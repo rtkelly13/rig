@@ -99,7 +99,9 @@ def agents_audit_command(
         rules = config.agents_md(policy_key(target))
         results.append(audit_repo(target, rules))
 
-    remote_findings = sweep_remote_agent_files(config.allowed_owners("")) if remote else []
+    remote_findings = (
+        sweep_remote_agent_files(config.allowed_owners(""), is_registered=config.is_registered) if remote else []
+    )
 
     if json_output:
         payload = {

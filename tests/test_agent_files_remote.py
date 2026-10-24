@@ -34,10 +34,11 @@ def _gh(answers: Mapping[str, object]) -> GhCli:
     return run
 
 
-def _repo_row(name: str, branch: str | None, *, archived: bool = False) -> dict[str, object]:
+def _repo_row(name: str, branch: str | None, *, archived: bool = False, fork: bool = False) -> dict[str, object]:
     return {
         "nameWithOwner": name,
         "isArchived": archived,
+        "isFork": fork,
         "defaultBranchRef": None if branch is None else {"name": branch},
     }
 
@@ -95,9 +96,29 @@ def test_sweep_reports_archived_and_skips_repos_without_a_branch() -> None:
         }
     )
 
-    findings = sweep_remote_agent_files(["rtkelly13"], run)
+    findings = sweep_remote_agent_files(["rtkelly13"], run=run)
 
     assert [(f.repo, f.path, f.archived) for f in findings] == [
         ("rtkelly13/docs", "CLAUDE.md", False),
         ("rtkelly13/the-vault-system", "CLAUDE.md", True),
     ]
+
+
+def test_forks_are_skipped_unless_a_profile_registers_them() -> None:
+    """Upstream's instruction files are not ours to remove."""
+    run = _gh(
+        {
+            f"{_LIST} rtkelly13": [
+                _repo_row("rtkelly13/nodatime", "master", fork=True),
+                _repo_row("rtkelly13/Resultful", "main", fork=True),
+            ],
+            _TREE: {"tree": [{"path": "CLAUDE.md"}]},
+        }
+    )
+
+    assert sweep_remote_agent_files(["rtkelly13"], run=run) == []
+
+    registered = sweep_remote_agent_files(
+        ["rtkelly13"], is_registered=lambda name: name.endswith("/Resultful"), run=run
+    )
+    assert [finding.repo for finding in registered] == ["rtkelly13/Resultful"]

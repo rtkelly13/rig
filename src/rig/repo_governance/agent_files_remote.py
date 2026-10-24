@@ -33,6 +33,7 @@ class OwnerRepo(BaseModel):
 
     name_with_owner: Annotated[str, Field(alias="nameWithOwner")]
     is_archived: Annotated[bool, Field(alias="isArchived")] = False
+    is_fork: Annotated[bool, Field(alias="isFork")] = False
     default_branch: Annotated[_Branch | None, Field(alias="defaultBranchRef")] = None
 
 
@@ -85,7 +86,7 @@ def list_owner_repos(owner: str, run: GhCli = run_gh_cli) -> list[OwnerRepo]:
         "--limit",
         "200",
         "--json",
-        "nameWithOwner,isArchived,defaultBranchRef",
+        "nameWithOwner,isArchived,isFork,defaultBranchRef",
     )
     return listed or []
 
@@ -116,11 +117,21 @@ def find_redundant_files(paths: Iterable[str]) -> list[str]:
     return found
 
 
-def sweep_remote_agent_files(owners: Sequence[str], run: GhCli = run_gh_cli) -> list[RemoteAgentFile]:
-    """Every redundant agent file on the default branch of every repo *owners* own."""
+def sweep_remote_agent_files(
+    owners: Sequence[str],
+    is_registered: Callable[[str], bool] | None = None,
+    run: GhCli = run_gh_cli,
+) -> list[RemoteAgentFile]:
+    """Every redundant agent file on the default branch of every repo *owners* own.
+
+    A fork's instruction files are upstream's, not ours, so a fork is skipped unless
+    a policy profile registers it — the same rule `is_managed_repo` applies locally.
+    """
     findings: list[RemoteAgentFile] = []
     for owner in owners:
         for repo in list_owner_repos(owner, run):
+            if repo.is_fork and not (is_registered and is_registered(repo.name_with_owner)):
+                continue
             branch = repo.default_branch.name if repo.default_branch else ""
             if not branch:
                 continue
