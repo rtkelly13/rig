@@ -8,6 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from rig.repo_governance.agent_files import BESPOKE_AGENT_FILES
+
 
 @dataclass(frozen=True)
 class AgentsMdRules:
@@ -15,6 +17,8 @@ class AgentsMdRules:
 
     max_lines: int = 120
     claude_md: Literal["symlink", "absent", "any"] = "any"
+    #: Per-tool instruction files that shadow `AGENTS.md` when present. Empty disables the check.
+    bespoke_agent_files: tuple[str, ...] = BESPOKE_AGENT_FILES
     require: tuple[str, ...] = ("description", "package_manager", "commands")
     check_paths: bool = True
     report_only: tuple[str, ...] = ("instruction-count", "forcing-language", "section-outlier")

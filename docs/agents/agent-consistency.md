@@ -41,6 +41,7 @@ A perfect root `AGENTS.md` should ideally contain only:
 
 - **No Auto-Generation**: Never use scripts to auto-generate `AGENTS.md`. They prioritize comprehensiveness over restraint.
 - **No `CLAUDE.md`**: Claude Code reads `AGENTS.md` natively (v2.1.277+), and prefers `CLAUDE.md` over it when both exist. A copy, stub or symlink therefore *shadows* `AGENTS.md`. Keep `AGENTS.md` as the only instruction file.
+- **No Per-Tool Instruction Files**: The same reasoning applies to every tool that shipped its own instruction file before `AGENTS.md` was a standard — `.github/copilot-instructions.md`, `.cursorrules`, `GEMINI.md`, `.clinerules`, `.windsurfrules`, and the rest. Each tool reads its own file *instead* of `AGENTS.md`, so a copy drifts and a pointer only adds indirection. The canonical list lives in [`agent_files.py`](../../src/rig/repo_governance/agent_files.py); `repo-governance agents-audit` fails a repo that still carries one, and `workspace sync` writes the same paths into `.gitignore` so a tool cannot reintroduce one behind the audit's back. Tool *feature* definitions — `.github/agents/`, `.github/prompts/`, `.claude/skills/` — are not in the list: they extend a tool rather than competing with `AGENTS.md`.
 - **Ruthless Pruning**: Periodically remove redundant, vague, or obvious instructions.
 
 ### 6. Where Content Belongs

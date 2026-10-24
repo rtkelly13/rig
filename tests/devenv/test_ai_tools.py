@@ -18,6 +18,7 @@ from rig.devenv.steps.ai_tools.estate_rules import (
     BEGIN,
     END,
     merge_estate_rules,
+    setup_estate_rules,
 )
 from rig.devenv.steps.ai_tools.opencode import (
     merge_dicts_non_destructive,
@@ -252,3 +253,12 @@ def test_estate_rules_are_idempotent():
 
     assert twice == once
     assert action == "unchanged"
+
+
+def test_setup_estate_rules_does_not_create_a_claude_md(tmp_path):
+    """Claude Code reads AGENTS.md natively; a CLAUDE.md here would shadow it."""
+    setup_estate_rules(root=tmp_path)
+
+    assert (tmp_path / "AGENTS.md").is_file()
+    assert not (tmp_path / "CLAUDE.md").exists()
+    assert not (tmp_path / "CLAUDE.md").is_symlink()

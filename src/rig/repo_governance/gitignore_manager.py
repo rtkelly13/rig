@@ -13,6 +13,10 @@ from dataclasses import dataclass
 from pydantic import TypeAdapter
 
 from rig import worktree_state
+from rig.repo_governance.agent_files import (
+    GITIGNORE_COMMENT,
+    GITIGNORE_ENTRY_NAME,
+)
 from rig.repo_governance.policy_config import (
     GitignoreEntry,
     PolicyConfig,
@@ -30,6 +34,7 @@ __all__ = [
     "align_gitignore",
     "audit_estate_gitignores",
     "inspect_gitignore",
+    "required_entries",
     "sync_estate_gitignores",
 ]
 
@@ -92,6 +97,36 @@ def _json_fields(result: GitignoreInspection | GitignoreAlignment) -> JsonObject
 _ROW: TypeAdapter[GitignoreInspection | GitignoreAlignment] = TypeAdapter(GitignoreInspection | GitignoreAlignment)
 
 
+def required_entries(
+    repo_path: pathlib.Path,
+    config: PolicyConfig | None = None,
+    languages: Sequence[str] | None = None,
+) -> tuple[GitignoreEntry, ...]:
+    """Every `.gitignore` entry this repo must satisfy, including the agent-file block.
+
+    The bespoke agent-file block is derived from `AgentsMdRules.bespoke_agent_files`
+    rather than declared a second time in config, so the audit and the ignore rule
+    cannot drift: a path the audit fails is a path git ignores. One source of truth,
+    two consumers.
+    """
+    cfg = config or load_policy_config()
+    key = policy_key(repo_path)
+    entries = cfg.gitignore_entries(key, repo_path=repo_path, languages=languages)
+    bespoke = cfg.agents_md(key).bespoke_agent_files
+    if not bespoke or any(entry.name == GITIGNORE_ENTRY_NAME for entry in entries):
+        return entries
+    return (
+        *entries,
+        GitignoreEntry(
+            name=GITIGNORE_ENTRY_NAME,
+            comment=GITIGNORE_COMMENT,
+            write=bespoke,
+            satisfied_by=bespoke,
+            match_mode="all",
+        ),
+    )
+
+
 def inspect_gitignore(
     repo_path: pathlib.Path,
     config: PolicyConfig | None = None,
@@ -105,7 +140,7 @@ def inspect_gitignore(
     cfg = config or load_policy_config()
     key = policy_key(repo_path)
     resolved_languages = cfg.resolve_languages(key, repo_path=repo_path, explicit_languages=languages)
-    entries = cfg.gitignore_entries(key, repo_path=repo_path, languages=resolved_languages)
+    entries = required_entries(repo_path, config=cfg, languages=resolved_languages)
     gitignore_file = repo_path / ".gitignore"
 
     if not entries:
@@ -186,7 +221,7 @@ def align_gitignore(
     cfg = config or load_policy_config()
     key = policy_key(repo_path)
     resolved_languages = cfg.resolve_languages(key, repo_path=repo_path, explicit_languages=languages)
-    entries = cfg.gitignore_entries(key, repo_path=repo_path, languages=resolved_languages)
+    entries = required_entries(repo_path, config=cfg, languages=resolved_languages)
     gitignore_file = repo_path / ".gitignore"
 
     if not entries:

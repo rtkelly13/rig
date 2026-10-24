@@ -14,6 +14,10 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
+from rig.repo_governance.agent_files_remote import (
+    RemoteAgentFile,
+    sweep_remote_agent_files,
+)
 from rig.repo_governance.agents_md_audit import (
     GATING_CHECKS,
     REPORT_ONLY_CHECKS,
@@ -48,6 +52,14 @@ def agents_audit_command(
     path: str | None = typer.Argument(None, help="Target repository directory path (defaults to CWD)"),
     all: bool = typer.Option(False, "--all", "-a", help="Audit all personal repositories under <code root>/personal"),
     json_output: bool = typer.Option(False, "--json", help="Emit findings as JSON for an agent to act on"),
+    remote: bool = typer.Option(
+        False,
+        "--remote",
+        help=(
+            "Also sweep default branches on GitHub, including repos with no local clone "
+            "and archived ones (which are reported but do not fail the audit)"
+        ),
+    ),
     strict: bool = typer.Option(False, "--strict", help="Fail on warnings too, not only errors"),
     write_waivers: bool = typer.Option(
         False, "--write-waivers", help=f"Append a stub for every surviving finding to {WAIVER_FILENAME}"
@@ -65,24 +77,34 @@ def agents_audit_command(
     so the dismissal list cannot quietly become the ball of mud the rules exist to prevent.
     `--write-waivers` emits the stubs with an empty reason, which the audit then fails on until
     each one is justified.
+
+    `--remote` sweeps each default branch over the GitHub API as well, which catches repositories
+    that have no local clone — the blind spot that let an archived repo keep a `CLAUDE.md`
+    through an earlier sweep.
     """
     # Repo selection narrates which repos it skipped. In `--json` mode stdout
     # belongs to the payload, so that narration goes to stderr instead.
-    if json_output:
-        with contextlib.redirect_stdout(sys.stderr):
-            targets = resolve_target_directories(path, all)
-    else:
-        targets = resolve_target_directories(path, all)
+    # `--remote` on its own means "GitHub only"; combined with --all it sweeps both.
     config = load_policy_config()
     results: list[AuditResult] = []
+    targets: list[pathlib.Path] = []
+    if not (remote and not (path or all)):
+        if json_output:
+            with contextlib.redirect_stdout(sys.stderr):
+                targets = resolve_target_directories(path, all)
+        else:
+            targets = resolve_target_directories(path, all)
 
     for target in targets:
         rules = config.agents_md(policy_key(target))
         results.append(audit_repo(target, rules))
 
+    remote_findings = sweep_remote_agent_files(config.allowed_owners("")) if remote else []
+
     if json_output:
         payload = {
             "results": [r.model_dump(mode="json") for r in results],
+            "remote": [finding.to_json() for finding in remote_findings],
             "gating_checks": list(GATING_CHECKS),
             "report_only_checks": list(REPORT_ONLY_CHECKS),
             "rubric": "docs/agents/agent-consistency.md",
@@ -94,6 +116,8 @@ def agents_audit_command(
         typer.echo(json.dumps(payload, indent=2))
     else:
         _render_audit(results)
+        if remote:
+            _render_remote(remote_findings)
 
     if write_waivers:
         for target, result in zip(targets, results, strict=True):
@@ -104,7 +128,9 @@ def agents_audit_command(
                     f"fill in each `reason` or the audit stays red.[/yellow]"
                 )
 
-    failed = any(r.failed or (strict and r.findings) for r in results)
+    failed = any(r.failed or (strict and r.findings) for r in results) or any(
+        not finding.archived for finding in remote_findings
+    )
     if failed:
         raise typer.Exit(code=1)
 
@@ -134,6 +160,27 @@ def _render_audit(results: list[AuditResult]) -> None:
             console.print(f"  [dim]{len(result.suppressed)} finding(s) waived in {WAIVER_FILENAME}[/dim]")
         metrics = ", ".join(f"{k} {v}" for k, v in result.metrics.items())
         console.print(f"  [dim]metrics (not gated): {metrics}[/dim]\n")
+
+
+def _render_remote(findings: list[RemoteAgentFile]) -> None:
+    """Print the GitHub-side sweep. Archived rows are reported, never gated.
+
+    An archived repo is read-only, so removing a file there means unarchive,
+    commit, re-archive. Reporting it keeps the sweep honest without demanding
+    that churn.
+    """
+    if not findings:
+        console.print("[green]✓ GitHub sweep: no redundant agent files[/green]")
+        return
+
+    table = Table(title="GitHub default branches — redundant agent files", title_style="bold")
+    table.add_column("Repository", style="cyan", no_wrap=True)
+    table.add_column("Path", no_wrap=True)
+    table.add_column("State")
+    for finding in findings:
+        state = "[yellow]archived — left as-is[/yellow]" if finding.archived else "[red]remove[/red]"
+        table.add_row(finding.repo, finding.path, state)
+    console.print(table)
 
 
 def _append_waiver_stubs(repo_path: pathlib.Path, result: AuditResult) -> int:

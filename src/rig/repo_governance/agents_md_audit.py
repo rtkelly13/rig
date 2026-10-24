@@ -37,6 +37,7 @@ GATING_CHECKS: tuple[str, ...] = (
     "pointer-integrity",
     "docs-orphan",
     "claude-md-shape",
+    "bespoke-agent-file",
     "path-liveness",
     "required-content",
     "generation-marker",
@@ -407,6 +408,32 @@ def check_claude_md(repo_path: pathlib.Path, rules: AgentsMdRules) -> list[Findi
     return []
 
 
+def check_bespoke_agent_files(repo_path: pathlib.Path, rules: AgentsMdRules) -> list[Finding]:
+    """Fail a repository that still carries a per-tool instruction file.
+
+    `AGENTS.md` is the single source of truth, and the tools that own these names
+    read their own file *instead* of it. A copy therefore drifts silently, and a
+    pointer only adds indirection the tool does not need — the same reasoning that
+    removed `CLAUDE.md`. A tool *feature* definition is not in the list; see
+    `agent_files.py` for which shapes were deliberately excluded.
+    """
+    out: list[Finding] = []
+    for relative in rules.bespoke_agent_files:
+        path = repo_path / relative.rstrip("/")
+        if not (path.is_symlink() or path.exists()):
+            continue
+        out.append(
+            Finding(
+                check="bespoke-agent-file",
+                severity=Severity.ERROR,
+                path=relative.rstrip("/"),
+                message="Merge anything worth keeping into AGENTS.md, then delete this. "
+                "The tool that owns this name reads it instead of AGENTS.md.",
+            )
+        )
+    return out
+
+
 def _looks_like_path(candidate: str) -> bool:
     """Return True for backticked text that is plausibly a repo path.
 
@@ -724,6 +751,7 @@ def audit_repo(repo_path: pathlib.Path, rules: AgentsMdRules) -> AuditResult:
         *check_folder_index(repo_path),
         *check_code_blocks(repo_path, docs, rules),
         *check_claude_md(repo_path, rules),
+        *check_bespoke_agent_files(repo_path, rules),
         *check_required_content(text, rules),
         *check_generation_markers(text),
     ]
