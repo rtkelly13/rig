@@ -95,6 +95,8 @@ jobs:
         run: uv run ratchet --report
       - name: Import contracts
         run: uv run lint-imports
+      - name: AGENTS.md and docs audit
+        run: uv run repo-governance agents-audit . --strict
       - name: Bandit Security Scan
         run: uv run bandit -r src/ -ll
       # The preview gallery's CSS is Tailwind output that has to be committed,
