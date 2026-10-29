@@ -19,6 +19,7 @@ import pathlib
 import re
 from collections.abc import Iterable, Sequence
 from enum import StrEnum
+from urllib.parse import unquote
 
 from pydantic import BaseModel, Field
 
@@ -273,7 +274,8 @@ def _relative_targets(text: str) -> Iterable[str]:
         target = match.group(1).split("#", 1)[0].strip()
         if not target or target.startswith(("http://", "https://", "mailto:", "#")):
             continue
-        yield target
+        # Markdown links percent-encode spaces (`Repo%20Docs%20Index.md`); the file on disk does not.
+        yield unquote(target)
 
 
 def check_pointers(repo_path: pathlib.Path, docs: Sequence[pathlib.Path]) -> list[Finding]:

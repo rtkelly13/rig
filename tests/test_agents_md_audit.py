@@ -347,3 +347,10 @@ def test_docs_site_hub_index_md_serves_its_subfolders(tmp_path: pathlib.Path) ->
     assert [f.path for f in result.findings if f.check == "docs-index"] == []
     # reference/d.md is linked from no index on its path, so its folder still needs one.
     assert [f.path for f in result.findings if f.check == "folder-index"] == ["docs/reference/README.md"]
+
+
+def test_percent_encoded_link_resolves(tmp_path: pathlib.Path) -> None:
+    repo = _repo(tmp_path, GOOD_ROOT + "\nSee [index](./docs/Repo%20Docs%20Index.md).\n")
+    _write(repo / "docs" / "Repo Docs Index.md")
+    result = audit_repo(repo, AgentsMdRules(claude_md="any"))
+    assert [f for f in result.findings if f.check == "pointer-integrity"] == []
