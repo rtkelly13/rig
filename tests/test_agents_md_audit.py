@@ -335,3 +335,15 @@ def test_long_code_block_in_docs_is_reported_but_diagrams_are_not(tmp_path: path
     blocks = [f for f in result.findings if f.check == "docs-code-block"]
     assert [f.path for f in blocks] == ["docs/long.md"]
     assert "25-line code block at line 3" in blocks[0].message
+
+
+def test_docs_site_hub_index_md_serves_its_subfolders(tmp_path: pathlib.Path) -> None:
+    """A docs-site `docs/index.md` linking every page needs no README in each folder."""
+    repo = _repo(tmp_path, GOOD_ROOT + "\nSee [docs](./docs/index.md).\n")
+    _write(repo / "docs" / "index.md", "# hub\n\n- [a](guides/a.md)\n- [b](guides/b.md)\n- [c](reference/c.md)\n")
+    for rel in ("guides/a.md", "guides/b.md", "reference/c.md", "reference/d.md"):
+        _write(repo / "docs" / rel)
+    result = audit_repo(repo, AgentsMdRules(claude_md="any", docs_index_min_files=3))
+    assert [f.path for f in result.findings if f.check == "docs-index"] == []
+    # reference/d.md is linked from no index on its path, so its folder still needs one.
+    assert [f.path for f in result.findings if f.check == "folder-index"] == ["docs/reference/README.md"]

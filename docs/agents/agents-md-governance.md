@@ -44,9 +44,8 @@ passes or names the line that failed.
 | **Path liveness** | staleness poison | Path-shaped strings that no longer exist. Requires a directory separator to qualify, so bare suffixes like `.test.ts` are not treated as paths — a naive version of this check produced 10 false positives out of 14 |
 | **Required root content** | essential root content | A one-line description, a package-manager statement, and a commands section are present |
 | **No generation markers** | no auto-generation | `<!-- generated`, `Auto-generated`, or an `init`-tool banner |
-| **Docs index** (`docs-index`, warn) | progressive disclosure, second hop | Past `agents_md.docs_index_min_files` (default 5) markdown files, `docs/README.md` must exist and link each top-level doc and folder. A link beneath a folder with no README counts for that folder |
-| **Code blocks** (`docs-code-block`, warn) | capabilities, not structure | A fenced block in `docs/` longer than `agents_md.max_code_block_lines` (default 20): source, config, a template or sample output copied into prose. The copy goes stale; link the file, workflow or `--help`. Mermaid diagrams are exempt. Waive a block that is itself the artifact, such as a prompt saved elsewhere |
-| **Folder index** (`folder-index`, warn) | progressive disclosure, third hop | Every folder under `docs/` holding markdown has a `README.md` linking each file and subfolder in it. A file its folder's README doesn't name is unreachable however close it sits |
+| **Docs index** (`docs-index`, warn) | progressive disclosure, second hop | Past `agents_md.docs_index_min_files` (default 5) markdown files, `docs/README.md` (or a docs-site `docs/index.md`) must exist and link each top-level doc and folder. A link beneath a folder with no index counts for that folder |
+| **Folder index** (`folder-index`, warn) | progressive disclosure, third hop | Every file under `docs/` is linked from an index on its path: its folder's `README.md`/`index.md`, or any index above it. A folder needs its own index only when something in it is linked from none of them |
 
 ## 3. What a machine cannot decide
 
