@@ -198,6 +198,45 @@ class OrcaLiveSettings:
 @dataclass(frozen=True, slots=True)
 class _OneSettings:
     settings: OrcaLiveSettings
+class Worktree:
+    """A workspace, as `worktree.list` reports it: a project's main checkout or a linked worktree."""
+
+    id: str
+    path: str
+    repo_id: Annotated[str, Field(alias="repoId")] = ""
+    #: `refs/heads/<name>`, or empty when HEAD is detached.
+    branch: Lenient[str] = None
+    is_main: Annotated[Lenient[bool], Field(alias="isMainWorktree")] = None
+    display_name: Annotated[Lenient[str], Field(alias="displayName")] = None
+    #: Milliseconds since the epoch.
+    last_activity_ms: Annotated[Lenient[float], Field(alias="lastActivityAt")] = None
+
+
+@dataclass(frozen=True, slots=True)
+class Agent:
+    """One agent pane. Orca's states are `working`, `blocked`, `waiting` and `done`."""
+
+    state: Lenient[str] = None
+
+
+@dataclass(frozen=True, slots=True)
+class Activity:
+    """What `worktree.ps` reports running in one worktree."""
+
+    worktree_id: Annotated[str, Field(alias="worktreeId")]
+    live_terminals: Annotated[Lenient[int], Field(alias="liveTerminalCount")] = None
+    agents: Lenient[tuple[Agent, ...]] = None
+
+
+@dataclass(frozen=True, slots=True)
+class _Worktrees:
+    worktrees: tuple[Worktree, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class _Activities:
+    worktrees: tuple[Activity, ...] = ()
+    truncated: Lenient[bool] = None
 
 
 _REQUEST: TypeAdapter[_Request] = TypeAdapter(_Request)
@@ -320,3 +359,21 @@ class OrcaRuntime:
         """Replace the whole agent-arguments map; Orca does not merge it, so pass every agent's entry."""
         reply = self.call(_OneSettings, "settings.update", {"agentDefaultArgs": args})
         return reply.settings.agent_default_args or {}
+    def worktrees(self) -> tuple[Worktree, ...]:
+        return self.call(_Worktrees, "worktree.list", {}).worktrees
+
+    def activity(self) -> tuple[Activity, ...]:
+        """Terminals and agents per worktree. Raises rather than answer from a truncated list."""
+        answer = self.call(_Activities, "worktree.ps", {})
+        if answer.truncated:
+            msg = "Orca truncated worktree.ps; refusing to judge worktrees it did not report"
+            raise OrcaUnavailableError(msg)
+        return answer.worktrees
+
+    def remove_worktree(self, worktree_id: str) -> None:
+        """Remove a worktree the way Orca's own delete does.
+
+        Orca stops its terminals and runs `git worktree remove`, which refuses a dirty tree
+        because `force` is never sent. It deletes the branch too, unless git calls it unmerged.
+        """
+        _ = self.call(_Removed, "worktree.rm", {"worktree": f"id:{worktree_id}"})

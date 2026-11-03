@@ -58,6 +58,45 @@ so hand-written notes in a worktree are never lost to it. Like
 the workspace checkout, and is skipped, not failed, when that checkout or its venv
 is missing.
 
+## Clearing finished Orca worktrees
+
+Orca makes a worktree for each piece of work and never removes one when the work lands,
+so the sidebar fills with finished branches. `estate orca-worktrees` lists every linked
+worktree in both Orca profiles (on Windows, `orca-personal` and the work profile) and says
+which are finished. `--apply` removes those, `--all` lists the kept ones with the reason, and
+`--json` gives every row.
+
+| verdict | means | `--apply` |
+|---|---|---|
+| `merged` | the newest PR for the branch merged, and HEAD has nothing local since | removes it |
+| `landed` | no PR, HEAD is already in the default branch, idle for `--idle-days` (2) | removes it |
+| `missing` | Orca lists it, but the folder is gone | prunes git, removes it from Orca |
+| `leftover` | git no longer knows the folder, and every file in it matches the branch | deletes the folder, prunes, removes it from Orca |
+| `current` | this command is running inside it | keeps it |
+| `busy` | an agent in it is `working`, `blocked` or `waiting` | keeps it |
+| `dirty` | uncommitted or untracked files | keeps it |
+| `after-merge` | the PR merged, but there are local commits since | keeps it |
+| `open-pr` / `closed-pr` | the PR is open, or closed without merging | keeps it |
+| `unmerged` | commits outside the default branch and no PR | keeps it |
+| `recent` | already in the default branch, but touched within `--idle-days` | keeps it |
+| `leftover-differs` | a folder git no longer knows, holding edits, new files, or a branch that is gone | keeps it: look by hand |
+
+The rules are checked in that order, so a dirty tree or a running agent is kept whatever
+else is true. Each verdict comes from git, Orca's `worktree.ps` and one GitHub query per
+project, never from guessing.
+
+**Removal goes through Orca, not `rm -rf`.** `worktree.rm` is Orca's own delete. It stops the
+worktree's terminals, runs `git worktree remove` without `--force`, so a dirty tree is
+refused, and deletes the branch with `git branch -d`, so an unmerged branch stays.
+
+**`leftover` is what an interrupted delete leaves on Windows.** Git deletes the `.git` file and
+the top-level dotfiles, then stops at a locked file in `.venv`. Orca then reports the folder
+"is no longer a Git worktree" and leaves it on disk. The command compares the folder with
+the branch through the main checkout's object store, using a throwaway index. Files missing
+from the folder count as safe, because the branch still has them. They are marked
+skip-worktree, so git reads `.gitignore` from the branch even though the folder has lost it.
+Only changed or untracked files that git does not ignore keep the folder.
+
 ## Why merged branches need care
 
 Under a squash-merge policy a branch's commits never become ancestors of `main`,
