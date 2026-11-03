@@ -9,9 +9,11 @@ from dataclasses import dataclass, field
 
 import pytest
 from pydantic import TypeAdapter
+from typer.testing import CliRunner
 
 from rig import proc
 from rig.estate import orca_worktrees
+from rig.estate.cli import app as estate_app
 from rig.estate.orca_runtime import OrcaRuntime
 from rig.estate.orca_worktrees import Facts, Verdict, decide, leftover_matches
 from rig.estate.prs import PullRequest
@@ -46,7 +48,7 @@ def _pr(state: str, number: int = 7) -> PullRequest:
     ],
 )
 def test_each_rule_gives_its_verdict(facts: Facts, verdict: Verdict) -> None:
-    assert decide(facts, idle_days=2)[0] is verdict
+    assert decide(facts, idle_days=2).verdict is verdict
 
 
 def test_only_finished_verdicts_are_removable() -> None:
@@ -107,7 +109,7 @@ def test_a_leftover_folder_matching_its_branch_is_safe(repo: pathlib.Path) -> No
     _break(path)
     (path / "README.md").unlink()
 
-    assert leftover_matches(path, repo, "feature") == (True, "")
+    assert leftover_matches(path, repo, "feature").matches
 
 
 def test_a_leftover_folder_with_an_edit_or_a_new_file_is_kept(repo: pathlib.Path) -> None:
@@ -116,10 +118,10 @@ def test_a_leftover_folder_with_an_edit_or_a_new_file_is_kept(repo: pathlib.Path
     (path / "src" / "app.py").write_text("print(2)\n", encoding="utf-8")
     (path / "notes.md").write_text("mine\n", encoding="utf-8")
 
-    matches, detail = leftover_matches(path, repo, "feature")
+    compared = leftover_matches(path, repo, "feature")
 
-    assert not matches
-    assert "2 file(s) differ" in detail
+    assert not compared.matches
+    assert "2 file(s) differ" in compared.detail
 
 
 def test_a_leftover_folder_whose_branch_is_gone_is_kept(repo: pathlib.Path) -> None:
@@ -128,10 +130,10 @@ def test_a_leftover_folder_whose_branch_is_gone_is_kept(repo: pathlib.Path) -> N
     _ = _git(repo, "worktree", "prune")
     _ = _git(repo, "branch", "-D", "feature")
 
-    matches, detail = leftover_matches(path, repo, "feature")
+    compared = leftover_matches(path, repo, "feature")
 
-    assert not matches
-    assert "only copy" in detail
+    assert not compared.matches
+    assert "only copy" in compared.detail
 
 
 # ---------------------------------------------------------------- through a fake Orca
@@ -247,3 +249,37 @@ def test_the_worktree_the_command_runs_in_is_never_judged_finished(repo: pathlib
     )
 
     assert [r.verdict for r in rows] == [Verdict.CURRENT]
+
+
+# ---------------------------------------------------------------- scope
+
+
+def test_select_names_a_project_by_folder_display_name_or_path(repo: pathlib.Path) -> None:
+    fake = FakeOrca(repo)
+    inside = _worktree(repo, "feature")
+    fake.add(inside, "feature")
+    runtime = fake.runtime()
+
+    assert orca_worktrees.select(runtime, "REPO") == {"r1"}
+    assert orca_worktrees.select(runtime, str(repo / "src")) == {"r1"}
+    assert orca_worktrees.select(runtime, str(inside)) == {"r1"}
+    assert orca_worktrees.select(runtime, "elsewhere") == frozenset()
+
+
+def test_review_only_judges_the_chosen_projects(repo: pathlib.Path) -> None:
+    fake = FakeOrca(repo)
+    fake.add(_worktree(repo, "feature"), "feature")
+
+    rows = orca_worktrees.review(
+        fake.runtime(), "personal", cwd=repo, now_ms=NOW_MS, prs=_prs({}), only=frozenset({"other"})
+    )
+
+    assert rows == []
+
+
+@pytest.mark.parametrize("args", [[], ["--all", "--repo", "rig"]])
+def test_the_command_demands_exactly_one_scope(args: list[str]) -> None:
+    result = CliRunner().invoke(estate_app, ["orca-worktrees", *args])
+
+    assert result.exit_code == 2
+    assert "Choose a scope" in result.output

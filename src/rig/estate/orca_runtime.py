@@ -198,6 +198,9 @@ class OrcaLiveSettings:
 @dataclass(frozen=True, slots=True)
 class _OneSettings:
     settings: OrcaLiveSettings
+
+
+@dataclass(frozen=True, slots=True)
 class Worktree:
     """A workspace, as `worktree.list` reports it: a project's main checkout or a linked worktree."""
 
@@ -359,6 +362,7 @@ class OrcaRuntime:
         """Replace the whole agent-arguments map; Orca does not merge it, so pass every agent's entry."""
         reply = self.call(_OneSettings, "settings.update", {"agentDefaultArgs": args})
         return reply.settings.agent_default_args or {}
+
     def worktrees(self) -> tuple[Worktree, ...]:
         return self.call(_Worktrees, "worktree.list", {}).worktrees
 

@@ -89,34 +89,42 @@ class Facts:
     leftover_detail: str = ""
 
 
-def decide(facts: Facts, *, idle_days: float = DEFAULT_IDLE_DAYS) -> tuple[Verdict, str]:
+@dataclass(frozen=True, slots=True)
+class Judgement:
+    verdict: Verdict
+    reason: str
+
+
+def decide(facts: Facts, *, idle_days: float = DEFAULT_IDLE_DAYS) -> Judgement:
     """The verdict for one worktree and the reason, in the order the safety rules need."""
     if facts.is_current:
-        return Verdict.CURRENT, "this command is running inside it"
+        return Judgement(Verdict.CURRENT, "this command is running inside it")
     if facts.busy_agents:
-        return Verdict.BUSY, f"{facts.busy_agents} agent(s) still working or waiting"
+        return Judgement(Verdict.BUSY, f"{facts.busy_agents} agent(s) still working or waiting")
     if not facts.exists:
-        return Verdict.MISSING, "the folder is gone"
+        return Judgement(Verdict.MISSING, "the folder is gone")
     if not facts.is_worktree:
         if facts.leftover_matches:
-            return Verdict.LEFTOVER, "not a git worktree any more; its files match the branch"
-        return Verdict.LEFTOVER_DIFFERS, facts.leftover_detail or "not a git worktree; could not compare it"
+            return Judgement(Verdict.LEFTOVER, "not a git worktree any more; its files match the branch")
+        return Judgement(Verdict.LEFTOVER_DIFFERS, facts.leftover_detail or "not a git worktree; could not compare it")
     if facts.dirty:
-        return Verdict.DIRTY, "uncommitted or untracked files"
+        return Judgement(Verdict.DIRTY, "uncommitted or untracked files")
     pr = facts.pr
     if pr is not None and pr.merged:
         if facts.beyond_merge:
-            return Verdict.AFTER_MERGE, f"PR #{pr.number} merged, but {facts.beyond_merge} commit(s) since are local"
-        return Verdict.MERGED, f"PR #{pr.number} merged"
+            return Judgement(
+                Verdict.AFTER_MERGE, f"PR #{pr.number} merged, but {facts.beyond_merge} commit(s) since are local"
+            )
+        return Judgement(Verdict.MERGED, f"PR #{pr.number} merged")
     if pr is not None and pr.open:
-        return Verdict.OPEN_PR, f"PR #{pr.number} open"
+        return Judgement(Verdict.OPEN_PR, f"PR #{pr.number} open")
     if pr is not None:
-        return Verdict.CLOSED_PR, f"PR #{pr.number} closed without merging: decide by hand"
+        return Judgement(Verdict.CLOSED_PR, f"PR #{pr.number} closed without merging: decide by hand")
     if not facts.in_default:
-        return Verdict.UNMERGED, "commits not in the default branch, and no PR"
+        return Judgement(Verdict.UNMERGED, "commits not in the default branch, and no PR")
     if facts.idle_days < idle_days:
-        return Verdict.RECENT, f"already in the default branch, but active {facts.idle_days:.1f} day(s) ago"
-    return Verdict.LANDED, f"already in the default branch; idle {facts.idle_days:.0f} day(s)"
+        return Judgement(Verdict.RECENT, f"already in the default branch, but active {facts.idle_days:.1f} day(s) ago")
+    return Judgement(Verdict.LANDED, f"already in the default branch; idle {facts.idle_days:.0f} day(s)")
 
 
 # ---------------------------------------------------------------- gathering facts
@@ -175,7 +183,15 @@ def _in_default(path: pathlib.Path) -> bool:
     return proc.git("merge-base", "--is-ancestor", "HEAD", default, cwd=path).ok
 
 
-def leftover_matches(folder: pathlib.Path, repo: pathlib.Path, branch: str) -> tuple[bool, str]:
+@dataclass(frozen=True, slots=True)
+class Comparison:
+    """Whether a leftover folder matches its branch, and if not, why."""
+
+    matches: bool
+    detail: str = ""
+
+
+def leftover_matches(folder: pathlib.Path, repo: pathlib.Path, branch: str) -> Comparison:
     """Whether every file git does not ignore in *folder* matches *branch*'s last commit.
 
     The folder has no `.git` any more, so it is compared through the main checkout's object store
@@ -189,12 +205,12 @@ def leftover_matches(folder: pathlib.Path, repo: pathlib.Path, branch: str) -> t
     ignore rules from the index instead of the folder.
     """
     if not branch:
-        return False, "detached when it broke; nothing to compare it with"
+        return Comparison(False, "detached when it broke; nothing to compare it with")
     common = proc.git_out("rev-parse", "--path-format=absolute", "--git-common-dir", cwd=repo)
     if not common:
-        return False, f"could not find the git folder of {repo.as_posix()}"
+        return Comparison(False, f"could not find the git folder of {repo.as_posix()}")
     if not proc.git("rev-parse", "--verify", "--quiet", f"refs/heads/{branch}", cwd=repo).ok:
-        return False, f"branch {branch} no longer exists, so the folder may hold the only copy"
+        return Comparison(False, f"branch {branch} no longer exists, so the folder may hold the only copy")
     with tempfile.TemporaryDirectory(prefix="orca-leftover-") as scratch:
         env = {
             **os.environ,
@@ -207,7 +223,7 @@ def leftover_matches(folder: pathlib.Path, repo: pathlib.Path, branch: str) -> t
             return proc.git(*args, cwd=folder, env=env)
 
         if not run("read-tree", f"refs/heads/{branch}").ok:
-            return False, f"could not read {branch}"
+            return Comparison(False, f"could not read {branch}")
         _ = run("update-index", "-q", "--refresh")
         missing = run("diff-files", "--name-only", "--diff-filter=D", "-z")
         if missing.ok and missing.out:
@@ -217,11 +233,11 @@ def leftover_matches(folder: pathlib.Path, repo: pathlib.Path, branch: str) -> t
         changed = run("diff-files", "--name-only")
         untracked = run("ls-files", "--others", "--exclude-standard")
     if not (changed.ok and untracked.ok):
-        return False, "git could not compare the folder"
+        return Comparison(False, "git could not compare the folder")
     differing = [line for line in (changed.out + untracked.out).splitlines() if line.strip()]
     if differing:
-        return False, f"{len(differing)} file(s) differ from {branch}, e.g. {differing[0]}"
-    return True, ""
+        return Comparison(False, f"{len(differing)} file(s) differ from {branch}, e.g. {differing[0]}")
+    return Comparison(True)
 
 
 @dataclass(frozen=True, slots=True)
@@ -255,8 +271,8 @@ def gather(worktree: Worktree, context: Context) -> Facts:
     if not _is_worktree(path):
         if repo is None:
             return replace(base, leftover_matches=False, leftover_detail="its project is not registered in Orca")
-        matches, detail = leftover_matches(path, repo, branch)
-        return replace(base, leftover_matches=matches, leftover_detail=detail)
+        compared = leftover_matches(path, repo, branch)
+        return replace(base, leftover_matches=compared.matches, leftover_detail=compared.detail)
     dirty = is_dirty(path)
     pr = context.prs(repo).get(branch) if (repo is not None and branch and not dirty) else None
     return replace(
@@ -293,9 +309,12 @@ def review(
     now_ms: float,
     idle_days: float = DEFAULT_IDLE_DAYS,
     prs: PrLookup | None = None,
+    only: frozenset[str] | None = None,
 ) -> list[Row]:
-    """Every linked worktree in one Orca profile with its verdict. Changes nothing."""
-    repos = runtime.repos()
+    """Every linked worktree in one Orca profile with its verdict, or only those of the *only* repo ids."""
+    repos = [r for r in runtime.repos() if only is None or r.id in only]
+    if not repos:
+        return []
     context = Context(
         repo_paths={r.id: pathlib.Path(r.path) for r in repos},
         activity={a.worktree_id: a for a in runtime.activity()},
@@ -306,12 +325,33 @@ def review(
     names = {r.id: r.display_name or pathlib.Path(r.path).name for r in repos}
     rows: list[Row] = []
     for worktree in runtime.worktrees():
-        if worktree.is_main:
+        if worktree.is_main or worktree.repo_id not in names:
             continue
-        verdict, reason = decide(gather(worktree, context), idle_days=idle_days)
+        judgement = decide(gather(worktree, context), idle_days=idle_days)
         project = names.get(worktree.repo_id, worktree.repo_id)
-        rows.append(Row(profile, project, worktree.path, short_branch(worktree.branch), verdict, reason))
+        rows.append(
+            Row(profile, project, worktree.path, short_branch(worktree.branch), judgement.verdict, judgement.reason)
+        )
     return rows
+
+
+def select(runtime: OrcaRuntime, wanted: str) -> frozenset[str]:
+    """The ids of the projects *wanted* names in this profile.
+
+    *wanted* is a path to a project's checkout or to one of its worktrees (or anything inside
+    them), or a name: the checkout's folder name or Orca's display name, ignoring case.
+    """
+    repos = runtime.repos()
+    candidate = pathlib.Path(wanted).expanduser()
+    if candidate.exists():
+        here = candidate.resolve()
+        roots = [(r.id, pathlib.Path(r.path)) for r in repos]
+        roots += [(w.repo_id, pathlib.Path(w.path)) for w in runtime.worktrees()]
+        return frozenset(repo_id for repo_id, root in roots if _is_within(here, root))
+    key = wanted.strip().casefold()
+    return frozenset(
+        r.id for r in repos if key in {pathlib.Path(r.path).name.casefold(), (r.display_name or "").casefold()}
+    )
 
 
 def apply(runtime: OrcaRuntime, rows: list[Row]) -> list[Row]:

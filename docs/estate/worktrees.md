@@ -63,8 +63,10 @@ is missing.
 Orca makes a worktree for each piece of work and never removes one when the work lands,
 so the sidebar fills with finished branches. `estate orca-worktrees` lists every linked
 worktree in both Orca profiles (on Windows, `orca-personal` and the work profile) and says
-which are finished. `--apply` removes those, `--all` lists the kept ones with the reason, and
-`--json` gives every row.
+which are finished. As with `estate tidy`, the scope is explicit: `--repo <name|path>`
+(repeatable; a project's folder or display name, or a path inside its checkout or a worktree)
+or `--all` for every project, and neither or both exits 2. `--apply` removes the finished
+ones, `--kept` lists the kept ones with the reason, and `--json` gives every row.
 
 | verdict | means | `--apply` |
 |---|---|---|

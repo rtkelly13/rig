@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import pathlib
 import time
+from dataclasses import dataclass
 
 import typer
 from pydantic import TypeAdapter
@@ -23,12 +24,28 @@ err = Console(stderr=True)
 _ROWS: TypeAdapter[list[Row]] = TypeAdapter(list[Row])
 
 
-def _profiles(user_data: str | None, work_data: str | None, *, include_work: bool) -> list[tuple[str, pathlib.Path]]:
+@dataclass(frozen=True, slots=True)
+class Profile:
+    """An Orca profile by name, and its user-data folder."""
+
+    name: str
+    folder: pathlib.Path
+
+
+@dataclass(frozen=True, slots=True)
+class Live:
+    """A profile whose Orca answered."""
+
+    name: str
+    runtime: OrcaRuntime
+
+
+def _profiles(user_data: str | None, work_data: str | None, *, include_work: bool) -> list[Profile]:
     estate = pathlib.Path(user_data).expanduser() if user_data else estate_user_data()
-    chosen = [("personal", estate)]
+    chosen = [Profile("personal", estate)]
     work = pathlib.Path(work_data).expanduser() if work_data else work_user_data()
     if include_work and work is not None and work.resolve() != estate.resolve():
-        chosen.append(("work", work))
+        chosen.append(Profile("work", work))
     return chosen
 
 
@@ -53,7 +70,46 @@ def _print(rows: list[Row], *, show_kept: bool, applied: bool) -> None:
     console.print(table)
 
 
+def _connect(chosen: list[Profile]) -> list[Live]:
+    """The reachable profiles. The estate's must answer (exit 2); the work profile only warns."""
+    live: list[Live] = []
+    for index, profile in enumerate(chosen):
+        try:
+            runtime = OrcaRuntime.connect(profile.folder)
+            _ = runtime.repos()
+        except OrcaUnavailableError as e:
+            if index == 0:
+                err.print(f"[red]{e}[/red]")
+                raise typer.Exit(2) from e
+            err.print(f"[yellow]{profile.name} Orca profile not checked: {e}[/yellow]")
+            continue
+        live.append(Live(profile.name, runtime))
+    return live
+
+
+def _scopes(live: list[Live], wanted: list[str]) -> list[frozenset[str]]:
+    """Per profile, the project ids `--repo` names. A name matching nothing anywhere, or two projects in one
+    profile, is an error rather than a silent empty run."""
+    scopes = [frozenset[str]() for _ in live]
+    for name in wanted:
+        hits = [finished.select(p.runtime, name) for p in live]
+        if any(len(h) > 1 for h in hits):
+            err.print(f"[bold red]--repo {name} is ambiguous: it names more than one Orca project.[/bold red]")
+            raise typer.Exit(2)
+        if not any(hits):
+            err.print(f"[bold red]--repo {name} matches no Orca project.[/bold red] Pass a name or a path.")
+            raise typer.Exit(2)
+        scopes = [scope | hit for scope, hit in zip(scopes, hits, strict=True)]
+    return scopes
+
+
 def orca_worktrees(
+    repos: list[str] | None = typer.Option(
+        None,
+        "--repo",
+        help="Only this Orca project: its folder or display name, or a path to its checkout or a worktree. Repeatable.",
+    ),
+    every: bool = typer.Option(False, "--all", help="Every Orca project. Required when --repo is not given."),
     user_data: str | None = typer.Option(
         None, "--orca-data", help="The estate's Orca user-data folder (default: orca-personal on Windows)"
     ),
@@ -66,11 +122,14 @@ def orca_worktrees(
         "--idle-days",
         help="Days a worktree holding nothing beyond the default branch must sit untouched to count as landed",
     ),
-    show_kept: bool = typer.Option(False, "--all", help="List kept worktrees too, with why each is kept"),
+    show_kept: bool = typer.Option(False, "--kept", help="List kept worktrees too, with why each is kept"),
     apply: bool = typer.Option(False, "--apply", help="Remove the finished worktrees through Orca"),
     as_json: bool = typer.Option(False, "--json", help="Write every row as JSON to stdout"),
 ) -> None:
     """Orca's worktrees whose work is finished: merged, landed, or already half-deleted.
+
+    The scope is always explicit, as for `estate tidy`: `--repo` names Orca projects, `--all`
+    takes every project in both profiles. Neither, or both, is an error.
 
     Read-only unless --apply. A worktree is finished when its branch's newest PR merged with
     nothing local since (`merged`), when it holds nothing outside the default branch and has sat
@@ -79,21 +138,26 @@ def orca_worktrees(
     A dirty tree, a running or waiting agent, an open or closed-unmerged PR, unpushed commits and
     the worktree this command runs in are always kept. --apply removes through Orca's own
     delete, which stops the worktree's terminals and keeps any branch git calls unmerged.
-    Exit code 2 when the estate's Orca is not running.
+    Exit code 2 for a missing or unmatched scope, or when the estate's Orca is not running.
     """
+    if bool(repos) == every:
+        err.print("[bold red]Choose a scope: --repo <name|path> (repeatable), or --all for every project.[/bold red]")
+        raise typer.Exit(2)
+    live = _connect(_profiles(user_data, work_data, include_work=not personal_only))
+    scopes: list[frozenset[str] | None] = list(_scopes(live, repos)) if repos else [None] * len(live)
     now_ms = time.time() * 1000
     cwd = pathlib.Path.cwd()
     rows: list[Row] = []
-    for index, (profile, folder) in enumerate(_profiles(user_data, work_data, include_work=not personal_only)):
+    for profile, only in zip(live, scopes, strict=True):
+        if only is not None and not only:
+            continue
+        runtime = profile.runtime
         try:
-            runtime = OrcaRuntime.connect(folder)
-            found = finished.review(runtime, profile, cwd=cwd, now_ms=now_ms, idle_days=idle_days)
+            found = finished.review(runtime, profile.name, cwd=cwd, now_ms=now_ms, idle_days=idle_days, only=only)
             rows += finished.apply(runtime, found) if apply else found
         except OrcaUnavailableError as e:
-            if index == 0:
-                err.print(f"[red]{e}[/red]")
-                raise typer.Exit(2) from e
-            err.print(f"[yellow]{profile} Orca profile not checked: {e}[/yellow]")
+            err.print(f"[red]{profile.name} Orca profile failed: {e}[/red]")
+            raise typer.Exit(2) from e
     if as_json:
         typer.echo(_ROWS.dump_json(rows, indent=2).decode())
         return
