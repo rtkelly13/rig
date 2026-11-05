@@ -22,7 +22,7 @@ import tempfile
 from dataclasses import dataclass
 
 import pytest
-from hypothesis import HealthCheck, settings
+from hypothesis import HealthCheck, event, settings
 from hypothesis import strategies as st
 from hypothesis.stateful import RuleBasedStateMachine, invariant, rule
 
@@ -255,6 +255,11 @@ class EstateSync(RuleBasedStateMachine):
                 assert spec.name not in missing
                 continue
             expected_dir = project_dir(self.root, spec.name, spec.repo)
+            on_disk = self.disk.get(expected_dir)
+            state = type(on_disk).__name__ if on_disk is not None else "absent"
+            if isinstance(on_disk, Clone):
+                state += " match" if same_repo(on_disk.url, spec.repo) else " mismatch"
+            event(f"enabled spec in {'org folder' if expected_dir.parent != self.root else 'root'}: {state}")
             assert (spec.name in managed) + (spec.name in missing) <= 1
             if spec.name in missing:
                 assert not expected_dir.exists()

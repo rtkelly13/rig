@@ -10,6 +10,8 @@ on:
       fuzz_seconds:
         description: How long HypoFuzz runs
         default: "600"
+  # HypoFuzz reads the profile at collection; the env var alone left it on ci (derandomized),
+  # which it refuses to fuzz, so the dev profile is also passed as a pytest option.
   # TEMPORARY: registers the workflow so it can be dispatched from this branch.
   push:
     branches: [rtkelly13/testing-experiments]
@@ -45,15 +47,15 @@ jobs:
       - name: Normal run (ci profile)
         id: normal
         continue-on-error: true
-        run: uv run pytest "$TARGET" -q --durations=5 2>&1 | tee fuzz/normal.txt; exit "${PIPESTATUS[0]}"
+        run: uv run pytest "$TARGET" -q --durations=5 --hypothesis-show-statistics 2>&1 | tee fuzz/normal.txt; exit "${PIPESTATUS[0]}"
       # HypoFuzz runs until killed. The dev profile gives it the example database it saves
       # failures to, which the replay then reads.
       - name: HypoFuzz
         env:
           HYPOTHESIS_PROFILE: dev
-          FUZZ_SECONDS: ${{ inputs.fuzz_seconds || '120' }}
+          FUZZ_SECONDS: ${{ inputs.fuzz_seconds || '600' }}
         run: |
-          timeout "$FUZZ_SECONDS" uv run --with 'hypofuzz==25.11.1' hypothesis fuzz -n 2 --no-dashboard -- "$TARGET" > fuzz/hypofuzz.txt 2>&1 || true
+          timeout "$FUZZ_SECONDS" uv run --with 'hypofuzz==25.11.1' hypothesis fuzz -n 2 --no-dashboard -- "$TARGET" --hypothesis-profile=dev > fuzz/hypofuzz.txt 2>&1 || true
           tail -40 fuzz/hypofuzz.txt
       - name: Replay saved examples
         id: replay
@@ -61,7 +63,7 @@ jobs:
         continue-on-error: true
         env:
           HYPOTHESIS_PROFILE: dev
-        run: uv run pytest "$TARGET" -q 2>&1 | tee fuzz/replay.txt; exit "${PIPESTATUS[0]}"
+        run: uv run pytest "$TARGET" -q --hypothesis-show-statistics 2>&1 | tee fuzz/replay.txt; exit "${PIPESTATUS[0]}"
       - name: Summary
         if: always()
         run: |
