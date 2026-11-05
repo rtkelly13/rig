@@ -63,8 +63,12 @@ class WorkspaceAuditResult:
     missing_managed_repos: list[ManagedRepoSpec] = field(default_factory=_default_repo_specs)
     known_system_items: list[EstateItem] = field(default_factory=_default_estate_items)
     retained_archives: list[EstateItem] = field(default_factory=_default_estate_items)
+    # A declared org-folder location holding something other than that repo's clone: a clone of
+    # another remote, a plain directory, a worktree or a file. Reported only; `clean` never
+    # touches it, because it lies outside the estate root.
+    blocked_managed_repos: list[EstateItem] = field(default_factory=_default_estate_items)
 
     @property
     def is_clean(self) -> bool:
-        """Estate is clean when no unmanaged items exist and no managed repos are missing."""
-        return len(self.unmanaged_items) == 0 and len(self.missing_managed_repos) == 0
+        """Clean when nothing is unmanaged, missing, or blocking a declared location."""
+        return not (self.unmanaged_items or self.missing_managed_repos or self.blocked_managed_repos)

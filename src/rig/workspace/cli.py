@@ -85,6 +85,10 @@ def audit_command(
                 {"name": spec.name, "repo": spec.repo, "description": spec.description}
                 for spec in audit.missing_managed_repos
             ],
+            "blocked_managed_repos": [
+                {"name": item.name, "path": str(item.path), "kind": item.kind.value, "detail": item.detail}
+                for item in audit.blocked_managed_repos
+            ],
             "known_system_items": [{"name": item.name, "path": str(item.path)} for item in audit.known_system_items],
             "retained_archives": [
                 {"name": item.name, "path": str(item.path), "remote": item.remote_url, "detail": item.detail}
@@ -129,6 +133,12 @@ def audit_command(
         console.print(f"\n[bold red]✗ Missing Declared Clones ({len(audit.missing_managed_repos)})[/bold red]")
         for spec in audit.missing_managed_repos:
             console.print(f"  • [red]{spec.name}[/red]: {spec.repo} [dim]({spec.description})[/dim]")
+
+    # Declared org-folder locations occupied by something else
+    if audit.blocked_managed_repos:
+        console.print(f"\n[bold red]✗ Blocked Declared Locations ({len(audit.blocked_managed_repos)})[/bold red]")
+        for item in audit.blocked_managed_repos:
+            console.print(f"  • [red]{item.name}[/red] at {item.path} [dim]({item.kind.value}: {item.detail})[/dim]")
 
     # Unmanaged Items
     if audit.unmanaged_items:
@@ -245,6 +255,7 @@ def status_command(
 
     present_names = {item.name for item in audit.managed_repos}
     retained_names = {item.name for item in audit.retained_archives}
+    blocked_names = {item.name for item in audit.blocked_managed_repos}
     for spec in specs:
         if not spec.enabled:
             status = (
@@ -254,6 +265,8 @@ def status_command(
             )
         elif spec.name in present_names:
             status = "[green]Present[/green]"
+        elif spec.name in blocked_names:
+            status = "[red]Blocked[/red]"
         else:
             status = "[red]Missing[/red]"
         table.add_row(spec.name, status, spec.description or "[dim]--[/dim]")

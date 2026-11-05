@@ -44,14 +44,15 @@ jobs:
         run: uv run pytest "$TARGET" -q --durations=5 --hypothesis-show-statistics 2>&1 | tee fuzz/normal.txt; exit "${PIPESTATUS[0]}"
       # HypoFuzz runs until killed. The dev profile gives it the example database it saves
       # failures to, which the replay then reads. HypoFuzz 25.11.1 crashes while reporting a
-      # failure under Hypothesis 6.170 (`slice_comments` was renamed), after saving it: the
-      # replay step is where a failure shows up.
+      # failure under Hypothesis 6.157.1+ (`slice_comments` became `span_comments`), so this
+      # step and the replay pin 6.157.0: the database is written and read by one version.
+      # The normal run stays on the locked version, which is what PR CI sees.
       - name: HypoFuzz
         env:
           HYPOTHESIS_PROFILE: dev
           FUZZ_SECONDS: ${{ inputs.fuzz_seconds }}
         run: |
-          timeout "$FUZZ_SECONDS" uv run --with 'hypofuzz==25.11.1' hypothesis fuzz -n 2 --no-dashboard -- "$TARGET" > fuzz/hypofuzz.txt 2>&1 || true
+          timeout "$FUZZ_SECONDS" uv run --with 'hypothesis==6.157.0' --with 'hypofuzz==25.11.1' hypothesis fuzz -n 2 --no-dashboard -- "$TARGET" > fuzz/hypofuzz.txt 2>&1 || true
           tail -40 fuzz/hypofuzz.txt
       - name: Replay saved examples
         id: replay
@@ -59,7 +60,7 @@ jobs:
         continue-on-error: true
         env:
           HYPOTHESIS_PROFILE: dev
-        run: uv run pytest "$TARGET" -q --hypothesis-show-statistics 2>&1 | tee fuzz/replay.txt; exit "${PIPESTATUS[0]}"
+        run: uv run --with 'hypothesis==6.157.0' pytest "$TARGET" -q --hypothesis-show-statistics 2>&1 | tee fuzz/replay.txt; exit "${PIPESTATUS[0]}"
       - name: Summary
         if: always()
         run: |

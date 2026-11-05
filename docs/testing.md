@@ -158,7 +158,9 @@ footprints can still be the only one that kills a mutant: `tests/test_gitignore_
 added 0.01 points of coverage and killed 88 mutants. Run mutation before deleting such a test.
 
 The `Fuzz` workflow, also dispatch-only, runs the estate state machine
-(`tests/test_estate_sync_state_machine.py`) under HypoFuzz and replays what it saved.
+(`tests/test_estate_sync_state_machine.py`) under HypoFuzz and replays what it saved. Both steps
+pin Hypothesis 6.157.0, the last release HypoFuzz 25.11.1 can report failures under; lift the pin
+when HypoFuzz catches up.
 
 ### Coverage parity for test refactors
 

@@ -25,7 +25,7 @@ from dataclasses import dataclass
 import pytest
 from hypothesis import HealthCheck, event, settings
 from hypothesis import strategies as st
-from hypothesis.stateful import RuleBasedStateMachine, invariant, rule
+from hypothesis.stateful import RuleBasedStateMachine, invariant, precondition, rule
 
 from rig import proc
 from rig.workspace.engine import (
@@ -165,37 +165,49 @@ def _org_estate(tmp_path: pathlib.Path, entry: Entry) -> tuple[pathlib.Path, Man
     return root, ManagedRepoSpec(name="rig", repo=f"git@github.com:{ORG}/rig.git")
 
 
-@pytest.mark.xfail(strict=True, reason="audit_estate checks the remote only for clones in the estate root")
-def test_org_folder_clone_with_another_remote_is_not_managed(tmp_path: pathlib.Path):
-    """A clone in an org folder is called managed whatever its remote; in the root it is flagged."""
+def test_org_folder_clone_with_another_remote_is_blocked_not_managed(tmp_path: pathlib.Path):
+    """Found by the state machine: an org-folder clone was called managed whatever its remote."""
     root, spec = _org_estate(tmp_path, Clone("git@github.com:rtkelly13/blog.git", dirty=False))
     audit = audit_estate(root, [spec], skip=frozenset())
-    assert [i.name for i in audit.managed_repos] == []
-
-
-@pytest.mark.xfail(strict=True, reason="an org-folder spec whose directory has no .git is never reported")
-def test_org_folder_directory_without_git_is_reported(tmp_path: pathlib.Path):
-    """The spec is neither managed nor missing, and nothing in the audit names its directory."""
-    root, spec = _org_estate(tmp_path, Plain())
-    audit = audit_estate(root, [spec], skip=frozenset())
-    reported = [
-        i.path
-        for i in (*audit.managed_repos, *audit.unmanaged_items, *audit.linked_worktrees, *audit.retained_archives)
+    assert audit.managed_repos == []
+    assert audit.missing_managed_repos == []
+    assert audit.unmanaged_items == []  # outside the root, so `clean` never sees it
+    assert [(i.name, i.path, i.kind) for i in audit.blocked_managed_repos] == [
+        ("rig", tmp_path / ORG / "rig", EstateItemKind.UNMANAGED_REPO)
     ]
-    assert spec in audit.missing_managed_repos or tmp_path / ORG / "rig" in reported
+    assert not audit.is_clean
 
 
-@pytest.mark.xfail(strict=True, reason="audit_estate matches root clones by name, not by the spec's location")
-def test_root_clone_of_org_spec_is_in_the_workspace_or_not_managed(tmp_path: pathlib.Path):
-    """Found by HypoFuzz: the audit calls the root clone managed, but the workspace looks in the org folder."""
+@pytest.mark.parametrize(
+    ("entry", "kind"),
+    [
+        (Plain(), EstateItemKind.UNMANAGED_DIR),
+        (Worktree(), EstateItemKind.LINKED_WORKTREE),
+        (File(), EstateItemKind.UNMANAGED_FILE),
+    ],
+)
+def test_org_folder_location_without_a_clone_is_blocked(tmp_path: pathlib.Path, entry: Entry, kind: EstateItemKind):
+    """Found writing the accounting invariant: such a spec was neither managed, missing nor reported."""
+    root, spec = _org_estate(tmp_path, entry)
+    audit = audit_estate(root, [spec], skip=frozenset())
+    assert audit.managed_repos == audit.unmanaged_items == []
+    assert audit.missing_managed_repos == []
+    assert [(i.path, i.kind) for i in audit.blocked_managed_repos] == [(tmp_path / ORG / "rig", kind)]
+
+
+def test_root_clone_of_org_spec_is_misplaced_and_the_spec_missing(tmp_path: pathlib.Path):
+    """Found by HypoFuzz: the root clone was called managed, but the workspace looks in the org folder."""
     root = tmp_path / "personal"
     root.mkdir()
     url = f"git@github.com:{ORG}/rig.git"
     write_entry(root / "rig", Clone(url, dirty=False))
     spec = ManagedRepoSpec(name="rig", repo=url)
-    managed = {i.name for i in audit_estate(root, [spec], skip=frozenset()).managed_repos}
-    folders = json.loads(sync_estate_code_workspace(root, [spec]).read_text(encoding="utf-8"))["folders"]
-    assert managed <= {f["name"] for f in folders}
+    audit = audit_estate(root, [spec], skip=frozenset())
+    assert audit.managed_repos == []
+    assert audit.missing_managed_repos == [spec]
+    assert [(i.name, i.kind, i.detail) for i in audit.unmanaged_items] == [
+        ("rig", EstateItemKind.UNMANAGED_REPO, f"Misplaced: declared at ../{ORG}/rig")
+    ]
 
 
 class EstateSync(RuleBasedStateMachine):
@@ -243,17 +255,26 @@ class EstateSync(RuleBasedStateMachine):
     def clone(self, name: str, where: str | None, owner: str, remote_name: str, form: str, dirty: bool) -> None:
         self._put(self._where(where) / name, Clone(form.format(owner=owner, name=remote_name), dirty))
 
+    @precondition(lambda self: bool(self.specs))
+    @rule(data=st.data(), form=st.sampled_from(URL_FORMS), dirty=st.booleans())
+    def clone_declared(self, data: st.DataObject, form: str, dirty: bool) -> None:
+        """Clone a declared repo where its spec says, from its own remote: the managed path."""
+        name = data.draw(st.sampled_from(sorted(self.specs)))
+        repo = self.specs[name].repo
+        owner = repo.split(":", 1)[1].split("/", 1)[0]
+        self._put(project_dir(self.root, name, repo), Clone(form.format(owner=owner, name=name), dirty))
+
     @rule(name=st.sampled_from(ROOT_NAMES), where=st.sampled_from(WHERE))
     def mkdir(self, name: str, where: str | None) -> None:
         self._put(self._where(where) / name, Plain())
 
-    @rule(name=st.sampled_from(ROOT_NAMES))
-    def touch(self, name: str) -> None:
-        self._put(self.root / name, File())
+    @rule(name=st.sampled_from(ROOT_NAMES), where=st.sampled_from(WHERE))
+    def touch(self, name: str, where: str | None) -> None:
+        self._put(self._where(where) / name, File())
 
-    @rule(name=st.sampled_from(ROOT_NAMES))
-    def worktree(self, name: str) -> None:
-        self._put(self.root / name, Worktree())
+    @rule(name=st.sampled_from(ROOT_NAMES), where=st.sampled_from(WHERE))
+    def worktree(self, name: str, where: str | None) -> None:
+        self._put(self._where(where) / name, Worktree())
 
     @rule(name=st.sampled_from(ROOT_NAMES), where=st.sampled_from(WHERE))
     def remove(self, name: str, where: str | None) -> None:
@@ -279,8 +300,22 @@ class EstateSync(RuleBasedStateMachine):
             return EstateItemKind.RETAINED_ARCHIVE if retained else EstateItemKind.UNMANAGED_DIR
         if retained:
             return EstateItemKind.RETAINED_ARCHIVE
-        if spec is not None and same_repo(entry.url, spec.repo):
+        if (
+            spec is not None
+            and project_dir(self.root, name, spec.repo) == self.root / name
+            and same_repo(entry.url, spec.repo)
+        ):
             return EstateItemKind.MANAGED_REPO
+        return EstateItemKind.UNMANAGED_REPO
+
+    @staticmethod
+    def _occupant_kind(entry: Entry) -> EstateItemKind:
+        if isinstance(entry, File):
+            return EstateItemKind.UNMANAGED_FILE
+        if isinstance(entry, Worktree):
+            return EstateItemKind.LINKED_WORKTREE
+        if isinstance(entry, Plain):
+            return EstateItemKind.UNMANAGED_DIR
         return EstateItemKind.UNMANAGED_REPO
 
     def _check_plan(self, audit: WorkspaceAuditResult) -> None:
@@ -300,21 +335,32 @@ class EstateSync(RuleBasedStateMachine):
         expected = {p.name: self._expected_root_kind(p.name, e) for p, e in self.disk.items() if p.parent == self.root}
         assert {i.name: i.kind for i in in_root} == expected
 
-        # Only org-folder clones are reported from outside the root, and only as managed.
+        # Outside the root, only org-folder clones are reported, and only as managed.
         for item in items:
             if item.path.parent != self.root:
                 assert item.kind is EstateItemKind.MANAGED_REPO
                 assert isinstance(self.disk.get(item.path), Clone)
 
-        # A repo called managed carries the remote its spec declares. Relaxed for org folders,
-        # which are not checked (pinned by test_org_folder_clone_with_another_remote_is_not_managed).
+        # A repo called managed sits where its spec says and carries the remote it declares.
         for item in audit.managed_repos:
-            if item.path.parent == self.root:
-                assert same_repo(item.remote_url, self.specs[item.name].repo), item
+            spec = self.specs[item.name]
+            assert item.path == project_dir(self.root, item.name, spec.repo), item
+            assert same_repo(item.remote_url, spec.repo), item
+
+        # A blocked location is an enabled spec's org-folder path, holding what the model says is
+        # there, and never that spec's own clone.
+        for item in audit.blocked_managed_repos:
+            spec = self.specs[item.name]
+            assert spec.enabled
+            assert item.path == project_dir(self.root, item.name, spec.repo) != self.root / item.name
+            entry = self.disk[item.path]
+            assert item.kind is self._occupant_kind(entry)
+            assert not (isinstance(entry, Clone) and same_repo(entry.url, spec.repo))
 
         # Every enabled spec is accounted for: managed, missing, or its directory is reported.
         managed = {i.name for i in audit.managed_repos}
         missing = {s.name for s in audit.missing_managed_repos}
+        blocked = {i.name for i in audit.blocked_managed_repos}
         reported = {i.path for i in items}
         for spec in self.specs.values():
             if not spec.enabled:
@@ -326,15 +372,13 @@ class EstateSync(RuleBasedStateMachine):
             if isinstance(on_disk, Clone):
                 state += " match" if same_repo(on_disk.url, spec.repo) else " mismatch"
             event(f"enabled spec in {'org folder' if expected_dir.parent != self.root else 'root'}: {state}")
-            assert (spec.name in managed) + (spec.name in missing) <= 1
+            assert (spec.name in managed) + (spec.name in missing) + (spec.name in blocked) <= 1
             if spec.name in missing:
                 assert not expected_dir.exists()
-            elif spec.name not in managed:
-                # Relaxed for a non-clone in an org folder, which is never reported
-                # (pinned by test_org_folder_directory_without_git_is_reported).
-                if expected_dir.parent != self.root and not isinstance(on_disk, Clone):
-                    continue
-                assert expected_dir in reported or self.root / spec.name in reported, spec
+            elif spec.name not in managed and spec.name not in blocked:
+                # Only a root location can be left to the root partition to report.
+                assert expected_dir.parent == self.root, spec
+                assert expected_dir in reported, spec
 
     @rule()
     def audit(self) -> None:
@@ -386,16 +430,10 @@ class EstateSync(RuleBasedStateMachine):
         assert len({f["name"] for f in folders}) == len(folders)
         for folder in folders:
             assert (self.root / folder["path"]).exists()
-        # Everything the plan calls managed is open in the editor workspace. Relaxed to repos at
-        # their spec's location: a root clone of an org-owned spec is called managed but left out
-        # (pinned by test_root_clone_of_org_spec_is_in_the_workspace_or_not_managed).
-        in_place = {
-            i.name
-            for i in self._audit().managed_repos
-            if i.name in self.specs and i.path == project_dir(self.root, i.name, self.specs[i.name].repo)
-        }
-        event(f"sync: {len(in_place)} managed at their spec's location")
-        assert in_place <= {f["name"] for f in folders}
+        # Everything the plan calls managed is open in the editor workspace.
+        managed = {i.name for i in self._audit().managed_repos}
+        event(f"sync: {len(managed)} managed")
+        assert managed <= {f["name"] for f in folders}
 
     @invariant()
     def model_matches_disk(self) -> None:
