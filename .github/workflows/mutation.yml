@@ -5,19 +5,6 @@ name: Mutation
 # See docs/testing.md#mutation-testing.
 on:
   workflow_dispatch:
-  # Temporary, for the testing experiment branch only: workflow_dispatch needs the file on the
-  # default branch before it can be dispatched. Remove before this leaves draft.
-  push:
-    branches: [rtkelly13/testing-experiments]
-    paths:
-      - .github/workflows/mutation.yml
-      - pyproject.toml
-      - tests/**
-      - src/desktop_manager/placement.py
-      - src/rig/repo_governance/gitignore_manager.py
-      - src/rig/typed_json.py
-      - src/rig/image_drift/simplifier/syntactic.py
-      - src/rig/workspace/layout.py
 
 concurrency:
   group: mutation-${{ github.ref }}
@@ -82,10 +69,12 @@ jobs:
         if: always()
         run: |
           grep -E ': (survived|no tests)$' mutation/results.txt | cut -d: -f1 | sed 's/^ *//' > mutation/survivors.txt || true
-          while read -r name; do
-            echo "=== ${name}"
-            uv run --with 'mutmut==3.8.0' mutmut show "${name}" || true
-          done < mutation/survivors.txt > mutation/survivors.diff
+          # One environment for the whole loop: `uv run` per survivor cost ~5 minutes on run 1.
+          uv run --with 'mutmut==3.8.0' bash -c '
+            while read -r name; do
+              echo "=== ${name}"
+              mutmut show "${name}" || true
+            done < mutation/survivors.txt > mutation/survivors.diff'
           echo "Survivors: $(wc -l < mutation/survivors.txt)" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload mutation results
         if: always()

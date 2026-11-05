@@ -448,6 +448,7 @@ pytest_add_cli_args_test_selection = [
     "tests/desktop_manager/test_placement_properties.py",
     "tests/desktop_manager/test_workspace_align.py",
     "tests/test_gitignore_manager.py",
+    "tests/test_gitignore_manager_mutants.py",
     "tests/test_workspace_layout.py",
     "tests/test_typed_json.py",
     "tests/test_svg_syntactic_minifier.py",
