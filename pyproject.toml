@@ -439,6 +439,7 @@ source_paths = [
     "src/rig/repo_governance/gitignore_manager.py",
     "src/rig/typed_json.py",
     "src/rig/image_drift/simplifier/syntactic.py",
+    "src/rig/workspace/layout.py",
 ]
 also_copy = ["tests/", "desktop-manager/", "src/", "typings/", "config/", "data/", "assets/"]
 pytest_add_cli_args = ["-p", "no:xdist", "-p", "no:cacheprovider", "-q"]
