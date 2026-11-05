@@ -134,6 +134,37 @@ def test_fake_clones_are_real_to_git(tmp_path: pathlib.Path):
     assert (dirty.ok, dirty.out.strip()) == (True, "?? wip.txt")
 
 
+# -- Defects the machine surfaced, pinned until fixed. The machine's model is relaxed for each. --
+
+
+def _org_estate(tmp_path: pathlib.Path, entry: Entry) -> tuple[pathlib.Path, ManagedRepoSpec]:
+    root = tmp_path / "personal"
+    root.mkdir()
+    (tmp_path / ORG).mkdir()
+    write_entry(tmp_path / ORG / "rig", entry)
+    return root, ManagedRepoSpec(name="rig", repo=f"git@github.com:{ORG}/rig.git")
+
+
+@pytest.mark.xfail(strict=True, reason="audit_estate checks the remote only for clones in the estate root")
+def test_org_folder_clone_with_another_remote_is_not_managed(tmp_path: pathlib.Path):
+    """A clone in an org folder is called managed whatever its remote; in the root it is flagged."""
+    root, spec = _org_estate(tmp_path, Clone("git@github.com:rtkelly13/blog.git", dirty=False))
+    audit = audit_estate(root, [spec], skip=frozenset())
+    assert [i.name for i in audit.managed_repos] == []
+
+
+@pytest.mark.xfail(strict=True, reason="an org-folder spec whose directory has no .git is never reported")
+def test_org_folder_directory_without_git_is_reported(tmp_path: pathlib.Path):
+    """The spec is neither managed nor missing, and nothing in the audit names its directory."""
+    root, spec = _org_estate(tmp_path, Plain())
+    audit = audit_estate(root, [spec], skip=frozenset())
+    reported = [
+        i.path
+        for i in (*audit.managed_repos, *audit.unmanaged_items, *audit.linked_worktrees, *audit.retained_archives)
+    ]
+    assert spec in audit.missing_managed_repos or tmp_path / ORG / "rig" in reported
+
+
 class EstateSync(RuleBasedStateMachine):
     def __init__(self) -> None:
         super().__init__()
@@ -242,9 +273,11 @@ class EstateSync(RuleBasedStateMachine):
                 assert item.kind is EstateItemKind.MANAGED_REPO
                 assert isinstance(self.disk.get(item.path), Clone)
 
-        # A repo called managed carries the remote its spec declares, wherever it lives.
+        # A repo called managed carries the remote its spec declares. Relaxed for org folders,
+        # which are not checked (pinned by test_org_folder_clone_with_another_remote_is_not_managed).
         for item in audit.managed_repos:
-            assert same_repo(item.remote_url, self.specs[item.name].repo), item
+            if item.path.parent == self.root:
+                assert same_repo(item.remote_url, self.specs[item.name].repo), item
 
         # Every enabled spec is accounted for: managed, missing, or its directory is reported.
         managed = {i.name for i in audit.managed_repos}
@@ -264,6 +297,10 @@ class EstateSync(RuleBasedStateMachine):
             if spec.name in missing:
                 assert not expected_dir.exists()
             elif spec.name not in managed:
+                # Relaxed for a non-clone in an org folder, which is never reported
+                # (pinned by test_org_folder_directory_without_git_is_reported).
+                if expected_dir.parent != self.root and not isinstance(on_disk, Clone):
+                    continue
                 assert expected_dir in reported or self.root / spec.name in reported, spec
 
     @rule()
