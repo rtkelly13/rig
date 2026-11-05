@@ -81,3 +81,7 @@ jobs:
           name: fuzz
           path: fuzz/
           retention-days: 14
+      # The test steps continue on error so the artifact always uploads; fail the job here.
+      - name: Fail on any failing run
+        if: steps.normal.outcome == 'failure' || steps.replay.outcome == 'failure'
+        run: exit 1
