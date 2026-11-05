@@ -25,7 +25,7 @@ from dataclasses import dataclass
 import pytest
 from hypothesis import HealthCheck, event, settings
 from hypothesis import strategies as st
-from hypothesis.stateful import RuleBasedStateMachine, invariant, precondition, rule
+from hypothesis.stateful import RuleBasedStateMachine, initialize, invariant, precondition, rule
 
 from rig import proc
 from rig.workspace.engine import (
@@ -224,6 +224,13 @@ class EstateSync(RuleBasedStateMachine):
         shutil.rmtree(self.base, ignore_errors=True)
 
     # -- desired state -------------------------------------------------------------------------
+
+    @initialize(name=st.sampled_from(NAMES), owner=st.sampled_from(OWNERS), form=st.sampled_from(URL_FORMS))
+    def seed(self, name: str, owner: str, form: str) -> None:
+        """Start from one managed repo, so sync and clean meet the managed path in every example."""
+        self.declare(name, owner, enabled=True)
+        repo = self.specs[name].repo
+        self._put(project_dir(self.root, name, repo), Clone(form.format(owner=owner, name=name), dirty=False))
 
     @rule(name=st.sampled_from(NAMES), owner=st.sampled_from(OWNERS), enabled=st.booleans())
     def declare(self, name: str, owner: str, enabled: bool) -> None:
