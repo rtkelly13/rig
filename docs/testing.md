@@ -151,6 +151,14 @@ Judge a test change by the mutation score it moves, not by the test count or lin
 adds. Adding 15 property tests to `placement.py` moved the score over reachable mutants from
 78.5% to 86.6% and barely changed line coverage.
 
+In CI, the `Mutation` workflow (`workflow_dispatch` only) scores each module in the job summary
+and uploads every survivor's diff, so tests can be written from the artifact alone. Run it with
+`gh workflow run mutation.yml --ref <branch>`. A test with zero unique lines in the per-test
+footprints can still be the only one that kills a mutant: `tests/test_gitignore_manager_mutants.py`
+added 0.01 points of coverage and killed 88 mutants. Run mutation before deleting such a test.
+The `Fuzz` workflow does the same for the estate state machine
+(`tests/test_estate_sync_state_machine.py`) under HypoFuzz.
+
 ### Coverage parity for test refactors
 
 When tests are rewritten (examples folded into a feature, or a file split), compare the exact sets
