@@ -19,6 +19,7 @@ import pathlib
 import shutil
 import sys
 import tempfile
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 import pytest
@@ -44,6 +45,25 @@ pytestmark = [
     # Hundreds of git subprocesses per run; the logic is platform-neutral and runs on Linux CI.
     pytest.mark.skipif(sys.platform == "win32", reason="subprocess-heavy; covered by the Linux run"),
 ]
+
+
+@pytest.fixture(scope="module")
+def tmp_path_factory() -> Iterator[pytest.TempPathFactory]:
+    """A factory of this module's own, for the conftest isolation fixtures that request one.
+
+    HypoFuzz collects with `pytest.main` and enters fixtures after that session has ended, by
+    which time the tmpdir plugin has removed the built-in factory from the config. Under plain
+    pytest this behaves like the built-in one.
+    """
+    with tempfile.TemporaryDirectory(prefix="estate-sm-") as base:
+        yield pytest.TempPathFactory(
+            given_basetemp=pathlib.Path(base) / "basetemp",
+            retention_count=0,
+            retention_policy="none",
+            trace=lambda *_: None,
+            _ispytest=True,
+        )
+
 
 ORG = "rtkelly-labs"
 NAMES = ("blog", "rig", "Diffra")

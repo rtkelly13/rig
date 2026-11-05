@@ -156,8 +156,9 @@ and uploads every survivor's diff, so tests can be written from the artifact alo
 `gh workflow run mutation.yml --ref <branch>`. A test with zero unique lines in the per-test
 footprints can still be the only one that kills a mutant: `tests/test_gitignore_manager_mutants.py`
 added 0.01 points of coverage and killed 88 mutants. Run mutation before deleting such a test.
-The `Fuzz` workflow does the same for the estate state machine
-(`tests/test_estate_sync_state_machine.py`) under HypoFuzz.
+
+The `Fuzz` workflow, also dispatch-only, runs the estate state machine
+(`tests/test_estate_sync_state_machine.py`) under HypoFuzz and replays what it saved.
 
 ### Coverage parity for test refactors
 
