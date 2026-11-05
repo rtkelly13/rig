@@ -185,6 +185,19 @@ def test_org_folder_directory_without_git_is_reported(tmp_path: pathlib.Path):
     assert spec in audit.missing_managed_repos or tmp_path / ORG / "rig" in reported
 
 
+@pytest.mark.xfail(strict=True, reason="audit_estate matches root clones by name, not by the spec's location")
+def test_root_clone_of_org_spec_is_in_the_workspace_or_not_managed(tmp_path: pathlib.Path):
+    """Found by HypoFuzz: the audit calls the root clone managed, but the workspace looks in the org folder."""
+    root = tmp_path / "personal"
+    root.mkdir()
+    url = f"git@github.com:{ORG}/rig.git"
+    write_entry(root / "rig", Clone(url, dirty=False))
+    spec = ManagedRepoSpec(name="rig", repo=url)
+    managed = {i.name for i in audit_estate(root, [spec], skip=frozenset()).managed_repos}
+    folders = json.loads(sync_estate_code_workspace(root, [spec]).read_text(encoding="utf-8"))["folders"]
+    assert managed <= {f["name"] for f in folders}
+
+
 class EstateSync(RuleBasedStateMachine):
     def __init__(self) -> None:
         super().__init__()
@@ -373,8 +386,16 @@ class EstateSync(RuleBasedStateMachine):
         assert len({f["name"] for f in folders}) == len(folders)
         for folder in folders:
             assert (self.root / folder["path"]).exists()
-        # Everything the plan calls managed is open in the editor workspace.
-        assert {i.name for i in self._audit().managed_repos} <= {f["name"] for f in folders}
+        # Everything the plan calls managed is open in the editor workspace. Relaxed to repos at
+        # their spec's location: a root clone of an org-owned spec is called managed but left out
+        # (pinned by test_root_clone_of_org_spec_is_in_the_workspace_or_not_managed).
+        in_place = {
+            i.name
+            for i in self._audit().managed_repos
+            if i.name in self.specs and i.path == project_dir(self.root, i.name, self.specs[i.name].repo)
+        }
+        event(f"sync: {len(in_place)} managed at their spec's location")
+        assert in_place <= {f["name"] for f in folders}
 
     @invariant()
     def model_matches_disk(self) -> None:

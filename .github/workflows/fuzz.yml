@@ -43,7 +43,9 @@ jobs:
         continue-on-error: true
         run: uv run pytest "$TARGET" -q --durations=5 --hypothesis-show-statistics 2>&1 | tee fuzz/normal.txt; exit "${PIPESTATUS[0]}"
       # HypoFuzz runs until killed. The dev profile gives it the example database it saves
-      # failures to, which the replay then reads.
+      # failures to, which the replay then reads. HypoFuzz 25.11.1 crashes while reporting a
+      # failure under Hypothesis 6.170 (`slice_comments` was renamed), after saving it: the
+      # replay step is where a failure shows up.
       - name: HypoFuzz
         env:
           HYPOTHESIS_PROFILE: dev
