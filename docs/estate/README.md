@@ -81,6 +81,7 @@ Each page goes one level deeper. Read the one for the command you are using.
 | [Orca](./orca.md) | adding a repo, or Orca's sidebar disagrees with `managed-projects.json` |
 | [Wrap-up](./wrapup.md) | finding out which Orca sessions are finished and what is left for you to do |
 | [Local ports and Vercel names](./url-ownership.md) | a repo gains a local app or a Vercel project, or naming an alias |
+| [Drawing the estate graph](./graph-rendering.md) | changing how the web estate page lays out or draws its dependency lines |
 | [Internals](./internals.md) | changing discovery, the safety checks, or the Windows code paths |
 | [Lessons](./lessons.md) | running a big cleanup for real; the known gaps |
 

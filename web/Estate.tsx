@@ -3,9 +3,9 @@ import {
   Input,
   Select,
   layoutServiceGraph,
-  serviceEdgePath,
 } from '@rtkelly-labs/design-system';
 import { useEffect, useMemo, useState } from 'react';
+import { routeEstateEdges } from './estateEdges';
 import { Icon } from './Icon';
 import { failedStates } from './attention';
 import { inView } from './model';
@@ -13,6 +13,10 @@ import { navigate, queueUrl, updateQuery } from './router';
 import type { Route } from './router';
 import type { QueueState } from './useQueue';
 import type { EstateGraph, EstateProject } from './estateModel';
+
+/* The gutter between layers is where every line turns, so it is sized for several trunks
+   side by side; the gap between rows is a channel a line skipping a layer can run along. */
+const SPACING = { columnGap: 120, rowGap: 36 };
 
 export function Estate({ route, state }: { route: Route; state: QueueState }) {
   const [graph, setGraph] = useState<EstateGraph | null>(null);
@@ -82,8 +86,9 @@ export function Estate({ route, state }: { route: Route; state: QueueState }) {
         avgDuration: 0,
       })),
     },
-    { nodeWidth: 240, nodeHeight: 100, columnGap: 80, rowGap: 28 },
+    { nodeWidth: 240, nodeHeight: 100, ...SPACING },
   );
+  const lines = routeEstateEdges(layout, SPACING);
   const projectById = new Map(graph?.projects.map((project) => [project.id, project]));
   const componentById = new Map(components.map((component) => [component.id, component]));
   const stats = (ids: string[]) => {
@@ -283,11 +288,16 @@ export function Estate({ route, state }: { route: Route; state: QueueState }) {
                   className="estate-edges"
                 >
                   <defs>
+                    {/* Sized in layout units, not stroke widths: the stroke is held at a
+                        constant width on screen, and an arrow measured in stroke widths
+                        would grow against the boxes as the reader zooms out. */}
                     <marker
                       id="dependency-arrow"
-                      markerWidth="8"
-                      markerHeight="8"
-                      refX="7"
+                      viewBox="0 0 8 8"
+                      markerWidth="9"
+                      markerHeight="9"
+                      markerUnits="userSpaceOnUse"
+                      refX="8"
                       refY="4"
                       orient="auto"
                     >
@@ -295,10 +305,12 @@ export function Estate({ route, state }: { route: Route; state: QueueState }) {
                     </marker>
                   </defs>
                   <g transform="translate(20,20)">
-                    {layout.edges.map((edge) => (
+                    {lines.map((edge) => (
                       <path
                         key={`${edge.from}:${edge.to}`}
-                        d={serviceEdgePath(edge)}
+                        d={edge.d}
+                        data-from={edge.from}
+                        data-to={edge.to}
                         markerEnd="url(#dependency-arrow)"
                         data-selected={
                           componentById.get(edge.from)?.members.includes(selectedId) ||
@@ -322,6 +334,7 @@ export function Estate({ route, state }: { route: Route; state: QueueState }) {
                     <button
                       key={node.id}
                       className="estate-node"
+                      data-node={node.id}
                       data-selected={component.members.includes(selectedId)}
                       data-failed={counts.failed > 0}
                       data-enabled={component.members.some((id) => projectById.get(id)?.enabled)}

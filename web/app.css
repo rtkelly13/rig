@@ -2488,10 +2488,15 @@ button:disabled {
   pointer-events: none;
   overflow: visible;
 }
+/* The canvas zooms with a CSS scale, which scales a stroke with everything else: at 40% a
+   1.5 unit line paints under a pixel and the graph reads as boxes joined by haze. Lines
+   hold their width on screen instead, as the text does. */
 .estate-edges > g > path {
   fill: none;
   stroke: var(--ds-border-strong);
   stroke-width: 1.5;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
 }
 .estate-edges marker path {
   fill: var(--ds-border-strong);
