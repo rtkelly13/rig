@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import fnmatch
 import json
 import shlex
 from dataclasses import dataclass
@@ -99,22 +100,68 @@ def command_prefix(pattern: str) -> CommandPrefix | None:
 
 
 def _rules_for(policy: Policy, risk: CommandRisk, system: str) -> list[CommandPrefix]:
+    shadows = _unexpressible_denies(policy, system) if risk is CommandRisk.SAFE else []
     return [
         prefix
         for rule in policy.command_rules
         if rule.risk is risk and system not in rule.exclude_systems
         if (prefix := command_prefix(rule.pattern))
+        if not _shadowed(prefix, shadows, system)
     ]
 
 
 def _excluded_rules(policy: Policy, risk: CommandRisk, system: str) -> list[CommandPrefix]:
-    """Rules opted out of ``system``; a copy an earlier sync wrote is removed, since merges only add."""
+    """Rules kept off ``system``; a copy an earlier sync wrote is removed, since merges only add.
+
+    That is the rules opted out with ``exclude_systems``, plus, for allow rules, any a deny the
+    surface cannot express would carve an exception out of (`_shadowed`).
+    """
+    shadows = _unexpressible_denies(policy, system) if risk is CommandRisk.SAFE else []
     return [
         prefix
         for rule in policy.command_rules
-        if rule.risk is risk and system in rule.exclude_systems
+        if rule.risk is risk
         if (prefix := command_prefix(rule.pattern))
+        if system in rule.exclude_systems or _shadowed(prefix, shadows, system)
     ]
+
+
+def _unexpressible_denies(policy: Policy, system: str) -> list[str]:
+    """Deny globs that apply to ``system`` but have no prefix form (interior ``*``): prefix-only surfaces drop them."""
+    return [
+        rule.pattern
+        for rule in policy.command_rules
+        if rule.risk is CommandRisk.DENIED and system not in rule.exclude_systems
+        if command_prefix(rule.pattern) is None
+    ]
+
+
+#: Surfaces whose rules always match as prefixes: an exact policy command still allows anything after it.
+_PREFIX_MATCH_ONLY = frozenset({"codex", "antigravity"})
+
+
+def _shadowed(prefix: CommandPrefix, denies: list[str], system: str) -> bool:
+    """Whether allowing ``prefix`` would also allow a command one of ``denies`` forbids.
+
+    A prefix-only surface cannot carry those denies, so projecting the allow alone would turn the
+    deny into an allow (``gh stack sync *`` without ``gh stack sync *--prune*``). Such an allow is
+    held back and the surface keeps prompting. An exact command is checked against each glob; a
+    wildcard prefix conservatively overlaps any glob whose literal head is compatible with it.
+    On Codex and Antigravity every rule is a prefix, so an exact command counts as a wildcard there.
+    """
+    command = " ".join(prefix.tokens)
+    wildcard = prefix.wildcard or system in _PREFIX_MATCH_ONLY
+    for deny in denies:
+        if not wildcard:
+            if fnmatch.fnmatch(command, deny):
+                return True
+            continue
+        head = deny.split("*", 1)[0]
+        head_tokens = head.split() if head.endswith(" ") else head.split()[:-1]
+        shorter = min(len(head_tokens), len(prefix.tokens))
+        if list(prefix.tokens[:shorter]) == head_tokens[:shorter]:
+            return True
+    return False
 
 
 def _remove_all(target: list[object], values: list[str]) -> None:

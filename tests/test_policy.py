@@ -329,3 +329,27 @@ def test_claude_projection_keeps_interior_wildcards_and_denies_admin_merges(tmp_
     assert "Bash(gh run rerun:*)" in allow
     assert "Bash(gh pr merge *--admin*)" in deny
     assert not any(isinstance(rule, str) and rule.startswith("Bash(gh pr merge:") for rule in allow)
+
+
+@pytest.mark.ci
+def test_prefix_surfaces_hold_back_allows_a_dropped_interior_deny_would_carve_out(tmp_path: Path):
+    """A deny with an interior `*` is dropped by prefix-only surfaces, so the allow it narrows is held back too."""
+    home = tmp_path / "home"
+    stale = home / ".gemini" / "antigravity-cli" / "settings.json"
+    stale.parent.mkdir(parents=True)
+    stale.write_text('{"permissions":{"allow":["command(gh stack sync)","command(find)"]}}\n', encoding="utf-8")
+
+    results = project_native_permissions(load_policy(), systems=["opencode", "codex", "antigravity"], home=home)
+
+    assert all(result.status is ProjectionStatus.APPLIED for result in results)
+    opencode = (home / ".config" / "opencode" / "opencode.json").read_text(encoding="utf-8")
+    assert '"gh stack sync": "allow"' in opencode  # exact: `gh stack sync --prune` does not match it
+    assert '"gh stack sync *": "allow"' not in opencode
+    assert '"find *": "allow"' not in opencode
+    codex = (home / ".codex" / "rules" / "default.rules").read_text(encoding="utf-8")
+    assert 'pattern=["gh", "stack", "sync"],\n    decision=\'allow\'' not in codex
+    assert "pattern=[\"find\"],\n    decision='allow'" not in codex
+    antigravity = stale.read_text(encoding="utf-8")
+    assert "command(gh stack sync)" not in antigravity  # a copy an earlier sync wrote is removed
+    assert "command(find)" not in antigravity
+    assert "command(gh run rerun)" in antigravity  # allows no deny overlaps still project
