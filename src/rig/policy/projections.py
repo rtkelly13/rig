@@ -130,8 +130,8 @@ def _render_json_config(system: str, data: dict[str, object], policy: Policy) ->
         deny = _array_at(permissions, "deny", "permissions.deny")
         if system == "claude":
             for target, risk in ((allow, CommandRisk.SAFE), (deny, CommandRisk.DENIED)):
-                _remove_all(target, [_claude_rule(prefix) for prefix in _excluded_rules(policy, risk, system)])
-                _merge_unique(target, [_claude_rule(prefix) for prefix in _rules_for(policy, risk, system)])
+                _remove_all(target, _claude_rules(policy, risk, excluded=True))
+                _merge_unique(target, _claude_rules(policy, risk, excluded=False))
         else:
             allow[:] = _migrate_antigravity_rules(allow)
             deny[:] = _migrate_antigravity_rules(deny)
@@ -214,6 +214,31 @@ def _merge_unique(target: list[object], values: list[str]) -> None:
 def _claude_rule(prefix: CommandPrefix) -> str:
     command = " ".join(prefix.tokens)
     return f"Bash({command}:*)" if prefix.wildcard else f"Bash({command})"
+
+
+def claude_rule(pattern: str) -> str | None:
+    """Render a policy glob as a Claude Code ``Bash(...)`` rule.
+
+    A literal or trailing-``*`` glob becomes the prefix form every surface shares. A glob
+    with an interior ``*`` (``gh pr merge * --auto --squash``) has no prefix form, so the
+    prefix-only surfaces (Codex, Antigravity, OpenCode's projection) skip it; Claude Code
+    matches ``*`` anywhere in a rule, so it is projected there verbatim.
+    """
+    if prefix := command_prefix(pattern):
+        return _claude_rule(prefix)
+    text = " ".join(pattern.split())
+    if not text or "?" in text or any(quote in text for quote in "\"'"):
+        return None
+    return f"Bash({text})"
+
+
+def _claude_rules(policy: Policy, risk: CommandRisk, *, excluded: bool) -> list[str]:
+    return [
+        rule_text
+        for rule in policy.command_rules
+        if rule.risk is risk and ("claude" in rule.exclude_systems) is excluded
+        if (rule_text := claude_rule(rule.pattern))
+    ]
 
 
 def _opencode_rule(prefix: CommandPrefix) -> str:

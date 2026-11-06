@@ -278,3 +278,46 @@ def test_pnpm_filter_deny_is_excluded_from_claude_but_projected_to_antigravity(t
     antigravity = (home / ".gemini" / "antigravity-cli" / "settings.json").read_text(encoding="utf-8")
     assert "command(pnpm --filter)" in antigravity
     assert "command(pnpm -F)" in antigravity
+
+
+@pytest.mark.ci
+def test_merge_requested_gh_commands_are_safe_but_admin_merges_are_denied():
+    policy = load_policy()
+
+    for command in (
+        "gh pr ready 42",
+        "gh pr merge 42 --auto --squash",
+        "gh pr merge 42 --disable-auto",
+        "gh stack merge 42 --yes",
+        "gh run rerun 1234567890",
+    ):
+        assert check_command(command, policy) is CommandRisk.SAFE, command
+    for command in (
+        "gh pr merge 42 --admin --auto --squash",
+        "gh pr merge --admin 42",
+        "gh pr merge 42 --squash --admin",
+        "gh pr merge 42 --squash",
+        "gh stack merge 42",
+    ):
+        assert check_command(command, policy) is not CommandRisk.SAFE, command
+    assert check_command("gh pr merge 42 --admin --auto --squash", policy) is CommandRisk.DENIED
+
+
+@pytest.mark.ci
+def test_claude_projection_keeps_interior_wildcards_and_denies_admin_merges(tmp_path: Path):
+    home = tmp_path / "home"
+
+    (result,) = project_native_permissions(load_policy(), systems=["claude"], home=home)
+
+    assert result.status is ProjectionStatus.APPLIED
+    settings = decode_json(dict[str, object], (home / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    permissions = decode(dict[str, object], settings.get("permissions"))
+    allow = decode(list[object], permissions.get("allow"))
+    deny = decode(list[object], permissions.get("deny"))
+    assert "Bash(gh pr ready:*)" in allow
+    assert "Bash(gh pr merge * --auto --squash)" in allow
+    assert "Bash(gh pr merge * --disable-auto)" in allow
+    assert "Bash(gh stack merge * --yes)" in allow
+    assert "Bash(gh run rerun:*)" in allow
+    assert "Bash(gh pr merge *--admin*)" in deny
+    assert not any(isinstance(rule, str) and rule.startswith("Bash(gh pr merge:") for rule in allow)
