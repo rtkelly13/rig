@@ -289,6 +289,9 @@ def test_merge_requested_gh_commands_are_safe_but_admin_merges_are_denied():
         "gh pr merge 42 --auto --squash",
         "gh pr merge 42 --disable-auto",
         "gh stack merge 42 --yes",
+        "gh stack merge 600 --yes --squash",
+        "gh stack sync",
+        "gh stack sync --remote origin",
         "gh run rerun 1234567890",
     ):
         assert check_command(command, policy) is CommandRisk.SAFE, command
@@ -298,6 +301,8 @@ def test_merge_requested_gh_commands_are_safe_but_admin_merges_are_denied():
         "gh pr merge 42 --squash --admin",
         "gh pr merge 42 --squash",
         "gh stack merge 42",
+        "gh stack sync --prune",
+        "gh stack sync --remote origin --prune",
     ):
         assert check_command(command, policy) is not CommandRisk.SAFE, command
     assert check_command("gh pr merge 42 --admin --auto --squash", policy) is CommandRisk.DENIED
@@ -317,7 +322,10 @@ def test_claude_projection_keeps_interior_wildcards_and_denies_admin_merges(tmp_
     assert "Bash(gh pr ready:*)" in allow
     assert "Bash(gh pr merge * --auto --squash)" in allow
     assert "Bash(gh pr merge * --disable-auto)" in allow
-    assert "Bash(gh stack merge * --yes)" in allow
+    assert "Bash(gh stack merge * --yes*)" in allow
+    assert "Bash(gh stack sync)" in allow
+    assert "Bash(gh stack sync:*)" in allow
+    assert "Bash(gh stack sync *--prune*)" in deny
     assert "Bash(gh run rerun:*)" in allow
     assert "Bash(gh pr merge *--admin*)" in deny
     assert not any(isinstance(rule, str) and rule.startswith("Bash(gh pr merge:") for rule in allow)
