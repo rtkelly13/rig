@@ -157,11 +157,14 @@ class _Neighbours:
 
 @final
 class _Deriver:
-    def __init__(self, repo: Path, where: Origin, callgraph: Path | None) -> None:
+    def __init__(self, repo: Path, where: Origin, callgraph: Path | None, roots: tuple[str, ...] = ("src",)) -> None:
         self.repo = repo
+        self.roots = roots
         self.where = where
         self.callgraph = callgraph
-        self.scans = {p.path: _ProjectScan(p, f, components(p, f)) for p in discover(repo) for f in (sources(p),)}
+        self.scans = {
+            p.path: _ProjectScan(p, f, components(p, f)) for p in discover(repo, roots) for f in (sources(p),)
+        }
         self.common = _common_namespace([s.project.root_namespace for s in self.scans.values()])
         self.alias = {p: slug(self.short(s.project.name)) for p, s in self.scans.items()}
         self.code_ids = self._code_ids()
@@ -254,7 +257,8 @@ class _Deriver:
         head = _frontmatter(
             "C4 Container",
             f"{name} — projects",
-            "Every project under src/ and what it references, read from the .csproj files.",
+            f"Every project under {', '.join(r + '/' for r in self.roots)} and what it references, read from the"
+            " .csproj files.",
             self.where,
         )
         intro = (
@@ -592,10 +596,11 @@ def derive(
     callgraph: Path | None,
     guides: tuple[str, ...] = (),
     changes: int = 0,
+    roots: tuple[str, ...] = ("src",),
 ) -> Derived:
     from rig.c4_okf.narrate import change_pages, guide_pages
 
-    deriver = _Deriver(repo.resolve(), origin(repo), callgraph)
+    deriver = _Deriver(repo.resolve(), origin(repo), callgraph, roots)
     files = {"containers.md": deriver.containers(parent, root)}
     pathways: dict[str, PathwayScore] = {}
     for scan in deriver.scans.values():

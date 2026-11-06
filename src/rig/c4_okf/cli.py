@@ -144,6 +144,10 @@ def derive_dotnet_cmd(
         int, typer.Option("--changes", help="Walk through the last N merged changes to src/ (needs --callgraph).")
     ] = 0,
     check: Annotated[bool, typer.Option("--check", help="Write nothing; exit 1 if any derived file is stale.")] = False,
+    src: Annotated[
+        list[str] | None,
+        typer.Option("--src", help="A folder to read projects from, relative to REPO. Repeatable; default src."),
+    ] = None,
 ) -> None:
     """Derive containers (projects), components (namespaces) and code (types) from a .NET repository.
 
@@ -155,7 +159,15 @@ def derive_dotnet_cmd(
     if parent:
         concept, _, alias = parent.partition(":")
         link = Parent(concept, alias)
-    derived = derive(repo, out, parent=link, callgraph=callgraph, guides=tuple(guide or ()), changes=changes)
+    derived = derive(
+        repo,
+        out,
+        parent=link,
+        callgraph=callgraph,
+        guides=tuple(guide or ()),
+        changes=changes,
+        roots=tuple(src or ("src",)),
+    )
     changed = stale(out, derived.files) if check else write(out, derived.files)
     for name in changed:
         verb = "stale" if check else "wrote" if name in derived.files else "removed"
