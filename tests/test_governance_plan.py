@@ -295,3 +295,21 @@ def test_a_failed_write_exits_2(tmp_path: pathlib.Path) -> None:
 
     assert code == 2
     assert "Validation Failed" in out
+
+
+def test_the_table_says_when_everything_matches_and_shows_drift_when_not(tmp_path: pathlib.Path) -> None:
+    cfg = _config(["lint"])
+    api = _aligned(cfg)
+    checkout = _checkout(tmp_path)
+
+    code, out = _plan(checkout, cfg, api)
+
+    assert code == 0
+    assert "Every repo matches its policy." in out
+
+    api.reads[f"repos/{SLUG}/rulesets"] = []
+    code, out = _plan(checkout, cfg, api)
+
+    assert code == 1
+    assert "ruleset" in out
+    assert "create" in out
