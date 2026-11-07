@@ -45,6 +45,12 @@ Tests share one vocabulary rather than each file building its own doubles
   `steps.git.add_worktree`, `commit` and `make_dirty`. Feature steps and example tests call them;
   they never import helpers from another `test_*.py` module.
 
+- **`tests/contracts/`** holds a fake to the real adapter. `test_gh_runner_contract.py` runs one
+  suite against `FakeGh` and against `RecordedGh`, a replay of real `gh api graphql` answers for
+  the queries `resolve_repo` makes. A changed query fails as unrecorded: re-record with
+  `uv run python -m tests.contracts.record_gh_runner`, then fix the fake to match. Git needs no
+  contract, because its stand-in is real git.
+
 A new scenario reuses a fake or a step. Extend the shared one rather than writing a second copy inline.
 
 `uv run ratchet` enforces it over `tests/`: `fake-location` fails a `Fake*` or `Stub*` class outside

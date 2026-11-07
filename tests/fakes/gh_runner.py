@@ -2,6 +2,7 @@
 
 It answers the `repository(owner:, name:)` queries `rig.github_prs` builds: the paged `open:` connection
 of open pull requests and `prN: pullRequest(number:)` aliases, failing per alias the way `gh` does.
+`tests/contracts/test_gh_runner_contract.py` holds it to recorded answers from the real `run_gh`.
 """
 
 from __future__ import annotations
@@ -46,7 +47,7 @@ class FakeGh:
         assert match is not None
         repo = self.repos.get(f"{match[1]}/{match[2]}")
         if repo is None:
-            return _repo_error("Could not resolve to a Repository")
+            return _repo_error(f"Could not resolve to a Repository with the name '{match[1]}/{match[2]}'.")
         if repo.fail:
             return _repo_error(repo.fail)
         data: dict[str, object] = {}
@@ -61,14 +62,16 @@ class FakeGh:
             state = repo.states.get(number)
             if state is None:
                 data[f"pr{number}"] = None
-                errors.append({"type": "NOT_FOUND", "path": ["repository", f"pr{number}"], "message": "no PR"})
+                message = f"Could not resolve to a PullRequest with the number of {number}."
+                errors.append({"type": "NOT_FOUND", "path": ["repository", f"pr{number}"], "message": message})
             else:
                 data[f"pr{number}"] = {"number": number, "state": state, "merged": state == "MERGED"}
         body: dict[str, object] = {"data": {"repository": data}}
         if errors:
             body["errors"] = errors
         # Like gh: exit 1 when any alias failed, with the data still on stdout.
-        return (1 if errors else 0), json.dumps(body), ""
+        stderr = f"gh: {errors[0]['message']}\n" if errors else ""
+        return (1 if errors else 0), json.dumps(body), stderr
 
 
 def as_port(fake: FakeGh) -> GhRunner:

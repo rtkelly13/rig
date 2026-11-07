@@ -275,7 +275,9 @@ def test_missing_pr_is_unknown_but_the_rest_resolve(fake_gh: FakeFactory) -> Non
     fake = fake_gh({"o/r": FakeRepo(states={1: "OPEN"})})
     states = resolve_pr_states(_refs("o/r#1", "o/r#99999"), runner=fake)
     assert states[PrRef("o", "r", 1)] == PrState("OPEN")
-    assert states[PrRef("o", "r", 99999)] == PrState("UNKNOWN", "no PR")
+    assert states[PrRef("o", "r", 99999)] == PrState(
+        "UNKNOWN", "Could not resolve to a PullRequest with the number of 99999."
+    )
 
 
 def test_whole_repo_failure_is_unknown_with_no_chains(fake_gh: FakeFactory) -> None:
