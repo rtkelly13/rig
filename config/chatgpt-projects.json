@@ -4,7 +4,7 @@
   "transport": "agent-browser-ui",
   "context_template": "docs/project-reviews/bootstrap.md",
   "report_template": "docs/project-reviews/contract.md",
-  "memory_index": "https://github.com/rtkelly13/rig/issues/375",
+  "memory_index": "https://github.com/rtkelly13/rig/issues/21",
   "projects": [
     {
       "key": "data",
@@ -24,7 +24,7 @@
         "conversation_binding": "6ae064f7-000c-83ed-b630-fa910a11ea1a"
       },
       "management": "manage",
-      "memory_issue": "https://github.com/rtkelly13/rig/issues/376",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/22",
       "policy_path": "docs/project-reviews/data.md"
     },
     {
@@ -45,7 +45,7 @@
         "conversation_binding": "6ae06692-9af0-83ed-92e3-da966390f1f2"
       },
       "management": "manage",
-      "memory_issue": "https://github.com/rtkelly13/rig/issues/363",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/12",
       "policy_path": "docs/project-reviews/diffra.md"
     },
     {
@@ -66,7 +66,7 @@
         "conversation_binding": "6ae07667-8f88-83eb-83a2-c6f4ab3ffa2f"
       },
       "management": "manage",
-      "memory_issue": "https://github.com/rtkelly13/rig/issues/379",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/25",
       "policy_path": "docs/project-reviews/tooling-design.md"
     },
     {
@@ -87,7 +87,7 @@
         "conversation_binding": "6ae067ef-7fd8-83ed-9e7c-a4f3a051b7de"
       },
       "management": "manage",
-      "memory_issue": "https://github.com/rtkelly13/rig/issues/378",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/24",
       "policy_path": "docs/project-reviews/personal.md"
     }
   ],
@@ -102,7 +102,7 @@
       "name": "Resultful",
       "policy": "preserve_name_instructions_sources_and_chats",
       "scheduled_review_group": "tooling-design",
-      "historical_memory_issue": "https://github.com/rtkelly13/rig/issues/377"
+      "historical_memory_issue": "https://github.com/rtkelly13/rig/issues/23"
     }
   ],
   "excluded_repositories": [

@@ -1,7 +1,7 @@
 # Diffra scheduled review
 
 Schedule key: `diffra`
-Canonical memory: https://github.com/rtkelly13/rig/issues/363
+Canonical memory: https://github.com/rtkelly13/rig/issues/12
 Contract: [contract.md](contract.md), fetched at the same main commit as this file.
 
 Follow the shared contract. This file is the current schedule-specific policy;

@@ -331,7 +331,7 @@ Issue intake and pull request reviews represent the primary operational boundary
 To ensure consistent data capture and zero-friction triage, all public estate repositories implement schema-validated **GitHub Issue Forms** (`.github/ISSUE_TEMPLATE/*.yml`) and a unified **Pull Request Template** (`.github/PULL_REQUEST_TEMPLATE.md`).
 
 > [!TIP]
-> Ongoing estate-wide expansion, dynamic parameter rendering, and template enhancements are tracked in issue [#367](https://github.com/rtkelly13/rig/issues/367).
+> Ongoing estate-wide expansion, dynamic parameter rendering, and template enhancements are tracked in issue [#367](https://github.com/rtkelly13/rig-archive/issues/367).
 
 The other side of intake is filing well on projects we depend on: see
 [Minimal Reproductions for Upstream Issues](minimal-reproductions.md) for building the smallest

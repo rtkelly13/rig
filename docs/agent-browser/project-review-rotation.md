@@ -15,14 +15,14 @@ applied audit; target configuration alone is not provider verification.
 
 | Native ChatGPT Project | Policy | Sources | Memory |
 | --- | --- | --- | --- |
-| Data | Manage; rename the existing Source Generators identity | Parquet, Arrow, Iceberg, TypeProvider and the parquet-dotnet fork | [#376](https://github.com/rtkelly13/rig/issues/376) |
-| Diffra (Artifact Driven Baselines) | Manage existing identity | rtkelly-labs/Diffra | [#363](https://github.com/rtkelly13/rig/issues/363) |
-| Resultful | Retain Project/instructions/chats; independent task paused | Reviewed within Tooling & Design | [Historical #377](https://github.com/rtkelly13/rig/issues/377), reports [#379](https://github.com/rtkelly13/rig/issues/379) |
-| Personal | Manage distinct project | Eight personal application/infrastructure repositories | [#378](https://github.com/rtkelly13/rig/issues/378) |
+| Data | Manage; rename the existing Source Generators identity | Parquet, Arrow, Iceberg, TypeProvider and the parquet-dotnet fork | [#22](https://github.com/rtkelly13/rig/issues/22) |
+| Diffra (Artifact Driven Baselines) | Manage existing identity | rtkelly-labs/Diffra | [#12](https://github.com/rtkelly13/rig/issues/12) |
+| Resultful | Retain Project/instructions/chats; independent task paused | Reviewed within Tooling & Design | [Historical #23](https://github.com/rtkelly13/rig/issues/23), reports [#25](https://github.com/rtkelly13/rig/issues/25) |
+| Personal | Manage distinct project | Eight personal application/infrastructure repositories | [#24](https://github.com/rtkelly13/rig/issues/24) |
 | c11n (configuration) | Preserve name, instructions, sources and tasks | Existing context | Unchanged |
-| Design System | Manage tooling/design context; preserve identity, name, chats and sources | design-system, mermaid-toolkit, rig, workflow experiments, org governance and both Resultful repositories | [#379](https://github.com/rtkelly13/rig/issues/379) |
+| Design System | Manage tooling/design context; preserve identity, name, chats and sources | design-system, mermaid-toolkit, rig, workflow experiments, org governance and both Resultful repositories | [#25](https://github.com/rtkelly13/rig/issues/25) |
 
-The [index #375](https://github.com/rtkelly13/rig/issues/375) links memories; it
+The [index #21](https://github.com/rtkelly13/rig/issues/21) links memories; it
 has no shared review task. Rig is private. The full 155-repository access
 inventory remains in gitignored local notes. Work/collaborator access is not
 adoption scope. Archived the-vault-system is excluded from scheduled review.
@@ -38,11 +38,11 @@ changed, unverified or overdue area. Quiet projects get a short no-change update
 not a repeated full audit. Separate projects/tasks still share plan allowance.
 
 Resultful consolidation keeps its native Project, original instructions and chats,
-its permanent #377 history, and its paused task record. The tooling policy includes both Resultful repositories and reads #377 as history;
+its permanent #23 history, and its paused task record. The tooling policy includes both Resultful repositories and reads #23 as history;
 the task and Project bootstrap fetch that policy every run.
-New combined reports go only to #379. Establish a baseline when unassessed, then
+New combined reports go only to #25. Establish a baseline when unassessed, then
 deepen Resultful on material changes or when fifteen calendar weeks have elapsed
-since the last deep assessment, recording last assessment and next due review in #379.
+since the last deep assessment, recording last assessment and next due review in #25.
 The earlier five-week/five-task setup and publication audits below are historical evidence;
 the JSON and layout above define the current four-task target.
 
@@ -52,7 +52,7 @@ The independent Resultful task was paused without deletion. A fresh Scheduled
 view showed four active and four paused task records. The combined tooling
 Project settings were saved, reopened and compared exactly with the rendered
 eight-repository context. A fresh saved-task editor independently confirmed all
-eight repositories, #377 historical reads/#379 publication, the baseline and
+eight repositories, #23 historical reads/#379 publication, the baseline and
 three-occurrence policy, the original report/retry contract and generic marker,
 and absence of a temporary test ID. The other three active schedules retain
 their original five-week starts. No review run was triggered for this scope-only
@@ -140,7 +140,7 @@ or broad cookie clearing is needed for this fallback.
 
 Native Run now executed the saved fifth task with the explicit verification ID
 `tooling-design:publication-verification:2026-10-27-v2`. Its unattended worker
-published [one partial review comment](https://github.com/rtkelly13/rig/issues/379#issuecomment-6447519232)
+published [one partial review comment](https://github.com/rtkelly13/rig/issues/25#issuecomment-6447519232)
 and updated the marked issue description. Independent GitHub readback verified
 one matching report marker, the description's attempt link, unchanged text
 outside the markers, unchanged labels and open state. The latest-complete group
@@ -253,12 +253,12 @@ Repository-level trackers remain available as detailed memories:
 
 | Repository | Permanent issue |
 | --- | --- |
-| `rtkelly-labs/.github` | [#369](https://github.com/rtkelly13/rig/issues/369) |
-| `rtkelly-labs/Arrow.SourceGenerator` | [#365](https://github.com/rtkelly13/rig/issues/365) |
-| `rtkelly-labs/design-system` | [#370](https://github.com/rtkelly13/rig/issues/370) |
-| `rtkelly-labs/Diffra` | [#363](https://github.com/rtkelly13/rig/issues/363) |
-| `rtkelly-labs/Lake.NET` | [#371](https://github.com/rtkelly13/rig/issues/371) |
-| `rtkelly-labs/mermaid-toolkit` | [#372](https://github.com/rtkelly13/rig/issues/372) |
-| `rtkelly-labs/parquet-dotnet` | [#373](https://github.com/rtkelly13/rig/issues/373) |
-| `rtkelly-labs/Parquet.SourceGenerator` | [#364](https://github.com/rtkelly13/rig/issues/364) |
-| `rtkelly-labs/Parquet.TypeProvider` | [#374](https://github.com/rtkelly13/rig/issues/374) |
+| `rtkelly-labs/.github` | [#15](https://github.com/rtkelly13/rig/issues/15) |
+| `rtkelly-labs/Arrow.SourceGenerator` | [#14](https://github.com/rtkelly13/rig/issues/14) |
+| `rtkelly-labs/design-system` | [#16](https://github.com/rtkelly13/rig/issues/16) |
+| `rtkelly-labs/Diffra` | [#12](https://github.com/rtkelly13/rig/issues/12) |
+| `rtkelly-labs/Lake.NET` | [#17](https://github.com/rtkelly13/rig/issues/17) |
+| `rtkelly-labs/mermaid-toolkit` | [#18](https://github.com/rtkelly13/rig/issues/18) |
+| `rtkelly-labs/parquet-dotnet` | [#19](https://github.com/rtkelly13/rig/issues/19) |
+| `rtkelly-labs/Parquet.SourceGenerator` | [#13](https://github.com/rtkelly13/rig/issues/13) |
+| `rtkelly-labs/Parquet.TypeProvider` | [#20](https://github.com/rtkelly13/rig/issues/20) |

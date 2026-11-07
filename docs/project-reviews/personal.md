@@ -1,7 +1,7 @@
 # Personal scheduled review
 
 Schedule key: `personal`
-Canonical memory: https://github.com/rtkelly13/rig/issues/378
+Canonical memory: https://github.com/rtkelly13/rig/issues/24
 Contract: [contract.md](contract.md), fetched at the same main commit as this file.
 
 Follow the shared contract. This file is the current schedule-specific policy;

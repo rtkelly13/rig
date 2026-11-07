@@ -37,7 +37,7 @@ At most one proposed refinement ID / hypothesis / acceptance criterion / case ID
 Next evaluation due / owner:
 ```
 
-For index #375, keep a compact operator-maintained register:
+For index #21, keep a compact operator-maintained register:
 
 | Refinement ID | Evidence / baseline | Hypothesis / acceptance | Policy paths / PR | Cases / comparison | State / owner | Canary run / next check / rollback |
 | --- | --- | --- | --- | --- | --- | --- |

@@ -191,15 +191,15 @@ replace another project's latest summary:
 
 | Active group | Fixed reporting issue |
 | --- | --- |
-| Data | [rig #376](https://github.com/rtkelly13/rig/issues/376) |
-| Diffra | [rig #363](https://github.com/rtkelly13/rig/issues/363) |
-| Developer Tooling & Design, including Resultful | [rig #379](https://github.com/rtkelly13/rig/issues/379) |
-| Personal | [rig #378](https://github.com/rtkelly13/rig/issues/378) |
+| Data | [rig #22](https://github.com/rtkelly13/rig/issues/22) |
+| Diffra | [rig #12](https://github.com/rtkelly13/rig/issues/12) |
+| Developer Tooling & Design, including Resultful | [rig #25](https://github.com/rtkelly13/rig/issues/25) |
+| Personal | [rig #24](https://github.com/rtkelly13/rig/issues/24) |
 
 The [group guide](project-review-rotation.md) and
-[index #375](https://github.com/rtkelly13/rig/issues/375) link retained per-repository
-trackers and Resultful #377 as historical read sources. Parquet #364 and Arrow
-#365 are not current publication destinations; their legacy tasks remain paused.
+[index #21](https://github.com/rtkelly13/rig/issues/21) link retained per-repository
+trackers and Resultful #23 as historical read sources. Parquet #13 and Arrow
+#14 are not current publication destinations; their legacy tasks remain paused.
 The four canonical memories, retained trackers and index remain open/permanent.
 The index has no shared review schedule. Rig and these issues are private.
 
@@ -253,7 +253,7 @@ If approval is requested, report it rather than treating local GitHub CLI
 access as proof of cloud permissions.
 
 On 2026-10-26 this test successfully posted
-[one comment on rig #364](https://github.com/rtkelly13/rig/issues/364#issuecomment-6429861439)
+[one comment on rig #13](https://github.com/rtkelly13/rig/issues/13#issuecomment-6429861439)
 through ChatGPT Work's connected GitHub app without further approval. An
 independent GitHub API read confirmed the exact text, one occurrence of the test
 ID, and unchanged issue body/title/labels/state. The cloud session reported
@@ -265,7 +265,7 @@ Local agents can read the issue with GitHub tools. CLI examples:
 
 ```bash
 gh issue view 364 --repo rtkelly13/rig --json title,body,url
-gh api --paginate repos/rtkelly13/rig/issues/364/comments
+gh api --paginate repos/rtkelly13/rig/issues/13/comments
 ```
 
 Inspect the linked report and source commit(s), and identify stale or incomplete

@@ -125,7 +125,7 @@ id = "top-layers"
 name = "desktop_manager sits above rig"
 type = "layers"
 layers = ["desktop_manager", "rig"]
-# Today's violations (plan item G1, #411). Each entry names the item that removes it;
+# Today's violations (plan item G1, #30). Each entry names the item that removes it;
 # G3 deletes every ignore_imports list.
 ignore_imports = [
     "rig.estate.apps_windows -> desktop_manager.win32.dlls",  # G2
@@ -248,7 +248,7 @@ ignore = [
 "src/desktop_manager/projects.py" = ["TID251"]
 "src/rig/fs_links.py" = ["TID251"]
 "src/desktop_manager/terminal_init.py" = ["TID251"]
-# subprocess.* is banned (TID251, plan item B10, #411). Permanent owners:
+# subprocess.* is banned (TID251, plan item B10, #30). Permanent owners:
 # tracing.run is the one executor that rig.proc and every other caller goes through;
 # type-ratchet is a stdlib-only package that cannot import rig.
 "src/rig/tracing.py" = ["TID251"]

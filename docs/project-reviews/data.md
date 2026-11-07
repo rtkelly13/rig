@@ -1,7 +1,7 @@
 # Data scheduled review
 
 Schedule key: `data`
-Canonical memory: https://github.com/rtkelly13/rig/issues/376
+Canonical memory: https://github.com/rtkelly13/rig/issues/22
 Contract: [contract.md](contract.md), fetched at the same main commit as this file.
 
 Follow the shared contract. This file is the current schedule-specific policy;
@@ -34,9 +34,9 @@ supported by source-specific evidence there.
 ## Historical memory
 
 Import relevant prior evidence once, preserving source refs and assessment dates:
-[Parquet #364](https://github.com/rtkelly13/rig/issues/364),
-[Arrow #365](https://github.com/rtkelly13/rig/issues/365),
-[Iceberg #371](https://github.com/rtkelly13/rig/issues/371),
-[parquet-dotnet #373](https://github.com/rtkelly13/rig/issues/373), and
-[TypeProvider #374](https://github.com/rtkelly13/rig/issues/374).
-These are read sources; new scheduled reports go only to #376.
+[Parquet #13](https://github.com/rtkelly13/rig/issues/13),
+[Arrow #14](https://github.com/rtkelly13/rig/issues/14),
+[Iceberg #17](https://github.com/rtkelly13/rig/issues/17),
+[parquet-dotnet #19](https://github.com/rtkelly13/rig/issues/19), and
+[TypeProvider #20](https://github.com/rtkelly13/rig/issues/20).
+These are read sources; new scheduled reports go only to #22.

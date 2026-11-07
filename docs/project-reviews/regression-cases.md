@@ -31,4 +31,4 @@ when judging. Valid phrasing can vary; grade actions and claims, not exact prose
 The existing tooling publication test is integration evidence for posting and
 summary preservation. The 2026-10-27 live-policy test is integration evidence for
 fetching private policy files and reading memory. Neither establishes all case
-passes or full review quality; use their records in index #375 with those limits.
+passes or full review quality; use their records in index #21 with those limits.
