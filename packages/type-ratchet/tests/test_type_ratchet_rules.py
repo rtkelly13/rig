@@ -243,3 +243,41 @@ def test_disabled_rules_never_gate() -> None:
     actual = {Rule.NOQA: {"a.py": 3}, Rule.CAST: {"a.py": 1}}
     found = violations(actual, RatchetConfig(disabled_rules=frozenset({Rule.NOQA})))
     assert [v.rule for v in found] == [Rule.CAST]
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("class FakeGh: ...", 1),
+        ("class _FakeGh: ...", 1),
+        ("class Stub(Base): ...", 1),
+        ("class StubRunner: ...", 1),
+        ("class Fakery: ...", 0),
+        ("class Stubborn: ...", 0),
+        ("class GhFake: ...", 0),
+        ("def FakeGh(): ...", 0),
+    ],
+)
+def test_fake_and_stub_classes_are_counted(source: str, expected: int) -> None:
+    assert _count(source).get(Rule.FAKE_LOCATION, 0) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("from unittest import mock\nmock.patch('a.b')", 1),
+        ("from unittest import mock\nmock.patch.object(A, 'b', 1)", 1),
+        ("from unittest.mock import patch\n@patch('a.b')\ndef f(): ...", 1),
+        ("from unittest.mock import patch as p\nwith p.dict('os.environ', {}): ...", 1),
+        ("import unittest.mock\nunittest.mock.patch('a')", 1),
+        ("def test(monkeypatch):\n    monkeypatch.setattr(mod, 'f', g)", 1),
+        ("import sys\nsys.modules['x'] = object()", 1),
+        ("from unittest.mock import patch", 0),
+        ("def test(monkeypatch):\n    monkeypatch.setenv('A', '1')\n    monkeypatch.setitem(d, 'k', 1)", 0),
+        ("import sys\nm = sys.modules['x']\nsys.modules.get('y')", 0),
+        ("setattr(obj, 'a', 1)", 0),
+        ("from unittest.mock import MagicMock\nm = MagicMock()", 0),
+    ],
+)
+def test_patching_is_counted(source: str, expected: int) -> None:
+    assert _count(source).get(Rule.PATCHING, 0) == expected

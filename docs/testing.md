@@ -47,6 +47,12 @@ Tests share one vocabulary rather than each file building its own doubles
 
 A new scenario reuses a fake or a step. Extend the shared one rather than writing a second copy inline.
 
+`uv run ratchet` enforces it over `tests/`: `fake-location` fails a `Fake*` or `Stub*` class outside
+`tests/fakes/`, and `patching` fails `mock.patch`, `monkeypatch.setattr` and `sys.modules[...] =`.
+The files that did either when the rules landed are listed in `fake-location-allow` and
+`patching-allow` in `pyproject.toml`. Those lists only shrink: when you touch one of those files,
+move its fake into `tests/fakes/` or pass the fake through a seam, then delete its entry.
+
 ### Properties: state the rule, then let Hypothesis find the counterexample
 
 Useful shapes, each with an example in `tests/desktop_manager/test_placement_properties.py`:

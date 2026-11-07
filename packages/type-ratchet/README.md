@@ -47,10 +47,13 @@ is not run inside a git work tree.
 | `yaml-load` | any reference to a `yaml.*load*` function |
 | `pyright-pragma` | a file-level `# pyright:` comment that lowers the mode (`basic`, `standard`, `off`) or switches a rule down (`reportX=false`, `warning`, ...) |
 | `loose-dict` | `dict[str, object]`, `Mapping[str, object]` and `MutableMapping[str, object]` (from `typing` or `collections.abc`, however imported), and any read of a `loose-dict-aliases` name: in annotations, type aliases, quoted annotations and type arguments such as `decode(dict[str, object], raw)` or `default_factory=dict[str, object]`. The alias's own definition does not count. |
+| `fake-location` | a class named `Fake*` or `Stub*` (leading underscores too, so `_FakeGh`), outside the `fake-location-allow` paths. Meant for a tests rule set, so fakes live in one shared place |
+| `patching` | `mock.patch` in any form (`patch`, `.object`, `.dict`, decorator or context manager, however `unittest.mock` is imported), `monkeypatch.setattr`, and writes to `sys.modules[...]`, outside the `patching-allow` paths |
 
 `json-loads`, `yaml-load`, `isinstance-dict` and `loose-dict` are boundary rules: the `boundary-modules`, where raw
 data is decoded into typed shapes, may break them. `pyright-pragma` is exempt only in `pyright-pragma-allow` paths,
-and `loose-dict` also in `loose-dict-allow` paths. Every other rule has no per-file exemption.
+and `loose-dict`, `fake-location` and `patching` also in their `*-allow` paths. Every other rule has no per-file
+exemption.
 
 ## Config
 
@@ -68,6 +71,8 @@ unknown key. Every key is optional.
 | `str-key-receivers` | list of strings | `[]` | receivers that are homogeneous string-keyed maps, not records: an exact dotted name (`self.headers`) or `*.attr` for any `x.attr` |
 | `loose-dict-aliases` | list of strings | `[]` | type alias names `loose-dict` counts like `dict[str, object]`, matched on the last segment of the resolved name, so `JsonObject`, `typed_json.JsonObject` and `JsonObject as Obj` all count |
 | `loose-dict-allow` | list of strings | `[]` | repo-relative paths or `fnmatch` globs (`*` also matches `/`) that may keep loose dicts, such as JSON output serializers and config files rewritten with their unknown keys |
+| `fake-location-allow` | list of strings | `[]` | repo-relative paths or `fnmatch` globs that may define `Fake*`/`Stub*` classes |
+| `patching-allow` | list of strings | `[]` | repo-relative paths or `fnmatch` globs that may patch: today's files, while they move to fakes |
 | `hint` | string | `"Remove them."` | printed after the violations, for example a pointer to your typing guide |
 | `rule-sets` | array of tables | `[]` | per-path rule choices; see below |
 
@@ -99,9 +104,12 @@ paths = ["src"]
 
 [[tool.type-ratchet.rule-sets]]
 files = ["tests/fakes/*"]
-rules = ["cast", "ignore-comment"]
+rules = ["patching"]
 
 [[tool.type-ratchet.rule-sets]]
 files = ["tests/*"]
-rules = ["ignore-comment"]
+rules = ["fake-location", "patching"]
 ```
+
+Here fakes may be defined only in `tests/fakes/`, and nothing under `tests/` patches. Add `disable =
+["fake-location", "patching"]` when application code may legitimately write `sys.modules`.

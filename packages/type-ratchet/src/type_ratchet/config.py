@@ -27,6 +27,8 @@ _BOUNDARY_MODULES = "boundary-modules"
 _STR_KEY_RECEIVERS = "str-key-receivers"
 _LOOSE_DICT_ALIASES = "loose-dict-aliases"
 _LOOSE_DICT_ALLOW = "loose-dict-allow"
+_FAKE_LOCATION_ALLOW = "fake-location-allow"
+_PATCHING_ALLOW = "patching-allow"
 _HINT = "hint"
 _RULE_SETS = "rule-sets"
 _FILES = "files"
@@ -42,6 +44,8 @@ _KEYS = frozenset(
         _STR_KEY_RECEIVERS,
         _LOOSE_DICT_ALIASES,
         _LOOSE_DICT_ALLOW,
+        _FAKE_LOCATION_ALLOW,
+        _PATCHING_ALLOW,
         _HINT,
         _RULE_SETS,
     }
@@ -85,6 +89,10 @@ class RatchetConfig:
     """Type alias names that `loose-dict` counts like `dict[str, object]`, wherever they are referenced."""
     loose_dict_allow: tuple[str, ...] = ()
     """Repo-relative paths or `fnmatch` globs that may keep loose dicts: output serializers and config round-trips."""
+    fake_location_allow: tuple[str, ...] = ()
+    """Repo-relative paths or `fnmatch` globs that may define `Fake*`/`Stub*` classes outside the shared fakes."""
+    patching_allow: tuple[str, ...] = ()
+    """Repo-relative paths or `fnmatch` globs that may still use `mock.patch`, `monkeypatch.setattr`, `sys.modules`."""
     hint: str = DEFAULT_HINT
     """Printed after the violations, typically a pointer to the repo's own guidance."""
     rule_sets: tuple[RuleSet, ...] = ()
@@ -206,6 +214,8 @@ def parse_config(document: dict[str, object]) -> RatchetConfig:
         str_key_receivers=frozenset(_strings(table, _STR_KEY_RECEIVERS) or ()),
         loose_dict_aliases=frozenset(_strings(table, _LOOSE_DICT_ALIASES) or ()),
         loose_dict_allow=_strings(table, _LOOSE_DICT_ALLOW) or (),
+        fake_location_allow=_strings(table, _FAKE_LOCATION_ALLOW) or (),
+        patching_allow=_strings(table, _PATCHING_ALLOW) or (),
         hint=_string(table, _HINT, DEFAULT_HINT),
         rule_sets=_rule_sets(table),
     )

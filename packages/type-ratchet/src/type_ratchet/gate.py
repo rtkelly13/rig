@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from pathlib import Path
@@ -62,12 +63,21 @@ def measure(root: Path, config: RatchetConfig | None = None) -> RuleCounts:
     return result
 
 
+_ALLOW_LISTS: dict[Rule, Callable[[RatchetConfig], tuple[str, ...]]] = {
+    Rule.LOOSE_DICT: lambda config: config.loose_dict_allow,
+    Rule.FAKE_LOCATION: lambda config: config.fake_location_allow,
+    Rule.PATCHING: lambda config: config.patching_allow,
+}
+"""Rules a configured list of paths or globs may break."""
+
+
 def _exempt(rule: Rule, path: str, config: RatchetConfig) -> bool:
     if rule not in config.gated_rules(path):
         return True
     if rule is Rule.PYRIGHT_PRAGMA:
         return path in config.pyright_pragma_allow
-    if rule is Rule.LOOSE_DICT and any(fnmatchcase(path, pattern) for pattern in config.loose_dict_allow):
+    allowed = _ALLOW_LISTS.get(rule)
+    if allowed is not None and any(fnmatchcase(path, pattern) for pattern in allowed(config)):
         return True
     return rule in BOUNDARY_RULES and path in config.boundary_modules
 

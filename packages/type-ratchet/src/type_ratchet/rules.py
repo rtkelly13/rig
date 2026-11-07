@@ -35,6 +35,8 @@ class Rule(StrEnum):
     YAML_LOAD = "yaml-load"
     PYRIGHT_PRAGMA = "pyright-pragma"
     LOOSE_DICT = "loose-dict"
+    FAKE_LOCATION = "fake-location"
+    PATCHING = "patching"
 
 
 BOUNDARY_RULES: frozenset[Rule] = frozenset({Rule.JSON_LOADS, Rule.YAML_LOAD, Rule.ISINSTANCE_DICT, Rule.LOOSE_DICT})
@@ -55,6 +57,8 @@ _YAML_LOADERS = frozenset(
     )
 )
 _ENVIRON = frozenset({"os.environ"})
+_FAKE_CLASS = re.compile(r"_*(?:Fake|Stub)(?![a-z])")
+_PATCHERS = ("unittest.mock.patch", "mock.patch")
 _LOOSE_MAPS = frozenset(
     {
         "dict",
@@ -181,6 +185,8 @@ class _Visitor(ast.NodeVisitor):
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         if any(self._name(base) in {"NamedTuple", "typing.NamedTuple"} for base in node.bases):
             self.counts[Rule.FIXED_TUPLE] += 1
+        if _FAKE_CLASS.match(node.name):
+            self.counts[Rule.FAKE_LOCATION] += 1
         self.generic_visit(node)
 
     @override
@@ -194,6 +200,8 @@ class _Visitor(ast.NodeVisitor):
             self.counts[Rule.FIXED_TUPLE] += 1
         elif name == "isinstance" and len(node.args) == 2 and _mentions_dict(node.args[1]):
             self.counts[Rule.ISINSTANCE_DICT] += 1
+        elif _is_patcher(name) or name == "monkeypatch.setattr":
+            self.counts[Rule.PATCHING] += 1
         elif (
             isinstance(node.func, ast.Attribute)
             and node.func.attr == "get"
@@ -213,6 +221,8 @@ class _Visitor(ast.NodeVisitor):
             self.counts[Rule.STR_KEY_SUBSCRIPT] += 1
         if self._is_loose_dict(node):
             self.counts[Rule.LOOSE_DICT] += 1
+        if isinstance(node.ctx, ast.Store) and self._name(node.value) == "sys.modules":
+            self.counts[Rule.PATCHING] += 1
         self.generic_visit(node)
 
     def _annotation(self, node: ast.expr | None, quoted: bool = False) -> None:
@@ -290,6 +300,11 @@ def _dotted_name(node: ast.expr) -> str:
 
 def _is_str_constant(args: list[ast.expr]) -> bool:
     return bool(args) and isinstance(args[0], ast.Constant) and isinstance(args[0].value, str)
+
+
+def _is_patcher(name: str) -> bool:
+    """`mock.patch` and its `.object`, `.dict` and `.multiple` forms, however `unittest.mock` is imported."""
+    return any(name == patcher or name.startswith(f"{patcher}.") for patcher in _PATCHERS)
 
 
 def _mentions_dict(node: ast.expr) -> bool:
