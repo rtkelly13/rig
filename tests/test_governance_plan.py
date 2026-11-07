@@ -350,3 +350,27 @@ def test_the_table_says_when_everything_matches_and_shows_drift_when_not(tmp_pat
     assert code == 1
     assert "ruleset" in out
     assert "create" in out
+
+
+def test_apply_is_idempotent_a_second_plan_is_empty(tmp_path: pathlib.Path) -> None:
+    cfg = _config(["lint"], pages={"enabled": True, "cname": "widget.example"})
+    api = FakeGitHubApi(
+        {
+            f"repos/{SLUG}": {**SETTINGS, "default_branch": "master", "allow_merge_commit": True},
+            f"repos/{SLUG}/rulesets": [],
+            f"repos/{SLUG}/labels?per_page=100": [{"name": "type: bug", "color": "000000", "description": "old"}],
+        }
+    )
+    checkout = _checkout(tmp_path)
+
+    code, out = _plan(checkout, cfg, api, "--apply", "--json")
+
+    assert code == 0
+    assert {c.resource for c in _plans(out)[0].changes} == {"repo-settings", "ruleset", "labels", "pages"}
+    written = len(api.writes)
+
+    code, out = _plan(checkout, cfg, api, "--apply", "--json")
+
+    assert code == 0
+    assert _plans(out) == [RepoPlan(SLUG)]
+    assert len(api.writes) == written

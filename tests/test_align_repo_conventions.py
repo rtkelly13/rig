@@ -27,6 +27,7 @@ from rig.repo_governance.check_names import (
     suggest_preferred_name,
 )
 from rig.repo_governance.github_rulesets import (
+    RULESET_NAME,
     AlignResult,
     RepoSettingsResult,
     RulesetInspection,
@@ -38,6 +39,8 @@ from rig.repo_governance.gitignore_manager import GitignoreInspection
 from rig.repo_governance.policy_config import PolicyConfig, load_policy_config
 from rig.repo_governance.repo_discovery import OwnerInspection, RepoFound
 from rig.repo_governance.repo_hygiene import HygieneResult
+from rig.typed_json import load_json
+from tests.fakes.github_rest import FakeGitHubApi
 
 runner = CliRunner()
 
@@ -117,88 +120,59 @@ def test_get_gh_repo_name_failure(tmp_path: pathlib.Path):
         assert get_gh_repo_name(tmp_path) is None
 
 
+_SETTINGS_REPO = "rtkelly13/design-system"
+_ALIGNED_SETTINGS = {
+    "default_branch": "main",
+    "delete_branch_on_merge": True,
+    "allow_squash_merge": True,
+    "allow_merge_commit": False,
+    "allow_rebase_merge": False,
+    "allow_auto_merge": True,
+}
+
+
+def _settings(**overrides: object) -> FakeGitHubApi:
+    return FakeGitHubApi({f"repos/{_SETTINGS_REPO}": {**_ALIGNED_SETTINGS, **overrides}})
+
+
 def test_inspect_repo_settings_aligned():
-    mock_json = json.dumps(
-        {
-            "delete_branch_on_merge": True,
-            "allow_squash_merge": True,
-            "allow_merge_commit": False,
-            "allow_rebase_merge": False,
-            "allow_auto_merge": True,
-        }
-    )
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = _done(mock_json)
-        res = inspect_repo_settings("rtkelly13/design-system")
-        assert res.is_aligned is True
-        assert res.delete_on_merge is True
-        assert res.squash_only is True
+    res = inspect_repo_settings(_SETTINGS_REPO, api=_settings(), cfg=PolicyConfig.parse({}))
+    assert res.is_aligned is True
+    assert res.delete_on_merge is True
+    assert res.squash_only is True
 
 
 def test_inspect_repo_settings_drifted():
-    mock_json = json.dumps(
-        {
-            "delete_branch_on_merge": False,
-            "allow_squash_merge": True,
-            "allow_merge_commit": True,
-            "allow_rebase_merge": False,
-            "allow_auto_merge": True,
-        }
-    )
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = _done(mock_json)
-        res = inspect_repo_settings("rtkelly13/design-system")
-        assert res.is_aligned is False
+    api = _settings(delete_branch_on_merge=False, allow_merge_commit=True)
+    res = inspect_repo_settings(_SETTINGS_REPO, api=api, cfg=PolicyConfig.parse({}))
+    assert res.is_aligned is False
 
 
 def test_inspect_repo_settings_base_branch_aligned():
-    mock_json = json.dumps(
-        {
-            "default_branch": "main",
-            "delete_branch_on_merge": True,
-            "allow_squash_merge": True,
-            "allow_merge_commit": False,
-            "allow_rebase_merge": False,
-            "allow_auto_merge": True,
-        }
-    )
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = _done(mock_json)
-        res = inspect_repo_settings("rtkelly13/design-system", expected_branch="main")
-        assert res.is_aligned is True
-        assert res.base_branch_aligned is True
-        assert res.default_branch == "main"
-        assert res.expected_branch == "main"
+    res = inspect_repo_settings(_SETTINGS_REPO, expected_branch="main", api=_settings(), cfg=PolicyConfig.parse({}))
+    assert res.is_aligned is True
+    assert res.base_branch_aligned is True
+    assert res.default_branch == "main"
+    assert res.expected_branch == "main"
 
 
 def test_inspect_repo_settings_base_branch_deviation():
-    mock_json = json.dumps(
-        {
-            "default_branch": "master",
-            "delete_branch_on_merge": True,
-            "allow_squash_merge": True,
-            "allow_merge_commit": False,
-            "allow_rebase_merge": False,
-            "allow_auto_merge": True,
-        }
-    )
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = _done(mock_json)
-        res = inspect_repo_settings("rtkelly13/design-system", expected_branch="main")
-        assert res.is_aligned is False
-        assert res.base_branch_aligned is False
-        assert res.default_branch == "master"
-        assert res.expected_branch == "main"
+    api = _settings(default_branch="master")
+    res = inspect_repo_settings(_SETTINGS_REPO, expected_branch="main", api=api, cfg=PolicyConfig.parse({}))
+    assert res.is_aligned is False
+    assert res.base_branch_aligned is False
+    assert res.default_branch == "master"
+    assert res.expected_branch == "main"
 
 
 def test_align_github_repo_settings_execution():
-    with patch("subprocess.run", return_value=_done()) as mock_run:
-        res = align_github_repo_settings("rtkelly13/design-system", dry_run=False)
-        assert res.status == "success"
-        mock_run.assert_called_once()
-        cmd = mock_run.call_args[0][0]
-        assert cmd[:5] == ["gh", "api", "-X", "PATCH", "repos/rtkelly13/design-system"]
-        assert '"default_branch":"main"' in mock_run.call_args.kwargs["input"]
+    cfg = PolicyConfig.parse({})
+    api = _settings(default_branch="master", allow_merge_commit=True)
+    res = align_github_repo_settings(_SETTINGS_REPO, dry_run=False, api=api, cfg=cfg)
+    assert res.status == "success"
+    [write] = api.writes
+    assert (write.method, write.route) == ("PATCH", f"repos/{_SETTINGS_REPO}")
+    assert inspect_repo_settings(_SETTINGS_REPO, api=api, cfg=cfg).is_aligned
 
 
 def test_align_github_repo_settings_dry_run():
@@ -1338,6 +1312,14 @@ class TestRulesetDrift:
         payload["rules"] = rules
         return json.dumps(payload)
 
+    def _github(self, detail: str) -> FakeGitHubApi:
+        return FakeGitHubApi(
+            {
+                f"repos/{self.REPO}/rulesets": [{"id": 7, "name": RULESET_NAME, "enforcement": "active"}],
+                f"repos/{self.REPO}/rulesets/7": load_json(detail),
+            }
+        )
+
     @pytest.mark.ci
     def test_a_ruleset_matching_the_declaration_has_no_drift(self):
         assert ruleset_drift(self.REPO, self._live()) == []
@@ -1350,22 +1332,18 @@ class TestRulesetDrift:
 
     @pytest.mark.ci
     def test_align_updates_an_active_ruleset_that_drifted(self):
-        listing = _done(json.dumps([{"id": 7, "name": "Main Branch Governance Ruleset", "enforcement": "active"}]))
-        detail = _done(self._live(drop="required_linear_history"))
-        with patch("subprocess.run", side_effect=[listing, detail]):
-            res = align_github_ruleset(self.REPO, dry_run=True)
+        api = self._github(self._live(drop="required_linear_history"))
+        res = align_github_ruleset(self.REPO, dry_run=True, api=api)
         assert res.status == "dry_run"
         assert res.action == "PUT"
         assert res.drift == ("missing rule required_linear_history",)
 
     @pytest.mark.ci
     def test_align_leaves_an_active_ruleset_that_matches(self):
-        listing = _done(json.dumps([{"id": 7, "name": "Main Branch Governance Ruleset", "enforcement": "active"}]))
-        detail = _done(self._live())
-        with patch("subprocess.run", side_effect=[listing, detail]) as run:
-            res = align_github_ruleset(self.REPO)
+        api = self._github(self._live())
+        res = align_github_ruleset(self.REPO, api=api)
         assert res.status == "already_active"
-        assert run.call_count == 2
+        assert api.writes == []
 
 
 # ---------------------------------------------------------------------------
