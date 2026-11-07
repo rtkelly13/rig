@@ -24,7 +24,6 @@ from desktop_manager.cli_common import (
     console,
     console_safe_text,
     virtual_desktop_event_callback,
-    wait_diff_for_console,
 )
 from desktop_manager.cli_machine import export_plan, guard, name_desktops, wire_machine
 from desktop_manager.cli_projects import (
@@ -141,10 +140,6 @@ def help_cmd() -> None:
 def help_main() -> None:
     """Entry point for `uv run help`."""
     help_cmd()
-
-
-def _workspace_diff_is_clean(diff: str) -> bool:
-    return all(token not in diff for token in ("missing:", "extra:", "misplaced:", "borrowed:"))
 
 
 def _filter_plan_to_desktop(plan: WorkspacePlan, *, desktop: str) -> WorkspacePlan:
@@ -417,23 +412,23 @@ def _wait_for_restore_success(
     max_checks: int = 18,
     checks_after_success: int = 3,
 ) -> bool:
-    from desktop_manager.windows_workspace import render_workspace_diff
+    from desktop_manager.windows_workspace import WorkspaceDiff, diff_workspace
 
     target_plan = _plan_for_scope(plan, desktop=desktop, screen=screen)
 
     console.print("\n[bold]Wait For Success[/bold]")
     saw_success = False
     success_checks_remaining: int | None = None
-    previous_diff: str | None = None
+    previous_diff: WorkspaceDiff | None = None
     for check_index in range(1, max_checks + 1):
         actual_plan = _current_workspace_status_for_scope(plan, desktop=desktop, screen=screen)
-        diff = render_workspace_diff(target_plan, actual_plan)
-        is_success = _workspace_diff_is_clean(diff)
+        diff = diff_workspace(target_plan, actual_plan)
+        is_success = diff.is_clean
         status_label = "success" if is_success else "not yet stable"
         diff_changed = diff != previous_diff
         console.print(f"Check {check_index}: {status_label}")
         if diff_changed:
-            console_diff = wait_diff_for_console(diff, previous_diff)
+            console_diff = diff.changed_since(previous_diff).render()
             console.print(console_safe_text(console_diff))
         else:
             console.print("No Change")
@@ -442,7 +437,7 @@ def _wait_for_restore_success(
                 f"Wait-for-success check {check_index}: {status_label} changed={'yes' if diff_changed else 'no'}"
             )
             if diff_changed:
-                for line in diff.splitlines():
+                for line in diff.render().splitlines():
                     logger.log(f"WAIT {line}")
         if is_success:
             saw_success = True
@@ -514,7 +509,7 @@ def audit(
     ),
 ) -> None:
     """Compare the saved workspace plan to the live desktop state without changing anything."""
-    from desktop_manager.windows_workspace import render_workspace_diff
+    from desktop_manager.windows_workspace import diff_workspace
 
     config_path = config or config_option()
     if not config_path.exists():
@@ -524,11 +519,11 @@ def audit(
     plan = _load_plan_with_features(config_path, enable=enable_feature, disable=disable_feature)
     scoped_plan = _plan_for_scope(plan, desktop=desktop, screen=screen)
     actual_plan = _current_workspace_status_for_scope(plan, desktop=desktop, screen=screen)
-    diff = render_workspace_diff(scoped_plan, actual_plan)
+    diff = diff_workspace(scoped_plan, actual_plan)
 
     console.print("[bold]Workspace Audit[/bold]")
-    console.print(console_safe_text(diff))
-    if _workspace_diff_is_clean(diff):
+    console.print(console_safe_text(diff.render()))
+    if diff.is_clean:
         console.print("[green]Audit passed.[/green]")
         return
     console.print("[yellow]Audit found drift.[/yellow]")

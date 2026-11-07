@@ -512,7 +512,7 @@ def _verify_desktop_completion(
     port: DesktopPort,
 ) -> DesktopCompletion:
     """Check the desktop against its plan."""
-    from desktop_manager.visualization import entries_matched_on_planned_screen, render_workspace_diff
+    from desktop_manager.visualization import diff_workspace, entries_matched_on_planned_screen
 
     _ensure_desktop_anchor(
         desktop_step.desktop_index,
@@ -532,7 +532,7 @@ def _verify_desktop_completion(
         notes=plan.notes,
         aliases=plan.aliases,
     )
-    diff = render_workspace_diff(scoped_plan, WorkspacePlan(desktops=[actual_desktop]))
+    diff = diff_workspace(scoped_plan, WorkspacePlan(desktops=[actual_desktop]))
     satisfied: set[str]
     try:
         satisfied = entries_matched_on_planned_screen(desktop_step.desktop, actual_desktop, plan.substitutions())
@@ -540,13 +540,11 @@ def _verify_desktop_completion(
         if logger is not None:
             logger.exception(f"Could not determine satisfied entries on desktop {desktop_step.desktop_index}: {err}")
         satisfied = set()
-    # Only planned entries that are absent (`missing:`) or in the wrong place
-    # (`misplaced:`) are fixable by another attempt. `extra:`/`borrowed:` denote
-    # orphan or foreign windows (Docker Desktop, stray browser tabs, an
-    # already-open Slack) that a retry can never resolve, so they must not force
-    # the desktop to burn all its attempts.
-    is_complete = all(token not in diff for token in ("missing:", "misplaced:"))
-    return DesktopCompletion(is_complete, diff, satisfied)
+    # Only planned entries that are missing or misplaced are fixable by another
+    # attempt. Extra and borrowed windows are orphan or foreign ones (Docker
+    # Desktop, stray browser tabs, an already-open Slack) that a retry can never
+    # resolve, so they must not force the desktop to burn all its attempts.
+    return DesktopCompletion(not diff.has_fixable_drift, diff.render(), satisfied)
 
 
 def _ensure_desktop_anchor(

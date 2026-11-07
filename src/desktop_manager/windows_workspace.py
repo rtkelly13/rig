@@ -109,6 +109,8 @@ from desktop_manager.restore import (
     restart_app_entries,
 )
 from desktop_manager.visualization import (
+    WorkspaceDiff,
+    diff_workspace,
     render_workspace_diff,
     truncate_text,
 )
@@ -263,6 +265,8 @@ __all__ = [
     "window_matches_placement",
     # visualization
     "captured_window_match_score",
+    "WorkspaceDiff",
+    "diff_workspace",
     "expected_process_name",
     "render_workspace_diff",
     "truncate_text",

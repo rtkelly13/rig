@@ -10,8 +10,16 @@ from pathlib import Path
 from desktop_manager.desktop_port import Win32DesktopPort
 from desktop_manager.handlers import restore_steps
 from desktop_manager.handlers.restore_handler import restore_workspace_with_options
-from desktop_manager.models import DesktopPlan, LaunchEntry, LiveWindow, WorkspacePlan
-from desktop_manager.restore_models import PlannedEntryExecution
+from desktop_manager.models import (
+    DesktopPlan,
+    LaunchEntry,
+    LiveWindow,
+    PlacementLayout,
+    PlacementSpec,
+    WindowSnapshot,
+    WorkspacePlan,
+)
+from desktop_manager.restore_models import PlannedDesktopExecution, PlannedEntryExecution
 from desktop_manager.window_reuse import WindowMove
 
 
@@ -88,3 +96,58 @@ def test_failed_reuse_relaunches_through_the_injected_port(tmp_path: Path) -> No
         "launch_entry Editor",
         "sleep 0.25",
     ]
+
+
+class _SettledDesktopPort(_RecordingPort):
+    """Already on the target desktop, showing one captured desktop."""
+
+    def __init__(self, desktop: DesktopPlan) -> None:
+        super().__init__()
+        self.desktop = desktop
+
+    def get_current_desktop_number(self) -> int | None:
+        return 1
+
+    def current_desktop_status(self, *, desktop_name: str | None = None) -> DesktopPlan:
+        return self.desktop
+
+
+def _notes_desktop(window_title: str) -> tuple[DesktopPlan, DesktopPlan]:
+    full = PlacementSpec(screen=1, layout=PlacementLayout(mode="full", slot=1))
+    planned = DesktopPlan(
+        name="Work",
+        launch=[LaunchEntry(name="Notes", type="app", path=r"C:\Notes.exe", placement=full)],
+    )
+    actual = DesktopPlan(
+        name="Work",
+        captured_windows=[
+            WindowSnapshot(title=window_title, process_name="Notes.exe", screen_number=1, inferred_placement=full)
+        ],
+    )
+    return planned, actual
+
+
+def test_completion_is_not_fooled_by_a_window_title_that_reads_like_drift() -> None:
+    """The check used to search the rendered diff for `missing:`, so this title kept the desktop retrying."""
+    planned, actual = _notes_desktop("extra: missing: misplaced: notes")
+    plan = WorkspacePlan(desktops=[planned])
+    step = PlannedDesktopExecution(desktop=planned, desktop_index=1, close_existing=False)
+
+    completion = restore_steps._verify_desktop_completion(plan, step, logger=None, port=_SettledDesktopPort(actual))
+
+    assert "missing:" in completion.diff
+    assert completion.is_complete is True
+    assert completion.satisfied_entry_names == {"Notes"}
+
+
+def test_completion_is_incomplete_while_a_planned_entry_is_missing() -> None:
+    planned, _ = _notes_desktop("unused")
+    plan = WorkspacePlan(desktops=[planned])
+    step = PlannedDesktopExecution(desktop=planned, desktop_index=1, close_existing=False)
+
+    completion = restore_steps._verify_desktop_completion(
+        plan, step, logger=None, port=_SettledDesktopPort(DesktopPlan(name="Work"))
+    )
+
+    assert completion.is_complete is False
+    assert "  missing: Notes" in completion.diff.splitlines()
