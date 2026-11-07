@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from type_ratchet import ConfigError, RatchetConfig, Rule, load_config
+from type_ratchet import ConfigError, RatchetConfig, Rule, RuleSet, load_config
 
 pytestmark = pytest.mark.ci
 
@@ -59,8 +59,51 @@ def test_missing_table_or_file_means_defaults(tmp_path: Path) -> None:
         '[tool]\ntype-ratchet = "x"\n',
         "[tool.type-ratchet]\n[tool.repo-health.ratchet]\n",
         "[tool.type-ratchet\n",
+        '[tool.type-ratchet]\nrule-sets = "tests"\n',
+        '[[tool.type-ratchet.rule-sets]]\nrules = ["cast"]\n',
+        '[[tool.type-ratchet.rule-sets]]\nfiles = []\nrules = ["cast"]\n',
+        '[[tool.type-ratchet.rule-sets]]\nfiles = ["tests/*"]\n',
+        '[[tool.type-ratchet.rule-sets]]\nfiles = ["tests/*"]\nrules = []\n',
+        '[[tool.type-ratchet.rule-sets]]\nfiles = ["tests/*"]\nrules = ["nope"]\n',
+        '[[tool.type-ratchet.rule-sets]]\nfiles = ["tests/*"]\nrules = ["cast"]\ndisable = []\n',
     ],
 )
 def test_malformed_config_is_rejected(tmp_path: Path, text: str) -> None:
     with pytest.raises(ConfigError):
         _ = load_config(_write(tmp_path, text))
+
+
+def test_rule_sets_are_read_in_order(tmp_path: Path) -> None:
+    pyproject = _write(
+        tmp_path,
+        '[tool.repo-health.ratchet]\ndisable = ["noqa"]\n'
+        '[[tool.repo-health.ratchet.rule-sets]]\nfiles = ["tests/fakes/*"]\nrules = ["cast"]\n'
+        '[[tool.repo-health.ratchet.rule-sets]]\nfiles = ["tests/*", "scripts/*"]\nrules = ["cast", "noqa"]\n',
+    )
+    assert load_config(pyproject) == RatchetConfig(
+        disabled_rules=frozenset({Rule.NOQA}),
+        rule_sets=(
+            RuleSet(files=("tests/fakes/*",), rules=frozenset({Rule.CAST})),
+            RuleSet(files=("tests/*", "scripts/*"), rules=frozenset({Rule.CAST, Rule.NOQA})),
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("path", "gated"),
+    [
+        ("src/a.py", frozenset(Rule) - {Rule.NOQA}),
+        ("tests/fakes/gh.py", frozenset({Rule.CAST})),
+        ("tests/test_a.py", frozenset({Rule.CAST, Rule.NOQA})),
+        ("tests/deep/test_b.py", frozenset({Rule.CAST, Rule.NOQA})),
+    ],
+)
+def test_the_first_matching_rule_set_decides_the_gated_rules(path: str, gated: frozenset[Rule]) -> None:
+    config = RatchetConfig(
+        disabled_rules=frozenset({Rule.NOQA}),
+        rule_sets=(
+            RuleSet(files=("tests/fakes/*",), rules=frozenset({Rule.CAST})),
+            RuleSet(files=("tests/*",), rules=frozenset({Rule.CAST, Rule.NOQA})),
+        ),
+    )
+    assert config.gated_rules(path) == gated

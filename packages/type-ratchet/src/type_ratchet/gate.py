@@ -34,11 +34,23 @@ def tracked_files(root: Path, paths: tuple[str, ...]) -> list[Path]:
     return [path for path in found if path.is_file()]
 
 
+def _measured_files(root: Path, config: RatchetConfig) -> list[Path]:
+    """Tracked files under `paths`, plus any tracked file a rule set's `files` glob matches."""
+    files = set(tracked_files(root, config.paths))
+    if config.rule_sets:
+        files.update(
+            path
+            for path in tracked_files(root, (".",))
+            if any(rule_set.matches(path.relative_to(root).as_posix()) for rule_set in config.rule_sets)
+        )
+    return sorted(files)
+
+
 def measure(root: Path, config: RatchetConfig | None = None) -> RuleCounts:
-    """Per-rule, per-file counts for every tracked Python file under the configured paths."""
+    """Per-rule, per-file counts for every tracked Python file under the configured paths and rule sets."""
     settings = config or RatchetConfig()
     result: RuleCounts = {rule: {} for rule in Rule}
-    for path in tracked_files(root, settings.paths):
+    for path in _measured_files(root, settings):
         rel = path.relative_to(root).as_posix()
         source = path.read_text(encoding="utf-8")
         counts = count_source(
@@ -51,7 +63,7 @@ def measure(root: Path, config: RatchetConfig | None = None) -> RuleCounts:
 
 
 def _exempt(rule: Rule, path: str, config: RatchetConfig) -> bool:
-    if rule in config.disabled_rules:
+    if rule not in config.gated_rules(path):
         return True
     if rule is Rule.PYRIGHT_PRAGMA:
         return path in config.pyright_pragma_allow

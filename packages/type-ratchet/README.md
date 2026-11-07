@@ -69,6 +69,7 @@ unknown key. Every key is optional.
 | `loose-dict-aliases` | list of strings | `[]` | type alias names `loose-dict` counts like `dict[str, object]`, matched on the last segment of the resolved name, so `JsonObject`, `typed_json.JsonObject` and `JsonObject as Obj` all count |
 | `loose-dict-allow` | list of strings | `[]` | repo-relative paths or `fnmatch` globs (`*` also matches `/`) that may keep loose dicts, such as JSON output serializers and config files rewritten with their unknown keys |
 | `hint` | string | `"Remove them."` | printed after the violations, for example a pointer to your typing guide |
+| `rule-sets` | array of tables | `[]` | per-path rule choices; see below |
 
 ```toml
 [tool.type-ratchet]
@@ -80,4 +81,27 @@ str-key-receivers = ["self.headers", "*.attrib"]
 loose-dict-aliases = ["JsonObject"]
 loose-dict-allow = ["src/app/serialize.py"]
 hint = "See docs/python-types.md for the replacements."
+```
+
+### Rule sets
+
+Different parts of a repo can gate different rules: tests, say, may patch and cast where `src/` may not. Each
+`[[tool.type-ratchet.rule-sets]]` entry names `files`, a list of repo-relative `fnmatch` globs (`*` also matches `/`),
+and `rules`, the rules that fail the gate in those files. Both must be non-empty.
+
+A file takes the first set whose `files` match it; order the sets from most to least specific. A file no set matches
+gets every rule except `disable`. Set-matched files are checked even outside `paths`, so a set for `tests/*` brings the
+tracked tests in. `--report` still counts every rule everywhere, and the exemptions above still apply.
+
+```toml
+[tool.type-ratchet]
+paths = ["src"]
+
+[[tool.type-ratchet.rule-sets]]
+files = ["tests/fakes/*"]
+rules = ["cast", "ignore-comment"]
+
+[[tool.type-ratchet.rule-sets]]
+files = ["tests/*"]
+rules = ["ignore-comment"]
 ```
