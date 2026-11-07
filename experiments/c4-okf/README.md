@@ -163,7 +163,7 @@ containers and modules as components, with `import` as the reference pathway.
 
 - The browser renders with a vendored **pele 1.13.0** (`static/vendor/pele.global.js`, MIT), so rig never
   runs Node, per the principle in [experiments/README.md](../README.md).
-- `c4.css` maps the `--pele-*` variables onto the design system's `--ds-*` role tokens, so diagrams follow the
+- `styles/c4.css` (compiled with the design-system theme into `static/c4.css`) maps the `--pele-*` variables onto the design system's `--ds-*` role tokens, so diagrams follow the
   page's level (midnight, sketch). The vendored mermaid-toolkit `retro-brutalist.css` is kept as reference only: linking it shadowed the mapping, because its `.dark .pele` rule is declared on the SVG itself.
 - Pele is given the theme's font for text measurement. Without it, labels overflow their boxes.
 - **Colour carries the level.** Each kind has one palette hue: person violet, system blue, container teal,
@@ -180,7 +180,7 @@ containers and modules as components, with `import` as the reference pathway.
 
 Split it in three, and only when a second consumer turns up:
 
-1. **Pele theme → design system.** The `--pele-*` → `--ds-*` mapping in `c4.css` belongs in
+1. **Pele theme → design system.** The `--pele-*` → `--ds-*` mapping in `styles/c4.css` belongs in
    `@rtkelly13/design-system` as a `pele.css` per level, generated alongside `theme.css`. The design system
    then owns how diagrams look everywhere.
 2. **Pele bundle and C4 link lint → mermaid-toolkit.** The toolkit already wraps pele. It should publish the

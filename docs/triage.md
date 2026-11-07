@@ -61,11 +61,11 @@ The catalogue records nine interface references across Gmail, GitHub, Graphite, 
 ```bash
 pnpm install --frozen-lockfile
 pnpm web:typecheck
-pnpm web:build
-pnpm web:check
+pnpm css:build
+pnpm css:check
 ```
 
-The compiled JS/CSS/fonts and their licenses are committed under `src/rig/image_drift/templates/app_assets/`, so the Python server does not need Node at runtime. `web:check` rebuilds into `temp/` and compares bytes. CI checks both TypeScript and committed assets. The gallery has its separate existing `pnpm css:build` pipeline.
+The compiled JS/CSS/fonts and their licenses are committed under `src/rig/image_drift/templates/app_assets/`, so the Python server does not need Node at runtime. `css:build` also compiles the gallery and C4 viewer stylesheets; `css:check` rebuilds every output into `temp/` and compares bytes. CI checks both TypeScript and committed assets.
 
 ## Repository scope and estate connectivity
 

@@ -252,7 +252,7 @@ function RunOutputView({ job, runId, onClose }: { job: string; runId: string; on
       ) : null}
       {output === undefined && !error ? <Spinner label="Loading output" /> : null}
       {output ? (
-        <CodeBlock title={title} copyable className="max-h-[32rem] overflow-auto">
+        <CodeBlock title={title} copyable className="max-h-128 overflow-auto">
           {output.output ?? 'This run saved no output, or it has since been pruned.'}
         </CodeBlock>
       ) : null}

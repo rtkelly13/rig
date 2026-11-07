@@ -1,0 +1,10 @@
+/* Tailwind source for the C4 viewer's stylesheet.
+ *
+ * `pnpm css:build` compiles it to src/rig/c4_okf/static/c4.css, which the
+ * viewer links. The page is hand-built DOM, not Tailwind markup, so this entry
+ * takes only the theme layers: the @rtkelly-labs/design-system tokens that
+ * c4.css reads, without preflight or utilities restyling the page.
+ */
+@import "tailwindcss/theme.css" layer(theme);
+@import "@rtkelly-labs/design-system/theme.css";
+@import "./c4.css";

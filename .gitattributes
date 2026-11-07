@@ -3,3 +3,6 @@
 # Compiled rig SPA artifacts are committed so the Python server needs no Node runtime.
 src/rig/image_drift/templates/app_assets/*.js -text linguist-generated=true
 src/rig/image_drift/templates/app_assets/*.css -text linguist-generated=true
+# Compiled Tailwind stylesheets, built from styles/*.src.css by `pnpm css:build`.
+src/rig/image_drift/templates/gallery.css -text linguist-generated=true
+src/rig/c4_okf/static/c4.css -text linguist-generated=true

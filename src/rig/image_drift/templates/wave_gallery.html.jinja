@@ -4,7 +4,7 @@
 {% block subtitle %}Multi-Candidate Wave Preview Gallery &mdash; Candidate Selection &amp; Feature Matrix{% endblock %}
 
 {% block metric_note %}
-  <p class="text-[0.82rem] leading-relaxed text-muted">
+  <p class="text-caption leading-relaxed text-content-secondary">
     Composite score = {{ frame_weight }}% full-frame RMSE + {{ feature_weight }}% mean per-feature
     RMSE. Full-frame RMSE alone is dominated by the card and tiling, so small features cannot
     move it.
@@ -13,7 +13,7 @@
 
 {% block content %}
 {% if tied %}
-  <div class="mb-2.5 w-full max-w-[1200px] rounded-xl border border-[#f59e0b] bg-warn/10 px-[18px] py-3.5 text-[0.88rem] leading-relaxed text-warn">
+  <div class="mb-2.5 w-full max-w-300 rounded-xl border border-intent-warning bg-intent-warning/10 px-4.5 py-3.5 text-caption leading-relaxed text-intent-warning">
     &#9878; Composite scores span only {{ "%.2f"|format(spread) }}pp &mdash; below the
     {{ tie_threshold }}pp significance threshold. These candidates are
     <strong>statistically indistinguishable</strong>; the builder default was used rather than
@@ -22,34 +22,34 @@
 {% endif %}
 
   <h2 class="section-title">Canonical Reference vs Candidate Wave</h2>
-  <div class="mb-7 grid w-full max-w-[1300px] grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
+  <div class="mb-7 grid w-full max-w-325 grid-cols-auto-fit gap-5">
     {#
       The reference hero belongs in this grid: without it the gallery asks the
       reader to judge fidelity with nothing to judge against.
     #}
-    <article class="panel card-shadow relative flex flex-col items-center border-2 border-magenta p-5 shadow-magenta/25">
-      <div class="ribbon bg-linear-to-r from-magenta to-magenta-deep text-white">&#128204; Canonical Reference</div>
-      <h3 class="mt-3 mb-1.5 text-center text-base text-paper">{{ reference_name }}</h3>
-      <p class="mb-3 min-h-[34px] text-center text-[0.78rem] text-muted">The source artwork every candidate is scored against.</p>
-      <img class="size-[210px] rounded-xl object-contain" src="{{ reference_hero }}" alt="Canonical reference">
+    <article class="panel card-shadow relative flex flex-col items-center border-2 border-accent-tertiary p-5 shadow-accent-tertiary/25">
+      <div class="ribbon bg-linear-to-r from-accent-tertiary to-palette-magenta text-content-inverse">&#128204; Canonical Reference</div>
+      <h3 class="mt-3 mb-1.5 text-center text-body text-content-primary">{{ reference_name }}</h3>
+      <p class="mb-3 min-h-8.5 text-center text-caption text-content-secondary">The source artwork every candidate is scored against.</p>
+      <img class="size-52.5 rounded-xl object-contain" src="{{ reference_hero }}" alt="Canonical reference">
       <div class="badge-ref">Composite: 0.00% (by definition)</div>
-      <div class="mt-1.5 text-[0.72rem] text-faint">&nbsp;</div>
+      <div class="mt-1.5 text-caption text-content-muted">&nbsp;</div>
     </article>
 
     {% for candidate in candidates %}
-    <article class="panel card-shadow relative flex flex-col items-center p-5{% if candidate.is_chosen %} border-2 border-accent{% endif %}">
+    <article class="panel card-shadow relative flex flex-col items-center p-5{% if candidate.is_chosen %} border-2 border-accent-primary{% endif %}">
       {%- if candidate.is_chosen %}
-      <div class="ribbon bg-linear-to-r from-accent to-accent-deep text-ink">
+      <div class="ribbon bg-linear-to-r from-accent-primary to-palette-blue text-content-inverse">
         {%- if tied %}&#9878; Default (tied){% else %}&#127942; Best Match{% endif -%}
       </div>
       {%- endif %}
-      <h3 class="mt-3 mb-1.5 text-center text-base text-paper">{{ candidate.name }}</h3>
-      <p class="mb-3 min-h-[34px] text-center text-[0.78rem] text-muted">{{ candidate.description }}</p>
-      <img class="size-[210px] rounded-xl object-contain" src="{{ candidate.hero }}" alt="{{ candidate.name }}">
+      <h3 class="mt-3 mb-1.5 text-center text-body text-content-primary">{{ candidate.name }}</h3>
+      <p class="mb-3 min-h-8.5 text-center text-caption text-content-secondary">{{ candidate.description }}</p>
+      <img class="size-52.5 rounded-xl object-contain" src="{{ candidate.hero }}" alt="{{ candidate.name }}">
       <div class="{{ candidate.badge_class }}">
         Composite: {{ "%.2f"|format(candidate.composite_pct) }}%
       </div>
-      <div class="mt-1.5 text-[0.72rem] text-faint">Full frame: {{ "%.2f"|format(candidate.full_pct) }}%</div>
+      <div class="mt-1.5 text-caption text-content-muted">Full frame: {{ "%.2f"|format(candidate.full_pct) }}%</div>
     </article>
     {% endfor %}
   </div>

@@ -251,7 +251,7 @@ function App() {
                   </span>
                   <a
                     href="/triage/inbox"
-                    className="mt-1 flex items-center gap-1.5 text-[11px] text-content-secondary no-underline hover:text-content-primary [&_svg]:size-3"
+                    className="mt-1 flex items-center gap-1.5 text-caption text-content-secondary no-underline hover:text-content-primary [&_svg]:size-3"
                     onClick={(event) => {
                       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                       event.preventDefault();

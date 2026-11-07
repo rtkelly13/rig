@@ -39,15 +39,15 @@ COMPONENTS = (
     "scroll-x",
 )
 
-# @theme tokens the templates reference as colour utilities.
+# Design-system tokens behind the colour utilities the templates use.
 TOKENS = (
-    "--color-ink",
-    "--color-panel",
-    "--color-edge",
-    "--color-accent",
-    "--color-magenta",
-    "--color-muted",
-    "--color-good",
+    "--ds-surface-base",
+    "--ds-surface-raised",
+    "--ds-border-subtle",
+    "--ds-accent-primary",
+    "--ds-accent-tertiary",
+    "--ds-text-secondary",
+    "--ds-intent-success",
 )
 
 
@@ -65,7 +65,9 @@ def test_source_configures_tailwind_in_css_not_javascript() -> None:
     """Tailwind v4 is configured in CSS; a JS config file would be a regression."""
     source = SOURCE.read_text(encoding="utf-8")
     assert '@import "tailwindcss"' in source
-    assert "@theme" in source
+    assert '@import "@rtkelly-labs/design-system/theme.css"' in source
+    # Tokens come from the design system, so the gallery declares none of its own.
+    assert "@theme" not in source
     assert not (REPO_ROOT / "tailwind.config.js").exists()
     assert not (REPO_ROOT / "tailwind.config.ts").exists()
 

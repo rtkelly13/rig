@@ -2,28 +2,28 @@
   Feature matrix: one row per region, canonical reference first, then each
   candidate cropped from the SAME box so the comparison is like-for-like.
 #}
-<div class="flex w-full max-w-[1300px] flex-col gap-5">
+<div class="flex w-full max-w-325 flex-col gap-5">
   {% for region in regions %}
-  <div class="panel flex flex-col items-center p-[18px]">
-    <h3 class="m-0 mb-3.5 text-center text-base text-accent-deep">
+  <div class="panel flex flex-col items-center p-4.5">
+    <h3 class="m-0 mb-3.5 text-center text-body text-accent-primary">
       {{ region.label }}
       {%- if region.has_ref_override %}
-      <span class="ml-1.5 rounded-md border border-warn px-1.5 py-px text-[0.68rem] uppercase text-warn">reference box offset</span>
+      <span class="ml-1.5 rounded-md border border-intent-warning px-1.5 py-px text-caption uppercase text-intent-warning">reference box offset</span>
       {%- endif %}
     </h3>
     <div class="flex w-full flex-wrap items-start justify-center gap-3.5">
       <div class="flex flex-col items-center">
-        <img class="crop-tile border-magenta" src="{{ reference_crops[region.key] }}" alt="Reference {{ region.key }}">
-        <span class="mt-1.5 max-w-[120px] text-center text-[0.72rem] text-muted">Canonical Reference</span>
-        <span class="mt-1.5 text-[0.72rem] font-bold text-slate-300">&mdash;</span>
+        <img class="crop-tile border-accent-tertiary" src="{{ reference_crops[region.key] }}" alt="Reference {{ region.key }}">
+        <span class="mt-1.5 max-w-30 text-center text-caption text-content-secondary">Canonical Reference</span>
+        <span class="mt-1.5 text-caption font-bold text-content-secondary">&mdash;</span>
       </div>
-      <div class="mx-1.5 h-[100px] w-0.5 bg-edge"></div>
+      <div class="mx-1.5 h-25 w-0.5 bg-edge-subtle"></div>
       {% for candidate in candidates %}
       <div class="flex flex-col items-center">
         <img class="crop-tile" src="{{ candidate.feature_crops[region.key] }}"
              alt="{{ candidate.key }} {{ region.key }}">
-        <span class="mt-1.5 max-w-[120px] text-center text-[0.72rem] text-muted">{{ candidate.short_name }}</span>
-        <span class="mt-1.5 text-[0.72rem] font-bold text-slate-300">{{ "%.1f"|format(candidate.per_feature[region.key]) }}%</span>
+        <span class="mt-1.5 max-w-30 text-center text-caption text-content-secondary">{{ candidate.short_name }}</span>
+        <span class="mt-1.5 text-caption font-bold text-content-secondary">{{ "%.1f"|format(candidate.per_feature[region.key]) }}%</span>
       </div>
       {% endfor %}
     </div>

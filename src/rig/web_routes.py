@@ -166,8 +166,6 @@ def frontend_files(templates: Path) -> tuple[Path, ...]:
             "index.html",
             "studio.js",
             "studio.css",
-            "design_system/theme.css",
-            "design_system/styles.css",
             "gallery.css",
             "app_assets/app.js",
             "app_assets/app.css",

@@ -34,11 +34,6 @@ def test_environment(tmp_path: Path):
     (templates_dir / "studio.css").write_text("body { background: #0a0a1a; }")
     (templates_dir / "studio.js").write_text("console.log('studio ready');")
 
-    ds_dir = templates_dir / "design_system"
-    ds_dir.mkdir()
-    (ds_dir / "theme.css").write_text(":root { --ds-surface-base: #0a0a1a; }")
-    (ds_dir / "styles.css").write_text(".ds-btn { border-radius: 0px; }")
-
     # Setup mock project: test-brand
     proj_dir = assets_root / "test-brand"
     proj_dir.mkdir()
@@ -110,10 +105,6 @@ def test_serve_static_files(running_server) -> None:
     js_req = urllib.request.urlopen(f"{base_url}/static/studio.js")
     assert js_req.status == 200
     assert "console.log" in js_req.read().decode("utf-8")
-
-    ds_req = urllib.request.urlopen(f"{base_url}/static/design_system/theme.css")
-    assert ds_req.status == 200
-    assert "--ds-surface-base" in ds_req.read().decode("utf-8")
 
 
 def test_serve_media_files(running_server) -> None:
