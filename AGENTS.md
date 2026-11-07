@@ -23,7 +23,9 @@ Every CLI's `--help` documents its flags, findings and defaults: read it before 
 
 [docs/development.md](docs/development.md) has the rest: pytest markers and which tests run where,
 the Windows-safe test rules, every quality gate, and the Tailwind gallery build. Read it before
-writing tests. Read [docs/python-types.md](docs/python-types.md) before writing Python in `src/`:
+writing tests. Shared test doubles live in `tests/fakes/` (one per port) and given/when/then
+steps in `tests/behaviour/steps/`; reuse them ([docs/testing.md](docs/testing.md#shared-fakes-and-steps)).
+Read [docs/python-types.md](docs/python-types.md) before writing Python in `src/`:
 basedpyright is strict with `Any` banned, and the ratchet blocks the shapes it lists.
 
 ## Working Rules

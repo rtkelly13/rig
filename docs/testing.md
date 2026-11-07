@@ -31,6 +31,22 @@ Good candidates are the behaviours whose failure loses work or leaks something: 
 branch cleanup, workspace restore with window reuse, and governance sync (what it changes and what
 it never touches).
 
+### Shared fakes and steps
+
+Tests share one vocabulary rather than each file building its own doubles
+([target-architecture.md](target-architecture.md#behaviour-suites-share-one-vocabulary)):
+
+- **`tests/fakes/`** holds one stand-in per port, typed as that port with an `as_port()` so a
+  signature change breaks the fake visibly: `gh_runner.FakeGh` for `rig.proc.GhRunner`,
+  `gh_graphql.FakeGitHub` for `rig.gh_threads.github.GraphQL`. Git has no fake class: `git.py`
+  runs real git through `rig.proc` against a temp clone with a bare origin, and `tests/conftest.py`
+  serves that clone as the `clone` fixture.
+- **`tests/behaviour/steps/`** holds typed given/when/then functions over those fakes, such as
+  `steps.git.add_worktree`, `commit` and `make_dirty`. Feature steps and example tests call them;
+  they never import helpers from another `test_*.py` module.
+
+A new scenario reuses a fake or a step. Extend the shared one rather than writing a second copy inline.
+
 ### Properties: state the rule, then let Hypothesis find the counterexample
 
 Useful shapes, each with an example in `tests/desktop_manager/test_placement_properties.py`:

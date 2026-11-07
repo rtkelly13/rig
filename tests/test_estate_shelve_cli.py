@@ -21,13 +21,10 @@ from typer.testing import CliRunner
 from rig.estate import shelf_store, shelve, shelve_cli
 from rig.estate.prs import PullRequest
 from rig.typed_json import JsonValue
-from tests import test_estate_shelve as shelve_tests
-from tests.test_estate_shelve import _commit, _dirty, _git, _worktree
+from tests.behaviour.steps.git import add_worktree, commit, make_dirty
+from tests.fakes.git import git
 
 pytestmark = pytest.mark.ci
-
-#: The real clone and bare origin the shelve tests build.
-clone = shelve_tests.clone
 
 runner = CliRunner()
 
@@ -109,11 +106,11 @@ def test_a_clone_with_no_linked_worktrees_plans_nothing(clone: pathlib.Path) -> 
 
 
 def test_dry_run_plans_every_linked_worktree_and_touches_nothing(clone: pathlib.Path) -> None:
-    clean = _worktree(clone, "clean")
-    ahead = _worktree(clone, "ahead")
-    _commit(ahead, "local.txt", "only here\n")
-    dirty = _worktree(clone, "dirty")
-    _dirty(dirty)
+    clean = add_worktree(clone, "clean")
+    ahead = add_worktree(clone, "ahead")
+    commit(ahead, "local.txt", "only here\n")
+    dirty = add_worktree(clone, "dirty")
+    make_dirty(dirty)
 
     code, plans = _shelve("--repo", str(clone))
 
@@ -130,8 +127,8 @@ def test_dry_run_plans_every_linked_worktree_and_touches_nothing(clone: pathlib.
 
 
 def test_apply_shelves_and_removes_each_worktree(clone: pathlib.Path) -> None:
-    dirty = _worktree(clone, "dirty")
-    _dirty(dirty)
+    dirty = add_worktree(clone, "dirty")
+    make_dirty(dirty)
 
     code, results = _shelve("--repo", str(clone), "--apply")
 
@@ -143,7 +140,7 @@ def test_apply_shelves_and_removes_each_worktree(clone: pathlib.Path) -> None:
 
 
 def test_a_worktree_needing_a_decision_exits_2_and_says_why(clone: pathlib.Path) -> None:
-    secret = _worktree(clone, "secret")
+    secret = add_worktree(clone, "secret")
     (secret / ".env").write_text("TOKEN=x\n", encoding="utf-8")
 
     code, plans = _shelve("--repo", str(clone))
@@ -155,7 +152,7 @@ def test_a_worktree_needing_a_decision_exits_2_and_says_why(clone: pathlib.Path)
 
 
 def test_discard_ignored_resolves_that_decision(clone: pathlib.Path) -> None:
-    secret = _worktree(clone, "secret")
+    secret = add_worktree(clone, "secret")
     (secret / ".env").write_text("TOKEN=x\n", encoding="utf-8")
 
     code, plans = _shelve("--repo", str(clone), "--discard-ignored")
@@ -165,7 +162,7 @@ def test_discard_ignored_resolves_that_decision(clone: pathlib.Path) -> None:
 
 
 def test_a_recently_touched_worktree_is_held_by_the_default_idle_guard(clone: pathlib.Path) -> None:
-    _worktree(clone, "live")
+    add_worktree(clone, "live")
 
     code, out = _run("shelve", "--json", "--repo", str(clone))
 
@@ -174,7 +171,7 @@ def test_a_recently_touched_worktree_is_held_by_the_default_idle_guard(clone: pa
 
 
 def test_a_known_pr_is_named_in_the_plan(clone: pathlib.Path, no_github: dict[str, PullRequest]) -> None:
-    _worktree(clone, "feat")
+    add_worktree(clone, "feat")
     no_github["feat"] = PullRequest(number=42, state="OPEN", head_ref="feat")
 
     _, plans = _shelve("--repo", str(clone))
@@ -183,8 +180,8 @@ def test_a_known_pr_is_named_in_the_plan(clone: pathlib.Path, no_github: dict[st
 
 
 def test_paths_scope_to_the_worktree_holding_each_path(clone: pathlib.Path) -> None:
-    one = _worktree(clone, "one")
-    _worktree(clone, "two")
+    one = add_worktree(clone, "one")
+    add_worktree(clone, "two")
     (one / "sub").mkdir()
 
     code, plans = _shelve(str(one / "sub"))
@@ -210,8 +207,8 @@ def test_a_path_outside_any_repository_is_refused(tmp_path: pathlib.Path) -> Non
 
 
 def test_the_table_reports_each_worktree_and_tallies_the_plans(clone: pathlib.Path) -> None:
-    _worktree(clone, "clean")
-    _dirty(_worktree(clone, "dirty"))
+    add_worktree(clone, "clean")
+    make_dirty(add_worktree(clone, "dirty"))
 
     code, out = _run("shelve", "--idle", "0", "--repo", str(clone))
 
@@ -222,7 +219,7 @@ def test_the_table_reports_each_worktree_and_tallies_the_plans(clone: pathlib.Pa
 
 
 def test_the_applied_table_reports_outcomes(clone: pathlib.Path) -> None:
-    _worktree(clone, "clean")
+    add_worktree(clone, "clean")
 
     code, out = _run("shelve", "--idle", "0", "--repo", str(clone), "--apply")
 
@@ -239,8 +236,8 @@ def test_the_applied_table_reports_outcomes(clone: pathlib.Path) -> None:
 @pytest.fixture
 def shelved_dirty(clone: pathlib.Path) -> pathlib.Path:
     """A dirty worktree, shelved and removed. Returns where it was."""
-    dirty = _worktree(clone, "dirty")
-    _dirty(dirty)
+    dirty = add_worktree(clone, "dirty")
+    make_dirty(dirty)
     code, _ = _shelve("--repo", str(clone), "--apply")
     assert code == 0
     return dirty
@@ -274,12 +271,12 @@ def test_a_snapshot_is_never_pruned(clone: pathlib.Path, shelved_dirty: pathlib.
 
 
 def test_prune_drops_a_shelf_whose_base_landed_only_with_apply(clone: pathlib.Path) -> None:
-    ahead = _worktree(clone, "ahead")
-    _commit(ahead, "local.txt", "only here\n")
+    ahead = add_worktree(clone, "ahead")
+    commit(ahead, "local.txt", "only here\n")
     assert _shelve("--repo", str(clone), "--apply")[0] == 0
     [shelf] = shelf_store.list_shelves(clone)
-    _git(["push", "-q", "origin", f"{shelf.trailers.base}:main"], clone)
-    _git(["fetch", "-q", "origin"], clone)
+    git(["push", "-q", "origin", f"{shelf.trailers.base}:main"], clone)
+    git(["fetch", "-q", "origin"], clone)
 
     _, dry = _run("shelved", "--repo", str(clone), "--prune", "--json")
     _, applied = _run("shelved", "--repo", str(clone), "--prune", "--apply", "--json")
@@ -337,7 +334,7 @@ def test_unshelve_of_an_unknown_name_is_refused(clone: pathlib.Path, shelved_dir
 
 def test_a_bare_name_shared_by_two_users_is_ambiguous(clone: pathlib.Path, shelved_dirty: pathlib.Path) -> None:
     sha = shelf_store.remote_shelves(clone)["refs/heads/shelved/t.user/dirty"]
-    _git(["push", "-q", "origin", f"{sha}:refs/heads/shelved/someone/dirty"], clone)
+    git(["push", "-q", "origin", f"{sha}:refs/heads/shelved/someone/dirty"], clone)
 
     with pytest.raises(typer.BadParameter, match="matches 2 shelves"):
         shelve_cli._find_shelf(clone, "dirty", "nobody")

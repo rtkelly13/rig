@@ -19,7 +19,7 @@ from rig.estate import busy, cli, discovery, prs
 from rig.estate import downloads as downloads_mod
 from rig.estate.reclaim import Reclaimable
 from rig.typed_json import JsonValue
-from tests.test_estate_shelve import _git
+from tests.fakes.git import git
 
 
 @pytest.fixture(autouse=True)
@@ -37,18 +37,18 @@ def _clone(code: pathlib.Path, name: str) -> pathlib.Path:
     """A clone of a fresh bare origin, with main pushed and `node_modules/` ignored."""
     origin = code.parent / "origins" / f"{name}.git"
     origin.parent.mkdir(exist_ok=True)
-    _git(["init", "-q", "--bare", "-b", "main", str(origin)], code.parent)
+    git(["init", "-q", "--bare", "-b", "main", str(origin)], code.parent)
     root = code / name
     root.mkdir(parents=True)
-    _git(["init", "-q", "-b", "main"], root)
+    git(["init", "-q", "-b", "main"], root)
     for key, value in [("user.email", "t.user@example.com"), ("user.name", "T"), ("core.autocrlf", "false")]:
-        _git(["config", key, value], root)
-    _git(["remote", "add", "origin", str(origin)], root)
+        git(["config", key, value], root)
+    git(["remote", "add", "origin", str(origin)], root)
     (root / ".gitignore").write_text("node_modules/\n", encoding="utf-8")
     (root / "README.md").write_text("hi\n", encoding="utf-8")
-    _git(["add", "."], root)
-    _git(["commit", "-qm", "first"], root)
-    _git(["push", "-q", "-u", "origin", "main"], root)
+    git(["add", "."], root)
+    git(["commit", "-qm", "first"], root)
+    git(["push", "-q", "-u", "origin", "main"], root)
     return root
 
 
@@ -66,10 +66,10 @@ class Estate:
         self.code = code
         self.safe = _clone(code, "safe")
         self.risky = _clone(code, "risky")
-        _git(["switch", "-q", "-c", "wip"], self.risky)
+        git(["switch", "-q", "-c", "wip"], self.risky)
         (self.risky / "wip.txt").write_text("only here\n", encoding="utf-8")
-        _git(["add", "wip.txt"], self.risky)
-        _git(["commit", "-qm", "wip"], self.risky)
+        git(["add", "wip.txt"], self.risky)
+        git(["commit", "-qm", "wip"], self.risky)
         (self.risky / "README.md").write_text("edited\n", encoding="utf-8")
         self.clones = [self.safe, self.risky]
 
@@ -159,7 +159,7 @@ def test_audit_table_puts_the_riskiest_clone_first(estate: Estate) -> None:
 
 def test_the_same_origin_cloned_twice_is_reported_as_a_duplicate(estate: Estate, tmp_path: pathlib.Path) -> None:
     twin = estate.code / "twin"
-    _git(["clone", "-q", _git(["remote", "get-url", "origin"], estate.safe), str(twin)], tmp_path)
+    git(["clone", "-q", git(["remote", "get-url", "origin"], estate.safe), str(twin)], tmp_path)
     estate.clones.append(twin)
 
     _, out = _run("audit", "--root", str(estate.code))
@@ -194,9 +194,9 @@ def test_risk_names_the_push_that_saves_each_branch(estate: Estate) -> None:
 
 
 def test_risk_reports_a_clone_with_no_remote_and_its_stash(estate: Estate) -> None:
-    _git(["remote", "remove", "origin"], estate.safe)
+    git(["remote", "remove", "origin"], estate.safe)
     (estate.safe / "README.md").write_text("stashed\n", encoding="utf-8")
-    _git(["stash", "push", "-q", "-m", "test-stash"], estate.safe)
+    git(["stash", "push", "-q", "-m", "test-stash"], estate.safe)
     estate.clones.remove(estate.risky)
 
     _, out = _run("risk", "--root", str(estate.code))
@@ -249,8 +249,8 @@ def _worktree_entry(clone: pathlib.Path, path: pathlib.Path) -> Reclaimable:
 @pytest.fixture
 def temp_worktree(estate: Estate) -> pathlib.Path:
     path = estate.safe / "temp" / "wt"
-    _git(["worktree", "add", "-q", "-b", "wt", str(path)], estate.safe)
-    _git(["push", "-q", "-u", "origin", "wt"], path)
+    git(["worktree", "add", "-q", "-b", "wt", str(path)], estate.safe)
+    git(["push", "-q", "-u", "origin", "wt"], path)
     return path
 
 
@@ -264,8 +264,8 @@ def test_a_dirty_worktree_is_refused_unless_forced(estate: Estate, temp_worktree
 
 def test_a_worktree_holding_the_only_copy_of_a_commit_is_refused(estate: Estate, temp_worktree: pathlib.Path) -> None:
     (temp_worktree / "new.txt").write_text("new\n", encoding="utf-8")
-    _git(["add", "new.txt"], temp_worktree)
-    _git(["commit", "-qm", "local"], temp_worktree)
+    git(["add", "new.txt"], temp_worktree)
+    git(["commit", "-qm", "local"], temp_worktree)
 
     outcome = cli._reclaim_one(estate.safe, _worktree_entry(estate.safe, temp_worktree), apply=True)
 
@@ -278,7 +278,7 @@ def test_a_clean_pushed_worktree_is_removed_through_git(estate: Estate, temp_wor
 
     assert outcome == cli._ReclaimOutcome("removed", "bold green")
     assert not temp_worktree.exists()
-    assert "temp/wt" not in _git(["worktree", "list"], estate.safe)
+    assert "temp/wt" not in git(["worktree", "list"], estate.safe)
 
 
 def test_an_entry_resolving_outside_the_clone_is_never_removed(estate: Estate, tmp_path: pathlib.Path) -> None:
@@ -326,15 +326,15 @@ def test_tidy_on_a_tidy_clone_has_nothing_to_do(estate: Estate, monkeypatch: pyt
 
 
 def test_tidy_all_refuses_to_touch_work_found_nowhere_else(estate: Estate) -> None:
-    _git(["switch", "-q", "main"], estate.risky)
-    _git(["stash", "push", "-q", "-m", "keep"], estate.risky)
+    git(["switch", "-q", "main"], estate.risky)
+    git(["stash", "push", "-q", "-m", "keep"], estate.risky)
 
     code, out = _run("tidy", "--root", str(estate.code), "--all", "--apply")
 
     assert code == 0
     assert "Tidy" in out
     assert "dry run" not in out
-    assert _git(["branch", "--list", "wip"], estate.risky) != ""
+    assert git(["branch", "--list", "wip"], estate.risky) != ""
 
 
 def test_doctor_refuses_a_folder_that_is_not_a_checkout(tmp_path: pathlib.Path) -> None:
@@ -371,7 +371,7 @@ def test_doctor_tabulates_findings_with_their_fix(estate: Estate) -> None:
 
 
 def test_sync_fetches_every_clone_and_names_the_ones_that_fail(estate: Estate, tmp_path: pathlib.Path) -> None:
-    _git(["remote", "set-url", "origin", str(tmp_path / "gone.git")], estate.risky)
+    git(["remote", "set-url", "origin", str(tmp_path / "gone.git")], estate.risky)
 
     code, out = _run("sync", "--root", str(estate.code))
 

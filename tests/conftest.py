@@ -226,3 +226,11 @@ def work_scope() -> tuple[str, ...]:
     config = Path(os.environ["WORKSPACE_HOME"]) / "config.json"
     _ = config.write_text(f'{{"tools": {{"estate": {{"work_dirs": ["{dirs[0]}", "{dirs[1]}"]}}}}}}', encoding="utf-8")
     return dirs
+
+
+@pytest.fixture
+def clone(tmp_path: Path) -> Path:
+    """A real clone with `main` pushed to a bare origin (`tests.fakes.git.clone_with_origin`)."""
+    from tests.fakes.git import clone_with_origin
+
+    return clone_with_origin(tmp_path)
