@@ -9,19 +9,15 @@ import pathlib
 from dataclasses import asdict, dataclass
 from typing import Annotated
 
-import jinja2
 from pydantic import Field
 
 from rig import proc
 from rig.gh_origin import origin_args
+from rig.repo_governance.oss_templates import get_jinja_env
+from rig.repo_governance.policy_config import PolicyConfig, load_policy_config
 
 TEMPLATES_DIR = pathlib.Path(__file__).parent / "templates"
-jinja_env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(TEMPLATES_DIR),
-    autoescape=jinja2.select_autoescape(),
-    trim_blocks=True,
-    lstrip_blocks=True,
-)
+jinja_env = get_jinja_env(TEMPLATES_DIR)
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,12 +43,11 @@ class _GhRepoView:
     license_info: Annotated[_License | None, Field(alias="licenseInfo")] = None
 
 
-def detect_repo_metadata(repo_path: pathlib.Path) -> RepoMetadata:
-    """Inspects local repository files and GitHub remote metadata."""
+def detect_repo_metadata(repo_path: pathlib.Path, cfg: PolicyConfig | None = None) -> RepoMetadata:
+    """Inspects local repository files and GitHub remote metadata; the contact address is the policy's."""
     repo_name = repo_path.name
     is_public = False
     license_name = "MIT"
-    author_email = "94ryan.kelly@gmail.com"
 
     # 1. Query GitHub CLI if available, about origin rather than an `upstream` remote (rig.gh_origin).
     # Falls back to local inspection when gh is missing or fails.
@@ -84,7 +79,7 @@ def detect_repo_metadata(repo_path: pathlib.Path) -> RepoMetadata:
         repo_name=repo_name,
         is_public=is_public,
         license=license_name,
-        author_email=author_email,
+        author_email=(cfg or load_policy_config()).contact_email(repo_name),
         supported_runtimes=supported_runtimes,
     )
 

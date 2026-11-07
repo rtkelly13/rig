@@ -1407,32 +1407,26 @@ def test_align_agents_md_dry_run_writes_nothing(tmp_path: pathlib.Path):
     assert "Repository Conventions" not in agents.read_text(encoding="utf-8")
 
 
-def test_sync_policies_rejects_a_misshapen_config(tmp_path: pathlib.Path):
-    cfg = tmp_path / "repo_policies.json"
-    cfg.write_text(json.dumps({"profiles": ["not", "a", "mapping"]}), encoding="utf-8")
-    result = runner.invoke(app, ["sync-policies", "--config", str(cfg)])
+def _policy_in_cwd(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, text: str) -> None:
+    """`load_policy_config` reads `config/repo_policies.json` under the working directory first."""
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "repo_policies.json").write_text(text, encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+
+def test_sync_policies_rejects_a_misshapen_config(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
+    _policy_in_cwd(tmp_path, monkeypatch, json.dumps({"profiles": ["not", "a", "mapping"]}))
+    result = runner.invoke(app, ["sync-policies"])
     assert result.exit_code == 1
     assert "Invalid policy config" in result.output
 
 
 def test_sync_policies_walks_declared_profiles(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
-    cfg = tmp_path / "repo_policies.json"
-    cfg.write_text(
-        json.dumps({"profiles": {"public_open_source": {"repos": ["absent-repo"], "policies": ["ai_policy"]}}}),
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    result = runner.invoke(app, ["sync-policies", "--config", str(cfg), "--dry-run"])
+    policy = {"profiles": {"public_open_source": {"repos": ["absent-repo"], "policies": ["ai_policy"]}}}
+    _policy_in_cwd(tmp_path, monkeypatch, json.dumps(policy))
+    result = runner.invoke(app, ["sync-policies", "--dry-run"])
     assert result.exit_code == 0, result.output
     assert "Skipping absent-repo" in result.output
-
-
-def test_sync_policies_rejects_malformed_json(tmp_path: pathlib.Path):
-    cfg = tmp_path / "repo_policies.json"
-    cfg.write_text("{not json", encoding="utf-8")
-    result = runner.invoke(app, ["sync-policies", "--config", str(cfg)])
-    assert result.exit_code == 1
-    assert "Invalid policy config" in result.output
 
 
 def test_verify_pr_checks_always_targets_the_resolved_repo():

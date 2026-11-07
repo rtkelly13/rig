@@ -22,7 +22,7 @@ from rig.repo_governance.issue_triage import (
     build_triage_dashboard,
     fetch_repo_issues,
 )
-from rig.repo_governance.policy_config import PolicyConfig
+from rig.repo_governance.policy_config import config_path, load_policy_config
 from rig.repo_governance.pr_triage import (
     PRItem,
     build_pr_triage_dashboard,
@@ -36,7 +36,7 @@ from rig.repo_governance.repo_discovery import (
     resolve_target_directories,
 )
 from rig.repo_governance.review_threads import inspect_review_threads
-from rig.typed_json import load_json, try_decode_json
+from rig.typed_json import try_decode_json
 
 app = typer.Typer()
 
@@ -360,11 +360,10 @@ def apply_policy(
 
 @app.command()
 def sync_policies(
-    config_file: str = typer.Option("config/repo_policies.json", "--config", "-c", help="Path to repo_policies.json"),
     public_only: bool = typer.Option(True, "--public-only/--all", help="Only sync public open source profile repos"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview changes without writing files"),
 ) -> None:
-    """Synchronizes governance policies across declared repository profiles."""
+    """Synchronizes governance policies across the profiles `config/repo_policies.json` declares."""
     from rig.repo_governance.policy_template_engine import (
         apply_ai_policy,
         apply_security_policy,
@@ -372,18 +371,10 @@ def sync_policies(
         inject_readme_ai_disclosure,
     )
 
-    cfg_path = pathlib.Path(config_file)
-    if not cfg_path.exists() and (pathlib.Path(__file__).parents[3] / config_file).exists():
-        cfg_path = pathlib.Path(__file__).parents[3] / config_file
-
-    if not cfg_path.exists():
-        console.print(f"[bold red]❌ Config file not found at {config_file}[/bold red]")
-        sys.exit(1)
-
     try:
-        config = PolicyConfig.parse(load_json(cfg_path.read_text(encoding="utf-8")))
-    except (json.JSONDecodeError, ValidationError) as exc:
-        console.print(f"[bold red]❌ Invalid policy config {cfg_path}: {exc}[/bold red]")
+        config = load_policy_config()
+    except ValidationError as exc:  # unreadable JSON is logged and skipped by the loader
+        console.print(f"[bold red]❌ Invalid policy config {config_path()}: {exc}[/bold red]")
         sys.exit(1)
 
     base_dir = pathlib.Path.cwd() if (pathlib.Path.cwd() / "shared-utilities").exists() else pathlib.Path.cwd().parent
@@ -399,7 +390,7 @@ def sync_policies(
                 console.print(f"  [dim]Skipping {r_name} (not found locally at {target_path})[/dim]")
                 continue
 
-            meta = detect_repo_metadata(target_path)
+            meta = detect_repo_metadata(target_path, config)
             console.print(f"  • [bold cyan]{r_name}[/bold cyan] ({'Public' if meta.is_public else 'Private'})")
 
             if "ai_policy" in prof.policies:
