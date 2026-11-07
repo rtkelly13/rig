@@ -20,6 +20,7 @@ from pydantic import BeforeValidator, TypeAdapter
 
 from rig.repo_governance.agents_md_rules import AgentsMdRules
 from rig.repo_governance.fork_policy import ForkSpec
+from rig.repo_governance.github_policy import LabelSpec, MergeSettings, PagesPolicy
 from rig.repo_governance.policy_key import bare_name, names_match
 from rig.repo_governance.repo_selection import ManageDecision, RepoSelectionRules, should_manage_repo
 from rig.typed_json import load_json
@@ -269,36 +270,6 @@ class VercelGatingRules:
 
     team_id: str = ""
     window_days: int = 3
-
-
-@dataclass(frozen=True)
-class MergeSettings:
-    """The merge settings a repo carries on GitHub (`repo_settings`); set by one ``PATCH repos/<repo>``."""
-
-    delete_branch_on_merge: bool = True
-    allow_squash_merge: bool = True
-    allow_merge_commit: bool = False
-    allow_rebase_merge: bool = False
-    allow_auto_merge: bool = True
-
-
-@dataclass(frozen=True)
-class LabelSpec:
-    """One label of the taxonomy (`labels`); *color* is six hex digits without ``#``."""
-
-    name: str
-    color: str
-    description: str
-
-
-@dataclass(frozen=True)
-class PagesPolicy:
-    """GitHub Pages configuration policy for a repository."""
-
-    enabled: bool = False
-    build_type: Literal["workflow", "legacy"] = "workflow"
-    cname: str | None = None
-    https_enforced: bool = True
 
 
 @dataclass(frozen=True)
