@@ -39,17 +39,6 @@ ARBITRARY_VALUE = re.compile(r"(?<![\w-])-?[a-z][\w-]*-\[[^\]\s]+\]")
 # `[image-rendering:pixelated]`; variants like `[&_svg]:size-3` start with `&` and are allowed.
 ARBITRARY_PROPERTY = re.compile(r"(?<![\w&-])\[[a-z-]+:[^\]\s]+\]")
 
-# Today's violations, each removed by the change named beside it. An entry that no longer
-# matches fails the gate, so the list can only shrink.
-KNOWN = {
-    # The 3D studio's optical swatches; cut with the studio by C5 (#467).
-    ("src/rig/image_drift/templates/index.html", "#00F5FF"),
-    ("src/rig/image_drift/templates/index.html", "#C084FC"),
-    ("src/rig/image_drift/templates/index.html", "#F59E0B"),
-    ("src/rig/image_drift/templates/index.html", "#10B981"),
-    ("src/rig/image_drift/templates/index.html", "#FFFFFF"),
-}
-
 
 def violations(text: str) -> list[str]:
     """Every raw colour or arbitrary-value class in a stylesheet or template."""
@@ -93,14 +82,11 @@ def test_scope_covers_the_sources() -> None:
 
 
 def test_stylesheets_and_templates_use_design_system_tokens() -> None:
-    found: set[tuple[str, str]] = set()
+    found: list[tuple[str, str]] = []
     for path in _scanned_files():
         relative = path.relative_to(REPO_ROOT).as_posix()
-        found.update((relative, hit) for hit in violations(path.read_text(encoding="utf-8")))
-    unexpected = sorted(found - KNOWN)
-    assert not unexpected, (
+        found.extend((relative, hit) for hit in violations(path.read_text(encoding="utf-8")))
+    assert not found, (
         "Use @rtkelly-labs/design-system tokens (Tailwind utilities or var(--ds-*)), not raw colours "
-        f"or arbitrary values; a missing token goes upstream: {unexpected}"
+        f"or arbitrary values; a missing token goes upstream: {found}"
     )
-    stale = sorted(KNOWN - found)
-    assert not stale, f"Remove these from KNOWN; they are gone: {stale}"

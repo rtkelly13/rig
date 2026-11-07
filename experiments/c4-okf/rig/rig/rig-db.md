@@ -18,13 +18,6 @@ erDiagram
     TEXT status
     INTEGER exit_code
   }
-  optical_presets {
-    INTEGER id PK
-    TEXT name
-    TEXT project
-    REAL ior
-    REAL dispersion
-  }
   schema_migrations {
     INTEGER version PK
     TEXT name

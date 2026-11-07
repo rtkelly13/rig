@@ -94,30 +94,6 @@ def find_project_brand_assets(assets_root: Path, project_name: str) -> ProjectBr
 
 
 @dataclass(frozen=True, slots=True)
-class ProjectQuery:
-    project: tuple[StrictStr, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class Export3DRequest:
-    project: StrictStr
-    cut_type: StrictStr
-    image_base64: StrictStr
-
-
-@dataclass(frozen=True, slots=True)
-class SavePresetRequest:
-    name: StrictStr
-    project: StrictStr
-    ior: float
-    dispersion: float
-    roughness: float
-    thickness: float
-    distortion: float
-    caustic_color: StrictStr
-
-
-@dataclass(frozen=True, slots=True)
 class SnapshotRequest:
     project: StrictStr | None = None
     run_id: StrictStr | None = None
@@ -126,18 +102,6 @@ class SnapshotRequest:
     svg_content: StrictStr | None = None
     metrics: dict[str, JsonValue] = field(default_factory=dict[str, JsonValue])
     notes: StrictStr = ""
-
-
-@dataclass(frozen=True, slots=True)
-class FeedbackRequest:
-    project: StrictStr = "unknown-project"
-    reference: StrictStr = ""
-    candidate: StrictStr = ""
-    region: StrictStr = "Overall"
-    issue: StrictStr = "General"
-    verdict: StrictStr = "NEEDS_ITERATION"
-    notes: StrictStr = ""
-    prompt: StrictStr = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -238,23 +202,6 @@ class StatusResponse(ResponseModel):
 class BackupResponse(ResponseModel):
     status: str
     backup_file: str
-
-
-class OpticalPresetResponseItem(ResponseModel):
-    id: int
-    name: str
-    project: str
-    ior: float
-    dispersion: float
-    roughness: float
-    thickness: float
-    distortion: float
-    caustic_color: str
-    created_at: str
-
-
-class PresetsListResponse(ResponseModel):
-    presets: list[OpticalPresetResponseItem]
 
 
 class HotspotResponse(ResponseModel):

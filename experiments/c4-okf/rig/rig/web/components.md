@@ -18,7 +18,7 @@ Container_Boundary(web, "Web control plane") {
   Component(server, "StudioServer", "ThreadingHTTPServer", "Routes /api/* and static files", $link="request-handler.md")
   Component(indexer, "AssetIndexer", "Python", "Indexes assets/ and temp/variations/")
   Component(c4, "C4 viewer", "rig.c4_okf", "OKF bundle API and zoom UI")
-  Component(studio, "studio.js", "Vanilla JS, Three.js", "Estate, Asset Studio, 3D prism tabs")
+  Component(studio, "studio.js", "Vanilla JS", "Estate operations and Asset Studio tabs")
   Component(c4ui, "c4.js", "Vanilla JS, Pele", "Renders diagrams, zooms on click")
 }
 
@@ -28,7 +28,7 @@ Rel(studio, server, "Fetches", "JSON")
 Rel(c4ui, c4, "Fetches", "JSON")
 Rel(server, indexer, "Catalogues assets")
 Rel(server, c4, "Delegates /c4 and /api/c4")
-Rel(server, db, "Reads runs, saves presets")
+Rel(server, db, "Reads and backs up job runs")
 Rel(dm, server, "Starts")
 ```
 

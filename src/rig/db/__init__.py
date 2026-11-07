@@ -11,26 +11,18 @@ from rig.db.migrations import (
     get_applied_migrations,
     run_migrations,
 )
-from rig.db.presets_repo import (
-    OpticalPresetRecord,
-    get_presets_for_project,
-    save_optical_preset,
-)
 
 __all__ = [
     "JobRunRecord",
     "MigrationRecord",
-    "OpticalPresetRecord",
     "backup_database",
     "current_schema_version",
     "default_backup_dir",
     "default_db_path",
     "get_applied_migrations",
     "get_db_connection",
-    "get_presets_for_project",
     "get_recent_job_runs",
     "record_job_run",
     "run_migrations",
-    "save_optical_preset",
     "update_job_run",
 ]

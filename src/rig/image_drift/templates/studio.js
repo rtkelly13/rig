@@ -3,15 +3,12 @@
  * Built on @rtkelly13/design-system Midnight Brutalist Tokens
  */
 
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
 (function () {
   'use strict';
 
   // Application State
   const state = {
-    activeTab: 'workbench', // 'estate' | 'optical' | 'workbench'
+    activeTab: 'workbench', // 'estate' | 'workbench'
     projects: [],
     estateProjects: [],
     currentProject: null,
@@ -25,16 +22,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
       rmse: null,
       cand_size: null,
     },
-    // 3D Optical Parameters
-    optical: {
-      ior: 1.54,
-      dispersion: 0.08,
-      roughness: 0.02,
-      thickness: 1.6,
-      attenuationColor: '#00F5FF',
-      autoRotate: true,
-      selectedProject: 'rig',
-    },
   };
 
   // DOM Elements
@@ -42,10 +29,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     // Top Tabs
     envBadge: document.getElementById('env-badge'),
     tabBtnEstate: document.getElementById('tab-btn-estate'),
-    tabBtnOptical: document.getElementById('tab-btn-optical'),
     tabBtnWorkbench: document.getElementById('tab-btn-workbench'),
     viewEstate: document.getElementById('view-estate'),
-    viewOptical: document.getElementById('view-optical'),
     viewWorkbench: document.getElementById('view-workbench'),
     workbenchControlsGroup: document.getElementById('workbench-controls-group'),
     studioStatus: document.getElementById('studio-status'),
@@ -56,22 +41,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     estateRepoCount: document.getElementById('estate-repo-count'),
     btnRefreshEstate: document.getElementById('btn-refresh-estate'),
     btnBackupDb: document.getElementById('btn-backup-db'),
-
-    // 3D Optical Studio
-    opticalCanvas: document.getElementById('optical-canvas'),
-    opticalProjectSelect: document.getElementById('optical-project-select'),
-    sliderOpticalIor: document.getElementById('slider-optical-ior'),
-    sliderOpticalDispersion: document.getElementById('slider-optical-dispersion'),
-    sliderOpticalRoughness: document.getElementById('slider-optical-roughness'),
-    sliderOpticalThickness: document.getElementById('slider-optical-thickness'),
-    chkOpticalAutorotate: document.getElementById('chk-optical-autorotate'),
-    valOpticalIor: document.getElementById('val-optical-ior'),
-    valOpticalDispersion: document.getElementById('val-optical-dispersion'),
-    valOpticalRoughness: document.getElementById('val-optical-roughness'),
-    valOpticalThickness: document.getElementById('val-optical-thickness'),
-    swatches: document.querySelectorAll('.optical-swatch'),
-    btnExportLogo: document.getElementById('btn-export-logo'),
-    btnExportBanner: document.getElementById('btn-export-banner'),
 
     // Workbench Elements
     projectSelect: document.getElementById('project-select'),
@@ -142,20 +111,14 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     const path = '/' + (tab === 'workbench' ? 'studio' : tab === 'estate' ? 'estate/operations' : tab);
     if (location.pathname !== path) { history.pushState(null, '', path); window.dispatchEvent(new PopStateEvent('popstate')); }
     state.activeTab = tab;
-    [dom.tabBtnEstate, dom.tabBtnOptical, dom.tabBtnWorkbench].forEach((b) => b?.classList.remove('ds-btn-active'));
-    [dom.viewEstate, dom.viewOptical, dom.viewWorkbench].forEach((v) => v?.classList.remove('active'));
+    [dom.tabBtnEstate, dom.tabBtnWorkbench].forEach((b) => b?.classList.remove('ds-btn-active'));
+    [dom.viewEstate, dom.viewWorkbench].forEach((v) => v?.classList.remove('active'));
 
     if (tab === 'estate') {
       dom.tabBtnEstate?.classList.add('ds-btn-active');
       dom.viewEstate?.classList.add('active');
       if (dom.workbenchControlsGroup) dom.workbenchControlsGroup.style.display = 'none';
       fetchEstate();
-    } else if (tab === 'optical') {
-      dom.tabBtnOptical?.classList.add('ds-btn-active');
-      dom.viewOptical?.classList.add('active');
-      if (dom.workbenchControlsGroup) dom.workbenchControlsGroup.style.display = 'none';
-      initOpticalStudio();
-      resizeOpticalCanvas();
     } else {
       dom.tabBtnWorkbench?.classList.add('ds-btn-active');
       dom.viewWorkbench?.classList.add('active');
@@ -167,7 +130,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
   window.addEventListener('rig:view', event => switchTab(event.detail));
 
   dom.tabBtnEstate?.addEventListener('click', () => switchTab('estate'));
-  dom.tabBtnOptical?.addEventListener('click', () => switchTab('optical'));
   dom.tabBtnWorkbench?.addEventListener('click', () => switchTab('workbench'));
   dom.btnRefreshEstate?.addEventListener('click', () => fetchEstate());
 
@@ -181,7 +143,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
       const data = await res.json();
       state.estateProjects = data.projects || [];
       renderEstateGrid();
-      populateOpticalProjects();
     } catch (err) {
       console.error('Failed to load estate repositories:', err);
       setStatus(`[ ERR: ${err.message} ]`, true);
@@ -313,16 +274,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
             </span>
             <div style="display:flex; gap:6px;">
               ${proj.enabled !== false ? `<a href="/repos/${repoSlug}/triage/inbox" class="ds-btn ds-btn-sm" style="text-decoration:none;">[ 📋 Queue ]</a>` : ''}
-              <button class="ds-btn ds-btn-sm btn-open-optical" data-project="${proj.name}">[ 💎 3D Studio ]</button>
             </div>
           </div>
         `;
-
-        card.querySelector('.btn-open-optical')?.addEventListener('click', () => {
-          state.optical.selectedProject = proj.name;
-          if (dom.opticalProjectSelect) dom.opticalProjectSelect.value = proj.name;
-          switchTab('optical');
-        });
 
         grid.appendChild(card);
       });
@@ -331,22 +285,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
       dom.estateGrid.appendChild(section);
     }
   }
-
-  function populateOpticalProjects() {
-    if (!dom.opticalProjectSelect) return;
-    dom.opticalProjectSelect.innerHTML = '';
-    state.estateProjects.forEach((proj) => {
-      const opt = document.createElement('option');
-      opt.value = proj.name;
-      opt.textContent = `[ ${proj.name} ]`;
-      if (proj.name === state.optical.selectedProject) opt.selected = true;
-      dom.opticalProjectSelect.appendChild(opt);
-    });
-  }
-
-  dom.opticalProjectSelect?.addEventListener('change', (e) => {
-    state.optical.selectedProject = e.target.value;
-  });
 
   // -------------------------------------------------------------------------
   // Server Status & Database Backup (jobs live in the SPA at /ops/jobs)
@@ -381,196 +319,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
       setStatus(`[ ERR: ${err.message} ]`, true);
     }
   });
-
-  // -------------------------------------------------------------------------
-  // 3D Optical Studio Engine (Three.js WebGL)
-  // -------------------------------------------------------------------------
-  let opticalScene, opticalCamera, opticalRenderer, opticalControls, opticalPrismMesh, opticalMaterial;
-  let isOpticalInitialized = false;
-
-  function initOpticalStudio() {
-    if (isOpticalInitialized || !dom.opticalCanvas) return;
-    isOpticalInitialized = true;
-
-    opticalScene = new THREE.Scene();
-    opticalScene.background = new THREE.Color('#07090E');
-
-    const width = dom.opticalCanvas.parentElement.clientWidth || 800;
-    const height = dom.opticalCanvas.parentElement.clientHeight || 600;
-
-    opticalCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    opticalCamera.position.set(0, 0, 5.5);
-
-    opticalRenderer = new THREE.WebGLRenderer({
-      canvas: dom.opticalCanvas,
-      antialias: true,
-      preserveDrawingBuffer: true,
-    });
-    opticalRenderer.setSize(width, height);
-    opticalRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-    opticalControls = new OrbitControls(opticalCamera, opticalRenderer.domElement);
-    opticalControls.enableDamping = true;
-    opticalControls.dampingFactor = 0.05;
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    opticalScene.add(ambientLight);
-
-    const pointLight1 = new THREE.PointLight(0xffffff, 2.0);
-    pointLight1.position.set(10, 10, 10);
-    opticalScene.add(pointLight1);
-
-    const pointLight2 = new THREE.PointLight(0x00f5ff, 1.2);
-    pointLight2.position.set(-10, -5, -5);
-    opticalScene.add(pointLight2);
-
-    const laserBeam = new THREE.DirectionalLight(0xffffff, 2.5);
-    laserBeam.position.set(-6, 2, 2);
-    opticalScene.add(laserBeam);
-
-    // Incident Beam Cylinder
-    const beamGeo = new THREE.CylinderGeometry(0.04, 0.04, 5, 16);
-    const beamMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0 });
-    const beamMesh = new THREE.Mesh(beamGeo, beamMat);
-    beamMesh.position.set(-3.5, 0.5, 0);
-    beamMesh.rotation.z = -Math.PI / 2;
-    opticalScene.add(beamMesh);
-
-    // Optical Prism (Triangular Cylinder: 3 radial segments)
-    const prismGeo = new THREE.CylinderGeometry(2.0, 2.0, 1.2, 3);
-
-    opticalMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      transmission: 1.0,
-      opacity: 1.0,
-      transparent: true,
-      roughness: state.optical.roughness,
-      ior: state.optical.ior,
-      thickness: state.optical.thickness,
-      dispersion: state.optical.dispersion,
-      attenuationColor: new THREE.Color(state.optical.attenuationColor),
-      attenuationDistance: 0.7,
-      side: THREE.DoubleSide,
-    });
-
-    opticalPrismMesh = new THREE.Mesh(prismGeo, opticalMaterial);
-    opticalPrismMesh.rotation.y = Math.PI / 4;
-    opticalScene.add(opticalPrismMesh);
-
-    // Animation Loop
-    let clock = new THREE.Clock();
-    function animate() {
-      requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      if (state.optical.autoRotate && opticalPrismMesh) {
-        opticalPrismMesh.rotation.y += delta * 0.4;
-        opticalPrismMesh.rotation.x = Math.sin(Date.now() * 0.001) * 0.15;
-      }
-      opticalControls.update();
-      opticalRenderer.render(opticalScene, opticalCamera);
-    }
-    animate();
-
-    window.addEventListener('resize', resizeOpticalCanvas);
-  }
-
-  function resizeOpticalCanvas() {
-    if (!opticalRenderer || !opticalCamera || !dom.opticalCanvas) return;
-    const parent = dom.opticalCanvas.parentElement;
-    if (!parent) return;
-    const width = parent.clientWidth;
-    const height = parent.clientHeight;
-    opticalCamera.aspect = width / height;
-    opticalCamera.updateProjectionMatrix();
-    opticalRenderer.setSize(width, height);
-  }
-
-  // Optical Sliders Binding
-  dom.sliderOpticalIor?.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value);
-    state.optical.ior = val;
-    if (dom.valOpticalIor) dom.valOpticalIor.textContent = val.toFixed(2);
-    if (opticalMaterial) opticalMaterial.ior = val;
-  });
-
-  dom.sliderOpticalDispersion?.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value);
-    state.optical.dispersion = val;
-    if (dom.valOpticalDispersion) dom.valOpticalDispersion.textContent = val.toFixed(3);
-    if (opticalMaterial) opticalMaterial.dispersion = val;
-  });
-
-  dom.sliderOpticalRoughness?.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value);
-    state.optical.roughness = val;
-    if (dom.valOpticalRoughness) dom.valOpticalRoughness.textContent = val.toFixed(3);
-    if (opticalMaterial) opticalMaterial.roughness = val;
-  });
-
-  dom.sliderOpticalThickness?.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value);
-    state.optical.thickness = val;
-    if (dom.valOpticalThickness) dom.valOpticalThickness.textContent = val.toFixed(1);
-    if (opticalMaterial) opticalMaterial.thickness = val;
-  });
-
-  dom.chkOpticalAutorotate?.addEventListener('change', (e) => {
-    state.optical.autoRotate = e.target.checked;
-  });
-
-  dom.swatches.forEach((swatch) => {
-    swatch.addEventListener('click', () => {
-      dom.swatches.forEach((s) => s.classList.remove('active'));
-      swatch.classList.add('active');
-      const color = swatch.dataset.color || '#00F5FF';
-      state.optical.attenuationColor = color;
-      if (opticalMaterial) opticalMaterial.attenuationColor = new THREE.Color(color);
-    });
-  });
-
-  // Export 3D Render
-  async function export3DRender(cutType, width, height) {
-    if (!opticalRenderer || !opticalScene || !opticalCamera) return;
-    const project = state.optical.selectedProject || 'rig';
-
-    setStatus(`[ EXPORTING ${cutType.toUpperCase()} (${width}×${height}) FOR ${project}... ]`);
-
-    // Temporarily resize renderer to high-res target
-    opticalCamera.aspect = width / height;
-    opticalCamera.updateProjectionMatrix();
-    opticalRenderer.setSize(width, height, false);
-    opticalRenderer.render(opticalScene, opticalCamera);
-
-    const dataUrl = opticalRenderer.domElement.toDataURL('image/png');
-
-    // Restore viewport size
-    resizeOpticalCanvas();
-
-    try {
-      const res = await fetch('/api/export-3d-render', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: project,
-          cut_type: cutType,
-          image_base64: dataUrl,
-        }),
-      });
-
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-      const result = await res.json();
-      setStatus(`[ SAVED: assets/${project}/${result.filename} ]`);
-      // Refresh project list in workbench
-      fetchProjects();
-    } catch (err) {
-      console.error('Export failed:', err);
-      setStatus(`[ ERR: ${err.message} ]`, true);
-    }
-  }
-
-  dom.btnExportLogo?.addEventListener('click', () => export3DRender('logo', 1024, 1024));
-  dom.btnExportBanner?.addEventListener('click', () => export3DRender('banner', 1376, 768));
 
   // -------------------------------------------------------------------------
   // Workbench API Calls

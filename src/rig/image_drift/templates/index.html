@@ -6,14 +6,6 @@
   <title>Rig // Estate Management & Visual Studio</title>
   <link rel="stylesheet" href="/static/studio.css">
   <link rel="stylesheet" href="/static/app_assets/app.css">
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "/static/vendor/three.module.js",
-      "three/addons/controls/OrbitControls.js": "/static/vendor/OrbitControls.js"
-    }
-  }
-  </script>
 </head>
 <body class="studio-body">
   <div id="rig-app"></div>
@@ -66,85 +58,6 @@
       </div>
       <div id="estate-filter-bar" class="estate-filter-bar"></div>
       <div id="estate-grid"></div>
-    </div>
-  </div>
-
-  <!-- VIEW 2: 3D Optical Studio -->
-  <div id="view-optical" class="view-container">
-    <div class="optical-layout">
-      <!-- Controls Sidebar -->
-      <aside class="optical-sidebar">
-        <h3 class="section-heading">[ 💎 3D_PRISM_OPTICS ]</h3>
-        <p style="color: var(--ds-text-muted); font-size: 11px; margin: 0; line-height: 1.4;">
-          Real-time physical transmission, Snell's law refraction, and wavelength dispersion powered by Three.js.
-        </p>
-
-        <div class="optical-control-group">
-          <label><span>TARGET REPO:</span></label>
-          <select id="optical-project-select" class="ds-select" style="width: 100%;"></select>
-        </div>
-
-        <div class="optical-control-group">
-          <label>
-            <span>Index of Refraction (IOR)</span>
-            <span id="val-optical-ior">1.54</span>
-          </label>
-          <input id="slider-optical-ior" type="range" min="1.0" max="2.5" step="0.01" value="1.54" class="optical-slider">
-        </div>
-
-        <div class="optical-control-group">
-          <label>
-            <span>Dispersion (Chromatic Aberration)</span>
-            <span id="val-optical-dispersion">0.080</span>
-          </label>
-          <input id="slider-optical-dispersion" type="range" min="0.0" max="0.25" step="0.005" value="0.08" class="optical-slider">
-        </div>
-
-        <div class="optical-control-group">
-          <label>
-            <span>Surface Roughness</span>
-            <span id="val-optical-roughness">0.020</span>
-          </label>
-          <input id="slider-optical-roughness" type="range" min="0.0" max="0.2" step="0.005" value="0.02" class="optical-slider">
-        </div>
-
-        <div class="optical-control-group">
-          <label>
-            <span>Virtual Thickness</span>
-            <span id="val-optical-thickness">1.6</span>
-          </label>
-          <input id="slider-optical-thickness" type="range" min="0.2" max="3.5" step="0.1" value="1.6" class="optical-slider">
-        </div>
-
-        <div class="optical-control-group">
-          <label>
-            <span>Auto-Rotate Animation</span>
-            <input id="chk-optical-autorotate" type="checkbox" checked style="accent-color: var(--ds-accent-primary);">
-          </label>
-        </div>
-
-        <div class="optical-control-group">
-          <label><span>Caustic Absorption Tint:</span></label>
-          <div class="optical-palette">
-            <div class="optical-swatch active" data-color="#00F5FF" style="background-color: #00F5FF;" title="Electric Cyan"></div>
-            <div class="optical-swatch" data-color="#C084FC" style="background-color: #C084FC;" title="Neon Violet"></div>
-            <div class="optical-swatch" data-color="#F59E0B" style="background-color: #F59E0B;" title="Solar Amber"></div>
-            <div class="optical-swatch" data-color="#10B981" style="background-color: #10B981;" title="Emerald Green"></div>
-            <div class="optical-swatch" data-color="#FFFFFF" style="background-color: #FFFFFF;" title="Pure White"></div>
-          </div>
-        </div>
-
-        <div style="border-top: 1px solid var(--ds-border-default); padding-top: 16px; display: flex; flex-direction: column; gap: 8px;">
-          <button id="btn-export-logo" class="ds-btn ds-btn-accent" style="width: 100%;">[ EXPORT 1:1 LOGO (1024×1024) ]</button>
-          <button id="btn-export-banner" class="ds-btn" style="width: 100%;">[ EXPORT 16:9 BANNER (1376×768) ]</button>
-        </div>
-      </aside>
-
-      <!-- 3D Canvas Area -->
-      <main class="optical-viewport-area">
-        <canvas id="optical-canvas"></canvas>
-        <div class="optical-hint">Drag to orbit • Scroll to zoom • Right-click to pan</div>
-      </main>
     </div>
   </div>
 

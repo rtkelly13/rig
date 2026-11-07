@@ -21,7 +21,7 @@ System_Boundary(rig, "rig") {
   Container(rigcli, "rig CLI", "Python, Typer", "workspace, estate, repo-governance, vault, agent", $link="cli.md")
   Container(dm, "desktop-manager", "Python, Typer", "Desktop IaC, claude-sessions, jobs, web launcher", $link="desktop-manager/components.md")
   Container(web, "Web control plane", "http.server, vanilla JS", "Estate dashboard, Asset Studio, C4 viewer", $link="web/components.md")
-  ContainerDb(db, "rig.db", "SQLite, WAL", "Job runs and presets", $link="rig-db.md")
+  ContainerDb(db, "rig.db", "SQLite, WAL", "Job runs, triage and feature flags", $link="rig-db.md")
   Container(infra, "Vercel infra", "TypeScript, Pulumi", "sites.ts registry")
 }
 
@@ -33,7 +33,7 @@ Rel(rigcli, agents, "Launches")
 Rel(dm, desktop, "Restores, schedules")
 Rel(dm, agents, "Places sessions")
 Rel(dm, db, "Records job runs")
-Rel(web, db, "Reads runs, saves presets")
+Rel(web, db, "Reads and backs up job runs")
 Rel(dm, web, "Starts and installs", "LaunchAgent / Task Scheduler")
 Rel(infra, vercel, "Declares", "Pulumi")
 ```

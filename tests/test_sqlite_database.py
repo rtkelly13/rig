@@ -15,7 +15,6 @@ from rig.db.migrations import (
     get_applied_migrations,
     run_migrations,
 )
-from rig.db.presets_repo import get_presets_for_project, save_optical_preset
 
 pytestmark = pytest.mark.ci
 
@@ -137,34 +136,13 @@ def test_database_backup_and_pruning(tmp_path: Path) -> None:
         backup_conn.close()
 
 
-def test_optical_presets_save_and_query(tmp_path: Path) -> None:
-    db_file = tmp_path / "test_presets.db"
-    conn = get_db_connection(db_file)
+def test_migrations_drop_the_retired_optical_presets_table(tmp_path: Path) -> None:
+    """The 3D studio is gone; its presets table goes from every migrated database."""
+    conn = get_db_connection(tmp_path / "rig.db")
     try:
         run_migrations(conn)
-
-        preset_id = save_optical_preset(
-            conn=conn,
-            name="high-dispersion-flint",
-            project="Resultful",
-            ior=1.75,
-            dispersion=0.08,
-            roughness=0.02,
-            thickness=1.5,
-            distortion=0.1,
-            caustic_color="#39ff14",
-            created_at="2026-10-24T15:00:00Z",
-        )
-        assert preset_id > 0
-
-        presets = get_presets_for_project(conn, "Resultful")
-        assert len(presets) == 1
-        assert presets[0].name == "high-dispersion-flint"
-        assert presets[0].ior == 1.75
-        assert presets[0].caustic_color == "#39ff14"
-
-        # Check empty for different project
-        empty = get_presets_for_project(conn, "Diffra")
-        assert len(empty) == 0
+        tables = {str(row[0]) for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+        assert "optical_presets" not in tables
+        assert {"job_runs", "feature_flags"} <= tables
     finally:
         conn.close()

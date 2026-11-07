@@ -91,6 +91,13 @@ MIGRATIONS: Sequence[Migration] = (
         );
         """,
     ),
+    Migration(
+        version=4,
+        name="004_drop_optical_presets",
+        sql="""
+        DROP TABLE IF EXISTS optical_presets;
+        """,
+    ),
 )
 
 
