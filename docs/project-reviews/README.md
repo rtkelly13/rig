@@ -49,7 +49,7 @@ Use [evaluations.md](evaluations.md) for independent run scoring, sampling caden
 evidence capture and the PR/canary/rollback loop. Copy the
 [evaluation record](evaluation-record.md) and compare policy changes against the
 [regression cases](regression-cases.md). Track evaluations and refinement status
-in index #375; this is an operator workflow, not an additional cloud schedule.
+in index #21; this is an operator workflow, not an additional cloud schedule.
 
 ## Memory migration
 

@@ -42,15 +42,15 @@ spacing runs does not reserve allowance or guarantee completion.
 ## Resultful within the tooling group
 
 Read retained [Resultful memory #23](https://github.com/rtkelly13/rig/issues/23)
-before assessing its two repositories; publish new combined reports only to #379.
-Keep #377 open and permanent as historical memory and a forwarding pointer.
+before assessing its two repositories; publish new combined reports only to #25.
+Keep #23 open and permanent as historical memory and a forwarding pointer.
 Do not create a new task or delete its native Project/history.
 
 Establish a Resultful baseline when unassessed. Thereafter deepen it on material
 changes, or when fifteen calendar weeks have elapsed since its last deep
 assessment. Increasing the group frequency must not shorten that deeper-review
 interval. The initial unassessed baseline is eligible on the first Tooling run.
-Track last assessment and next due review in #379. Focus on result semantics,
+Track last assessment and next due review in #25. Focus on result semantics,
 public API compatibility, packaging and FluentAssertions integration. Quiet
 periods need no repeated full audit; uninspected areas keep their old freshness.
 
@@ -58,7 +58,7 @@ periods need no repeated full audit; uninspected areas keep their old freshness.
 
 Before consolidation, the tooling task's native Run now worker published a
 [partial report](https://github.com/rtkelly13/rig/issues/25#issuecomment-6447519232)
-and updated #379's marked description. Independent readback confirmed one marker,
+and updated #25's marked description. Independent readback confirmed one marker,
 preserved outside text, labels and open state. The temporary request-ID block
 was removed afterward. This proves the tested publication path; the report is
 not a complete assessment of the expanded group or a guarantee of future delivery.

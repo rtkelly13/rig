@@ -198,8 +198,8 @@ replace another project's latest summary:
 
 The [group guide](project-review-rotation.md) and
 [index #21](https://github.com/rtkelly13/rig/issues/21) link retained per-repository
-trackers and Resultful #377 as historical read sources. Parquet #364 and Arrow
-#365 are not current publication destinations; their legacy tasks remain paused.
+trackers and Resultful #23 as historical read sources. Parquet #13 and Arrow
+#14 are not current publication destinations; their legacy tasks remain paused.
 The four canonical memories, retained trackers and index remain open/permanent.
 The index has no shared review schedule. Rig and these issues are private.
 

@@ -38,11 +38,11 @@ changed, unverified or overdue area. Quiet projects get a short no-change update
 not a repeated full audit. Separate projects/tasks still share plan allowance.
 
 Resultful consolidation keeps its native Project, original instructions and chats,
-its permanent #377 history, and its paused task record. The tooling policy includes both Resultful repositories and reads #377 as history;
+its permanent #23 history, and its paused task record. The tooling policy includes both Resultful repositories and reads #23 as history;
 the task and Project bootstrap fetch that policy every run.
-New combined reports go only to #379. Establish a baseline when unassessed, then
+New combined reports go only to #25. Establish a baseline when unassessed, then
 deepen Resultful on material changes or when fifteen calendar weeks have elapsed
-since the last deep assessment, recording last assessment and next due review in #379.
+since the last deep assessment, recording last assessment and next due review in #25.
 The earlier five-week/five-task setup and publication audits below are historical evidence;
 the JSON and layout above define the current four-task target.
 
@@ -52,7 +52,7 @@ The independent Resultful task was paused without deletion. A fresh Scheduled
 view showed four active and four paused task records. The combined tooling
 Project settings were saved, reopened and compared exactly with the rendered
 eight-repository context. A fresh saved-task editor independently confirmed all
-eight repositories, #377 historical reads/#379 publication, the baseline and
+eight repositories, #23 historical reads/#379 publication, the baseline and
 three-occurrence policy, the original report/retry contract and generic marker,
 and absence of a temporary test ID. The other three active schedules retain
 their original five-week starts. No review run was triggered for this scope-only

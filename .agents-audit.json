@@ -8,7 +8,7 @@
     {
       "check": "docs-code-block",
       "path": "docs/project-reviews/evaluation-record.md",
-      "reason": "The block is the template an evaluator fills in on rig #375; it is the artifact, not a copy of one."
+      "reason": "The block is the template an evaluator fills in on rig #21; it is the artifact, not a copy of one."
     },
     {
       "check": "docs-code-block",

@@ -21,7 +21,7 @@ frequency, native identities, credentials or the allowed issue-write destination
 
 ## Focus
 
-Design consistency and accessibility, developer experience, tooling reliability, CI/security governance and highest-value actionable improvements. Resultful: result semantics, API compatibility, packaging and FluentAssertions integration. Read historical Resultful memory #377 before assessment; publish combined reports only to #379. Establish a baseline when unassessed; thereafter deepen Resultful on material changes or when fifteen calendar weeks have elapsed since its last deep assessment. Track its last assessment and next due review in group memory; do not repeat an unchanged audit.
+Design consistency and accessibility, developer experience, tooling reliability, CI/security governance and highest-value actionable improvements. Resultful: result semantics, API compatibility, packaging and FluentAssertions integration. Read historical Resultful memory #23 before assessment; publish combined reports only to #25. Establish a baseline when unassessed; thereafter deepen Resultful on material changes or when fifteen calendar weeks have elapsed since its last deep assessment. Track its last assessment and next due review in group memory; do not repeat an unchanged audit.
 
 ## Structural health
 

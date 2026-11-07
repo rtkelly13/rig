@@ -39,4 +39,4 @@ Import relevant prior evidence once, preserving source refs and assessment dates
 [Iceberg #17](https://github.com/rtkelly13/rig/issues/17),
 [parquet-dotnet #19](https://github.com/rtkelly13/rig/issues/19), and
 [TypeProvider #20](https://github.com/rtkelly13/rig/issues/20).
-These are read sources; new scheduled reports go only to #376.
+These are read sources; new scheduled reports go only to #22.

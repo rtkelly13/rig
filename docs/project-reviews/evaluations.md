@@ -118,7 +118,7 @@ crediting a policy change; source changes and service availability are confounde
    `<!-- rig-review-eval:<schedule-key>:<original-run-id>:v1 -->`. On correction,
    update only that evaluator-owned record or append a linked correction. Do not
    rewrite the worker report, quality-assessment dates or stable finding states.
-   Keep a compact evaluation/refinement register in index #375, outside run pointers.
+   Keep a compact evaluation/refinement register in index #21, outside run pointers.
    Evaluation comments are operator-owned; scheduled workers cannot self-award them.
 2. **Diagnose** the failure: policy ambiguity, missing memory, inaccessible tool,
    source reasoning, publication mechanics or lack of evidence. A service outage
@@ -128,7 +128,7 @@ crediting a policy change; source changes and service availability are confounde
 3. **Specify** one hypothesis and acceptance criteria before editing. Assign a
    stable refinement ID, for example `review-refinement:repeat-unchanged-topic`.
    Register evidence links, owner, status, affected policy paths, baseline commit,
-   changed behavior, case IDs, next review date and rollback condition in #375.
+   changed behavior, case IDs, next review date and rollback condition in #21.
    States: PROPOSED → TESTING → CANARY → ADOPTED, or REJECTED/ROLLED-BACK.
 4. **Compare** the baseline and candidate on the same frozen packets using
    [regression-cases.md](regression-cases.md). Add a minimal case for the observed
@@ -149,7 +149,7 @@ crediting a policy change; source changes and service availability are confounde
    A gate regression triggers a revert PR for the policy change; if harmful writes
    are possible, the operator may pause the affected schedule pending repair.
    A new fetch commit will be recorded after revert; do not pin stale policy silently.
-7. **Retain** a short dated result, compared counts and next check in #375. Close
+7. **Retain** a short dated result, compared counts and next check in #21. Close
    rejected hypotheses with reasons. Periodically remove redundant prompt wording
    through PRs while retaining the regression cases that explain the behavior.
 
