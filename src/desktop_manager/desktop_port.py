@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Protocol, override
+from typing import TYPE_CHECKING, Protocol
 
 from desktop_manager.commands.workspace_commands import WorkspaceCommands
 from desktop_manager.models import (
@@ -148,22 +148,3 @@ class Win32DesktopPort(WorkspaceQueries, WorkspaceCommands):
         from desktop_manager.terminal_init import start_terminal_command_upgrades_for_plan
 
         start_terminal_command_upgrades_for_plan(plan)
-
-
-class RestoreCompatibilityPort(Win32DesktopPort):
-    """Port that preserves existing monkeypatch points in tests."""
-
-    @override
-    def launch_entry(
-        self, entry: LaunchEntry, substitutions: dict[str, str], *, restore_token: str | None = None
-    ) -> int | None:
-        from desktop_manager.launching import launch_entry
-
-        if restore_token is None:
-            return launch_entry(entry, substitutions)
-        try:
-            return launch_entry(entry, substitutions, restore_token=restore_token)
-        except TypeError as err:
-            if "restore_token" not in str(err):
-                raise
-            return launch_entry(entry, substitutions)

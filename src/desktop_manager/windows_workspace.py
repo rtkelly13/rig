@@ -9,7 +9,7 @@ All implementation has been split into submodules:
   - placeholders.py : placeholder substitution
   - visualization.py: plan-vs-live workspace diff
   - restore.py          : orchestration, capture, status
-  - workspace_restore.py: restore_workspace_with_options entry point
+  - handlers/restore_handler.py: restore_workspace_with_options entry point
   - launching.py        : launching entries and tracking their processes
   - terminal_init.py    : one-off CLI self-updates before terminals launch
   - executable_paths.py : resolving executables (version wildcards, PATH, AppX)
@@ -37,6 +37,7 @@ from desktop_manager.desktop_reconcile import (
 )
 from desktop_manager.executable_paths import resolve_versioned_path
 from desktop_manager.geometry import coverage_summary, normalized_placement_rect, rect_similarity
+from desktop_manager.handlers.restore_handler import restore_workspace_with_options
 from desktop_manager.launching import (
     LaunchedProcess,
     build_terminal_command,
@@ -180,7 +181,6 @@ from desktop_manager.window_reuse import (
     window_identity_match_score,
     window_matches_placement,
 )
-from desktop_manager.workspace_restore import restore_workspace_with_options
 
 __all__ = [
     # models

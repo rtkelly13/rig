@@ -258,7 +258,7 @@ def test_restore_workspace_opens_deduplicated_missing_app_fallback(monkeypatch, 
         lambda desktop_name=None: DesktopPlan(name=desktop_name or "Work"),
     )
 
-    def fake_launch_entry(entry, _subs):
+    def fake_launch_entry(entry, _subs, **_kwargs):
         launched.append((entry.path or "", tuple(entry.args)))
         if entry.path == r"C:\missing\app.exe":
             raise ValueError(f"Launch entry `{entry.name}` resolved path does not exist: C:\\missing\\app.exe")
@@ -317,7 +317,7 @@ def test_restore_workspace_missing_arg_path_does_not_open_fallback(monkeypatch, 
         lambda desktop_name=None: DesktopPlan(name=desktop_name or "Personal"),
     )
 
-    def fake_launch_entry(entry, _subs):
+    def fake_launch_entry(entry, _subs, **_kwargs):
         launched.append(entry.path or "")
         raise ValueError(
             "Launch entry `Obsidian Vault` resolved arg does not exist: C:\\code\\personal\\obsidian-vault\\Vault"

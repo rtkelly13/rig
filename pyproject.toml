@@ -165,7 +165,6 @@ forbidden_modules = [
     "desktop_manager.placement",
     "desktop_manager.desktop_reconcile",
     "desktop_manager.restore",
-    "desktop_manager.workspace_restore",
     "desktop_manager.cli",
 ]
 ignore_imports = [
