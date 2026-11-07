@@ -73,8 +73,8 @@ def no_app_update_settling(monkeypatch: pytest.MonkeyPatch) -> None:
     time. ``desktop_manager.app_updates`` is covered directly by its own unit tests.
     """
     monkeypatch.setattr(
-        "desktop_manager.handlers.restore_handler._settle_pending_app_updates",
-        lambda **_kwargs: False,
+        "desktop_manager.app_updates.settle_pending_app_updates",
+        lambda _plan, **_kwargs: False,
     )
 
 

@@ -39,7 +39,7 @@ from pydantic import StrictStr
 from rig.typed_json import try_decode_json
 
 if TYPE_CHECKING:
-    from desktop_manager.models import WorkspacePlan
+    from desktop_manager.models import RestoreRunLogger, WorkspacePlan
 
 WARP_PROCESS_NAME = "warp.exe"
 
@@ -359,3 +359,35 @@ def entry_targets_warp(process_name: str | None, path: str | None) -> bool:
     if process_name and process_name.casefold() == WARP_PROCESS_NAME:
         return True
     return bool(path and path.casefold().endswith(WARP_PROCESS_NAME))
+
+
+def settle_pending_app_updates(plan: WorkspacePlan, *, logger: RestoreRunLogger | None) -> bool:
+    """Apply or wait out pending self-updates for the apps the plan launches."""
+    from desktop_manager.orca_update import plan_launches_orca, settle_orca_update
+
+    def log(message: str) -> None:
+        if logger is not None:
+            logger.log(message)
+
+    settled = False
+    # The check alone costs seconds and an update would launch Warp, so a plan without it skips both.
+    if not plan_launches_warp(plan):
+        log("Warp update check skipped: the plan launches no Warp window")
+    else:
+        try:
+            settled = settle_warp_update(log=log)
+        except Exception as err:  # pragma: no cover - defensive: never block a restore
+            if logger is not None:
+                logger.exception(f"Warp update check failed: {err}; continuing with the restore")
+
+    # The Orca installer kills every Orca.exe and relaunches at most one profile, so it
+    # runs only while no Orca is up; the restore then launches every profile itself.
+    if not plan_launches_orca(plan):
+        log("Orca update check skipped: the plan launches no Orca window")
+    else:
+        try:
+            settled = settle_orca_update(log=log) or settled
+        except Exception as err:  # pragma: no cover - defensive: never block a restore
+            if logger is not None:
+                logger.exception(f"Orca update check failed: {err}; continuing with the restore")
+    return settled

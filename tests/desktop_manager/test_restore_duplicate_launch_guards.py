@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pytest
 
+from desktop_manager.desktop_port import Win32DesktopPort
 from desktop_manager.handlers import restore_steps
 from desktop_manager.models import (
     DesktopPlan,
@@ -168,7 +169,7 @@ class TestSiblingOwnedHwnds:
         )
         step = PlannedDesktopExecution(desktop=desktop, desktop_index=1, close_existing=False)
 
-        reserved = restore_steps._sibling_owned_hwnds(step, desktop.launch[0], logger=None)
+        reserved = restore_steps._sibling_owned_hwnds(step, desktop.launch[0], logger=None, port=Win32DesktopPort())
 
         assert reserved == {330112}
 
@@ -180,7 +181,9 @@ class TestSiblingOwnedHwnds:
         )
         step = PlannedDesktopExecution(desktop=desktop, desktop_index=1, close_existing=False)
 
-        assert restore_steps._sibling_owned_hwnds(step, desktop.launch[0], logger=None) == set()
+        assert (
+            restore_steps._sibling_owned_hwnds(step, desktop.launch[0], logger=None, port=Win32DesktopPort()) == set()
+        )
 
     def test_ignores_siblings_running_other_processes(self, monkeypatch: pytest.MonkeyPatch):
         desktop = DesktopPlan(
@@ -209,7 +212,9 @@ class TestSiblingOwnedHwnds:
         )
         step = PlannedDesktopExecution(desktop=desktop, desktop_index=4, close_existing=False)
 
-        assert restore_steps._sibling_owned_hwnds(step, desktop.launch[0], logger=None) == set()
+        assert (
+            restore_steps._sibling_owned_hwnds(step, desktop.launch[0], logger=None, port=Win32DesktopPort()) == set()
+        )
 
 
 def test_entries_matched_on_planned_screen_excludes_wrong_screen():

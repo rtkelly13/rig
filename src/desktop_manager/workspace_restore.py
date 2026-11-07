@@ -14,7 +14,7 @@ def restore_workspace_with_options(
     logger: RestoreRunLogger | None = None,
     target_desktop: str | None = None,
 ) -> list[str]:
-    from desktop_manager.commands.workspace_commands import RestoreCompatibilityCommands
+    from desktop_manager.desktop_port import RestoreCompatibilityPort
     from desktop_manager.handlers.restore_handler import restore_workspace_with_options as run_restore_handler
 
     return run_restore_handler(
@@ -24,5 +24,5 @@ def restore_workspace_with_options(
         diff_existing=diff_existing,
         logger=logger,
         target_desktop=target_desktop,
-        commands=RestoreCompatibilityCommands(),
+        port=RestoreCompatibilityPort(),
     )
