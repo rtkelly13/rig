@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import ctypes
+
 from desktop_manager.win32.send_input import (
     INPUT_KEYBOARD,
+    INPUT_SIZE,
     KEYEVENTF_KEYUP,
     KEYEVENTF_UNICODE,
+    Input,
+    InputUnion,
+    KeyboardInput,
     KeyEvent,
+    MouseInput,
     input_batch,
     key_tap,
     unicode_events,
@@ -41,3 +48,8 @@ def test_the_batch_carries_every_event_as_a_keyboard_input() -> None:
     assert len(batch) == 4
     assert all(item.type == INPUT_KEYBOARD for item in batch)
     assert [KeyEvent(item.u.ki.wVk, item.u.ki.wScan, item.u.ki.dwFlags) for item in batch] == events
+
+
+def test_the_input_union_is_as_large_as_mouseinput_or_sendinput_rejects_the_size() -> None:
+    assert ctypes.sizeof(InputUnion) == ctypes.sizeof(MouseInput) > ctypes.sizeof(KeyboardInput)
+    assert ctypes.sizeof(Input) == INPUT_SIZE
