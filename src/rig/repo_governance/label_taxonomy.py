@@ -1,68 +1,22 @@
-"""Standard GitHub Label Taxonomy and Synchronization Engine.
+"""GitHub label governance: holds repos to the `labels` taxonomy in `config/repo_policies.json`.
 
-Reconciles repository labels across open source repositories to enforce
-consistent naming, descriptions, and hex colors.
+Labels outside the taxonomy are left alone; a taxonomy label that is missing is created, and one whose
+colour or description differs is updated.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import override
 from urllib.parse import quote
 
 from pydantic import BaseModel, Field, StrictStr
 
 from rig.proc import GitHubApi, gh_api
-from rig.repo_governance.policy_config import PolicyConfig
-from rig.repo_governance.resource import Change, GitHubReadError, Resource, Target, read_json, send
+from rig.repo_governance.policy_config import LabelSpec, PolicyConfig, load_policy_config
+from rig.repo_governance.resource import Change, GitHubReadError, Target, read_json, send
 from rig.repo_governance.sync_outcome import SyncOutcome
 from rig.typed_json import encode_json
-
-
-class StandardLabel(BaseModel):
-    name: str
-    color: str  # 6-char hex without #
-    description: str
-
-
-STANDARD_LABEL_TAXONOMY: list[StandardLabel] = [
-    # Types
-    StandardLabel(name="type: bug", color="d73a4a", description="Something is broken or behaving unexpectedly"),
-    StandardLabel(name="type: feature", color="a2eeef", description="New feature or capability request"),
-    StandardLabel(name="type: docs", color="0075ca", description="Documentation improvements, typo fixes, or guides"),
-    StandardLabel(
-        name="type: performance", color="ffc107", description="Performance optimization or memory improvement"
-    ),
-    StandardLabel(
-        name="type: maintenance", color="e4e669", description="Chore, dependency update, tooling, or refactor"
-    ),
-    # Status
-    StandardLabel(
-        name="status: needs-repro",
-        color="e99695",
-        description="Cannot reproduce; waiting on submitter for minimal example",
-    ),
-    StandardLabel(
-        name="status: blocked", color="6a737d", description="Blocked by upstream dependency or external issue"
-    ),
-    StandardLabel(name="status: in-progress", color="fbca04", description="Actively being addressed by a contributor"),
-    # Community & Discovery
-    StandardLabel(
-        name="good first issue", color="7057ff", description="Friendly, self-contained entry point for new contributors"
-    ),
-    StandardLabel(name="help wanted", color="008672", description="Extra attention or community contribution welcome"),
-    # Impact
-    StandardLabel(
-        name="breaking-change", color="b60205", description="Backwards-incompatible API or behavioral change"
-    ),
-    # Merge gate: a repo whose `regression` status runs the full suite only once a PR carries this.
-    StandardLabel(
-        name="ready-to-merge",
-        color="0e8a16",
-        description="Ready to merge: runs the full regression suite (required status: regression)",
-    ),
-]
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,7 +103,7 @@ def _write_label(api: GitHubApi, repo_name: str, diff: LabelDifference) -> str |
     return None if ran.ok else ran.err.strip()
 
 
-def label_differences(taxonomy: Sequence[StandardLabel], labels: dict[str, RepoLabel]) -> list[LabelDifference]:
+def label_differences(taxonomy: Sequence[LabelSpec], labels: dict[str, RepoLabel]) -> list[LabelDifference]:
     """What it takes to bring *labels* up to *taxonomy*; labels outside the taxonomy are left alone."""
     differences: list[LabelDifference] = []
     for std in taxonomy:
@@ -172,17 +126,19 @@ def label_differences(taxonomy: Sequence[StandardLabel], labels: dict[str, RepoL
 def inspect_repo_labels(
     repo_name: str,
     existing_labels: dict[str, RepoLabel] | None = None,
+    taxonomy: Sequence[LabelSpec] | None = None,
 ) -> LabelAuditResult:
-    """Audits repository labels against the standard taxonomy."""
+    """Audits repository labels against the repo's taxonomy (from the policy unless given)."""
+    wanted = taxonomy if taxonomy is not None else load_policy_config().labels(repo_name)
     labels = existing_labels if existing_labels is not None else fetch_repo_labels(repo_name)
-    differences = label_differences(STANDARD_LABEL_TAXONOMY, labels)
+    differences = label_differences(wanted, labels)
     changed = {d.label_name for d in differences}
     return LabelAuditResult(
         repo_name=repo_name,
-        total_standard=len(STANDARD_LABEL_TAXONOMY),
+        total_standard=len(wanted),
         missing=[d.label_name for d in differences if d.action == "create"],
         mismatched=[d.label_name for d in differences if d.action == "update"],
-        aligned=[std.name for std in STANDARD_LABEL_TAXONOMY if std.name not in changed],
+        aligned=[label.name for label in wanted if label.name not in changed],
         differences=differences,
     )
 
@@ -192,10 +148,11 @@ def sync_repo_labels(
     dry_run: bool = False,
     existing_labels: dict[str, RepoLabel] | None = None,
     api: GitHubApi = gh_api,
+    taxonomy: Sequence[LabelSpec] | None = None,
 ) -> SyncOutcome:
-    """Synchronizes labels in the target repository to match the standard taxonomy."""
+    """Synchronizes labels in the target repository to match its taxonomy."""
     labels = existing_labels if existing_labels is not None else fetch_repo_labels(repo_name, api)
-    audit = inspect_repo_labels(repo_name, labels)
+    audit = inspect_repo_labels(repo_name, labels, taxonomy)
     if audit.is_fully_aligned:
         return SyncOutcome(changed=False, messages=["All standard labels already aligned."])
 
@@ -218,31 +175,25 @@ def sync_repo_labels(
     return SyncOutcome(changed=True, messages=messages)
 
 
-class LabelsResource(Resource[tuple[StandardLabel, ...], dict[str, RepoLabel]]):
-    """The standard label taxonomy, on every governed repo; nothing in the policy narrows it yet."""
+@dataclass(frozen=True, slots=True)
+class LabelsResource:
+    """The `labels` taxonomy; a repo whose policy declares none is left alone."""
 
-    @property
-    @override
-    def name(self) -> str:
-        return "labels"
+    name: str = "labels"
 
-    @override
-    def desired(self, cfg: PolicyConfig, target: Target) -> tuple[StandardLabel, ...]:
-        return tuple(STANDARD_LABEL_TAXONOMY)
+    def desired(self, cfg: PolicyConfig, target: Target) -> tuple[LabelSpec, ...] | None:
+        return cfg.labels(target.slug) or None
 
-    @override
     def read(self, api: GitHubApi, target: Target) -> dict[str, RepoLabel]:
         return read_repo_labels(api, target.slug)
 
-    @override
-    def diff(self, desired: tuple[StandardLabel, ...], observed: dict[str, RepoLabel]) -> list[Change]:
+    def diff(self, desired: tuple[LabelSpec, ...], observed: dict[str, RepoLabel]) -> list[Change]:
         return [
             Change(self.name, d.action, d.details, subject=d.label_name) for d in label_differences(desired, observed)
         ]
 
-    @override
     def apply(
-        self, api: GitHubApi, target: Target, desired: tuple[StandardLabel, ...], changes: Sequence[Change]
+        self, api: GitHubApi, target: Target, desired: tuple[LabelSpec, ...], changes: Sequence[Change]
     ) -> list[str]:
         wanted = {label.name: label for label in desired}
         failures: list[str] = []

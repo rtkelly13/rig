@@ -32,8 +32,10 @@ __all__ = (
     "GitHubAppAccountPolicy",
     "GitHubAppPolicy",
     "GitignoreEntry",
+    "LabelSpec",
     "LanguagePreset",
     "ManageDecision",
+    "MergeSettings",
     "PagesPolicy",
     "PolicyConfig",
     "PolicyFile",
@@ -270,6 +272,26 @@ class VercelGatingRules:
 
 
 @dataclass(frozen=True)
+class MergeSettings:
+    """The merge settings a repo carries on GitHub (`repo_settings`); set by one ``PATCH repos/<repo>``."""
+
+    delete_branch_on_merge: bool = True
+    allow_squash_merge: bool = True
+    allow_merge_commit: bool = False
+    allow_rebase_merge: bool = False
+    allow_auto_merge: bool = True
+
+
+@dataclass(frozen=True)
+class LabelSpec:
+    """One label of the taxonomy (`labels`); *color* is six hex digits without ``#``."""
+
+    name: str
+    color: str
+    description: str
+
+
+@dataclass(frozen=True)
 class PagesPolicy:
     """GitHub Pages configuration policy for a repository."""
 
@@ -380,7 +402,8 @@ class PolicyLayer:
     license: LicenseSpec | str | None = None
     languages: tuple[str, ...] | None = None
     gitignore_entries: tuple[GitignoreEntrySpec, ...] | None = None
-    repo_settings: dict[str, bool] | None = None
+    repo_settings: MergeSettings | None = None
+    labels: tuple[LabelSpec, ...] | None = None
     branch_cleanup: BranchCleanupRules | None = None
     repo_selection: RepoSelectionRules | None = None
     environments: dict[str, EnvironmentSpec] | None = None
@@ -653,9 +676,13 @@ class PolicyConfig:
 
         return tuple(entries)
 
-    def repo_settings(self, repo: str) -> dict[str, bool]:
-        """Return the expected GitHub repo settings for *repo*."""
-        return dict(self._resolve(repo, lambda layer: layer.repo_settings) or {})
+    def repo_settings(self, repo: str) -> MergeSettings:
+        """Return the merge settings *repo* should carry on GitHub."""
+        return self._resolve(repo, lambda layer: layer.repo_settings) or MergeSettings()
+
+    def labels(self, repo: str) -> tuple[LabelSpec, ...]:
+        """Return the label taxonomy for *repo*; empty means labels are not governed."""
+        return self._resolve(repo, lambda layer: layer.labels) or ()
 
     def fork(self, repo: str) -> ForkSpec | None:
         """Return the upstream *repo* tracks, or None when it is not a managed fork."""

@@ -126,21 +126,11 @@ uv run repo-governance sync-templates --all --apply
 
 ## 5. Standard GitHub Label Taxonomy
 
-To prevent label proliferation and maintain visual clarity across GitHub notifications and issue trackers, `sync-labels` reconciles a consistent taxonomy with standard colors:
-
-| Category | Label | Color | Description |
-| :--- | :--- | :--- | :--- |
-| **Type** | `type: bug` | `#d73a4a` (Red) | Something is broken or behaving unexpectedly |
-| | `type: feature` | `#a2eeef` (Light Blue) | New feature or capability request |
-| | `type: performance`| `#ffc107` (Amber) | Performance optimization or memory improvement |
-| | `type: docs` | `#0075ca` (Deep Blue) | Documentation improvements or typo fixes |
-| | `type: maintenance`| `#e4e669` (Yellow) | Chore, dependency update, or refactor |
-| **Status** | `status: needs-repro`| `#e99695` (Salmon) | Cannot reproduce; waiting on submitter for minimal example |
-| | `status: blocked` | `#6a737d` (Grey) | Blocked by upstream dependency or external issue |
-| | `status: in-progress`| `#fbca04` (Orange) | Actively being addressed by a contributor |
-| **Community**| `good first issue` | `#7057ff` (Purple) | Friendly, self-contained entry point for new contributors |
-| | `help wanted` | `#008672` (Teal) | Extra attention or community contribution welcome |
-| **Impact** | `breaking-change` | `#b60205` (Dark Red) | Backwards-incompatible API or behavioral change |
+To prevent label proliferation and keep issue trackers readable, `sync-labels` (and `plan`) reconcile
+one taxonomy of names, colours and descriptions: the `labels` list in `config/repo_policies.json`
+(see [policy config](../repo-governance/policy-config.md#labels)). It covers `type:` labels (bug,
+feature, performance, docs, maintenance), `status:` labels (needs-repro, blocked, in-progress),
+`good first issue`, `help wanted`, `breaking-change` and `ready-to-merge`.
 
 ### Usage
 ```bash

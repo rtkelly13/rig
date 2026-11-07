@@ -10,10 +10,10 @@ from typer.testing import CliRunner
 from rig.proc import ApiRequest, GitHubApi
 from rig.repo_governance.align_repo_conventions import app
 from rig.repo_governance.cli_plan import PlanContext
-from rig.repo_governance.github_rulesets import RULESET_NAME, RepoSettings, build_ruleset_payload
-from rig.repo_governance.label_taxonomy import STANDARD_LABEL_TAXONOMY, RepoLabel, label_differences
+from rig.repo_governance.github_rulesets import RULESET_NAME, RepoSettings, build_ruleset_payload, desired_settings
+from rig.repo_governance.label_taxonomy import RepoLabel, label_differences
 from rig.repo_governance.pages_manager import pages_drift, read_pages
-from rig.repo_governance.policy_config import PagesPolicy, PolicyConfig
+from rig.repo_governance.policy_config import LabelSpec, PagesPolicy, PolicyConfig
 from rig.repo_governance.resource import RepoPlan
 from rig.typed_json import decode_json
 from tests.fakes.github_rest import FakeGitHubApi
@@ -28,6 +28,11 @@ SETTINGS = {
     "allow_auto_merge": True,
     "private": False,
 }
+LABELS = (
+    LabelSpec("type: bug", "d73a4a", "Something is broken"),
+    LabelSpec("good first issue", "7057ff", "Good for newcomers"),
+    LabelSpec("priority: high", "b60205", "Needs attention now"),
+)
 WORKFLOW = """\
 on: pull_request
 jobs:
@@ -39,9 +44,13 @@ jobs:
 
 
 def _config(required: list[str], **layer: object) -> PolicyConfig:
-    return PolicyConfig.parse(
-        {"defaults": {"expected_owner": "acme", "allowed_owners": ["acme"], "required_checks": required, **layer}}
-    )
+    defaults: dict[str, object] = {
+        "expected_owner": "acme",
+        "allowed_owners": ["acme"],
+        "required_checks": required,
+        "labels": [{"name": label.name, "color": label.color, "description": label.description} for label in LABELS],
+    }
+    return PolicyConfig.parse({"defaults": {**defaults, **layer}})
 
 
 def _checkout(tmp_path: pathlib.Path) -> pathlib.Path:
@@ -59,8 +68,7 @@ def _aligned(cfg: PolicyConfig) -> FakeGitHubApi:
             f"repos/{SLUG}/rulesets": [{"id": 7, "name": RULESET_NAME, "enforcement": "active"}],
             f"repos/{SLUG}/rulesets/7": build_ruleset_payload(SLUG, cfg),
             f"repos/{SLUG}/labels?per_page=100": [
-                {"name": label.name, "color": label.color, "description": label.description}
-                for label in STANDARD_LABEL_TAXONOMY
+                {"name": label.name, "color": label.color, "description": label.description} for label in LABELS
             ],
         }
     )
@@ -110,7 +118,36 @@ def test_settings_drift_is_one_change_and_apply_sends_one_patch(tmp_path: pathli
     assert code == 0
     [write] = api.writes
     assert (write.method, write.route) == ("PATCH", f"repos/{SLUG}")
-    assert decode_json(RepoSettings, write.body or "") == RepoSettings()
+    assert decode_json(RepoSettings, write.body or "") == desired_settings(cfg, SLUG, "main")
+
+
+def test_repo_settings_come_from_the_policy(tmp_path: pathlib.Path) -> None:
+    cfg = _config(["lint"], repo_settings={"allow_rebase_merge": True, "allow_auto_merge": False})
+    api = _aligned(cfg)
+    checkout = _checkout(tmp_path)
+
+    code, out = _plan(checkout, cfg, api, "--json")
+
+    assert code == 1
+    [change] = _plans(out)[0].changes
+    assert change.detail == "allow_rebase_merge False -> True; allow_auto_merge True -> False"
+
+    _plan(checkout, cfg, api, "--apply")
+
+    [write] = api.writes
+    sent = decode_json(RepoSettings, write.body or "")
+    assert (sent.allow_rebase_merge, sent.allow_auto_merge, sent.delete_branch_on_merge) == (True, False, True)
+
+
+def test_a_policy_without_labels_leaves_labels_alone(tmp_path: pathlib.Path) -> None:
+    cfg = _config(["lint"], labels=[])
+    api = _aligned(cfg)
+    del api.reads[f"repos/{SLUG}/labels?per_page=100"]
+
+    code, _ = _plan(_checkout(tmp_path), cfg, api, "--json")
+
+    assert code == 0
+    assert all("labels" not in call.route for call in api.calls)
 
 
 def test_stale_required_check_is_refused_and_never_written(tmp_path: pathlib.Path) -> None:
@@ -198,11 +235,11 @@ def test_label_and_pages_writes_go_through_the_port(tmp_path: pathlib.Path) -> N
 @pytest.mark.parametrize(
     ("labels", "expected"),
     [
-        ({}, [(label.name, "create") for label in STANDARD_LABEL_TAXONOMY]),
-        ({label.name: RepoLabel(label.color.upper(), label.description) for label in STANDARD_LABEL_TAXONOMY}, []),
+        ({}, [(label.name, "create") for label in LABELS]),
+        ({label.name: RepoLabel(label.color.upper(), label.description) for label in LABELS}, []),
         (
             {
-                **{label.name: RepoLabel(label.color, label.description) for label in STANDARD_LABEL_TAXONOMY},
+                **{label.name: RepoLabel(label.color, label.description) for label in LABELS},
                 "type: bug": RepoLabel("000000", "old"),
             },
             [("type: bug", "update")],
@@ -211,7 +248,7 @@ def test_label_and_pages_writes_go_through_the_port(tmp_path: pathlib.Path) -> N
     ids=["none", "case-insensitive colour", "one stale"],
 )
 def test_label_differences(labels: dict[str, RepoLabel], expected: list[tuple[str, str]]) -> None:
-    diffs = label_differences(STANDARD_LABEL_TAXONOMY, labels)
+    diffs = label_differences(LABELS, labels)
     assert [(d.label_name, d.action) for d in diffs] == expected
 
 
@@ -222,8 +259,8 @@ def test_label_update_url_encodes_the_name(tmp_path: pathlib.Path) -> None:
     assert isinstance(labels, list)
     api.reads[f"repos/{SLUG}/labels?per_page=100"] = [
         {"name": "good first issue", "color": "000000", "description": ""},
-        *labels[:8],
-        *labels[9:],
+        *labels[:1],
+        *labels[2:],
     ]
 
     _plan(_checkout(tmp_path), cfg, api, "--apply")

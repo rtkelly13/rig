@@ -279,14 +279,27 @@ def _pull_request_rule() -> JsonObject:
 
 @dataclass(frozen=True, slots=True)
 class RepoSettings:
-    """The merge settings every governed repo carries; also the body of the ``PATCH repos/<repo>`` that sets them."""
+    """A repo's default branch and merge settings; also the body of the ``PATCH repos/<repo>`` that sets them."""
 
-    default_branch: str = "main"
-    delete_branch_on_merge: bool = True
-    allow_squash_merge: bool = True
-    allow_merge_commit: bool = False
-    allow_rebase_merge: bool = False
-    allow_auto_merge: bool = True
+    default_branch: str
+    delete_branch_on_merge: bool
+    allow_squash_merge: bool
+    allow_merge_commit: bool
+    allow_rebase_merge: bool
+    allow_auto_merge: bool
+
+
+def desired_settings(cfg: PolicyConfig, repo_name: str, default_branch: str) -> RepoSettings:
+    """The settings `config/repo_policies.json` (`repo_settings`) declares for *repo_name*."""
+    merge = cfg.repo_settings(repo_name)
+    return RepoSettings(
+        default_branch=default_branch,
+        delete_branch_on_merge=merge.delete_branch_on_merge,
+        allow_squash_merge=merge.allow_squash_merge,
+        allow_merge_commit=merge.allow_merge_commit,
+        allow_rebase_merge=merge.allow_rebase_merge,
+        allow_auto_merge=merge.allow_auto_merge,
+    )
 
 
 def settings_drift(desired: RepoSettings, live: _RepoSettings) -> list[str]:
@@ -308,14 +321,16 @@ def settings_drift(desired: RepoSettings, live: _RepoSettings) -> list[str]:
     return drift
 
 
-def inspect_repo_settings(repo_name: str, expected_branch: str = "main", api: GitHubApi = gh_api) -> RepoSettingsResult:
-    """Inspects current GitHub repo settings through the REST port."""
+def inspect_repo_settings(
+    repo_name: str, expected_branch: str = "main", api: GitHubApi = gh_api, cfg: PolicyConfig | None = None
+) -> RepoSettingsResult:
+    """Inspects current GitHub repo settings through the REST port against the policy's `repo_settings`."""
     try:
         settings = read_json(api, _RepoSettings, f"repos/{repo_name}")
     except GitHubReadError as e:
         return RepoSettingsResult(error=str(e), is_aligned=False)
     default_branch = settings.default_branch or "main"
-    drift = settings_drift(RepoSettings(default_branch=expected_branch), settings)
+    drift = settings_drift(desired_settings(cfg or load_policy_config(), repo_name, expected_branch), settings)
     return RepoSettingsResult(
         delete_on_merge=settings.delete_branch_on_merge,
         squash_only=settings.allow_squash_merge is True
@@ -330,10 +345,15 @@ def inspect_repo_settings(repo_name: str, expected_branch: str = "main", api: Gi
 
 
 def align_github_repo_settings(
-    repo_name: str, expected_branch: str = "main", dry_run: bool = False, api: GitHubApi = gh_api
+    repo_name: str,
+    expected_branch: str = "main",
+    dry_run: bool = False,
+    api: GitHubApi = gh_api,
+    cfg: PolicyConfig | None = None,
 ) -> AlignResult:
-    """Sets the merge settings and default branch with one ``PATCH repos/<repo>``."""
-    body = encode_json(RepoSettings, RepoSettings(default_branch=expected_branch))
+    """Sets the policy's merge settings and the default branch with one ``PATCH repos/<repo>``."""
+    desired = desired_settings(cfg or load_policy_config(), repo_name, expected_branch)
+    body = encode_json(RepoSettings, desired)
     if dry_run:
         return AlignResult(status="dry_run", command=f"PATCH repos/{repo_name} {body}")
     ran = send(api, "PATCH", f"repos/{repo_name}", body)
@@ -349,7 +369,7 @@ class RepoSettingsResource:
     name: str = "repo-settings"
 
     def desired(self, cfg: PolicyConfig, target: Target) -> RepoSettings:
-        return RepoSettings(default_branch=cfg.expected_base_branch(target.slug))
+        return desired_settings(cfg, target.slug, cfg.expected_base_branch(target.slug))
 
     def read(self, api: GitHubApi, target: Target) -> _RepoSettings:
         return read_json(api, _RepoSettings, f"repos/{target.slug}")

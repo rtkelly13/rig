@@ -68,6 +68,68 @@
       "allow_rebase_merge": false,
       "allow_auto_merge": true
     },
+    "labels": [
+      {
+        "name": "type: bug",
+        "color": "d73a4a",
+        "description": "Something is broken or behaving unexpectedly"
+      },
+      {
+        "name": "type: feature",
+        "color": "a2eeef",
+        "description": "New feature or capability request"
+      },
+      {
+        "name": "type: docs",
+        "color": "0075ca",
+        "description": "Documentation improvements, typo fixes, or guides"
+      },
+      {
+        "name": "type: performance",
+        "color": "ffc107",
+        "description": "Performance optimization or memory improvement"
+      },
+      {
+        "name": "type: maintenance",
+        "color": "e4e669",
+        "description": "Chore, dependency update, tooling, or refactor"
+      },
+      {
+        "name": "status: needs-repro",
+        "color": "e99695",
+        "description": "Cannot reproduce; waiting on submitter for minimal example"
+      },
+      {
+        "name": "status: blocked",
+        "color": "6a737d",
+        "description": "Blocked by upstream dependency or external issue"
+      },
+      {
+        "name": "status: in-progress",
+        "color": "fbca04",
+        "description": "Actively being addressed by a contributor"
+      },
+      {
+        "name": "good first issue",
+        "color": "7057ff",
+        "description": "Friendly, self-contained entry point for new contributors"
+      },
+      {
+        "name": "help wanted",
+        "color": "008672",
+        "description": "Extra attention or community contribution welcome"
+      },
+      {
+        "name": "breaking-change",
+        "color": "b60205",
+        "description": "Backwards-incompatible API or behavioral change"
+      },
+      {
+        "name": "ready-to-merge",
+        "color": "0e8a16",
+        "description": "Ready to merge: runs the full regression suite (required status: regression)"
+      }
+    ],
     "branch_cleanup": {
       "enabled": true,
       "protected": [
