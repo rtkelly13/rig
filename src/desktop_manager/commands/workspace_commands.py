@@ -7,7 +7,6 @@ from desktop_manager.models import LaunchEntry, LiveWindow, PlacementOutcome, Re
 
 if TYPE_CHECKING:
     from desktop_manager.restore_fallbacks import RestoreFailureFallbacks
-    from desktop_manager.win32.reconcile import DesktopReconciliationResult
     from desktop_manager.window_reuse import WindowMove
 
 
@@ -18,25 +17,6 @@ class WorkspaceCommands:
         from desktop_manager.win32 import ensure_windows
 
         ensure_windows()
-
-    def reconcile_virtual_desktops(
-        self,
-        plan: WorkspacePlan,
-        *,
-        dry_run: bool = False,
-    ) -> DesktopReconciliationResult:
-        from desktop_manager.win32.reconcile import reconcile_virtual_desktops
-
-        target_names = [d.name for d in plan.desktops]
-        return reconcile_virtual_desktops(
-            target_names,
-            retired_names=plan.retired_desktop_names,
-            switch_delay_seconds=plan.switch_delay_ms / 1000,
-            dry_run=dry_run,
-            retire_fn=self.retire_switched_off_desktops,
-            ensure_count_fn=self.ensure_desktop_count,
-            rename_fn=self.rename_desktop,
-        )
 
     def ensure_desktop_count(self, count: int, settle_seconds: float) -> None:
         from desktop_manager.win32.desktops import ensure_desktop_count

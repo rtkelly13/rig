@@ -145,9 +145,6 @@ ignore_imports = [
     "rig.workspace.ci_cli -> rig.estate.ci_telemetry",  # G2 (move the module)
     "rig.workspace.cli -> rig.repo_governance.gitignore_manager",  # G2 (mount from rig_cli)
     "rig.workspace.nuget_governance -> rig.repo_governance.workflow_yaml",  # G2
-    "desktop_manager.desktop_reconcile -> desktop_manager.win32.desktops",  # D1 (DesktopPort)
-    "desktop_manager.placement -> desktop_manager.win32.errors",  # D2 (pure geometry layer)
-    "desktop_manager.placement -> desktop_manager.win32.geometry",  # D2 (pure geometry layer)
     "desktop_manager.work.sessions -> desktop_manager.claude_sessions.discovery",  # G2
     "desktop_manager.work.sessions -> desktop_manager.claude_sessions.folders",  # G2
 ]
@@ -172,10 +169,6 @@ forbidden_modules = [
     "desktop_manager.cli",
 ]
 ignore_imports = [
-    "desktop_manager.win32.align_ports -> desktop_manager.placement",  # D2 (pure geometry layer)
-    "desktop_manager.win32.entry_windows -> desktop_manager.placement",  # D2
-    "desktop_manager.win32.inventory -> desktop_manager.placement",  # D2
-    "desktop_manager.win32.reconcile -> desktop_manager.desktop_reconcile",  # D1 (DesktopPort)
 ]
 
 [[tool.importlinter.contracts]]

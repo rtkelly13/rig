@@ -204,7 +204,8 @@ def name_desktops(
     them on every run, but this reconciles virtual desktops on demand to match
     the declared plan specification (Infrastructure as Code).
     """
-    from desktop_manager.win32.reconcile import reconcile_virtual_desktops
+    from desktop_manager.desktop_reconcile import reconcile_virtual_desktops
+    from desktop_manager.win32.desktops import Win32VirtualDesktops
     from desktop_manager.windows_workspace import load_plan
 
     config_path = config or config_option()
@@ -220,6 +221,7 @@ def name_desktops(
 
     result = reconcile_virtual_desktops(
         target_names,
+        Win32VirtualDesktops(),
         retired_names=plan.retired_desktop_names,
         switch_delay_seconds=plan.switch_delay_ms / 1000,
         dry_run=dry_run,

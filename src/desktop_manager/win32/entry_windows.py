@@ -4,10 +4,11 @@ import time
 from collections.abc import Callable
 
 from desktop_manager import win32
+from desktop_manager.geometry import rect_similarity
 from desktop_manager.models import LaunchEntry, PlacementOutcome, PlacementSpec, WindowMatch
-from desktop_manager.placement import placement_rect_for, rect_similarity
 from desktop_manager.win32 import desktops, geometry, inventory
 from desktop_manager.win32.errors import PYVDA_ERRORS
+from desktop_manager.win32.geometry import placement_rect_for
 from rig import tracing
 
 _SCOPE = "desktop_manager.win32"

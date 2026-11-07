@@ -53,7 +53,8 @@ def window_slot(hwnd: int) -> str | None:
     if sys.platform != "win32":
         return None
     try:
-        from desktop_manager.placement import format_placement, infer_placement_for_window
+        from desktop_manager.placement import format_placement
+        from desktop_manager.win32.geometry import infer_placement_for_window
 
         placement = infer_placement_for_window(hwnd)
     except WIN32_ERRORS:

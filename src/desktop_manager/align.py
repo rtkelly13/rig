@@ -20,8 +20,9 @@ from desktop_manager.desktop_reconcile import (
     plan_virtual_desktops,
 )
 from desktop_manager.display_guard import ShowState
+from desktop_manager.geometry import normalized_placement_rect, rect_similarity
 from desktop_manager.models import DesktopPlan, LaunchEntry, LiveWindow, PlacementSpec, Rect, WorkspacePlan
-from desktop_manager.placement import format_placement, normalized_placement_rect, rect_similarity
+from desktop_manager.placement import format_placement
 from desktop_manager.restore_planner import resolve_target_desktop_index
 from desktop_manager.window_reuse import (
     claim_reusable_window,

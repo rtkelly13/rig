@@ -1,4 +1,4 @@
-"""Unit tests for pure/math functions in placement.py.
+"""Unit tests for the pure functions in placement.py and geometry.py.
 
 These tests cover functions that have no win32 or OS dependencies and
 run correctly on any platform (Linux CI, macOS, Windows).
@@ -10,8 +10,29 @@ from fractions import Fraction
 
 import pytest
 
+from desktop_manager.geometry import (
+    UnitRect,
+    _candidate_layouts,
+    _candidate_subdivide_layouts,
+    _fractional_horizontal_fraction,
+    _fractional_horizontal_two_thirds,
+    _fractional_quarter_rect,
+    _fractional_vertical_fraction,
+    _horizontal_fraction,
+    _horizontal_two_thirds,
+    _quarter_rect,
+    _rect_from_layout,
+    _vertical_fraction,
+    columns_for_width,
+    coverage_summary,
+    infer_placement,
+    normalized_placement_rect,
+    placement_rect_in,
+    rect_similarity,
+)
 from desktop_manager.models import (
     DesktopPlan,
+    DisplayArea,
     LaunchEntry,
     PlacementLayout,
     PlacementSpec,
@@ -19,28 +40,12 @@ from desktop_manager.models import (
     WorkspacePlan,
 )
 from desktop_manager.placement import (
-    UnitRect,
-    _candidate_layouts,
-    _candidate_subdivide_layouts,
     _extract_local_path_arg,
     _format_fraction_percent,
-    _fractional_horizontal_fraction,
-    _fractional_horizontal_two_thirds,
-    _fractional_quarter_rect,
-    _fractional_vertical_fraction,
-    _horizontal_fraction,
-    _horizontal_two_thirds,
     _looks_like_obsidian_vault_arg,
-    _quarter_rect,
-    _rect_from_layout,
-    _vertical_fraction,
-    columns_for_width,
-    coverage_summary,
     fit_columns,
     format_placement,
-    normalized_placement_rect,
     placement_spec,
-    rect_similarity,
     resolve_screen_count,
     validate_placement_spec,
     validate_plan_structure,
@@ -792,3 +797,44 @@ class TestColumns:
 
         assert layout.to_dict() == {"mode": "columns", "slot": 2, "min_width": 800}
         assert PlacementLayout.from_dict(layout.to_dict()) == PlacementLayout(mode="columns", slot=2, min_width=800)
+
+
+# ---------------------------------------------------------------------------
+# placement_rect_in and infer_placement: the machine-free halves of the win32 wrappers
+# ---------------------------------------------------------------------------
+
+_LEFT_SCREEN = DisplayArea(screen_number=1, bounds=Rect(0, 0, 300, 120))
+_RIGHT_SCREEN = DisplayArea(screen_number=2, bounds=Rect(300, 0, 400, 200))
+
+
+@pytest.mark.parametrize(
+    ("placement", "expected"),
+    [
+        (PlacementSpec(screen=2, layout=PlacementLayout(mode="full")), Rect(300, 0, 400, 200)),
+        (PlacementSpec(screen=2, layout=PlacementLayout(mode="thirds", slot=3)), Rect(566, 0, 134, 200)),
+        (
+            PlacementSpec(
+                screen=2,
+                layout=PlacementLayout(mode="halves", slot=2, orientation="vertical"),
+                subdivide=PlacementLayout(mode="halves", slot=1, orientation="horizontal"),
+            ),
+            Rect(500, 0, 200, 100),
+        ),
+    ],
+)
+def test_placement_rect_in_lays_the_slot_out_on_the_given_screen(placement: PlacementSpec, expected: Rect) -> None:
+    assert placement_rect_in(_RIGHT_SCREEN.bounds, placement) == expected
+
+
+@pytest.mark.parametrize(
+    ("window", "expected"),
+    [
+        (Rect(100, 0, 100, 120), PlacementSpec(screen=1, layout=PlacementLayout(mode="thirds", slot=2))),
+        (Rect(300, 0, 400, 200), PlacementSpec(screen=2, layout=PlacementLayout(mode="full"))),
+        # A half of a half ties with a quarter; the plainer quarter wins.
+        (Rect(500, 100, 200, 100), PlacementSpec(screen=2, layout=PlacementLayout(mode="quarters", slot=3))),
+        (Rect(10, 10, 20, 20), None),
+    ],
+)
+def test_infer_placement_names_the_slot_a_window_fills(window: Rect, expected: PlacementSpec | None) -> None:
+    assert infer_placement(window, [_LEFT_SCREEN, _RIGHT_SCREEN]) == expected
