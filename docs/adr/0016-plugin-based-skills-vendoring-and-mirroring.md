@@ -8,7 +8,7 @@
 > `shared-utilities` is the only skill store — domain skills live in the vault library.
 >
 > The `devenv skills` facade, its `devenv skills vendor` commands and the `skill_plugins` registry in
-> `~/.config/devenv/config.json` were removed (rig #411, plan item C11). Clause 4 is now served by
+> `~/.config/devenv/config.json` were removed (rig #30, plan item C11). Clause 4 is now served by
 > `uv run workspace skills update` / `sync`; vendoring is configured in `config/upstream-skills.json`.
 
 ## Context

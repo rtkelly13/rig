@@ -8,7 +8,7 @@ Onboarding developers or configuring new machines requires installing tools, run
 
 ## Decision
 Implement a unified, cross-platform onboarding engine (`devenv`):
-- An ordered list of setup steps (`SETUP_STEPS` in `devenv/cli.py`); each `Step` is a name, a function and its confirm defaults. (The original `StepRegistry` and `@step` decorator were removed in rig #411, plan item C11.)
+- An ordered list of setup steps (`SETUP_STEPS` in `devenv/cli.py`); each `Step` is a name, a function and its confirm defaults. (The original `StepRegistry` and `@step` decorator were removed in rig #30, plan item C11.)
 - Cross-platform context (`StepContext`) supporting `full`, `express`, and `agent` execution modes.
 - Modular Rich UI runner with step skipping, error recovery, and dry-run inspection.
 

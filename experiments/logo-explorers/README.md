@@ -2,7 +2,7 @@
 
 Two logo marks that were once candidates for the Parquet.SourceGenerator brand and are now
 unscored: no promote gate, pathway or test compares them against a reference. They lived in
-`src/rig/image_drift/` until plan item C6 of rtkelly13/rig#411 moved them here.
+`src/rig/image_drift/` until plan item C6 of rtkelly13/rig#30 moved them here.
 
 | File | What it is |
 |---|---|

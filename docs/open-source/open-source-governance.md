@@ -105,7 +105,7 @@ Instead of unstructured freeform markdown, public repositories use schema-valida
 - **Verification Checklist**: Linear history rebase on `origin/main`, test coverage, CI gate agreement, and documentation parity.
 
 > [!TIP]
-> For the comprehensive architectural specification, field validations, and intake lifecycle, see [**Open Source Project Expectations (Section 8)**](./open-source-project-expectations.md#8-structured-issue-forms--pull-request-templates) and tracking issue [#367](https://github.com/rtkelly13/rig/issues/367).
+> For the comprehensive architectural specification, field validations, and intake lifecycle, see [**Open Source Project Expectations (Section 8)**](./open-source-project-expectations.md#8-structured-issue-forms--pull-request-templates) and tracking issue [#367](https://github.com/rtkelly13/rig-archive/issues/367).
 
 ### 3. Community Health & Governance Files
 - **`CONTRIBUTING.md`**: Outlines local development setup (`uv`, `pnpm`, `dotnet`), code style rules, testing instructions, linear history policy, and squash-merge conventions.

@@ -50,7 +50,7 @@ basedpyright is strict with `Any` banned, and the ratchet blocks the shapes it l
 
 - **Target architecture**: [docs/target-architecture.md](docs/target-architecture.md) is the end state rig
   converges on (desired → plan → apply, one port per external state, behaviour tests through seams).
-  Structural changes cite an item in the #411 plan.
+  Structural changes cite an item in the #30 plan.
 - **Browser automation**: use `agent-browser` with the dedicated **dev** profile; never auto-connect
   to or import daily Chrome sessions. [docs/agent-browser/README.md](docs/agent-browser/README.md).
 - **Scheduled ChatGPT reviews**: policy lives in [docs/project-reviews/](docs/project-reviews/README.md)

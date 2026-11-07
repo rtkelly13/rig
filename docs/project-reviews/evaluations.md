@@ -17,7 +17,7 @@ whichever comes first. With four weekly groups, four attempts will normally
 accumulate within a week; each group's first run is still evaluated individually.
 Count attempts, including failures, rather than only
 successful reports. This is an operator reminder, not an installed timer. Record
-the next due date and last evaluated run IDs in [index #375](https://github.com/rtkelly13/rig/issues/375).
+the next due date and last evaluated run IDs in [index #21](https://github.com/rtkelly13/rig/issues/21).
 If no new attempts occurred, record that fact without manufacturing a quality eval.
 
 Review all attempts in the batch for operational outcomes. Deep-score at least
@@ -52,7 +52,7 @@ mkdir -p temp/review-evals/tooling-before
 # gh issue view includes the issue's comments; independently count/page the REST
 # comments collection below to make completeness explicit.
 gh issue view 379 --repo rtkelly13/rig --json body,comments,state,labels > temp/review-evals/tooling-before/issue.json
-gh api --paginate --slurp repos/rtkelly13/rig/issues/379/comments > temp/review-evals/tooling-before/comment-pages.json
+gh api --paginate --slurp repos/rtkelly13/rig/issues/25/comments > temp/review-evals/tooling-before/comment-pages.json
 gh api repos/rtkelly13/rig/git/ref/heads/main > temp/review-evals/tooling-before/main-ref.json
 ```
 

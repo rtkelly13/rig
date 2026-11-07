@@ -8,10 +8,10 @@ current GitHub content every time.
 
 | Schedule | Policy | Canonical memory |
 | --- | --- | --- |
-| Data | [data.md](data.md) | [#376](https://github.com/rtkelly13/rig/issues/376) |
-| Diffra | [diffra.md](diffra.md) | [#363](https://github.com/rtkelly13/rig/issues/363) |
-| Developer Tooling & Design, including Resultful | [tooling-design.md](tooling-design.md) | [#379](https://github.com/rtkelly13/rig/issues/379) |
-| Personal | [personal.md](personal.md) | [#378](https://github.com/rtkelly13/rig/issues/378) |
+| Data | [data.md](data.md) | [#22](https://github.com/rtkelly13/rig/issues/22) |
+| Diffra | [diffra.md](diffra.md) | [#12](https://github.com/rtkelly13/rig/issues/12) |
+| Developer Tooling & Design, including Resultful | [tooling-design.md](tooling-design.md) | [#25](https://github.com/rtkelly13/rig/issues/25) |
+| Personal | [personal.md](personal.md) | [#24](https://github.com/rtkelly13/rig/issues/24) |
 
 Each group runs once every week at 02:00 Europe/London: Data Monday, Diffra
 Tuesday, Tooling & Design Thursday, Personal Friday. Exact starts and RRULEs live
