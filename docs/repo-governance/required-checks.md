@@ -36,6 +36,8 @@ comment did not survive contact, because the name doubled as a job description.
 
 It now reports one aggregate job named `ci`, which names nothing and so has nothing to go stale.
 The three jobs beneath it report as `lint`, `test` and `visual` and can be renamed freely.
+`verify-pr-checks` no longer keeps a list of its own either: it asks GitHub which checks are required
+(`gh pr checks --required`).
 
 Writing the guard immediately surfaced two more repos in the same state, both invisible because they
 matched no key at all and silently inherited the fallback names:

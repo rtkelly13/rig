@@ -136,12 +136,11 @@ def test_empty_thread_list_passes():
 
 @pytest.mark.parametrize("pr", ["feature/topic", "https://github.com/rtkelly13/blog/pull/42"])
 def test_cli_resolves_branch_or_url_before_verifying_threads(pr):
-    checks = [{"name": "pr-checks", "state": "SUCCESS", "bucket": "pass"}]
     with patch(
         "subprocess.run",
         side_effect=[
-            _response(checks),
-            _response({"number": 42}),
+            subprocess.CompletedProcess(["gh"], 0, "pr-checks\tpass\t1m\n", ""),
+            _response({"number": 42, "mergeStateStatus": "CLEAN"}),
             _response(_page(resolved=False)),
         ],
     ) as run:

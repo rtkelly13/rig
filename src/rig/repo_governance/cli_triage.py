@@ -7,16 +7,14 @@ import json
 import pathlib
 import sys
 from dataclasses import dataclass
+from typing import Annotated, NoReturn
 
 import typer
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 from rich.panel import Panel
 
 from rig import proc
 from rig.repo_governance.cli_common import console
-from rig.repo_governance.github_rulesets import (
-    get_required_checks_for_repo,
-)
 from rig.repo_governance.issue_triage import (
     IssueItem,
     build_triage_dashboard,
@@ -36,7 +34,6 @@ from rig.repo_governance.repo_discovery import (
     resolve_target_directories,
 )
 from rig.repo_governance.review_threads import inspect_review_threads
-from rig.typed_json import try_decode_json
 
 app = typer.Typer()
 
@@ -233,84 +230,58 @@ def pr_triage_command(
 
 
 @dataclass(frozen=True, slots=True)
-class _GhPrCheck:
-    """One row of ``gh pr checks --json name,state,bucket``."""
+class _GhPrMergeState:
+    """``gh pr view --json number,mergeStateStatus``."""
 
-    name: str
-    state: str = ""
-    bucket: str | None = None
+    number: int
+    merge_state_status: Annotated[str, Field(alias="mergeStateStatus")]
 
 
-@dataclass(frozen=True, slots=True)
-class _GhPrViewNumber:
-    number: int = 0
+#: ``mergeStateStatus`` values GitHub would merge on. ``UNSTABLE`` means a check that is not required failed.
+_MERGEABLE = frozenset({"CLEAN", "HAS_HOOKS", "UNSTABLE"})
+#: `gh pr checks` exits 8 when checks are still running.
+_PENDING_EXIT = 8
+
+
+def _blocked(message: str, detail: str = "") -> NoReturn:
+    console.print(f"BLOCKED: {message}", markup=False, style="bold red")
+    if detail.strip():
+        console.print(detail.strip(), markup=False)
+    sys.exit(1)
 
 
 @app.command()
 def verify_pr_checks(
-    pr: str = typer.Argument(..., help="PR number or branch name"),
+    pr: str = typer.Argument(..., help="PR number, branch name or URL"),
     repo: str | None = typer.Option(None, "--repo", "-r", help="Target GitHub repo (e.g. rtkelly13/design-system)"),
 ) -> None:
-    """Strictly verifies that all repo-specific required CI status checks pass for a given PR before merging."""
-    target_repo = repo or get_gh_repo_name(pathlib.Path.cwd()) or "rtkelly13/shared-utilities"
-    required_checks = get_required_checks_for_repo(target_repo)
+    """Merge preflight: required checks pass, GitHub says the PR can merge, and every review thread is resolved.
 
-    res = proc.gh("pr", "checks", pr, "--repo", target_repo, "--json", "name,state,bucket")
-    if not res.ok:
-        console.print(f"[bold red]❌ Failed to fetch checks for PR {pr}: {res.err.strip()}[/bold red]")
-        sys.exit(1)
+    The checks are GitHub's required ones (`gh pr checks --required`, set by the ruleset), and the merge
+    state is GitHub's own `mergeStateStatus`.
+    """
+    target_repo = repo or get_gh_repo_name(pathlib.Path.cwd())
+    if target_repo is None:
+        _blocked("no GitHub repository found for the current directory; pass --repo")
 
-    checks = try_decode_json(list[_GhPrCheck], res.out)
-    if checks is None:
-        console.print(f"[bold red]❌ Unreadable check list from `gh pr checks` for PR {pr}[/bold red]")
-        sys.exit(1)
-    check_map = {c.name: c for c in checks}
+    checks = proc.gh("pr", "checks", pr, "--repo", target_repo, "--required")
+    # A repo whose ruleset requires no checks has nothing to wait for; the merge state still gates it.
+    if not checks.ok and "no required checks" not in checks.err:
+        state = "still pending" if checks.code == _PENDING_EXIT else "not passing"
+        _blocked(f"required checks for PR {pr} in {target_repo} are {state}", checks.out or checks.err)
 
-    missing = [name for name in required_checks if name not in check_map]
-    if missing:
-        console.print(
-            f"[bold red]❌ BLOCKED: PR {pr} in {target_repo} is missing required CI checks: {missing}[/bold red]"
-        )
-        console.print("[dim]Every PR must trigger and pass all required checks before merging.[/dim]")
-        sys.exit(1)
+    view = proc.gh_json(_GhPrMergeState, "pr", "view", pr, "--repo", target_repo, "--json", "number,mergeStateStatus")
+    if view is None:
+        _blocked(f"could not read PR '{pr}' in {target_repo}")
+    if view.merge_state_status not in _MERGEABLE:
+        _blocked(f"PR {pr} in {target_repo} cannot merge: mergeStateStatus is {view.merge_state_status}")
 
-    failed: dict[str, str] = {}  # check name -> state
-    pending: dict[str, str] = {}
-
-    for name in required_checks:
-        chk = check_map[name]
-        if chk.bucket in ("fail", "cancel"):
-            failed[name] = chk.state
-        elif chk.bucket == "pending":
-            pending[name] = chk.state
-
-    if failed:
-        console.print(f"[bold red]❌ BLOCKED: Required CI check(s) failed for PR {pr}:[/bold red]")
-        for name, state in failed.items():
-            console.print(f"  • [red]{name}: {state}[/red]")
-        sys.exit(1)
-
-    if pending:
-        console.print(f"[bold yellow]⏳ BLOCKED: Required CI check(s) still pending for PR {pr}:[/bold yellow]")
-        for name, state in pending.items():
-            console.print(f"  • [yellow]{name}: {state}[/yellow]")
-        sys.exit(1)
-
-    # Resolve a branch name or URL before querying the review-thread connection.
-    pr_number: int | None = int(pr) if pr.isdigit() else None
-    if pr_number is None:
-        parsed_view = proc.gh_json(_GhPrViewNumber, "pr", "view", pr, "--repo", target_repo, "--json", "number")
-        if parsed_view is None or parsed_view.number <= 0:
-            console.print(f"[bold red]Failed to resolve PR '{pr}' in {target_repo}[/bold red]")
-            sys.exit(1)
-        pr_number = parsed_view.number
-    threads = inspect_review_threads(target_repo, pr_number)
+    threads = inspect_review_threads(target_repo, view.number)
     if not threads.is_aligned:
-        console.print(f"BLOCKED: PR {pr} in {target_repo}: {threads.message}", markup=False)
-        sys.exit(1)
+        _blocked(f"PR {pr} in {target_repo}: {threads.message}")
 
     console.print(
-        f"[bold green]✓ All required status checks passed and every conversation thread "
+        f"[bold green]✓ Required checks pass, GitHub can merge it, and every conversation thread "
         f"is resolved for PR {pr}![/bold green]"
     )
 
