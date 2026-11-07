@@ -204,3 +204,32 @@ def run_gh(query: str) -> GhResult:
     """Run one GraphQL query through ``gh api graphql``."""
     ran = gh("api", "graphql", "-f", f"query={query}", timeout=GRAPHQL_TIMEOUT)
     return GhResult(ran.code, ran.out, ran.err)
+
+
+# -- REST seam ------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class ApiRequest:
+    """One GitHub REST call: ``GET repos/o/r/labels``, or a write whose JSON *body* is already encoded."""
+
+    method: str
+    route: str
+    body: str | None = None
+
+
+class GitHubApi(Protocol):
+    """Runs one REST call. Production passes `gh_api`; tests pass a fake that answers by method and route.
+
+    A failed call answers as ``gh api`` does: a non-zero code and ``HTTP <status>`` in ``err``.
+    """
+
+    def __call__(self, request: ApiRequest, /) -> Ran: ...
+
+
+def gh_api(request: ApiRequest) -> Ran:
+    """Run one REST call through ``gh api``; a body goes on stdin as ``--input -``."""
+    args = ["api", request.route] if request.method == "GET" else ["api", "-X", request.method, request.route]
+    if request.body is None:
+        return gh(*args)
+    return gh(*args, "--input", "-", stdin_text=request.body)

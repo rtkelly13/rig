@@ -108,9 +108,9 @@ def test_align_pages_dry_run_when_disabled():
     assert res.status == "dry_run"
     assert len(res.actions) == 2
     assert "POST repos/rtkelly13/docs/pages" in res.actions[0]
-    assert "-f build_type=workflow" in res.actions[0]
+    assert '"build_type":"workflow"' in res.actions[0]
     assert "PUT repos/rtkelly13/docs/pages" in res.actions[1]
-    assert "-f cname=docs.ryankelly.dev" in res.actions[1]
+    assert '"cname":"docs.ryankelly.dev"' in res.actions[1]
 
 
 def test_align_pages_execute_flow():

@@ -6,18 +6,20 @@ custom domain (CNAME) assignments, and HTTPS enforcement via the GitHub API.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal, override
 
-from pydantic import ValidationError
-
-from rig import proc
-from rig.proc import ProcError
-from rig.repo_governance.policy_config import PagesPolicy
-from rig.typed_json import decode_json
+from rig.proc import ApiRequest, GitHubApi, gh_api
+from rig.repo_governance.policy_config import PagesPolicy, PolicyConfig
+from rig.repo_governance.resource import Change, GitHubReadError, Resource, Target, is_not_found
+from rig.typed_json import encode_json, try_decode_json
 
 __all__ = [
+    "PagesResource",
     "align_pages",
     "inspect_pages",
+    "pages_drift",
 ]
 
 
@@ -59,68 +61,54 @@ class _Pages:
     html_url: str | None = None
 
 
-def inspect_pages(repo_name: str, expected: PagesPolicy | None = None) -> PagesInspection:
-    """Inspects the current GitHub Pages configuration for *repo_name* via gh API.
+@dataclass(frozen=True, slots=True)
+class _EnablePages:
+    build_type: Literal["workflow", "legacy"]
 
-    Returns a status dict detailing whether Pages is enabled, the build type,
-    assigned custom domain, and whether HTTPS is enforced.
-    """
+
+@dataclass(frozen=True, slots=True)
+class _ConfigurePages:
+    cname: str | None
+    https_enforced: bool
+
+
+def read_pages(api: GitHubApi, repo_name: str) -> _Pages | None:
+    """The repo's Pages site, or None when Pages is off (GitHub's 404); raises when it cannot be read."""
+    route = f"repos/{repo_name}/pages"
+    ran = api(ApiRequest("GET", route))
+    if not ran.ok:
+        if is_not_found(ran):
+            return None
+        raise GitHubReadError(f"GET {route}: {ran.err.strip() or f'exit {ran.code}'}")
+    pages = try_decode_json(_Pages, ran.out)
+    if pages is None:
+        raise GitHubReadError(f"GET {route}: unreadable response")
+    return pages
+
+
+def pages_drift(expected: PagesPolicy | None, pages: _Pages | None) -> list[str]:
+    """Why *pages* (None when Pages is off) does not match *expected*; empty when it does."""
+    if pages is None:
+        return ["Pages is disabled"] if expected and expected.enabled else []
+    if expected is None:
+        return []
+    if not expected.enabled:
+        return ["Pages is enabled, expected disabled"]
+    drift: list[str] = []
+    if pages.build_type != expected.build_type:
+        drift.append(f"build_type is '{pages.build_type}', expected '{expected.build_type}'")
+    if expected.cname and pages.cname != expected.cname:
+        drift.append(f"cname is '{pages.cname}', expected '{expected.cname}'")
+    if expected.https_enforced and not pages.https_enforced:
+        drift.append("https_enforced is False, expected True")
+    return drift
+
+
+def inspect_pages(repo_name: str, expected: PagesPolicy | None = None, api: GitHubApi = gh_api) -> PagesInspection:
+    """Inspects the current GitHub Pages configuration for *repo_name* against *expected*."""
     try:
-        res = proc.gh("api", f"repos/{repo_name}/pages", check=True)
-        pages = decode_json(_Pages, res.out)
-
-        cname = pages.cname
-        build_type = pages.build_type
-        https_enforced = pages.https_enforced
-        status = pages.status
-        html_url = pages.html_url
-
-        is_aligned = True
-        drift_reasons: list[str] = []
-
-        if expected and expected.enabled:
-            if build_type != expected.build_type:
-                is_aligned = False
-                drift_reasons.append(f"build_type is '{build_type}', expected '{expected.build_type}'")
-            if expected.cname and cname != expected.cname:
-                is_aligned = False
-                drift_reasons.append(f"cname is '{cname}', expected '{expected.cname}'")
-            if expected.https_enforced and not https_enforced:
-                is_aligned = False
-                drift_reasons.append("https_enforced is False, expected True")
-        elif expected and not expected.enabled:
-            is_aligned = False
-            drift_reasons.append("Pages is enabled, expected disabled")
-
-        return PagesInspection(
-            enabled=True,
-            cname=cname,
-            build_type=build_type,
-            https_enforced=https_enforced,
-            status=status,
-            html_url=html_url,
-            is_aligned=is_aligned,
-            drift_reasons=tuple(drift_reasons),
-        )
-
-    except ProcError as e:
-        # 404 indicates Pages is disabled on this repo
-        is_disabled = "404" in e.ran.err or "Not Found" in e.ran.err
-        is_aligned = expected is not None and not expected.enabled if is_disabled else False
-        drift = ["Pages is disabled"] if expected and expected.enabled else []
-
-        return PagesInspection(
-            enabled=False,
-            cname=None,
-            build_type=None,
-            https_enforced=False,
-            status="disabled",
-            html_url=None,
-            is_aligned=is_aligned,
-            drift_reasons=tuple(drift),
-            error=None if is_disabled else e.ran.err.strip(),
-        )
-    except ValidationError as e:
+        pages = read_pages(api, repo_name)
+    except GitHubReadError as exc:
         return PagesInspection(
             enabled=False,
             cname=None,
@@ -129,74 +117,109 @@ def inspect_pages(repo_name: str, expected: PagesPolicy | None = None) -> PagesI
             status="error",
             html_url=None,
             is_aligned=False,
-            drift_reasons=(str(e),),
-            error=str(e),
+            drift_reasons=(),
+            error=str(exc),
         )
+    drift = pages_drift(expected, pages)
+    if pages is None:
+        return PagesInspection(
+            enabled=False,
+            cname=None,
+            build_type=None,
+            https_enforced=False,
+            status="disabled",
+            html_url=None,
+            is_aligned=expected is not None and not expected.enabled,
+            drift_reasons=tuple(drift),
+        )
+    return PagesInspection(
+        enabled=True,
+        cname=pages.cname,
+        build_type=pages.build_type,
+        https_enforced=pages.https_enforced,
+        status=pages.status,
+        html_url=pages.html_url,
+        is_aligned=not drift,
+        drift_reasons=tuple(drift),
+    )
 
 
-def align_pages(repo_name: str, policy: PagesPolicy, dry_run: bool = False) -> PagesAlignResult:
+def _pages_writes(repo_name: str, policy: PagesPolicy, enabled: bool) -> list[ApiRequest]:
+    """The writes that bring an enabled policy's Pages site into line: enable it, then configure it."""
+    route = f"repos/{repo_name}/pages"
+    writes: list[ApiRequest] = []
+    if not enabled:
+        writes.append(ApiRequest("POST", route, encode_json(_EnablePages, _EnablePages(policy.build_type))))
+    if policy.cname or policy.https_enforced:
+        body = _ConfigurePages(cname=policy.cname, https_enforced=policy.https_enforced)
+        writes.append(ApiRequest("PUT", route, encode_json(_ConfigurePages, body)))
+    return writes
+
+
+def _describe(request: ApiRequest) -> str:
+    return f"{request.method} {request.route} {request.body or ''}".rstrip()
+
+
+def align_pages(
+    repo_name: str, policy: PagesPolicy, dry_run: bool = False, api: GitHubApi = gh_api
+) -> PagesAlignResult:
     """Applies GitHub Pages configuration according to *policy*.
 
-    - Enables Pages with build_type='workflow' if not currently enabled.
+    - Enables Pages with the policy's build type if not currently enabled.
     - Configures custom domain CNAME and enforces HTTPS.
     """
-    current = inspect_pages(repo_name, expected=policy)
+    current = inspect_pages(repo_name, expected=policy, api=api)
 
     if current.is_aligned:
         return PagesAlignResult(status="aligned", repo=repo_name, details="Pages already aligned with policy")
 
-    planned_actions: list[str] = []
-
-    # 1. Enable Pages if disabled
-    if policy.enabled and not current.enabled:
-        enable_cmd = [
-            "gh",
-            "api",
-            "--method",
-            "POST",
-            f"repos/{repo_name}/pages",
-            "-H",
-            "Accept: application/vnd.github+json",
-            "-f",
-            f"build_type={policy.build_type}",
-        ]
-        planned_actions.append(" ".join(enable_cmd))
-
-        if not dry_run:
-            enabled = proc.gh(*enable_cmd[1:])
-            if not enabled.ok:
-                return PagesAlignResult(
-                    status="error", action="enable_pages", repo=repo_name, error=enabled.err.strip()
-                )
-
-    # 2. Update CNAME / HTTPS if needed
-    if policy.enabled and (policy.cname or policy.https_enforced):
-        put_cmd = [
-            "gh",
-            "api",
-            "--method",
-            "PUT",
-            f"repos/{repo_name}/pages",
-            "-H",
-            "Accept: application/vnd.github+json",
-        ]
-        if policy.cname:
-            put_cmd.extend(["-f", f"cname={policy.cname}"])
-        if policy.https_enforced:
-            put_cmd.extend(["-F", "https_enforced=true"])
-
-        planned_actions.append(" ".join(put_cmd))
-
-        if not dry_run:
-            configured = proc.gh(*put_cmd[1:])
-            if not configured.ok:
-                return PagesAlignResult(
-                    status="error", action="configure_pages_cname", repo=repo_name, error=configured.err.strip()
-                )
-
+    writes = _pages_writes(repo_name, policy, current.enabled) if policy.enabled else []
+    planned_actions = tuple(_describe(w) for w in writes)
     if dry_run:
         return PagesAlignResult(
-            status="dry_run", repo=repo_name, actions=tuple(planned_actions), drift_reasons=current.drift_reasons
+            status="dry_run", repo=repo_name, actions=planned_actions, drift_reasons=current.drift_reasons
         )
+    for write in writes:
+        ran = api(write)
+        if not ran.ok:
+            action = "enable_pages" if write.method == "POST" else "configure_pages_cname"
+            return PagesAlignResult(status="error", action=action, repo=repo_name, error=ran.err.strip())
+    return PagesAlignResult(status="success", repo=repo_name, actions_taken=planned_actions)
 
-    return PagesAlignResult(status="success", repo=repo_name, actions_taken=tuple(planned_actions))
+
+class PagesResource(Resource[PagesPolicy, "_Pages | None"]):
+    """The GitHub Pages site, for repos whose policy enables it; a repo that declares nothing is left alone."""
+
+    @property
+    @override
+    def name(self) -> str:
+        return "pages"
+
+    @override
+    def desired(self, cfg: PolicyConfig, target: Target) -> PagesPolicy | None:
+        policy = cfg.pages(target.slug)
+        return policy if policy.enabled else None
+
+    @override
+    def read(self, api: GitHubApi, target: Target) -> _Pages | None:
+        return read_pages(api, target.slug)
+
+    @override
+    def diff(self, desired: PagesPolicy, observed: _Pages | None) -> list[Change]:
+        drift = pages_drift(desired, observed)
+        if not drift:
+            return []
+        return [Change(self.name, "enable" if observed is None else "update", "; ".join(drift))]
+
+    @override
+    def apply(self, api: GitHubApi, target: Target, desired: PagesPolicy, changes: Sequence[Change]) -> list[str]:
+        if not any(change.kind == "apply" for change in changes):
+            return []
+        enabled = all(change.action != "enable" for change in changes)
+        failures: list[str] = []
+        for write in _pages_writes(target.slug, desired, enabled):
+            ran = api(write)
+            if not ran.ok:
+                failures.append(f"{_describe(write)}: {ran.err.strip()}")
+                break
+        return failures

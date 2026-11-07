@@ -2,18 +2,17 @@ from __future__ import annotations
 
 import json
 import pathlib
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
-from pydantic import ValidationError
-
-from rig import proc
-from rig.proc import ProcError
+from rig.proc import ApiRequest, GitHubApi, Ran, gh_api
 from rig.repo_governance.check_names import (
     discover_pr_check_names,
     lint_check_name,
 )
-from rig.repo_governance.policy_config import load_policy_config
-from rig.typed_json import JsonObject, JsonValue, decode_json
+from rig.repo_governance.policy_config import PolicyConfig, load_policy_config
+from rig.repo_governance.resource import Change, GitHubReadError, Target, read_json, send
+from rig.typed_json import JsonObject, JsonValue, decode_json, encode_json, try_decode_json
 
 HARDCODED_REQUIRED_CHECKS: list[str] = [
     "Lint & Typecheck",
@@ -185,16 +184,19 @@ def _ruleset_shape(ruleset: _RulesetRules) -> dict[str, str]:
     return shape
 
 
-def ruleset_drift(repo_name: str, live_json: str) -> list[str]:
+def ruleset_drift(repo_name: str, live_json: str, cfg: PolicyConfig | None = None) -> list[str]:
     """What the live ruleset lacks or holds differently from `build_ruleset_payload`, one line each.
 
     Existence was all `align_github_ruleset` used to check, so a ruleset created once never took a
     later change: design-system's ran for months with no required checks at all, and with an
     extra-approval rule that made its owner's own PRs unmergeable.
     """
-    wanted = decode_json(_RulesetRules, json.dumps(build_ruleset_payload(repo_name)))
+    wanted = decode_json(_RulesetRules, json.dumps(build_ruleset_payload(repo_name, cfg)))
+    return _drift(wanted, decode_json(_RulesetRules, live_json))
+
+
+def _drift(wanted: _RulesetRules, detail: _RulesetRules) -> list[str]:
     declared = _ruleset_shape(wanted)
-    detail = decode_json(_RulesetRules, live_json)
     live = _ruleset_shape(detail)
     drift: list[str] = []
     enforcement = detail.enforcement
@@ -216,17 +218,17 @@ def ruleset_drift(repo_name: str, live_json: str) -> list[str]:
     return drift
 
 
-def build_ruleset_payload(repo_name: str) -> JsonObject:
+def build_ruleset_payload(repo_name: str, cfg: PolicyConfig | None = None) -> JsonObject:
     """Dynamically builds Main Branch Governance Ruleset payload with repo-specific required checks.
 
     It covers the repo's own default branch (`expected_base_branch`; a fork keeps upstream's). On a
     managed fork the stack tool rebuilds that branch on every rebaseline (docs/forks.md), so it is
     not protected against non-fast-forward pushes and needs no pull request.
     """
-    cfg = load_policy_config()
+    cfg = cfg or load_policy_config()
     branch = cfg.expected_base_branch(repo_name)
     is_fork = cfg.fork(repo_name) is not None
-    req_checks: list[JsonValue] = [{"context": c} for c in registered_required_checks(repo_name)]
+    req_checks: list[JsonValue] = [{"context": c} for c in cfg.required_checks(repo_name)]
     status_checks: list[JsonValue] = (
         [
             {
@@ -275,72 +277,102 @@ def _pull_request_rule() -> JsonObject:
     }
 
 
-def inspect_repo_settings(repo_name: str, expected_branch: str = "main") -> RepoSettingsResult:
-    """Inspects current GitHub repo settings via gh CLI."""
+@dataclass(frozen=True, slots=True)
+class RepoSettings:
+    """The merge settings every governed repo carries; also the body of the ``PATCH repos/<repo>`` that sets them."""
+
+    default_branch: str = "main"
+    delete_branch_on_merge: bool = True
+    allow_squash_merge: bool = True
+    allow_merge_commit: bool = False
+    allow_rebase_merge: bool = False
+    allow_auto_merge: bool = True
+
+
+def settings_drift(desired: RepoSettings, live: _RepoSettings) -> list[str]:
+    """Each setting GitHub holds differently from *desired*, as ``name live -> wanted``.
+
+    GitHub silently ignores ``allow_auto_merge`` on private repos under Free plans (auto-merge
+    needs branch protection, which is Pro-only there), so it is not drift on a private repo.
+    """
+    pairs = {
+        "default_branch": (live.default_branch or "main", desired.default_branch),
+        "delete_branch_on_merge": (live.delete_branch_on_merge, desired.delete_branch_on_merge),
+        "allow_squash_merge": (live.allow_squash_merge, desired.allow_squash_merge),
+        "allow_merge_commit": (live.allow_merge_commit, desired.allow_merge_commit),
+        "allow_rebase_merge": (live.allow_rebase_merge, desired.allow_rebase_merge),
+    }
+    drift = [f"{name} {have} -> {want}" for name, (have, want) in pairs.items() if have != want]
+    if not live.private and live.allow_auto_merge != desired.allow_auto_merge:
+        drift.append(f"allow_auto_merge {live.allow_auto_merge} -> {desired.allow_auto_merge}")
+    return drift
+
+
+def inspect_repo_settings(repo_name: str, expected_branch: str = "main", api: GitHubApi = gh_api) -> RepoSettingsResult:
+    """Inspects current GitHub repo settings through the REST port."""
     try:
-        res = proc.gh("api", f"repos/{repo_name}", check=True)
-        settings = decode_json(_RepoSettings, res.out)
-
-        default_branch = settings.default_branch or "main"
-        base_branch_aligned = default_branch == expected_branch
-        delete_on_merge = settings.delete_branch_on_merge
-        squash_only = (
-            settings.allow_squash_merge is True
-            and settings.allow_merge_commit is False
-            and settings.allow_rebase_merge is False
-        )
-
-        auto_merge = settings.allow_auto_merge
-        # GitHub silently ignores allow_auto_merge on private repos under Free plans
-        # (auto-merge requires branch protection, which is Pro-only for private repos).
-        auto_merge_ok = auto_merge or settings.private
-
-        is_aligned = delete_on_merge and squash_only and auto_merge_ok and base_branch_aligned
-        return RepoSettingsResult(
-            delete_on_merge=delete_on_merge,
-            squash_only=squash_only,
-            auto_merge=auto_merge,
-            default_branch=default_branch,
-            expected_branch=expected_branch,
-            base_branch_aligned=base_branch_aligned,
-            is_aligned=is_aligned,
-        )
-    except (ProcError, ValidationError) as e:
+        settings = read_json(api, _RepoSettings, f"repos/{repo_name}")
+    except GitHubReadError as e:
         return RepoSettingsResult(error=str(e), is_aligned=False)
+    default_branch = settings.default_branch or "main"
+    drift = settings_drift(RepoSettings(default_branch=expected_branch), settings)
+    return RepoSettingsResult(
+        delete_on_merge=settings.delete_branch_on_merge,
+        squash_only=settings.allow_squash_merge is True
+        and settings.allow_merge_commit is False
+        and settings.allow_rebase_merge is False,
+        auto_merge=settings.allow_auto_merge,
+        default_branch=default_branch,
+        expected_branch=expected_branch,
+        base_branch_aligned=default_branch == expected_branch,
+        is_aligned=not drift,
+    )
 
 
-def align_github_repo_settings(repo_name: str, expected_branch: str = "main", dry_run: bool = False) -> AlignResult:
-    """Applies repo settings via gh repo edit (squash, delete-on-merge, auto-merge, default branch)."""
-    cmd = [
-        "gh",
-        "repo",
-        "edit",
-        repo_name,
-        "--delete-branch-on-merge=true",
-        "--enable-auto-merge=true",
-        "--enable-squash-merge=true",
-        "--enable-merge-commit=false",
-        "--enable-rebase-merge=false",
-        f"--default-branch={expected_branch}",
-    ]
+def align_github_repo_settings(
+    repo_name: str, expected_branch: str = "main", dry_run: bool = False, api: GitHubApi = gh_api
+) -> AlignResult:
+    """Sets the merge settings and default branch with one ``PATCH repos/<repo>``."""
+    body = encode_json(RepoSettings, RepoSettings(default_branch=expected_branch))
     if dry_run:
-        return AlignResult(status="dry_run", command=" ".join(cmd))
-
-    try:
-        proc.gh(*cmd[1:], check=True)
+        return AlignResult(status="dry_run", command=f"PATCH repos/{repo_name} {body}")
+    ran = send(api, "PATCH", f"repos/{repo_name}", body)
+    if ran.ok:
         return AlignResult(status="success", repo=repo_name)
-    except ProcError as e:
-        return AlignResult(status="error", error=e.ran.err.strip())
+    return AlignResult(status="error", error=ran.err.strip())
 
 
-def inspect_check_names(repo_path: pathlib.Path, repo_name: str) -> CheckNamesResult:
+@dataclass(frozen=True, slots=True)
+class RepoSettingsResource:
+    """Merge settings and default branch (`gh api repos/<repo>`)."""
+
+    name: str = "repo-settings"
+
+    def desired(self, cfg: PolicyConfig, target: Target) -> RepoSettings:
+        return RepoSettings(default_branch=cfg.expected_base_branch(target.slug))
+
+    def read(self, api: GitHubApi, target: Target) -> _RepoSettings:
+        return read_json(api, _RepoSettings, f"repos/{target.slug}")
+
+    def diff(self, desired: RepoSettings, observed: _RepoSettings) -> list[Change]:
+        drift = settings_drift(desired, observed)
+        return [Change(self.name, "update", "; ".join(drift))] if drift else []
+
+    def apply(self, api: GitHubApi, target: Target, desired: RepoSettings, changes: Sequence[Change]) -> list[str]:
+        if not any(change.kind == "apply" for change in changes):
+            return []
+        ran = send(api, "PATCH", f"repos/{target.slug}", encode_json(RepoSettings, desired))
+        return [] if ran.ok else [f"PATCH repos/{target.slug}: {ran.err.strip()}"]
+
+
+def inspect_check_names(repo_path: pathlib.Path, repo_name: str, cfg: PolicyConfig | None = None) -> CheckNamesResult:
     """Checks a repo's required check names against its workflows on disk, and against the lexicon.
 
     `missing` is drift — a required name no `pull_request` job declares — and is an error.
     `warnings` is shape — a name that breaks the lexicon — and is advisory.
     See docs/repo-governance/required-checks.md.
     """
-    required = registered_required_checks(repo_name)
+    required = list((cfg or load_policy_config()).required_checks(repo_name))
     declared = discover_pr_check_names(repo_path)
     # Unregistered repositories require no check names until their workflows are registered.
     registered = bool(required)
@@ -371,62 +403,143 @@ def inspect_check_names(repo_path: pathlib.Path, repo_name: str) -> CheckNamesRe
     )
 
 
-def inspect_github_ruleset(repo_name: str) -> RulesetInspection:
+#: What GitHub answers a rulesets call on a private repo whose plan does not serve them.
+_RULESETS_UNSERVED = "Upgrade to GitHub Pro or make this repository public"
+
+
+@dataclass(frozen=True, slots=True)
+class LiveRuleset:
+    """The managed ruleset as GitHub holds it. ``rules`` is None when it does not exist yet."""
+
+    served: bool = True
+    id: int | None = None
+    rules: _RulesetRules | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DeclaredRuleset:
+    """The ruleset a repo should carry, and why it must not be written when the check-name guard refuses."""
+
+    payload: str
+    rules: _RulesetRules
+    refusal: str | None = None
+
+
+def read_ruleset(api: GitHubApi, repo_name: str) -> LiveRuleset:
+    """Read the managed ruleset; raises :class:`GitHubReadError` when GitHub cannot be read."""
+    listed = api(ApiRequest("GET", f"repos/{repo_name}/rulesets"))
+    if not listed.ok:
+        if _RULESETS_UNSERVED in listed.err:
+            return LiveRuleset(served=False)
+        raise GitHubReadError(f"GET repos/{repo_name}/rulesets: {listed.err.strip() or f'exit {listed.code}'}")
+    rulesets = try_decode_json(list[_Ruleset], listed.out)
+    if rulesets is None:
+        raise GitHubReadError(f"GET repos/{repo_name}/rulesets: unreadable response")
+    named = [r for r in rulesets if r.name == RULESET_NAME and r.id is not None]
+    if not named:
+        return LiveRuleset()
+    chosen = next((r for r in named if r.enforcement == "active"), named[0])
+    return LiveRuleset(id=chosen.id, rules=read_json(api, _RulesetRules, f"repos/{repo_name}/rulesets/{chosen.id}"))
+
+
+def check_name_refusal(repo_path: pathlib.Path, repo_name: str, cfg: PolicyConfig) -> str | None:
+    """Why the ruleset must not be written, or None. The check-name guard, on every enforcement path.
+
+    A required check no `pull_request` job reports blocks every PR, and undoing it means editing the
+    ruleset in the GitHub UI. A repo with no registered checks gets no status-checks rule, so there is
+    nothing to verify. See docs/repo-governance/required-checks.md.
+    """
+    if not cfg.required_checks(repo_name):
+        return None
+    names = inspect_check_names(repo_path, repo_name, cfg)
+    if names.status == "no_pr_workflows" and names.required:
+        return f"required checks {list(names.required)}: no pull_request workflow exists to report them"
+    if names.missing:
+        declared = sorted(names.declared)
+        return f"required checks {list(names.missing)}: no pull_request job declares them (declared: {declared})"
+    return None
+
+
+def inspect_github_ruleset(repo_name: str, api: GitHubApi = gh_api) -> RulesetInspection:
     """Read the managed ruleset and check its enforcement and declared rules."""
     try:
-        res = proc.gh("api", f"repos/{repo_name}/rulesets", check=True)
-        named = [r for r in decode_json(list[_Ruleset], res.out) if r.name == RULESET_NAME and r.id is not None]
-        if not named:
-            return RulesetInspection(status="MISSING", is_aligned=False)
-        chosen = next((r for r in named if r.enforcement == "active"), named[0])
-        detail = proc.gh("api", f"repos/{repo_name}/rulesets/{chosen.id}", check=True)
-        drift = tuple(ruleset_drift(repo_name, detail.out))
-        return RulesetInspection(
-            status=f"DRIFTED: {'; '.join(drift)}" if drift else "ACTIVE",
-            is_aligned=not drift,
-            id=chosen.id,
-            drift=drift,
-        )
-    except ProcError as e:
-        if "Upgrade to GitHub Pro or make this repository public" in e.ran.err:
-            return RulesetInspection(status="N/A (Private Repo)", is_aligned=True)
+        live = read_ruleset(api, repo_name)
+    except GitHubReadError:
         return RulesetInspection(status="error", is_aligned=False)
-    except ValidationError:
-        return RulesetInspection(status="error", is_aligned=False)
+    if not live.served:
+        return RulesetInspection(status="N/A (Private Repo)", is_aligned=True)
+    if live.rules is None:
+        return RulesetInspection(status="MISSING", is_aligned=False)
+    wanted = decode_json(_RulesetRules, json.dumps(build_ruleset_payload(repo_name)))
+    drift = tuple(_drift(wanted, live.rules))
+    return RulesetInspection(
+        status=f"DRIFTED: {'; '.join(drift)}" if drift else "ACTIVE",
+        is_aligned=not drift,
+        id=live.id,
+        drift=drift,
+    )
 
 
-def align_github_ruleset(repo_name: str, dry_run: bool = False) -> AlignResult:
+def _write_ruleset(api: GitHubApi, repo_name: str, ruleset_id: int | None, payload: str) -> Ran:
+    """Create the ruleset, or replace it in place when it exists, so a drifted one is never duplicated."""
+    if ruleset_id is None:
+        return send(api, "POST", f"repos/{repo_name}/rulesets", payload)
+    return send(api, "PUT", f"repos/{repo_name}/rulesets/{ruleset_id}", payload)
+
+
+def align_github_ruleset(repo_name: str, dry_run: bool = False, api: GitHubApi = gh_api) -> AlignResult:
     """Applies the Main Branch Governance Ruleset, or updates it where it has drifted from the declared one."""
-    existing = inspect_github_ruleset(repo_name)
+    existing = inspect_github_ruleset(repo_name, api)
     if existing.status == "N/A (Private Repo)":
         return AlignResult(status="skipped (private repo restriction)")
-
     if existing.status == "error":
         return AlignResult(status="error", error="could not read the existing rulesets")
     if existing.is_aligned:
         return AlignResult(status="already_active")
-    cmd_type = "PUT" if existing.id is not None else "POST"
-    api_endpoint = f"repos/{repo_name}/rulesets"
-    if existing.id is not None:
-        api_endpoint += f"/{existing.id}"
-    drift = existing.drift
-
     if dry_run:
-        return AlignResult(status="dry_run", action=cmd_type, drift=tuple(drift))
-
-    try:
-        proc.gh(
-            "api",
-            "-X",
-            cmd_type,
-            api_endpoint,
-            "--input",
-            "-",
-            check=True,
-            stdin_text=json.dumps(build_ruleset_payload(repo_name)),
-        )
+        return AlignResult(status="dry_run", action="PUT" if existing.id is not None else "POST", drift=existing.drift)
+    ran = _write_ruleset(api, repo_name, existing.id, json.dumps(build_ruleset_payload(repo_name)))
+    if ran.ok:
         return AlignResult(status="success", ruleset=RULESET_NAME)
-    except ProcError as e:
-        if "Upgrade to GitHub Pro or make this repository public" in e.ran.err:
-            return AlignResult(status="skipped (private repo restriction)")
-        return AlignResult(status="error", error=e.ran.err.strip())
+    if _RULESETS_UNSERVED in ran.err:
+        return AlignResult(status="skipped (private repo restriction)")
+    return AlignResult(status="error", error=ran.err.strip())
+
+
+@dataclass(frozen=True, slots=True)
+class RulesetResource:
+    """The Main Branch Governance Ruleset, behind the check-name guard."""
+
+    name: str = "ruleset"
+
+    def desired(self, cfg: PolicyConfig, target: Target) -> DeclaredRuleset:
+        payload = json.dumps(build_ruleset_payload(target.slug, cfg))
+        return DeclaredRuleset(
+            payload=payload,
+            rules=decode_json(_RulesetRules, payload),
+            refusal=check_name_refusal(target.path, target.slug, cfg),
+        )
+
+    def read(self, api: GitHubApi, target: Target) -> LiveRuleset:
+        return read_ruleset(api, target.slug)
+
+    def diff(self, desired: DeclaredRuleset, observed: LiveRuleset) -> list[Change]:
+        if not observed.served:
+            return [Change(self.name, "unserved", "rulesets are not served for this private repo's plan", kind="note")]
+        if desired.refusal is not None:
+            return [Change(self.name, "refused", desired.refusal, kind="refused")]
+        if observed.rules is None:
+            return [Change(self.name, "create", f"{RULESET_NAME} is missing")]
+        drift = _drift(desired.rules, observed.rules)
+        return [Change(self.name, "update", "; ".join(drift), subject=str(observed.id))] if drift else []
+
+    def apply(self, api: GitHubApi, target: Target, desired: DeclaredRuleset, changes: Sequence[Change]) -> list[str]:
+        failures: list[str] = []
+        for change in changes:
+            if change.kind != "apply":
+                continue
+            ruleset_id = int(change.subject) if change.subject else None
+            ran = _write_ruleset(api, target.slug, ruleset_id, desired.payload)
+            if not ran.ok:
+                failures.append(f"{change.action} {RULESET_NAME} on {target.slug}: {ran.err.strip()}")
+        return failures

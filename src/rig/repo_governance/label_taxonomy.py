@@ -6,14 +6,18 @@ consistent naming, descriptions, and hex colors.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import override
+from urllib.parse import quote
 
 from pydantic import BaseModel, Field, StrictStr
 
-from rig import proc
-from rig.proc import ProcError
+from rig.proc import GitHubApi, gh_api
+from rig.repo_governance.policy_config import PolicyConfig
+from rig.repo_governance.resource import Change, GitHubReadError, Resource, Target, read_json, send
 from rig.repo_governance.sync_outcome import SyncOutcome
-from rig.typed_json import decode_json
+from rig.typed_json import encode_json
 
 
 class StandardLabel(BaseModel):
@@ -98,17 +102,71 @@ class _GhLabel:
     description: StrictStr | None = None
 
 
-def fetch_repo_labels(repo_name: str) -> dict[str, RepoLabel]:
-    """Fetches all existing labels for a repository via gh CLI."""
+@dataclass(frozen=True, slots=True)
+class _LabelUpdate:
+    """The body of a label update; the route names the label."""
+
+    color: str
+    description: str
+
+
+@dataclass(frozen=True, slots=True)
+class _NewLabel:
+    name: str
+    color: str
+    description: str
+
+
+def read_repo_labels(api: GitHubApi, repo_name: str) -> dict[str, RepoLabel]:
+    """Every label on *repo_name*; raises :class:`GitHubReadError` when they cannot be read.
+
+    The taxonomy is a dozen labels, so one page of 100 holds every label a governed repo carries.
+    """
+    labels = read_json(api, list[_GhLabel], f"repos/{repo_name}/labels?per_page=100")
+    return {
+        label.name: RepoLabel(color=(label.color or "").lower(), description=label.description or "")
+        for label in labels
+    }
+
+
+def fetch_repo_labels(repo_name: str, api: GitHubApi = gh_api) -> dict[str, RepoLabel]:
+    """:func:`read_repo_labels`, reading an unreadable list as no labels."""
     try:
-        res = proc.gh("api", f"repos/{repo_name}/labels", "--paginate", check=True)
-        labels = decode_json(list[_GhLabel], res.out)
-        return {
-            label.name: RepoLabel(color=(label.color or "").lower(), description=label.description or "")
-            for label in labels
-        }
-    except (ProcError, ValueError, LookupError):
+        return read_repo_labels(api, repo_name)
+    except GitHubReadError:
         return {}
+
+
+def _write_label(api: GitHubApi, repo_name: str, diff: LabelDifference) -> str | None:
+    """Create or update one label; returns why it failed, or None."""
+    if diff.action == "create":
+        created = _NewLabel(name=diff.label_name, color=diff.color, description=diff.description)
+        ran = send(api, "POST", f"repos/{repo_name}/labels", encode_json(_NewLabel, created))
+    else:
+        updated = _LabelUpdate(color=diff.color, description=diff.description)
+        route = f"repos/{repo_name}/labels/{quote(diff.label_name, safe='')}"
+        ran = send(api, "PATCH", route, encode_json(_LabelUpdate, updated))
+    return None if ran.ok else ran.err.strip()
+
+
+def label_differences(taxonomy: Sequence[StandardLabel], labels: dict[str, RepoLabel]) -> list[LabelDifference]:
+    """What it takes to bring *labels* up to *taxonomy*; labels outside the taxonomy are left alone."""
+    differences: list[LabelDifference] = []
+    for std in taxonomy:
+        current = labels.get(std.name)
+        if current is None:
+            differences.append(
+                LabelDifference(std.name, "create", "Label missing from repository", std.color, std.description)
+            )
+            continue
+        reasons: list[str] = []
+        if current.color.lower() != std.color.lower():
+            reasons.append(f"color mismatch (#{current.color.lower()} vs #{std.color.lower()})")
+        if current.description != std.description:
+            reasons.append("description mismatch")
+        if reasons:
+            differences.append(LabelDifference(std.name, "update", ", ".join(reasons), std.color, std.description))
+    return differences
 
 
 def inspect_repo_labels(
@@ -117,54 +175,14 @@ def inspect_repo_labels(
 ) -> LabelAuditResult:
     """Audits repository labels against the standard taxonomy."""
     labels = existing_labels if existing_labels is not None else fetch_repo_labels(repo_name)
-    missing: list[str] = []
-    mismatched: list[str] = []
-    aligned: list[str] = []
-    differences: list[LabelDifference] = []
-
-    for std in STANDARD_LABEL_TAXONOMY:
-        if std.name not in labels:
-            missing.append(std.name)
-            differences.append(
-                LabelDifference(
-                    label_name=std.name,
-                    action="create",
-                    details="Label missing from repository",
-                    color=std.color,
-                    description=std.description,
-                )
-            )
-        else:
-            curr = labels[std.name]
-            curr_color = curr.color.lower()
-            std_color = std.color.lower()
-            curr_desc = curr.description
-
-            if curr_color != std_color or curr_desc != std.description:
-                mismatched.append(std.name)
-                diff_reasons: list[str] = []
-                if curr_color != std_color:
-                    diff_reasons.append(f"color mismatch (#{curr_color} vs #{std_color})")
-                if curr_desc != std.description:
-                    diff_reasons.append("description mismatch")
-                differences.append(
-                    LabelDifference(
-                        label_name=std.name,
-                        action="update",
-                        details=", ".join(diff_reasons),
-                        color=std.color,
-                        description=std.description,
-                    )
-                )
-            else:
-                aligned.append(std.name)
-
+    differences = label_differences(STANDARD_LABEL_TAXONOMY, labels)
+    changed = {d.label_name for d in differences}
     return LabelAuditResult(
         repo_name=repo_name,
         total_standard=len(STANDARD_LABEL_TAXONOMY),
-        missing=missing,
-        mismatched=mismatched,
-        aligned=aligned,
+        missing=[d.label_name for d in differences if d.action == "create"],
+        mismatched=[d.label_name for d in differences if d.action == "update"],
+        aligned=[std.name for std in STANDARD_LABEL_TAXONOMY if std.name not in changed],
         differences=differences,
     )
 
@@ -173,9 +191,11 @@ def sync_repo_labels(
     repo_name: str,
     dry_run: bool = False,
     existing_labels: dict[str, RepoLabel] | None = None,
+    api: GitHubApi = gh_api,
 ) -> SyncOutcome:
     """Synchronizes labels in the target repository to match the standard taxonomy."""
-    audit = inspect_repo_labels(repo_name, existing_labels)
+    labels = existing_labels if existing_labels is not None else fetch_repo_labels(repo_name, api)
+    audit = inspect_repo_labels(repo_name, labels)
     if audit.is_fully_aligned:
         return SyncOutcome(changed=False, messages=["All standard labels already aligned."])
 
@@ -187,37 +207,49 @@ def sync_repo_labels(
             else:
                 messages.append(f"[Dry Run] Would update label '{diff.label_name}' ({diff.details})")
             continue
-
-        try:
-            if diff.action == "create":
-                proc.gh(
-                    "api",
-                    "--method",
-                    "POST",
-                    f"repos/{repo_name}/labels",
-                    "-f",
-                    f"name={diff.label_name}",
-                    "-f",
-                    f"color={diff.color}",
-                    "-f",
-                    f"description={diff.description}",
-                    check=True,
-                )
-                messages.append(f"Created label '{diff.label_name}' (#{diff.color})")
-            else:
-                proc.gh(
-                    "api",
-                    "--method",
-                    "PATCH",
-                    f"repos/{repo_name}/labels/{diff.label_name}",
-                    "-f",
-                    f"color={diff.color}",
-                    "-f",
-                    f"description={diff.description}",
-                    check=True,
-                )
-                messages.append(f"Updated label '{diff.label_name}'")
-        except ProcError as e:
-            messages.append(f"Failed to {diff.action} '{diff.label_name}': {e.ran.err.strip()}")
+        error = _write_label(api, repo_name, diff)
+        if error is not None:
+            messages.append(f"Failed to {diff.action} '{diff.label_name}': {error}")
+        elif diff.action == "create":
+            messages.append(f"Created label '{diff.label_name}' (#{diff.color})")
+        else:
+            messages.append(f"Updated label '{diff.label_name}'")
 
     return SyncOutcome(changed=True, messages=messages)
+
+
+class LabelsResource(Resource[tuple[StandardLabel, ...], dict[str, RepoLabel]]):
+    """The standard label taxonomy, on every governed repo; nothing in the policy narrows it yet."""
+
+    @property
+    @override
+    def name(self) -> str:
+        return "labels"
+
+    @override
+    def desired(self, cfg: PolicyConfig, target: Target) -> tuple[StandardLabel, ...]:
+        return tuple(STANDARD_LABEL_TAXONOMY)
+
+    @override
+    def read(self, api: GitHubApi, target: Target) -> dict[str, RepoLabel]:
+        return read_repo_labels(api, target.slug)
+
+    @override
+    def diff(self, desired: tuple[StandardLabel, ...], observed: dict[str, RepoLabel]) -> list[Change]:
+        return [
+            Change(self.name, d.action, d.details, subject=d.label_name) for d in label_differences(desired, observed)
+        ]
+
+    @override
+    def apply(
+        self, api: GitHubApi, target: Target, desired: tuple[StandardLabel, ...], changes: Sequence[Change]
+    ) -> list[str]:
+        wanted = {label.name: label for label in desired}
+        failures: list[str] = []
+        for change in changes:
+            label = wanted[change.subject]
+            diff = LabelDifference(label.name, change.action, change.detail, label.color, label.description)
+            error = _write_label(api, target.slug, diff)
+            if error is not None:
+                failures.append(f"{change.action} label '{label.name}' on {target.slug}: {error}")
+        return failures

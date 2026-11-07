@@ -197,17 +197,18 @@ def test_align_github_repo_settings_execution():
         assert res.status == "success"
         mock_run.assert_called_once()
         cmd = mock_run.call_args[0][0]
-        assert "--default-branch=main" in cmd
+        assert cmd[:5] == ["gh", "api", "-X", "PATCH", "repos/rtkelly13/design-system"]
+        assert '"default_branch":"main"' in mock_run.call_args.kwargs["input"]
 
 
 def test_align_github_repo_settings_dry_run():
     res = align_github_repo_settings("rtkelly13/design-system", dry_run=True)
     assert res.status == "dry_run"
-    assert "gh repo edit" in res.command
-    assert "--default-branch=main" in res.command
+    assert res.command.startswith("PATCH repos/rtkelly13/design-system ")
+    assert '"default_branch":"main"' in res.command
 
     res_custom = align_github_repo_settings("rtkelly13/design-system", expected_branch="develop", dry_run=True)
-    assert "--default-branch=develop" in res_custom.command
+    assert '"default_branch":"develop"' in res_custom.command
 
 
 def test_inspect_npmrc_no_package_json(tmp_path: pathlib.Path):

@@ -1,6 +1,6 @@
 import typer
 
-from rig.repo_governance import cli_audits, cli_repo_checks, cli_sync, cli_triage
+from rig.repo_governance import cli_audits, cli_plan, cli_repo_checks, cli_sync, cli_triage
 from rig.repo_governance.github_rulesets import (
     HARDCODED_REQUIRED_CHECKS,
     align_github_repo_settings,
@@ -75,7 +75,7 @@ __all__ = [
 app = typer.Typer(help="CLI tool to audit, inspect status, and enforce repository conventions across GitHub repos.")
 app.registered_commands.extend(
     command
-    for sub_app in (cli_repo_checks.app, cli_sync.app, cli_triage.app, cli_audits.app)
+    for sub_app in (cli_plan.app, cli_repo_checks.app, cli_sync.app, cli_triage.app, cli_audits.app)
     for command in sub_app.registered_commands
 )
 
