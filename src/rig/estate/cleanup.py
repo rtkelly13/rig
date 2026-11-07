@@ -29,19 +29,27 @@ up with prunable entries pointing at nothing.
 from __future__ import annotations
 
 import pathlib
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
 from rig import proc, tracing
+from rig.estate import busy
 from rig.estate.checks import (
     Finding,
     RepoReport,
+    foreign_admin_dir,
     is_dirty,
     list_worktrees,
     orphaned_count,
+    own_worktrees_dir,
 )
 from rig.estate.trim import LONG_PATHS, remove_tree
+
+BRANCH_CHECKS = ("branch-upstream-gone", "branch-merged")
+WORKTREE_CHECKS = ("temp-stale-worktree", "worktree-merged")
+#: Every finding check `clean_repo` acts on; anything else is reported, never touched.
+TIDY_CHECKS = ("worktree-prunable", *BRANCH_CHECKS, *WORKTREE_CHECKS, "temp-stale")
 
 
 class Outcome(StrEnum):
@@ -61,6 +69,30 @@ class Action:
     subject: str
     outcome: Outcome
     detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class Busy:
+    """One snapshot of the directories processes are working in, taken once per run.
+
+    *dirs* is None when it could not be read. That is not "nothing is busy": an
+    unchecked path is refused unless the caller forces it.
+    """
+
+    dirs: frozenset[pathlib.Path] | None
+
+    @classmethod
+    def snapshot(cls) -> Busy:
+        return cls(busy.working_dirs())
+
+    def refusal(self, path: pathlib.Path, force: bool) -> str:
+        """Why *path* must not be removed while in use; "" when it may be."""
+        if self.dirs is None:
+            return (
+                "" if force else "cannot tell whether a process is working in it (lsof unavailable) — --force to skip"
+            )
+        # No flag overrides this: removing it pulls the directory out from under a live process.
+        return "a process is working in it (a shell, agent or Orca terminal)" if busy.in_use(path, self.dirs) else ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,6 +196,7 @@ def _clean_worktree(
     apply: bool,
     force: bool = False,
     merged_heads: Mapping[str, int] | None = None,
+    in_use: Busy | None = None,
 ) -> Action:
     """Remove one worktree, on the same two signals a branch gets.
 
@@ -171,15 +204,41 @@ def _clean_worktree(
     and a first cut had it wrong here after fixing it there: risk is
     `rev-list HEAD --not --remotes`, not "ahead of upstream", and a merged PR
     authorises removal when commits are stranded by a squash.
+
+    Three refusals hold even under `force`, because each one is a case where
+    the usual signals read wrong rather than merely cautious:
+
+    - **unborn HEAD**: its branch ref is gone, so there is no commit to count
+      and `orphaned_count` reads 0; the files on disk may be the only copy.
+    - **another clone's worktree**: `git worktree remove` from here deletes
+      that clone's live work.
+    - **in use**: a process is working in it.
     """
     path = pathlib.Path(finding.subject)
-    registered = {t.path.resolve() for t in list_worktrees(repo) if not t.is_main}
+    trees = list_worktrees(repo)
     try:
         resolved = path.resolve()
     except OSError:
         resolved = None
-    if resolved not in registered:
+    tree = next((t for t in trees if not t.is_main and t.path.resolve() == resolved), None)
+    if tree is None:
         refusal = _guard_path(repo, path)
+        if refusal:
+            return Action(finding.check, finding.subject, Outcome.REFUSED, refusal)
+    else:
+        # Ownership first: a copied registry entry usually reads as unborn too, since the
+        # copy lacks the branch, and "another clone's" is the reason that matters.
+        own = own_worktrees_dir(repo)
+        if own is None:
+            return Action(finding.check, finding.subject, Outcome.REFUSED, "cannot read this clone's git dir")
+        if foreign_admin_dir(tree.path, own) is not None:
+            return Action(
+                finding.check, finding.subject, Outcome.REFUSED, "belongs to another clone — see worktree-foreign-owner"
+            )
+        if tree.unborn:
+            return Action(finding.check, finding.subject, Outcome.REFUSED, "unborn HEAD — see worktree-unborn-head")
+    if in_use is not None:
+        refusal = in_use.refusal(path, force)
         if refusal:
             return Action(finding.check, finding.subject, Outcome.REFUSED, refusal)
     if not force and is_dirty(path):
@@ -187,7 +246,7 @@ def _clean_worktree(
 
     orphaned = 0 if force else orphaned_count(path)
     if orphaned:
-        branch = next((t.branch for t in list_worktrees(repo) if t.path == path), "")
+        branch = tree.branch if tree is not None else ""
         pr = (merged_heads or {}).get(branch)
         if pr is None:
             detail = f"{orphaned} commit(s) on no remote"
@@ -202,9 +261,11 @@ def _clean_worktree(
     return Action(finding.check, finding.subject, Outcome.CLEANED if ok else Outcome.FAILED, out or "removed")
 
 
-def _clean_temp(repo: pathlib.Path, finding: Finding, apply: bool) -> Action:
+def _clean_temp(
+    repo: pathlib.Path, finding: Finding, apply: bool, force: bool = False, in_use: Busy | None = None
+) -> Action:
     path = pathlib.Path(finding.subject)
-    refusal = _guard_path(repo, path)
+    refusal = _guard_path(repo, path) or (in_use.refusal(path, force) if in_use is not None else "")
     if refusal:
         return Action(finding.check, finding.subject, Outcome.REFUSED, refusal)
     if not apply:
@@ -225,6 +286,8 @@ def clean_repo(
     apply: bool = False,
     force: bool = False,
     merged_heads: Mapping[str, int] | None = None,
+    in_use: Busy | None = None,
+    checks: Collection[str] | None = None,
 ) -> list[Action]:
     """Act on the actionable findings in *report*.
 
@@ -235,25 +298,31 @@ def clean_repo(
 
     `force` relaxes the worktree refusals only. No flag will delete a branch
     holding the last copy of a commit; that is not a judgement call.
+
+    *in_use* is the run's snapshot of process working directories; a directory
+    one of them sits in is never removed. None skips that check, which only a
+    caller that has already ruled it out should do. *checks* limits the run to
+    those finding checks.
     """
     actions: list[Action] = []
+    actionable = [f for f in report.actionable if checks is None or f.check in checks]
     with tracing.span(
         "estate.clean_repo", scope="rig.estate", **{"estate.clone": str(report.repo), "estate.apply": apply}
     ):
-        prunable = [f for f in report.actionable if f.check == "worktree-prunable"]
+        prunable = [f for f in actionable if f.check == "worktree-prunable"]
         if prunable:
             actions.append(_clean_prunable(report.repo, apply))
 
-        for finding in report.actionable:
+        for finding in actionable:
             with tracing.span(
                 f"estate.clean {finding.check}", scope="rig.estate", **{"estate.subject": finding.subject}
             ) as s:
-                if finding.check in ("branch-upstream-gone", "branch-merged"):
+                if finding.check in BRANCH_CHECKS:
                     actions.append(_clean_branch(report.repo, finding, apply, merged_heads))
-                elif finding.check in ("temp-stale-worktree", "worktree-merged"):
-                    actions.append(_clean_worktree(report.repo, finding, apply, force, merged_heads))
+                elif finding.check in WORKTREE_CHECKS:
+                    actions.append(_clean_worktree(report.repo, finding, apply, force, merged_heads, in_use))
                 elif finding.check == "temp-stale":
-                    actions.append(_clean_temp(report.repo, finding, apply))
+                    actions.append(_clean_temp(report.repo, finding, apply, force, in_use))
                 else:
                     continue
                 s.set(**{"estate.outcome": str(actions[-1].outcome), "estate.detail": actions[-1].detail[:200]})

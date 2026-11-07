@@ -15,11 +15,18 @@ from rich.console import Console
 from typer.testing import CliRunner
 
 from rig.estate import apps as apps_mod
-from rig.estate import cli, discovery, prs
+from rig.estate import busy, cli, discovery, prs
 from rig.estate import downloads as downloads_mod
 from rig.estate.reclaim import Reclaimable
 from rig.typed_json import JsonValue
 from tests.test_estate_shelve import _git
+
+
+@pytest.fixture(autouse=True)
+def nothing_is_busy(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`tidy` snapshots process working directories with `lsof`; pin that to "none" so runs are deterministic."""
+    monkeypatch.setattr(busy, "working_dirs", frozenset[pathlib.Path])
+
 
 pytestmark = pytest.mark.ci
 

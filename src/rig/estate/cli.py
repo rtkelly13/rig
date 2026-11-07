@@ -48,7 +48,7 @@ from rig.estate import reclaim as reclaim_mod
 from rig.estate import risk as risk_mod
 from rig.estate import trim as trim_mod
 from rig.estate.checks import inspect_repo
-from rig.estate.cleanup import Outcome, clean_repo
+from rig.estate.cleanup import TIDY_CHECKS, Busy, Outcome, clean_repo
 from rig.estate.reclaim import human
 
 app = typer.Typer(add_completion=False, help="Manage the code assets cloned on this machine.")
@@ -402,10 +402,17 @@ def tidy(
     ),
     every: bool = typer.Option(False, "--all", help="Every clone under --root. Required when --repo is not given."),
     apply: bool = typer.Option(False, "--apply", help="Actually delete. Off by default."),
-    force: bool = typer.Option(False, "--force", help="Proceed on clones holding uncommitted or unpushed work"),
+    force: bool = typer.Option(
+        False, "--force", help="Proceed on uncommitted or unpushed work, or when lsof cannot say what is in use"
+    ),
     refresh: bool = typer.Option(False, "--refresh", help="Rescan rather than using the cached list"),
     merged: bool = typer.Option(
         False, "--merged", help="Ask GitHub which head refs have a merged PR (one call per clone)"
+    ),
+    only_checks: list[str] | None = typer.Option(
+        None,
+        "--check",
+        help=f"Act only on this finding check. Repeatable. One of: {', '.join(TIDY_CHECKS)}.",
     ),
 ) -> None:
     """Stale worktrees and finished branches, across the estate.
@@ -423,10 +430,18 @@ def tidy(
     The scope is always explicit: `--repo` names the clones (tidying after one
     merge costs one clone's checks), `--all` sweeps every clone under `--root`.
     Neither, or both, is an error, so a bare `tidy` never starts an estate-wide
-    run nobody asked for.
+    run nobody asked for. `--check` narrows it further, to one kind of finding.
+
+    A directory some process is working in (a shell, an agent, an Orca terminal)
+    is never removed, whatever the flags: one `lsof` snapshot per run says which.
+    Where that cannot be read, removals are refused unless `--force`.
     """
     if bool(repos) == every:
         err.print("[bold red]Choose a scope: --repo <path|name> (repeatable), or --all for every clone.[/bold red]")
+        raise typer.Exit(code=2)
+    unknown = sorted(set(only_checks or ()) - set(TIDY_CHECKS))
+    if unknown:
+        err.print(f"[bold red]Unknown --check {', '.join(unknown)}. Choose from: {', '.join(TIDY_CHECKS)}.[/bold red]")
         raise typer.Exit(code=2)
     scan_root = locate.code_root(root)
     if repos:
@@ -441,6 +456,9 @@ def tidy(
     table.add_column("outcome", justify="right")
     table.add_column("detail", style="dim")
 
+    in_use = Busy.snapshot()
+    if in_use.dirs is None:
+        err.print("[yellow]Cannot read process working directories (lsof); removals need --force.[/yellow]")
     counts: dict[str, int] = {}
     for clone in clones:
         with tracing.span("estate.tidy.clone", scope="rig.estate", **{"estate.clone": str(clone)}) as clone_span:
@@ -451,7 +469,13 @@ def tidy(
                 heads = merged_heads(clone)
             report = inspect_repo(clone, merged_heads=heads)
             clone_span.set(**{"estate.actionable": len(report.actionable)})
-            actions = clean_repo(report, apply=apply, force=force, merged_heads=heads) if report.actionable else []
+            actions = (
+                clean_repo(
+                    report, apply=apply, force=force, merged_heads=heads, in_use=in_use, checks=only_checks or None
+                )
+                if report.actionable
+                else []
+            )
             for outcome in {a.outcome for a in actions}:
                 clone_span.set(**{f"estate.outcome.{outcome}": sum(a.outcome == outcome for a in actions)})
         for action in actions:
