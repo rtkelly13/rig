@@ -1,0 +1,484 @@
+[project]
+name = "rig"
+version = "0.1.0"
+description = "Personal developer rig — multi-agent launcher, estate governance, desktop IaC, and tooling cockpit"
+readme = "README.md"
+authors = [
+    { name = "Ryan Kelly", email = "94ryan.kelly@gmail.com" }
+]
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "click>=8.1.0",
+    "mdformat>=1.0.0",
+    "httpx>=0.28.0",
+    "python-frontmatter>=1.0.0",
+    "jinja2>=3.1.6",
+    "numpy>=2.5.1",
+    "pillow>=12.3.0",
+    "playwright>=1.62.0",
+    "pydantic>=2.12.5",
+    "pyvda>=0.5.0; sys_platform == 'win32'",
+    "rich>=14.2.0",
+    "svgwrite>=1.4.3",
+    "typer>=0.21.1",
+    "pyyaml>=6.0.2",
+    "scour>=0.38.2",
+    "shapely>=2.0.0",
+    "vtracer>=0.6.15",
+    "defusedxml>=0.7.1",
+    "duckdb>=1.5.5",
+    "comtypes>=1.4.16; sys_platform == 'win32'",
+    "pywin32>=311; sys_platform == 'win32'",
+    "type-ratchet",
+    "platformdirs>=4.3",
+    "mcp>=2.3.0",
+    "markdown-it-py>=4.0.0",
+]
+
+[project.scripts]
+rig = "rig.rig_cli:main"
+desktop-manager = "desktop_manager.cli:main"
+estate = "rig.estate.cli:main"
+otel-stack = "rig.otel_stack.cli:main"
+help = "desktop_manager.cli:help_main"
+status = "repo_health.cli:main"
+agent = "rig.agent_launcher.cli:agent_main"
+image-reconcile = "rig.image_drift.cli:main"
+vault = "rig.obsidian.cli:main"
+md-lint = "rig.obsidian.cli:md_lint_entry"
+repo-governance = "rig.repo_governance.align_repo_conventions:main"
+workspace = "rig.workspace.cli:main"
+devenv = "rig.devenv.cli:main"
+latex = "rig.latex_builder.cli:main"
+mail = "rig.mail.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'win32'",
+    "sys_platform == 'linux'",
+]
+
+[tool.uv.workspace]
+members = ["packages/type-ratchet"]
+
+[tool.uv.sources]
+type-ratchet = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/desktop_manager", "src/repo_health", "src/rig", "src/shared_utilities"]
+
+[tool.hatch.build.targets.wheel.force-include]
+# The installed chrome-tabs snapshot has no checkout; site_hosts falls back to this copy.
+"config/chrome-site-groups.json" = "desktop_manager/chrome/chrome-site-groups.json"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "packages/type-ratchet/tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+# Per-test cap (pytest-timeout): a hang fails one test with a stack trace instead of
+# silently eating the job's timeout-minutes. The slowest test took 54s under -n auto on an
+# 8-core Mac on 2026-11-04; 4-vCPU CI runners are slower, so the cap catches hangs, not slowness.
+timeout = 300
+markers = [
+    "ci: no external dependencies — safe to run in CI",
+    "windows: requires Windows OS with win32 APIs",
+    "macos: requires macOS with Chrome scripting and accessibility",
+    "integration: requires live system state (open windows, virtual desktops)",
+    "property: Hypothesis property-based test (applied automatically in tests/conftest.py)",
+    "bdd: pytest-bdd scenario driven by a .feature file (applied automatically)",
+]
+
+[dependency-groups]
+dev = [
+    "deepdiff>=8.6.1",
+    "types-pyyaml>=6.0.12",
+    "ty>=0.0.84",
+    "pytest>=9.0.2",
+    "pytest-xdist>=3.0.0",
+    "inline-snapshot>=0.18.0",
+    "ruff>=0.9.9",
+    "coverage>=7.6.12",
+    "pytest-cov>=6.0.0",
+    "bandit>=1.8.3",
+    "mdformat-ruff>=0.1.3",
+    "mdformat-frontmatter>=2.0.10",
+    "pre-commit>=4.0.0",
+    "types-defusedxml>=0.7.0.20260504",
+    "basedpyright>=1.40.2",
+    "types-pywin32>=312.0.0.20261006",
+    "import-linter>=2.15",
+    "hypothesis>=6.140",
+    "pytest-timeout>=2.3",
+    "pytest-bdd>=8.1.0",
+]
+
+[tool.importlinter]
+root_packages = ["rig", "desktop_manager"]
+include_external_packages = false
+
+[[tool.importlinter.contracts]]
+id = "top-layers"
+name = "desktop_manager sits above rig"
+type = "layers"
+layers = ["desktop_manager", "rig"]
+# Today's violations (plan item G1, #411). Each entry names the item that removes it;
+# G3 deletes every ignore_imports list.
+ignore_imports = [
+    "rig.estate.apps_windows -> desktop_manager.win32.dlls",  # G2
+    "rig.rig_cli -> desktop_manager.cli",  # G2 (composition root, allowed explicitly)
+    "rig.rig_cli -> desktop_manager.web_cli",  # G2 (composition root, allowed explicitly)
+    "rig.otel_stack.backfill -> desktop_manager.runtime",  # B1 (roots.app_data_dir)
+    "rig.otel_stack.paths -> desktop_manager.runtime",  # B1 (roots.app_data_dir)
+]
+
+[[tool.importlinter.contracts]]
+id = "acyclic-siblings"
+name = "rig and desktop_manager subpackages are acyclic"
+type = "acyclic_siblings"
+ancestors = ["rig", "desktop_manager"]
+# A minimal cut set: every entry is needed for the contract to pass. Each names the item that removes it.
+ignore_imports = [
+    "rig.workspace.ci_cli -> rig.estate.ci_telemetry",  # G2 (move the module)
+    "rig.workspace.cli -> rig.repo_governance.gitignore_manager",  # G2 (mount from rig_cli)
+    "rig.workspace.nuget_governance -> rig.repo_governance.workflow_yaml",  # G2
+    "desktop_manager.desktop_reconcile -> desktop_manager.win32.desktops",  # D1 (DesktopPort)
+    "desktop_manager.placement -> desktop_manager.win32.errors",  # D2 (pure geometry layer)
+    "desktop_manager.placement -> desktop_manager.win32.geometry",  # D2 (pure geometry layer)
+    "desktop_manager.work.sessions -> desktop_manager.claude_sessions.discovery",  # G2
+    "desktop_manager.work.sessions -> desktop_manager.claude_sessions.folders",  # G2
+]
+
+[[tool.importlinter.contracts]]
+id = "win32-adapters"
+name = "win32 adapters do not import features"
+type = "forbidden"
+source_modules = ["desktop_manager.win32"]
+forbidden_modules = [
+    "desktop_manager.chrome",
+    "desktop_manager.claude_sessions",
+    "desktop_manager.commands",
+    "desktop_manager.handlers",
+    "desktop_manager.jobs",
+    "desktop_manager.queries",
+    "desktop_manager.work",
+    "desktop_manager.placement",
+    "desktop_manager.desktop_reconcile",
+    "desktop_manager.restore",
+    "desktop_manager.workspace_restore",
+    "desktop_manager.cli",
+]
+ignore_imports = [
+    "desktop_manager.win32.align_ports -> desktop_manager.placement",  # D2 (pure geometry layer)
+    "desktop_manager.win32.entry_windows -> desktop_manager.placement",  # D2
+    "desktop_manager.win32.inventory -> desktop_manager.placement",  # D2
+    "desktop_manager.win32.reconcile -> desktop_manager.desktop_reconcile",  # D1 (DesktopPort)
+]
+
+[[tool.importlinter.contracts]]
+id = "rig-features"
+name = "rig features are independent"
+type = "independence"
+modules = [
+    "rig.estate",
+    "rig.workspace",
+    "rig.repo_governance",
+    "rig.image_drift",
+    "rig.obsidian",
+    "rig.devenv",
+]
+ignore_imports = [
+    "rig.image_drift.server -> rig.workspace.engine",  # G2
+    "rig.workspace.ci_cli -> rig.estate.ci_telemetry",  # G2 (move the module)
+    "rig.workspace.cli -> rig.devenv.ui",  # G2 (shared console helpers to a leaf module)
+    "rig.workspace.cli -> rig.repo_governance.gitignore_manager",  # G2 (mount from rig_cli)
+    "rig.workspace.nuget_governance -> rig.repo_governance.workflow_yaml",  # G2
+    "rig.workspace.orca_cli -> rig.devenv.ui",  # G2 (shared console helpers to a leaf module)
+    "rig.image_drift.server -> rig.connectivity.web",  # G2 (the web host mounts routes from rig_cli)
+    "rig.image_drift.server -> rig.triage.web",  # G2 (the web host mounts routes from rig_cli)
+    "rig.repo_governance.cli_audits -> rig.workspace.engine",  # G2
+    "rig.repo_governance.cli_audits -> rig.workspace.vercel_names",  # G2 (move the module)
+    "rig.repo_governance.vercel_projects -> rig.workspace.vercel_names",  # G2 (move the module)
+    "rig.workspace.orca -> rig.estate.orca_runtime",  # G2 (move the module)
+    "rig.workspace.orca_agent_args -> rig.estate.orca_runtime",  # G2 (move the module)
+    "rig.workspace.orca_cli -> rig.estate.orca_runtime",  # G2 (move the module)
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "N", "UP", "PL", "C90", "T20", "SIM", "ARG", "PTH", "ERA", "TID251", "BLE001", "DTZ", "S602", "PGH004"]
+ignore = [
+    "PLR0913", # Too many arguments
+    "PLR0915", # Too many statements
+    "PLR2004", # Magic value comparison
+    "B008",    # Typer Option/Argument calls in defaults — standard Typer CLI pattern
+    "PLC0415", # Lazy imports inside CLI commands — intentional for fast startup
+    "C901",    # Complex functions — existing logic, refactor separately
+    "PLR0912", # Too many branches — existing logic, refactor separately
+    "PLR0911", # Too many return statements — existing logic, refactor separately
+    "PLW1510", # subprocess.run without check= — many are fire-and-forget
+    "ARG001",  # Unused function argument — interface-compliance signatures
+    "PLW2901", # Loop variable overwritten — intentional line.strip() patterns
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test doubles use interface-compliant mock signatures and lambda stubs whose
+# arguments are intentionally unused; mirrors the global ARG001 rationale.
+"tests/**" = ["ARG002", "ARG005", "PLW0108", "BLE001", "DTZ"]
+"typings/**" = ["N801", "N802", "N803", "N815", "N816", "F403", "TID251"]
+"**/*_windows.py" = ["TID251"]
+"**/windows/**" = ["TID251"]
+"src/desktop_manager/win32/*.py" = ["TID251"]
+"src/desktop_manager/display_guard.py" = ["TID251"]
+"src/desktop_manager/claude_sessions/wt_uia.py" = ["TID251"]
+"src/desktop_manager/claude_sessions/desktop_facts.py" = ["TID251"]
+"src/desktop_manager/claude_sessions/discovery.py" = ["TID251"]
+"src/desktop_manager/chrome/desktops.py" = ["TID251"]
+"src/desktop_manager/chrome/presence.py" = ["TID251"]
+"src/desktop_manager/chrome/uia.py" = ["TID251"]
+"src/desktop_manager/chrome/uia_core.py" = ["TID251"]
+"src/desktop_manager/chrome/window_info.py" = ["TID251"]
+"src/desktop_manager/processes.py" = ["TID251"]
+"src/desktop_manager/projects.py" = ["TID251"]
+"src/rig/fs_links.py" = ["TID251"]
+"src/desktop_manager/terminal_init.py" = ["TID251"]
+# subprocess.* is banned (TID251, plan item B10, #411). Permanent owners:
+# tracing.run is the one executor that rig.proc and every other caller goes through;
+# type-ratchet is a stdlib-only package that cannot import rig.
+"src/rig/tracing.py" = ["TID251"]
+"packages/type-ratchet/**" = ["TID251"]
+# Temporary: callers that still spawn processes directly. Each entry goes when its
+# file moves onto rig.tracing.run / rig.proc; G4 deletes whatever is left.
+# Removed by C10 (installers):
+"src/desktop_manager/chrome/install.py" = ["TID251"]
+# Removed by C13 (latex_builder):
+"src/rig/latex_builder/cli.py" = ["TID251"]
+# Removed by C15 (agent_browser reduced to setup) or G4:
+"src/rig/agent_browser/config.py" = ["TID251"]
+"src/rig/agent_browser/launcher.py" = ["TID251"]
+# Removed by G4 (migrate onto rig.tracing.run):
+"src/desktop_manager/app_updates.py" = ["TID251"]
+"src/desktop_manager/cli_machine.py" = ["TID251"]  # raw git rev-parse: move onto rig.proc.git
+"src/desktop_manager/jobs/install.py" = ["TID251"]
+"src/desktop_manager/jobs/runner.py" = ["TID251"]
+"src/desktop_manager/launching.py" = ["TID251"]
+"src/desktop_manager/restore_fallbacks.py" = ["TID251"]
+"src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
+"src/desktop_manager/service_installer.py" = ["TID251"]
+"src/rig/agent_launcher/cli.py" = ["TID251"]
+"src/rig/devenv/doctor/core.py" = ["TID251"]
+"src/rig/devenv/providers/base.py" = ["TID251"]
+"src/rig/devenv/steps/git.py" = ["TID251"]
+"src/rig/devenv/steps/runtimes.py" = ["TID251"]
+"src/rig/estate/apps.py" = ["TID251"]
+"src/rig/estate/caches.py" = ["TID251"]
+"src/rig/estate/disksize.py" = ["TID251"]
+"src/rig/estate/orca.py" = ["TID251"]
+"src/rig/estate/trim.py" = ["TID251"]
+"src/rig/estate/volume.py" = ["TID251"]
+"src/rig/image_drift/server.py" = ["TID251"]
+"src/rig/image_drift/simplifier/syntactic.py" = ["TID251"]
+"src/rig/obsidian/cli.py" = ["TID251"]
+"src/rig/obsidian/orphan_manager.py" = ["TID251"]
+"src/rig/repo_governance/vercel_gating.py" = ["TID251"]
+"src/rig/skills/vendor.py" = ["TID251"]  # git pull/fetch/clone still raw: move onto rig.proc.git
+"src/rig/workspace/orca_rpc.py" = ["TID251"]
+"src/rig/workspace/package_sources.py" = ["TID251"]
+# Landed on main while this stack was open; same G4 migration.
+"src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
+"src/rig/connectivity/manifests.py" = ["TID251"]
+"src/rig/launchd.py" = ["TID251"]
+"src/rig/models/discovery.py" = ["TID251"]
+"src/rig/otel_stack/clickhouse.py" = ["TID251"]
+"src/rig/otel_stack/runtime.py" = ["TID251"]
+"src/rig/repo_governance/vercel_projects.py" = ["TID251"]
+"src/rig/triage/github.py" = ["TID251"]
+# Temporary: tests that build real temp repos with raw git. F2 moves them onto the
+# shared real-git fixture in tests/fakes/; G4 deletes whatever is left.
+"tests/desktop_manager/test_claude_sessions.py" = ["TID251"]
+"tests/desktop_manager/test_projects.py" = ["TID251"]
+"tests/desktop_manager/test_runtime.py" = ["TID251"]
+"tests/desktop_manager/test_cli_machine_checkout.py" = ["TID251"]
+"tests/test_agents_md_audit.py" = ["TID251"]
+"tests/test_estate.py" = ["TID251"]
+"tests/test_estate_caches.py" = ["TID251"]
+"tests/test_estate_decisions.py" = ["TID251"]
+"tests/test_estate_shelve.py" = ["TID251"]
+"tests/desktop_manager/test_chrome_site_hosts.py" = ["TID251"]
+"tests/test_estate_connectivity.py" = ["TID251"]
+"tests/test_repo_hygiene_git_hooks.py" = ["TID251"]
+"tests/test_estate_trim.py" = ["TID251"]
+"tests/test_workspace_repo_resolver.py" = ["TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"_winapi".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"comtypes".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"ctypes.WINFUNCTYPE".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"ctypes.WinDLL".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"ctypes.oledll".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"ctypes.windll".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"msvcrt".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"pythoncom".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"pyvda".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"pywinauto".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"pywintypes".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"uiautomation".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"win32api".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"win32com".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"win32con".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"win32event".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"win32gui".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"win32process".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"winreg".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
+"subprocess.Popen".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
+"subprocess.call".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
+"subprocess.check_call".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
+"subprocess.check_output".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
+"subprocess.run".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.basedpyright]
+include = ["src", "packages/type-ratchet/src"]
+typeCheckingMode = "strict"
+reportExplicitAny = "error"
+reportAny = "error"
+reportIgnoreCommentWithoutRule = "error"
+reportImplicitOverride = "error"
+reportUnannotatedClassAttribute = "error"
+reportImportCycles = "error"
+reportUninitializedInstanceVariable = "error"
+reportUnusedParameter = "error"
+reportPrivateLocalImportUsage = "error"
+pythonVersion = "3.13"
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportMissingModuleSource = false
+executionEnvironments = [
+    { root = "src", extraPaths = ["src"] },
+    { root = "packages/type-ratchet/src", extraPaths = ["packages/type-ratchet/src"] },
+]
+
+[tool.ty.environment]
+python-version = "3.13"
+python-platform = "all"
+
+[tool.ty.analysis]
+replace-imports-with-any = [
+    "comtypes.**",
+    "pywintypes",
+    "win32api",
+    "win32com.**",
+    "win32con",
+    "win32gui",
+    "win32event",
+    "win32process",
+    "win32ts",
+    "pyvda",
+]
+
+[tool.ty.terminal]
+error-on-warning = true
+output-format = "concise"
+
+[tool.mdformat]
+wrap = 120
+end_of_line = "lf"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/__init__.py",
+    "*/__pycache__/*",
+    # Win32 and UI Automation adapters: they only drive the live Windows desktop, so the Linux
+    # job cannot run them and they would sit in its denominator as permanent misses. Keep logic
+    # out of them; anything testable belongs in a module that stays measured here.
+    "src/desktop_manager/chrome/input_windows.py",
+    "src/desktop_manager/chrome/uia.py",
+    "src/desktop_manager/chrome/uia_core.py",
+    "src/desktop_manager/claude_sessions/wt_uia.py",
+    "src/desktop_manager/display_guard_windows.py",
+    "src/desktop_manager/jobs/session_windows.py",
+    "src/desktop_manager/service_installer.py",
+    "src/desktop_manager/win32/align_ports.py",
+    "src/desktop_manager/win32/inventory.py",
+]
+
+[tool.coverage.report]
+# The floor. A ratchet (rig.repo_governance.coverage_floor, run in CI) stops it falling and
+# makes it follow coverage up to [tool.rig.coverage_ratchet] target. See docs/testing.md.
+fail_under = 79
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.rig.coverage_ratchet]
+target = 95  # the hard floor this ratchets towards
+slack = 2  # points coverage may sit above the floor before the floor must rise
+
+# Mutation testing: `uv run --with mutmut mutmut run`, then `... mutmut results`. Scoped to
+# pure, invariant-rich modules whose tests run in seconds; widen one module at a time and keep
+# the selection to the tests that exercise it. See docs/testing.md.
+[tool.mutmut]
+source_paths = [
+    "src/desktop_manager/placement.py",
+    "src/rig/repo_governance/gitignore_manager.py",
+    "src/rig/typed_json.py",
+    "src/rig/image_drift/simplifier/syntactic.py",
+]
+also_copy = ["tests/", "desktop-manager/", "src/", "typings/", "config/", "data/", "assets/"]
+pytest_add_cli_args = ["-p", "no:xdist", "-p", "no:cacheprovider", "-q"]
+pytest_add_cli_args_test_selection = [
+    "tests/desktop_manager/test_placement_pure.py",
+    "tests/desktop_manager/test_placement_properties.py",
+    "tests/desktop_manager/test_workspace_align.py",
+    "tests/test_gitignore_manager.py",
+    "tests/test_workspace_layout.py",
+    "tests/test_typed_json.py",
+    "tests/test_svg_syntactic_minifier.py",
+]
+
+[tool.repo-health.ratchet]
+paths = ["src", "packages/type-ratchet/src"]
+hint = "Remove them. See docs/python-types.md for the replacements."
+pyright-pragma-allow = []
+boundary-modules = [
+    "src/rig/typed_json.py",
+    "src/rig/typed_yaml.py",
+    "packages/type-ratchet/src/type_ratchet/config.py",
+]
+str-key-receivers = ["self.headers", "handler.headers"]
+loose-dict-aliases = ["JsonObject"]
+loose-dict-allow = [
+    "src/desktop_manager/chrome/cli.py",
+    "src/desktop_manager/chrome/traces.py",
+    "src/desktop_manager/claude_sessions/plan.py",
+    "src/desktop_manager/models.py",
+    "src/desktop_manager/work/serialize.py",
+    "src/rig/devenv/steps/ai_tools/claude_code.py",
+    "src/rig/devenv/steps/ai_tools/obsidian_plugins.py",
+    "src/rig/devenv/steps/ai_tools/opencode.py",
+    "src/rig/devenv/steps/ai_tools/session_ledger.py",
+    "src/rig/devenv/steps/terminal.py",
+    "src/rig/estate/discovery.py",
+    "src/rig/otel_stack/backfill.py",
+    "src/rig/policy/projections.py",
+    "src/rig/repo_governance/github_rulesets.py",
+    "src/rig/repo_governance/gitignore_manager.py",
+    "src/rig/tracing.py",
+    "src/rig/workspace/package_dashboard.py",
+]

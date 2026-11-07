@@ -1,0 +1,17 @@
+{
+  "project": "rtkelly-labs",
+  "variants": {
+    "master": {
+      "file": "master.svg",
+      "sha256": "ed950a4fe75e38a2a7d100c2e827b813ba020e621cde912a3c0c0b33f945af80",
+      "gated": true,
+      "provenance": "Traced from reference/02-smooth-crossover-baseline.jpg (Antigravity session 09c871e1). Not recomputable -- edit only via `image-reconcile promote`."
+    },
+    "favicon": {
+      "file": "favicon.svg",
+      "sha256": "635c50abf9be8fa7aa513845d4c5bbb0c0bd6e58f24b02e43c0d04396f3414e5",
+      "gated": false,
+      "provenance": "Hand-authored small-size cut. Reuses the master's loop and beam path geometry with flattened two-tone fills and no drop shadow. Deliberately diverges from the master; excluded from the reference drift gate."
+    }
+  }
+}

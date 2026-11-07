@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="midnight">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rig // Estate Management & Visual Studio</title>
+  <link rel="stylesheet" href="/static/studio.css">
+  <link rel="stylesheet" href="/static/app_assets/app.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/static/vendor/three.module.js",
+      "three/addons/controls/OrbitControls.js": "/static/vendor/OrbitControls.js"
+    }
+  }
+  </script>
+</head>
+<body class="studio-body">
+  <div id="rig-app"></div>
+  <div id="legacy-workspace" hidden>
+  <header class="studio-header">
+    <div class="header-controls">
+      <div id="workbench-controls-group" style="display: flex; gap: 12px; align-items: center;">
+        <div class="control-group">
+          <label for="project-select">PROJECT:</label>
+          <select id="project-select" class="ds-select"></select>
+        </div>
+        <div class="control-group">
+          <label>VIEW MODE:</label>
+          <div class="button-toggle-group">
+            <button id="mode-side-by-side" class="ds-btn ds-btn-active" data-mode="side-by-side">[ SIDE_BY_SIDE ]</button>
+            <button id="mode-split-slider" class="ds-btn" data-mode="split-slider">[ SPLIT_SLIDER ]</button>
+            <button id="mode-diff-heatmap" class="ds-btn" data-mode="diff-heatmap">[ DIFF_HEATMAP ]</button>
+            <button id="mode-diagnostics" class="ds-btn" data-mode="diagnostics">[ DIAGNOSTICS ]</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>ZOOM:</label>
+          <div class="button-toggle-group">
+            <button class="ds-btn zoom-btn" data-zoom="1">100%</button>
+            <button class="ds-btn zoom-btn ds-btn-active" data-zoom="2">200%</button>
+            <button class="ds-btn zoom-btn" data-zoom="4">400%</button>
+            <button class="ds-btn zoom-btn" data-zoom="8">800%</button>
+          </div>
+        </div>
+        <button id="btn-quick-snapshot" class="ds-btn ds-btn-accent">[ + SNAPSHOT_STEP ]</button>
+      </div>
+      <span id="studio-status" class="studio-status"></span>
+    </div>
+  </header>
+
+  <!-- VIEW 1: Estate Repositories Dashboard -->
+  <div id="view-estate" class="view-container">
+    <div class="estate-container">
+      <div class="estate-header-block">
+        <div>
+          <h2 class="estate-title">Estate Managed Repositories</h2>
+          <div class="estate-stats" id="estate-repo-count">Loading estate repositories...</div>
+        </div>
+        <div class="button-toggle-group">
+          <a href="/triage/inbox" class="ds-btn ds-btn-accent" style="text-decoration:none;">[ 📋 REVIEW_QUEUE ]</a>
+          <a href="/ops/jobs" class="ds-btn" style="text-decoration:none;">[ ⏱️ JOBS ]</a>
+          <button id="btn-backup-db" class="ds-btn">[ 💾 BACKUP_DB ]</button>
+          <button id="btn-refresh-estate" class="ds-btn">[ ⟳ REFRESH ]</button>
+        </div>
+      </div>
+      <div id="estate-filter-bar" class="estate-filter-bar"></div>
+      <div id="estate-grid"></div>
+    </div>
+  </div>
+
+  <!-- VIEW 2: 3D Optical Studio -->
+  <div id="view-optical" class="view-container">
+    <div class="optical-layout">
+      <!-- Controls Sidebar -->
+      <aside class="optical-sidebar">
+        <h3 class="section-heading">[ 💎 3D_PRISM_OPTICS ]</h3>
+        <p style="color: var(--ds-text-muted); font-size: 11px; margin: 0; line-height: 1.4;">
+          Real-time physical transmission, Snell's law refraction, and wavelength dispersion powered by Three.js.
+        </p>
+
+        <div class="optical-control-group">
+          <label><span>TARGET REPO:</span></label>
+          <select id="optical-project-select" class="ds-select" style="width: 100%;"></select>
+        </div>
+
+        <div class="optical-control-group">
+          <label>
+            <span>Index of Refraction (IOR)</span>
+            <span id="val-optical-ior">1.54</span>
+          </label>
+          <input id="slider-optical-ior" type="range" min="1.0" max="2.5" step="0.01" value="1.54" class="optical-slider">
+        </div>
+
+        <div class="optical-control-group">
+          <label>
+            <span>Dispersion (Chromatic Aberration)</span>
+            <span id="val-optical-dispersion">0.080</span>
+          </label>
+          <input id="slider-optical-dispersion" type="range" min="0.0" max="0.25" step="0.005" value="0.08" class="optical-slider">
+        </div>
+
+        <div class="optical-control-group">
+          <label>
+            <span>Surface Roughness</span>
+            <span id="val-optical-roughness">0.020</span>
+          </label>
+          <input id="slider-optical-roughness" type="range" min="0.0" max="0.2" step="0.005" value="0.02" class="optical-slider">
+        </div>
+
+        <div class="optical-control-group">
+          <label>
+            <span>Virtual Thickness</span>
+            <span id="val-optical-thickness">1.6</span>
+          </label>
+          <input id="slider-optical-thickness" type="range" min="0.2" max="3.5" step="0.1" value="1.6" class="optical-slider">
+        </div>
+
+        <div class="optical-control-group">
+          <label>
+            <span>Auto-Rotate Animation</span>
+            <input id="chk-optical-autorotate" type="checkbox" checked style="accent-color: var(--ds-accent-primary);">
+          </label>
+        </div>
+
+        <div class="optical-control-group">
+          <label><span>Caustic Absorption Tint:</span></label>
+          <div class="optical-palette">
+            <div class="optical-swatch active" data-color="#00F5FF" style="background-color: #00F5FF;" title="Electric Cyan"></div>
+            <div class="optical-swatch" data-color="#C084FC" style="background-color: #C084FC;" title="Neon Violet"></div>
+            <div class="optical-swatch" data-color="#F59E0B" style="background-color: #F59E0B;" title="Solar Amber"></div>
+            <div class="optical-swatch" data-color="#10B981" style="background-color: #10B981;" title="Emerald Green"></div>
+            <div class="optical-swatch" data-color="#FFFFFF" style="background-color: #FFFFFF;" title="Pure White"></div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--ds-border-default); padding-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <button id="btn-export-logo" class="ds-btn ds-btn-accent" style="width: 100%;">[ EXPORT 1:1 LOGO (1024×1024) ]</button>
+          <button id="btn-export-banner" class="ds-btn" style="width: 100%;">[ EXPORT 16:9 BANNER (1376×768) ]</button>
+        </div>
+      </aside>
+
+      <!-- 3D Canvas Area -->
+      <main class="optical-viewport-area">
+        <canvas id="optical-canvas"></canvas>
+        <div class="optical-hint">Drag to orbit • Scroll to zoom • Right-click to pan</div>
+      </main>
+    </div>
+  </div>
+
+  <!-- VIEW 3: Asset Studio Visual Workbench (Original) -->
+  <div id="view-workbench" class="view-container active">
+    <div class="studio-layout" style="width: 100%; height: 100%;">
+      <!-- Sidebar: Asset Catalog -->
+      <aside class="studio-sidebar">
+        <div class="sidebar-section">
+          <h3 class="section-heading">[ REFERENCE_SEQUENCE ]</h3>
+          <ul id="reference-list" class="asset-tree-list"></ul>
+        </div>
+
+        <div class="sidebar-section">
+          <h3 class="section-heading">[ PRODUCTION_CUTS ]</h3>
+          <ul id="cuts-list" class="asset-tree-list"></ul>
+        </div>
+
+        <div class="sidebar-section">
+          <h3 class="section-heading">[ VARIATIONS_&_SNAPSHOTS ]</h3>
+          <div id="variations-tree" class="variations-container"></div>
+        </div>
+      </aside>
+
+      <!-- Main Comparison Workbench -->
+      <main class="studio-main">
+        <!-- Top Metrics Strip -->
+        <div class="metrics-strip">
+          <div class="metric-chip">
+            <span class="metric-label">REFERENCE:</span>
+            <span id="metric-ref-name" class="metric-value">-</span>
+          </div>
+          <div class="metric-chip">
+            <span class="metric-label">CANDIDATE:</span>
+            <span id="metric-cand-name" class="metric-value">-</span>
+          </div>
+          <div class="metric-chip">
+            <span class="metric-label">SSIM:</span>
+            <span id="metric-ssim" class="metric-value accent-cyan">-</span>
+          </div>
+          <div class="metric-chip">
+            <span class="metric-label">PSNR:</span>
+            <span id="metric-psnr" class="metric-value accent-cyan">-</span>
+          </div>
+          <div class="metric-chip">
+            <span class="metric-label">RMSE:</span>
+            <span id="metric-rmse" class="metric-value accent-amber">-</span>
+          </div>
+          <div class="metric-chip" title="Luminance structural error (grayscale silhouette / geometry)">
+            <span class="metric-label">LUM:</span>
+            <span id="metric-lum" class="metric-value accent-amber">-</span>
+          </div>
+          <div class="metric-chip" title="Chrominance error (color / palette drift)">
+            <span class="metric-label">CHROM:</span>
+            <span id="metric-chrom" class="metric-value accent-cyan">-</span>
+          </div>
+          <div class="metric-chip" title="High-frequency Sobel gradient edge correlation">
+            <span class="metric-label">EDGE:</span>
+            <span id="metric-edge" class="metric-value accent-cyan">-</span>
+          </div>
+          <div class="metric-chip" title="Boundary dilation (+) or erosion (-)">
+            <span class="metric-label">BIAS:</span>
+            <span id="metric-bias" class="metric-value accent-amber">-</span>
+          </div>
+          <div class="metric-chip">
+            <span class="metric-label">SIZE:</span>
+            <span id="metric-size" class="metric-value">-</span>
+          </div>
+        </div>
+
+        <!-- Workbench Viewport Area -->
+        <div class="workbench-viewport" id="workbench-viewport">
+          <!-- View Container: Side by Side -->
+          <div class="view-panel" id="view-side-by-side">
+            <div class="pan-zoom-container" id="container-reference">
+              <div class="panel-tag">[ REFERENCE ]</div>
+              <div class="pan-zoom-stage">
+                <img id="img-reference" class="workbench-image" alt="Reference" draggable="false" style="display: none;">
+              </div>
+              <div class="panel-meta-info" id="panel-ref-info"></div>
+            </div>
+            <div class="pan-zoom-container" id="container-candidate">
+              <div class="panel-tag">[ CANDIDATE ]</div>
+              <div class="pan-zoom-stage">
+                <img id="img-candidate" class="workbench-image" alt="Candidate" draggable="false" style="display: none;">
+              </div>
+              <div class="panel-meta-info" id="panel-cand-info"></div>
+            </div>
+          </div>
+
+          <!-- View Container: Split Slider -->
+          <div class="view-panel" id="view-split-slider" style="display: none;">
+            <div class="split-slider-container" id="split-slider-container">
+              <div class="slider-image-layer slider-underlay">
+                <img id="slider-img-candidate" class="workbench-image" alt="Candidate" draggable="false" style="display: none;">
+              </div>
+              <div class="slider-image-layer slider-overlay" id="slider-clip-overlay">
+                <img id="slider-img-reference" class="workbench-image" alt="Reference" draggable="false" style="display: none;">
+              </div>
+              <div class="slider-divider" id="slider-divider">
+                <div class="slider-handle"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- View Container: Diff Heatmap -->
+          <div class="view-panel" id="view-diff-heatmap" style="display: none;">
+            <div class="heatmap-legend">
+              <span class="legend-color legend-blue"></span> 0.0 Match
+              <span class="legend-color legend-cyan"></span> Low Error
+              <span class="legend-color legend-yellow"></span> Medium Error
+              <span class="legend-color legend-red"></span> High Drift
+            </div>
+            <div class="pan-zoom-container" id="container-heatmap">
+              <div class="pan-zoom-stage">
+                <img id="img-heatmap" class="workbench-image" alt="Diff Heatmap" draggable="false" style="display: none;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decomposed Diagnostics & Hotspots Drawer -->
+        <div id="diagnostics-drawer" class="diagnostics-drawer" style="display: none;">
+          <div class="diagnostics-header">
+            <span class="diagnostics-title">[ DECOMPOSED_DRIFT_DIAGNOSTICS ]</span>
+            <span id="diagnostics-mode" class="diagnostics-mode-badge">BALANCED</span>
+          </div>
+          <div class="diagnostics-body">
+            <div class="diagnostics-hotspots">
+              <div class="diagnostics-subtitle">SPATIAL ERROR HOTSPOTS:</div>
+              <div id="diagnostics-hotspots-list" class="hotspots-list">-</div>
+            </div>
+            <div class="diagnostics-recommendations">
+              <div class="diagnostics-subtitle">BUILDER REASONING GUIDANCE:</div>
+              <ul id="diagnostics-recs-list" class="recs-list">-</ul>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  </div>
+  <script type="module" src="/static/app_assets/app.js"></script>
+</body>
+</html>

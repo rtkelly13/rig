@@ -1,0 +1,29 @@
+[project]
+name = "type-ratchet"
+version = "0.1.0"
+description = "A zero-baseline gate against type soup in Python: fixed tuples, casts, ignore comments, string-key record reads and more"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Ryan Kelly", email = "94ryan.kelly@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
+
+[project.scripts]
+ratchet = "type_ratchet.cli:main"
+
+[project.urls]
+Repository = "https://github.com/rtkelly13/shared-utilities"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/type_ratchet"]

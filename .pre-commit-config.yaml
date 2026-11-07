@@ -1,0 +1,56 @@
+# Pre-commit hooks for shared-utilities.
+#
+# These run the same checks as CI (.github/workflows/ci.yml) before code leaves
+# your machine, so lint/type/security failures are caught here rather than in a
+# red pipeline. If a hook fails, FIX THE REPORTED ISSUE and commit again — do
+# not bypass with `git commit --no-verify`. Bypassing only pushes the failure
+# downstream to CI and your reviewers.
+#
+# Install once per clone:   uv run pre-commit install --install-hooks
+# Also enable push checks:  uv run pre-commit install --hook-type pre-push
+# Run against everything:   uv run pre-commit run --all-files
+
+default_install_hook_types: [pre-commit, pre-push]
+fail_fast: false
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (fix lint issues before committing — do not --no-verify)
+        entry: uv run ruff check --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff format (run `uv run ruff format .` before committing)
+        entry: uv run ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: basedpyright
+        name: basedpyright (resolve type errors before committing — do not --no-verify)
+        entry: uv run basedpyright
+        language: system
+        types: [python]
+        pass_filenames: false
+        require_serial: true
+
+      - id: bandit
+        name: bandit security scan (address findings before committing)
+        entry: uv run bandit -r src/ -ll
+        language: system
+        types: [python]
+        pass_filenames: false
+        require_serial: true
+
+      - id: pytest
+        name: pytest (full suite must pass before pushing — do not --no-verify)
+        entry: uv run pytest -q
+        language: system
+        types: [python]
+        pass_filenames: false
+        require_serial: true
+        stages: [pre-push]

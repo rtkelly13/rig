@@ -1,0 +1,83 @@
+name: Generate Docs QMD Index
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'docs/**'
+      - 'AGENTS.md'
+      - '.github/workflows/generate-docs-index.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1.2.2
+        with:
+          bun-version: latest
+          
+      - name: Cache QMD Models
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/qmd/models
+          key: qmd-models-v1
+          restore-keys: |
+            qmd-models-
+
+      - name: Install QMD
+        run: bun install -g @tobilu/qmd
+        
+      - name: Prime QMD Models
+        run: |
+          mkdir -p ~/.cache/qmd/models
+          mkdir -p ~/.cache/qmd/prime
+          echo "Priming" > ~/.cache/qmd/prime/anchor.md
+          qmd --index prime collection add ~/.cache/qmd/prime --name prime
+          qmd --index prime embed
+          rm -f ~/.cache/qmd/prime.sqlite*
+          rm -rf ~/.cache/qmd/prime
+
+      - name: Restore Previous Index
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ~/.cache/qmd
+          # Attempt to download from the rolling release
+          if gh release view qmd-index > /dev/null 2>&1; then
+            echo "Restoring index from qmd-index release..."
+            gh release download qmd-index -p docs.sqlite -D ~/.cache/qmd --clobber || echo "docs.sqlite not found in release. Starting fresh."
+            if [ -f ~/.cache/qmd/docs.sqlite ]; then
+              mv ~/.cache/qmd/docs.sqlite ~/.cache/qmd/index.sqlite
+            fi
+          else
+            echo "No qmd-index release found. Starting fresh."
+          fi
+
+      - name: Generate Embeddings
+        run: |
+          mkdir -p ~/.cache/qmd
+          qmd collection add docs/ --name shared-utilities-docs
+          qmd collection add . --name shared-utilities-root --mask "AGENTS.md"
+          qmd embed
+          qmd cleanup
+          
+      - name: Upload Index to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Ensure release exists
+          if ! gh release view qmd-index > /dev/null 2>&1; then
+            gh release create qmd-index --title "qmd-index" --notes "Automated storage for vector search indices."
+          fi
+          
+          # Upload and rename to docs.sqlite for the release asset
+          cp ~/.cache/qmd/index.sqlite ./docs.sqlite
+          gh release upload qmd-index ./docs.sqlite --clobber
+# efficiency check

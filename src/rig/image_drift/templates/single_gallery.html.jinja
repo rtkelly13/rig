@@ -1,0 +1,35 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}{{ project_name }} Logo Macro Element Analysis{% endblock %}
+{% block subtitle %}Deterministic Logo Reconciliation &mdash; Reference vs Target SVG Vector{% endblock %}
+
+{% block metric_note %}
+  <p class="text-[0.82rem] leading-relaxed text-muted">
+    Composite {{ "%.2f"|format(candidates[0].composite_pct) }}% &mdash;
+    full frame {{ "%.2f"|format(candidates[0].full_pct) }}%
+  </p>
+{% endblock %}
+
+{% block content %}
+  <div class="mb-7 grid w-full max-w-[1300px] grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
+    <article class="panel card-shadow relative flex flex-col items-center border-2 border-magenta p-5">
+      <div class="ribbon bg-linear-to-r from-magenta to-magenta-deep text-white">&#128204; Canonical Reference</div>
+      <h3 class="mt-3 mb-1.5 text-center text-base text-paper">{{ reference_name }}</h3>
+      <p class="mb-3 min-h-[34px] text-center text-[0.78rem] text-muted">The source artwork the target is scored against.</p>
+      <img class="size-[210px] rounded-xl object-contain" src="{{ reference_hero }}" alt="Canonical reference">
+      <div class="badge-ref">Composite: 0.00% (by definition)</div>
+    </article>
+    <article class="panel card-shadow relative flex flex-col items-center border-2 border-accent p-5">
+      <h3 class="mt-3 mb-1.5 text-center text-base text-paper">{{ candidates[0].name }}</h3>
+      <p class="mb-3 min-h-[34px] text-center text-[0.78rem] text-muted">{{ candidates[0].description }}</p>
+      <img class="size-[210px] rounded-xl object-contain" src="{{ candidates[0].hero }}" alt="Target SVG">
+      <div class="{{ candidates[0].badge_class }}">
+        Composite: {{ "%.2f"|format(candidates[0].composite_pct) }}%
+      </div>
+      <div class="mt-1.5 text-[0.72rem] text-faint">Full frame: {{ "%.2f"|format(candidates[0].full_pct) }}%</div>
+    </article>
+  </div>
+
+  <h2 class="section-title">High-Resolution Macro Element Zoom Inspection</h2>
+{% include "_feature_matrix.html.jinja" %}
+{% endblock %}

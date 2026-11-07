@@ -1,0 +1,486 @@
+{
+  "projects": [
+    {
+      "name": "blog",
+      "repo": "git@github.com:rtkelly13/blog.git",
+      "description": "Personal blog (ryankelly.dev), technical articles, interactive talks, and content platform.",
+      "domain": "Web & Content Platform",
+      "stack": "Next.js / TypeScript",
+      "vercel": [
+        "blog",
+        "blog-storybook"
+      ],
+      "ports": {
+        "start": 8110,
+        "end": 8119
+      },
+      "orca": {
+        "group": "personal/knowledge"
+      }
+    },
+    {
+      "name": "design-system",
+      "repo": "git@github.com:rtkelly-labs/design-system.git",
+      "description": "Foundational visual design system and component library (@rtkelly-labs/design-system).",
+      "domain": "Frontend & UI Design System",
+      "stack": "React / TypeScript",
+      "vercel": [
+        "design-system-storybook"
+      ],
+      "ports": {
+        "start": 8100,
+        "end": 8109
+      },
+      "packages": [
+        {
+          "registry": "npm",
+          "name": "@rtkelly-labs/design-system",
+          "manifest": "packages/design-system/package.json",
+          "workflow": "publish-package.yml",
+          "auth": "oidc"
+        }
+      ],
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "rig",
+      "repo": "git@github.com:rtkelly13/rig.git",
+      "description": "Central personal estate orchestration CLI, desktop workspace management, repo governance, and automation.",
+      "domain": "Developer Tooling & Estate Governance",
+      "stack": "Python / uv",
+      "ports": {
+        "start": 8090,
+        "end": 8099
+      },
+      "orca": {
+        "group": ""
+      }
+    },
+    {
+      "name": "mermaid-toolkit",
+      "repo": "git@github.com:rtkelly-labs/mermaid-toolkit.git",
+      "description": "Mermaid diagram theme engine and ASCII rendering tools (@rtkelly/mermaid-toolkit).",
+      "domain": "Visualization & Diagram Tooling",
+      "stack": "Node / TypeScript",
+      "packages": [
+        {
+          "registry": "npm",
+          "name": "@rtkelly/mermaid-toolkit",
+          "manifest": "package.json",
+          "workflow": "release.yml",
+          "auth": "token"
+        }
+      ],
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "obsidian-vault",
+      "repo": "git@github.com:rtkelly13/obsidian-vault.git",
+      "description": "Primary Obsidian vault repository for personal knowledge management.",
+      "domain": "Knowledge Management",
+      "stack": "Markdown / Obsidian",
+      "skip_lfs": true,
+      "orca": {
+        "group": "personal/knowledge"
+      }
+    },
+    {
+      "name": "Parquet.SourceGenerator",
+      "repo": "git@github.com:rtkelly-labs/Parquet.SourceGenerator.git",
+      "description": "High-performance C# source generator for Apache Parquet serialization.",
+      "domain": "Data Engineering & .NET",
+      "stack": ".NET 10 / C#",
+      "packages": [
+        {
+          "registry": "nuget",
+          "name": "Parquet.SourceGenerator",
+          "manifest": "Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "owners": ["rtk_13", "rtkelly-labs"],
+          "scopes": ["push-new", "push-version"]
+        },
+        {
+          "registry": "nuget",
+          "name": "Parquet.SourceGenerator.Attributes",
+          "manifest": "Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "owners": ["rtk_13", "rtkelly-labs"],
+          "scopes": ["push-new", "push-version"]
+        },
+        {
+          "registry": "nuget",
+          "name": "Parquet.SourceGenerator.Legacy",
+          "manifest": "Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "owners": ["rtk_13", "rtkelly-labs"],
+          "scopes": ["push-new", "push-version"]
+        }
+      ],
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "Parquet.TypeProvider",
+      "repo": "git@github.com:rtkelly-labs/Parquet.TypeProvider.git",
+      "description": "F# Type Provider for Apache Parquet with compile-time schema inference.",
+      "domain": "Data Engineering & F#",
+      "stack": ".NET 10 / F#",
+      "packages": [
+        {
+          "registry": "nuget",
+          "name": "Parquet.TypeProvider",
+          "manifest": "Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc"
+        }
+      ],
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "ProceduralGeneration3DMazes",
+      "repo": "git@github.com:rtkelly13/ProceduralGeneration3DMazes.git",
+      "description": "Procedural 3D maze generation system built with Godot 4 and C#.",
+      "domain": "Game Development & Procedural Algorithms",
+      "stack": "Godot 4 / C#",
+      "vercel": [
+        "maze"
+      ],
+      "orca": {
+        "group": "personal/apps"
+      }
+    },
+    {
+      "name": "Resultful",
+      "repo": "git@github.com:Resultful/Resultful.git",
+      "description": "Railway-oriented programming primitives and discriminated unions for C#.",
+      "domain": "Functional Architecture & .NET",
+      "stack": ".NET 10 / C#",
+      "packages": [
+        {
+          "registry": "nuget",
+          "name": "Resultful",
+          "manifest": "Resultful/Resultful.csproj",
+          "workflow": "ci.yml",
+          "auth": "token"
+        }
+      ],
+      "orca": {
+        "group": "Resultful"
+      }
+    },
+    {
+      "name": "FluentAssertions.Resultful",
+      "repo": "git@github.com:Resultful/FluentAssertions.Resultful.git",
+      "description": "FluentAssertions extensions for Resultful and OneOf union types.",
+      "domain": "Functional Architecture & .NET",
+      "stack": ".NET 10 / C#",
+      "packages": [
+        {
+          "registry": "nuget",
+          "name": "FluentAssertions.Resultful",
+          "manifest": "src/FluentAssertions.Resultful/FluentAssertions.Resultful.csproj",
+          "workflow": "ci.yml",
+          "auth": "token"
+        },
+        {
+          "registry": "nuget",
+          "name": "FluentAssertions.OneOf",
+          "manifest": "src/FluentAssertions.OneOf/FluentAssertions.OneOf.csproj",
+          "workflow": "ci.yml",
+          "auth": "token"
+        },
+        {
+          "registry": "nuget",
+          "name": "FluentAssertions.OneOf.Extended",
+          "manifest": "src/FluentAssertions.OneOf.Extended/FluentAssertions.OneOf.Extended.csproj",
+          "workflow": "ci.yml",
+          "auth": "token"
+        },
+        {
+          "registry": "nuget",
+          "name": "FluentAssertions.Union",
+          "manifest": "src/FluentAssertions.Union/FluentAssertions.Union.csproj",
+          "workflow": "ci.yml",
+          "auth": "token"
+        }
+      ],
+      "orca": {
+        "group": "Resultful"
+      }
+    },
+    {
+      "name": "ynab-budget-companion",
+      "repo": "git@github.com:rtkelly13/ynab-budget-companion.git",
+      "description": "Local personal budget companion with FastAPI backend and React frontend.",
+      "domain": "Personal Finance & Full-Stack Application",
+      "stack": "FastAPI / React",
+      "orca": {
+        "group": "personal/apps"
+      }
+    },
+    {
+      "name": "hearth",
+      "repo": "git@github.com:rtkelly13/hearth.git",
+      "description": "Personal life systems: health, fitness, money and lifestyle automation. The home counterpart to rig.",
+      "domain": "Personal Operations & Automation",
+      "stack": "Python / uv, React / pnpm",
+      "orca": {
+        "group": "personal/apps"
+      }
+    },
+    {
+      "name": "docs",
+      "repo": "git@github.com:rtkelly-labs/docs.git",
+      "description": "Multi-project Parquet documentation portal and API reference catalog.",
+      "domain": "Documentation Portals",
+      "stack": "Docusaurus / Node",
+      "ports": {
+        "start": 8120,
+        "end": 8129
+      },
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "MySQLEFConcurrencyBug",
+      "repo": "git@github.com:rtkelly13/MySQLEFConcurrencyBug.git",
+      "description": "Reproduction repository for a MySQL EF concurrency issue.",
+      "domain": "Bug Reproduction & Reference",
+      "stack": ".NET / C#"
+    },
+    {
+      "name": "AWSBatch-MapReduce",
+      "repo": "git@github.com:rtkelly13/AWSBatch-MapReduce.git",
+      "description": "AWS Batch-based map reduce experimentation repository.",
+      "domain": "Cloud Infrastructure & Distributed Computing",
+      "stack": "AWS Batch / Python"
+    },
+    {
+      "name": "Lake.NET",
+      "repo": "git@github.com:rtkelly-labs/Lake.NET.git",
+      "description": "Native .NET implementation of Apache Iceberg: tables, catalogs (Glue, REST, JDBC), writes, reads and maintenance.",
+      "domain": "Data Engineering & .NET",
+      "stack": ".NET 10 / C#",
+      "packages": [
+        {
+          "registry": "nuget",
+          "name": "Iceberg.Net.Core",
+          "manifest": "src/Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "environment": "release",
+          "owners": [
+            "rtkelly-labs"
+          ],
+          "scopes": [
+            "push-new",
+            "push-version"
+          ]
+        },
+        {
+          "registry": "nuget",
+          "name": "Iceberg.Net.Avro",
+          "manifest": "src/Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "environment": "release",
+          "owners": [
+            "rtkelly-labs"
+          ],
+          "scopes": [
+            "push-new",
+            "push-version"
+          ]
+        },
+        {
+          "registry": "nuget",
+          "name": "Iceberg.Net.Puffin",
+          "manifest": "src/Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "environment": "release",
+          "owners": [
+            "rtkelly-labs"
+          ],
+          "scopes": [
+            "push-new",
+            "push-version"
+          ]
+        },
+        {
+          "registry": "nuget",
+          "name": "Iceberg.Net.IO",
+          "manifest": "src/Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "environment": "release",
+          "owners": [
+            "rtkelly-labs"
+          ],
+          "scopes": [
+            "push-new",
+            "push-version"
+          ]
+        },
+        {
+          "registry": "nuget",
+          "name": "Iceberg.Net.Catalog",
+          "manifest": "src/Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "environment": "release",
+          "owners": [
+            "rtkelly-labs"
+          ],
+          "scopes": [
+            "push-new",
+            "push-version"
+          ]
+        },
+        {
+          "registry": "nuget",
+          "name": "Iceberg.Net.Data",
+          "manifest": "src/Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "environment": "release",
+          "owners": [
+            "rtkelly-labs"
+          ],
+          "scopes": [
+            "push-new",
+            "push-version"
+          ]
+        },
+        {
+          "registry": "nuget",
+          "name": "Iceberg.Net.Linq",
+          "manifest": "src/Directory.Build.props",
+          "workflow": "release.yml",
+          "auth": "oidc",
+          "nuget_owner": "rtkelly-labs",
+          "nuget_user": "rtk_13",
+          "environment": "release",
+          "owners": [
+            "rtkelly-labs"
+          ],
+          "scopes": [
+            "push-new",
+            "push-version"
+          ]
+        }
+      ],
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "Diffra",
+      "repo": "git@github.com:rtkelly-labs/Diffra.git",
+      "description": "Typed evidence and trusted baseline comparison protocol.",
+      "domain": "Developer Tooling & Quality",
+      "stack": ".NET 10 / C#",
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "Diffra.Guardrails",
+      "repo": "git@github.com:rtkelly-labs/Diffra.Guardrails.git",
+      "description": "Constraints that steer people and AI agents toward well-structured tests, emitted as Diffra evidence.",
+      "domain": "Developer Tooling & Quality",
+      "stack": "Python / .NET 10 / TypeScript",
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "diffra-pro",
+      "repo": "git@github.com:rtkelly-labs/diffra-pro.git",
+      "description": "Diffra server implementations, hosted service, identity and commercial work (private while experimenting).",
+      "domain": "Developer Tooling & Quality",
+      "stack": ".NET 10 / C#",
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "Arrow.SourceGenerator",
+      "repo": "git@github.com:rtkelly-labs/Arrow.SourceGenerator.git",
+      "description": "Compile-time, reflection-free mapping between ordinary .NET models and Apache Arrow.",
+      "domain": "Data Engineering & .NET",
+      "stack": ".NET 10 / C#",
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "github-actions",
+      "repo": "git@github.com:rtkelly-labs/github-actions.git",
+      "description": "Pure Python GitHub Actions for estate-wide PR scope assessment and sticky reports.",
+      "domain": "Developer Tooling & Quality",
+      "stack": "GitHub Actions / Python",
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "parquet-dotnet",
+      "repo": "git@github.com:rtkelly-labs/parquet-dotnet.git",
+      "description": "Fork of aloneguid/parquet-dotnet, published as Lake.Parquet: upstream plus only the improvements evaluated against it. A managed fork (docs/forks.md).",
+      "domain": "Data Engineering & .NET",
+      "stack": ".NET 10 / C#",
+      "packages": [
+        {
+          "registry": "nuget",
+          "name": "Lake.Parquet",
+          "manifest": "eng/lake/Lake.Parquet.targets",
+          "workflow": "lake.yml",
+          "auth": "oidc"
+        }
+      ],
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    },
+    {
+      "name": "oxbow",
+      "repo": "git@github.com:rtkelly-labs/oxbow.git",
+      "description": "Keeps a fork as upstream plus a short stack of recorded changes, layered in waves (the oxbow CLI).",
+      "domain": "Developer Tooling & Quality",
+      "stack": ".NET 10 / C#",
+      "orca": {
+        "group": "rtkelly-labs"
+      }
+    }
+  ]
+}

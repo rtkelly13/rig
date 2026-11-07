@@ -1,0 +1,29 @@
+{
+  "projects": [
+    {
+      "name": "the-vault-system",
+      "repo": "git@github.com:rtkelly13/the-vault-system.git",
+      "description": "Interactive vault workflows, triage, graph maintenance, search, and sync. Its remainder is rig's vault CLI.",
+      "status": "archived"
+    },
+    {
+      "name": "blobflags",
+      "repo": "git@github.com:rtkelly13/blobflags.git",
+      "description": "Self-hosted feature flagging system backed by blob storage. Not the direction being taken.",
+      "status": "archived",
+      "retired": "2026-11-06"
+    },
+    {
+      "name": "notes-old-clone",
+      "repo": "git@github.com:rtkelly13/notes.git",
+      "description": "Legacy notes repository clone preserved for migration reference.",
+      "status": "deleted"
+    },
+    {
+      "name": "obsidian-backup-clean",
+      "repo": "local/obsidian-backup-clean",
+      "description": "Clean snapshot backup of Obsidian vault notes. Local only; the folder no longer exists.",
+      "status": "deleted"
+    }
+  ]
+}

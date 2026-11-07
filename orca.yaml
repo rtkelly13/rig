@@ -1,0 +1,7 @@
+# Orca runs this in each new worktree. Policy and checks: config/orca.json, docs/orca.md.
+scripts:
+  setup: |
+    set -e
+    mkdir -p temp
+    [ -e TODO.md ] || printf '# TODO: %s\n\n- [ ] Local tasks and notes (gitignored)\n' "$(git branch --show-current)" > TODO.md
+    uv sync && pnpm install

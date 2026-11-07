@@ -1,0 +1,25 @@
+{
+  "project": "parquet-source-generator",
+  "primary": "02-simplified-cad-baseline.jpg",
+  "description": "Historical and approved ground-truth references for Parquet.SourceGenerator brand identity.",
+  "references": [
+    {
+      "filename": "01-original-wood-tile.jpg",
+      "sequence_number": 1,
+      "role": "historical",
+      "description": "Initial generative concept featuring parquet floor tile textures, organic wood grain, and git tree forks"
+    },
+    {
+      "filename": "02-simplified-cad-baseline.jpg",
+      "sequence_number": 2,
+      "role": "primary",
+      "description": "Approved simplified CAD baseline regularizing the diamond silhouette and establishing crisp branch vectors"
+    },
+    {
+      "filename": "parquet-diamond.png",
+      "sequence_number": 3,
+      "role": "raster_export",
+      "description": "1024x1024 lossless raster baseline used for quantitative calibration"
+    }
+  ]
+}

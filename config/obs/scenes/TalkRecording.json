@@ -1,0 +1,150 @@
+{
+    "name": "TalkRecording",
+    "AuxAudioDevice1": {
+        "prev_ver": 536936450,
+        "name": "Mic",
+        "uuid": "7c9e6a10-2b4d-4f8a-9c1e-3d5f7a9b1c2d",
+        "id": "coreaudio_input_capture",
+        "versioned_id": "coreaudio_input_capture",
+        "settings": {
+            "device_id": "default"
+        },
+        "mixers": 255,
+        "sync": 0,
+        "flags": 0,
+        "volume": 1.0,
+        "balance": 0.5,
+        "enabled": true,
+        "muted": false,
+        "monitoring_type": 0,
+        "private_settings": {}
+    },
+    "sources": [
+        {
+            "prev_ver": 536936450,
+            "name": "Screen",
+            "uuid": "9d5408c1-2a37-43d0-83e6-c6128880eabc",
+            "id": "screen_capture",
+            "versioned_id": "screen_capture",
+            "settings": {
+                "type": 0,
+                "show_cursor": true,
+                "hide_obs": true
+            },
+            "mixers": 0,
+            "sync": 0,
+            "flags": 0,
+            "volume": 1.0,
+            "balance": 0.5,
+            "enabled": true,
+            "muted": false,
+            "monitoring_type": 0,
+            "private_settings": {}
+        },
+        {
+            "prev_ver": 536936450,
+            "name": "Camera",
+            "uuid": "035f4c1e-a618-43cb-9187-39ac83fc02a1",
+            "id": "av_capture_input_v2",
+            "versioned_id": "av_capture_input_v2",
+            "settings": {
+                "use_preset": true,
+                "preset": "AVCaptureSessionPreset1280x720"
+            },
+            "mixers": 0,
+            "sync": 0,
+            "flags": 0,
+            "volume": 1.0,
+            "balance": 0.5,
+            "enabled": true,
+            "muted": false,
+            "monitoring_type": 0,
+            "private_settings": {}
+        },
+        {
+            "prev_ver": 536936450,
+            "name": "Talk",
+            "uuid": "f1a32649-8d9f-49c0-8e47-85d5b554aad8",
+            "id": "scene",
+            "versioned_id": "scene",
+            "settings": {
+                "id_counter": 2,
+                "custom_size": false,
+                "items": [
+                    {
+                        "name": "Camera",
+                        "source_uuid": "035f4c1e-a618-43cb-9187-39ac83fc02a1",
+                        "visible": true,
+                        "locked": false,
+                        "rot": 0.0,
+                        "pos": {"x": 1408.0, "y": 778.0},
+                        "scale": {"x": 1.0, "y": 1.0},
+                        "align": 5,
+                        "bounds_type": 2,
+                        "bounds_align": 0,
+                        "bounds": {"x": 480.0, "y": 270.0},
+                        "crop_left": 0,
+                        "crop_top": 0,
+                        "crop_right": 0,
+                        "crop_bottom": 0,
+                        "id": 2,
+                        "scale_filter": "disable",
+                        "blend_method": "default",
+                        "blend_type": "normal",
+                        "private_settings": {}
+                    },
+                    {
+                        "name": "Screen",
+                        "source_uuid": "9d5408c1-2a37-43d0-83e6-c6128880eabc",
+                        "visible": true,
+                        "locked": false,
+                        "rot": 0.0,
+                        "pos": {"x": 0.0, "y": 0.0},
+                        "scale": {"x": 1.0, "y": 1.0},
+                        "align": 5,
+                        "bounds_type": 2,
+                        "bounds_align": 0,
+                        "bounds": {"x": 1920.0, "y": 1080.0},
+                        "crop_left": 0,
+                        "crop_top": 0,
+                        "crop_right": 0,
+                        "crop_bottom": 0,
+                        "id": 1,
+                        "scale_filter": "disable",
+                        "blend_method": "default",
+                        "blend_type": "normal",
+                        "private_settings": {}
+                    }
+                ]
+            },
+            "mixers": 0,
+            "sync": 0,
+            "flags": 0,
+            "volume": 1.0,
+            "balance": 0.5,
+            "enabled": true,
+            "muted": false,
+            "monitoring_type": 0,
+            "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
+            "private_settings": {}
+        }
+    ],
+    "groups": [],
+    "scene_order": [
+        {"name": "Talk"}
+    ],
+    "current_scene": "Talk",
+    "current_program_scene": "Talk",
+    "canvases": [],
+    "current_transition": "Fade",
+    "transition_duration": 300,
+    "transitions": [],
+    "saved_projectors": [],
+    "preview_locked": false,
+    "scaling_enabled": false,
+    "virtual-camera": {
+        "type2": 3
+    },
+    "modules": {},
+    "version": 2
+}

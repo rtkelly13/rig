@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "workspace": "{workspace}",
+  "switch_delay_ms": 650,
+  "notes": [
+    "Sample desktop manager plan used for typed JSON verification.",
+    "This file is intentionally generic and not tied to one workstation."
+  ],
+  "desktops": [
+    {
+      "name": "Work",
+      "launch": [
+        {
+          "name": "Terminal A",
+          "type": "terminal",
+          "cwd": "{workspace}",
+          "command": "opencode --auto",
+          "shell": "wt-pwsh",
+          "window_title": "Terminal A",
+          "window_process_name": "WindowsTerminal.exe",
+          "placement": {
+            "screen": 1,
+            "layout": { "mode": "halves", "slot": 1, "orientation": "vertical" }
+          }
+        },
+        {
+          "name": "Browser",
+          "type": "app",
+          "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+          "args": ["--profile-directory=Default"],
+          "window_process_name": "chrome.exe",
+          "placement": {
+            "screen": 1,
+            "layout": { "mode": "halves", "slot": 2, "orientation": "vertical" }
+          }
+        },
+        {
+          "name": "Editor",
+          "type": "app",
+          "path": "C:\\Editor.exe",
+          "window_process_name": "Editor.exe",
+          "placement": {
+            "screen": 2,
+            "layout": { "mode": "full", "slot": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "launch": [
+        {
+          "name": "Mail",
+          "type": "app",
+          "path": "C:\\Mail.exe",
+          "window_process_name": "Mail.exe",
+          "placement": {
+            "screen": 1,
+            "layout": { "mode": "full", "slot": 1 }
+          }
+        },
+        {
+          "name": "Chat",
+          "type": "app",
+          "path": "C:\\Chat.exe",
+          "window_process_name": "Chat.exe",
+          "placement": {
+            "screen": 2,
+            "layout": { "mode": "full", "slot": 1 }
+          }
+        }
+      ]
+    }
+  ]
+}

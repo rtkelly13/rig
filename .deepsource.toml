@@ -1,0 +1,43 @@
+# DeepSource Configuration (Governed by shared-utilities)
+# See https://docs.deepsource.com for configuration syntax
+
+version = 1
+
+exclude_patterns = [
+  "**/node_modules/**",
+  "**/dist/**",
+  "**/build/**",
+  "**/temp/**",
+  "**/.temp/**",
+  "**/.venv/**",
+  "**/bin/**",
+  "**/obj/**",
+]
+
+test_patterns = [
+  "**/tests/**",
+  "**/test_*.py",
+  "**/*.test.ts",
+  "**/*.test.tsx",
+  "**/*.spec.ts",
+  "**/*.spec.tsx",
+  "**/*Tests.cs",
+]
+
+[[analyzers]]
+name = "python"
+enabled = true
+
+[analyzers.meta]
+runtime_version = "3.x.x"
+
+[[analyzers]]
+name = "javascript"
+enabled = true
+
+[analyzers.meta]
+environment = ["nodejs"]
+
+[[analyzers]]
+name = "secrets"
+enabled = true

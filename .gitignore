@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# Project specific
+projects/
+temp/
+# mutmut's working copy (cannot be relocated under temp/)
+mutants/
+skills/vendored/
+*.log
+.env
+.env.*
+.cache/
+.pytest_cache/
+.pytest-tmp/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.logs/
+todo.md
+.ruff_cache/
+.mypy_cache/
+test_mcp_diag.py
+tmp-opencode-init.lock
+.vercel/
+
+# Local TODO file
+TODO.md
+
+coverage.json
+coverage_summary.md
+
+# Node modules for the Tailwind build (the compiled CSS is committed).
+node_modules/
+desktop-manager/logs/
+.worktrees/

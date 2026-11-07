@@ -1,0 +1,13 @@
+filename,cut_type,width,height,format,purpose,description
+parquet-diamond-2000x2000.png,cut_2000,2000,2000,png,Ultra High-Res Cut,Master 2000px high-resolution raster cut
+parquet-diamond-1000x1000.png,master_png,1000,1000,png,Master 1000px Cut,Master 1000px production cut
+parquet-diamond.svg,master_svg,1024,1024,svg,Canonical Vector,Resolution-independent master vector logo
+avatar-500x500.png,avatar,500,500,png,GitHub Profile Avatar,Primary 500x500 project avatar
+avatar-180x180.png,avatar,180,180,png,Web Profile,180x180 mobile and web touch profile
+apple-touch-icon.png,apple_touch,180,180,png,iOS Touch Icon,Apple iOS Safari home screen touch icon
+favicon.svg,favicon_svg,32,32,svg,High-Contrast Favicon Vector,Simplified high-contrast vector cut for small displays
+favicon-512.png,favicon,512,512,png,PWA Manifest Icon,Web app manifest 512x512 icon
+favicon-48.png,favicon,48,48,png,Web Favicon,Desktop browser tab favicon (48px)
+favicon-32.png,favicon,32,32,png,Web Favicon,Desktop browser tab favicon (32px)
+favicon-16.png,favicon,16,16,png,Web Favicon,Desktop browser tab favicon (16px)
+favicon.ico,favicon,48,48,ico,Legacy Favicon Bundle,Multi-resolution legacy browser favicon bundle (48/32/16)

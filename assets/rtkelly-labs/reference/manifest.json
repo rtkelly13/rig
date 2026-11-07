@@ -1,0 +1,25 @@
+{
+  "project": "rtkelly-labs",
+  "primary": "02-smooth-crossover-baseline.jpg",
+  "description": "Historical and approved ground-truth references for rtkelly-labs brand identity.",
+  "references": [
+    {
+      "filename": "01-original-concept.jpg",
+      "sequence_number": 1,
+      "role": "historical",
+      "description": "Initial generative Concept 2 ('Isometric Architecture Glyph') with dividing seams"
+    },
+    {
+      "filename": "02-smooth-crossover-baseline.jpg",
+      "sequence_number": 2,
+      "role": "primary",
+      "description": "Approved baseline photo with continuous diagonal crossover beams (eliminates longitudinal dividing seams)"
+    },
+    {
+      "filename": "rtkelly-labs.png",
+      "sequence_number": 3,
+      "role": "raster_export",
+      "description": "1024x1024 lossless raster baseline used for quantitative image drift and calibration"
+    }
+  ]
+}

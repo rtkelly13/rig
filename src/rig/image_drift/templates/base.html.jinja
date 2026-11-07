@@ -1,0 +1,27 @@
+{#
+  Shared shell for every preview page.
+
+  Styling is Tailwind, compiled from styles/gallery.src.css by `pnpm css:build`.
+  The result is inlined via `include` rather than linked so the generated file is
+  a single self-contained artefact that opens straight from disk -- no server, no
+  sibling asset to keep alongside it.
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Image Drift Preview{% endblock %}</title>
+  <style>
+{% include "gallery.css" %}
+  </style>
+</head>
+<body class="m-0 flex min-h-screen flex-col items-center bg-ink px-5 py-10 text-paper antialiased">
+  <header class="mb-5 max-w-[900px] text-center">
+    <h1 class="m-0 mb-2.5 bg-linear-to-r from-accent to-magenta-deep bg-clip-text text-[2.2rem] font-bold text-transparent">{{ project_name }}</h1>
+    <p class="text-muted">{% block subtitle %}{% endblock %}</p>
+    {% block metric_note %}{% endblock %}
+  </header>
+{% block content %}{% endblock %}
+</body>
+</html>

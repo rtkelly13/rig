@@ -1,0 +1,60 @@
+/* Vendored from rtkelly-labs/mermaid-toolkit themes/retro-brutalist.css @ d524a56 — edit upstream, then re-copy. */
+/**
+ * @rtkelly-labs/mermaid-toolkit - Retro Brutalist Theme
+ * Sharp geometric corners, high contrast outlines, monospace typography,
+ * and bold neo-brutalist series accents (matches personal/docs palette).
+ */
+
+:root {
+  --pele-bg: #fffdf5;
+  --pele-fg: #18181b;
+  --pele-muted: #52525b;
+  --pele-line: #18181b;
+  --pele-surface: #fef08a;
+  --pele-surface-alt: #fed7aa;
+  --pele-border: #18181b;
+  --pele-accent: #06b6d4;
+  --pele-font:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  --pele-radius: 0px;
+  --pele-title-weight: 800;
+  --pele-header-weight: 700;
+
+  --pele-series-1: #06b6d4;
+  --pele-series-2: #ec4899;
+  --pele-series-3: #facc15;
+  --pele-series-4: #8b5cf6;
+  --pele-series-5: #10b981;
+  --pele-series-6: #f97316;
+  --pele-series-7: #3b82f6;
+  --pele-series-8: #14b8a6;
+}
+
+[data-theme="dark"],
+.dark,
+[data-theme="dark"] .pele,
+.dark .pele {
+  --pele-bg: #121214;
+  --pele-fg: #fafafa;
+  --pele-muted: #a1a1aa;
+  --pele-line: #fafafa;
+  --pele-surface: #1e1e24;
+  --pele-surface-alt: #27272a;
+  --pele-border: #fafafa;
+  --pele-accent: #22d3ee;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.light),
+  :root:not([data-theme="light"]):not(.light) .pele {
+    --pele-bg: #121214;
+    --pele-fg: #fafafa;
+    --pele-muted: #a1a1aa;
+    --pele-line: #fafafa;
+    --pele-surface: #1e1e24;
+    --pele-surface-alt: #27272a;
+    --pele-border: #fafafa;
+    --pele-accent: #22d3ee;
+  }
+}

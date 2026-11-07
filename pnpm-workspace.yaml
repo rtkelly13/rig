@@ -1,0 +1,16 @@
+# pnpm workspace for the Node parts of this otherwise Python-first repo.
+#
+# The root package (`shared-utilities-styles`, the Tailwind build for the
+# image-drift gallery) is an implicit member and is deliberately not listed —
+# pnpm always includes the root.
+packages:
+  - 'infra/vercel'
+
+# Install scripts stay off, as they were under pnpm 10, which skipped them
+# silently; pnpm 12 fails an install that skips one it has no decision for.
+# None is needed: esbuild and @parcel/watcher ship prebuilt binaries as
+# optional dependencies, and protobufjs's script is only a version notice.
+allowBuilds:
+  '@parcel/watcher': false
+  esbuild: false
+  protobufjs: false

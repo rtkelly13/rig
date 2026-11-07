@@ -1,0 +1,142 @@
+{
+  "schema_version": 2,
+  "group_name": "personal-project-reviews",
+  "transport": "agent-browser-ui",
+  "context_template": "docs/project-reviews/bootstrap.md",
+  "report_template": "docs/project-reviews/contract.md",
+  "memory_index": "https://github.com/rtkelly13/rig/issues/375",
+  "projects": [
+    {
+      "key": "data",
+      "name": "Data",
+      "native_project": {
+        "observed_identifier": "project:g-p-6ab1add6646c81918b6c824ef6ad99f4",
+        "name": "Data"
+      },
+      "task": {
+        "title": "Data deep project review",
+        "destination": "continue_project_review_chat",
+        "enabled": true,
+        "timezone": "Europe/London",
+        "rrule": "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
+        "dtstart": "20261102T020000",
+        "observed_identifier": "6ae06524f40081918583082f9f4af9c4",
+        "conversation_binding": "6ae064f7-000c-83ed-b630-fa910a11ea1a"
+      },
+      "management": "manage",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/376",
+      "policy_path": "docs/project-reviews/data.md"
+    },
+    {
+      "key": "diffra",
+      "name": "Diffra",
+      "native_project": {
+        "observed_identifier": "project:g-p-6ab78ae2cd548191b0e59bb270191923",
+        "name": "Diffra (Artifact Driven Baselines)"
+      },
+      "task": {
+        "title": "Diffra deep project review",
+        "destination": "continue_project_review_chat",
+        "enabled": true,
+        "timezone": "Europe/London",
+        "rrule": "FREQ=WEEKLY;INTERVAL=1;BYDAY=TU;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
+        "dtstart": "20261103T020000",
+        "observed_identifier": "6ae066c0c760819191c1b6c317e264c7",
+        "conversation_binding": "6ae06692-9af0-83ed-92e3-da966390f1f2"
+      },
+      "management": "manage",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/363",
+      "policy_path": "docs/project-reviews/diffra.md"
+    },
+    {
+      "key": "tooling-design",
+      "name": "Developer Tooling & Design",
+      "native_project": {
+        "observed_identifier": "project:g-p-6ab037c333f0819183a152d8ac3eb387",
+        "name": "Design System"
+      },
+      "task": {
+        "title": "Developer Tooling & Design deep project review",
+        "destination": "continue_project_review_chat",
+        "enabled": true,
+        "timezone": "Europe/London",
+        "rrule": "FREQ=WEEKLY;INTERVAL=1;BYDAY=TH;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
+        "dtstart": "20261029T020000",
+        "observed_identifier": "6ae076b428648191ab85f87a0915976a",
+        "conversation_binding": "6ae07667-8f88-83eb-83a2-c6f4ab3ffa2f"
+      },
+      "management": "manage",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/379",
+      "policy_path": "docs/project-reviews/tooling-design.md"
+    },
+    {
+      "key": "personal",
+      "name": "Personal",
+      "native_project": {
+        "observed_identifier": "project:g-p-6ae061cdd35081918948d29f8b75d6b7",
+        "name": "Personal"
+      },
+      "task": {
+        "title": "Personal deep project review",
+        "destination": "continue_project_review_chat",
+        "enabled": true,
+        "timezone": "Europe/London",
+        "rrule": "FREQ=WEEKLY;INTERVAL=1;BYDAY=FR;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
+        "dtstart": "20261030T020000",
+        "observed_identifier": "6ae069da2d188191949429c6359fe9e8",
+        "conversation_binding": "6ae067ef-7fd8-83ed-9e7c-a4f3a051b7de"
+      },
+      "management": "manage",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/378",
+      "policy_path": "docs/project-reviews/personal.md"
+    }
+  ],
+  "preserve": [
+    {
+      "observed_identifier": "project:g-p-6abc0381be6c8191828534c658dcc9e7",
+      "name": "c11n (configuration)",
+      "policy": "preserve_name_instructions_sources_and_tasks"
+    },
+    {
+      "observed_identifier": "project:g-p-6ae0633e7d888191b65e593517389f61",
+      "name": "Resultful",
+      "policy": "preserve_name_instructions_sources_and_chats",
+      "scheduled_review_group": "tooling-design",
+      "historical_memory_issue": "https://github.com/rtkelly13/rig/issues/377"
+    }
+  ],
+  "excluded_repositories": [
+    {
+      "repository": "rtkelly13/the-vault-system",
+      "reason": "archived"
+    }
+  ],
+  "legacy_tasks": [
+    {
+      "title": "Parquet 0.1 Progress",
+      "automation_id": "6ab915df086c8191a5ee88f247b53247",
+      "policy": "keep_paused"
+    },
+    {
+      "title": "Arrow 0.1 Progress",
+      "automation_id": "6abac99aed848191ad5beba4d36cc2e1",
+      "policy": "keep_paused"
+    },
+    {
+      "title": "Diffra 0.1 Progress",
+      "automation_id": "6abac8a3e0d08191979ff979fe56f6a0",
+      "policy": "keep_paused"
+    },
+    {
+      "title": "Resultful deep project review",
+      "automation_id": "6ae067af518c81919e3342c4485fdfc2",
+      "policy": "keep_paused_reviewed_by_tooling_design"
+    }
+  ],
+  "policy_source": {
+    "repository": "rtkelly13/rig",
+    "ref": "main",
+    "contract_path": "docs/project-reviews/contract.md",
+    "fetch": "authenticated_github_resolve_once_then_fetch_by_commit"
+  }
+}

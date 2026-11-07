@@ -1,0 +1,9 @@
+name: vercel-domains
+runtime:
+  name: nodejs
+  options:
+    packagemanager: pnpm
+description: >-
+  Vercel projects and domains for ryankelly.dev sites. Identity, domains and
+  environment variables only — each repo's vercel.json owns how it builds.
+  Sites are declared in sites.ts; index.ts is a loop over that registry.

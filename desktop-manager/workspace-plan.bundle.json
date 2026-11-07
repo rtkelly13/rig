@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "switch_delay_ms": 650,
+  "notes": [
+    "Bundle-style workspace plan that loads one file per desktop.",
+    "Bundle aliases are available anywhere placeholders are supported.",
+    "Desktop paths are resolved relative to this file.",
+    "Feature flags and their defaults live in the rig flags registry (`rig flags list`); `rig flags enable|disable NAME` stores a machine override in rig.db. Entries carry a `feature` name; a feature that is off disables its entries exactly as `disabled: true` would, so a variant can be paused without deleting its configuration.",
+    "A desktop ref can carry a `feature` too. A desktop behind a switched-off feature is not created at all and the desktops after it move up, so `personal-desktop: false` means three desktops, not four with an empty one.",
+    "Switching a desktop's feature off also retires it: restore removes a leftover virtual desktop past the planned count that carries that desktop's name, moving its windows to the last kept desktop. Other extra desktops are left alone. `--enable personal-desktop` brings it back.",
+    "`experimental-desktop` adds a trailing Lab desktop for evaluating new tooling (currently T3 Code) without disturbing the daily desktops. Switch it off for one run with `workspace restore --disable experimental-desktop`.",
+    "`orca-sessions` puts two Orca windows on the Work desktop in place of the Workspace Terminal columns: the default profile (work repos) on screen 1 and a second `--user-data-dir` profile (personal repos) on screen 3. Roll back with `rig flags disable orca-sessions` and `rig flags enable wt-terminals`.",
+    "Desktop names (Review, Work, Admin, Personal, Lab) are re-applied on every restore; `workspace name-desktops` re-applies them (and retires switched-off desktops) on demand.",
+    "Aliases here are defaults. `{localappdata}`, `{appdata}`, `{userprofile}` and `{programfiles}` come from the environment, and `tools.desktop.aliases` in `~/.workspace/config.json` overrides or adds any alias on one machine (`chrome-profile-work`, `workspace-root`, an app path).",
+    "Override a default for one run with `workspace restore --enable NAME` / `--disable NAME`. Inspect with `workspace features`."
+  ],
+  "aliases": {
+    "code-root": "C:\\code",
+    "workspace-root": "{code-root}\\workspace",
+    "personal-root": "{code-root}\\personal",
+    "rig-root": "{personal-root}\\rig",
+    "chrome-user-data": "{localappdata}\\Google\\Chrome\\User Data",
+    "chrome-profile-work": "Profile 4",
+    "chrome-profile-personal": "Profile 1",
+    "chrome-path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "fork-path": "{localappdata}\\Fork\\current\\Fork.exe",
+    "warp-path": "{localappdata}\\Programs\\Warp\\warp.exe",
+    "t3code-path": "{localappdata}\\Programs\\t3code\\T3 Code (Alpha).exe",
+    "orca-work-data": "{appdata}\\orca",
+    "orca-personal-data": "{appdata}\\orca-personal",
+    "orca-path": "{localappdata}\\Programs\\orca\\Orca.exe",
+    "onepassword-path": "C:\\Program Files\\WindowsApps\\Agilebits.1Password_8.12.28.25_x64__amwd9z03whsfe\\1Password.exe",
+    "slack-path": "{localappdata}\\slack\\slack.exe",
+    "obsidian-path": "{localappdata}\\Programs\\Obsidian\\Obsidian.exe",
+    "obsidian-vault": "{personal-root}\\obsidian-vault\\Vault",
+    "vscode-path": "C:\\Program Files\\Microsoft VS Code\\Code.exe"
+  },
+  "workspace": "{workspace-root}",
+  "personal-workspace": "{rig-root}",
+  "bundle": {
+    "desktops": [
+      { "path": "bundles/review.json" },
+      { "path": "bundles/work.json" },
+      { "path": "bundles/admin.json" },
+      { "path": "bundles/personal.json", "feature": "personal-desktop" },
+      { "path": "bundles/lab.json", "feature": "experimental-desktop" }
+    ]
+  }
+}

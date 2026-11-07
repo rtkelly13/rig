@@ -1,0 +1,844 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "personal-repo-policies",
+  "version": "1.0.0",
+  "defaults": {
+    "description": "Applied to every repo unless a profile overrides the same key.",
+    "expected_owner": "rtkelly13",
+    "allowed_owners": [
+      "rtkelly13",
+      "rtkelly-labs",
+      "Resultful"
+    ],
+    "expected_base_branch": "main",
+    "repo_selection": {
+      "description": "Which repos governance touches at all during an --all sweep. A repo named in any profile's `repos` list is always managed, whatever these say.",
+      "manage_forks": false,
+      "require_push_access": true
+    },
+    "gitignore_entries": [
+      {
+        "name": "temp",
+        "comment": "Temporary files, databases, scratch files, and worktrees",
+        "write": [
+          "temp/",
+          ".temp/"
+        ],
+        "satisfied_by": [
+          "/temp",
+          "temp/",
+          "/temp/",
+          ".temp/",
+          "/.temp/",
+          "temp",
+          ".temp"
+        ],
+        "match_mode": "any"
+      },
+      {
+        "name": "todo",
+        "comment": "Local TODO files",
+        "write": [
+          "TODO.md",
+          "todo.md"
+        ],
+        "satisfied_by": [
+          "TODO.md",
+          "todo.md"
+        ],
+        "match_mode": "all"
+      }
+    ],
+    "languages": [],
+    "script_ban": {
+      "enabled": true,
+      "banned_extensions": [
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".ps1",
+        ".psm1"
+      ],
+      "allowed_exceptions": []
+    },
+    "repo_settings": {
+      "delete_branch_on_merge": true,
+      "allow_squash_merge": true,
+      "allow_merge_commit": false,
+      "allow_rebase_merge": false,
+      "allow_auto_merge": true
+    },
+    "branch_cleanup": {
+      "enabled": true,
+      "protected": [
+        "main",
+        "master",
+        "main-backup"
+      ],
+      "protect_open_pr_heads": true,
+      "protect_prefixes": [
+        "dependabot/",
+        "renovate/"
+      ]
+    },
+    "agents_md_hygiene": {
+      "description": "Machine-decidable half of docs/agents/agent-consistency.md. Judgement calls are reported, not gated \u2014 see docs/agents/agents-md-governance.md.",
+      "max_lines": 120,
+      "claude_md": "absent",
+      "require": [
+        "description",
+        "package_manager",
+        "commands"
+      ],
+      "check_paths": true,
+      "report_only": [
+        "instruction-count",
+        "forcing-language",
+        "section-outlier"
+      ]
+    },
+    "vercel": {
+      "description": "Account facts for `repo-governance vercel-gating` \u2014 see docs/repo-governance/vercel-gating.md. Hobby's 100 deployments/day is spent at creation, so branch pushes that create-then-skip deployments are budget burn even when the build is correctly ignored.",
+      "team_id": "team_359p3EN2vzqqcyrxavcNdc1x",
+      "window_days": 3
+    }
+  },
+  "profiles": {
+    "public_open_source": {
+      "description": "Standard policies for public, community-facing open source repositories.",
+      "policies": [
+        "ai_policy",
+        "readme_ai_disclosure",
+        "security_policy",
+        "squash_merge_only",
+        "pinned_action_shas",
+        "agents_md_hygiene"
+      ],
+      "required_checks": [
+        "build",
+        "pr-title"
+      ],
+      "environments": {
+        "release": {
+          "wait_timer": 0
+        }
+      },
+      "repos": [
+        "Resultful",
+        "FluentAssertions.Resultful",
+        "blog",
+        "ProceduralGeneration3DMazes"
+      ],
+      "agents_md_hygiene": {
+        "max_lines": 90
+      }
+    },
+    "private_workspace": {
+      "description": "Internal developer tooling and private personal workspaces.",
+      "policies": [
+        "squash_merge_only",
+        "gitignored_temp",
+        "pinned_action_shas",
+        "agents_md_hygiene"
+      ],
+      "required_checks": [
+        "build",
+        "pr-title"
+      ],
+      "repos": [
+        "obsidian-vault",
+        "rig",
+        "ynab-budget-companion",
+        "hearth"
+      ]
+    },
+    "documentation_portal": {
+      "description": "Public documentation portals deployed to GitHub Pages with custom domains.",
+      "expected_owner": "rtkelly-labs",
+      "allowed_owners": [
+        "rtkelly-labs"
+      ],
+      "copyright_holder": "rtkelly-labs",
+      "contact_email": "ryan@ryankelly.dev",
+      "policies": [
+        "squash_merge_only",
+        "pinned_action_shas",
+        "agents_md_hygiene",
+        "github_pages"
+      ],
+      "pages": {
+        "enabled": true,
+        "build_type": "workflow",
+        "cname": "docs.ryankelly.dev",
+        "https_enforced": true
+      },
+      "required_checks": [
+        "build"
+      ],
+      "repos": [
+        "docs"
+      ]
+    },
+    "demos_experiments": {
+      "description": "Demos, bug reproductions and experiments. Tracked here so their exclusion is deliberate, but no conventions, branch protection or rulesets apply.",
+      "repo_selection": {
+        "exempt": true
+      },
+      "repos": [
+        "MySQLEFConcurrencyBug",
+        "AWSBatch-MapReduce"
+      ]
+    },
+    "rtkelly_labs": {
+      "description": "Free and open source software repositories under the rtkelly-labs organization.",
+      "expected_owner": "rtkelly-labs",
+      "allowed_owners": [
+        "rtkelly-labs"
+      ],
+      "copyright_holder": "rtkelly-labs",
+      "contact_email": "ryan@ryankelly.dev",
+      "policies": [
+        "ai_policy",
+        "readme_ai_disclosure",
+        "security_policy",
+        "squash_merge_only",
+        "pinned_action_shas",
+        "agents_md_hygiene",
+        "license",
+        "community_templates"
+      ],
+      "license": {
+        "type": "MIT"
+      },
+      "environments": {
+        "release": {
+          "wait_timer": 0
+        }
+      },
+      "required_checks": [
+        "build",
+        "pr-title"
+      ],
+      "repos": [
+        ".github",
+        "design-system",
+        "Parquet.SourceGenerator",
+        "Parquet.TypeProvider",
+        "Diffra",
+        "Diffra.Guardrails",
+        "Lake.NET",
+        "mermaid-toolkit",
+        "oxbow"
+      ]
+    },
+    "rtkelly_labs_forks": {
+      "description": "Forks under rtkelly-labs that track an upstream they do not own, kept as upstream plus a linear stack of recorded changes by Oxbow (rtkelly-labs/oxbow), which rebaselines the stack, keeps its records and promotes releases. Rig governs only the repository around it. Policies here only ever add files: one that rewrites an upstream file (license, pinned_action_shas, community_templates) would conflict on every rebaseline, so they are left out. The ruleset keeps deletion protection, linear history and required checks on the default branch, but allows the non-fast-forward pushes a rebaseline makes. `lake-ci` is the fork's own aggregate check, in a workflow file upstream does not have, because upstream's skips docs-only PRs. See docs/forks.md.",
+      "expected_owner": "rtkelly-labs",
+      "allowed_owners": [
+        "rtkelly-labs"
+      ],
+      "copyright_holder": "rtkelly-labs",
+      "contact_email": "ryan@ryankelly.dev",
+      "policies": [
+        "ai_policy",
+        "readme_ai_disclosure",
+        "agents_md_hygiene"
+      ],
+      "environments": {
+        "release": {
+          "wait_timer": 0
+        }
+      },
+      "required_checks": [
+        "lake-ci"
+      ],
+      "repos": [
+        "parquet-dotnet"
+      ]
+    }
+  },
+  "owner_profiles": {
+    "rtkelly-labs": "rtkelly_labs"
+  },
+  "repo_overrides": {
+    "rig": {
+      "script_ban": {
+        "allowed_exceptions": [
+          "config/obs/install.sh",
+          "mcp_server_wrapper.sh"
+        ]
+      },
+      "required_checks": [
+        "ci"
+      ]
+    },
+    "blog": {
+      "script_ban": {
+        "allowed_exceptions": [
+          "scripts/download-snapshots.sh"
+        ]
+      },
+      "required_checks": [
+        "pr-checks"
+      ]
+    },
+    "ProceduralGeneration3DMazes": {
+      "script_ban": {
+        "allowed_exceptions": [
+          ".github/actions/export-web/scripts/**",
+          ".github/scripts/**"
+        ]
+      },
+      "required_checks": [
+        "test"
+      ]
+    },
+    "Resultful": {
+      "expected_owner": "Resultful",
+      "allowed_owners": [
+        "Resultful"
+      ],
+      "required_checks": [
+        "build"
+      ]
+    },
+    "FluentAssertions.Resultful": {
+      "expected_owner": "Resultful",
+      "allowed_owners": [
+        "Resultful"
+      ],
+      "required_checks": [
+        "build"
+      ]
+    },
+    "design-system": {
+      "required_checks": [
+        "ci",
+        "regression"
+      ]
+    },
+    "Parquet.TypeProvider": {
+      "script_ban": {
+        "allowed_exceptions": [
+          "scripts/generate_test_data.py"
+        ]
+      }
+    },
+    "Diffra.Guardrails": {
+      "required_checks": [
+        "lint"
+      ]
+    },
+    "Parquet.SourceGenerator": {
+      "script_ban": {
+        "allowed_exceptions": [
+          "scripts/generate_test_data.py"
+        ]
+      },
+      "required_checks": [
+        "build",
+        "pr-title",
+        "protected-paths"
+      ]
+    },
+    "Lake.NET": {
+      "script_ban": {
+        "banned_extensions": [
+          ".ps1",
+          ".psm1"
+        ],
+        "allowed_script_extensions": [
+          ".cs",
+          ".py",
+          ".sh"
+        ],
+        "allowed_exceptions": []
+      },
+      "required_checks": [
+        "ci"
+      ]
+    },
+    "ynab-budget-companion": {
+      "required_checks": [
+        "ci"
+      ]
+    },
+    "mermaid-toolkit": {
+      "required_checks": [
+        "pr-checks"
+      ]
+    },
+    "parquet-dotnet": {
+      "expected_base_branch": "master",
+      "fork": {
+        "upstream": "aloneguid/parquet-dotnet",
+        "upstream_branch": "master"
+      }
+    }
+  },
+  "language_presets": {
+    "python": {
+      "name": "Python",
+      "aliases": [
+        "py"
+      ],
+      "detect_files": [
+        "pyproject.toml",
+        "setup.py",
+        "setup.cfg",
+        "requirements.txt",
+        "uv.lock",
+        "Pipfile"
+      ],
+      "script_extensions": [
+        ".py",
+        ".pyi"
+      ],
+      "banned_script_extensions": [],
+      "gitignore_entries": [
+        {
+          "name": "python_bytecode",
+          "comment": "Python bytecode and cache",
+          "write": [
+            "__pycache__/",
+            "*.py[cod]",
+            "*$py.class"
+          ],
+          "satisfied_by": [
+            "__pycache__/",
+            "*.py[cod]",
+            "*$py.class"
+          ],
+          "match_mode": "any"
+        },
+        {
+          "name": "python_virtualenv",
+          "comment": "Python virtual environments",
+          "write": [
+            ".venv/",
+            "venv/"
+          ],
+          "satisfied_by": [
+            ".venv/",
+            "venv/",
+            ".venv",
+            "venv",
+            "env/",
+            "env",
+            "ENV/",
+            "ENV"
+          ],
+          "match_mode": "any"
+        },
+        {
+          "name": "python_tools",
+          "comment": "Python testing, linting, and coverage tool caches",
+          "write": [
+            ".pytest_cache/",
+            ".ruff_cache/",
+            ".mypy_cache/",
+            ".coverage"
+          ],
+          "satisfied_by": [
+            ".pytest_cache/",
+            ".ruff_cache/",
+            ".mypy_cache/",
+            ".pyright/",
+            ".coverage",
+            "htmlcov/"
+          ],
+          "match_mode": "any"
+        },
+        {
+          "name": "python_build",
+          "comment": "Python build and packaging artifacts",
+          "write": [
+            "build/",
+            "dist/",
+            "*.egg-info/"
+          ],
+          "satisfied_by": [
+            "dist/",
+            "build/",
+            "*.egg-info/",
+            "dist",
+            "build"
+          ],
+          "match_mode": "any"
+        }
+      ]
+    },
+    "dotnet": {
+      "name": ".NET / C# / F#",
+      "aliases": [
+        "csharp",
+        "fsharp",
+        "c#",
+        "f#",
+        ".net",
+        "cs",
+        "fs"
+      ],
+      "detect_files": [
+        "*.sln",
+        "*.slnx",
+        "*.csproj",
+        "*.fsproj",
+        "*.vbproj",
+        "Directory.Build.props"
+      ],
+      "script_extensions": [
+        ".cs",
+        ".fsx"
+      ],
+      "banned_script_extensions": [
+        ".py"
+      ],
+      "gitignore_entries": [
+        {
+          "name": "dotnet_build",
+          "comment": ".NET build artifacts",
+          "write": [
+            "bin/",
+            "obj/"
+          ],
+          "satisfied_by": [
+            "bin/",
+            "obj/",
+            "[Bb]in/",
+            "[Oo]bj/",
+            "**/bin",
+            "**/obj"
+          ],
+          "match_mode": "all"
+        },
+        {
+          "name": "dotnet_tools",
+          "comment": ".NET IDE and developer tooling files",
+          "write": [
+            "*.user",
+            "*.suo",
+            ".vs/"
+          ],
+          "satisfied_by": [
+            "*.user",
+            "*.suo",
+            ".vs/",
+            "*.userprefs",
+            "*.DotSettings.user"
+          ],
+          "match_mode": "any"
+        },
+        {
+          "name": "dotnet_diagnostics",
+          "comment": "MSBuild binary logs",
+          "write": [
+            "*.binlog"
+          ],
+          "satisfied_by": [
+            "*.binlog"
+          ],
+          "match_mode": "any"
+        }
+      ]
+    },
+    "node": {
+      "name": "Node / TypeScript",
+      "aliases": [
+        "typescript",
+        "javascript",
+        "ts",
+        "js"
+      ],
+      "detect_files": [
+        "package.json",
+        "tsconfig.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "package-lock.json"
+      ],
+      "script_extensions": [
+        ".ts",
+        ".js",
+        ".mjs",
+        ".cjs"
+      ],
+      "banned_script_extensions": [
+        ".py"
+      ],
+      "gitignore_entries": [
+        {
+          "name": "node_dependencies",
+          "comment": "Node dependencies",
+          "write": [
+            "node_modules/"
+          ],
+          "satisfied_by": [
+            "node_modules/",
+            "node_modules",
+            "/node_modules",
+            "**/node_modules"
+          ],
+          "match_mode": "all"
+        },
+        {
+          "name": "node_build",
+          "comment": "Node and TypeScript build outputs and caches",
+          "write": [
+            "dist/",
+            "*.tsbuildinfo"
+          ],
+          "satisfied_by": [
+            "dist/",
+            "dist",
+            "build/",
+            "out/",
+            ".next/",
+            "*.tsbuildinfo",
+            ".turbo/"
+          ],
+          "match_mode": "any"
+        },
+        {
+          "name": "node_tools",
+          "comment": "Node package manager debug logs",
+          "write": [
+            "npm-debug.log*",
+            "yarn-debug.log*",
+            "yarn-error.log*",
+            "pnpm-debug.log*"
+          ],
+          "satisfied_by": [
+            "npm-debug.log*",
+            "yarn-debug.log*",
+            "yarn-error.log*",
+            "pnpm-debug.log*",
+            "*.log"
+          ],
+          "match_mode": "any"
+        }
+      ]
+    },
+    "godot": {
+      "name": "Godot",
+      "aliases": [],
+      "detect_files": [
+        "project.godot"
+      ],
+      "script_extensions": [
+        ".cs",
+        ".gd",
+        ".cs.uid"
+      ],
+      "banned_script_extensions": [
+        ".py"
+      ],
+      "gitignore_entries": [
+        {
+          "name": "godot_cache",
+          "comment": "Godot 4 project cache",
+          "write": [
+            ".godot/"
+          ],
+          "satisfied_by": [
+            ".godot/",
+            ".godot"
+          ],
+          "match_mode": "all"
+        },
+        {
+          "name": "godot_mono",
+          "comment": "Godot Mono / .NET files",
+          "write": [
+            ".mono/"
+          ],
+          "satisfied_by": [
+            ".mono/",
+            ".mono"
+          ],
+          "match_mode": "any"
+        }
+      ]
+    },
+    "rust": {
+      "name": "Rust",
+      "aliases": [
+        "rs"
+      ],
+      "detect_files": [
+        "Cargo.toml",
+        "Cargo.lock"
+      ],
+      "script_extensions": [
+        ".rs"
+      ],
+      "banned_script_extensions": [
+        ".py"
+      ],
+      "gitignore_entries": [
+        {
+          "name": "rust_build",
+          "comment": "Rust Cargo build output",
+          "write": [
+            "target/"
+          ],
+          "satisfied_by": [
+            "target/",
+            "/target/"
+          ],
+          "match_mode": "all"
+        }
+      ]
+    }
+  },
+  "github_apps": {
+    "chatgpt-codex-connector": {
+      "name": "ChatGPT / Codex in GitHub",
+      "slug": "chatgpt-codex-connector",
+      "install_url": "https://github.com/apps/chatgpt-codex-connector/installations/new",
+      "accounts": {
+        "rtkelly-labs": {
+          "required": true,
+          "all_repos": true,
+          "disallow_repos": [
+            ".github"
+          ]
+        },
+        "rtkelly13": {
+          "required": false,
+          "all_repos": true,
+          "disallow_repos": [
+            "obsidian-vault"
+          ]
+        }
+      }
+    },
+    "coderabbitai": {
+      "name": "CodeRabbit AI Reviewer",
+      "slug": "coderabbitai",
+      "install_url": "https://github.com/apps/coderabbitai/installations/new",
+      "config_template": ".coderabbit.yaml",
+      "accounts": {
+        "rtkelly-labs": {
+          "required": true,
+          "all_repos": true,
+          "disallow_repos": [
+            ".github"
+          ]
+        },
+        "rtkelly13": {
+          "required": false,
+          "all_repos": true,
+          "disallow_repos": [
+            "obsidian-vault"
+          ]
+        }
+      }
+    },
+    "renovate": {
+      "name": "Renovate",
+      "slug": "renovate",
+      "install_url": "https://github.com/apps/renovate/installations/new",
+      "accounts": {
+        "rtkelly-labs": {
+          "required": true,
+          "all_repos": true,
+          "disallow_repos": [
+            ".github"
+          ]
+        },
+        "rtkelly13": {
+          "required": false,
+          "all_repos": true,
+          "disallow_repos": [
+            "obsidian-vault"
+          ]
+        }
+      }
+    },
+    "codecov": {
+      "name": "Codecov PR Coverage",
+      "slug": "codecov",
+      "install_url": "https://github.com/apps/codecov/installations/new",
+      "config_template": "codecov.yml",
+      "accounts": {
+        "rtkelly-labs": {
+          "required": true,
+          "all_repos": true,
+          "disallow_repos": [
+            ".github"
+          ]
+        },
+        "rtkelly13": {
+          "required": false,
+          "all_repos": true,
+          "disallow_repos": [
+            "obsidian-vault",
+            "docs"
+          ]
+        }
+      }
+    },
+    "socket-security": {
+      "name": "Socket Supply Chain Security",
+      "slug": "socket-security",
+      "install_url": "https://github.com/apps/socket-security/installations/new",
+      "accounts": {
+        "rtkelly-labs": {
+          "required": true,
+          "all_repos": true,
+          "disallow_repos": [
+            ".github"
+          ]
+        },
+        "rtkelly13": {
+          "required": false,
+          "all_repos": true,
+          "disallow_repos": [
+            "obsidian-vault"
+          ]
+        }
+      }
+    },
+    "deepsource-io": {
+      "name": "DeepSource Static Analysis & Autofix",
+      "slug": "deepsource-io",
+      "install_url": "https://github.com/apps/deepsource-io/installations/new",
+      "config_template": ".deepsource.toml",
+      "accounts": {
+        "rtkelly-labs": {
+          "required": true,
+          "all_repos": true,
+          "disallow_repos": [
+            ".github"
+          ]
+        },
+        "rtkelly13": {
+          "required": false,
+          "all_repos": true,
+          "disallow_repos": [
+            "obsidian-vault"
+          ]
+        }
+      }
+    },
+    "vercel": {
+      "name": "Vercel",
+      "slug": "vercel",
+      "install_url": "https://github.com/apps/vercel/installations/new",
+      "accounts": {
+        "rtkelly-labs": {
+          "required": true,
+          "all_repos": true
+        },
+        "rtkelly13": {
+          "required": true,
+          "all_repos": true,
+          "disallow_repos": [
+            "obsidian-vault"
+          ]
+        }
+      }
+    }
+  }
+}

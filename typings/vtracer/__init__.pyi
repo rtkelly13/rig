@@ -1,0 +1,15 @@
+def convert_image_to_svg_py(
+    image_path: str,
+    out_path: str,
+    colormode: str | None = None,
+    hierarchical: str | None = None,
+    mode: str | None = None,
+    filter_speckle: int | None = None,
+    color_precision: int | None = None,
+    layer_difference: int | None = None,
+    corner_threshold: int | None = None,
+    length_threshold: float | None = None,
+    max_iterations: int | None = None,
+    splice_threshold: int | None = None,
+    path_precision: int | None = None,
+) -> None: ...

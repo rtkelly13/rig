@@ -1,0 +1,312 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # Windows tests run nightly on main rather than on every merge; see test-windows.
+  schedule:
+    - cron: "43 3 * * *" # daily, 03:43 UTC (off the whole-hour rush)
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  # Docs-only changes skip the heavy jobs here rather than through paths-ignore:
+  # a workflow that never starts never reports the required `ci` check, so a
+  # docs-only PR could not merge.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Did anything besides docs change?
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          case "${EVENT}" in
+            # A PR is compared from its merge base; a push compares its two endpoints
+            # directly, so a force-push back to an ancestor still sees its changes.
+            pull_request) base="${PR_BASE}"; range="${PR_BASE}...HEAD" ;;
+            push) base="${PUSH_BEFORE}"; range="${PUSH_BEFORE}..HEAD" ;;
+            *) echo "code=true" >> "${GITHUB_OUTPUT}"; exit 0 ;;
+          esac
+          if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "code=true" >> "${GITHUB_OUTPUT}"; exit 0
+          fi
+          code_files="$(git diff --name-only "${range}" \
+            | grep -Ev '^(docs/|\.vscode/|skills/)|\.md$' || true)"
+          if [ -n "${code_files}" ]; then
+            echo "code=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "code=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+  lint:
+    name: lint
+    needs: changes
+    # The nightly schedule exists for test-windows; main's Linux jobs already ran on merge.
+    if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Verify no banned scripts (.sh / .ps1)
+        uses: ls-lint/action@a87c5eb4fb26d7af1bd0adba203dd1e76f7e94eb # v2.3.2
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --dev
+      # Workflow supply chain: SHA pins, credential persistence, permissions.
+      # Offline audits only, so no token and no network beyond the install.
+      - name: zizmor (workflow audit)
+        run: uvx zizmor@1.31.1 --offline --format github .
+      - name: Ruff Check
+        run: uv run ruff check .
+      # `uv run status` checks formatting, so CI must too -- otherwise the repo's
+      # own health gate disagrees with the pipeline and main drifts unformatted.
+      - name: Ruff Format Check
+        run: uv run ruff format --check .
+      - name: Basedpyright
+        run: uv run basedpyright
+      - name: ty
+        run: uv run ty check src packages/type-ratchet/src
+      - name: Type-soup ratchet
+        run: uv run ratchet --report
+      - name: Import contracts
+        run: uv run lint-imports
+      - name: Bandit Security Scan
+        run: uv run bandit -r src/ -ll
+      # The preview gallery's CSS is Tailwind output that has to be committed,
+      # because the Python CLI inlines it and must work without Node. Verify the
+      # committed copy still matches the source rather than trusting it.
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+      # One install covers every workspace package (see pnpm-workspace.yaml):
+      # the root Tailwind build and infra/vercel.
+      - name: Install Node toolchains
+        run: pnpm install --frozen-lockfile
+      - name: Verify compiled gallery.css is current
+        run: pnpm css:check
+      - name: Typecheck rig SPA
+        run: pnpm web:typecheck
+      - name: Verify committed SPA assets
+        run: pnpm web:check
+      # The Pulumi program is TypeScript in a Python-first repo, so nothing else
+      # in this pipeline would ever compile it. Without this it rots silently
+      # until someone runs `pulumi up` against live domains and finds out then.
+      - name: Typecheck infra/vercel
+        run: pnpm --filter infra-vercel typecheck
+
+  test:
+    name: test
+    needs: changes
+    if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    # Hard cap. The serial suite took ~4m on 2026-11-04; xdist roughly halves it.
+    # Mutation testing never runs here: it is a local or scheduled measure (docs/testing.md).
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --dev
+      # image_drift renders SVGs through headless Chromium. Cache Playwright's browser
+      # binaries to avoid 25-35s download overhead on every CI run.
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-linux-${{ hashFiles('uv.lock') }}
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: uv run playwright install --with-deps chromium
+      - name: Run tests with coverage
+        run: |
+          uv run pytest -n auto --durations=15 --cov=src --cov-context=test --record-sizes=coverage-by-test/sizes.json --cov-report=xml:coverage.xml --cov-report=json:coverage.json --cov-report=term-missing
+
+      # Line + branch coverage. The floor is [tool.coverage.report] fail_under in pyproject.toml
+      # (pytest-cov already fails the run below it),
+      # and coverage_floor makes it a ratchet towards 95%: it never falls, and it must rise once
+      # coverage passes it by more than the slack. Coverage shows what runs, not what is
+      # checked; mutation score covers that (docs/testing.md).
+      - name: Fetch the base branch's coverage floor
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/contents/pyproject.toml?ref=${BASE_SHA}" \
+            -H "Accept: application/vnd.github.raw" > base-pyproject.toml
+      - name: Coverage floor ratchet
+        run: uv run python -m rig.repo_governance.coverage_floor coverage.json --base-pyproject base-pyproject.toml
+
+      # Per-test footprint: lines each test executes, and lines no other test does. A test with no
+      # unique lines is a candidate to merge, sharpen or delete (docs/testing.md).
+      - name: Coverage by test
+        if: always() && hashFiles('.coverage') != ''
+        run: |
+          {
+            echo '## Coverage by test'
+            echo '```'
+            uv run python -m rig.repo_governance.coverage_by_test .coverage --sizes coverage-by-test/sizes.json --group function --top 15 --csv coverage-by-test/function.csv
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          uv run python -m rig.repo_governance.coverage_by_test .coverage --sizes coverage-by-test/sizes.json --group item --top 0 --csv coverage-by-test/item.csv
+          uv run python -m rig.repo_governance.coverage_by_test .coverage --sizes coverage-by-test/sizes.json --group file --top 0 --csv coverage-by-test/file.csv
+      - name: Upload coverage by test
+        if: always() && hashFiles('coverage-by-test/*.csv') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-by-test
+          path: coverage-by-test/
+          retention-days: 14
+
+      - name: Generate Sticky Coverage Comment Markdown
+        if: github.event_name == 'pull_request'
+        run: |
+          uv run python src/rig/repo_governance/generate_coverage_comment.py coverage.json coverage_summary.md
+
+      - name: Post/Update Sticky Coverage Comment on PR
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
+        if: github.event_name == 'pull_request'
+        with:
+          header: code-coverage-report
+          path: coverage_summary.md
+
+      - name: Download coverage baseline (main)
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p baseline
+          run_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?branch=main&status=success&per_page=20" \
+            --jq '.workflow_runs[] | select(.name == "CI") | .id' | head -n 1 || true)"
+          if [ -n "${run_id}" ]; then
+            gh run download "${run_id}" --repo "${GITHUB_REPOSITORY}" --name coverage-main -D baseline || true
+          fi
+
+      - name: Generate coverage-diff comment
+        if: github.event_name == 'pull_request'
+        env:
+          BASELINE_BRANCH: main
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          uv run python .github/scripts/coverage_diff.py baseline/coverage.xml coverage.xml coverage_diff.md
+
+      - name: Post/Update sticky coverage-diff comment
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
+        if: github.event_name == 'pull_request'
+        with:
+          header: coverage-diff
+          path: coverage_diff.md
+
+      - name: Upload PR coverage artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: github.event_name == 'pull_request'
+        with:
+          name: coverage-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: coverage.xml
+          retention-days: 7
+          overwrite: true
+
+      - name: Upload coverage baseline (main only)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: coverage-main
+          path: coverage.xml
+          retention-days: 400
+          overwrite: true
+
+  test-windows:
+    name: test-windows
+    needs: changes
+    runs-on: windows-latest
+    timeout-minutes: 15
+    # Only run Windows runner when:
+    # 1. Nightly on main (not per merge: per-merge runs were 64% of Windows minutes)
+    # 2. PR title or branch contains 'windows' / 'win32'
+    # 3. Explicit label 'ci:windows' or manual workflow_dispatch
+    if: |
+      needs.changes.outputs.code == 'true' && (
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.title, '[windows]') ||
+      contains(github.event.pull_request.title, 'win32') ||
+      contains(github.head_ref, 'windows') ||
+      contains(github.head_ref, 'win32') ||
+      contains(github.event.pull_request.labels.*.name, 'ci:windows'))
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --dev
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache-win
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: playwright-windows-${{ hashFiles('uv.lock') }}
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache-win.outputs.cache-hit != 'true'
+        run: uv run playwright install chromium
+      - name: Run tests
+        run: uv run pytest -m "not integration" -p no:cacheprovider --basetemp="${{ runner.temp }}/pytest" -ra
+
+  ci:
+    name: ci
+    if: always()
+    needs: [changes, lint, test, test-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Verify all required jobs succeeded
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python3 .github/scripts/require_jobs_succeeded.py

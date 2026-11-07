@@ -1,0 +1,5 @@
+@import 'tailwindcss' source(none);
+@import '@rtkelly-labs/design-system/theme.css';
+@source "../node_modules/@rtkelly-labs/design-system/dist/**/*.js";
+@source "./**/*.{tsx,ts}";
+@import './app.css';

@@ -1,0 +1,24 @@
+{
+  "waivers": [
+    {
+      "check": "docs-code-block",
+      "path": "docs/project-reviews/bootstrap.md",
+      "reason": "The block is the bootstrap text saved into each ChatGPT task and Project; it is the artifact, not a copy of one."
+    },
+    {
+      "check": "docs-code-block",
+      "path": "docs/project-reviews/evaluation-record.md",
+      "reason": "The block is the template an evaluator fills in on rig #375; it is the artifact, not a copy of one."
+    },
+    {
+      "check": "docs-code-block",
+      "path": "docs/agent-browser/weekly-project-review-prompt.md",
+      "reason": "Historical full-baseline prompt kept as the reference example; the prompt is the content."
+    },
+    {
+      "check": "docs-code-block",
+      "path": "docs/superpowers/plans/2026-09-19-asset-studio-web-dashboard.md",
+      "reason": "Historical implementation plan; its code shows what was planned at the time and is not maintained."
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$comment": "chrome-tabs site groups by host. A tab whose title names no repo or site joins the group of the longest domain its host equals or ends with. Call hosts never group (kept in code). See docs/desktop-manager/chrome-tabs-uia.md.",
+  "groups": {
+    "Claude": [
+      "claude.ai"
+    ],
+    "Google": [
+      "google.com"
+    ],
+    "Asana": [
+      "app.asana.com"
+    ],
+    "YouTrack": [
+      "youtrack.cloud",
+      "myjetbrains.com"
+    ],
+    "AI": [
+      "chatgpt.com",
+      "openai.com",
+      "gemini.google.com",
+      "opencode.ai"
+    ],
+    "Dev": [
+      "github.com",
+      "vercel.com",
+      "npmjs.com",
+      "nuget.org",
+      "cloudflare.com",
+      "socket.dev",
+      "deepsource.com",
+      "docs.renovatebot.com",
+      "base-ui.com",
+      "mdxcn.dev",
+      "alembic.sqlalchemy.org",
+      "aloneguid.uk",
+      "typesafe.ai"
+    ]
+  }
+}

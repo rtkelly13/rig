@@ -1,0 +1,65 @@
+"""AI coding tools configuration step."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from rich.console import Console
+from rich.table import Table
+
+from rig.skills.engine import sync_skill_symlinks
+from rig.skills.models import CliSystem
+
+from ...engine.context import StepContext
+from .agent_browser import setup_agent_browser_profiles
+from .agent_launcher_setup import setup_agent_launcher
+from .claude_code import setup_claude_code
+from .discovery import detect_installed_agents
+from .estate_rules import setup_estate_rules
+from .obsidian_plugins import setup_obsidian_plugins
+from .opencode import setup_opencode
+
+console = Console()
+
+
+def run_ai_tools_setup(ctx: StepContext) -> None:
+    """Configure AI agent environments and baselines."""
+    # 1. Report installed agents
+    agents = detect_installed_agents()
+    table = Table(title="Detected AI Coding Assistants", show_header=True)
+    table.add_column("Assistant", style="cyan")
+    table.add_column("Command", style="dim")
+    table.add_column("Status", justify="center")
+
+    for a in agents:
+        status_str = "[green]Found[/green]" if a.is_installed else "[dim]Not Found[/dim]"
+        table.add_row(a.display_name, a.command, status_str)
+
+    console.print(table)
+    console.print()
+
+    # 2. Configure Claude Code settings baseline
+    setup_claude_code(dry_run=ctx.dry_run)
+
+    # 3. Configure OpenCode
+    setup_opencode(dry_run=ctx.dry_run)
+
+    # 4. Configure agent-browser profiles
+    setup_agent_browser_profiles(dry_run=ctx.dry_run)
+
+    # 5. Estate-wide agent rules for ~/code/personal
+    setup_estate_rules(dry_run=ctx.dry_run)
+
+    # 6. Obsidian plugins for the agent-facing vault
+    vault = Path.home() / "code" / "personal" / "obsidian-vault"
+    if (vault / ".obsidian").is_dir():
+        console.print("\n[cyan]Installing Obsidian plugins...[/cyan]")
+        setup_obsidian_plugins(vault, dry_run=ctx.dry_run)
+
+    # 7. Link skills into every agent CLI through the one skills engine (`workspace skills`)
+    console.print("\n[cyan]Linking skills into agent CLIs...[/cyan]")
+    sync_skill_symlinks(systems=list(CliSystem), dry_run=ctx.dry_run)
+
+    # 8. Agent launcher root shim and shell shortcut
+    console.print("\n[cyan]Configuring agent launcher root shim & shell shortcut...[/cyan]")
+    setup_agent_launcher(dry_run=ctx.dry_run)

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-theme="midnight">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C4 Zoom</title>
+  <link rel="stylesheet" href="/static/design_system/theme.css">
+  <link rel="stylesheet" href="/c4/static/c4.css">
+</head>
+<body>
+  <header class="c4-top">
+    <a class="c4-home" href="/" title="Back to rig">←</a>
+    <span class="c4-brand">C4</span>
+    <span id="bundle-name"></span>
+    <nav id="crumbs" class="c4-crumbs" aria-label="Zoom path"></nav>
+    <div class="c4-tools">
+      <button id="toggle-tree" class="c4-tool" aria-pressed="false" aria-controls="drawer">All views</button>
+      <button id="counts" class="c4-tool" aria-pressed="false" aria-controls="drawer"></button>
+      <button id="toggle-notes" class="c4-tool" aria-pressed="true" aria-controls="inspector">Notes</button>
+    </div>
+  </header>
+
+  <main id="layout" class="c4-main">
+    <aside id="drawer" class="c4-drawer" hidden>
+      <section id="drawer-tree">
+        <h2 class="c4-label">Zoom tree</h2>
+        <p class="c4-aside">A view reached from several parents appears once and is marked <em>(again)</em> after that.</p>
+        <ul id="tree" class="c4-tree"></ul>
+      </section>
+      <section id="drawer-findings" hidden>
+        <h2 class="c4-label">Findings</h2>
+        <ul id="findings" class="c4-findings"></ul>
+      </section>
+    </aside>
+
+    <section class="c4-stage-wrap">
+      <div class="c4-head">
+        <div class="c4-head-text">
+          <span id="concept-level" class="c4-level"></span>
+          <h1 id="concept-title" class="c4-title"></h1>
+          <p id="concept-description" class="c4-desc"></p>
+        </div>
+        <div id="expand-controls" class="c4-expand"></div>
+      </div>
+      <div id="stage" class="c4-stage"></div>
+      <p class="c4-hint">Click a solid box to zoom in · click anything for its note · scroll to zoom, drag to pan</p>
+    </section>
+
+    <aside id="inspector" class="c4-inspector">
+      <div id="element-note" class="c4-element-note c4-prose" hidden></div>
+      <h2 class="c4-label">Notes</h2>
+      <div id="notes" class="c4-prose"></div>
+      <h2 class="c4-label">Linked from</h2>
+      <ul id="inbound" class="c4-list"></ul>
+      <h2 class="c4-label">Provenance</h2>
+      <dl id="provenance" class="c4-prov"></dl>
+    </aside>
+  </main>
+
+  <script src="/c4/static/vendor/pele.global.js"></script>
+  <script type="module" src="/c4/static/c4.js"></script>
+</body>
+</html>

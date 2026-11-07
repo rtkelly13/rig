@@ -1,0 +1,16 @@
+# Keeps the SHA-pinned actions in .github/workflows current. Each `uses:` is a
+# 40-char commit SHA with a `# vX.Y.Z` comment; Dependabot bumps both together.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: ci

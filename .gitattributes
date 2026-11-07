@@ -1,0 +1,5 @@
+.github/workflows/*.lock.yml linguist-generated=true merge=ours
+*.svg -text
+# Compiled rig SPA artifacts are committed so the Python server needs no Node runtime.
+src/rig/image_drift/templates/app_assets/*.js -text linguist-generated=true
+src/rig/image_drift/templates/app_assets/*.css -text linguist-generated=true

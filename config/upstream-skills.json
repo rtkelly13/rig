@@ -1,0 +1,123 @@
+[
+  {
+    "name": "mattpocock-skills",
+    "url": "https://github.com/mattpocock/skills.git",
+    "folder_name": "skills",
+    "branch": "main",
+    "skills_subdir": "skills",
+    "allowlist": [
+      "codebase-design",
+      "domain-modeling",
+      "tdd",
+      "code-review",
+      "grilling",
+      "grill-me",
+      "prototype",
+      "research",
+      "resolving-merge-conflicts",
+      "retro",
+      "setup-pre-commit",
+      "triage",
+      "wait-what",
+      "wayfinder",
+      "wizard",
+      "writing-beats",
+      "writing-for-agents",
+      "writing-fragments",
+      "writing-shape",
+      "git-guardrails-claude-code"
+    ]
+  },
+  {
+    "name": "pstack",
+    "url": "https://github.com/poteto/pstack.git",
+    "folder_name": "pstack",
+    "branch": "main",
+    "skills_subdir": "skills",
+    "allowlist": [
+      "architect",
+      "arena",
+      "blast-radius",
+      "bro",
+      "figure-it-out",
+      "how",
+      "why",
+      "teach",
+      "interrogate",
+      "recall",
+      "reflect",
+      "setup-pstack",
+      "show-me-your-work",
+      "swarm",
+      "technical-writing",
+      "typescript-best-practices",
+      "unslop",
+      "principle-boundary-discipline",
+      "principle-build-the-lever",
+      "principle-make-operations-idempotent",
+      "principle-minimize-reader-load",
+      "principle-subtract-before-you-add",
+      "principle-type-system-discipline"
+    ]
+  },
+  {
+    "name": "superpowers",
+    "url": "https://github.com/obra/superpowers.git",
+    "folder_name": "superpowers",
+    "branch": "main",
+    "skills_subdir": "skills",
+    "allowlist": [
+      "subagent-driven-development",
+      "dispatching-parallel-agents",
+      "systematic-debugging",
+      "verification-before-completion",
+      "writing-plans",
+      "executing-plans",
+      "using-git-worktrees",
+      "finishing-a-development-branch"
+    ]
+  },
+  {
+    "name": "anthropics-skills",
+    "url": "https://github.com/anthropics/skills.git",
+    "folder_name": "anthropics-skills",
+    "branch": "main",
+    "skills_subdir": "skills",
+    "allowlist": [
+      "frontend-design",
+      "skill-creator",
+      "mcp-builder",
+      "webapp-testing"
+    ]
+  },
+  {
+    "name": "agent-chisels",
+    "url": "https://github.com/lhohan/agent-chisels.git",
+    "folder_name": "agent-chisels",
+    "branch": "main",
+    "skills_subdir": "agentfiles/shared/skills",
+    "allowlist": [
+      "evaluate-skills"
+    ]
+  },
+  {
+    "name": "agent-browser",
+    "url": "https://github.com/vercel-labs/agent-browser.git",
+    "folder_name": "agent-browser",
+    "branch": "main",
+    "skills_subdir": "skills",
+    "allowlist": [
+      "agent-browser"
+    ]
+  },
+  {
+    "name": "awesome-skills",
+    "url": "https://github.com/sickn33/agentic-awesome-skills.git",
+    "folder_name": "awesome-skills",
+    "branch": "main",
+    "skills_subdir": "skills",
+    "allowlist": [
+      "audit-skills"
+    ]
+  }
+]

@@ -1,0 +1,142 @@
+/* @rtkelly13/design-system — the full opinionated stylesheet.
+ *
+ * theme.css alone ships the tokens and nothing else, for consumers who want to
+ * bring their own resets and fonts. This file layers on the web fonts and the
+ * global resets — and nothing more.
+ *
+ * ============================================================================
+ * Why there are no component classes here
+ * ============================================================================
+ *
+ * Styling lives in the TSX, as Tailwind utilities on the element. What remains
+ * in this file is only what has no element in a component to hang a `className`
+ * on: the document itself, and bare tags arriving from a consumer's own markup.
+ *
+ * `pnpm check:css` enforces that. It counts every declaration whose selector
+ * names a class this repo authors, and fails when the number rises.
+ *
+ * The classes that used to live here — `.brutalist-card`, `.brutalist-btn`,
+ * `.brutalist-badge`, `.ascii-divider` — are now utilities inside `Card`,
+ * `Badge` and `AsciiDivider`. `.brutalist-btn` and `.brutalist-btn-pink` had no
+ * caller anywhere in this package and are gone; use `<Button />`.
+ */
+/* Fonts are self-hosted, from `@fontsource`, and that is a correctness choice
+ * before it is a performance one.
+ *
+ * These lines replace a remote `@import` of the Google Fonts CSS API. Four
+ * things were wrong with that:
+ *
+ *   1. **It transmits every visitor's IP to a third party.** The Munich
+ *      Regional Court held that doing so without consent breaches the GDPR,
+ *      specifically because self-hosting was available and so the transfer was
+ *      not necessary. A design system should not hand that decision — or that
+ *      liability — to whoever installs it.
+ *   2. **The performance argument no longer exists.** It rested on a shared
+ *      browser cache across every site using Google Fonts; cache partitioning
+ *      ended that, so each origin downloads its own copy regardless.
+ *   3. **`@import` of a remote stylesheet is the slowest possible delivery.**
+ *      It serialises: fetch this file, parse it, discover the import, fetch
+ *      Google's CSS, parse that, and only then fetch the WOFF2s. Three round
+ *      trips of render-blocking work before text can paint.
+ *   4. **The rendering was not pinned to anything.** Google can change a font
+ *      binary with no commit here, which moves both consumer rendering and this
+ *      repo's visual baselines with nothing to explain why. Now the exact bytes
+ *      are in the lockfile, pinned by the same mechanism as every other
+ *      dependency.
+ *
+ * Variable where a variable build exists — one file spans the whole weight axis
+ * instead of four to seven static files. `ibm-plex-mono` has no variable build,
+ * so its four weights are imported individually.
+ *
+ * Note `space-grotesk` really is a 300-700 family, while the old Google request
+ * asked for 800. Whatever resolved that gap before — Google clamping to 700
+ * server-side, or the browser synthesising — the outcome is unchanged: the
+ * visual suite compares all 38 baselines at `maxDiffPixels: 0` and every one of
+ * them is byte-identical across this change. Worth knowing that
+ * `font-extrabold` on a display face is not drawn at 800 by this family, but it
+ * was not before either.
+ *
+ * `theme.css` remains the bring-your-own-fonts path: it declares only the
+ * `--ds-font-*` roles, each indirecting through `var(--font-inter, ...)` so a
+ * consumer can substitute their own faces without touching this file. */
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+@import "@fontsource/ibm-plex-mono/700.css";
+@import "@fontsource/vt323";
+
+@font-face {
+  font-family: "Symbols Nerd Font Mono";
+  src: url("./fonts/SymbolsNerdFontMono-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+E000-F8FF, U+F0000-FFFFF, U+23FB-23FE, U+2B58;
+}
+
+@import "tailwindcss";
+@import "./theme.css";
+@import "./prose.css";
+
+body, html {
+  font-family: var(--ds-font-body);
+  background-color: var(--ds-surface-base);
+  color: var(--ds-text-primary);
+}
+
+/* Typography defaults for bare tags. A consumer's own markup and a Markdown
+ * pipeline both emit these with no class to target, so this is the one place
+ * the type roles can reach them. Components state their own font.
+ *
+ * `!important` is inherited from the rule these replace, and is load-bearing
+ * while prose.css still sets fonts on `.docs-prose h1` and friends: a component
+ * carrying `font-mono` inside an article would otherwise lose to the more
+ * specific descendant selector. It comes out with those prose rules. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--ds-font-display) !important;
+}
+
+code, pre {
+  font-family: var(--ds-font-mono) !important;
+}
+
+/* Radius, as a token rather than a reset.
+ *
+ * This was `*, *::before, *::after { border-radius: 0px !important }` — a
+ * universal selector with `!important`, reaching every element in a consumer's
+ * document including ones this package has never heard of. A consumer wanting a
+ * rounded avatar in their own markup could not have one, and the only way out
+ * was a second `!important`. That is #54.
+ *
+ * Zero is a value on the radius scale, not the absence of one. Declared per
+ * Medium in `src/theme/media.ts` and emitted as `--ds-radius-none`, it stops
+ * being a reset: scoped to this package's own elements, and overridable by
+ * ordinary specificity.
+ *
+ * There is no rule here at all, and that is the fix.
+ *
+ * `theme.css` redefines Tailwind's whole radius scale to the Medium's value, so
+ * every `rounded-*` utility — including `rounded-lg` on a component this
+ * package ships — resolves to zero without any selector. Nothing else needs
+ * saying.
+ *
+ * A rule for bare `<input>` / `<button>` tags arriving from a consumer's own
+ * markup was the obvious next thought, and `check:css` was right to refuse it:
+ * `src/styles.css` has a budget of zero, and reaching into a consumer's
+ * document is precisely what #54 is about. A consumer's bare tags are theirs. */
+
+/* Keyboard focus must stay visible even where a component replaces the ring
+ * with a border colour — a border swap is invisible under forced-colors.
+ *
+ * The geometry is the Medium's and the colour is the Level's, which is the two
+ * axes in one declaration. `media.ts` has declared `focusRing` since the axis
+ * landed and this rule kept its own hardcoded `2px` — a token with no reader,
+ * which is the same fault the palette had before `accentHue` gave the Roles
+ * something to point at. A ring that has to be thicker on a 1080p frame now
+ * changes in one place. */
+:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-accent-primary);
+  outline-offset: var(--ds-focus-offset);
+}

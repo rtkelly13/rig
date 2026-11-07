@@ -1,0 +1,51 @@
+name: Backup main branch
+
+# Daily recovery point for main: mirrors main to main-backup, force-pushing
+# over whatever is there. Cheap by design — a single API comparison decides
+# whether anything moved; the checkout + push only run on drift.
+# Restore path: git push origin main-backup:main (via PR or temporarily
+# lifted ruleset, since main is protected).
+
+on:
+  schedule:
+    - cron: "17 2 * * *" # daily, 02:17 UTC (off the whole-hour rush)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backup-main
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Repoint main-backup if main moved
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect drift between main and main-backup
+        id: drift
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          main_sha=$(gh api "repos/${GITHUB_REPOSITORY}/branches/main" -q .commit.sha)
+          backup_sha=$(gh api "repos/${GITHUB_REPOSITORY}/branches/main-backup" -q .commit.sha 2>/dev/null || echo "none")
+          echo "main=$main_sha backup=$backup_sha"
+          if [ "$main_sha" = "$backup_sha" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout main (full history)
+        if: steps.drift.outputs.changed == 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: main
+          fetch-depth: 0
+          # The next step pushes, so the token must stay in git config.
+          persist-credentials: true
+
+      - name: Force-push to main-backup
+        if: steps.drift.outputs.changed == 'true'
+        run: git push --force origin main:refs/heads/main-backup

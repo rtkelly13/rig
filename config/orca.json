@@ -1,0 +1,136 @@
+{
+  "agent_args": {
+    "claude": "",
+    "claude-agent-teams": "",
+    "openclaude": "",
+    "opencode": "--auto",
+    "antigravity": "--dangerously-skip-permissions",
+    "copilot": "--experimental --assisted-approval"
+  },
+  "workspace_dir": "~/orca/workspaces",
+  "repos": {
+    "rig": {
+      "path": "~/code/personal/rig",
+      "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\nuv sync && pnpm install",
+      "external_worktree_visibility": "show",
+      "base_ref": "main",
+      "worktree_base_path": "temp",
+      "color": "#6366f1",
+      "icon": "SquareTerminal"
+    },
+    "design-system": {
+      "path": "~/code/rtkelly-labs/design-system",
+      "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\npnpm install",
+      "external_worktree_visibility": "show",
+      "base_ref": "main",
+      "worktree_base_path": "temp",
+      "color": "#ec4899",
+      "icon": "Palette"
+    },
+    "blog": {
+      "path": "~/code/personal/blog",
+      "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\npnpm install",
+      "external_worktree_visibility": "hide",
+      "base_ref": "main",
+      "worktree_base_path": "temp",
+      "color": "#14b8a6",
+      "icon": "Globe"
+    },
+    "mermaid-toolkit": {
+      "path": "~/code/rtkelly-labs/mermaid-toolkit",
+      "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\npnpm install",
+      "external_worktree_visibility": "hide",
+      "base_ref": "main",
+      "worktree_base_path": "temp",
+      "color": "#f97316",
+      "icon": "Shapes"
+    },
+    "Parquet.SourceGenerator": {
+      "path": "~/code/rtkelly-labs/Parquet.SourceGenerator",
+      "color": "#0284c7",
+      "icon": "Code2"
+    },
+    "Parquet.TypeProvider": {
+      "path": "~/code/rtkelly-labs/Parquet.TypeProvider",
+      "color": "#06b6d4",
+      "icon": "Braces"
+    },
+    "Lake.NET": {
+      "path": "~/code/rtkelly-labs/Lake.NET",
+      "color": "#38bdf8",
+      "icon": "Database",
+      "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\ngit submodule update --init\ndotnet restore Iceberg.Net.slnx\nuv sync --project interop",
+      "base_ref": "main",
+      "worktree_base_path": "temp"
+    },
+    "Diffra": {
+      "path": "~/code/rtkelly-labs/Diffra",
+      "color": "#f59e0b",
+      "icon": "Layers"
+    },
+    "Diffra.Guardrails": {
+      "path": "~/code/rtkelly-labs/Diffra.Guardrails",
+      "color": "#fbbf24",
+      "icon": "emoji:🛡️"
+    },
+    "docs": {
+      "path": "~/code/rtkelly-labs/docs",
+      "color": "#3b82f6",
+      "icon": "emoji:📚"
+    },
+    "Resultful": {
+      "path": "~/code/Resultful/Resultful",
+      "color": "#10b981",
+      "icon": "Package"
+    },
+    "FluentAssertions.Resultful": {
+      "path": "~/code/Resultful/FluentAssertions.Resultful",
+      "color": "#059669",
+      "icon": "Wrench"
+    },
+    "ProceduralGeneration3DMazes": {
+      "path": "~/code/personal/ProceduralGeneration3DMazes",
+      "color": "#f43f5e",
+      "icon": "Box"
+    },
+    "ynab-budget-companion": {
+      "path": "~/code/personal/ynab-budget-companion",
+      "color": "#84cc16",
+      "icon": "Gauge"
+    },
+    "obsidian-vault": {
+      "path": "~/code/personal/obsidian-vault",
+      "color": "#7c3aed",
+      "icon": "emoji:🧠"
+    },
+    "Arrow.SourceGenerator": {
+      "path": "~/code/rtkelly-labs/Arrow.SourceGenerator",
+      "color": "#d946ef",
+      "icon": "emoji:🏹"
+    },
+    "parquet-dotnet": {
+      "path": "~/code/rtkelly-labs/parquet-dotnet",
+      "color": "#a16207",
+      "icon": "emoji:🪵"
+    },
+    "diffra-pro": {
+      "path": "~/code/rtkelly-labs/diffra-pro",
+      "color": "#d97706",
+      "icon": "Sparkles"
+    },
+    "github-actions": {
+      "path": "~/code/rtkelly-labs/github-actions",
+      "color": "#64748b",
+      "icon": "Cpu"
+    },
+    "oxbow": {
+      "path": "~/code/rtkelly-labs/oxbow",
+      "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md",
+      "external_worktree_visibility": "show",
+      "base_ref": "main",
+      "worktree_base_path": "temp",
+      "color": "#0e7490",
+      "icon": "emoji:🌊"
+    }
+  }
+}

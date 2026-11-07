@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-label="Parquet.SourceGenerator" role="img" version="1.1">
+  <title>Parquet.SourceGenerator</title>
+  <desc>High-contrast diamond parquet favicon cut with Git Triad: Cyan trunk, Violet left branch, Solar Amber right branch.</desc>
+  <defs>
+    <!-- Cyan trunk gradient -->
+    <linearGradient id="fav-cyan" x1="0" y1="170" x2="0" y2="370" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#00F5FF" />
+      <stop offset="100%" stop-color="#00E5FF" />
+    </linearGradient>
+
+    <!-- Violet left branch gradient -->
+    <linearGradient id="fav-violet" x1="186" y1="216" x2="256" y2="310" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E879F9" />
+      <stop offset="50%" stop-color="#C084FC" />
+      <stop offset="100%" stop-color="#00F5FF" />
+    </linearGradient>
+
+    <!-- Solar Amber right branch gradient -->
+    <linearGradient id="fav-amber" x1="326" y1="216" x2="256" y2="310" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="50%" stop-color="#D97706" />
+      <stop offset="100%" stop-color="#00F5FF" />
+    </linearGradient>
+
+    <filter id="fav-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark card background -->
+  <rect width="512" height="512" rx="64" fill="#19222F" />
+
+  <!-- Coarse 4-quadrant diamond parquet planks (rotated 45 deg, center 256, 256) -->
+  <g transform="translate(256, 256) rotate(45)">
+    <!-- Top-left quadrant -->
+    <path d="M 0,0 L -150,0 L -150,-150 L 0,-150 Z" fill="#D5A370" />
+    <!-- Top-right quadrant -->
+    <path d="M 0,0 L 0,-150 L 150,-150 L 150,0 Z" fill="#BB7A54" />
+    <!-- Bottom-left quadrant -->
+    <path d="M 0,0 L -150,0 L -150,150 L 0,150 Z" fill="#C28156" />
+    <!-- Bottom-right quadrant -->
+    <path d="M 0,0 L 0,150 L 150,150 L 150,0 Z" fill="#CD9561" />
+    <!-- Inner grain line accents -->
+    <line x1="-150" y1="-75" x2="0" y2="-75" stroke="#E3C29D" stroke-width="6" opacity="0.6" />
+    <line x1="75" y1="-150" x2="75" y2="0" stroke="#9E5D38" stroke-width="6" opacity="0.6" />
+    <line x1="-75" y1="0" x2="-75" y2="150" stroke="#96522E" stroke-width="6" opacity="0.6" />
+    <line x1="0" y1="75" x2="150" y2="75" stroke="#E1B17F" stroke-width="6" opacity="0.6" />
+  </g>
+
+  <!-- Clean Bold Git Triad Tree -->
+  <!-- 1. Dark Channel Casing (32px wide) -->
+  <g fill="none" stroke="#162232" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 256,370 L 256,170" />
+    <path d="M 256,310 C 256,300 186,268 186,252 L 186,216" />
+    <path d="M 256,310 C 256,300 326,268 326,252 L 326,216" />
+    <!-- Node wells (radius 22px) -->
+    <circle cx="256" cy="370" r="22" fill="#162232" stroke="none" />
+    <circle cx="256" cy="170" r="22" fill="#162232" stroke="none" />
+    <circle cx="186" cy="216" r="22" fill="#162232" stroke="none" />
+    <circle cx="326" cy="216" r="22" fill="#162232" stroke="none" />
+  </g>
+
+  <!-- 2. Radiant Neon Traces (16px wide) + White Inners (4.5px wide) -->
+  <g filter="url(#fav-glow)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Outer Neon -->
+    <path d="M 256,370 L 256,170" stroke="url(#fav-cyan)" stroke-width="16" />
+    <path d="M 256,310 C 256,300 186,268 186,252 L 186,216" stroke="url(#fav-violet)" stroke-width="16" />
+    <path d="M 256,310 C 256,300 326,268 326,252 L 326,216" stroke="url(#fav-amber)" stroke-width="16" />
+
+    <!-- Core Highlights -->
+    <path d="M 256,370 L 256,170" stroke="#ffffff" stroke-width="4.5" opacity="0.95" />
+    <path d="M 256,310 C 256,300 186,268 186,252 L 186,216" stroke="#ffffff" stroke-width="4.5" opacity="0.95" />
+    <path d="M 256,310 C 256,300 326,268 326,252 L 326,216" stroke="#ffffff" stroke-width="4.5" opacity="0.95" />
+
+    <!-- Commit Nodes (Radius 14, Stroke 7) -->
+    <circle cx="256" cy="370" r="14" stroke="url(#fav-cyan)" stroke-width="7" fill="#162232" />
+    <circle cx="256" cy="370" r="14" stroke="#ffffff" stroke-width="2.5" fill="none" opacity="0.95" />
+
+    <circle cx="256" cy="170" r="14" stroke="url(#fav-cyan)" stroke-width="7" fill="#162232" />
+    <circle cx="256" cy="170" r="14" stroke="#ffffff" stroke-width="2.5" fill="none" opacity="0.95" />
+
+    <circle cx="186" cy="216" r="14" stroke="#C084FC" stroke-width="7" fill="#162232" />
+    <circle cx="186" cy="216" r="14" stroke="#ffffff" stroke-width="2.5" fill="none" opacity="0.95" />
+
+    <circle cx="326" cy="216" r="14" stroke="#F59E0B" stroke-width="7" fill="#162232" />
+    <circle cx="326" cy="216" r="14" stroke="#ffffff" stroke-width="2.5" fill="none" opacity="0.95" />
+  </g>
+</svg>

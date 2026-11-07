@@ -1,0 +1,20 @@
+{
+  "name": "infra-vercel",
+  "private": true,
+  "description": "Pulumi (Vercel provider) IaC for ryankelly.dev projects and domains.",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "discover": "tsc && op run --env-file=.env.op -- node bin/discover.js",
+    "discover:env": "tsc && node bin/discover.js",
+    "pulumi": "op run --env-file=.env.op -- pulumi"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.0.0",
+    "@pulumiverse/vercel": "^4.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
+}

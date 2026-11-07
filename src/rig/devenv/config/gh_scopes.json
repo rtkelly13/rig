@@ -1,0 +1,6 @@
+{
+  "required": [
+    {"scope": "admin:org", "rationale": "Org governance: members, teams, invitations, rulesets, app installations."},
+    {"scope": "read:user", "rationale": "List user app installations and read profile/email for governance tooling."}
+  ]
+}

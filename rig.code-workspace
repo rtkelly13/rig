@@ -1,0 +1,20 @@
+{
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "../ProceduralGeneration3DMazes",
+      "name": "ProceduralGeneration3DMazes"
+    },
+    {
+      "path": "../obsidian-vault",
+      "name": "obsidian-vault"
+    },
+    {
+      "path": "../the-vault-system",
+      "name": "the-vault-system"
+    }
+  ],
+  "settings": {}
+}

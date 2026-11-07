@@ -1,0 +1,112 @@
+/* Tailwind source for the image-drift preview gallery.
+ *
+ * Build with `pnpm css:build`, which compiles to
+ * src/rig/image_drift/templates/gallery.css. That output is
+ * committed, because the Python CLI inlines it into a self-contained
+ * preview.html and must work without Node installed.
+ *
+ * Tailwind v4 is configured here in CSS rather than in a JS config file; there
+ * is deliberately no tailwind.config.js.
+ */
+
+/* `source(none)` disables automatic content detection, so the only input is the
+ * @source below. Without it Tailwind scans the whole repo and any file that
+ * happens to contain a class-like string adds rules to the output — which, for
+ * a build artifact that is committed and checked byte-for-byte by `pnpm
+ * css:check`, means an unrelated file elsewhere in the repo turns CI red. */
+@import "tailwindcss" source(none);
+
+/* Automatic content detection skips files it cannot classify, so point it at
+ * the Jinja templates explicitly. Without this the utility classes used in the
+ * markup are never emitted. */
+@source "../src/rig/image_drift/templates/**/*.jinja";
+
+/* `_badge_class()` picks `badge-good`/`badge-warn`/`badge-bad` at runtime and
+ * passes the result to the template as `badge_class`, so those names appear
+ * nowhere in the markup and Tailwind cannot learn them by scanning.
+ *
+ * Safelist them by name rather than scanning cli.py. Scanning a Python module
+ * for class names means its *prose* feeds the stylesheet: a docstring that
+ * happens to contain a word like "fixed" or "table" silently adds a utility to
+ * this committed, byte-compared artifact and turns CI red for an unrelated
+ * edit. Naming the three classes is precise and cannot drift. */
+@source inline("badge-good badge-warn badge-bad");
+
+/* Brand tokens become real utilities: `bg-ink`, `text-accent`, `border-edge`. */
+@theme {
+  --color-ink: #0b0f17;
+  --color-panel: #161b26;
+  --color-edge: #232a3b;
+  --color-sunken: #0f1420;
+  --color-accent: #00f2fe;
+  --color-accent-deep: #00b4d8;
+  --color-magenta: #e040fb;
+  --color-magenta-deep: #b5179e;
+  --color-paper: #f0f6fc;
+  --color-muted: #94a3b8;
+  --color-faint: #64748b;
+  --color-good: #34d399;
+  --color-warn: #fbbf24;
+  --color-bad: #f87171;
+}
+
+/* Components. Each is used many times across the templates, so composing them
+ * once here keeps the markup readable — utilities are used directly for
+ * anything that appears once. */
+
+@utility panel {
+  @apply bg-panel border border-edge rounded-2xl;
+}
+
+@utility card-shadow {
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.4);
+}
+
+@utility section-title {
+  @apply w-full max-w-[1200px] mx-auto mt-9 mb-5 pb-2.5 text-center text-[1.4rem]
+         text-accent border-b border-edge;
+}
+
+@utility badge {
+  @apply mt-3 px-3 py-1 rounded-lg text-[0.82rem] font-bold;
+}
+
+@utility badge-good {
+  @apply badge text-good;
+  background: rgb(16 185 129 / 0.2);
+  border: 1px solid #10b981;
+}
+
+@utility badge-warn {
+  @apply badge text-warn;
+  background: rgb(245 158 11 / 0.2);
+  border: 1px solid #f59e0b;
+}
+
+@utility badge-bad {
+  @apply badge text-bad;
+  background: rgb(239 68 68 / 0.2);
+  border: 1px solid #ef4444;
+}
+
+@utility badge-ref {
+  @apply badge text-[#e879f9];
+  background: rgb(224 64 251 / 0.18);
+  border: 1px solid var(--color-magenta);
+}
+
+/* Pill that overlaps a panel's top edge. */
+@utility ribbon {
+  @apply absolute -top-3 px-3 py-1 rounded-xl text-[0.72rem] font-bold uppercase tracking-wide;
+}
+
+@utility crop-tile {
+  @apply w-[110px] h-[110px] rounded-lg border-2 border-edge object-contain;
+  image-rendering: pixelated;
+}
+
+/* Wide content must scroll inside its own container rather than making the page
+ * scroll sideways. */
+@utility scroll-x {
+  @apply w-full max-w-[1300px] overflow-x-auto;
+}

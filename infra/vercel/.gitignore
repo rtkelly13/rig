@@ -1,0 +1,11 @@
+node_modules/
+bin/
+Pulumi.*.yaml.bak
+
+# The root .gitignore excludes `.env.*`. This one holds op:// references rather
+# than secret values and has to be committed for `pnpm discover` to work.
+!.env.op
+
+# `pnpm discover` output. Generated from the live account, reviewed by hand, and
+# merged into sites.ts — never committed as-is.
+out/

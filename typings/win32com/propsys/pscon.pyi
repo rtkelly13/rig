@@ -1,0 +1,4 @@
+from _win32typing import PyPROPERTYKEY
+
+PKEY_AppUserModel_RelaunchCommand: PyPROPERTYKEY
+PKEY_AppUserModel_RelaunchDisplayNameResource: PyPROPERTYKEY

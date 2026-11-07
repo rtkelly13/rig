@@ -1,0 +1,78 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}{{ project_name }} — Pick a Base{% endblock %}
+{% block subtitle %}Choose the base to build the next round on{% endblock %}
+
+{% block metric_note %}
+  <p class="text-[0.82rem] leading-relaxed text-muted">
+    No scores here on purpose. Drift measures similarity to the source raster, which the mark
+    deviates from by design, so it cannot tell you which of these looks best. Judge the large
+    render for character and the small ones for legibility, then adopt one with the command on
+    its card.
+  </p>
+{% endblock %}
+
+{% block content %}
+  <h2 class="section-title">Source Artwork</h2>
+  <div class="panel mb-2.5 flex w-full max-w-[1300px] flex-wrap items-center gap-6 border-2 border-magenta p-[22px]">
+    <img class="size-[200px] rounded-xl object-contain" src="{{ reference_hero }}" alt="Canonical reference">
+    <div class="min-w-[260px] flex-1">
+      <h3 class="m-0 mb-1.5 text-base text-[#e879f9]">{{ reference_name }}</h3>
+      <p class="m-0 mb-3.5 text-[0.84rem] leading-relaxed text-muted">
+        The original. Kept alongside for character reference, not as a target to converge on.
+      </p>
+      <div class="mb-4 flex flex-wrap items-end gap-3.5">
+        {% for chip in reference_sizes %}
+        <div class="flex flex-col items-center gap-1.5">
+          <img class="rounded-lg border border-edge bg-ink" src="{{ chip.uri }}" alt="reference at {{ chip.size }}px">
+          <span class="text-[0.7rem] text-faint">{{ chip.size }}px</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Candidates</h2>
+  <div class="flex w-full max-w-[1300px] flex-col gap-[18px]">
+    {% for candidate in candidates %}
+    <article class="panel relative flex flex-wrap items-start gap-[26px] p-[22px]{% if candidate.is_current %} border-2 border-good{% endif %}">
+      {% if candidate.is_current %}
+      <div class="ribbon left-[22px] bg-linear-to-r from-good to-[#10b981] text-[#062a20]">&check; Current base</div>
+      {% endif %}
+      <img class="size-[240px] rounded-2xl object-contain" src="{{ candidate.hero }}" alt="{{ candidate.name }}">
+      <div class="min-w-[300px] flex-1">
+        <h3 class="m-0 mb-1.5 text-[1.15rem] text-paper">{{ candidate.name }}</h3>
+        <p class="m-0 mb-4 text-[0.86rem] leading-relaxed text-muted">{{ candidate.description }}</p>
+
+        <div class="mb-4 flex flex-wrap items-end gap-3.5">
+          {% for chip in candidate.sizes %}
+          <div class="flex flex-col items-center gap-1.5">
+            <img class="rounded-lg border border-edge bg-ink" src="{{ chip.uri }}" alt="{{ candidate.key }} at {{ chip.size }}px">
+            <span class="text-[0.7rem] text-faint">{{ chip.size }}px</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        <dl class="m-0 mb-4 flex flex-wrap gap-x-2.5 gap-y-2">
+          {% for row in candidate.spec %}
+          <div class="flex gap-1.5 rounded-md border border-edge bg-sunken px-2.5 py-0.5">
+            <dt class="m-0 text-[0.7rem] uppercase tracking-wide text-faint">{{ row.label }}</dt>
+            <dd class="m-0 text-[0.72rem] font-semibold text-slate-300">{{ row.value }}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+
+        <div class="flex flex-col gap-1.5 rounded-xl border border-dashed border-accent-deep bg-sunken px-3.5 py-3">
+          <span class="text-[0.7rem] uppercase tracking-wide text-accent-deep">Adopt this base</span>
+          <code class="break-all font-mono text-[0.82rem] text-[#7ef9ff]">uv run image-reconcile build --variant {{ candidate.key }}</code>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  <h2 class="section-title">Socket Detail — Side by Side</h2>
+  <div class="panel scroll-x p-4">
+    <img class="block h-auto max-w-full [image-rendering:pixelated]" src="{{ socket_sheet }}" alt="Socket ring across all candidates">
+  </div>
+{% endblock %}

@@ -1,0 +1,291 @@
+/* C4 viewer. Colours come from the rig design system when it is served alongside; the fallbacks keep the
+   page usable if the viewer is broken out on its own. Diagram colours map --pele-* onto the same tokens.
+
+   Colour carries the C4 level: each kind of element has one hue, and the level pill above the map uses the hue
+   of the elements that level is about. External elements stay grey and dashed, so the eye lands on what is
+   inside the boundary. */
+
+/* The rig app shell ships these faces; the bare theme.css this page loads does not. */
+@font-face { font-family: "Inter Variable"; src: url(/static/app_assets/inter.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Space Grotesk Variable"; src: url(/static/app_assets/display.woff2) format("woff2"); font-weight: 300 700; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url(/static/app_assets/mono.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+
+:root {
+  --c4-bg: var(--ds-surface-base, #121214);
+  --c4-panel: var(--ds-surface-raised, #1e1e24);
+  --c4-sunken: var(--ds-surface-sunken, #0c0c0e);
+  --c4-text: var(--ds-text-primary, #fafafa);
+  --c4-text-2: var(--ds-text-secondary, #d4d4d8);
+  --c4-muted: var(--ds-text-muted, #a1a1aa);
+  --c4-border: var(--ds-border-default, #3f3f46);
+  --c4-subtle: var(--ds-border-subtle, #27272a);
+  --c4-accent: var(--ds-accent-primary, #22d3ee);
+  --c4-error: var(--ds-intent-danger, #f87171);
+  --c4-warning: var(--ds-intent-warning, #facc15);
+  --c4-success: var(--ds-intent-success, #4ade80);
+  --c4-mono: var(--ds-font-mono, "IBM Plex Mono", ui-monospace, Menlo, monospace);
+  --c4-body: "Inter Variable", var(--ds-font-body, system-ui, sans-serif);
+  --c4-display: "Space Grotesk Variable", var(--ds-font-display, var(--c4-body));
+
+  /* One hue per C4 kind. */
+  --c4-person: var(--ds-palette-violet, #a78bfa);
+  --c4-system: var(--ds-palette-blue, #60a5fa);
+  --c4-container: var(--ds-palette-teal, #2dd4bf);
+  --c4-component: var(--ds-palette-green, #4ade80);
+  --c4-code: var(--ds-palette-orange, #fb923c);
+  --c4-external: var(--ds-text-muted, #a1a1aa);
+
+  --c4-head: 52px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--c4-bg);
+  color: var(--c4-text);
+  font: 15px/1.55 var(--c4-body);
+  min-height: 100vh;
+}
+
+h1, h2, h3 { margin: 0; }
+a { color: var(--c4-accent); }
+button { font: inherit; color: inherit; }
+
+/* ── Header: one row. Where you are on the left, tools on the right. ───────────────────────────────────── */
+
+.c4-top {
+  display: flex; align-items: center; gap: 12px; height: var(--c4-head);
+  padding: 0 16px; border-bottom: 1px solid var(--c4-border); background: var(--c4-panel);
+}
+.c4-home { text-decoration: none; font-size: 18px; color: var(--c4-muted); }
+.c4-home:hover { color: var(--c4-accent); }
+.c4-brand { font: 800 15px/1 var(--c4-display); letter-spacing: 0.04em; }
+.c4-top select {
+  font: 600 13px var(--c4-body); background: var(--c4-sunken); color: var(--c4-text);
+  border: 1px solid var(--c4-border); padding: 5px 8px; border-radius: var(--ds-radius-soft, 4px);
+}
+.c4-crumbs {
+  display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; overflow: hidden;
+  font-size: 13px; white-space: nowrap;
+}
+.c4-crumbs button {
+  all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px; border-radius: 999px; color: var(--c4-text-2);
+  overflow: hidden; text-overflow: ellipsis; max-width: 340px;
+}
+.c4-crumbs button:hover { background: var(--c4-sunken); color: var(--c4-text); }
+.c4-crumbs button[aria-current="page"] { color: var(--c4-text); font-weight: 600; cursor: default; background: var(--c4-sunken); }
+.c4-crumbs .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--hue, var(--c4-muted)); }
+.c4-crumbs .sep { color: var(--c4-muted); }
+
+.c4-tools { display: flex; gap: 6px; }
+.c4-tool {
+  background: transparent; border: 1px solid var(--c4-border); color: var(--c4-text-2);
+  padding: 5px 10px; font-size: 13px; cursor: pointer; border-radius: var(--ds-radius-soft, 4px); white-space: nowrap;
+}
+.c4-tool:hover { color: var(--c4-text); border-color: var(--c4-muted); }
+.c4-tool[aria-pressed="true"] { background: var(--c4-sunken); color: var(--c4-text); border-color: var(--c4-accent); }
+.c4-tool .n-error { color: var(--c4-error); font-weight: 700; }
+.c4-tool .n-warning { color: var(--c4-warning); font-weight: 700; }
+.c4-tool .n-ok { color: var(--c4-success); font-weight: 700; }
+
+/* ── Layout: the map takes the room. Drawer and inspector are optional columns. ─────────────────────────── */
+
+.c4-main {
+  display: grid; grid-template-columns: minmax(0, 1fr) 380px; height: calc(100vh - var(--c4-head));
+}
+.c4-main.with-drawer { grid-template-columns: 300px minmax(0, 1fr) 380px; }
+.c4-main.no-inspector { grid-template-columns: minmax(0, 1fr); }
+.c4-main.with-drawer.no-inspector { grid-template-columns: 300px minmax(0, 1fr); }
+.c4-main.no-inspector .c4-inspector { display: none; }
+
+.c4-drawer, .c4-inspector { overflow: auto; padding: 16px 20px 32px; background: var(--c4-panel); }
+.c4-drawer { border-right: 1px solid var(--c4-border); }
+.c4-inspector { border-left: 1px solid var(--c4-border); }
+
+.c4-label {
+  font: 700 11px/1 var(--c4-body); text-transform: uppercase; letter-spacing: 0.1em; color: var(--c4-muted);
+  margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--c4-subtle);
+}
+.c4-label:first-child, .c4-element-note:not([hidden]) + .c4-label { margin-top: 0; }
+.c4-element-note:not([hidden]) + .c4-label { margin-top: 24px; }
+.c4-aside { font-size: 12px; color: var(--c4-muted); margin: 0 0 10px; }
+
+/* ── Title band ────────────────────────────────────────────────────────────────────────────────────────── */
+
+.c4-stage-wrap { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 18px 20px 12px; }
+.c4-head { display: flex; flex-direction: column; gap: 12px; }
+.c4-head-text { min-width: 0; }
+.c4-level {
+  display: inline-flex; align-items: center; gap: 8px; font: 700 12px/1 var(--c4-body);
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--hue, var(--c4-accent));
+  padding: 5px 10px 5px 8px; border-radius: 999px;
+  background: color-mix(in srgb, var(--hue, var(--c4-accent)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hue, var(--c4-accent)) 45%, transparent);
+}
+.c4-level .n { font-variant-numeric: tabular-nums; opacity: 0.8; }
+.c4-title { font: 800 clamp(22px, 2.2vw, 30px)/1.2 var(--c4-display); margin-top: 10px; overflow-wrap: anywhere; }
+.c4-desc { color: var(--c4-text-2); margin: 6px 0 0; max-width: 75ch; }
+
+.c4-expand { display: flex; flex-wrap: wrap; gap: 6px; }
+.c4-expand:empty { display: none; }
+.c4-expand button {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; background: var(--c4-sunken); color: var(--c4-text-2);
+  border: 1px solid var(--c4-border); padding: 5px 10px; cursor: pointer; border-radius: 999px;
+}
+.c4-expand button:hover { color: var(--c4-text); border-color: var(--c4-muted); }
+.c4-expand button[aria-pressed="true"] { border-color: var(--c4-accent); color: var(--c4-accent); }
+.c4-expand .lead { color: var(--c4-muted); font-size: 12px; align-self: center; margin-right: 2px; }
+
+/* ── Stage ─────────────────────────────────────────────────────────────────────────────────────────────── */
+
+/* Prototype of a design-system pele theme: --pele-* derived from --ds-* role tokens, so diagrams follow the
+   page's level (midnight, sketch). Declared on the stage, inside the [data-theme] element, so the var()s resolve
+   against that level. Also set on .pele so it beats pele's own defaults; the vendored toolkit theme is kept only as reference. */
+.c4-stage, .c4-stage .pele {
+  --pele-bg: var(--ds-surface-sunken, #121214);
+  --pele-fg: var(--ds-text-primary, #fafafa);
+  --pele-muted: var(--ds-text-muted, #a1a1aa);
+  --pele-line: var(--ds-text-muted, #a1a1aa);
+  --pele-surface: var(--ds-surface-raised, #1e1e24);
+  --pele-surface-alt: var(--ds-surface-overlay, #27272a);
+  --pele-border: var(--ds-border-strong, #fafafa);
+  --pele-accent: var(--ds-accent-primary, #22d3ee);
+  /* Diagram text is read, so it is Inter: small mono labels are the hardest text on the page (DESIGN.md §7). */
+  --pele-font: var(--c4-body);
+  --pele-series-1: var(--ds-accent-primary, #06b6d4);
+  --pele-series-2: var(--ds-accent-secondary, #ec4899);
+  --pele-series-3: var(--ds-accent-tertiary, #facc15);
+}
+
+.c4-stage {
+  position: relative; flex: 1; min-height: 360px; margin-top: 16px; overflow: hidden;
+  border: 1px solid var(--c4-border); border-radius: var(--ds-radius-soft, 4px);
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--c4-muted) 22%, transparent) 1px, transparent 1px) 0 0 / 22px 22px,
+    var(--pele-bg, var(--c4-sunken));
+}
+.c4-stage .pele { --pele-bg: transparent; }
+.c4-stage .c4-canvas {
+  width: 100%; height: 100%; transform-origin: 0 0;
+  transition: transform 420ms cubic-bezier(0.3, 0, 0.2, 1), opacity 420ms ease;
+}
+.c4-stage .c4-canvas.leaving { opacity: 0; }
+.c4-stage .c4-canvas.arriving { opacity: 0; transform: scale(0.6); transform-origin: 50% 50%; }
+/* Pele sets an inline height:auto; the map should fill the stage and centre (preserveAspectRatio is set in c4.js). */
+.c4-stage .c4-canvas { display: flex; align-items: center; justify-content: center; }
+.c4-stage .c4-canvas > svg { width: 100% !important; height: 100% !important; display: block; }
+.c4-stage a { cursor: zoom-in; }
+.c4-stage [data-id] { cursor: pointer; }
+.c4-stage .c4-selected :is(rect, circle, path, polygon) { stroke: var(--c4-accent) !important; stroke-width: 3px; }
+.c4-stage .c4-error-box { padding: 16px; font-family: var(--c4-mono); color: var(--c4-error); white-space: pre-wrap; }
+.c4-hint { color: var(--c4-muted); font-size: 12px; margin: 8px 0 0; }
+
+/* Element hues. Pele fills a node from --_s and strokes it from --_b, so setting those on the node recolours it;
+   the shape rules beat the presentation attributes when the var chain does not reach. Externals fill from --_bg
+   and keep pele's dashed grey. */
+.c4-stage .pele-node { --hue: var(--c4-system); }
+.c4-stage .pele-c4-person { --hue: var(--c4-person); }
+.c4-stage .pele-c4-system { --hue: var(--c4-system); }
+.c4-stage .pele-c4-container, .c4-stage .pele-c4-container_db, .c4-stage .pele-c4-container_queue { --hue: var(--c4-container); }
+.c4-stage .pele-c4-component, .c4-stage .pele-c4-component_db { --hue: var(--c4-component); }
+.c4-stage .pele-class .pele-node { --hue: var(--c4-code); }
+.c4-stage .pele-node:not(.pele-c4-external) > :is(rect, circle, path, polygon, ellipse),
+.c4-stage .pele-node:not(.pele-c4-external) > a > :is(rect, circle, path, polygon, ellipse) {
+  fill: color-mix(in srgb, var(--hue) 11%, var(--pele-surface));
+  stroke: var(--hue);
+  stroke-width: 1.5px;
+}
+.c4-stage .pele-node:not(.pele-c4-external) .pele-c4-type,
+.c4-stage .pele-class .pele-annotation { fill: var(--hue); }
+.c4-stage .pele-c4-external > :is(rect, circle, path), .c4-stage .pele-c4-external > a > :is(rect, circle, path) {
+  fill: color-mix(in srgb, var(--c4-external) 6%, var(--pele-surface));
+}
+/* Elements that zoom somewhere get a heavier frame, so "click to go deeper" is visible before hovering. */
+.c4-stage .pele-node > a > :is(rect, path):first-child { stroke-width: 2.5px; }
+.c4-stage .pele-node > a:hover > :is(rect, path):first-child { fill: color-mix(in srgb, var(--hue) 30%, var(--pele-surface)); }
+.c4-stage .pele-c4-boundary :is(rect, path) { stroke: color-mix(in srgb, var(--c4-system) 70%, transparent); }
+.c4-stage .pele-c4-boundary text { fill: var(--c4-system); }
+.c4-stage .pele-edge-label { fill: var(--c4-text-2); }
+.c4-stage .pele-c4-techn { fill: var(--c4-muted); }
+.c4-stage .pele-class .pele-member { fill: var(--c4-text-2); }
+
+/* ── Inspector prose ───────────────────────────────────────────────────────────────────────────────────── */
+
+.c4-prose { font-size: 14px; color: var(--c4-text-2); }
+.c4-prose > :first-child { margin-top: 0; }
+.c4-prose h2 {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  font: 700 15px/1.3 var(--c4-body); color: var(--c4-text); margin: 22px 0 6px;
+  padding-left: 10px; border-left: 3px solid var(--hue, var(--c4-border));
+}
+.c4-prose h2 .alias, .c4-element-note .alias { font: 500 11px var(--c4-mono); color: var(--c4-muted); }
+.c4-prose h3 { font: 700 13px/1.3 var(--c4-body); color: var(--c4-text); margin: 14px 0 4px; }
+.c4-prose p { margin: 6px 0; }
+.c4-prose ul { margin: 6px 0; padding-left: 18px; }
+.c4-prose li { margin: 2px 0; }
+.c4-prose code {
+  font: 12.5px var(--c4-mono); background: var(--c4-sunken); padding: 1px 4px; border-radius: 3px;
+  overflow-wrap: anywhere; color: var(--c4-text);
+}
+.c4-prose strong { color: var(--c4-text); }
+.c4-prose table { border-collapse: collapse; font-size: 13px; width: 100%; margin: 8px 0; }
+.c4-prose th, .c4-prose td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--c4-subtle); vertical-align: top; }
+.c4-prose th { color: var(--c4-muted); font-weight: 600; font-size: 12px; }
+.c4-prose td:last-child, .c4-prose th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+
+.c4-element-note {
+  border: 1px solid var(--hue, var(--c4-accent)); border-left-width: 4px; padding: 12px 14px; font-size: 14px;
+  background: color-mix(in srgb, var(--hue, var(--c4-accent)) 8%, var(--c4-panel)); border-radius: var(--ds-radius-soft, 4px);
+}
+.c4-element-note h3 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 0 0 6px; font: 700 16px/1.3 var(--c4-body); color: var(--c4-text); }
+.c4-element-note .zoom {
+  all: unset; cursor: pointer; display: inline-block; margin-top: 8px; padding: 5px 10px; border-radius: 999px;
+  background: var(--hue, var(--c4-accent)); color: var(--ds-text-inverse, #000); font-weight: 600; font-size: 13px;
+}
+
+.c4-list { list-style: none; margin: 0; padding: 0; }
+.c4-list li { font-size: 14px; padding: 3px 0; }
+.c4-list button { all: unset; cursor: pointer; color: var(--c4-accent); }
+.c4-list .kind { color: var(--c4-muted); font-size: 12px; }
+.c4-prov { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13px; margin: 0; }
+.c4-prov dt { color: var(--c4-muted); }
+.c4-prov dd { margin: 0; overflow-wrap: anywhere; color: var(--c4-text-2); }
+.c4-prov .unverified { color: var(--c4-warning); }
+
+/* ── Drawer: zoom tree and findings ────────────────────────────────────────────────────────────────────── */
+
+.c4-tree, .c4-tree ul, .c4-findings { list-style: none; margin: 0; padding: 0; }
+.c4-tree ul { padding-left: 12px; border-left: 1px solid var(--c4-subtle); margin-left: 7px; }
+.c4-tree button {
+  all: unset; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 4px 6px; font-size: 13px;
+  width: 100%; border-radius: 4px; color: var(--c4-text-2);
+}
+.c4-tree button .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--hue, var(--c4-muted)); }
+.c4-tree button:hover, .c4-tree button[aria-current="true"] { background: var(--c4-sunken); color: var(--c4-text); }
+.c4-tree .repeat { color: var(--c4-muted); font-style: italic; }
+
+.c4-findings li { font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--c4-subtle); color: var(--c4-text-2); }
+.c4-findings .sev { font-weight: 700; margin-right: 6px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; }
+.c4-findings .error .sev { color: var(--c4-error); }
+.c4-findings .warning .sev { color: var(--c4-warning); }
+.c4-findings .info .sev { color: var(--c4-muted); }
+.c4-findings .code { font-family: var(--c4-mono); color: var(--c4-muted); font-size: 12px; }
+.c4-link { all: unset; cursor: pointer; color: var(--c4-accent); }
+
+@media (max-width: 1100px) {
+  .c4-top { height: auto; flex-wrap: wrap; padding: 8px 16px; }
+  .c4-crumbs { order: 9; flex-basis: 100%; }
+  .c4-main, .c4-main.with-drawer, .c4-main.no-inspector, .c4-main.with-drawer.no-inspector { grid-template-columns: 1fr; height: auto; }
+  .c4-stage { min-height: 70vh; }
+  .c4-drawer, .c4-inspector { border: 0; border-top: 1px solid var(--c4-border); }
+}
+
+/* File tables: keep a filename on one line, let the other columns wrap. */
+.c4-prose td { overflow-wrap: anywhere; }
+.c4-prose td code { white-space: nowrap; overflow-wrap: normal; font-size: 12px; }
+.c4-element-note table { font-size: 12.5px; }
+/* Externals and boundaries: the note panel follows the element, so give them their own hue. */
+.c4-stage .pele-c4-external { --hue: var(--c4-external); }

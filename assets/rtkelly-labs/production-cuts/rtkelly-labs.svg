@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="grad-1" x1="582" y1="240" x2="772" y2="511" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#04ebc7" />
+<stop offset="25%" stop-color="#14b6c3" />
+<stop offset="50%" stop-color="#198ec3" />
+<stop offset="75%" stop-color="#1e6dc1" />
+<stop offset="100%" stop-color="#2864c1" />
+</linearGradient>
+<linearGradient id="grad-2" x1="561" y1="606" x2="214" y2="732" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#0edbbf" />
+<stop offset="25%" stop-color="#11cdc1" />
+<stop offset="50%" stop-color="#11aec0" />
+<stop offset="75%" stop-color="#119ac5" />
+<stop offset="100%" stop-color="#1499d3" />
+</linearGradient>
+<linearGradient id="grad-3" x1="749" y1="481" x2="660" y2="811" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#13d1c2" />
+<stop offset="25%" stop-color="#14acbd" />
+<stop offset="50%" stop-color="#1a7bbc" />
+<stop offset="75%" stop-color="#205fbc" />
+<stop offset="100%" stop-color="#265bbe" />
+</linearGradient>
+<linearGradient id="grad-4" x1="365" y1="552" x2="281" y2="238" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#2969bd" />
+<stop offset="25%" stop-color="#2277c5" />
+<stop offset="50%" stop-color="#1b7cc3" />
+<stop offset="75%" stop-color="#169eca" />
+<stop offset="100%" stop-color="#02f0e6" />
+</linearGradient>
+<linearGradient id="grad-5" x1="551" y1="453" x2="470" y2="569" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#4fdce0" />
+<stop offset="25%" stop-color="#4edfe5" />
+<stop offset="50%" stop-color="#38c7e1" />
+<stop offset="75%" stop-color="#2790cb" />
+<stop offset="100%" stop-color="#245cb2" />
+</linearGradient>
+<linearGradient id="grad-6" x1="590" y1="286" x2="759" y2="488" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#10a4b9" />
+<stop offset="25%" stop-color="#148eb1" />
+<stop offset="50%" stop-color="#1869aa" />
+<stop offset="75%" stop-color="#1c54ac" />
+<stop offset="100%" stop-color="#2053af" />
+</linearGradient>
+<linearGradient id="grad-7" x1="719" y1="511" x2="655" y2="750" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#0fa6b4" />
+<stop offset="25%" stop-color="#1391b1" />
+<stop offset="50%" stop-color="#166dad" />
+<stop offset="75%" stop-color="#1a4ea8" />
+<stop offset="100%" stop-color="#1a48ac" />
+</linearGradient>
+<linearGradient id="grad-8" x1="249" y1="580" x2="462" y2="729" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#1458a7" />
+<stop offset="25%" stop-color="#1465aa" />
+<stop offset="50%" stop-color="#0f86b3" />
+<stop offset="75%" stop-color="#0ba9b8" />
+<stop offset="100%" stop-color="#0bbebc" />
+</linearGradient>
+<linearGradient id="grad-9" x1="390" y1="541" x2="441" y2="650" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#58e3e7" />
+<stop offset="25%" stop-color="#4adae7" />
+<stop offset="50%" stop-color="#2d97d1" />
+<stop offset="75%" stop-color="#2268bc" />
+<stop offset="100%" stop-color="#2456aa" />
+</linearGradient>
+<linearGradient id="grad-10" x1="572" y1="382" x2="646" y2="471" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#58e7ea" />
+<stop offset="25%" stop-color="#52e6ea" />
+<stop offset="50%" stop-color="#35b8dc" />
+<stop offset="75%" stop-color="#1f81cb" />
+<stop offset="100%" stop-color="#216fb5" />
+</linearGradient>
+<linearGradient id="grad-11" x1="636" y1="553" x2="582" y2="647" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#1e83bb" />
+<stop offset="25%" stop-color="#1c85c8" />
+<stop offset="50%" stop-color="#207bc0" />
+<stop offset="75%" stop-color="#2266bf" />
+<stop offset="100%" stop-color="#2457ae" />
+</linearGradient>
+<linearGradient id="grad-12" x1="576" y1="379" x2="630" y2="433" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#5de7e9" />
+<stop offset="25%" stop-color="#56e7ea" />
+<stop offset="50%" stop-color="#51e8eb" />
+<stop offset="75%" stop-color="#4de0ea" />
+<stop offset="100%" stop-color="#48cae1" />
+</linearGradient>
+<linearGradient id="grad-13" x1="401" y1="539" x2="430" y2="589" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#5fe2e5" />
+<stop offset="25%" stop-color="#53e9ec" />
+<stop offset="50%" stop-color="#51e9ec" />
+<stop offset="75%" stop-color="#51e7ec" />
+<stop offset="100%" stop-color="#4ad0e4" />
+</linearGradient>
+<linearGradient id="grad-14" x1="758" y1="473" x2="591" y2="274" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#2e8ad9" />
+<stop offset="25%" stop-color="#299bd3" />
+<stop offset="50%" stop-color="#2bacc7" />
+<stop offset="75%" stop-color="#35d1dc" />
+<stop offset="100%" stop-color="#47e7e2" />
+</linearGradient>
+<filter id="crossover-shadow" x="-20%" y="-20%" width="140%" height="140%">
+<feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#080e18" flood-opacity="0.65" />
+</filter>
+<linearGradient id="grad-tl-inner" x1="266" y1="332" x2="443" y2="357" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#147eb6" />
+<stop offset="30%" stop-color="#1b6ab8" />
+<stop offset="70%" stop-color="#1f58b8" />
+<stop offset="100%" stop-color="#244aa4" />
+</linearGradient>
+</defs>
+<path d="M0,0 L1024,0 L1024,1024 L0,1024 Z" fill="#101923" />
+<path d="M 645,216 L 659,216 L 675,224 L 803,299 L 812,305 L 817,312 L 819,319 L 819,469 L 816,479 L 811,484 L 788,500 L 778,500 L 775,496 L 757,489 L 757,487 L 737,477 L 736,474 L 715,463 L 715,461 L 709,459 L 709,457 L 705,457 L 705,455 L 700,454 L 702,450 L 719,440 L 724,434 L 723,362 L 718,361 L 693,344 L 684,341 L 684,339 L 675,335 L 675,333 L 668,331 L 656,324 L 645,324 L 570,368 L 560,377 L 558,381 L 557,419 L 504,450 L 499,449 L 462,426 L 462,339 L 464,330 L 470,320 L 477,314 L 641,217 Z" fill="url(#grad-1)" />
+<path d="M 240,521 L 245,522 L 284,546 L 295,551 L 295,553 L 301,557 L 301,559 L 310,561 L 315,567 L 319,568 L 322,571 L 319,576 L 313,579 L 308,584 L 303,585 L 302,588 L 299,589 L 299,658 L 301,658 L 306,663 L 367,700 L 376,700 L 454,653 L 461,643 L 462,619 L 530,578 L 557,594 L 557,690 L 553,700 L 547,708 L 526,722 L 388,805 L 376,809 L 364,809 L 358,806 L 219,724 L 213,720 L 207,711 L 205,705 L 205,551 L 213,537 L 226,529 Z" fill="url(#grad-2)" />
+<path d="M 677,465 L 686,465 L 695,468 L 808,535 L 815,542 L 819,551 L 819,707 L 810,721 L 728,770 L 717,776 L 712,777 L 712,779 L 695,790 L 674,800 L 671,800 L 671,802 L 662,808 L 643,807 L 643,805 L 628,800 L 611,790 L 611,787 L 605,785 L 569,765 L 569,763 L 551,754 L 526,738 L 557,717 L 568,699 L 570,699 L 572,691 L 572,658 L 575,658 L 599,672 L 603,673 L 603,675 L 617,682 L 617,684 L 633,693 L 633,695 L 638,695 L 646,700 L 657,700 L 669,694 L 686,684 L 686,682 L 719,663 L 723,658 L 723,590 L 716,584 L 635,534 L 635,532 L 629,530 L 599,511 L 599,509 L 611,504 L 611,502 L 669,468 Z" fill="url(#grad-3)" />
+<path d="M 365,216 L 378,216 L 389,220 L 489,280 L 497,285 L 497,287 L 466,306 L 456,316 L 445,312 L 445,314 L 452,318 L 448,335 L 447,361 L 439,359 L 439,357 L 435,356 L 399,335 L 396,333 L 396,331 L 380,324 L 380,322 L 366,322 L 365,325 L 357,328 L 357,331 L 351,336 L 335,343 L 324,350 L 321,350 L 320,353 L 306,362 L 300,364 L 301,435 L 303,435 L 303,437 L 323,450 L 327,451 L 327,453 L 355,469 L 355,471 L 360,472 L 385,487 L 385,489 L 396,494 L 396,496 L 401,497 L 414,506 L 423,510 L 423,513 L 411,519 L 358,552 L 345,558 L 333,558 L 314,548 L 314,546 L 299,539 L 299,537 L 292,535 L 291,532 L 282,529 L 240,503 L 229,498 L 229,496 L 215,488 L 208,480 L 205,473 L 205,316 L 211,306 L 220,299 L 362,217 Z" fill="url(#grad-4)" />
+<path d="M 366,274 L 380,274 L 439,308 L 449,313 L 449,361 L 439,361 L 439,357 L 416,345 L 366,322 L 324,350 L 300,364 L 301,435 L 260,438 L 260,336 Z" fill="url(#grad-tl-inner)" />
+<path d="M 396,352 L 401,353 L 448,381 L 449,434 L 678,577 L 678,640 L 628,670 L 624,671 L 615,666 L 615,664 L 606,661 L 599,655 L 572,640 L 571,586 L 346,448 L 346,446 L 344,446 L 343,444 L 343,384 L 390,356 Z" fill="url(#grad-5)" filter="url(#crossover-shadow)" />
+<path d="M 649,273 L 656,273 L 666,277 L 756,330 L 762,334 L 766,341 L 769,355 L 769,448 L 767,454 L 758,466 L 752,468 L 743,474 L 743,477 L 751,478 L 749,482 L 757,484 L 759,489 L 737,477 L 736,474 L 727,470 L 726,468 L 715,463 L 715,461 L 709,459 L 709,457 L 705,457 L 705,455 L 700,454 L 702,450 L 719,440 L 724,434 L 723,362 L 718,361 L 693,344 L 684,341 L 684,339 L 675,335 L 675,333 L 668,331 L 656,324 L 645,324 L 570,368 L 560,377 L 558,381 L 557,419 L 526,436 L 526,438 L 513,444 L 513,360 L 517,349 L 537,335 L 573,314 L 576,314 L 576,312 L 593,302 L 596,302 L 596,300 L 610,292 L 613,292 L 613,290 L 636,277 L 644,274 Z" fill="url(#grad-6)" />
+<path d="M 637,490 L 642,491 L 665,505 L 665,507 L 668,506 L 757,559 L 762,563 L 767,574 L 767,673 L 764,682 L 757,690 L 667,744 L 665,744 L 665,746 L 659,748 L 648,748 L 640,746 L 623,736 L 623,734 L 595,719 L 595,717 L 567,703 L 568,699 L 570,699 L 572,691 L 572,658 L 575,658 L 599,672 L 603,673 L 603,675 L 617,682 L 617,684 L 633,693 L 633,695 L 638,695 L 646,700 L 657,700 L 669,694 L 686,684 L 686,682 L 719,663 L 723,658 L 723,590 L 716,584 L 635,534 L 635,532 L 629,530 L 626,526 L 626,523 L 620,522 L 609,515 L 605,511 L 607,511 L 609,507 L 625,496 Z" fill="url(#grad-7)" />
+<path d="M 286,547 L 295,551 L 295,553 L 301,557 L 301,559 L 310,561 L 315,567 L 319,568 L 322,571 L 319,576 L 313,579 L 308,584 L 303,585 L 302,588 L 299,589 L 299,658 L 301,658 L 306,663 L 367,700 L 376,700 L 454,653 L 461,643 L 462,619 L 507,592 L 507,660 L 503,671 L 497,677 L 455,702 L 451,703 L 450,706 L 443,709 L 442,711 L 429,716 L 428,719 L 394,739 L 390,740 L 390,742 L 385,745 L 375,748 L 365,747 L 265,688 L 260,682 L 257,675 L 257,572 L 264,561 L 286,549 Z" fill="url(#grad-8)" />
+<path d="M 434,521 L 441,522 L 515,568 L 515,570 L 450,609 L 447,609 L 447,641 L 399,668 L 399,670 L 394,671 L 373,658 L 373,656 L 363,652 L 363,650 L 358,649 L 357,646 L 350,644 L 349,641 L 343,639 L 343,577 L 415,533 Z" fill="url(#grad-9)" />
+<path d="M 621,353 L 628,354 L 678,384 L 678,444 L 673,449 L 586,501 L 581,500 L 563,489 L 520,462 L 518,459 L 570,427 L 572,427 L 572,383 L 618,355 Z" fill="url(#grad-10)" />
+<path d="M 427,496 L 431,496 L 431,498 L 436,497 L 439,501 L 443,497 L 443,499 L 446,500 L 446,502 L 453,503 L 453,505 L 459,507 L 485,523 L 485,525 L 496,530 L 626,609 L 678,578 L 678,640 L 628,670 L 624,671 L 615,666 L 615,664 L 606,661 L 599,655 L 572,640 L 571,586 L 427,497 Z" fill="url(#grad-11)" />
+<path d="M 621,353 L 628,354 L 661,374 L 677,384 L 677,387 L 537,471 L 531,469 L 520,462 L 518,459 L 570,427 L 572,427 L 572,383 L 618,355 Z" fill="url(#grad-12)" />
+<path d="M 434,521 L 441,522 L 488,551 L 487,554 L 398,608 L 394,609 L 343,579 L 344,576 L 415,533 Z" fill="url(#grad-13)" />
+<path d="M 643,265 L 659,265 L 671,271 L 758,323 L 768,330 L 773,338 L 775,347 L 775,454 L 766,467 L 764,467 L 763,470 L 749,478 L 745,479 L 741,476 L 763,459 L 767,452 L 768,444 L 768,355 L 767,346 L 762,334 L 666,278 L 656,274 L 649,274 L 638,277 L 613,290 L 613,292 L 596,300 L 596,302 L 576,312 L 576,314 L 521,346 L 517,351 L 514,360 L 512,441 L 509,444 L 506,444 L 505,356 L 507,347 L 515,339 L 518,339 L 520,335 L 546,320 L 551,319 L 551,317 L 558,313 L 561,313 L 561,311 L 565,311 L 566,308 L 573,306 L 573,304 L 599,291 L 599,289 L 640,266 Z" fill="url(#grad-14)" />
+</svg>
