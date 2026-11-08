@@ -22,6 +22,7 @@ from rig.estate.checks import (
     parse_worktrees,
 )
 from rig.estate.cleanup import Outcome, clean_repo
+from rig.estate.prs import PullRequest
 from rig.estate.reclaim import human, scan_repo
 
 
@@ -308,15 +309,53 @@ def _push_as(repo: pathlib.Path, local: str, remote_branch: str, *, remote: str 
     _git(["fetch", "-q", "--prune", remote], repo)
 
 
+def _merged_at(repo: pathlib.Path, number: int, head_ref: str, tip_of: str) -> dict[str, PullRequest]:
+    """GitHub's view: PR *number* merged *head_ref* with *tip_of*'s current commit as its head."""
+    tip = subprocess.run(["git", "rev-parse", tip_of], cwd=repo, check=True, capture_output=True, text=True).stdout
+    return {head_ref: PullRequest(number, "MERGED", head_ref, head_oid=tip.strip())}
+
+
+def _commit_more(repo: pathlib.Path, branch: str) -> None:
+    _git(["checkout", "-q", branch], repo)
+    (repo / "later.txt").write_text("never pushed\n", encoding="utf-8")
+    _git(["add", "."], repo)
+    _git(["commit", "-qm", "after the push"], repo)
+    _git(["checkout", "-q", "main"], repo)
+
+
 def test_a_branch_pushed_under_another_name_matches_its_merged_pr(repo: pathlib.Path) -> None:
     """GitHub knows the PR by the remote branch name; the local name differs after a port or rename."""
     _push_as(repo, "port/work", "30-work")
+    heads = _merged_at(repo, 68, "30-work", "port/work")
 
-    actions = clean_repo(inspect_repo(repo, merged_heads={"30-work": 68}), apply=False, merged_heads={"30-work": 68})
+    actions = clean_repo(inspect_repo(repo, merged_heads=heads), apply=False, merged_heads=heads)
 
     verdict = next(a for a in actions if a.subject == "port/work")
     assert verdict.outcome is Outcome.WOULD_CLEAN
     assert verdict.detail.startswith("squash-merged in #68")
+
+
+@pytest.mark.parametrize(("local", "remote_branch"), [("work", "work"), ("port/work", "30-work")])
+def test_a_commit_after_the_merged_head_keeps_the_branch(repo: pathlib.Path, local: str, remote_branch: str) -> None:
+    """The PR merged what was pushed; a later local commit was never in it, so the name match proves nothing."""
+    _push_as(repo, local, remote_branch)
+    heads = _merged_at(repo, 68, remote_branch, local)
+    _commit_more(repo, local)
+
+    actions = clean_repo(inspect_repo(repo, merged_heads=heads), apply=True, merged_heads=heads)
+
+    verdict = next(a for a in actions if a.subject == local)
+    assert verdict.outcome is Outcome.REFUSED
+    assert "on no remote" in verdict.detail
+
+
+def test_a_merged_pr_without_a_known_head_never_authorises_deletion(repo: pathlib.Path) -> None:
+    _push_as(repo, "work", "work")
+    heads = {"work": PullRequest(68, "MERGED", "work")}
+
+    actions = clean_repo(inspect_repo(repo, merged_heads=heads), apply=True, merged_heads=heads)
+
+    assert next(a for a in actions if a.subject == "work").outcome is Outcome.REFUSED
 
 
 def test_an_upstream_on_another_remote_never_matches_origins_prs(repo: pathlib.Path, tmp_path: pathlib.Path) -> None:
@@ -325,8 +364,9 @@ def test_an_upstream_on_another_remote_never_matches_origins_prs(repo: pathlib.P
     _git(["init", "-q", "--bare", "-b", "main", str(other)], tmp_path)
     _git(["remote", "add", "other", str(other)], repo)
     _push_as(repo, "port/work", "30-work", remote="other")
+    heads = _merged_at(repo, 68, "30-work", "port/work")
 
-    actions = clean_repo(inspect_repo(repo, merged_heads={"30-work": 68}), apply=True, merged_heads={"30-work": 68})
+    actions = clean_repo(inspect_repo(repo, merged_heads=heads), apply=True, merged_heads=heads)
 
     verdict = next(a for a in actions if a.subject == "port/work")
     assert verdict.outcome is Outcome.REFUSED
@@ -471,7 +511,7 @@ def test_a_dirty_worktree_is_never_removed(repo: pathlib.Path) -> None:
 
     report = inspect_repo(repo)
     report.findings.append(_worktree_finding(tree))
-    actions = clean_repo(report, apply=True, merged_heads={"spike": 1})
+    actions = clean_repo(report, apply=True, merged_heads={"spike": PullRequest(1, "MERGED", "spike")})
 
     verdict = next(a for a in actions if a.subject == str(tree))
     assert verdict.outcome is Outcome.REFUSED
@@ -491,7 +531,7 @@ def test_an_untracked_file_also_blocks_removal(repo: pathlib.Path) -> None:
 
     report = inspect_repo(repo)
     report.findings.append(_worktree_finding(tree))
-    actions = clean_repo(report, apply=True, merged_heads={"spike": 1})
+    actions = clean_repo(report, apply=True, merged_heads={"spike": PullRequest(1, "MERGED", "spike")})
 
     verdict = next(a for a in actions if a.subject == str(tree))
     assert verdict.outcome is Outcome.REFUSED
@@ -505,7 +545,7 @@ def test_a_clean_worktree_is_removed(repo: pathlib.Path) -> None:
 
     report = inspect_repo(repo)
     report.findings.append(_worktree_finding(tree))
-    actions = clean_repo(report, apply=True, merged_heads={"spike": 1})
+    actions = clean_repo(report, apply=True, merged_heads={"spike": PullRequest(1, "MERGED", "spike")})
 
     verdict = next(a for a in actions if a.subject == str(tree))
     assert verdict.outcome is Outcome.CLEANED
@@ -526,7 +566,7 @@ def test_no_path_through_estate_deletes_a_dirty_worktree(repo: pathlib.Path) -> 
 
     report = inspect_repo(repo)
     report.findings.append(_worktree_finding(tree))
-    actions = clean_repo(report, apply=True, force=True, merged_heads={"spike": 1})
+    actions = clean_repo(report, apply=True, force=True, merged_heads={"spike": PullRequest(1, "MERGED", "spike")})
 
     verdict = next(a for a in actions if a.subject == str(tree))
     assert verdict.outcome is Outcome.FAILED

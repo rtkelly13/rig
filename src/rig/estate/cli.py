@@ -49,6 +49,7 @@ from rig.estate import risk as risk_mod
 from rig.estate import trim as trim_mod
 from rig.estate.checks import inspect_repo
 from rig.estate.cleanup import TIDY_CHECKS, Busy, Outcome, clean_repo
+from rig.estate.prs import PullRequest
 from rig.estate.reclaim import human
 
 app = typer.Typer(add_completion=False, help="Manage the code assets cloned on this machine.")
@@ -392,7 +393,7 @@ def trim(
     console.print(f"\n[bold]{'Freed' if apply else 'Would free'} {human(freed)}[/bold]")
 
 
-def _merged_heads(clone: pathlib.Path) -> dict[str, int]:
+def _merged_heads(clone: pathlib.Path) -> dict[str, PullRequest]:
     """GitHub's merged head refs, after a pruning fetch.
 
     `--merged` is already a network call, and without the prune a remote branch deleted on merge
@@ -400,7 +401,10 @@ def _merged_heads(clone: pathlib.Path) -> dict[str, int]:
     """
     from rig.estate.prs import merged_heads
 
-    _ = proc.git("fetch", "--prune", "--quiet", cwd=clone, timeout=120)
+    fetched = proc.git("fetch", "--prune", "--quiet", cwd=clone, timeout=120)
+    if not fetched.ok:
+        reason = (fetched.err.strip().splitlines() or ["no output"])[-1]
+        err.print(f"[yellow]{clone.name}: fetch --prune failed ({reason}); merged branches may be missed[/yellow]")
     return merged_heads(clone)
 
 

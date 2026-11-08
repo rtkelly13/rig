@@ -44,7 +44,7 @@ from rig.estate.checks import (
     orphaned_count,
     own_worktrees_dir,
 )
-from rig.estate.prs import merged_pr
+from rig.estate.prs import PullRequest, merged_pr
 from rig.estate.trim import LONG_PATHS, remove_tree
 
 BRANCH_CHECKS = ("branch-upstream-gone", "branch-merged")
@@ -144,7 +144,7 @@ def _clean_branch(
     repo: pathlib.Path,
     finding: Finding,
     apply: bool,
-    merged_heads: Mapping[str, int] | None = None,
+    merged_heads: Mapping[str, PullRequest] | None = None,
 ) -> Action:
     """Delete one branch, refusing only if it is genuinely the last copy of work.
 
@@ -196,7 +196,7 @@ def _clean_worktree(
     finding: Finding,
     apply: bool,
     force: bool = False,
-    merged_heads: Mapping[str, int] | None = None,
+    merged_heads: Mapping[str, PullRequest] | None = None,
     in_use: Busy | None = None,
 ) -> Action:
     """Remove one worktree, on the same two signals a branch gets.
@@ -286,7 +286,7 @@ def clean_repo(
     *,
     apply: bool = False,
     force: bool = False,
-    merged_heads: Mapping[str, int] | None = None,
+    merged_heads: Mapping[str, PullRequest] | None = None,
     in_use: Busy | None = None,
     checks: Collection[str] | None = None,
 ) -> list[Action]:
