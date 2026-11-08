@@ -1290,12 +1290,10 @@ button:disabled {
   height: 6px;
   background: var(--ds-accent-primary);
 }
-#legacy-workspace[data-view='estate'] .studio-header,
-#legacy-workspace[data-view='optical'] .studio-header {
+#legacy-workspace[data-view='estate'] .studio-header {
   display: none;
 }
-#legacy-workspace[data-view='estate'] .view-container,
-#legacy-workspace[data-view='optical'] .view-container {
+#legacy-workspace[data-view='estate'] .view-container {
   height: 100%;
 }
 .triage-page .eyebrow {
