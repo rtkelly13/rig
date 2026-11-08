@@ -13,6 +13,13 @@ invariants, see [Open Source Project Expectations](../open-source/open-source-pr
 `audit`, then `check-names`, then `enforce --dry-run`, then `enforce`. `uv run repo-governance --help`
 lists every command.
 
+`plan` is the desired → plan → apply shape ([target architecture](../target-architecture.md)) for the
+GitHub-side state: repo settings, the ruleset, environments, labels and Pages. It reads only; `--apply`
+makes the planned writes and `--json` emits the plan. It exits 0 when every repo matches its policy, 1 on
+drift or a refused write (the check-name guard), 2 when GitHub could not be read or a write failed. Each
+resource is a `Resource` in `src/rig/repo_governance/resource.py`, reading and writing through the
+`GitHubApi` port in `rig.proc`, so tests drive it with `tests/fakes/github_rest.py`.
+
 ## Guides
 
 | Guide | When to use |

@@ -97,7 +97,10 @@ PR cannot merge while any review conversation, human or bot, is unresolved.
 A ruleset aimed at another branch or allowing actors to bypass it is drift too. `enforce` checks
 registered CI names before writing the ruleset.
 
-`repo-governance verify-pr-checks <number-or-branch-or-URL> --repo <owner/repo>` also reads every
+`repo-governance verify-pr-checks <number-or-branch-or-URL> --repo <owner/repo>` is the merge
+preflight. It asks GitHub rather than keeping its own list: `gh pr checks --required` for the checks
+the ruleset requires (still running blocks), then the PR's `mergeStateStatus` (only `CLEAN`,
+`HAS_HOOKS` and `UNSTABLE` pass; `BLOCKED`, `BEHIND`, `DIRTY` and `DRAFT` do not). It also reads every
 page of review threads. Unresolved human, bot and outdated threads block; missing data, GraphQL
 errors and broken pagination block as well. `pr-triage --merge-ready` uses the same check immediately
 before each merge, including on private repositories. This is a CLI safeguard; it cannot enforce

@@ -293,4 +293,4 @@ class TestShippedConfig:
 
     def test_delete_branch_on_merge_is_the_default_policy(self):
         settings = PolicyConfig.parse(self._shipped()).repo_settings("Parquet.SourceGenerator")
-        assert settings["delete_branch_on_merge"] is True
+        assert settings.delete_branch_on_merge is True

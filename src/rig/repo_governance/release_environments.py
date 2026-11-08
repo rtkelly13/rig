@@ -8,25 +8,27 @@ secrets namespace, not an approval pause. Reviewer support exists here for the
 day a repo moves to an org with a second human.
 
 The plan step is pure (desired policy in, current state in, actions out) so the
-judgement is testable without touching GitHub; only the apply step shells out.
+judgement is testable without touching GitHub; reads and writes go through the GitHubApi port.
 """
 
 from __future__ import annotations
 
-import json
-from dataclasses import asdict, dataclass, field
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 
-from rig import proc
-from rig.typed_json import load_json, try_decode
-
-from .policy_config import EnvironmentPolicy
+from rig.proc import GitHubApi, gh_api
+from rig.repo_governance.policy_config import EnvironmentPolicy, PolicyConfig
+from rig.repo_governance.resource import Change, GitHubReadError, Target, read_json, send
+from rig.typed_json import encode_json
 
 __all__ = [
     "Action",
     "CurrentEnvironment",
     "EnvironmentSync",
+    "EnvironmentsResource",
     "fetch_current_environments",
     "plan_environment_actions",
+    "read_environments",
     "sync_repo_environments",
 ]
 
@@ -101,13 +103,6 @@ class EnvironmentSync:
 
 
 @dataclass(frozen=True, slots=True)
-class _GhCall:
-    code: int
-    body: object
-    stderr: str
-
-
-@dataclass(frozen=True, slots=True)
 class _GhUser:
     id: int
 
@@ -158,49 +153,64 @@ class _ReviewersBody:
     reviewers: list[_ReviewerBody]
 
 
-def _gh_api(method: str, endpoint: str, payload: _WaitTimerBody | _ReviewersBody | None = None) -> _GhCall:
-    """Run one `gh api` call; ``body`` is the parsed JSON, or ``None`` when there was none."""
-    if payload is None:
-        res = proc.gh("api", "-X", method, endpoint)
-    else:
-        res = proc.gh("api", "-X", method, endpoint, "--input", "-", stdin_text=json.dumps(asdict(payload)))
-    body: object = None
-    if res.out.strip():
-        try:
-            body = load_json(res.out)
-        except json.JSONDecodeError:
-            body = None
-    return _GhCall(code=res.code, body=body, stderr=res.err.strip())
+def _user_id(api: GitHubApi, login: str) -> int | None:
+    try:
+        return read_json(api, _GhUser, f"users/{login}").id
+    except GitHubReadError:
+        return None
 
 
-def _user_id(login: str) -> int | None:
-    call = _gh_api("GET", f"users/{login}")
-    user = try_decode(_GhUser, call.body) if call.code == 0 else None
-    return user.id if user else None
-
-
-def _deploy_reviewers(repo_name: str, environment: str) -> tuple[str, ...] | None:
+def _deploy_reviewers(api: GitHubApi, repo_name: str, environment: str) -> tuple[str, ...] | None:
     """User reviewer logins, or ``None`` when GitHub does not serve the protection rules for this repo."""
-    call = _gh_api("GET", f"repos/{repo_name}/environments/{environment}/deploy_reviewers")
-    served = try_decode(_GhDeployReviewers, call.body) if call.code == 0 else None
-    if served is None:
+    try:
+        served = read_json(api, _GhDeployReviewers, f"repos/{repo_name}/environments/{environment}/deploy_reviewers")
+    except GitHubReadError:
         return None
     return tuple(entry.reviewer.login for entry in served.reviewers if entry.reviewer.login)
 
 
-def fetch_current_environments(repo_name: str) -> dict[str, CurrentEnvironment]:
-    """Read every environment on *repo_name*, tolerating unserved protection endpoints."""
-    call = _gh_api("GET", f"repos/{repo_name}/environments")
-    listed = try_decode(_GhEnvironmentList, call.body) if call.code == 0 else None
-    if listed is None:
-        return {}
+def read_environments(api: GitHubApi, repo_name: str) -> dict[str, CurrentEnvironment]:
+    """Read every environment on *repo_name*, tolerating unserved protection endpoints.
+
+    Raises :class:`GitHubReadError` when the list itself cannot be read.
+    """
+    listed = read_json(api, _GhEnvironmentList, f"repos/{repo_name}/environments")
     return {
         env.name: CurrentEnvironment(
-            name=env.name, wait_timer=env.wait_timer, reviewers=_deploy_reviewers(repo_name, env.name)
+            name=env.name, wait_timer=env.wait_timer, reviewers=_deploy_reviewers(api, repo_name, env.name)
         )
         for env in listed.environments
         if env.name
     }
+
+
+def fetch_current_environments(repo_name: str, api: GitHubApi = gh_api) -> dict[str, CurrentEnvironment]:
+    """:func:`read_environments`, reading an unreadable list as no environments."""
+    try:
+        return read_environments(api, repo_name)
+    except GitHubReadError:
+        return {}
+
+
+def _apply_action(api: GitHubApi, repo_name: str, policy: EnvironmentPolicy, action: Action) -> str:
+    """Make one mutating action; returns its log line, starting ``FAILED`` when it failed."""
+    route = f"repos/{repo_name}/environments/{action.environment}"
+    if action.kind in {"create", "wait-timer"}:
+        ran = send(api, "PUT", route, encode_json(_WaitTimerBody, _WaitTimerBody(policy.wait_timer)))
+        verb = "created" if action.kind == "create" else "updated wait_timer on"
+        return f"{verb} {action.environment}" if ran.ok else f"FAILED {action.kind} {action.environment}: {ran.err}"
+    reviewers: list[_ReviewerBody] = []
+    for login in policy.reviewers:
+        uid = _user_id(api, login)
+        if uid is None:
+            return f"FAILED add-reviewers {action.environment}: cannot resolve user {login}"
+        reviewers.append(_ReviewerBody(id=uid))
+    ran = send(api, "PATCH", f"{route}/deploy_reviewers", encode_json(_ReviewersBody, _ReviewersBody(reviewers)))
+    return (
+        f"configured reviewers on {action.environment}"
+        if ran.ok
+        else f"FAILED add-reviewers {action.environment}: {ran.err}"
+    )
 
 
 def sync_repo_environments(
@@ -208,61 +218,45 @@ def sync_repo_environments(
     desired: dict[str, EnvironmentPolicy],
     *,
     dry_run: bool = False,
+    api: GitHubApi = gh_api,
 ) -> EnvironmentSync:
     """Apply the plan, returning the actions it decided on and a log line per action."""
-    current = fetch_current_environments(repo_name)
-    actions = plan_environment_actions(desired, current)
+    actions = plan_environment_actions(desired, fetch_current_environments(repo_name, api))
     log: list[str] = []
-
     for action in actions:
         if not action.mutates:
             log.append(f"{action.kind}: {action.environment} — {action.detail}")
-            continue
-        if dry_run:
+        elif dry_run:
             log.append(f"dry-run {action.kind}: {action.environment} — {action.detail}")
-            continue
-
-        policy = desired[action.environment]
-        if action.kind == "create":
-            call = _gh_api(
-                "PUT", f"repos/{repo_name}/environments/{action.environment}", _WaitTimerBody(policy.wait_timer)
-            )
-            log.append(
-                f"created {action.environment}"
-                if call.code == 0
-                else f"FAILED create {action.environment}: {call.stderr}"
-            )
-
-        elif action.kind == "wait-timer":
-            call = _gh_api(
-                "PUT",
-                f"repos/{repo_name}/environments/{action.environment}",
-                _WaitTimerBody(policy.wait_timer),
-            )
-            log.append(
-                f"updated wait_timer on {action.environment}"
-                if call.code == 0
-                else f"FAILED wait_timer {action.environment}: {call.stderr}"
-            )
-
-        elif action.kind == "add-reviewers" and policy.reviewers:
-            reviewers: list[_ReviewerBody] = []
-            for login in policy.reviewers:
-                uid = _user_id(login)
-                if uid is None:
-                    log.append(f"FAILED add-reviewers {action.environment}: cannot resolve user {login}")
-                    reviewers = []
-                    break
-                reviewers.append(_ReviewerBody(id=uid))
-            if reviewers:
-                call = _gh_api(
-                    "PATCH",
-                    f"repos/{repo_name}/environments/{action.environment}/deploy_reviewers",
-                    _ReviewersBody(reviewers),
-                )
-                if call.code != 0:
-                    log.append(f"FAILED add-reviewers {action.environment}: {call.stderr}")
-                else:
-                    log.append(f"configured reviewers on {action.environment}")
-
+        else:
+            log.append(_apply_action(api, repo_name, desired[action.environment], action))
     return EnvironmentSync(actions=actions, log=log)
+
+
+@dataclass(frozen=True, slots=True)
+class EnvironmentsResource:
+    """Deployment environments a profile declares (`environments` in config/repo_policies.json)."""
+
+    name: str = "environments"
+
+    def desired(self, cfg: PolicyConfig, target: Target) -> dict[str, EnvironmentPolicy] | None:
+        return cfg.environments(target.slug) or None
+
+    def read(self, api: GitHubApi, target: Target) -> dict[str, CurrentEnvironment]:
+        return read_environments(api, target.slug)
+
+    def diff(self, desired: dict[str, EnvironmentPolicy], observed: dict[str, CurrentEnvironment]) -> list[Change]:
+        return [
+            Change(self.name, a.kind, a.detail, kind="apply" if a.mutates else "note", subject=a.environment)
+            for a in plan_environment_actions(desired, observed)
+        ]
+
+    def apply(
+        self, api: GitHubApi, target: Target, desired: dict[str, EnvironmentPolicy], changes: Sequence[Change]
+    ) -> list[str]:
+        lines = (
+            _apply_action(api, target.slug, desired[c.subject], Action(c.action, c.subject, c.detail))
+            for c in changes
+            if c.kind == "apply"
+        )
+        return [line for line in lines if line.startswith("FAILED")]

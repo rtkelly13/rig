@@ -27,6 +27,7 @@ from rig.repo_governance.check_names import (
     suggest_preferred_name,
 )
 from rig.repo_governance.github_rulesets import (
+    RULESET_NAME,
     AlignResult,
     RepoSettingsResult,
     RulesetInspection,
@@ -38,6 +39,8 @@ from rig.repo_governance.gitignore_manager import GitignoreInspection
 from rig.repo_governance.policy_config import PolicyConfig, load_policy_config
 from rig.repo_governance.repo_discovery import OwnerInspection, RepoFound
 from rig.repo_governance.repo_hygiene import HygieneResult
+from rig.typed_json import load_json
+from tests.fakes.github_rest import FakeGitHubApi
 
 runner = CliRunner()
 
@@ -117,97 +120,69 @@ def test_get_gh_repo_name_failure(tmp_path: pathlib.Path):
         assert get_gh_repo_name(tmp_path) is None
 
 
+_SETTINGS_REPO = "rtkelly13/design-system"
+_ALIGNED_SETTINGS = {
+    "default_branch": "main",
+    "delete_branch_on_merge": True,
+    "allow_squash_merge": True,
+    "allow_merge_commit": False,
+    "allow_rebase_merge": False,
+    "allow_auto_merge": True,
+}
+
+
+def _settings(**overrides: object) -> FakeGitHubApi:
+    return FakeGitHubApi({f"repos/{_SETTINGS_REPO}": {**_ALIGNED_SETTINGS, **overrides}})
+
+
 def test_inspect_repo_settings_aligned():
-    mock_json = json.dumps(
-        {
-            "delete_branch_on_merge": True,
-            "allow_squash_merge": True,
-            "allow_merge_commit": False,
-            "allow_rebase_merge": False,
-            "allow_auto_merge": True,
-        }
-    )
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = _done(mock_json)
-        res = inspect_repo_settings("rtkelly13/design-system")
-        assert res.is_aligned is True
-        assert res.delete_on_merge is True
-        assert res.squash_only is True
+    res = inspect_repo_settings(_SETTINGS_REPO, api=_settings(), cfg=PolicyConfig.parse({}))
+    assert res.is_aligned is True
+    assert res.delete_on_merge is True
+    assert res.squash_only is True
 
 
 def test_inspect_repo_settings_drifted():
-    mock_json = json.dumps(
-        {
-            "delete_branch_on_merge": False,
-            "allow_squash_merge": True,
-            "allow_merge_commit": True,
-            "allow_rebase_merge": False,
-            "allow_auto_merge": True,
-        }
-    )
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = _done(mock_json)
-        res = inspect_repo_settings("rtkelly13/design-system")
-        assert res.is_aligned is False
+    api = _settings(delete_branch_on_merge=False, allow_merge_commit=True)
+    res = inspect_repo_settings(_SETTINGS_REPO, api=api, cfg=PolicyConfig.parse({}))
+    assert res.is_aligned is False
 
 
 def test_inspect_repo_settings_base_branch_aligned():
-    mock_json = json.dumps(
-        {
-            "default_branch": "main",
-            "delete_branch_on_merge": True,
-            "allow_squash_merge": True,
-            "allow_merge_commit": False,
-            "allow_rebase_merge": False,
-            "allow_auto_merge": True,
-        }
-    )
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = _done(mock_json)
-        res = inspect_repo_settings("rtkelly13/design-system", expected_branch="main")
-        assert res.is_aligned is True
-        assert res.base_branch_aligned is True
-        assert res.default_branch == "main"
-        assert res.expected_branch == "main"
+    res = inspect_repo_settings(_SETTINGS_REPO, expected_branch="main", api=_settings(), cfg=PolicyConfig.parse({}))
+    assert res.is_aligned is True
+    assert res.base_branch_aligned is True
+    assert res.default_branch == "main"
+    assert res.expected_branch == "main"
 
 
 def test_inspect_repo_settings_base_branch_deviation():
-    mock_json = json.dumps(
-        {
-            "default_branch": "master",
-            "delete_branch_on_merge": True,
-            "allow_squash_merge": True,
-            "allow_merge_commit": False,
-            "allow_rebase_merge": False,
-            "allow_auto_merge": True,
-        }
-    )
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = _done(mock_json)
-        res = inspect_repo_settings("rtkelly13/design-system", expected_branch="main")
-        assert res.is_aligned is False
-        assert res.base_branch_aligned is False
-        assert res.default_branch == "master"
-        assert res.expected_branch == "main"
+    api = _settings(default_branch="master")
+    res = inspect_repo_settings(_SETTINGS_REPO, expected_branch="main", api=api, cfg=PolicyConfig.parse({}))
+    assert res.is_aligned is False
+    assert res.base_branch_aligned is False
+    assert res.default_branch == "master"
+    assert res.expected_branch == "main"
 
 
 def test_align_github_repo_settings_execution():
-    with patch("subprocess.run", return_value=_done()) as mock_run:
-        res = align_github_repo_settings("rtkelly13/design-system", dry_run=False)
-        assert res.status == "success"
-        mock_run.assert_called_once()
-        cmd = mock_run.call_args[0][0]
-        assert "--default-branch=main" in cmd
+    cfg = PolicyConfig.parse({})
+    api = _settings(default_branch="master", allow_merge_commit=True)
+    res = align_github_repo_settings(_SETTINGS_REPO, dry_run=False, api=api, cfg=cfg)
+    assert res.status == "success"
+    [write] = api.writes
+    assert (write.method, write.route) == ("PATCH", f"repos/{_SETTINGS_REPO}")
+    assert inspect_repo_settings(_SETTINGS_REPO, api=api, cfg=cfg).is_aligned
 
 
 def test_align_github_repo_settings_dry_run():
     res = align_github_repo_settings("rtkelly13/design-system", dry_run=True)
     assert res.status == "dry_run"
-    assert "gh repo edit" in res.command
-    assert "--default-branch=main" in res.command
+    assert res.command.startswith("PATCH repos/rtkelly13/design-system ")
+    assert '"default_branch":"main"' in res.command
 
     res_custom = align_github_repo_settings("rtkelly13/design-system", expected_branch="develop", dry_run=True)
-    assert "--default-branch=develop" in res_custom.command
+    assert '"default_branch":"develop"' in res_custom.command
 
 
 def test_inspect_npmrc_no_package_json(tmp_path: pathlib.Path):
@@ -665,86 +640,95 @@ def test_enforce_command_execution(tmp_path: pathlib.Path):
     hooks.assert_called_once_with(tmp_path, dry_run=False)
 
 
-def test_verify_pr_checks_all_passing():
-    mock_checks = [
-        {"name": "Lint & Typecheck", "state": "SUCCESS", "bucket": "pass"},
-        {"name": "Tests & Coverage", "state": "SUCCESS", "bucket": "pass"},
-    ]
-    mock_threads = {
-        "data": {
-            "repository": {
-                "pullRequest": {
-                    "reviewThreads": {
-                        "pageInfo": {"hasNextPage": False, "endCursor": None},
-                        "nodes": [{"id": "t1", "isResolved": True, "comments": {"nodes": []}}],
-                    }
+_RESOLVED_THREADS = {
+    "data": {
+        "repository": {
+            "pullRequest": {
+                "reviewThreads": {
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    "nodes": [{"id": "t1", "isResolved": True, "comments": {"nodes": []}}],
                 }
             }
         }
     }
-    with patch("subprocess.run") as mock_run:
-
-        def side_effect(cmd: list[str], **kwargs: object) -> MagicMock:
-            if "checks" in cmd:
-                return MagicMock(returncode=0, stdout=json.dumps(mock_checks))
-            if "graphql" in cmd:
-                return MagicMock(returncode=0, stdout=json.dumps(mock_threads))
-            return MagicMock(returncode=0, stdout="rtkelly13/custom-unregistered")
-
-        mock_run.side_effect = side_effect
-        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/custom-unregistered"])
-        assert result.exit_code == 0
-        assert "every conversation thread is resolved" in result.output
+}
 
 
-def test_verify_pr_checks_unreadable_output_exits_cleanly():
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = '{"not": "a list"}'
-        result = runner.invoke(app, ["verify-pr-checks", "123"])
-        assert result.exit_code == 1
-        assert "Unreadable check list" in result.output
+def _gh_for_pr(checks: subprocess.CompletedProcess[str], merge_state: str = "CLEAN") -> tuple[list[list[str]], object]:
+    """A `gh` that answers `pr checks` with *checks*, `pr view` with *merge_state*, and resolved threads."""
+    calls: list[list[str]] = []
+
+    def run(cmd: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        if "checks" in cmd:
+            return checks
+        if "view" in cmd:
+            view = {"number": 123, "mergeStateStatus": merge_state}
+            return subprocess.CompletedProcess(cmd, 0, json.dumps(view), "")
+        return subprocess.CompletedProcess(cmd, 0, json.dumps(_RESOLVED_THREADS), "")
+
+    return calls, run
 
 
-def test_verify_pr_checks_missing_hardcoded_check():
-    mock_checks = [
-        {"name": "Lint & Typecheck", "state": "SUCCESS", "bucket": "pass"},
-    ]
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = json.dumps(mock_checks)
-        result = runner.invoke(app, ["verify-pr-checks", "123"])
-        assert result.exit_code == 1
-        assert "BLOCKED" in result.output
-        assert "Tests & Coverage" in result.output
+def _checks(code: int, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
+    return subprocess.CompletedProcess(["gh"], code, out, err)
 
 
-def test_verify_pr_checks_failing_check():
-    mock_checks = [
-        {"name": "Lint & Typecheck", "state": "SUCCESS", "bucket": "pass"},
-        {"name": "Tests & Coverage", "state": "FAILURE", "bucket": "fail"},
-    ]
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = json.dumps(mock_checks)
-        result = runner.invoke(app, ["verify-pr-checks", "123"])
-        assert result.exit_code == 1
-        assert "BLOCKED" in result.output
-        assert "Tests & Coverage" in result.output
+def test_verify_pr_checks_passes_when_required_checks_pass_and_github_can_merge():
+    calls, run = _gh_for_pr(_checks(0, "ci\tpass\t1m\n"))
+    with patch("subprocess.run", side_effect=run):
+        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
+    assert result.exit_code == 0, result.output
+    assert "every conversation thread is resolved" in " ".join(result.output.split())
+    checks_cmd = next(c for c in calls if "checks" in c)
+    assert checks_cmd[-3:] == ["--repo", "rtkelly13/blog", "--required"]
 
 
-def test_verify_pr_checks_pending_check():
-    mock_checks = [
-        {"name": "Lint & Typecheck", "state": "SUCCESS", "bucket": "pass"},
-        {"name": "Tests & Coverage", "state": "IN_PROGRESS", "bucket": "pending"},
-    ]
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = json.dumps(mock_checks)
-        result = runner.invoke(app, ["verify-pr-checks", "123"])
-        assert result.exit_code == 1
-        assert "BLOCKED" in result.output
-        assert "pending" in result.output
+@pytest.mark.parametrize(
+    ("checks", "expected"),
+    [
+        (_checks(1, "ci\tfail\t1m\n"), "not passing"),
+        (_checks(8, "ci\tpending\t0\n"), "still pending"),
+    ],
+)
+def test_verify_pr_checks_blocks_on_a_required_check_that_has_not_passed(checks, expected):
+    _, run = _gh_for_pr(checks)
+    with patch("subprocess.run", side_effect=run):
+        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
+    assert result.exit_code == 1
+    assert "BLOCKED" in result.output
+    assert expected in result.output
+    # gh's own table is shown, so the reader sees which check.
+    assert result.output.splitlines()[-1].split()[0] == "ci"
+
+
+def test_verify_pr_checks_with_no_required_checks_falls_through_to_the_merge_state():
+    no_required = _checks(1, err="no required checks reported on the 'feature' branch")
+    _, run = _gh_for_pr(no_required)
+    with patch("subprocess.run", side_effect=run):
+        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
+    assert result.exit_code == 0, result.output
+
+
+@pytest.mark.parametrize("state", ["BLOCKED", "BEHIND", "DIRTY", "DRAFT", "UNKNOWN"])
+def test_verify_pr_checks_blocks_when_github_would_not_merge(state):
+    _, run = _gh_for_pr(_checks(0), merge_state=state)
+    with patch("subprocess.run", side_effect=run):
+        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
+    assert result.exit_code == 1
+    assert f"mergeStateStatus is {state}" in result.output
+
+
+def test_verify_pr_checks_blocks_when_the_pr_cannot_be_read():
+    def run(cmd: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        if "view" in cmd:
+            return subprocess.CompletedProcess(cmd, 1, "", "no pull requests found")
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    with patch("subprocess.run", side_effect=run):
+        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
+    assert result.exit_code == 1
+    assert "could not read PR" in result.output
 
 
 def test_inspect_pinned_shas_no_workflows(tmp_path: pathlib.Path):
@@ -1337,6 +1321,14 @@ class TestRulesetDrift:
         payload["rules"] = rules
         return json.dumps(payload)
 
+    def _github(self, detail: str) -> FakeGitHubApi:
+        return FakeGitHubApi(
+            {
+                f"repos/{self.REPO}/rulesets": [{"id": 7, "name": RULESET_NAME, "enforcement": "active"}],
+                f"repos/{self.REPO}/rulesets/7": load_json(detail),
+            }
+        )
+
     @pytest.mark.ci
     def test_a_ruleset_matching_the_declaration_has_no_drift(self):
         assert ruleset_drift(self.REPO, self._live()) == []
@@ -1349,22 +1341,18 @@ class TestRulesetDrift:
 
     @pytest.mark.ci
     def test_align_updates_an_active_ruleset_that_drifted(self):
-        listing = _done(json.dumps([{"id": 7, "name": "Main Branch Governance Ruleset", "enforcement": "active"}]))
-        detail = _done(self._live(drop="required_linear_history"))
-        with patch("subprocess.run", side_effect=[listing, detail]):
-            res = align_github_ruleset(self.REPO, dry_run=True)
+        api = self._github(self._live(drop="required_linear_history"))
+        res = align_github_ruleset(self.REPO, dry_run=True, api=api)
         assert res.status == "dry_run"
         assert res.action == "PUT"
         assert res.drift == ("missing rule required_linear_history",)
 
     @pytest.mark.ci
     def test_align_leaves_an_active_ruleset_that_matches(self):
-        listing = _done(json.dumps([{"id": 7, "name": "Main Branch Governance Ruleset", "enforcement": "active"}]))
-        detail = _done(self._live())
-        with patch("subprocess.run", side_effect=[listing, detail]) as run:
-            res = align_github_ruleset(self.REPO)
+        api = self._github(self._live())
+        res = align_github_ruleset(self.REPO, api=api)
         assert res.status == "already_active"
-        assert run.call_count == 2
+        assert api.writes == []
 
 
 # ---------------------------------------------------------------------------
@@ -1428,46 +1416,37 @@ def test_align_agents_md_dry_run_writes_nothing(tmp_path: pathlib.Path):
     assert "Repository Conventions" not in agents.read_text(encoding="utf-8")
 
 
-def test_sync_policies_rejects_a_misshapen_config(tmp_path: pathlib.Path):
-    cfg = tmp_path / "repo_policies.json"
-    cfg.write_text(json.dumps({"profiles": ["not", "a", "mapping"]}), encoding="utf-8")
-    result = runner.invoke(app, ["sync-policies", "--config", str(cfg)])
+def _policy_in_cwd(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, text: str) -> None:
+    """`load_policy_config` reads `config/repo_policies.json` under the working directory first."""
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "repo_policies.json").write_text(text, encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+
+def test_sync_policies_rejects_a_misshapen_config(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
+    _policy_in_cwd(tmp_path, monkeypatch, json.dumps({"profiles": ["not", "a", "mapping"]}))
+    result = runner.invoke(app, ["sync-policies"])
     assert result.exit_code == 1
     assert "Invalid policy config" in result.output
 
 
 def test_sync_policies_walks_declared_profiles(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
-    cfg = tmp_path / "repo_policies.json"
-    cfg.write_text(
-        json.dumps({"profiles": {"public_open_source": {"repos": ["absent-repo"], "policies": ["ai_policy"]}}}),
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    result = runner.invoke(app, ["sync-policies", "--config", str(cfg), "--dry-run"])
+    policy = {"profiles": {"public_open_source": {"repos": ["absent-repo"], "policies": ["ai_policy"]}}}
+    _policy_in_cwd(tmp_path, monkeypatch, json.dumps(policy))
+    result = runner.invoke(app, ["sync-policies", "--dry-run"])
     assert result.exit_code == 0, result.output
     assert "Skipping absent-repo" in result.output
 
 
-def test_sync_policies_rejects_malformed_json(tmp_path: pathlib.Path):
-    cfg = tmp_path / "repo_policies.json"
-    cfg.write_text("{not json", encoding="utf-8")
-    result = runner.invoke(app, ["sync-policies", "--config", str(cfg)])
-    assert result.exit_code == 1
-    assert "Invalid policy config" in result.output
-
-
-def test_verify_pr_checks_always_targets_the_resolved_repo():
+def test_verify_pr_checks_without_a_resolvable_repo_asks_for_one():
     with (
         patch("rig.repo_governance.cli_triage.get_gh_repo_name", return_value=None),
         patch("subprocess.run") as mock_run,
     ):
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "[]"
-        runner.invoke(app, ["verify-pr-checks", "123"])
-    checks_calls = [c for c in mock_run.call_args_list if "checks" in c.args[0]]
-    assert len(checks_calls) == 1
-    cmd = checks_calls[0].args[0]
-    assert cmd[cmd.index("--repo") + 1] == "rtkelly13/shared-utilities"
+        result = runner.invoke(app, ["verify-pr-checks", "123"])
+    assert result.exit_code == 1
+    assert "pass --repo" in result.output
+    mock_run.assert_not_called()
 
 
 def test_audit_with_no_repositories_fails():

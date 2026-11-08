@@ -20,6 +20,7 @@ from pydantic import BeforeValidator, TypeAdapter
 
 from rig.repo_governance.agents_md_rules import AgentsMdRules
 from rig.repo_governance.fork_policy import ForkSpec
+from rig.repo_governance.github_policy import LabelSpec, MergeSettings, PagesPolicy
 from rig.repo_governance.policy_key import bare_name, names_match
 from rig.repo_governance.repo_selection import ManageDecision, RepoSelectionRules, should_manage_repo
 from rig.typed_json import load_json
@@ -32,8 +33,10 @@ __all__ = (
     "GitHubAppAccountPolicy",
     "GitHubAppPolicy",
     "GitignoreEntry",
+    "LabelSpec",
     "LanguagePreset",
     "ManageDecision",
+    "MergeSettings",
     "PagesPolicy",
     "PolicyConfig",
     "PolicyFile",
@@ -270,16 +273,6 @@ class VercelGatingRules:
 
 
 @dataclass(frozen=True)
-class PagesPolicy:
-    """GitHub Pages configuration policy for a repository."""
-
-    enabled: bool = False
-    build_type: Literal["workflow", "legacy"] = "workflow"
-    cname: str | None = None
-    https_enforced: bool = True
-
-
-@dataclass(frozen=True)
 class GitHubAppAccountPolicy:
     """Policy declaring which repos an installed app should be connected to for a specific account."""
 
@@ -380,7 +373,8 @@ class PolicyLayer:
     license: LicenseSpec | str | None = None
     languages: tuple[str, ...] | None = None
     gitignore_entries: tuple[GitignoreEntrySpec, ...] | None = None
-    repo_settings: dict[str, bool] | None = None
+    repo_settings: MergeSettings | None = None
+    labels: tuple[LabelSpec, ...] | None = None
     branch_cleanup: BranchCleanupRules | None = None
     repo_selection: RepoSelectionRules | None = None
     environments: dict[str, EnvironmentSpec] | None = None
@@ -653,9 +647,13 @@ class PolicyConfig:
 
         return tuple(entries)
 
-    def repo_settings(self, repo: str) -> dict[str, bool]:
-        """Return the expected GitHub repo settings for *repo*."""
-        return dict(self._resolve(repo, lambda layer: layer.repo_settings) or {})
+    def repo_settings(self, repo: str) -> MergeSettings:
+        """Return the merge settings *repo* should carry on GitHub."""
+        return self._resolve(repo, lambda layer: layer.repo_settings) or MergeSettings()
+
+    def labels(self, repo: str) -> tuple[LabelSpec, ...]:
+        """Return the label taxonomy for *repo*; empty means labels are not governed."""
+        return self._resolve(repo, lambda layer: layer.labels) or ()
 
     def fork(self, repo: str) -> ForkSpec | None:
         """Return the upstream *repo* tracks, or None when it is not a managed fork."""

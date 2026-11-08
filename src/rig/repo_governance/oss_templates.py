@@ -50,10 +50,10 @@ class OSSTemplatesAuditResult(BaseModel):
         return len(self.missing) == 0
 
 
-def get_jinja_env() -> Environment:
-    """Creates a Jinja2 environment configured for OSS templates."""
+def get_jinja_env(directory: Path = TEMPLATES_DIR) -> Environment:
+    """The one Jinja2 setup governance renders with; *directory* defaults to the OSS templates."""
     return Environment(
-        loader=FileSystemLoader(str(TEMPLATES_DIR)),
+        loader=FileSystemLoader(str(directory)),
         autoescape=select_autoescape(),
         trim_blocks=True,
         lstrip_blocks=True,

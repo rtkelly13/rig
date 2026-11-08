@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from rig import proc
+from rig.repo_governance.policy_config import PolicyConfig
 from rig.repo_governance.policy_template_engine import (
     RepoMetadata,
     apply_ai_policy,
@@ -23,6 +24,13 @@ def test_detect_repo_metadata_fallback(tmp_path: pathlib.Path):
     meta = detect_repo_metadata(tmp_path)
     assert meta.repo_name == tmp_path.name
     assert meta.supported_runtimes
+
+
+def test_detect_repo_metadata_takes_the_contact_address_from_the_policy(tmp_path: pathlib.Path):
+    cfg = PolicyConfig.parse({"defaults": {"contact_email": "security@example.com"}})
+    with patch("rig.proc.run", return_value=proc.Ran(1, "", "gh: not a repo")):
+        meta = detect_repo_metadata(tmp_path, cfg)
+    assert meta.author_email == "security@example.com"
 
 
 @pytest.mark.ci

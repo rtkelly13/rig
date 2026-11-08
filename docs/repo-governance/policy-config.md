@@ -52,6 +52,31 @@ and `temp/` both ignore the scratch directory, and appending a second spelling
 to a file that already has one is churn, not enforcement. Only missing entries
 are appended, so `enforce` is idempotent.
 
+### `repo_settings`
+
+The merge settings `plan` (and `enforce`) hold a repo to, sent as one `PATCH repos/<repo>`
+together with the default branch from `expected_base_branch`:
+
+```json
+{
+  "delete_branch_on_merge": true,
+  "allow_squash_merge": true,
+  "allow_merge_commit": false,
+  "allow_rebase_merge": false,
+  "allow_auto_merge": true
+}
+```
+
+A key left out takes the value shown. `allow_auto_merge` is not drift on a private repo:
+GitHub ignores it there on Free plans.
+
+### `labels`
+
+The label taxonomy, a list of `{"name", "color", "description"}` (`color` is six hex digits,
+no `#`). A missing label is created and one whose colour or description differs is updated;
+labels outside the list are left alone. An empty list (or none) leaves a repo's labels
+ungoverned.
+
 ## Which repos governance touches
 
 `defaults.repo_selection` decides whether a repo is in scope at all during an
