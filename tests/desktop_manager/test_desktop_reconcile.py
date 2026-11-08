@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 import pytest
 
 from desktop_manager.desktop_reconcile import (
@@ -13,6 +11,7 @@ from desktop_manager.desktop_reconcile import (
     plan_virtual_desktops,
     reconcile_virtual_desktops,
 )
+from tests.fakes.virtual_desktops import FakeVirtualDesktops
 
 
 @pytest.mark.ci
@@ -115,43 +114,10 @@ def test_plan_virtual_desktops_identifies_unmanaged_surplus() -> None:
     ]
 
 
-class _FakeDesktops:
-    """Virtual desktops held in a list; records every change it is asked to make."""
-
-    def __init__(self, names: list[str], *, failing_renames: set[int] | None = None) -> None:
-        self.state = list(names)
-        self.calls: list[str] = []
-        self._failing_renames = failing_renames or set()
-
-    def names(self) -> list[str]:
-        return list(self.state)
-
-    def count(self) -> int:
-        return len(self.state)
-
-    def retire(self, keep_count: int, retired_names: Sequence[str]) -> list[str]:
-        self.calls.append(f"retire {list(retired_names)}")
-        retired = [name for name in self.state if name in retired_names]
-        self.state = [name for name in self.state if name not in retired_names]
-        return retired
-
-    def ensure_count(self, count: int, settle_seconds: float) -> None:
-        self.calls.append(f"ensure {count}")
-        while len(self.state) < count:
-            self.state.append("")
-
-    def rename(self, desktop_index: int, name: str) -> bool:
-        self.calls.append(f"rename {desktop_index} {name}")
-        if desktop_index in self._failing_renames:
-            return False
-        self.state[desktop_index - 1] = name
-        return True
-
-
 @pytest.mark.ci
 def test_reconcile_virtual_desktops_dry_run_performs_no_mutations() -> None:
     """Dry run calculates drift and returns reconciliation result without calling mutations."""
-    desktops = _FakeDesktops(["Review", "Personal"])
+    desktops = FakeVirtualDesktops(["Review", "Personal"])
 
     result = reconcile_virtual_desktops(["Review", "Work", "Admin"], desktops, retired_names=["Personal"], dry_run=True)
 
@@ -164,7 +130,7 @@ def test_reconcile_virtual_desktops_dry_run_performs_no_mutations() -> None:
 @pytest.mark.ci
 def test_reconcile_virtual_desktops_converges_live_environment() -> None:
     """Live reconciliation retires, ensures desktop count, and renames mismatched desktops."""
-    desktops = _FakeDesktops(["Desktop 1", "Personal"])
+    desktops = FakeVirtualDesktops(["Desktop 1", "Personal"])
 
     result = reconcile_virtual_desktops(
         ["Review", "Work", "Admin"], desktops, retired_names=["Personal"], dry_run=False
@@ -188,7 +154,7 @@ def test_reconcile_virtual_desktops_converges_live_environment() -> None:
 @pytest.mark.ci
 def test_reconcile_virtual_desktops_reports_rename_failures() -> None:
     """When a desktop rename fails, it is recorded in failed_renames and converged is False."""
-    desktops = _FakeDesktops(["", "", ""], failing_renames={2})
+    desktops = FakeVirtualDesktops(["", "", ""], failing_renames={2})
 
     result = reconcile_virtual_desktops(["Review", "Work", "Admin"], desktops, dry_run=False)
 
