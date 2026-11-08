@@ -8,6 +8,7 @@
       {"pattern": "uv run pytest*", "rationale": "Run validation tests."},
       {"pattern": "uv run ruff check*", "rationale": "Run static lint checks."},
       {"pattern": "uv run pyright*", "rationale": "Run type checks."},
+      {"pattern": "uv run estate history status*", "rationale": "Reads a restarted clone's guard, remotes and old branches; changes nothing."},
       {"pattern": "uv run rig gh threads list *", "rationale": "Lists a PR's unresolved review threads; read-only. Temporary with rig.gh_threads."},
       {"pattern": "pnpm test*", "rationale": "Run project tests."},
       {"pattern": "pnpm typecheck*", "rationale": "Run TypeScript checks."},

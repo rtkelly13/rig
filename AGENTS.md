@@ -74,8 +74,10 @@ it. The old history, issues closed before the move and every earlier PR stay rea
 [`rtkelly13/rig-archive`](https://github.com/rtkelly13/rig-archive).
 
 - **Never push a branch carrying the old history here.** A clone from before the move has
-  unrelated history: fetch the new `main` and rebase each branch onto it with
-  `git rebase --onto origin/main <old main> <branch>`. The trees match, so the rebase is clean.
+  unrelated history. `uv run estate history setup --apply`, run from the main checkout, installs
+  the push guard that refuses it. `uv run estate history status` lists the old branches still to
+  port, and `estate history port <branch>` rebases one onto the new `main`. See
+  [docs/estate/history.md](docs/estate/history.md).
 - **Machine-specific values live in `~/.workspace/config.json`, not in the repo**: the work folders
   (`tools.estate.work_dirs`), the work workspace checkout (`tools.estate.workspace_repo`) and desktop
   plan aliases (`tools.desktop.aliases`). See [docs/estate/README.md](docs/estate/README.md) and

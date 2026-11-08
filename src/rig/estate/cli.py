@@ -42,7 +42,17 @@ from rich.table import Table
 
 from rig import proc, roots, tracing
 from rig.estate import apps as apps_mod
-from rig.estate import apps_windows, discovery, locate, orca_cli, shelve_cli, tiers_cli, volume_report, wrapup_cli
+from rig.estate import (
+    apps_windows,
+    discovery,
+    history_cli,
+    locate,
+    orca_cli,
+    shelve_cli,
+    tiers_cli,
+    volume_report,
+    wrapup_cli,
+)
 from rig.estate import downloads as downloads_mod
 from rig.estate import reclaim as reclaim_mod
 from rig.estate import risk as risk_mod
@@ -707,6 +717,7 @@ _ = app.command(name="prune-caches")(tiers_cli.prune_caches)
 _ = app.command(name="decisions")(tiers_cli.decisions)
 _ = app.command(name="orca")(orca_cli.orca_layout)
 app.add_typer(wrapup_cli.wrapup_app, name="wrapup")
+app.add_typer(history_cli.app, name="history")
 
 
 @app.command()

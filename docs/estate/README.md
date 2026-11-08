@@ -58,6 +58,7 @@ convention (`rig.scopes`):
 | `estate volume` | (Windows) a whole drive from a WizTree MFT scan: drill-down, dev-artefact partition, known hogs | [→](./internals.md#windows-is-a-parallel-implementation-not-a-port) |
 | `estate shelve` | resolve a worktree `tidy` refuses: push its unpushed work to `shelved/<user>/<name>`, verify, remove | [→](./shelving.md) |
 | `estate unshelve` / `shelved` | restore a shelf as a worktree; list shelves and `--prune` the ones that landed | [→](./shelving.md) |
+| `estate history` | a clone of a repo restarted without history: the push guard, the archive remote, and which old branches still need porting | [→](./history.md) |
 
 Read-only by default. `reclaim`, `trim`, `tidy`, `prune-caches`, `shelve` and `wrapup` need `--apply`.
 `decisions` never changes anything; each entry carries the command that would.

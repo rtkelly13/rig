@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import Field
 
+from rig import git_hooks
 from rig.repo_governance.policy_key import policy_key
 from rig.typed_yaml import try_decode_yaml
 
@@ -178,42 +179,8 @@ def inspect_pinned_shas(repo_path: pathlib.Path) -> HygieneResult:
     return HygieneResult(status=f"UNPINNED ({unpinned_count} actions)", is_aligned=False, unpinned_count=unpinned_count)
 
 
-#: Marks a hook that blocks direct pushes to main.
-_MAIN_BLOCK_MARKER = "DIRECT PUSH TO MAIN BLOCKED"
-#: Marks a hook that also hands the push to git-lfs. pre-push is the hook git-lfs
-#: uploads LFS content from, so a hook without it pushes pointers and no content.
-_LFS_HANDOFF_MARKER = "git lfs pre-push"
-
-PRE_PUSH_HOOK_CONTENT = """#!/usr/bin/env bash
-# Enforced by align-repo-conventions
-# Prevents accidental direct pushes to main branch without explicit bypass,
-# then hands the push to git-lfs so LFS content is uploaded with the commits.
-
-# Git passes the refs being pushed on stdin; keep them for git-lfs.
-refs=$(cat)
-
-while read local_ref local_oid remote_ref remote_oid
-do
-	if [ "$remote_ref" = "refs/heads/main" ]; then
-		if [ "$ALLOW_MAIN_PUSH" != "1" ]; then
-			echo "🛑 DIRECT PUSH TO MAIN BLOCKED by repository governance policy!"
-			echo "Push your changes to a feature branch and merge via PR (gh pr merge --squash)."
-			echo "Override for emergency push: ALLOW_MAIN_PUSH=1 git push origin main"
-			exit 1
-		fi
-	fi
-done <<< "$refs"
-
-if command -v git-lfs >/dev/null 2>&1; then
-	printf '%s\\n' "$refs" | git lfs pre-push "$@" || exit $?
-fi
-
-exit 0
-"""
-
-
-def _hook_is_current(content: str) -> bool:
-    return _MAIN_BLOCK_MARKER in content and _LFS_HANDOFF_MARKER in content
+#: The hook text and its markers live in `rig.git_hooks`, shared with `estate history`.
+PRE_PUSH_HOOK_CONTENT = git_hooks.PRE_PUSH_HOOK_CONTENT
 
 
 def inspect_git_hooks(repo_path: pathlib.Path) -> HygieneResult:
@@ -221,10 +188,11 @@ def inspect_git_hooks(repo_path: pathlib.Path) -> HygieneResult:
     hook_file = repo_path / ".git" / "hooks" / "pre-push"
     if hook_file.exists():
         content = hook_file.read_text(encoding="utf-8")
-        if _hook_is_current(content):
+        if git_hooks.hook_is_current(content):
             return HygieneResult(status="ENFORCED", is_aligned=True)
-        if _MAIN_BLOCK_MARKER in content:
-            return HygieneResult(status="OUTDATED", is_aligned=False, reason="pre-push hook skips git-lfs uploads")
+        if git_hooks.MAIN_BLOCK_MARKER in content:
+            missing = "git-lfs uploads" if git_hooks.LFS_HANDOFF_MARKER not in content else "the restart history guard"
+            return HygieneResult(status="OUTDATED", is_aligned=False, reason=f"pre-push hook lacks {missing}")
     return HygieneResult(status="MISSING", is_aligned=False)
 
 
@@ -234,13 +202,12 @@ def align_git_hooks(repo_path: pathlib.Path, dry_run: bool = False) -> HygieneRe
     if not hooks_dir.exists():
         return HygieneResult(status="skipped", reason="No .git/hooks directory found")
 
-    hook_file = hooks_dir / "pre-push"
-    if hook_file.exists() and _hook_is_current(hook_file.read_text(encoding="utf-8")):
+    hook_file = git_hooks.pre_push_hook(hooks_dir)
+    if hook_file.exists() and git_hooks.hook_is_current(hook_file.read_text(encoding="utf-8")):
         return HygieneResult(status="already_configured")
 
     if not dry_run:
-        hook_file.write_text(PRE_PUSH_HOOK_CONTENT, encoding="utf-8")
-        hook_file.chmod(0o755)
+        _ = git_hooks.install_pre_push_hook(hooks_dir)
 
     return HygieneResult(status="aligned", file=str(hook_file))
 
