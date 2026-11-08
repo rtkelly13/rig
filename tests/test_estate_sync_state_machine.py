@@ -47,6 +47,15 @@ pytestmark = [
 ]
 
 
+#: Scratch lives in the repo's gitignored `temp/` (AGENTS.md), even when this runs under HypoFuzz.
+SCRATCH = pathlib.Path(__file__).resolve().parents[1] / "temp" / "estate-sm"
+
+
+def _scratch() -> pathlib.Path:
+    SCRATCH.mkdir(parents=True, exist_ok=True)
+    return SCRATCH
+
+
 @pytest.fixture(scope="module")
 def tmp_path_factory() -> Iterator[pytest.TempPathFactory]:
     """A factory of this module's own, for the conftest isolation fixtures that request one.
@@ -55,7 +64,7 @@ def tmp_path_factory() -> Iterator[pytest.TempPathFactory]:
     which time the tmpdir plugin has removed the built-in factory from the config. Under plain
     pytest this behaves like the built-in one.
     """
-    with tempfile.TemporaryDirectory(prefix="estate-sm-") as base:
+    with tempfile.TemporaryDirectory(prefix="estate-sm-", dir=_scratch()) as base:
         yield pytest.TempPathFactory(
             given_basetemp=pathlib.Path(base) / "basetemp",
             retention_count=0,
@@ -213,7 +222,7 @@ def test_root_clone_of_org_spec_is_misplaced_and_the_spec_missing(tmp_path: path
 class EstateSync(RuleBasedStateMachine):
     def __init__(self) -> None:
         super().__init__()
-        self.base = pathlib.Path(tempfile.mkdtemp(prefix="estate-"))
+        self.base = pathlib.Path(tempfile.mkdtemp(prefix="estate-", dir=_scratch()))
         self.root = self.base / "personal"
         self.root.mkdir()
         (self.base / ORG).mkdir()
