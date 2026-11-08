@@ -12,9 +12,9 @@ from collections.abc import Sequence
 from desktop_manager import win32
 from desktop_manager.display_guard import ShowState
 from desktop_manager.models import LiveWindow, PlacementSpec, Rect
-from desktop_manager.placement import placement_rect_for
 from desktop_manager.win32 import desktops, geometry, inventory
 from desktop_manager.win32.errors import PYVDA_ERRORS, WIN32_ERRORS
+from desktop_manager.win32.geometry import placement_rect_for
 
 
 class Win32AlignPorts:

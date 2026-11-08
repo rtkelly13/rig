@@ -2,13 +2,14 @@
 
 All implementation has been split into submodules:
   - models.py       : dataclasses, constants, coercion helpers
-  - placement.py    : geometry, validation, inference
+  - geometry.py     : pure slot geometry and inference
+  - placement.py    : plan validation
   - win32/          : Win32 API wrappers
   - plan.py         : IO, templates
   - placeholders.py : placeholder substitution
   - visualization.py: plan-vs-live workspace diff
   - restore.py          : orchestration, capture, status
-  - workspace_restore.py: restore_workspace_with_options entry point
+  - handlers/restore_handler.py: restore_workspace_with_options entry point
   - launching.py        : launching entries and tracking their processes
   - terminal_init.py    : one-off CLI self-updates before terminals launch
   - executable_paths.py : resolving executables (version wildcards, PATH, AppX)
@@ -25,7 +26,18 @@ from __future__ import annotations
 
 import time
 
+from desktop_manager.desktop_reconcile import (
+    DesktopCreationAction,
+    DesktopItem,
+    DesktopReconciliationPlan,
+    DesktopReconciliationResult,
+    DesktopRenameAction,
+    plan_virtual_desktops,
+    reconcile_virtual_desktops,
+)
 from desktop_manager.executable_paths import resolve_versioned_path
+from desktop_manager.geometry import coverage_summary, normalized_placement_rect, rect_similarity
+from desktop_manager.handlers.restore_handler import restore_workspace_with_options
 from desktop_manager.launching import (
     LaunchedProcess,
     build_terminal_command,
@@ -57,13 +69,8 @@ from desktop_manager.models import (
 )
 from desktop_manager.placeholders import substitute_placeholders
 from desktop_manager.placement import (
-    coverage_summary,
     format_placement,
-    infer_placement_for_window,
-    normalized_placement_rect,
-    placement_rect_for,
     placement_spec,
-    rect_similarity,
     resolve_screen_count,
     validate_placement_spec,
     validate_plan,
@@ -103,6 +110,8 @@ from desktop_manager.restore import (
     restart_app_entries,
 )
 from desktop_manager.visualization import (
+    WorkspaceDiff,
+    diff_workspace,
     render_workspace_diff,
     truncate_text,
 )
@@ -137,11 +146,13 @@ from desktop_manager.win32.geometry import (
     adjust_rect_for_window_frame,
     current_window_handles_to_preserve,
     extended_frame_bounds,
+    infer_placement_for_window,
     monitor_display_areas,
     monitor_work_area_by_number,
     monitor_work_area_by_slot,
     monitor_work_areas,
     move_window,
+    placement_rect_for,
     primary_monitor_work_area,
     request_close_window,
     screen_number_for_window,
@@ -157,15 +168,6 @@ from desktop_manager.win32.inventory import (
     list_current_desktop_window_handles,
     list_current_desktop_windows,
 )
-from desktop_manager.win32.reconcile import (
-    DesktopCreationAction,
-    DesktopItem,
-    DesktopReconciliationPlan,
-    DesktopReconciliationResult,
-    DesktopRenameAction,
-    plan_virtual_desktops,
-    reconcile_virtual_desktops,
-)
 from desktop_manager.window_reuse import (
     apply_second_pass_placements,
     captured_window_match_score,
@@ -179,7 +181,6 @@ from desktop_manager.window_reuse import (
     window_identity_match_score,
     window_matches_placement,
 )
-from desktop_manager.workspace_restore import restore_workspace_with_options
 
 __all__ = [
     # models
@@ -264,6 +265,8 @@ __all__ = [
     "window_matches_placement",
     # visualization
     "captured_window_match_score",
+    "WorkspaceDiff",
+    "diff_workspace",
     "expected_process_name",
     "render_workspace_diff",
     "truncate_text",

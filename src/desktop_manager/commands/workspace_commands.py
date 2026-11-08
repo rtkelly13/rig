@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING
 
 from desktop_manager.models import LaunchEntry, LiveWindow, PlacementOutcome, RestoreRunLogger, WorkspacePlan
 
 if TYPE_CHECKING:
     from desktop_manager.restore_fallbacks import RestoreFailureFallbacks
-    from desktop_manager.win32.reconcile import DesktopReconciliationResult
     from desktop_manager.window_reuse import WindowMove
 
 
@@ -18,25 +17,6 @@ class WorkspaceCommands:
         from desktop_manager.win32 import ensure_windows
 
         ensure_windows()
-
-    def reconcile_virtual_desktops(
-        self,
-        plan: WorkspacePlan,
-        *,
-        dry_run: bool = False,
-    ) -> DesktopReconciliationResult:
-        from desktop_manager.win32.reconcile import reconcile_virtual_desktops
-
-        target_names = [d.name for d in plan.desktops]
-        return reconcile_virtual_desktops(
-            target_names,
-            retired_names=plan.retired_desktop_names,
-            switch_delay_seconds=plan.switch_delay_ms / 1000,
-            dry_run=dry_run,
-            retire_fn=self.retire_switched_off_desktops,
-            ensure_count_fn=self.ensure_desktop_count,
-            rename_fn=self.rename_desktop,
-        )
 
     def ensure_desktop_count(self, count: int, settle_seconds: float) -> None:
         from desktop_manager.win32.desktops import ensure_desktop_count
@@ -148,50 +128,3 @@ class WorkspaceCommands:
         from desktop_manager.window_reuse import apply_second_pass_placements
 
         return apply_second_pass_placements(plan, logger=logger, entries_by_desktop=entries_by_desktop)
-
-
-class RestoreCompatibilityCommands(WorkspaceCommands):
-    """Command adapter that preserves existing monkeypatch points in tests."""
-
-    @override
-    def launch_entry(
-        self, entry: LaunchEntry, substitutions: dict[str, str], *, restore_token: str | None = None
-    ) -> int | None:
-        from desktop_manager.launching import launch_entry
-
-        if restore_token is None:
-            return launch_entry(entry, substitutions)
-        try:
-            return launch_entry(entry, substitutions, restore_token=restore_token)
-        except TypeError as err:
-            if "restore_token" not in str(err):
-                raise
-            return launch_entry(entry, substitutions)
-
-    @override
-    def move_existing_window_to_entry(self, window: LiveWindow, desktop_index: int, entry: LaunchEntry) -> WindowMove:
-        from desktop_manager.window_reuse import move_existing_window_to_entry
-
-        return move_existing_window_to_entry(window, desktop_index, entry)
-
-    @override
-    def apply_window_placement(
-        self,
-        entry: LaunchEntry,
-        *,
-        hwnd: int | None = None,
-        target_desktop_number: int,
-        excluded_hwnds: set[int] | None = None,
-        diagnostic_callback: Callable[[str], None] | None = None,
-        timeout_seconds: float = 10.0,
-    ) -> PlacementOutcome:
-        from desktop_manager.win32.entry_windows import apply_window_placement
-
-        return apply_window_placement(
-            entry,
-            timeout_seconds,
-            hwnd=hwnd,
-            target_desktop_number=target_desktop_number,
-            excluded_hwnds=excluded_hwnds,
-            diagnostic_callback=diagnostic_callback,
-        )

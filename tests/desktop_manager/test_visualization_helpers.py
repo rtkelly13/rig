@@ -5,12 +5,15 @@ Covers branches in:
   - _terminal_command_hint_score: copilot, opencode, and fallback branches
   - truncate_text: within-limit and truncation cases
   - expected_process_name: explicit process name, path-derived, and None cases
+  - WorkspaceDiff: cleanliness, fixable drift and the changed-screens view
 """
 
 from __future__ import annotations
 
+import pytest
+
 from desktop_manager.models import LaunchEntry
-from desktop_manager.visualization import truncate_text
+from desktop_manager.visualization import DesktopDiff, ScreenDiff, WorkspaceDiff, truncate_text
 from desktop_manager.window_reuse import (
     _chrome_hints_for_url,
     _terminal_command_hint_score,
@@ -166,3 +169,71 @@ class TestExpectedProcessName:
     def test_no_path_and_no_process_name_returns_none(self) -> None:
         entry = LaunchEntry(name="Terminal", type="terminal", cwd=r"C:\code")
         assert expected_process_name(entry, {}) is None
+
+
+# ---------------------------------------------------------------------------
+# WorkspaceDiff
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("screen", "is_clean", "has_fixable_drift"),
+    [
+        (ScreenDiff(1, matched=("Notes <- extra: missing: notes [notes]",)), True, False),
+        (ScreenDiff(1, missing=("Notes",)), False, True),
+        (ScreenDiff(1, misplaced=("Notes on screen 2",)), False, True),
+        (ScreenDiff(1, extra=("Slack [slack]",)), False, False),
+        (ScreenDiff(1, borrowed=("Docs [chrome] -> Chrome",)), False, False),
+    ],
+)
+def test_workspace_diff_reads_its_fields_not_its_text(
+    screen: ScreenDiff, is_clean: bool, has_fixable_drift: bool
+) -> None:
+    diff = WorkspaceDiff((DesktopDiff("Work", (screen,)),))
+
+    assert diff.is_clean is is_clean
+    assert diff.has_fixable_drift is has_fixable_drift
+
+
+def test_workspace_diff_renders_the_restore_diff_layout() -> None:
+    diff = WorkspaceDiff(
+        (
+            DesktopDiff("Work", (ScreenDiff(1, planned=("Notes",), missing=("Notes",), extra=("Slack [slack]",)),)),
+            DesktopDiff("Admin", (ScreenDiff(2),)),
+        )
+    )
+
+    assert diff.render().splitlines() == [
+        "Workspace Diff",
+        "",
+        "Work",
+        "Screen 1",
+        "  planned: Notes",
+        "  actual:  -",
+        "  missing: Notes",
+        "  extra:   Slack [slack]",
+        "",
+        "Admin",
+        "Screen 2",
+        "  planned: -",
+        "  actual:  -",
+        "  status:  ok",
+    ]
+
+
+def test_changed_since_keeps_only_screens_that_changed() -> None:
+    ok_work = DesktopDiff("Work", (ScreenDiff(1), ScreenDiff(2)))
+    ok_admin = DesktopDiff("Admin", (ScreenDiff(1),))
+    drifted_work = DesktopDiff("Work", (ScreenDiff(1), ScreenDiff(2, missing=("Notes",))))
+    previous = WorkspaceDiff((ok_work, ok_admin))
+
+    changed = WorkspaceDiff((drifted_work, ok_admin)).changed_since(previous)
+
+    assert changed == WorkspaceDiff((DesktopDiff("Work", (ScreenDiff(2, missing=("Notes",)),)),))
+
+
+@pytest.mark.parametrize("previous", [None, WorkspaceDiff((DesktopDiff("Work", (ScreenDiff(1),)),))])
+def test_changed_since_returns_the_whole_diff_without_a_previous_change(previous: WorkspaceDiff | None) -> None:
+    diff = WorkspaceDiff((DesktopDiff("Work", (ScreenDiff(1),)),))
+
+    assert diff.changed_since(previous) is diff

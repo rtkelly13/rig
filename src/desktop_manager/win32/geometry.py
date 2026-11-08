@@ -4,7 +4,8 @@ from collections.abc import Iterable
 
 from desktop_manager import win32
 from desktop_manager.display_guard import ShowState
-from desktop_manager.models import DisplayArea, Rect
+from desktop_manager.geometry import infer_placement, placement_rect_in
+from desktop_manager.models import DisplayArea, PlacementSpec, Rect
 from desktop_manager.win32 import dlls
 from desktop_manager.win32.errors import WIN32_ERRORS
 from desktop_manager.win32.monitor_info import get_monitor_info
@@ -287,3 +288,16 @@ def place_window_without_activating(hwnd: int, rect: Rect) -> None:
         adjusted_rect.height,
         win32con.SWP_NOACTIVATE | win32con.SWP_NOZORDER | win32con.SWP_NOOWNERZORDER,
     )
+
+
+def placement_rect_for(placement: PlacementSpec) -> Rect:
+    """Where ``placement`` sits in pixels on the live monitor it names."""
+    return placement_rect_in(monitor_work_area_by_number(placement.screen), placement)
+
+
+def infer_placement_for_window(hwnd: int) -> PlacementSpec | None:
+    """The placement a live window most closely fills on the live monitors, if any is close enough."""
+    rect = window_bounds(hwnd)
+    if rect is None:
+        return None
+    return infer_placement(rect, monitor_display_areas())

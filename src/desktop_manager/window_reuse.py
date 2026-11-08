@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
 
+from desktop_manager.geometry import normalized_placement_rect, rect_similarity
 from desktop_manager.models import (
     LaunchEntry,
     LiveWindow,
@@ -17,11 +18,7 @@ from desktop_manager.models import (
     WorkspacePlan,
 )
 from desktop_manager.placeholders import substitute_placeholders
-from desktop_manager.placement import (
-    normalized_placement_rect,
-    placement_rect_for,
-    rect_similarity,
-)
+from desktop_manager.win32.geometry import placement_rect_for
 from desktop_manager.window_pid_file import pid_verified, window_owner_allowed
 
 

@@ -396,3 +396,22 @@ def is_window_on_current_desktop(hwnd: int) -> bool:
             return bool(pyvda.AppView(hwnd=hwnd).is_on_current_desktop())
     except PYVDA_ERRORS:
         return True
+
+
+class Win32VirtualDesktops:
+    """The live virtual desktops, as ``desktop_reconcile.VirtualDesktops`` reads and changes them."""
+
+    def names(self) -> list[str]:
+        return virtual_desktop_names()
+
+    def count(self) -> int:
+        return get_virtual_desktop_count()
+
+    def retire(self, keep_count: int, retired_names: Sequence[str]) -> list[str]:
+        return retire_switched_off_desktops(keep_count, retired_names)
+
+    def ensure_count(self, count: int, settle_seconds: float) -> None:
+        ensure_desktop_count(count, settle_seconds)
+
+    def rename(self, desktop_index: int, name: str) -> bool:
+        return rename_desktop(desktop_index, name)

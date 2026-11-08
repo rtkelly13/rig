@@ -1,13 +1,30 @@
-"""Pure virtual desktop reconciliation models and planner (IaC).
+"""Virtual desktop reconciliation (IaC): the drift planner and the orchestration that applies it.
 
-Computes declarative drift between live virtual desktop names and declared target names.
-Pure and leaf: depends only on standard libraries.
+:func:`plan_virtual_desktops` computes the drift between live desktop names and the
+declared ones. :func:`reconcile_virtual_desktops` applies it through a
+:class:`VirtualDesktops` port; ``win32.desktops.Win32VirtualDesktops`` is the real machine.
+Nothing here imports Win32.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import Protocol
+
+from rig import tracing
+
+_SCOPE = "desktop_manager.win32"
+
+
+class VirtualDesktops(Protocol):
+    """The virtual desktops reconciliation reads and changes."""
+
+    def names(self) -> list[str]: ...
+    def count(self) -> int: ...
+    def retire(self, keep_count: int, retired_names: Sequence[str]) -> list[str]: ...
+    def ensure_count(self, count: int, settle_seconds: float) -> None: ...
+    def rename(self, desktop_index: int, name: str) -> bool: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,8 +94,7 @@ def plan_virtual_desktops(
     target_desktops: Sequence[str],
     *,
     retired_names: Sequence[str] = (),
-    current_names: Sequence[str] | None = None,
-    names_fn: Callable[[], list[str]] | None = None,
+    current_names: Sequence[str],
 ) -> DesktopReconciliationPlan:
     """Calculate the declarative drift between live virtual desktops and declared targets.
 
@@ -87,14 +103,7 @@ def plan_virtual_desktops(
     """
     targets = list(target_desktops)
     retired_set = {n.casefold() for n in retired_names if n}
-    if current_names is not None:
-        current = list(current_names)
-    elif names_fn is not None:
-        current = names_fn()
-    else:
-        from desktop_manager.win32 import desktops
-
-        current = desktops.virtual_desktop_names()
+    current = list(current_names)
 
     to_retire: list[str] = []
     for name in current:
@@ -140,3 +149,108 @@ def plan_virtual_desktops(
         unchanged=unchanged,
         unmanaged=unmanaged,
     )
+
+
+def reconcile_virtual_desktops(
+    target_desktops: Sequence[str],
+    desktops: VirtualDesktops,
+    *,
+    retired_names: Sequence[str] = (),
+    switch_delay_seconds: float = 0.65,
+    dry_run: bool = False,
+) -> DesktopReconciliationResult:
+    """Reconcile Windows virtual desktops to converge to the declared target state (IaC).
+
+    Ensures the exact declared virtual desktops exist and have the right names:
+    1. Retires switched-off desktops matching ``retired_names``.
+    2. Ensures the required desktop count exists (creating missing ones).
+    3. Renames desktops 1..N to their declared target names (no-op if already matching).
+    4. Detects and reports unmanaged surplus desktops.
+    """
+    targets = list(target_desktops)
+
+    with tracing.span(
+        "win32.reconcile_virtual_desktops",
+        scope=_SCOPE,
+        **{
+            "desktops.target_count": len(targets),
+            "desktops.dry_run": dry_run,
+        },
+    ) as s:
+        plan = plan_virtual_desktops(targets, retired_names=retired_names, current_names=desktops.names())
+        s.set(
+            **{
+                "desktops.has_drift": plan.has_drift,
+                "desktops.to_create": len(plan.to_create),
+                "desktops.to_rename": len(plan.to_rename),
+                "desktops.to_retire": len(plan.to_retire),
+            }
+        )
+
+        if dry_run:
+            return DesktopReconciliationResult(
+                plan=plan,
+                retired=[],
+                created=[],
+                renamed=[],
+                failed_renames=[],
+                unchanged=plan.unchanged,
+                unmanaged=plan.unmanaged,
+                dry_run=True,
+            )
+
+        # 1. Retire switched-off desktops
+        retired: list[str] = []
+        if retired_names:
+            retired = desktops.retire(len(targets), retired_names)
+
+        # 2. Ensure desktop count
+        before_count = desktops.count()
+        desktops.ensure_count(len(targets), switch_delay_seconds)
+        after_count = desktops.count()
+
+        created: list[DesktopCreationAction] = []
+        if after_count > before_count:
+            for i in range(before_count + 1, min(len(targets), after_count) + 1):
+                created.append(DesktopCreationAction(index=i, name=targets[i - 1]))
+
+        # 3. Rename desktops
+        renamed: list[DesktopRenameAction] = []
+        failed_renames: list[DesktopRenameAction] = []
+        unchanged: list[DesktopItem] = []
+
+        current_names_after = desktops.names()
+        for i, target_name in enumerate(targets, start=1):
+            curr = current_names_after[i - 1] if i <= len(current_names_after) else ""
+            if curr == target_name:
+                unchanged.append(DesktopItem(index=i, name=target_name))
+                continue
+            ok = desktops.rename(i, target_name)
+            action = DesktopRenameAction(
+                index=i,
+                current_name=curr,
+                target_name=target_name,
+                success=ok,
+                error=None if ok else "Rename failed",
+            )
+            renamed.append(action)
+            if not ok:
+                failed_renames.append(action)
+
+        unmanaged: list[DesktopItem] = []
+        if len(current_names_after) > len(targets):
+            for i in range(len(targets) + 1, len(current_names_after) + 1):
+                unmanaged.append(DesktopItem(index=i, name=current_names_after[i - 1]))
+
+        res = DesktopReconciliationResult(
+            plan=plan,
+            retired=retired,
+            created=created,
+            renamed=renamed,
+            failed_renames=failed_renames,
+            unchanged=unchanged,
+            unmanaged=unmanaged,
+            dry_run=False,
+        )
+        s.set(**{"desktops.converged": res.converged})
+        return res

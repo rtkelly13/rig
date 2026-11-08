@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import IO, Protocol
 
+from desktop_manager import scheduled_tasks as tasks
 from desktop_manager.models import Rect
 
 GUARD_LOCK_FILE_NAME = "display-guard.lock"
@@ -415,10 +416,6 @@ def is_lock_held(path: Path) -> bool:
 GUARD_TASK_NAME = "Workspace Display Guard"
 
 
-def _xml_text(value: str) -> str:
-    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
-
-
 def render_guard_task_xml(
     repo_root: Path,
     config_path: Path,
@@ -436,54 +433,17 @@ def render_guard_task_xml(
     any time.
     """
     pythonw = repo_root / ".venv" / "Scripts" / "pythonw.exe"
-    arguments = f'-m desktop_manager.cli workspace guard --config "{config_path}"'
-    user = _xml_text(user_id)
-    return (
-        '<?xml version="1.0" encoding="UTF-16"?>\n'
-        '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">\n'
-        "  <RegistrationInfo>\n"
-        "    <Description>Put windows back after a monitor drops out or the machine wakes.</Description>\n"
-        f"    <URI>\\{task_name}</URI>\n"
-        "  </RegistrationInfo>\n"
-        "  <Triggers>\n"
-        "    <LogonTrigger>\n"
-        "      <Enabled>true</Enabled>\n"
-        f"      <UserId>{user}</UserId>\n"
-        f"      <Delay>{delay}</Delay>\n"
-        "    </LogonTrigger>\n"
-        "  </Triggers>\n"
-        "  <Principals>\n"
-        '    <Principal id="Author">\n'
-        f"      <UserId>{user}</UserId>\n"
-        "      <LogonType>InteractiveToken</LogonType>\n"
-        "      <RunLevel>LeastPrivilege</RunLevel>\n"
-        "    </Principal>\n"
-        "  </Principals>\n"
-        "  <Settings>\n"
-        "    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\n"
-        "    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>\n"
-        "    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>\n"
-        "    <AllowHardTerminate>true</AllowHardTerminate>\n"
-        "    <StartWhenAvailable>true</StartWhenAvailable>\n"
-        "    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>\n"
-        "    <AllowStartOnDemand>true</AllowStartOnDemand>\n"
-        "    <Enabled>true</Enabled>\n"
-        "    <Hidden>false</Hidden>\n"
-        "    <RunOnlyIfIdle>false</RunOnlyIfIdle>\n"
-        "    <WakeToRun>false</WakeToRun>\n"
-        "    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>\n"
-        "    <Priority>4</Priority>\n"
-        "    <RestartOnFailure>\n"
-        "      <Interval>PT1M</Interval>\n"
-        "      <Count>10</Count>\n"
-        "    </RestartOnFailure>\n"
-        "  </Settings>\n"
-        '  <Actions Context="Author">\n'
-        "    <Exec>\n"
-        f"      <Command>{_xml_text(str(pythonw))}</Command>\n"
-        f"      <Arguments>{_xml_text(arguments)}</Arguments>\n"
-        f"      <WorkingDirectory>{_xml_text(str(repo_root))}</WorkingDirectory>\n"
-        "    </Exec>\n"
-        "  </Actions>\n"
-        "</Task>\n"
+    return tasks.render_task_xml(
+        tasks.ScheduledTask(
+            uri=task_name,
+            description="Put windows back after a monitor drops out or the machine wakes.",
+            user_id=user_id,
+            trigger=tasks.logon_trigger(user_id, delay=delay),
+            command=str(pythonw),
+            arguments=f'-m desktop_manager.cli workspace guard --config "{config_path}"',
+            execution_time_limit="PT0S",
+            priority=4,
+            restart_on_failure=tasks.RestartOnFailure(interval="PT1M", count=10),
+            working_directory=str(repo_root),
+        )
     )

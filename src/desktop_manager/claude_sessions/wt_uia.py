@@ -32,12 +32,12 @@ import time
 from collections.abc import Callable
 from contextlib import suppress
 from ctypes import wintypes
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, final
 
 from desktop_manager.claude_sessions.terminal import TerminalTab, TerminalWindow
 from desktop_manager.win32 import dlls
+from desktop_manager.win32.send_input import INPUT_SIZE, KEYEVENTF_KEYUP, KeyEvent, input_batch, key_tap, unicode_events
 
 if TYPE_CHECKING:
     from comtypes.gen.UIAutomationClient import (
@@ -131,76 +131,20 @@ def terminal_window_handles() -> list[int]:
     ]
 
 
-@final
-class _KeyboardInput(ctypes.Structure):
-    _fields_ = [
-        ("wVk", wintypes.WORD),
-        ("wScan", wintypes.WORD),
-        ("dwFlags", wintypes.DWORD),
-        ("time", wintypes.DWORD),
-        ("dwExtraInfo", ctypes.c_size_t),
-    ]
-
-
-@final
-class _MouseInput(ctypes.Structure):
-    _fields_ = [
-        ("dx", wintypes.LONG),
-        ("dy", wintypes.LONG),
-        ("mouseData", wintypes.DWORD),
-        ("dwFlags", wintypes.DWORD),
-        ("time", wintypes.DWORD),
-        ("dwExtraInfo", ctypes.c_size_t),
-    ]
-
-
-@final
-class _InputUnion(ctypes.Union):
-    _fields_ = [("ki", _KeyboardInput), ("mi", _MouseInput)]
-
-
-@final
-class _Input(ctypes.Structure):
-    _fields_ = [("type", wintypes.DWORD), ("u", _InputUnion)]
-
-
-_INPUT_KEYBOARD = 1
-_KEYEVENTF_KEYUP = 0x0002
-_KEYEVENTF_UNICODE = 0x0004
 _VK_RETURN = 0x0D
 _VK_ESCAPE = 0x1B
 _VK_MENU = 0x12
-
-
-@dataclass(frozen=True, slots=True)
-class KeyEvent:
-    """One keyboard event for SendInput: a virtual key, or with KEYEVENTF_UNICODE a UTF-16 unit in `scan`."""
-
-    vk: int
-    scan: int
-    flags: int
-
-
-def _key(event: KeyEvent) -> _Input:
-    return _Input(_INPUT_KEYBOARD, _InputUnion(ki=_KeyboardInput(event.vk, event.scan, event.flags, 0, 0)))
 
 
 def keystrokes_for(text: str, *, clear_line: bool = True, submit: bool = True) -> list[KeyEvent]:
     """Key events for `text`: Esc to clear the line, Unicode chars, then Enter."""
     events: list[KeyEvent] = []
     if clear_line:
-        events += [KeyEvent(_VK_ESCAPE, 0, 0), KeyEvent(_VK_ESCAPE, 0, _KEYEVENTF_KEYUP)]
-    for char in text:
-        for unit in _utf16_units(char):
-            events += [KeyEvent(0, unit, _KEYEVENTF_UNICODE), KeyEvent(0, unit, _KEYEVENTF_UNICODE | _KEYEVENTF_KEYUP)]
+        events += key_tap(_VK_ESCAPE)
+    events += unicode_events(text)
     if submit:
-        events += [KeyEvent(_VK_RETURN, 0, 0), KeyEvent(_VK_RETURN, 0, _KEYEVENTF_KEYUP)]
+        events += key_tap(_VK_RETURN)
     return events
-
-
-def _utf16_units(char: str) -> list[int]:
-    encoded = char.encode("utf-16-le")
-    return [int.from_bytes(encoded[i : i + 2], "little") for i in range(0, len(encoded), 2)]
 
 
 def echoed(before: str, after: str, text: str) -> bool:
@@ -214,8 +158,7 @@ def _squash(text: str) -> str:
 
 
 def _send(events: list[KeyEvent]) -> None:
-    batch = (_Input * len(events))(*(_key(event) for event in events))
-    sent = dlls.call_int(_user32().SendInput, len(events), batch, ctypes.sizeof(_Input))
+    sent = dlls.call_int(_user32().SendInput, len(events), input_batch(events), INPUT_SIZE)
     if sent != len(events):
         raise TerminalAutomationError(f"SendInput delivered {sent} of {len(events)} key events")
 
@@ -225,7 +168,7 @@ def _bring_to_front(hwnd: int) -> bool:
     if _user32().IsIconic(hwnd):
         _user32().ShowWindow(hwnd, 9)  # SW_RESTORE
     _user32().keybd_event(_VK_MENU, 0, 0, 0)
-    _user32().keybd_event(_VK_MENU, 0, _KEYEVENTF_KEYUP, 0)
+    _user32().keybd_event(_VK_MENU, 0, KEYEVENTF_KEYUP, 0)
     _user32().SetForegroundWindow(hwnd)
     deadline = time.monotonic() + 2
     while time.monotonic() < deadline:

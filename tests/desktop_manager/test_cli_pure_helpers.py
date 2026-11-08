@@ -1,14 +1,13 @@
 """Unit tests for pure helper functions in desktop_manager.cli.
 
-These tests cover console_safe_text, _wait_diff_sections,
-wait_diff_for_console, and _filter_plan_to_screen — all of which are
+These tests cover console_safe_text and _filter_plan_to_screen, which are
 platform-agnostic and can run on Linux in CI without Win32 dependencies.
 """
 
 from __future__ import annotations
 
 from desktop_manager.cli import _filter_plan_to_screen
-from desktop_manager.cli_common import _DiffSection, _wait_diff_sections, console_safe_text, wait_diff_for_console
+from desktop_manager.cli_common import console_safe_text
 from desktop_manager.models import DesktopPlan, LaunchEntry, LiveWindow, PlacementLayout, PlacementSpec, WorkspacePlan
 
 # ---------------------------------------------------------------------------
@@ -36,109 +35,6 @@ class TestConsoleSafeText:
     def test_mixed_cp1252_and_non_encodable(self) -> None:
         result = console_safe_text("caf\xe9 \u2603")
         assert result == "caf\xe9 ?"
-
-
-# ---------------------------------------------------------------------------
-# _wait_diff_sections
-# ---------------------------------------------------------------------------
-
-
-class TestWaitDiffSections:
-    def test_empty_string_returns_empty_list(self) -> None:
-        assert _wait_diff_sections("") == []
-
-    def test_workspace_diff_header_is_skipped(self) -> None:
-        assert _wait_diff_sections("Workspace Diff") == []
-
-    def test_single_desktop_single_screen_with_lines(self) -> None:
-        diff = "Work\nScreen 1\n  - entry1\n  - entry2"
-        sections = _wait_diff_sections(diff)
-        assert sections == [_DiffSection("Work", "Screen 1", ("  - entry1", "  - entry2"))]
-
-    def test_multiple_desktops_multiple_screens(self) -> None:
-        diff = "Work\nScreen 1\n  - app1\nAdmin\nScreen 2\n  - app2"
-        sections = _wait_diff_sections(diff)
-        assert len(sections) == 2
-        assert sections[0] == _DiffSection("Work", "Screen 1", ("  - app1",))
-        assert sections[1] == _DiffSection("Admin", "Screen 2", ("  - app2",))
-
-    def test_desktop_with_multiple_screens(self) -> None:
-        diff = "Work\nScreen 1\n  - app1\nScreen 2\n  - app2"
-        sections = _wait_diff_sections(diff)
-        assert len(sections) == 2
-        assert sections[0] == _DiffSection("Work", "Screen 1", ("  - app1",))
-        assert sections[1] == _DiffSection("Work", "Screen 2", ("  - app2",))
-
-    def test_lines_before_first_screen_are_dropped(self) -> None:
-        # Lines belonging to a desktop but before any Screen header are dropped
-        diff = "Work\n  - orphan\nScreen 1\n  - entry1"
-        sections = _wait_diff_sections(diff)
-        assert sections == [_DiffSection("Work", "Screen 1", ("  - entry1",))]
-
-    def test_empty_lines_are_not_included_in_content(self) -> None:
-        diff = "Work\nScreen 1\n  - entry1\n\n  - entry2"
-        sections = _wait_diff_sections(diff)
-        # Empty line is skipped, not included in tuple
-        assert "  - entry1" in sections[0].lines
-        assert "" not in sections[0].lines
-
-    def test_workspace_diff_header_inline_is_skipped(self) -> None:
-        diff = "Workspace Diff\nWork\nScreen 1\n  - entry1"
-        sections = _wait_diff_sections(diff)
-        assert sections == [_DiffSection("Work", "Screen 1", ("  - entry1",))]
-
-    def test_trailing_whitespace_stripped_from_lines(self) -> None:
-        diff = "Work\nScreen 1\n  - entry1   "
-        sections = _wait_diff_sections(diff)
-        assert sections[0].lines == ("  - entry1",)
-
-
-# ---------------------------------------------------------------------------
-# wait_diff_for_console
-# ---------------------------------------------------------------------------
-
-
-class TestWaitDiffForConsole:
-    def test_no_previous_diff_returns_diff_unchanged(self) -> None:
-        diff = "Work\nScreen 1\n  - app1"
-        assert wait_diff_for_console(diff, None) == diff
-
-    def test_previous_diff_same_returns_original_diff(self) -> None:
-        diff = "Work\nScreen 1\n  - app1"
-        result = wait_diff_for_console(diff, diff)
-        assert result == diff
-
-    def test_all_sections_changed_returns_all(self) -> None:
-        old = "Work\nScreen 1\n  - app1"
-        new = "Work\nScreen 1\n  - app2"
-        result = wait_diff_for_console(new, old)
-        assert "Work" in result
-        assert "Screen 1" in result
-        assert "  - app2" in result
-
-    def test_partial_change_returns_only_changed_sections(self) -> None:
-        old = "Work\nScreen 1\n  - app1\nAdmin\nScreen 2\n  - admin1"
-        new = "Work\nScreen 1\n  - app1\nAdmin\nScreen 2\n  - admin2"
-        result = wait_diff_for_console(new, old)
-        # Only the Admin/Screen 2 section changed
-        assert "Admin" in result
-        assert "  - admin2" in result
-        # Work/Screen 1 did NOT change — should not appear in the filtered output
-        assert "Screen 1" not in result
-        assert "app1" not in result
-
-    def test_no_changes_returns_original_diff_unchanged(self) -> None:
-        diff = "Work\nScreen 1\n  - app1"
-        # Same content → no changed sections → returns original diff
-        result = wait_diff_for_console(diff, diff)
-        assert result == diff
-
-    def test_empty_previous_diff_returns_new_diff_sections(self) -> None:
-        new = "Work\nScreen 1\n  - app1"
-        result = wait_diff_for_console(new, "")
-        # No sections in previous → all are "changed"
-        assert "Work" in result
-        assert "  - app1" in result
 
 
 # ---------------------------------------------------------------------------

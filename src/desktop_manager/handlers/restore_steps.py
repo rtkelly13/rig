@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from desktop_manager.commands.workspace_commands import WorkspaceCommands
+from desktop_manager.desktop_port import DesktopPort
 from desktop_manager.models import DesktopPlan, LaunchEntry, RestoreRunLogger, WorkspacePlan
-from desktop_manager.queries.workspace_queries import WorkspaceQueries
 from desktop_manager.restore_fallbacks import is_missing_path_error
 from desktop_manager.restore_models import PlannedDesktopExecution, PlannedEntryExecution
 from desktop_manager.restore_timing import new_terminal_restore_token, should_force_terminal_relaunch
@@ -31,7 +29,7 @@ def refresh_desktop_execution_plan(
     *,
     diff_existing: bool,
     logger: RestoreRunLogger | None,
-    queries: WorkspaceQueries,
+    port: DesktopPort,
     preserved_hwnds: set[int],
 ) -> None:
     from desktop_manager.window_pid_file import pid_verified
@@ -73,7 +71,7 @@ def refresh_desktop_execution_plan(
     # workspace-terminal slot: it is then moved/repositioned (and closed in the
     # close path), terminating the running session.  Keeping it out of the
     # reusable inventory retains it in place.
-    reusable_windows = queries.inventory_reusable_windows(excluded_hwnds=preserved_hwnds)
+    reusable_windows = port.inventory_reusable_windows(excluded_hwnds=preserved_hwnds)
     # A window an entry here pins by recorded pid is that entry's own instance even on
     # another desktop, so it stays a candidate and is moved here instead of relaunched.
     pinned_entries = [entry for entry in desktop_step.desktop.launch if entry.window_pid_file and not entry.disabled]
@@ -136,8 +134,7 @@ def _execute_desktop_step(
     *,
     preserved_hwnds: set[int],
     logger: RestoreRunLogger | None,
-    queries: WorkspaceQueries,
-    commands: WorkspaceCommands,
+    port: DesktopPort,
     fallback_state: RestoreFailureFallbacks,
 ) -> list[LaunchEntry]:
     pending_second_pass_entries: list[LaunchEntry] = []
@@ -147,17 +144,17 @@ def _execute_desktop_step(
         logger.log(f"Processing desktop {desktop_step.desktop_index}: {desktop_step.desktop.name}")
 
     if desktop_step.close_existing:
-        closed_count = commands.close_current_desktop_windows(preserved_hwnds=preserved_hwnds)
+        closed_count = port.close_current_desktop_windows(preserved_hwnds=preserved_hwnds)
         if logger is not None:
             logger.log(f"Requested close for {closed_count} existing window(s) on {desktop_step.desktop.name}")
-        time.sleep(0.5)
+        port.sleep(0.5)
 
     for entry_step in desktop_step.entry_steps:
         if entry_step.action_kind == "satisfied":
             if logger is not None:
                 logger.log(f"Skipping {entry_step.entry.name}: already verified in its planned slot")
             continue
-        confirmed = commands.ensure_current_desktop_number(entry_step.desktop_index, settle_seconds=0.1)
+        confirmed = port.ensure_current_desktop_number(entry_step.desktop_index, settle_seconds=0.1)
         if logger is not None:
             anchor_status = "confirmed" if confirmed else "best-effort only"
             logger.log(
@@ -178,7 +175,7 @@ def _execute_desktop_step(
                 entry_pending = _execute_reuse_step(
                     entry_step,
                     logger=logger,
-                    commands=commands,
+                    port=port,
                     plan=plan,
                 )
             else:
@@ -186,12 +183,11 @@ def _execute_desktop_step(
                     entry_step,
                     substitutions=substitutions,
                     logger=logger,
-                    commands=commands,
-                    queries=queries,
+                    port=port,
                     plan=plan,
                     fallback_state=fallback_state,
                     already_launched=entry_step.entry.name in desktop_step.launched_entry_names,
-                    reserved_hwnds=_sibling_owned_hwnds(desktop_step, entry_step.entry, logger=logger),
+                    reserved_hwnds=_sibling_owned_hwnds(desktop_step, entry_step.entry, logger=logger, port=port),
                 )
                 desktop_step.launched_entry_names.add(entry_step.entry.name)
             entry_span.set(**{"entry.deferred_second_pass": bool(entry_pending)})
@@ -213,11 +209,9 @@ def _execute_reuse_step(
     entry_step: PlannedEntryExecution,
     *,
     logger: RestoreRunLogger | None,
-    commands: WorkspaceCommands,
+    port: DesktopPort,
     plan: WorkspacePlan,
 ) -> list[LaunchEntry]:
-    from desktop_manager.window_reuse import is_window_target_confirmed
-
     reusable_window = entry_step.reusable_window
     if reusable_window is None:
         return []
@@ -230,7 +224,7 @@ def _execute_reuse_step(
             f"desktop={reusable_window.desktop_number}"
         )
     try:
-        move = commands.move_existing_window_to_entry(
+        move = port.move_existing_window_to_entry(
             reusable_window,
             entry_step.desktop_index,
             entry_step.entry,
@@ -246,7 +240,7 @@ def _execute_reuse_step(
                 f"to {entry_step.entry.placement.to_dict()}"
             )
         if entry_step.entry.placement is not None and entry_step.entry.type != "terminal":
-            if is_window_target_confirmed(reusable_window.hwnd, entry_step.desktop_index, entry_step.entry):
+            if port.is_window_target_confirmed(reusable_window.hwnd, entry_step.desktop_index, entry_step.entry):
                 if logger is not None:
                     logger.log(f"First-pass placement verified for {entry_step.entry.name}")
             else:
@@ -264,13 +258,11 @@ def _execute_reuse_step(
             description=entry_step.description,
             action_kind="launch",
         )
-        pending_second_pass_entries.extend([])
         return _execute_launch_step(
             launch_step,
             substitutions=plan.substitutions(),
             logger=logger,
-            commands=commands,
-            queries=WorkspaceQueries(),
+            port=port,
             plan=plan,
             fallback_state=None,
             preserve_launch_signature=True,
@@ -283,8 +275,7 @@ def _execute_launch_step(
     *,
     substitutions: dict[str, str],
     logger: RestoreRunLogger | None,
-    commands: WorkspaceCommands,
-    queries: WorkspaceQueries,
+    port: DesktopPort,
     plan: WorkspacePlan,
     fallback_state: RestoreFailureFallbacks | None,
     preserve_launch_signature: bool = False,
@@ -292,7 +283,6 @@ def _execute_launch_step(
     reserved_hwnds: set[int] | None = None,
 ) -> list[LaunchEntry]:
     from desktop_manager.restore_timing import entry_window_wait_timeout_seconds
-    from desktop_manager.window_reuse import is_entry_target_confirmed
 
     pending_second_pass_entries: list[LaunchEntry] = []
     entry = entry_step.entry
@@ -304,7 +294,7 @@ def _execute_launch_step(
     # instance we started is still alive, wait for *it* instead of launching
     # again: three attempts against a slow-starting Fork spawned three processes
     # on 2026-08-05, none of which landed in the planned slot.
-    adopt_existing = already_launched and _entry_process_is_running(entry)
+    adopt_existing = already_launched and _entry_process_is_running(entry, port=port)
     if adopt_existing and logger is not None:
         logger.log(
             f"Not relaunching {entry.name}: the instance launched earlier this run is still "
@@ -317,16 +307,16 @@ def _execute_launch_step(
     existing_process_handles: set[int] = set(reserved_hwnds or ())
     launch_token: str | None = new_terminal_restore_token(entry) if should_force_terminal_relaunch(entry) else None
     if entry.window_process_name and not adopt_existing:
-        existing_process_handles |= queries.collect_windows_matching_process(entry.window_process_name)
+        existing_process_handles |= port.collect_windows_matching_process(entry.window_process_name)
         if logger is not None and existing_process_handles:
             logger.log(f"Snapshot existing process windows for {entry.name}: {sorted(existing_process_handles)}")
 
     if not adopt_existing:
         try:
             if preserve_launch_signature and launch_token is None:
-                launched_pid = commands.launch_entry(entry, substitutions)
+                launched_pid = port.launch_entry(entry, substitutions)
             else:
-                launched_pid = commands.launch_entry(entry, substitutions, restore_token=launch_token)
+                launched_pid = port.launch_entry(entry, substitutions, restore_token=launch_token)
             if logger is not None and launched_pid is not None:
                 logger.log(f"Launched {entry.name} pid={launched_pid}")
             if logger is not None and launch_token is not None:
@@ -344,7 +334,7 @@ def _execute_launch_step(
             desktop_index=entry_step.desktop_index,
             logger=logger,
             excluded_hwnds=existing_process_handles,
-            queries=queries,
+            port=port,
         )
     except Exception as err:
         if logger is not None:
@@ -355,8 +345,8 @@ def _execute_launch_step(
         return pending_second_pass_entries
 
     try:
-        placement_started_at = time.monotonic()
-        moved_to_desktop = commands.apply_window_placement(
+        placement_started_at = port.clock()
+        moved_to_desktop = port.apply_window_placement(
             entry,
             hwnd=ready_hwnd,
             target_desktop_number=entry_step.desktop_index,
@@ -371,20 +361,19 @@ def _execute_launch_step(
         if logger is not None:
             logger.log(
                 f"Applied placement {entry.placement.to_dict()} to {entry.name} "
-                f"after {time.monotonic() - placement_started_at:.2f}s"
+                f"after {port.clock() - placement_started_at:.2f}s"
             )
         _ensure_desktop_anchor(
             entry_step.desktop_index,
             entry_name=entry.name,
             reason="post-entry status",
             logger=logger,
-            queries=queries,
-            commands=commands,
+            port=port,
             settle_seconds=min(plan.switch_delay_ms / 1000, 0.2),
         )
-        _log_post_entry_desktop_state(entry, entry_step.desktop, logger=logger, plan=plan, queries=queries)
+        _log_post_entry_desktop_state(entry, entry_step.desktop, logger=logger, plan=plan, port=port)
         if entry.type != "terminal":
-            if is_entry_target_confirmed(entry, entry_step.desktop_index, timeout_seconds=0.35):
+            if port.is_entry_target_confirmed(entry, entry_step.desktop_index, timeout_seconds=0.35):
                 if logger is not None:
                     logger.log(f"First-pass placement verified for {entry.name}")
             else:
@@ -404,8 +393,7 @@ def execute_desktop_with_retries(
     *,
     preserved_hwnds: set[int],
     logger: RestoreRunLogger | None,
-    queries: WorkspaceQueries,
-    commands: WorkspaceCommands,
+    port: DesktopPort,
     fallback_state: RestoreFailureFallbacks,
 ) -> list[LaunchEntry]:
     pending_second_pass_entries: list[LaunchEntry] = []
@@ -419,7 +407,7 @@ def execute_desktop_with_retries(
                 desktop_step,
                 diff_existing=True,
                 logger=logger,
-                queries=queries,
+                port=port,
                 preserved_hwnds=preserved_hwnds,
             )
             if logger is not None:
@@ -440,8 +428,7 @@ def execute_desktop_with_retries(
                 desktop_step,
                 preserved_hwnds=preserved_hwnds,
                 logger=logger,
-                queries=queries,
-                commands=commands,
+                port=port,
                 fallback_state=fallback_state,
             )
             with tracing.span(
@@ -451,8 +438,7 @@ def execute_desktop_with_retries(
                     plan,
                     desktop_step,
                     logger=logger,
-                    queries=queries,
-                    commands=commands,
+                    port=port,
                 )
                 desktop_complete = completion.is_complete
                 completion_diff = completion.diff
@@ -464,7 +450,7 @@ def execute_desktop_with_retries(
         if desktop_complete:
             if logger is not None:
                 logger.log(f"Desktop {desktop_step.desktop_index} completion check passed on attempt {attempt_index}")
-            _raise_planned_windows_on_desktop(desktop_step, commands=commands, logger=logger)
+            _raise_planned_windows_on_desktop(desktop_step, port=port, logger=logger)
             return []
 
         if logger is not None:
@@ -477,14 +463,14 @@ def execute_desktop_with_retries(
             f"Desktop {desktop_step.desktop_index} incomplete after "
             f"{_MAX_DESKTOP_RESTORE_ATTEMPTS} attempt(s); continuing"
         )
-    _raise_planned_windows_on_desktop(desktop_step, commands=commands, logger=logger)
+    _raise_planned_windows_on_desktop(desktop_step, port=port, logger=logger)
     return pending_second_pass_entries
 
 
 def _raise_planned_windows_on_desktop(
     desktop_step: PlannedDesktopExecution,
     *,
-    commands: WorkspaceCommands,
+    port: DesktopPort,
     logger: RestoreRunLogger | None,
 ) -> None:
     """Re-raise the desktop's planned windows so they sit above any orphan windows.
@@ -500,7 +486,7 @@ def _raise_planned_windows_on_desktop(
     }
     if not process_names:
         return
-    raised = commands.raise_windows_for_processes(process_names)
+    raised = port.raise_windows_for_processes(process_names)
     if logger is not None:
         logger.log(f"Desktop {desktop_step.desktop_index} raised {raised} planned window(s) above orphan windows")
 
@@ -523,22 +509,20 @@ def _verify_desktop_completion(
     desktop_step: PlannedDesktopExecution,
     *,
     logger: RestoreRunLogger | None,
-    queries: WorkspaceQueries,
-    commands: WorkspaceCommands,
+    port: DesktopPort,
 ) -> DesktopCompletion:
     """Check the desktop against its plan."""
-    from desktop_manager.visualization import entries_matched_on_planned_screen, render_workspace_diff
+    from desktop_manager.visualization import diff_workspace, entries_matched_on_planned_screen
 
     _ensure_desktop_anchor(
         desktop_step.desktop_index,
         entry_name=desktop_step.desktop.name,
         reason="desktop completion check",
         logger=logger,
-        queries=queries,
-        commands=commands,
+        port=port,
         settle_seconds=min(plan.switch_delay_ms / 1000, 0.2),
     )
-    actual_desktop = queries.current_desktop_status(desktop_name=desktop_step.desktop.name)
+    actual_desktop = port.current_desktop_status(desktop_name=desktop_step.desktop.name)
     scoped_plan = WorkspacePlan(
         version=plan.version,
         workspace=plan.workspace,
@@ -548,7 +532,7 @@ def _verify_desktop_completion(
         notes=plan.notes,
         aliases=plan.aliases,
     )
-    diff = render_workspace_diff(scoped_plan, WorkspacePlan(desktops=[actual_desktop]))
+    diff = diff_workspace(scoped_plan, WorkspacePlan(desktops=[actual_desktop]))
     satisfied: set[str]
     try:
         satisfied = entries_matched_on_planned_screen(desktop_step.desktop, actual_desktop, plan.substitutions())
@@ -556,13 +540,11 @@ def _verify_desktop_completion(
         if logger is not None:
             logger.exception(f"Could not determine satisfied entries on desktop {desktop_step.desktop_index}: {err}")
         satisfied = set()
-    # Only planned entries that are absent (`missing:`) or in the wrong place
-    # (`misplaced:`) are fixable by another attempt. `extra:`/`borrowed:` denote
-    # orphan or foreign windows (Docker Desktop, stray browser tabs, an
-    # already-open Slack) that a retry can never resolve, so they must not force
-    # the desktop to burn all its attempts.
-    is_complete = all(token not in diff for token in ("missing:", "misplaced:"))
-    return DesktopCompletion(is_complete, diff, satisfied)
+    # Only planned entries that are missing or misplaced are fixable by another
+    # attempt. Extra and borrowed windows are orphan or foreign ones (Docker
+    # Desktop, stray browser tabs, an already-open Slack) that a retry can never
+    # resolve, so they must not force the desktop to burn all its attempts.
+    return DesktopCompletion(not diff.has_fixable_drift, diff.render(), satisfied)
 
 
 def _ensure_desktop_anchor(
@@ -571,15 +553,14 @@ def _ensure_desktop_anchor(
     entry_name: str,
     reason: str,
     logger: RestoreRunLogger | None,
-    queries: WorkspaceQueries,
-    commands: WorkspaceCommands,
+    port: DesktopPort,
     settle_seconds: float,
 ) -> None:
-    current_desktop = queries.get_current_desktop_number()
+    current_desktop = port.get_current_desktop_number()
     if current_desktop == desktop_index:
         return
 
-    confirmed = commands.ensure_current_desktop_number(desktop_index, settle_seconds=settle_seconds)
+    confirmed = port.ensure_current_desktop_number(desktop_index, settle_seconds=settle_seconds)
     if logger is None or current_desktop is None:
         return
 
@@ -595,6 +576,7 @@ def _sibling_owned_hwnds(
     entry: LaunchEntry,
     *,
     logger: RestoreRunLogger | None,
+    port: DesktopPort,
 ) -> set[int]:
     """Windows that plainly belong to a sibling entry and must not be adopted.
 
@@ -624,9 +606,7 @@ def _sibling_owned_hwnds(
     if not sibling_titles:
         return set()
     try:
-        from desktop_manager.win32.inventory import window_titles_for_process
-
-        live_titles = window_titles_for_process(process_name)
+        live_titles = port.window_titles_for_process(process_name)
     except WIN32_OPTIONAL_ERRORS:
         return set()
     reserved = {
@@ -639,7 +619,7 @@ def _sibling_owned_hwnds(
     return reserved
 
 
-def _entry_process_is_running(entry: LaunchEntry) -> bool:
+def _entry_process_is_running(entry: LaunchEntry, *, port: DesktopPort) -> bool:
     """True when this entry's target process exists, windowed or not.
 
     Used to decide whether a retry should adopt the instance the previous attempt
@@ -648,9 +628,7 @@ def _entry_process_is_running(entry: LaunchEntry) -> bool:
     if not entry.window_process_name:
         return False
     try:
-        from desktop_manager.win32.inventory import is_process_running
-
-        return is_process_running(entry.window_process_name)
+        return port.is_process_running(entry.window_process_name)
     except WIN32_OPTIONAL_ERRORS:
         return False
 
@@ -661,18 +639,18 @@ def _wait_for_launched_entry_ready(
     desktop_index: int,
     logger: RestoreRunLogger | None,
     excluded_hwnds: set[int] | None = None,
-    queries: WorkspaceQueries,
+    port: DesktopPort,
 ) -> int | None:
     from desktop_manager.restore_timing import entry_title_takeover_timeout_seconds
 
-    started_at = time.monotonic()
+    started_at = port.clock()
     if should_force_terminal_relaunch(entry):
         if logger is not None:
             logger.log(
                 f"Waiting for launch readiness for {entry.name} on desktop {desktop_index} "
                 f"excluded_hwnds={sorted(excluded_hwnds or set())}"
             )
-        hwnd = queries.wait_for_window_for_entry(
+        hwnd = port.wait_for_window_for_entry(
             entry,
             timeout_seconds=10.0,
             target_desktop_number=desktop_index,
@@ -683,10 +661,10 @@ def _wait_for_launched_entry_ready(
         if hwnd is None:
             raise RuntimeError(f"Could not detect launched window for {entry.name}")
         if logger is not None:
-            logger.log(f"Detected launched window {hwnd} for {entry.name} after {time.monotonic() - started_at:.2f}s")
+            logger.log(f"Detected launched window {hwnd} for {entry.name} after {port.clock() - started_at:.2f}s")
         # A bare shell (command deferred at logon) runs nothing that would retitle the window.
         if entry.window_title and entry.command:
-            changed_title = queries.wait_for_window_title_change(
+            changed_title = port.wait_for_window_title_change(
                 hwnd,
                 entry.window_title,
                 timeout_seconds=entry_title_takeover_timeout_seconds(entry),
@@ -699,7 +677,7 @@ def _wait_for_launched_entry_ready(
         return hwnd
     delay_seconds = max(entry.delay_ms, 0) / 1000
     if delay_seconds > 0:
-        time.sleep(delay_seconds)
+        port.sleep(delay_seconds)
     return None
 
 
@@ -709,11 +687,11 @@ def _log_post_entry_desktop_state(
     *,
     logger: RestoreRunLogger | None,
     plan: WorkspacePlan | None,
-    queries: WorkspaceQueries,
+    port: DesktopPort,
 ) -> None:
     if logger is None:
         return
-    actual_desktop = queries.current_desktop_status(desktop_name=desktop.name)
+    actual_desktop = port.current_desktop_status(desktop_name=desktop.name)
     logger.log(f"Post-entry status for {entry.name}: {len(actual_desktop.captured_windows)} visible window(s)")
     if plan is None:
         return

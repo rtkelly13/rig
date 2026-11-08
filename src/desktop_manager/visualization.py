@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,22 +15,124 @@ from desktop_manager.models import (
 from desktop_manager.window_reuse import captured_window_match_score, competing_sibling_titles
 
 
+@dataclass(frozen=True, slots=True)
+class ScreenDiff:
+    """One screen of one desktop: what the plan puts there, what is there, and how they pair up.
+
+    ``missing`` and ``misplaced`` are planned entries another restore attempt can fix.
+    ``extra`` (a window no entry claims) and ``borrowed`` (a window matched to an entry
+    planned for another screen) are not: a retry cannot close a stray window.
+    """
+
+    screen_number: int
+    planned: tuple[str, ...] = ()
+    actual: tuple[str, ...] = ()
+    matched: tuple[str, ...] = ()
+    misplaced: tuple[str, ...] = ()
+    borrowed: tuple[str, ...] = ()
+    missing: tuple[str, ...] = ()
+    extra: tuple[str, ...] = ()
+
+    @property
+    def is_ok(self) -> bool:
+        return not (self.missing or self.extra or self.misplaced or self.borrowed)
+
+    @property
+    def has_fixable_drift(self) -> bool:
+        return bool(self.missing or self.misplaced)
+
+    def render_lines(self) -> list[str]:
+        lines = [
+            f"Screen {self.screen_number}",
+            f"  planned: {', '.join(self.planned) or '-'}",
+            f"  actual:  {', '.join(self.actual) or '-'}",
+        ]
+        if self.matched:
+            lines.append(f"  matched: {', '.join(self.matched)}")
+        if self.misplaced:
+            lines.append(f"  misplaced: {', '.join(self.misplaced)}")
+        if self.borrowed:
+            lines.append(f"  borrowed: {', '.join(self.borrowed)}")
+        if self.is_ok:
+            lines.append("  status:  ok")
+        else:
+            if self.missing:
+                lines.append(f"  missing: {', '.join(self.missing)}")
+            if self.extra:
+                lines.append(f"  extra:   {', '.join(self.extra)}")
+        return lines
+
+
+@dataclass(frozen=True, slots=True)
+class DesktopDiff:
+    """One planned desktop, screen by screen."""
+
+    name: str
+    screens: tuple[ScreenDiff, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class WorkspaceDiff:
+    """The plan against the live workspace. Decisions read the fields; people read :meth:`render`."""
+
+    desktops: tuple[DesktopDiff, ...] = ()
+
+    def screens(self) -> Iterator[ScreenDiff]:
+        for desktop in self.desktops:
+            yield from desktop.screens
+
+    @property
+    def is_clean(self) -> bool:
+        """Nothing missing, misplaced, borrowed or extra anywhere."""
+        return all(screen.is_ok for screen in self.screens())
+
+    @property
+    def has_fixable_drift(self) -> bool:
+        """Some planned entry is missing or on the wrong screen, which another attempt can fix."""
+        return any(screen.has_fixable_drift for screen in self.screens())
+
+    def changed_since(self, previous: WorkspaceDiff | None) -> WorkspaceDiff:
+        """Only the screens that differ from ``previous``; the whole diff when there is none or nothing changed."""
+        if previous is None:
+            return self
+        before = {
+            (desktop.name, screen.screen_number): screen for desktop in previous.desktops for screen in desktop.screens
+        }
+        changed = tuple(
+            DesktopDiff(desktop.name, screens)
+            for desktop in self.desktops
+            if (screens := tuple(s for s in desktop.screens if before.get((desktop.name, s.screen_number)) != s))
+        )
+        return WorkspaceDiff(changed) if changed else self
+
+    def render(self) -> str:
+        lines = ["Workspace Diff"]
+        for desktop in self.desktops:
+            lines.append("")
+            lines.append(desktop.name)
+            for screen in desktop.screens:
+                lines.extend(screen.render_lines())
+        return "\n".join(lines)
+
+
 def render_workspace_diff(plan: WorkspacePlan, actual_plan: WorkspacePlan) -> str:
-    lines = ["Workspace Diff"]
+    return diff_workspace(plan, actual_plan).render()
+
+
+def diff_workspace(plan: WorkspacePlan, actual_plan: WorkspacePlan) -> WorkspaceDiff:
+    desktops: list[DesktopDiff] = []
     for index, planned_desktop in enumerate(plan.desktops):
         actual_desktop = (
             actual_plan.desktops[index]
             if index < len(actual_plan.desktops)
             else DesktopPlan(name=f"Desktop {index + 1}")
         )
-        lines.append("")
-        lines.append(f"{planned_desktop.name}")
         matches = _match_desktop_entries_to_windows(planned_desktop, actual_desktop, plan.substitutions())
         planned_by_screen = _planned_names_by_screen(planned_desktop)
         actual_by_screen = _actual_names_by_screen(actual_desktop)
         all_screens = sorted(set(planned_by_screen) | set(actual_by_screen))
+        screens: list[ScreenDiff] = []
         for screen_number in all_screens:
-            lines.append(f"Screen {screen_number}")
             planned_names = planned_by_screen.get(screen_number, [])
             actual_names = actual_by_screen.get(screen_number, [])
             screen_entry_indexes = [
@@ -78,22 +181,20 @@ def render_workspace_diff(plan: WorkspacePlan, actual_plan: WorkspacePlan) -> st
                 for window_index in screen_window_indexes
                 if window_index not in matches.by_window
             ]
-            lines.append(f"  planned: {', '.join(planned_names) or '-'}")
-            lines.append(f"  actual:  {', '.join(actual_names) or '-'}")
-            if matched:
-                lines.append(f"  matched: {', '.join(matched)}")
-            if misplaced:
-                lines.append(f"  misplaced: {', '.join(misplaced)}")
-            if borrowed:
-                lines.append(f"  borrowed: {', '.join(borrowed)}")
-            if not missing and not extra and not misplaced and not borrowed:
-                lines.append("  status:  ok")
-            else:
-                if missing:
-                    lines.append(f"  missing: {', '.join(missing)}")
-                if extra:
-                    lines.append(f"  extra:   {', '.join(extra)}")
-    return "\n".join(lines)
+            screens.append(
+                ScreenDiff(
+                    screen_number,
+                    planned=tuple(planned_names),
+                    actual=tuple(actual_names),
+                    matched=tuple(matched),
+                    misplaced=tuple(misplaced),
+                    borrowed=tuple(borrowed),
+                    missing=tuple(missing),
+                    extra=tuple(extra),
+                )
+            )
+        desktops.append(DesktopDiff(planned_desktop.name, tuple(screens)))
+    return WorkspaceDiff(tuple(desktops))
 
 
 def truncate_text(value: str, limit: int) -> str:

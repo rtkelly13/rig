@@ -357,7 +357,8 @@ def place_cmd(
 ) -> None:
     """Move a terminal window into a workspace-plan slot, in the bundles' screen/layout vocabulary."""
     from desktop_manager.claude_sessions.recover import place_window
-    from desktop_manager.placement import format_placement, infer_placement_for_window
+    from desktop_manager.placement import format_placement
+    from desktop_manager.win32.geometry import infer_placement_for_window
 
     place_window(hwnd, Placement(screen=screen, mode=mode, slot=slot, orientation=orientation))
     placed = infer_placement_for_window(hwnd)

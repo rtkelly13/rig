@@ -38,8 +38,8 @@ from desktop_manager.claude_sessions.wt_uia import (
 
 def place_window(hwnd: int, place: Placement) -> None:
     """Move a window into a workspace-plan screen slot."""
-    from desktop_manager.placement import placement_rect_for, placement_spec
-    from desktop_manager.win32.geometry import adjust_rect_for_window_frame, move_window
+    from desktop_manager.placement import placement_spec
+    from desktop_manager.win32.geometry import adjust_rect_for_window_frame, move_window, placement_rect_for
 
     spec = placement_spec(
         place.screen, place.mode, place.slot, orientation=place.orientation if place.mode == "halves" else None

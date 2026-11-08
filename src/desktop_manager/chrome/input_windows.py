@@ -5,13 +5,11 @@ Imports Windows modules lazily, so it imports anywhere; calling it needs Windows
 
 from __future__ import annotations
 
-import ctypes
 import time
 from collections.abc import Callable
 from contextlib import suppress
-from typing import final
 
-from desktop_manager.win32 import dlls
+from desktop_manager.win32 import dlls, send_input
 
 _POLL_SECONDS = 0.05
 
@@ -65,49 +63,14 @@ def press(virtual_key: int) -> None:
     win32api.keybd_event(virtual_key, 0, win32con.KEYEVENTF_KEYUP, 0)
 
 
-@final
-class _KeyboardInput(ctypes.Structure):
-    _fields_ = (
-        ("wVk", ctypes.c_ushort),
-        ("wScan", ctypes.c_ushort),
-        ("dwFlags", ctypes.c_ulong),
-        ("time", ctypes.c_ulong),
-        ("dwExtraInfo", ctypes.c_size_t),
-    )
-
-
-@final
-class _InputUnion(ctypes.Union):
-    # As large as the biggest real member (MOUSEINPUT), or SendInput rejects the struct size.
-    _fields_ = (("ki", _KeyboardInput), ("padding", ctypes.c_byte * 32))
-
-
-@final
-class _Input(ctypes.Structure):
-    _fields_ = (("type", ctypes.c_ulong), ("union", _InputUnion))
-
-
-_INPUT_KEYBOARD = 1
-_KEYEVENTF_KEYUP = 0x0002
-_KEYEVENTF_UNICODE = 0x0004
-
-
 def type_text(text: str) -> None:
     """Type text into whatever has focus as Unicode key events, independent of keyboard layout.
 
     UIA's ValuePattern.SetValue on the group title field shows the text but
     Chrome never commits it, so the title has to arrive as typing.
     """
-    data = text.encode("utf-16-le")
-    events = [
-        _Input(
-            _INPUT_KEYBOARD, _InputUnion(ki=_KeyboardInput(0, int.from_bytes(data[i : i + 2], "little"), flags, 0, 0))
-        )
-        for i in range(0, len(data), 2)
-        for flags in (_KEYEVENTF_UNICODE, _KEYEVENTF_UNICODE | _KEYEVENTF_KEYUP)
-    ]
-    array = (_Input * len(events))(*events)
-    dlls.system_dll("user32").SendInput(len(events), array, ctypes.sizeof(_Input))
+    events = send_input.unicode_events(text)
+    dlls.system_dll("user32").SendInput(len(events), send_input.input_batch(events), send_input.INPUT_SIZE)
 
 
 def poll[T](probe: Callable[[], T | None], timeout_seconds: float) -> T | None:

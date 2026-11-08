@@ -19,8 +19,7 @@ import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
-from desktop_manager.models import PlacementLayout, PlacementSpec, Rect
-from desktop_manager.placement import (
+from desktop_manager.geometry import (
     Coverage,
     UnitRect,
     _horizontal_fraction,
@@ -30,6 +29,7 @@ from desktop_manager.placement import (
     normalized_placement_rect,
     rect_similarity,
 )
+from desktop_manager.models import PlacementLayout, PlacementSpec, Rect
 
 pytestmark = pytest.mark.ci
 

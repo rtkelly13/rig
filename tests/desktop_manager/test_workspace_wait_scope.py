@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from desktop_manager.models import RestoreRunLogger
+from desktop_manager.visualization import DesktopDiff, ScreenDiff, WorkspaceDiff
 from desktop_manager.windows_workspace import (
     DesktopPlan,
     LaunchEntry,
@@ -10,6 +11,12 @@ from desktop_manager.windows_workspace import (
     PlacementSpec,
     WindowSnapshot,
     WorkspacePlan,
+)
+
+OK_WORK = DesktopDiff("Work", (ScreenDiff(1),))
+OK_ADMIN = DesktopDiff("Admin", (ScreenDiff(1),))
+MISSING_TERMINAL_WORK = DesktopDiff(
+    "Work", (ScreenDiff(1, planned=("Workspace Terminal 1",), missing=("Workspace Terminal 1",)),)
 )
 
 
@@ -35,8 +42,8 @@ def test_wait_for_restore_success_tracks_success_through_final_check(monkeypatch
         lambda desktop_count=None: WorkspacePlan(desktops=[DesktopPlan(name="Work")]),
     )
     monkeypatch.setattr(
-        "desktop_manager.windows_workspace.render_workspace_diff",
-        lambda plan, actual: "Workspace Diff\n\nWork\nScreen 1\n  status:  ok",
+        "desktop_manager.windows_workspace.diff_workspace",
+        lambda plan, actual: WorkspaceDiff((OK_WORK,)),
     )
 
     plan = WorkspacePlan(desktops=[DesktopPlan(name="Work")])
@@ -73,8 +80,8 @@ def test_wait_for_restore_success_logs_changed_status_for_repeated_diff(monkeypa
         lambda desktop_count=None: WorkspacePlan(desktops=[DesktopPlan(name="Work")]),
     )
     monkeypatch.setattr(
-        "desktop_manager.windows_workspace.render_workspace_diff",
-        lambda plan, actual: "Workspace Diff\n\nWork\nScreen 1\n  status:  ok",
+        "desktop_manager.windows_workspace.diff_workspace",
+        lambda plan, actual: WorkspaceDiff((OK_WORK,)),
     )
 
     plan = WorkspacePlan(desktops=[DesktopPlan(name="Work")])
@@ -111,9 +118,9 @@ def test_wait_for_restore_success_prints_console_safe_diff(monkeypatch):
         lambda desktop_count=None: WorkspacePlan(desktops=[DesktopPlan(name="Work")]),
     )
     monkeypatch.setattr(
-        "desktop_manager.windows_workspace.render_workspace_diff",
-        lambda plan, actual: (
-            "Workspace Diff\n\nWork\nScreen 1\n  actual:  🤖 Investigating error source [WindowsTerminal]"
+        "desktop_manager.windows_workspace.diff_workspace",
+        lambda plan, actual: WorkspaceDiff(
+            (DesktopDiff("Work", (ScreenDiff(1, actual=("🤖 Investigating error source [WindowsTerminal]",)),)),)
         ),
     )
 
@@ -144,8 +151,8 @@ def test_wait_for_restore_success_detects_regression_after_initial_success(monke
     fake_console = FakeConsole()
     diffs = iter(
         [
-            "Workspace Diff\n\nWork\nScreen 1\n  status:  ok",
-            "Workspace Diff\n\nWork\nScreen 1\n  missing: Workspace Terminal 1",
+            WorkspaceDiff((OK_WORK,)),
+            WorkspaceDiff((MISSING_TERMINAL_WORK,)),
         ]
     )
     monkeypatch.setattr("desktop_manager.cli.console", fake_console)
@@ -154,7 +161,7 @@ def test_wait_for_restore_success_detects_regression_after_initial_success(monke
         lambda desktop_count=None: WorkspacePlan(desktops=[DesktopPlan(name="Work")]),
     )
     monkeypatch.setattr(
-        "desktop_manager.windows_workspace.render_workspace_diff",
+        "desktop_manager.windows_workspace.diff_workspace",
         lambda plan, actual: next(diffs),
     )
 
@@ -186,32 +193,8 @@ def test_wait_for_restore_success_prints_only_changed_sections_after_first_check
     fake_console = FakeConsole()
     diffs = iter(
         [
-            "\n".join(
-                [
-                    "Workspace Diff",
-                    "",
-                    "Work",
-                    "Screen 1",
-                    "  status:  ok",
-                    "",
-                    "Admin",
-                    "Screen 1",
-                    "  status:  ok",
-                ]
-            ),
-            "\n".join(
-                [
-                    "Workspace Diff",
-                    "",
-                    "Work",
-                    "Screen 1",
-                    "  missing: Workspace Terminal 1",
-                    "",
-                    "Admin",
-                    "Screen 1",
-                    "  status:  ok",
-                ]
-            ),
+            WorkspaceDiff((OK_WORK, OK_ADMIN)),
+            WorkspaceDiff((MISSING_TERMINAL_WORK, OK_ADMIN)),
         ]
     )
     monkeypatch.setattr("desktop_manager.cli.console", fake_console)
@@ -220,7 +203,7 @@ def test_wait_for_restore_success_prints_only_changed_sections_after_first_check
         lambda desktop_count=None: WorkspacePlan(desktops=[DesktopPlan(name="Work"), DesktopPlan(name="Admin")]),
     )
     monkeypatch.setattr(
-        "desktop_manager.windows_workspace.render_workspace_diff",
+        "desktop_manager.windows_workspace.diff_workspace",
         lambda plan, actual: next(diffs),
     )
 
@@ -234,6 +217,18 @@ def test_wait_for_restore_success_prints_only_changed_sections_after_first_check
         max_checks=2,
         checks_after_success=3,
     )
+
+    second_diff = fake_console.lines[fake_console.lines.index("Check 2: not yet stable") + 1]
+    assert "Admin" in fake_console.lines[fake_console.lines.index("Check 1: success") + 1]
+    assert second_diff.splitlines() == [
+        "Workspace Diff",
+        "",
+        "Work",
+        "Screen 1",
+        "  planned: Workspace Terminal 1",
+        "  actual:  -",
+        "  missing: Workspace Terminal 1",
+    ]
 
 
 def test_wait_for_restore_success_stops_after_configured_checks_post_success(monkeypatch):
@@ -255,12 +250,12 @@ def test_wait_for_restore_success_stops_after_configured_checks_post_success(mon
         lambda desktop_count=None: WorkspacePlan(desktops=[DesktopPlan(name="Work")]),
     )
 
-    def fake_render_workspace_diff(plan, actual):
+    def fake_diff_workspace(plan, actual):
         _ = (plan, actual)
         render_calls["count"] += 1
-        return "Workspace Diff\n\nWork\nScreen 1\n  status:  ok"
+        return WorkspaceDiff((OK_WORK,))
 
-    monkeypatch.setattr("desktop_manager.windows_workspace.render_workspace_diff", fake_render_workspace_diff)
+    monkeypatch.setattr("desktop_manager.windows_workspace.diff_workspace", fake_diff_workspace)
 
     plan = WorkspacePlan(desktops=[DesktopPlan(name="Work")])
     result = _wait_for_restore_success(

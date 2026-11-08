@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from desktop_manager.visualization import DesktopDiff, ScreenDiff, WorkspaceDiff
 from desktop_manager.windows_workspace import WorkspacePlan
 
 pytestmark = pytest.mark.usefixtures("as_windows")
@@ -137,7 +138,8 @@ def test_audit_command_reports_clean_state(monkeypatch, tmp_path: Path):
     monkeypatch.setattr("desktop_manager.windows_workspace.load_plan", lambda _path, **_kwargs: plan)
     monkeypatch.setattr("desktop_manager.windows_workspace.current_workspace_status", lambda desktop_count=None: plan)
     monkeypatch.setattr(
-        "desktop_manager.windows_workspace.render_workspace_diff", lambda _plan, _actual: "Workspace Diff\nclean"
+        "desktop_manager.windows_workspace.diff_workspace",
+        lambda _plan, _actual: WorkspaceDiff((DesktopDiff("Work", (ScreenDiff(1),)),)),
     )
 
     result = runner.invoke(app, ["workspace", "audit", "--config", str(config)])
@@ -158,14 +160,56 @@ def test_audit_command_reports_drift(monkeypatch, tmp_path: Path):
     monkeypatch.setattr("desktop_manager.windows_workspace.load_plan", lambda _path, **_kwargs: plan)
     monkeypatch.setattr("desktop_manager.windows_workspace.current_workspace_status", lambda desktop_count=None: plan)
     monkeypatch.setattr(
-        "desktop_manager.windows_workspace.render_workspace_diff",
-        lambda _plan, _actual: "Workspace Diff\nmissing: Terminal",
+        "desktop_manager.windows_workspace.diff_workspace",
+        lambda _plan, _actual: WorkspaceDiff(
+            (DesktopDiff("Work", (ScreenDiff(1, planned=("Terminal",), missing=("Terminal",)),)),)
+        ),
     )
 
     result = runner.invoke(app, ["workspace", "audit", "--config", str(config)])
 
     assert result.exit_code == 1
     assert "Audit found drift" in result.stdout
+
+
+def test_audit_passes_when_a_matched_window_title_reads_like_drift(monkeypatch, tmp_path: Path):
+    """Audit used to search the rendered diff for `missing:` and `extra:`, so this title failed it."""
+    from desktop_manager.cli import app
+    from desktop_manager.models import DesktopPlan, LaunchEntry, PlacementLayout, PlacementSpec, WindowSnapshot
+
+    full = PlacementSpec(screen=1, layout=PlacementLayout(mode="full", slot=1))
+    plan = WorkspacePlan(
+        desktops=[
+            DesktopPlan(
+                name="Work", launch=[LaunchEntry(name="Notes", type="app", path=r"C:\Notes.exe", placement=full)]
+            )
+        ]
+    )
+    actual = WorkspacePlan(
+        desktops=[
+            DesktopPlan(
+                name="Work",
+                captured_windows=[
+                    WindowSnapshot(
+                        title="extra: missing: notes",
+                        process_name="Notes.exe",
+                        screen_number=1,
+                        inferred_placement=full,
+                    )
+                ],
+            )
+        ]
+    )
+    config = tmp_path / "workspace.json"
+    config.write_text('{"desktops":[{"name":"Work","launch":[]}]}', encoding="utf-8")
+    monkeypatch.setattr("desktop_manager.windows_workspace.load_plan", lambda _path, **_kwargs: plan)
+    monkeypatch.setattr("desktop_manager.windows_workspace.current_workspace_status", lambda desktop_count=None: actual)
+
+    result = CliRunner().invoke(app, ["workspace", "audit", "--config", str(config)])
+
+    assert result.exit_code == 0
+    assert "extra: missing: notes" in result.stdout
+    assert "Audit passed" in result.stdout
 
 
 def test_restore_desktop_scope_keeps_the_absolute_desktop_index(monkeypatch, tmp_path: Path):

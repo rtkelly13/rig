@@ -13,9 +13,9 @@ from desktop_manager.models import (
     WindowHandleCollector,
     WindowSnapshot,
 )
-from desktop_manager.placement import infer_placement_for_window
 from desktop_manager.win32 import desktops, geometry
 from desktop_manager.win32.errors import WIN32_ERRORS
+from desktop_manager.win32.geometry import infer_placement_for_window
 
 
 @dataclass(frozen=True, slots=True)
