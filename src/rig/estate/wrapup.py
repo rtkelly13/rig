@@ -369,7 +369,8 @@ def _matches_worktree(worktree: OrcaWorktree, wanted: Iterable[str]) -> bool:
         if want.casefold() in names:
             return True
         candidate = Path(want).expanduser()
-        if candidate.is_absolute() and candidate == Path(worktree.path):
+        # `anchor`, not is_absolute(): on Windows a rooted path with no drive is not absolute.
+        if candidate.anchor and candidate == Path(worktree.path):
             return True
     return False
 
