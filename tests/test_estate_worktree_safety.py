@@ -16,6 +16,7 @@ import pytest
 from rig import proc
 from rig.estate.checks import Finding, Severity, check_worktrees, inspect_repo
 from rig.estate.cleanup import Busy, Outcome, clean_repo
+from rig.estate.prs import PullRequest
 
 pytestmark = pytest.mark.ci
 
@@ -117,7 +118,7 @@ def test_a_merged_branch_does_not_make_an_unborn_worktree_finished(repo: pathlib
     tree = _spike(repo)
     _orphan_head(repo)
 
-    findings = check_worktrees(repo, merged_heads={"spike": 7})
+    findings = check_worktrees(repo, merged_heads={"spike": PullRequest(7, "MERGED", "spike")})
 
     assert "worktree-merged" not in _checks(findings, tree)
 
@@ -128,7 +129,7 @@ def test_tidy_refuses_an_unborn_worktree_even_forced(repo: pathlib.Path) -> None
     report = inspect_repo(repo)
     report.findings.append(_merged(tree))
 
-    actions = clean_repo(report, apply=True, force=True, merged_heads={"spike": 7})
+    actions = clean_repo(report, apply=True, force=True, merged_heads={"spike": PullRequest(7, "MERGED", "spike")})
 
     verdict = next(a for a in actions if a.subject == str(tree))
     assert verdict.outcome is Outcome.REFUSED
@@ -175,7 +176,7 @@ def test_tidy_never_removes_another_clones_worktree(copied: tuple[pathlib.Path, 
     report = inspect_repo(stale)
     report.findings.append(_merged(tree))
 
-    actions = clean_repo(report, apply=True, force=True, merged_heads={"spike": 7})
+    actions = clean_repo(report, apply=True, force=True, merged_heads={"spike": PullRequest(7, "MERGED", "spike")})
 
     verdict = next(a for a in actions if a.subject == str(tree))
     assert verdict.outcome is Outcome.REFUSED
@@ -195,7 +196,9 @@ def test_tidy_never_removes_a_worktree_a_process_is_working_in(repo: pathlib.Pat
     report.findings.append(_merged(tree))
 
     in_use = Busy(frozenset({(tree / "src").resolve()}))
-    actions = clean_repo(report, apply=True, force=True, merged_heads={"spike": 7}, in_use=in_use)
+    actions = clean_repo(
+        report, apply=True, force=True, merged_heads={"spike": PullRequest(7, "MERGED", "spike")}, in_use=in_use
+    )
 
     verdict = next(a for a in actions if a.subject == str(tree))
     assert verdict.outcome is Outcome.REFUSED, "a shell below the worktree counts as well as one at its root"
@@ -209,8 +212,12 @@ def test_an_unreadable_snapshot_refuses_unless_forced(repo: pathlib.Path) -> Non
     report.findings.append(_merged(tree))
     unknown = Busy(None)
 
-    cautious = clean_repo(report, apply=False, merged_heads={"spike": 7}, in_use=unknown)
-    forced = clean_repo(report, apply=False, force=True, merged_heads={"spike": 7}, in_use=unknown)
+    cautious = clean_repo(
+        report, apply=False, merged_heads={"spike": PullRequest(7, "MERGED", "spike")}, in_use=unknown
+    )
+    forced = clean_repo(
+        report, apply=False, force=True, merged_heads={"spike": PullRequest(7, "MERGED", "spike")}, in_use=unknown
+    )
 
     assert next(a for a in cautious if a.subject == str(tree)).outcome is Outcome.REFUSED
     assert next(a for a in forced if a.subject == str(tree)).outcome is Outcome.WOULD_CLEAN
@@ -224,7 +231,10 @@ def test_an_idle_worktree_is_still_removed(repo: pathlib.Path) -> None:
     report.findings.append(_merged(tree))
 
     actions = clean_repo(
-        report, apply=True, merged_heads={"spike": 7}, in_use=Busy(frozenset({repo.resolve() / "docs"}))
+        report,
+        apply=True,
+        merged_heads={"spike": PullRequest(7, "MERGED", "spike")},
+        in_use=Busy(frozenset({repo.resolve() / "docs"})),
     )
 
     assert next(a for a in actions if a.subject == str(tree)).outcome is Outcome.CLEANED
@@ -242,8 +252,12 @@ def test_checks_limits_a_run_to_the_named_findings(repo: pathlib.Path) -> None:
     report = inspect_repo(repo)
     report.findings.append(_merged(tree))
 
-    skipped = clean_repo(report, apply=False, merged_heads={"spike": 7}, checks={"branch-merged"})
-    chosen = clean_repo(report, apply=False, merged_heads={"spike": 7}, checks={"worktree-merged"})
+    skipped = clean_repo(
+        report, apply=False, merged_heads={"spike": PullRequest(7, "MERGED", "spike")}, checks={"branch-merged"}
+    )
+    chosen = clean_repo(
+        report, apply=False, merged_heads={"spike": PullRequest(7, "MERGED", "spike")}, checks={"worktree-merged"}
+    )
 
     assert all(a.subject != str(tree) for a in skipped)
     assert {a.check for a in chosen} == {"worktree-merged"}

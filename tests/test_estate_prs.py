@@ -108,7 +108,7 @@ def test_merged_heads_skips_a_branch_reused_after_merge(octo: None) -> None:
         _recent(_page([_node(5, "MERGED", "reused"), _node(6, "OPEN", "reused"), _node(2, "MERGED", "done")])),
         _mine(_page([])),
     )
-    assert prs.merged_heads(pathlib.Path(), runner=fake) == {"done": 2}
+    assert {head: pull.number for head, pull in prs.merged_heads(pathlib.Path(), runner=fake).items()} == {"done": 2}
 
 
 def test_a_failed_graphql_call_stops_paging(octo: None) -> None:

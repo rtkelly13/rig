@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import json
 import pathlib
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -239,14 +239,44 @@ def pr_heads(
     return heads
 
 
-def merged_heads(repo: pathlib.Path, *, limit: int = DEFAULT_LIMIT, runner: GhRunner = run_gh) -> dict[str, int]:
-    """Return ``{head_ref: pr_number}`` for heads whose **newest** PR merged.
+def merged_heads(
+    repo: pathlib.Path, *, limit: int = DEFAULT_LIMIT, runner: GhRunner = run_gh
+) -> dict[str, PullRequest]:
+    """Return ``{head_ref: pull}`` for heads whose **newest** PR merged.
 
     A head whose newest PR is open is deliberately absent: the branch was reused
     and the open PR is the live fact, so nothing here should authorise deleting
-    it. Returning the plain int keeps the shape `estate.cleanup` already takes.
+    it. Each pull keeps its head commit, which `merged_pr` checks the local tip against.
     """
     with tracing.span("estate.merged_heads", scope="rig.estate", **{"estate.clone": str(repo)}) as s:
-        heads = {head: pull.number for head, pull in pr_heads(repo, limit=limit, runner=runner).items() if pull.merged}
+        heads = {head: pull for head, pull in pr_heads(repo, limit=limit, runner=runner).items() if pull.merged}
         s.set(**{"estate.merged_heads": len(heads)})
     return heads
+
+
+def merged_pr(repo: pathlib.Path, branch: str, merged_heads: Mapping[str, PullRequest] | None) -> int | None:
+    """The merged PR that holds *branch*'s tip: by its own name, else by the origin branch it pushes to.
+
+    GitHub knows a PR by its head ref, which is the *remote* branch name. A local branch pushed
+    under another name (`git push -u origin local:remote`) only matches through its upstream.
+    The upstream comes from config, so it still resolves after the remote branch is deleted.
+
+    A name match is not enough: a commit made after the last push was never in the PR, and a
+    squash leaves no other trace of it. So the tip must be the PR's head commit or behind it.
+    An unknown head, or one this clone does not have, proves nothing and matches nothing.
+    """
+    if merged_heads is None:
+        return None
+    pull = merged_heads.get(branch)
+    if pull is None:
+        fmt = "%(upstream:remotename)\t%(upstream:remoteref)"
+        remote, _, ref = proc.git_out("for-each-ref", f"--format={fmt}", f"refs/heads/{branch}", cwd=repo).partition(
+            "\t"
+        )
+        if remote != "origin" or not ref.startswith("refs/heads/"):
+            return None
+        pull = merged_heads.get(ref.removeprefix("refs/heads/"))
+    if pull is None or not pull.head_oid:
+        return None
+    contained = proc.git("merge-base", "--is-ancestor", f"refs/heads/{branch}", pull.head_oid, cwd=repo).ok
+    return pull.number if contained else None
