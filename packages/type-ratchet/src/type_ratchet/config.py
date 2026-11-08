@@ -8,6 +8,7 @@ from __future__ import annotations
 import tomllib
 from collections.abc import Sequence
 from dataclasses import dataclass
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import TypeGuard
 
@@ -26,7 +27,13 @@ _BOUNDARY_MODULES = "boundary-modules"
 _STR_KEY_RECEIVERS = "str-key-receivers"
 _LOOSE_DICT_ALIASES = "loose-dict-aliases"
 _LOOSE_DICT_ALLOW = "loose-dict-allow"
+_FAKE_LOCATION_ALLOW = "fake-location-allow"
+_PATCHING_ALLOW = "patching-allow"
 _HINT = "hint"
+_RULE_SETS = "rule-sets"
+_FILES = "files"
+_RULES = "rules"
+_RULE_SET_KEYS = frozenset({_FILES, _RULES})
 _KEYS = frozenset(
     {
         _PATHS,
@@ -37,13 +44,29 @@ _KEYS = frozenset(
         _STR_KEY_RECEIVERS,
         _LOOSE_DICT_ALIASES,
         _LOOSE_DICT_ALLOW,
+        _FAKE_LOCATION_ALLOW,
+        _PATCHING_ALLOW,
         _HINT,
+        _RULE_SETS,
     }
 )
 
 
 class ConfigError(ValueError):
     """The ratchet table in pyproject.toml is malformed."""
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RuleSet:
+    """The rules gated for the files that match `files`, in place of the top-level `disable`."""
+
+    files: tuple[str, ...]
+    """Repo-relative `fnmatch` globs (`*` also matches `/`), such as `tests/*`."""
+    rules: frozenset[Rule]
+    """The only rules that fail the gate in these files; the rest are still counted for `--report`."""
+
+    def matches(self, path: str) -> bool:
+        return any(fnmatchcase(path, pattern) for pattern in self.files)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -66,8 +89,21 @@ class RatchetConfig:
     """Type alias names that `loose-dict` counts like `dict[str, object]`, wherever they are referenced."""
     loose_dict_allow: tuple[str, ...] = ()
     """Repo-relative paths or `fnmatch` globs that may keep loose dicts: output serializers and config round-trips."""
+    fake_location_allow: tuple[str, ...] = ()
+    """Repo-relative paths or `fnmatch` globs that may define `Fake*`/`Stub*` classes outside the shared fakes."""
+    patching_allow: tuple[str, ...] = ()
+    """Repo-relative paths or `fnmatch` globs that may still use `mock.patch`, `monkeypatch.setattr`, `sys.modules`."""
     hint: str = DEFAULT_HINT
     """Printed after the violations, typically a pointer to the repo's own guidance."""
+    rule_sets: tuple[RuleSet, ...] = ()
+    """Per-path rule sets; the first whose `files` match a file decides which rules gate it."""
+
+    def gated_rules(self, path: str) -> frozenset[Rule]:
+        """The rules that fail the gate in `path`: its rule set's, or every rule not in `disable`."""
+        for rule_set in self.rule_sets:
+            if rule_set.matches(path):
+                return rule_set.rules
+        return frozenset(Rule) - self.disabled_rules
 
 
 def _is_table(value: object) -> TypeGuard[dict[str, object]]:
@@ -103,13 +139,41 @@ def _strings(table: dict[str, object], key: str) -> tuple[str, ...] | None:
     return items
 
 
-def _rules(table: dict[str, object]) -> frozenset[Rule]:
-    names = _strings(table, _DISABLE) or ()
+def _rules(table: dict[str, object], key: str) -> frozenset[Rule]:
+    names = _strings(table, key) or ()
     known = {rule.value: rule for rule in Rule}
     unknown = sorted(set(names) - known.keys())
     if unknown:
-        raise ConfigError(f"{_DISABLE} has unknown rules: {', '.join(unknown)}")
+        raise ConfigError(f"{key} has unknown rules: {', '.join(unknown)}")
     return frozenset(known[name] for name in names)
+
+
+def _rule_set(index: int, value: object) -> RuleSet:
+    where = f"{_RULE_SETS}[{index}]"
+    if not _is_table(value):
+        raise ConfigError(f"{where} must be a table")
+    unknown = sorted(value.keys() - _RULE_SET_KEYS)
+    if unknown:
+        raise ConfigError(f"{where} has unknown keys: {', '.join(unknown)}")
+    files = _strings(value, _FILES)
+    if not files:
+        raise ConfigError(f"{where}.{_FILES} must be a non-empty list of globs")
+    if not _strings(value, _RULES):
+        raise ConfigError(f"{where}.{_RULES} must list the rules gated for those files")
+    try:
+        rules = _rules(value, _RULES)
+    except ConfigError as exc:
+        raise ConfigError(f"{where}.{exc}") from exc
+    return RuleSet(files=files, rules=rules)
+
+
+def _rule_sets(table: dict[str, object]) -> tuple[RuleSet, ...]:
+    value = table.get(_RULE_SETS)
+    if value is None:
+        return ()
+    if not _is_array(value):
+        raise ConfigError(f"{_RULE_SETS} must be an array of tables")
+    return tuple(_rule_set(index, item) for index, item in enumerate(value))
 
 
 def _positive_int(table: dict[str, object], key: str, default: int) -> int:
@@ -143,14 +207,17 @@ def parse_config(document: dict[str, object]) -> RatchetConfig:
         raise ConfigError(f"{_PATHS} must not be empty")
     return RatchetConfig(
         paths=paths or DEFAULT_PATHS,
-        disabled_rules=_rules(table),
+        disabled_rules=_rules(table, _DISABLE),
         long_module_lines=_positive_int(table, _LONG_MODULE_LINES, DEFAULT_LONG_MODULE_LINES),
         pyright_pragma_allow=frozenset(_strings(table, _PRAGMA_ALLOW) or ()),
         boundary_modules=frozenset(_strings(table, _BOUNDARY_MODULES) or ()),
         str_key_receivers=frozenset(_strings(table, _STR_KEY_RECEIVERS) or ()),
         loose_dict_aliases=frozenset(_strings(table, _LOOSE_DICT_ALIASES) or ()),
         loose_dict_allow=_strings(table, _LOOSE_DICT_ALLOW) or (),
+        fake_location_allow=_strings(table, _FAKE_LOCATION_ALLOW) or (),
+        patching_allow=_strings(table, _PATCHING_ALLOW) or (),
         hint=_string(table, _HINT, DEFAULT_HINT),
+        rule_sets=_rule_sets(table),
     )
 
 

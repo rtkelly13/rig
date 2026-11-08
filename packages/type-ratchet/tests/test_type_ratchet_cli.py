@@ -76,3 +76,46 @@ def test_cli_reports_a_root_outside_git_as_a_usage_error(
     _ = (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
     assert run(["--root", str(tmp_path)]) == EXIT_USAGE
     assert "not inside a git work tree" in capsys.readouterr().err
+
+
+def test_a_rule_set_gates_its_own_rules_in_its_files(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    smells = "from typing import cast\nx = cast(int, getattr(1, 'y'))\n"
+    root = _repo(
+        tmp_path,
+        {
+            "pyproject.toml": (
+                '[tool.type-ratchet]\n[[tool.type-ratchet.rule-sets]]\nfiles = ["tests/*"]\nrules = ["cast"]\n'
+            ),
+            "src/a.py": smells,
+            "tests/test_a.py": smells,
+            "docs/b.py": smells,
+        },
+    )
+    assert run(["--root", str(root)]) == EXIT_VIOLATIONS
+    out = capsys.readouterr().out.splitlines()
+    assert out[:3] == ["src/a.py: 1 cast", "tests/test_a.py: 1 cast", "src/a.py: 1 getattr-family"]
+    assert not any(line.startswith("docs/") for line in out)
+    assert "tests/test_a.py: 1 getattr-family" not in out
+
+
+def test_fakes_live_in_their_home_and_patching_only_in_allowed_files(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    patched = "def test(monkeypatch):\n    monkeypatch.setattr(m, 'f', 1)\n"
+    root = _repo(
+        tmp_path,
+        {
+            "pyproject.toml": (
+                '[tool.type-ratchet]\npatching-allow = ["tests/old_*"]\nfake-location-allow = ["tests/old_*"]\n'
+                '[[tool.type-ratchet.rule-sets]]\nfiles = ["tests/fakes/*"]\nrules = ["patching"]\n'
+                '[[tool.type-ratchet.rule-sets]]\nfiles = ["tests/*"]\nrules = ["fake-location", "patching"]\n'
+            ),
+            "src/a.py": "x = 1\n",
+            "tests/fakes/gh.py": "class FakeGh: ...\n",
+            "tests/old_test.py": "class FakeOld: ...\n" + patched,
+            "tests/test_new.py": "class FakeNew: ...\n" + patched,
+        },
+    )
+    assert run(["--root", str(root)]) == EXIT_VIOLATIONS
+    out = capsys.readouterr().out.splitlines()
+    assert out[:2] == ["tests/test_new.py: 1 fake-location", "tests/test_new.py: 1 patching"]

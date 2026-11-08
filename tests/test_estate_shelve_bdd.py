@@ -1,7 +1,7 @@
 """Step definitions for ``features/estate_shelve.feature``.
 
 The feature states the rules `estate shelve` must keep; these steps drive them against
-a real clone and a throwaway bare origin, reusing the fixtures of ``test_estate_shelve``.
+a real clone and a throwaway bare origin, with the shared `clone` fixture and `tests.behaviour.steps.git`.
 Mechanics below the level of a rule (trailer parsing, ACL clean-up, prune arithmetic)
 stay as example tests there.
 """
@@ -17,7 +17,9 @@ import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from rig.estate import shelf_store, shelve
-from tests.test_estate_shelve import NOW, _commit, _dirty, _git, _tree, _worktree, clone  # noqa: F401
+from tests.behaviour.steps.git import add_worktree, commit, make_dirty
+from tests.fakes.git import git
+from tests.test_estate_shelve import NOW, _tree
 
 pytestmark = pytest.mark.ci
 
@@ -64,7 +66,7 @@ class Shelving:
 
 
 @given("a clone whose main branch is pushed to origin", target_fixture="world")
-def _a_clone(clone: pathlib.Path) -> Shelving:  # noqa: F811
+def _a_clone(clone: pathlib.Path) -> Shelving:
     return Shelving(clone=clone)
 
 
@@ -76,63 +78,63 @@ def _origin_rejects(world: Shelving) -> None:
 
 
 def _clean(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "clean")
+    w.path = add_worktree(w.clone, "clean")
 
 
 def _ahead(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "ahead")
-    _commit(w.path, "a.txt", "a\n")
+    w.path = add_worktree(w.clone, "ahead")
+    commit(w.path, "a.txt", "a\n")
 
 
 def _uncommitted(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "dirty")
-    _dirty(w.path)
+    w.path = add_worktree(w.clone, "dirty")
+    make_dirty(w.path)
 
 
 def _squash_merged(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "landed")
-    _commit(w.path, "a.txt", "a\n")
+    w.path = add_worktree(w.clone, "landed")
+    commit(w.path, "a.txt", "a\n")
     w.prs["landed"] = shelve.PrRef(number=7, state="MERGED")
 
 
 def _secret(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "secret")
+    w.path = add_worktree(w.clone, "secret")
     (w.path / ".env").write_text("TOKEN=1\n", encoding="utf-8")
 
 
 def _build_output(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "built")
+    w.path = add_worktree(w.clone, "built")
     (w.path / "node_modules").mkdir()
     (w.path / "node_modules" / "x.js").write_text("x", encoding="utf-8")
 
 
 def _live(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "live")
-    _dirty(w.path)
+    w.path = add_worktree(w.clone, "live")
+    make_dirty(w.path)
     w.options = shelve.Options(idle=dt.timedelta(hours=2))
     w.now = None  # the real clock: the files were written moments ago
 
 
 def _shelf_clash(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "clash")
-    _dirty(w.path)
-    other = _git(["rev-parse", "HEAD"], w.clone)
-    _git(["push", "-q", "origin", f"{other}:refs/heads/shelved/t.user/clash"], w.clone)
-    _commit(w.path, "x.txt", "x\n")
+    w.path = add_worktree(w.clone, "clash")
+    make_dirty(w.path)
+    other = git(["rev-parse", "HEAD"], w.clone)
+    git(["push", "-q", "origin", f"{other}:refs/heads/shelved/t.user/clash"], w.clone)
+    commit(w.path, "x.txt", "x\n")
 
 
 def _never_pushed_dirty(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "blocked", push=False)
-    _dirty(w.path)
+    w.path = add_worktree(w.clone, "blocked", push=False)
+    make_dirty(w.path)
 
 
 def _local_commit_and_dirty(w: Shelving) -> None:
-    w.path = _worktree(w.clone, "wip")
+    w.path = add_worktree(w.clone, "wip")
     w.branch = "wip"
-    _commit(w.path, "local.txt", "local\n")
-    w.head = _git(["rev-parse", "HEAD"], w.path)
-    w.pushed_branch = _git(["rev-parse", "origin/wip"], w.clone)
-    _dirty(w.path)
+    commit(w.path, "local.txt", "local\n")
+    w.head = git(["rev-parse", "HEAD"], w.path)
+    w.pushed_branch = git(["rev-parse", "origin/wip"], w.clone)
+    make_dirty(w.path)
 
 
 WORKTREES: dict[str, Callable[[Shelving], None]] = {
@@ -243,7 +245,7 @@ def _still_there(world: Shelving) -> None:
 @then("the worktree's own index is untouched")
 def _index_untouched(world: Shelving) -> None:
     assert (world.worktree / "new.txt").read_text(encoding="utf-8") == "untracked\n"
-    assert sorted(_git(["status", "--porcelain"], world.worktree).splitlines()) == sorted(
+    assert sorted(git(["status", "--porcelain"], world.worktree).splitlines()) == sorted(
         [" M README.md", " D gone.txt", "A  staged.txt", "?? new.txt"]
     )
 
@@ -256,9 +258,9 @@ def _gone(world: Shelving) -> None:
 @then("origin holds a shelf recording the branch and the commit it was taken on")
 def _shelf_on_origin(world: Shelving) -> None:
     sha = world.applied.sha
-    assert _git(["ls-remote", "origin", f"refs/heads/shelved/t.user/{world.branch}"], world.clone).split("\t")[0] == sha
-    assert _git(["log", "-1", "--format=%s", sha], world.clone).startswith(shelf_store.PREFIX)
-    assert _git(["rev-parse", f"{sha}^"], world.clone) == world.head
+    assert git(["ls-remote", "origin", f"refs/heads/shelved/t.user/{world.branch}"], world.clone).split("\t")[0] == sha
+    assert git(["log", "-1", "--format=%s", sha], world.clone).startswith(shelf_store.PREFIX)
+    assert git(["rev-parse", f"{sha}^"], world.clone) == world.head
     [shelf] = shelf_store.list_shelves(world.clone)
     assert (shelf.name, shelf.snapshot, shelf.trailers.branch, shelf.trailers.base) == (
         world.branch,
@@ -270,15 +272,15 @@ def _shelf_on_origin(world: Shelving) -> None:
 
 @then("the pull request branch on origin did not move")
 def _pr_branch_unmoved(world: Shelving) -> None:
-    on_origin = _git(["ls-remote", "origin", f"refs/heads/{world.branch}"], world.clone).split("\t")[0]
+    on_origin = git(["ls-remote", "origin", f"refs/heads/{world.branch}"], world.clone).split("\t")[0]
     assert on_origin == world.pushed_branch
 
 
 @then("the branch and its commits are back")
 def _branch_back(world: Shelving, restored: shelf_store.Done) -> None:
     assert restored.ok, restored.detail
-    assert _git(["rev-parse", "HEAD"], world.worktree) == world.head
-    assert _git(["branch", "--show-current"], world.worktree) == world.branch
+    assert git(["rev-parse", "HEAD"], world.worktree) == world.head
+    assert git(["branch", "--show-current"], world.worktree) == world.branch
 
 
 @then("every uncommitted change is back, unstaged")
@@ -286,4 +288,4 @@ def _changes_back(world: Shelving) -> None:
     assert (world.worktree / "README.md").read_text(encoding="utf-8") == "edited\n"
     assert (world.worktree / "new.txt").read_text(encoding="utf-8") == "untracked\n"
     assert not (world.worktree / "gone.txt").exists()
-    assert sorted(_git(["status", "--porcelain"], world.worktree).splitlines()) == sorted(DIRTY_STATUS)
+    assert sorted(git(["status", "--porcelain"], world.worktree).splitlines()) == sorted(DIRTY_STATUS)

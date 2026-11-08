@@ -31,6 +31,34 @@ Good candidates are the behaviours whose failure loses work or leaks something: 
 branch cleanup, workspace restore with window reuse, and governance sync (what it changes and what
 it never touches).
 
+### Shared fakes and steps
+
+Tests share one vocabulary rather than each file building its own doubles
+([target-architecture.md](target-architecture.md#behaviour-suites-share-one-vocabulary)):
+
+- **`tests/fakes/`** holds one stand-in per port, typed as that port with an `as_port()` so a
+  signature change breaks the fake visibly: `gh_runner.FakeGh` for `rig.proc.GhRunner`,
+  `gh_graphql.FakeGitHub` for `rig.gh_threads.github.GraphQL`. Git has no fake class: `git.py`
+  runs real git through `rig.proc` against a temp clone with a bare origin, and `tests/conftest.py`
+  serves that clone as the `clone` fixture.
+- **`tests/behaviour/steps/`** holds typed given/when/then functions over those fakes, such as
+  `steps.git.add_worktree`, `commit` and `make_dirty`. Feature steps and example tests call them;
+  they never import helpers from another `test_*.py` module.
+
+- **`tests/contracts/`** holds a fake to the real adapter. `test_gh_runner_contract.py` runs one
+  suite against `FakeGh` and against `RecordedGh`, a replay of real `gh api graphql` answers for
+  the queries `resolve_repo` makes. A changed query fails as unrecorded: re-record with
+  `uv run python -m tests.contracts.record_gh_runner`, then fix the fake to match. Git needs no
+  contract, because its stand-in is real git.
+
+A new scenario reuses a fake or a step. Extend the shared one rather than writing a second copy inline.
+
+`uv run ratchet` enforces it over `tests/`: `fake-location` fails a `Fake*` or `Stub*` class outside
+`tests/fakes/`, and `patching` fails `mock.patch`, `monkeypatch.setattr` and `sys.modules[...] =`.
+The files that did either when the rules landed are listed in `fake-location-allow` and
+`patching-allow` in `pyproject.toml`. Those lists only shrink: when you touch one of those files,
+move its fake into `tests/fakes/` or pass the fake through a seam, then delete its entry.
+
 ### Properties: state the rule, then let Hypothesis find the counterexample
 
 Useful shapes, each with an example in `tests/desktop_manager/test_placement_properties.py`:

@@ -13,42 +13,11 @@ import pytest
 
 from rig.estate import shelf_store, shelve
 from rig.estate.checks import Worktree, list_worktrees
+from tests.behaviour.steps.git import add_worktree, commit, make_dirty
+from tests.fakes.git import git
 
 NOW = dt.datetime(2026, 10, 9, 12, 0, tzinfo=dt.UTC)
 NO_IDLE = shelve.Options(idle=dt.timedelta(0))
-
-
-def _git(args: list[str], cwd: pathlib.Path) -> str:
-    done = subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
-    return done.stdout.rstrip()
-
-
-@pytest.fixture
-def clone(tmp_path: pathlib.Path) -> pathlib.Path:
-    origin = tmp_path / "origin.git"
-    _git(["init", "-q", "--bare", "-b", "main", str(origin)], tmp_path)
-    root = tmp_path / "clone"
-    root.mkdir()
-    _git(["init", "-q", "-b", "main"], root)
-    _git(["config", "user.email", "t.user@example.com"], root)
-    _git(["config", "user.name", "T"], root)
-    _git(["config", "core.autocrlf", "false"], root)
-    _git(["remote", "add", "origin", str(origin)], root)
-    (root / ".gitignore").write_text(".env\nnode_modules/\n", encoding="utf-8")
-    (root / "README.md").write_text("hi\n", encoding="utf-8")
-    (root / "gone.txt").write_text("delete me\n", encoding="utf-8")
-    _git(["add", "."], root)
-    _git(["commit", "-qm", "first"], root)
-    _git(["push", "-q", "-u", "origin", "main"], root)
-    return root
-
-
-def _worktree(clone: pathlib.Path, branch: str, *, push: bool = True) -> pathlib.Path:
-    path = clone / ".worktrees" / branch
-    _git(["worktree", "add", "-q", "-b", branch, str(path)], clone)
-    if push:
-        _git(["push", "-q", "-u", "origin", branch], path)
-    return path
 
 
 def _tree(clone: pathlib.Path, path: pathlib.Path) -> Worktree:
@@ -70,20 +39,6 @@ def _plan(
         options=options,
         now=NOW,
     )
-
-
-def _commit(path: pathlib.Path, name: str, text: str) -> None:
-    (path / name).write_text(text, encoding="utf-8")
-    _git(["add", name], path)
-    _git(["commit", "-qm", f"add {name}"], path)
-
-
-def _dirty(path: pathlib.Path) -> None:
-    (path / "README.md").write_text("edited\n", encoding="utf-8")
-    (path / "staged.txt").write_text("staged\n", encoding="utf-8")
-    _git(["add", "staged.txt"], path)
-    (path / "gone.txt").unlink()
-    (path / "new.txt").write_text("untracked\n", encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -159,7 +114,7 @@ def test_is_regenerable(path: str, regenerable: bool) -> None:
 
 @pytest.mark.skipif(sys.platform != "win32", reason="ACLs are Windows-only")
 def test_a_delete_git_abandons_part_way_is_finished(clone: pathlib.Path) -> None:
-    path = _worktree(clone, "locked-cache")
+    path = add_worktree(clone, "locked-cache")
     cache = path / ".pytest_cache"
     (cache / "v").mkdir(parents=True)
     _ = (cache / ".gitignore").write_text("*\n", encoding="utf-8")
@@ -184,9 +139,9 @@ def test_a_delete_git_abandons_part_way_is_finished(clone: pathlib.Path) -> None
 
 @pytest.mark.ci
 def test_local_commits_are_shelved_and_the_branch_is_recreated(clone: pathlib.Path) -> None:
-    path = _worktree(clone, "never-pushed", push=False)
-    _commit(path, "a.txt", "a\n")
-    head = _git(["rev-parse", "HEAD"], path)
+    path = add_worktree(clone, "never-pushed", push=False)
+    commit(path, "a.txt", "a\n")
+    head = git(["rev-parse", "HEAD"], path)
 
     result = shelve.apply_plan(_plan(clone, path), now=NOW, ledger=None)
 
@@ -198,17 +153,17 @@ def test_local_commits_are_shelved_and_the_branch_is_recreated(clone: pathlib.Pa
     restored = shelf_store.unshelve(shelf)
 
     assert restored.ok, restored.detail
-    assert _git(["rev-parse", "never-pushed"], clone) == head
-    assert _git(["status", "--porcelain"], path) == ""
+    assert git(["rev-parse", "never-pushed"], clone) == head
+    assert git(["status", "--porcelain"], path) == ""
 
 
 @pytest.mark.ci
 def test_a_rerun_after_a_failed_removal_is_idempotent(clone: pathlib.Path) -> None:
-    path = _worktree(clone, "again")
-    _dirty(path)
+    path = add_worktree(clone, "again")
+    make_dirty(path)
     plan = _plan(clone, path)
     sha = shelve._marker(plan, NOW)  # pyright: ignore[reportPrivateUsage]
-    _git(["push", "-q", "origin", f"{sha}:{plan.ref}"], clone)
+    git(["push", "-q", "origin", f"{sha}:{plan.ref}"], clone)
 
     rerun = _plan(clone, path)
 
@@ -219,19 +174,19 @@ def test_a_rerun_after_a_failed_removal_is_idempotent(clone: pathlib.Path) -> No
 
 @pytest.mark.ci
 def test_only_a_marker_without_a_snapshot_is_prunable(clone: pathlib.Path) -> None:
-    landed = _worktree(clone, "landed", push=False)
-    _commit(landed, "a.txt", "a\n")
+    landed = add_worktree(clone, "landed", push=False)
+    commit(landed, "a.txt", "a\n")
     assert shelve.apply_plan(_plan(clone, landed), now=NOW, ledger=None).outcome == "shelved"
-    dirty = _worktree(clone, "dirty")
-    _dirty(dirty)
+    dirty = add_worktree(clone, "dirty")
+    make_dirty(dirty)
     assert shelve.apply_plan(_plan(clone, dirty), now=NOW, ledger=None).outcome == "shelved"
 
     shelves = {s.name: s for s in shelf_store.list_shelves(clone)}
 
     assert shelf_store.prunable(shelves["landed"], merged_prs={}) == ""
-    _git(["fetch", "-q", "origin"], clone)
-    _git(["push", "-q", "origin", f"{shelves['landed'].sha}^:refs/heads/main"], clone)
-    _git(["fetch", "-q", "origin"], clone)
+    git(["fetch", "-q", "origin"], clone)
+    git(["push", "-q", "origin", f"{shelves['landed'].sha}^:refs/heads/main"], clone)
+    git(["fetch", "-q", "origin"], clone)
     assert shelf_store.prunable(shelves["landed"], merged_prs={}) == "base is in main"
     assert shelf_store.prunable(shelves["dirty"], merged_prs={}) == "", "a snapshot is never pruned"
 
@@ -242,11 +197,11 @@ def test_only_a_marker_without_a_snapshot_is_prunable(clone: pathlib.Path) -> No
 
 @pytest.mark.ci
 def test_a_merged_pr_prunes_a_shelf_only_when_it_merged_the_shelved_commits(clone: pathlib.Path) -> None:
-    path = _worktree(clone, "squashed")
-    _commit(path, "a.txt", "a\n")
-    pushed = _git(["rev-parse", "HEAD"], path)
-    _git(["push", "-q", "origin", "squashed"], path)
-    _commit(path, "b.txt", "local only\n")
+    path = add_worktree(clone, "squashed")
+    commit(path, "a.txt", "a\n")
+    pushed = git(["rev-parse", "HEAD"], path)
+    git(["push", "-q", "origin", "squashed"], path)
+    commit(path, "b.txt", "local only\n")
     plan = _plan(clone, path, prs={"squashed": shelve.PrRef(number=5, state="OPEN")})
     assert shelve.apply_plan(plan, now=NOW, ledger=None).outcome == "shelved"
     shelf = next(s for s in shelf_store.list_shelves(clone) if s.name == "squashed")
@@ -257,8 +212,8 @@ def test_a_merged_pr_prunes_a_shelf_only_when_it_merged_the_shelved_commits(clon
 
 @pytest.mark.ci
 def test_a_tree_edited_after_planning_is_kept(clone: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    path = _worktree(clone, "late-edit")
-    _dirty(path)
+    path = add_worktree(clone, "late-edit")
+    make_dirty(path)
     plan = _plan(clone, path)
     on_remote = shelve._on_remote  # pyright: ignore[reportPrivateUsage]
 
@@ -276,8 +231,8 @@ def test_a_tree_edited_after_planning_is_kept(clone: pathlib.Path, monkeypatch: 
 
 @pytest.mark.ci
 def test_an_ignored_file_written_after_planning_is_kept(clone: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    path = _worktree(clone, "late-ignored", push=False)
-    _commit(path, "a.txt", "a\n")
+    path = add_worktree(clone, "late-ignored", push=False)
+    commit(path, "a.txt", "a\n")
     plan = _plan(clone, path)
     assert plan.action == shelve.PUSH
     on_remote = shelve._on_remote  # pyright: ignore[reportPrivateUsage]
@@ -298,7 +253,7 @@ def test_an_ignored_file_written_after_planning_is_kept(clone: pathlib.Path, mon
 def test_an_unreadable_worktree_list_never_finishes_a_delete(
     clone: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    plan = _plan(clone, _worktree(clone, "unlisted"))
+    plan = _plan(clone, add_worktree(clone, "unlisted"))
 
     def unreadable(_clone: pathlib.Path) -> list[Worktree]:
         return []
@@ -326,7 +281,7 @@ def test_tool_outputs_found_on_the_estate_are_regenerable(path: str, regenerable
 
 @pytest.mark.ci
 def test_the_decision_reports_how_much_the_ignored_paths_weigh(clone: pathlib.Path) -> None:
-    path = _worktree(clone, "weighed")
+    path = add_worktree(clone, "weighed")
     (path / ".env").write_bytes(b"x" * 3 * 2**20)
 
     plan = _plan(clone, path)
@@ -374,9 +329,9 @@ def test_a_skeleton_holding_a_file_is_left_alone(tmp_path: pathlib.Path) -> None
 
 @pytest.mark.ci
 def test_a_worktree_holding_another_registered_worktree_is_refused(clone: pathlib.Path) -> None:
-    outer = _worktree(clone, "outer")
+    outer = add_worktree(clone, "outer")
     inner = outer / "node_modules" / "inner"
-    _git(["worktree", "add", "-q", "-b", "inner", str(inner)], clone)
+    git(["worktree", "add", "-q", "-b", "inner", str(inner)], clone)
 
     plan = _plan(clone, outer, shelve.Options(idle=dt.timedelta(0), discard_ignored=True))
 
@@ -385,10 +340,10 @@ def test_a_worktree_holding_another_registered_worktree_is_refused(clone: pathli
 
 @pytest.mark.ci
 def test_a_worktree_holding_a_nested_clone_is_refused(clone: pathlib.Path) -> None:
-    outer = _worktree(clone, "outer")
+    outer = add_worktree(clone, "outer")
     nested = outer / "scratch"
     nested.mkdir()
-    _git(["init", "-q"], nested)
+    git(["init", "-q"], nested)
 
     plan = _plan(clone, outer)
 
