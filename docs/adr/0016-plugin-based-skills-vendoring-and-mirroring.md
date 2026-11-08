@@ -26,4 +26,4 @@ AI coding agents (Google Antigravity, Claude Code, OpenAI Codex, OpenCode) requi
 - Completely vendor/author agnostic CLI interface.
 
 ## References
-- [`src/shared_utilities/devenv/steps/ai_tools/skills.py`](../../src/rig/devenv/steps/ai_tools/skills.py)
+- `src/shared_utilities/devenv/steps/ai_tools/skills.py` (since removed)

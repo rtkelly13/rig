@@ -195,7 +195,7 @@ flickering as the closes move between windows.
 
 The scheduled `organise --unattended` run (see [Organise](#organise)) belongs to
 `desktop-manager jobs install`: its Tick task runs it, as you, only while you are
-logged on, never overlapping (see [desktop-manager/jobs.md](desktop-manager/jobs.md)).
+logged on, never overlapping (see [jobs.md](jobs.md)).
 The output goes to `organise.log` in `%LOCALAPPDATA%\shared-utilities\chrome-tabs`,
 rotated at 1 MB.
 
