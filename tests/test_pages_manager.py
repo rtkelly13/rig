@@ -70,6 +70,18 @@ def test_align_pages_dry_run_when_disabled():
     assert api.writes == []
 
 
+def test_align_pages_without_a_cname_leaves_the_custom_domain_alone():
+    """A null cname would remove a live site's domain, so an HTTPS-only policy omits the field."""
+    api = FakeGitHubApi()
+    policy = PagesPolicy(enabled=True, build_type="workflow", https_enforced=True)
+
+    res = align_pages(REPO, policy, dry_run=True, api=api)
+
+    assert "PUT repos/rtkelly13/docs/pages" in res.actions[1]
+    assert '"https_enforced":true' in res.actions[1]
+    assert "cname" not in res.actions[1]
+
+
 def test_align_pages_enables_then_configures_and_is_then_aligned():
     api = FakeGitHubApi()
 

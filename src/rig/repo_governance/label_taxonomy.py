@@ -71,12 +71,24 @@ class _NewLabel:
     description: str
 
 
+#: GitHub's largest page for the labels endpoint.
+_PAGE_SIZE = 100
+
+
 def read_repo_labels(api: GitHubApi, repo_name: str) -> dict[str, RepoLabel]:
     """Every label on *repo_name*; raises :class:`GitHubReadError` when they cannot be read.
 
-    The taxonomy is a dozen labels, so one page of 100 holds every label a governed repo carries.
+    Pages are read until a short one: labels outside the taxonomy are kept, so a repo can carry
+    more than one page, and a governed label on a later page must not read as missing.
     """
-    labels = read_json(api, list[_GhLabel], f"repos/{repo_name}/labels?per_page=100")
+    route = f"repos/{repo_name}/labels?per_page={_PAGE_SIZE}"
+    labels = read_json(api, list[_GhLabel], route)
+    page = labels
+    number = 1
+    while len(page) == _PAGE_SIZE:
+        number += 1
+        page = read_json(api, list[_GhLabel], f"{route}&page={number}")
+        labels.extend(page)
     return {
         label.name: RepoLabel(color=(label.color or "").lower(), description=label.description or "")
         for label in labels

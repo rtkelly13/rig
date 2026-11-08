@@ -68,7 +68,14 @@ class _EnablePages:
 
 @dataclass(frozen=True, slots=True)
 class _ConfigurePages:
-    cname: str | None
+    cname: str
+    https_enforced: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _EnforceHttps:
+    """A configure body with no `cname`: GitHub reads `"cname": null` as removing the custom domain."""
+
     https_enforced: bool
 
 
@@ -150,9 +157,11 @@ def _pages_writes(repo_name: str, policy: PagesPolicy, enabled: bool) -> list[Ap
     writes: list[ApiRequest] = []
     if not enabled:
         writes.append(ApiRequest("POST", route, encode_json(_EnablePages, _EnablePages(policy.build_type))))
-    if policy.cname or policy.https_enforced:
+    if policy.cname:
         body = _ConfigurePages(cname=policy.cname, https_enforced=policy.https_enforced)
         writes.append(ApiRequest("PUT", route, encode_json(_ConfigurePages, body)))
+    elif policy.https_enforced:
+        writes.append(ApiRequest("PUT", route, encode_json(_EnforceHttps, _EnforceHttps(https_enforced=True))))
     return writes
 
 

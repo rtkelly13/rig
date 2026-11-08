@@ -11,7 +11,7 @@ from rig.proc import ApiRequest, GitHubApi
 from rig.repo_governance.align_repo_conventions import app
 from rig.repo_governance.cli_plan import PlanContext
 from rig.repo_governance.github_rulesets import RULESET_NAME, RepoSettings, build_ruleset_payload, desired_settings
-from rig.repo_governance.label_taxonomy import RepoLabel, label_differences
+from rig.repo_governance.label_taxonomy import RepoLabel, label_differences, read_repo_labels
 from rig.repo_governance.pages_manager import pages_drift, read_pages
 from rig.repo_governance.policy_config import LabelSpec, PagesPolicy, PolicyConfig
 from rig.repo_governance.resource import RepoPlan
@@ -374,3 +374,17 @@ def test_apply_is_idempotent_a_second_plan_is_empty(tmp_path: pathlib.Path) -> N
     assert code == 0
     assert _plans(out) == [RepoPlan(SLUG)]
     assert len(api.writes) == written
+
+
+def test_labels_are_read_past_the_first_page() -> None:
+    """A governed label on page two is current, not missing, so the plan does not try to create it."""
+    first = [{"name": f"extra {n}", "color": "ffffff", "description": ""} for n in range(100)]
+    second = [{"name": "type: bug", "color": "d73a4a", "description": "Something is broken"}]
+    api = FakeGitHubApi(
+        {f"repos/{SLUG}/labels?per_page=100": first, f"repos/{SLUG}/labels?per_page=100&page=2": second}
+    )
+
+    labels = read_repo_labels(api, SLUG)
+
+    assert len(labels) == 101
+    assert labels["type: bug"] == RepoLabel(color="d73a4a", description="Something is broken")
