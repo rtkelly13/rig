@@ -32,7 +32,7 @@ left out of the project registry so no routine command can route to it.
 
 Explorers that nothing scores — no promote gate, pathway or test compares them against a
 reference — do not ship in the package. The rhombille hexagon and interlocking-columns marks
-live in [`experiments/logo-explorers/`](../experiments/logo-explorers/README.md).
+live in [`experiments/logo-explorers/`](../../experiments/logo-explorers/README.md).
 
 ### Layout
 

@@ -104,6 +104,30 @@ def test_readme_makes_a_directory_self_indexing(tmp_path: pathlib.Path) -> None:
     assert [f.check for f in result.findings if f.check == "docs-orphan"] == []
 
 
+def test_index_md_makes_a_directory_self_indexing(tmp_path: pathlib.Path) -> None:
+    """`index.md` indexes a folder as `README.md` does, so neither it nor its pages are orphans."""
+    site = tmp_path / "docs" / "site"
+    site.mkdir(parents=True)
+    (site / "index.md").write_text("# index\n", encoding="utf-8")
+    (site / "page.md").write_text("# page\n", encoding="utf-8")
+    result = audit_repo(_repo(tmp_path), AgentsMdRules(claude_md="any"))
+    assert [f.path for f in result.findings if f.check == "docs-orphan"] == []
+
+
+def test_a_nul_link_is_a_dead_pointer_not_a_crash(tmp_path: pathlib.Path) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "README.md").write_text("See [bad](./bad%00.md).\n", encoding="utf-8")
+    repo = _repo(tmp_path, GOOD_ROOT + "\nSee [docs](./docs/README.md).\n")
+    result = audit_repo(repo, AgentsMdRules(claude_md="any"))
+    assert [f.path for f in result.findings if f.check == "pointer-integrity"] == ["docs/README.md"]
+
+
+def test_path_liveness_ignores_home_paths(tmp_path: pathlib.Path) -> None:
+    """`~/...` is per machine, outside the repo, so it is never checked against it."""
+    assert check_path_liveness(tmp_path, "Set it in `~/.workspace/config.json`.\n") == []
+
+
 def test_claude_md_copy_is_flagged_but_symlink_is_not(tmp_path: pathlib.Path) -> None:
     repo = _repo(tmp_path)
     copy = repo / "CLAUDE.md"
@@ -335,3 +359,22 @@ def test_long_code_block_in_docs_is_reported_but_diagrams_are_not(tmp_path: path
     blocks = [f for f in result.findings if f.check == "docs-code-block"]
     assert [f.path for f in blocks] == ["docs/long.md"]
     assert "25-line code block at line 3" in blocks[0].message
+
+
+def test_docs_site_hub_index_md_serves_its_subfolders(tmp_path: pathlib.Path) -> None:
+    """A docs-site `docs/index.md` linking every page needs no README in each folder."""
+    repo = _repo(tmp_path, GOOD_ROOT + "\nSee [docs](./docs/index.md).\n")
+    _write(repo / "docs" / "index.md", "# hub\n\n- [a](guides/a.md)\n- [b](guides/b.md)\n- [c](reference/c.md)\n")
+    for rel in ("guides/a.md", "guides/b.md", "reference/c.md", "reference/d.md"):
+        _write(repo / "docs" / rel)
+    result = audit_repo(repo, AgentsMdRules(claude_md="any", docs_index_min_files=3))
+    assert [f.path for f in result.findings if f.check == "docs-index"] == []
+    # reference/d.md is linked from no index on its path, so its folder still needs one.
+    assert [f.path for f in result.findings if f.check == "folder-index"] == ["docs/reference/README.md"]
+
+
+def test_percent_encoded_link_resolves(tmp_path: pathlib.Path) -> None:
+    repo = _repo(tmp_path, GOOD_ROOT + "\nSee [index](./docs/Repo%20Docs%20Index.md).\n")
+    _write(repo / "docs" / "Repo Docs Index.md")
+    result = audit_repo(repo, AgentsMdRules(claude_md="any"))
+    assert [f for f in result.findings if f.check == "pointer-integrity"] == []

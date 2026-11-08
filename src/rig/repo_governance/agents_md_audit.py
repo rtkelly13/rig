@@ -19,6 +19,7 @@ import pathlib
 import re
 from collections.abc import Iterable, Sequence
 from enum import StrEnum
+from urllib.parse import unquote
 
 from pydantic import BaseModel, Field
 
@@ -273,7 +274,16 @@ def _relative_targets(text: str) -> Iterable[str]:
         target = match.group(1).split("#", 1)[0].strip()
         if not target or target.startswith(("http://", "https://", "mailto:", "#")):
             continue
-        yield target
+        # Markdown links percent-encode spaces (`Repo%20Docs%20Index.md`); the file on disk does not.
+        yield unquote(target)
+
+
+def _resolve(base: pathlib.Path, target: str) -> pathlib.Path | None:
+    """Resolve a link target under `base`; None when it cannot name a file (a decoded `%00`)."""
+    try:
+        return (base / target).resolve()
+    except (ValueError, OSError):
+        return None
 
 
 def check_pointers(repo_path: pathlib.Path, docs: Sequence[pathlib.Path]) -> list[Finding]:
@@ -290,7 +300,8 @@ def check_pointers(repo_path: pathlib.Path, docs: Sequence[pathlib.Path]) -> lis
             continue
         rel = doc.relative_to(repo_path).as_posix()
         for target in _relative_targets(text):
-            if not (doc.parent / target).resolve().exists():
+            resolved = _resolve(doc.parent, target)
+            if resolved is None or not resolved.exists():
                 out.append(
                     Finding(
                         check="pointer-integrity",
@@ -316,8 +327,8 @@ def check_docs_orphans(repo_path: pathlib.Path, docs: Sequence[pathlib.Path]) ->
         except OSError:
             continue
         for target in _relative_targets(text):
-            resolved = (doc.parent / target).resolve()
-            if resolved.exists():
+            resolved = _resolve(doc.parent, target)
+            if resolved is not None and resolved.exists():
                 linked.add(resolved)
 
     out: list[Finding] = []
@@ -325,7 +336,7 @@ def check_docs_orphans(repo_path: pathlib.Path, docs: Sequence[pathlib.Path]) ->
         if doc.name == AGENTS_FILENAME or doc.resolve() in linked:
             continue
         # A folder index that fails to link this doc is reported by `folder-index` instead.
-        if doc.name.upper() == "README.MD" or (doc.parent / "README.md").is_file():
+        if _is_index(doc) or _folder_index(doc.parent) is not None:
             continue
         out.append(
             Finding(
@@ -403,7 +414,8 @@ def _looks_like_path(candidate: str) -> bool:
     `.test.ts` and bare filenames read as paths, which is how a naive version of
     this check produced ten false positives out of fourteen.
     """
-    if "/" not in candidate or candidate.startswith(("/", "http", "@", "-")):
+    # `~/...` lives in a home directory, not the repo, so it can never be checked from here.
+    if "/" not in candidate or candidate.startswith(("/", "~", "http", "@", "-")):
         return False
     if any(ch in candidate for ch in " *<>|$(){}"):
         return False
@@ -496,10 +508,23 @@ def collect_metrics(text: str) -> dict[str, int]:
 # ---------------------------------------------------------------------------
 
 
+#: A folder's index: `README.md`, or `index.md` as docs-site generators name it.
+_INDEX_NAMES = ("README.md", "index.md")
+
+
+def _folder_index(folder: pathlib.Path) -> pathlib.Path | None:
+    return next((folder / name for name in _INDEX_NAMES if (folder / name).is_file()), None)
+
+
+def _is_index(path: pathlib.Path) -> bool:
+    # Exact names, as `_folder_index` finds them: on a case-sensitive filesystem `Index.md` is a page.
+    return path.name in _INDEX_NAMES
+
+
 def _linked_from(index: pathlib.Path) -> set[pathlib.Path]:
     """Resolved targets of an index's relative links; a link to `dir/README.md` also counts as `dir`.
 
-    A folder with no README of its own (`superpowers/` holding only `plans/`) is a pass-through, so a
+    A folder with no index of its own (`superpowers/` holding only `plans/`) is a pass-through, so a
     link to anything beneath it counts for it too.
     """
     try:
@@ -509,14 +534,16 @@ def _linked_from(index: pathlib.Path) -> set[pathlib.Path]:
     base = index.parent.resolve()
     linked: set[pathlib.Path] = set()
     for target in _relative_targets(text):
-        resolved = (index.parent / target).resolve()
+        resolved = _resolve(index.parent, target)
+        if resolved is None:
+            continue
         linked.add(resolved)
         start = resolved.parent
-        if resolved.name.upper() == "README.MD":
+        if _is_index(resolved):
             linked.add(start)
             start = start.parent
         for ancestor in (start, *start.parents):
-            if ancestor == base or not ancestor.is_relative_to(base) or (ancestor / "README.md").is_file():
+            if ancestor == base or not ancestor.is_relative_to(base) or _folder_index(ancestor):
                 break
             linked.add(ancestor)
     return linked
@@ -524,13 +551,13 @@ def _linked_from(index: pathlib.Path) -> set[pathlib.Path]:
 
 def _index_entries(folder: pathlib.Path) -> list[pathlib.Path]:
     """What a folder's index should link: its other markdown files and the subfolders holding any."""
-    entries = [p for p in folder.glob("*.md") if p.is_file() and p.name.upper() != "README.MD"]
+    entries = [p for p in folder.glob("*.md") if p.is_file() and not _is_index(p)]
     entries.extend(d for d in folder.iterdir() if d.is_dir() and any(d.rglob("*.md")))
     return sorted(entries)
 
 
 def check_docs_index(repo_path: pathlib.Path, rules: AgentsMdRules) -> list[Finding]:
-    """Require `docs/README.md` to index the top level of a docs tree past a minimum size.
+    """Require a docs index (`docs/README.md` or `docs/index.md`) past a minimum tree size.
 
     The second hop of progressive disclosure: `AGENTS.md` points at the index, the index points at
     one folder or doc per subject. Without it the root file has to list every doc itself, which is
@@ -539,8 +566,8 @@ def check_docs_index(repo_path: pathlib.Path, rules: AgentsMdRules) -> list[Find
     docs_dir = repo_path / "docs"
     if not docs_dir.is_dir() or sum(1 for _ in docs_dir.rglob("*.md")) < rules.docs_index_min_files:
         return []
-    index = docs_dir / "README.md"
-    if not index.is_file():
+    index = _folder_index(docs_dir)
+    if index is None:
         return [
             Finding(
                 check="docs-index",
@@ -555,7 +582,7 @@ def check_docs_index(repo_path: pathlib.Path, rules: AgentsMdRules) -> list[Find
             check="docs-index",
             severity=Severity.WARN,
             path=entry.relative_to(repo_path).as_posix(),
-            message="Not linked from docs/README.md, so an agent reading the index won't find it.",
+            message=f"Not linked from docs/{index.name}, so an agent reading the index won't find it.",
         )
         for entry in _index_entries(docs_dir)
         if entry.resolve() not in linked
@@ -563,10 +590,12 @@ def check_docs_index(repo_path: pathlib.Path, rules: AgentsMdRules) -> list[Find
 
 
 def check_folder_index(repo_path: pathlib.Path) -> list[Finding]:
-    """Require every folder under `docs/` to carry a `README.md` that links what it holds.
+    """Require every file under `docs/` to be linked from an index on its path.
 
-    A folder is a subject. Its README is where an agent decides which file in it to load, so a file
-    the README does not name is unreachable however close it sits.
+    A folder is a subject, and its index is where an agent decides which file in it to load. One
+    index higher up can serve several folders (a docs-site hub linking every page), so a file counts
+    as reachable when its own folder's index or any index above it links it. A folder needs its own
+    index only when something in it is linked from none of them.
     """
     docs_dir = repo_path / "docs"
     if not docs_dir.is_dir():
@@ -574,8 +603,17 @@ def check_folder_index(repo_path: pathlib.Path) -> list[Finding]:
     out: list[Finding] = []
     for folder in sorted(d for d in docs_dir.rglob("*") if d.is_dir() and any(d.glob("*.md"))):
         rel = folder.relative_to(repo_path).as_posix()
-        index = folder / "README.md"
-        if not index.is_file():
+        on_path = [folder, *(a for a in folder.parents if a.is_relative_to(docs_dir))]
+        linked: set[pathlib.Path] = set()
+        for level in on_path:
+            level_index = _folder_index(level)
+            if level_index is not None:
+                linked |= _linked_from(level_index)
+        missing = [entry for entry in _index_entries(folder) if entry.resolve() not in linked]
+        if not missing:
+            continue
+        own = _folder_index(folder)
+        if own is None:
             out.append(
                 Finding(
                     check="folder-index",
@@ -585,16 +623,14 @@ def check_folder_index(repo_path: pathlib.Path) -> list[Finding]:
                 )
             )
             continue
-        linked = _linked_from(index)
         out.extend(
             Finding(
                 check="folder-index",
                 severity=Severity.WARN,
                 path=entry.relative_to(repo_path).as_posix(),
-                message=f"Not linked from {rel}/README.md.",
+                message=f"Not linked from {rel}/{own.name}.",
             )
-            for entry in _index_entries(folder)
-            if entry.resolve() not in linked
+            for entry in missing
         )
     return out
 

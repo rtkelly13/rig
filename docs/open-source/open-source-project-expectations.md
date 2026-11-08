@@ -227,7 +227,7 @@ Every other job is listed in the aggregate's `needs:`, and the aggregate runs wi
   Unable to resolve action ... unable to find version
   ```
 - **Automated Gate Integrity**: Gate integrity tests (e.g. `CiGateIntegrityTests.cs` in `Parquet.SourceGenerator` or `check-governance.mjs` in `design-system`) fail CI if any action uses an unpinned tag or lacks a version comment.
-- **Tooling**: `pinact` for the first pin, Dependabot's `github-actions` ecosystem to keep pins current, and `zizmor --offline` in CI to refuse an unpinned ref. See [repo-governance/action-pinning.md](repo-governance/action-pinning.md).
+- **Tooling**: `pinact` for the first pin, Dependabot's `github-actions` ecosystem to keep pins current, and `zizmor --offline` in CI to refuse an unpinned ref. See [repo-governance/action-pinning.md](../repo-governance/action-pinning.md).
 
 ### Runner Ceilings (`timeout-minutes`)
 To protect against deadlocks, hanging child processes, or unclosed browser sessions from consuming organization runner minutes:
