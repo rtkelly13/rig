@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from rig import proc, tracing
+from rig.estate.prs import merged_pr
 
 DEFAULT_STALE_AFTER = dt.timedelta(days=14)
 
@@ -384,8 +385,9 @@ def check_worktrees(
                 )
             )
 
-        if not tree.is_main and not tree.unborn and tree.branch and (merged_heads or {}).get(tree.branch) is not None:
-            pr = (merged_heads or {})[tree.branch]
+        carries_branch = bool(tree.branch) and not tree.is_main and not tree.unborn
+        pr = merged_pr(repo, tree.branch, merged_heads) if carries_branch else None
+        if pr is not None:
             findings.append(
                 Finding(
                     check="worktree-merged",

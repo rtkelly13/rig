@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import json
 import pathlib
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -250,3 +250,21 @@ def merged_heads(repo: pathlib.Path, *, limit: int = DEFAULT_LIMIT, runner: GhRu
         heads = {head: pull.number for head, pull in pr_heads(repo, limit=limit, runner=runner).items() if pull.merged}
         s.set(**{"estate.merged_heads": len(heads)})
     return heads
+
+
+def merged_pr(repo: pathlib.Path, branch: str, merged_heads: Mapping[str, int] | None) -> int | None:
+    """The merged PR for *branch*: by its own name, else by the origin branch it pushes to.
+
+    GitHub knows a PR by its head ref, which is the *remote* branch name. A local branch pushed
+    under another name (`git push -u origin local:remote`) only matches through its upstream.
+    The upstream comes from config, so it still resolves after the remote branch is deleted.
+    """
+    if merged_heads is None:
+        return None
+    if (pr := merged_heads.get(branch)) is not None:
+        return pr
+    fmt = "%(upstream:remotename)\t%(upstream:remoteref)"
+    remote, _, ref = proc.git_out("for-each-ref", f"--format={fmt}", f"refs/heads/{branch}", cwd=repo).partition("\t")
+    if remote != "origin" or not ref.startswith("refs/heads/"):
+        return None
+    return merged_heads.get(ref.removeprefix("refs/heads/"))

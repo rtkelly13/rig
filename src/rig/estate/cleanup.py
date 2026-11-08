@@ -44,6 +44,7 @@ from rig.estate.checks import (
     orphaned_count,
     own_worktrees_dir,
 )
+from rig.estate.prs import merged_pr
 from rig.estate.trim import LONG_PATHS, remove_tree
 
 BRANCH_CHECKS = ("branch-upstream-gone", "branch-merged")
@@ -173,7 +174,7 @@ def _clean_branch(
 
     authority = "no commits outside a remote"
     if orphaned:
-        pr = (merged_heads or {}).get(branch)
+        pr = merged_pr(repo, branch, merged_heads)
         if pr is None:
             detail = f"{orphaned} commit(s) on no remote"
             if merged_heads is None:
@@ -247,7 +248,7 @@ def _clean_worktree(
     orphaned = 0 if force else orphaned_count(path)
     if orphaned:
         branch = tree.branch if tree is not None else ""
-        pr = (merged_heads or {}).get(branch)
+        pr = merged_pr(repo, branch, merged_heads) if branch else None
         if pr is None:
             detail = f"{orphaned} commit(s) on no remote"
             if merged_heads is None:

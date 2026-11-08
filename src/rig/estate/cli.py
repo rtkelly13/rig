@@ -392,6 +392,18 @@ def trim(
     console.print(f"\n[bold]{'Freed' if apply else 'Would free'} {human(freed)}[/bold]")
 
 
+def _merged_heads(clone: pathlib.Path) -> dict[str, int]:
+    """GitHub's merged head refs, after a pruning fetch.
+
+    `--merged` is already a network call, and without the prune a remote branch deleted on merge
+    still shows as tracked, so `branch-upstream-gone` never fires for it. Same fetch as `sync`.
+    """
+    from rig.estate.prs import merged_heads
+
+    _ = proc.git("fetch", "--prune", "--quiet", cwd=clone, timeout=120)
+    return merged_heads(clone)
+
+
 @app.command()
 def tidy(
     root: str | None = typer.Option(None, "--root", help="Code root to scan"),
@@ -407,7 +419,9 @@ def tidy(
     ),
     refresh: bool = typer.Option(False, "--refresh", help="Rescan rather than using the cached list"),
     merged: bool = typer.Option(
-        False, "--merged", help="Ask GitHub which head refs have a merged PR (one call per clone)"
+        False,
+        "--merged",
+        help="Fetch --prune, then ask GitHub which head refs have a merged PR (one call per clone)",
     ),
     only_checks: list[str] | None = typer.Option(
         None,
@@ -462,11 +476,7 @@ def tidy(
     counts: dict[str, int] = {}
     for clone in clones:
         with tracing.span("estate.tidy.clone", scope="rig.estate", **{"estate.clone": str(clone)}) as clone_span:
-            heads: dict[str, int] | None = None
-            if merged:
-                from rig.estate.prs import merged_heads
-
-                heads = merged_heads(clone)
+            heads = _merged_heads(clone) if merged else None
             report = inspect_repo(clone, merged_heads=heads)
             clone_span.set(**{"estate.actionable": len(report.actionable)})
             actions = (
@@ -502,7 +512,9 @@ def tidy(
 def doctor(
     path: str | None = typer.Argument(None, help="Clone to inspect (default: the one containing the cwd)"),
     json_output: bool = typer.Option(False, "--json", help="Emit findings for a machine"),
-    merged: bool = typer.Option(False, "--merged", help="Ask GitHub which head refs have a merged PR"),
+    merged: bool = typer.Option(
+        False, "--merged", help="Fetch --prune, then ask GitHub which head refs have a merged PR"
+    ),
 ) -> None:
     """One clone, every finding, each with the command that resolves it."""
     clone = locate.one_clone(path)
@@ -510,11 +522,7 @@ def doctor(
         err.print(f"[bold red]{clone} is not a git checkout.[/bold red]")
         raise typer.Exit(code=2)
 
-    heads = None
-    if merged:
-        from rig.estate.prs import merged_heads
-
-        heads = merged_heads(clone)
+    heads = _merged_heads(clone) if merged else None
     report = inspect_repo(clone, merged_heads=heads)
     exposure = risk_mod.inspect_exposure(clone, per_branch=True)
     disk = reclaim_mod.scan_repo(clone)

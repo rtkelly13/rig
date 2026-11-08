@@ -296,6 +296,43 @@ def test_a_branch_holding_local_only_commits_is_never_deleted(repo: pathlib.Path
     assert "work" in branches
 
 
+def _push_as(repo: pathlib.Path, local: str, remote_branch: str, *, remote: str = "origin") -> None:
+    """Commit on *local*, push it as *remote_branch*, then delete that remote branch, as a merge does."""
+    _git(["checkout", "-q", "-b", local], repo)
+    (repo / "new.txt").write_text("landed by squash\n", encoding="utf-8")
+    _git(["add", "."], repo)
+    _git(["commit", "-qm", "work"], repo)
+    _git(["push", "-q", "-u", remote, f"{local}:{remote_branch}"], repo)
+    _git(["checkout", "-q", "main"], repo)
+    _git(["push", "-q", remote, "--delete", remote_branch], repo)
+    _git(["fetch", "-q", "--prune", remote], repo)
+
+
+def test_a_branch_pushed_under_another_name_matches_its_merged_pr(repo: pathlib.Path) -> None:
+    """GitHub knows the PR by the remote branch name; the local name differs after a port or rename."""
+    _push_as(repo, "port/work", "30-work")
+
+    actions = clean_repo(inspect_repo(repo, merged_heads={"30-work": 68}), apply=False, merged_heads={"30-work": 68})
+
+    verdict = next(a for a in actions if a.subject == "port/work")
+    assert verdict.outcome is Outcome.WOULD_CLEAN
+    assert verdict.detail.startswith("squash-merged in #68")
+
+
+def test_an_upstream_on_another_remote_never_matches_origins_prs(repo: pathlib.Path, tmp_path: pathlib.Path) -> None:
+    """The merged-PR list is origin's; a same-named branch on another remote proves nothing."""
+    other = tmp_path / "other.git"
+    _git(["init", "-q", "--bare", "-b", "main", str(other)], tmp_path)
+    _git(["remote", "add", "other", str(other)], repo)
+    _push_as(repo, "port/work", "30-work", remote="other")
+
+    actions = clean_repo(inspect_repo(repo, merged_heads={"30-work": 68}), apply=True, merged_heads={"30-work": 68})
+
+    verdict = next(a for a in actions if a.subject == "port/work")
+    assert verdict.outcome is Outcome.REFUSED
+    assert "on no remote" in verdict.detail
+
+
 def test_dry_run_removes_nothing(repo: pathlib.Path) -> None:
     (repo / ".gitignore").write_text("temp/\n", encoding="utf-8")
     _git(["add", "."], repo)
