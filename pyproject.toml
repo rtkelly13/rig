@@ -274,7 +274,6 @@ ignore = [
 "src/rig/estate/orca.py" = ["TID251"]
 "src/rig/estate/trim.py" = ["TID251"]
 "src/rig/estate/volume.py" = ["TID251"]
-"src/rig/image_drift/server.py" = ["TID251"]
 "src/rig/image_drift/simplifier/syntactic.py" = ["TID251"]
 "src/rig/obsidian/cli.py" = ["TID251"]
 "src/rig/obsidian/orphan_manager.py" = ["TID251"]

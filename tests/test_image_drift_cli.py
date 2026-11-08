@@ -85,7 +85,7 @@ def test_gallery_renders_self_contained_html(template: str) -> None:
     assert "<link" not in html
     assert "<script" not in html
     # CSS is inlined from gallery.css rather than linked.
-    assert "--color-ink" in html  # Tailwind @theme token
+    assert "--ds-surface-base" in html  # design-system token
 
 
 def test_choose_gallery_renders_candidate_records() -> None:

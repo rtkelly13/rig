@@ -97,9 +97,9 @@ jobs:
         run: uv run lint-imports
       - name: Bandit Security Scan
         run: uv run bandit -r src/ -ll
-      # The preview gallery's CSS is Tailwind output that has to be committed,
-      # because the Python CLI inlines it and must work without Node. Verify the
-      # committed copy still matches the source rather than trusting it.
+      # The web assets (SPA bundle, every Tailwind stylesheet) are committed,
+      # because the Python CLI and server must work without Node. Verify the
+      # committed copies still match their sources rather than trusting them.
       - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -109,12 +109,10 @@ jobs:
       # the root Tailwind build and infra/vercel.
       - name: Install Node toolchains
         run: pnpm install --frozen-lockfile
-      - name: Verify compiled gallery.css is current
-        run: pnpm css:check
       - name: Typecheck rig SPA
         run: pnpm web:typecheck
-      - name: Verify committed SPA assets
-        run: pnpm web:check
+      - name: Verify committed web assets are current
+        run: pnpm css:check
       # The Pulumi program is TypeScript in a Python-first repo, so nothing else
       # in this pipeline would ever compile it. Without this it rots silently
       # until someone runs `pulumi up` against live domains and finds out then.

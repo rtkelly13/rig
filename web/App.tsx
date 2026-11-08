@@ -64,7 +64,7 @@ function App() {
       /* Storage may be disabled. */
     }
   }, [collapsed]);
-  const legacy = ['studio', 'optical', 'operations'].includes(route.page);
+  const legacy = ['studio', 'operations'].includes(route.page);
   useEffect(() => {
     const abort = new AbortController();
     void fetch('/api/status', { signal: abort.signal })
@@ -120,7 +120,7 @@ function App() {
     ? 'Operations'
     : route.page === 'estate' || route.page === 'operations'
       ? 'Estate'
-      : route.page === 'studio' || route.page === 'optical' || route.page === 'references'
+      : route.page === 'studio' || route.page === 'references'
         ? 'Design library'
         : 'Triage';
   const count = (view: Parameters<typeof inView>[1]) =>
@@ -251,7 +251,7 @@ function App() {
                   </span>
                   <a
                     href="/triage/inbox"
-                    className="mt-1 flex items-center gap-1.5 text-[11px] text-content-secondary no-underline hover:text-content-primary [&_svg]:size-3"
+                    className="mt-1 flex items-center gap-1.5 text-caption text-content-secondary no-underline hover:text-content-primary [&_svg]:size-3"
                     onClick={(event) => {
                       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                       event.preventDefault();
@@ -315,8 +315,6 @@ function App() {
             </>
           ) : route.page === 'studio' ? (
             sidebarNav('/studio', 'Asset studio', 'grid', true)
-          ) : route.page === 'optical' ? (
-            sidebarNav('/optical', 'Optical studio', 'grid', true)
           ) : (
             sidebarNav('/triage/references', 'UI references', 'book', route.page === 'references')
           )}
@@ -365,7 +363,6 @@ function App() {
           {nav('/estate', 'Estate', 'grid', route.page === 'estate')}
           {nav('/estate/operations', 'Estate operations', 'clock', route.page === 'operations')}
           {nav('/studio', 'Asset studio', 'grid', route.page === 'studio')}
-          {nav('/optical', 'Optical studio', 'grid', route.page === 'optical')}
           {nav('/triage/references', 'UI references', 'book', route.page === 'references')}
           {/* The C4 viewer is its own page, served by the Python handler, so this is a full load. */}
           <a href="/c4/" aria-label="C4 architecture">

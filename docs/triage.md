@@ -48,7 +48,7 @@ PRs sort by case-insensitive priority labels (`P0` through `P3`, optionally pref
 
 ## UI and reference catalogue
 
-`web/` contains the React/TypeScript SPA. It uses published `@rtkelly-labs/design-system` 0.17.0 components (`Button`, `Badge`, `Input`, `TextArea`), semantic tokens, the Midnight/Sketch theme levels and self-hosted fonts. Existing studio JavaScript and Three.js load only when a studio/estate route is opened. This keeps the existing tools available without a second application or an iframe.
+`web/` contains the React/TypeScript SPA. It uses published `@rtkelly-labs/design-system` 0.17.0 components (`Button`, `Badge`, `Input`, `TextArea`), semantic tokens, the Midnight/Sketch theme levels and self-hosted fonts. Existing studio JavaScript loads only when a studio or estate operations route is opened. This keeps the existing tools available without a second application or an iframe.
 
 The header’s **Tools** launcher opens an accessible modal for estate, studios and the reference library. Navigation defaults to a 64px icon rail with design-system hover/focus tooltips; a saved expanded preference is respected. The bounded queue defaults to 300–360px. Search stays visible beside a **Filters** button; repository, readiness and unread choices open in a design-system popover. Repository and readiness use the design-system Select listboxes, with themed options and nested Escape/focus handling. A single summary line shows the item count and applied filters, with a clear action. The closed header uses about 84px of height; ordering and refresh details are available inside the popover. At 1440px, the PR workspace is 1048px wide and begins at y=104px. Drag the divider to resize it, use Left/Right (20px steps), Home/End (260px/560px), or double-click to restore the responsive default. Pixel widths are saved separately from the older percentage preference.
 
@@ -61,11 +61,11 @@ The catalogue records nine interface references across Gmail, GitHub, Graphite, 
 ```bash
 pnpm install --frozen-lockfile
 pnpm web:typecheck
-pnpm web:build
-pnpm web:check
+pnpm css:build
+pnpm css:check
 ```
 
-The compiled JS/CSS/fonts and their licenses are committed under `src/rig/image_drift/templates/app_assets/`, so the Python server does not need Node at runtime. `web:check` rebuilds into `temp/` and compares bytes. CI checks both TypeScript and committed assets. The gallery has its separate existing `pnpm css:build` pipeline.
+The compiled JS/CSS/fonts and their licenses are committed under `src/rig/image_drift/templates/app_assets/`, so the Python server does not need Node at runtime. `css:build` also compiles the gallery and C4 viewer stylesheets; `css:check` rebuilds every output into `temp/` and compares bytes. CI checks both TypeScript and committed assets.
 
 ## Repository scope and estate connectivity
 

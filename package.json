@@ -2,13 +2,10 @@
   "name": "rig-styles",
   "private": true,
   "type": "module",
-  "description": "Tailwind build for the image-drift preview gallery templates.",
+  "description": "Web assets for rig: the SPA bundle and every Tailwind stylesheet, built on @rtkelly-labs/design-system.",
   "scripts": {
-    "css:build": "tailwindcss -i styles/gallery.src.css -o src/rig/image_drift/templates/gallery.css --minify",
-    "css:watch": "tailwindcss -i styles/gallery.src.css -o src/rig/image_drift/templates/gallery.css --watch",
-    "css:check": "tailwindcss -i styles/gallery.src.css -o /tmp/gallery.check.css --minify && cmp -s /tmp/gallery.check.css src/rig/image_drift/templates/gallery.css && echo 'gallery.css is up to date' || (echo 'gallery.css is stale - run: pnpm css:build' && exit 1)",
-    "web:build": "node scripts/build-web.mjs",
-    "web:check": "node scripts/build-web.mjs --check",
+    "css:build": "node scripts/build-web.mjs",
+    "css:check": "node scripts/build-web.mjs --check",
     "web:typecheck": "tsc -p web/tsconfig.json"
   },
   "devDependencies": {

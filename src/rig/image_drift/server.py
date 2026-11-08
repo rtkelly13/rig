@@ -9,7 +9,6 @@ import mimetypes
 import tempfile
 import urllib.parse
 from collections.abc import Sequence
-from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import ClassVar, override
@@ -33,19 +32,13 @@ from rig.image_drift.server_models import (
     DriftResponse,
     EstateProjectResponse,
     EstateResponse,
-    Export3DRequest,
-    FeedbackRequest,
     HotspotResponse,
     MtimeResponse,
-    OpticalPresetResponseItem,
     OrcaBadgeConfig,
-    PresetsListResponse,
     ProductionCutResponse,
     ProjectBrandAssets,
-    ProjectQuery,
     ProjectsResponse,
     ReferenceResponse,
-    SavePresetRequest,
     SnapshotRequest,
     SnapshotStepResponse,
     StatusResponse,
@@ -68,7 +61,6 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
     assets_root: ClassVar[Path]
     variations_root: ClassVar[Path]
     templates_dir: ClassVar[Path]
-    feedback_file: ClassVar[Path]
     environment: ClassVar[str] = "PROD"
     is_preview: ClassVar[bool] = False
     server_port: ClassVar[int] = 8090
@@ -327,38 +319,7 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             )
             return
 
-        # 5e. REST API: /api/presets
-        if path == "/api/presets":
-            from rig.db.connection import get_db_connection
-            from rig.db.presets_repo import get_presets_for_project
-
-            query_obj = decode(ProjectQuery, urllib.parse.parse_qs(parsed_url.query))
-            proj = str(query_obj.project[0]) if query_obj.project else "rig"
-            conn = get_db_connection(self.env_db_path)
-            presets = get_presets_for_project(conn, proj)
-            conn.close()
-            self._send_json(
-                PresetsListResponse(
-                    presets=[
-                        OpticalPresetResponseItem(
-                            id=p.id,
-                            name=p.name,
-                            project=p.project,
-                            ior=p.ior,
-                            dispersion=p.dispersion,
-                            roughness=p.roughness,
-                            thickness=p.thickness,
-                            distortion=p.distortion,
-                            caustic_color=p.caustic_color,
-                            created_at=p.created_at,
-                        )
-                        for p in presets
-                    ]
-                ).model_dump(mode="json")
-            )
-            return
-
-        # 5f. REST API: /api/dev/mtime (live reload polling)
+        # 5d. REST API: /api/dev/mtime (live reload polling)
         if path == "/api/dev/mtime":
             ts = self._compute_change_timestamps()
             self._send_json(
@@ -370,15 +331,7 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             )
             return
 
-        # 6. REST API: /api/project/<name>
-        if path.startswith("/api/project/"):
-            project_name = path[len("/api/project/") :]
-            indexer = AssetIndexer(assets_root=self.assets_root, variations_root=self.variations_root)
-            catalog = indexer.index_project(project_name)
-            self._send_json(self._serialize_catalog(catalog).model_dump(mode="json"))
-            return
-
-        # 7. REST API: /api/diff
+        # 6. REST API: /api/diff
         if path == "/api/diff":
             query = decode(DiffQuery, urllib.parse.parse_qs(parsed_url.query))
             ref_raw = query.ref[0] if query.ref else None
@@ -542,85 +495,7 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": f"Failed to capture snapshot: {exc}"}, status=500)
             return
 
-        # 2. Record human feedback for agent
-        if path == "/api/feedback":
-            try:
-                content_length = int(self.headers.get("Content-Length", 0))
-                body = self.rfile.read(content_length).decode("utf-8")
-                feedback = decode_json(FeedbackRequest, body)
-                project = feedback.project
-                reference = feedback.reference
-                candidate = feedback.candidate
-                region = feedback.region
-                issue = feedback.issue
-                verdict = feedback.verdict
-                notes = feedback.notes
-                prompt = feedback.prompt
-
-                now_utc = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
-
-                feedback_block = (
-                    f"\n## [{now_utc}] {project} // {region}\n"
-                    f"- **Verdict**: {verdict}\n"
-                    f"- **Reference**: `{reference}`\n"
-                    f"- **Candidate**: `{candidate}`\n"
-                    f"- **Focus Region**: {region}\n"
-                    f"- **Issue**: {issue}\n"
-                    f"- **Human Notes**: {notes}\n\n"
-                    f"### Actionable Prompt for Agent:\n"
-                    f"```\n{prompt}\n```\n\n---\n"
-                )
-
-                self.feedback_file.parent.mkdir(parents=True, exist_ok=True)
-                if not self.feedback_file.exists():
-                    header = (
-                        "# Asset Studio Agent Feedback Log\n\n"
-                        "> Captured from the local visual workbench. Use these instructions "
-                        "for iterative CAD / SVG vector refinements.\n\n"
-                    )
-                    self.feedback_file.write_text(header + feedback_block, encoding="utf-8")
-                else:
-                    with self.feedback_file.open("a", encoding="utf-8") as f:
-                        f.write(feedback_block)
-
-                self._send_json({"status": "ok", "path": str(self.feedback_file)})
-            except ValidationError as exc:
-                self._send_json({"error": f"Invalid feedback request: {exc}"}, status=400)
-            except Exception as exc:
-                logger.error("Feedback request failed", exc_info=True)
-                self._send_json({"error": f"Failed to record feedback: {exc}"}, status=500)
-            return
-
-        # 3. Export 3D render cut (logo or banner)
-        if path == "/api/export-3d-render":
-            try:
-                content_length = int(self.headers.get("Content-Length", 0))
-                body = self.rfile.read(content_length).decode("utf-8")
-                req = decode_json(Export3DRequest, body)
-                # Only an indexed project may be written to: the name is joined onto
-                # assets_root, so anything else (``..``, absolute paths) escapes it.
-                indexer = AssetIndexer(assets_root=self.assets_root, variations_root=self.variations_root)
-                if req.project not in indexer.list_projects():
-                    self._send_json({"error": f"Unknown project: {req.project!r}"}, status=400)
-                    return
-                raw_b64 = req.image_base64
-                if "," in raw_b64:
-                    raw_b64 = raw_b64.split(",", 1)[1]
-                img_bytes = base64.b64decode(raw_b64)
-
-                proj_dir = self._find_project_dir(req.project)
-                proj_dir.mkdir(parents=True, exist_ok=True)
-                filename = f"{req.project}-logo.png" if req.cut_type == "logo" else f"{req.project}-banner.png"
-                target_path = proj_dir / filename
-                target_path.write_bytes(img_bytes)
-
-                self._send_json({"status": "ok", "filename": filename, "path": str(target_path)})
-            except Exception as exc:
-                logger.error("Export 3D render failed", exc_info=True)
-                self._send_json({"error": f"Failed to export 3D render: {exc}"}, status=500)
-            return
-
-        # 5. On-demand SQLite database backup
+        # 2. On-demand SQLite database backup
         if path == "/api/db/backup":
             from rig.db.backup import backup_database
 
@@ -633,36 +508,6 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             except Exception as exc:
                 logger.error("DB backup failed", exc_info=True)
                 self._send_json({"error": f"Database backup failed: {exc}"}, status=500)
-            return
-
-        # 6. Save Optical Preset
-        if path == "/api/presets":
-            from rig.db.connection import get_db_connection
-            from rig.db.presets_repo import save_optical_preset
-
-            try:
-                content_len = int(self.headers.get("Content-Length", 0))
-                body = self.rfile.read(content_len).decode("utf-8")
-                preset_req = decode_json(SavePresetRequest, body)
-                conn = get_db_connection(self.env_db_path)
-                created_at = datetime.now(UTC).isoformat()
-                preset_id = save_optical_preset(
-                    conn=conn,
-                    name=preset_req.name,
-                    project=preset_req.project,
-                    ior=preset_req.ior,
-                    dispersion=preset_req.dispersion,
-                    roughness=preset_req.roughness,
-                    thickness=preset_req.thickness,
-                    distortion=preset_req.distortion,
-                    caustic_color=preset_req.caustic_color,
-                    created_at=created_at,
-                )
-                conn.close()
-                self._send_json({"status": "ok", "id": preset_id, "name": preset_req.name})
-            except Exception as exc:
-                logger.error("Failed to save optical preset", exc_info=True)
-                self._send_json({"error": f"Failed to save preset: {exc}"}, status=500)
             return
 
         self.send_error(404, f"Endpoint not found: {path}")
@@ -679,7 +524,6 @@ class StudioServer(ThreadingHTTPServer):
         assets_root: Path | None = None,
         variations_root: Path | None = None,
         templates_dir: Path | None = None,
-        feedback_file: Path | None = None,
         db_path: Path | None = None,
         routes: Sequence[Route] = (),
     ) -> None:
@@ -690,7 +534,6 @@ class StudioServer(ThreadingHTTPServer):
         self.assets_root: Path = assets_root or (pkg_root / "assets")
         self.variations_root: Path = variations_root or (pkg_root / "temp" / "variations")
         self.templates_dir: Path = templates_dir or (module_dir / "templates")
-        self.feedback_file: Path = feedback_file or (pkg_root / "temp" / "agent_feedback.md")
         self.is_preview: bool = is_preview
         self.environment: str = "PREVIEW" if is_preview else "PROD"
         self.server_port: int = port
@@ -708,7 +551,6 @@ class StudioServer(ThreadingHTTPServer):
         StudioRequestHandler.assets_root = self.assets_root
         StudioRequestHandler.variations_root = self.variations_root
         StudioRequestHandler.templates_dir = self.templates_dir
-        StudioRequestHandler.feedback_file = self.feedback_file
         StudioRequestHandler.environment = self.environment
         StudioRequestHandler.is_preview = self.is_preview
         StudioRequestHandler.server_port = self.server_port

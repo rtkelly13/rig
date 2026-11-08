@@ -1,20 +1,23 @@
 /* Tailwind source for the image-drift preview gallery.
  *
- * Build with `pnpm css:build`, which compiles to
- * src/rig/image_drift/templates/gallery.css. That output is
- * committed, because the Python CLI inlines it into a self-contained
- * preview.html and must work without Node installed.
+ * `pnpm css:build` compiles it to src/rig/image_drift/templates/gallery.css.
+ * That output is committed, because the Python CLI inlines it into a
+ * self-contained preview.html and must work without Node installed.
  *
- * Tailwind v4 is configured here in CSS rather than in a JS config file; there
- * is deliberately no tailwind.config.js.
+ * Every colour, type size, radius and shadow comes from
+ * @rtkelly-labs/design-system: no hand-written values here or in the templates
+ * (tests/test_design_tokens.py enforces it). A missing token is fixed upstream
+ * in rtkelly-labs/design-system, not patched in here.
  */
 
-/* `source(none)` disables automatic content detection, so the only input is the
- * @source below. Without it Tailwind scans the whole repo and any file that
- * happens to contain a class-like string adds rules to the output — which, for
- * a build artifact that is committed and checked byte-for-byte by `pnpm
- * css:check`, means an unrelated file elsewhere in the repo turns CI red. */
+/* `source(none)` disables automatic content detection, so the only inputs are
+ * the @source lines below. Without it Tailwind scans the whole repo and any
+ * file that happens to contain a class-like string adds rules to the output —
+ * which, for a build artifact that is committed and checked byte-for-byte by
+ * `pnpm css:check`, means an unrelated file elsewhere in the repo turns CI red. */
 @import "tailwindcss" source(none);
+@import "@rtkelly-labs/design-system/theme.css";
+@source "../node_modules/@rtkelly-labs/design-system/dist/**/*.js";
 
 /* Automatic content detection skips files it cannot classify, so point it at
  * the Jinja templates explicitly. Without this the utility classes used in the
@@ -32,81 +35,63 @@
  * edit. Naming the three classes is precise and cannot drift. */
 @source inline("badge-good badge-warn badge-bad");
 
-/* Brand tokens become real utilities: `bg-ink`, `text-accent`, `border-edge`. */
-@theme {
-  --color-ink: #0b0f17;
-  --color-panel: #161b26;
-  --color-edge: #232a3b;
-  --color-sunken: #0f1420;
-  --color-accent: #00f2fe;
-  --color-accent-deep: #00b4d8;
-  --color-magenta: #e040fb;
-  --color-magenta-deep: #b5179e;
-  --color-paper: #f0f6fc;
-  --color-muted: #94a3b8;
-  --color-faint: #64748b;
-  --color-good: #34d399;
-  --color-warn: #fbbf24;
-  --color-bad: #f87171;
-}
-
 /* Components. Each is used many times across the templates, so composing them
  * once here keeps the markup readable — utilities are used directly for
  * anything that appears once. */
 
 @utility panel {
-  @apply bg-panel border border-edge rounded-2xl;
+  @apply bg-surface-raised border border-edge-subtle rounded-2xl;
 }
 
 @utility card-shadow {
-  box-shadow: 0 8px 20px rgb(0 0 0 / 0.4);
+  @apply shadow-hard-md;
 }
 
 @utility section-title {
-  @apply w-full max-w-[1200px] mx-auto mt-9 mb-5 pb-2.5 text-center text-[1.4rem]
-         text-accent border-b border-edge;
+  @apply w-full max-w-300 mx-auto mt-9 mb-5 pb-2.5 text-center text-title
+         text-accent-primary border-b border-edge-subtle;
 }
 
 @utility badge {
-  @apply mt-3 px-3 py-1 rounded-lg text-[0.82rem] font-bold;
+  @apply mt-3 px-3 py-1 rounded-lg text-caption font-bold border;
 }
 
 @utility badge-good {
-  @apply badge text-good;
-  background: rgb(16 185 129 / 0.2);
-  border: 1px solid #10b981;
+  @apply badge text-intent-success bg-intent-success/20 border-intent-success;
 }
 
 @utility badge-warn {
-  @apply badge text-warn;
-  background: rgb(245 158 11 / 0.2);
-  border: 1px solid #f59e0b;
+  @apply badge text-intent-warning bg-intent-warning/20 border-intent-warning;
 }
 
 @utility badge-bad {
-  @apply badge text-bad;
-  background: rgb(239 68 68 / 0.2);
-  border: 1px solid #ef4444;
+  @apply badge text-intent-danger bg-intent-danger/20 border-intent-danger;
 }
 
 @utility badge-ref {
-  @apply badge text-[#e879f9];
-  background: rgb(224 64 251 / 0.18);
-  border: 1px solid var(--color-magenta);
+  @apply badge text-palette-bright-magenta bg-accent-tertiary/20 border-accent-tertiary;
 }
 
 /* Pill that overlaps a panel's top edge. */
 @utility ribbon {
-  @apply absolute -top-3 px-3 py-1 rounded-xl text-[0.72rem] font-bold uppercase tracking-wide;
+  @apply absolute -top-3 px-3 py-1 rounded-xl text-caption font-bold uppercase tracking-wide;
+}
+
+@utility pixelated {
+  image-rendering: pixelated;
 }
 
 @utility crop-tile {
-  @apply w-[110px] h-[110px] rounded-lg border-2 border-edge object-contain;
-  image-rendering: pixelated;
+  @apply size-27.5 rounded-lg border-2 border-edge-subtle object-contain pixelated;
+}
+
+/* As many 60-step (15rem) columns as fit, sharing what is left over. */
+@utility grid-cols-auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--spacing) * 60), 1fr));
 }
 
 /* Wide content must scroll inside its own container rather than making the page
  * scroll sideways. */
 @utility scroll-x {
-  @apply w-full max-w-[1300px] overflow-x-auto;
+  @apply w-full max-w-325 overflow-x-auto;
 }

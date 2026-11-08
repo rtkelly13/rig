@@ -11,13 +11,24 @@ the commands an agent runs every session.
 uv run status --ci                                      # CI-safe tests only (@pytest.mark.ci)
 uv run pytest -m ci                                     # the same subset, directly
 uv run pytest --cov=src --cov-report=term-missing       # coverage
-pnpm install && pnpm css:build                          # rebuild the gallery CSS
-pnpm css:check                                          # fails if the committed CSS is stale
+pnpm install && pnpm css:build                          # rebuild every committed web asset
+pnpm css:check                                          # fails if any committed output is stale
 ```
 
-The gallery CSS (Tailwind 4, CSS-first, so no `tailwind.config.js`) is compiled to
-`src/rig/image_drift/templates/gallery.css` and committed, because the Python CLI inlines it and
-must work without Node. Rebuild it after touching the templates or `styles/gallery.src.css`.
+Every stylesheet is Tailwind 4 (CSS-first, so no `tailwind.config.js`) built on
+`@rtkelly-labs/design-system`. Each entry imports the package's `theme.css`, and the outputs are
+committed because the Python CLI and server must work without Node:
+
+| Entry | Output |
+|---|---|
+| `web/app.src.css` | `src/rig/image_drift/templates/app_assets/app.css` (with the SPA bundle) |
+| `styles/gallery.src.css` | `src/rig/image_drift/templates/gallery.css`, inlined into preview pages |
+| `styles/c4.src.css` | `src/rig/c4_okf/static/c4.css` |
+
+Rebuild after touching a template, an entry or a design-system bump. Colours, type sizes and
+spacing come from design-system tokens only: `tests/test_design_tokens.py` fails on raw hex/`rgb()`
+or arbitrary-value classes (`text-[0.82rem]`) in the sources and templates. A missing token is
+added upstream in rtkelly-labs/design-system, not hard-coded here.
 
 ## Pytest Markers
 

@@ -16,10 +16,10 @@
 {% include "gallery.css" %}
   </style>
 </head>
-<body class="m-0 flex min-h-screen flex-col items-center bg-ink px-5 py-10 text-paper antialiased">
-  <header class="mb-5 max-w-[900px] text-center">
-    <h1 class="m-0 mb-2.5 bg-linear-to-r from-accent to-magenta-deep bg-clip-text text-[2.2rem] font-bold text-transparent">{{ project_name }}</h1>
-    <p class="text-muted">{% block subtitle %}{% endblock %}</p>
+<body class="m-0 flex min-h-screen flex-col items-center bg-surface-base px-5 py-10 text-content-primary antialiased">
+  <header class="mb-5 max-w-225 text-center">
+    <h1 class="m-0 mb-2.5 bg-linear-to-r from-accent-primary to-palette-magenta bg-clip-text text-display font-bold text-transparent">{{ project_name }}</h1>
+    <p class="text-content-secondary">{% block subtitle %}{% endblock %}</p>
     {% block metric_note %}{% endblock %}
   </header>
 {% block content %}{% endblock %}

@@ -10,7 +10,6 @@ export type Page =
   | 'estate'
   | 'operations'
   | 'studio'
-  | 'optical'
   | 'missing';
 const OPS_PAGES: Record<string, OpsPage> = {
   jobs: 'ops-jobs',
@@ -53,9 +52,12 @@ export function parseRoute(value: string): Route {
   }
   if (parts.length === 2 && parts[0] === 'estate' && parts[1] === 'operations')
     return { page: 'operations', repository: '', selected: '', query: url.searchParams };
-  if (['estate', 'studio', 'optical'].includes(parts[0] ?? '') && parts.length === 1) {
+  if (['estate', 'studio'].includes(parts[0] ?? '') && parts.length === 1) {
     return { repository: '', page: parts[0] as Page, selected: '', query: url.searchParams };
   }
+  // The optical studio was retired; an old link lands in the asset studio.
+  if (parts[0] === 'optical' && parts.length === 1)
+    return { repository: '', page: 'studio', selected: '', query: url.searchParams };
   if (parts[0] === 'repos' && parts[3] === 'triage' && (parts.length === 5 || parts.length === 6)) {
     const owner = parts[1] || '',
       name = parts[2] || '',

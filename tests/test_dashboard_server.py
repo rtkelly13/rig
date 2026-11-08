@@ -34,11 +34,6 @@ def test_environment(tmp_path: Path):
     (templates_dir / "studio.css").write_text("body { background: #0a0a1a; }")
     (templates_dir / "studio.js").write_text("console.log('studio ready');")
 
-    ds_dir = templates_dir / "design_system"
-    ds_dir.mkdir()
-    (ds_dir / "theme.css").write_text(":root { --ds-surface-base: #0a0a1a; }")
-    (ds_dir / "styles.css").write_text(".ds-btn { border-radius: 0px; }")
-
     # Setup mock project: test-brand
     proj_dir = assets_root / "test-brand"
     proj_dir.mkdir()
@@ -57,7 +52,6 @@ def test_environment(tmp_path: Path):
         "assets_root": assets_root,
         "variations_root": variations_root,
         "templates_dir": templates_dir,
-        "feedback_path": tmp_path / "temp" / "agent_feedback.md",
     }
 
 
@@ -78,7 +72,6 @@ def running_server(test_environment):
         assets_root=test_environment["assets_root"],
         variations_root=test_environment["variations_root"],
         templates_dir=test_environment["templates_dir"],
-        feedback_file=test_environment["feedback_path"],
     )
 
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -111,10 +104,6 @@ def test_serve_static_files(running_server) -> None:
     assert js_req.status == 200
     assert "console.log" in js_req.read().decode("utf-8")
 
-    ds_req = urllib.request.urlopen(f"{base_url}/static/design_system/theme.css")
-    assert ds_req.status == 200
-    assert "--ds-surface-base" in ds_req.read().decode("utf-8")
-
 
 def test_serve_media_files(running_server) -> None:
     base_url, _ = running_server
@@ -135,15 +124,6 @@ def test_api_projects_endpoint(running_server) -> None:
     assert proj["master_svg"] == "/media/assets/test-brand/test-brand.svg"
     assert len(proj["references"]) == 1
     assert proj["references"][0]["filename"] == "01-reference-concept.jpg"
-
-
-def test_api_project_detail_endpoint(running_server) -> None:
-    base_url, _ = running_server
-    req = urllib.request.urlopen(f"{base_url}/api/project/test-brand")
-    assert req.status == 200
-    proj = json.loads(req.read().decode("utf-8"))
-    assert proj["name"] == "test-brand"
-    assert proj["master_svg"] == "/media/assets/test-brand/test-brand.svg"
 
 
 def test_api_diff_endpoint(running_server) -> None:
@@ -194,40 +174,6 @@ def test_api_snapshot_endpoint(running_server) -> None:
     assert len(svg_files) == 1
 
 
-def test_api_feedback_endpoint(running_server) -> None:
-    base_url, env = running_server
-    payload = {
-        "project": "test-brand",
-        "reference": "01-reference-concept.jpg",
-        "candidate": "test-brand.svg",
-        "region": "Center Crossover",
-        "issue": "Occlusion Gradient Too Light",
-        "verdict": "NEEDS_ITERATION",
-        "notes": "Deepen the shadow under the center crossover beam.",
-        "prompt": "Please adjust the svg stops...",
-    }
-    data_bytes = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        f"{base_url}/api/feedback",
-        data=data_bytes,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    res = urllib.request.urlopen(req)
-    assert res.status == 200
-    res_data = json.loads(res.read().decode("utf-8"))
-    assert res_data["status"] == "ok"
-
-    # Verify feedback file was created
-    feedback_file = env["feedback_path"]
-    assert feedback_file.exists()
-    content = feedback_file.read_text(encoding="utf-8")
-    assert "test-brand" in content
-    assert "Center Crossover" in content
-    assert "NEEDS_ITERATION" in content
-    assert "Please adjust the svg stops..." in content
-
-
 def test_api_dev_mtime_endpoint(running_server) -> None:
     base_url, _env = running_server
     req = urllib.request.Request(f"{base_url}/api/dev/mtime")
@@ -242,39 +188,24 @@ def test_api_dev_mtime_endpoint(running_server) -> None:
     assert "is_preview" in data
 
 
-def _post_export(base_url: str, project: str) -> tuple[int, dict[str, str]]:
-    payload = {"project": project, "cut_type": "logo", "image_base64": "data:image/png;base64,iVBORw0KGgo="}
-    req = urllib.request.Request(
-        f"{base_url}/api/export-3d-render",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        res = urllib.request.urlopen(req)
-    except urllib.error.HTTPError as err:
-        return err.code, json.loads(err.read().decode("utf-8"))
-    return res.status, json.loads(res.read().decode("utf-8"))
-
-
-def test_export_3d_render_writes_only_into_a_known_project(running_server) -> None:
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("GET", "/api/presets"),
+        ("POST", "/api/presets"),
+        ("POST", "/api/export-3d-render"),
+        ("POST", "/api/feedback"),
+        ("GET", "/api/project/test-brand"),
+    ],
+)
+def test_retired_endpoints_are_gone(running_server, method: str, path: str) -> None:
     base_url, env = running_server
+    before = sorted(env["assets_root"].rglob("*"))
+    data = b"{}" if method == "POST" else None
+    req = urllib.request.Request(f"{base_url}{path}", data=data, method=method)
 
-    status, body = _post_export(base_url, "test-brand")
+    with pytest.raises(urllib.error.HTTPError) as err:
+        urllib.request.urlopen(req)
 
-    assert status == 200
-    assert (env["assets_root"] / "test-brand" / "test-brand-logo.png").is_file()
-    assert body["path"] == str(env["assets_root"] / "test-brand" / "test-brand-logo.png")
-
-
-@pytest.mark.parametrize("project", ["../escaped", "unknown-brand", "test-brand/../../escaped"])
-def test_export_3d_render_refuses_an_unknown_project(running_server, project: str) -> None:
-    base_url, env = running_server
-    before = sorted(p.relative_to(env["assets_root"].parent) for p in env["assets_root"].parent.rglob("*"))
-
-    status, body = _post_export(base_url, project)
-
-    assert status == 400
-    assert "Unknown project" in body["error"]
-    after = sorted(p.relative_to(env["assets_root"].parent) for p in env["assets_root"].parent.rglob("*"))
-    assert after == before
+    assert err.value.code == 404
+    assert sorted(env["assets_root"].rglob("*")) == before
