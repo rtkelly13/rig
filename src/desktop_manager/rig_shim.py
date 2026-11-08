@@ -43,11 +43,12 @@ def install(shim: Path | None = None, root: Path | None = None) -> Outcome:
     path = shim or shim_path()
     text = render(runtime.executable(runtime.current_link(root), "rig"))
     if path.is_file():
-        # Bytes, not read_text: universal newlines would turn the Windows shim's CRLF into LF.
-        existing = path.read_bytes().decode("utf-8", errors="replace")
-        if MARKER not in existing:
+        # Raw bytes: universal newlines would turn the Windows shim's CRLF into LF, and a lossy
+        # decode could let a replacement character stand in for an invalid byte.
+        existing = path.read_bytes()
+        if MARKER.encode("utf-8") not in existing:
             return Outcome.FOREIGN
-        if existing == text:
+        if existing == text.encode("utf-8"):
             return Outcome.UNCHANGED
     path.parent.mkdir(parents=True, exist_ok=True)
     _ = path.write_text(text, encoding="utf-8", newline="")

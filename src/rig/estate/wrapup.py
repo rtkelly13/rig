@@ -370,7 +370,8 @@ def _matches_worktree(worktree: OrcaWorktree, wanted: Iterable[str]) -> bool:
             return True
         candidate = Path(want).expanduser()
         # `anchor`, not is_absolute(): on Windows a rooted path with no drive is not absolute.
-        if candidate.anchor and candidate == Path(worktree.path):
+        # absolute() gives it the current drive, as Orca's drive-qualified paths have.
+        if candidate.anchor and candidate.absolute() == Path(worktree.path).absolute():
             return True
     return False
 
