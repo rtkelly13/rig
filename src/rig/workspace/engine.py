@@ -162,6 +162,27 @@ def normalize_git_url(url: str | None) -> str | None:
     return cleaned.lower().strip("/")
 
 
+def _remote_mismatch(spec: ManagedRepoSpec, remote_url: str | None) -> bool:
+    """True when a clone's origin is known and differs from the spec's declared remote."""
+    if not spec.repo or not remote_url or spec.repo.startswith("local/"):
+        return False
+    norm_remote = normalize_git_url(remote_url)
+    norm_spec = normalize_git_url(spec.repo)
+    return bool(norm_remote and norm_spec and norm_remote != norm_spec)
+
+
+def _occupant_kind(path: pathlib.Path) -> EstateItemKind:
+    """What sits at *path*, in the audit's own terms."""
+    git_path = path / ".git"
+    if not path.is_dir():
+        return EstateItemKind.UNMANAGED_FILE
+    if git_path.is_dir():
+        return EstateItemKind.UNMANAGED_REPO
+    if git_path.exists():
+        return EstateItemKind.LINKED_WORKTREE
+    return EstateItemKind.UNMANAGED_DIR
+
+
 def audit_estate(
     root: pathlib.Path | None = None,
     specs: list[ManagedRepoSpec] | None = None,
@@ -175,7 +196,6 @@ def audit_estate(
     skipped = load_skip_repos() if skip is None else skip
     estate_dir = root or estate_root_path()
     managed_specs = specs if specs is not None else load_managed_specs()
-    managed_names = {s.name for s in managed_specs if s.enabled}
     retained_names = {s.name for s in managed_specs if not s.enabled}
 
     result = WorkspaceAuditResult(estate_root=estate_dir)
@@ -208,16 +228,21 @@ def audit_estate(
                 if git_path.is_dir():
                     # It is a standalone git clone
                     remote_url = get_git_remote_url(item)
-                    if name in managed_names:
-                        spec = next((s for s in managed_specs if s.name == name), None)
-                        remote_mismatch = False
-                        if spec and spec.repo and remote_url and not spec.repo.startswith("local/"):
-                            norm_remote = normalize_git_url(remote_url)
-                            norm_spec = normalize_git_url(spec.repo)
-                            if norm_remote and norm_spec and norm_remote != norm_spec:
-                                remote_mismatch = True
-
-                        if remote_mismatch and spec:
+                    spec = next((s for s in managed_specs if s.name == name and s.enabled), None)
+                    if spec is not None:
+                        if project_dir(estate_dir, name, spec.repo) != item:
+                            # Declared in an org folder: this root copy is not the managed clone.
+                            result.unmanaged_items.append(
+                                EstateItem(
+                                    name=name,
+                                    path=item,
+                                    kind=EstateItemKind.UNMANAGED_REPO,
+                                    is_dir=True,
+                                    remote_url=remote_url,
+                                    detail=f"Misplaced: declared at {project_relpath(name, spec.repo)}",
+                                )
+                            )
+                        elif _remote_mismatch(spec, remote_url):
                             result.unmanaged_items.append(
                                 EstateItem(
                                     name=name,
@@ -315,23 +340,46 @@ def audit_estate(
                 )
             )
 
-    # Org-owned repos live in sibling org folders; anything not found is missing
+    # Org-owned repos live in sibling org folders; anything not found is missing. Whatever else
+    # occupies an org-folder location is reported as blocking it, never as unmanaged: `clean`
+    # removes unmanaged items, and its scope is the estate root.
     for spec in managed_specs:
-        if spec.enabled and spec.name not in discovered_names:
-            expected_path = project_dir(estate_dir, spec.name, spec.repo)
-            if expected_path.parent != estate_dir and (expected_path / ".git").is_dir():
+        if not spec.enabled or spec.name in discovered_names:
+            continue
+        expected_path = project_dir(estate_dir, spec.name, spec.repo)
+        in_org_folder = expected_path.parent != estate_dir
+        if in_org_folder and expected_path.exists():
+            kind = _occupant_kind(expected_path)
+            remote_url = get_git_remote_url(expected_path) if kind is EstateItemKind.UNMANAGED_REPO else None
+            if kind is EstateItemKind.UNMANAGED_REPO and not _remote_mismatch(spec, remote_url):
                 result.managed_repos.append(
                     EstateItem(
                         name=spec.name,
                         path=expected_path,
                         kind=EstateItemKind.MANAGED_REPO,
                         is_dir=True,
-                        remote_url=get_git_remote_url(expected_path),
+                        remote_url=remote_url,
                         detail=f"Registered managed repository ({expected_path.parent.name} org folder)",
                     )
                 )
-            elif not expected_path.exists() and spec.name not in skipped:
-                result.missing_managed_repos.append(spec)
+            else:
+                detail = (
+                    f"Remote URL mismatch: local '{remote_url}' != declared '{spec.repo}'"
+                    if kind is EstateItemKind.UNMANAGED_REPO
+                    else f"Not a git clone; declared as {spec.repo}"
+                )
+                result.blocked_managed_repos.append(
+                    EstateItem(
+                        name=spec.name,
+                        path=expected_path,
+                        kind=kind,
+                        is_dir=kind is not EstateItemKind.UNMANAGED_FILE,
+                        remote_url=remote_url,
+                        detail=detail,
+                    )
+                )
+        elif not expected_path.exists() and spec.name not in skipped:
+            result.missing_managed_repos.append(spec)
 
     return result
 

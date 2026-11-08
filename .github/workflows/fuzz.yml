@@ -1,0 +1,88 @@
+name: Fuzz
+
+# Coverage-guided fuzzing of the estate state machine with HypoFuzz. Manual only: the repo's
+# Actions minutes are limited. A run compares three things: the derandomized 100-example run PR
+# CI makes, a timed HypoFuzz campaign, and a replay of whatever HypoFuzz saved.
+# See docs/testing.md#mutation-testing.
+on:
+  workflow_dispatch:
+    inputs:
+      fuzz_seconds:
+        description: How long HypoFuzz runs
+        default: "600"
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  TARGET: tests/test_estate_sync_state_machine.py
+
+jobs:
+  hypofuzz:
+    name: hypofuzz
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+          mkdir -p fuzz
+      # What PR CI sees: GitHub sets CI, so this is the derandomized ci profile.
+      - name: Normal run (ci profile)
+        id: normal
+        continue-on-error: true
+        run: uv run pytest "$TARGET" -q --durations=5 --hypothesis-show-statistics 2>&1 | tee fuzz/normal.txt; exit "${PIPESTATUS[0]}"
+      # HypoFuzz runs until killed. The dev profile gives it the example database it saves
+      # failures to, which the replay then reads. HypoFuzz 25.11.1 crashes while reporting a
+      # failure under Hypothesis 6.157.1+ (`slice_comments` became `span_comments`), so this
+      # step and the replay pin 6.157.0: the database is written and read by one version.
+      # The normal run stays on the locked version, which is what PR CI sees.
+      - name: HypoFuzz
+        env:
+          HYPOTHESIS_PROFILE: dev
+          FUZZ_SECONDS: ${{ inputs.fuzz_seconds }}
+        run: |
+          timeout "$FUZZ_SECONDS" uv run --with 'hypothesis==6.157.0' --with 'hypofuzz==25.11.1' hypothesis fuzz -n 2 --no-dashboard -- "$TARGET" > fuzz/hypofuzz.txt 2>&1 || true
+          tail -40 fuzz/hypofuzz.txt
+      - name: Replay saved examples
+        id: replay
+        if: always()
+        continue-on-error: true
+        env:
+          HYPOTHESIS_PROFILE: dev
+        run: uv run --with 'hypothesis==6.157.0' pytest "$TARGET" -q --hypothesis-show-statistics 2>&1 | tee fuzz/replay.txt; exit "${PIPESTATUS[0]}"
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '## Fuzz'
+            echo
+            echo "| Run | Outcome |"
+            echo "|:--|:--|"
+            echo "| Normal (ci profile) | ${{ steps.normal.outcome }} |"
+            echo "| Replay after HypoFuzz | ${{ steps.replay.outcome }} |"
+            echo
+            echo "Saved examples: $(find temp/hypothesis -type f 2>/dev/null | wc -l)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          cp -r temp/hypothesis fuzz/database 2>/dev/null || true
+      - name: Upload fuzz results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fuzz
+          path: fuzz/
+          retention-days: 14
+      # The test steps continue on error so the artifact always uploads; fail the job here.
+      - name: Fail on any failing run
+        if: steps.normal.outcome == 'failure' || steps.replay.outcome == 'failure'
+        run: exit 1

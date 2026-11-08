@@ -17,6 +17,9 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 # xdist workers share CPUs, so wall-clock deadlines are flaky rather than informative.
 settings.register_profile(
     "dev",
+    # Explicit parent: with CI set, Hypothesis loads its built-in ci profile on import, and a
+    # parentless profile would inherit derandomize=True from it (HypoFuzz then refuses to fuzz).
+    parent=settings.get_profile("default"),
     deadline=None,
     database=DirectoryBasedExampleDatabase(str(_REPO_ROOT / "temp" / "hypothesis")),
 )

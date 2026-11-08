@@ -439,6 +439,7 @@ source_paths = [
     "src/rig/repo_governance/gitignore_manager.py",
     "src/rig/typed_json.py",
     "src/rig/image_drift/simplifier/syntactic.py",
+    "src/rig/workspace/layout.py",
 ]
 also_copy = ["tests/", "desktop-manager/", "src/", "typings/", "config/", "data/", "assets/"]
 pytest_add_cli_args = ["-p", "no:xdist", "-p", "no:cacheprovider", "-q"]
@@ -447,6 +448,7 @@ pytest_add_cli_args_test_selection = [
     "tests/desktop_manager/test_placement_properties.py",
     "tests/desktop_manager/test_workspace_align.py",
     "tests/test_gitignore_manager.py",
+    "tests/test_gitignore_manager_mutants.py",
     "tests/test_workspace_layout.py",
     "tests/test_typed_json.py",
     "tests/test_svg_syntactic_minifier.py",

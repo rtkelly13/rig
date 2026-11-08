@@ -1,0 +1,85 @@
+name: Mutation
+
+# Mutation score for the modules in [tool.mutmut] (pyproject.toml). Manual only: a run takes
+# minutes per module and the repo's Actions minutes are limited, so this never joins PR CI.
+# See docs/testing.md#mutation-testing.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mutmut:
+    name: mutmut
+    runs-on: ubuntu-latest
+    # If a run hits this, shrink source_paths rather than raise the cap.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --dev
+      # mutmut is not a dev dependency (it pins a click that breaks typer's types), so it is
+      # added for this run only. GitHub sets CI, so Hypothesis uses the derandomized ci profile.
+      - name: mutmut run
+        run: uv run --with 'mutmut==3.8.0' mutmut run --max-children 4
+      - name: Score by module
+        if: always()
+        run: |
+          mkdir -p mutation
+          uv run --with 'mutmut==3.8.0' mutmut results --all true > mutation/results.txt || true
+          {
+            echo '## Mutation score by module'
+            echo
+            echo '| Module | Killed | Survived | No tests | Timeout | Other | Score |'
+            echo '|:--|--:|--:|--:|--:|--:|--:|'
+            awk -F': ' '
+              NF >= 2 {
+                name = $1; gsub(/^ +/, "", name); status = $2
+                sub(/\.x[_ǁ].*$/, "", name); sub(/__mutmut_[0-9]+$/, "", name)
+                mods[name] = 1
+                if (status == "killed") k[name]++
+                else if (status == "survived") s[name]++
+                else if (status ~ /no tests/) n[name]++
+                else if (status ~ /timeout/) t[name]++
+                else o[name]++
+              }
+              END {
+                for (m in mods) {
+                  total = k[m] + s[m] + n[m] + t[m]
+                  score = total ? sprintf("%.1f%%", 100 * (k[m] + t[m]) / total) : "-"
+                  printf "| `%s` | %d | %d | %d | %d | %d | %s |\n", m, k[m], s[m], n[m], t[m], o[m], score
+                }
+              }' mutation/results.txt | sort
+          } >> "$GITHUB_STEP_SUMMARY"
+          uv run --with 'mutmut==3.8.0' mutmut export-cicd-stats || true
+          cp mutants/mutmut-cicd-stats.json mutation/ 2>/dev/null || true
+          cp mutants/mutmut-stats.json mutation/ 2>/dev/null || true
+      # Every survivor's diff in one file, so tests can be written from the artifact alone.
+      - name: Survivor diffs
+        if: always()
+        run: |
+          grep -E ': (survived|no tests)$' mutation/results.txt | cut -d: -f1 | sed 's/^ *//' > mutation/survivors.txt || true
+          # One environment for the whole loop: `uv run` per survivor cost ~5 minutes on run 1.
+          uv run --with 'mutmut==3.8.0' bash -c '
+            while read -r name; do
+              echo "=== ${name}"
+              mutmut show "${name}" || true
+            done < mutation/survivors.txt > mutation/survivors.diff'
+          echo "Survivors: $(wc -l < mutation/survivors.txt)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload mutation results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mutation
+          path: mutation/
+          retention-days: 14
