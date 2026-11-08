@@ -62,6 +62,22 @@ Safe is read-only and idempotent — `uv run help`, `uv run pytest`, git inspect
 `gh` reads (`pr view`, `run view`, `search`, …), and the Unix text and process
 inspection tools (`cat`, `grep`, `jq`, `du`, `ps`, `lsof`, …).
 
+Merge steps are the one group of writes in the safe tier, because an agent runs them only
+once the user has asked to merge, and branch protection still gates every one of them:
+`gh pr ready *`, `gh pr merge * --auto --squash`, `gh pr merge * --disable-auto` (requeues a
+PR in a label-driven merge queue), `gh stack merge * --yes*` (a method flag such as `--squash`
+may follow `--yes`) and `gh run rerun *`. `gh stack sync` sits beside `git push`: it rebases
+each stack layer onto its parent and pushes with `--force-with-lease --atomic`, and it never
+opens PRs. Its `--prune` flag deletes local branches, so it is denied like `git branch -D`. They are
+estate-wide rather than per-repo: the policy projects into the user-level Claude settings,
+and a repo you do not own (such as a Sentric one) cannot carry them in its own `.claude/`.
+The interior `*` is projected to Claude Code verbatim; the prefix-only surfaces (Codex,
+Antigravity, OpenCode) skip those patterns and keep prompting. A skipped *deny* would otherwise
+turn the allow it narrows into a hole (`gh stack sync *` without `gh stack sync *--prune*`), so
+those surfaces also hold back every allow such a deny overlaps: `gh stack sync`, `find *`,
+`sort *` and `agent-browser *` prompt there. On Codex and Antigravity every rule is a prefix, so
+even the exact `gh stack sync` is held back; OpenCode keeps it.
+
 Everything that mutates stays unlisted, so the harness prompts:
 
 | Family | Tools | Why not auto-approved |
@@ -85,6 +101,8 @@ Everything that mutates stays unlisted, so the harness prompts:
 | `git -C *`, `pnpm --dir/-C` | Directory-escape flags. Set the working directory (`Cwd`) and run the command directly; where the tool has no working-directory parameter, use `cd <dir> && <command>`. |
 | `pnpm --filter/-F` | Cross-package flags that can run scripts in workspaces you didn't target. Not projected to Claude (`exclude_systems: ["claude"]`): its auto-mode classifier vets the target, and team docs use single-package filters such as `pnpm --filter rights-app …`. |
 | `gh auth refresh/logout/token*`, `gh repo delete*` | Credential and repository destruction. |
+| `gh pr merge *--admin*` | Bypasses branch protection. It also wins over the auto-merge allow rules above. |
+| `gh stack sync *--prune*` | Deletes local branches; `estate tidy` owns branch removal. |
 
 ## Chaining and substitution
 
