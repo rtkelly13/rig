@@ -11,10 +11,16 @@ from rich.console import Console
 from typer.testing import CliRunner
 
 from rig import proc, tracing
-from rig.estate import locate
+from rig.estate import busy, locate
 from rig.estate.cli import app
 
 _QUIET = Console(stderr=True, quiet=True)
+
+
+@pytest.fixture(autouse=True)
+def nothing_is_busy(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`tidy` snapshots process working directories with `lsof`; pin that to "none" so runs are deterministic."""
+    monkeypatch.setattr(busy, "working_dirs", frozenset[pathlib.Path])
 
 
 def _git(args: list[str], cwd: pathlib.Path) -> None:
@@ -185,3 +191,28 @@ def test_tidy_all_sweeps_every_clone(estate: pathlib.Path, monkeypatch: pytest.M
 
     assert result.exit_code == 0, result.output
     assert swept == [estate.resolve()]
+
+
+def test_tidy_rejects_an_unknown_check(estate: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(locate, "clones", _no_discovery)
+
+    result = CliRunner().invoke(app, ["tidy", "--root", str(estate), "--all", "--check", "worktree-dirty"])
+
+    assert result.exit_code == 2, "worktree-dirty is reported, never acted on, so it is not a tidy check"
+
+
+def test_tidy_check_leaves_other_findings_alone(estate: pathlib.Path) -> None:
+    alpha = estate / "alpha"
+    _git(["branch", "done"], alpha)  # level with main: a `branch-merged` finding tidy would delete
+
+    skipped = CliRunner().invoke(
+        app, ["tidy", "--root", str(estate), "--repo", str(alpha), "--check", "temp-stale", "--apply"]
+    )
+
+    assert skipped.exit_code == 0, skipped.output
+    assert proc.git("rev-parse", "--verify", "refs/heads/done", cwd=alpha).ok, "only temp-stale was in scope"
+
+    unscoped = CliRunner().invoke(app, ["tidy", "--root", str(estate), "--repo", str(alpha), "--apply"])
+
+    assert unscoped.exit_code == 0, unscoped.output
+    assert not proc.git("rev-parse", "--verify", "refs/heads/done", cwd=alpha).ok, "the control: unscoped, it goes"

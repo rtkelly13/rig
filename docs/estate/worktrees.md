@@ -107,6 +107,39 @@ So `--force` on a dirty worktree produces a loud `failed`, not a deletion. The
 only thing neither layer counts is **ignored** files — a worktree holding
 nothing but `node_modules` is removable, which is the intent.
 
+### Three worktrees no flag removes
+
+Each of these is a case where the usual signals read wrong rather than merely
+cautious, so `--force` does not relax them. All three come from the 2026-11-06
+estate triage.
+
+- **Unborn HEAD (`worktree-unborn-head`).** The worktree's branch ref is gone, as
+  happens when its clone was replaced and the refs went with the old one. Git
+  then shows every file as newly staged, which an earlier `doctor` reported as
+  `worktree-dirty` (56 of them across 3 clones). With no commit to count,
+  `orphaned_count` reads 0 and a merged PR would have authorised removal, so a
+  merged unborn worktree is never `worktree-merged`. The finding reads the
+  worktree's own reflog: if the last tip is still in the clone, the fix is
+  `git branch <name> <tip>`; if not, it names the tip so it can be fetched as a
+  PR head, or says the files on disk are the only copy. Of those 56, 26 tips were
+  in the clone, 10 were PR heads, and 20 were nowhere else.
+- **Another clone's worktree (`worktree-foreign-owner`).** Copying or moving a
+  clone copies its `.git/worktrees/` registry, while the worktrees themselves
+  point at the new clone. The old clone then lists them as its own. A
+  `git worktree remove` there deletes the new clone's live work. The check
+  compares each worktree's `.git` file against this clone's `worktrees/` dir and
+  reports nothing else about a worktree that fails, since every other reading
+  would describe the other clone. 63 such entries across 6 `.old` clones.
+- **In use.** `tidy` takes one `lsof` snapshot of process working directories per
+  run and refuses any worktree or `temp/` entry that a shell, agent or Orca
+  terminal is working in, or below. Where that cannot be read (no `lsof`,
+  Windows), removals are refused unless `--force`. Without this,
+  `tidy --merged` would have removed 62 worktrees, 8 of them with live
+  terminals.
+
+`tidy --check <check>` narrows a run to one kind of finding, for example
+`--check worktree-merged`, alongside `--repo` for one clone.
+
 ## Cleanup cascades, so run it twice
 
 Removing a worktree frees the branch it held, which until then was refused as

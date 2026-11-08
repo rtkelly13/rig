@@ -42,14 +42,12 @@ Orca's state is read, and changed, through the running app's runtime API
 from __future__ import annotations
 
 import pathlib
-import shutil
-import subprocess
-import sys
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
 
 from rig import roots, scopes
+from rig.estate import busy
 from rig.estate.orca_runtime import Group, OrcaRuntime, Remote, Repo
 from rig.repo_slug import RepoSlug
 from rig.typed_json import decode_json
@@ -665,19 +663,5 @@ def working_in(path: pathlib.Path) -> bool | None:
     None (no `lsof`, Windows, a failure or timeout) is not "idle": removal stops the
     project's terminals, so the caller must treat an unchecked project as in use.
     """
-    lsof = shutil.which("lsof")
-    if lsof is None or sys.platform == "win32":
-        return None
-    try:
-        done = subprocess.run([lsof, "-n", "-d", "cwd", "-Fn"], capture_output=True, text=True, check=False, timeout=60)
-    except (OSError, subprocess.SubprocessError):
-        return None
-    if done.returncode != 0 and not done.stdout:
-        return None
-    target = path.resolve()
-    for line in done.stdout.splitlines():
-        if line.startswith("n/"):
-            cwd = pathlib.Path(line[1:])
-            if cwd == target or target in cwd.parents:
-                return True
-    return False
+    dirs = busy.working_dirs()
+    return None if dirs is None else busy.in_use(path, dirs)
