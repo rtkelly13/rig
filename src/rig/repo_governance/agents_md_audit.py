@@ -278,6 +278,14 @@ def _relative_targets(text: str) -> Iterable[str]:
         yield unquote(target)
 
 
+def _resolve(base: pathlib.Path, target: str) -> pathlib.Path | None:
+    """Resolve a link target under `base`; None when it cannot name a file (a decoded `%00`)."""
+    try:
+        return (base / target).resolve()
+    except (ValueError, OSError):
+        return None
+
+
 def check_pointers(repo_path: pathlib.Path, docs: Sequence[pathlib.Path]) -> list[Finding]:
     """Fail any relative link that does not resolve.
 
@@ -292,7 +300,8 @@ def check_pointers(repo_path: pathlib.Path, docs: Sequence[pathlib.Path]) -> lis
             continue
         rel = doc.relative_to(repo_path).as_posix()
         for target in _relative_targets(text):
-            if not (doc.parent / target).resolve().exists():
+            resolved = _resolve(doc.parent, target)
+            if resolved is None or not resolved.exists():
                 out.append(
                     Finding(
                         check="pointer-integrity",
@@ -318,8 +327,8 @@ def check_docs_orphans(repo_path: pathlib.Path, docs: Sequence[pathlib.Path]) ->
         except OSError:
             continue
         for target in _relative_targets(text):
-            resolved = (doc.parent / target).resolve()
-            if resolved.exists():
+            resolved = _resolve(doc.parent, target)
+            if resolved is not None and resolved.exists():
                 linked.add(resolved)
 
     out: list[Finding] = []
@@ -327,7 +336,7 @@ def check_docs_orphans(repo_path: pathlib.Path, docs: Sequence[pathlib.Path]) ->
         if doc.name == AGENTS_FILENAME or doc.resolve() in linked:
             continue
         # A folder index that fails to link this doc is reported by `folder-index` instead.
-        if doc.name.upper() == "README.MD" or (doc.parent / "README.md").is_file():
+        if _is_index(doc) or _folder_index(doc.parent) is not None:
             continue
         out.append(
             Finding(
@@ -405,7 +414,8 @@ def _looks_like_path(candidate: str) -> bool:
     `.test.ts` and bare filenames read as paths, which is how a naive version of
     this check produced ten false positives out of fourteen.
     """
-    if "/" not in candidate or candidate.startswith(("/", "http", "@", "-")):
+    # `~/...` lives in a home directory, not the repo, so it can never be checked from here.
+    if "/" not in candidate or candidate.startswith(("/", "~", "http", "@", "-")):
         return False
     if any(ch in candidate for ch in " *<>|$(){}"):
         return False
@@ -507,7 +517,8 @@ def _folder_index(folder: pathlib.Path) -> pathlib.Path | None:
 
 
 def _is_index(path: pathlib.Path) -> bool:
-    return path.name.lower() in {name.lower() for name in _INDEX_NAMES}
+    # Exact names, as `_folder_index` finds them: on a case-sensitive filesystem `Index.md` is a page.
+    return path.name in _INDEX_NAMES
 
 
 def _linked_from(index: pathlib.Path) -> set[pathlib.Path]:
@@ -523,7 +534,9 @@ def _linked_from(index: pathlib.Path) -> set[pathlib.Path]:
     base = index.parent.resolve()
     linked: set[pathlib.Path] = set()
     for target in _relative_targets(text):
-        resolved = (index.parent / target).resolve()
+        resolved = _resolve(index.parent, target)
+        if resolved is None:
+            continue
         linked.add(resolved)
         start = resolved.parent
         if _is_index(resolved):

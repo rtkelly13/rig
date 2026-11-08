@@ -104,6 +104,30 @@ def test_readme_makes_a_directory_self_indexing(tmp_path: pathlib.Path) -> None:
     assert [f.check for f in result.findings if f.check == "docs-orphan"] == []
 
 
+def test_index_md_makes_a_directory_self_indexing(tmp_path: pathlib.Path) -> None:
+    """`index.md` indexes a folder as `README.md` does, so neither it nor its pages are orphans."""
+    site = tmp_path / "docs" / "site"
+    site.mkdir(parents=True)
+    (site / "index.md").write_text("# index\n", encoding="utf-8")
+    (site / "page.md").write_text("# page\n", encoding="utf-8")
+    result = audit_repo(_repo(tmp_path), AgentsMdRules(claude_md="any"))
+    assert [f.path for f in result.findings if f.check == "docs-orphan"] == []
+
+
+def test_a_nul_link_is_a_dead_pointer_not_a_crash(tmp_path: pathlib.Path) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "README.md").write_text("See [bad](./bad%00.md).\n", encoding="utf-8")
+    repo = _repo(tmp_path, GOOD_ROOT + "\nSee [docs](./docs/README.md).\n")
+    result = audit_repo(repo, AgentsMdRules(claude_md="any"))
+    assert [f.path for f in result.findings if f.check == "pointer-integrity"] == ["docs/README.md"]
+
+
+def test_path_liveness_ignores_home_paths(tmp_path: pathlib.Path) -> None:
+    """`~/...` is per machine, outside the repo, so it is never checked against it."""
+    assert check_path_liveness(tmp_path, "Set it in `~/.workspace/config.json`.\n") == []
+
+
 def test_claude_md_copy_is_flagged_but_symlink_is_not(tmp_path: pathlib.Path) -> None:
     repo = _repo(tmp_path)
     copy = repo / "CLAUDE.md"
