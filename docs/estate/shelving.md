@@ -30,6 +30,8 @@ silently lose or leak something: ignored files that do not regenerate (an
 over 50 MB, a locked worktree,
 another repository nested inside it (no flag clears that: `git worktree remove`
 would delete it), a shelf already on origin holding other content,
+a branch that shares no history with origin's default branch (a clone made before
+the remote was restarted: rebase it onto origin first, no flag clears this),
 or a tree touched within `--idle` (default 2h), which is how a live agent
 session looks from outside.
 

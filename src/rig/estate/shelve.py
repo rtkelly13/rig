@@ -469,7 +469,36 @@ def plan_worktree(
     if plan.existing and plan.action != REMOVE and not _matches(plan, status):
         plan.decision_needed.append(f"{ref} already on {REMOTE} at {plan.existing[:9]} with other content")
 
+    # Last, so every action change above (`--include-ignored` can turn a remove into a
+    # snapshot) is guarded. No flag clears it: a clone made before its remote was
+    # restarted would push the history the restart dropped.
+    if plan.action != REMOVE and (problem := history_problem(path)):
+        plan.decision_needed.append(problem)
+
     return plan
+
+
+def history_problem(path: pathlib.Path) -> str:
+    """Why HEAD is not shown to share history with what the remote serves now; "" when it is.
+
+    Asks the remote itself rather than trusting `origin/*` tracking refs, which in a clone
+    from before a restart still name the old history. Only a remote with no default branch
+    at all (nothing to compare against) passes unjudged.
+    """
+    listed = run_git(["ls-remote", REMOTE, "HEAD"], path)
+    if not listed.ok:
+        return f"could not read {REMOTE}'s default branch, so its history is unproven: {listed.detail[:120]}"
+    if not listed.detail:
+        return ""
+    sha = listed.detail.split()[0]
+    if not run_git(["cat-file", "-e", f"{sha}^{{commit}}"], path).ok:
+        return f"{REMOTE}'s default branch is at {sha[:9]}, which this clone has not fetched: fetch {REMOTE} first"
+    if not git_out(["merge-base", "HEAD", sha], path):
+        return (
+            f"shares no history with {REMOTE}'s default branch; a shelf would push history "
+            + f"{REMOTE} does not have. Rebase onto {REMOTE} first"
+        )
+    return ""
 
 
 def _matches(plan: Plan, status: Status) -> bool:

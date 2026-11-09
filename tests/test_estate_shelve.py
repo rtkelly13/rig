@@ -339,6 +339,60 @@ def test_a_worktree_holding_another_registered_worktree_is_refused(clone: pathli
 
 
 @pytest.mark.ci
+def test_a_branch_with_no_history_in_common_with_origin_is_refused(clone: pathlib.Path) -> None:
+    git(["fetch", "-q", "origin"], clone)
+    path = add_worktree(clone, "before-the-restart", push=False)
+    git(["checkout", "-q", "--orphan", "old-history"], path)
+    commit(path, "old.txt", "history origin never had\n")
+
+    plan = _plan(clone, path)
+
+    assert plan.action == shelve.PUSH
+    assert any("shares no history" in d for d in plan.decision_needed), plan.decision_needed
+
+
+@pytest.mark.ci
+def test_stale_tracking_refs_do_not_prove_shared_history(clone: pathlib.Path) -> None:
+    path = add_worktree(clone, "stale-view", push=False)
+    git(["checkout", "-q", "--orphan", "old-history"], path)
+    commit(path, "old.txt", "history origin never had\n")
+    # A clone from before the restart: its tracking refs still name the old history.
+    git(["update-ref", "refs/remotes/origin/main", "HEAD"], path)
+    git(["symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main"], path)
+    make_dirty(path)
+
+    plan = _plan(clone, path)
+
+    assert plan.action == shelve.SNAPSHOT
+    assert any("shares no history" in d for d in plan.decision_needed), plan.decision_needed
+
+
+@pytest.mark.ci
+def test_carrying_ignored_files_does_not_skip_the_history_check(clone: pathlib.Path) -> None:
+    path = add_worktree(clone, "ignored-only", push=False)
+    git(["checkout", "-q", "--orphan", "old-history"], path)
+    commit(path, ".gitignore", ".env\n")
+    git(["push", "-q", "origin", "old-history:refs/heads/elsewhere"], path)  # every commit on a remote
+    _ = (path / ".env").write_text("TOKEN=x\n", encoding="utf-8")
+
+    plan = _plan(clone, path, shelve.Options(idle=dt.timedelta(0), include_ignored=True))
+
+    assert plan.action == shelve.SNAPSHOT
+    assert any("shares no history" in d for d in plan.decision_needed), plan.decision_needed
+
+
+@pytest.mark.ci
+def test_a_branch_built_on_origin_is_not_refused_for_its_history(clone: pathlib.Path) -> None:
+    git(["fetch", "-q", "origin"], clone)
+    path = add_worktree(clone, "after-the-restart", push=False)
+    commit(path, "new.txt", "new\n")
+
+    plan = _plan(clone, path)
+
+    assert not any("shares no history" in d for d in plan.decision_needed), plan.decision_needed
+
+
+@pytest.mark.ci
 def test_a_worktree_holding_a_nested_clone_is_refused(clone: pathlib.Path) -> None:
     outer = add_worktree(clone, "outer")
     nested = outer / "scratch"
