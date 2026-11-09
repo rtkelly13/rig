@@ -70,7 +70,7 @@ may follow `--yes`) and `gh run rerun *`. `gh stack sync` sits beside `git push`
 each stack layer onto its parent and pushes with `--force-with-lease --atomic`, and it never
 opens PRs. Its `--prune` flag deletes local branches, so it is denied like `git branch -D`. They are
 estate-wide rather than per-repo: the policy projects into the user-level Claude settings,
-and a repo you do not own (such as a Sentric one) cannot carry them in its own `.claude/`.
+and a repo you do not own (such as a work one) cannot carry them in its own `.claude/`.
 The interior `*` is projected to Claude Code verbatim; the prefix-only surfaces (Codex,
 Antigravity, OpenCode) skip those patterns and keep prompting. A skipped *deny* would otherwise
 turn the allow it narrows into a hole (`gh stack sync *` without `gh stack sync *--prune*`), so
