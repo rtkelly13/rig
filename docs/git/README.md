@@ -23,6 +23,7 @@ These are notes on *this* setup, not general git advice. The shape of it:
 | [landing-a-queue.md](landing-a-queue.md) | Several PRs are ready and `main` is strict |
 | [resolving-conflicts.md](resolving-conflicts.md) | Rebasing a stale branch, especially across many of them |
 | [worktrees.md](worktrees.md) | Working on more than one branch at a time |
+| [moving-a-clone-across-a-history-restart.md](moving-a-clone-across-a-history-restart.md) | A clone from before `rig` was restarted without history |
 
 ---
 

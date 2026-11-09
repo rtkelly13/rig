@@ -78,6 +78,8 @@ it. The old history, issues closed before the move and every earlier PR stay rea
 - **Never push a branch carrying the old history here.** A clone from before the move has
   unrelated history: fetch the new `main` and rebase each branch onto it with
   `git rebase --onto origin/main <old main> <branch>`. The trees match, so the rebase is clean.
+  Moving a whole clone (guard, audit, port, teardown):
+  [docs/git/moving-a-clone-across-a-history-restart.md](docs/git/moving-a-clone-across-a-history-restart.md).
 - **Machine-specific values live in `~/.workspace/config.json`, not in the repo**: the work folders
   (`tools.estate.work_dirs`), the work workspace checkout (`tools.estate.workspace_repo`) and desktop
   plan aliases (`tools.desktop.aliases`). See [docs/estate/README.md](docs/estate/README.md) and
