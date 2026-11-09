@@ -27,6 +27,7 @@ def test_setup_steps_run_in_declared_order():
         "Terminal Customization",
         "Runtimes",
         "Development Tools",
+        "VS Code Settings",
     ]
 
 
