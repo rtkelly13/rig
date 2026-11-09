@@ -5,11 +5,13 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
+from rig.jsonc import JsoncError
+
 from .doctor.core import run_doctor
 from .engine.context import StepContext, get_current_platform
 from .engine.runner import run_steps
 from .engine.step import Step
-from .steps import ai_tools, fonts, git, github_cli, runtimes, terminal, tools
+from .steps import ai_tools, fonts, git, github_cli, runtimes, terminal, tools, vscode
 from .steps.ai_tools.claude_code import setup_claude_code
 from .tool_manager import ToolManager
 
@@ -64,6 +66,12 @@ SETUP_STEPS: list[Step] = [
         description="Install and update curated developer tools & CLI utilities",
         func=tools.run_tools_setup,
         confirm_message="Would you like to install/update development tools?",
+    ),
+    Step(
+        name="VS Code Settings",
+        description="Merge rig's VS Code rules into user settings, backing the settings up first",
+        func=vscode.run_vscode_setup,
+        confirm_message="Would you like to apply rig's VS Code settings rules?",
     ),
 ]
 
@@ -153,6 +161,34 @@ def terminal_cmd(
     platform = get_current_platform()
     ctx = StepContext(platform=platform, mode="full", dry_run=dry_run)
     terminal.run_terminal_setup(ctx)
+
+
+@app.command("vscode")
+def vscode_cmd(
+    dry_run: bool = typer.Option(False, "--dry-run", help="Report what would change without writing"),
+    backup_only: bool = typer.Option(False, "--backup-only", help="Back up the settings folder and stop"),
+) -> None:
+    """Merge rig's VS Code rules into user settings, or back the settings up.
+
+    Exits 1 when settings differ from the rules (dry run) or a rule conflicts with a value you set.
+    """
+    ctx = StepContext(platform=get_current_platform(), mode="full", dry_run=dry_run)
+    user_dir = vscode.user_settings_dir(ctx.platform)
+    if backup_only:
+        if not user_dir.is_dir():
+            console.print(f"[red]VS Code settings folder not found: {user_dir.as_posix()}[/red]")
+            raise typer.Exit(2)
+        snapshot = vscode.backup(user_dir, vscode.default_backup_root(), extensions=vscode.list_extensions())
+        console.print(f"[bold green]✓ Backed up VS Code settings to {snapshot.as_posix()}[/bold green]")
+        return
+    try:
+        changes = vscode.sync_settings(ctx, extensions=None if dry_run else vscode.list_extensions())
+    except (OSError, JsoncError) as exc:
+        console.print(f"[red]Could not update VS Code settings: {exc}[/red]")
+        raise typer.Exit(2) from exc
+    conflicts = [c for c in changes if c.kind == vscode.ChangeKind.CONFLICT]
+    if conflicts or (dry_run and changes):
+        raise typer.Exit(1)
 
 
 @app.command("git")

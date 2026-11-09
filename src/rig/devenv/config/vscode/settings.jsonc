@@ -1,0 +1,17 @@
+// rig's VS Code rules (ADR 0022). `uv run devenv vscode` merges each key, and the comment above it,
+// into the user settings.json. A key you have set differently is reported and left alone.
+{
+  // rig: hide nested worktrees and scratch folders from the explorer, search and extensions.
+  "files.exclude": {
+    "**/.worktrees": true,
+    "**/temp": true
+  },
+  // rig: don't watch them either; bulk writes there caused rg storms (ADR 0022).
+  "files.watcherExclude": {
+    "**/.worktrees/**": true,
+    "**/temp/**": true
+  },
+  // rig: Copilot and chat are off; this machine doesn't use VS Code for AI work.
+  // To turn them back on, set this to false: rig reports it as a conflict and leaves it.
+  "chat.disableAIFeatures": true
+}

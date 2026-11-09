@@ -606,6 +606,7 @@ loose-dict-allow = [
     "src/rig/devenv/steps/ai_tools/opencode.py",
     "src/rig/devenv/steps/ai_tools/session_ledger.py",
     "src/rig/devenv/steps/terminal.py",
+    "src/rig/devenv/steps/vscode.py",
     "src/rig/estate/discovery.py",
     "src/rig/otel_stack/backfill.py",
     "src/rig/policy/projections.py",
