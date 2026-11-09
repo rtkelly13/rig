@@ -41,6 +41,7 @@ passes or names the line that failed.
 | **No duplicate headings** | contradictory instructions | Two `## 🛑 Repository Conventions` sections. Would have caught the drift above the day it happened |
 | **Conventions block equality** | — | Compare the governance-owned block to what is there, rather than testing for a substring. Report a diff; never append a second copy |
 | **`CLAUDE.md` shape** | single source of truth | Must be **absent**. Claude Code reads `AGENTS.md` natively from v2.1.277, and when both exist the default mode prefers `CLAUDE.md` — so any copy, pointer stub or symlink shadows `AGENTS.md` rather than supplementing it |
+| **No bespoke agent file** | single source of truth | No per-tool instruction file — `.github/copilot-instructions.md`, `.github/instructions/`, `.cursorrules`, `GEMINI.md`, `.clinerules`, `.windsurfrules` and the rest. Each tool reads its own file *instead of* `AGENTS.md`, so the failure is identical to a `CLAUDE.md` copy. The list lives in [`agent_files.py`](../../src/rig/repo_governance/agent_files.py) and is read by both the audit and the `.gitignore` writer, so the two cannot drift. Tool *feature* definitions (`.github/agents/`, `.github/prompts/`, `.claude/skills/`) are deliberately excluded. Config: `agents_md_hygiene.bespoke_agent_files`, empty to disable |
 | **Path liveness** | staleness poison | Path-shaped strings that no longer exist. Requires a directory separator to qualify, so bare suffixes like `.test.ts` are not treated as paths — a naive version of this check produced 10 false positives out of 14 |
 | **Required root content** | essential root content | A one-line description, a package-manager statement, and a commands section are present |
 | **No generation markers** | no auto-generation | `<!-- generated`, `Auto-generated`, or an `init`-tool banner |
@@ -107,6 +108,7 @@ repo's `AGENTS.md` is read by contributors as well as agents.
 ```bash
 repo-governance agents-audit                 # this repo
 repo-governance agents-audit --all           # every managed repo
+repo-governance agents-audit --remote        # every default branch on GitHub, cloned or not
 repo-governance agents-audit --all --json    # for an agent; stdout is the payload
 repo-governance agents-audit --strict        # fail on warnings too
 repo-governance agents-audit --write-waivers # stub out a dismissal per finding
@@ -187,6 +189,17 @@ Still outstanding, in order:
    shadowing 6.2KB and 9.9KB of `AGENTS.md` respectively rather than redirecting to it. All
    three (both stubs and the estate-root symlink) were removed, and `sync_estate_router` no
    longer generates one.
-4. **Wire it into CI**, once the errors are cleared, so it gates rather than reports.
-5. **Land the agent rubric** — a `/agents-audit` command that feeds `--json` plus
+4. **Bespoke agent files** — **done.** The same rule generalised to every tool that shipped its
+   own instruction file. One list drives both halves: `agents-audit` fails a repo that carries
+   one, and `workspace sync` writes the paths into `.gitignore`. `devenv` no longer creates a
+   `CLAUDE.md` symlink at the estate root.
+5. **Remote sweep** — **done.** `agents-audit --remote` reads each default-branch tree over the
+   GitHub API. `--all` only walks local clones, which is how `the-vault-system` kept a
+   `CLAUDE.md` through the first sweep: it has no local clone. Archived repos are reported but
+   do not fail the command — removing a file there means unarchive, commit, re-archive, and
+   `the-vault-system`'s `CLAUDE.md` is a symlink to `AGENTS.md`, so it resolves correctly and
+   harms nothing while the repo stays frozen. An owner it cannot list or a tree it cannot read
+   fails the command and is named (`remote_unread` in `--json`), never counted as clean.
+6. **Wire it into CI**, once the errors are cleared, so it gates rather than reports.
+7. **Land the agent rubric** — a `/agents-audit` command that feeds `--json` plus
    `agent-consistency.md` to an agent for the judgement calls in §3.

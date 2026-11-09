@@ -378,3 +378,68 @@ def test_percent_encoded_link_resolves(tmp_path: pathlib.Path) -> None:
     _write(repo / "docs" / "Repo Docs Index.md")
     result = audit_repo(repo, AgentsMdRules(claude_md="any"))
     assert [f for f in result.findings if f.check == "pointer-integrity"] == []
+
+
+def _with_file(tmp_path: pathlib.Path, relative: str, body: str = "rules\n") -> pathlib.Path:
+    repo = _repo(tmp_path)
+    target = repo / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(body, encoding="utf-8")
+    return repo
+
+
+def test_a_copilot_instruction_file_is_flagged(tmp_path: pathlib.Path) -> None:
+    repo = _with_file(tmp_path, ".github/copilot-instructions.md")
+
+    result = audit_repo(repo, AgentsMdRules(claude_md="any"))
+
+    assert [f.check for f in result.findings] == ["bespoke-agent-file"]
+    assert result.findings[0].path == ".github/copilot-instructions.md"
+    assert result.findings[0].severity is Severity.ERROR
+    assert result.failed
+
+
+def test_a_broken_symlink_is_still_a_bespoke_file(tmp_path: pathlib.Path) -> None:
+    """A dangling link is the shape that rots quietly, so it must not pass as absent."""
+    repo = _repo(tmp_path)
+    _ = file_symlink_or_skip(repo / "GEMINI.md", "nowhere.md")
+
+    assert [f.check for f in audit_repo(repo, AgentsMdRules(claude_md="any")).findings] == ["bespoke-agent-file"]
+
+
+def test_a_tool_feature_definition_is_not_flagged(tmp_path: pathlib.Path) -> None:
+    """`.github/agents/` holds custom agents, which extend a tool rather than shadow AGENTS.md."""
+    repo = _with_file(tmp_path, ".github/agents/workflows.agent.md", "---\ndescription: x\n---\n")
+
+    assert audit_repo(repo, AgentsMdRules(claude_md="any")).findings == []
+
+
+def test_bespoke_agent_files_can_be_disabled_per_repo(tmp_path: pathlib.Path) -> None:
+    repo = _with_file(tmp_path, ".github/copilot-instructions.md")
+
+    result = audit_repo(repo, AgentsMdRules(claude_md="any", bespoke_agent_files=()))
+
+    assert result.findings == []
+
+
+def test_a_bespoke_file_finding_can_be_waived(tmp_path: pathlib.Path) -> None:
+    repo = _with_file(tmp_path, ".github/copilot-instructions.md")
+    (repo / WAIVER_FILENAME).write_text(
+        json.dumps(
+            {
+                "waivers": [
+                    {
+                        "check": "bespoke-agent-file",
+                        "path": ".github/copilot-instructions.md",
+                        "reason": "Copilot is the only reviewer on this repo.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = audit_repo(repo, AgentsMdRules(claude_md="any"))
+
+    assert result.findings == []
+    assert [f.check for f in result.suppressed] == ["bespoke-agent-file"]

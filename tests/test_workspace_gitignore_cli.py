@@ -46,7 +46,9 @@ def test_workspace_gitignore_audit_and_sync_cli(tmp_path: pathlib.Path):
         ["gitignore", "audit", "--root", str(estate_root), "--config", str(cfg_file), "--strict"],
     )
     assert res_audit.exit_code != 0
-    assert "MISSING todo.md" in res_audit.output
+    # The status line lists every missing line, so match the two facts that matter.
+    assert "MISSING" in res_audit.output
+    assert "todo.md" in res_audit.output
 
     # 2. JSON output includes both repos
     res_json = runner.invoke(

@@ -4,10 +4,15 @@ import pathlib
 
 import pytest
 
+from rig.repo_governance.agent_files import (
+    BESPOKE_AGENT_FILES,
+    GITIGNORE_ENTRY_NAME,
+)
 from rig.repo_governance.gitignore_manager import (
     align_gitignore,
     audit_estate_gitignores,
     inspect_gitignore,
+    required_entries,
     sync_estate_gitignores,
 )
 from rig.repo_governance.policy_config import (
@@ -80,6 +85,7 @@ def test_inspect_and_align_gitignore_lifecycle(tmp_path: pathlib.Path):
     policy = PolicyConfig.parse(
         {
             "defaults": {
+                "agents_md_hygiene": {"bespoke_agent_files": []},
                 "gitignore_entries": [
                     {
                         "name": "temp",
@@ -95,7 +101,7 @@ def test_inspect_and_align_gitignore_lifecycle(tmp_path: pathlib.Path):
                         "satisfied_by": ["TODO.md", "todo.md"],
                         "match_mode": "all",
                     },
-                ]
+                ],
             }
         }
     )
@@ -143,6 +149,7 @@ def test_align_partial_missing_lines_no_duplication(tmp_path: pathlib.Path):
     policy = PolicyConfig.parse(
         {
             "defaults": {
+                "agents_md_hygiene": {"bespoke_agent_files": []},
                 "gitignore_entries": [
                     {
                         "name": "todo",
@@ -151,7 +158,7 @@ def test_align_partial_missing_lines_no_duplication(tmp_path: pathlib.Path):
                         "satisfied_by": ["TODO.md", "todo.md"],
                         "match_mode": "all",
                     },
-                ]
+                ],
             }
         }
     )
@@ -181,6 +188,7 @@ def test_estate_batch_audit_and_sync(tmp_path: pathlib.Path):
     policy = PolicyConfig.parse(
         {
             "defaults": {
+                "agents_md_hygiene": {"bespoke_agent_files": []},
                 "gitignore_entries": [
                     {
                         "name": "todo",
@@ -189,7 +197,7 @@ def test_estate_batch_audit_and_sync(tmp_path: pathlib.Path):
                         "satisfied_by": ["TODO.md", "todo.md"],
                         "match_mode": "all",
                     }
-                ]
+                ],
             }
         }
     )
@@ -308,3 +316,48 @@ def test_explicit_language_override(tmp_path: pathlib.Path):
     inspection_cs = inspect_gitignore(repo, languages=["csharp"])
     assert inspection_cs.languages == ("dotnet",)
     assert "bin/" in inspection_cs.missing_lines
+
+
+@pytest.mark.ci
+def test_bespoke_agent_entry_covers_every_configured_path(tmp_path: pathlib.Path):
+    """The ignore rule and the audit read one list, so they cannot drift."""
+    policy = PolicyConfig.parse({"defaults": {"gitignore_entries": []}})
+
+    entries = required_entries(tmp_path, config=policy)
+
+    bespoke = next(entry for entry in entries if entry.name == GITIGNORE_ENTRY_NAME)
+    assert bespoke.write == BESPOKE_AGENT_FILES
+    assert bespoke.match_mode == "all"
+
+
+@pytest.mark.ci
+def test_bespoke_agent_entry_needs_every_line_present(tmp_path: pathlib.Path):
+    """One stray `.cursorrules` must not satisfy the whole block."""
+    policy = PolicyConfig.parse({"defaults": {"gitignore_entries": []}})
+    (tmp_path / ".gitignore").write_text(".cursorrules\n", encoding="utf-8")
+
+    inspection = inspect_gitignore(tmp_path, config=policy)
+
+    assert not inspection.is_aligned
+    assert ".github/copilot-instructions.md" in inspection.missing_lines
+
+
+@pytest.mark.ci
+def test_bespoke_agent_entry_is_disabled_by_an_empty_list(tmp_path: pathlib.Path):
+    policy = PolicyConfig.parse(
+        {"defaults": {"gitignore_entries": [], "agents_md_hygiene": {"bespoke_agent_files": []}}}
+    )
+
+    assert required_entries(tmp_path, config=policy) == ()
+
+
+@pytest.mark.ci
+def test_aligning_writes_the_bespoke_agent_block(tmp_path: pathlib.Path):
+    policy = PolicyConfig.parse({"defaults": {"gitignore_entries": []}})
+
+    alignment = align_gitignore(tmp_path, config=policy)
+
+    assert alignment.status == "aligned"
+    assert ".github/copilot-instructions.md" in alignment.added
+    content = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert "AGENTS.md is the single source of truth" in content

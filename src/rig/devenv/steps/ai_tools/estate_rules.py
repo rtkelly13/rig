@@ -10,7 +10,6 @@ in line with ADR 0015: never clobber what the user wrote.
 
 from __future__ import annotations
 
-import contextlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -126,11 +125,5 @@ def setup_estate_rules(dry_run: bool = False, root: Path | None = None) -> None:
     except OSError as e:
         console.print(f"[red]Failed to write estate rules: {e}[/red]")
         return
-
-    # CLAUDE.md alongside, per the single-source-of-truth convention.
-    claude = base / "CLAUDE.md"
-    if not claude.exists():
-        with contextlib.suppress(OSError):
-            claude.symlink_to("AGENTS.md")
 
     console.print(f"[bold green]✓ Estate agent rules {action} at {target}[/bold green]")

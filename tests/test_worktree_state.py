@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from rig import proc, worktree_state
-from rig.repo_governance.gitignore_manager import WORKTREE_STATE_ENTRY, inspect_gitignore
+from rig.repo_governance.gitignore_manager import WORKTREE_STATE_ENTRY, inspect_gitignore, required_entries
 from rig.repo_governance.policy_config import load_policy_config
 from rig.worktree_state import Ignored
 
@@ -77,7 +77,7 @@ def test_written_state_reads_back_and_leaves_the_worktree_clean(tmp_path: Path) 
 def test_audit_flags_a_rule_that_re_includes_the_state_folder(tmp_path: Path) -> None:
     config = load_policy_config()
     repo = _repo(tmp_path / "r", None)
-    entries = config.gitignore_entries("r", repo_path=repo, languages=[])
+    entries = required_entries(repo, config=config, languages=[])
     lines = "\n".join(line for e in entries for line in e.write)
     _ = (repo / ".gitignore").write_text(lines + "\n", encoding="utf-8")
     assert inspect_gitignore(repo, config=config, languages=[]).status == "CONFIGURED"
