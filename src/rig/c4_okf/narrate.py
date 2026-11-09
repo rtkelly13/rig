@@ -20,13 +20,14 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING
 
 from rig.c4_okf.callgraph import CallGraph, MemberKey
+from rig.c4_okf.views import Deriver
+from rig.c4_okf.views import diagram as _diagram
+from rig.c4_okf.views import node_id as _node_id
+from rig.c4_okf.views import plural as _n
+from rig.c4_okf.views import quote as _q
 from rig.proc import git, git_out
-
-if TYPE_CHECKING:
-    from rig.c4_okf.derive import _Deriver
 
 #: The most nodes a change diagram draws; neighbours beyond it are listed, not drawn.
 MAX_NODES = 90
@@ -58,6 +59,14 @@ def _head(kind: str, title: str, description: str, resource: str, date: str, pro
 # --- names → views -------------------------------------------------------------------------------------------
 
 
+@dataclass(frozen=True, slots=True)
+class _Target:
+    """Where a code span links: a code view, and the heading in it (empty for the view itself)."""
+
+    view: str
+    anchor: str
+
+
 @dataclass(slots=True)
 class _Names:
     """Resolves a name as prose writes it (``StatsRunner``, ``CliEntryPoint.Run``, ``Crd.Reader.Hosting``)."""
@@ -66,34 +75,33 @@ class _Names:
     namespaces: dict[str, str] = field(default_factory=dict)  # namespace → code view id
 
     @classmethod
-    def of(cls, d: _Deriver) -> _Names:
+    def of(cls, d: Deriver) -> _Names:
         names = cls()
         for qualified in sorted(d.home):
             names.types.setdefault(qualified.rsplit(".", 1)[-1], []).append(qualified)
-        for scan in d.scans.values():
-            for part in scan.parts:
-                names.namespaces.setdefault(part.namespace, d.code_id(part))
+        for part in d.parts():
+            _ = names.namespaces.setdefault(part.namespace, d.code_id(part))
         return names
 
-    def target(self, d: _Deriver, text: str) -> tuple[str, str] | None:
+    def target(self, d: Deriver, text: str) -> _Target | None:
         """``(code view id, anchor)`` for a code span, or None when it names nothing drawn, or names it twice."""
         bare = re.sub(r"<[^<>]*>|\(.*\)$", "", text.strip())
         if not re.fullmatch(r"[A-Za-z_][\w.]*", bare):
             return None
         if bare in self.namespaces:
-            return self.namespaces[bare], ""
+            return _Target(self.namespaces[bare], "")
         parts = bare.split(".")
         # Longest qualified prefix first, so `Crd.Reader.Layout.CrdLayout` beats a type called `Crd`.
         for i in range(len(parts), 0, -1):
             head = ".".join(parts[:i])
             if head in d.home:
-                return d.code_id(d.home[head]), _anchor(parts[i - 1])
+                return _Target(d.code_id(d.home[head]), _anchor(parts[i - 1]))
         # Then a short name, read the way prose writes it: `Type`, `Type.Member`, or `Namespace.Type`.
         candidates = [parts[0]] if len(parts) == 1 else [parts[0], parts[1]] if len(parts) == 2 else []
         for short in candidates:
             found = self.types.get(short, [])
             if len(found) == 1:
-                return d.code_id(d.home[found[0]]), _anchor(short)
+                return _Target(d.code_id(d.home[found[0]]), _anchor(short))
         return None
 
 
@@ -108,7 +116,7 @@ _SPAN = re.compile(r"(?<!`)`([^`\n]+)`(?!`)")
 _LINK = re.compile(r"(!?\[[^\]]*\])\(([^()\s]+)\)")
 
 
-def guide_pages(d: _Deriver, paths: list[str], producer: str) -> dict[str, str]:
+def guide_pages(d: Deriver, paths: list[str], producer: str) -> dict[str, str]:
     """Bundle path → page, for each repository markdown file named in ``paths``."""
     names = _Names.of(d)
     copied = {PurePosixPath(p).as_posix(): f"guide/{PurePosixPath(p).name}" for p in paths}
@@ -128,7 +136,7 @@ def guide_pages(d: _Deriver, paths: list[str], producer: str) -> dict[str, str]:
     return pages
 
 
-def _link_guide(d: _Deriver, names: _Names, text: str, source: str, copied: dict[str, str]) -> str:
+def _link_guide(d: Deriver, names: _Names, text: str, source: str, copied: dict[str, str]) -> str:
     out: list[str] = []
     fenced = False
     for line in text.splitlines():
@@ -144,7 +152,7 @@ def _link_guide(d: _Deriver, names: _Names, text: str, source: str, copied: dict
     return "\n".join(out) + "\n"
 
 
-def _relink(d: _Deriver, href: str, source: str, copied: dict[str, str]) -> str:
+def _relink(d: Deriver, href: str, source: str, copied: dict[str, str]) -> str:
     if re.match(r"^[a-z][a-z0-9+.-]*:|^#|^/", href, re.I):
         return href
     path, _, hash_ = href.partition("#")
@@ -167,7 +175,7 @@ def _normal(path: PurePosixPath) -> str:
     return "/".join(parts)
 
 
-def _link_spans(d: _Deriver, names: _Names, line: str) -> str:
+def _link_spans(d: Deriver, names: _Names, line: str) -> str:
     """Links code spans outside existing links: ``[`x`](y)`` is left alone."""
     pieces = re.split(r"(\[[^\]]*\]\([^)]*\))", line)
     for i in range(0, len(pieces), 2):
@@ -176,7 +184,7 @@ def _link_spans(d: _Deriver, names: _Names, line: str) -> str:
             found = names.target(d, m.group(1))
             if found is None:
                 return m.group(0)
-            view, anchor = found
+            view, anchor = found.view, found.anchor
             return f"[`{m.group(1)}`](../{view}.md{'#' + anchor if anchor else ''})"
 
         pieces[i] = _SPAN.sub(link, pieces[i])
@@ -237,12 +245,18 @@ def _without_trailers(body: str) -> str:
     return "\n".join(lines).strip()
 
 
+@dataclass(frozen=True, slots=True)
+class _Stat:
+    added: int
+    removed: int
+
+
 def _files(repo: Path, sha: str) -> list[_File]:
-    stats: dict[str, tuple[int, int]] = {}
+    stats: dict[str, _Stat] = {}
     for line in git_out("diff", "--numstat", "-M", f"{sha}^", sha, "--", "src", cwd=repo).splitlines():
         added, removed, path = line.split("\t", 2)
         path = re.sub(r"\{[^{}]* => ([^{}]*)\}", r"\1", path).split(" => ")[-1].replace("//", "/")
-        stats[path] = (int(added) if added.isdigit() else 0, int(removed) if removed.isdigit() else 0)
+        stats[path] = _Stat(int(added) if added.isdigit() else 0, int(removed) if removed.isdigit() else 0)
     touched: dict[str, list[int]] = defaultdict(list)
     current = ""
     diff = git("diff", "-U0", "-M", "--no-color", f"{sha}^", sha, "--", "src", cwd=repo).out
@@ -255,24 +269,36 @@ def _files(repo: Path, sha: str) -> list[_File]:
                 start, size = int(m.group(1)), int(m.group(2) or "1")
                 touched[current] += list(range(start, start + size)) if size else [start + 1]
     files: list[_File] = []
-    for path, (added, removed) in sorted(stats.items()):
+    for path in sorted(stats):
+        stat = stats[path]
         at_commit = git_out("rev-parse", f"{sha}:{path}", cwd=repo)
         at_head = git_out("rev-parse", f"HEAD:{path}", cwd=repo)
         files.append(
-            _File(path, added, removed, tuple(touched.get(path, ())), at_head == at_commit != "", at_head != "")
+            _File(
+                path, stat.added, stat.removed, tuple(touched.get(path, ())), at_head == at_commit != "", at_head != ""
+            )
         )
     return files
 
 
-def _member_spans(graph: CallGraph) -> dict[str, list[tuple[int, MemberKey | None, str]]]:
+@dataclass(frozen=True, slots=True)
+class _Span:
+    """Where a declaration starts: a member (*key*), or the type itself when *key* is None."""
+
+    line: int
+    key: MemberKey | None
+    type_id: str
+
+
+def _member_spans(graph: CallGraph) -> dict[str, list[_Span]]:
     """Per file, the start line of every type and member declared in it, in order."""
-    spans: dict[str, list[tuple[int, MemberKey | None, str]]] = defaultdict(list)
+    spans: dict[str, list[_Span]] = defaultdict(list)
     for type_id, decl in graph.types.items():
-        spans[decl.path].append((decl.line, None, type_id))
+        spans[decl.path].append(_Span(decl.line, None, type_id))
         for key in graph.of_type(type_id):
-            spans[decl.path] += [(m.line, key, type_id) for m in graph.members[key]]
+            spans[decl.path] += [_Span(m.line, key, type_id) for m in graph.members[key]]
     for items in spans.values():
-        items.sort(key=lambda s: (s[0], s[1] is not None, s[2], s[1] or MemberKey("", "")))
+        items.sort(key=lambda s: (s.line, s.key is not None, s.type_id, s.key or MemberKey("", "")))
     return spans
 
 
@@ -285,7 +311,7 @@ class _Touched:
 
 def _touched(graph: CallGraph, commit: _Commit) -> _Touched:
     spans = _member_spans(graph)
-    by_path = defaultdict(list)
+    by_path: dict[str, list[str]] = defaultdict(list)
     for type_id, decl in graph.types.items():
         by_path[decl.path].append(type_id)
     out = _Touched()
@@ -300,32 +326,32 @@ def _touched(graph: CallGraph, commit: _Commit) -> _Touched:
             continue
         items = spans.get(f.path, [])
         for line in f.lines:
-            before = [s for s in items if s[0] <= line]
+            before = [s for s in items if s.line <= line]
             if before:
-                _, key, type_id = before[-1]
-                if key is not None and graph.callable(key):
-                    out.members.add(key)
+                span = before[-1]
+                if span.key is not None and graph.callable(span.key):
+                    out.members.add(span.key)
                 else:
-                    out.types.add(type_id)
+                    out.types.add(span.type_id)
             elif items:
-                out.types.add(items[0][2])
+                out.types.add(items[0].type_id)
     return out
 
 
 def _reading_order(graph: CallGraph, members: set[MemberKey]) -> list[MemberKey]:
     """Touched members, each after the touched members that call it; ties (and cycles) by name."""
-    calls = {(a, b) for a, b in graph.calls if a in members and b in members and a != b}
+    calls = {c for c in graph.calls if c.source in members and c.target in members and c.source != c.target}
     order: list[MemberKey] = []
     left = set(members)
     while left:
-        ready = sorted(m for m in left if not any(a in left and b == m for a, b in calls))
+        ready = sorted(m for m in left if not any(c.source in left and c.target == m for c in calls))
         pick = ready[0] if ready else sorted(left)[0]
         order.append(pick)
         left.discard(pick)
     return order
 
 
-def change_pages(d: _Deriver, count: int, producer: str) -> dict[str, str]:
+def change_pages(d: Deriver, count: int, producer: str) -> dict[str, str]:
     graph = d.graph
     if graph is None or count <= 0:
         return {}
@@ -359,13 +385,12 @@ def _md(text: str) -> str:
     return text.replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
 
 
-def _change_page(d: _Deriver, graph: CallGraph, commit: _Commit, producer: str) -> str:
-    from rig.c4_okf.derive import _diagram, _n, _node_id, _q
-
+def _change_page(d: Deriver, graph: CallGraph, commit: _Commit, producer: str) -> str:
     touched = _touched(graph, commit)
     changed = touched.members
     near: set[MemberKey] = set()
-    for a, b in sorted(graph.calls | graph.implements):
+    for call in sorted(graph.calls | graph.implements):
+        a, b = call.source, call.target
         if a in changed and b not in changed and b.type in d.home and graph.callable(b):
             near.add(b)
         if b in changed and a not in changed and a.type in d.home and graph.callable(a):
@@ -397,10 +422,12 @@ def _change_page(d: _Deriver, graph: CallGraph, commit: _Commit, producer: str) 
                 clicks.append(f'  click {_node_id(k.type + "." + k.name)} href "{target}"')
             if not by_type.get(type_id):
                 clicks.append(f'  click {tid} href "{target}"')
-    for a, b in sorted(graph.calls):
+    for call in sorted(graph.calls):
+        a, b = call.source, call.target
         if a in shown and b in shown and a != b and (a in changed or b in changed):
             lines.append(f"  {_node_id(a.type + '.' + a.name)} --> {_node_id(b.type + '.' + b.name)}")
-    for a, b in sorted(graph.implements):
+    for call in sorted(graph.implements):
+        a, b = call.source, call.target
         if a in shown and b in shown and (a in changed or b in changed):
             lines.append(f"  {_node_id(a.type + '.' + a.name)} -.-> {_node_id(b.type + '.' + b.name)}")
     lines += [f"  class {_node_id(k.type + '.' + k.name)} changed" for k in sorted(changed)]
@@ -438,7 +465,9 @@ def _change_page(d: _Deriver, graph: CallGraph, commit: _Commit, producer: str) 
             name = k.type.rsplit(".", 1)[-1]
             view = f"../{d.code_id(part)}.md#{_anchor(name)}" if part else None
             label = f"`{name}.{graph.label(k)}`"
-            callers = sorted({a for a, b in graph.calls if b == k and a not in changed and a.type in d.home})
+            callers = sorted(
+                {c.source for c in graph.calls if c.target == k and c.source not in changed and c.source.type in d.home}
+            )
             first = min(graph.members[k], key=lambda m: m.line)
             decl = graph.types.get(k.type)
             src = f"{web}/blob/{commit.sha}/{decl.path}#L{first.line}" if web and decl else None

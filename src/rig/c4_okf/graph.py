@@ -17,7 +17,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import StrEnum
 
-from rig.c4_okf.bundle import DIAGRAM_KEYWORDS, LEVELS, Bundle, Concept, resolve_href
+from rig.c4_okf.bundle import DIAGRAM_KEYWORDS, Bundle, Concept, resolve_href
 from rig.c4_okf.mermaid_c4 import C4_KEYWORDS, Element, ElementKind
 
 
@@ -159,7 +159,7 @@ def _zoom_findings(bundle: Bundle, links: Links) -> list[Finding]:
         if source.level is None or target.level is None:
             continue
         # Code views link sideways to each other, where a call leaves one namespace for another: not a zoom.
-        if source.level == target.level == LEVELS["C4 Code"]:
+        if source.type == target.type == "C4 Code":
             continue
         if target.level != source.level + 1:
             message = f"`{edge.alias}` zooms from {source.type} to {target.type}; a zoom normally goes one level deeper"

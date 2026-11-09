@@ -30,6 +30,14 @@ class MemberKey:
     name: str
 
 
+@dataclass(frozen=True, slots=True, order=True)
+class Call:
+    """An edge: *source* calls *target*, or, in ``implements``, a call to *source* lands on *target*."""
+
+    source: MemberKey
+    target: MemberKey
+
+
 @dataclass(frozen=True, slots=True)
 class TypeDecl:
     id: str
@@ -60,8 +68,8 @@ class MemberDecl:
 class CallGraph:
     types: dict[str, TypeDecl] = field(default_factory=dict)
     members: dict[MemberKey, list[MemberDecl]] = field(default_factory=dict)
-    calls: set[tuple[MemberKey, MemberKey]] = field(default_factory=set)
-    implements: set[tuple[MemberKey, MemberKey]] = field(default_factory=set)
+    calls: set[Call] = field(default_factory=set)
+    implements: set[Call] = field(default_factory=set)
 
     @classmethod
     def load(cls, directory: Path, projects: Iterable[str]) -> CallGraph | None:
@@ -91,7 +99,7 @@ class CallGraph:
                     same.append(decl)
             elif tag in ("E", "X"):
                 source, _, target = rest.partition(" | ")
-                pair = (member_key(source), member_key(target))
+                pair = Call(member_key(source), member_key(target))
                 (self.calls if tag == "E" else self.implements).add(pair)
 
     def callable(self, key: MemberKey) -> bool:

@@ -19,7 +19,7 @@ from pathlib import Path, PurePosixPath
 from typing import final
 
 from rig.c4_okf.bundle import load_bundle
-from rig.c4_okf.callgraph import CallGraph, MemberKey
+from rig.c4_okf.callgraph import Call, CallGraph, MemberKey
 from rig.c4_okf.dotnet_scan import (
     Component,
     Edge,
@@ -33,26 +33,15 @@ from rig.c4_okf.dotnet_scan import (
     sources,
     type_index,
 )
+from rig.c4_okf.views import Origin
+from rig.c4_okf.views import diagram as _diagram
+from rig.c4_okf.views import node_id as _node_id
+from rig.c4_okf.views import plural as _n
+from rig.c4_okf.views import quote as _q
 from rig.proc import git_out
 
 PRODUCER = "rig-c4-derive/0.1"
 _COMPILER = "csc"
-
-
-@dataclass(frozen=True, slots=True)
-class Origin:
-    """Where the code came from: the commit pins every derived view to one state of the repository."""
-
-    commit: str
-    date: str
-    web: str | None
-
-    def blob(self, repo: Path, path: Path) -> str | None:
-        rel = path.relative_to(repo).as_posix()
-        return f"{self.web}/blob/{self.commit}/{rel}" if self.web else None
-
-    def tree(self) -> str | None:
-        return f"{self.web}/tree/{self.commit}" if self.web else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,10 +66,6 @@ def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_") or "root"
 
 
-def _q(text: str) -> str:
-    return text.replace('"', "'")
-
-
 def _frontmatter(kind: str, title: str, description: str, where: Origin, resource: str | None = None) -> str:
     lines = [
         "---",
@@ -94,10 +79,6 @@ def _frontmatter(kind: str, title: str, description: str, where: Origin, resourc
         "",
     ]
     return "\n".join(lines)
-
-
-def _diagram(lines: list[str]) -> str:
-    return "```mermaid\n" + "\n".join(lines) + "\n```\n"
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,6 +172,10 @@ class _Deriver:
                     taken[base] += 1
                     seen[key] = f"code/{base}" if taken[base] == 1 else f"code/{base}--{self.alias[path]}"
         return seen
+
+    def parts(self) -> list[Component]:
+        """Every namespace part of every project, in project order."""
+        return [part for scan in self.scans.values() for part in scan.parts]
 
     def code_id(self, part: Component) -> str:
         return self.code_ids[_CodeKey(part.namespace, tuple(f.path for f in part.files))]
@@ -348,9 +333,13 @@ class _Deriver:
         def drawable(key: MemberKey) -> bool:
             return key.type in self.home and graph.callable(key)
 
-        calls = sorted((a, b) for a, b in graph.calls if drawable(a) and drawable(b) and local & {a.type, b.type})
-        impls = sorted((a, b) for a, b in graph.implements if drawable(a) and drawable(b) and local & {a.type, b.type})
-        linked = {k for pair in [*calls, *impls] for k in pair}
+        def shown(call: Call) -> bool:
+            ends = (call.source, call.target)
+            return all(drawable(k) for k in ends) and bool(local & {k.type for k in ends})
+
+        calls = sorted(c for c in graph.calls if shown(c))
+        impls = sorted(c for c in graph.implements if shown(c))
+        linked = {k for c in [*calls, *impls] for k in (c.source, c.target)}
         lines = ["flowchart LR"]
         clicks: list[str] = []
         for type_id in mine:
@@ -380,12 +369,12 @@ class _Deriver:
             ]
             lines.append("  end")
             clicks += [f'  click {_node_id(k.type + "." + k.name)} href "/{code_id}.md"' for k in keys]
-        lines += [f"  {_node_id(a.type + '.' + a.name)} --> {_node_id(b.type + '.' + b.name)}" for a, b in calls]
-        lines += [f"  {_node_id(a.type + '.' + a.name)} -.-> {_node_id(b.type + '.' + b.name)}" for a, b in impls]
+        lines += [f"  {_member_node(c.source)} --> {_member_node(c.target)}" for c in calls]
+        lines += [f"  {_member_node(c.source)} -.-> {_member_node(c.target)}" for c in impls]
         lines += clicks
         notes = [self._flow_note(graph, t, local) for t in mine]
-        inbound = len({a for a, b in calls if a.type not in local})
-        outbound = len({b for a, b in calls if b.type not in local})
+        inbound = len({c.source for c in calls if c.source.type not in local})
+        outbound = len({c.target for c in calls if c.target.type not in local})
         intro = (
             "Each box is a type and each node one of its members, overloads together. A solid arrow is a call; a"
             " dotted one is where a call through an interface or base class lands. Boxes marked ↗ are other"
@@ -421,14 +410,14 @@ class _Deriver:
             file = PurePosixPath(decl.path)
             where = f"[{file.name}]({url}#L{decl.line})" if url else f"`{file.name}`"
             lines += ["", f"{where} in {file.parent.as_posix()}/"]
-        rows = []
+        rows: list[str] = []
         for key in graph.of_type(type_id):
             decls = graph.members[key]
             kinds = ", ".join(sorted({d.kind for d in decls}))
             access = ", ".join(sorted({d.access for d in decls}))
             count = f" ×{len(decls)}" if len(decls) > 1 else ""
-            out = sorted({b for a, b in graph.calls if a == key and b.type in self.home})
-            into = sorted({a for a, b in graph.calls if b == key and a.type in self.home})
+            out = sorted({c.target for c in graph.calls if c.source == key and c.target.type in self.home})
+            into = sorted({c.source for c in graph.calls if c.target == key and c.source.type in self.home})
             rows.append(
                 f"| `{graph.label(key)}`{count} | {kinds} | {access} | {_names(out, local, graph)}"
                 f" | {_names(into, local, graph)} |"
@@ -463,9 +452,8 @@ def _qualified(namespace: str, name: str) -> str:
     return f"{namespace}.{name}" if namespace else name
 
 
-def _node_id(text: str) -> str:
-    """A Mermaid id: letters, digits and underscores, the same for the same member on every run."""
-    return "n_" + re.sub(r"[^A-Za-z0-9]", "_", text)
+def _member_node(key: MemberKey) -> str:
+    return _node_id(key.type + "." + key.name)
 
 
 def _names(keys: list[MemberKey], local: set[str], graph: CallGraph) -> str:
@@ -532,10 +520,6 @@ def _container_note(repo: Path, alias: str, scan: _ProjectScan) -> str:
 def _endpoints(rel: str) -> tuple[str, ...]:
     """``Rel(a, b, "label")`` connects ``a`` and ``b``."""
     return tuple(part.strip() for part in rel.split("(", 1)[-1].split(",")[:2])
-
-
-def _n(count: int, noun: str) -> str:
-    return f"{count} {noun}{'' if count == 1 else 's'}"
 
 
 def _where(repo: Path, path: Path) -> str:

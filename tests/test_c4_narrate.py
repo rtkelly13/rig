@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from rig.c4_okf.callgraph import CallGraph, MemberKey, member_key
+from rig.c4_okf.callgraph import Call, CallGraph, MemberKey, member_key
 from rig.c4_okf.derive import derive
 from rig.c4_okf.narrate import yaml_str
 from rig.proc import git
@@ -86,8 +86,8 @@ def test_call_graph_reads_types_members_calls_and_constructors() -> None:
     assert graph.types["Acme.App.Runner"].path == "src/Acme.App/Runner.cs"
     assert member_key("Acme.App.Runner..ctor/()") == MemberKey("Acme.App.Runner", "new")
     assert [k.name for k in graph.of_type("Acme.App.Runner")] == ["Run", "Stop", "new"]
-    assert (MemberKey("Acme.App.Runner", "Stop"), MemberKey("Acme.App.Runner", "Run")) in graph.calls
-    assert graph.implements == {(MemberKey("Acme.App.IRun", "Run"), MemberKey("Acme.App.Runner", "Run"))}
+    assert Call(MemberKey("Acme.App.Runner", "Stop"), MemberKey("Acme.App.Runner", "Run")) in graph.calls
+    assert graph.implements == {Call(MemberKey("Acme.App.IRun", "Run"), MemberKey("Acme.App.Runner", "Run"))}
     assert graph.label(MemberKey("Acme.App.Runner", "Run")) == "Run()"
 
 
