@@ -49,3 +49,12 @@ def test_empty_object_has_no_members() -> None:
 def test_rejects_what_it_cannot_read(text: str) -> None:
     with pytest.raises(jsonc.JsoncError):
         jsonc.members(text, jsonc.root_object(text))
+
+
+def test_comments_above_reads_the_comment_lines_right_above_a_key() -> None:
+    text = '{\n    "a": 1,\n\n  // first\n    //second\n    "b": 2, "c": 3\n}\n'
+    by_key = {m.key: m for m in jsonc.members(text, jsonc.root_object(text))}
+
+    assert jsonc.comments_above(text, by_key["b"].key_start) == ["first", "second"]
+    assert jsonc.comments_above(text, by_key["a"].key_start) == []
+    assert jsonc.comments_above(text, by_key["c"].key_start) == []

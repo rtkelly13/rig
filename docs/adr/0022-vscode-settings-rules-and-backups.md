@@ -18,16 +18,24 @@ was starved for an hour while worktrees were rebased, until VS Code was closed.
 
 ## Decision
 
-`src/rig/devenv/config/vscode/settings.json` lists the settings every machine must have. Today that is
-`files.exclude` and `files.watcherExclude` for `**/.worktrees` and `**/temp`. `files.exclude` also hides
-them from search and from extensions' `workspace.findFiles`.
+`src/rig/devenv/config/vscode/settings.jsonc` lists the settings every machine must have, each under a
+`// rig: ...` comment that says why. Today that is:
+
+- `files.exclude` and `files.watcherExclude` for `**/.worktrees` and `**/temp`. `files.exclude` also hides
+  them from search and from extensions' `workspace.findFiles`.
+- `chat.disableAIFeatures: true`. VS Code is not used for AI work here, and the built-in Copilot chat
+  otherwise loads in every window. The comment says how to turn it back on: set it to `false`.
 
 `uv run devenv vscode` merges those rules into the user `settings.json` without overwriting:
 
 - A missing key, or a missing entry in an object such as `files.exclude`, is inserted as text after the
   object's `{`. The rest of the file, including comments and trailing commas, is untouched. `rig.jsonc`
   parses the file and finds the insertion points.
-- A key the user has set to a different value is reported as a conflict and left alone (exit 1).
+- A rule's comment is written above its key when the key is added, or inserted above an existing key
+  whose comment lines don't already include it. Comments are only ever added: the user's own comments
+  stay, and an old wording of a rig comment stays until the user deletes it.
+- A key the user has set to a different value is reported as a conflict and left alone (exit 1). It
+  gets no comment.
 - `--dry-run` prints the plan (exit 1 when anything would change). A second run finds nothing to do.
 
 Before every write, and with `--backup-only`, the `User` folder's `settings.json`, `keybindings.json`,

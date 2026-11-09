@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from rig.typed_json import load_json
 
-__all__ = ["JsoncError", "Member", "loads", "members", "root_object"]
+__all__ = ["JsoncError", "Member", "comments_above", "loads", "members", "root_object"]
 
 _WHITESPACE = " \t\r\n﻿"
 
@@ -135,6 +135,27 @@ def members(text: str, open_brace: int) -> list[Member]:
         value_end = _skip_value(text, value_start)
         found.append(Member(key=key, key_start=i, value_start=value_start, value_end=value_end))
         i = value_end
+
+
+def comments_above(text: str, start: int) -> list[str]:
+    """The ``//`` comment lines directly above the line holding ``start``, without the ``//``.
+
+    Empty when something other than whitespace comes before ``start`` on its line.
+    """
+    line_start = text.rfind("\n", 0, start) + 1
+    if text[line_start:start].strip():
+        return []
+    found: list[str] = []
+    end = line_start - 1
+    while end > 0:
+        prev_start = text.rfind("\n", 0, end) + 1
+        line = text[prev_start:end].strip()
+        if not line.startswith("//"):
+            break
+        found.append(line[2:].strip())
+        end = prev_start - 1
+    found.reverse()
+    return found
 
 
 def _to_json(text: str) -> str:
