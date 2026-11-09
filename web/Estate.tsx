@@ -89,6 +89,8 @@ export function Estate({ route, state }: { route: Route; state: QueueState }) {
     { nodeWidth: 240, nodeHeight: 100, ...SPACING },
   );
   const lines = routeEstateEdges(layout, SPACING);
+  // Overflow channels run below the boxes, so the canvas grows to keep them on it.
+  const canvasHeight = Math.max(layout.height, ...lines.map((line) => line.bottom + SPACING.rowGap / 2)) + 40;
   const projectById = new Map(graph?.projects.map((project) => [project.id, project]));
   const componentById = new Map(components.map((component) => [component.id, component]));
   const stats = (ids: string[]) => {
@@ -271,20 +273,20 @@ export function Estate({ route, state }: { route: Route; state: QueueState }) {
           {components.length ? (
             <div
               className="estate-canvas"
-              style={{ width: (layout.width + 40) * zoom, height: (layout.height + 40) * zoom }}
+              style={{ width: (layout.width + 40) * zoom, height: canvasHeight * zoom }}
             >
               <div
                 className="estate-canvas-content"
                 style={{
                   width: layout.width + 40,
-                  height: layout.height + 40,
+                  height: canvasHeight,
                   transform: `scale(${zoom})`,
                 }}
               >
                 <svg
                   aria-hidden="true"
                   width={layout.width + 40}
-                  height={layout.height + 40}
+                  height={canvasHeight}
                   className="estate-edges"
                 >
                   <defs>

@@ -25,6 +25,8 @@ export interface RoutedEdge {
   from: string;
   to: string;
   d: string;
+  /** The lowest y the line reaches; below the boxes when it had to take an overflow channel. */
+  bottom: number;
 }
 
 export interface RouteOptions {
@@ -151,6 +153,13 @@ export function routeEstateEdges(layout: ServiceGraphLayout, options: RouteOptio
   // then the clear band nearest the middle — and never a stretch another line already runs
   // along, or two lines merge into one.
   const runs: { y: number; x0: number; x1: number }[] = [];
+  // When every band between the boxes is full, a line runs below them all, each in a lane
+  // of its own: reusing one fixed y would merge every such line into one.
+  const overflow = (taken: (y: number) => boolean) => {
+    let y = layout.height + options.rowGap / 2;
+    while (taken(y)) y += LANE;
+    return y;
+  };
   const routes: Route[] = forward.map((edge) => {
     const key = `${edge.from}\0${edge.to}`;
     const from = placed.get(edge.from)!;
@@ -190,7 +199,7 @@ export function routeEstateEdges(layout: ServiceGraphLayout, options: RouteOptio
         .slice(2)
         .filter((y) => clear(y) && !taken(y))
         .sort((a, b) => Math.abs(a - middle) - Math.abs(b - middle))[0] ??
-      layout.height + options.rowGap / 2;
+      overflow(taken);
 
     runs.push({ y: channel, x0, x1 });
     route.channel = channel;
@@ -249,10 +258,10 @@ export function routeEstateEdges(layout: ServiceGraphLayout, options: RouteOptio
       })
       .map((point, at) => `${at ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
       .join(' ');
-    return { from: route.from, to: route.to, d };
+    return { from: route.from, to: route.to, d, bottom: Math.max(...points.map((point) => point.y)) };
   });
 
   for (const edge of layout.edges)
-    if (edge.back) drawn.push({ from: edge.from, to: edge.to, d: serviceEdgePath(edge) });
+    if (edge.back) drawn.push({ from: edge.from, to: edge.to, d: serviceEdgePath(edge), bottom: 0 });
   return drawn;
 }
