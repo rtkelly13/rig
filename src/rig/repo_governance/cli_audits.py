@@ -15,7 +15,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from rig.repo_governance.agent_files_remote import (
-    RemoteAgentFile,
+    RemoteSweep,
     sweep_remote_agent_files,
 )
 from rig.repo_governance.agents_md_audit import (
@@ -99,14 +99,18 @@ def agents_audit_command(
         rules = config.agents_md(policy_key(target))
         results.append(audit_repo(target, rules))
 
-    remote_findings = (
-        sweep_remote_agent_files(config.allowed_owners(""), is_registered=config.is_registered) if remote else []
+    sweep = (
+        sweep_remote_agent_files(config.allowed_owners(""), is_registered=config.is_registered)
+        if remote
+        else RemoteSweep()
     )
+    remote_findings = sweep.findings
 
     if json_output:
         payload = {
             "results": [r.model_dump(mode="json") for r in results],
             "remote": [finding.to_json() for finding in remote_findings],
+            "remote_unread": list(sweep.unread),
             "gating_checks": list(GATING_CHECKS),
             "report_only_checks": list(REPORT_ONLY_CHECKS),
             "rubric": "docs/agents/agent-consistency.md",
@@ -119,7 +123,7 @@ def agents_audit_command(
     else:
         _render_audit(results)
         if remote:
-            _render_remote(remote_findings)
+            _render_remote(sweep)
 
     if write_waivers:
         for target, result in zip(targets, results, strict=True):
@@ -130,8 +134,10 @@ def agents_audit_command(
                     f"fill in each `reason` or the audit stays red.[/yellow]"
                 )
 
-    failed = any(r.failed or (strict and r.findings) for r in results) or any(
-        not finding.archived for finding in remote_findings
+    failed = (
+        any(r.failed or (strict and r.findings) for r in results)
+        or any(not finding.archived for finding in remote_findings)
+        or bool(sweep.unread)
     )
     if failed:
         raise typer.Exit(code=1)
@@ -164,15 +170,19 @@ def _render_audit(results: list[AuditResult]) -> None:
         console.print(f"  [dim]metrics (not gated): {metrics}[/dim]\n")
 
 
-def _render_remote(findings: list[RemoteAgentFile]) -> None:
+def _render_remote(sweep: RemoteSweep) -> None:
     """Print the GitHub-side sweep. Archived rows are reported, never gated.
 
     An archived repo is read-only, so removing a file there means unarchive,
     commit, re-archive. Reporting it keeps the sweep honest without demanding
-    that churn.
+    that churn. Anything the sweep could not read is listed and fails the audit.
     """
+    for name in sweep.unread:
+        console.print(f"[red]✗ GitHub sweep could not read {name}: check `gh auth status` and retry[/red]")
+    findings = sweep.findings
     if not findings:
-        console.print("[green]✓ GitHub sweep: no redundant agent files[/green]")
+        if not sweep.unread:
+            console.print("[green]✓ GitHub sweep: no redundant agent files[/green]")
         return
 
     table = Table(title="GitHub default branches — redundant agent files", title_style="bold")

@@ -198,7 +198,8 @@ Still outstanding, in order:
    `CLAUDE.md` through the first sweep: it has no local clone. Archived repos are reported but
    do not fail the command — removing a file there means unarchive, commit, re-archive, and
    `the-vault-system`'s `CLAUDE.md` is a symlink to `AGENTS.md`, so it resolves correctly and
-   harms nothing while the repo stays frozen.
+   harms nothing while the repo stays frozen. An owner it cannot list or a tree it cannot read
+   fails the command and is named (`remote_unread` in `--json`), never counted as clean.
 6. **Wire it into CI**, once the errors are cleared, so it gates rather than reports.
 7. **Land the agent rubric** — a `/agents-audit` command that feeds `--json` plus
    `agent-consistency.md` to an agent for the judgement calls in §3.

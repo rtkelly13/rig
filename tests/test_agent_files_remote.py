@@ -10,6 +10,7 @@ import pytest
 from rig.proc import Ran
 from rig.repo_governance.agent_files_remote import (
     GhCli,
+    RemoteSweep,
     find_redundant_files,
     list_owner_repos,
     sweep_remote_agent_files,
@@ -79,8 +80,22 @@ def test_list_owner_repos_decodes_gh_output() -> None:
     assert [repo.is_archived for repo in repos] == [False, True]
 
 
-def test_a_failed_gh_call_reads_as_an_empty_list() -> None:
-    assert list_owner_repos("rtkelly13", _gh({})) == []
+def test_a_failed_gh_call_is_not_an_empty_list() -> None:
+    assert list_owner_repos("rtkelly13", _gh({})) is None
+
+
+def test_an_unlistable_owner_or_unreadable_tree_is_reported_as_unread() -> None:
+    """A failed read must not pass as a clean repository."""
+    run = _gh(
+        {
+            f"{_LIST} rtkelly13": [_repo_row("rtkelly13/docs", "main"), _repo_row("rtkelly13/locked", "main")],
+            f"{_TREE}rtkelly13/docs/": {"tree": [{"path": "AGENTS.md"}]},
+        }
+    )
+
+    sweep = sweep_remote_agent_files(["rtkelly13", "someone-else"], run=run)
+
+    assert sweep == RemoteSweep(findings=(), unread=("rtkelly13/locked", "someone-else"))
 
 
 def test_sweep_reports_archived_and_skips_repos_without_a_branch() -> None:
@@ -96,9 +111,10 @@ def test_sweep_reports_archived_and_skips_repos_without_a_branch() -> None:
         }
     )
 
-    findings = sweep_remote_agent_files(["rtkelly13"], run=run)
+    sweep = sweep_remote_agent_files(["rtkelly13"], run=run)
 
-    assert [(f.repo, f.path, f.archived) for f in findings] == [
+    assert sweep.unread == ()
+    assert [(f.repo, f.path, f.archived) for f in sweep.findings] == [
         ("rtkelly13/docs", "CLAUDE.md", False),
         ("rtkelly13/the-vault-system", "CLAUDE.md", True),
     ]
@@ -116,9 +132,9 @@ def test_forks_are_skipped_unless_a_profile_registers_them() -> None:
         }
     )
 
-    assert sweep_remote_agent_files(["rtkelly13"], run=run) == []
+    assert sweep_remote_agent_files(["rtkelly13"], run=run) == RemoteSweep()
 
     registered = sweep_remote_agent_files(
         ["rtkelly13"], is_registered=lambda name: name.endswith("/Resultful"), run=run
     )
-    assert [finding.repo for finding in registered] == ["rtkelly13/Resultful"]
+    assert [finding.repo for finding in registered.findings] == ["rtkelly13/Resultful"]

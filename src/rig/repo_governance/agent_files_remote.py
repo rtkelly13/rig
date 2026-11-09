@@ -58,6 +58,19 @@ class RemoteAgentFile:
         return {"repo": self.repo, "path": self.path, "archived": self.archived}
 
 
+@dataclass(frozen=True, slots=True)
+class RemoteSweep:
+    """What the GitHub sweep found, and what it could not read.
+
+    A failed read is never a clean repository: `unread` names each owner whose
+    repositories could not be listed and each repository whose tree could not be
+    read, so the audit can fail instead of reporting coverage it does not have.
+    """
+
+    findings: tuple[RemoteAgentFile, ...] = ()
+    unread: tuple[str, ...] = ()
+
+
 #: Runs one `gh` invocation. Production runs the real CLI; tests answer from a table.
 type GhCli = Callable[[list[str]], proc.Ran]
 
@@ -75,8 +88,8 @@ def _gh_json[T](run: GhCli, kind: type[T], *args: str) -> T | None:
     return try_decode_json(kind, ran.out)
 
 
-def list_owner_repos(owner: str, run: GhCli = run_gh_cli) -> list[OwnerRepo]:
-    """Every repository *owner* owns, archived ones included."""
+def list_owner_repos(owner: str, run: GhCli = run_gh_cli) -> list[OwnerRepo] | None:
+    """Every repository *owner* owns, archived ones included; None when `gh` cannot list them."""
     listed = _gh_json(
         run,
         list[OwnerRepo],
@@ -88,14 +101,14 @@ def list_owner_repos(owner: str, run: GhCli = run_gh_cli) -> list[OwnerRepo]:
         "--json",
         "nameWithOwner,isArchived,isFork,defaultBranchRef",
     )
-    return listed or []
+    return listed
 
 
-def default_branch_paths(repo: str, branch: str, run: GhCli = run_gh_cli) -> frozenset[str]:
-    """Every path in *repo*'s *branch* tree, or empty when the tree cannot be read."""
+def default_branch_paths(repo: str, branch: str, run: GhCli = run_gh_cli) -> frozenset[str] | None:
+    """Every path in *repo*'s *branch* tree, or None when the tree cannot be read."""
     tree = _gh_json(run, _Tree, "api", f"repos/{repo}/git/trees/{branch}?recursive=1")
     if tree is None:
-        return frozenset()
+        return None
     return frozenset(entry.path for entry in tree.tree if entry.path)
 
 
@@ -121,23 +134,32 @@ def sweep_remote_agent_files(
     owners: Sequence[str],
     is_registered: Callable[[str], bool] | None = None,
     run: GhCli = run_gh_cli,
-) -> list[RemoteAgentFile]:
+) -> RemoteSweep:
     """Every redundant agent file on the default branch of every repo *owners* own.
 
     A fork's instruction files are upstream's, not ours, so a fork is skipped unless
     a policy profile registers it — the same rule `is_managed_repo` applies locally.
     """
     findings: list[RemoteAgentFile] = []
+    unread: list[str] = []
     for owner in owners:
-        for repo in list_owner_repos(owner, run):
+        repos = list_owner_repos(owner, run)
+        if repos is None:
+            unread.append(owner)
+            continue
+        for repo in repos:
             if repo.is_fork and not (is_registered and is_registered(repo.name_with_owner)):
                 continue
             branch = repo.default_branch.name if repo.default_branch else ""
             if not branch:
                 continue
             paths = default_branch_paths(repo.name_with_owner, branch, run)
+            if paths is None:
+                unread.append(repo.name_with_owner)
+                continue
             findings.extend(
                 RemoteAgentFile(repo=repo.name_with_owner, path=path, archived=repo.is_archived)
                 for path in find_redundant_files(paths)
             )
-    return sorted(findings, key=lambda finding: (finding.repo, finding.path))
+    ordered = sorted(findings, key=lambda finding: (finding.repo, finding.path))
+    return RemoteSweep(findings=tuple(ordered), unread=tuple(unread))
