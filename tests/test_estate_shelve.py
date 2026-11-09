@@ -339,6 +339,30 @@ def test_a_worktree_holding_another_registered_worktree_is_refused(clone: pathli
 
 
 @pytest.mark.ci
+def test_a_branch_with_no_history_in_common_with_origin_is_refused(clone: pathlib.Path) -> None:
+    git(["fetch", "-q", "origin"], clone)
+    path = add_worktree(clone, "before-the-restart", push=False)
+    git(["checkout", "-q", "--orphan", "old-history"], path)
+    commit(path, "old.txt", "history origin never had\n")
+
+    plan = _plan(clone, path)
+
+    assert plan.action == shelve.PUSH
+    assert any("shares no history" in d for d in plan.decision_needed), plan.decision_needed
+
+
+@pytest.mark.ci
+def test_a_branch_built_on_origin_is_not_refused_for_its_history(clone: pathlib.Path) -> None:
+    git(["fetch", "-q", "origin"], clone)
+    path = add_worktree(clone, "after-the-restart", push=False)
+    commit(path, "new.txt", "new\n")
+
+    plan = _plan(clone, path)
+
+    assert not any("shares no history" in d for d in plan.decision_needed), plan.decision_needed
+
+
+@pytest.mark.ci
 def test_a_worktree_holding_a_nested_clone_is_refused(clone: pathlib.Path) -> None:
     outer = add_worktree(clone, "outer")
     nested = outer / "scratch"

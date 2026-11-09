@@ -421,6 +421,14 @@ def plan_worktree(
         plan.action = REMOVE
         plan.reasons.append(f"squash-merged in #{plan.pr}")
 
+    if plan.action != REMOVE and not shares_history(path):
+        # No flag clears this: a clone made before its remote was restarted would push
+        # the history the restart dropped. Rebase onto the remote's default branch first.
+        plan.decision_needed.append(
+            f"shares no history with {REMOTE}'s default branch; a shelf would push history "
+            + f"{REMOTE} does not have. Rebase onto {REMOTE} first"
+        )
+
     if options.to_upstream and plan.action != REMOVE and tree.branch:
         upstream = git_out(["rev-parse", "--abbrev-ref", f"{tree.branch}@{{upstream}}"], clone)
         if upstream.startswith(f"{REMOTE}/") and plan.pr_state != "MERGED":
@@ -470,6 +478,17 @@ def plan_worktree(
         plan.decision_needed.append(f"{ref} already on {REMOTE} at {plan.existing[:9]} with other content")
 
     return plan
+
+
+def shares_history(path: pathlib.Path) -> bool:
+    """True unless HEAD and the remote's default branch have no common ancestor.
+
+    A remote with no default branch fetched yet cannot be judged, so it passes.
+    """
+    for base in (f"refs/remotes/{REMOTE}/HEAD", f"refs/remotes/{REMOTE}/main"):
+        if git_out(["rev-parse", "--verify", "-q", base], path):
+            return bool(git_out(["merge-base", "HEAD", base], path))
+    return True
 
 
 def _matches(plan: Plan, status: Status) -> bool:
