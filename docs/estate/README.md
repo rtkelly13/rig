@@ -55,6 +55,7 @@ convention (`rig.scopes`):
 | `estate decisions` | what only a human can decide: dubious ownership, unpushed or PR-less idle worktrees, leftovers | [→](./decisions.md) |
 | `estate orca` | Orca's projects and groups against the `orca.group` each managed project declares. `--apply` registers, creates groups and moves | [→](./orca.md) |
 | `estate wrapup` | asks idle Orca Claude sessions whether their change is finished, then reads back each `WRAPUP:` verdict. Needs `--personal`/`--work` and `--repo`/`--all`; `--apply` asks 5 at a time, the next as each answers | [→](./wrapup.md) |
+| `estate orca-worktrees` | Orca's finished worktrees in both profiles: merged, landed, folder gone, or half-deleted. Needs `--repo <project>` or `--all`; `--apply` removes them through Orca | [→](./worktrees.md#clearing-finished-orca-worktrees) |
 | `estate volume` | (Windows) a whole drive from a WizTree MFT scan: drill-down, dev-artefact partition, known hogs | [→](./internals.md#windows-is-a-parallel-implementation-not-a-port) |
 | `estate shelve` | resolve a worktree `tidy` refuses: push its unpushed work to `shelved/<user>/<name>`, verify, remove | [→](./shelving.md) |
 | `estate unshelve` / `shelved` | restore a shelf as a worktree; list shelves and `--prune` the ones that landed | [→](./shelving.md) |
