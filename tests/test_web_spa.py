@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from contextlib import closing
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import TypedDict, cast
 
 import pytest
 from playwright.sync_api import Page, expect, sync_playwright
@@ -696,6 +697,104 @@ def test_repository_scope_and_estate_graph_connectivity(browser_app: BrowserApp)
     expect(page.get_by_role("heading", name="Estate Managed Repositories", exact=True)).to_be_visible()
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
     assert page.locator(".app-content").evaluate("element => getComputedStyle(element).overflowY") == "clip"
+
+
+class _EstateLine(TypedDict):
+    id: str
+    to: str
+    through: list[str]
+    startY: float
+    endY: float
+    startGap: float
+    endGap: float
+    square: bool
+    vectorEffect: str
+
+
+_EstateLineFrom = TypedDict("_EstateLineFrom", {"from": str})
+
+
+class _DrawnLine(_EstateLine, _EstateLineFrom):
+    """What `_ESTATE_LINES` measures about one drawn line, in screen pixels."""
+
+
+_ESTATE_LINES = """() => {
+    const boxes = new Map([...document.querySelectorAll('.estate-node')].map(
+        (node) => [node.dataset.node, node.getBoundingClientRect()]));
+    return [...document.querySelectorAll('.estate-edges path[data-from]')].map((path) => {
+        const matrix = path.getScreenCTM();
+        const screen = (x, y) => new DOMPoint(x, y).matrixTransform(matrix);
+        const corners = [...path.getAttribute('d').matchAll(/[ML] ([-\\d.]+) ([-\\d.]+)/g)]
+            .map(([, x, y]) => screen(Number(x), Number(y)));
+        const samples = [];
+        for (let at = 0; at <= path.getTotalLength(); at += 3) {
+            const point = path.getPointAtLength(at);
+            samples.push(screen(point.x, point.y));
+        }
+        const through = [...boxes].filter(([id]) => id !== path.dataset.from && id !== path.dataset.to)
+            .filter(([, box]) => samples.some((point) =>
+                point.x > box.left + 1 && point.x < box.right - 1 &&
+                point.y > box.top + 1 && point.y < box.bottom - 1))
+            .map(([id]) => id);
+        const source = boxes.get(path.dataset.from), target = boxes.get(path.dataset.to);
+        const start = corners[0], end = corners.at(-1);
+        return {
+            id: `${path.dataset.from}->${path.dataset.to}`,
+            from: path.dataset.from,
+            to: path.dataset.to,
+            through,
+            startY: start.y,
+            endY: end.y,
+            startGap: Math.abs(start.x - source.right),
+            endGap: Math.abs(end.x - target.left),
+            square: corners.slice(1).every((point, at) =>
+                Math.abs(point.x - corners[at].x) < 0.5 || Math.abs(point.y - corners[at].y) < 0.5),
+            vectorEffect: getComputedStyle(path).vectorEffect,
+        };
+    });
+}"""
+
+
+def test_estate_lines_turn_in_gutters_and_never_cross_a_box(
+    browser_app: BrowserApp, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # a feeds three consumers, one of them two layers on: b and d stand in the layer
+    # between, so the direct line from a to c has to find the gap between them.
+    ids = ["owner/a", "owner/b", "owner/c", "owner/d", "owner/e"]
+    pairs = [("a", "b"), ("a", "d"), ("a", "c"), ("b", "c"), ("d", "c"), ("d", "e")]
+    graph = Graph(
+        [Project(id, id.split("/")[1], "", "Libraries", "Python", True, True, 1, []) for id in ids],
+        [
+            Dependency(f"owner/{s}", f"owner/{t}", "npm", f"pkg-{s}", "^1.0", "runtime", "package.json")
+            for s, t in pairs
+        ],
+        [Component(id, [id], False) for id in ids],
+        [ComponentEdge(f"owner/{s}", f"owner/{t}") for s, t in pairs],
+        "2026-01-01T00:00:00Z",
+        [],
+    )
+    monkeypatch.setattr(connectivity_web, "load_graph", lambda *, refresh=False: graph)
+    page, url = browser_app.page, browser_app.url
+    page.goto(url + "/estate")
+    expect(page.locator(".estate-edges path[data-from]")).to_have_count(len(pairs))
+
+    for zoom_out in (0, 3):
+        for _ in range(zoom_out):
+            page.get_by_role("button", name="Zoom graph out", exact=True).click()
+        lines = cast(list[_DrawnLine], page.evaluate(_ESTATE_LINES))
+        for line in lines:
+            assert line["through"] == [], f"{line['id']} runs through {line['through']}"
+            assert line["square"], f"{line['id']} has a segment that is neither level nor upright"
+            # Two units of slack for the border; the arrow's tip is at the path's end.
+            assert line["startGap"] < 2.5 and line["endGap"] < 2.5, line
+            assert line["vectorEffect"] == "non-scaling-stroke"
+        # No two lines share a port: five consumers of one box are five lines, not one.
+        for node in ids:
+            for side, ys in (
+                ("out", sorted(line["startY"] for line in lines if line["from"] == node)),
+                ("in", sorted(line["endY"] for line in lines if line["to"] == node)),
+            ):
+                assert all(b - a > 3 for a, b in zip(ys, ys[1:], strict=False)), (node, side, ys)
 
 
 def test_estate_keeps_the_existing_operations_tools_in_the_spa(browser_app: BrowserApp) -> None:
