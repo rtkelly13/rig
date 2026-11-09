@@ -33,6 +33,9 @@ class FakeOrca:
     worktrees: list[Json] = field(default_factory=list[Json])
     activity: list[Json] = field(default_factory=list[Json])
     removed: list[str] = field(default_factory=list[str])
+    #: Worktree ids whose `worktree.rm` Orca accepts but does not finish: it answers
+    #: `removed: false` and keeps listing them.
+    stuck: set[str] = field(default_factory=set[str])
     now_ms: float = 100 * DAY_MS
 
     def runtime(self) -> OrcaRuntime:
@@ -50,7 +53,10 @@ class FakeOrca:
         elif method == "worktree.rm":
             selector = str(params["worktree"]).removeprefix("id:")
             self.removed.append(selector)
-            result = {"removed": True}
+            done = selector not in self.stuck
+            if done:
+                self.worktrees = [w for w in self.worktrees if w["id"] != selector]
+            result = {"removed": done}
         else:
             raise AssertionError(method)
         yield (json.dumps({"id": body.id, "ok": True, "result": result}) + "\n").encode()

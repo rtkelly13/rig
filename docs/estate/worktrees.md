@@ -70,22 +70,35 @@ ones, `--kept` lists the kept ones with the reason, and `--json` gives every row
 
 | verdict | means | `--apply` |
 |---|---|---|
-| `merged` | the newest PR for the branch merged, and HEAD has nothing local since | removes it |
-| `landed` | no PR, HEAD is already in the default branch, idle for `--idle-days` (2) | removes it |
-| `missing` | Orca lists it, but the folder is gone | prunes git, removes it from Orca |
-| `leftover` | git no longer knows the folder, and every file in it matches the branch | deletes the folder, prunes, removes it from Orca |
 | `current` | this command is running inside it | keeps it |
 | `busy` | an agent in it is `working`, `blocked` or `waiting` | keeps it |
+| `missing` | Orca lists it, but the folder is gone | prunes git, removes it from Orca |
+| `leftover` | git no longer knows the folder, and every file in it matches the branch | deletes the folder, prunes, removes it from Orca |
+| `leftover-differs` | a folder git no longer knows, holding edits, new files, or a branch that is gone | keeps it: look by hand |
+| `foreign` | its git is not the registered project's, or the project is not registered | keeps it |
 | `dirty` | uncommitted or untracked files | keeps it |
+| `pr-unknown` | GitHub could not list the branch's PRs, so "no PR" cannot be trusted | keeps it |
+| `merged` | the newest PR for the branch merged, and HEAD has nothing local since | removes it |
 | `after-merge` | the PR merged, but there are local commits since | keeps it |
 | `open-pr` / `closed-pr` | the PR is open, or closed without merging | keeps it |
 | `unmerged` | commits outside the default branch and no PR | keeps it |
 | `recent` | already in the default branch, but touched within `--idle-days` | keeps it |
-| `leftover-differs` | a folder git no longer knows, holding edits, new files, or a branch that is gone | keeps it: look by hand |
+| `landed` | no PR, HEAD is already in the default branch, idle for `--idle-days` (2) | removes it |
 
-The rules are checked in that order, so a dirty tree or a running agent is kept whatever
-else is true. Each verdict comes from git, Orca's `worktree.ps` and one GitHub query per
-project, never from guessing.
+The rules are checked in that order, top to bottom, so a running agent, a foreign or dirty
+tree, or an unanswered GitHub query keeps the worktree whatever else is true. Each verdict
+comes from git, Orca's `worktree.ps` and one GitHub query per branch (`gh pr list --head`),
+never from guessing. A PR from a fork that happens to share the branch name is ignored.
+
+**`--apply` checks again just before it removes.** Review and removal are separate steps, so
+anything can change between them. For each worktree it removes, `--apply` first confirms that
+Orca still lists the same worktree id at that path. A `missing` folder must still be gone, and
+a `leftover` must still match its branch file for file. A `merged` or `landed` tree must still
+belong to its project and still be clean. If any of these fails, the row says
+`skipped: …` and nothing is touched. This shrinks the window for a race to the gap between
+the last check and the delete; it cannot close it, because no portable way exists to lock a
+folder against writes. A removal counts only when Orca confirms it, or stops listing the
+worktree. Otherwise the row says `failed`, and the command exits 1, with or without `--json`.
 
 **Removal goes through Orca, not `rm -rf`.** `worktree.rm` is Orca's own delete. It stops the
 worktree's terminals, runs `git worktree remove` without `--force`, so a dirty tree is
@@ -94,7 +107,7 @@ refused, and deletes the branch with `git branch -d`, so an unmerged branch stay
 **`leftover` is what an interrupted delete leaves on Windows.** Git deletes the `.git` file and
 the top-level dotfiles, then stops at a locked file in `.venv`. Orca then reports the folder
 "is no longer a Git worktree" and leaves it on disk. The command compares the folder with
-the branch through the main checkout's object store, using a throwaway index. Files missing
+the branch through the main checkout's object store, using a throwaway index under the project's `temp/.rig/`. Files missing
 from the folder count as safe, because the branch still has them. They are marked
 skip-worktree, so git reads `.gitignore` from the branch even though the folder has lost it.
 Only changed or untracked files that git does not ignore keep the folder.

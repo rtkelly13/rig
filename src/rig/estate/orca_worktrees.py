@@ -18,9 +18,11 @@ A worktree is finished when any of these holds:
   every file git does not ignore matches its branch's last commit, so the branch keeps it all.
 
 Everything else is kept, and a dirty tree or a running agent is kept whatever else is true.
-Removal goes through Orca (`worktree.rm`), never `rm -rf`, so Orca stops the terminals and
+So is a worktree whose git is not its registered project's, and one whose PRs GitHub could not
+list. Removal goes through Orca (`worktree.rm`), never `rm -rf`, so Orca stops the terminals and
 drops the sidebar entry. Orca deletes the branch with `git branch -d`, so an unmerged branch is
-kept. Only a leftover folder, which git has already let go of, is deleted here.
+kept. Only a leftover folder, which git has already let go of, is deleted here, and it is
+compared with its branch again just before.
 """
 
 from __future__ import annotations
@@ -32,19 +34,21 @@ import tempfile
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from enum import StrEnum
+from typing import Annotated
 
-from rig import proc
+from pydantic import Field
+
+from rig import proc, worktree_state
 from rig.estate.checks import is_dirty, orphaned_count
 from rig.estate.orca_runtime import Activity, OrcaRuntime, OrcaUnavailableError, Worktree
-from rig.estate.prs import PullRequest, pr_heads
+from rig.estate.prs import PullRequest, origin_slug
 from rig.estate.trim import remove_tree
+from rig.typed_json import try_decode_json
 
 #: Agent states that mean someone is still working in the worktree.
 BUSY_STATES = frozenset({"working", "blocked", "waiting"})
 DEFAULT_IDLE_DAYS = 2.0
 
-type PrLookup = Callable[[pathlib.Path], Mapping[str, PullRequest]]
-"""The newest PR per head ref for a clone."""
 _MS_PER_DAY = 86_400_000
 
 
@@ -62,6 +66,8 @@ class Verdict(StrEnum):
     UNMERGED = "unmerged"
     RECENT = "recent"
     LEFTOVER_DIFFERS = "leftover-differs"
+    FOREIGN = "foreign"
+    PR_UNKNOWN = "pr-unknown"
 
 
 #: Verdicts `--apply` acts on. Every other verdict keeps the worktree.
@@ -76,9 +82,13 @@ class Facts:
     is_worktree: bool
     is_current: bool = False
     busy_agents: int = 0
+    #: The worktree's git is not its registered project's, or the project is not registered.
+    foreign: bool = False
     dirty: bool = False
     #: The newest PR for the branch, or None when there is none (or HEAD is detached).
     pr: PullRequest | None = None
+    #: False when GitHub could not list the branch's PRs, so "no PR" cannot be trusted.
+    pr_known: bool = True
     #: Commits on HEAD that are on no remote and not in the PR's merged head.
     beyond_merge: int = 0
     #: HEAD is an ancestor of the remote default branch.
@@ -107,8 +117,12 @@ def decide(facts: Facts, *, idle_days: float = DEFAULT_IDLE_DAYS) -> Judgement:
         if facts.leftover_matches:
             return Judgement(Verdict.LEFTOVER, "not a git worktree any more; its files match the branch")
         return Judgement(Verdict.LEFTOVER_DIFFERS, facts.leftover_detail or "not a git worktree; could not compare it")
+    if facts.foreign:
+        return Judgement(Verdict.FOREIGN, "its git is not the registered project's")
     if facts.dirty:
         return Judgement(Verdict.DIRTY, "uncommitted or untracked files")
+    if not facts.pr_known:
+        return Judgement(Verdict.PR_UNKNOWN, "GitHub could not list the branch's PRs")
     pr = facts.pr
     if pr is not None and pr.merged:
         if facts.beyond_merge:
@@ -141,10 +155,20 @@ class Row:
     verdict: Verdict
     reason: str
     outcome: str = ""
+    #: Orca's id for the worktree reviewed, so `apply` removes that one and no other at the same path.
+    worktree_id: str = ""
 
     @property
     def removable(self) -> bool:
         return self.verdict in REMOVABLE
+
+    @property
+    def removed(self) -> bool:
+        return self.outcome.startswith("removed")
+
+    @property
+    def failed(self) -> bool:
+        return self.outcome.startswith("failed")
 
 
 def short_branch(ref: str | None) -> str:
@@ -165,6 +189,20 @@ def _is_worktree(path: pathlib.Path) -> bool:
     """True when git recognises *path* itself as the top of a working tree."""
     top = proc.git_out("rev-parse", "--show-toplevel", cwd=path)
     return bool(top) and _comparable(top) == _comparable(path)
+
+
+def _common_dir(path: pathlib.Path) -> str:
+    """The git common dir *path* belongs to, comparable across spellings; empty when git cannot say."""
+    out = proc.git_out("rev-parse", "--path-format=absolute", "--git-common-dir", cwd=path)
+    return _comparable(out) if out else ""
+
+
+def _belongs_to(path: pathlib.Path, repo: pathlib.Path | None) -> bool:
+    """True when the worktree at *path* shares *repo*'s git, so removing it touches only that project."""
+    if repo is None:
+        return False
+    mine = _common_dir(path)
+    return bool(mine) and mine == _common_dir(repo)
 
 
 def _beyond_merge(path: pathlib.Path, merged_oid: str) -> int:
@@ -211,7 +249,9 @@ def leftover_matches(folder: pathlib.Path, repo: pathlib.Path, branch: str) -> C
         return Comparison(False, f"could not find the git folder of {repo.as_posix()}")
     if not proc.git("rev-parse", "--verify", "--quiet", f"refs/heads/{branch}", cwd=repo).ok:
         return Comparison(False, f"branch {branch} no longer exists, so the folder may hold the only copy")
-    with tempfile.TemporaryDirectory(prefix="orca-leftover-") as scratch:
+    scratch_root = worktree_state.state_dir(repo)
+    scratch_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="orca-leftover-", dir=scratch_root) as scratch:
         env = {
             **os.environ,
             "GIT_DIR": common,
@@ -238,6 +278,68 @@ def leftover_matches(folder: pathlib.Path, repo: pathlib.Path, branch: str) -> C
     if differing:
         return Comparison(False, f"{len(differing)} file(s) differ from {branch}, e.g. {differing[0]}")
     return Comparison(True)
+
+
+@dataclass(frozen=True, slots=True)
+class PrAnswer:
+    """The newest PR for one branch, or `known=False` when GitHub could not say."""
+
+    known: bool
+    pr: PullRequest | None = None
+
+
+type PrLookup = Callable[[pathlib.Path, str], PrAnswer]
+"""The newest same-repository PR for a branch of a clone."""
+
+type GhCli = Callable[[list[str]], proc.Ran]
+
+
+def _run_gh(args: list[str]) -> proc.Ran:
+    return proc.gh(*args)
+
+
+@dataclass(frozen=True, slots=True)
+class _BranchPr:
+    number: int
+    state: str = ""
+    head_oid: Annotated[str, Field(alias="headRefOid")] = ""
+    cross_repository: Annotated[bool, Field(alias="isCrossRepository")] = False
+
+
+def branch_pr(repo: pathlib.Path, branch: str, run: GhCli = _run_gh) -> PrAnswer:
+    """The newest PR whose head is *branch* in *repo*'s own GitHub repository.
+
+    Asked per branch, so a PR outside any recent window is still found, and a fork's PR that
+    happens to share the branch name is ignored. Any failure answers `known=False`.
+    """
+    slug = origin_slug(repo)
+    if slug is None:
+        return PrAnswer(known=False)
+    ran = run(
+        [
+            "pr",
+            "list",
+            "--repo",
+            slug.full_name,
+            "--head",
+            branch,
+            "--state",
+            "all",
+            "--limit",
+            "100",
+            "--json",
+            "number,state,headRefOid,isCrossRepository",
+        ]
+    )
+    pulls = try_decode_json(list[_BranchPr], ran.out) if ran.ok else None
+    if pulls is None:
+        return PrAnswer(known=False)
+    own = [p for p in pulls if not p.cross_repository]
+    if not own:
+        return PrAnswer(known=True)
+    newest = max(own, key=lambda p: p.number)
+    pr = PullRequest(number=newest.number, state=newest.state, head_ref=branch, head_oid=newest.head_oid)
+    return PrAnswer(known=True, pr=pr)
 
 
 @dataclass(frozen=True, slots=True)
@@ -273,29 +375,20 @@ def gather(worktree: Worktree, context: Context) -> Facts:
             return replace(base, leftover_matches=False, leftover_detail="its project is not registered in Orca")
         compared = leftover_matches(path, repo, branch)
         return replace(base, leftover_matches=compared.matches, leftover_detail=compared.detail)
+    if repo is None or not _belongs_to(path, repo):
+        return replace(base, is_worktree=True, foreign=True)
     dirty = is_dirty(path)
-    pr = context.prs(repo).get(branch) if (repo is not None and branch and not dirty) else None
+    answer = context.prs(repo, branch) if (branch and not dirty) else PrAnswer(known=True)
+    pr = answer.pr
     return replace(
         base,
         is_worktree=True,
         dirty=dirty,
         pr=pr,
+        pr_known=answer.known,
         beyond_merge=_beyond_merge(path, pr.head_oid) if pr is not None and pr.merged else 0,
-        in_default=False if dirty or pr is not None else _in_default(path),
+        in_default=False if dirty or pr is not None or not answer.known else _in_default(path),
     )
-
-
-def cached_prs() -> PrLookup:
-    """`pr_heads` once per clone: one GraphQL round per project, not per worktree."""
-    seen: dict[str, Mapping[str, PullRequest]] = {}
-
-    def lookup(repo: pathlib.Path) -> Mapping[str, PullRequest]:
-        key = _comparable(repo)
-        if key not in seen:
-            seen[key] = pr_heads(repo)
-        return seen[key]
-
-    return lookup
 
 
 # ---------------------------------------------------------------- one profile
@@ -318,7 +411,7 @@ def review(
     context = Context(
         repo_paths={r.id: pathlib.Path(r.path) for r in repos},
         activity={a.worktree_id: a for a in runtime.activity()},
-        prs=prs or cached_prs(),
+        prs=prs or branch_pr,
         now_ms=now_ms,
         cwd=cwd,
     )
@@ -330,7 +423,15 @@ def review(
         judgement = decide(gather(worktree, context), idle_days=idle_days)
         project = names.get(worktree.repo_id, worktree.repo_id)
         rows.append(
-            Row(profile, project, worktree.path, short_branch(worktree.branch), judgement.verdict, judgement.reason)
+            Row(
+                profile,
+                project,
+                worktree.path,
+                short_branch(worktree.branch),
+                judgement.verdict,
+                judgement.reason,
+                worktree_id=worktree.id,
+            )
         )
     return rows
 
@@ -343,11 +444,14 @@ def select(runtime: OrcaRuntime, wanted: str) -> frozenset[str]:
     """
     repos = runtime.repos()
     candidate = pathlib.Path(wanted).expanduser()
+    roots = [(r.id, pathlib.Path(r.path)) for r in repos]
+    roots += [(w.repo_id, pathlib.Path(w.path)) for w in runtime.worktrees()]
     if candidate.exists():
         here = candidate.resolve()
-        roots = [(r.id, pathlib.Path(r.path)) for r in repos]
-        roots += [(w.repo_id, pathlib.Path(w.path)) for w in runtime.worktrees()]
         return frozenset(repo_id for repo_id, root in roots if _is_within(here, root))
+    if candidate.is_absolute():
+        # A vanished worktree is still registered: match its path as Orca spells it.
+        return frozenset(repo_id for repo_id, root in roots if _comparable(root) == _comparable(candidate))
     key = wanted.strip().casefold()
     return frozenset(
         r.id for r in repos if key in {pathlib.Path(r.path).name.casefold(), (r.display_name or "").casefold()}
@@ -357,31 +461,60 @@ def select(runtime: OrcaRuntime, wanted: str) -> frozenset[str]:
 def apply(runtime: OrcaRuntime, rows: list[Row]) -> list[Row]:
     """Remove each removable worktree; returns the rows with what happened to each."""
     repo_paths = {r.id: pathlib.Path(r.path) for r in runtime.repos()}
-    by_path = {_comparable(w.path): w for w in runtime.worktrees()}
+    by_id = {w.id: w for w in runtime.worktrees()}
     done: list[Row] = []
     for row in rows:
-        worktree = by_path.get(_comparable(row.path))
-        if not row.removable or worktree is None:
+        if not row.removable:
             done.append(row)
             continue
-        outcome = _remove(runtime, worktree, row.verdict, repo_paths.get(worktree.repo_id))
+        worktree = by_id.get(row.worktree_id)
+        if worktree is None or _comparable(worktree.path) != _comparable(row.path):
+            done.append(replace(row, outcome="skipped: Orca no longer lists the worktree reviewed"))
+            continue
+        outcome = _remove(runtime, worktree, row, repo_paths.get(worktree.repo_id))
         done.append(replace(row, outcome=outcome))
     return done
 
 
-def _remove(runtime: OrcaRuntime, worktree: Worktree, verdict: Verdict, repo: pathlib.Path | None) -> str:
+def _still_safe(path: pathlib.Path, row: Row, repo: pathlib.Path | None) -> str:
+    """Why the worktree must now be kept, re-checked just before removal; empty when it may go."""
+    if row.verdict is Verdict.MISSING:
+        return "its folder is back" if path.exists() else ""
+    if repo is None:
+        return "its project is no longer registered"
+    if row.verdict is Verdict.LEFTOVER:
+        compared = leftover_matches(path, repo, row.branch)
+        return "" if compared.matches else f"changed since review: {compared.detail}"
+    if not _belongs_to(path, repo):
+        return "its git is not the registered project's"
+    return "changed since review: uncommitted or untracked files" if is_dirty(path) else ""
+
+
+def _remove(runtime: OrcaRuntime, worktree: Worktree, row: Row, repo: pathlib.Path | None) -> str:
     path = pathlib.Path(worktree.path)
-    if verdict is Verdict.LEFTOVER:
+    if keep := _still_safe(path, row, repo):
+        return f"skipped: {keep}"
+    if row.verdict is Verdict.LEFTOVER:
         try:
             remove_tree(path)
         except OSError as e:
             return f"failed: could not delete the folder: {e}"
-    if verdict in {Verdict.LEFTOVER, Verdict.MISSING} and repo is not None:
+    if row.verdict in {Verdict.LEFTOVER, Verdict.MISSING} and repo is not None:
         _ = proc.git("worktree", "prune", cwd=repo)
     try:
-        runtime.remove_worktree(worktree.id)
+        confirmed = runtime.remove_worktree(worktree.id)
     except OrcaUnavailableError as e:
-        if verdict in {Verdict.LEFTOVER, Verdict.MISSING} and not path.exists():
+        if _gone(runtime, worktree.id):
             return "removed (git had already dropped it from Orca)"
         return f"failed: {e}"
-    return "removed"
+    if confirmed or _gone(runtime, worktree.id):
+        return "removed"
+    return "failed: Orca accepted the removal but still lists the worktree"
+
+
+def _gone(runtime: OrcaRuntime, worktree_id: str) -> bool:
+    """True when Orca no longer lists the worktree; a failed listing proves nothing."""
+    try:
+        return all(w.id != worktree_id for w in runtime.worktrees())
+    except OrcaUnavailableError:
+        return False

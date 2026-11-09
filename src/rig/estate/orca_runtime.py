@@ -374,10 +374,11 @@ class OrcaRuntime:
             raise OrcaUnavailableError(msg)
         return answer.worktrees
 
-    def remove_worktree(self, worktree_id: str) -> None:
-        """Remove a worktree the way Orca's own delete does.
+    def remove_worktree(self, worktree_id: str) -> bool:
+        """Remove a worktree the way Orca's own delete does; True when Orca says it is gone.
 
         Orca stops its terminals and runs `git worktree remove`, which refuses a dirty tree
         because `force` is never sent. It deletes the branch too, unless git calls it unmerged.
+        False means Orca accepted the request but has not finished it, so check `worktrees()`.
         """
-        _ = self.call(_Removed, "worktree.rm", {"worktree": f"id:{worktree_id}"})
+        return self.call(_Removed, "worktree.rm", {"worktree": f"id:{worktree_id}"}).removed

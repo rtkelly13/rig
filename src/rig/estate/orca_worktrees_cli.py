@@ -49,11 +49,23 @@ def _profiles(user_data: str | None, work_data: str | None, *, include_work: boo
     return chosen
 
 
+def _headline(rows: list[Row], *, applied: bool) -> str:
+    removable = [r for r in rows if r.removable]
+    if not applied:
+        return f"{len(removable)} of {len(rows)} Orca worktree(s) finished; the rest are kept"
+    removed = sum(1 for r in removable if r.removed)
+    failed = sum(1 for r in removable if r.failed)
+    skipped = len(removable) - removed - failed
+    return (
+        f"{removed} of {len(rows)} Orca worktree(s) removed, {failed} failed, "
+        f"{skipped} skipped as changed since review; the rest are kept"
+    )
+
+
 def _print(rows: list[Row], *, show_kept: bool, applied: bool) -> None:
     removable = [r for r in rows if r.removable]
     shown = rows if show_kept else removable
-    verb = "removed" if applied else "finished"
-    console.print(f"{len(removable)} of {len(rows)} Orca worktree(s) {verb}; the rest are kept")
+    console.print(_headline(rows, applied=applied))
     if not shown:
         return
     table = Table(show_lines=False)
@@ -135,10 +147,13 @@ def orca_worktrees(
     nothing local since (`merged`), when it holds nothing outside the default branch and has sat
     idle for --idle-days (`landed`), when its folder is gone (`missing`), or when an interrupted
     delete left a folder git no longer knows and every file in it matches the branch (`leftover`).
-    A dirty tree, a running or waiting agent, an open or closed-unmerged PR, unpushed commits and
-    the worktree this command runs in are always kept. --apply removes through Orca's own
-    delete, which stops the worktree's terminals and keeps any branch git calls unmerged.
-    Exit code 2 for a missing or unmatched scope, or when the estate's Orca is not running.
+    A dirty tree, a running or waiting agent, an open or closed-unmerged PR, unpushed commits,
+    a worktree whose git is not its project's, one whose PRs GitHub could not list, and the
+    worktree this command runs in are always kept. Each is re-checked just before removal.
+    --apply removes through Orca's own delete, which stops the worktree's terminals and keeps any
+    branch git calls unmerged.
+    Exit code 1 when any removal failed, with or without --json. Exit code 2 for a missing or
+    unmatched scope, or when the estate's Orca is not running.
     """
     if bool(repos) == every:
         err.print("[bold red]Choose a scope: --repo <name|path> (repeatable), or --all for every project.[/bold red]")
@@ -158,9 +173,14 @@ def orca_worktrees(
         except OrcaUnavailableError as e:
             err.print(f"[red]{profile.name} Orca profile failed: {e}[/red]")
             raise typer.Exit(2) from e
+    report(rows, as_json=as_json, show_kept=show_kept, applied=apply)
+
+
+def report(rows: list[Row], *, as_json: bool, show_kept: bool, applied: bool) -> None:
+    """Print the rows as JSON or a table, then exit 1 if any removal failed, in either form."""
     if as_json:
         typer.echo(_ROWS.dump_json(rows, indent=2).decode())
-        return
-    _print(rows, show_kept=show_kept, applied=apply)
-    if apply and any(r.outcome.startswith("failed") for r in rows):
+    else:
+        _print(rows, show_kept=show_kept, applied=applied)
+    if applied and any(r.failed for r in rows):
         raise typer.Exit(1)
