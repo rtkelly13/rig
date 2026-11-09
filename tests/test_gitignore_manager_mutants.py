@@ -53,9 +53,13 @@ PYTHON = {
     "gitignore_entries": [{"name": "pycache", "comment": "Python bytecode", "write": ["__pycache__/"]}],
 }
 
-BASE = PolicyConfig.parse({"defaults": {"gitignore_entries": [TEMP, TODO]}})
-PRESET_ONLY = PolicyConfig.parse({"language_presets": {"python": PYTHON}})
-EMPTY = PolicyConfig.parse({})
+#: The bespoke agent-file block is required by default; these tests pin the entry mechanics, so
+#: they turn it off. tests/test_gitignore_manager.py covers the block itself.
+NO_AGENT_FILES = {"agents_md_hygiene": {"bespoke_agent_files": []}}
+
+BASE = PolicyConfig.parse({"defaults": {"gitignore_entries": [TEMP, TODO], **NO_AGENT_FILES}})
+PRESET_ONLY = PolicyConfig.parse({"defaults": NO_AGENT_FILES, "language_presets": {"python": PYTHON}})
+EMPTY = PolicyConfig.parse({"defaults": NO_AGENT_FILES})
 
 
 def _repo(path: pathlib.Path, gitignore: str | None = None, *, git: bool = True) -> pathlib.Path:
