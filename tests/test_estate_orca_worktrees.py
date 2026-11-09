@@ -2,21 +2,18 @@
 
 from __future__ import annotations
 
-import json
 import pathlib
-from collections.abc import Iterator, Mapping
-from dataclasses import dataclass, field
+from collections.abc import Mapping
 
 import pytest
-from pydantic import TypeAdapter
 from typer.testing import CliRunner
 
 from rig import proc
 from rig.estate import orca_worktrees
 from rig.estate.cli import app as estate_app
-from rig.estate.orca_runtime import OrcaRuntime
 from rig.estate.orca_worktrees import Facts, Verdict, decide, leftover_matches
 from rig.estate.prs import PullRequest
+from tests.fakes.orca import FakeOrca
 
 pytestmark = pytest.mark.ci
 
@@ -137,60 +134,6 @@ def test_a_leftover_folder_whose_branch_is_gone_is_kept(repo: pathlib.Path) -> N
 
 
 # ---------------------------------------------------------------- through a fake Orca
-
-
-@dataclass(frozen=True)
-class Request:
-    id: str
-    method: str
-    params: dict[str, str | None] | None
-
-
-REQUEST = TypeAdapter(Request)
-
-
-@dataclass
-class FakeOrca:
-    """`repo.list`, `worktree.list`, `worktree.ps` and `worktree.rm`, as Orca answers them."""
-
-    repo: pathlib.Path
-    worktrees: list[Json] = field(default_factory=list[Json])
-    activity: list[Json] = field(default_factory=list[Json])
-    removed: list[str] = field(default_factory=list[str])
-
-    def runtime(self) -> OrcaRuntime:
-        return OrcaRuntime("pipe", "token", self.exchange)
-
-    def exchange(self, _endpoint: str, request: bytes) -> Iterator[bytes]:
-        body = REQUEST.validate_json(request)
-        method, params = body.method, body.params or {}
-        if method == "repo.list":
-            result: object = {"repos": [{"id": "r1", "path": self.repo.as_posix(), "displayName": "repo"}]}
-        elif method == "worktree.list":
-            result = {"worktrees": self.worktrees}
-        elif method == "worktree.ps":
-            result = {"worktrees": self.activity, "truncated": False}
-        elif method == "worktree.rm":
-            selector = str(params["worktree"]).removeprefix("id:")
-            self.removed.append(selector)
-            result = {"removed": True}
-        else:
-            raise AssertionError(method)
-        yield (json.dumps({"id": body.id, "ok": True, "result": result}) + "\n").encode()
-
-    def add(self, path: pathlib.Path, branch: str, *, idle_days: float = 10) -> str:
-        worktree_id = f"r1::{path.as_posix()}"
-        self.worktrees.append(
-            {
-                "id": worktree_id,
-                "repoId": "r1",
-                "path": path.as_posix(),
-                "branch": f"refs/heads/{branch}" if branch else "",
-                "isMainWorktree": False,
-                "lastActivityAt": NOW_MS - idle_days * DAY_MS,
-            }
-        )
-        return worktree_id
 
 
 def _prs(heads: Mapping[str, PullRequest]) -> orca_worktrees.PrLookup:
