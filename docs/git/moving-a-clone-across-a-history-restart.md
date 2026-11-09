@@ -28,6 +28,18 @@ git fetch archive "refs/pull/<n>/head:refs/remotes/archive/pr/<n>"   # each PR y
 `archive/pr/<n>` refs show what each archive PR held, which matters once you
 start working out what was squash-merged.
 
+Then refresh `origin` itself. Fetching `archive` does not touch it, so a clone
+that has not fetched since the restart still has the old history under
+`origin/main`, and every later step would compare against, and port onto, the
+wrong base:
+
+```bash
+git fetch --prune origin
+git rev-list --max-parents=0 origin/main   # must print the new root, 3ef1c67…
+```
+
+Stop if it prints anything else.
+
 ## 2. Install a pre-push guard
 
 Put a `pre-push` hook in the clone's common dir (`git rev-parse --git-common-dir`
