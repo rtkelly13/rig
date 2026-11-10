@@ -360,7 +360,7 @@ def render_ls_lint_config(
     """Generates standard .ls-lint.yml content."""
     lines = [
         "# .ls-lint.yml",
-        "# Estate-wide ban on shell (.sh, .bash, .zsh) and PowerShell (.ps1, .psm1) scripts.",
+        "# Policy ban on shell (.sh, .bash, .zsh) and PowerShell (.ps1, .psm1) scripts.",
         "# Exceptions must be explicitly listed in the `ignore:` section below.",
         "",
         "ls:",

@@ -1,3 +1,5 @@
+# Pull Request
+
 ## Summary
 
 <!-- Briefly describe the changes introduced in this PR and their rationale. -->
@@ -5,7 +7,7 @@
 ## Linked Issues
 
 <!-- Link any relevant issues below (e.g. Closes #123, Fixes #456). -->
-- Resolves: 
+- Resolves:
 
 ## Type of Change
 
@@ -28,5 +30,5 @@
 
 - [ ] My branch is rebased onto latest `main` with a clean linear history.
 - [ ] Unit and/or integration tests have been added or updated.
-- [ ] All required CI checks pass (`ci` / `test` / `lint`).
+- [ ] All required CI checks pass ({% if required_checks %}`{{ required_checks | join('`, `') }}`{% else %}`ci` / `test` / `lint`{% endif %}).
 - [ ] Relevant documentation has been updated.

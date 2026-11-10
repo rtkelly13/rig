@@ -1,8 +1,10 @@
-blank_issues_enabled: false
+blank_issues_enabled: {{ "false" if discussions_enabled else "true" }}
 contact_links:
+{% if discussions_enabled %}
   - name: GitHub Discussions / Community Questions
     url: https://github.com/{{ repo_full_name }}/discussions
     about: Ask questions, share ideas, or get help with {{ repo_name }}.
+{% endif %}
   - name: Security Vulnerability Disclosure
     url: https://github.com/{{ repo_full_name }}/security/policy
     about: Please report security vulnerabilities privately via our security policy.

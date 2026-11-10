@@ -48,8 +48,19 @@ body:
     id: runtime-version
     attributes:
       label: Runtime & Toolchain Versions
-      description: e.g., Python 3.13 / Node 22 / .NET 10 / pnpm 12 / uv 0.6
+{% if "dotnet" in languages or primary_language == "dotnet" %}
+      description: .NET SDK version, OS version, and {{ repo_name }} version (e.g. dotnet --version)
+      placeholder: e.g. .NET 10.0.100
+{% elif "python" in languages or primary_language == "python" %}
+      description: Python version, toolchain, and OS version (e.g. python --version, uv --version)
       placeholder: e.g. Python 3.13, uv 0.6
+{% elif "node" in languages or primary_language == "node" %}
+      description: Node.js version, package manager, and OS version (e.g. node -v, pnpm -v)
+      placeholder: e.g. Node 22, pnpm 10
+{% else %}
+      description: Toolchain and runtime versions (e.g., .NET 10 / Node 22 / Python 3.13)
+      placeholder: Toolchain / runtime versions
+{% endif %}
     validations:
       required: false
   - type: textarea

@@ -66,3 +66,37 @@ def test_sync_oss_templates_apply_and_inspect(tmp_path: Path):
     )
     assert not resynced.changed
     assert len(resynced.messages) == 0
+
+
+def test_sync_oss_templates_language_rendering(tmp_path: Path):
+    dotnet_dir = tmp_path / "dotnet_repo"
+    dotnet_dir.mkdir()
+    synced = sync_oss_templates(
+        dotnet_dir,
+        context={
+            "repo_name": "MyDotNetLib",
+            "repo_full_name": "rtkelly-labs/MyDotNetLib",
+            "languages": ("dotnet",),
+            "primary_language": "dotnet",
+            "required_checks": ["build", "pr-title"],
+            "discussions_enabled": False,
+        },
+        dry_run=False,
+    )
+    assert synced.changed
+
+    contrib = (dotnet_dir / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    assert "dotnet build --configuration Release" in contrib
+    assert "uv run ruff" not in contrib
+
+    bug = (dotnet_dir / ".github" / "ISSUE_TEMPLATE" / "bug_report.yml").read_text(encoding="utf-8")
+    assert ".NET SDK version" in bug
+    assert "Python 3.13" not in bug
+
+    config_yml = (dotnet_dir / ".github" / "ISSUE_TEMPLATE" / "config.yml").read_text(encoding="utf-8")
+    assert "blank_issues_enabled: true" in config_yml
+    assert "discussions" not in config_yml
+
+    pr_tmpl = (dotnet_dir / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(encoding="utf-8")
+    assert "`build`, `pr-title`" in pr_tmpl
+    assert pr_tmpl.startswith("# Pull Request")
