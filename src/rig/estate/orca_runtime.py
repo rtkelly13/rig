@@ -90,7 +90,7 @@ class _Metadata:
     transport: Lenient[_Transport] = None
 
 
-type Params = dict[str, str | None] | dict[str, dict[str, str]]
+type Params = dict[str, str | dict[str, str] | None]
 """A request's params: flat string fields, or one level of string maps (`settings.update`)."""
 
 
@@ -190,7 +190,13 @@ class _OneGroup:
 
 @dataclass(frozen=True, slots=True)
 class OrcaLiveSettings:
-    """The agent-launch part of Orca's settings; the runtime does not expose the rest."""
+    """The agent-launch part of Orca's settings; the runtime does not expose the rest.
+
+    Since Orca 1.4.255 ``agentDefaultArgs`` here is each agent's whole launch line: its permission
+    mode's flags joined to the custom arguments the profile stores. `settings.update` takes lines
+    in the same form and splits them again (flags to the mode, the rest to custom arguments), so a
+    line is safe to send back whole; see `set_agent_default_args`.
+    """
 
     agent_default_args: Annotated[Lenient[dict[str, str]], Field(alias="agentDefaultArgs")] = None
 
@@ -354,13 +360,13 @@ class OrcaRuntime:
         """Orca's settings as the running app holds them, not as last backed up."""
         return self.call(_OneSettings, "settings.get").settings
 
-    def agent_default_args(self) -> dict[str, str]:
-        """The extra arguments Orca adds when it launches each agent (Settings > Agents)."""
-        return self.settings().agent_default_args or {}
+    def set_agent_default_args(self, lines: dict[str, str]) -> dict[str, str]:
+        """Send every agent's whole launch line; returns the lines Orca then serves.
 
-    def set_agent_default_args(self, args: dict[str, str]) -> dict[str, str]:
-        """Replace the whole agent-arguments map; Orca does not merge it, so pass every agent's entry."""
-        reply = self.call(_OneSettings, "settings.update", {"agentDefaultArgs": args})
+        Orca replaces the map whole, so pass every agent, not only the ones that change. Each line is
+        split again: its permission flags set the agent's mode, the rest its custom arguments.
+        """
+        reply = self.call(_OneSettings, "settings.update", {"agentDefaultArgs": lines})
         return reply.settings.agent_default_args or {}
 
     def worktrees(self) -> tuple[Worktree, ...]:

@@ -1,8 +1,9 @@
 """`workspace orca doctor` and `workspace orca sync`: audit and manage Orca per repo.
 
 Orca keeps its settings in a SQLite document store that it holds open and rewrites while it
-runs. For diagnosis, settings come from the newest `profile-state.db.backup.*.db` that Orca
-writes beside it. Live repos come from `orca repo list --json`.
+runs. For diagnosis, settings are read from it read-only, or from the newest
+`profile-state.db.backup.*.db` beside it when it cannot be read. Rig never writes to either. Live
+repos come from `orca repo list --json`.
 
 For mutations, see `rig.workspace.orca_rpc`. Every entry point takes an optional Orca user-data
 folder, so a second instance (such as `%APPDATA%/orca-personal`) can be audited and synced.
@@ -14,7 +15,7 @@ import os
 import sqlite3
 from collections.abc import Callable
 from contextlib import closing
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
@@ -22,8 +23,14 @@ from typing import Annotated
 from pydantic import Field
 
 from rig import roots
-from rig.estate.orca_runtime import OrcaRuntime, OrcaUnavailableError
 from rig.typed_json import decode, decode_json, try_decode_json
+from rig.workspace.orca_agent_permissions import (
+    AgentCheck,
+    AgentPermissionsPolicy,
+    custom_args_checks,
+    launch_checks,
+    permission_checks,
+)
 from rig.workspace.orca_agent_sleep import AgentSleepPolicy, agent_sleep_check
 from rig.workspace.orca_hooks import (
     ORCA_YAML,
@@ -91,7 +98,7 @@ __all__ = [
     "run_orca",
     "send_orca_rpc",
     "sync_repos",
-    "live_settings",
+    "agent_checks",
     "take_snapshot",
     "set_base_ref",
     "set_visibility",
@@ -123,6 +130,7 @@ class OrcaPolicy:
     """What `config/orca.json` declares. Agents and repos it leaves out are not checked."""
 
     agent_args: dict[str, str] = field(default_factory=dict[str, str])
+    agent_permissions: AgentPermissionsPolicy | None = None
     workspace_dir: str | None = None
     agent_sleep: AgentSleepPolicy | None = None
     repos: dict[str, RepoPolicy] = field(default_factory=dict[str, RepoPolicy])
@@ -142,6 +150,8 @@ class OrcaSettings:
     workspace_dir: Annotated[str | None, Field(alias="workspaceDir")] = None
     agent_sleep: Annotated[bool | None, Field(alias="experimentalAgentHibernation")] = None
     agent_sleep_idle_ms: Annotated[int | None, Field(alias="agentHibernationIdleMs")] = None
+    permission_default: Annotated[str | None, Field(alias="agentPermissionDefault")] = None
+    permission_overrides: Annotated[dict[str, str] | None, Field(alias="agentPermissionOverrides")] = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -201,11 +211,6 @@ class SettingsCopy:
     source: Path
     saved: datetime
     settings: OrcaSettings
-    #: Read from the running app (`settings.get`) rather than a backup, so it cannot be stale.
-    live: bool = False
-    #: Only agent arguments were read (the runtime, with no backup to fill in the rest), so every
-    #: other setting is unknown rather than unset.
-    agent_args_only: bool = False
 
 
 @dataclass(slots=True, frozen=True)
@@ -216,6 +221,9 @@ class OrcaSnapshot:
     repos: tuple[OrcaRepo, ...] | None
     #: Where the settings backup was looked for; None means the default instance's profile.
     profile_dir: Path | None = None
+    #: What the running Orca launches each agent with (permission flags plus custom arguments), or
+    #: None when it could not be asked.
+    launch_args: dict[str, str] | None = None
 
 
 def orca_profile_dir(user_data: Path | None = None) -> Path:
@@ -237,10 +245,19 @@ def _mtime(path: Path) -> float:
     return path.stat().st_mtime
 
 
-def read_settings(db_path: Path) -> OrcaSettings | None:
-    """The ``settings`` document of a profile-state database copy, or None when absent or unreadable."""
+_LIVE_DB = "profile-state.db"
+
+
+def read_settings(db_path: Path, *, live: bool = False) -> OrcaSettings | None:
+    """The ``settings`` document of a profile-state database, or None when absent or unreadable.
+
+    A ``live`` database, which Orca may be writing, is not opened as immutable, so its log is read.
+    """
+    if not db_path.is_file():
+        return None
+    mode = "mode=ro" if live else "mode=ro&immutable=1"
     try:
-        with closing(sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro&immutable=1", uri=True)) as db:
+        with closing(sqlite3.connect(f"file:{db_path.as_posix()}?{mode}", uri=True)) as db:
             rows = db.execute("select payload from profile_state_documents where domain = 'settings'")
             payloads = decode(list[list[str]], rows.fetchall())
     except (sqlite3.Error, ValueError):
@@ -249,6 +266,13 @@ def read_settings(db_path: Path) -> OrcaSettings | None:
 
 
 def read_settings_copy(profile_dir: Path) -> SettingsCopy | None:
+    """Orca's settings from its live database, else from its newest backup."""
+    live = profile_dir / _LIVE_DB
+    if (settings := read_settings(live, live=True)) is not None:
+        # Orca writes through SQLite's write-ahead log, so the log holds the latest save.
+        wal = live.with_name(f"{_LIVE_DB}-wal")
+        saved = max(_mtime(path) for path in (live, wal) if path.is_file())
+        return SettingsCopy(source=live, saved=datetime.fromtimestamp(saved, tz=UTC), settings=settings)
     backup = newest_backup(profile_dir)
     if backup is None:
         return None
@@ -265,38 +289,16 @@ def live_repos(run: CommandRunner = run_orca) -> tuple[OrcaRepo, ...] | None:
     return reply.result.repos if reply and reply.result else None
 
 
-def live_settings(user_data: Path | None = None) -> SettingsCopy | None:
-    """Agent arguments from the running Orca over `settings.get`, or None when it is not reachable.
-
-    The runtime exposes only agent-launch settings, so ``workspace_dir`` is left unset.
-    """
-    try:
-        live = OrcaRuntime.from_metadata(orca_runtime_metadata_path(user_data)).settings()
-    except OrcaUnavailableError:
-        return None
-    settings = OrcaSettings(agent_default_args=live.agent_default_args)
-    return SettingsCopy(
-        source=Path("settings.get"), saved=datetime.now(UTC), settings=settings, live=True, agent_args_only=True
-    )
-
-
 def take_snapshot(
     profile_dir: Path | None = None,
     run: CommandRunner = run_orca,
-    live: Callable[[], SettingsCopy | None] | None = None,
+    launch: Callable[[], dict[str, str] | None] | None = None,
 ) -> OrcaSnapshot:
-    """Orca's settings and repos. With ``live``, agent arguments come from the running app."""
+    """Orca's saved settings and live repos; with ``launch``, also what it launches each agent with."""
     folder = profile_dir or orca_profile_dir()
-    backup = read_settings_copy(folder)
-    current = live() if live else None
-    if current is not None and backup is not None:
-        # The runtime serves only agent arguments; every other setting comes from the backup.
-        current = replace(
-            current,
-            settings=replace(backup.settings, agent_default_args=current.settings.agent_default_args),
-            agent_args_only=False,
-        )
-    return OrcaSnapshot(settings=current or backup, repos=live_repos(run), profile_dir=folder)
+    return OrcaSnapshot(
+        read_settings_copy(folder), live_repos(run), profile_dir=folder, launch_args=launch() if launch else None
+    )
 
 
 # ---------------------------------------------------------------- icon helper
@@ -355,6 +357,9 @@ def diagnose(
     """Every difference between the policy and Orca, plus local managed projects Orca has not registered."""
     profile_dir = snapshot.profile_dir or orca_profile_dir()
     findings = _settings_findings(policy, snapshot.settings, profile_dir, now or datetime.now(tz=UTC))
+    findings += [_check_finding(c) for c in agent_checks(policy, snapshot)]
+    if policy.agent_permissions is not None and snapshot.launch_args is None:
+        findings.append(OrcaFinding("agents", "launch args", Status.SKIP, "Orca is not running to ask"))
     findings += _repo_findings(policy, snapshot.repos, estate_root, managed_projects)
     return findings
 
@@ -409,27 +414,16 @@ def _settings_findings(
             )
         ]
     age_hours = (now - copy.saved).total_seconds() / 3600
-    stale = not copy.live and age_hours > STALE_AFTER_HOURS
-    source = (
-        "live from the running Orca (settings.get)" if copy.live else f"{copy.source.name}, saved {age_hours:.1f}h ago"
-    )
+    stale = age_hours > STALE_AFTER_HOURS
     findings = [
         OrcaFinding(
             "settings",
             "source",
             Status.WARN if stale else Status.OK,
-            source,
+            f"{copy.source.name}, saved {age_hours:.1f}h ago",
             "Orca writes these backups as it saves; recent Settings changes may not show yet" if stale else "",
         )
     ]
-    actual_args = copy.settings.agent_default_args or {}
-    for agent, want in sorted(policy.agent_args.items()):
-        have = actual_args.get(agent, "")
-        findings.append(_agent_args_finding(agent, want, have))
-    if copy.agent_args_only:
-        wanted = {"workspace dir": policy.workspace_dir, "agent sleep": policy.agent_sleep}
-        unread = f"no readable {_BACKUP_GLOB} to read it from"
-        return findings + [OrcaFinding("settings", k, Status.SKIP, unread) for k, v in wanted.items() if v is not None]
     if policy.workspace_dir is not None:
         want_dir = Path(policy.workspace_dir).expanduser()
         have_dir = Path(copy.settings.workspace_dir).expanduser() if copy.settings.workspace_dir else None
@@ -456,11 +450,24 @@ def _agent_sleep_finding(want: AgentSleepPolicy, settings: OrcaSettings) -> Orca
     return OrcaFinding("settings", "agent sleep", Status.FAIL, f"{check.have}, want {check.want}", check.fix)
 
 
-def _agent_args_finding(agent: str, want: str, have: str) -> OrcaFinding:
-    if have.strip() == want.strip():
-        return OrcaFinding(f"agent {agent}", "default args", Status.OK, have or "(none)")
-    fix = "run `workspace orca sync --apply` to set every agent's default arguments"
-    return OrcaFinding(f"agent {agent}", "default args", Status.FAIL, f'"{have}", want "{want}"', fix)
+def agent_checks(policy: OrcaPolicy, snapshot: OrcaSnapshot, *, launch: bool = True) -> list[AgentCheck]:
+    """Custom arguments and permission modes from the backup, and launch arguments from the running Orca."""
+    stored = snapshot.settings.settings if snapshot.settings else None
+    checks = custom_args_checks(policy.agent_args, stored.agent_default_args or {}) if stored else []
+    if (want := policy.agent_permissions) is None:
+        return checks
+    if stored is not None:
+        overrides = stored.permission_overrides or {}
+        checks += permission_checks(want, list(overrides), stored.permission_default, overrides)
+    if launch and snapshot.launch_args is not None:
+        checks += launch_checks(want, policy.agent_args, snapshot.launch_args)
+    return checks
+
+
+def _check_finding(check: AgentCheck) -> OrcaFinding:
+    if check.ok:
+        return OrcaFinding(check.subject, check.check, Status.OK, check.have or "(none)")
+    return OrcaFinding(check.subject, check.check, Status.FAIL, f'"{check.have}", want "{check.want}"', check.fix)
 
 
 def policy_repo_path(path: str, code_root: Path | None = None) -> Path:
@@ -611,12 +618,10 @@ class SyncAction:
 
 
 def settings_manual_actions(policy: OrcaPolicy, snapshot: OrcaSnapshot) -> list[SyncAction]:
-    """Settings the runtime cannot write, as `manual` rows: today only Agent sleep.
-
-    `settings.update` rejects the Agent sleep keys, and Orca's database must not be edited while
-    it runs, so sync names the change to make in Orca's Settings instead of making it.
+    """Agent sleep, as a `manual` row: `settings.update` rejects its keys, and Orca's database must
+    not be edited while it runs, so sync names the change to make in Orca's Settings instead.
     """
-    if policy.agent_sleep is None or snapshot.settings is None or snapshot.settings.agent_args_only:
+    if policy.agent_sleep is None or snapshot.settings is None:
         return []
     settings = snapshot.settings.settings
     check = agent_sleep_check(policy.agent_sleep, settings.agent_sleep, settings.agent_sleep_idle_ms)

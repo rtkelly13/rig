@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from typer.testing import CliRunner
 
+from rig.estate.orca_runtime import ORCA_UNAVAILABLE_EXIT
 from rig.typed_json import decode_json
 from rig.workspace import orca_cli
 from rig.workspace.cli import app
@@ -109,7 +110,11 @@ def decode_repo(raw: dict[str, object]) -> OrcaRepo:
 def test_checked_in_policy_decodes() -> None:
     policy = load_policy(REPO_ROOT / "config" / "orca.json")
     assert policy.agent_args["claude"] == ""
-    assert policy.agent_args["opencode"] == "--auto"
+    assert policy.agent_args["opencode2"] == "--auto"
+    assert policy.agent_permissions is not None
+    assert policy.agent_permissions.wanted("claude") == "auto"
+    assert policy.agent_permissions.wanted("antigravity") == "full-access"
+    assert policy.agent_permissions.wanted("codex") == "auto"
     assert policy.repos["design-system"].external_worktree_visibility == "show"
     assert policy.repos["design-system"].color == "#ec4899"
     assert policy.repos["design-system"].icon == "Palette"
@@ -129,6 +134,18 @@ def test_read_settings_unreadable_is_none(tmp_path: pathlib.Path) -> None:
     junk.write_text("not sqlite", encoding="utf-8")
     assert read_settings(junk) is None
     assert read_settings_copy(tmp_path) is None
+
+
+def test_settings_come_from_the_live_db_before_a_backup(tmp_path: pathlib.Path) -> None:
+    _write_profile_db(tmp_path / "profile-state.db.backup.1.db", json.dumps({"workspaceDir": "/old"}))
+    copy = read_settings_copy(tmp_path)
+    assert copy is not None
+    assert copy.settings.workspace_dir == "/old"
+
+    _write_profile_db(tmp_path / "profile-state.db", json.dumps({"workspaceDir": "/live"}))
+    copy = read_settings_copy(tmp_path)
+    assert copy is not None
+    assert (copy.source.name, copy.settings.workspace_dir) == ("profile-state.db", "/live")
 
 
 def test_newest_backup_ignores_live_db(tmp_path: pathlib.Path) -> None:
@@ -172,9 +189,9 @@ def test_agent_args_mismatch_fails_with_fix() -> None:
         settings=_settings_copy({"claude": "--dangerously-skip-permissions", "antigravity": "--skip"}), repos=()
     )
     findings = diagnose(policy, snapshot, estate_root=pathlib.Path("/code"), now=NOW)
-    by_subject = {f.subject: f for f in findings if f.check == "default args"}
+    by_subject = {f.subject: f for f in findings if f.check == "custom args"}
     assert by_subject["agent claude"].status is Status.FAIL
-    assert "workspace orca sync --apply" in by_subject["agent claude"].fix
+    assert by_subject["agent claude"].fix == 'Orca Settings → Agents → claude: set custom arguments to ""'
     assert by_subject["agent opencode"].status is Status.FAIL
     assert '"--auto"' in by_subject["agent opencode"].detail
     assert by_subject["agent antigravity"].status is Status.OK
@@ -243,41 +260,18 @@ def test_sync_reports_agent_sleep_as_manual() -> None:
     assert settings_manual_actions(policy, OrcaSnapshot(None, ())) == []
 
 
-def test_live_agent_args_alone_leave_backup_only_settings_unchecked() -> None:
-    # Orca reachable but no backup: the runtime serves only agent arguments, so Agent sleep and the
-    # workspace folder are unknown, not off or unset.
-    live = SettingsCopy(
-        source=pathlib.Path("settings.get"),
-        saved=NOW,
-        settings=OrcaSettings(agent_default_args={}),
-        live=True,
-        agent_args_only=True,
-    )
-    policy = OrcaPolicy(workspace_dir="~/orca/workspaces", agent_sleep=AgentSleepPolicy(enabled=True))
-    snapshot = OrcaSnapshot(live, ())
-
-    findings = diagnose(policy, snapshot, estate_root=pathlib.Path("/c"), now=NOW)
-
-    checked = {f.check: f.status for f in findings if f.check in {"workspace dir", "agent sleep"}}
-    assert checked == {"workspace dir": Status.SKIP, "agent sleep": Status.SKIP}
-    assert settings_manual_actions(policy, snapshot) == []
-
-
-def test_agent_sleep_is_read_from_the_backup_beside_live_agent_args(tmp_path: pathlib.Path) -> None:
+def test_launch_args_come_from_the_running_orca_and_custom_args_from_the_backup(tmp_path: pathlib.Path) -> None:
     db = tmp_path / "profile-state.db.backup.1.db"
-    settings = {
-        "agentDefaultArgs": {"claude": "--old"},
-        "experimentalAgentHibernation": True,
-        "agentHibernationIdleMs": 600_000,
-    }
+    settings = {"agentDefaultArgs": {"claude": ""}, "agentPermissionDefault": "full-access"}
     _write_profile_db(db, json.dumps(settings))
-    live = SettingsCopy(pathlib.Path("settings.get"), NOW, OrcaSettings(agent_default_args={"claude": ""}), live=True)
+    composed = {"claude": "--dangerously-skip-permissions"}
 
-    snapshot = take_snapshot(tmp_path, run=lambda _args: None, live=lambda: live)
+    snapshot = take_snapshot(tmp_path, run=lambda _args: None, launch=lambda: composed)
 
     assert snapshot.settings is not None
     assert snapshot.settings.settings.agent_default_args == {"claude": ""}
-    assert (snapshot.settings.settings.agent_sleep, snapshot.settings.settings.agent_sleep_idle_ms) == (True, 600_000)
+    assert snapshot.settings.settings.permission_default == "full-access"
+    assert snapshot.launch_args == composed
 
 
 def test_repo_policy_checks_all_attributes() -> None:
@@ -587,14 +581,8 @@ def test_sync_cli_dry_run(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatc
     )
     (tmp_path / "rig" / ".git").mkdir(parents=True)
     repos = (_repo("rig", str(tmp_path / "rig"), setup="old"),)
-    snapshot = OrcaSnapshot(settings=None, repos=repos)
+    snapshot = OrcaSnapshot(settings=None, repos=repos, launch_args={})
     monkeypatch.setattr(orca_cli, "_snapshot", _fixed(snapshot))
-
-    def no_agent_changes(_policy: OrcaPolicy, _user_data: pathlib.Path | None, *, apply: bool) -> list[SyncAction]:
-        del apply
-        return []
-
-    monkeypatch.setattr(orca_cli, "_sync_agents", no_agent_changes)
 
     result = CliRunner().invoke(app, ["orca", "sync", "--config", str(config), "--json"])
     assert result.exit_code == 0
@@ -603,6 +591,19 @@ def test_sync_cli_dry_run(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatc
     assert actions[0].repo == "rig"
     assert actions[0].field == "setup script"
     assert not actions[0].applied
+
+
+def test_sync_cli_exits_for_retry_when_orca_is_not_running(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = tmp_path / "orca.json"
+    _ = config.write_text(json.dumps({"agent_args": {"claude": ""}}), encoding="utf-8")
+    monkeypatch.setattr(orca_cli, "_snapshot", _fixed(OrcaSnapshot(settings=None, repos=())))
+
+    result = CliRunner().invoke(app, ["orca", "sync", "--config", str(config)])
+
+    assert result.exit_code == ORCA_UNAVAILABLE_EXIT
+    assert "not running" in result.stderr
 
 
 def test_worktree_location_is_checked_and_synced(tmp_path: pathlib.Path) -> None:

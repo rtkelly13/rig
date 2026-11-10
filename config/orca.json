@@ -3,9 +3,20 @@
     "claude": "",
     "claude-agent-teams": "",
     "openclaude": "",
-    "opencode": "--auto",
-    "antigravity": "--dangerously-skip-permissions",
+    "opencode2": "--auto",
+    "antigravity": "",
     "copilot": "--experimental --assisted-approval"
+  },
+  "agent_permissions": {
+    "default": "own",
+    "agents": {
+      "claude": "auto",
+      "claude-agent-teams": "auto",
+      "antigravity": "full-access",
+      "openclaude": "own",
+      "codex": "auto",
+      "copilot": "own"
+    }
   },
   "workspace_dir": "~/orca/workspaces",
   "agent_sleep": { "enabled": true, "idle_minutes": 30 },
