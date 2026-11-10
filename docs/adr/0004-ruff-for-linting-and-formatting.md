@@ -1,6 +1,6 @@
 # ADR 0004: ruff for Sub-Second Linting and Code Formatting
 
-- **Status:** Accepted
+- **Status:** Superseded by [0022](0022-csharp-is-rigs-primary-language.md), except for `image_drift`
 - **Applies to:** all Python code in the repository
 
 ## Context
