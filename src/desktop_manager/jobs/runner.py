@@ -303,13 +303,21 @@ def _read_from(path: Path, offset: int) -> bytes:
         return b""
 
 
-def _modified(path: Path | None) -> tuple[int, int] | None:
-    """The mtime and size of `path`: Windows' coarse clock can leave an append's mtime unchanged."""
+@dataclass(frozen=True, slots=True)
+class _Stamp:
+    """When a file last changed and how long it is: Windows' coarse clock can leave an append's mtime unchanged."""
+
+    mtime_ns: int
+    size: int
+
+
+def _modified(path: Path | None) -> _Stamp | None:
+    """The stamp of `path`, or None when it is missing."""
     try:
         if path is None:
             return None
         stat = path.stat()
-        return (stat.st_mtime_ns, stat.st_size)
+        return _Stamp(stat.st_mtime_ns, stat.st_size)
     except OSError:
         return None
 
