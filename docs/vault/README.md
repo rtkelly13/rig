@@ -7,3 +7,4 @@ archived `the-vault-system`. `uv run vault --help` lists the commands; the
 | Guide | When to read |
 |:------|:-------------|
 | [vault-lint-policy.md](vault-lint-policy.md) | Reading or fixing `vault graph lint` findings: why each severity, the repair order, the filename rules |
+| [knowledge-server.md](knowledge-server.md) | The one shared OpenKnowledge server: install, connecting Claude, reviewing Markdown in its editor |
