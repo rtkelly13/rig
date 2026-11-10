@@ -33,6 +33,8 @@ dotnet_style_qualification_for_event = false:warning
 dotnet_diagnostic.IDE0161.severity = warning
 dotnet_diagnostic.IDE0011.severity = warning
 dotnet_diagnostic.IDE0009.severity = warning
+# rig lowercases on purpose: keys and stems match what the Python wrote, never compared culture-sensitively.
+dotnet_diagnostic.CA1308.severity = none
 
 # Tests: sentence-style names with underscores, and no ConfigureAwait in test bodies.
 [tests/**/*.cs]

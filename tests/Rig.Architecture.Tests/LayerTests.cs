@@ -27,10 +27,11 @@ public sealed class LayerTests
     public void Core_types_live_under_the_core_namespace()
     {
         // Coverage runs add coverlet's tracker types, and the compiler adds types such as <>z__ReadOnlyArray
-        // for collection expressions; neither is rig's.
+        // for collection expressions and <PrivateImplementationDetails> structs (unmarked) for static arrays; none is rig's.
         var result = Types.InAssembly(Core)
             .That().DoNotResideInNamespaceStartingWith("Coverlet")
             .And().DoNotHaveCustomAttribute(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute))
+            .And().DoNotHaveNameStartingWith("__StaticArrayInitTypeSize")
             .Should().ResideInNamespaceStartingWith("Rig.Core")
             .GetResult();
 
