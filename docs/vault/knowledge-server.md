@@ -33,9 +33,9 @@ OpenKnowledge project on this machine; a second one would need its own server.
 
 ## Choices, and why
 
-- **Full mode, not `--only server`.** Server-only answers `/` with 404, so there is no editor. Full
-  mode costs a little more memory (it varies with indexing, roughly 60–330 MB observed) and gives a
-  browser editor for reviewing Markdown.
+- **Full mode, not `--only server`.** Server-only answers `/` with 404, so there is no editor; full
+  mode adds the browser editor for reviewing Markdown. Memory did not separate by mode: it varies
+  with indexing, roughly 60–330 MB observed in either.
 - **`--idle-shutdown off`.** The default shuts down after 30 minutes without clients, and with
   `KeepAlive` launchd would restart it every half hour.
 - **Node runs the CLI module directly.** launchd has no shell `PATH`, so the plist names the
