@@ -15,6 +15,15 @@ applies it. Code that does none of those three things doesn't belong in rig. Per
 `hearth`. A project's own build goes to that project's repo. Experiments go to `experiments/` until they are
 scored against something.
 
+## Language
+
+rig is moving from Python to C# on .NET 10 ([ADR 0022](adr/0022-csharp-is-rigs-primary-language.md)).
+Everything on this page holds for both languages: ports become C# interfaces, fakes become C# classes, and the
+layering below becomes project references checked by NetArchTest. A C# `rig` front door owns the command line
+and forwards any command it does not own yet to the Python entry point. The brand-asset pipeline
+(`image_drift`) stays Python. Where this page names a Python module, that module is the owner until its C#
+replacement lands.
+
 ## One shape for every feature: desired → observed → plan → apply
 
 Each feature has four parts:

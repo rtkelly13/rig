@@ -43,3 +43,4 @@ This directory contains the durable architectural ledger for `shared-utilities`.
 | **[0019](0019-skills-split-between-harness-baseline-and-vault-library.md)** | Skills Split Between a Harness Baseline and a Vault Library | AI Agent Skills | Accepted |
 | **[0020](0020-cli-projection-and-validation-engine-not-json-crud.md)** | CLI as Projection and Validation Engine, Not JSON CRUD | CLI Architecture | Accepted |
 | **[0021](0021-projections-not-runtime-interposition.md)** | Projections, Not Runtime Interposition | AI Coding Agents | Accepted |
+| **[0022](0022-csharp-is-rigs-primary-language.md)** | C# on .NET 10 Is rig's Primary Language | Repository-wide | Accepted |
