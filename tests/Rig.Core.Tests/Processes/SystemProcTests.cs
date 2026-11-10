@@ -1,0 +1,109 @@
+using System.Diagnostics;
+using Rig.Core.Processes;
+
+namespace Rig.Core.Tests.Processes;
+
+/// <summary>Real processes. git is on every CI runner and dev machine, so it stands in for "a program".</summary>
+public sealed class SystemProcTests
+{
+    private readonly SystemProc _proc = new();
+
+    [Fact]
+    public async Task Captures_standard_output()
+    {
+        var ran = await _proc.RunAsync(new ProcRequest(["git", "--version"]), TestContext.Current.CancellationToken);
+
+        Assert.True(ran.Ok);
+        Assert.StartsWith("git version", ran.Out, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Reports_a_failing_exit_code_without_throwing()
+    {
+        var ran = await _proc.RunAsync(new ProcRequest(["git", "not-a-command"]), TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, ran.Code);
+        Assert.Contains("not-a-command", ran.Err, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_missing_program_is_127()
+    {
+        var ran = await _proc.RunAsync(new ProcRequest(["rig-no-such-program"]), TestContext.Current.CancellationToken);
+
+        Assert.Equal(Ran.NotFound, ran.Code);
+        Assert.Equal("rig-no-such-program is not on PATH", ran.Err);
+    }
+
+    [Fact]
+    public async Task Writes_stdin_text()
+    {
+        var ran = await _proc.RunAsync(
+            new ProcRequest(["git", "hash-object", "--stdin"]) { StdinText = "hello\n" },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("ce013625030ba8dba906f756967f9e9ca394464a", ran.OutOrEmpty);
+    }
+
+    [Fact]
+    public async Task Adds_to_the_inherited_environment()
+    {
+        var ran = await _proc.RunAsync(
+            new ProcRequest(["git", "config", "--get", "rig.test"])
+            {
+                Environment = new Dictionary<string, string>
+                {
+                    ["GIT_CONFIG_COUNT"] = "1",
+                    ["GIT_CONFIG_KEY_0"] = "rig.test",
+                    ["GIT_CONFIG_VALUE_0"] = "yes",
+                },
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("yes", ran.OutOrEmpty);
+    }
+
+    [Fact]
+    public async Task Runs_in_the_working_directory()
+    {
+        using var dir = new TempDir();
+
+        var ran = await _proc.RunAsync(new ProcRequest(["git", "init", "-q", "."]) { WorkingDirectory = dir.Path }, TestContext.Current.CancellationToken);
+
+        Assert.True(ran.Ok, ran.Err);
+        Assert.True(Directory.Exists(Path.Combine(dir.Path, ".git")));
+    }
+
+    [Fact]
+    public async Task A_timeout_stops_the_process_and_is_124()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "sleep(1) is a Unix program.");
+
+        var ran = await _proc.RunAsync(
+            new ProcRequest(["sleep", "10"]) { Timeout = TimeSpan.FromMilliseconds(200) },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(Ran.TimedOut, ran.Code);
+        Assert.Equal("sleep timed out after 0s", ran.Err);
+    }
+
+    [Fact]
+    public async Task Records_a_span_per_call()
+    {
+        var spans = new List<Activity>();
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source == SystemProc.Source,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = spans.Add,
+        };
+        ActivitySource.AddActivityListener(listener);
+
+        await _proc.RunAsync(new ProcRequest(["git", "not-a-command"]), TestContext.Current.CancellationToken);
+        await _proc.RunAsync(new ProcRequest(["git", "--version"]), TestContext.Current.CancellationToken);
+
+        var mine = spans.Where(s => (s.GetTagItem("process.command_args") as string)?.StartsWith("git ", StringComparison.Ordinal) == true).ToList();
+        Assert.Contains(mine, s => s.Status == ActivityStatusCode.Error && (int)s.GetTagItem("process.exit.code")! == 1);
+        Assert.Contains(mine, s => s.Status == ActivityStatusCode.Unset && (int)s.GetTagItem("process.exit.code")! == 0);
+    }
+}
