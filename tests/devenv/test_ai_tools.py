@@ -7,6 +7,7 @@ import pytest
 
 from rig.devenv.steps.ai_tools.claude_code import (
     BASELINE_ATTRIBUTION,
+    BASELINE_ENV,
     BASELINE_MCP_SERVERS,
     SettingsMerge,
     get_claude_settings_path,
@@ -98,6 +99,24 @@ def test_attribution_added_when_absent():
     assert any("attribution.pr" in c for c in merge.changes)
     assert any("attribution.commit" in c for c in merge.changes)
     assert any("attribution.sessionUrl" in c for c in merge.changes)
+
+
+def test_parallel_agent_caps_are_added_beside_existing_env():
+    """The concurrency caps join the env block without disturbing variables already there."""
+    merge = merge_claude_settings({"env": {"MSBUILDDISABLENODEREUSE": "1"}})
+    settings = _written(merge)
+
+    assert settings["env"] == {"MSBUILDDISABLENODEREUSE": "1", **BASELINE_ENV}
+    assert settings["workflowSizeGuideline"] == "small"
+    assert any("env.CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS" in c for c in merge.changes)
+
+
+def test_a_cap_already_set_is_never_clobbered():
+    """A machine that chose its own subagent cap keeps it."""
+    merge = merge_claude_settings({"env": {"CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "6"}})
+
+    assert _written(merge)["env"]["CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS"] == "6"
+    assert not any("env.CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS" in c for c in merge.changes)
 
 
 def test_existing_attribution_is_never_clobbered():
