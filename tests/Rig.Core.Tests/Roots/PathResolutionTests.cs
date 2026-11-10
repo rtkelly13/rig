@@ -40,6 +40,48 @@ public sealed class PathResolutionTests
     }
 
     [Fact]
+    public void Dot_dot_after_a_link_leaves_the_link_target_not_the_link_folder()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Windows collapses .. by name before following links.");
+        using var dir = new TempDir();
+        var external = dir.Folder(Path.Combine("external", "subdir"));
+        dir.Folder("personal");
+        Directory.CreateSymbolicLink(Path.Combine(dir.Path, "personal", "link"), external);
+
+        var resolved = PathResolution.Resolve(Path.Combine(dir.Path, "personal", "link", "..", "repo"));
+
+        Assert.Equal(Path.Combine(PathResolution.Resolve(Path.Combine(dir.Path, "external")), "repo"), resolved);
+    }
+
+    [Fact]
+    public void Dot_dot_inside_a_link_target_walks_from_the_target()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Windows collapses .. by name before following links.");
+        using var dir = new TempDir();
+        var deep = dir.Folder(Path.Combine("a", "b"));
+        Directory.CreateSymbolicLink(Path.Combine(dir.Path, "hop"), deep);
+        Directory.CreateSymbolicLink(Path.Combine(dir.Path, "up"), Path.Combine("hop", ".."));
+
+        Assert.Equal(PathResolution.Resolve(Path.Combine(dir.Path, "a")), PathResolution.Resolve(Path.Combine(dir.Path, "up")));
+    }
+
+    [Fact]
+    public void Dot_components_are_dropped_and_dot_dot_stops_at_the_root()
+    {
+        var root = Path.GetPathRoot(Path.GetTempPath())!;
+        using var dir = new TempDir();
+
+        Assert.Equal(PathResolution.Resolve(dir.Path), PathResolution.Resolve(Path.Combine(dir.Path, ".", "x", "..")));
+        Assert.Equal(root, PathResolution.Resolve(Path.Combine(root, "..", "..")));
+    }
+
+    [Fact]
+    public void A_relative_path_is_taken_from_the_current_folder()
+    {
+        Assert.Equal(PathResolution.Resolve(Environment.CurrentDirectory), PathResolution.Resolve("."));
+    }
+
+    [Fact]
     public void Keeps_missing_components_as_written()
     {
         using var dir = new TempDir();

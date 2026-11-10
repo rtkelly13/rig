@@ -88,6 +88,48 @@ public sealed class SystemProcTests
     }
 
     [Fact]
+    public async Task Stdin_larger_than_a_pipe_is_echoed_without_deadlock()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "cat(1) is a Unix program.");
+        var text = new string('x', 1 << 20);
+
+        var ran = await _proc.RunAsync(
+            new ProcRequest(["cat"]) { StdinText = text, Timeout = TimeSpan.FromSeconds(30) },
+            TestContext.Current.CancellationToken);
+
+        Assert.True(ran.Ok);
+        Assert.Equal(text.Length, ran.Out.Length);
+    }
+
+    [Fact]
+    public async Task Input_the_child_never_reads_is_not_an_error()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "true(1) is a Unix program.");
+
+        var ran = await _proc.RunAsync(
+            new ProcRequest(["true"]) { StdinText = new string('x', 1 << 20) },
+            TestContext.Current.CancellationToken);
+
+        Assert.True(ran.Ok);
+    }
+
+    [Fact]
+    public async Task Caller_cancellation_stops_the_child_and_propagates()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "sh(1) is a Unix program.");
+        using var dir = new TempDir();
+        var marker = Path.Combine(dir.Path, "still-running");
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancel.CancelAfter(TimeSpan.FromMilliseconds(200));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => _proc.RunAsync(new ProcRequest(["sh", "-c", $"sleep 1; touch '{marker}'"]), cancel.Token));
+
+        await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
+        Assert.False(File.Exists(marker));
+    }
+
+    [Fact]
     public async Task Records_a_span_per_call()
     {
         var spans = new List<Activity>();

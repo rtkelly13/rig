@@ -13,6 +13,9 @@ public sealed class SystemProc : IProc
     /// <summary>The trace source every process span is recorded under.</summary>
     public static readonly ActivitySource Source = new("Rig.Proc");
 
+    // How long to wait for a killed process tree to be reaped before giving up on it.
+    private static readonly TimeSpan KillGrace = TimeSpan.FromSeconds(5);
+
     /// <inheritdoc />
     public async Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
     {
@@ -51,15 +54,10 @@ public sealed class SystemProc : IProc
             return Finish(activity, new Ran(Ran.NotFound, string.Empty, $"{request.Argv[0]} is not on PATH"));
         }
 
-        if (request.StdinText is not null)
-        {
-            await process.StandardInput.WriteAsync(request.StdinText.AsMemory(), cancellationToken).ConfigureAwait(false);
-        }
-
-        process.StandardInput.Close();
-
-        var stdout = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderr = process.StandardError.ReadToEndAsync(cancellationToken);
+        // Drain both outputs and arm the timeout before feeding stdin: a child that writes while it reads would
+        // otherwise fill its output pipe while rig is still filling its input pipe, and neither would move.
+        var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
+        var stderr = process.StandardError.ReadToEndAsync(CancellationToken.None);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         if (request.Timeout is { } limit)
         {
@@ -68,15 +66,52 @@ public sealed class SystemProc : IProc
 
         try
         {
+            await FeedAsync(process, request.StdinText, timeout.Token).ConfigureAwait(false);
             await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
-            process.Kill(entireProcessTree: true);
+            // Whoever stopped waiting, the child stops too: a cancelled git must not go on holding locks.
+            Stop(process);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
             return Finish(activity, new Ran(Ran.TimedOut, string.Empty, $"{request.Argv[0]} timed out after {request.Timeout!.Value.TotalSeconds:0}s"));
         }
 
         return Finish(activity, new Ran(process.ExitCode, await stdout.ConfigureAwait(false), await stderr.ConfigureAwait(false)));
+    }
+
+    private static async Task FeedAsync(Process process, string? text, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (text is not null)
+            {
+                await process.StandardInput.WriteAsync(text.AsMemory(), cancellationToken).ConfigureAwait(false);
+            }
+
+            process.StandardInput.Close();
+        }
+        catch (IOException)
+        {
+            // The child exited or closed its input before reading it all; its exit code says how that went.
+        }
+    }
+
+    private static void Stop(Process process)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit(KillGrace);
+        }
+        catch (InvalidOperationException)
+        {
+            // It had already exited.
+        }
     }
 
     private static Ran Finish(Activity? activity, Ran ran)
