@@ -36,6 +36,15 @@ BASELINE_PREFERENCES: dict[str, object] = {
     "autoCompactEnabled": True,
     "autoCompactWindow": 200000,
     "skipWorkflowUsageWarning": True,
+    # Advice to Claude on how many agents a workflow plans for; the caps below enforce it.
+    "workflowSizeGuideline": "small",
+}
+
+#: Environment for every session. The caps keep one session to about three agents at once, since
+#: each agent's builds and tests compete for memory on an 8 GB machine.
+BASELINE_ENV: dict[str, object] = {
+    "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "3",
+    "CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS": "3",
 }
 
 BASELINE_PERMISSION_PREFERENCES: dict[str, object] = {
@@ -101,6 +110,7 @@ class _SettingsView:
     permissions: Lenient[dict[str, object]] = None
     mcp_servers: Annotated[Lenient[dict[str, object]], Field(alias="mcpServers")] = None
     attribution: Lenient[dict[str, object]] = None
+    env: Lenient[dict[str, object]] = None
 
 
 def merge_claude_settings(existing: dict[str, object], session_end_command: str | None = None) -> SettingsMerge:
@@ -126,6 +136,15 @@ def merge_claude_settings(existing: dict[str, object], session_end_command: str 
         if key not in merged:
             merged[key] = val
             changes.append(f"+ {key}: {val!r}")
+
+    # env — union by variable; a value already set, even a different cap, is kept.
+    env = view.env or {}
+    if BASELINE_ENV or env:
+        merged["env"] = env
+    for key, val in BASELINE_ENV.items():
+        if key not in env:
+            env[key] = val
+            changes.append(f"+ env.{key}: {val!r}")
 
     # attribution — clear automated footers/trailers while preserving custom text
     attribution = view.attribution or {}
