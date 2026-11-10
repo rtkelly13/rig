@@ -43,7 +43,7 @@ def test_a_ported_command_runs_on_dotnet_with_the_bridge_variable_set(tmp_path: 
     assert calls == [
         (
             ["dotnet", "run", "--project", str(project), "--", "gh", "threads", "list", "7"],
-            {csharp_cli.BRIDGE_VARIABLE: "1"},
+            {csharp_cli.BRIDGE_VARIABLE: "1", csharp_cli.HOME_VARIABLE: str(project.parents[1])},
         )
     ]
 

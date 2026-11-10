@@ -26,6 +26,10 @@ PORTED: tuple[str, ...] = ("gh",)
 #: Set for the C# CLI so it refuses to forward a command back to Python.
 BRIDGE_VARIABLE = "RIG_FROM_PYTHON"
 
+#: The rig checkout the C# CLI runs Python tools from (mdformat, forwarded commands): set to this one, so both
+#: halves and their uv environment come from the same tree.
+HOME_VARIABLE = "RIG_HOME"
+
 #: Runs an attached command with extra environment and returns its exit code.
 type Runner = Callable[[list[str], dict[str, str]], int]
 
@@ -55,7 +59,7 @@ def run(args: Sequence[str], *, project: Path | None = None, runner: Runner = _a
         )
         return 2
     try:
-        return runner(argv(target, args), {BRIDGE_VARIABLE: "1"})
+        return runner(argv(target, args), {BRIDGE_VARIABLE: "1", HOME_VARIABLE: str(target.parents[1])})
     except FileNotFoundError:
         _ = sys.stderr.write(f"rig {name}: this command now runs on the C# rig CLI, which needs dotnet on PATH.\n")
         return 2
