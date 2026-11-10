@@ -303,9 +303,13 @@ def _read_from(path: Path, offset: int) -> bytes:
         return b""
 
 
-def _modified(path: Path | None) -> int | None:
+def _modified(path: Path | None) -> tuple[int, int] | None:
+    """The mtime and size of `path`: Windows' coarse clock can leave an append's mtime unchanged."""
     try:
-        return None if path is None else path.stat().st_mtime_ns
+        if path is None:
+            return None
+        stat = path.stat()
+        return (stat.st_mtime_ns, stat.st_size)
     except OSError:
         return None
 
