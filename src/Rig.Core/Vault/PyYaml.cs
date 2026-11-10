@@ -369,35 +369,42 @@ public static partial class PyYaml
             return node.Tag == MapTag ? new PyDict(entries) : PyOther.Value;
         }
 
-        // SafeConstructor.flatten_mapping: merged entries go first, so the mapping's own keys win.
+        // SafeConstructor.flatten_mapping, in place as PyYAML does it: each merge pair is removed before its value is
+        // flattened, so a mapping that merges itself (`&a {<<: *a}`) ends rather than recursing, and merged entries go
+        // first so the mapping's own keys win.
         private static List<KeyValuePair<Node, Node>> Flatten(MappingNode node)
         {
             var merge = new List<KeyValuePair<Node, Node>>();
-            var own = new List<KeyValuePair<Node, Node>>();
-            foreach (var pair in node.Pairs)
+            var at = 0;
+            while (at < node.Pairs.Count)
             {
-                if (pair.Key.Tag != MergeTag)
+                var (key, value) = node.Pairs[at];
+                if (key.Tag != MergeTag)
                 {
-                    if (pair.Key.Tag == ValueTag)
+                    if (key.Tag == ValueTag)
                     {
-                        pair.Key.Tag = StrTag;
+                        key.Tag = StrTag;
                     }
 
-                    own.Add(pair);
+                    at++;
                     continue;
                 }
 
-                switch (pair.Value)
+                node.Pairs.RemoveAt(at);
+                switch (value)
                 {
                     case MappingNode mapping:
                         merge.AddRange(Flatten(mapping));
                         break;
                     case SequenceNode sequence:
-                        var parts = sequence.Items
-                            .Select(item => item is MappingNode part
+                        var parts = new List<List<KeyValuePair<Node, Node>>>();
+                        foreach (var item in sequence.Items)
+                        {
+                            parts.Add(item is MappingNode part
                                 ? Flatten(part)
-                                : throw new PyYamlException("expected a mapping for merging"))
-                            .ToList();
+                                : throw new PyYamlException("expected a mapping for merging"));
+                        }
+
                         parts.Reverse();
                         merge.AddRange(parts.SelectMany(part => part));
                         break;
@@ -406,8 +413,8 @@ public static partial class PyYaml
                 }
             }
 
-            merge.AddRange(own);
-            return merge;
+            node.Pairs.InsertRange(0, merge);
+            return [.. node.Pairs];
         }
 
         private static string ConstructBool(string value) => value.ToLowerInvariant() switch
