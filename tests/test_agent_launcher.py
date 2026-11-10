@@ -339,6 +339,18 @@ def test_main_runs_opencode_2_under_its_orca_name(monkeypatch: pytest.MonkeyPatc
 
 
 @pytest.mark.ci
+def test_print_config_shows_the_name_the_launch_will_run(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    def which(cmd: str) -> str | None:
+        return "/bin/opencode2" if cmd == "opencode2" else None
+
+    monkeypatch.setattr("shutil.which", which)
+    assert main(["-oc", "--print-config", "run"]) == 0
+    assert "command: opencode2 run" in capsys.readouterr().out
+
+
+@pytest.mark.ci
 def test_main_invalid_args(capsys: pytest.CaptureFixture[str]):
     exit_code = main(["--use"])
     assert exit_code == 2

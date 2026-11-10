@@ -376,13 +376,16 @@ def main(
         err_console.print(f"error: {exc}", highlight=False)
         return 2
 
+    names = (resolution.executable, *EXECUTABLE_ALTERNATES.get(resolution.executable, ()))
+    found = next(((name, path) for name in names if (path := shutil.which(name))), None)
+
     if parsed.print_config:
+        shown = [found[0] if found else resolution.executable, *resolution.full_command[1:]]
         console.print(f"agent: {resolution.display_name} ({resolution.agent_id})", highlight=False)
-        console.print(f"command: {' '.join(resolution.full_command)}", highlight=False)
+        console.print(f"command: {' '.join(shown)}", highlight=False)
         return 0
 
-    names = (resolution.executable, *EXECUTABLE_ALTERNATES.get(resolution.executable, ()))
-    resolved = next((path for name in names if (path := shutil.which(name))), None)
+    resolved = found[1] if found else None
     if resolved is None:
         err_console.print(
             f"{resolution.display_name} ('{resolution.executable}') was not found on PATH. Install it and try again.",
