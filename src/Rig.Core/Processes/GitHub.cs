@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Rig.Core.Processes;
 
 /// <summary>One GitHub REST call: <c>GET repos/o/r/labels</c>, or a write whose JSON body is already encoded.</summary>
@@ -8,6 +10,21 @@ public sealed record ApiRequest(string Method, string Route, string? Body = null
 {
     /// <summary>A GET of <paramref name="route"/>.</summary>
     public static ApiRequest Get(string route) => new("GET", route);
+
+    /// <summary>
+    /// A GraphQL call: <c>POST graphql</c> with the document and its variables as the JSON body, so a variable can hold
+    /// any characters and keeps its JSON type. <c>gh api graphql</c> answers a GraphQL error with a non-zero exit and the
+    /// <c>errors</c> JSON still on standard output.
+    /// </summary>
+    /// <param name="query">The GraphQL document.</param>
+    /// <param name="variables">The variables; a null value is left out.</param>
+    public static ApiRequest GraphQL(string query, IReadOnlyDictionary<string, object?> variables)
+    {
+        ArgumentNullException.ThrowIfNull(variables);
+        var present = variables.Where(pair => pair.Value is not null).ToDictionary(pair => pair.Key, pair => pair.Value);
+        var body = new Dictionary<string, object?> { ["query"] = query, ["variables"] = present };
+        return new("POST", "graphql", JsonSerializer.Serialize(body));
+    }
 }
 
 /// <summary>

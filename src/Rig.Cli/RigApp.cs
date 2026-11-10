@@ -1,6 +1,8 @@
 using System.CommandLine;
 using Rig.Cli.Forwarding;
+using Rig.Cli.Gh.Threads;
 using Rig.Core;
+using Rig.Core.Processes;
 
 namespace Rig.Cli;
 
@@ -8,16 +10,17 @@ namespace Rig.Cli;
 /// The rig command line. A line the Python CLI still owns is handed to it whole; everything else (help, version and
 /// every ported command) is parsed here. Exit codes follow <see cref="ExitCode"/>: a line that does not parse is 2.
 /// </summary>
-internal sealed class RigApp(PythonRig python, TextWriter output, TextWriter error)
+internal sealed class RigApp(PythonRig python, IGitHubApi github, OriginReader origin, TextWriter output, TextWriter error)
 {
     /// <summary>What <c>rig --help</c> says rig is.</summary>
     public const string Description =
         "Developer rig: workspace management, AI agents and estate tooling. Commands marked (Python) still run on the Python CLI.";
 
     /// <summary>The root command: the ported commands, plus the forwarded ones so help lists them all.</summary>
-    public static RootCommand BuildRoot()
+    public RootCommand BuildRoot()
     {
         var root = new RootCommand(Description);
+        root.Subcommands.Add(new ThreadsCommand(new ThreadsGitHub(github), origin, output, error).Build());
         foreach (var (name, description) in Forwarded.Commands)
         {
             root.Subcommands.Add(new Command(name, $"{description} (Python)"));

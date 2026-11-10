@@ -4,5 +4,6 @@
   </ItemGroup>
   <ItemGroup Label="Shared doubles">
     <Compile Include="../Rig.Core.Tests/Fakes/FakeProc.cs" Link="Fakes/FakeProc.cs" />
+    <Compile Include="../Rig.Core.Tests/Fakes/FakeGitHub.cs" Link="Fakes/FakeGitHub.cs" />
   </ItemGroup>
 </Project>

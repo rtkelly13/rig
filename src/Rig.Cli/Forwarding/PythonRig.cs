@@ -8,8 +8,14 @@ namespace Rig.Cli.Forwarding;
 /// <c>rig.sh</c> shim starts it: <c>uv run --no-sync --project &lt;rig checkout&gt; rig …</c>, attached to this
 /// console so prompts, colour and the agent launcher's terminal all behave as before.
 /// </summary>
-internal sealed class PythonRig(IProc proc, string checkout)
+internal sealed class PythonRig(IProc proc, string checkout, bool fromPython = false)
 {
+    /// <summary>
+    /// Set by the Python CLI when it hands a ported command to C#. A line arriving with it set must not go back to
+    /// Python: the two sides disagree on who owns the command, and forwarding again would loop.
+    /// </summary>
+    public const string BridgeVariable = "RIG_FROM_PYTHON";
+
     /// <summary>The environment variable naming the rig checkout the Python CLI runs from.</summary>
     public const string HomeVariable = "RIG_HOME";
 
@@ -31,6 +37,14 @@ internal sealed class PythonRig(IProc proc, string checkout)
     public async Task<int> RunAsync(IReadOnlyList<string> args, TextWriter error)
     {
         ArgumentNullException.ThrowIfNull(error);
+        if (fromPython)
+        {
+            var name = args.Count > 0 ? args[0] : "rig";
+            await error.WriteLineAsync($"rig: the Python CLI handed '{name}' to C#, which hands it back to Python; refusing to loop. "
+                + "PORTED in src/rig/rig_cli.py and Forwarded in src/Rig.Cli disagree.").ConfigureAwait(false);
+            return (int)Core.ExitCode.Error;
+        }
+
 
         // Never cancelled: Ctrl+C reaches the child through the shared console, and rig exits with its code.
         var ran = await proc.RunAsync(new ProcRequest(Argv(args)) { Attached = true }, CancellationToken.None).ConfigureAwait(false);

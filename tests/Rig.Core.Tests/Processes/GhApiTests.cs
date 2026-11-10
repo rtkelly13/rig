@@ -38,6 +38,22 @@ public sealed class GhApiTests
     }
 
     [Fact]
+    public async Task A_graphql_call_posts_the_document_and_its_variables_on_stdin()
+    {
+        var request = ApiRequest.GraphQL("query Q($n: Int!) { x }", new Dictionary<string, object?> { ["n"] = 7, ["cursor"] = null, ["s"] = "a\"b" });
+
+        await new GhApi(_proc).CallAsync(request, TestContext.Current.CancellationToken);
+
+        var sent = Assert.Single(_proc.Requests);
+        Assert.Equal(["gh", "api", "-X", "POST", "graphql", "--input", "-"], sent.Argv);
+        var body = System.Text.Json.Nodes.JsonNode.Parse(sent.StdinText!)!;
+        Assert.Equal("query Q($n: Int!) { x }", body["query"]!.GetValue<string>());
+        Assert.Equal(7, body["variables"]!["n"]!.GetValue<int>());
+        Assert.Equal("a\"b", body["variables"]!["s"]!.GetValue<string>());
+        Assert.False(body["variables"]!.AsObject().ContainsKey("cursor"));
+    }
+
+    [Fact]
     public async Task The_fake_answers_by_method_and_route()
     {
         var github = new FakeGitHub().On("GET", "repos/o/r", """{"name":"r"}""").Fail("DELETE", "repos/o/r", 403);

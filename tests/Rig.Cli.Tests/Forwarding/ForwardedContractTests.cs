@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 using Rig.Cli.Forwarding;
+using Rig.Core.GitHub;
+using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.Forwarding;
 
@@ -10,6 +12,7 @@ namespace Rig.Cli.Tests.Forwarding;
 public sealed partial class ForwardedContractTests
 {
     private static readonly string PythonCli = Path.Combine(RepoRoot(), "src", "rig", "rig_cli.py");
+    private static readonly string Bridge = Path.Combine(RepoRoot(), "src", "rig", "csharp_cli.py");
 
     [Fact]
     public void The_table_names_exactly_the_python_commands()
@@ -18,6 +21,21 @@ public sealed partial class ForwardedContractTests
         var python = SubApp().Matches(source).Concat(Command().Matches(source)).Select(m => m.Groups["name"].Value);
 
         Assert.Equal(python.Order(StringComparer.Ordinal), Forwarded.Commands.Select(c => c.Name).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Every_command_python_hands_over_is_one_csharp_owns()
+    {
+        var block = PortedBlock().Match(File.ReadAllText(Bridge)).Groups["body"].Value;
+        var ported = Name().Matches(block).Select(m => m.Groups["name"].Value).ToList();
+        var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
+        var app = new RigApp(
+            new PythonRig(new FakeProc(), "/rig"), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), TextWriter.Null, TextWriter.Null);
+        var owned = app
+            .BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));
+
+        Assert.NotEmpty(ported);
+        Assert.Equal(ported.Order(StringComparer.Ordinal), owned.Order(StringComparer.Ordinal));
     }
 
     [Fact]
@@ -51,6 +69,12 @@ public sealed partial class ForwardedContractTests
 
     [GeneratedRegex("""AGENT_SHORTCUT_FLAGS = \{(?<body>[^}]*)\}""")]
     private static partial Regex ShortcutBlock();
+
+    [GeneratedRegex("""PORTED: tuple\[str, \.\.\.\] = \((?<body>[^)]*)\)""")]
+    private static partial Regex PortedBlock();
+
+    [GeneratedRegex(@"""(?<name>[\w-]+)""")]
+    private static partial Regex Name();
 
     [GeneratedRegex(@"""(?<flag>-[\w-]+)""")]
     private static partial Regex Quoted();
