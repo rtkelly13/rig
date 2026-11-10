@@ -52,6 +52,17 @@ public sealed class GitTests : IDisposable
     }
 
     [Fact]
+    public void A_symlinked_untrusted_folder_is_still_untrusted()
+    {
+        using var elsewhere = new TempDir();
+        var clone = Directory.CreateDirectory(Path.Combine(elsewhere.Path, "skills", "x")).FullName;
+        Directory.CreateSymbolicLink(Path.Combine(_root.Path, "external"), elsewhere.Path);
+
+        Assert.True(new Git(_proc, _root.Path).IsUntrusted(Path.Combine(_root.Path, "external", "skills", "x")));
+        Assert.True(new Git(_proc, _root.Path).IsUntrusted(clone));
+    }
+
+    [Fact]
     public void A_missing_working_directory_means_the_current_one()
     {
         var git = new Git(_proc, _root.Path);

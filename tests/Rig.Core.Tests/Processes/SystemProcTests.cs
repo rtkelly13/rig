@@ -75,6 +75,19 @@ public sealed class SystemProcTests
     }
 
     [Fact]
+    public async Task A_timeout_still_fires_when_a_grandchild_holds_the_output_open()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "sh(1) is a Unix program.");
+
+        // sh exits at once, but the background sleep inherits stdout, so the output never reaches EOF.
+        var ran = await _proc.RunAsync(
+            new ProcRequest(["sh", "-c", "sleep 30 &"]) { Timeout = TimeSpan.FromMilliseconds(500) },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(Ran.TimedOut, ran.Code);
+    }
+
+    [Fact]
     public async Task A_timeout_stops_the_process_and_is_124()
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "sleep(1) is a Unix program.");

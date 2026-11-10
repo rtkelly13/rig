@@ -38,7 +38,8 @@ public sealed class Git(IProc proc, string codeRoot)
     {
         var target = PathResolution.Resolve(path ?? Directory.GetCurrentDirectory());
         var root = PathResolution.Resolve(codeRoot);
-        return UntrustedFolders.Any(folder => PathResolution.IsUnder(target, Path.Combine(root, folder)));
+        // Each folder is resolved too: IsUnder compares resolved paths, and a symlinked external/ must stay untrusted.
+        return UntrustedFolders.Any(folder => PathResolution.IsUnder(target, PathResolution.Resolve(Path.Combine(root, folder))));
     }
 
     /// <summary>Runs <c>git <paramref name="args"/></c> in <paramref name="workingDirectory"/>.</summary>

@@ -69,9 +69,14 @@ public sealed class SystemProc : IProc
 #pragma warning disable CA2025 // The finally below awaits the feed before process and timeout are disposed.
         var feed = FeedAsync(process, request.StdinText, timeout.Token);
 #pragma warning restore CA2025
+        string output, errors;
         try
         {
             await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+
+            // The reads are bounded too: a grandchild that inherited the pipes keeps them open after the child exits.
+            output = await stdout.WaitAsync(timeout.Token).ConfigureAwait(false);
+            errors = await stderr.WaitAsync(timeout.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -90,7 +95,7 @@ public sealed class SystemProc : IProc
             await feed.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
 
-        return Finish(activity, new Ran(process.ExitCode, await stdout.ConfigureAwait(false), await stderr.ConfigureAwait(false)));
+        return Finish(activity, new Ran(process.ExitCode, output, errors));
     }
 
     private static async Task FeedAsync(Process process, string? text, CancellationToken cancellationToken)
