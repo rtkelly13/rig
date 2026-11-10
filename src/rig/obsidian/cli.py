@@ -14,6 +14,7 @@ import sys
 import typer
 
 from rig.obsidian.commands import graph_app
+from rig.obsidian.commands.knowledge_server import server_app
 
 app = typer.Typer(
     name="vault",
@@ -22,6 +23,7 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 app.add_typer(graph_app, name="graph")
+app.add_typer(server_app, name="knowledge-server")
 
 
 @app.command("paths")
