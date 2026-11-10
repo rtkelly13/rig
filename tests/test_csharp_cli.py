@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import typer
 from typer.testing import CliRunner
 
 from rig import csharp_cli
@@ -81,3 +82,20 @@ def test_the_python_cli_hands_a_ported_command_over(monkeypatch: pytest.MonkeyPa
 
     assert result.exit_code == 2
     assert "rig gh: this command now runs on the C# rig CLI, which needs dotnet on PATH." in result.output
+
+
+def test_a_stub_hands_over_every_argument_and_returns_the_exit_code() -> None:
+    handed: list[list[str]] = []
+
+    def handover(args: list[str]) -> int:
+        handed.append(args)
+        return 1
+
+    app_under_test = typer.Typer()
+    csharp_cli.add_stub(app_under_test, "gh", handover)
+    _ = app_under_test.command("other")(lambda: None)
+
+    result = CliRunner().invoke(app_under_test, ["gh", "threads", "list", "7", "--repo", "o/r", "--json", "--help"])
+
+    assert result.exit_code == 1
+    assert handed == [["gh", "threads", "list", "7", "--repo", "o/r", "--json", "--help"]]

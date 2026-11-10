@@ -16,6 +16,8 @@ import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
+import typer
+
 from rig import tracing
 
 #: Commands the C# CLI owns. ``tests/Rig.Cli.Tests`` checks each is registered there and gone from here.
@@ -57,3 +59,17 @@ def run(args: Sequence[str], *, project: Path | None = None, runner: Runner = _a
     except FileNotFoundError:
         _ = sys.stderr.write(f"rig {name}: this command now runs on the C# rig CLI, which needs dotnet on PATH.\n")
         return 2
+
+
+def add_stub(app: typer.Typer, name: str, handover: Callable[[list[str]], int] | None = None) -> None:
+    """Register *name* on *app* as a stub that hands the whole line, ``--help`` included, to the C# CLI."""
+    send: Callable[[list[str]], int] = handover or run
+
+    def stub(ctx: typer.Context) -> None:
+        raise typer.Exit(code=send([name, *ctx.args]))
+
+    app.command(
+        name,
+        context_settings={"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": list[str]()},
+        help="Runs on the C# rig CLI.",
+    )(stub)

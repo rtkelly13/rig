@@ -47,21 +47,8 @@ app.add_typer(browser_app, name="browser")
 app.add_typer(c4_app, name="c4")
 
 
-def _ported(name: str) -> None:
-    """Register *name* as a stub that hands the whole line to the C# CLI (see `rig.csharp_cli`)."""
-
-    def stub(ctx: typer.Context) -> None:
-        raise typer.Exit(code=csharp_cli.run([name, *ctx.args]))
-
-    app.command(
-        name,
-        context_settings={"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": list[str]()},
-        help="Runs on the C# rig CLI.",
-    )(stub)
-
-
 for _name in csharp_cli.PORTED:
-    _ported(_name)
+    csharp_cli.add_stub(app, _name)
 
 
 @app.command("agent", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
