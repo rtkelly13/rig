@@ -102,6 +102,20 @@ public sealed class SystemProcTests
     }
 
     [Fact]
+    public async Task The_timeout_covers_a_child_that_neither_reads_nor_exits()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "sleep(1) is a Unix program.");
+        var watch = Stopwatch.StartNew();
+
+        var ran = await _proc.RunAsync(
+            new ProcRequest(["sleep", "10"]) { StdinText = new string('x', 1 << 20), Timeout = TimeSpan.FromMilliseconds(200) },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(Ran.TimedOut, ran.Code);
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
+    }
+
+    [Fact]
     public async Task Input_the_child_never_reads_is_not_an_error()
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "true(1) is a Unix program.");

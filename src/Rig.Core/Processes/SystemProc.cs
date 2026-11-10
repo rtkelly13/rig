@@ -64,9 +64,13 @@ public sealed class SystemProc : IProc
             timeout.CancelAfter(limit);
         }
 
+        // The feed runs beside the wait, not before it: a child that never reads would block a write into a full
+        // pipe, and the timeout must still fire. Once the child is gone the pipe breaks and the feed ends.
+#pragma warning disable CA2025 // The finally below awaits the feed before process and timeout are disposed.
+        var feed = FeedAsync(process, request.StdinText, timeout.Token);
+#pragma warning restore CA2025
         try
         {
-            await FeedAsync(process, request.StdinText, timeout.Token).ConfigureAwait(false);
             await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -79,6 +83,11 @@ public sealed class SystemProc : IProc
             }
 
             return Finish(activity, new Ran(Ran.TimedOut, string.Empty, $"{request.Argv[0]} timed out after {request.Timeout!.Value.TotalSeconds:0}s"));
+        }
+        finally
+        {
+            // Never leaves the feed running past the process it writes to.
+            await feed.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
 
         return Finish(activity, new Ran(process.ExitCode, await stdout.ConfigureAwait(false), await stderr.ConfigureAwait(false)));
