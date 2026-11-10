@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -318,6 +319,35 @@ def test_main_missing_executable(monkeypatch: pytest.MonkeyPatch, capsys: pytest
     assert exit_code == 127
     captured = capsys.readouterr()
     assert "Antigravity CLI ('agy') was not found on PATH" in captured.err
+
+
+@pytest.mark.ci
+def test_main_runs_opencode_2_under_its_orca_name(monkeypatch: pytest.MonkeyPatch):
+    ran: list[list[str]] = []
+
+    def which(cmd: str) -> str | None:
+        return "/bin/opencode2" if cmd == "opencode2" else None
+
+    def run(cmd: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        ran.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr("shutil.which", which)
+    monkeypatch.setattr("subprocess.run", run)
+    assert main(["-oc", "run"]) == 0
+    assert ran == [["/bin/opencode2", "run"]]
+
+
+@pytest.mark.ci
+def test_print_config_shows_the_name_the_launch_will_run(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    def which(cmd: str) -> str | None:
+        return "/bin/opencode2" if cmd == "opencode2" else None
+
+    monkeypatch.setattr("shutil.which", which)
+    assert main(["-oc", "--print-config", "run"]) == 0
+    assert "command: opencode2 run" in capsys.readouterr().out
 
 
 @pytest.mark.ci

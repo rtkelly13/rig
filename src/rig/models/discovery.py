@@ -158,10 +158,11 @@ def discover_opencode_models(
     First tries executing `opencode models`. If that times out or fails (e.g. background
     service stopped or sandboxed), falls back to parsing `~/.cache/opencode/models.json`.
     """
-    if allow_cli and shutil.which("opencode"):
+    executable = shutil.which("opencode") or shutil.which("opencode2")
+    if allow_cli and executable:
         try:
             proc = subprocess.run(
-                ["opencode", "models"],
+                [executable, "models"],
                 capture_output=True,
                 text=True,
                 timeout=3,

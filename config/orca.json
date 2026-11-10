@@ -4,8 +4,7 @@
     "claude-agent-teams": "",
     "openclaude": "",
     "opencode2": "--auto",
-    "antigravity": "",
-    "copilot": "--experimental --assisted-approval"
+    "antigravity": ""
   },
   "agent_permissions": {
     "default": "own",
@@ -14,8 +13,7 @@
       "claude-agent-teams": "auto",
       "antigravity": "full-access",
       "openclaude": "own",
-      "codex": "auto",
-      "copilot": "own"
+      "codex": "auto"
     }
   },
   "workspace_dir": "~/orca/workspaces",
