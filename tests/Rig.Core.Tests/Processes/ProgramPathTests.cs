@@ -47,6 +47,23 @@ public sealed class ProgramPathTests : IDisposable
         Assert.Equal(tool, ProgramPath.Find("tool", _dir.Folder("bin"), ".EXE; .cmd"));
     }
 
+    [Fact]
+    public void With_extensions_an_extensionless_file_beside_the_program_is_skipped()
+    {
+        Program("bin/npm");
+        var npm = Program("bin/npm.cmd");
+
+        Assert.Equal(npm, ProgramPath.Find("npm", _dir.Folder("bin"), ".exe;.cmd"));
+    }
+
+    [Fact]
+    public void With_extensions_a_name_that_already_has_one_is_found_as_written()
+    {
+        var npm = Program("bin/npm.cmd");
+
+        Assert.Equal(npm, ProgramPath.Find("npm.cmd", _dir.Folder("bin"), ".exe;.cmd"));
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

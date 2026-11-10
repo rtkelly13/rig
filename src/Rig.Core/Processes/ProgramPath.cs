@@ -5,13 +5,17 @@ public static class ProgramPath
 {
     /// <summary>
     /// The first runnable file named <paramref name="program"/> in the folders of <paramref name="path"/>, or null. On Windows
-    /// the <paramref name="extensions"/> (the <c>PATHEXT</c> list, separated by <c>;</c>) are tried as well.
+    /// each of the <paramref name="extensions"/> (the <c>PATHEXT</c> list, separated by <c>;</c>) is tried, and the bare name
+    /// only when it already ends in one of them.
     /// </summary>
     public static string? Find(string program, string? path, string? extensions = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(program);
-        var suffixes = new List<string> { string.Empty };
-        suffixes.AddRange((extensions ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        // As shutil.which does since Python 3.12: with a PATHEXT list, the bare name only counts when it already ends in one
+        // of the extensions, so an extensionless shim beside npm.cmd is never picked.
+        var listed = (extensions ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var bare = listed.Length == 0 || listed.Any(extension => program.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
+        string[] suffixes = bare ? [string.Empty, .. listed] : listed;
         var folders = (path ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
         return folders
             .SelectMany(folder => suffixes.Select(suffix => Path.Combine(folder, program + suffix)))
