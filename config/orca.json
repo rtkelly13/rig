@@ -143,6 +143,15 @@
       "worktree_base_path": "temp",
       "color": "#0e7490",
       "icon": "emoji:🌊"
+    },
+    "matchmark": {
+      "path": "~/code/rtkelly-labs/matchmark",
+      "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md",
+      "external_worktree_visibility": "show",
+      "base_ref": "main",
+      "worktree_base_path": "temp",
+      "color": "#7c3aed",
+      "icon": "emoji:🎯"
     }
   }
 }

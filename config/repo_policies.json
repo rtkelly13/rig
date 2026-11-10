@@ -290,7 +290,8 @@
         "Diffra.Guardrails",
         "Lake.NET",
         "mermaid-toolkit",
-        "oxbow"
+        "oxbow",
+        "matchmark"
       ]
     },
     "rtkelly_labs_forks": {
@@ -389,6 +390,14 @@
     "Diffra.Guardrails": {
       "required_checks": [
         "lint"
+      ]
+    },
+    "matchmark": {
+      "required_checks": [
+        "test",
+        "container image",
+        "package consumption",
+        "derived evidence"
       ]
     },
     "Parquet.SourceGenerator": {
