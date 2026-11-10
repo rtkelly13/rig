@@ -2,4 +2,8 @@
   <PropertyGroup>
     <RootNamespace>Rig.Core</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Its parser only: rig applies PyYAML's tag resolution itself (Vault/Frontmatter.cs). -->
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
 </Project>
