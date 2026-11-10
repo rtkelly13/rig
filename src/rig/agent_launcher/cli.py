@@ -68,6 +68,10 @@ SUPPORTED_AGENTS: dict[str, AgentMeta] = {
 
 VALID_AGENT_IDS_STR = ", ".join(SUPPORTED_AGENTS.keys())
 
+#: Other names an agent's executable goes by, tried in order when it is not on PATH. OpenCode 2
+#: installs as ``opencode``, except beside Orca, which names it ``opencode2``.
+EXECUTABLE_ALTERNATES: dict[str, tuple[str, ...]] = {"opencode": ("opencode2",)}
+
 AGENT_DANGER_FLAGS: dict[str, str] = {
     "antigravity": "--dangerously-skip-permissions",
     "claude-code": "--dangerously-skip-permissions",
@@ -377,7 +381,8 @@ def main(
         console.print(f"command: {' '.join(resolution.full_command)}", highlight=False)
         return 0
 
-    resolved = shutil.which(resolution.executable)
+    names = (resolution.executable, *EXECUTABLE_ALTERNATES.get(resolution.executable, ()))
+    resolved = next((path for name in names if (path := shutil.which(name))), None)
     if resolved is None:
         err_console.print(
             f"{resolution.display_name} ('{resolution.executable}') was not found on PATH. Install it and try again.",

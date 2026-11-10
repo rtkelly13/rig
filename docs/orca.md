@@ -54,11 +54,10 @@ registered in Orca.
 
 Current policy: Claude and Claude agent teams launch in **Auto** (`--permission-mode auto`), never
 with `--dangerously-skip-permissions`, and Codex in **Auto** (`--approve-for-me`). OpenCode 2
-(`opencode2`) launches with its own `--auto`, and Copilot with `--experimental --assisted-approval`:
-its safety judge reviews each permission request. Both are custom arguments: Orca offers OpenCode
-no permission mode, and Copilot stays on **Own**. Antigravity (`agy`) runs in **Full access**. The
-default for every other agent is **Own**, so Orca adds no flags to them. The original OpenCode is
-no longer in the policy; OpenCode 2 replaces it.
+(`opencode2`) launches with its own `--auto`, as a custom argument, since Orca offers OpenCode no
+permission mode. Antigravity (`agy`) runs in **Full access**. The default for every other agent is
+**Own**, so Orca adds no flags to them. The original OpenCode, Copilot and Muse are not in the
+policy: they are uninstalled, so Orca does not detect them.
 
 The rule behind it: no constant prompting, and nothing run dangerously. An agent uses its own
 auto mode where it has a workable one: Claude Code's auto mode keeps the allow and deny rules that
