@@ -601,6 +601,7 @@ loose-dict-allow = [
     "src/desktop_manager/claude_sessions/plan.py",
     "src/desktop_manager/models.py",
     "src/desktop_manager/work/serialize.py",
+    "src/rig/devenv/steps/ai_tools/bundled_hooks.py",
     "src/rig/devenv/steps/ai_tools/claude_code.py",
     "src/rig/devenv/steps/ai_tools/obsidian_plugins.py",
     "src/rig/devenv/steps/ai_tools/opencode.py",

@@ -177,7 +177,7 @@ def gh_cmd(
 def claude_cmd(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would change without writing it"),
 ) -> None:
-    """Merge the Claude Code settings baseline and install the session-ledger SessionEnd hook."""
+    """Merge the Claude Code settings baseline and install the session-ledger and low-priority hooks."""
     setup_claude_code(dry_run=dry_run)
 
 
