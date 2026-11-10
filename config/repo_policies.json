@@ -433,9 +433,6 @@
         "pr-checks"
       ]
     },
-    ".github": {
-      "required_checks": []
-    },
     "parquet-dotnet": {
       "expected_base_branch": "master",
       "fork": {
