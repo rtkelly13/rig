@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Rig.Cli.Forwarding;
+using Rig.Cli.Latex;
 using Rig.Core.GitHub;
 using Rig.Core.Tests.Fakes;
 
@@ -13,6 +14,7 @@ public sealed partial class ForwardedContractTests
 {
     private static readonly string PythonCli = Path.Combine(RepoRoot(), "src", "rig", "rig_cli.py");
     private static readonly string Bridge = Path.Combine(RepoRoot(), "src", "rig", "csharp_cli.py");
+    private static readonly string Project = Path.Combine(RepoRoot(), "pyproject.toml");
 
     [Fact]
     public void The_table_names_exactly_the_python_commands()
@@ -26,11 +28,19 @@ public sealed partial class ForwardedContractTests
     [Fact]
     public void Every_command_python_hands_over_is_one_csharp_owns()
     {
+        // Python hands over the PORTED rig subcommands, and each entry point whose script is the bridge's entry().
         var block = PortedBlock().Match(File.ReadAllText(Bridge)).Groups["body"].Value;
-        var ported = Name().Matches(block).Select(m => m.Groups["name"].Value).ToList();
+        var ported = Name().Matches(block).Select(m => m.Groups["name"].Value)
+            .Concat(HandedOverScript().Matches(File.ReadAllText(Project)).Select(m => m.Groups["name"].Value))
+            .ToList();
         var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
         var app = new RigApp(
-            new PythonRig(new FakeProc(), "/rig"), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), TextWriter.Null, TextWriter.Null);
+            new PythonRig(new FakeProc(), "/rig"),
+            new FakeGitHub(),
+            _ => Task.FromResult<RepoSlug?>(null),
+            TextWriter.Null,
+            TextWriter.Null,
+            new LatexCommand(new FakeProc(), new LatexHost(_ => null, string.Empty, "/", "/"), TextWriter.Null, TextWriter.Null));
         var owned = app
             .BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));
 
@@ -75,6 +85,9 @@ public sealed partial class ForwardedContractTests
 
     [GeneratedRegex(@"""(?<name>[\w-]+)""")]
     private static partial Regex Name();
+
+    [GeneratedRegex(@"^(?<name>[\w-]+) = ""rig\.csharp_cli:entry""\r?$", RegexOptions.Multiline)]
+    private static partial Regex HandedOverScript();
 
     [GeneratedRegex(@"""(?<flag>-[\w-]+)""")]
     private static partial Regex Quoted();

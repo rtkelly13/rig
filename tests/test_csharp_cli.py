@@ -99,3 +99,18 @@ def test_a_stub_hands_over_every_argument_and_returns_the_exit_code() -> None:
 
     assert result.exit_code == 1
     assert handed == [["gh", "threads", "list", "7", "--repo", "o/r", "--json", "--help"]]
+
+
+@pytest.mark.parametrize("script", ["/venv/bin/latex", "C:/venv/Scripts/latex.exe"])
+def test_a_ported_entry_point_hands_over_as_the_rig_command_of_its_name(script: str) -> None:
+    handed: list[list[str]] = []
+
+    def handover(args: list[str]) -> int:
+        handed.append(args)
+        return 1
+
+    with pytest.raises(SystemExit) as exited:
+        csharp_cli.entry([script, "build", "--no-sync-data"], handover)
+
+    assert exited.value.code == 1
+    assert handed == [["latex", "build", "--no-sync-data"]]

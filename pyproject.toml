@@ -49,7 +49,7 @@ md-lint = "rig.obsidian.cli:md_lint_entry"
 repo-governance = "rig.repo_governance.align_repo_conventions:main"
 workspace = "rig.workspace.cli:main"
 devenv = "rig.devenv.cli:main"
-latex = "rig.latex_builder.cli:main"
+latex = "rig.csharp_cli:entry"
 mail = "rig.mail.cli:main"
 
 [build-system]
@@ -247,8 +247,6 @@ ignore = [
 # file moves onto rig.tracing.run / rig.proc; G4 deletes whatever is left.
 # Removed by C10 (installers):
 "src/desktop_manager/chrome/install.py" = ["TID251"]
-# Removed by C13 (latex_builder):
-"src/rig/latex_builder/cli.py" = ["TID251"]
 # Removed by C15 (agent_browser reduced to setup) or G4:
 "src/rig/agent_browser/config.py" = ["TID251"]
 "src/rig/agent_browser/launcher.py" = ["TID251"]

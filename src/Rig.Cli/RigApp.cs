@@ -1,6 +1,7 @@
 using System.CommandLine;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Gh.Threads;
+using Rig.Cli.Latex;
 using Rig.Core;
 using Rig.Core.Processes;
 
@@ -10,7 +11,8 @@ namespace Rig.Cli;
 /// The rig command line. A line the Python CLI still owns is handed to it whole; everything else (help, version and
 /// every ported command) is parsed here. Exit codes follow <see cref="ExitCode"/>: a line that does not parse is 2.
 /// </summary>
-internal sealed class RigApp(PythonRig python, IGitHubApi github, OriginReader origin, TextWriter output, TextWriter error)
+internal sealed class RigApp(
+    PythonRig python, IGitHubApi github, OriginReader origin, TextWriter output, TextWriter error, LatexCommand? latex = null)
 {
     /// <summary>What <c>rig --help</c> says rig is.</summary>
     public const string Description =
@@ -21,6 +23,11 @@ internal sealed class RigApp(PythonRig python, IGitHubApi github, OriginReader o
     {
         var root = new RootCommand(Description);
         root.Subcommands.Add(new ThreadsCommand(new ThreadsGitHub(github), origin, output, error).Build());
+        if (latex is not null)
+        {
+            root.Subcommands.Add(latex.Build());
+        }
+
         foreach (var (name, description) in Forwarded.Commands)
         {
             root.Subcommands.Add(new Command(name, $"{description} (Python)"));
