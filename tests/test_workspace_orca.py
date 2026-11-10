@@ -18,7 +18,6 @@ from rig.typed_json import decode_json
 from rig.workspace import orca_cli
 from rig.workspace.cli import app
 from rig.workspace.orca import (
-    AgentSleepPolicy,
     OrcaPolicy,
     OrcaRepo,
     OrcaRepoIcon,
@@ -40,6 +39,7 @@ from rig.workspace.orca import (
     sync_repos,
     take_snapshot,
 )
+from rig.workspace.orca_agent_sleep import AgentSleepPolicy
 from rig.workspace.orca_hooks import Scripts
 from rig.workspace.packages import Status
 

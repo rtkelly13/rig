@@ -24,6 +24,7 @@ from pydantic import Field
 from rig import roots
 from rig.estate.orca_runtime import OrcaRuntime, OrcaUnavailableError
 from rig.typed_json import decode, decode_json, try_decode_json
+from rig.workspace.orca_agent_sleep import AgentSleepPolicy, agent_sleep_check
 from rig.workspace.orca_hooks import (
     ORCA_YAML,
     HookSettings,
@@ -115,15 +116,6 @@ class RepoPolicy:
     worktree_base_path: str | None = None
     color: str | None = None
     icon: str | None = None
-
-
-@dataclass(slots=True, frozen=True)
-class AgentSleepPolicy:
-    """Orca's experimental Agent sleep: stop idle agent terminals, resume them when opened."""
-
-    enabled: bool
-    #: Orca accepts 1 minute to 24 hours, and falls back to 30 minutes outside that range.
-    idle_minutes: Annotated[int, Field(ge=1, le=24 * 60)] = 30
 
 
 @dataclass(slots=True, frozen=True)
@@ -445,32 +437,9 @@ def _settings_findings(
     return findings
 
 
-@dataclass(slots=True, frozen=True)
-class _AgentSleepCheck:
-    have: str
-    want: str
-    fix: str
-
-    @property
-    def ok(self) -> bool:
-        return self.have == self.want
-
-
-def _agent_sleep_check(want: AgentSleepPolicy, settings: OrcaSettings) -> _AgentSleepCheck:
-    """Agent sleep as Orca has it and as the policy wants it, both written ``off`` or ``on, 30m idle``."""
-    # Orca reads a missing or out-of-range window as its 30-minute default.
-    idle_ms = settings.agent_sleep_idle_ms
-    idle_minutes = idle_ms // 60_000 if idle_ms is not None and 60_000 <= idle_ms <= 86_400_000 else 30
-    have = f"on, {idle_minutes}m idle" if settings.agent_sleep is True else "off"
-    if not want.enabled:
-        return _AgentSleepCheck(have, "off", "Orca Settings → Experimental: turn Agent sleep off")
-    fix = f"Orca Settings → Experimental: turn Agent sleep on with a {want.idle_minutes} minute idle window"
-    return _AgentSleepCheck(have, f"on, {want.idle_minutes}m idle", fix)
-
-
 def _agent_sleep_finding(want: AgentSleepPolicy, settings: OrcaSettings) -> OrcaFinding:
     """Agent sleep against the policy. The runtime cannot set it, so the fix is Orca's Settings page."""
-    check = _agent_sleep_check(want, settings)
+    check = agent_sleep_check(want, settings.agent_sleep, settings.agent_sleep_idle_ms)
     if check.ok:
         return OrcaFinding("settings", "agent sleep", Status.OK, check.have)
     return OrcaFinding("settings", "agent sleep", Status.FAIL, f"{check.have}, want {check.want}", check.fix)
@@ -638,7 +607,8 @@ def settings_manual_actions(policy: OrcaPolicy, snapshot: OrcaSnapshot) -> list[
     """
     if policy.agent_sleep is None or snapshot.settings is None:
         return []
-    check = _agent_sleep_check(policy.agent_sleep, snapshot.settings.settings)
+    settings = snapshot.settings.settings
+    check = agent_sleep_check(policy.agent_sleep, settings.agent_sleep, settings.agent_sleep_idle_ms)
     if check.ok:
         return []
     return [SyncAction("settings", "manual", "agent sleep", check.have, check.want, False, check.fix)]
