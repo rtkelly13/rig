@@ -194,9 +194,7 @@ ignore_imports = [
     "rig.repo_governance.cli_audits -> rig.workspace.engine",  # G2
     "rig.repo_governance.cli_audits -> rig.workspace.vercel_names",  # G2 (move the module)
     "rig.repo_governance.vercel_projects -> rig.workspace.vercel_names",  # G2 (move the module)
-    "rig.workspace.orca -> rig.estate.orca_runtime",  # G2 (move the module)
-    "rig.workspace.orca_agent_args -> rig.estate.orca_runtime",  # G2 (move the module)
-    "rig.workspace.orca_cli -> rig.estate.orca_runtime",  # G2 (move the module)
+    "rig.workspace.orca_agent_permissions -> rig.estate.orca_runtime",  # G2 (move the module)
 ]
 
 [tool.ruff]
@@ -477,7 +475,6 @@ fake-location-allow = [
     "tests/test_otel_clickhouse.py",
     "tests/test_otel_web.py",
     "tests/test_web_ops_spa.py",
-    "tests/test_workspace_orca_agent_args.py",
     "tests/test_workspace_packages.py",
 ]
 patching-allow = [
@@ -582,7 +579,6 @@ patching-allow = [
     "tests/test_workspace_doctor_cli.py",
     "tests/test_workspace_nuget_governance.py",
     "tests/test_workspace_orca.py",
-    "tests/test_workspace_orca_agent_args.py",
     "tests/test_workspace_orca_rpc.py",
     "tests/test_workspace_package_dashboard.py",
     "tests/test_workspace_packages.py",

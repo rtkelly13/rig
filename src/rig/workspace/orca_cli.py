@@ -12,16 +12,12 @@ from rich.markup import escape
 from rich.table import Table
 
 from rig.devenv.ui import make_console, table_box
-from rig.estate.orca_runtime import ORCA_UNAVAILABLE_EXIT, OrcaRuntime, OrcaUnavailableError
 from rig.typed_json import decode_json
 from rig.workspace.engine import config_file_path, estate_root_path, retired_project_names
 from rig.workspace.orca import (
     CONFIG_RELATIVE_PATH,
-    OrcaPolicy,
     OrcaSnapshot,
-    SyncAction,
     diagnose,
-    live_settings,
     load_policy,
     orca_profile_dir,
     orca_runner,
@@ -29,8 +25,8 @@ from rig.workspace.orca import (
     sync_repos,
     take_snapshot,
 )
-from rig.workspace.orca_agent_args import sync_agent_args
-from rig.workspace.orca_rpc import USER_DATA_ENV, orca_runtime_metadata_path
+from rig.workspace.orca_agent_permissions import live_launch_args
+from rig.workspace.orca_rpc import USER_DATA_ENV
 from rig.workspace.packages import Status
 
 orca_cli = typer.Typer(
@@ -76,13 +72,9 @@ def _user_data(orca_data: str | None) -> pathlib.Path | None:
 
 
 def _snapshot(user_data: pathlib.Path | None) -> OrcaSnapshot:
-    return take_snapshot(orca_profile_dir(user_data), orca_runner(user_data), live=lambda: live_settings(user_data))
-
-
-def _sync_agents(policy: OrcaPolicy, user_data: pathlib.Path | None, *, apply: bool) -> list[SyncAction]:
-    """Raises `OrcaUnavailableError` when Orca cannot be read."""
-    runtime = OrcaRuntime.from_metadata(orca_runtime_metadata_path(user_data))
-    return sync_agent_args(policy, runtime, apply=apply)
+    return take_snapshot(
+        orca_profile_dir(user_data), orca_runner(user_data), launch=lambda: live_launch_args(user_data)
+    )
 
 
 def _managed_project_names(registry: pathlib.Path) -> tuple[str, ...]:
@@ -140,9 +132,10 @@ def sync_command(
     orca_data: str | None = typer.Option(None, "--orca-data", help=_ORCA_DATA_HELP),
     json_output: bool = typer.Option(False, "--json", help="Output actions as JSON"),
 ) -> None:
-    """Sync Orca to config/orca.json: agent default args, then repos (registration, colors, icons, scripts, refs).
+    """Sync Orca's repos to config/orca.json (registration, colors, icons, scripts, refs).
 
-    Exits 3 when Orca cannot be reached, 1 when any change failed.
+    Agent arguments, permissions and Agent sleep are listed as manual steps for Orca's Settings.
+    Exits 1 when any change failed.
     """
     policy_path = pathlib.Path(config).resolve() if config else config_file_path().parent.parent / CONFIG_RELATIVE_PATH
     policy = load_policy(policy_path)
@@ -150,13 +143,7 @@ def sync_command(
     snapshot = _snapshot(user_data)
     root = estate_root_path(estate_root)
 
-    try:
-        actions = [] if repo is not None else _sync_agents(policy, user_data, apply=apply)
-    except OrcaUnavailableError as e:
-        typer.echo(str(e), err=True)
-        raise typer.Exit(ORCA_UNAVAILABLE_EXIT) from e
-    if repo is None:
-        actions += settings_manual_actions(policy, snapshot)
+    actions = settings_manual_actions(policy, snapshot) if repo is None else []
     actions += sync_repos(
         policy,
         snapshot,

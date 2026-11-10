@@ -190,7 +190,12 @@ class _OneGroup:
 
 @dataclass(frozen=True, slots=True)
 class OrcaLiveSettings:
-    """The agent-launch part of Orca's settings; the runtime does not expose the rest."""
+    """The agent-launch part of Orca's settings; the runtime does not expose the rest.
+
+    Since Orca 1.4.255 ``agentDefaultArgs`` here is each agent's whole launch line: its permission
+    mode's flags joined to the custom arguments the profile stores. Never write it back as custom
+    arguments, or the flags are pinned into them and Orca locks the agent's permission choice.
+    """
 
     agent_default_args: Annotated[Lenient[dict[str, str]], Field(alias="agentDefaultArgs")] = None
 
@@ -353,15 +358,6 @@ class OrcaRuntime:
     def settings(self) -> OrcaLiveSettings:
         """Orca's settings as the running app holds them, not as last backed up."""
         return self.call(_OneSettings, "settings.get").settings
-
-    def agent_default_args(self) -> dict[str, str]:
-        """The extra arguments Orca adds when it launches each agent (Settings > Agents)."""
-        return self.settings().agent_default_args or {}
-
-    def set_agent_default_args(self, args: dict[str, str]) -> dict[str, str]:
-        """Replace the whole agent-arguments map; Orca does not merge it, so pass every agent's entry."""
-        reply = self.call(_OneSettings, "settings.update", {"agentDefaultArgs": args})
-        return reply.settings.agent_default_args or {}
 
     def worktrees(self) -> tuple[Worktree, ...]:
         return self.call(_Worktrees, "worktree.list", {}).worktrees
