@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Forwarding;
+using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 
@@ -11,14 +12,23 @@ internal static class Program
 {
     private static async Task<int> Main(string[] args)
     {
-        var checkout = PythonRig.ResolveCheckout(Environment.GetEnvironmentVariable(PythonRig.HomeVariable), CodeRoot.Current());
+        var codeRoot = CodeRoot.Current();
+        var checkout = PythonRig.ResolveCheckout(Environment.GetEnvironmentVariable(PythonRig.HomeVariable), codeRoot);
         if (Forwarded.Owns(args))
         {
             // The Python CLI shares this console and handles Ctrl+C itself; rig waits for it and returns its code.
             Console.CancelKeyPress += (_, e) => e.Cancel = true;
         }
 
-        var app = new RigApp(new PythonRig(new SystemProc(), checkout), Console.Out, Console.Error);
+        var proc = new SystemProc();
+        var git = new Git(proc, codeRoot);
+        var fromPython = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(PythonRig.BridgeVariable));
+        var app = new RigApp(
+            new PythonRig(proc, checkout, fromPython),
+            new GhApi(proc),
+            async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false)),
+            Console.Out,
+            Console.Error);
         return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
     }
 }

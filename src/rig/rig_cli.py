@@ -16,14 +16,13 @@ import typer
 from rich.console import Console
 
 from desktop_manager.web_cli import web_app
-from rig import tracing
+from rig import csharp_cli, tracing
 from rig.agent_browser.cli import app as browser_app
 from rig.agent_launcher.cli import agent_main
 from rig.c4_okf.cli import app as c4_app
 from rig.devenv.cli import app as devenv_app
 from rig.estate.cli import app as estate_app
 from rig.flags.cli import app as flags_app
-from rig.gh_threads.cli import app as gh_app
 from rig.models.cli import app as models_app
 from rig.triage.cli import app as triage_app
 from rig.workspace.cli import app as workspace_app
@@ -45,8 +44,11 @@ app.add_typer(triage_app, name="triage")
 app.add_typer(web_app, name="web")
 app.add_typer(flags_app, name="flags")
 app.add_typer(browser_app, name="browser")
-app.add_typer(gh_app, name="gh")  # TEMPORARY: retire with rig.gh_threads once gh handles review threads
 app.add_typer(c4_app, name="c4")
+
+
+for _name in csharp_cli.PORTED:
+    csharp_cli.add_stub(app, _name)
 
 
 @app.command("agent", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})

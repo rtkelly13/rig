@@ -1,4 +1,5 @@
 using Rig.Cli.Forwarding;
+using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
 
@@ -12,15 +13,15 @@ public sealed class RigAppTests : IDisposable
     private readonly FakeProc _proc = new();
     private readonly StringWriter _out = new();
     private readonly StringWriter _err = new();
+    private bool _fromPython;
 
     private Task<int> Run(params string[] args) =>
-        new RigApp(new PythonRig(_proc, Checkout), _out, _err).RunAsync(args, TestContext.Current.CancellationToken);
+        new RigApp(new PythonRig(_proc, Checkout, _fromPython), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), _out, _err).RunAsync(args, TestContext.Current.CancellationToken);
 
     [Theory]
     [InlineData("workspace", "sync", "--dry-run")]
     [InlineData("status", "--help")]
     [InlineData("-ccc")]
-    [InlineData("gh", "threads", "list", "89")]
     public async Task A_python_command_goes_over_whole_and_attached(params string[] args)
     {
         _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
@@ -101,6 +102,27 @@ public sealed class RigAppTests : IDisposable
         Assert.Empty(_proc.Requests);
         Assert.Contains("no-such-command", _err.ToString(), StringComparison.Ordinal);
         Assert.Contains("rig --help", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_ported_command_is_parsed_here_not_forwarded()
+    {
+        Assert.Equal(0, await Run("gh", "threads", "--help"));
+
+        Assert.Empty(_proc.Requests);
+        Assert.Contains("resolve", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_python_command_sent_from_python_is_refused_not_sent_back()
+    {
+        _fromPython = true;
+
+        Assert.Equal(2, await Run("sync"));
+
+        Assert.Empty(_proc.Requests);
+        Assert.Contains("refusing to loop", _err.ToString(), StringComparison.Ordinal);
+        Assert.Contains("'sync'", _err.ToString(), StringComparison.Ordinal);
     }
 
     public void Dispose()

@@ -8,7 +8,7 @@
       {"pattern": "uv run pytest*", "rationale": "Run validation tests."},
       {"pattern": "uv run ruff check*", "rationale": "Run static lint checks."},
       {"pattern": "uv run pyright*", "rationale": "Run type checks."},
-      {"pattern": "uv run rig gh threads list *", "rationale": "Lists a PR's unresolved review threads; read-only. Temporary with rig.gh_threads."},
+      {"pattern": "uv run rig gh threads list *", "rationale": "Lists a PR's unresolved review threads; read-only. Runs on the C# CLI (src/Rig.Cli/Gh/Threads); temporary until gh resolves threads itself."},
       {"pattern": "pnpm test*", "rationale": "Run project tests."},
       {"pattern": "pnpm typecheck*", "rationale": "Run TypeScript checks."},
       {"pattern": "pnpm lint", "rationale": "Run lint checks."},
