@@ -73,3 +73,12 @@ def add_stub(app: typer.Typer, name: str, handover: Callable[[list[str]], int] |
         context_settings={"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": list[str]()},
         help="Runs on the C# rig CLI.",
     )(stub)
+
+
+def entry(argv0_and_args: Sequence[str] | None = None, handover: Callable[[list[str]], int] = run) -> None:
+    """A ported entry point (``uv run latex …``): run ``rig <its name> …`` on the C# CLI, keeping the exit code.
+
+    The name is the invoked script's stem, so ``latex`` and Windows' ``latex.exe`` both hand over as ``rig latex``.
+    """
+    line = list(sys.argv if argv0_and_args is None else argv0_and_args)
+    raise SystemExit(handover([Path(line[0]).stem, *line[1:]]))

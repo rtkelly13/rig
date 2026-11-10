@@ -12,10 +12,10 @@ public sealed class TempDir : IDisposable
     /// <summary>Creates <paramref name="relative"/> as a folder under this one and returns its path.</summary>
     public string Folder(string relative) => Directory.CreateDirectory(System.IO.Path.Combine(Path, relative)).FullName;
 
-    /// <summary>Creates <paramref name="relative"/> as an empty file under this one and returns its path.</summary>
+    /// <summary>Creates <paramref name="relative"/> as an empty file under this one and returns its full path, with this platform's separators.</summary>
     public string File(string relative)
     {
-        var path = System.IO.Path.Combine(Path, relative);
+        var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(Path, relative));
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
         System.IO.File.WriteAllText(path, string.Empty);
         return path;

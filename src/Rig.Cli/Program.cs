@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Forwarding;
+using Rig.Cli.Latex;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
@@ -28,7 +29,12 @@ internal static class Program
             new GhApi(proc),
             async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false)),
             Console.Out,
-            Console.Error);
+            Console.Error,
+            new LatexCommand(
+                proc,
+                new LatexHost(ProgramPath.Find, Environment.GetEnvironmentVariable("PATH") ?? string.Empty, codeRoot, Environment.CurrentDirectory),
+                Console.Out,
+                Console.Error));
         return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
     }
 }
