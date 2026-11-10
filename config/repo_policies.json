@@ -404,6 +404,9 @@
       ]
     },
     "Lake.NET": {
+      "license": {
+        "type": "Apache-2.0"
+      },
       "script_ban": {
         "banned_extensions": [
           ".ps1",
@@ -429,6 +432,9 @@
       "required_checks": [
         "pr-checks"
       ]
+    },
+    ".github": {
+      "required_checks": []
     },
     "parquet-dotnet": {
       "expected_base_branch": "master",

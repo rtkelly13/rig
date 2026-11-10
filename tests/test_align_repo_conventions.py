@@ -986,6 +986,22 @@ class TestDiscoverPrCheckNames:
         assert set(discover_pr_check_names(repo)) == {"ci"}
 
     @pytest.mark.ci
+    def test_pull_request_target_workflows_are_discovered(self, tmp_path):
+        repo = self._write(
+            tmp_path,
+            "protected-paths.yml",
+            """
+            on:
+              pull_request_target:
+                types: [opened, synchronize]
+            jobs:
+              gate:
+                name: protected-paths
+            """,
+        )
+        assert discover_pr_check_names(repo) == {"protected-paths": "protected-paths.yml :: gate"}
+
+    @pytest.mark.ci
     def test_repo_without_a_workflows_directory_is_empty(self, tmp_path):
         assert discover_pr_check_names(tmp_path) == {}
 
