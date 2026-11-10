@@ -12,6 +12,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from rig.devenv.ui import make_console, table_box
+from rig.estate.orca_runtime import ORCA_UNAVAILABLE_EXIT
 from rig.typed_json import decode_json
 from rig.workspace.engine import config_file_path, estate_root_path, retired_project_names
 from rig.workspace.orca import (
@@ -135,12 +136,15 @@ def sync_command(
     """Sync Orca's repos to config/orca.json (registration, colors, icons, scripts, refs).
 
     Agent arguments, permissions and Agent sleep are listed as manual steps for Orca's Settings.
-    Exits 1 when any change failed.
+    Exits 3 when Orca is not running (the scheduled job retries that), 1 when any change failed.
     """
     policy_path = pathlib.Path(config).resolve() if config else config_file_path().parent.parent / CONFIG_RELATIVE_PATH
     policy = load_policy(policy_path)
     user_data = _user_data(orca_data)
     snapshot = _snapshot(user_data)
+    if snapshot.launch_args is None:
+        typer.echo("Orca is not running, so there is nothing to sync; retry once it starts.", err=True)
+        raise typer.Exit(ORCA_UNAVAILABLE_EXIT)
     root = estate_root_path(estate_root)
 
     actions = settings_manual_actions(policy, snapshot) if repo is None else []

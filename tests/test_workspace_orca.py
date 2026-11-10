@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from typer.testing import CliRunner
 
+from rig.estate.orca_runtime import ORCA_UNAVAILABLE_EXIT
 from rig.typed_json import decode_json
 from rig.workspace import orca_cli
 from rig.workspace.cli import app
@@ -568,7 +569,7 @@ def test_sync_cli_dry_run(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatc
     )
     (tmp_path / "rig" / ".git").mkdir(parents=True)
     repos = (_repo("rig", str(tmp_path / "rig"), setup="old"),)
-    snapshot = OrcaSnapshot(settings=None, repos=repos)
+    snapshot = OrcaSnapshot(settings=None, repos=repos, launch_args={})
     monkeypatch.setattr(orca_cli, "_snapshot", _fixed(snapshot))
 
     result = CliRunner().invoke(app, ["orca", "sync", "--config", str(config), "--json"])
@@ -578,6 +579,19 @@ def test_sync_cli_dry_run(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatc
     assert actions[0].repo == "rig"
     assert actions[0].field == "setup script"
     assert not actions[0].applied
+
+
+def test_sync_cli_exits_for_retry_when_orca_is_not_running(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = tmp_path / "orca.json"
+    _ = config.write_text(json.dumps({"agent_args": {"claude": ""}}), encoding="utf-8")
+    monkeypatch.setattr(orca_cli, "_snapshot", _fixed(OrcaSnapshot(settings=None, repos=())))
+
+    result = CliRunner().invoke(app, ["orca", "sync", "--config", str(config)])
+
+    assert result.exit_code == ORCA_UNAVAILABLE_EXIT
+    assert "not running" in result.stderr
 
 
 def test_worktree_location_is_checked_and_synced(tmp_path: pathlib.Path) -> None:
