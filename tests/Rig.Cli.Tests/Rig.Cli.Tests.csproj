@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/Rig.Cli/Rig.Cli.csproj" />
+  </ItemGroup>
+  <ItemGroup Label="Shared doubles">
+    <Compile Include="../Rig.Core.Tests/Fakes/FakeProc.cs" Link="Fakes/FakeProc.cs" />
+  </ItemGroup>
+</Project>

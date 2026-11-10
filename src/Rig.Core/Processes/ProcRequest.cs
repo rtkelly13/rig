@@ -15,4 +15,10 @@ public sealed record ProcRequest(IReadOnlyList<string> Argv)
 
     /// <summary>Text written to standard input; when null, standard input is closed.</summary>
     public string? StdinText { get; init; }
+
+    /// <summary>
+    /// Whether the process shares this console: standard input, output and error are inherited rather than captured,
+    /// so <see cref="Ran.Out"/> and <see cref="Ran.Err"/> stay empty. Used to hand a whole command to another program.
+    /// </summary>
+    public bool Attached { get; init; }
 }
