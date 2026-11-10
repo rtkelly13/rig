@@ -1,0 +1,1955 @@
+[
+ {
+  "name": "portable",
+  "posix_only": false,
+  "files": [
+   {
+    "path": "Resources/Topic/Good Note.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9nb29kLmV4YW1wbGUvb25lCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Topic/No Type.md",
+    "b64": "LS0tCnN0YXR1czogYWN0aXZlCi0tLQo="
+   },
+   {
+    "path": "Resources/Topic/No Frontmatter.md",
+    "b64": "SnVzdCBhIGJvZHkK"
+   },
+   {
+    "path": "Resources/Topic/Unknown Type.md",
+    "b64": "LS0tCnR5cGU6IGdpem1vCi0tLQo="
+   },
+   {
+    "path": "Resources/Topic/Type Not Str.md",
+    "b64": "LS0tCnR5cGU6IDEyCi0tLQo="
+   },
+   {
+    "path": "Resources/Topic/Blank Type.md",
+    "b64": "LS0tCnR5cGU6ICcnCi0tLQo="
+   },
+   {
+    "path": "Resources/Topic/Missing Fields.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCi0tLQo="
+   },
+   {
+    "path": "Resources/Topic/Null Field.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZToKc3RhdHVzOiB+CmNyZWF0ZWQ6IG51bGwKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Blank Field.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogJycKc3RhdHVzOiAnICAgJwpjcmVhdGVkOiAiXHQiCi0tLQo="
+   },
+   {
+    "path": "Resources/Topic/Empty List.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogW10Kc3RhdHVzOiBbeF0KY3JlYXRlZDoge30KLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/False Field.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogZmFsc2UKc3RhdHVzOiAwCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Hub Kind.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlLWh1YgotLS0K"
+   },
+   {
+    "path": "Areas/Health/Area Note.md",
+    "b64": "LS0tCnR5cGU6IGFyZWEKLS0tCg=="
+   },
+   {
+    "path": "Projects/Build/Project Note.md",
+    "b64": "LS0tCnR5cGU6IHByb2plY3QKLS0tCg=="
+   },
+   {
+    "path": "Projects/Build/Design/Sketch.md",
+    "b64": "LS0tCnN0YXR1czogZHJhZnQKLS0tCg=="
+   },
+   {
+    "path": "Projects/Build/Plain.md",
+    "b64": "LS0tCnRpdGxlOiB4Ci0tLQo="
+   },
+   {
+    "path": "Areas/Health/Daily Thing.md",
+    "b64": "LS0tCnR5cGU6IGRhaWx5Ci0tLQo="
+   },
+   {
+    "path": "Areas/Health/Okf.md",
+    "b64": "LS0tCnR5cGU6IFJlcG9zaXRvcnkKLS0tCg=="
+   },
+   {
+    "path": "Areas/Health/Task.md",
+    "b64": "LS0tCnR5cGU6IHRhc2sKc3RhdHVzOiAnJwotLS0K"
+   },
+   {
+    "path": "Social Media Posts/Thread/Bare Social.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbAotLS0K"
+   },
+   {
+    "path": "Resources/Topic/Ignore One.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCmxpbnRfaWdub3JlOiBUVlMwMDIKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Ignore List.md",
+    "b64": "LS0tCmxpbnRfaWdub3JlOiBbJyB0dnMwMDEgJywgNywgbnVsbF0KLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Ignore All.md",
+    "b64": "LS0tCnR5cGU6IGdpem1vCmxpbnRfaWdub3JlOiBhbGwKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Ignore Tvs.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCmxpbnQtaWdub3JlOiBbVFZTXQotLS0K"
+   },
+   {
+    "path": "Resources/Topic/Ignore Blank.md",
+    "b64": "LS0tCnR5cGU6IGdpem1vCmxpbnRfaWdub3JlOiAnJwpsaW50LWlnbm9yZTogVFZTMDA1Ci0tLQo="
+   },
+   {
+    "path": "Resources/Topic/Ignore Empty.md",
+    "b64": "LS0tCnR5cGU6IGdpem1vCmxpbnRfaWdub3JlOiBbXQpsaW50LWlnbm9yZTogW3R2czAwNV0KLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Ignore Dict.md",
+    "b64": "LS0tCnR5cGU6IGdpem1vCmxpbnRfaWdub3JlOiB7YTogMX0KbGludC1pZ25vcmU6IFRWUzAwNQotLS0K"
+   },
+   {
+    "path": "Resources/Topic/ignore_filename.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKbGludF9pZ25vcmU6IFtUVlMxMDNdCi0tLQo="
+   },
+   {
+    "path": "Resources/Topic/also_dots.v2.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKbGludF9pZ25vcmU6IFRWUzEwNQotLS0K"
+   },
+   {
+    "path": "Resources/Topic/nested_ignore.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKbGludF9pZ25vcmU6IFtbVFZTMTAzXSwgJyAnLCBUVlMxMDJdCi0tLQo="
+   },
+   {
+    "path": "Resources/Clash/Clash A.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogdGl0bGU6Q2xhc2gvc2FtZQpzdGF0dXM6IGFjdGl2ZQpjcmVhdGVkOiAyMDI0LTAxLTAxCnRpdGxlOiAiU2FtZSIKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Clash/Clash B.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogdGl0bGU6Q2xhc2gvc2FtZQpzdGF0dXM6IGFjdGl2ZQpjcmVhdGVkOiAyMDI0LTAxLTAxCnRpdGxlOiAiU2FtZSIKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Clash/Clash C.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jbGFzaC5leGFtcGxlL2MKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQp0aXRsZTogIlNhbWUiCi0tLQpCb2R5Cg=="
+   },
+   {
+    "path": "Resources_loose.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Projects Hub.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Bad Yaml.md",
+    "b64": "LS0tCnR5cGU6IFt1bmNsb3NlZAotLS0K"
+   },
+   {
+    "path": "Resources/Topic/Bad Utf8.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCi0tLQr//go="
+   },
+   {
+    "path": "Resources/Topic/Int Key.md",
+    "b64": "LS0tCjE6IG9uZQp0eXBlOiBub3RlCi0tLQo="
+   },
+   {
+    "path": "Resources/Topic/Content Key.md",
+    "b64": "LS0tCmNvbnRlbnQ6IHgKdHlwZTogbm90ZQotLS0K"
+   },
+   {
+    "path": "Resources/Topic/Folder.md",
+    "folder": true
+   },
+   {
+    "path": "Resources/Topic/Crlf Note.md",
+    "b64": "LS0tDQp0eXBlOiBub3RlDQp0aXRsZTogQ3JsZg0KLS0tDQpCb2R5DQo="
+   },
+   {
+    "path": "Resources/Topic/Bom Note.md",
+    "b64": "77u/LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/https-example-com-some-page.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IFNvbWUgUGFnZQotLS0K"
+   },
+   {
+    "path": "Resources/Topic/status 12345 thread.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Café Notes.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/my_note.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/two  spaces.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/a--b.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/v1.2 notes.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/@handle post.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Read github.com notes.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/HTTPS-WWW-EXAMPLE-COM.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/x.com status.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKc291cmNlOiBodHRwczovL3guY29tL3Uvc3RhdHVzLzEyMwotLS0K"
+   },
+   {
+    "path": "Resources/Topic/node.js tips.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IE5vZGUuanMgVGlwcwotLS0K"
+   },
+   {
+    "path": "Resources/Topic/titled_thing.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IEEgTXVjaCBCZXR0ZXIgVGl0bGUKc291cmNlOiBodHRwczovL2V4LmNvbS9hCi0tLQo="
+   },
+   {
+    "path": "Resources/Topic/related_one.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKcmVsYXRlZF9hcnRpY2xlOiAnW1tTb21lIEFydGljbGVdXScKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/url_field.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdXJsOiBodHRwczovL3NpdGUuZXhhbXBsZS9wYXRoL3RvL3BhZ2UKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Ünïcode Ä.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/� replacement.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/𐐀 deseret.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/é nfc.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Topic.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlLWh1YgpzdGF0dXM6IHgKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Topic Index.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlLWh1YgotLS0K"
+   },
+   {
+    "path": "Resources/Topic/My_Hub.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlLWh1YgotLS0K"
+   },
+   {
+    "path": "Resources/Topic/Inbox-dump_1.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/top_level.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Deep/inner_note.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Bad Yaml_name.md",
+    "b64": "LS0tCnR5cGU6IFt1bmNsb3NlZAotLS0K"
+   },
+   {
+    "path": "Resources/Topic/dots...md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/trailing-.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/UPPER_case.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Inbox/loose_note.md",
+    "b64": "LS0tCnR5cGU6IGdpem1vCi0tLQo="
+   },
+   {
+    "path": "Root Note.md",
+    "b64": "LS0tCnR5cGU6IGdpem1vCi0tLQo="
+   },
+   {
+    "path": "Archive/Resources/Topic/old_one.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9nb29kLmV4YW1wbGUvb25lCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Archive Stuff/old_two.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9nb29kLmV4YW1wbGUvb25lCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": ".obsidian/Resources/x_y.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9nb29kLmV4YW1wbGUvb25lCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": ".hidden/Resources/Topic/hidden_note.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9oaWRkZW4uZXhhbXBsZS9hCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": ".hidden/Resources/Topic/hidden_twin.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9oaWRkZW4uZXhhbXBsZS9hLwpzdGF0dXM6IGFjdGl2ZQpjcmVhdGVkOiAyMDI0LTAxLTAxCi0tLQpCb2R5Cg=="
+   },
+   {
+    "path": "Daily/2024-01-01.md",
+    "b64": "LS0tCnR5cGU6IGRhaWx5CmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCg=="
+   },
+   {
+    "path": "Templates/Template.md",
+    "b64": "e3t0aXRsZX19Cg=="
+   },
+   {
+    "path": "Templates/notes.txt",
+    "b64": "bm90IG1hcmtkb3duCg=="
+   },
+   {
+    "path": "Templates/Note.MD",
+    "b64": "dXBwZXIgc3VmZml4Cg=="
+   },
+   {
+    "path": "Empty",
+    "folder": true
+   },
+   {
+    "path": "Resources/Dupes/First.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly93d3cuRHVwLmV4YW1wbGUvcGF0aC8/dXRtX3NvdXJjZT14I2ZyYWcKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Dupes/Second.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9kdXAuZXhhbXBsZS9wYXRoCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Inbox/a/b.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9vcmRlci5leGFtcGxlL3gKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Inbox/a b.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9vcmRlci5leGFtcGxlL3gKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Inbox/a-b.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9vcmRlci5leGFtcGxlL3gKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Projects/Build/One Url.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9vbmx5LmV4YW1wbGUveApzdGF0dXM6IGFjdGl2ZQpjcmVhdGVkOiAyMDI0LTAxLTAxCi0tLQpCb2R5Cg=="
+   },
+   {
+    "path": "Inbox/Bad Url.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cDovL1s6OjEKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Inbox/Bad Url Twin.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cDovL1s6OjEKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Inbox/Twitter A.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly90d2l0dGVyLmNvbS9zb21lb25lL3N0YXR1cy80Mj9zPTIwCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Inbox/Twitter B.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly94LmNvbS9vdGhlci9zdGF0dXMvNDIKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Linked/Article.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9saW5rZWQuZXhhbXBsZS9hCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Social Media Posts/Linked/Post Related.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbApzb3VyY2U6IGh0dHBzOi8vbGlua2VkLmV4YW1wbGUvYQpyZWxhdGVkX2FydGljbGU6ICJbW0FydGljbGVdXSIKLS0tCg=="
+   },
+   {
+    "path": "Social Media Posts/Linked/Post Content.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbApzb3VyY2U6IGh0dHBzOi8vbGlua2VkLmV4YW1wbGUvYQotLS0KU2VlIFtbQXJ0aWNsZS5tZF1dCg=="
+   },
+   {
+    "path": "Social Media Posts/Linked/Post Unlinked.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbApzb3VyY2U6IGh0dHBzOi8vbGlua2VkLmV4YW1wbGUvYQotLS0KTm8gbGluawo="
+   },
+   {
+    "path": "Resources/Pair/Paper.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9wYWlyLmV4YW1wbGUvcApzdGF0dXM6IGFjdGl2ZQpjcmVhdGVkOiAyMDI0LTAxLTAxCi0tLQpCb2R5Cg=="
+   },
+   {
+    "path": "Social Media Posts/Pair/Pair Post.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbApzb3VyY2U6IGh0dHBzOi8vcGFpci5leGFtcGxlL3AKLS0tCltbUGFwZXJdXQo="
+   },
+   {
+    "path": "Social Media Posts/Multi/Multi Post.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbApzb3VyY2U6IGh0dHBzOi8vbXVsdGkuZXhhbXBsZS9tCnJlbGF0ZWRfYXJ0aWNsZTogIltbXG5QYXBlciBUd29dXSIKLS0tCg=="
+   },
+   {
+    "path": "Resources/Multi/Paper Two.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9tdWx0aS5leGFtcGxlL20Kc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Multi/Paper Three.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9tdWx0aS5leGFtcGxlL20Kc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Social Media Posts/Solo/Solo A.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbApzb3VyY2U6IGh0dHBzOi8vc29sby5leGFtcGxlL3MKLS0tCg=="
+   },
+   {
+    "path": "Social Media Posts/Solo/Solo B.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbApzb3VyY2U6IGh0dHBzOi8vc29sby5leGFtcGxlL3MKLS0tCg=="
+   },
+   {
+    "path": "Inbox/Mixed Inbox.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9taXhlZC5leGFtcGxlL20Kc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Social Media Posts/Mixed/Mixed Post.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbApzb3VyY2U6IGh0dHBzOi8vbWl4ZWQuZXhhbXBsZS9tCi0tLQo="
+   },
+   {
+    "path": "Resources/Mixed/Mixed Res.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9taXhlZC5leGFtcGxlL20Kc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Titles/Foo Bar.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Titles/foo bar (1).md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Titles/Foo Bar-a1b2.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Titles/Other.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6ICcgIEZPTyBCQVIgJwotLS0K"
+   },
+   {
+    "path": "Resources/Titles/Spaced.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6ICJTcGFjZWRcdTIwMDMoMSkiCi0tLQo="
+   },
+   {
+    "path": "Resources/Titles/Spaced Twin.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IHNwYWNlZAotLS0K"
+   },
+   {
+    "path": "Resources/Titles/Newline.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6ICJMaW5lICgxKVxuIgotLS0K"
+   },
+   {
+    "path": "Resources/Titles/line.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Titles/Titles.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IEZvbyBCYXIKLS0tCg=="
+   },
+   {
+    "path": "Resources/Titles/Empty Title.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6ICcnCi0tLQo="
+   },
+   {
+    "path": "Resources/Titles/Empty Twin.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IGVtcHR5IHRpdGxlCi0tLQo="
+   },
+   {
+    "path": "Resources/Other Titles/Foo Bar.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Social Media Posts/Titles/Foo Bar.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbAotLS0K"
+   },
+   {
+    "path": "Social Media Posts/Titles/foo bar (1).md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbAotLS0K"
+   },
+   {
+    "path": "Inbox/Social Typed.md",
+    "b64": "LS0tCnR5cGU6IHNvY2lhbAotLS0K"
+   },
+   {
+    "path": "Inbox/Typed Twin.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IHNvY2lhbCB0eXBlZAotLS0K"
+   },
+   {
+    "path": "Inbox/Mixed Key.md",
+    "b64": "LS0tCnNvdXJjZTogJ3RpdGxlOmluYm94L21peGVkIGtleScKLS0tCg=="
+   },
+   {
+    "path": "Inbox/Key Twin.md",
+    "b64": "LS0tCnRpdGxlOiBtaXhlZCBrZXkKc291cmNlOiAndGl0bGU6SW5ib3gvbWl4ZWQga2V5JwotLS0K"
+   },
+   {
+    "path": "Resources/Topic/My Inbox-dump_1.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Same Root.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Other Root.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IHNhbWUgcm9vdAotLS0K"
+   },
+   {
+    "path": "Vault.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Inbox/Vault Twin.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IFZhdWx0Ci0tLQo="
+   },
+   {
+    "path": "Inbox/Broken.md",
+    "b64": "LS0tCnR5cGU6IFt1bmNsb3NlZAotLS0K"
+   },
+   {
+    "path": "Inbox/broken (1).md",
+    "b64": "LS0tCnR5cGU6IFt1bmNsb3NlZAotLS0K"
+   },
+   {
+    "path": "Inbox/Url Title.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cDovL1s6OjEKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQp0aXRsZTogIlNhbWUgVXJsIFRpdGxlIgotLS0KQm9keQo="
+   },
+   {
+    "path": "Inbox/Url Title 2.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cDovL1s6OjIKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQp0aXRsZTogIlNhbWUgVXJsIFRpdGxlIgotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Sort/sub_dir/a_b.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9zb3J0LmV4YW1wbGUvcwpzdGF0dXM6IGFjdGl2ZQpjcmVhdGVkOiAyMDI0LTAxLTAxCi0tLQpCb2R5Cg=="
+   },
+   {
+    "path": "Resources/Sort/sub_dir x/a_b.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9zb3J0LmV4YW1wbGUvcwpzdGF0dXM6IGFjdGl2ZQpjcmVhdGVkOiAyMDI0LTAxLTAxCi0tLQpCb2R5Cg=="
+   },
+   {
+    "path": "Resources/Sort/sub_dir-y/a_b.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9zb3J0LmV4YW1wbGUvcwpzdGF0dXM6IGFjdGl2ZQpjcmVhdGVkOiAyMDI0LTAxLTAxCi0tLQpCb2R5Cg=="
+   },
+   {
+    "path": "Resources/Topic/notes.github.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9nb29kLmV4YW1wbGUvb25lCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Topic/Archived_thing.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9nb29kLmV4YW1wbGUvb25lCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Topic/my.obsidian_note.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9nb29kLmV4YW1wbGUvb25lCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 0.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzAKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 1.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzEKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 2.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzIKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 3.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzMKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 4.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzQKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 5.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzUKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 6.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzYKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 7.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzcKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 8.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzgKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 9.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzkKc3RhdHVzOiBhY3RpdmUKY3JlYXRlZDogMjAyNC0wMS0wMQotLS0KQm9keQo="
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 10.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzEwCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 11.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzExCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 12.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzEyCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 13.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzEzCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Crowd/Crowd Note 14.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9jcm93ZC5leGFtcGxlLzE0CnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   }
+  ],
+  "expect": {
+   "report": {
+    "ok": false,
+    "metadata": {
+     "errors": [
+      {
+       "path": "Social Media Posts/Mixed/Mixed Post.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'related_article'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Mixed/Mixed Post.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Mixed/Mixed Post.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Multi/Multi Post.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Multi/Multi Post.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Titles/Foo Bar.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'source'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Titles/Foo Bar.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'related_article'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Titles/Foo Bar.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Titles/Foo Bar.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Titles/foo bar (1).md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'source'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Titles/foo bar (1).md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'related_article'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Titles/foo bar (1).md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Titles/foo bar (1).md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Solo/Solo B.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'related_article'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Solo/Solo B.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Solo/Solo B.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Solo/Solo A.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'related_article'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Solo/Solo A.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Solo/Solo A.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Linked/Post Unlinked.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'related_article'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Linked/Post Unlinked.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Linked/Post Unlinked.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Linked/Post Content.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'related_article'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Linked/Post Content.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Linked/Post Content.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Linked/Post Related.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Linked/Post Related.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Thread/Bare Social.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'source'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Thread/Bare Social.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'related_article'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Thread/Bare Social.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Thread/Bare Social.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Pair/Pair Post.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'related_article'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Pair/Pair Post.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Social Media Posts/Pair/Pair Post.md",
+       "code": "TVS002",
+       "reason": "Type 'social' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Content Key.md",
+       "code": "TVS000",
+       "reason": null,
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/No Frontmatter.md",
+       "code": "TVS001",
+       "reason": "Missing 'type' field (Suggested: 'resource')",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Int Key.md",
+       "code": "TVS000",
+       "reason": null,
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Bom Note.md",
+       "code": "TVS001",
+       "reason": "Missing 'type' field (Suggested: 'resource')",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Missing Fields.md",
+       "code": "TVS002",
+       "reason": "Type 'resource' missing required field: 'source'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Missing Fields.md",
+       "code": "TVS002",
+       "reason": "Type 'resource' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Missing Fields.md",
+       "code": "TVS002",
+       "reason": "Type 'resource' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Bad Yaml_name.md",
+       "code": "TVS000",
+       "reason": null,
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Empty List.md",
+       "code": "TVS004",
+       "reason": "Type 'resource' has empty list: 'source'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Bad Utf8.md",
+       "code": "TVS000",
+       "reason": null,
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Topic Index.md",
+       "code": "TVS002",
+       "reason": "Type 'resource-hub' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Null Field.md",
+       "code": "TVS002",
+       "reason": "Type 'resource' missing required field: 'source'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Null Field.md",
+       "code": "TVS002",
+       "reason": "Type 'resource' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Null Field.md",
+       "code": "TVS002",
+       "reason": "Type 'resource' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Blank Type.md",
+       "code": "TVS001",
+       "reason": "Missing 'type' field (Suggested: 'resource')",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Bad Yaml.md",
+       "code": "TVS000",
+       "reason": null,
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/My_Hub.md",
+       "code": "TVS002",
+       "reason": "Type 'resource-hub' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/No Type.md",
+       "code": "TVS001",
+       "reason": "Missing 'type' field (Suggested: 'resource')",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Folder.md",
+       "code": "TVS000",
+       "reason": null,
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Type Not Str.md",
+       "code": "TVS001",
+       "reason": "Missing 'type' field (Suggested: 'resource')",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Hub Kind.md",
+       "code": "TVS002",
+       "reason": "Type 'resource-hub' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Blank Field.md",
+       "code": "TVS003",
+       "reason": "Type 'resource' has empty field: 'source'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Blank Field.md",
+       "code": "TVS003",
+       "reason": "Type 'resource' has empty field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Blank Field.md",
+       "code": "TVS003",
+       "reason": "Type 'resource' has empty field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Projects/Build/Project Note.md",
+       "code": "TVS002",
+       "reason": "Type 'project' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Projects/Build/Project Note.md",
+       "code": "TVS002",
+       "reason": "Type 'project' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Projects/Build/Plain.md",
+       "code": "TVS001",
+       "reason": "Missing 'type' field (Suggested: 'project-note')",
+       "severity": "error"
+      },
+      {
+       "path": "Projects/Build/Design/Sketch.md",
+       "code": "TVS001",
+       "reason": "Missing 'type' field (Suggested: 'design-note')",
+       "severity": "error"
+      },
+      {
+       "path": "Areas/Health/Daily Thing.md",
+       "code": "TVS002",
+       "reason": "Type 'daily' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Areas/Health/Area Note.md",
+       "code": "TVS002",
+       "reason": "Type 'area' missing required field: 'status'",
+       "severity": "error"
+      },
+      {
+       "path": "Areas/Health/Area Note.md",
+       "code": "TVS002",
+       "reason": "Type 'area' missing required field: 'created'",
+       "severity": "error"
+      },
+      {
+       "path": "Areas/Health/Task.md",
+       "code": "TVS003",
+       "reason": "Type 'task' has empty field: 'status'",
+       "severity": "error"
+      }
+     ],
+     "warnings": [
+      {
+       "path": "Resources/Topic/Unknown Type.md",
+       "code": "TVS005",
+       "reason": "Unknown note type: 'gizmo'",
+       "severity": "warning"
+      }
+     ]
+    },
+    "filenames": [
+     {
+      "path": ".hidden/Resources/Topic/hidden_note.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": ".hidden/Resources/Topic/hidden-note.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": ".hidden/Resources/Topic/hidden_twin.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": ".hidden/Resources/Topic/hidden-twin.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Sort/sub_dir x/a_b.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Sort/sub_dir x/a-b.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Sort/sub_dir-y/a_b.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Sort/sub_dir-y/a-b.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Sort/sub_dir/a_b.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Sort/sub_dir/a-b.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/.md",
+      "severity": "warning",
+      "reason": "filename includes stray dots",
+      "suggested_path": "Resources/Topic/md",
+      "codes": [
+       "TVS105"
+      ]
+     },
+     {
+      "path": "Resources/Topic/@handle post.md",
+      "severity": "warning",
+      "reason": "filename includes handle-style prefix",
+      "suggested_path": "Resources/Topic/handle-post.md",
+      "codes": [
+       "TVS106"
+      ]
+     },
+     {
+      "path": "Resources/Topic/Café Notes.md",
+      "severity": "warning",
+      "reason": "filename includes non-ASCII characters",
+      "suggested_path": "Resources/Topic/cafe-notes.md",
+      "codes": [
+       "TVS102"
+      ]
+     },
+     {
+      "path": "Resources/Topic/Deep/inner_note.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Topic/Deep/inner-note.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/HTTPS-WWW-EXAMPLE-COM.md",
+      "severity": "warning",
+      "reason": "filename is URL-shaped",
+      "suggested_path": "Resources/Topic/example.md",
+      "codes": [
+       "TVS101"
+      ]
+     },
+     {
+      "path": "Resources/Topic/My Inbox-dump_1.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Topic/my-inbox-dump-1.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/Read github.com notes.md",
+      "severity": "warning",
+      "reason": "filename is URL-shaped, filename includes stray dots",
+      "suggested_path": "Resources/Topic/notes.md",
+      "codes": [
+       "TVS101",
+       "TVS105"
+      ]
+     },
+     {
+      "path": "Resources/Topic/UPPER_case.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Topic/upper-case.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/a--b.md",
+      "severity": "warning",
+      "reason": "filename has repeated separators",
+      "suggested_path": "Resources/Topic/a-b.md",
+      "codes": [
+       "TVS104"
+      ]
+     },
+     {
+      "path": "Resources/Topic/also_dots.v2.md",
+      "severity": "warning",
+      "reason": "filename is URL-shaped, filename uses inconsistent separators, filename includes stray dots",
+      "suggested_path": "Resources/Topic/also-dots-v2.md",
+      "codes": [
+       "TVS101",
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/dots...md",
+      "severity": "warning",
+      "reason": "filename includes stray dots",
+      "suggested_path": "Resources/Topic/dots.md",
+      "codes": [
+       "TVS105"
+      ]
+     },
+     {
+      "path": "Resources/Topic/https-example-com-some-page.md",
+      "severity": "warning",
+      "reason": "filename is URL-shaped",
+      "suggested_path": "Resources/Topic/some-page.md",
+      "codes": [
+       "TVS101"
+      ]
+     },
+     {
+      "path": "Resources/Topic/my_note.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Topic/my-note.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/nested_ignore.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Topic/nested-ignore.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/node.js tips.md",
+      "severity": "warning",
+      "reason": "filename is URL-shaped, filename includes stray dots",
+      "suggested_path": "Resources/Topic/nodejs-tips.md",
+      "codes": [
+       "TVS101",
+       "TVS105"
+      ]
+     },
+     {
+      "path": "Resources/Topic/related_one.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Topic/related-one.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/titled_thing.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Topic/a-much-better-title.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/two  spaces.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Topic/two-spaces.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/url_field.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Topic/url-field.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/v1.2 notes.md",
+      "severity": "warning",
+      "reason": "filename is URL-shaped, filename includes stray dots",
+      "suggested_path": "Resources/Topic/v1-2-notes.md",
+      "codes": [
+       "TVS101",
+       "TVS105"
+      ]
+     },
+     {
+      "path": "Resources/Topic/x.com status.md",
+      "severity": "warning",
+      "reason": "filename is URL-shaped, filename includes stray dots",
+      "suggested_path": "Resources/Topic/status.md",
+      "codes": [
+       "TVS101",
+       "TVS105"
+      ]
+     },
+     {
+      "path": "Resources/Topic/Ünïcode Ä.md",
+      "severity": "warning",
+      "reason": "filename includes non-ASCII characters",
+      "suggested_path": "Resources/Topic/unicode-a.md",
+      "codes": [
+       "TVS102"
+      ]
+     },
+     {
+      "path": "Resources/Topic/é nfc.md",
+      "severity": "warning",
+      "reason": "filename includes non-ASCII characters",
+      "suggested_path": "Resources/Topic/e-nfc.md",
+      "codes": [
+       "TVS102"
+      ]
+     },
+     {
+      "path": "Resources/Topic/� replacement.md",
+      "severity": "warning",
+      "reason": "filename includes non-ASCII characters",
+      "suggested_path": "Resources/Topic/replacement.md",
+      "codes": [
+       "TVS102"
+      ]
+     },
+     {
+      "path": "Resources/Topic/𐐀 deseret.md",
+      "severity": "warning",
+      "reason": "filename includes non-ASCII characters",
+      "suggested_path": "Resources/Topic/deseret.md",
+      "codes": [
+       "TVS102"
+      ]
+     },
+     {
+      "path": "Resources_loose.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "resources-loose.md",
+      "codes": [
+       "TVS103"
+      ]
+     }
+    ],
+    "duplicates": {
+     "https://x.com/i/status/42": [
+      "Inbox/Twitter A.md",
+      "Inbox/Twitter B.md"
+     ],
+     "https://mixed.example/m": [
+      "Resources/Mixed/Mixed Res.md",
+      "Social Media Posts/Mixed/Mixed Post.md"
+     ],
+     "https://order.example/x": [
+      "Inbox/a/b.md",
+      "Inbox/a b.md",
+      "Inbox/a-b.md"
+     ],
+     "https://multi.example/m": [
+      "Resources/Multi/Paper Three.md",
+      "Resources/Multi/Paper Two.md",
+      "Social Media Posts/Multi/Multi Post.md"
+     ],
+     "https://solo.example/s": [
+      "Social Media Posts/Solo/Solo A.md",
+      "Social Media Posts/Solo/Solo B.md"
+     ],
+     "https://linked.example/a": [
+      "Resources/Linked/Article.md",
+      "Social Media Posts/Linked/Post Unlinked.md"
+     ],
+     "https://dup.example/path": [
+      "Resources/Dupes/First.md",
+      "Resources/Dupes/Second.md"
+     ],
+     "title:Clash/same": [
+      "Resources/Clash/Clash A.md",
+      "Resources/Clash/Clash B.md",
+      "Resources/Clash/Clash C.md"
+     ],
+     "https://sort.example/s": [
+      "Resources/Sort/sub_dir/a_b.md",
+      "Resources/Sort/sub_dir x/a_b.md",
+      "Resources/Sort/sub_dir-y/a_b.md"
+     ],
+     "https://hidden.example/a": [
+      ".hidden/Resources/Topic/hidden_note.md",
+      ".hidden/Resources/Topic/hidden_twin.md"
+     ],
+     "title:Vault/same root": [
+      "Other Root.md",
+      "Same Root.md"
+     ],
+     "title:Inbox/mixed key": [
+      "Inbox/Key Twin.md",
+      "Inbox/Mixed Key.md"
+     ],
+     "title:Titles/empty title": [
+      "Resources/Titles/Empty Title.md",
+      "Resources/Titles/Empty Twin.md"
+     ],
+     "title:Titles/foo bar": [
+      "Resources/Titles/Foo Bar-a1b2.md",
+      "Resources/Titles/Foo Bar.md",
+      "Resources/Titles/Other.md",
+      "Resources/Titles/foo bar (1).md"
+     ],
+     "title:Titles/line": [
+      "Resources/Titles/Newline.md",
+      "Resources/Titles/line.md"
+     ],
+     "title:Titles/spaced": [
+      "Resources/Titles/Spaced Twin.md",
+      "Resources/Titles/Spaced.md"
+     ]
+    }
+   },
+   "folders": {
+    "Social Media Posts/Mixed": {
+     "metadata_errors": 3,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 75.0
+    },
+    "Social Media Posts/Multi": {
+     "metadata_errors": 2,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 80.0
+    },
+    "Social Media Posts/Titles": {
+     "metadata_errors": 8,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 2,
+     "score": 80.0
+    },
+    "Social Media Posts/Solo": {
+     "metadata_errors": 6,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 2,
+     "total_notes": 2,
+     "score": 75.0
+    },
+    "Social Media Posts/Linked": {
+     "metadata_errors": 8,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 1,
+     "total_notes": 3,
+     "score": 83.33333333333333
+    },
+    "Social Media Posts/Thread": {
+     "metadata_errors": 4,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 80.0
+    },
+    "Social Media Posts/Pair": {
+     "metadata_errors": 3,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 85.0
+    },
+    "Resources/Topic": {
+     "metadata_errors": 24,
+     "metadata_warnings": 1,
+     "filename_issues": 29,
+     "duplicates": 0,
+     "total_notes": 59,
+     "score": 73.44915254237289
+    },
+    "Projects/Build": {
+     "metadata_errors": 3,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 3,
+     "score": 95.0
+    },
+    "Projects/Build/Design": {
+     "metadata_errors": 1,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 95.0
+    },
+    "Areas/Health": {
+     "metadata_errors": 4,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 4,
+     "score": 95.0
+    },
+    ".hidden/Resources/Topic": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 2,
+     "duplicates": 2,
+     "total_notes": 2,
+     "score": 88.0
+    },
+    "Resources/Sort/sub_dir x": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 1,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 88.0
+    },
+    "Resources/Sort/sub_dir-y": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 1,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 88.0
+    },
+    "Resources/Sort/sub_dir": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 1,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 88.0
+    },
+    "Resources/Topic/Deep": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 1,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 98.0
+    },
+    "Resources_loose.md": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 1,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 98.0
+    },
+    "Inbox": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 6,
+     "total_notes": 17,
+     "score": 93.97058823529412
+    },
+    "Resources/Mixed": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 90.0
+    },
+    "Inbox/a": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 90.0
+    },
+    "Resources/Multi": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 2,
+     "total_notes": 2,
+     "score": 90.0
+    },
+    "Resources/Linked": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 90.0
+    },
+    "Resources/Dupes": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 2,
+     "total_notes": 2,
+     "score": 90.0
+    },
+    "Resources/Clash": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 3,
+     "total_notes": 3,
+     "score": 90.0
+    },
+    "Other Root.md": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 90.0
+    },
+    "Same Root.md": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 90.0
+    },
+    "Resources/Titles": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 10,
+     "total_notes": 11,
+     "score": 90.9090909090909
+    },
+    "Vault.md": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 100.0
+    },
+    "Root Note.md": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 100.0
+    },
+    "Projects Hub.md": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 100.0
+    },
+    "Resources": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 100.0
+    },
+    "Daily": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 100.0
+    },
+    "Templates": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 100.0
+    },
+    ".obsidian/Resources": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 100.0
+    },
+    "Resources/Other Titles": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 100.0
+    },
+    "Resources/Crowd": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 15,
+     "score": 98.5
+    },
+    "Resources/Pair": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 0,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 100.0
+    }
+   },
+   "health": {
+    "Archive": 1,
+    "Areas": 4,
+    "Daily": 1,
+    "Inbox": 18,
+    "Projects": 4,
+    "Resources": 104,
+    "Social Media Posts": 11,
+    "Templates": 1,
+    "Total": 144
+   }
+  }
+ },
+ {
+  "name": "posix",
+  "posix_only": true,
+  "files": [
+   {
+    "path": "Resources/Topic/Fine.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9maW5lLmV4YW1wbGUvCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Topic/a:b.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/con.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/Com1.notes.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/ends space .md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/back\\slash.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Bad./inside.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Aux/inside.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Resources/Topic/what?.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKdGl0bGU6IFdoYXQ/Ci0tLQo="
+   },
+   {
+    "path": "Resources/Topic/Upper.MD",
+    "b64": "LS0tCnR5cGU6IGdpem1vCi0tLQo="
+   },
+   {
+    "path": "Outside/Resources/Topic/linked_target.md",
+    "b64": "LS0tCnR5cGU6IHJlc291cmNlCnNvdXJjZTogaHR0cHM6Ly9saW5rZWQtZGlyLmV4YW1wbGUvCnN0YXR1czogYWN0aXZlCmNyZWF0ZWQ6IDIwMjQtMDEtMDEKLS0tCkJvZHkK"
+   },
+   {
+    "path": "Resources/Linked Dir",
+    "link": "../Outside/Resources/Topic"
+   },
+   {
+    "path": "Resources/Topic/Linked Note.md",
+    "link": "../../Outside/Resources/Topic/linked_target.md"
+   },
+   {
+    "path": "Resources/Topic/Broken Link.md",
+    "link": "nowhere.md"
+   },
+   {
+    "path": "Resources/Topic/Dir Link.md",
+    "link": "../Linked Target Dir"
+   },
+   {
+    "path": "Resources/Linked Target Dir",
+    "folder": true
+   },
+   {
+    "path": "Resources/Linked Target Dir/in_target.md",
+    "b64": "LS0tCnR5cGU6IG5vdGUKLS0tCg=="
+   },
+   {
+    "path": "Top Link",
+    "link": "Outside"
+   },
+   {
+    "path": "Dangling Top",
+    "link": "missing-folder"
+   }
+  ],
+  "expect": {
+   "report": {
+    "ok": false,
+    "metadata": {
+     "errors": [
+      {
+       "path": "Resources/Topic/Dir Link.md",
+       "code": "TVS000",
+       "reason": null,
+       "severity": "error"
+      },
+      {
+       "path": "Resources/Topic/Broken Link.md",
+       "code": "TVS000",
+       "reason": null,
+       "severity": "error"
+      }
+     ],
+     "warnings": []
+    },
+    "filenames": [
+     {
+      "path": "Outside/Resources/Topic/linked_target.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Outside/Resources/Topic/linked-target.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Aux/inside.md",
+      "severity": "warning",
+      "reason": "path is not portable to Windows",
+      "suggested_path": "Resources/Aux/inside.md",
+      "codes": [
+       "TVS108"
+      ]
+     },
+     {
+      "path": "Resources/Bad./inside.md",
+      "severity": "warning",
+      "reason": "path is not portable to Windows",
+      "suggested_path": "Resources/Bad./inside.md",
+      "codes": [
+       "TVS108"
+      ]
+     },
+     {
+      "path": "Resources/Linked Target Dir/in_target.md",
+      "severity": "warning",
+      "reason": "filename uses inconsistent separators",
+      "suggested_path": "Resources/Linked Target Dir/in-target.md",
+      "codes": [
+       "TVS103"
+      ]
+     },
+     {
+      "path": "Resources/Topic/Com1.notes.md",
+      "severity": "warning",
+      "reason": "filename is URL-shaped, filename includes stray dots, path is not portable to Windows",
+      "suggested_path": "Resources/Topic/com1-notes.md",
+      "codes": [
+       "TVS101",
+       "TVS105",
+       "TVS108"
+      ]
+     },
+     {
+      "path": "Resources/Topic/a:b.md",
+      "severity": "warning",
+      "reason": "path is not portable to Windows",
+      "suggested_path": "Resources/Topic/a-b.md",
+      "codes": [
+       "TVS108"
+      ]
+     },
+     {
+      "path": "Resources/Topic/back\\slash.md",
+      "severity": "warning",
+      "reason": "path is not portable to Windows",
+      "suggested_path": "Resources/Topic/back-slash.md",
+      "codes": [
+       "TVS108"
+      ]
+     },
+     {
+      "path": "Resources/Topic/con.md",
+      "severity": "warning",
+      "reason": "path is not portable to Windows",
+      "suggested_path": "Resources/Topic/con.md",
+      "codes": [
+       "TVS108"
+      ]
+     },
+     {
+      "path": "Resources/Topic/what?.md",
+      "severity": "warning",
+      "reason": "path is not portable to Windows",
+      "suggested_path": "Resources/Topic/what.md",
+      "codes": [
+       "TVS108"
+      ]
+     }
+    ],
+    "duplicates": {
+     "https://linked-dir.example": [
+      "Outside/Resources/Topic/linked_target.md",
+      "Resources/Topic/Linked Note.md"
+     ]
+    }
+   },
+   "folders": {
+    "Resources/Topic": {
+     "metadata_errors": 2,
+     "metadata_warnings": 0,
+     "filename_issues": 7,
+     "duplicates": 1,
+     "total_notes": 10,
+     "score": 96.6
+    },
+    "Outside/Resources/Topic": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 1,
+     "duplicates": 1,
+     "total_notes": 1,
+     "score": 88.0
+    },
+    "Resources/Aux": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 1,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 98.0
+    },
+    "Resources/Bad.": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 1,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 98.0
+    },
+    "Resources/Linked Target Dir": {
+     "metadata_errors": 0,
+     "metadata_warnings": 0,
+     "filename_issues": 1,
+     "duplicates": 0,
+     "total_notes": 1,
+     "score": 98.0
+    }
+   },
+   "health": {
+    "Outside": 1,
+    "Resources": 13,
+    "Top Link": 1,
+    "Total": 15
+   }
+  }
+ }
+]
