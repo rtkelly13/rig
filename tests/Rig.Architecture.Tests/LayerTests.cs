@@ -26,9 +26,11 @@ public sealed class LayerTests
     [Fact]
     public void Core_types_live_under_the_core_namespace()
     {
-        // Coverage runs add coverlet's tracker types to the assembly; they are not rig's.
+        // Coverage runs add coverlet's tracker types, and the compiler adds types such as <>z__ReadOnlyArray
+        // for collection expressions; neither is rig's.
         var result = Types.InAssembly(Core)
             .That().DoNotResideInNamespaceStartingWith("Coverlet")
+            .And().DoNotHaveCustomAttribute(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute))
             .Should().ResideInNamespaceStartingWith("Rig.Core")
             .GetResult();
 

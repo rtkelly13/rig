@@ -38,3 +38,7 @@ dotnet_diagnostic.IDE0009.severity = warning
 [tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA2007.severity = none
+# Test types and fakes are public for xUnit and never a shipped API: no null guards, plain lists.
+dotnet_diagnostic.CA1002.severity = none
+dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA1515.severity = none

@@ -1,0 +1,30 @@
+using Rig.Core.Processes;
+
+namespace Rig.Core.Tests.Fakes;
+
+/// <summary>An <see cref="IProc"/> that records every request and answers from a table keyed by argv prefix.</summary>
+public sealed class FakeProc : IProc
+{
+    private readonly List<(IReadOnlyList<string> Prefix, Ran Answer)> _answers = [];
+
+    /// <summary>Every request, in the order it was made.</summary>
+    public List<ProcRequest> Requests { get; } = [];
+
+    /// <summary>What an unanswered command gets.</summary>
+    public Ran Unanswered { get; set; } = new(Ran.NotFound, string.Empty, "no fake answer");
+
+    /// <summary>Answers any command starting with <paramref name="prefix"/>; later answers win.</summary>
+    public FakeProc Answer(Ran answer, params string[] prefix)
+    {
+        _answers.Insert(0, (prefix, answer));
+        return this;
+    }
+
+    /// <inheritdoc />
+    public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
+    {
+        Requests.Add(request);
+        var match = _answers.FirstOrDefault(a => request.Argv.Take(a.Prefix.Count).SequenceEqual(a.Prefix));
+        return Task.FromResult(match.Answer ?? Unanswered);
+    }
+}
