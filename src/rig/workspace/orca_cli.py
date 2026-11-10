@@ -25,6 +25,7 @@ from rig.workspace.orca import (
     load_policy,
     orca_profile_dir,
     orca_runner,
+    settings_manual_actions,
     sync_repos,
     take_snapshot,
 )
@@ -154,6 +155,8 @@ def sync_command(
     except OrcaUnavailableError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(ORCA_UNAVAILABLE_EXIT) from e
+    if repo is None:
+        actions += settings_manual_actions(policy, snapshot)
     actions += sync_repos(
         policy,
         snapshot,
