@@ -1,0 +1,1521 @@
+From 7eb559729b18fd7c8808c766efb02e2954fc430a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 10 Nov 2026 17:24:05 +0000
+Subject: [PATCH] feat: dependency licence scan and check actions
+
+licence-scan runs a pinned, checksum-verified osv-scanner on committed
+lockfiles (pnpm, uv, NuGet and the rest it reads) and freezes packages,
+licences, lockfiles and manifests without a lockfile into a fingerprinted
+packet. licence-check judges that packet with no network: SPDX
+expressions against an allow/review/deny policy, with exact-version
+overrides that must cite evidence. Codes stay advisory; the consuming
+workflow decides to fail.
+
+The scanner pin is empty until a release and its SHA-256 are recorded;
+until then the scan reports itself incomplete.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Mdbr219wLwDQYja5Qz799s
+---
+ README.md                            |  88 +++++
+ licence-check/action.yml             |  51 +++
+ licence-scan/action.yml              |  38 +++
+ licence-scan/scanner.json            |  10 +
+ src/estate_actions/licence_cli.py    | 134 ++++++++
+ src/estate_actions/licence_report.py | 124 +++++++
+ src/estate_actions/licence_scan.py   | 121 +++++++
+ src/estate_actions/licences.py       | 470 +++++++++++++++++++++++++++
+ tests/test_licences.py               | 385 ++++++++++++++++++++++
+ 9 files changed, 1421 insertions(+)
+ create mode 100644 licence-check/action.yml
+ create mode 100644 licence-scan/action.yml
+ create mode 100644 licence-scan/scanner.json
+ create mode 100644 src/estate_actions/licence_cli.py
+ create mode 100644 src/estate_actions/licence_report.py
+ create mode 100644 src/estate_actions/licence_scan.py
+ create mode 100644 src/estate_actions/licences.py
+ create mode 100644 tests/test_licences.py
+
+diff --git a/README.md b/README.md
+index 9c6d127..7eb6dc7 100644
+--- a/README.md
++++ b/README.md
+@@ -189,6 +189,94 @@ execute the PR head in `pull_request_target`. A normal `pull_request` workflow
+ can gather/present with read-only permissions; fork tokens generally cannot post
+ comments. Repository content and PR text are untrusted evidence, never instructions.
+ 
++## Dependency licences
++
++Two actions check that every dependency a repository ships has a licence compatible with
++the one it publishes under. They follow the same two-phase pattern as the PR assessment.
++
++1. **`licence-scan`** downloads the osv-scanner release pinned in `licence-scan/scanner.json`,
++   refuses it unless its SHA-256 matches the pin, and scans committed lockfiles
++   (`pnpm-lock.yaml`, `uv.lock`, `packages.lock.json` and the rest osv-scanner reads).
++   Licences come from deps.dev, which the scanner queries with package names and versions
++   only. It also lists manifests with no lockfile (`*.csproj` without `packages.lock.json`,
++   `package.json` or a `[project]` `pyproject.toml` with no lockfile at or above it), since
++   their dependency set cannot be established. Everything is frozen into a fingerprinted packet.
++2. **`licence-check`** judges that packet with no network access, using the bundled default
++   policy overlaid by `.github/licence-policy.json` and corrected by
++   `.github/licence-overrides.json` in the consuming repository.
++
++SPDX expressions are evaluated, not string-matched: `OR` takes the least severe option,
++`AND` the most severe, and `X WITH exception` uses an exact policy entry for the
++combination before falling back to `X`. Missing, `non-standard` and unlisted licences are
++**unknown**, which fails like a denied licence until someone resolves it.
++
++| Status | Meaning |
++| --- | --- |
++| allowed | Every term is on the allow list |
++| needs review | A weak-copyleft term (MPL, LGPL, EPL, CDDL); resolved only by an `accept` override |
++| accepted | A needs-review package with a recorded `accept` reason |
++| unknown | No usable or listed licence; resolved by a `license` override citing evidence |
++| denied | Strong copyleft or source-available terms; changing the policy is the only way out |
++| not shipped | Only in dev dependency groups, or only in lockfiles under `exclude_paths` |
++
++Overrides name one exact version, so a dependency update asks again. Overrides that
++match nothing are reported for removal.
++
++```json
++{
++  "schema_version": 1,
++  "overrides": [
++    {"ecosystem": "NuGet", "name": "Some.Package", "version": "1.2.3", "license": "MIT",
++     "evidence": "https://github.com/owner/repo/blob/v1.2.3/LICENSE"},
++    {"ecosystem": "PyPI", "name": "certifi", "version": "2025.1.31",
++     "accept": "Unmodified MPL-2.0 data file used at runtime", "evidence": "https://github.com/owner/repo/pull/12"}
++  ]
++}
++```
++
++A repository policy overlays the default key by key. For example, publish-only projects:
++
++```json
++{"schema_version": 1, "exclude_paths": ["tests/*", "benchmarks/*", "eng/*"]}
++```
++
++Codes are advisory like every action here: `0` compliant, `1` violation, `2` incomplete.
++The consuming workflow decides to fail:
++
++```yaml
++name: Licences
++on:
++  pull_request:
++  push:
++    branches: [main]
++permissions:
++  contents: read
++  pull-requests: write
++jobs:
++  licences:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@<sha>
++      - uses: actions/setup-python@<sha>
++        with:
++          python-version: '3.12'
++      - id: scan
++        uses: rtkelly-labs/github-actions/licence-scan@<sha>
++      - id: check
++        uses: rtkelly-labs/github-actions/licence-check@<sha>
++        with:
++          scan-file: ${{ steps.scan.outputs.scan-file }}
++          scan-issue: ${{ steps.scan.outputs.issue }}
++      - if: github.event_name == 'pull_request'
++        uses: rtkelly-labs/github-actions/sticky-comment@<sha>
++        with:
++          session: dependency-licences
++          markdown-file: ${{ steps.check.outputs.markdown-file }}
++          error-code: ${{ steps.check.outputs.error-code }}
++      - if: steps.check.outputs.error-code != '0'
++        run: exit 1
++```
++
+ ## Estate audit and offline replay
+ 
+ ```console
+diff --git a/licence-check/action.yml b/licence-check/action.yml
+new file mode 100644
+index 0000000..5c1257f
+--- /dev/null
++++ b/licence-check/action.yml
+@@ -0,0 +1,51 @@
++name: Dependency licence check
++description: Judge a frozen licence scan against policy and cited overrides; no network
++inputs:
++  scan-file:
++    description: Packet from licence-scan; empty means the scan was incomplete
++    required: true
++  scan-issue:
++    description: The licence-scan issue output, reported when scan-file is empty
++    default: ''
++  policy-file:
++    description: Repository policy overlaid key by key on the bundled default
++    default: .github/licence-policy.json
++  overrides-file:
++    description: Exact package versions with a cited licence correction or review acceptance
++    default: .github/licence-overrides.json
++outputs:
++  markdown:
++    description: Complete report Markdown
++    value: ${{ steps.check.outputs.markdown }}
++  markdown-file:
++    description: Local Markdown report path
++    value: ${{ steps.check.outputs.markdown-file }}
++  inventory-file:
++    description: Local JSON inventory of every package, its licence and status
++    value: ${{ steps.check.outputs.inventory-file }}
++  error-code:
++    description: 0 compliant; 1 violation; 2 incomplete. Advisory only; the caller decides to fail.
++    value: ${{ steps.check.outputs.error-code }}
++  decision:
++    description: COMPLIANT, VIOLATION or INCOMPLETE
++    value: ${{ steps.check.outputs.decision }}
++  evidence-key:
++    description: SHA256 of the scan packet that was judged
++    value: ${{ steps.check.outputs.evidence-key }}
++runs:
++  using: composite
++  steps:
++    - id: check
++      shell: python
++      env:
++        ACTION_ROOT: ${{ github.action_path }}/..
++        SCAN_FILE: ${{ inputs.scan-file }}
++        SCAN_ISSUE: ${{ inputs.scan-issue }}
++        POLICY_FILE: ${{ inputs.policy-file }}
++        OVERRIDES_FILE: ${{ inputs.overrides-file }}
++      run: |
++        import os
++        import sys
++        sys.path.insert(0, os.path.join(os.environ['ACTION_ROOT'], 'src'))
++        from estate_actions.licence_cli import run
++        sys.exit(run('check'))
+diff --git a/licence-scan/action.yml b/licence-scan/action.yml
+new file mode 100644
+index 0000000..e887c1b
+--- /dev/null
++++ b/licence-scan/action.yml
+@@ -0,0 +1,38 @@
++name: Dependency licence scan
++description: Run a pinned, checksum-verified osv-scanner on committed lockfiles and freeze the result
++inputs:
++  path:
++    description: Directory to scan recursively for lockfiles
++    default: .
++  scanner-binary:
++    description: Use this osv-scanner executable instead of downloading the pinned release
++    default: ''
++outputs:
++  scan-file:
++    description: Fingerprinted JSON packet of packages, licences, lockfiles and manifests without one
++    value: ${{ steps.scan.outputs.scan-file }}
++  evidence-key:
++    description: SHA256 of the exact scan packet
++    value: ${{ steps.scan.outputs.evidence-key }}
++  error-code:
++    description: 0 scanned; 2 incomplete (see issue). Advisory only.
++    value: ${{ steps.scan.outputs.error-code }}
++  issue:
++    description: Why the scan is incomplete, when it is
++    value: ${{ steps.scan.outputs.issue }}
++runs:
++  using: composite
++  steps:
++    - id: scan
++      shell: python
++      env:
++        ACTION_ROOT: ${{ github.action_path }}/..
++        PIN_FILE: ${{ github.action_path }}/scanner.json
++        SCAN_ROOT: ${{ inputs.path }}
++        SCANNER_BINARY: ${{ inputs.scanner-binary }}
++      run: |
++        import os
++        import sys
++        sys.path.insert(0, os.path.join(os.environ['ACTION_ROOT'], 'src'))
++        from estate_actions.licence_cli import run
++        sys.exit(run('scan'))
+diff --git a/licence-scan/scanner.json b/licence-scan/scanner.json
+new file mode 100644
+index 0000000..53addc7
+--- /dev/null
++++ b/licence-scan/scanner.json
+@@ -0,0 +1,10 @@
++{
++  "version": "",
++  "sha256": {
++    "linux_amd64": "",
++    "linux_arm64": "",
++    "darwin_arm64": "",
++    "windows_amd64.exe": ""
++  },
++  "arguments": ["--all-packages", "--licenses=MIT"]
++}
+diff --git a/src/estate_actions/licence_cli.py b/src/estate_actions/licence_cli.py
+new file mode 100644
+index 0000000..b9227b3
+--- /dev/null
++++ b/src/estate_actions/licence_cli.py
+@@ -0,0 +1,134 @@
++"""Licence action entry points. Result codes are data, never the process exit status."""
++
++from __future__ import annotations
++
++import argparse
++import os
++import sys
++from pathlib import Path
++
++from estate_actions.cli import emit
++from estate_actions.data import Invalid, canonical, decode, sequence
++from estate_actions.licence_report import inventory, render
++from estate_actions.licence_scan import (
++    fetch_scanner,
++    load_pin,
++    lockfiles_of,
++    missing_lockfiles,
++    run_scanner,
++    runner_platform,
++)
++from estate_actions.licences import (
++    DEFAULT_POLICY,
++    Evaluation,
++    Policy,
++    evaluate,
++    make_packet,
++    normalise,
++    parse_overrides,
++    verify_packet,
++)
++
++
++def directory() -> Path:
++    base = Path(os.environ.get("REPORT_DIRECTORY") or os.environ.get("RUNNER_TEMP") or "temp")
++    target = base / "estate-actions" / "licences"
++    target.mkdir(parents=True, exist_ok=True)
++    return target
++
++
++def scan() -> int:
++    root = Path(os.environ.get("SCAN_ROOT") or ".").resolve()
++    out = directory()
++    try:
++        pin = load_pin(Path(os.environ["PIN_FILE"]))
++        override = os.environ.get("SCANNER_BINARY", "")
++        binary = Path(override) if override else fetch_scanner(pin, runner_platform(), out)
++        arguments = [str(item) for item in sequence(pin["arguments"])]
++        code, raw = run_scanner(binary, arguments, root, out / "osv-scanner.json")
++        packet = make_packet(
++            normalise(raw, str(root)),
++            lockfiles_of(raw, root),
++            missing_lockfiles(root),
++            {
++                "name": "osv-scanner",
++                "version": str(pin["version"]),
++                "arguments": arguments,
++                "exit_code": code,
++            },
++        )
++    except (Invalid, OSError, KeyError, TimeoutError) as error:
++        message = str(error) if isinstance(error, Invalid) else f"Licence scan failed: {type(error).__name__}"
++        print(f"Licence scan incomplete: {message}")
++        emit({"scan-file": "", "evidence-key": "", "error-code": "2", "issue": message})
++        return 0
++    scan_file = out / "scan.json"
++    scan_file.write_text(canonical(packet) + "\n", encoding="utf-8")
++    emit(
++        {
++            "scan-file": str(scan_file.resolve()),
++            "evidence-key": str(packet["evidence_key"]),
++            "error-code": "0",
++        }
++    )
++    counts = len(sequence(packet["packages"])), len(sequence(packet["lockfiles"]))
++    print(f"Licence scan: {counts[0]} packages from {counts[1]} lockfiles")
++    return 0
++
++
++def optional_json(variable: str, default: str) -> object | None:
++    path = Path(os.environ.get(variable) or default)
++    return decode(path.read_text(encoding="utf-8")) if path.is_file() else None
++
++
++def check() -> int:
++    out = directory()
++    evidence_key = ""
++    issue = ""
++    evaluation = Evaluation()
++    try:
++        scan_file = os.environ.get("SCAN_FILE", "")
++        if not scan_file:
++            raise Invalid(os.environ.get("SCAN_ISSUE") or "No licence scan was supplied")
++        packet = verify_packet(decode(Path(scan_file).read_text(encoding="utf-8")))
++        evidence_key = str(packet["evidence_key"])
++        local = optional_json("POLICY_FILE", ".github/licence-policy.json")
++        policy = Policy.merge(DEFAULT_POLICY, local) if local is not None else Policy.parse(DEFAULT_POLICY)
++        overrides_data = optional_json("OVERRIDES_FILE", ".github/licence-overrides.json")
++        overrides = parse_overrides(overrides_data) if overrides_data is not None else []
++        evaluation = evaluate(packet, policy, overrides)
++    except (Invalid, OSError, KeyError) as error:
++        issue = str(error) if isinstance(error, Invalid) else "Invalid or inaccessible licence input"
++        evaluation = Evaluation(issues=[issue])
++        issue = ""
++    markdown = render(evaluation, evidence_key, issue)
++    markdown_file = out / "report.md"
++    markdown_file.write_text(markdown, encoding="utf-8")
++    inventory_file = out / "inventory.json"
++    inventory_file.write_text(canonical(inventory(evaluation)) + "\n", encoding="utf-8")
++    emit(
++        {
++            "markdown": markdown,
++            "markdown-file": str(markdown_file.resolve()),
++            "inventory-file": str(inventory_file.resolve()),
++            "error-code": str(evaluation.error_code),
++            "decision": evaluation.decision,
++            "evidence-key": evidence_key,
++        }
++    )
++    print(f"Licences: {evaluation.decision}; advisory error code: {evaluation.error_code}")
++    return 0
++
++
++def run(mode: str) -> int:
++    return scan() if mode == "scan" else check()
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("mode", choices=("scan", "check"))
++    return run(parser.parse_args().mode)
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/src/estate_actions/licence_report.py b/src/estate_actions/licence_report.py
+new file mode 100644
+index 0000000..cc03440
+--- /dev/null
++++ b/src/estate_actions/licence_report.py
+@@ -0,0 +1,124 @@
++"""Deterministic Markdown for a licence evaluation. Sized to fit one sticky comment."""
++
++from __future__ import annotations
++
++from collections import Counter
++
++from estate_actions.licences import ACCEPTED, ALLOW, DENY, EXCLUDED, REVIEW, UNKNOWN, Evaluation, Finding
++from estate_actions.report import safe
++
++TITLE = "## Dependency licences"
++MAX_ROWS = 100  # GitHub comments are limited to 65,536 characters; the inventory file has the rest.
++LABELS = {
++    DENY: "denied",
++    UNKNOWN: "unknown",
++    REVIEW: "needs review",
++    ACCEPTED: "accepted",
++    ALLOW: "allowed",
++    EXCLUDED: "not shipped",
++}
++ORDER = [DENY, UNKNOWN, REVIEW, ACCEPTED, ALLOW, EXCLUDED]
++
++
++def row(finding: Finding) -> str:
++    package = finding.package
++    expression = finding.expression or "(none declared)"
++    marker = " (override)" if finding.overridden else ""
++    sources = ", ".join(sorted({f"`{safe(path)}`" for path in package.sources}))
++    return (
++        f"| {LABELS[finding.status]} | {safe(package.ecosystem)} | {safe(package.name)} "
++        f"| {safe(package.version)} | {safe(expression)}{marker} | {sources} |"
++    )
++
++
++def render(evaluation: Evaluation, evidence_key: str, issue: str = "") -> str:
++    lines = [TITLE, ""]
++    summary = {
++        "COMPLIANT": "Every shipped dependency has an allowed or accepted licence.",
++        "VIOLATION": "Shipped dependencies have denied, unknown or unreviewed licences.",
++        "INCOMPLETE": "The shipped dependency set could not be fully established.",
++    }[evaluation.decision]
++    lines += [f"**{evaluation.decision}**: {summary}", ""]
++    for text in [issue, *evaluation.issues]:
++        if text:
++            lines += [f"- {safe(text)}"]
++    if issue or evaluation.issues:
++        lines.append("")
++
++    counts = Counter(finding.status for finding in evaluation.findings)
++    lines += ["| " + " | ".join(LABELS[s] for s in ORDER) + " |", "|" + " ---: |" * len(ORDER)]
++    lines += ["| " + " | ".join(str(counts[s]) for s in ORDER) + " |", ""]
++
++    problems = sorted(
++        evaluation.violations,
++        key=lambda item: (ORDER.index(item.status), item.package.ecosystem, item.package.name.casefold()),
++    )
++    if problems:
++        lines += [
++            "### Needs action",
++            "",
++            "Fix the dependency, or add a cited entry to `.github/licence-overrides.json`: "
++            "`license` corrects missing or wrong metadata; `accept` records a review decision.",
++            "",
++            "| Status | Ecosystem | Package | Version | Licence | Lockfiles |",
++            "| --- | --- | --- | --- | --- | --- |",
++        ]
++        lines += [row(item) for item in problems[:MAX_ROWS]]
++        if len(problems) > MAX_ROWS:
++            lines.append(f"\n{len(problems) - MAX_ROWS} more in the inventory file.")
++        lines.append("")
++    if evaluation.missing_lockfiles:
++        lines += [
++            "### Manifests without a lockfile",
++            "",
++            "Commit a lockfile (for .NET, set `RestorePackagesWithLockFile`) or exclude the path in "
++            "`.github/licence-policy.json` if it is never published.",
++            "",
++        ]
++        lines += [f"- `{safe(path)}`" for path in evaluation.missing_lockfiles] + [""]
++    accepted = [item for item in evaluation.findings if item.status == ACCEPTED]
++    if accepted:
++        lines += ["<details><summary>Accepted after review</summary>", ""]
++        lines += [
++            f"- {safe(item.package.name)} {safe(item.package.version)}: {safe(item.note)}"
++            for item in accepted
++        ]
++        lines += ["", "</details>", ""]
++    if evaluation.stale_overrides:
++        lines += ["<details><summary>Overrides matching no scanned package (remove them)</summary>", ""]
++        lines += [f"- `{safe(label)}`" for label in evaluation.stale_overrides] + ["", "</details>", ""]
++
++    shipped = Counter(
++        finding.expression or "(none declared)"
++        for finding in evaluation.findings
++        if finding.status in (ALLOW, ACCEPTED)
++    )
++    if shipped:
++        lines += [
++            "<details><summary>Licences shipped</summary>",
++            "",
++            "| Licence | Packages |",
++            "| --- | ---: |",
++        ]
++        lines += [f"| {safe(name)} | {count} |" for name, count in sorted(shipped.items())]
++        lines += ["", "</details>", ""]
++    lines.append(
++        f"<sub>Evidence key `{safe(evidence_key or 'none')}`. Error code {evaluation.error_code}.</sub>"
++    )
++    return "\n".join(lines) + "\n"
++
++
++def inventory(evaluation: Evaluation) -> list[dict[str, object]]:
++    return [
++        {
++            "ecosystem": item.package.ecosystem,
++            "name": item.package.name,
++            "version": item.package.version,
++            "license": item.expression,
++            "status": item.status,
++            "overridden": item.overridden,
++            "note": item.note,
++            "lockfiles": sorted(set(item.package.sources)),
++        }
++        for item in evaluation.findings
++    ]
+diff --git a/src/estate_actions/licence_scan.py b/src/estate_actions/licence_scan.py
+new file mode 100644
+index 0000000..94bc6cf
+--- /dev/null
++++ b/src/estate_actions/licence_scan.py
+@@ -0,0 +1,121 @@
++"""Licence scan phase: fetch a pinned osv-scanner, run it on lockfiles, freeze the result.
++
++This is the only licence step with side effects (one download, one subprocess, deps.dev lookups
++made by the scanner). Everything it learns is written to a fingerprinted packet for the pure
++``licences`` evaluation.
++"""
++
++from __future__ import annotations
++
++import hashlib
++import os
++import stat
++import subprocess
++import urllib.request
++from pathlib import Path
++
++from estate_actions.data import Invalid, decode, mapping, sequence, string
++
++RELEASE_URL = "https://github.com/google/osv-scanner/releases/download/v{version}/osv-scanner_{platform}"
++
++# Directories never holding a project's own manifests.
++SKIPPED = {".git", "node_modules", ".venv", "venv", "bin", "obj", "temp", ".worktrees", "dist", "build"}
++DOTNET_PROJECTS = (".csproj", ".fsproj", ".vbproj")
++NODE_LOCKFILES = ("pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lock")
++PYTHON_LOCKFILES = ("uv.lock", "poetry.lock", "pdm.lock", "pylock.toml")
++# osv-scanner exit codes: 0 clean, 1 findings (vulnerabilities or licence violations), 128 no packages.
++SCANNER_OK = {0, 1, 128}
++
++
++def runner_platform() -> str:
++    system = {"Linux": "linux", "macOS": "darwin", "Windows": "windows"}.get(
++        os.environ.get("RUNNER_OS", "Linux")
++    )
++    arch = {"X64": "amd64", "ARM64": "arm64"}.get(os.environ.get("RUNNER_ARCH", "X64"))
++    if not system or not arch:
++        raise Invalid("Unsupported runner platform for osv-scanner")
++    return f"{system}_{arch}" + (".exe" if system == "windows" else "")
++
++
++def load_pin(path: Path) -> dict[str, object]:
++    pin = mapping(decode(path.read_text(encoding="utf-8")))
++    if not string(pin.get("version")):
++        raise Invalid(f"osv-scanner version is not pinned in {path.name}")
++    mapping(pin.get("sha256"))
++    sequence(pin.get("arguments"))
++    return pin
++
++
++def fetch_scanner(pin: dict[str, object], platform: str, directory: Path) -> Path:
++    """Download the pinned release asset and refuse it unless its SHA-256 matches the pin."""
++    expected = string(mapping(pin["sha256"]).get(platform, "")).lower()
++    if len(expected) != 64:
++        raise Invalid(f"No SHA-256 pinned for osv-scanner on {platform}")
++    url = RELEASE_URL.format(version=string(pin["version"]), platform=platform)
++    target = directory / f"osv-scanner-{pin['version']}-{platform}"
++    if not target.exists() or hashlib.sha256(target.read_bytes()).hexdigest() != expected:
++        with urllib.request.urlopen(url, timeout=120) as response:  # noqa: S310 - fixed https URL
++            content: bytes = response.read()
++        actual = hashlib.sha256(content).hexdigest()
++        if actual != expected:
++            raise Invalid(f"osv-scanner download does not match its pinned SHA-256 (got {actual})")
++        target.write_bytes(content)
++    target.chmod(target.stat().st_mode | stat.S_IXUSR)
++    return target
++
++
++def run_scanner(binary: Path, arguments: list[str], root: Path, output: Path) -> tuple[int, object]:
++    command = [str(binary), "scan", "source", "--recursive", "--format", "json", "--output", str(output)]
++    command += [*arguments, str(root)]
++    completed = subprocess.run(command, capture_output=True, text=True, timeout=900, check=False)
++    if completed.returncode not in SCANNER_OK:
++        tail = (completed.stderr or completed.stdout).strip().splitlines()[-5:]
++        raise Invalid(f"osv-scanner failed with exit code {completed.returncode}: {' / '.join(tail)}")
++    if completed.returncode == 128 or not output.exists():
++        return completed.returncode, {"results": []}
++    return completed.returncode, decode(output.read_text(encoding="utf-8"))
++
++
++def lockfiles_of(raw: object, root: Path) -> list[str]:
++    prefix = str(root).rstrip("/") + "/"
++    paths = []
++    for result in sequence(mapping(raw).get("results", [])):
++        path = string(mapping(mapping(result).get("source", {})).get("path", ""))
++        paths.append(path[len(prefix) :] if path.startswith(prefix) else path)
++    return sorted(set(paths))
++
++
++def missing_lockfiles(root: Path) -> list[str]:
++    """Manifests whose dependency set no committed lockfile pins. Their licences are unknowable."""
++    missing: list[str] = []
++    for directory, names, files in os.walk(root):
++        names[:] = sorted(name for name in names if name not in SKIPPED)
++        here = Path(directory)
++        relative = here.relative_to(root).as_posix()
++
++        def show(name: str, base: str = relative) -> str:
++            return name if base == "." else f"{base}/{name}"
++
++        for name in sorted(files):
++            if name.endswith(DOTNET_PROJECTS) and "packages.lock.json" not in files:
++                missing.append(show(name))
++        if "package.json" in files and not ancestor_has(here, root, NODE_LOCKFILES):
++            missing.append(show("package.json"))
++        if (
++            "pyproject.toml" in files
++            and "[project]" in (here / "pyproject.toml").read_text(encoding="utf-8", errors="replace")
++            and not ancestor_has(here, root, PYTHON_LOCKFILES)
++        ):
++            missing.append(show("pyproject.toml"))
++    return missing
++
++
++def ancestor_has(directory: Path, root: Path, names: tuple[str, ...]) -> bool:
++    """Workspace lockfiles live at the workspace root, above member manifests."""
++    current = directory
++    while True:
++        if any((current / name).exists() for name in names):
++            return True
++        if current == root or root not in current.parents:
++            return False
++        current = current.parent
+diff --git a/src/estate_actions/licences.py b/src/estate_actions/licences.py
+new file mode 100644
+index 0000000..9750a4d
+--- /dev/null
++++ b/src/estate_actions/licences.py
+@@ -0,0 +1,470 @@
++"""Deterministic dependency licence evaluation. Pure functions: no network, no subprocesses.
++
++The scan phase (``licence_scan``) freezes what the scanner reported into a fingerprinted packet.
++This module judges that packet against a policy and the consuming repository's overrides.
++"""
++
++from __future__ import annotations
++
++import hashlib
++import re
++from dataclasses import dataclass, field
++from fnmatch import fnmatchcase
++
++from estate_actions.data import Invalid, canonical, integer, mapping, sequence, string
++
++SCHEMA_VERSION = 1
++
++# Statuses ordered by severity. An OR expression takes its least severe option, AND its most severe.
++ALLOW, REVIEW, UNKNOWN, DENY = "allow", "review", "unknown", "deny"
++SEVERITY = {ALLOW: 0, REVIEW: 1, UNKNOWN: 2, DENY: 3}
++ACCEPTED, EXCLUDED = "accepted", "excluded"
++
++# Placeholders the scanner or registry metadata use for "no usable licence".
++UNUSABLE = {"", "unknown", "non-standard", "noassertion", "none"}
++
++DEFAULT_POLICY: dict[str, object] = {
++    "schema_version": SCHEMA_VERSION,
++    # Suitable for packages published under a permissive licence (MIT, Apache-2.0, BSD).
++    "allow": [
++        "0BSD",
++        "Apache-2.0",
++        "BlueOak-1.0.0",
++        "BSD-2-Clause",
++        "BSD-3-Clause",
++        "BSL-1.0",
++        "CC-BY-3.0",
++        "CC-BY-4.0",
++        "CC0-1.0",
++        "ISC",
++        "MIT",
++        "MIT-0",
++        "PSF-2.0",
++        "Python-2.0",
++        "Unicode-3.0",
++        "Unicode-DFS-2016",
++        "Unlicense",
++        "X11",
++        "Zlib",
++    ],
++    # Weak copyleft: usually fine to depend on unmodified, but someone must say so.
++    "review": [
++        "CDDL-1.0",
++        "CDDL-1.1",
++        "EPL-1.0",
++        "EPL-2.0",
++        "LGPL-2.0-only",
++        "LGPL-2.0-or-later",
++        "LGPL-2.1-only",
++        "LGPL-2.1-or-later",
++        "LGPL-3.0-only",
++        "LGPL-3.0-or-later",
++        "MPL-1.1",
++        "MPL-2.0",
++    ],
++    "deny": [
++        "AGPL-1.0-only",
++        "AGPL-1.0-or-later",
++        "AGPL-3.0-only",
++        "AGPL-3.0-or-later",
++        "BUSL-1.1",
++        "CC-BY-NC-4.0",
++        "CC-BY-NC-SA-4.0",
++        "Elastic-2.0",
++        "GPL-1.0-only",
++        "GPL-1.0-or-later",
++        "GPL-2.0-only",
++        "GPL-2.0-or-later",
++        "GPL-3.0-only",
++        "GPL-3.0-or-later",
++        "SSPL-1.0",
++    ],
++    # Dependency groups the scanner reports that never ship with a published package.
++    "dev_groups": ["dev"],
++    # Lockfiles (and manifests) of projects that are never published: tests, benchmarks, tools.
++    "exclude_paths": [],
++}
++
++
++@dataclass(frozen=True)
++class Policy:
++    allow: frozenset[str]
++    review: frozenset[str]
++    deny: frozenset[str]
++    dev_groups: frozenset[str]
++    exclude_paths: tuple[str, ...]
++
++    @staticmethod
++    def parse(value: object) -> Policy:
++        data = mapping(value)
++        if integer(data.get("schema_version")) != SCHEMA_VERSION:
++            raise Invalid(f"Licence policy schema_version must be {SCHEMA_VERSION}")
++        unknown = set(data) - set(DEFAULT_POLICY)
++        if unknown:
++            raise Invalid(f"Unknown licence policy keys: {', '.join(sorted(unknown))}")
++
++        def ids(key: str) -> frozenset[str]:
++            return frozenset(string(item).casefold() for item in sequence(data.get(key, [])))
++
++        allow, review, deny = ids("allow"), ids("review"), ids("deny")
++        overlap = (allow & review) | (allow & deny) | (review & deny)
++        if overlap:
++            raise Invalid(f"Licences listed in more than one class: {', '.join(sorted(overlap))}")
++        return Policy(
++            allow,
++            review,
++            deny,
++            ids("dev_groups"),
++            tuple(string(item) for item in sequence(data.get("exclude_paths", []))),
++        )
++
++    @staticmethod
++    def merge(base: dict[str, object], local: object) -> Policy:
++        """Overlay a repository's policy keys on the bundled default, key by key."""
++        merged = dict(base)
++        merged.update(mapping(local))
++        return Policy.parse(merged)
++
++    def excluded(self, path: str) -> bool:
++        return any(fnmatchcase(path, pattern) for pattern in self.exclude_paths)
++
++    def classify_id(self, licence: str) -> str:
++        key = licence.casefold()
++        if key in self.deny:
++            return DENY
++        if key in self.review:
++            return REVIEW
++        if key in self.allow:
++            return ALLOW
++        return UNKNOWN
++
++
++# --- SPDX expressions ------------------------------------------------------------------------
++
++TOKEN = re.compile(r"\s*(\(|\)|[A-Za-z0-9.+:-]+)")
++
++
++def tokens(expression: str) -> list[str]:
++    result: list[str] = []
++    position = 0
++    text = expression.strip()
++    while position < len(text):
++        match = TOKEN.match(text, position)
++        if not match:
++            raise Invalid(f"Cannot parse SPDX expression: {expression}")
++        result.append(match.group(1))
++        position = match.end()
++    return result
++
++
++def classify(expression: str, policy: Policy) -> str:
++    """Classify an SPDX licence expression. Anything unparseable or unlisted is UNKNOWN."""
++    if expression.strip().casefold() in UNUSABLE:
++        return UNKNOWN
++    try:
++        items = tokens(expression)
++    except Invalid:
++        return UNKNOWN
++    position = 0
++
++    def peek() -> str:
++        return items[position].upper() if position < len(items) else ""
++
++    def take() -> str:
++        nonlocal position
++        if position >= len(items):
++            raise Invalid("Unexpected end of SPDX expression")
++        position += 1
++        return items[position - 1]
++
++    def disjunction() -> str:
++        status = conjunction()
++        while peek() == "OR":
++            take()
++            other = conjunction()
++            status = min(status, other, key=SEVERITY.__getitem__)
++        return status
++
++    def conjunction() -> str:
++        status = term()
++        while peek() == "AND":
++            take()
++            other = term()
++            status = max(status, other, key=SEVERITY.__getitem__)
++        return status
++
++    def term() -> str:
++        token = take()
++        if token == "(":
++            status = disjunction()
++            if take() != ")":
++                raise Invalid("Unbalanced SPDX expression")
++            return status
++        if token.upper() in {"AND", "OR", "WITH", ")"}:
++            raise Invalid("Misplaced SPDX operator")
++        if peek() == "WITH":
++            take()
++            exception = take()
++            # A policy may list the exact combination; otherwise the base licence decides.
++            combined = policy.classify_id(f"{token} WITH {exception}")
++            return combined if combined != UNKNOWN else policy.classify_id(token)
++        return policy.classify_id(token)
++
++    try:
++        status = disjunction()
++    except Invalid:
++        return UNKNOWN
++    return status if position == len(items) else UNKNOWN
++
++
++# --- Scan packets ------------------------------------------------------------------------------
++
++
++def package_key(ecosystem: str, name: str) -> tuple[str, str]:
++    eco = ecosystem.casefold()
++    if eco == "pypi":
++        name = re.sub(r"[-_.]+", "-", name)
++    # npm names are lowercase by rule; NuGet and PyPI compare case-insensitively.
++    return eco, name.casefold()
++
++
++@dataclass(frozen=True)
++class Package:
++    ecosystem: str
++    name: str
++    version: str
++    licences: tuple[str, ...]
++    occurrences: tuple[tuple[str, tuple[str, ...]], ...]  # (lockfile path, dependency groups)
++
++    @property
++    def sources(self) -> tuple[str, ...]:
++        return tuple(path for path, _ in self.occurrences)
++
++    @property
++    def expression(self) -> str:
++        usable = [item for item in self.licences if item.strip().casefold() not in UNUSABLE]
++        if not usable:
++            return ""
++        if len(usable) == 1:
++            return usable[0]
++        # Several declared licences must all be honoured: combine them conservatively.
++        return " AND ".join(f"({item})" for item in usable)
++
++
++def normalise(raw: object, root: str) -> list[dict[str, object]]:
++    """Reduce osv-scanner JSON to sorted package records. One record per package version."""
++    merged: dict[tuple[str, str, str], dict[str, object]] = {}
++    prefix = root.rstrip("/") + "/"
++    for result in sequence(mapping(raw).get("results", [])):
++        entry = mapping(result)
++        source = mapping(entry.get("source", {}))
++        path = string(source.get("path", ""))
++        path = path[len(prefix) :] if path.startswith(prefix) else path
++        for item in sequence(entry.get("packages", [])):
++            record = mapping(item)
++            info = mapping(record.get("package"))
++            ecosystem, name, version = (
++                string(info.get("ecosystem", "")),
++                string(info.get("name", "")),
++                string(info.get("version", "")),
++            )
++            if not (ecosystem and name and version):
++                raise Invalid("Scanner reported a package without ecosystem, name and version")
++            licences = sorted({string(value) for value in sequence(record.get("licenses", []) or [])})
++            groups = sorted({string(value) for value in sequence(record.get("dependency_groups", []) or [])})
++            key = (*package_key(ecosystem, name), version)
++            existing = merged.get(key)
++            if existing is None:
++                merged[key] = {
++                    "ecosystem": ecosystem,
++                    "name": name,
++                    "version": version,
++                    "licenses": licences,
++                    "occurrences": [{"path": path, "groups": groups}],
++                }
++            else:
++                existing["licenses"] = sorted(set(map(str, sequence(existing["licenses"]))) | set(licences))
++                occurrences = sequence(existing["occurrences"])
++                occurrences.append({"path": path, "groups": groups})
++                existing["occurrences"] = occurrences
++    for record in merged.values():
++        record["occurrences"] = sorted(sequence(record["occurrences"]), key=lambda value: canonical(value))
++    return [merged[key] for key in sorted(merged)]
++
++
++def make_packet(
++    packages: list[dict[str, object]],
++    lockfiles: list[str],
++    missing_lockfiles: list[str],
++    scanner: dict[str, object],
++) -> dict[str, object]:
++    body: dict[str, object] = {
++        "schema_version": SCHEMA_VERSION,
++        "scanner": scanner,
++        "lockfiles": sorted(set(lockfiles)),
++        "missing_lockfiles": sorted(set(missing_lockfiles)),
++        "packages": packages,
++    }
++    return {**body, "evidence_key": hashlib.sha256(canonical(body).encode()).hexdigest()}
++
++
++def verify_packet(value: object) -> dict[str, object]:
++    packet = mapping(value)
++    key = string(packet.get("evidence_key"))
++    body = {name: item for name, item in packet.items() if name != "evidence_key"}
++    if integer(packet.get("schema_version")) != SCHEMA_VERSION:
++        raise Invalid(f"Licence scan schema_version must be {SCHEMA_VERSION}")
++    if hashlib.sha256(canonical(body).encode()).hexdigest() != key:
++        raise Invalid("Licence scan evidence key does not match its contents")
++    return packet
++
++
++def packages_of(packet: dict[str, object]) -> list[Package]:
++    result = []
++    for item in sequence(packet["packages"]):
++        record = mapping(item)
++        occurrences = [mapping(value) for value in sequence(record["occurrences"])]
++        result.append(
++            Package(
++                string(record["ecosystem"]),
++                string(record["name"]),
++                string(record["version"]),
++                tuple(string(value) for value in sequence(record["licenses"])),
++                tuple(
++                    (string(value["path"]), tuple(string(group) for group in sequence(value["groups"])))
++                    for value in occurrences
++                ),
++            )
++        )
++    return result
++
++
++# --- Overrides ---------------------------------------------------------------------------------
++
++
++@dataclass(frozen=True)
++class Override:
++    ecosystem: str
++    name: str
++    version: str
++    licence: str
++    accept: str
++    evidence: str
++
++    @property
++    def key(self) -> tuple[str, str, str]:
++        return (*package_key(self.ecosystem, self.name), self.version)
++
++    @property
++    def label(self) -> str:
++        return f"{self.ecosystem}:{self.name}@{self.version}"
++
++
++def parse_overrides(value: object) -> list[Override]:
++    data = mapping(value)
++    if integer(data.get("schema_version")) != SCHEMA_VERSION:
++        raise Invalid(f"Licence overrides schema_version must be {SCHEMA_VERSION}")
++    result: list[Override] = []
++    seen: set[tuple[str, str, str]] = set()
++    for item in sequence(data.get("overrides", [])):
++        record = mapping(item)
++        allowed = {"ecosystem", "name", "version", "license", "accept", "evidence"}
++        if set(record) - allowed:
++            raise Invalid(f"Unknown override keys: {', '.join(sorted(set(record) - allowed))}")
++        override = Override(
++            string(record.get("ecosystem")),
++            string(record.get("name")),
++            string(record.get("version")),
++            string(record.get("license", "")),
++            string(record.get("accept", "")),
++            string(record.get("evidence", "")),
++        )
++        if not (override.ecosystem and override.name and override.version):
++            raise Invalid("Each override names an exact ecosystem, package and version")
++        if not override.evidence.strip():
++            raise Invalid(f"Override {override.label} must cite evidence")
++        if not (override.licence.strip() or override.accept.strip()):
++            raise Invalid(f"Override {override.label} must set a license, an accept reason, or both")
++        if override.key in seen:
++            raise Invalid(f"Duplicate override for {override.label}")
++        seen.add(override.key)
++        result.append(override)
++    return result
++
++
++# --- Evaluation --------------------------------------------------------------------------------
++
++
++@dataclass(frozen=True)
++class Finding:
++    package: Package
++    expression: str
++    status: str
++    overridden: bool
++    note: str = ""
++
++
++@dataclass
++class Evaluation:
++    findings: list[Finding] = field(default_factory=list)
++    missing_lockfiles: list[str] = field(default_factory=list)
++    stale_overrides: list[str] = field(default_factory=list)
++    issues: list[str] = field(default_factory=list)
++
++    def count(self, status: str) -> int:
++        return sum(1 for finding in self.findings if finding.status == status)
++
++    @property
++    def violations(self) -> list[Finding]:
++        return [item for item in self.findings if item.status in (REVIEW, UNKNOWN, DENY)]
++
++    @property
++    def error_code(self) -> int:
++        """0 compliant; 1 licence violation; 2 incomplete evidence. Advisory, never an exit status."""
++        if self.issues or self.missing_lockfiles:
++            return 2
++        return 1 if self.violations else 0
++
++    @property
++    def decision(self) -> str:
++        return ("COMPLIANT", "VIOLATION", "INCOMPLETE")[self.error_code]
++
++
++def evaluate(packet: dict[str, object], policy: Policy, overrides: list[Override]) -> Evaluation:
++    by_key = {override.key: override for override in overrides}
++    used: set[tuple[str, str, str]] = set()
++    evaluation = Evaluation()
++    evaluation.missing_lockfiles = [
++        path for path in map(str, sequence(packet["missing_lockfiles"])) if not policy.excluded(path)
++    ]
++    shipped = [path for path in map(str, sequence(packet["lockfiles"])) if not policy.excluded(path)]
++    if not shipped and not evaluation.missing_lockfiles:
++        evaluation.issues.append("No lockfiles were scanned; the dependency set cannot be established")
++
++    for package in packages_of(packet):
++        key = (*package_key(package.ecosystem, package.name), package.version)
++        override = by_key.get(key)
++        if override:
++            used.add(key)
++        expression = override.licence if override and override.licence else package.expression
++        in_scope = [groups for path, groups in package.occurrences if not policy.excluded(path)]
++        # Dev only when every shipped occurrence is in a dev group; an ungrouped occurrence ships.
++        dev_only = all(
++            groups and all(g.casefold() in policy.dev_groups for g in groups) for groups in in_scope
++        )
++        if not in_scope:
++            evaluation.findings.append(
++                Finding(package, expression, EXCLUDED, bool(override), "excluded path")
++            )
++            continue
++        if dev_only:
++            evaluation.findings.append(Finding(package, expression, EXCLUDED, bool(override), "dev only"))
++            continue
++        status = classify(expression, policy)
++        note = ""
++        if status == REVIEW and override and override.accept.strip():
++            status, note = ACCEPTED, override.accept.strip()
++        evaluation.findings.append(Finding(package, expression, status, bool(override), note))
++
++    evaluation.stale_overrides = sorted(item.label for item in overrides if item.key not in used)
++    return evaluation
+diff --git a/tests/test_licences.py b/tests/test_licences.py
+new file mode 100644
+index 0000000..9e6449d
+--- /dev/null
++++ b/tests/test_licences.py
+@@ -0,0 +1,385 @@
++import hashlib
++import io
++import json
++import sys
++
++import pytest
++from hypothesis import given
++from hypothesis import strategies as st
++
++from estate_actions import licence_scan
++from estate_actions.data import Invalid
++from estate_actions.licence_cli import run
++from estate_actions.licence_report import render
++from estate_actions.licences import (
++    ACCEPTED,
++    ALLOW,
++    DEFAULT_POLICY,
++    DENY,
++    EXCLUDED,
++    REVIEW,
++    SEVERITY,
++    UNKNOWN,
++    Policy,
++    classify,
++    evaluate,
++    make_packet,
++    normalise,
++    parse_overrides,
++    verify_packet,
++)
++
++POLICY = Policy.parse(DEFAULT_POLICY)
++
++
++def scanner_output(root="/repo", *results):
++    """The osv-scanner v2 JSON shape this prototype reads: results[].source and results[].packages[]."""
++    return {
++        "results": [
++            {
++                "source": {"path": f"{root}/{path}", "type": "lockfile"},
++                "packages": [
++                    {
++                        "package": {"name": name, "version": version, "ecosystem": ecosystem},
++                        "licenses": licences,
++                        "dependency_groups": groups,
++                    }
++                    for ecosystem, name, version, licences, groups in packages
++                ],
++            }
++            for path, packages in results
++        ]
++    }
++
++
++def packet(*results, missing=()):
++    raw = scanner_output("/repo", *results)
++    lockfiles = [path for path, _ in results]
++    return make_packet(normalise(raw, "/repo"), lockfiles, list(missing), {"name": "osv-scanner"})
++
++
++def statuses(evaluation):
++    return {finding.package.name: finding.status for finding in evaluation.findings}
++
++
++@pytest.mark.parametrize(
++    ("expression", "expected"),
++    [
++        ("MIT", ALLOW),
++        ("mit", ALLOW),
++        ("MIT OR GPL-3.0-only", ALLOW),
++        ("MIT AND GPL-3.0-only", DENY),
++        ("(MIT OR Apache-2.0) AND MPL-2.0", REVIEW),
++        ("GPL-2.0-only OR LGPL-2.1-only", REVIEW),
++        ("Apache-2.0 WITH LLVM-exception", ALLOW),
++        ("MIT AND LicenseRef-Custom", UNKNOWN),
++        ("MIT OR LicenseRef-Custom", ALLOW),
++        ("non-standard", UNKNOWN),
++        ("UNKNOWN", UNKNOWN),
++        ("", UNKNOWN),
++        ("MIT AND", UNKNOWN),
++        ("(MIT", UNKNOWN),
++        ("MIT Apache-2.0", UNKNOWN),
++        ("MIT/Apache-2.0", UNKNOWN),
++    ],
++)
++def test_spdx_expressions_classify_by_severity(expression, expected):
++    assert classify(expression, POLICY) == expected
++
++
++def test_a_policy_can_list_an_exact_exception_combination():
++    policy = Policy.merge(
++        DEFAULT_POLICY,
++        {"allow": ["MIT", "GPL-2.0-only WITH Classpath-exception-2.0"], "deny": ["GPL-2.0-only"]},
++    )
++    assert classify("GPL-2.0-only WITH Classpath-exception-2.0", policy) == ALLOW
++    assert classify("GPL-2.0-only", policy) == DENY
++
++
++licence_ids = st.sampled_from(
++    ["MIT", "Apache-2.0", "MPL-2.0", "GPL-3.0-only", "LicenseRef-X", "BSD-3-Clause"]
++)
++
++
++@given(licence_ids, licence_ids)
++def test_or_takes_the_least_and_and_the_most_severe_option(left, right):
++    a, b = classify(left, POLICY), classify(right, POLICY)
++    assert classify(f"{left} OR {right}", POLICY) == min(a, b, key=SEVERITY.__getitem__)
++    assert classify(f"{left} AND {right}", POLICY) == max(a, b, key=SEVERITY.__getitem__)
++    assert classify(f"{left} OR {right}", POLICY) == classify(f"{right} OR {left}", POLICY)
++
++
++def test_policy_rejects_a_licence_in_two_classes_and_unknown_keys():
++    with pytest.raises(Invalid, match="more than one class"):
++        Policy.merge(DEFAULT_POLICY, {"review": ["MIT"]})
++    with pytest.raises(Invalid, match="Unknown licence policy keys"):
++        Policy.merge(DEFAULT_POLICY, {"alow": ["MIT"]})
++
++
++def test_normalise_merges_one_version_across_lockfiles_and_sorts():
++    raw = scanner_output(
++        "/repo",
++        ("b/pnpm-lock.yaml", [("npm", "zod", "3.0.0", ["MIT"], []), ("npm", "a", "1.0.0", ["ISC"], [])]),
++        ("a/pnpm-lock.yaml", [("npm", "zod", "3.0.0", ["MIT"], ["dev"])]),
++    )
++    records = normalise(raw, "/repo")
++    assert [record["name"] for record in records] == ["a", "zod"]
++    assert records[1]["occurrences"] == [
++        {"groups": ["dev"], "path": "a/pnpm-lock.yaml"},
++        {"groups": [], "path": "b/pnpm-lock.yaml"},
++    ]
++
++
++def test_pypi_names_compare_after_normalisation():
++    raw = scanner_output(
++        "/repo",
++        ("uv.lock", [("PyPI", "Typing_Extensions", "4.0", ["PSF-2.0"], [])]),
++        ("tools/uv.lock", [("PyPI", "typing-extensions", "4.0", ["PSF-2.0"], [])]),
++    )
++    assert len(normalise(raw, "/repo")) == 1
++
++
++def test_packet_is_fingerprinted_and_rejects_tampering():
++    scan = packet(("uv.lock", [("PyPI", "attrs", "25.1.0", ["MIT"], [])]))
++    assert verify_packet(json.loads(json.dumps(scan))) == scan
++    scan["packages"][0]["licenses"] = ["GPL-3.0-only"]
++    with pytest.raises(Invalid, match="evidence key"):
++        verify_packet(scan)
++
++
++def test_dev_only_packages_are_not_shipped_but_a_runtime_occurrence_is():
++    scan = packet(
++        ("pnpm-lock.yaml", [("npm", "vitest", "3.0.0", ["GPL-3.0-only"], ["dev"])]),
++        ("pnpm-lock.yaml", [("npm", "left", "1.0.0", ["GPL-3.0-only"], ["dev"])]),
++        ("web/pnpm-lock.yaml", [("npm", "left", "1.0.0", ["GPL-3.0-only"], [])]),
++    )
++    evaluation = evaluate(scan, POLICY, [])
++    assert statuses(evaluation) == {"vitest": EXCLUDED, "left": DENY}
++    assert evaluation.error_code == 1
++
++
++def test_excluded_paths_cover_unpublished_projects_and_their_manifests():
++    policy = Policy.merge(DEFAULT_POLICY, {"exclude_paths": ["tests/*"]})
++    scan = packet(
++        ("src/App/packages.lock.json", [("NuGet", "Newtonsoft.Json", "13.0.3", ["MIT"], [])]),
++        ("tests/App.Test/packages.lock.json", [("NuGet", "xunit.core", "2.9.0", ["GPL-3.0-only"], [])]),
++        missing=["tests/Bench/Bench.csproj"],
++    )
++    evaluation = evaluate(scan, policy, [])
++    assert statuses(evaluation) == {"Newtonsoft.Json": ALLOW, "xunit.core": EXCLUDED}
++    assert evaluation.missing_lockfiles == []
++    assert evaluation.decision == "COMPLIANT"
++
++
++def overrides(*entries):
++    return parse_overrides({"schema_version": 1, "overrides": list(entries)})
++
++
++def test_an_override_corrects_metadata_for_one_exact_version_only():
++    scan = packet(
++        (
++            "packages.lock.json",
++            [("NuGet", "Old.Package", "1.0.0", [], []), ("NuGet", "Old.Package", "1.1.0", [], [])],
++        )
++    )
++    fix = overrides(
++        {
++            "ecosystem": "nuget",
++            "name": "old.package",
++            "version": "1.0.0",
++            "license": "MIT",
++            "evidence": "https://example.test/LICENSE",
++        }
++    )
++    evaluation = evaluate(scan, POLICY, fix)
++    found = {finding.package.version: (finding.status, finding.overridden) for finding in evaluation.findings}
++    assert found == {"1.0.0": (ALLOW, True), "1.1.0": (UNKNOWN, False)}
++
++
++def test_accept_resolves_review_but_never_deny_or_unknown():
++    scan = packet(
++        (
++            "uv.lock",
++            [
++                ("PyPI", "certifi", "2025.1.1", ["MPL-2.0"], []),
++                ("PyPI", "gpl-thing", "1.0", ["GPL-3.0-only"], []),
++                ("PyPI", "mystery", "1.0", [], []),
++            ],
++        )
++    )
++    accept = [
++        {"ecosystem": "PyPI", "name": name, "version": version, "accept": "Unmodified", "evidence": "PR #1"}
++        for name, version in [("certifi", "2025.1.1"), ("gpl-thing", "1.0"), ("mystery", "1.0")]
++    ]
++    evaluation = evaluate(scan, POLICY, overrides(*accept))
++    assert statuses(evaluation) == {"certifi": ACCEPTED, "gpl-thing": DENY, "mystery": UNKNOWN}
++
++
++def test_overrides_must_cite_evidence_be_unique_and_change_something():
++    base = {"ecosystem": "npm", "name": "a", "version": "1.0.0", "license": "MIT"}
++    with pytest.raises(Invalid, match="cite evidence"):
++        overrides(base)
++    with pytest.raises(Invalid, match="Duplicate"):
++        overrides({**base, "evidence": "x"}, {**base, "evidence": "y"})
++    with pytest.raises(Invalid, match="license, an accept reason"):
++        overrides({**base, "license": "", "evidence": "x"})
++    with pytest.raises(Invalid, match="Unknown override keys"):
++        overrides({**base, "evidence": "x", "licence": "MIT"})
++
++
++def test_stale_overrides_are_reported():
++    scan = packet(("uv.lock", [("PyPI", "attrs", "25.1.0", ["MIT"], [])]))
++    stale = overrides(
++        {"ecosystem": "PyPI", "name": "attrs", "version": "24.0.0", "license": "MIT", "evidence": "x"}
++    )
++    evaluation = evaluate(scan, POLICY, stale)
++    assert evaluation.stale_overrides == ["PyPI:attrs@24.0.0"]
++    assert "remove them" in render(evaluation, "key")
++
++
++def test_missing_lockfiles_or_no_lockfiles_are_incomplete():
++    assert evaluate(packet(missing=["src/A/A.csproj"]), POLICY, []).error_code == 2
++    nothing = evaluate(packet(), POLICY, [])
++    assert nothing.decision == "INCOMPLETE"
++    assert "No lockfiles" in nothing.issues[0]
++
++
++def test_report_escapes_package_metadata_and_lists_problems_first():
++    scan = packet(
++        (
++            "pnpm-lock.yaml",
++            [("npm", "@evil/<script>", "1.0.0", ["GPL-3.0-only"], []), ("npm", "ok", "1", ["MIT"], [])],
++        )
++    )
++    markdown = render(evaluate(scan, POLICY, []), scan["evidence_key"])
++    assert "<script>" not in markdown
++    assert "@​evil/&lt;script&gt;" in markdown
++    assert markdown.index("Needs action") < markdown.index("Licences shipped")
++    assert "**VIOLATION**" in markdown
++
++
++def test_missing_lockfile_detection(tmp_path):
++    (tmp_path / "pnpm-lock.yaml").write_text("")
++    (tmp_path / "packages" / "ui").mkdir(parents=True)
++    (tmp_path / "packages" / "ui" / "package.json").write_text("{}")
++    (tmp_path / "src" / "Locked").mkdir(parents=True)
++    (tmp_path / "src" / "Locked" / "Locked.csproj").write_text("")
++    (tmp_path / "src" / "Locked" / "packages.lock.json").write_text("{}")
++    (tmp_path / "src" / "Loose").mkdir(parents=True)
++    (tmp_path / "src" / "Loose" / "Loose.csproj").write_text("")
++    (tmp_path / "tool").mkdir()
++    (tmp_path / "tool" / "pyproject.toml").write_text("[project]\nname = 'tool'\n")
++    (tmp_path / "config-only").mkdir()
++    (tmp_path / "config-only" / "pyproject.toml").write_text("[tool.ruff]\n")
++    (tmp_path / "node_modules" / "dep").mkdir(parents=True)
++    (tmp_path / "node_modules" / "dep" / "package.json").write_text("{}")
++    assert licence_scan.missing_lockfiles(tmp_path) == ["src/Loose/Loose.csproj", "tool/pyproject.toml"]
++
++
++def test_download_is_refused_unless_it_matches_the_pinned_checksum(tmp_path, monkeypatch):
++    content = b"scanner"
++    pin = {
++        "version": "2.0.0",
++        "sha256": {"linux_amd64": hashlib.sha256(content).hexdigest()},
++        "arguments": [],
++    }
++    monkeypatch.setattr(licence_scan.urllib.request, "urlopen", lambda url, timeout: io.BytesIO(content))
++    assert licence_scan.fetch_scanner(pin, "linux_amd64", tmp_path).read_bytes() == content
++
++    monkeypatch.setattr(licence_scan.urllib.request, "urlopen", lambda url, timeout: io.BytesIO(b"tampered"))
++    with pytest.raises(Invalid, match="does not match"):
++        licence_scan.fetch_scanner(pin, "linux_amd64", tmp_path / "fresh")
++
++
++def test_unpinned_scanner_is_refused(tmp_path):
++    with pytest.raises(Invalid, match="No SHA-256 pinned"):
++        licence_scan.fetch_scanner(
++            {"version": "2.0.0", "sha256": {}, "arguments": []}, "linux_amd64", tmp_path
++        )
++
++
++def outputs(path):
++    text = path.read_text()
++    result, lines = {}, iter(text.splitlines())
++    for line in lines:
++        key, delimiter = line.split("<<", 1)
++        value = []
++        for item in lines:
++            if item == delimiter:
++                break
++            value.append(item)
++        result[key] = "\n".join(value)
++    return result
++
++
++def test_scan_then_check_end_to_end_with_a_stand_in_scanner(tmp_path, monkeypatch):
++    repo = tmp_path / "repo"
++    repo.mkdir()
++    (repo / "uv.lock").write_text("")
++    (repo / ".github").mkdir()
++    (repo / ".github" / "licence-overrides.json").write_text(
++        json.dumps(
++            {
++                "schema_version": 1,
++                "overrides": [
++                    {
++                        "ecosystem": "PyPI",
++                        "name": "certifi",
++                        "version": "1",
++                        "accept": "unmodified",
++                        "evidence": "x",
++                    }
++                ],
++            }
++        )
++    )
++    canned = scanner_output(
++        str(repo),
++        ("uv.lock", [("PyPI", "attrs", "25.1.0", ["MIT"], []), ("PyPI", "certifi", "1", ["MPL-2.0"], [])]),
++    )
++    fake = tmp_path / "fake-osv-scanner"
++    fake.write_text(
++        f"#!{sys.executable}\nimport json, sys\n"
++        "args = sys.argv[1:]\n"
++        f"open(args[args.index('--output') + 1], 'w').write(json.dumps({canned!r}))\n"
++        "sys.exit(1)\n"
++    )
++    fake.chmod(0o755)
++    pin = tmp_path / "scanner.json"
++    pin.write_text(json.dumps({"version": "2.0.0", "sha256": {}, "arguments": ["--all-packages"]}))
++    output_file = tmp_path / "github-output"
++    monkeypatch.chdir(repo)
++    monkeypatch.setenv("GITHUB_OUTPUT", str(output_file))
++    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path / "runner"))
++    monkeypatch.setenv("PIN_FILE", str(pin))
++    monkeypatch.setenv("SCANNER_BINARY", str(fake))
++    monkeypatch.setenv("SCAN_ROOT", str(repo))
++
++    assert run("scan") == 0
++    scanned = outputs(output_file)
++    assert scanned["error-code"] == "0"
++    output_file.unlink()
++
++    monkeypatch.setenv("SCAN_FILE", scanned["scan-file"])
++    assert run("check") == 0
++    checked = outputs(output_file)
++    assert checked["decision"] == "COMPLIANT"
++    assert checked["error-code"] == "0"
++    assert checked["evidence-key"] == scanned["evidence-key"]
++    inventory = json.loads(
++        (tmp_path / "runner" / "estate-actions" / "licences" / "inventory.json").read_text()
++    )
++    assert {item["name"]: item["status"] for item in inventory} == {"attrs": ALLOW, "certifi": ACCEPTED}
++
++
++def test_check_without_a_scan_reports_the_scan_issue(tmp_path, monkeypatch):
++    output_file = tmp_path / "github-output"
++    monkeypatch.chdir(tmp_path)
++    monkeypatch.setenv("GITHUB_OUTPUT", str(output_file))
++    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
++    monkeypatch.setenv("SCAN_FILE", "")
++    monkeypatch.setenv("SCAN_ISSUE", "No SHA-256 pinned for osv-scanner on linux_amd64")
++    assert run("check") == 0
++    result = outputs(output_file)
++    assert result["error-code"] == "2"
++    assert "No SHA-256 pinned" in result["markdown"]
+-- 
+2.43.0
+
