@@ -17,6 +17,8 @@ uv run basedpyright && uv run ty check src packages/type-ratchet/src
 uv run ratchet                   # type-soup ratchet; see docs/python-types.md
 uv run lint-imports              # import contracts (layers, cycles, independence)
 pnpm dlx @ls-lint/ls-lint        # filename and script-language lint (bans .sh and .ps1)
+dotnet build rig.slnx -m:2       # C# side (ADR 0022); keep -m:2 locally
+dotnet test --solution rig.slnx  # C# tests (xUnit v3 on Microsoft.Testing.Platform)
 ```
 
 Every CLI's `--help` documents its flags, findings and defaults: read it before the docs.
