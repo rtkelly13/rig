@@ -77,3 +77,4 @@ desktop-manager/logs/
 bin/
 obj/
 TestResults/
+/artifacts/

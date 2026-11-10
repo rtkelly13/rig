@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The rig front door (ADR 0022). Commands not yet ported forward to the Python CLI (Forwarding/). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Rig.Cli</RootNamespace>
+    <AssemblyName>rig</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>rig</ToolCommandName>
+    <PackageId>Rig.Cli</PackageId>
+    <Version>0.1.0</Version>
+    <Description>rig, the personal estate command line.</Description>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/packages</PackageOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rig.Core/Rig.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rig.Cli.Tests" />
+  </ItemGroup>
+</Project>

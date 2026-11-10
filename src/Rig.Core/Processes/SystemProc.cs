@@ -20,18 +20,24 @@ public sealed class SystemProc : IProc
     public async Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (request.Attached && request.StdinText is not null)
+        {
+            throw new ArgumentException("An attached process reads this console's input; it cannot be given text.", nameof(request));
+        }
+
         using var activity = Source.StartActivity(request.Argv[0]);
         activity?.SetTag("process.command_args", string.Join(' ', request.Argv));
 
+        var captured = !request.Attached;
         var info = new ProcessStartInfo(request.Argv[0])
         {
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
+            RedirectStandardInput = captured,
+            RedirectStandardOutput = captured,
+            RedirectStandardError = captured,
+            StandardOutputEncoding = captured ? Encoding.UTF8 : null,
+            StandardErrorEncoding = captured ? Encoding.UTF8 : null,
             UseShellExecute = false,
-            CreateNoWindow = true,
+            CreateNoWindow = captured,
             WorkingDirectory = request.WorkingDirectory ?? string.Empty,
         };
         foreach (var argument in request.Argv.Skip(1))
@@ -56,8 +62,8 @@ public sealed class SystemProc : IProc
 
         // Drain both outputs and arm the timeout before feeding stdin: a child that writes while it reads would
         // otherwise fill its output pipe while rig is still filling its input pipe, and neither would move.
-        var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
-        var stderr = process.StandardError.ReadToEndAsync(CancellationToken.None);
+        var stdout = captured ? process.StandardOutput.ReadToEndAsync(CancellationToken.None) : Task.FromResult(string.Empty);
+        var stderr = captured ? process.StandardError.ReadToEndAsync(CancellationToken.None) : Task.FromResult(string.Empty);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         if (request.Timeout is { } limit)
         {
@@ -67,7 +73,7 @@ public sealed class SystemProc : IProc
         // The feed runs beside the wait, not before it: a child that never reads would block a write into a full
         // pipe, and the timeout must still fire. Once the child is gone the pipe breaks and the feed ends.
 #pragma warning disable CA2025 // The finally below awaits the feed before process and timeout are disposed.
-        var feed = FeedAsync(process, request.StdinText, timeout.Token);
+        var feed = captured ? FeedAsync(process, request.StdinText, timeout.Token) : Task.CompletedTask;
 #pragma warning restore CA2025
         string output, errors;
         try

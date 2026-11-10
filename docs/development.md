@@ -30,6 +30,27 @@ spacing come from design-system tokens only: `tests/test_design_tokens.py` fails
 or arbitrary-value classes (`text-[0.82rem]`) in the sources and templates. A missing token is
 added upstream in rtkelly-labs/design-system, not hard-coded here.
 
+## The C# front door
+
+`rig` is moving to C# (ADR 0022, #85). `src/Rig.Cli` is the front door: it parses help, version and every
+ported command itself, and hands any line the Python CLI still owns to it whole, as
+`uv run --no-sync --project <rig checkout> rig …` attached to the same console. That covers a bare `rig`, the agent
+shortcut flags (`rig -ccc`) and every command in `src/Rig.Cli/Forwarding/Forwarded.cs`. Prompts, colour, Ctrl+C
+and exit codes behave as before.
+
+The Python CLI runs from `RIG_HOME` when it is set, else `<code root>/personal/rig`. Porting a command means
+registering it in C# and deleting its row from `Forwarded.Commands`. `ForwardedContractTests` fails if the table and
+`src/rig/rig_cli.py` disagree, so a command can't drop out of `rig` unnoticed.
+
+```bash
+dotnet run --project src/Rig.Cli -- --help              # from a checkout
+dotnet pack src/Rig.Cli -c Release                      # writes artifacts/packages/Rig.Cli.<version>.nupkg
+dotnet tool update --global --add-source artifacts/packages Rig.Cli   # installs or updates ~/.dotnet/tools/rig
+```
+
+The generated `rig.sh` shim still calls Python until `devenv` moves to C#. Until then the installed tool is opt-in:
+call it as `~/.dotnet/tools/rig`, since the shell function the shim installs wins over PATH.
+
 ## Pytest Markers
 
 Mark tests so the CI-safe subset can be run without external dependencies:

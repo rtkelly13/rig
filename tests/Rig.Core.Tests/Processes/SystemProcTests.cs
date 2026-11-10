@@ -27,6 +27,24 @@ public sealed class SystemProcTests
     }
 
     [Fact]
+    public async Task An_attached_process_keeps_its_exit_code_and_captures_nothing()
+    {
+        var ran = await _proc.RunAsync(new ProcRequest(["git", "not-a-command"]) { Attached = true }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, ran.Code);
+        Assert.Empty(ran.Out);
+        Assert.Empty(ran.Err);
+    }
+
+    [Fact]
+    public async Task An_attached_process_cannot_be_given_stdin_text()
+    {
+        var request = new ProcRequest(["git", "--version"]) { Attached = true, StdinText = "x" };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => _proc.RunAsync(request, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task A_missing_program_is_127()
     {
         var ran = await _proc.RunAsync(new ProcRequest(["rig-no-such-program"]), TestContext.Current.CancellationToken);
