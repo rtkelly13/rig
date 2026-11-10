@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -182,3 +183,23 @@ def test_a_job_that_redirects_its_stdout_saves_this_runs_part_of_its_own_log(tmp
     assert "tool chrome" in output
     assert "Not closed #236: tab is still present" in output
     assert "Closed 3/3" not in output
+
+
+def test_an_append_that_leaves_the_mtime_unchanged_is_still_this_runs_output(tmp_path: Path) -> None:
+    """Windows' clock can stamp an append with the mtime the log already had; the size still moves."""
+    own_log = tmp_path / "organise.log"
+    own_log.write_text("--- earlier organise\n", encoding="utf-8")
+    stamp = own_log.stat().st_mtime_ns
+    job = replace(_job("chrome"), detail_log=own_log)
+
+    def execute(job: Job, logs: Path, run_id: str) -> int:
+        log_path(logs, job).parent.mkdir(parents=True, exist_ok=True)
+        with own_log.open("a", encoding="utf-8") as log:
+            log.write("--- organise\nNot closed #236\n")
+        os.utime(own_log, ns=(stamp, stamp))
+        return 1
+
+    run([job], Trigger.TICK, tmp_path, booted=BOOTED, execute=execute, clock=lambda: NOW, report=lambda _: None)
+
+    [record] = read_runs(tmp_path)
+    assert "Not closed #236" in (read_output(tmp_path, record) or "")
