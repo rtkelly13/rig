@@ -15,10 +15,8 @@ from typing import Annotated
 
 import pytest
 from pydantic import Field
-from typer.testing import CliRunner
 
 from rig.obsidian import knowledge_server as ks
-from rig.obsidian.cli import app
 from rig.typed_json import decode
 
 _load_plist: Callable[[bytes], object] = plistlib.loads
@@ -86,28 +84,20 @@ def test_an_unreadable_claude_json_reads_as_absent(tmp_path: pathlib.Path, text:
     assert ks.current_registration(tmp_path) == ks.Registration(None, None)
 
 
-def test_connect_replaces_the_user_entry_through_claude_mcp() -> None:
-    assert ks.connect_commands("claude") == [
+_ADD = ["claude", "mcp", "add", "--scope", "user", "--transport", "http", "open-knowledge", ks.mcp_url()]
+
+
+def test_connect_replaces_a_stdio_entry_through_claude_mcp() -> None:
+    """Scenario: the per-session entry is removed, then the shared one added, both through `claude mcp`."""
+    assert ks.connect_commands(ks.Registration("stdio", "/bin/sh")) == [
         ["claude", "mcp", "remove", "--scope", "user", "open-knowledge"],
-        ["claude", "mcp", "add", "--scope", "user", "--transport", "http", "open-knowledge", ks.mcp_url()],
+        _ADD,
     ]
 
 
-def test_connect_without_apply_changes_nothing(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, cli: CliRunner
-) -> None:
-    """Scenario: a dry run prints both commands and leaves `~/.claude.json` as it was."""
-    user_home = _claude_json(tmp_path, {ks.SERVER_NAME: _LADDER})
-    before = (user_home / ".claude.json").read_text(encoding="utf-8")
-    monkeypatch.setattr(pathlib.Path, "home", lambda: user_home)
-    def which(name: str) -> str:
-        return f"/bin/{name}"
+def test_connect_only_adds_when_there_is_no_entry() -> None:
+    assert ks.connect_commands(ks.Registration(None, None)) == [_ADD]
 
-    monkeypatch.setattr("shutil.which", which)
 
-    result = cli.invoke(app, ["knowledge-server", "connect"])
-
-    assert result.exit_code == 0, result.output
-    assert "mcp remove" in result.output and "mcp add" in result.output
-    assert "dry run" in result.output
-    assert (user_home / ".claude.json").read_text(encoding="utf-8") == before
+def test_connect_does_nothing_once_shared() -> None:
+    assert ks.connect_commands(ks.Registration("http", ks.mcp_url())) == []

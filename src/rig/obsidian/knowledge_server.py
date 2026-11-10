@@ -17,13 +17,15 @@ from __future__ import annotations
 import pathlib
 import plistlib
 import shutil
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Annotated
 
 import httpx
+from pydantic import Field
 
 from rig import launchd, proc
 from rig.roots import app_data_dir
-from rig.typed_json import decode_json, is_object, load_json
+from rig.typed_json import Lenient, try_decode_json
 
 LABEL = "dev.rtkelly.rig.open-knowledge"
 PACKAGE = "@inkeep/open-knowledge"
@@ -66,14 +68,18 @@ def plist_path() -> pathlib.Path:
     return launchd.agents_dir() / f"{LABEL}.plist"
 
 
+@dataclass(frozen=True, slots=True)
+class _Manifest:
+    version: Lenient[str] = None
+
+
 def installed_version(prefix: pathlib.Path | None = None) -> str | None:
     manifest = (prefix or home()) / "node_modules" / PACKAGE / "package.json"
     try:
-        data = load_json(manifest.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        decoded = try_decode_json(_Manifest, manifest.read_bytes())
+    except OSError:
         return None
-    version = data.get("version") if is_object(data) else None
-    return version if isinstance(version, str) else None
+    return decoded.version if decoded else None
 
 
 def install(prefix: pathlib.Path | None = None) -> pathlib.Path:
@@ -177,33 +183,46 @@ def claude_json_path(user_home: pathlib.Path | None = None) -> pathlib.Path:
     return (user_home or pathlib.Path.home()) / ".claude.json"
 
 
-def registration(text: str) -> Registration:
+@dataclass(frozen=True, slots=True)
+class _Entry:
+    type: Lenient[str] = "stdio"
+    url: Lenient[str] = None
+    command: Lenient[str] = None
+
+
+@dataclass(frozen=True, slots=True)
+class _ClaudeJson:
+    """The part of `~/.claude.json` read here; a wrong-typed value reads as absent."""
+
+    mcp_servers: Annotated[Lenient[dict[str, Lenient[_Entry]]], Field(alias="mcpServers")] = field(
+        default_factory=dict[str, Lenient[_Entry]]
+    )
+
+
+def registration(text: str | bytes) -> Registration:
     """Read the user-scope entry from the text of `~/.claude.json`; never writes it."""
-    data = decode_json(dict[str, object], text)
-    servers = data.get("mcpServers")
-    entry = servers.get(SERVER_NAME) if is_object(servers) else None
-    if not is_object(entry):
+    decoded = try_decode_json(_ClaudeJson, text)
+    entry = (decoded.mcp_servers or {}).get(SERVER_NAME) if decoded else None
+    if entry is None:
         return Registration(None, None)
-    transport = entry.get("type", "stdio")
-    url = entry.get("url")
-    command = entry.get("command")
-    target = url if isinstance(url, str) else command if isinstance(command, str) else None
-    return Registration(transport if isinstance(transport, str) else None, target)
+    return Registration(entry.type, entry.url or entry.command)
 
 
 def current_registration(user_home: pathlib.Path | None = None) -> Registration:
     try:
-        return registration(claude_json_path(user_home).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        return registration(claude_json_path(user_home).read_bytes())
+    except OSError:
         return Registration(None, None)
 
 
-def connect_commands(claude: str = "claude") -> list[list[str]]:
-    """Replace the user-scope entry with the shared server, through `claude mcp`, which owns that file.
+def connect_commands(have: Registration, claude: str = "claude") -> list[list[str]]:
+    """The `claude mcp` commands that point the user-scope entry at the shared server; none when it already does.
 
-    `~/.claude.json` is rewritten by every running session, so rig never edits it itself.
+    `~/.claude.json` is rewritten by every running session, so rig goes through `claude mcp`, which owns it.
     """
-    return [
-        [claude, "mcp", "remove", "--scope", "user", SERVER_NAME],
-        [claude, "mcp", "add", "--scope", "user", "--transport", "http", SERVER_NAME, mcp_url()],
-    ]
+    if have.shared:
+        return []
+    add = [claude, "mcp", "add", "--scope", "user", "--transport", "http", SERVER_NAME, mcp_url()]
+    if have.transport is None:
+        return [add]
+    return [[claude, "mcp", "remove", "--scope", "user", SERVER_NAME], add]

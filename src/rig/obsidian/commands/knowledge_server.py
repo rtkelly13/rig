@@ -74,9 +74,7 @@ def connect_command(
         console.print("[red]claude is not on PATH[/red]")
         raise typer.Exit(code=127)
     console.print(f"now: {have.transport or 'absent'} {have.target or ''}".rstrip())
-    commands = ks.connect_commands(claude)
-    if have.transport is None:
-        commands = commands[1:]
+    commands = ks.connect_commands(have, claude)
     for argv in commands:
         console.print(f"  {' '.join(argv)}", highlight=False)
     if not apply:
