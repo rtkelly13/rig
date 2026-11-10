@@ -16,6 +16,14 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <!-- The C# coverage ratchet (scripts/coverage-floor.cs): line and branch coverage together.
+       The floor never falls, and must rise once coverage passes it by more than the slack. -->
+  <PropertyGroup>
+    <RigCoverageFloor>95</RigCoverageFloor>
+    <RigCoverageTarget>95</RigCoverageTarget>
+    <RigCoverageSlack>2</RigCoverageSlack>
+  </PropertyGroup>
+
   <PropertyGroup>
     <Authors>Ryan Kelly</Authors>
     <Copyright>Copyright (c) 2026 Ryan Kelly</Copyright>

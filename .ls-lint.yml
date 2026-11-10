@@ -30,6 +30,7 @@ ls:
     .js: regex:.*
     .mjs: regex:.*
     .cjs: regex:.*
+    .cs: regex:.*
     .*: exists:0
   "scripts/**":
     .dir: regex:.*
@@ -47,6 +48,7 @@ ls:
     .js: regex:.*
     .mjs: regex:.*
     .cjs: regex:.*
+    .cs: regex:.*
     .*: exists:0
 
 ignore:
