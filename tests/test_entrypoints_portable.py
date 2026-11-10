@@ -39,7 +39,10 @@ def _gated_off_linux() -> list[CommandRecord]:
 
 def test_every_script_is_covered():
     assert {entry.script for entry in ENTRY_POINTS} >= {"desktop-manager", "help", "md-lint", "workspace"}
-    hand_rolled = {entry.script for entry in ENTRY_POINTS if entry.function != "main"}
+    # Ported entry points hand over to the C# CLI; tests/test_csharp_cli.py covers that handover.
+    hand_rolled = {
+        entry.script for entry in ENTRY_POINTS if entry.function != "main" and entry.target != "rig.csharp_cli:entry"
+    }
     assert hand_rolled == {"agent", "help", "md-lint"}, "a new non-main entry point needs its own smoke test here"
 
 
