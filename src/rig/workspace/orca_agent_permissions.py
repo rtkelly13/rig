@@ -1,9 +1,10 @@
 """Orca's agent permission modes (Settings → Agents), as policy and as checks.
 
 Since Orca 1.4.255 an agent's launch command is its permission mode's flags plus its custom
-arguments. The upgrade folded the old per-agent flags into one Full access default, and the runtime
-cannot set modes (`settings.update` rejects `agentPermissionOverrides`), so rig checks them and names
-the change to make in Orca's Settings. See `docs/orca.md` (Agent permissions).
+arguments. `settings.update` rejects `agentPermissionOverrides`, but it takes a whole launch line in
+`agentDefaultArgs` and splits it again: the permission flags become the agent's mode and the rest
+its custom arguments. So sync sends each agent's composed line, and the doctor checks both halves.
+See `docs/orca.md` (Agent permissions).
 """
 
 from __future__ import annotations
@@ -12,18 +13,22 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from rig.estate.orca_runtime import OrcaRuntime, OrcaUnavailableError
+from rig.estate.orca_runtime import ORCA_UNAVAILABLE_EXIT, OrcaRuntime, OrcaUnavailableError
 from rig.workspace.orca_rpc import orca_runtime_metadata_path
 
 __all__ = [
+    "ORCA_UNAVAILABLE_EXIT",
     "AgentCheck",
     "AgentPermissionsPolicy",
     "Permission",
     "custom_args_checks",
     "flags",
+    "configurable",
     "launch_checks",
+    "launch_lines",
     "live_launch_args",
     "permission_checks",
+    "set_live_launch_args",
 ]
 
 type Permission = Literal["own", "ask", "accept-edits", "auto", "full-access"]
@@ -55,6 +60,24 @@ _FLAGS: dict[Permission, dict[str, str]] = {
         "gemini": "--yolo",
     },
 }
+
+
+#: Agents with a permission choice in Orca 1.4.255: `hasConfigurableTuiAgentPermissions`, which is
+#: the keys of `YOLO_TUI_AGENT_ARGS` and `YOLO_TUI_AGENT_ENV`. Orca keeps an override for others
+#: (OpenCode, omp) but launches them the same in every mode and shows no choice, so it is not checked.
+_CONFIGURABLE = frozenset(
+    {
+        "claude", "codebuddy", "claude-agent-teams", "openclaude", "codex", "qoder", "qoder-cn", "gemini",
+        "antigravity", "aider", "amp", "kiro", "crush", "autohand", "cline", "command-code", "continue",
+        "cursor", "kimi", "muse", "zcode", "mistral-vibe", "qwen-code", "rovo", "hermes", "copilot", "grok",
+        "devin", "ante", "trae", "droid", "goose",
+    }
+)  # fmt: skip
+
+
+def configurable(agent: str) -> bool:
+    """Whether Orca offers ``agent`` a permission mode at all."""
+    return agent in _CONFIGURABLE
 
 
 def flags(mode: Permission, agent: str) -> str | None:
@@ -102,6 +125,7 @@ def permission_checks(
     """The default mode, and the mode of each policy agent and each ``agents`` entry, as Orca stores them.
 
     Pass Orca's override keys as ``agents``, so an override the policy does not expect is caught.
+    Agents Orca offers no mode for are left out: their stored override changes nothing.
     """
     stored_default = default or "own"
     stored = overrides or {}
@@ -114,7 +138,7 @@ def permission_checks(
             f"Orca Settings → Agents: set the default permission to {_LABEL[policy.default]}",
         )
     ]
-    for agent in sorted({*agents, *policy.agents}):
+    for agent in sorted(a for a in {*agents, *policy.agents} if configurable(a)):
         want = policy.wanted(agent)
         fix = f"Orca Settings → Agents → {agent}: set permission to {_LABEL[want]}"
         checks.append(AgentCheck(f"agent {agent}", "permission", stored.get(agent, stored_default), want, fix))
@@ -130,15 +154,36 @@ def launch_checks(
     Compared as sets of tokens, since the order Orca joins the two in is not part of the policy.
     """
     checks: list[AgentCheck] = []
-    for agent in sorted({*custom_args, *policy.agents}):
-        added = flags(policy.wanted(agent), agent)
-        if added is None:
-            continue
-        want = " ".join(sorted(f"{added} {custom_args.get(agent, '')}".split()))
+    for agent, line in sorted(_wanted_lines(policy, custom_args).items()):
+        want = " ".join(sorted(line.split()))
         have = " ".join(sorted(launch.get(agent, "").split()))
-        fix = "fix this agent's permission and custom arguments in Orca Settings → Agents"
+        fix = "run `workspace orca sync --apply`, or set this agent in Orca Settings → Agents"
         checks.append(AgentCheck(f"agent {agent}", "launch args", have, want, fix))
     return checks
+
+
+def _wanted_lines(policy: AgentPermissionsPolicy, custom_args: dict[str, str]) -> dict[str, str]:
+    """Each policy agent's whole launch line; agents whose mode rig has no flags for are left out."""
+    lines: dict[str, str] = {}
+    for agent in {*custom_args, *policy.agents}:
+        added = flags(policy.wanted(agent), agent) if configurable(agent) else ""
+        if added is not None:
+            lines[agent] = f"{added} {custom_args.get(agent, '').strip()}".strip()
+    return lines
+
+
+def launch_lines(policy: AgentPermissionsPolicy, custom_args: dict[str, str], launch: dict[str, str]) -> dict[str, str]:
+    """The launch line to send for each policy agent whose live one differs, for `settings.update`.
+
+    Orca splits a line it is sent: permission flags set the agent's mode and the rest its custom
+    arguments, and a changed line with no flags sets Own. Send the whole live map with these merged
+    in, since Orca replaces ``agentDefaultArgs`` whole; lines that equal the live one change nothing.
+    """
+    return {
+        agent: line
+        for agent, line in _wanted_lines(policy, custom_args).items()
+        if sorted(line.split()) != sorted(launch.get(agent, "").split())
+    }
 
 
 def live_launch_args(user_data: Path | None = None) -> dict[str, str] | None:
@@ -149,5 +194,17 @@ def live_launch_args(user_data: Path | None = None) -> dict[str, str] | None:
     """
     try:
         return OrcaRuntime.from_metadata(orca_runtime_metadata_path(user_data)).settings().agent_default_args or {}
+    except OrcaUnavailableError:
+        return None
+
+
+def set_live_launch_args(lines: dict[str, str], user_data: Path | None = None) -> dict[str, str] | None:
+    """Send ``lines`` merged onto the running Orca's launch lines; returns every line as Orca then
+    serves it, or None when Orca could not be reached.
+    """
+    try:
+        runtime = OrcaRuntime.from_metadata(orca_runtime_metadata_path(user_data))
+        have = runtime.settings().agent_default_args or {}
+        return runtime.set_agent_default_args({**have, **lines})
     except OrcaUnavailableError:
         return None

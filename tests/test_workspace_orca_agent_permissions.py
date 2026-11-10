@@ -18,11 +18,14 @@ from rig.workspace.orca import (
     policy_repo_path,
     settings_manual_actions,
 )
+from rig.workspace.orca_agent_launch import sync_agent_launch
 from rig.workspace.orca_agent_permissions import (
     AgentPermissionsPolicy,
     Permission,
+    configurable,
     flags,
     launch_checks,
+    launch_lines,
     permission_checks,
 )
 from rig.workspace.orca_rpc import USER_DATA_ENV
@@ -82,7 +85,7 @@ def test_the_full_access_upgrade_fails_claudes_permission_and_launch_line() -> N
 def test_the_wanted_settings_pass() -> None:
     statuses = _statuses(_snapshot(_WANTED, _WANTED_LAUNCH))
     assert set(statuses.values()) == {Status.OK}
-    assert ("agent omp", "permission") in statuses
+    assert ("agent omp", "permission") not in statuses  # Orca offers omp no mode
 
 
 def test_launch_order_does_not_matter() -> None:
@@ -94,8 +97,13 @@ def test_launch_order_does_not_matter() -> None:
     assert check.ok
 
 
-def test_an_agent_orca_has_no_flags_for_is_not_checked_at_launch() -> None:
-    assert launch_checks(AgentPermissionsPolicy(agents={"opencode": "auto"}), {}, {"opencode": ""}) == []
+def test_a_mode_rig_has_no_flags_for_is_not_checked_at_launch() -> None:
+    assert launch_checks(AgentPermissionsPolicy(agents={"copilot": "auto"}), {}, {"copilot": ""}) == []
+
+
+def test_an_agent_orca_offers_no_mode_launches_with_its_custom_args_alone() -> None:
+    (check,) = launch_checks(AgentPermissionsPolicy(), {"opencode2": "--auto"}, {"opencode2": "--auto"})
+    assert check.ok
 
 
 def test_an_unexpected_override_is_caught() -> None:
@@ -112,15 +120,62 @@ def test_orca_down_skips_the_launch_check_but_still_reads_the_backup() -> None:
     assert ("agent claude", "launch args") not in by_check
 
 
-def test_sync_lists_permissions_and_custom_args_as_manual_and_never_writes() -> None:
-    actions = settings_manual_actions(POLICY, _snapshot(_UPGRADED, _UPGRADED_LAUNCH))
-    assert {a.action for a in actions} == {"manual"}
-    assert not any(a.applied for a in actions)
-    fields = {(a.repo, a.field) for a in actions}
-    assert ("agent claude", "permission") in fields
-    assert ("agent opencode", "custom args") in fields
-    assert all(a.field != "launch args" for a in actions)
-    assert settings_manual_actions(POLICY, _snapshot(_WANTED, _WANTED_LAUNCH)) == []
+def test_an_override_orca_offers_no_choice_for_is_not_checked() -> None:
+    # Orca kept OpenCode at Full access through the upgrade, but launches it the same in every mode.
+    assert not configurable("opencode")
+    checks = permission_checks(PERMISSIONS, ["opencode2"], "own", {"opencode2": "full-access"})
+    assert {c.subject for c in checks} == {"settings", "agent claude", "agent antigravity"}
+
+
+def test_launch_lines_carry_the_mode_flags_and_custom_args_for_agents_that_differ() -> None:
+    lines = launch_lines(PERMISSIONS, POLICY.agent_args, _UPGRADED_LAUNCH)
+    assert lines == {"claude": "--permission-mode auto", "opencode": "--auto"}
+    assert launch_lines(PERMISSIONS, POLICY.agent_args, _WANTED_LAUNCH) == {}
+
+
+def test_sync_plans_launch_lines_and_writes_only_with_apply() -> None:
+    sent: list[dict[str, str]] = []
+
+    def write(lines: dict[str, str]) -> dict[str, str]:
+        sent.append(lines)
+        return {**_UPGRADED_LAUNCH, **lines}
+
+    snapshot = _snapshot(_UPGRADED, _UPGRADED_LAUNCH)
+    planned = sync_agent_launch(POLICY, snapshot, write=write)
+    assert [(a.repo, a.action, a.applied) for a in planned] == [
+        ("agent claude", "update", False),
+        ("agent opencode", "update", False),
+    ]
+    assert sent == []
+
+    applied = sync_agent_launch(POLICY, snapshot, apply=True, write=write)
+    assert all(a.applied for a in applied)
+    assert sent == [{"claude": "--permission-mode auto", "opencode": "--auto"}]
+
+
+def test_a_line_orca_does_not_take_is_an_error_naming_the_manual_fix() -> None:
+    (action,) = sync_agent_launch(
+        OrcaPolicy(agent_permissions=AgentPermissionsPolicy(agents={"claude": "own"})),
+        _snapshot(_WANTED, {"claude": "--permission-mode auto"}),
+        apply=True,
+        write=lambda _lines: {"claude": "--permission-mode auto"},
+    )
+    assert (action.action, action.applied) == ("error", False)
+    assert "Orca Settings" in action.detail
+
+
+def test_sync_reports_orca_going_away_mid_write() -> None:
+    def write(_lines: dict[str, str]) -> dict[str, str] | None:
+        return None
+
+    actions = sync_agent_launch(POLICY, _snapshot(_UPGRADED, _UPGRADED_LAUNCH), apply=True, write=write)
+    assert {a.action for a in actions} == {"error"}
+
+
+def test_sync_leaves_agents_alone_without_a_permission_policy_or_a_running_orca() -> None:
+    assert sync_agent_launch(OrcaPolicy(agent_args={"claude": ""}), _snapshot(_UPGRADED, _UPGRADED_LAUNCH)) == []
+    assert sync_agent_launch(POLICY, _snapshot(_UPGRADED, None)) == []
+    assert settings_manual_actions(POLICY, _snapshot(_UPGRADED, _UPGRADED_LAUNCH)) == []
 
 
 def test_the_checked_in_policy_keeps_permission_flags_out_of_custom_args() -> None:

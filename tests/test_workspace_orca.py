@@ -110,11 +110,11 @@ def decode_repo(raw: dict[str, object]) -> OrcaRepo:
 def test_checked_in_policy_decodes() -> None:
     policy = load_policy(REPO_ROOT / "config" / "orca.json")
     assert policy.agent_args["claude"] == ""
-    assert policy.agent_args["opencode"] == "--auto"
+    assert policy.agent_args["opencode2"] == "--auto"
     assert policy.agent_permissions is not None
     assert policy.agent_permissions.wanted("claude") == "auto"
     assert policy.agent_permissions.wanted("antigravity") == "full-access"
-    assert policy.agent_permissions.wanted("opencode") == "own"
+    assert policy.agent_permissions.wanted("codex") == "auto"
     assert policy.repos["design-system"].external_worktree_visibility == "show"
     assert policy.repos["design-system"].color == "#ec4899"
     assert policy.repos["design-system"].icon == "Palette"
@@ -134,6 +134,18 @@ def test_read_settings_unreadable_is_none(tmp_path: pathlib.Path) -> None:
     junk.write_text("not sqlite", encoding="utf-8")
     assert read_settings(junk) is None
     assert read_settings_copy(tmp_path) is None
+
+
+def test_settings_come_from_the_live_db_before_a_backup(tmp_path: pathlib.Path) -> None:
+    _write_profile_db(tmp_path / "profile-state.db.backup.1.db", json.dumps({"workspaceDir": "/old"}))
+    copy = read_settings_copy(tmp_path)
+    assert copy is not None
+    assert copy.settings.workspace_dir == "/old"
+
+    _write_profile_db(tmp_path / "profile-state.db", json.dumps({"workspaceDir": "/live"}))
+    copy = read_settings_copy(tmp_path)
+    assert copy is not None
+    assert (copy.source.name, copy.settings.workspace_dir) == ("profile-state.db", "/live")
 
 
 def test_newest_backup_ignores_live_db(tmp_path: pathlib.Path) -> None:

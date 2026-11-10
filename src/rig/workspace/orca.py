@@ -1,8 +1,9 @@
 """`workspace orca doctor` and `workspace orca sync`: audit and manage Orca per repo.
 
 Orca keeps its settings in a SQLite document store that it holds open and rewrites while it
-runs. For diagnosis, settings come from the newest `profile-state.db.backup.*.db` that Orca
-writes beside it. Live repos come from `orca repo list --json`.
+runs. For diagnosis, settings are read from it read-only, or from the newest
+`profile-state.db.backup.*.db` beside it when it cannot be read. Rig never writes to either. Live
+repos come from `orca repo list --json`.
 
 For mutations, see `rig.workspace.orca_rpc`. Every entry point takes an optional Orca user-data
 folder, so a second instance (such as `%APPDATA%/orca-personal`) can be audited and synced.
@@ -244,10 +245,19 @@ def _mtime(path: Path) -> float:
     return path.stat().st_mtime
 
 
-def read_settings(db_path: Path) -> OrcaSettings | None:
-    """The ``settings`` document of a profile-state database copy, or None when absent or unreadable."""
+_LIVE_DB = "profile-state.db"
+
+
+def read_settings(db_path: Path, *, live: bool = False) -> OrcaSettings | None:
+    """The ``settings`` document of a profile-state database, or None when absent or unreadable.
+
+    A ``live`` database, which Orca may be writing, is not opened as immutable, so its log is read.
+    """
+    if not db_path.is_file():
+        return None
+    mode = "mode=ro" if live else "mode=ro&immutable=1"
     try:
-        with closing(sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro&immutable=1", uri=True)) as db:
+        with closing(sqlite3.connect(f"file:{db_path.as_posix()}?{mode}", uri=True)) as db:
             rows = db.execute("select payload from profile_state_documents where domain = 'settings'")
             payloads = decode(list[list[str]], rows.fetchall())
     except (sqlite3.Error, ValueError):
@@ -256,6 +266,13 @@ def read_settings(db_path: Path) -> OrcaSettings | None:
 
 
 def read_settings_copy(profile_dir: Path) -> SettingsCopy | None:
+    """Orca's settings from its live database, else from its newest backup."""
+    live = profile_dir / _LIVE_DB
+    if (settings := read_settings(live, live=True)) is not None:
+        # Orca writes through SQLite's write-ahead log, so the log holds the latest save.
+        wal = live.with_name(f"{_LIVE_DB}-wal")
+        saved = max(_mtime(path) for path in (live, wal) if path.is_file())
+        return SettingsCopy(source=live, saved=datetime.fromtimestamp(saved, tz=UTC), settings=settings)
     backup = newest_backup(profile_dir)
     if backup is None:
         return None
@@ -601,24 +618,16 @@ class SyncAction:
 
 
 def settings_manual_actions(policy: OrcaPolicy, snapshot: OrcaSnapshot) -> list[SyncAction]:
-    """Settings rig does not write, as `manual` rows: agent arguments and permissions, and Agent sleep.
-
-    `settings.update` rejects the permission and Agent sleep keys, its agent arguments come back
-    composed with the permission flags, and Orca's database must not be edited while it runs, so
-    sync names the change to make in Orca's Settings instead of making it.
+    """Agent sleep, as a `manual` row: `settings.update` rejects its keys, and Orca's database must
+    not be edited while it runs, so sync names the change to make in Orca's Settings instead.
     """
-    actions = [
-        SyncAction(c.subject, "manual", c.check, c.have, c.want, False, c.fix)
-        for c in agent_checks(policy, snapshot, launch=False)
-        if not c.ok
-    ]
     if policy.agent_sleep is None or snapshot.settings is None:
-        return actions
+        return []
     settings = snapshot.settings.settings
     check = agent_sleep_check(policy.agent_sleep, settings.agent_sleep, settings.agent_sleep_idle_ms)
-    if not check.ok:
-        actions.append(SyncAction("settings", "manual", "agent sleep", check.have, check.want, False, check.fix))
-    return actions
+    if check.ok:
+        return []
+    return [SyncAction("settings", "manual", "agent sleep", check.have, check.want, False, check.fix)]
 
 
 @dataclass(slots=True, frozen=True)

@@ -3,7 +3,7 @@
     "claude": "",
     "claude-agent-teams": "",
     "openclaude": "",
-    "opencode": "--auto",
+    "opencode2": "--auto",
     "antigravity": "",
     "copilot": "--experimental --assisted-approval"
   },
@@ -14,7 +14,7 @@
       "claude-agent-teams": "auto",
       "antigravity": "full-access",
       "openclaude": "own",
-      "opencode": "own",
+      "codex": "auto",
       "copilot": "own"
     }
   },

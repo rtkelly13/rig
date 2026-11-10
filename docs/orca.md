@@ -53,10 +53,12 @@ doctor also warns about any managed project cloned under the estate root but not
 registered in Orca.
 
 Current policy: Claude and Claude agent teams launch in **Auto** (`--permission-mode auto`), never
-with `--dangerously-skip-permissions`. OpenCode launches with its own `--auto`, and Copilot with
-`--experimental --assisted-approval`: its safety judge reviews each permission request. Both are
-custom arguments, with the permission mode left as **Own**. Antigravity (`agy`) runs in
-**Full access**. The default for every other agent is **Own**, so Orca adds no flags to them.
+with `--dangerously-skip-permissions`, and Codex in **Auto** (`--approve-for-me`). OpenCode 2
+(`opencode2`) launches with its own `--auto`, and Copilot with `--experimental --assisted-approval`:
+its safety judge reviews each permission request. Both are custom arguments: Orca offers OpenCode
+no permission mode, and Copilot stays on **Own**. Antigravity (`agy`) runs in **Full access**. The
+default for every other agent is **Own**, so Orca adds no flags to them. The original OpenCode is
+no longer in the policy; OpenCode 2 replaces it.
 
 The rule behind it: no constant prompting, and nothing run dangerously. An agent uses its own
 auto mode where it has a workable one: Claude Code's auto mode keeps the allow and deny rules that
@@ -67,9 +69,11 @@ prompts on every step and has no workable auto mode, as Antigravity does.
 
 - **Launch arguments**: live from the running app through `settings.get`, which serves each
   agent's whole launch line (permission flags plus custom arguments). Skipped when Orca is not running.
-- **Settings**, including custom arguments and permission modes: the newest `profile-state.db.backup.*.db` in Orca's profile folder
-  (`<user-data>/profiles/local-default`; for the default instance `ORCA_PROFILE_DIR` overrides it). Orca holds the live `profile-state.db` open and rewrites it, so the
-  doctor never opens it. It reports the backup's age and warns past 24 hours.
+- **Settings**, including custom arguments and permission modes: Orca's `profile-state.db` in its
+  profile folder (`<user-data>/profiles/local-default`; for the default instance `ORCA_PROFILE_DIR`
+  overrides it), opened read-only. Orca holds it open and rewrites it, so rig never writes to it.
+  When it cannot be read, the newest `profile-state.db.backup.*.db` beside it is used instead.
+  The `source` row names which, with its age, and warns past 24 hours.
 - **Repos**: `orca repo list --json`, which is safe while Orca runs.
 
 ## Repo icons
@@ -140,9 +144,9 @@ that differ:
    other hook settings are read first and sent back unchanged. A local script with no
    `orca.yaml` equivalent is never cleared; that row is `manual`.
 5. **Scripts `orca.yaml` lacks**: `manual`, with the script to commit.
-6. **Agent custom arguments and permission modes**: `manual`, naming the change to make under
-   Settings → Agents. Skipped with `--repo`. See [Agent permissions](#agent-permissions) for why
-   rig no longer writes them.
+6. **Agent launch lines** (permission mode and custom arguments): sent through `settings.update`
+   for each policy agent whose live line differs. Skipped with `--repo`. See
+   [Agent permissions](#agent-permissions) for how Orca splits a line.
 7. **Workspace folder**: change it in Orca's Settings.
 8. **Agent sleep**: `manual`, naming the change to make under Settings → Experimental.
 
@@ -154,7 +158,7 @@ upgrade folded the old per-agent flags into a single **Full access** default
 arguments. From then on Claude launched with `--dangerously-skip-permissions`, although
 `config/orca.json` still read correctly.
 
-The flags each mode adds come from Orca's `tui-agent-permission-choice.ts`. Only Claude, Claude
+The flags each mode adds come from Orca's `tui-agent-permissions.ts`. Only Claude, Claude
 agent teams and Codex have an Auto mode:
 
 | Mode | claude, claude-agent-teams | codex | others |
@@ -167,19 +171,28 @@ agent teams and Codex have an Auto mode:
 
 `doctor` checks three things:
 
-- **permission**: the default mode and each agent's mode, read from the backup. An agent's
-  override wins over the default, and an override the policy does not expect fails.
-- **custom args**: the stored `agentDefaultArgs`, read from the backup.
+- **permission**: the default mode and each agent's mode, as stored. An agent's override wins
+  over the default, and an override the policy does not expect fails. Agents Orca offers no mode
+  for (OpenCode, OpenCode 2, omp: not in its flag tables) are not checked: Orca can keep an
+  override for them, such as the Full access the upgrade left on OpenCode, but launches them the
+  same in every mode and shows no choice in Settings.
+- **custom args**: the stored `agentDefaultArgs`.
 - **launch args**: what the running Orca would launch the agent with, against its mode's flags
   plus its custom arguments, compared as sets of tokens. An agent and mode not in the table above
   is not checked.
 
-rig cannot set any of these. `settings.update` rejects `agentPermissionOverrides`
-(`Unrecognized key`). Worse, `settings.get` returns the composed launch line as
-`agentDefaultArgs`, so a read-modify-write would pin the permission flags into every agent's
-custom arguments. Orca then treats the arguments as "mixed" and refuses to change that agent's
-mode until they are edited by hand ("Edit custom launch arguments before choosing a permission
-mode"). So `sync` lists every difference as `manual`.
+`settings.update` rejects `agentPermissionOverrides` (`Unrecognized key`), but it takes whole
+launch lines in `agentDefaultArgs` and splits each again, as the Settings field does: a mode's flags
+set that agent's mode and the rest become its custom arguments. A changed line with no flags sets
+**Own**; an unchanged one changes nothing. So `sync` sends each policy agent's composed line,
+merged onto the live map (Orca replaces the map whole), and reads back what Orca then serves. A
+line Orca serves differently is an error naming the Settings change instead. That happens moving a
+flagless agent with unchanged arguments back to Own, since Orca keeps its mode.
+
+Send only lines rig composed from the policy. Before Orca 1.4.255 recorded `agentLaunchChoices`,
+a line with arguments it could not split left them "mixed", and Orca refused to change that agent's
+mode until they were edited by hand ("Edit custom launch arguments before choosing a permission
+mode").
 
 A sleeping agent keeps the launch line it started with, in the session's saved launch config, and
 resuming it reuses that line. After changing a mode, start the agent's session again rather than
