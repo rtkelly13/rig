@@ -28,9 +28,13 @@ internal sealed class MdLintCommand(IProc proc, MdLintHost host, TextWriter erro
         var command = new Command("md-lint", "Check Markdown formatting with mdformat, or fix it with --fix.") { paths, fix };
         // Anything else, an mdformat flag such as --wrap included, goes to mdformat as it did from Python.
         command.TreatUnmatchedTokensAsErrors = false;
-        // The targets are the raw tokens in order, so an mdformat flag keeps its value beside it.
-        command.SetAction((parsed, ct) => RunAsync(
-            [.. parsed.Tokens.Where(t => t.Type != TokenType.Command && t.Value != "--fix").Select(t => t.Value)], parsed.GetValue(fix), ct));
+        // The targets are the raw tokens in order, so an mdformat flag keeps its value beside it. As in Python, --fix
+        // anywhere means fix, after a `--` too, where the parser would read it as an argument.
+        command.SetAction((parsed, ct) =>
+        {
+            var tokens = parsed.Tokens.Where(t => t.Type != TokenType.Command).Select(t => t.Value).ToList();
+            return RunAsync([.. tokens.Where(t => t != "--fix")], tokens.Contains("--fix"), ct);
+        });
         return command;
     }
 

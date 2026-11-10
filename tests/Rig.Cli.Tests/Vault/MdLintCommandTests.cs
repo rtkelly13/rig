@@ -60,6 +60,16 @@ public sealed class MdLintCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Fix_after_a_double_dash_still_fixes_as_the_python_did()
+    {
+        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
+
+        Assert.Equal(0, await Run("md-lint", "--", "--fix", "note.md"));
+
+        Assert.Equal(Mdformat("--", "note.md"), Assert.Single(_proc.Requests).Argv);
+    }
+
+    [Fact]
     public async Task Mdformats_exit_code_is_returned_unchanged()
     {
         _proc.Answer(new Ran(1, string.Empty, string.Empty), "uv");
