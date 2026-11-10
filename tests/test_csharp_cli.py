@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from rig import csharp_cli, tracing
+from rig import csharp_cli
 from rig.rig_cli import app
 
 
@@ -64,37 +64,20 @@ def test_missing_dotnet_fails_with_a_pointer(tmp_path: Path, capsys: pytest.Capt
     assert "needs dotnet on PATH" in capsys.readouterr().err
 
 
-def test_the_attached_runner_passes_the_environment_through(monkeypatch: pytest.MonkeyPatch) -> None:
-    seen: dict[str, object] = {}
+def test_the_attached_runner_adds_its_environment_to_this_one(monkeypatch: pytest.MonkeyPatch) -> None:
+    # git reads GIT_CONFIG_COUNT/KEY/VALUE: the count comes from this environment, the pair from the extra one.
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    extra = {"GIT_CONFIG_KEY_0": "rig.probe", "GIT_CONFIG_VALUE_0": "yes"}
 
-    class Done:
-        returncode: int = 3
-
-    def fake_run(command: list[str], *, scope: str, env: dict[str, str]) -> Done:
-        seen.update(command=command, scope=scope, env=env)
-        return Done()
-
-    monkeypatch.setenv("RIG_TEST_KEPT", "yes")
-    monkeypatch.setattr(tracing, "run", fake_run)
-
-    assert csharp_cli._attached(["dotnet", "--info"], {"EXTRA": "1"}) == 3  # pyright: ignore[reportPrivateUsage]
-    env = seen["env"]
-    assert isinstance(env, dict)
-    assert env["EXTRA"] == "1"
-    assert env["RIG_TEST_KEPT"] == "yes"
-    assert seen["scope"] == "rig.csharp_cli"
+    assert csharp_cli._attached(["git", "config", "--get", "rig.probe"], extra) == 0  # pyright: ignore[reportPrivateUsage]
+    assert csharp_cli._attached(["git", "config", "--get", "rig.absent"], extra) == 1  # pyright: ignore[reportPrivateUsage]
 
 
-def test_the_python_cli_hands_the_whole_line_over(monkeypatch: pytest.MonkeyPatch) -> None:
-    handed: list[list[str]] = []
+def test_the_python_cli_hands_a_ported_command_over(monkeypatch: pytest.MonkeyPatch) -> None:
+    # With no dotnet to find, the hand-over reaches the C# runner and reports it, naming the command.
+    monkeypatch.setenv("PATH", "")
 
-    def fake(args: list[str]) -> int:
-        handed.append(args)
-        return 1
+    result = CliRunner().invoke(app, ["gh", "threads", "list", "7", "--help"])
 
-    monkeypatch.setattr(csharp_cli, "run", fake)
-
-    result = CliRunner().invoke(app, ["gh", "threads", "list", "7", "--json", "--help"])
-
-    assert result.exit_code == 1
-    assert handed == [["gh", "threads", "list", "7", "--json", "--help"]]
+    assert result.exit_code == 2
+    assert "rig gh: this command now runs on the C# rig CLI, which needs dotnet on PATH." in result.output

@@ -9,7 +9,6 @@ succeed, are logged in order, and change what later reads return, the way GitHub
   at ``route/<id>``. With no collection there, the body becomes the object at *route* (Pages).
 
 So a test can apply a plan and plan again: an idempotent resource plans nothing the second time.
-Distinct from `gh_graphql.FakeGitHub`, which fakes the GraphQL port.
 """
 
 from __future__ import annotations

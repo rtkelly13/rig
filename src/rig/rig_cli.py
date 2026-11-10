@@ -53,8 +53,11 @@ def _ported(name: str) -> None:
     def stub(ctx: typer.Context) -> None:
         raise typer.Exit(code=csharp_cli.run([name, *ctx.args]))
 
-    settings: dict[str, object] = {"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": []}
-    app.command(name, context_settings=settings, help="Runs on the C# rig CLI.")(stub)
+    app.command(
+        name,
+        context_settings={"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": list[str]()},
+        help="Runs on the C# rig CLI.",
+    )(stub)
 
 
 for _name in csharp_cli.PORTED:

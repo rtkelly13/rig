@@ -10,7 +10,7 @@ namespace Rig.Cli.Tests.Gh;
 
 /// <summary>
 /// <c>rig gh threads</c> (TEMPORARY): list, reply to and resolve PR review threads through a fake GitHub. Ported case
-/// for case from the Python CLI's tests/test_gh_threads.py, through the whole command line.
+/// for case from the retired Python tests, through the whole command line.
 /// </summary>
 public sealed class ThreadsCommandTests
 {
