@@ -203,6 +203,9 @@ class SettingsCopy:
     settings: OrcaSettings
     #: Read from the running app (`settings.get`) rather than a backup, so it cannot be stale.
     live: bool = False
+    #: Only agent arguments were read (the runtime, with no backup to fill in the rest), so every
+    #: other setting is unknown rather than unset.
+    agent_args_only: bool = False
 
 
 @dataclass(slots=True, frozen=True)
@@ -272,7 +275,9 @@ def live_settings(user_data: Path | None = None) -> SettingsCopy | None:
     except OrcaUnavailableError:
         return None
     settings = OrcaSettings(agent_default_args=live.agent_default_args)
-    return SettingsCopy(source=Path("settings.get"), saved=datetime.now(UTC), settings=settings, live=True)
+    return SettingsCopy(
+        source=Path("settings.get"), saved=datetime.now(UTC), settings=settings, live=True, agent_args_only=True
+    )
 
 
 def take_snapshot(
@@ -287,7 +292,9 @@ def take_snapshot(
     if current is not None and backup is not None:
         # The runtime serves only agent arguments; every other setting comes from the backup.
         current = replace(
-            current, settings=replace(backup.settings, agent_default_args=current.settings.agent_default_args)
+            current,
+            settings=replace(backup.settings, agent_default_args=current.settings.agent_default_args),
+            agent_args_only=False,
         )
     return OrcaSnapshot(settings=current or backup, repos=live_repos(run), profile_dir=folder)
 
@@ -419,6 +426,10 @@ def _settings_findings(
     for agent, want in sorted(policy.agent_args.items()):
         have = actual_args.get(agent, "")
         findings.append(_agent_args_finding(agent, want, have))
+    if copy.agent_args_only:
+        wanted = {"workspace dir": policy.workspace_dir, "agent sleep": policy.agent_sleep}
+        unread = f"no readable {_BACKUP_GLOB} to read it from"
+        return findings + [OrcaFinding("settings", k, Status.SKIP, unread) for k, v in wanted.items() if v is not None]
     if policy.workspace_dir is not None:
         want_dir = Path(policy.workspace_dir).expanduser()
         have_dir = Path(copy.settings.workspace_dir).expanduser() if copy.settings.workspace_dir else None
@@ -605,7 +616,7 @@ def settings_manual_actions(policy: OrcaPolicy, snapshot: OrcaSnapshot) -> list[
     `settings.update` rejects the Agent sleep keys, and Orca's database must not be edited while
     it runs, so sync names the change to make in Orca's Settings instead of making it.
     """
-    if policy.agent_sleep is None or snapshot.settings is None:
+    if policy.agent_sleep is None or snapshot.settings is None or snapshot.settings.agent_args_only:
         return []
     settings = snapshot.settings.settings
     check = agent_sleep_check(policy.agent_sleep, settings.agent_sleep, settings.agent_sleep_idle_ms)

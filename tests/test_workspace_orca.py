@@ -243,6 +243,26 @@ def test_sync_reports_agent_sleep_as_manual() -> None:
     assert settings_manual_actions(policy, OrcaSnapshot(None, ())) == []
 
 
+def test_live_agent_args_alone_leave_backup_only_settings_unchecked() -> None:
+    # Orca reachable but no backup: the runtime serves only agent arguments, so Agent sleep and the
+    # workspace folder are unknown, not off or unset.
+    live = SettingsCopy(
+        source=pathlib.Path("settings.get"),
+        saved=NOW,
+        settings=OrcaSettings(agent_default_args={}),
+        live=True,
+        agent_args_only=True,
+    )
+    policy = OrcaPolicy(workspace_dir="~/orca/workspaces", agent_sleep=AgentSleepPolicy(enabled=True))
+    snapshot = OrcaSnapshot(live, ())
+
+    findings = diagnose(policy, snapshot, estate_root=pathlib.Path("/c"), now=NOW)
+
+    checked = {f.check: f.status for f in findings if f.check in {"workspace dir", "agent sleep"}}
+    assert checked == {"workspace dir": Status.SKIP, "agent sleep": Status.SKIP}
+    assert settings_manual_actions(policy, snapshot) == []
+
+
 def test_agent_sleep_is_read_from_the_backup_beside_live_agent_args(tmp_path: pathlib.Path) -> None:
     db = tmp_path / "profile-state.db.backup.1.db"
     settings = {
