@@ -8,6 +8,7 @@
     "copilot": "--experimental --assisted-approval"
   },
   "workspace_dir": "~/orca/workspaces",
+  "agent_sleep": { "enabled": true, "idle_minutes": 30 },
   "repos": {
     "rig": {
       "path": "~/code/personal/rig",

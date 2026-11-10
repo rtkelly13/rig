@@ -37,6 +37,7 @@ daily against the personal instance (`orca-personal` on Windows).
 |---|---|
 | `agent_args` | Extra arguments Orca adds when it launches each agent (`agentDefaultArgs`). `""` means none. Agents left out are not checked. |
 | `workspace_dir` | Where Orca creates its worktrees (`~` is expanded). |
+| `agent_sleep` | Orca's experimental Agent sleep (`experimentalAgentHibernation`, `agentHibernationIdleMs`): `{"enabled": true, "idle_minutes": 30}`. Orca stops an agent terminal once its turn has been done for the idle window, and resumes it (`claude --resume <id>`) when the tab is opened again. The tab on screen, agents with running sub-agents and unsent drafts are never stopped. See [Agent sleep](#agent-sleep). |
 | `repos.<name>.path` | Optional filesystem path to repo (defaults to `<estate_root>/<name>`). |
 | `repos.<name>.setup` | The setup script each new Orca worktree should run. The repo's committed `orca.yaml` should declare it (see below). |
 | `repos.<name>.archive` | The archive script, run when a worktree is archived; same rule as `setup`. |
@@ -143,6 +144,21 @@ that differ:
    unchanged. Orca strips flags an agent does not accept; a value it did not keep is an error.
    Skipped with `--repo`.
 7. **Workspace folder**: change it in Orca's Settings.
+8. **Agent sleep**: `manual`, naming the change to make under Settings → Experimental.
+
+### Agent sleep
+
+Every idle Claude session keeps 300–500 MB resident. On an 8 GB Mac, two dozen idle sessions pushed
+the machine deep into swap while CPU sat mostly free, so the policy turns Agent sleep on. Sleeping
+stops the terminal; the worktree and the session are kept, and opening the tab resumes it.
+
+Neither half can be set by rig while Orca runs: `settings.update` rejects the keys
+(`Unrecognized key: "experimentalAgentHibernation"`, Orca 1.4.250), and Orca's database is never
+edited under it. So `doctor` checks it from the newest settings backup, and `sync` reports a
+`manual` row. A backup can trail a Settings change by up to a day; the `source` row says how old it is.
+
+A sleeping session has no live terminal, so [`estate wrapup`](estate/wrapup.md) shows it as
+`no-terminal` and cannot ask it. Run wrap-up inside the idle window, or open the tab first.
 
 ## Restoring agent sessions into Orca
 

@@ -8,6 +8,7 @@ import pathlib
 import sqlite3
 from collections.abc import Callable
 from contextlib import closing
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -34,8 +35,11 @@ from rig.workspace.orca import (
     newest_backup,
     read_settings,
     read_settings_copy,
+    settings_manual_actions,
     sync_repos,
+    take_snapshot,
 )
+from rig.workspace.orca_agent_sleep import AgentSleepPolicy
 from rig.workspace.orca_hooks import Scripts
 from rig.workspace.packages import Status
 
@@ -196,6 +200,84 @@ def test_workspace_dir_expands_home() -> None:
     )
     assert [f.status for f in ok if f.check == "workspace dir"] == [Status.OK]
     assert [f.status for f in bad if f.check == "workspace dir"] == [Status.FAIL]
+
+
+def _sleep_snapshot(enabled: bool | None, idle_ms: int | None = None) -> OrcaSnapshot:
+    copy = _settings_copy({})
+    settings = replace(copy.settings, agent_sleep=enabled, agent_sleep_idle_ms=idle_ms)
+    return OrcaSnapshot(replace(copy, settings=settings), ())
+
+
+def _sleep_findings(policy: OrcaPolicy, snapshot: OrcaSnapshot) -> list[tuple[Status, str]]:
+    findings = diagnose(policy, snapshot, estate_root=pathlib.Path("/c"), now=NOW)
+    return [(f.status, f.detail) for f in findings if f.check == "agent sleep"]
+
+
+def test_agent_sleep_is_checked_against_the_policy() -> None:
+    on = OrcaPolicy(agent_sleep=AgentSleepPolicy(enabled=True, idle_minutes=30))
+
+    assert _sleep_findings(on, _sleep_snapshot(True, 1_800_000)) == [(Status.OK, "on, 30m idle")]
+    # Orca reads a missing or out-of-range window as its 30-minute default.
+    assert _sleep_findings(on, _sleep_snapshot(True, None)) == [(Status.OK, "on, 30m idle")]
+    assert _sleep_findings(on, _sleep_snapshot(True, 5)) == [(Status.OK, "on, 30m idle")]
+    assert _sleep_findings(on, _sleep_snapshot(False)) == [(Status.FAIL, "off, want on, 30m idle")]
+    assert _sleep_findings(on, _sleep_snapshot(True, 600_000)) == [(Status.FAIL, "on, 10m idle, want on, 30m idle")]
+    assert _sleep_findings(OrcaPolicy(agent_sleep=AgentSleepPolicy(enabled=False)), _sleep_snapshot(None)) == [
+        (Status.OK, "off")
+    ]
+    assert _sleep_findings(OrcaPolicy(), _sleep_snapshot(False)) == []
+
+
+def test_sync_reports_agent_sleep_as_manual() -> None:
+    policy = OrcaPolicy(agent_sleep=AgentSleepPolicy(enabled=True, idle_minutes=30))
+
+    (action,) = settings_manual_actions(policy, _sleep_snapshot(False))
+    assert (action.action, action.old_value, action.new_value, action.applied) == (
+        "manual",
+        "off",
+        "on, 30m idle",
+        False,
+    )
+    assert "Settings → Experimental" in action.detail
+    assert settings_manual_actions(policy, _sleep_snapshot(True, 1_800_000)) == []
+    assert settings_manual_actions(policy, OrcaSnapshot(None, ())) == []
+
+
+def test_live_agent_args_alone_leave_backup_only_settings_unchecked() -> None:
+    # Orca reachable but no backup: the runtime serves only agent arguments, so Agent sleep and the
+    # workspace folder are unknown, not off or unset.
+    live = SettingsCopy(
+        source=pathlib.Path("settings.get"),
+        saved=NOW,
+        settings=OrcaSettings(agent_default_args={}),
+        live=True,
+        agent_args_only=True,
+    )
+    policy = OrcaPolicy(workspace_dir="~/orca/workspaces", agent_sleep=AgentSleepPolicy(enabled=True))
+    snapshot = OrcaSnapshot(live, ())
+
+    findings = diagnose(policy, snapshot, estate_root=pathlib.Path("/c"), now=NOW)
+
+    checked = {f.check: f.status for f in findings if f.check in {"workspace dir", "agent sleep"}}
+    assert checked == {"workspace dir": Status.SKIP, "agent sleep": Status.SKIP}
+    assert settings_manual_actions(policy, snapshot) == []
+
+
+def test_agent_sleep_is_read_from_the_backup_beside_live_agent_args(tmp_path: pathlib.Path) -> None:
+    db = tmp_path / "profile-state.db.backup.1.db"
+    settings = {
+        "agentDefaultArgs": {"claude": "--old"},
+        "experimentalAgentHibernation": True,
+        "agentHibernationIdleMs": 600_000,
+    }
+    _write_profile_db(db, json.dumps(settings))
+    live = SettingsCopy(pathlib.Path("settings.get"), NOW, OrcaSettings(agent_default_args={"claude": ""}), live=True)
+
+    snapshot = take_snapshot(tmp_path, run=lambda _args: None, live=lambda: live)
+
+    assert snapshot.settings is not None
+    assert snapshot.settings.settings.agent_default_args == {"claude": ""}
+    assert (snapshot.settings.settings.agent_sleep, snapshot.settings.settings.agent_sleep_idle_ms) == (True, 600_000)
 
 
 def test_repo_policy_checks_all_attributes() -> None:
