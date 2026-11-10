@@ -161,6 +161,25 @@ the Win32 adapters. Each driver either gets its logic moved behind a fake-able s
 or joins the omit list under the same rule as the Win32 adapters. Decide driver by driver.
 Moving the target is not one of the options.
 
+### The C# floor starts at 95%
+
+The C# side ([ADR 0022](adr/0022-csharp-is-rigs-primary-language.md)) runs the same three rules
+from `scripts/coverage-floor.cs`, with `RigCoverageFloor`, `RigCoverageTarget` and
+`RigCoverageSlack` in `Directory.Build.props` in place of the pyproject keys. Coverage is line and
+branch together, merged across every test project's coverlet json report. Those reports keep each
+branch's identity (offset, target, path), so two projects that take different sides of one `if`
+together count as covering both; cobertura's per-line `1/2` counts could not tell. It starts at the target: there is no backlog to ratchet through, so each command
+ported to C# arrives with its tests.
+
+```bash
+dotnet build rig.slnx -m:2
+dotnet test --solution rig.slnx --no-build --coverlet --coverlet-output-format json
+dotnet run scripts/coverage-floor.cs -- TestResults/coverage.*.json
+```
+
+Layer rules move from import-linter to `tests/Rig.Architecture.Tests` (NetArchTest), next to
+the project references that already stop a lower layer referencing a higher one.
+
 ### Mutation testing
 
 `[tool.mutmut]` in `pyproject.toml` scopes it to pure modules with fast tests. mutmut is not a dev

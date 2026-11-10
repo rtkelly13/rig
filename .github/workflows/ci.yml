@@ -312,10 +312,86 @@ jobs:
       - name: Run tests
         run: uv run pytest -m "not integration" -p no:cacheprovider --basetemp="${{ runner.temp }}/pytest" -ra
 
+  # The C# side (ADR 0022): format, build with warnings as errors, tests, the coverage ratchet.
+  dotnet:
+    name: dotnet
+    needs: changes
+    if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+      - name: Restore
+        run: dotnet restore rig.slnx
+      - name: Format check
+        run: dotnet format rig.slnx --no-restore --verify-no-changes
+      - name: Build
+        run: dotnet build rig.slnx --no-restore -c Release
+      - name: Test with coverage
+        run: dotnet test --solution rig.slnx --no-build -c Release --coverlet --coverlet-output-format json
+      # Same ratchet as the Python floor: never falls, must follow coverage up to 95%.
+      - name: Fetch the base branch's coverage floor
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/contents/Directory.Build.props?ref=${BASE_SHA}" \
+            -H "Accept: application/vnd.github.raw" > base-Directory.Build.props || rm -f base-Directory.Build.props
+      - name: Coverage floor ratchet
+        run: dotnet run scripts/coverage-floor.cs -- TestResults/coverage.*.json --base-props base-Directory.Build.props
+
+  # Windows runs on the same triggers as test-windows: the desktop port's Win32 code lands here.
+  dotnet-windows:
+    name: dotnet-windows
+    needs: changes
+    runs-on: windows-latest
+    timeout-minutes: 15
+    if: |
+      needs.changes.outputs.code == 'true' && (
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.title, '[windows]') ||
+      contains(github.event.pull_request.title, 'win32') ||
+      contains(github.head_ref, 'windows') ||
+      contains(github.head_ref, 'win32') ||
+      contains(github.event.pull_request.labels.*.name, 'ci:windows'))
+    permissions:
+      contents: read
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Build
+        run: dotnet build rig.slnx -c Release
+      - name: Test
+        run: dotnet test --solution rig.slnx --no-build -c Release
+
   ci:
     name: ci
     if: always()
-    needs: [changes, lint, docs-audit, test, test-windows]
+    needs: [changes, lint, docs-audit, test, test-windows, dotnet, dotnet-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: read
