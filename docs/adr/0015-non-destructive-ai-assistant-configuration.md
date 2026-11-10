@@ -10,6 +10,8 @@ AI coding assistants (Claude Code, OpenCode, Codex) require safe baseline permis
 Apply non-destructive union merges when configuring AI coding tools:
 - `~/.claude/settings.json`: Merges the policy's safe commands into `permissions.allow` and its denied commands into `permissions.deny` without modifying personal preferences or keys. Sets baseline preferences and clears automated attribution trailers and PR footers (`attribution.commit`, `attribution.pr`, `attribution.sessionUrl`).
 - `~/.claude/settings.json` `hooks.SessionEnd`: Adds the session-ledger hook (below) unless a `SessionEnd` hook already runs a script named `session-ledger.mjs`; other hooks are kept.
+- `~/.claude/settings.json` `hooks.SessionStart`: Adds the low-priority hook (below) unless a `SessionStart` hook already runs a script named `low-priority.mjs`; other hooks, such as Orca's, are kept.
+- `~/.claude/settings.json` `env`: Adds `MSBUILDDISABLENODEREUSE=1` unless the key is already set, so MSBuild worker nodes exit when a build ends instead of staying resident.
 - `~/.config/opencode/opencode.json`: Merges granular `permission.bash` rules while preserving existing keys.
 - `~/.gemini/antigravity-cli/settings.json`: Merges missing safe commands into `permissions.allow` and denied commands into `permissions.deny`, using `command(...)` rules only. Antigravity deprecated the `unsandboxed(...)` form and reports it as invalid on load, so existing rules are rewritten to `command(...)` and deduplicated during sync.
 - `~/.agent-browser-profiles/`: Provisions isolated `dev` and `personal` browser data directories with shell environment helpers.
@@ -53,6 +55,24 @@ The hook writes one file per session to `~/.claude/session-ends/<session_id>.jso
 `reason: "clear"` means the user ran `/clear` and the session is finished. A crash fires no hook, so a missing
 record means nothing. A record whose `ended_at` is older than the transcript's last activity is stale and ignored.
 
+### Low-priority sessions
+
+Agents share the machine with the user's foreground work, and a session's builds and tests used to compete with it
+at normal priority. The same step copies `claude_hooks/low-priority.mjs` to `~/.claude/hooks/low-priority.mjs` and
+wires it as a `SessionStart` hook (`node "<path>"`, 10s timeout). It finds the `claude` process it runs under (one
+process-table read: `ps` on macOS and Linux, `Get-CimInstance` on Windows), then sets that process and the children
+it has already started to below-normal priority with `os.setPriority`: nice 10 on POSIX, `BELOW_NORMAL` on Windows.
+Both are inherited, so everything the session runs afterwards is low priority too. A priority that is already lower
+is kept. The hook prints a line of session context asking for light local builds and GitHub CI for heavy checks.
+
+`CLAUDE_FOREGROUND=1 claude` opts a single session out. `devenv doctor` reports the hook the same way as the ledger.
+
+Priority only decides who wins the CPU when both want it. It does not reduce the total work, heat or disk I/O, so
+the limit on parallel agents still matters. macOS background mode (`taskpolicy -b`), which also throttles I/O and
+keeps work on efficiency cores, is only inherited when a process is launched under it, so it would have to come from
+the agent's launch command rather than a hook. Only the native `claude` binary is recognised. A session run as
+`node cli.js` is left at normal priority.
+
 ## Consequences
 - Reduces confirmation friction during AI pair programming sessions.
 - Guaranteed safety against configuration data loss.
@@ -61,3 +81,5 @@ record means nothing. A record whose `ended_at` is older than the transcript's l
 ## References
 - [`src/rig/devenv/steps/ai_tools/claude_code.py`](../../src/rig/devenv/steps/ai_tools/claude_code.py)
 - [`src/rig/devenv/steps/ai_tools/session_ledger.py`](../../src/rig/devenv/steps/ai_tools/session_ledger.py)
+- [`src/rig/devenv/steps/ai_tools/bundled_hooks.py`](../../src/rig/devenv/steps/ai_tools/bundled_hooks.py)
+- [`src/rig/devenv/steps/ai_tools/claude_hooks/low-priority.mjs`](../../src/rig/devenv/steps/ai_tools/claude_hooks/low-priority.mjs)

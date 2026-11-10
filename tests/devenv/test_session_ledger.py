@@ -90,7 +90,7 @@ def test_an_install_from_another_path_is_recognised():
 
     merge = merge_claude_settings(existing, session_end_command='node "/elsewhere/session-ledger.mjs"')
 
-    assert not any("hooks" in c for c in merge.changes)
+    assert not any("hooks.SessionEnd" in c for c in merge.changes)
     assert _ledger_entries(merge.settings) == [WORKSPACE_STYLE]
 
 
