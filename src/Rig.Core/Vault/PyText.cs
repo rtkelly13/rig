@@ -53,19 +53,21 @@ public static class PyText
     {
         ArgumentNullException.ThrowIfNull(s);
         var builder = new StringBuilder(s.Length);
-        for (var i = 0; i < s.Length; i++)
+        var runes = s.EnumerateRunes().ToArray();
+        for (var i = 0; i < runes.Length; i++)
         {
-            var c = s[i];
-            switch (c)
+            var rune = runes[i];
+            switch (rune.Value)
             {
                 case 'İ':
                     builder.Append("i̇");
                     break;
                 case 'Σ':
-                    builder.Append(FinalSigma(s, i) ? 'ς' : 'σ');
+                    builder.Append(FinalSigma(runes, i) ? 'ς' : 'σ');
                     break;
                 default:
-                    builder.Append(char.ToLowerInvariant(c));
+                    // Per scalar, so a supplementary-plane capital (Deseret's 𐐀) lowers as Python's does.
+                    builder.Append(Rune.ToLowerInvariant(rune).ToString());
                     break;
             }
         }
@@ -74,34 +76,34 @@ public static class PyText
     }
 
     // Unicode's Final_Sigma condition: a cased letter before (past case-ignorable marks) and none after.
-    private static bool FinalSigma(string s, int at)
+    private static bool FinalSigma(Rune[] runes, int at)
     {
         var before = at - 1;
-        while (before >= 0 && CaseIgnorable(s[before]))
+        while (before >= 0 && CaseIgnorable(runes[before]))
         {
             before--;
         }
 
-        if (before < 0 || !Cased(s[before]))
+        if (before < 0 || !Cased(runes[before]))
         {
             return false;
         }
 
         var after = at + 1;
-        while (after < s.Length && CaseIgnorable(s[after]))
+        while (after < runes.Length && CaseIgnorable(runes[after]))
         {
             after++;
         }
 
-        return after >= s.Length || !Cased(s[after]);
+        return after >= runes.Length || !Cased(runes[after]);
     }
 
-    private static bool Cased(char c) =>
-        CharUnicodeInfo.GetUnicodeCategory(c) is UnicodeCategory.UppercaseLetter or UnicodeCategory.LowercaseLetter or UnicodeCategory.TitlecaseLetter;
+    private static bool Cased(Rune r) =>
+        Rune.GetUnicodeCategory(r) is UnicodeCategory.UppercaseLetter or UnicodeCategory.LowercaseLetter or UnicodeCategory.TitlecaseLetter;
 
-    private static bool CaseIgnorable(char c) =>
-        c is '\'' or '.' or ':' or '^' or '`' or '·' or '’' or '‘' or '․' or '‧'
-        || CharUnicodeInfo.GetUnicodeCategory(c) is UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark
+    private static bool CaseIgnorable(Rune r) =>
+        r.Value is '\'' or '.' or ':' or '^' or '`' or '·' or '’' or '‘' or '․' or '‧'
+        || Rune.GetUnicodeCategory(r) is UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark
             or UnicodeCategory.Format or UnicodeCategory.ModifierLetter or UnicodeCategory.ModifierSymbol;
 
     /// <summary>Python's <c>len(s)</c>: the number of code points.</summary>
