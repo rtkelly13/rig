@@ -20,6 +20,7 @@ __all__ = [
     "AgentPermissionsPolicy",
     "Permission",
     "custom_args_checks",
+    "flags",
     "launch_checks",
     "live_launch_args",
     "permission_checks",
@@ -54,6 +55,11 @@ _FLAGS: dict[Permission, dict[str, str]] = {
         "gemini": "--yolo",
     },
 }
+
+
+def flags(mode: Permission, agent: str) -> str | None:
+    """The flags Orca adds to ``agent``'s launch line in ``mode``, or None when rig does not know them."""
+    return "" if mode == "own" else _FLAGS[mode].get(agent)
 
 
 @dataclass(slots=True, frozen=True)
@@ -125,11 +131,10 @@ def launch_checks(
     """
     checks: list[AgentCheck] = []
     for agent in sorted({*custom_args, *policy.agents}):
-        mode = policy.wanted(agent)
-        flags = "" if mode == "own" else _FLAGS[mode].get(agent)
-        if flags is None:
+        added = flags(policy.wanted(agent), agent)
+        if added is None:
             continue
-        want = " ".join(sorted(f"{flags} {custom_args.get(agent, '')}".split()))
+        want = " ".join(sorted(f"{added} {custom_args.get(agent, '')}".split()))
         have = " ".join(sorted(launch.get(agent, "").split()))
         fix = "fix this agent's permission and custom arguments in Orca Settings → Agents"
         checks.append(AgentCheck(f"agent {agent}", "launch args", have, want, fix))

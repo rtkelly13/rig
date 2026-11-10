@@ -14,15 +14,23 @@ from rig.workspace.orca import (
     OrcaSnapshot,
     SettingsCopy,
     diagnose,
+    load_policy,
     policy_repo_path,
     settings_manual_actions,
 )
-from rig.workspace.orca_agent_permissions import AgentPermissionsPolicy, launch_checks, permission_checks
+from rig.workspace.orca_agent_permissions import (
+    AgentPermissionsPolicy,
+    Permission,
+    flags,
+    launch_checks,
+    permission_checks,
+)
 from rig.workspace.orca_rpc import USER_DATA_ENV
 from rig.workspace.packages import Status
 
 pytestmark = pytest.mark.ci
 
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 NOW = datetime(2026, 11, 10, 12, 0, tzinfo=UTC)
 PERMISSIONS = AgentPermissionsPolicy(
     default="own", agents={"claude": "auto", "antigravity": "full-access", "opencode": "own"}
@@ -113,6 +121,23 @@ def test_sync_lists_permissions_and_custom_args_as_manual_and_never_writes() -> 
     assert ("agent opencode", "custom args") in fields
     assert all(a.field != "launch args" for a in actions)
     assert settings_manual_actions(POLICY, _snapshot(_WANTED, _WANTED_LAUNCH)) == []
+
+
+def test_the_checked_in_policy_keeps_permission_flags_out_of_custom_args() -> None:
+    # A permission flag in custom arguments makes Orca read them as "mixed" and lock the mode.
+    policy = load_policy(REPO_ROOT / "config" / "orca.json")
+    modes: tuple[Permission, ...] = ("ask", "accept-edits", "auto", "full-access")
+    for agent, args in policy.agent_args.items():
+        permission_tokens = {token for mode in modes for token in (flags(mode, agent) or "").split()}
+        assert not permission_tokens & set(args.split()), agent
+
+
+def test_the_checked_in_policy_asks_for_auto_only_where_orca_has_it() -> None:
+    policy = load_policy(REPO_ROOT / "config" / "orca.json")
+    assert policy.agent_permissions is not None
+    auto = [agent for agent, mode in policy.agent_permissions.agents.items() if mode == "auto"]
+    assert auto
+    assert all(flags("auto", agent) for agent in auto)
 
 
 def test_instance_defaults_to_the_orca_that_launched_the_terminal(

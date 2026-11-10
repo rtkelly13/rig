@@ -90,7 +90,7 @@ class _Metadata:
     transport: Lenient[_Transport] = None
 
 
-type Params = dict[str, str | None] | dict[str, dict[str, str]]
+type Params = dict[str, str | None]
 """A request's params: flat string fields, or one level of string maps (`settings.update`)."""
 
 
