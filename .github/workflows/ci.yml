@@ -343,7 +343,7 @@ jobs:
       - name: Build
         run: dotnet build rig.slnx --no-restore -c Release
       - name: Test with coverage
-        run: dotnet test --solution rig.slnx --no-build -c Release --coverlet --coverlet-output-format cobertura
+        run: dotnet test --solution rig.slnx --no-build -c Release --coverlet --coverlet-output-format json
       # Same ratchet as the Python floor: never falls, must follow coverage up to 95%.
       - name: Fetch the base branch's coverage floor
         if: github.event_name == 'pull_request'
@@ -354,7 +354,7 @@ jobs:
           gh api "repos/${GITHUB_REPOSITORY}/contents/Directory.Build.props?ref=${BASE_SHA}" \
             -H "Accept: application/vnd.github.raw" > base-Directory.Build.props || rm -f base-Directory.Build.props
       - name: Coverage floor ratchet
-        run: dotnet run scripts/coverage-floor.cs -- TestResults/*.cobertura.*.xml --base-props base-Directory.Build.props
+        run: dotnet run scripts/coverage-floor.cs -- TestResults/coverage.*.json --base-props base-Directory.Build.props
 
   # Windows runs on the same triggers as test-windows: the desktop port's Win32 code lands here.
   dotnet-windows:
