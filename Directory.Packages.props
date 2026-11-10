@@ -1,0 +1,12 @@
+<Project>
+  <ItemGroup Label="Command line">
+    <PackageVersion Include="Spectre.Console" Version="0.57.2" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.13" />
+  </ItemGroup>
+  <ItemGroup Label="Tests">
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.3" />
+    <PackageVersion Include="Verify.XunitV3" Version="33.3.4" />
+    <PackageVersion Include="CsCheck" Version="5.0.1" />
+    <PackageVersion Include="coverlet.MTP" Version="10.1.0" />
+  </ItemGroup>
+</Project>

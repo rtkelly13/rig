@@ -72,3 +72,8 @@ coverage_summary.md
 node_modules/
 desktop-manager/logs/
 .worktrees/
+
+# .NET build output
+bin/
+obj/
+TestResults/
