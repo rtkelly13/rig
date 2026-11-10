@@ -243,7 +243,7 @@ public sealed class LatexCommandTests : IDisposable
     {
         OnPath("xelatex", "tlmgr");
         var app = new RigApp(
-            new PythonRig(_proc, "/rig"), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), _out, _err, Command());
+            new PythonRig(_proc, "/rig"), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), _out, _err, [Command().Build]);
 
         Assert.Equal(0, await app.RunAsync(["latex", "doctor"], TestContext.Current.CancellationToken));
 

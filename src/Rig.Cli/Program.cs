@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
+using Rig.Cli.Vault;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
@@ -30,11 +31,17 @@ internal static class Program
             async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false)),
             Console.Out,
             Console.Error,
-            new LatexCommand(
-                proc,
-                new LatexHost(ProgramPath.Find, Environment.GetEnvironmentVariable("PATH") ?? string.Empty, codeRoot, Environment.CurrentDirectory),
-                Console.Out,
-                Console.Error));
+            [
+                new LatexCommand(
+                    proc,
+                    new LatexHost(ProgramPath.Find, Environment.GetEnvironmentVariable("PATH") ?? string.Empty, codeRoot, Environment.CurrentDirectory),
+                    Console.Out,
+                    Console.Error).Build,
+                new MdLintCommand(
+                    proc,
+                    new MdLintHost(checkout, Environment.GetEnvironmentVariable, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)),
+                    Console.Error).Build,
+            ]);
         return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
     }
 }

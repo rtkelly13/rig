@@ -43,7 +43,7 @@ def test_every_script_is_covered():
     hand_rolled = {
         entry.script for entry in ENTRY_POINTS if entry.function != "main" and entry.target != "rig.csharp_cli:entry"
     }
-    assert hand_rolled == {"agent", "help", "md-lint"}, "a new non-main entry point needs its own smoke test here"
+    assert hand_rolled == {"agent", "help"}, "a new non-main entry point needs its own smoke test here"
 
 
 @pytest.mark.parametrize("entry", ENTRY_POINTS, ids=lambda entry: entry.script)
