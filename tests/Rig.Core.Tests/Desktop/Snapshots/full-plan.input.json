@@ -1,0 +1,58 @@
+{
+  "version": "1",
+  "workspace": "C:/code",
+  "personal-workspace": "C:/personal",
+  "switch_delay_ms": 700,
+  "features": {"lab": "on", "warp": false},
+  "notes": ["one", 2],
+  "aliases": {"tools": "{workspace}/tools", "n": 3},
+  "desktops": [
+    {
+      "name": "Work",
+      "disabled": "no",
+      "feature": "lab",
+      "launch": [
+        {
+          "name": "Terminal",
+          "type": "terminal",
+          "path": "wt.exe",
+          "args": ["-w", 0],
+          "command": "claude",
+          "command_at_logon": "deferred",
+          "cwd": "{workspace}",
+          "shell": "pwsh",
+          "delay_ms": "1200",
+          "placement": {
+            "screen": 2,
+            "layout": {"mode": "columns", "slot": 2, "orientation": "vertical", "min_width": 800, "count": 3},
+            "subdivide": {"mode": "rows", "slot": "1"}
+          },
+          "window_title": "Claude",
+          "window_process_name": "WindowsTerminal",
+          "window_wait_timeout_ms": 5000,
+          "window_pid_file": "pid.txt",
+          "single_instance": "yes",
+          "summary": "The agent",
+          "notes": "Opens first",
+          "disabled": 0,
+          "feature": "warp"
+        },
+        {"name": "Fork"}
+      ],
+      "captured_windows": [
+        {
+          "title": "Fork",
+          "pid": "42",
+          "process_name": "Fork",
+          "exe_path": "C:/Fork/Fork.exe",
+          "class_name": "Chrome_WidgetWin_1",
+          "screen_number": 1,
+          "inferred_placement": {"screen": 1, "layout": {"mode": "full"}},
+          "bounds": [0, 0, 1920, 1080]
+        },
+        {"title": "Bare"}
+      ]
+    },
+    {"name": "Off", "disabled": true}
+  ]
+}

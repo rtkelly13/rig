@@ -1,0 +1,57 @@
+{
+  "name": "Lab",
+  "launch": [
+    {
+      "name": "Lab T3 Code",
+      "type": "app",
+      "delay_ms": 1600,
+      "path": "{t3code-path}",
+      "summary": "T3 Code under evaluation, full screen 1. Orca moved to the Work desktop, which owns both Orca profiles; a Lab entry would grab one of their windows. Install or upgrade it with `devenv tools` (winget `T3Tools.T3Code`).",
+      "placement": {
+        "screen": 1,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_process_name": "T3 Code (Alpha).exe",
+      "window_wait_timeout_ms": 20000
+    },
+    {
+      "name": "Lab Fork",
+      "type": "app",
+      "delay_ms": 1200,
+      "path": "{fork-path}",
+      "args": [
+        "{workspace-root}"
+      ],
+      "summary": "Fork on the workspace repo for inspecting the branches and diffs T3 Code produces.",
+      "placement": {
+        "screen": 2,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_process_name": "Fork.exe"
+    },
+    {
+      "name": "Lab Terminal",
+      "type": "terminal",
+      "delay_ms": 1200,
+      "shell": "wt-pwsh",
+      "command": "claude",
+      "cwd": "{workspace-root}",
+      "summary": "A plain Claude Code session beside T3 Code, for running the same task each way.",
+      "placement": {
+        "screen": 3,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_title": "Lab Terminal",
+      "window_process_name": "WindowsTerminal.exe"
+    }
+  ]
+}

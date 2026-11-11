@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "switch_delay_ms": 650,
+  "desktops": [
+    {
+      "name": "Work",
+      "launch": [
+        {
+          "name": "Terminal A",
+          "type": "terminal",
+          "delay_ms": 900,
+          "shell": "wt-pwsh",
+          "command": "opencode --auto",
+          "cwd": "{workspace}",
+          "placement": {
+            "screen": 1,
+            "layout": {
+              "mode": "halves",
+              "slot": 1,
+              "orientation": "vertical"
+            }
+          },
+          "window_title": "Terminal A",
+          "window_process_name": "WindowsTerminal.exe"
+        },
+        {
+          "name": "Browser",
+          "type": "app",
+          "delay_ms": 900,
+          "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+          "args": [
+            "--profile-directory=Default"
+          ],
+          "placement": {
+            "screen": 1,
+            "layout": {
+              "mode": "halves",
+              "slot": 2,
+              "orientation": "vertical"
+            }
+          },
+          "window_process_name": "chrome.exe"
+        },
+        {
+          "name": "Editor",
+          "type": "app",
+          "delay_ms": 900,
+          "path": "C:\\Editor.exe",
+          "placement": {
+            "screen": 2,
+            "layout": {
+              "mode": "full",
+              "slot": 1
+            }
+          },
+          "window_process_name": "Editor.exe"
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "launch": [
+        {
+          "name": "Mail",
+          "type": "app",
+          "delay_ms": 900,
+          "path": "C:\\Mail.exe",
+          "placement": {
+            "screen": 1,
+            "layout": {
+              "mode": "full",
+              "slot": 1
+            }
+          },
+          "window_process_name": "Mail.exe"
+        },
+        {
+          "name": "Chat",
+          "type": "app",
+          "delay_ms": 900,
+          "path": "C:\\Chat.exe",
+          "placement": {
+            "screen": 2,
+            "layout": {
+              "mode": "full",
+              "slot": 1
+            }
+          },
+          "window_process_name": "Chat.exe"
+        }
+      ]
+    }
+  ],
+  "workspace": "{workspace}",
+  "notes": [
+    "Sample desktop manager plan used for typed JSON verification.",
+    "This file is intentionally generic and not tied to one workstation."
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "switch_delay_ms": 700,
+  "desktops": [
+    {
+      "name": "Work",
+      "launch": [
+        {
+          "name": "Terminal",
+          "type": "terminal",
+          "delay_ms": 1200,
+          "feature": "warp",
+          "shell": "pwsh",
+          "path": "wt.exe",
+          "args": [
+            "-w",
+            "0"
+          ],
+          "command": "claude",
+          "command_at_logon": "deferred",
+          "cwd": "{workspace}",
+          "summary": "The agent",
+          "notes": "Opens first",
+          "placement": {
+            "screen": 2,
+            "layout": {
+              "mode": "columns",
+              "slot": 2,
+              "orientation": "vertical",
+              "min_width": 800
+            },
+            "subdivide": {
+              "mode": "rows",
+              "slot": 1
+            }
+          },
+          "window_title": "Claude",
+          "window_process_name": "WindowsTerminal",
+          "window_wait_timeout_ms": 5000,
+          "window_pid_file": "pid.txt",
+          "single_instance": true
+        },
+        {
+          "name": "Fork",
+          "type": "app",
+          "delay_ms": 900
+        }
+      ],
+      "feature": "lab",
+      "captured_windows": [
+        {
+          "title": "Fork",
+          "pid": 42,
+          "process_name": "Fork",
+          "exe_path": "C:/Fork/Fork.exe",
+          "class_name": "Chrome_WidgetWin_1",
+          "screen_number": 1,
+          "inferred_placement": {
+            "screen": 1,
+            "layout": {
+              "mode": "full",
+              "slot": 1
+            }
+          },
+          "bounds": {
+            "left": 0,
+            "top": 0,
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        {
+          "title": "Bare"
+        }
+      ]
+    },
+    {
+      "name": "Off",
+      "launch": [],
+      "disabled": true
+    }
+  ],
+  "features": {
+    "lab": true,
+    "warp": false
+  },
+  "workspace": "C:/code",
+  "personal-workspace": "C:/personal",
+  "notes": [
+    "one",
+    "2"
+  ],
+  "aliases": {
+    "tools": "{workspace}/tools",
+    "n": "3"
+  }
+}
