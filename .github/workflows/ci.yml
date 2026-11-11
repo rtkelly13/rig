@@ -409,7 +409,8 @@ jobs:
     steps:
       - name: Open, update or close the tracking issue
         run: |
-          open="$(gh issue list --state open --limit 100 --json number,title \
+          # Search by title server-side before the limit applies; the exact match drops near-misses.
+          open="$(gh issue list --state open --search "\"$TITLE\" in:title" --limit 20 --json number,title \
             --jq '.[] | select(.title == env.TITLE) | .number' | head -n 1)"
           summary="test-windows: \`$TEST_RESULT\`, dotnet-windows: \`$DOTNET_RESULT\` at $SHA — $RUN_URL"
           case "$TEST_RESULT $DOTNET_RESULT" in
