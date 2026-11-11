@@ -11,6 +11,7 @@ using Rig.Cli.Otel;
 using Rig.Cli.Policy;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
+using Rig.Cli.Tests.Estate;
 using Rig.Cli.Vault;
 using Rig.Cli.Workspace;
 using Rig.Core.Browser;
@@ -21,7 +22,6 @@ using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;
 using Rig.Core.Tests.Skills;
-using Rig.Cli.Tests.Estate;
 
 namespace Rig.Cli.Tests.Forwarding;
 

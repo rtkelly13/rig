@@ -130,48 +130,48 @@ public sealed class FakeOrca : IOrcaExchange
             case "worktree.ps":
                 return new() { ["worktrees"] = Array(Activity), ["truncated"] = false };
             case "worktree.rm":
-            {
-                var id = Selector(parameters, "worktree");
-                Removed.Add(id);
-                var done = !Stuck.Contains(id);
-                if (done)
                 {
-                    _ = Worktrees.RemoveAll(w => (string?)w["id"] == id);
+                    var id = Selector(parameters, "worktree");
+                    Removed.Add(id);
+                    var done = !Stuck.Contains(id);
+                    if (done)
+                    {
+                        _ = Worktrees.RemoveAll(w => (string?)w["id"] == id);
+                    }
+
+                    return new() { ["removed"] = done };
                 }
 
-                return new() { ["removed"] = done };
-            }
-
             case "repo.add":
-            {
-                var path = (string)parameters["path"]!;
-                var name = Path.GetFileName(path.TrimEnd('/', '\\'));
-                var repo = Project($"r-{name}", path, name, owner: "rtkelly-labs");
-                Repos.Add(repo);
-                return new() { ["repo"] = repo.DeepClone() };
-            }
+                {
+                    var path = (string)parameters["path"]!;
+                    var name = Path.GetFileName(path.TrimEnd('/', '\\'));
+                    var repo = Project($"r-{name}", path, name, owner: "rtkelly-labs");
+                    Repos.Add(repo);
+                    return new() { ["repo"] = repo.DeepClone() };
+                }
 
             case "projectGroup.create":
-            {
-                var group = Group($"g-{(string)parameters["name"]!}", (string)parameters["name"]!, (string?)parameters["parentGroupId"]);
-                Groups.Add(group);
-                return new() { ["group"] = group.DeepClone() };
-            }
+                {
+                    var group = Group($"g-{(string)parameters["name"]!}", (string)parameters["name"]!, (string?)parameters["parentGroupId"]);
+                    Groups.Add(group);
+                    return new() { ["group"] = group.DeepClone() };
+                }
 
             case "repo.rm":
-            {
-                var id = Selector(parameters, "repo");
-                _ = Repos.RemoveAll(r => (string?)r["id"] == id);
-                return new() { ["removed"] = true };
-            }
+                {
+                    var id = Selector(parameters, "repo");
+                    _ = Repos.RemoveAll(r => (string?)r["id"] == id);
+                    return new() { ["removed"] = true };
+                }
 
             case "projectGroup.moveProject":
-            {
-                var id = Selector(parameters, "repo");
-                var moved = Repos.Single(r => (string?)r["id"] == id);
-                moved["projectGroupId"] = (string?)parameters["groupId"];
-                return new() { ["repo"] = moved.DeepClone() };
-            }
+                {
+                    var id = Selector(parameters, "repo");
+                    var moved = Repos.Single(r => (string?)r["id"] == id);
+                    moved["projectGroupId"] = (string?)parameters["groupId"];
+                    return new() { ["repo"] = moved.DeepClone() };
+                }
 
             case "projectGroup.delete":
                 return new() { ["deleted"] = DeleteGroup((string)parameters["groupId"]!) };
