@@ -733,6 +733,14 @@ internal sealed class PyJsonWriter
         return this;
     }
 
+    /// <summary>Writes an unsigned integer (an inode can exceed <see cref="long.MaxValue"/>).</summary>
+    public PyJsonWriter Number(ulong value)
+    {
+        Separate();
+        text.Append(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        return this;
+    }
+
     /// <inheritdoc/>
     public override string ToString() => text.ToString();
 
