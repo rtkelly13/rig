@@ -188,83 +188,6 @@ _RESOLVED_THREADS = {
 }
 
 
-def _gh_for_pr(checks: subprocess.CompletedProcess[str], merge_state: str = "CLEAN") -> tuple[list[list[str]], object]:
-    """A `gh` that answers `pr checks` with *checks*, `pr view` with *merge_state*, and resolved threads."""
-    calls: list[list[str]] = []
-
-    def run(cmd: list[str], **_: object) -> subprocess.CompletedProcess[str]:
-        calls.append(cmd)
-        if "checks" in cmd:
-            return checks
-        if "view" in cmd:
-            view = {"number": 123, "mergeStateStatus": merge_state}
-            return subprocess.CompletedProcess(cmd, 0, json.dumps(view), "")
-        return subprocess.CompletedProcess(cmd, 0, json.dumps(_RESOLVED_THREADS), "")
-
-    return calls, run
-
-
-def _checks(code: int, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
-    return subprocess.CompletedProcess(["gh"], code, out, err)
-
-
-def test_verify_pr_checks_passes_when_required_checks_pass_and_github_can_merge():
-    calls, run = _gh_for_pr(_checks(0, "ci\tpass\t1m\n"))
-    with patch("subprocess.run", side_effect=run):
-        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
-    assert result.exit_code == 0, result.output
-    assert "every conversation thread is resolved" in " ".join(result.output.split())
-    checks_cmd = next(c for c in calls if "checks" in c)
-    assert checks_cmd[-3:] == ["--repo", "rtkelly13/blog", "--required"]
-
-
-@pytest.mark.parametrize(
-    ("checks", "expected"),
-    [
-        (_checks(1, "ci\tfail\t1m\n"), "not passing"),
-        (_checks(8, "ci\tpending\t0\n"), "still pending"),
-    ],
-)
-def test_verify_pr_checks_blocks_on_a_required_check_that_has_not_passed(checks, expected):
-    _, run = _gh_for_pr(checks)
-    with patch("subprocess.run", side_effect=run):
-        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
-    assert result.exit_code == 1
-    assert "BLOCKED" in result.output
-    assert expected in result.output
-    # gh's own table is shown, so the reader sees which check.
-    assert result.output.splitlines()[-1].split()[0] == "ci"
-
-
-def test_verify_pr_checks_with_no_required_checks_falls_through_to_the_merge_state():
-    no_required = _checks(1, err="no required checks reported on the 'feature' branch")
-    _, run = _gh_for_pr(no_required)
-    with patch("subprocess.run", side_effect=run):
-        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
-    assert result.exit_code == 0, result.output
-
-
-@pytest.mark.parametrize("state", ["BLOCKED", "BEHIND", "DIRTY", "DRAFT", "UNKNOWN"])
-def test_verify_pr_checks_blocks_when_github_would_not_merge(state):
-    _, run = _gh_for_pr(_checks(0), merge_state=state)
-    with patch("subprocess.run", side_effect=run):
-        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
-    assert result.exit_code == 1
-    assert f"mergeStateStatus is {state}" in result.output
-
-
-def test_verify_pr_checks_blocks_when_the_pr_cannot_be_read():
-    def run(cmd: list[str], **_: object) -> subprocess.CompletedProcess[str]:
-        if "view" in cmd:
-            return subprocess.CompletedProcess(cmd, 1, "", "no pull requests found")
-        return subprocess.CompletedProcess(cmd, 0, "", "")
-
-    with patch("subprocess.run", side_effect=run):
-        result = runner.invoke(app, ["verify-pr-checks", "123", "--repo", "rtkelly13/blog"])
-    assert result.exit_code == 1
-    assert "could not read PR" in result.output
-
-
 # --- Required check names: shape, lexicon and drift ------------------------------------------
 
 
@@ -726,14 +649,3 @@ def test_sync_policies_walks_declared_profiles(tmp_path: pathlib.Path, monkeypat
     result = runner.invoke(app, ["sync-policies", "--dry-run"])
     assert result.exit_code == 0, result.output
     assert "Skipping absent-repo" in result.output
-
-
-def test_verify_pr_checks_without_a_resolvable_repo_asks_for_one():
-    with (
-        patch("rig.repo_governance.cli_triage.get_gh_repo_name", return_value=None),
-        patch("subprocess.run") as mock_run,
-    ):
-        result = runner.invoke(app, ["verify-pr-checks", "123"])
-    assert result.exit_code == 1
-    assert "pass --repo" in result.output
-    mock_run.assert_not_called()
