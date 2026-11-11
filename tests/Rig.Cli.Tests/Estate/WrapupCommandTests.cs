@@ -251,6 +251,18 @@ public sealed class WrapupCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Ctrl_c_during_follow_still_prints_the_summary()
+    {
+        await TwoSessionsAsync();
+        using var interrupt = CancellationTokenSource.CreateLinkedTokenSource(Token);
+
+        var (code, output, _) = await RunAsync(["estate", "wrapup", "--personal", "--all", "--apply", "--follow", "--wait", "30s", "--json"], clock: new CancellingClock(interrupt), token: interrupt.Token);
+
+        Assert.Equal(0, code);
+        Assert.Equal(["deferred", "sent"], JsonNode.Parse(output)!.AsArray().Select(r => (string)r!["status"]!));
+    }
+
+    [Fact]
     public async Task Follow_stops_when_another_follower_holds_the_lock()
     {
         await TwoSessionsAsync();
@@ -370,7 +382,7 @@ public sealed class WrapupCommandTests : IDisposable
     private void Terminals(params JsonObject[] terminals) =>
         _orca.Answer(new Ran(0, new JsonObject { ["ok"] = true, ["result"] = new JsonObject { ["terminals"] = new JsonArray(terminals) } }.ToJsonString(), ""), "orca", "terminal", "list");
 
-    private async Task<(int Code, string Out, string Err)> RunAsync(string[] args, string? workingDirectory = null)
+    private async Task<(int Code, string Out, string Err)> RunAsync(string[] args, string? workingDirectory = null, IWrapupClock? clock = null, CancellationToken? token = null)
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
@@ -384,8 +396,8 @@ public sealed class WrapupCommandTests : IDisposable
             _ => null,
             output,
             error,
-            new WrapupHost("rig", _follower, _clock, () => $"ask{++ids}"));
-        var code = await new RootCommand { command.Build() }.Parse(args).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, Token);
+            new WrapupHost("rig", _follower, clock ?? _clock, () => $"ask{++ids}"));
+        var code = await new RootCommand { command.Build() }.Parse(args).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, token ?? Token);
         return (code, output.ToString().ReplaceLineEndings("\n"), error.ToString().ReplaceLineEndings("\n"));
     }
 
@@ -394,6 +406,20 @@ public sealed class WrapupCommandTests : IDisposable
     {
         public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) =>
             request.Argv[0] == "orca" ? orca.RunAsync(request, cancellationToken) : Repos.Proc.RunAsync(request, cancellationToken);
+    }
+
+    // Ctrl-C on the first wait: the invocation token is cancelled, as the console's handler would.
+    private sealed class CancellingClock(CancellationTokenSource interrupt) : IWrapupClock
+    {
+        public DateTimeOffset Now => WrapupFixtures.Now;
+
+        public double Monotonic => 0;
+
+        public async Task SleepAsync(TimeSpan delay, CancellationToken cancellationToken)
+        {
+            await interrupt.CancelAsync();
+            cancellationToken.ThrowIfCancellationRequested();
+        }
     }
 
     private sealed class Follower : IWrapupFollower

@@ -201,7 +201,7 @@ public sealed class WrapupStateTests
     }
 
     [Fact]
-    public async Task The_follower_lock_lets_one_follower_ask_at_a_time()
+    public void The_follower_lock_lets_one_follower_ask_at_a_time()
     {
         using var root = new TempDir();
         var follower = new WrapupFollower(root.Path, new RecordingDetached(new FakeSignals()), ["rig"]);

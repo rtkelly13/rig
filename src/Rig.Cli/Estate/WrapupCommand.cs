@@ -366,15 +366,15 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
 
         if (args.Json)
         {
-            await output.WriteLineAsync(Dump(rows).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(Dump(rows).AsMemory(), CancellationToken.None).ConfigureAwait(false);
         }
         else
         {
-            await PrintAsync(rows, args.Apply, snapshot.Truncated, false, cancellationToken).ConfigureAwait(false);
+            await PrintAsync(rows, args.Apply, snapshot.Truncated, false, CancellationToken.None).ConfigureAwait(false);
             var asks = rows.Count(r => r.Status == WrapupStatus.Ask);
             if (rolling && !args.Apply && asks > 0)
             {
-                await output.WriteLineAsync($"--apply asks these {asks}, {Math.Max(args.Max, 1)} at a time, waiting up to {args.Wait} each".AsMemory(), cancellationToken).ConfigureAwait(false);
+                await output.WriteLineAsync($"--apply asks these {asks}, {Math.Max(args.Max, 1)} at a time, waiting up to {args.Wait} each".AsMemory(), CancellationToken.None).ConfigureAwait(false);
             }
         }
 
