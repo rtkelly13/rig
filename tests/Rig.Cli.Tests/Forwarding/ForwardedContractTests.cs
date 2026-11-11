@@ -3,9 +3,11 @@ using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
 using Rig.Cli.Otel;
+using Rig.Cli.Status;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
+using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;
 
@@ -38,6 +40,7 @@ public sealed partial class ForwardedContractTests
         var block = PortedBlock().Match(File.ReadAllText(Bridge)).Groups["body"].Value;
         var ported = Name().Matches(block).Select(m => m.Groups["name"].Value)
             .Concat(HandedOverScript().Matches(File.ReadAllText(Project)).Select(m => m.Groups["name"].Value))
+            .Distinct(StringComparer.Ordinal) // status is both a rig subcommand and an entry point
             .ToList();
         var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
         var app = new RigApp(
@@ -57,6 +60,7 @@ public sealed partial class ForwardedContractTests
                     TextWriter.Null).Build,
                 new MailCommand(new MailHost(_ => null, "/", "/", TimeProvider.System), TextWriter.Null, TextWriter.Null).Build,
                 InertOtelStack().Build,
+                new StatusCommand(new FakeProc(), new Git(new FakeProc(), "/"), "/", TextWriter.Null).Build,
             ]);
         var owned = app
             .BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));

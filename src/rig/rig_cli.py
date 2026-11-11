@@ -58,14 +58,6 @@ def agent_cmd(ctx: typer.Context) -> None:
     raise typer.Exit(code=exit_code)
 
 
-@app.command("status", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
-def status_cmd(ctx: typer.Context) -> None:
-    """Report repository health, git status, and estate verification."""
-    from repo_health.cli import app as status_app
-
-    status_app(args=ctx.args, prog_name="rig status")
-
-
 @app.command("sync")
 def sync_cmd(
     root: str | None = typer.Option(None, "--root", "-r", help="Path to personal estate root directory"),

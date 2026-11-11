@@ -10,7 +10,6 @@ internal static class Forwarded
     public static readonly IReadOnlyList<(string Name, string Description)> Commands =
     [
         ("agent", "Launch preferred AI coding agent or selected flag (-agy, -ccc, -oc, -codex, -dng)."),
-        ("status", "Report repository health, git status, and estate verification."),
         ("sync", "Synchronize estate index (AGENTS.md) and personal.code-workspace."),
         ("doctor", "Validate environment health across tools, runtimes, git, and AI assistants."),
         ("align", "Reconcile desktop window layout and virtual desktop state."),

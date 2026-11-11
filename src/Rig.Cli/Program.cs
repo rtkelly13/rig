@@ -3,6 +3,7 @@ using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
 using Rig.Cli.Otel;
+using Rig.Cli.Status;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
@@ -102,6 +103,7 @@ internal static class Program
                         Task.Delay),
                     Console.Out,
                     Console.Error).Build,
+                new StatusCommand(proc, git, Environment.CurrentDirectory, Console.Out).Build,
             ]);
         return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
     }
