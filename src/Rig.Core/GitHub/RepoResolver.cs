@@ -22,8 +22,8 @@ public sealed record CanonicalRepo(string Owner, string CanonicalName, string Na
 /// <summary>
 /// Resolves repositories to their current GitHub names in one GraphQL call, through a disk cache. GraphQL has no
 /// <c>previousNames</c>, so a rename shows as <c>repository(owner, name)</c> answering with a different name.
-/// The cache file is shared with the Python resolver while the workspace commands are still Python, so it keeps
-/// that format: <c>{"repos": {"owner/name": {owner, canonical_name, …, fetched_at}}}</c> with an ISO timestamp.
+/// The cache keeps the format the Python resolver wrote, so caches already on disk stay valid:
+/// <c>{"repos": {"owner/name": {owner, canonical_name, …, fetched_at}}}</c> with an ISO timestamp.
 /// </summary>
 /// <param name="github">The GitHub API.</param>
 /// <param name="cacheFile">Where resolved names are cached.</param>

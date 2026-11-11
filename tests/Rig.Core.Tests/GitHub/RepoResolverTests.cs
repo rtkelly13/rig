@@ -8,7 +8,7 @@ namespace Rig.Core.Tests.GitHub;
 
 /// <summary>
 /// <see cref="RepoResolver"/> and <see cref="RepoFolderCheck"/> over a scripted GitHub and a temp cache file.
-/// Ported from <c>tests/test_workspace_repo_resolver.py</c>'s resolver and classification cases.
+/// Ported from the deleted Python resolver's tests, <c>tests/test_workspace_repo_resolver.py</c>.
 /// </summary>
 public sealed class RepoResolverTests : IDisposable
 {
@@ -199,6 +199,63 @@ public sealed class RepoResolverTests : IDisposable
 
         Assert.Equal(RepoFolderStatus.LocalOnly, check.Status);
         Assert.Single(proc.Requests);
+    }
+
+    [Fact]
+    public async Task The_estate_scan_checks_each_github_clone_in_one_query_ordered_by_folder()
+    {
+        var proc = new FakeProc();
+        string Clone(string parent, string name, string? origin)
+        {
+            var folder = Path.Join(_home.Path, parent, name);
+            _ = Directory.CreateDirectory(Path.Join(folder, ".git"));
+            _ = proc
+                .AnswerIn(folder, new(0, ".git\n", string.Empty), "git", "rev-parse")
+                .AnswerIn(folder, new(origin is null ? 1 : 0, origin ?? string.Empty, string.Empty), "git", "config");
+            return folder;
+        }
+
+        _ = Clone("personal", "shared-utilities", "git@github.com:rtkelly13/shared-utilities.git");
+        _ = Clone("personal", "rig", "https://github.com/rtkelly13/rig");
+        _ = Clone("personal", "alpha", "git@gitlab.com:o/alpha.git");
+        _ = Clone("personal", "local", null);
+        _ = Directory.CreateDirectory(Path.Join(_home.Path, "personal", "notes"));
+        await File.WriteAllTextAsync(Path.Join(_home.Path, "personal", "README.md"), string.Empty, Token);
+        _ = Clone("labs", "Beta", "git@github.com:rtkelly-labs/Beta.git");
+        _answer = new(0, Answer((0, "Beta"), (1, "rig"), (2, "rig")), string.Empty);
+        string[] parents = [Path.Join(_home.Path, "personal"), Path.Join(_home.Path, "labs"), Path.Join(_home.Path, "missing")];
+
+        var checks = await RepoFolderCheck.EstateAsync(new Git(proc, "/nowhere"), Resolver(), parents, cancellationToken: Token);
+
+        Assert.Equal(["Beta", "rig", "shared-utilities"], checks.Select(c => c.FolderName));
+        Assert.Equal([RepoFolderStatus.Ok, RepoFolderStatus.Ok, RepoFolderStatus.FolderRenamed], checks.Select(c => c.Status));
+        Assert.Single(_calls);
+        Assert.True(checks[2].IsIssue);
+        Assert.False(checks[2].IsMatch);
+        Assert.False(checks[2].RemoteMatchesCanonical);
+    }
+
+    [Theory]
+    [InlineData("rig", "rig", true, true)]
+    [InlineData("tripletail", "rig", false, true)]
+    [InlineData("rig", "shared-utilities", true, false)]
+    public void Folder_and_remote_matches_are_reported_separately(string folder, string remote, bool isMatch, bool remoteMatches)
+    {
+        var check = RepoFolderCheck.Classify($"/code/{folder}", new RepoSlug("rtkelly13", remote), new CanonicalRepo("rtkelly13", "rig", "rtkelly13/rig", remote));
+
+        Assert.Equal(isMatch, check.IsMatch);
+        Assert.Equal(remoteMatches, check.RemoteMatchesCanonical);
+    }
+
+    [Fact]
+    public void Local_only_matches_and_unresolved_does_not()
+    {
+        var local = new RepoFolderCheck("/code/x", null, null, RepoFolderStatus.LocalOnly, "local");
+        var gone = RepoFolderCheck.Classify("/code/gone", Gone, null);
+
+        Assert.True(local.IsMatch && local.RemoteMatchesCanonical && !local.IsIssue);
+        Assert.False(gone.IsMatch || gone.RemoteMatchesCanonical);
+        Assert.True(gone.IsIssue);
     }
 
     private sealed class Scripted(RepoResolverTests test) : IGitHubApi

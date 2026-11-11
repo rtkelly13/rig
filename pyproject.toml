@@ -281,7 +281,6 @@ ignore = [
 "tests/test_estate_connectivity.py" = ["TID251"]
 "tests/test_repo_hygiene_git_hooks.py" = ["TID251"]
 "tests/test_estate_trim.py" = ["TID251"]
-"tests/test_workspace_repo_resolver.py" = ["TID251"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "_winapi".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
@@ -540,7 +539,6 @@ patching-allow = [
     "tests/test_vercel_cli_auth.py",
     "tests/test_vercel_gating.py",
     "tests/test_web_spa.py",
-    "tests/test_workspace_doctor_cli.py",
     "tests/test_workspace_nuget_governance.py",
     "tests/test_workspace_orca.py",
     "tests/test_workspace_orca_rpc.py",

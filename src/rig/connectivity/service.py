@@ -13,12 +13,12 @@ import duckdb
 from rig.connectivity.dag import condense
 from rig.connectivity.manifests import canonical, read_inventory
 from rig.connectivity.models import Consumption, Dependency, Graph, Project, Publication
+from rig.gh_origin import get_repo_root_and_origin
 from rig.repo_slug import RepoSlug
 from rig.typed_json import decode, decode_json
 from rig.workspace.engine import config_file_path, estate_root_path, load_managed_specs
 from rig.workspace.layout import project_dir
 from rig.workspace.packages import load_package_bindings
-from rig.workspace.repo_resolver import get_repo_root_and_origin
 
 _LOCK = threading.RLock()
 
