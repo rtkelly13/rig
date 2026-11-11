@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+    # labeled: adding `ci:windows` to an open PR starts its Windows jobs without a new push.
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
   # Windows tests run nightly on main rather than on every merge; see test-windows.
   schedule:
