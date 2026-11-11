@@ -203,6 +203,10 @@ public sealed class BrowserSetupTests : IDisposable
         Setup().ProvisionProfiles(dryRun: false, _said.Add);
 
         Assert.StartsWith("Could not update shell profile for agent browser: ", _said[^1], StringComparison.Ordinal);
+        if (OperatingSystem.IsWindows())
+        {
+            File.SetAttributes(Zshrc, FileAttributes.Normal);
+        }
     }
 
     [Fact]
