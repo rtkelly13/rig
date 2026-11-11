@@ -62,7 +62,7 @@ Mark tests so the CI-safe subset can be run without external dependencies:
 
 CI runs the suite on Ubuntu (`test`, with coverage and Windows portability lint gates). To conserve runner minutes on private repos, `test-windows` on `windows-latest` runs conditionally:
 - Nightly on `main` (03:43 UTC), not on every merge — a break that lands on `main` surfaces the next morning. Linux jobs skip the nightly run.
-- On pull requests whose branch or title contains `windows` or `win32` (or with label `ci:windows`)
+- On pull requests whose branch or title contains `windows` or `win32` (or with label `ci:windows`; adding the label to an open PR starts a run)
 - On manual `workflow_dispatch`
 
 Pure Windows unit tests, path semantics, and mock wrappers execute on Linux CI via `as_windows` test doubles; only tests actually requiring live win32 APIs or native Windows subsystem behavior are deferred to `test-windows`. Anything that drives a real desktop, window or UI Automation tree must carry `integration`, or it will run on the Windows runner.
