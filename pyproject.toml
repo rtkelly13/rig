@@ -505,7 +505,6 @@ patching-allow = [
     "tests/desktop_manager/test_workspace_wait_scope.py",
     "tests/desktop_manager/test_workspace_win32_behavior.py",
     "tests/devenv/test_doctor.py",
-    "tests/devenv/test_runner.py",
     "tests/devenv/test_terminal_compat.py",
     "tests/test_align_repo_conventions.py",
     "tests/test_branch_cleanup.py",

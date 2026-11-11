@@ -52,11 +52,8 @@ All packages in `shared-utilities` adhere strictly to our foundational standards
 ```
 src/shared_utilities/
 ├── devenv/             # Development environment setup engine
-│   ├── engine/         # StepContext, StepRegistry, Runner
-│   ├── steps/          # System setup steps & AI tools
-│   │   └── ai_tools/   # Claude Code, OpenCode; browser profiles and skills hand off to rig
 │   ├── doctor/         # Diagnostic health checks and status reporting
-│   └── cli.py          # Unified Typer CLI entrypoint; tools, runtimes, update, git and terminal hand off to rig devenv
+│   └── cli.py          # Typer CLI: doctor; every other subcommand, setup included, hands off to rig devenv
 ├── repo_governance/    # Organization-wide GitHub policy engine
 ├── image_drift/        # Deterministic SVG renderer and drift detection
 └── obsidian/           # Vault note processing and Google Keep staging

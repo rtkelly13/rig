@@ -8,13 +8,13 @@ Onboarding developers or configuring new machines requires installing tools, run
 
 ## Decision
 Implement a unified, cross-platform onboarding engine (`devenv`):
-- An ordered list of setup steps (`SETUP_STEPS` in `devenv/cli.py`); each `Step` is a name, a function and its confirm defaults. (The original `StepRegistry` and `@step` decorator were removed in rig #30, plan item C11.)
-- Cross-platform context (`StepContext`) supporting `full`, `express`, and `agent` execution modes.
-- Modular Rich UI runner with step skipping, error recovery, and dry-run inspection.
+- An ordered list of setup steps (`SetupCommand.Steps`); each step is a name, its confirm default and the rig command lines it runs. (The original `StepRegistry` and `@step` decorator were removed in rig #30, plan item C11; the Python engine was ported to C# in #85.)
+- `full`, `express`, and `agent` execution modes.
+- A runner with step skipping, error recovery, and dry-run inspection.
 
 ## Consequences
 - Fully automated, reproducible developer environment onboarding on Mac and Windows.
 - Exposes `uv run devenv setup`, `tools`, `runtimes`, `fonts`, `git`, `ai`, and `doctor`.
 
 ## References
-- [`src/shared_utilities/devenv`](../../src/rig/devenv)
+- [`src/Rig.Cli/Devenv/SetupCommand.cs`](../../src/Rig.Cli/Devenv/SetupCommand.cs)

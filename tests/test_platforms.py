@@ -21,13 +21,6 @@ def test_detection_reads_sys_platform(monkeypatch, value, expected):
     assert platforms.get_current_platform() is expected
 
 
-def test_devenv_reuses_the_shared_detection():
-    from rig.devenv.engine import context
-
-    assert context.Platform is Platform
-    assert context.get_current_platform is platforms.get_current_platform
-
-
 def test_platform_label_joins_values():
     assert platform_label((Platform.WINDOWS,)) == "Windows"
     assert platform_label((Platform.WINDOWS, Platform.MACOS)) == "Windows/macOS"

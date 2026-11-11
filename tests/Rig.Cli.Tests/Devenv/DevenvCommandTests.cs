@@ -56,7 +56,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "tools", "runtimes", "update", "git", "terminal"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "setup", "ai", "tools", "runtimes", "update", "git", "terminal"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -539,7 +539,7 @@ public sealed class DevenvCommandTests : IDisposable
     [InlineData(new[] { "devenv", "claude", "--check" }, false)]
     [InlineData(new[] { "devenv" }, true)]
     [InlineData(new[] { "devenv", "--help" }, true)]
-    [InlineData(new[] { "devenv", "setup" }, true)]
+    [InlineData(new[] { "devenv", "setup" }, false)]
     [InlineData(new[] { "devenv", "opencode" }, false)]
     [InlineData(new[] { "devenv", "estate-rules", "--dry-run" }, false)]
     [InlineData(new[] { "devenv", "obsidian-plugins" }, false)]
