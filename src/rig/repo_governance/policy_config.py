@@ -384,6 +384,8 @@ class PolicyLayer:
     pages: PagesPolicy | None = None
     script_ban: ScriptBanRules | None = None
     fork: ForkSpec | None = None
+    merge_queue: bool | None = None
+    require_extra_approval_for_unattributed_changes: bool | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -523,6 +525,15 @@ class PolicyConfig:
         if isinstance(lic, LicenseSpec):
             return lic.type or "MIT"
         return lic or "MIT"
+
+    def merge_queue(self, repo: str) -> bool:
+        """Return True if merge queue should be configured in the ruleset for *repo*."""
+        return bool(self._resolve(repo, lambda layer: layer.merge_queue))
+
+    def require_extra_approval_for_unattributed_changes(self, repo: str) -> bool:
+        """Return True if extra approval for unattributed changes is required for *repo*."""
+        res = self._resolve(repo, lambda layer: layer.require_extra_approval_for_unattributed_changes)
+        return bool(res) if res is not None else False
 
     def repos_for_org(self, org: str) -> tuple[str, ...]:
         """Return repository names explicitly registered under *org*."""

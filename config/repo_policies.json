@@ -275,6 +275,7 @@
           "wait_timer": 0
         }
       },
+      "merge_queue": true,
       "required_checks": [
         "build",
         "pr-title"
@@ -397,7 +398,11 @@
         "build",
         "pr-title",
         "protected-paths"
-      ]
+      ],
+      "require_extra_approval_for_unattributed_changes": true
+    },
+    "oxbow": {
+      "merge_queue": false
     },
     "Lake.NET": {
       "license": {
@@ -427,7 +432,8 @@
     "mermaid-toolkit": {
       "required_checks": [
         "pr-checks"
-      ]
+      ],
+      "require_extra_approval_for_unattributed_changes": true
     },
     "parquet-dotnet": {
       "expected_base_branch": "master",
