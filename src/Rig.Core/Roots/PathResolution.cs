@@ -20,12 +20,26 @@ public static class PathResolution
         return Resolve(absolute, MaxLinkHops);
     }
 
+    /// <summary>
+    /// How two resolved paths compare: exactly on Linux, ignoring case on Windows and macOS, whose default file systems
+    /// do. git can name one folder in a different case (a lower-case drive letter), so equal paths must compare this way.
+    /// </summary>
+    public static StringComparison Comparison => OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+    /// <summary>Whether two resolved paths name the same place, trailing separators aside.</summary>
+    public static bool Same(string path, string other)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(other);
+        return path.TrimEnd(Path.DirectorySeparatorChar).Equals(other.TrimEnd(Path.DirectorySeparatorChar), Comparison);
+    }
+
     /// <summary>Whether <paramref name="path"/> is <paramref name="folder"/> or lies inside it. Both must be resolved.</summary>
     public static bool IsUnder(string path, string folder)
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(folder);
-        var comparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        var comparison = Comparison;
         var trimmed = folder.TrimEnd(Path.DirectorySeparatorChar);
         return path.Equals(trimmed, comparison)
             || path.StartsWith(trimmed + Path.DirectorySeparatorChar, comparison);

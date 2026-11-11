@@ -100,4 +100,13 @@ public sealed class PathResolutionTests
         var sep = Path.DirectorySeparatorChar;
         Assert.Equal(under, PathResolution.IsUnder(path.Replace('/', sep), folder.Replace('/', sep)));
     }
+
+    [Fact]
+    public void Same_ignores_a_trailing_separator_and_case_where_the_file_system_does()
+    {
+        var sep = Path.DirectorySeparatorChar;
+        Assert.True(PathResolution.Same($"{sep}a{sep}wt", $"{sep}a{sep}wt{sep}"));
+        Assert.False(PathResolution.Same($"{sep}a{sep}wt", $"{sep}a{sep}wt2"));
+        Assert.Equal(!OperatingSystem.IsLinux(), PathResolution.Same($"{sep}A{sep}Wt", $"{sep}a{sep}wt"));
+    }
 }
