@@ -2,7 +2,7 @@
 type: Reference
 title: rig CLI
 description: Entry points of the unified rig CLI.
-resource: https://github.com/rtkelly13/rig/blob/main/src/rig/rig_cli.py
+resource: https://github.com/rtkelly13/rig/blob/main/src/rig/csharp_cli.py
 generated: { by: claude-code/opus-5-5, at: 2026-11-04 }
 ---
 

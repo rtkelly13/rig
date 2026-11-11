@@ -46,8 +46,9 @@ Python runs from `RIG_HOME` when it is set, else `<code root>/personal/rig`. Por
 C# and deleting its row from `Forwarded.Commands`. `ForwardedContractTests` checks every script names a command C#
 owns and nothing forwards back to `rig`; `tests/test_csharp_cli.py` checks every row's program answers `--help`.
 
-`rig web mcp` is a stdio MCP server behind that hop. A rebuild by `dotnet run` writes nothing to stdout, so the
-protocol stays clean; a build that fails does not start the server at all. `desktop-manager web mcp` skips the hop.
+`rig web mcp` is a stdio MCP server behind that hop. `dotnet run` restores and builds without writing to stdout, even
+from a clean `src/Rig.Cli` with no `obj` or `bin`, so the protocol stays clean; a failed build never starts the server.
+`desktop-manager web mcp` skips the hop.
 
 ```bash
 dotnet run --project src/Rig.Cli -- --help              # from a checkout
