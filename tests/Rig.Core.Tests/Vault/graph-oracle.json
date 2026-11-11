@@ -1,0 +1,1505 @@
+[
+ {
+  "name": "graph",
+  "posix_only": false,
+  "files": [
+   {
+    "path": "Projects/Build.md",
+    "b64": "IyBCdWlsZAoKLSBbW1Byb2plY3RzL0J1aWxkL1BsYW5dXQo="
+   },
+   {
+    "path": "Projects/Build/Plan.md",
+    "b64": "UGxhbiBsaW5rcyBbW1VuaXF1ZSBUYXJnZXRdXSBhbmQgW1tNaXNzaW5nIE5vdGVdXQo="
+   },
+   {
+    "path": "Projects/Build/Deep/Leaf.md",
+    "b64": "QW4gb3JwaGFuIHR3byBmb2xkZXJzIHVuZGVyIGl0cyBodWIK"
+   },
+   {
+    "path": "Projects/Solo.md",
+    "b64": "QSBmaXJzdC1sZXZlbCBvcnBoYW4K"
+   },
+   {
+    "path": "Areas/Homework.md",
+    "b64": "RXhjbHVkZWQgYnkgdGhlIHN1YnN0cmluZyBIb21lCg=="
+   },
+   {
+    "path": "Areas/Health/Lighthouse.md",
+    "b64": "QSB0aXRsZSBsb25nIGVub3VnaCB0byBiZSBtZW50aW9uZWQK"
+   },
+   {
+    "path": "Areas/Health/Mentioner.md",
+    "b64": "TWVudGlvbnMgTGlnaHRob3VzZSBoZXJlLiBBbmQgTGlnaHRob3VzZS4gQWxzbyBsaWdodGhvdXNlIGxvd2VyLCBMaWdodGhvdXNlLCBhbmQgW1tMaWdodGhvdXNlXV0gbGlua2VkLgo="
+   },
+   {
+    "path": "Archives/Old Thing.md",
+    "b64": "UEFSQSBmb2xkZXIgQXJjaGl2ZXMsIG5vdCBleGNsdWRlZCBsaWtlIEFyY2hpdmUvCg=="
+   },
+   {
+    "path": "Archive/Gone.md",
+    "b64": "RXhjbHVkZWQK"
+   },
+   {
+    "path": "Templates/Tpl.md",
+    "b64": "W1tOb3doZXJlIEZyb20gVGVtcGxhdGVdXQo="
+   },
+   {
+    "path": ".obsidian/Inside.md",
+    "b64": "W1tMaWdodGhvdXNlXV0gW1tOb3doZXJlIEZyb20gRG90IE9ic2lkaWFuXV0K"
+   },
+   {
+    "path": "README.md",
+    "b64": "cmVhZG1lCg=="
+   },
+   {
+    "path": "Resources/Shapes.md",
+    "b64": "W1tVbmlxdWUgVGFyZ2V0fGFsaWFzXV0gW1tVbmlxdWUgVGFyZ2V0I0hlYWRpbmddXSBbWyBVbmlxdWUgVGFyZ2V0IF1dIFtbXV0gW1t8b25seSBhbGlhc11dCiFbW0VtYmVkZGVkXV0gW1tNeSUyMFNwYWNlZF1dIFtbb3V0ZXIgW1tJbm5lcl1dIHRhaWxdXSBbW1VuaXF1ZSBUYXJnZXQjXmJsb2NrXV0gW1sjTG9jYWwgaGVhZGluZ11dCltbUmVzb3VyY2VzL0RlZXBlci9VbmlxdWUgVGFyZ2V0XV0gW1tSZXNvdXJjZXMvRGVlcGVyL1VuaXF1ZSBUYXJnZXQubWRdXSBbW2xvd2VyIGNhc2UgZ29uZV1dIFtbL3Jvb3RlZF1dCg=="
+   },
+   {
+    "path": "Resources/Deeper/Unique Target.md",
+    "b64": "dGFyZ2V0Cg=="
+   },
+   {
+    "path": "Resources/Embedded.md",
+    "b64": "ZW1iZWRkZWQK"
+   },
+   {
+    "path": "Resources/My Spaced.md",
+    "b64": "c3BhY2VkCg=="
+   },
+   {
+    "path": "Resources/Inner.md",
+    "b64": "aW5uZXIK"
+   },
+   {
+    "path": "Resources/Read.md Me/Note.md",
+    "b64": "TGlua3MgW1tSZXNvdXJjZXMvUmVhZCBNZS9Ob3RlXV0gYW5kIFtbUmVzb3VyY2VzL1JlYWQubWQgTWUvTm90ZV1dCg=="
+   },
+   {
+    "path": "Resources/notes.mdfile.md",
+    "b64": "W1tub3Rlcy5tZGZpbGVdXSBbW1Jlc291cmNlcy9ub3Rlc2ZpbGVdXQo="
+   },
+   {
+    "path": "Resources/One/Dup.md",
+    "b64": "b25lCg=="
+   },
+   {
+    "path": "Resources/Two/Dup.md",
+    "b64": "dHdvCg=="
+   },
+   {
+    "path": "Resources/Fixes.md",
+    "b64": "W1tFbHNld2hlcmUvRHVwXV0gW1tFbHNld2hlcmUvSW5uZXJdXSBbW09sZC9FbWJlZGRlZHxrZXB0IGFsaWFzXV0gW1tPbGQvRW1iZWRkZWRdXQo="
+   },
+   {
+    "path": "Resources/Bytes.md",
+    "b64": "77u/Qk9NIGxpbmUK//4gYmFkIGJ5dGVzIFtbQnl0ZSBHb25lXV0KbmV4dCBbW0J5dGUgR29uZSAyXV0K"
+   },
+   {
+    "path": "Resources/Crlf.md",
+    "b64": "b25lDQp0d28gW1tDcmxmIEdvbmVdXQ0KdGhyZWUgW1tPbGQvSW5uZXJdXQ0K"
+   },
+   {
+    "path": "Resources/Splits.md",
+    "b64": "YQtiIFtbVnQgR29uZV1dDGMcZB1lHmbChWcgW1tOZWwgR29uZV1d4oCoaOKAqWkgW1tMcyBHb25lXV0K"
+   },
+   {
+    "path": "Resources/Upper.MD",
+    "b64": "W1tOb3QgU2Nhbm5lZF1dCg=="
+   },
+   {
+    "path": "Resources/Has  Two  Spaces.md",
+    "b64": "c3BhY2VzCg=="
+   }
+  ],
+  "runs": [
+   {
+    "op": "links-list",
+    "passes": [
+     {
+      "log": [
+       "[bold red]Broken Links:[/bold red]",
+       "  .obsidian/Inside.md:1 -> [[Nowhere From Dot Obsidian]]",
+       "  Projects/Build/Plan.md:1 -> [[Missing Note]]",
+       "  Resources/Bytes.md:2 -> [[Byte Gone]]",
+       "  Resources/Bytes.md:3 -> [[Byte Gone 2]]",
+       "  Resources/Crlf.md:2 -> [[Crlf Gone]]",
+       "  Resources/Crlf.md:3 -> [[Old/Inner]]",
+       "  Resources/Fixes.md:1 -> [[Elsewhere/Dup]]",
+       "  Resources/Fixes.md:1 -> [[Elsewhere/Inner]]",
+       "  Resources/Fixes.md:1 -> [[Old/Embedded]]",
+       "  Resources/Fixes.md:1 -> [[Old/Embedded]]",
+       "  Resources/Read.md Me/Note.md:1 -> [[Resources/Read.md Me/Note]]",
+       "  Resources/Shapes.md:2 -> [[My%20Spaced]]",
+       "  Resources/Shapes.md:2 -> [[outer [[Inner]]",
+       "  Resources/Shapes.md:3 -> [[Resources/Deeper/Unique Target.md]]",
+       "  Resources/Shapes.md:3 -> [[lower case gone]]",
+       "  Resources/Shapes.md:3 -> [[/rooted]]",
+       "  Resources/Splits.md:2 -> [[Vt Gone]]",
+       "  Resources/Splits.md:7 -> [[Nel Gone]]",
+       "  Resources/Splits.md:9 -> [[Ls Gone]]",
+       "  Templates/Tpl.md:1 -> [[Nowhere From Template]]",
+       "\n[bold yellow]Unlinked Mentions:[/bold yellow]",
+       "  Areas/Health/Mentioner.md mentions [[Lighthouse]]"
+      ],
+      "result": {
+       "broken": [
+        {
+         "source": ".obsidian/Inside.md",
+         "target": "Nowhere From Dot Obsidian",
+         "line": 1,
+         "context": "[[Lighthouse]] [[Nowhere From Dot Obsidian]]"
+        },
+        {
+         "source": "Projects/Build/Plan.md",
+         "target": "Missing Note",
+         "line": 1,
+         "context": "Plan links [[Unique Target]] and [[Missing Note]]"
+        },
+        {
+         "source": "Resources/Bytes.md",
+         "target": "Byte Gone",
+         "line": 2,
+         "context": "bad bytes [[Byte Gone]]"
+        },
+        {
+         "source": "Resources/Bytes.md",
+         "target": "Byte Gone 2",
+         "line": 3,
+         "context": "next [[Byte Gone 2]]"
+        },
+        {
+         "source": "Resources/Crlf.md",
+         "target": "Crlf Gone",
+         "line": 2,
+         "context": "two [[Crlf Gone]]"
+        },
+        {
+         "source": "Resources/Crlf.md",
+         "target": "Old/Inner",
+         "line": 3,
+         "context": "three [[Old/Inner]]"
+        },
+        {
+         "source": "Resources/Fixes.md",
+         "target": "Elsewhere/Dup",
+         "line": 1,
+         "context": "[[Elsewhere/Dup]] [[Elsewhere/Inner]] [[Old/Embedded|kept alias]] [[Old/Embedded]]"
+        },
+        {
+         "source": "Resources/Fixes.md",
+         "target": "Elsewhere/Inner",
+         "line": 1,
+         "context": "[[Elsewhere/Dup]] [[Elsewhere/Inner]] [[Old/Embedded|kept alias]] [[Old/Embedded]]"
+        },
+        {
+         "source": "Resources/Fixes.md",
+         "target": "Old/Embedded",
+         "line": 1,
+         "context": "[[Elsewhere/Dup]] [[Elsewhere/Inner]] [[Old/Embedded|kept alias]] [[Old/Embedded]]"
+        },
+        {
+         "source": "Resources/Fixes.md",
+         "target": "Old/Embedded",
+         "line": 1,
+         "context": "[[Elsewhere/Dup]] [[Elsewhere/Inner]] [[Old/Embedded|kept alias]] [[Old/Embedded]]"
+        },
+        {
+         "source": "Resources/Read.md Me/Note.md",
+         "target": "Resources/Read.md Me/Note",
+         "line": 1,
+         "context": "Links [[Resources/Read Me/Note]] and [[Resources/Read.md Me/Note]]"
+        },
+        {
+         "source": "Resources/Shapes.md",
+         "target": "My%20Spaced",
+         "line": 2,
+         "context": "![[Embedded]] [[My%20Spaced]] [[outer [[Inner]] tail]] [[Unique Target#^block]] [[#Local heading]]"
+        },
+        {
+         "source": "Resources/Shapes.md",
+         "target": "outer [[Inner",
+         "line": 2,
+         "context": "![[Embedded]] [[My%20Spaced]] [[outer [[Inner]] tail]] [[Unique Target#^block]] [[#Local heading]]"
+        },
+        {
+         "source": "Resources/Shapes.md",
+         "target": "Resources/Deeper/Unique Target.md",
+         "line": 3,
+         "context": "[[Resources/Deeper/Unique Target]] [[Resources/Deeper/Unique Target.md]] [[lower case gone]] [[/rooted]]"
+        },
+        {
+         "source": "Resources/Shapes.md",
+         "target": "lower case gone",
+         "line": 3,
+         "context": "[[Resources/Deeper/Unique Target]] [[Resources/Deeper/Unique Target.md]] [[lower case gone]] [[/rooted]]"
+        },
+        {
+         "source": "Resources/Shapes.md",
+         "target": "/rooted",
+         "line": 3,
+         "context": "[[Resources/Deeper/Unique Target]] [[Resources/Deeper/Unique Target.md]] [[lower case gone]] [[/rooted]]"
+        },
+        {
+         "source": "Resources/Splits.md",
+         "target": "Vt Gone",
+         "line": 2,
+         "context": "b [[Vt Gone]]"
+        },
+        {
+         "source": "Resources/Splits.md",
+         "target": "Nel Gone",
+         "line": 7,
+         "context": "g [[Nel Gone]]"
+        },
+        {
+         "source": "Resources/Splits.md",
+         "target": "Ls Gone",
+         "line": 9,
+         "context": "i [[Ls Gone]]"
+        },
+        {
+         "source": "Templates/Tpl.md",
+         "target": "Nowhere From Template",
+         "line": 1,
+         "context": "[[Nowhere From Template]]"
+        }
+       ],
+       "unlinked": [
+        {
+         "source": "Areas/Health/Mentioner.md",
+         "mention": "Lighthouse",
+         "target": "Areas/Health/Lighthouse"
+        }
+       ]
+      },
+      "error": null,
+      "after": {
+       "README.md": {
+        "same": true
+       },
+       "Archive/Gone.md": {
+        "same": true
+       },
+       "Areas/Homework.md": {
+        "same": true
+       },
+       "Areas/Health/Lighthouse.md": {
+        "same": true
+       },
+       "Areas/Health/Mentioner.md": {
+        "same": true
+       },
+       "Projects/Build.md": {
+        "same": true
+       },
+       "Projects/Solo.md": {
+        "same": true
+       },
+       "Projects/Build/Plan.md": {
+        "same": true
+       },
+       "Projects/Build/Deep/Leaf.md": {
+        "same": true
+       },
+       "Resources/Splits.md": {
+        "same": true
+       },
+       "Resources/My Spaced.md": {
+        "same": true
+       },
+       "Resources/Has  Two  Spaces.md": {
+        "same": true
+       },
+       "Resources/Embedded.md": {
+        "same": true
+       },
+       "Resources/Crlf.md": {
+        "same": true
+       },
+       "Resources/Bytes.md": {
+        "same": true
+       },
+       "Resources/Shapes.md": {
+        "same": true
+       },
+       "Resources/Fixes.md": {
+        "same": true
+       },
+       "Resources/notes.mdfile.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       },
+       "Resources/Upper.MD": {
+        "same": true
+       },
+       "Resources/Deeper/Unique Target.md": {
+        "same": true
+       },
+       "Resources/Read.md Me/Note.md": {
+        "same": true
+       },
+       "Resources/One/Dup.md": {
+        "same": true
+       },
+       "Resources/Two/Dup.md": {
+        "same": true
+       },
+       ".obsidian/Inside.md": {
+        "same": true
+       },
+       "Archives/Old Thing.md": {
+        "same": true
+       },
+       "Templates/Tpl.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "op": "links-fix",
+    "passes": [
+     {
+      "log": [
+       "Fixing Resources/Crlf.md: [[Old/Inner]] -> [[Resources/Inner]]",
+       "Fixing Resources/Fixes.md: [[Elsewhere/Inner]] -> [[Resources/Inner]]",
+       "Fixing Resources/Fixes.md: [[Old/Embedded]] -> [[Resources/Embedded]]",
+       "Fixing Resources/Fixes.md: [[Old/Embedded]] -> [[Resources/Embedded]]",
+       "Fixing Resources/Read.md Me/Note.md: [[Resources/Read.md Me/Note]] -> [[Resources/Read Me/Note]]"
+      ],
+      "result": {
+       "broken_found": 20,
+       "fixed": 5
+      },
+      "error": null,
+      "after": {
+       "README.md": {
+        "same": true
+       },
+       "Archive/Gone.md": {
+        "same": true
+       },
+       "Areas/Homework.md": {
+        "same": true
+       },
+       "Areas/Health/Lighthouse.md": {
+        "same": true
+       },
+       "Areas/Health/Mentioner.md": {
+        "same": true
+       },
+       "Projects/Build.md": {
+        "same": true
+       },
+       "Projects/Solo.md": {
+        "same": true
+       },
+       "Projects/Build/Plan.md": {
+        "same": true
+       },
+       "Projects/Build/Deep/Leaf.md": {
+        "same": true
+       },
+       "Resources/Splits.md": {
+        "same": true
+       },
+       "Resources/My Spaced.md": {
+        "same": true
+       },
+       "Resources/Has  Two  Spaces.md": {
+        "same": true
+       },
+       "Resources/Embedded.md": {
+        "same": true
+       },
+       "Resources/Crlf.md": {
+        "b64": "b25lCnR3byBbW0NybGYgR29uZV1dCnRocmVlIFtbUmVzb3VyY2VzL0lubmVyXV0K"
+       },
+       "Resources/Bytes.md": {
+        "same": true
+       },
+       "Resources/Shapes.md": {
+        "same": true
+       },
+       "Resources/Fixes.md": {
+        "b64": "W1tFbHNld2hlcmUvRHVwXV0gW1tSZXNvdXJjZXMvSW5uZXJdXSBbW09sZC9FbWJlZGRlZHxrZXB0IGFsaWFzXV0gW1tSZXNvdXJjZXMvRW1iZWRkZWRdXQo="
+       },
+       "Resources/notes.mdfile.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       },
+       "Resources/Upper.MD": {
+        "same": true
+       },
+       "Resources/Deeper/Unique Target.md": {
+        "same": true
+       },
+       "Resources/Read.md Me/Note.md": {
+        "b64": "TGlua3MgW1tSZXNvdXJjZXMvUmVhZCBNZS9Ob3RlXV0gYW5kIFtbUmVzb3VyY2VzL1JlYWQgTWUvTm90ZV1dCg=="
+       },
+       "Resources/One/Dup.md": {
+        "same": true
+       },
+       "Resources/Two/Dup.md": {
+        "same": true
+       },
+       ".obsidian/Inside.md": {
+        "same": true
+       },
+       "Archives/Old Thing.md": {
+        "same": true
+       },
+       "Templates/Tpl.md": {
+        "same": true
+       }
+      }
+     },
+     {
+      "log": [
+       "Fixing Resources/Fixes.md: [[Old/Embedded]] -> [[Resources/Embedded]]"
+      ],
+      "result": {
+       "broken_found": 16,
+       "fixed": 1
+      },
+      "error": null,
+      "after": {
+       "README.md": {
+        "same": true
+       },
+       "Archive/Gone.md": {
+        "same": true
+       },
+       "Areas/Homework.md": {
+        "same": true
+       },
+       "Areas/Health/Lighthouse.md": {
+        "same": true
+       },
+       "Areas/Health/Mentioner.md": {
+        "same": true
+       },
+       "Projects/Build.md": {
+        "same": true
+       },
+       "Projects/Solo.md": {
+        "same": true
+       },
+       "Projects/Build/Plan.md": {
+        "same": true
+       },
+       "Projects/Build/Deep/Leaf.md": {
+        "same": true
+       },
+       "Resources/Splits.md": {
+        "same": true
+       },
+       "Resources/My Spaced.md": {
+        "same": true
+       },
+       "Resources/Has  Two  Spaces.md": {
+        "same": true
+       },
+       "Resources/Embedded.md": {
+        "same": true
+       },
+       "Resources/Crlf.md": {
+        "b64": "b25lCnR3byBbW0NybGYgR29uZV1dCnRocmVlIFtbUmVzb3VyY2VzL0lubmVyXV0K"
+       },
+       "Resources/Bytes.md": {
+        "same": true
+       },
+       "Resources/Shapes.md": {
+        "same": true
+       },
+       "Resources/Fixes.md": {
+        "b64": "W1tFbHNld2hlcmUvRHVwXV0gW1tSZXNvdXJjZXMvSW5uZXJdXSBbW09sZC9FbWJlZGRlZHxrZXB0IGFsaWFzXV0gW1tSZXNvdXJjZXMvRW1iZWRkZWRdXQo="
+       },
+       "Resources/notes.mdfile.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       },
+       "Resources/Upper.MD": {
+        "same": true
+       },
+       "Resources/Deeper/Unique Target.md": {
+        "same": true
+       },
+       "Resources/Read.md Me/Note.md": {
+        "b64": "TGlua3MgW1tSZXNvdXJjZXMvUmVhZCBNZS9Ob3RlXV0gYW5kIFtbUmVzb3VyY2VzL1JlYWQgTWUvTm90ZV1dCg=="
+       },
+       "Resources/One/Dup.md": {
+        "same": true
+       },
+       "Resources/Two/Dup.md": {
+        "same": true
+       },
+       ".obsidian/Inside.md": {
+        "same": true
+       },
+       "Archives/Old Thing.md": {
+        "same": true
+       },
+       "Templates/Tpl.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "op": "orphans-list",
+    "passes": [
+     {
+      "log": [
+       "Archives/Old Thing.md",
+       "Areas/Health/Mentioner.md",
+       "Projects/Build.md",
+       "Projects/Build/Deep/Leaf.md",
+       "Projects/Solo.md",
+       "Resources/Bytes.md",
+       "Resources/Crlf.md",
+       "Resources/Fixes.md",
+       "Resources/Has  Two  Spaces.md",
+       "Resources/Inner.md",
+       "Resources/One/Dup.md",
+       "Resources/Shapes.md",
+       "Resources/Splits.md",
+       "Resources/Two/Dup.md"
+      ],
+      "result": [
+       "Archives/Old Thing.md",
+       "Areas/Health/Mentioner.md",
+       "Projects/Build.md",
+       "Projects/Build/Deep/Leaf.md",
+       "Projects/Solo.md",
+       "Resources/Bytes.md",
+       "Resources/Crlf.md",
+       "Resources/Fixes.md",
+       "Resources/Has  Two  Spaces.md",
+       "Resources/Inner.md",
+       "Resources/One/Dup.md",
+       "Resources/Shapes.md",
+       "Resources/Splits.md",
+       "Resources/Two/Dup.md"
+      ],
+      "error": null,
+      "after": {
+       "README.md": {
+        "same": true
+       },
+       "Archive/Gone.md": {
+        "same": true
+       },
+       "Areas/Homework.md": {
+        "same": true
+       },
+       "Areas/Health/Lighthouse.md": {
+        "same": true
+       },
+       "Areas/Health/Mentioner.md": {
+        "same": true
+       },
+       "Projects/Build.md": {
+        "same": true
+       },
+       "Projects/Solo.md": {
+        "same": true
+       },
+       "Projects/Build/Plan.md": {
+        "same": true
+       },
+       "Projects/Build/Deep/Leaf.md": {
+        "same": true
+       },
+       "Resources/Splits.md": {
+        "same": true
+       },
+       "Resources/My Spaced.md": {
+        "same": true
+       },
+       "Resources/Has  Two  Spaces.md": {
+        "same": true
+       },
+       "Resources/Embedded.md": {
+        "same": true
+       },
+       "Resources/Crlf.md": {
+        "same": true
+       },
+       "Resources/Bytes.md": {
+        "same": true
+       },
+       "Resources/Shapes.md": {
+        "same": true
+       },
+       "Resources/Fixes.md": {
+        "same": true
+       },
+       "Resources/notes.mdfile.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       },
+       "Resources/Upper.MD": {
+        "same": true
+       },
+       "Resources/Deeper/Unique Target.md": {
+        "same": true
+       },
+       "Resources/Read.md Me/Note.md": {
+        "same": true
+       },
+       "Resources/One/Dup.md": {
+        "same": true
+       },
+       "Resources/Two/Dup.md": {
+        "same": true
+       },
+       ".obsidian/Inside.md": {
+        "same": true
+       },
+       "Archives/Old Thing.md": {
+        "same": true
+       },
+       "Templates/Tpl.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "op": "orphans-link",
+    "passes": [
+     {
+      "log": [
+       "Linked Projects/Build/Deep/Leaf.md -> Projects/Build.md"
+      ],
+      "result": {
+       "orphans_found": 14,
+       "linked": 1
+      },
+      "error": null,
+      "after": {
+       "README.md": {
+        "same": true
+       },
+       "Archive/Gone.md": {
+        "same": true
+       },
+       "Areas/Homework.md": {
+        "same": true
+       },
+       "Areas/Health/Lighthouse.md": {
+        "same": true
+       },
+       "Areas/Health/Mentioner.md": {
+        "same": true
+       },
+       "Projects/Build.md": {
+        "b64": "IyBCdWlsZAoKLSBbW1Byb2plY3RzL0J1aWxkL1BsYW5dXQoKLSBbW1Byb2plY3RzL0J1aWxkL0RlZXAvTGVhZi5tZF1d"
+       },
+       "Projects/Solo.md": {
+        "same": true
+       },
+       "Projects/Build/Plan.md": {
+        "same": true
+       },
+       "Projects/Build/Deep/Leaf.md": {
+        "same": true
+       },
+       "Resources/Splits.md": {
+        "same": true
+       },
+       "Resources/My Spaced.md": {
+        "same": true
+       },
+       "Resources/Has  Two  Spaces.md": {
+        "same": true
+       },
+       "Resources/Embedded.md": {
+        "same": true
+       },
+       "Resources/Crlf.md": {
+        "same": true
+       },
+       "Resources/Bytes.md": {
+        "same": true
+       },
+       "Resources/Shapes.md": {
+        "same": true
+       },
+       "Resources/Fixes.md": {
+        "same": true
+       },
+       "Resources/notes.mdfile.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       },
+       "Resources/Upper.MD": {
+        "same": true
+       },
+       "Resources/Deeper/Unique Target.md": {
+        "same": true
+       },
+       "Resources/Read.md Me/Note.md": {
+        "same": true
+       },
+       "Resources/One/Dup.md": {
+        "same": true
+       },
+       "Resources/Two/Dup.md": {
+        "same": true
+       },
+       ".obsidian/Inside.md": {
+        "same": true
+       },
+       "Archives/Old Thing.md": {
+        "same": true
+       },
+       "Templates/Tpl.md": {
+        "same": true
+       }
+      }
+     },
+     {
+      "log": [
+       "Linked Projects/Build/Deep/Leaf.md -> Projects/Build.md"
+      ],
+      "result": {
+       "orphans_found": 14,
+       "linked": 1
+      },
+      "error": null,
+      "after": {
+       "README.md": {
+        "same": true
+       },
+       "Archive/Gone.md": {
+        "same": true
+       },
+       "Areas/Homework.md": {
+        "same": true
+       },
+       "Areas/Health/Lighthouse.md": {
+        "same": true
+       },
+       "Areas/Health/Mentioner.md": {
+        "same": true
+       },
+       "Projects/Build.md": {
+        "b64": "IyBCdWlsZAoKLSBbW1Byb2plY3RzL0J1aWxkL1BsYW5dXQoKLSBbW1Byb2plY3RzL0J1aWxkL0RlZXAvTGVhZi5tZF1dCi0gW1tQcm9qZWN0cy9CdWlsZC9EZWVwL0xlYWYubWRdXQ=="
+       },
+       "Projects/Solo.md": {
+        "same": true
+       },
+       "Projects/Build/Plan.md": {
+        "same": true
+       },
+       "Projects/Build/Deep/Leaf.md": {
+        "same": true
+       },
+       "Resources/Splits.md": {
+        "same": true
+       },
+       "Resources/My Spaced.md": {
+        "same": true
+       },
+       "Resources/Has  Two  Spaces.md": {
+        "same": true
+       },
+       "Resources/Embedded.md": {
+        "same": true
+       },
+       "Resources/Crlf.md": {
+        "same": true
+       },
+       "Resources/Bytes.md": {
+        "same": true
+       },
+       "Resources/Shapes.md": {
+        "same": true
+       },
+       "Resources/Fixes.md": {
+        "same": true
+       },
+       "Resources/notes.mdfile.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       },
+       "Resources/Upper.MD": {
+        "same": true
+       },
+       "Resources/Deeper/Unique Target.md": {
+        "same": true
+       },
+       "Resources/Read.md Me/Note.md": {
+        "same": true
+       },
+       "Resources/One/Dup.md": {
+        "same": true
+       },
+       "Resources/Two/Dup.md": {
+        "same": true
+       },
+       ".obsidian/Inside.md": {
+        "same": true
+       },
+       "Archives/Old Thing.md": {
+        "same": true
+       },
+       "Templates/Tpl.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "op": "hubs",
+    "passes": [
+     {
+      "log": [
+       "Linked Projects/Build.md -> Projects.md",
+       "Linked Projects/Solo.md -> Projects.md",
+       "Linked Resources/Bytes.md -> Resources.md",
+       "Linked Resources/Crlf.md -> Resources.md",
+       "Linked Resources/Fixes.md -> Resources.md",
+       "Linked Resources/Has  Two  Spaces.md -> Resources.md",
+       "Linked Resources/Inner.md -> Resources.md",
+       "Linked Resources/Shapes.md -> Resources.md",
+       "Linked Resources/Splits.md -> Resources.md",
+       "Linked Archives/Old Thing.md -> Archives.md"
+      ],
+      "result": {
+       "hubs_created": 5,
+       "links_added": 10
+      },
+      "error": null,
+      "after": {
+       "Resources.md": {
+        "b64": "IyDwn5e677iPIFJlc291cmNlcwoKW1tIb21lfPCflJkgQmFjayB0byBIb21lXV0KCiMjIENvbnRlbnQKLSBbW1Jlc291cmNlcy9CeXRlcy5tZF1dCi0gW1tSZXNvdXJjZXMvQ3JsZi5tZF1dCi0gW1tSZXNvdXJjZXMvRml4ZXMubWRdXQotIFtbUmVzb3VyY2VzL0hhcyAgVHdvICBTcGFjZXMubWRdXQotIFtbUmVzb3VyY2VzL0lubmVyLm1kXV0KLSBbW1Jlc291cmNlcy9TaGFwZXMubWRdXQotIFtbUmVzb3VyY2VzL1NwbGl0cy5tZF1dCg=="
+       },
+       "Projects.md": {
+        "b64": "IyDwn5e677iPIFByb2plY3RzCgpbW0hvbWV88J+UmSBCYWNrIHRvIEhvbWVdXQoKIyMgQ29udGVudAotIFtbUHJvamVjdHMvQnVpbGQubWRdXQotIFtbUHJvamVjdHMvU29sby5tZF1dCg=="
+       },
+       "Home.md": {
+        "b64": "IyDwn4+gIEhvbWUKCiMjIFBBUkEgUm9vdAotIFtbUHJvamVjdHNdXQotIFtbQXJlYXNdXQotIFtbUmVzb3VyY2VzXV0KLSBbW0FyY2hpdmVzXV0K"
+       },
+       "README.md": {
+        "same": true
+       },
+       "Archives.md": {
+        "b64": "IyDwn5e677iPIEFyY2hpdmVzCgpbW0hvbWV88J+UmSBCYWNrIHRvIEhvbWVdXQoKIyMgQ29udGVudAotIFtbQXJjaGl2ZXMvT2xkIFRoaW5nLm1kXV0K"
+       },
+       "Areas.md": {
+        "b64": "IyDwn5e677iPIEFyZWFzCgpbW0hvbWV88J+UmSBCYWNrIHRvIEhvbWVdXQoKIyMgQ29udGVudAo="
+       },
+       "Archive/Gone.md": {
+        "same": true
+       },
+       "Areas/Homework.md": {
+        "same": true
+       },
+       "Areas/Health/Lighthouse.md": {
+        "same": true
+       },
+       "Areas/Health/Mentioner.md": {
+        "same": true
+       },
+       "Projects/Build.md": {
+        "same": true
+       },
+       "Projects/Solo.md": {
+        "same": true
+       },
+       "Projects/Build/Plan.md": {
+        "same": true
+       },
+       "Projects/Build/Deep/Leaf.md": {
+        "same": true
+       },
+       "Resources/Splits.md": {
+        "same": true
+       },
+       "Resources/My Spaced.md": {
+        "same": true
+       },
+       "Resources/Has  Two  Spaces.md": {
+        "same": true
+       },
+       "Resources/Embedded.md": {
+        "same": true
+       },
+       "Resources/Crlf.md": {
+        "same": true
+       },
+       "Resources/Bytes.md": {
+        "same": true
+       },
+       "Resources/Shapes.md": {
+        "same": true
+       },
+       "Resources/Fixes.md": {
+        "same": true
+       },
+       "Resources/notes.mdfile.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       },
+       "Resources/Upper.MD": {
+        "same": true
+       },
+       "Resources/Deeper/Unique Target.md": {
+        "same": true
+       },
+       "Resources/Read.md Me/Note.md": {
+        "same": true
+       },
+       "Resources/One/Dup.md": {
+        "same": true
+       },
+       "Resources/Two/Dup.md": {
+        "same": true
+       },
+       ".obsidian/Inside.md": {
+        "same": true
+       },
+       "Archives/Old Thing.md": {
+        "same": true
+       },
+       "Templates/Tpl.md": {
+        "same": true
+       }
+      }
+     },
+     {
+      "log": [],
+      "result": {
+       "hubs_created": 0,
+       "links_added": 0
+      },
+      "error": null,
+      "after": {
+       "Resources.md": {
+        "b64": "IyDwn5e677iPIFJlc291cmNlcwoKW1tIb21lfPCflJkgQmFjayB0byBIb21lXV0KCiMjIENvbnRlbnQKLSBbW1Jlc291cmNlcy9CeXRlcy5tZF1dCi0gW1tSZXNvdXJjZXMvQ3JsZi5tZF1dCi0gW1tSZXNvdXJjZXMvRml4ZXMubWRdXQotIFtbUmVzb3VyY2VzL0hhcyAgVHdvICBTcGFjZXMubWRdXQotIFtbUmVzb3VyY2VzL0lubmVyLm1kXV0KLSBbW1Jlc291cmNlcy9TaGFwZXMubWRdXQotIFtbUmVzb3VyY2VzL1NwbGl0cy5tZF1dCg=="
+       },
+       "Projects.md": {
+        "b64": "IyDwn5e677iPIFByb2plY3RzCgpbW0hvbWV88J+UmSBCYWNrIHRvIEhvbWVdXQoKIyMgQ29udGVudAotIFtbUHJvamVjdHMvQnVpbGQubWRdXQotIFtbUHJvamVjdHMvU29sby5tZF1dCg=="
+       },
+       "Home.md": {
+        "b64": "IyDwn4+gIEhvbWUKCiMjIFBBUkEgUm9vdAotIFtbUHJvamVjdHNdXQotIFtbQXJlYXNdXQotIFtbUmVzb3VyY2VzXV0KLSBbW0FyY2hpdmVzXV0K"
+       },
+       "README.md": {
+        "same": true
+       },
+       "Archives.md": {
+        "b64": "IyDwn5e677iPIEFyY2hpdmVzCgpbW0hvbWV88J+UmSBCYWNrIHRvIEhvbWVdXQoKIyMgQ29udGVudAotIFtbQXJjaGl2ZXMvT2xkIFRoaW5nLm1kXV0K"
+       },
+       "Areas.md": {
+        "b64": "IyDwn5e677iPIEFyZWFzCgpbW0hvbWV88J+UmSBCYWNrIHRvIEhvbWVdXQoKIyMgQ29udGVudAo="
+       },
+       "Archive/Gone.md": {
+        "same": true
+       },
+       "Areas/Homework.md": {
+        "same": true
+       },
+       "Areas/Health/Lighthouse.md": {
+        "same": true
+       },
+       "Areas/Health/Mentioner.md": {
+        "same": true
+       },
+       "Projects/Build.md": {
+        "same": true
+       },
+       "Projects/Solo.md": {
+        "same": true
+       },
+       "Projects/Build/Plan.md": {
+        "same": true
+       },
+       "Projects/Build/Deep/Leaf.md": {
+        "same": true
+       },
+       "Resources/Splits.md": {
+        "same": true
+       },
+       "Resources/My Spaced.md": {
+        "same": true
+       },
+       "Resources/Has  Two  Spaces.md": {
+        "same": true
+       },
+       "Resources/Embedded.md": {
+        "same": true
+       },
+       "Resources/Crlf.md": {
+        "same": true
+       },
+       "Resources/Bytes.md": {
+        "same": true
+       },
+       "Resources/Shapes.md": {
+        "same": true
+       },
+       "Resources/Fixes.md": {
+        "same": true
+       },
+       "Resources/notes.mdfile.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       },
+       "Resources/Upper.MD": {
+        "same": true
+       },
+       "Resources/Deeper/Unique Target.md": {
+        "same": true
+       },
+       "Resources/Read.md Me/Note.md": {
+        "same": true
+       },
+       "Resources/One/Dup.md": {
+        "same": true
+       },
+       "Resources/Two/Dup.md": {
+        "same": true
+       },
+       ".obsidian/Inside.md": {
+        "same": true
+       },
+       "Archives/Old Thing.md": {
+        "same": true
+       },
+       "Templates/Tpl.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "name": "strict",
+  "posix_only": false,
+  "files": [
+   {
+    "path": "Resources/Inner.md",
+    "b64": "aW5uZXIK"
+   },
+   {
+    "path": "Resources/Bad.md",
+    "b64": "/yBbW09sZC9Jbm5lcl1dCg=="
+   },
+   {
+    "path": "Resources/Fine.md",
+    "b64": "W1tPbGQvSW5uZXJdXQo="
+   }
+  ],
+  "runs": [
+   {
+    "op": "links-fix",
+    "passes": [
+     {
+      "log": [
+       "Fixing Resources/Bad.md: [[Old/Inner]] -> [[Resources/Inner]]",
+       "Fixing Resources/Fine.md: [[Old/Inner]] -> [[Resources/Inner]]"
+      ],
+      "result": null,
+      "error": "UnicodeDecodeError",
+      "after": {
+       "Resources/Fine.md": {
+        "same": true
+       },
+       "Resources/Bad.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       }
+      }
+     },
+     {
+      "log": [
+       "Fixing Resources/Bad.md: [[Old/Inner]] -> [[Resources/Inner]]",
+       "Fixing Resources/Fine.md: [[Old/Inner]] -> [[Resources/Inner]]"
+      ],
+      "result": null,
+      "error": "UnicodeDecodeError",
+      "after": {
+       "Resources/Fine.md": {
+        "same": true
+       },
+       "Resources/Bad.md": {
+        "same": true
+       },
+       "Resources/Inner.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "name": "nested",
+  "posix_only": false,
+  "files": [
+   {
+    "path": "Outer.md",
+    "b64": "W1tPdXRlciBHb25lXV0K"
+   },
+   {
+    "path": "Vault/Inner Note.md",
+    "b64": "W1tJbm5lciBHb25lXV0K"
+   }
+  ],
+  "runs": [
+   {
+    "op": "links-list",
+    "passes": [
+     {
+      "log": [
+       "[bold red]Broken Links:[/bold red]",
+       "  Inner Note.md:1 -> [[Inner Gone]]"
+      ],
+      "result": {
+       "broken": [
+        {
+         "source": "Inner Note.md",
+         "target": "Inner Gone",
+         "line": 1,
+         "context": "[[Inner Gone]]"
+        }
+       ],
+       "unlinked": []
+      },
+      "error": null,
+      "after": {
+       "Outer.md": {
+        "same": true
+       },
+       "Vault/Inner Note.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "name": "posix",
+  "posix_only": true,
+  "files": [
+   {
+    "path": "Resources/Real.md",
+    "b64": "W1tMaW5rZWQgRm9sZGVyL0hpZGRlbl1dIFtbQWxpYXMgTm90ZV1dCg=="
+   },
+   {
+    "path": "Elsewhere/Hidden.md",
+    "b64": "aGlkZGVuCg=="
+   },
+   {
+    "path": "Resources/Linked Folder",
+    "link": "../Elsewhere"
+   },
+   {
+    "path": "Resources/Alias Note.md",
+    "link": "Real.md"
+   },
+   {
+    "path": "Resources/Dangling.md",
+    "link": "nowhere.md"
+   }
+  ],
+  "runs": [
+   {
+    "op": "links-list",
+    "passes": [
+     {
+      "log": [
+       "[bold red]Broken Links:[/bold red]",
+       "  Resources/Alias Note.md:1 -> [[Linked Folder/Hidden]]",
+       "  Resources/Real.md:1 -> [[Linked Folder/Hidden]]"
+      ],
+      "result": {
+       "broken": [
+        {
+         "source": "Resources/Alias Note.md",
+         "target": "Linked Folder/Hidden",
+         "line": 1,
+         "context": "[[Linked Folder/Hidden]] [[Alias Note]]"
+        },
+        {
+         "source": "Resources/Real.md",
+         "target": "Linked Folder/Hidden",
+         "line": 1,
+         "context": "[[Linked Folder/Hidden]] [[Alias Note]]"
+        }
+       ],
+       "unlinked": []
+      },
+      "error": null,
+      "after": {
+       "Resources/Dangling.md": {
+        "link": "nowhere.md"
+       },
+       "Resources/Alias Note.md": {
+        "link": "Real.md"
+       },
+       "Resources/Real.md": {
+        "same": true
+       },
+       "Resources/Linked Folder": {
+        "link": "../Elsewhere"
+       },
+       "Elsewhere/Hidden.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "op": "links-fix",
+    "passes": [
+     {
+      "log": [
+       "Fixing Resources/Alias Note.md: [[Linked Folder/Hidden]] -> [[Elsewhere/Hidden]]",
+       "Fixing Resources/Real.md: [[Linked Folder/Hidden]] -> [[Elsewhere/Hidden]]"
+      ],
+      "result": {
+       "broken_found": 2,
+       "fixed": 2
+      },
+      "error": null,
+      "after": {
+       "Resources/Dangling.md": {
+        "link": "nowhere.md"
+       },
+       "Resources/Alias Note.md": {
+        "link": "Real.md"
+       },
+       "Resources/Real.md": {
+        "b64": "W1tFbHNld2hlcmUvSGlkZGVuXV0gW1tBbGlhcyBOb3RlXV0K"
+       },
+       "Resources/Linked Folder": {
+        "link": "../Elsewhere"
+       },
+       "Elsewhere/Hidden.md": {
+        "same": true
+       }
+      }
+     },
+     {
+      "log": [],
+      "result": {
+       "broken_found": 0,
+       "fixed": 0
+      },
+      "error": null,
+      "after": {
+       "Resources/Dangling.md": {
+        "link": "nowhere.md"
+       },
+       "Resources/Alias Note.md": {
+        "link": "Real.md"
+       },
+       "Resources/Real.md": {
+        "b64": "W1tFbHNld2hlcmUvSGlkZGVuXV0gW1tBbGlhcyBOb3RlXV0K"
+       },
+       "Resources/Linked Folder": {
+        "link": "../Elsewhere"
+       },
+       "Elsewhere/Hidden.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "op": "orphans-list",
+    "passes": [
+     {
+      "log": [
+       "Elsewhere/Hidden.md",
+       "Resources/Dangling.md",
+       "Resources/Real.md"
+      ],
+      "result": [
+       "Elsewhere/Hidden.md",
+       "Resources/Dangling.md",
+       "Resources/Real.md"
+      ],
+      "error": null,
+      "after": {
+       "Resources/Dangling.md": {
+        "link": "nowhere.md"
+       },
+       "Resources/Alias Note.md": {
+        "link": "Real.md"
+       },
+       "Resources/Real.md": {
+        "same": true
+       },
+       "Resources/Linked Folder": {
+        "link": "../Elsewhere"
+       },
+       "Elsewhere/Hidden.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "op": "orphans-link",
+    "passes": [
+     {
+      "log": [],
+      "result": {
+       "orphans_found": 3,
+       "linked": 0
+      },
+      "error": null,
+      "after": {
+       "Resources/Dangling.md": {
+        "link": "nowhere.md"
+       },
+       "Resources/Alias Note.md": {
+        "link": "Real.md"
+       },
+       "Resources/Real.md": {
+        "same": true
+       },
+       "Resources/Linked Folder": {
+        "link": "../Elsewhere"
+       },
+       "Elsewhere/Hidden.md": {
+        "same": true
+       }
+      }
+     },
+     {
+      "log": [],
+      "result": {
+       "orphans_found": 3,
+       "linked": 0
+      },
+      "error": null,
+      "after": {
+       "Resources/Dangling.md": {
+        "link": "nowhere.md"
+       },
+       "Resources/Alias Note.md": {
+        "link": "Real.md"
+       },
+       "Resources/Real.md": {
+        "same": true
+       },
+       "Resources/Linked Folder": {
+        "link": "../Elsewhere"
+       },
+       "Elsewhere/Hidden.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "op": "hubs",
+    "passes": [
+     {
+      "log": [
+       "Linked Resources/Dangling.md -> Resources.md",
+       "Linked Resources/Real.md -> Resources.md"
+      ],
+      "result": {
+       "hubs_created": 2,
+       "links_added": 2
+      },
+      "error": null,
+      "after": {
+       "Resources.md": {
+        "b64": "IyDwn5e677iPIFJlc291cmNlcwoKW1tIb21lfPCflJkgQmFjayB0byBIb21lXV0KCiMjIENvbnRlbnQKLSBbW1Jlc291cmNlcy9EYW5nbGluZy5tZF1dCi0gW1tSZXNvdXJjZXMvUmVhbC5tZF1dCg=="
+       },
+       "Home.md": {
+        "b64": "IyDwn4+gIEhvbWUKCiMjIFBBUkEgUm9vdAotIFtbUmVzb3VyY2VzXV0K"
+       },
+       "Resources/Dangling.md": {
+        "link": "nowhere.md"
+       },
+       "Resources/Alias Note.md": {
+        "link": "Real.md"
+       },
+       "Resources/Real.md": {
+        "same": true
+       },
+       "Resources/Linked Folder": {
+        "link": "../Elsewhere"
+       },
+       "Elsewhere/Hidden.md": {
+        "same": true
+       }
+      }
+     },
+     {
+      "log": [],
+      "result": {
+       "hubs_created": 0,
+       "links_added": 0
+      },
+      "error": null,
+      "after": {
+       "Resources.md": {
+        "b64": "IyDwn5e677iPIFJlc291cmNlcwoKW1tIb21lfPCflJkgQmFjayB0byBIb21lXV0KCiMjIENvbnRlbnQKLSBbW1Jlc291cmNlcy9EYW5nbGluZy5tZF1dCi0gW1tSZXNvdXJjZXMvUmVhbC5tZF1dCg=="
+       },
+       "Home.md": {
+        "b64": "IyDwn4+gIEhvbWUKCiMjIFBBUkEgUm9vdAotIFtbUmVzb3VyY2VzXV0K"
+       },
+       "Resources/Dangling.md": {
+        "link": "nowhere.md"
+       },
+       "Resources/Alias Note.md": {
+        "link": "Real.md"
+       },
+       "Resources/Real.md": {
+        "same": true
+       },
+       "Resources/Linked Folder": {
+        "link": "../Elsewhere"
+       },
+       "Elsewhere/Hidden.md": {
+        "same": true
+       }
+      }
+     }
+    ]
+   }
+  ]
+ }
+]

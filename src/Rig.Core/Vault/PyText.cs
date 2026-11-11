@@ -155,6 +155,38 @@ public static class PyText
         _ => c,
     };
 
+    /// <summary>
+    /// Python's <c>s.splitlines()</c>: breaks at <c>\n</c>, <c>\r</c>, <c>\r\n</c> and the eight other line boundaries
+    /// Python knows (<c>\v \f \x1c \x1d \x1e \x85 \u2028 \u2029</c>); a trailing boundary ends the last line rather than
+    /// starting an empty one.
+    /// </summary>
+    public static IReadOnlyList<string> SplitLines(string s)
+    {
+        ArgumentNullException.ThrowIfNull(s);
+        var lines = new List<string>();
+        var start = 0;
+        for (var i = 0; i < s.Length; i++)
+        {
+            if (s[i] is '\n' or '\r' or '\v' or '\f' or '\x1c' or '\x1d' or '\x1e' or '\x85' or '\u2028' or '\u2029')
+            {
+                lines.Add(s[start..i]);
+                if (s[i] == '\r' && i + 1 < s.Length && s[i + 1] == '\n')
+                {
+                    i++;
+                }
+
+                start = i + 1;
+            }
+        }
+
+        if (start < s.Length)
+        {
+            lines.Add(s[start..]);
+        }
+
+        return lines;
+    }
+
     /// <summary>Python's <c>s[:count]</c>: the first <paramref name="count"/> code points.</summary>
     public static string Prefix(string s, int count)
     {
