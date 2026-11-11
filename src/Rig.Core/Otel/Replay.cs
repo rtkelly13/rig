@@ -46,12 +46,22 @@ public sealed class Replay(IOtlpSender sender)
                     _ = present.Add(Key(inode));
                 }
 
-                var result = await FileAsync(path, signal, offsets, dryRun, cancellationToken).ConfigureAwait(false);
-                results.Add(result);
-                if (!dryRun)
+                ReplayResult result;
+                try
                 {
-                    ReplayOffsets.Write(statePath, offsets);
+                    result = await FileAsync(path, signal, offsets, dryRun, cancellationToken).ConfigureAwait(false);
                 }
+                finally
+                {
+                    // Lines the collector accepted before a cancellation are recorded too: logs and metrics have no
+                    // identity to deduplicate by, so a resend would double them.
+                    if (!dryRun)
+                    {
+                        ReplayOffsets.Write(statePath, offsets);
+                    }
+                }
+
+                results.Add(result);
 
                 if (result.Error.Length > 0)
                 {

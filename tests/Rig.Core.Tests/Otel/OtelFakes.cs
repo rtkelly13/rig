@@ -135,8 +135,16 @@ internal sealed class FakeSender : IOtlpSender
     /// <summary>Rejects the send with this index (zero-based), and every later one.</summary>
     public int RejectFrom { get; set; } = int.MaxValue;
 
+    /// <summary>Cancels the send with this index (zero-based), as a cancelled token would mid-run.</summary>
+    public int CancelAt { get; set; } = int.MaxValue;
+
     public Task<string?> SendAsync(string signal, string body, CancellationToken cancellationToken = default)
     {
+        if (Sent.Count == CancelAt)
+        {
+            throw new OperationCanceledException();
+        }
+
         if (Sent.Count >= RejectFrom)
         {
             return Task.FromResult<string?>("collector rejected a batch: HTTP 400 no");

@@ -452,6 +452,20 @@ public sealed class BackfillReplayTests : IDisposable
     }
 
     [Fact]
+    public async Task Lines_accepted_before_a_cancellation_are_not_sent_again()
+    {
+        var (data, state) = ReplayFolder();
+        _ = Write(data, "logs.jsonl", "{\"a\":1}\n{\"b\":2}\n");
+        sender.CancelAt = 1;
+
+        _ = await Assert.ThrowsAsync<OperationCanceledException>(() => new Replay(sender).RunAsync(data, state, cancellationToken: Ct));
+        sender.CancelAt = int.MaxValue;
+        _ = await new Replay(sender).RunAsync(data, state, cancellationToken: Ct);
+
+        Assert.Equal(["{\"a\":1}", "{\"b\":2}"], sender.Sent.Select(sent => sent.Body));
+    }
+
+    [Fact]
     public async Task A_dry_run_counts_and_records_nothing()
     {
         var (data, state) = ReplayFolder();
