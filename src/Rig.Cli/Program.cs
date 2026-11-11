@@ -6,6 +6,7 @@ using Rig.Cli.Mail;
 using Rig.Cli.Models;
 using Rig.Cli.Otel;
 using Rig.Cli.Policy;
+using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
@@ -13,6 +14,7 @@ using Rig.Core.Otel;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Services;
+using Rig.Core.Skills;
 using Rig.Core.Vault;
 
 namespace Rig.Cli;
@@ -110,6 +112,12 @@ internal static class Program
                 () => new ModelsCommand(new ModelDiscovery(proc, home, ProgramPath.Find), Console.Out).Build(),
                 new PolicyCommand(
                     new PolicyHost(Path.Join(checkout, "config", "cli-allowlists.json"), home, Path.Join(codeRoot, "personal"), OperatingSystem.IsWindows()),
+                    Console.Out,
+                    Console.Error).Build,
+                new SkillsCommand(
+                    new SkillsHost(checkout, home, Environment.CurrentDirectory, Path.Join(codeRoot, "external"), OperatingSystem.IsWindows()),
+                    git,
+                    new SystemDirectoryLinker(),
                     Console.Out,
                     Console.Error).Build,
             ],

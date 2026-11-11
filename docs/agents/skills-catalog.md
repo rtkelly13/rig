@@ -1,8 +1,8 @@
 # Skills Catalog
 
-The repository has one skills engine, `rig.skills`, and one command surface for it,
-`workspace skills`. `devenv setup` / `devenv ai` link skills by calling that engine; there is no
-`devenv skills` command and no second plugin registry.
+The repository has one skills engine, `Rig.Core.Skills`, and one command surface for it,
+`rig skills`. `devenv setup` / `devenv ai` link skills by running `rig skills sync --system all`;
+there is no `devenv skills` command and no second plugin registry.
 
 ## Catalog policy
 
@@ -37,23 +37,23 @@ useful only when a particular technology is in play, it belongs in the vault lib
 For a targeted pass, temporarily expose hidden skills without editing the permanent allowlist:
 
 ```bash
-uv run workspace skills sync --only react-best-practices --dry-run
-uv run workspace skills sync --only obsidian-markdown --only obsidian-cli
-uv run workspace skills sync --all --dry-run
+rig skills sync --only react-best-practices --dry-run
+rig skills sync --only obsidian-markdown --only obsidian-cli
+rig skills sync --all --dry-run
 ```
 
 `--only` is additive and does not prune the normal catalog. `--all` exposes every discovered
 skill and uses normal mirroring; use `--dry-run` first when expanding the catalog. Both options
 are reversible overlays recorded in `~/.config/devenv/skill-activations.json`; run
-`workspace skills deactivate --all` after the targeted pass to restore the curated catalog.
+`rig skills deactivate --all` after the targeted pass to restore the curated catalog.
 
 Equivalent explicit commands are available when the intent should be visible in automation:
 
 ```bash
-uv run workspace skills activate --only react-best-practices
-uv run workspace skills deactivate --only react-best-practices
-uv run workspace skills activate --all
-uv run workspace skills deactivate --all
+rig skills activate --only react-best-practices
+rig skills deactivate --only react-best-practices
+rig skills activate --all
+rig skills deactivate --all
 ```
 
 ## Family review

@@ -74,7 +74,7 @@ Test isolation guards (autouse, so new tests get them for free):
 
 Windows-safe tests (the `test-windows` job catches these, but write them right first time):
 
-- **Links**: create directory links with `tests/links.py` `dir_link`. It makes a junction, which needs no privilege. Use `file_symlink_or_skip` when a test truly needs a file symlink. Never call `os.symlink` directly: without Developer Mode it fails with WinError 1314. Product code goes through `rig.fs_links` for the same reason.
+- **Links**: create directory links with `tests/links.py` `dir_link`. It makes a junction, which needs no privilege. Use `file_symlink_or_skip` when a test truly needs a file symlink. Never call `os.symlink` directly: without Developer Mode it fails with WinError 1314. Product code goes through `Rig.Core.Skills.IDirectoryLinker` for the same reason.
 - **Encoding**: always pass `encoding="utf-8"` to `read_text`, `write_text` and `open`. The Windows default is cp1252.
 - **Paths in output**: render paths with `.as_posix()` wherever a report, snapshot or assertion compares text. Otherwise Windows prints backslashes.
 - **Line endings**: when a test hashes a checked-in file, give that file type `-text` in `.gitattributes`, as `*.svg` has. Otherwise CRLF conversion on checkout changes the digest.

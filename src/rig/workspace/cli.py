@@ -19,7 +19,6 @@ from rig.repo_governance.gitignore_manager import (
     audit_estate_gitignores,
     sync_estate_gitignores,
 )
-from rig.skills.cli import skills_cli
 from rig.workspace.ci_cli import ci_cli
 from rig.workspace.engine import (
     audit_estate,
@@ -39,7 +38,7 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
-app.add_typer(skills_cli, name="skills")
+csharp_cli.add_stub(app, "skills")
 csharp_cli.add_stub(app, "policy")
 app.add_typer(ci_cli, name="ci")
 app.add_typer(packages_cli, name="packages")
