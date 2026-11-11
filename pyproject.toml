@@ -166,9 +166,6 @@ modules = [
     "rig.repo_governance",
 ]
 ignore_imports = [
-    "rig.repo_governance.cli_audits -> rig.workspace.engine",  # G2
-    "rig.repo_governance.cli_audits -> rig.workspace.vercel_names",  # G2 (move the module)
-    "rig.repo_governance.vercel_projects -> rig.workspace.vercel_names",  # G2 (move the module)
 ]
 
 [tool.ruff]
@@ -230,11 +227,9 @@ ignore = [
 "src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
 "src/desktop_manager/service_installer.py" = ["TID251"]
 "src/rig/estate/trim.py" = ["TID251"]
-"src/rig/repo_governance/vercel_gating.py" = ["TID251"]
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
 "src/rig/connectivity/manifests.py" = ["TID251"]
-"src/rig/repo_governance/vercel_projects.py" = ["TID251"]
 "src/rig/triage/github.py" = ["TID251"]
 # Temporary: tests that build real temp repos with raw git. F2 moves them onto the
 # shared real-git fixture in tests/fakes/; G4 deletes whatever is left.
@@ -471,8 +466,6 @@ patching-allow = [
     "tests/test_scopes.py",
     "tests/test_triage_agents.py",
     "tests/test_triage_queue.py",
-    "tests/test_vercel_cli_auth.py",
-    "tests/test_vercel_gating.py",
     "tests/test_web_spa.py",
 ]
 pyright-pragma-allow = []

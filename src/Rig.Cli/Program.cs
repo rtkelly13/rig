@@ -65,6 +65,9 @@ internal static class Program
         using var downloads = new HttpClient { Timeout = TimeSpan.FromSeconds(120) };
         using var clickhouseHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         using var otlp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        // The Vercel API, read by `repo-governance vercel-gating` and `vercel-projects`; the token is resolved on first use.
+        using var vercelHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        var vercel = new Rig.Core.Governance.VercelApi(vercelHttp, new Rig.Core.Governance.VercelToken(Environment.GetEnvironmentVariable, home, proc, TimeProvider.System).ResolveAsync);
         var otelPaths = new OtelPaths(AppData.Current());
         var detached = OperatingSystem.IsWindows() ? (IDetachedStart)new WindowsDetachedStart() : new UnixDetachedStart(proc);
         var signals = new ProcessSignals();
@@ -193,7 +196,7 @@ internal static class Program
                         new WrapupFollower(AppData.Current(), detached, SelfArgv()),
                         new SystemWrapupClock(TimeProvider.System),
                         WrapupStamps.NewAskId)).Build,
-                new GovernanceCommand(new GovernanceHost(codeRoot, Environment.CurrentDirectory, checkout), proc, TimeProvider.System, Console.Out).Build,
+                new GovernanceCommand(new GovernanceHost(codeRoot, Environment.CurrentDirectory, checkout), proc, TimeProvider.System, Console.Out, vercel: vercel).Build,
             ],
             new AgentLauncher(
                 proc,

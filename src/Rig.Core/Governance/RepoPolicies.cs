@@ -291,6 +291,9 @@ public sealed class RepoPolicies
     /// <summary>The script ban and its exceptions (<c>script_ban</c>).</summary>
     public ScriptBanRules ScriptBan(string key) => Resolve(key, layer => layer.ScriptBan) ?? ScriptBanRules.Default;
 
+    /// <summary>The Vercel account facts the deployment-creation audit reads (<c>vercel</c>).</summary>
+    public VercelGatingRules VercelGating(string key) => Resolve(key, layer => layer.Vercel) ?? VercelGatingRules.Default;
+
     /// <summary>
     /// The script extensions a repo allows and bans: the <c>script_ban</c> lists when it declares any, otherwise the
     /// union of its languages' presets, in order, with <c>.py</c> never banned in a Python repo.
@@ -735,6 +738,8 @@ public sealed class RepoPolicies
 
         public ScriptBanRules? ScriptBan { get; init; }
 
+        public VercelGatingRules? Vercel { get; init; }
+
         public static Layer From(JsonNode? node, string source)
         {
             var layer = node as JsonObject ?? throw Bad(source, "a policy layer is not an object");
@@ -758,6 +763,9 @@ public sealed class RepoPolicies
                 License = LicenseOf(layer, source),
                 BranchCleanup = CleanupOf(layer, source),
                 ScriptBan = ScriptBanOf(layer, source),
+                Vercel = Block(layer, "vercel", source) is { } vercel
+                    ? new(Text(vercel, "team_id", source) ?? string.Empty, Int(vercel, "window_days", source) ?? VercelGatingRules.Default.WindowDays)
+                    : null,
             };
         }
     }
