@@ -51,6 +51,8 @@ internal sealed partial class GovernanceCommand(GovernanceHost host, IProc proc,
         governance.Subcommands.Add(SyncLabels());
         governance.Subcommands.Add(Environments());
         governance.Subcommands.Add(Pages());
+        governance.Subcommands.Add(License());
+        governance.Subcommands.Add(SyncTemplates());
         return governance;
     }
 

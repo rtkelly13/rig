@@ -17,5 +17,7 @@
     <EmbeddedResource Include="Devenv/dev-tools.json" LogicalName="Rig.Core.Devenv.dev-tools.json" />
     <!-- The estate router template `workspace sync` writes as the personal folder's AGENTS.md (Workspace/EstateSync.cs). -->
     <EmbeddedResource Include="Workspace/root-agents-md.md" LogicalName="Rig.Core.Workspace.root-agents-md.md" />
+    <!-- The community health files `repo-governance sync-templates` writes (Governance/OssTemplates.cs). -->
+    <EmbeddedResource Include="Governance/Templates/oss/*.jinja" LogicalName="Rig.Core.Governance.Templates.oss.%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

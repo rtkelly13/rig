@@ -231,6 +231,15 @@ public sealed class RepoPolicies
     /// <summary>The owner the repo keyed <paramref name="key"/> is expected under, or null when none is configured.</summary>
     public string? ExpectedOwner(string key) => Resolve(key, layer => layer.ExpectedOwner, identity: true) is { Length: > 0 } owner ? owner : null;
 
+    /// <summary>Who the repo keyed <paramref name="key"/>'s LICENSE names (<c>copyright_holder</c>), else <c>Ryan Kelly</c>.</summary>
+    public string CopyrightHolder(string key) => Resolve(key, layer => layer.CopyrightHolder, identity: true) is { Length: > 0 } holder ? holder : "Ryan Kelly";
+
+    /// <summary>The address the repo keyed <paramref name="key"/>'s community files give (<c>contact_email</c>), else <c>ryan@ryankelly.dev</c>.</summary>
+    public string ContactEmail(string key) => Resolve(key, layer => layer.ContactEmail, identity: true) is { Length: > 0 } email ? email : "ryan@ryankelly.dev";
+
+    /// <summary>The licence the repo keyed <paramref name="key"/> should carry (<c>license</c>, a string or <c>{"type": …}</c>), else <c>MIT</c>.</summary>
+    public string LicenseType(string key) => Resolve(key, layer => layer.License, identity: true) is { Length: > 0 } license ? license : "MIT";
+
     /// <summary>The default branch the repo keyed <paramref name="key"/> should have (<c>expected_base_branch</c>), else <c>main</c>.</summary>
     public string ExpectedBaseBranch(string key) => Resolve(key, layer => layer.ExpectedBaseBranch) is { Length: > 0 } branch ? branch : "main";
 
@@ -559,6 +568,15 @@ public sealed class RepoPolicies
             ? new(Text(block, "upstream", source) ?? throw Bad(source, "fork has no upstream"), Text(block, "upstream_branch", source) ?? "main")
             : null;
 
+    // license: a bare type, or {"type": …}; an object without a type declares the default.
+    private static string? LicenseOf(JsonObject layer, string source) =>
+        layer["license"] switch
+        {
+            null => null,
+            JsonObject spec => Text(spec, "type", source) ?? string.Empty,
+            _ => Text(layer, "license", source),
+        };
+
     // expected_owner: null declares "no expected owner", which the Python keeps as "" so it still stops the lookup.
     private static string? ExpectedOwnerOf(JsonObject layer, string source) =>
         layer.TryGetPropertyValue("expected_owner", out var node) ? node is null ? string.Empty : Text(layer, "expected_owner", source) : null;
@@ -588,6 +606,12 @@ public sealed class RepoPolicies
 
         public ForkSpec? Fork { get; init; }
 
+        public string? CopyrightHolder { get; init; }
+
+        public string? ContactEmail { get; init; }
+
+        public string? License { get; init; }
+
         public static Layer From(JsonNode? node, string source)
         {
             var layer = node as JsonObject ?? throw Bad(source, "a policy layer is not an object");
@@ -606,6 +630,9 @@ public sealed class RepoPolicies
                 RequiredChecks = Strings(layer, "required_checks", source),
                 Pages = PagesOf(layer, source),
                 Fork = ForkOf(layer, source),
+                CopyrightHolder = Text(layer, "copyright_holder", source),
+                ContactEmail = Text(layer, "contact_email", source),
+                License = LicenseOf(layer, source),
             };
         }
     }
