@@ -69,6 +69,14 @@ The ordering encodes two real dependencies: **`risk` before any `--apply`**, and
 **`sync` before `tidy`** — an upstream only reads `gone` after a fetch has pruned
 the ref.
 
+## Where the code is
+
+Every subcommand runs on the C# CLI: `rig estate …` and the `estate` entry point
+(`uv run estate …`) both reach `src/Rig.Cli/Estate/`, with the logic in
+`src/Rig.Core/Estate/`. What is left in `src/rig/estate/` is only what the Python web
+console, the desktop jobs and triage still import: discovery, the worktree checks, the
+decision feed reader, the trim view behind the web page and the wrap-up state file.
+
 ## Going further
 
 Each page goes one level deeper. Read the one for the command you are using.

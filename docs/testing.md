@@ -3,55 +3,34 @@
 Which style of test to write, and how to measure whether a test is any good.
 [development.md](development.md) has the markers, the Windows-safe rules and the CI gates.
 
-## Three styles, chosen by what is being pinned
+## Two styles, chosen by what is being pinned
 
 | Style | Pins | Write one when | Lives in |
 |:------|:-----|:---------------|:---------|
-| **BDD** (pytest-bdd) | A rule a person would state: what the tool promises | Losing the behaviour costs real work or trust, and the rule is a decision table someone should be able to read | `tests/features/*.feature` and a `test_*_bdd.py` of steps |
 | **Property** (Hypothesis) | An invariant of an algorithm, for every input | The code is pure and the rule holds across a domain: tiling, round-trips, idempotence, symmetry, agreement with an oracle | `test_*_properties.py` beside the example tests |
 | **Example** | One concrete case | A specific regression, an edge the generator won't find, or mechanics below the level of a rule | `test_*.py` |
 
-Both `property` and `bdd` markers are applied automatically in `tests/conftest.py`, never by hand.
-Use `uv run pytest -m property` or `-m bdd` to run one style. Everything left is example-based.
+The `property` marker is applied automatically in `tests/conftest.py`, never by hand.
+Use `uv run pytest -m property` to run that style. Everything left is example-based.
 
-### BDD: model the rules, not the helpers
+The last pytest-bdd suite, `estate shelve`'s, moved to C# with the command
+(`tests/Rig.Core.Tests/Estate/ShelveTests.cs`), so pytest-bdd went with it.
 
-A feature file is the readable contract. Group scenarios under `Rule:` and put decision tables in
-a `Scenario Outline`, so the rows *are* the specification. `features/estate_shelve.feature`
-is the model to follow:
-
-- **Steps drive real collaborators.** That means real git against a bare origin, not mocks of
-  `subprocess`. A step that only checks a mock was called states nothing a reader cares about.
-- **One `Then` is one observable fact, asserted exactly.** Use `==` on the full status list, not
-  `in` on a substring.
-- **When a feature replaces example tests, delete them.** Then prove nothing was lost (see
-  [Coverage parity](#coverage-parity-for-test-refactors)).
-
-Good candidates are the behaviours whose failure loses work or leaks something: shelving, tidy,
-branch cleanup, workspace restore with window reuse, and governance sync (what it changes and what
-it never touches).
-
-### Shared fakes and steps
+### Shared fakes
 
 Tests share one vocabulary rather than each file building its own doubles
 ([target-architecture.md](target-architecture.md#behaviour-suites-share-one-vocabulary)):
 
 - **`tests/fakes/`** holds one stand-in per port, typed as that port with an `as_port()` so a
   signature change breaks the fake visibly: `gh_runner.FakeGh` for `rig.proc.GhRunner`.
-  Git has no fake class: `git.py`
-  runs real git through `rig.proc` against a temp clone with a bare origin, and `tests/conftest.py`
-  serves that clone as the `clone` fixture.
-- **`tests/behaviour/steps/`** holds typed given/when/then functions over those fakes, such as
-  `steps.git.add_worktree`, `commit` and `make_dirty`. Feature steps and example tests call them;
-  they never import helpers from another `test_*.py` module.
-
+  Tests never import helpers from another `test_*.py` module.
 - **`tests/contracts/`** holds a fake to the real adapter. `test_gh_runner_contract.py` runs one
   suite against `FakeGh` and against `RecordedGh`, a replay of real `gh api graphql` answers for
   the queries `resolve_repo` makes. A changed query fails as unrecorded: re-record with
   `uv run python -m tests.contracts.record_gh_runner`, then fix the fake to match. Git needs no
   contract, because its stand-in is real git.
 
-A new scenario reuses a fake or a step. Extend the shared one rather than writing a second copy inline.
+A new test reuses a fake. Extend the shared one rather than writing a second copy inline.
 
 `uv run ratchet` enforces it over `tests/`: `fake-location` fails a `Fake*` or `Stub*` class outside
 `tests/fakes/`, and `patching` fails `mock.patch`, `monkeypatch.setattr` and `sys.modules[...] =`.

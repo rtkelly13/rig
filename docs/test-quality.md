@@ -34,8 +34,9 @@ The others are well-known results, but check them before quoting.
 A test has two independent properties: its **style**, which is how it is written, and its
 **size**, which is the resources it actually uses at runtime.
 
-- **Style** is example, property (Hypothesis) or bdd (pytest-bdd). `tests/conftest.py` tags
-  property and bdd tests automatically. Everything else is an example test.
+- **Style** is example or property (Hypothesis). `tests/conftest.py` tags property tests
+  automatically. Everything else is an example test. The `bdd` style remains in the size probe,
+  but no Python suite uses it since pytest-bdd went with `estate shelve`'s move to C#.
 - **Size** follows Google's definitions, as `rig.repo_governance.size_probe` applies them:
   - **small**: one process, with no subprocess, filesystem write or socket;
   - **medium**: subprocesses, filesystem writes or localhost sockets;
@@ -106,9 +107,9 @@ setup is left out, so a `tmp_path` a test never writes to does not make it mediu
   start a subprocess, usually `git`.
 - **One test reaches the internet.** `test_cli_packages_status_and_artifacts_alias` resolves
   `registry.npmjs.org` on every run. It is large, unhermetic, and next in line to fake.
-- **There are 19 property tests and 12 BDD scenarios.** The `bdd` marker had selected nothing:
-  pytest-bdd 8 dropped the `__scenario__` attribute that `conftest.py` looked for. A test now
-  checks that both derived markers reach the suite's own tests.
+- **There are 19 property tests.** A derived marker can silently stop applying: the `bdd` marker
+  selected nothing for months after pytest-bdd 8 dropped the `__scenario__` attribute that
+  `conftest.py` looked for. A test now checks that the `property` marker reaches the suite's own tests.
 
 ## Python tooling
 
