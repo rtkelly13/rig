@@ -726,7 +726,7 @@ internal sealed class PyJsonWriter
     }
 
     /// <summary>Writes an integer.</summary>
-    public PyJsonWriter Number(int value)
+    public PyJsonWriter Number(long value)
     {
         Separate();
         text.Append(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
