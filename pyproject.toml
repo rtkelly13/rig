@@ -244,9 +244,6 @@ ignore = [
 # file moves onto rig.tracing.run / rig.proc; G4 deletes whatever is left.
 # Removed by C10 (installers):
 "src/desktop_manager/chrome/install.py" = ["TID251"]
-# Removed by C15 (agent_browser reduced to setup) or G4:
-"src/rig/agent_browser/config.py" = ["TID251"]
-"src/rig/agent_browser/launcher.py" = ["TID251"]
 # Removed by G4 (migrate onto rig.tracing.run):
 "src/desktop_manager/app_updates.py" = ["TID251"]
 "src/desktop_manager/cli_machine.py" = ["TID251"]  # raw git rev-parse: move onto rig.proc.git
@@ -518,7 +515,6 @@ patching-allow = [
     "tests/devenv/test_steps.py",
     "tests/devenv/test_terminal_compat.py",
     "tests/devenv/test_tool_manager.py",
-    "tests/test_agent_browser_setup.py",
     "tests/test_align_repo_conventions.py",
     "tests/test_branch_cleanup.py",
     "tests/test_c4_okf.py",

@@ -10,7 +10,6 @@ from rich.table import Table
 from rig import csharp_cli
 
 from ...engine.context import StepContext
-from .agent_browser import setup_agent_browser_profiles
 from .agent_launcher_setup import setup_agent_launcher
 from .claude_code import setup_claude_code
 from .discovery import detect_installed_agents
@@ -43,8 +42,9 @@ def run_ai_tools_setup(ctx: StepContext) -> None:
     # 3. Configure OpenCode
     setup_opencode(dry_run=ctx.dry_run)
 
-    # 4. Configure agent-browser profiles
-    setup_agent_browser_profiles(dry_run=ctx.dry_run)
+    # 4. Configure agent-browser profiles through `rig browser profiles`
+    dry_run = ["--dry-run"] if ctx.dry_run else []
+    failed = {"browser profiles": csharp_cli.run(["browser", "profiles", *dry_run])}
 
     # 5. Estate-wide agent rules for ~/code/personal
     setup_estate_rules(dry_run=ctx.dry_run)
@@ -57,12 +57,13 @@ def run_ai_tools_setup(ctx: StepContext) -> None:
 
     # 7. Link skills into every agent CLI through `rig skills sync`
     console.print("\n[cyan]Linking skills into agent CLIs...[/cyan]")
-    skills = csharp_cli.run(["skills", "sync", "--system", "all", *(["--dry-run"] if ctx.dry_run else [])])
+    failed["skills sync"] = csharp_cli.run(["skills", "sync", "--system", "all", *dry_run])
 
     # 8. Agent launcher root shim and shell shortcut
     console.print("\n[cyan]Configuring agent launcher root shim & shell shortcut...[/cyan]")
     setup_agent_launcher(dry_run=ctx.dry_run)
 
-    # The launcher still runs after a failed skills sync; the step then reports the failure.
-    if skills != 0:
-        raise RuntimeError(f"rig skills sync exited {skills}")
+    # Every part runs even after one fails; the step then reports each failure.
+    failures = [f"rig {command} exited {code}" for command, code in failed.items() if code != 0]
+    if failures:
+        raise RuntimeError("; ".join(failures))

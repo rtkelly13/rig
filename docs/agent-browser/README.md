@@ -5,7 +5,7 @@ automating personal projects, development workflows, and personal services.
 
 - **Install:** `npm install -g agent-browser` then `agent-browser install` (downloads Chromium)
 - **Reference:** `agent-browser --help` or `agent-browser skills get core --full`
-- **Setup:** `uv run rig browser setup` (provisions user-scoped env vars — run once per machine)
+- **Setup:** `rig browser setup` (provisions user-scoped env vars — run once per machine)
 
 ## Guides
 
@@ -52,7 +52,7 @@ agent-browser --profile ~/.agent-browser-profiles/personal --headed open <url>
 
 ## Setup (run once per machine)
 
-`uv run rig browser setup` provisions three user-scoped environment variables
+`rig browser setup` provisions three user-scoped environment variables
 (never-clobber — anything already set is left untouched):
 
 | Variable | Value | Role |
@@ -62,7 +62,7 @@ agent-browser --profile ~/.agent-browser-profiles/personal --headed open <url>
 | `AGENT_BROWSER_HEADED` | `1` | Run headed by default |
 
 ```bash
-uv run rig browser setup       # dry-run first: uv run rig browser setup --dry-run
+rig browser setup       # dry-run first: rig browser setup --dry-run
 ```
 
 Open a new terminal after setup for the env vars to take effect.
@@ -74,7 +74,7 @@ Open a new terminal after setup for the env vars to take effect.
 ### Switching profiles
 
 `AGENT_BROWSER_PROFILE` is the only stored default. To change it for good, set
-the variable (or rerun `uv run rig browser setup --force` after editing it).
+the variable (or rerun `rig browser setup --force` after editing it).
 `devenv` also installs `agent-browser-dev` / `agent-browser-personal` shell
 shortcuts that pass `--profile <dir>` for one command.
 
@@ -160,7 +160,8 @@ agent-browser --session verify-page close
 ## Setup reference
 
 ```bash
-uv run rig browser setup [--dry-run] [--force]   # provision env vars
+rig browser setup [--dry-run] [--force]   # provision env vars
+rig browser profiles [--dry-run]          # profile folders and shell shortcuts (devenv runs it)
 ```
 
 Everything else is the upstream `agent-browser` CLI (`agent-browser --help`).
