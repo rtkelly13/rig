@@ -13,6 +13,7 @@ import pytest
 
 from rig.image_drift import cli, cli_base, cli_gallery, metrics
 from rig.image_drift.builder_contract import FeatureRegion
+from rig.image_drift.variants import Variant
 
 pytestmark = pytest.mark.ci
 
@@ -294,3 +295,40 @@ def test_cli_snapshot_subcommand_execution(tmp_path: Path) -> None:
     assert len(svgs) == 1
     jsons = list(run_dir.glob("*.json"))
     assert len(jsons) == 1
+
+
+def _builder(variants: dict[str, Variant]) -> cli_base.Builder:
+    return cli_base.Builder(feature_regions=[], build=lambda _path: None, variants=variants, default_variant=None)
+
+
+def test_variant_spec_lists_the_field_then_the_style() -> None:
+    builder = _builder({"wood": Variant(name="Wood", tiling="rhombille", cell=12.5, tone="amber")})
+
+    spec = cli_gallery._variant_spec(builder, "wood")
+    plain = cli_gallery._variant_spec(builder, "missing")
+
+    field = [(row.label, row.value) for row in spec[:3]]
+    assert field == [("tiling", "rhombille"), ("cell", "12.5"), ("tone", "amber")]
+    assert [row.label for row in spec[3:]] == ["frame", "trace", "ring", "dots", "bloom"]
+    assert [row.label for row in plain] == ["frame", "trace", "ring", "dots", "bloom"]
+
+
+def test_favicon_refuses_an_unknown_variant_and_writes_nothing(tmp_path: Path) -> None:
+    from typer.testing import CliRunner
+
+    module = tmp_path / "tiny_builder.py"
+    _ = module.write_text(
+        "from rig.image_drift.variants import Variant\n"
+        "FEATURE_REGIONS = []\n"
+        "VARIANTS = {'full': Variant(name='Full')}\n"
+        "def build_svg_logo(output_path, variant='full'):\n"
+        "    output_path.write_text('<svg/>')\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "cuts"
+
+    res = CliRunner().invoke(cli.app, ["favicon", "-B", str(module), "-o", str(out), "-v", "tiny"])
+
+    assert res.exit_code == 1
+    assert "Unknown variant 'tiny'" in res.output
+    assert not out.exists()

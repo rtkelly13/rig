@@ -1,4 +1,4 @@
-"""What Python still needs from Orca's runtime: the unavailable exit code, the estate's profile and `Repo`.
+"""What Python still needs from Orca's runtime: the unavailable exit code and the estate's profile.
 
 The runtime client itself moved to C# (`src/Rig.Core/Orca/OrcaRuntime.cs`) with `estate orca`.
 """
@@ -7,12 +7,6 @@ from __future__ import annotations
 
 import pathlib
 import sys
-from dataclasses import dataclass
-from typing import Annotated
-
-from pydantic import Field
-
-from rig.typed_json import Lenient
 
 #: The exit code a command gives when Orca could not be reached; the job coordinator retries it.
 ORCA_UNAVAILABLE_EXIT = 3
@@ -35,19 +29,3 @@ def estate_user_data() -> pathlib.Path:
     if sys.platform == "win32":
         return default_user_data().with_name(ESTATE_PROFILE_FOLDER)
     return default_user_data()
-
-
-@dataclass(frozen=True, slots=True)
-class Remote:
-    canonical_key: Annotated[Lenient[str], Field(alias="canonicalKey")] = None
-
-
-@dataclass(frozen=True, slots=True)
-class Repo:
-    """A registered project, as `repo.list` reports it."""
-
-    id: str
-    path: str
-    display_name: Annotated[str, Field(alias="displayName")] = ""
-    group_id: Annotated[Lenient[str], Field(alias="projectGroupId")] = None
-    remote: Annotated[Lenient[Remote], Field(alias="gitRemoteIdentity")] = None

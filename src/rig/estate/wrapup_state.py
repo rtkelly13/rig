@@ -1,21 +1,19 @@
 """What `estate wrapup` remembers per worktree: `temp/.rig/wrapup.json`, schema `rig.wrapup/1`.
 
 The location and its rules are rig's per-worktree state standard (`rig.worktree_state`,
-docs/repo-governance/worktree-state.md). This module is the file's shape and how it is read and written;
-`wrapup.py` decides what goes in it. Spec: docs/estate/wrapup.md#the-state-file.
+docs/repo-governance/worktree-state.md). `estate wrapup` runs from C# (`src/Rig.Core/Estate/WrapupState.cs`) and
+writes the file; this module is its shape as the triage inbox reads it. Spec: docs/estate/wrapup.md#the-state-file.
 """
 
 from __future__ import annotations
 
 import datetime as dt
-import secrets
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
 
 from rig import worktree_state
-from rig.typed_json import encode_json, try_decode_json
+from rig.typed_json import try_decode_json
 
 FEATURE = "wrapup"
 SCHEMA = "rig.wrapup/1"
@@ -66,59 +64,15 @@ class WrapupState:
     asks: tuple[AskRecord, ...] = ()
     answers: tuple[AnswerRecord, ...] = ()
 
-    def last_ask(self, pane: str) -> AskRecord | None:
-        return next((a for a in reversed(self.asks) if a.pane == pane), None)
-
-    def last_answer(self, pane: str) -> AnswerRecord | None:
-        return next((a for a in reversed(self.answers) if a.pane == pane), None)
-
-    def ask_by_id(self, ask_id: str) -> AskRecord | None:
-        return next((a for a in reversed(self.asks) if ask_id and a.id == ask_id), None)
-
-    def answer_to(self, ask: AskRecord) -> AnswerRecord | None:
-        """The newest answer recorded for *ask*, from either source."""
-        return next((a for a in reversed(self.answers) if a.asked_at == ask.at and a.pane == ask.pane), None)
-
-    def with_ask(self, ask: AskRecord) -> WrapupState:
-        return replace(self, asks=(*self.asks, ask))
-
-    def with_answer(self, answer: AnswerRecord) -> WrapupState:
-        return replace(self, answers=(*self.answers, answer))
-
-
-class StateStore(Protocol):
-    def read(self, worktree: Path) -> WrapupState | None: ...
-
-    #: None when written, else why not.
-    def write(self, worktree: Path, state: WrapupState) -> str | None: ...
-
 
 type StateReader = Callable[[Path], WrapupState | None]
 
 
-class FileStateStore:
-    """`<worktree>/temp/.rig/wrapup.json`. Unreadable files and unknown schemas read as absent."""
-
-    def read(self, worktree: Path) -> WrapupState | None:
-        text = worktree_state.read_text(worktree, FEATURE)
-        state = try_decode_json(WrapupState, text) if text else None
-        return state if state is not None and state.schema == SCHEMA else None
-
-    def write(self, worktree: Path, state: WrapupState) -> str | None:
-        return worktree_state.write_text(worktree, FEATURE, encode_json(WrapupState, state) + "\n")
-
-
-def default_store() -> StateStore:
-    return FileStateStore()
-
-
-def new_ask_id() -> str:
-    """Eight hex digits: enough to tell one worktree's asks apart, short enough to type."""
-    return secrets.token_hex(4)
-
-
-def timestamp(when: dt.datetime) -> str:
-    return when.astimezone(dt.UTC).isoformat(timespec="milliseconds")
+def read(worktree: Path) -> WrapupState | None:
+    """`<worktree>/temp/.rig/wrapup.json`. Missing or unreadable files and unknown schemas read as absent."""
+    text = worktree_state.read_text(worktree, FEATURE)
+    state = try_decode_json(WrapupState, text) if text else None
+    return state if state is not None and state.schema == SCHEMA else None
 
 
 def parse_timestamp(text: str) -> dt.datetime | None:

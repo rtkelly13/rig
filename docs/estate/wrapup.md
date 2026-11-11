@@ -174,3 +174,13 @@ How a later run uses the latest ask for a pane:
 | the marker is still the last prompt | `answering` / `answered`, as above |
 | no marker, and the pane changed state after the ask | you carried on working: judged afresh (idle, settled, ask). The last recorded answer is shown in the note |
 | no marker, and the pane hasn't changed state since the ask | `unconfirmed`: the prompt never arrived |
+
+## Where it runs
+
+`estate wrapup` and `estate wrapup report` run on the C# CLI. The command is in
+`src/Rig.Cli/Estate/WrapupCommand.cs`; the plan and sends in `src/Rig.Core/Estate/Wrapup.cs`; the rolling
+follow and the follower in `WrapupRun.cs`; the state file in `WrapupState.cs`. The only Python left is
+`rig.estate.wrapup_state`, which the triage inbox uses to read the state file.
+
+The follower holds `wrapup/follow.lock` under rig's app data folder exclusively: a share-deny open on
+Windows, an advisory lock on macOS and Linux. Either is released when the process exits.

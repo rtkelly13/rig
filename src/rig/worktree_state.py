@@ -8,15 +8,15 @@ Spec: docs/repo-governance/worktree-state.md. In short:
   read, or carries a schema the reader does not know, is treated as missing.
 - The folder must be gitignored, so the state never makes a worktree dirty. Every managed repo
   ignores `temp/` (`gitignore_entries` in config/repo_policies.json), and `repo-governance gitignore`
-  checks git really ignores this folder. Writers check too, and skip writing when it is not ignored.
+  checks git really ignores this folder. Writers (`src/Rig.Core/Estate/WorktreeState.cs`) check too, and skip
+  writing when it is not ignored.
 - Writes replace the file atomically. Deleting the folder is always safe; only history is lost.
 
-This is a leaf module, so every rig feature can share the one location.
+Python only reads it now; the C# side writes. This is a leaf module.
 """
 
 from __future__ import annotations
 
-import os
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
 
@@ -67,24 +67,3 @@ def read_text(worktree: Path, feature: str) -> str | None:
         return state_file(worktree, feature).read_text(encoding="utf-8")
     except OSError:
         return None
-
-
-def write_text(worktree: Path, feature: str, text: str) -> str | None:
-    """Replace the feature's file. Returns None on success, or why nothing was written."""
-    target = state_file(worktree, feature)
-    staging = target.with_name(f".{target.name}.{os.getpid()}.tmp")
-    match ignored(worktree, target.name, staging.name):
-        case Ignored.NO:
-            return f"{STATE_DIR.as_posix()}/{target.name} is not gitignored here"
-        case Ignored.NOT_A_REPO:
-            return "not a git worktree"
-        case Ignored.YES:
-            pass
-    try:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        _ = staging.write_text(text, encoding="utf-8")
-        _ = staging.replace(target)
-    except OSError as exc:
-        staging.unlink(missing_ok=True)
-        return f"cannot write {target.as_posix()}: {exc.strerror or exc}"
-    return None

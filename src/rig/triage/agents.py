@@ -16,8 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from rig.estate import wrapup_state
 from rig.estate.checks import list_worktrees
-from rig.estate.wrapup_state import StateReader, WrapupState, default_store, parse_timestamp
+from rig.estate.wrapup_state import StateReader, WrapupState, parse_timestamp
 from rig.gh_origin import get_repo_root_and_origin
 from rig.repo_slug import RepoSlug
 from rig.workspace.engine import config_file_path, estate_root_path, load_managed_specs
@@ -122,7 +123,7 @@ def signals(
     """`scan` over the estate, reused for `TTL_SECONDS`."""
     with _cache.lock:
         if clock() - _cache.at >= TTL_SECONDS:
-            _cache.value = scan(roots(), default_store().read)
+            _cache.value = scan(roots(), wrapup_state.read)
             _cache.at = clock()
         return _cache.value
 

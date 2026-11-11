@@ -16,5 +16,6 @@
     <Compile Include="../Rig.Core.Tests/Estate/Repos.cs" Link="Fakes/Repos.cs" />
     <Compile Include="../Rig.Core.Tests/Estate/Walked.cs" Link="Fakes/Walked.cs" />
     <Compile Include="../Rig.Core.Tests/Orca/FakeOrca.cs" Link="Fakes/FakeOrca.cs" />
+    <Compile Include="../Rig.Core.Tests/Estate/WrapupFakes.cs" Link="Fakes/WrapupFakes.cs" />
   </ItemGroup>
 </Project>
