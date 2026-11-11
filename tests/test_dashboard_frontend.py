@@ -11,7 +11,7 @@ pytestmark = pytest.mark.ci
 
 def test_index_html_structure() -> None:
     """Verify HTML template structure and brutalist design system token usage."""
-    template_path = Path(__file__).parent.parent / "src" / "rig" / "image_drift" / "templates" / "index.html"
+    template_path = Path(__file__).parent.parent / "src" / "rig" / "web_host" / "templates" / "index.html"
     assert template_path.exists(), "index.html must exist in templates directory"
 
     content = template_path.read_text(encoding="utf-8")
@@ -47,7 +47,7 @@ def test_index_html_structure() -> None:
 
 def test_studio_css_tokens() -> None:
     """Verify studio.css strictly adheres to @rtkelly13/design-system brutalist rules."""
-    css_path = Path(__file__).parent.parent / "src" / "rig" / "image_drift" / "templates" / "studio.css"
+    css_path = Path(__file__).parent.parent / "src" / "rig" / "web_host" / "templates" / "studio.css"
     assert css_path.exists()
     content = css_path.read_text(encoding="utf-8")
 
@@ -64,7 +64,7 @@ def test_studio_css_tokens() -> None:
 
 def test_studio_js_controller() -> None:
     """Verify studio.js defines expected event listeners and API handlers."""
-    js_path = Path(__file__).parent.parent / "src" / "rig" / "image_drift" / "templates" / "studio.js"
+    js_path = Path(__file__).parent.parent / "src" / "rig" / "web_host" / "templates" / "studio.js"
     assert js_path.exists()
     content = js_path.read_text(encoding="utf-8")
 

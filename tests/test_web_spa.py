@@ -15,10 +15,10 @@ from playwright.sync_api import Page, expect, sync_playwright
 
 from rig.connectivity import web as connectivity_web
 from rig.connectivity.models import Component, ComponentEdge, Dependency, Graph, Project
-from rig.image_drift.server import StudioServer
 from rig.triage import github, service, store
 from rig.triage.facts import Check, Facts, Related, Stack, StackMember
 from rig.triage.models import Activity, Interaction, Item
+from rig.web_host.server import StudioServer
 
 pytestmark = pytest.mark.ci
 
@@ -88,7 +88,7 @@ def browser_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Bro
     ]
     with closing(store.connect(db)) as conn, conn:
         store.save(conn, items)
-    server = StudioServer(port=0, db_path=db, assets_root=tmp_path / "assets", variations_root=tmp_path / "variations")
+    server = StudioServer(port=0, db_path=db, assets_root=tmp_path / "assets")
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     with sync_playwright() as playwright:

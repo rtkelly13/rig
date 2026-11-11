@@ -174,9 +174,6 @@ modules = [
     "rig.image_drift",
 ]
 ignore_imports = [
-    "rig.image_drift.server -> rig.workspace.engine",  # G2
-    "rig.image_drift.server -> rig.connectivity.web",  # G2 (the web host mounts routes from rig_cli)
-    "rig.image_drift.server -> rig.triage.web",  # G2 (the web host mounts routes from rig_cli)
     "rig.repo_governance.cli_audits -> rig.workspace.engine",  # G2
     "rig.repo_governance.cli_audits -> rig.workspace.vercel_names",  # G2 (move the module)
     "rig.repo_governance.vercel_projects -> rig.workspace.vercel_names",  # G2 (move the module)

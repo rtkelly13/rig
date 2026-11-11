@@ -32,6 +32,9 @@ if TYPE_CHECKING:
 _COMMAND_MODULES = (cli_analysis, cli_gallery, cli_explore)
 """Imported so their commands register on `app`."""
 
+STUDIO_PAGE = "http://127.0.0.1:8090/studio"
+"""The rig web host's studio page, which calls this server's API."""
+
 
 @app.command(name="serve")
 def serve_command(
@@ -55,7 +58,7 @@ def serve_command(
         bool,
         typer.Option(
             "--open/--no-open",
-            help="Automatically open Asset Studio in the default web browser.",
+            help="Open the rig web host's studio page in the default web browser.",
         ),
     ] = True,
     assets_dir: Annotated[
@@ -73,16 +76,17 @@ def serve_command(
         ),
     ] = Path("temp/variations"),
 ) -> None:
-    """Launch the local Asset Studio interactive web workbench and agent feedback dashboard."""
+    """Serve Asset Studio's API for the rig web host's studio page (`/studio`)."""
     import webbrowser
 
-    from rig.image_drift.server import StudioServer
+    from rig.image_drift.server import AssetStudioServer
 
     server_url = f"http://{host}:{port}"
     console.print(
         Panel(
             f"[bold cyan]Asset Studio // Estate Visual Workbench[/]\n\n"
-            f"Server running at: [bold green]{server_url}[/]\n"
+            f"API running at: [bold green]{server_url}[/]\n"
+            f"Studio page: [bold green]{STUDIO_PAGE}[/] (the rig web host)\n"
             f"Assets Root: [dim]{assets_dir.resolve()}[/]\n"
             f"Variations Root (Git-Ignored): [dim]{variations_dir.resolve()}[/]\n\n"
             f"[dim]Press Ctrl+C to terminate the server.[/]",
@@ -91,16 +95,16 @@ def serve_command(
         )
     )
 
-    server = StudioServer(
+    server = AssetStudioServer(
+        assets_root=assets_dir,
+        variations_root=variations_dir,
         host=host,
         port=port,
-        assets_root=assets_dir.resolve(),
-        variations_root=variations_dir.resolve(),
     )
 
     if open_browser:
         with contextlib.suppress(Exception):
-            webbrowser.open(server_url)
+            webbrowser.open(STUDIO_PAGE)
 
     try:
         server.serve_forever()

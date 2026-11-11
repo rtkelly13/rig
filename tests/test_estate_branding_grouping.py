@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from rig.image_drift.server import StudioRequestHandler
+from rig.web_host.server import StudioRequestHandler
 from rig.workspace.engine import load_managed_specs
 
 pytestmark = pytest.mark.ci

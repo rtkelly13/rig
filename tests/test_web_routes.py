@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from rig.image_drift.server import StudioServer
+from rig.web_host.server import StudioServer
 from rig.web_routes import Request, RouteNotFoundError, json_body, respond
 
 pytestmark = pytest.mark.ci
@@ -55,7 +55,6 @@ def base_url(tmp_path: Path) -> Iterator[str]:
         templates_dir=templates,
         db_path=tmp_path / "rig.db",
         assets_root=tmp_path / "assets",
-        variations_root=tmp_path / "variations",
         routes=(echo,),
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)

@@ -26,8 +26,8 @@ SCANNED = (
     "web/*.css",
     "web/*.tsx",
     "src/rig/image_drift/templates/*.jinja",
-    "src/rig/image_drift/templates/*.html",
-    "src/rig/image_drift/templates/studio.css",
+    "src/rig/web_host/templates/*.html",
+    "src/rig/web_host/templates/studio.css",
     "src/rig/c4_okf/static/*.html",
 )
 

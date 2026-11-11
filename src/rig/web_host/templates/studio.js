@@ -6,6 +6,11 @@
 (function () {
   'use strict';
 
+  // Asset Studio's API and media come from `image-reconcile serve` (tools/image-drift), a separate
+  // server on its own port. Set window.RIG_ASSET_STUDIO_URL before this script loads to point elsewhere.
+  const ASSET_STUDIO = (window.RIG_ASSET_STUDIO_URL || 'http://127.0.0.1:8092').replace(/\/$/, '');
+  const studioUrl = (path) => `${ASSET_STUDIO}${path}`;
+
   // Application State
   const state = {
     activeTab: 'workbench', // 'estate' | 'workbench'
@@ -325,7 +330,7 @@
   // -------------------------------------------------------------------------
   async function fetchProjects() {
     try {
-      const res = await fetch('/api/projects');
+      const res = await fetch(studioUrl('/api/projects'));
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
       state.projects = data.projects || [];
@@ -338,7 +343,7 @@
       }
     } catch (err) {
       console.error('Failed to load projects:', err);
-      setStatus(`[ ERR: ${err.message} ]`, true);
+      setStatus(`[ ASSET STUDIO OFFLINE at ${ASSET_STUDIO}: run \`uv run --project tools/image-drift image-reconcile serve\` ]`, true);
     }
   }
 
@@ -487,9 +492,9 @@
     dom.metricCandName.textContent = cand ? cand.filename : '-';
 
     if (ref) {
-      dom.imgReference.src = ref.url;
+      dom.imgReference.src = studioUrl(ref.url);
       dom.imgReference.style.display = 'block';
-      dom.sliderImgReference.src = ref.url;
+      dom.sliderImgReference.src = studioUrl(ref.url);
       dom.sliderImgReference.style.display = 'block';
       dom.panelRefInfo.textContent = ref.description || ref.filename;
     } else {
@@ -501,9 +506,9 @@
     }
 
     if (cand) {
-      dom.imgCandidate.src = cand.url;
+      dom.imgCandidate.src = studioUrl(cand.url);
       dom.imgCandidate.style.display = 'block';
-      dom.sliderImgCandidate.src = cand.url;
+      dom.sliderImgCandidate.src = studioUrl(cand.url);
       dom.sliderImgCandidate.style.display = 'block';
       dom.panelCandInfo.textContent = cand.purpose || cand.filename;
     } else {
@@ -522,7 +527,7 @@
 
     setStatus('[ CALCULATING DRIFT... ]');
     try {
-      const url = `/api/diff?ref=${encodeURIComponent(ref.url)}&cand=${encodeURIComponent(cand.url)}`;
+      const url = studioUrl(`/api/diff?ref=${encodeURIComponent(ref.url)}&cand=${encodeURIComponent(cand.url)}`);
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
@@ -668,7 +673,7 @@
     };
 
     try {
-      const res = await fetch('/api/snapshot', {
+      const res = await fetch(studioUrl('/api/snapshot'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

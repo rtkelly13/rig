@@ -1,4 +1,4 @@
-"""Unit tests for the Asset Studio local HTTP server and REST API."""
+"""Asset Studio's HTTP API: catalogs, diffs, snapshots, media and the cross-origin headers the studio page needs."""
 
 from __future__ import annotations
 
@@ -13,26 +13,19 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from rig.image_drift.server import StudioServer
+from rig.image_drift.server import AssetStudioServer
 
 pytestmark = pytest.mark.ci
 
 
 @pytest.fixture
 def test_environment(tmp_path: Path):
-    """Set up mock assets, variations, and templates directory."""
+    """Set up mock assets and variations."""
     assets_root = tmp_path / "assets"
     variations_root = tmp_path / "temp" / "variations"
-    templates_dir = tmp_path / "templates"
 
     assets_root.mkdir(parents=True)
     variations_root.mkdir(parents=True)
-    templates_dir.mkdir(parents=True)
-
-    # Setup mock template files
-    (templates_dir / "index.html").write_text("<!DOCTYPE html><html><body>[ ASSET_STUDIO.exe ]</body></html>")
-    (templates_dir / "studio.css").write_text("body { background: #0a0a1a; }")
-    (templates_dir / "studio.js").write_text("console.log('studio ready');")
 
     # Setup mock project: test-brand
     proj_dir = assets_root / "test-brand"
@@ -51,7 +44,6 @@ def test_environment(tmp_path: Path):
     return {
         "assets_root": assets_root,
         "variations_root": variations_root,
-        "templates_dir": templates_dir,
     }
 
 
@@ -66,12 +58,11 @@ def find_free_port() -> int:
 @pytest.fixture
 def running_server(test_environment):
     port = find_free_port()
-    server = StudioServer(
-        host="127.0.0.1",
-        port=port,
+    server = AssetStudioServer(
         assets_root=test_environment["assets_root"],
         variations_root=test_environment["variations_root"],
-        templates_dir=test_environment["templates_dir"],
+        host="127.0.0.1",
+        port=port,
     )
 
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -83,26 +74,6 @@ def running_server(test_environment):
 
     server.shutdown()
     server.server_close()
-
-
-def test_serve_index_html(running_server) -> None:
-    base_url, _ = running_server
-    req = urllib.request.urlopen(f"{base_url}/")
-    assert req.status == 200
-    content = req.read().decode("utf-8")
-    assert "[ ASSET_STUDIO.exe ]" in content
-    assert req.headers.get("Content-Type", "").startswith("text/html")
-
-
-def test_serve_static_files(running_server) -> None:
-    base_url, _ = running_server
-    css_req = urllib.request.urlopen(f"{base_url}/static/studio.css")
-    assert css_req.status == 200
-    assert "background: #0a0a1a" in css_req.read().decode("utf-8")
-
-    js_req = urllib.request.urlopen(f"{base_url}/static/studio.js")
-    assert js_req.status == 200
-    assert "console.log" in js_req.read().decode("utf-8")
 
 
 def test_serve_media_files(running_server) -> None:
@@ -174,18 +145,53 @@ def test_api_snapshot_endpoint(running_server) -> None:
     assert len(svg_files) == 1
 
 
-def test_api_dev_mtime_endpoint(running_server) -> None:
-    base_url, _env = running_server
-    req = urllib.request.Request(f"{base_url}/api/dev/mtime")
+def test_every_response_allows_the_studio_page_origin(running_server) -> None:
+    base_url, _ = running_server
+    res = urllib.request.urlopen(f"{base_url}/api/projects")
+    assert res.headers.get("Access-Control-Allow-Origin") == "*"
+
+    img = urllib.request.urlopen(f"{base_url}/media/assets/test-brand/test-brand.svg")
+    assert img.headers.get("Access-Control-Allow-Origin") == "*"
+
+    with pytest.raises(urllib.error.HTTPError) as err:
+        urllib.request.urlopen(f"{base_url}/media/assets/missing.png")
+    assert err.value.headers.get("Access-Control-Allow-Origin") == "*"
+
+
+def test_a_json_post_preflight_is_answered(running_server) -> None:
+    base_url, _ = running_server
+    req = urllib.request.Request(f"{base_url}/api/snapshot", method="OPTIONS")
     res = urllib.request.urlopen(req)
-    assert res.status == 200
-    data = json.loads(res.read().decode("utf-8"))
-    assert "mtime" in data
-    assert isinstance(data["mtime"], float)
-    assert data["mtime"] > 0
-    assert "css_mtime" in data
-    assert isinstance(data["css_mtime"], float)
-    assert "is_preview" in data
+
+    assert res.status == 204
+    assert res.headers.get("Access-Control-Allow-Origin") == "*"
+    assert "POST" in res.headers.get("Access-Control-Allow-Methods", "")
+    assert res.headers.get("Access-Control-Allow-Headers") == "Content-Type"
+
+
+@pytest.mark.parametrize("path", ["/media/assets/../outside.txt", "/media/variations/../../outside.txt"])
+def test_media_outside_its_root_is_not_found(running_server, path: str) -> None:
+    base_url, env = running_server
+    (env["assets_root"].parent / "outside.txt").write_text("secret")
+
+    with pytest.raises(urllib.error.HTTPError) as err:
+        urllib.request.urlopen(f"{base_url}{path}")
+
+    assert err.value.code == 404
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [("GET", "/"), ("GET", "/static/studio.js"), ("GET", "/api/estate"), ("POST", "/api/db/backup")],
+)
+def test_the_rig_web_host_routes_are_not_served_here(running_server, method: str, path: str) -> None:
+    base_url, _ = running_server
+    data = b"{}" if method == "POST" else None
+
+    with pytest.raises(urllib.error.HTTPError) as err:
+        urllib.request.urlopen(urllib.request.Request(f"{base_url}{path}", data=data, method=method))
+
+    assert err.value.code == 404
 
 
 @pytest.mark.parametrize(
