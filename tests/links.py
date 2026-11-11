@@ -7,9 +7,19 @@ from pathlib import Path
 
 import pytest
 
-from rig.fs_links import link_directory
-
 _PRIVILEGE_NOT_HELD = 1314
+
+
+def link_directory(link: Path, target: Path) -> None:
+    """Point *link* at the directory *target*: a symlink, else a junction on Windows."""
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError:
+        if sys.platform != "win32":
+            raise
+        import _winapi  # noqa: TID251 - behind the win32 check
+
+        _winapi.CreateJunction(str(target.resolve()), str(link))
 
 
 def dir_link(link: Path, target: Path) -> Path:

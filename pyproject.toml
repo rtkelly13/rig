@@ -234,7 +234,6 @@ ignore = [
 "src/desktop_manager/chrome/window_info.py" = ["TID251"]
 "src/desktop_manager/processes.py" = ["TID251"]
 "src/desktop_manager/projects.py" = ["TID251"]
-"src/rig/fs_links.py" = ["TID251"]
 "src/desktop_manager/terminal_init.py" = ["TID251"]
 # subprocess.* is banned (TID251, plan item B10, #30). Permanent owners:
 # tracing.run is the one executor that rig.proc and every other caller goes through;

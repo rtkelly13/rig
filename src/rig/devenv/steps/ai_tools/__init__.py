@@ -7,8 +7,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
-from rig.skills.engine import sync_skill_symlinks
-from rig.skills.models import CliSystem
+from rig import csharp_cli
 
 from ...engine.context import StepContext
 from .agent_browser import setup_agent_browser_profiles
@@ -56,9 +55,9 @@ def run_ai_tools_setup(ctx: StepContext) -> None:
         console.print("\n[cyan]Installing Obsidian plugins...[/cyan]")
         setup_obsidian_plugins(vault, dry_run=ctx.dry_run)
 
-    # 7. Link skills into every agent CLI through the one skills engine (`workspace skills`)
+    # 7. Link skills into every agent CLI through `rig skills sync`
     console.print("\n[cyan]Linking skills into agent CLIs...[/cyan]")
-    sync_skill_symlinks(systems=list(CliSystem), dry_run=ctx.dry_run)
+    csharp_cli.run(["skills", "sync", "--system", "all", *(["--dry-run"] if ctx.dry_run else [])])
 
     # 8. Agent launcher root shim and shell shortcut
     console.print("\n[cyan]Configuring agent launcher root shim & shell shortcut...[/cyan]")

@@ -26,7 +26,7 @@ is useful only when a particular technology is in play, it belongs in the vault 
                                   ┌──────────────────────────────┐
                                   │ config/upstream-skills.json  │
                                   └──────────────┬───────────────┘
-                                                 │ schema-validated by Pydantic
+                                                 │ schema-validated by rig
                                                  ▼
 ┌───────────────────────────┐      ┌──────────────────────────────┐
 │  ~/code/external/<repo>   │─────►│  skills/vendored/<vendor>/   │ (gitignored)
@@ -39,7 +39,7 @@ is useful only when a particular technology is in play, it belongs in the vault 
 └───────────────────────────┘                     │
                                                   ▼
                          ┌──────────────────────────────────────────────────┐
-                         │      uv run workspace skills update / sync       │
+                         │             rig skills update / sync             │
                          └────────────────────────┬─────────────────────────┘
                                                   │
          ┌────────────────────────┬───────────────┴────────┬────────────────────────┐
@@ -70,7 +70,7 @@ When asked to update, audit, add, or customize skills, follow these steps:
 Run a fast audit to check active symlinks, missing skills, and broken paths:
 
 ```bash
-uv run workspace skills status
+rig skills status
 ```
 
 Expected output confirms all 4 systems report `✓ Healthy (N/N)` with zero issues.
@@ -138,11 +138,11 @@ The agent will parse the skill's `SKILL.md`, score each dimension, identify anti
 Run the update command:
 
 ```bash
-uv run workspace skills update
+rig skills update
 ```
 
 This command automatically:
-1. Validates `config/upstream-skills.json` against the Pydantic schema.
+1. Validates `config/upstream-skills.json` against the vendor schema.
 2. Clones new upstream repos into `~/code/external/` or runs `git pull --ff-only` on existing clones.
 3. Extracts only matching skills into `skills/vendored/<vendor>/<skill>/`.
 4. Purges any stale skills from `skills/vendored/` that are no longer in the allowlist.
@@ -150,15 +150,15 @@ This command automatically:
 
 To update a single vendor without pulling all repos:
 ```bash
-uv run workspace skills update --vendor <vendor-name>
+rig skills update --vendor <vendor-name>
 ```
 
 ### 5. Choosing Which Skills Are Linked
 The estate allowlist, `config/skills-allowlist.json`, decides which skills are linked. It takes skill names or glob patterns. The system is declarative: edit the file, then reconcile.
 
 1. Remove a skill (or narrow a pattern) in `config/skills-allowlist.json`.
-2. Run `uv run workspace skills sync`. Skills that are no longer allowed are pruned from every CLI environment.
-3. For a temporary, reversible overlay of hidden skills, use `uv run workspace skills activate <name>` and `uv run workspace skills deactivate --all`.
+2. Run `rig skills sync`. Skills that are no longer allowed are pruned from every CLI environment.
+3. For a temporary, reversible overlay of hidden skills, use `rig skills activate <name>` and `rig skills deactivate --all`.
 
 ### 6. Grounded & Vendored Skills Estate
 All skills in the estate must be grounded in maintained upstream repositories (configured in `config/upstream-skills.json`). Upstream repositories are synced into `~/code/external/` and extracted cleanly to `skills/vendored/`.
@@ -169,15 +169,15 @@ All skills in the estate must be grounded in maintained upstream repositories (c
 
 | Command | Purpose |
 |---|---|
-| `uv run workspace skills status` | Fast audit and verification of all 4 CLI directories with active, broken, and disabled counts per config. |
-| `uv run workspace skills list` | List all discovered skills with their Enabled/Disabled status and descriptions. |
-| `uv run workspace skills list --status <enabled\|disabled>` | Filter catalog listing by enabled or disabled status. |
-| `uv run workspace skills sync` | Reconcile declared active skills into CLI target directories (pruning disabled skills). |
-| `uv run workspace skills sync --dry-run` | Preview symlink additions and pruning without making changes. |
-| `uv run workspace skills sync --prune` | Synchronize and remove dangling or stale symlinks. |
-| `uv run workspace skills update` | Pull upstream git clones, extract selected skills, and re-sync symlinks. |
-| `uv run workspace skills update --vendor <name>` | Update only a specific vendor. |
-| `uv run workspace skills prune` | Purge broken symlinks pointing to non-existent targets. |
+| `rig skills status` | Fast audit and verification of all 4 CLI directories with active, broken, and disabled counts per config. |
+| `rig skills list` | List all discovered skills with their Enabled/Disabled status and descriptions. |
+| `rig skills list -q <text>` | Show only skills whose name or description contains the text. |
+| `rig skills sync` | Reconcile declared active skills into CLI target directories (pruning disabled skills). |
+| `rig skills sync --dry-run` | Preview symlink additions and pruning without making changes. |
+| `rig skills sync --prune` | Synchronize and remove dangling or stale symlinks. |
+| `rig skills update` | Pull upstream git clones, extract selected skills, and re-sync symlinks. |
+| `rig skills update --vendor <name>` | Update only a specific vendor. |
+| `rig skills prune` | Purge broken symlinks pointing to non-existent targets. |
 
 ---
 
@@ -185,6 +185,6 @@ All skills in the estate must be grounded in maintained upstream repositories (c
 
 1. **Clean Monorepo**: Upstream clones live in `~/code/external/`. Never clone third-party repositories directly into the monorepo root or estate folders.
 2. **Gitignored Vendoring**: `skills/vendored/` is added to `.gitignore` so third-party skill code never pollutes git history.
-3. **Execution Environment**: Always invoke with `uv run workspace ...`. Never invoke bare python.
-4. **Symlink Verification**: Before finishing any maintenance task, verify `uv run workspace skills status` reports `✓ Healthy` with 0 issues.
+3. **Execution Environment**: Always invoke with `rig skills ...`.
+4. **Symlink Verification**: Before finishing any maintenance task, verify `rig skills status` reports `✓ Healthy` with 0 issues.
 5. **Declarative Skill Management**: Configuration is declared in `config/skills-allowlist.json` and `config/upstream-skills.json`. The CLI verifies and reconciles disk symlinks against the declared JSON files rather than providing mutating write commands. All skills must be grounded in maintained upstream repositories.

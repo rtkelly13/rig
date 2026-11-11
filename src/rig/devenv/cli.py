@@ -98,7 +98,7 @@ def setup_cmd(
 
 @app.command("update")
 def update_cmd() -> None:
-    """Update installed development tools. Skills are updated by `workspace skills update`."""
+    """Update installed development tools. Skills are updated by `rig skills update`."""
     console.print("[bold cyan]Updating development tools...[/bold cyan]\n")
     ToolManager(get_current_platform()).update_all_tools()
     console.print("\n[bold green]✓ Environment update complete![/bold green]")

@@ -6,6 +6,7 @@ using Rig.Cli.Mail;
 using Rig.Cli.Models;
 using Rig.Cli.Otel;
 using Rig.Cli.Policy;
+using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
@@ -13,6 +14,7 @@ using Rig.Core.Otel;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;
+using Rig.Core.Tests.Skills;
 
 namespace Rig.Cli.Tests.Forwarding;
 
@@ -66,6 +68,7 @@ public sealed partial class ForwardedContractTests
                 new StatusCommand(new FakeProc(), new Git(new FakeProc(), "/"), "/", TextWriter.Null).Build,
                 () => new ModelsCommand(new ModelDiscovery(new FakeProc(), "/", _ => null), TextWriter.Null).Build(),
                 new PolicyCommand(new PolicyHost("/none.json", "/", "/", false), TextWriter.Null, TextWriter.Null).Build,
+                new SkillsCommand(new SkillsHost("/", "/", "/", "/", false), new Git(new FakeProc(), "/"), new RefusingLinker(), TextWriter.Null, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
         var owned = app
