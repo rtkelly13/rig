@@ -194,6 +194,34 @@ public sealed class VaultGraphTests : IDisposable
     }
 
     [Fact]
+    public async Task A_relative_vault_path_is_taken_from_the_working_folder()
+    {
+        Registry(Vaults((Path.GetRelativePath(Directory.GetCurrentDirectory(), Vault), true)));
+        proc.Answer(new Ran(0, "Native.md\n", string.Empty), "obsidian", "orphans");
+
+        Assert.Equal(["Native.md"], await Graph().FindOrphansAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Theory]
+    [InlineData("..", false)]
+    [InlineData("../..", true)]
+    [UnsupportedOSPlatform("windows")]
+    public async Task Parent_steps_after_a_symlink_climb_from_where_it_points(string up, bool same)
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Creating symlinks needs developer mode on Windows.");
+        var deep = Directory.CreateDirectory(Path.Combine(parent, "other", "deep")).FullName;
+        Directory.CreateDirectory(Path.Combine(parent, "other", "Vault"));
+        var alias = Path.Combine(parent, "alias");
+        Directory.CreateSymbolicLink(alias, deep);
+        Registry(Vaults((Path.Combine(alias, up, "Vault"), true)));
+        proc.Answer(new Ran(0, "Native.md\n", string.Empty), "obsidian", "orphans");
+        Write("Lone.md", "alone\n");
+
+        Assert.Equal([same ? "Native.md" : "Lone.md"], await Graph().FindOrphansAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(same ? 1 : 0, proc.Requests.Count);
+    }
+
+    [Fact]
     [UnsupportedOSPlatform("windows")]
     public void Links_stay_in_the_vault_when_its_vault_folder_is_a_dangling_symlink()
     {

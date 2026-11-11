@@ -79,7 +79,10 @@ public sealed class ObsidianOrphans(IProc proc, string home)
     /// </summary>
     internal static string RealPath(string path)
     {
-        var full = Path.GetFullPath(path);
+        // Path.GetFullPath would fold "a/link/.." to "a" before the link is followed; resolve() folds it after.
+        var full = Path.IsPathFullyQualified(path) ? path
+            : Path.IsPathRooted(path) ? Path.GetFullPath(path)
+            : Path.Join(Directory.GetCurrentDirectory(), path);
         var resolved = Path.GetPathRoot(full)!;
         var pending = new Stack<string>(Parts(full[resolved.Length..]));
         var hops = 0;
