@@ -56,7 +56,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "tools", "runtimes", "update"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "tools", "runtimes", "update", "git", "terminal"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -550,7 +550,9 @@ public sealed class DevenvCommandTests : IDisposable
     [InlineData(new[] { "devenv", "tools", "--check" }, false)]
     [InlineData(new[] { "devenv", "runtimes" }, false)]
     [InlineData(new[] { "devenv", "update" }, false)]
-    [InlineData(new[] { "devenv", "git" }, true)]
+    [InlineData(new[] { "devenv", "doctor" }, true)]
+    [InlineData(new[] { "devenv", "git", "--check" }, false)]
+    [InlineData(new[] { "devenv", "terminal" }, false)]
     public void Only_the_ported_devenv_subcommands_stay_in_csharp(string[] args, bool forwarded)
     {
         var root = new RootCommand { Build(TextWriter.Null, TextWriter.Null) };

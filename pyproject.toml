@@ -254,7 +254,6 @@ ignore = [
 "src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
 "src/desktop_manager/service_installer.py" = ["TID251"]
 "src/rig/devenv/doctor/core.py" = ["TID251"]
-"src/rig/devenv/steps/git.py" = ["TID251"]
 "src/rig/estate/apps.py" = ["TID251"]
 "src/rig/estate/caches.py" = ["TID251"]
 "src/rig/estate/disksize.py" = ["TID251"]
@@ -505,10 +504,8 @@ patching-allow = [
     "tests/desktop_manager/test_workspace_paths.py",
     "tests/desktop_manager/test_workspace_wait_scope.py",
     "tests/desktop_manager/test_workspace_win32_behavior.py",
-    "tests/devenv/test_config.py",
     "tests/devenv/test_doctor.py",
     "tests/devenv/test_runner.py",
-    "tests/devenv/test_steps.py",
     "tests/devenv/test_terminal_compat.py",
     "tests/test_align_repo_conventions.py",
     "tests/test_branch_cleanup.py",
@@ -570,7 +567,6 @@ loose-dict-allow = [
     "src/desktop_manager/claude_sessions/plan.py",
     "src/desktop_manager/models.py",
     "src/desktop_manager/work/serialize.py",
-    "src/rig/devenv/steps/terminal.py",
     "src/rig/estate/discovery.py",
     "src/rig/otel_stack/backfill.py",
     "src/rig/repo_governance/github_rulesets.py",

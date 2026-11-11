@@ -33,9 +33,11 @@ PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
         "estate-rules",
         "fonts",
         "gh",
+        "git",
         "obsidian-plugins",
         "opencode",
         "runtimes",
+        "terminal",
         "tools",
         "update",
     )

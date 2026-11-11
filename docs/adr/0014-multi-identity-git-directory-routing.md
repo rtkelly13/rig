@@ -7,7 +7,7 @@
 Developers frequently contribute to personal open-source projects, employer repositories, and client organizations from the same workstation. Managing multiple Git identities via manual configuration switches often leads to accidental commit author misattribution or signing key leakage.
 
 ## Decision
-Git identity management in `steps/git.py` adopts native Git conditional directory includes (`[includeIf "gitdir:..."]`).
+Git identity management (`rig devenv git`) adopts native Git conditional directory includes (`[includeIf "gitdir:..."]`).
 - Each configured identity in `DevenvConfig.identities` generates a modular profile file (`~/.gitconfig-<id>`) defining `user.name`, `user.email`, and optional `signingkey`.
 - The root `~/.gitconfig` is updated with directory match rules (e.g. `[includeIf "gitdir:~/code/personal/"] path = ~/.gitconfig-personal`).
 
@@ -16,5 +16,5 @@ Git identity management in `steps/git.py` adopts native Git conditional director
 - Supports distinct GPG/SSH commit signing keys per identity.
 
 ## References
-- [`src/shared_utilities/devenv/steps/git.py`](../../src/rig/devenv/steps/git.py)
+- [`src/Rig.Core/Devenv/GitSetup.cs`](../../src/Rig.Core/Devenv/GitSetup.cs)
 - [Git Documentation — Conditional Includes](https://git-scm.com/docs/git-config#_conditional_includes)

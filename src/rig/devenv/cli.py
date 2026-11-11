@@ -13,7 +13,7 @@ from .doctor.core import run_doctor
 from .engine.context import StepContext, get_current_platform
 from .engine.runner import run_steps
 from .engine.step import Step
-from .steps import ai_tools, git, terminal
+from .steps import ai_tools
 
 app = typer.Typer(
     name="devenv",
@@ -55,7 +55,7 @@ SETUP_STEPS: list[Step] = [
     Step(
         name="Git & SSH Setup",
         description="Configure Git author info, conditional directory routing, and SSH keys",
-        func=git.run_git_setup,
+        func=_ported("git", lambda ctx: ["--mode", ctx.mode]),
         confirm_message="Would you like to configure Git and SSH credentials?",
     ),
     Step(
@@ -67,7 +67,7 @@ SETUP_STEPS: list[Step] = [
     Step(
         name="Terminal Customization",
         description="Configure prompt themes, shell profile integration, and terminal settings",
-        func=terminal.run_terminal_setup,
+        func=_ported("terminal"),
         confirm_message="Would you like to configure terminal customization?",
         default_confirm=False,
     ),
@@ -119,24 +119,6 @@ def doctor_cmd() -> None:
     For lint, type and test gates on this repo, run `uv run status`.
     """
     raise typer.Exit(code=run_doctor())
-
-
-@app.command("terminal")
-def terminal_cmd(
-    dry_run: bool = typer.Option(False, "--dry-run", help="Report planned changes without modifying system"),
-) -> None:
-    """Configure terminal environment and emulator settings."""
-    platform = get_current_platform()
-    ctx = StepContext(platform=platform, mode="full", dry_run=dry_run)
-    terminal.run_terminal_setup(ctx)
-
-
-@app.command("git")
-def git_cmd() -> None:
-    """Configure Git identity and SSH keys."""
-    platform = get_current_platform()
-    ctx = StepContext(platform=platform, mode="full")
-    git.run_git_setup(ctx)
 
 
 @app.command("ai")

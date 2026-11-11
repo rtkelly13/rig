@@ -86,3 +86,29 @@ def test_the_runtimes_setup_step_hands_over_to_rig_devenv_runtimes(csharp_calls:
     step.func(StepContext(platform=get_current_platform(), mode="full"))
 
     assert [call[call.index("--") + 1 :] for call in csharp_calls] == [["devenv", "runtimes"]]
+
+
+@pytest.mark.ci
+def test_the_git_setup_step_hands_over_its_mode(csharp_calls: list[list[str]]):
+    from rig.devenv.cli import SETUP_STEPS
+    from rig.devenv.engine.context import StepContext, get_current_platform
+
+    step = next(step for step in SETUP_STEPS if step.name == "Git & SSH Setup")
+    step.func(StepContext(platform=get_current_platform(), mode="express", dry_run=True))
+    step.func(StepContext(platform=get_current_platform(), mode="full", use_silent_mode=False))
+
+    assert [call[call.index("--") + 1 :] for call in csharp_calls] == [
+        ["devenv", "git", "--dry-run", "--mode", "express"],
+        ["devenv", "git", "--mode", "full"],
+    ]
+
+
+@pytest.mark.ci
+def test_the_terminal_setup_step_hands_over_to_rig_devenv_terminal(csharp_calls: list[list[str]]):
+    from rig.devenv.cli import SETUP_STEPS
+    from rig.devenv.engine.context import StepContext, get_current_platform
+
+    step = next(step for step in SETUP_STEPS if step.name == "Terminal Customization")
+    step.func(StepContext(platform=get_current_platform(), mode="full", dry_run=True))
+
+    assert [call[call.index("--") + 1 :] for call in csharp_calls] == [["devenv", "terminal", "--dry-run"]]
