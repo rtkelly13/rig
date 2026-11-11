@@ -25,6 +25,44 @@ public static class MachineConfig
     public static IReadOnlyList<string> WorkDirs(string path, string codeRoot, string home) =>
         [.. EstateNames(path, "work_dirs").Select(entry => Path.Combine(codeRoot, ExpandHome(entry, home)))];
 
+    /// <summary>
+    /// <c>tools.desktop.aliases</c> in <paramref name="path"/>: this machine's desktop plan aliases, applied over the
+    /// plan's own. Names are trimmed and blank ones dropped; empty when any value is not text.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> DesktopAliases(string path)
+    {
+        var aliases = new OrderedDictionary<string, string>(StringComparer.Ordinal);
+        if (Read(path) is JsonObject root
+            && root["tools"] is JsonObject tools
+            && tools["desktop"] is JsonObject desktop
+            && desktop["aliases"] is JsonObject map
+            && map.All(item => item.Value?.GetValueKind() == JsonValueKind.String))
+        {
+            foreach (var (name, value) in map)
+            {
+                if (name.Trim() is { Length: > 0 } trimmed)
+                {
+                    aliases[trimmed] = value!.GetValue<string>();
+                }
+            }
+        }
+
+        return aliases;
+    }
+
+    private static JsonNode? Read(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        try
+        {
+            return JsonNode.Parse(File.ReadAllText(path));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return null;
+        }
+    }
+
     private static string ExpandHome(string entry, string home) =>
         entry == "~" ? home
         : entry.StartsWith("~/", StringComparison.Ordinal) || entry.StartsWith("~\\", StringComparison.Ordinal) ? Path.Join(home, entry[2..])
@@ -33,18 +71,7 @@ public static class MachineConfig
     // A string list under tools.estate, trimmed with blanks dropped; empty when the file, the key or any item is not as expected.
     private static IEnumerable<string> EstateNames(string path, string key)
     {
-        ArgumentNullException.ThrowIfNull(path);
-        JsonNode? root;
-        try
-        {
-            root = JsonNode.Parse(File.ReadAllText(path));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return [];
-        }
-
-        return (root as JsonObject)?["tools"] is JsonObject tools
+        return (Read(path) as JsonObject)?["tools"] is JsonObject tools
             && tools["estate"] is JsonObject estate
             && estate[key] is JsonArray list
             && list.All(item => item?.GetValueKind() == JsonValueKind.String)

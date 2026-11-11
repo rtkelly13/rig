@@ -1,0 +1,78 @@
+{
+  "name": "Admin",
+  "launch": [
+    {
+      "name": "Admin Browser - Work Profile",
+      "type": "app",
+      "delay_ms": 1400,
+      "path": "{chrome-path}",
+      "args": [
+        "--user-data-dir={chrome-user-data}",
+        "--profile-directory={chrome-profile-work}",
+        "--new-window",
+        "https://mail.google.com/"
+      ],
+      "summary": "Opens Gmail in a dedicated Chrome window with the work profile.",
+      "placement": {
+        "screen": 1,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_process_name": "chrome.exe"
+    },
+    {
+      "name": "Google Meet + Calendar - Work Profile",
+      "type": "app",
+      "delay_ms": 1400,
+      "path": "{chrome-path}",
+      "args": [
+        "--user-data-dir={chrome-user-data}",
+        "--profile-directory={chrome-profile-work}",
+        "--new-window",
+        "https://meet.google.com/",
+        "https://calendar.google.com/"
+      ],
+      "summary": "Opens Chrome with the work profile, with Google Meet and Calendar tabs.",
+      "placement": {
+        "screen": 2,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_process_name": "chrome.exe"
+    },
+    {
+      "name": "Slack",
+      "type": "app",
+      "delay_ms": 1600,
+      "path": "{slack-path}",
+      "placement": {
+        "screen": 3,
+        "layout": {
+          "mode": "halves",
+          "slot": 1,
+          "orientation": "vertical"
+        }
+      },
+      "window_process_name": "slack.exe"
+    },
+    {
+      "name": "1Password",
+      "type": "app",
+      "delay_ms": 900,
+      "path": "{onepassword-path}",
+      "placement": {
+        "screen": 3,
+        "layout": {
+          "mode": "halves",
+          "slot": 2,
+          "orientation": "vertical"
+        }
+      },
+      "window_process_name": "1Password.exe"
+    }
+  ]
+}

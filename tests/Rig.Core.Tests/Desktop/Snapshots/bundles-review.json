@@ -1,0 +1,73 @@
+{
+  "name": "Review",
+  "launch": [
+    {
+      "name": "VS Code Workspace",
+      "type": "command",
+      "delay_ms": 1600,
+      "command": "uv run --no-sync desktop-manager workspace vscode && \"{vscode-path}\" --new-window \"{rig-root}\\rig.code-workspace\"",
+      "cwd": "{rig-root}",
+      "summary": "Regenerates the multi-root workspace file, then opens it full-screen in VS Code for cross-repo code review.",
+      "placement": {
+        "screen": 1,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_title": "(Workspace)",
+      "window_process_name": "Code.exe",
+      "window_wait_timeout_ms": 30000
+    },
+    {
+      "name": "Rig Web",
+      "type": "command",
+      "delay_ms": 2200,
+      "command": "uv run --no-sync desktop-manager web ensure && \"{chrome-path}\" --user-data-dir=\"{chrome-user-data}\" --profile-directory=\"{chrome-profile-personal}\" --app=http://127.0.0.1:8090",
+      "cwd": "{rig-root}",
+      "summary": "Starts the rig web dashboard service if it is not already answering, then opens it as a Chrome app window full-screen on screen 3. Replaces the prs-to-review checklist.",
+      "placement": {
+        "screen": 3,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_title": "Rig // Estate Management",
+      "window_process_name": "chrome.exe",
+      "window_wait_timeout_ms": 45000
+    },
+    {
+      "name": "Fork",
+      "type": "app",
+      "delay_ms": 1200,
+      "path": "{fork-path}",
+      "summary": "Opens Fork full-screen for inspecting branches and diffs while reviewing.",
+      "placement": {
+        "screen": 2,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_process_name": "Fork.exe"
+    },
+    {
+      "name": "T3 Code",
+      "type": "app",
+      "delay_ms": 1200,
+      "disabled": true,
+      "path": "{t3code-path}",
+      "summary": "Disabled on the Review desktop in favour of standard code-review tooling.",
+      "placement": {
+        "screen": 1,
+        "layout": {
+          "mode": "halves",
+          "slot": 1,
+          "orientation": "vertical"
+        }
+      },
+      "window_process_name": "T3 Code (Alpha).exe"
+    }
+  ]
+}
