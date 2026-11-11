@@ -365,10 +365,10 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         return 0;
     }
 
-    private static string Languages(IReadOnlyList<string> languages) => languages.Count > 0 ? string.Join(", ", languages) : "common";
+    internal static string Languages(IReadOnlyList<string> languages) => languages.Count > 0 ? string.Join(", ", languages) : "common";
 
     // The row the Python's --json printed: the repo, then the result's fields in their declared order.
-    private static JsonObject Row(string name, string path, GitignoreInspection result) =>
+    internal static JsonObject Row(string name, string path, GitignoreInspection result) =>
         new()
         {
             ["repo_name"] = name,
@@ -381,7 +381,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
             ["file"] = result.File,
         };
 
-    private static JsonObject Row(string name, string path, GitignoreAlignment result) =>
+    internal static JsonObject Row(string name, string path, GitignoreAlignment result) =>
         new()
         {
             ["repo_name"] = name,

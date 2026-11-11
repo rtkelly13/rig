@@ -10,7 +10,7 @@ namespace Rig.Cli.Governance;
 
 /// <summary>
 /// The GitHub-side resources: <c>plan</c> across all of them, and <c>sync-labels</c>, <c>environments</c> and
-/// <c>pages</c> one at a time. Ported from <c>rig.repo_governance.cli_plan</c> and <c>cli_sync</c>.
+/// <c>pages</c> one at a time. Ported from the Python <c>cli_plan</c> and <c>cli_sync</c> modules.
 /// </summary>
 internal sealed partial class GovernanceCommand
 {

@@ -1,0 +1,6 @@
+# CodeRabbit Suppressor (Governed by shared-utilities)
+# Disables automated reviews on non-code knowledge repositories
+
+reviews:
+  auto_review:
+    enabled: false

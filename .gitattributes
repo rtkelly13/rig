@@ -1,5 +1,7 @@
 # C# raw string literals take the file's line endings; tests compare them with \n output.
 *.cs text eol=lf
+# Embedded templates are written byte for byte; keep them LF on every checkout.
+src/Rig.Core/Governance/Templates/** text eol=lf
 .github/workflows/*.lock.yml linguist-generated=true merge=ours
 *.svg -text
 # Compiled rig SPA artifacts are committed so the Python server needs no Node runtime.

@@ -389,7 +389,7 @@ The pull request template serves as an objective contract and verification check
 
 Every pull request across the estate must satisfy this structured schema:
 
-The template is [`templates/oss/PULL_REQUEST_TEMPLATE.md.jinja`](../../src/rig/repo_governance/templates/oss/PULL_REQUEST_TEMPLATE.md.jinja), synced into each repo by `repo-governance sync-templates`. Its sections: summary, linked issues, type of change, breaking-change migration, AI disclosure, and a verification checklist (rebased, tests, checks green, docs updated).
+The template is [`Templates/oss/PULL_REQUEST_TEMPLATE.md.jinja`](../../src/Rig.Core/Governance/Templates/oss/PULL_REQUEST_TEMPLATE.md.jinja), synced into each repo by `repo-governance sync-templates`. Its sections: summary, linked issues, type of change, breaking-change migration, AI disclosure, and a verification checklist (rebased, tests, checks green, docs updated).
 
 #### Key Review Invariants
 - **Automated Issue Auto-Close**: Every PR addressing an open issue must include `Resolves: #<id>` or `Fixes: #<id>`. GitHub automatically closes the issue upon squash-merge into `main`.

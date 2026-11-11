@@ -14,8 +14,6 @@ from rig.repo_governance.align_repo_conventions import (
     discover_org_repos,
     resolve_target_directories,
 )
-from rig.repo_governance.license_manager import align_license, inspect_license
-from rig.repo_governance.oss_templates import sync_oss_templates
 from rig.repo_governance.policy_config import ManageDecision, PolicyConfig, load_policy_config, should_manage_repo
 
 runner = CliRunner()
@@ -114,37 +112,6 @@ def test_shipped_config_demos_are_exempt_and_docs_is_governed():
 
 
 @pytest.mark.ci
-def test_sync_oss_templates_with_org_owner(tmp_path: pathlib.Path, org_policy: PolicyConfig):
-    tool_dir = tmp_path / "experimental-tool"
-    tool_dir.mkdir()
-
-    with patch("rig.repo_governance.oss_templates.load_policy_config", return_value=org_policy):
-        synced = sync_oss_templates(tool_dir, dry_run=False)
-        assert synced.changed
-        coc = tool_dir / "CODE_OF_CONDUCT.md"
-        assert coc.exists()
-        assert "ryan@ryankelly.dev" in coc.read_text(encoding="utf-8")
-
-
-@pytest.mark.ci
-def test_license_manager_respects_org_copyright_holder(tmp_path: pathlib.Path, org_policy: PolicyConfig):
-    tool_dir = tmp_path / "experimental-tool"
-    tool_dir.mkdir()
-
-    with patch("rig.repo_governance.license_manager.load_policy_config", return_value=org_policy):
-        aligned = align_license(tool_dir, dry_run=False)
-        assert aligned.changed
-        lic_text = (tool_dir / "LICENSE").read_text(encoding="utf-8")
-        assert "Copyright (c)" in lic_text
-        assert "rtkelly-labs" in lic_text
-
-        res = inspect_license(tool_dir)
-        assert res.is_aligned
-        assert res.copyright_holder_valid
-        assert res.detected_type == "MIT"
-
-
-@pytest.mark.ci
 def test_discover_org_repos_gh_cli(org_policy: PolicyConfig):
     mock_gh_output = json.dumps(
         [
@@ -208,16 +175,3 @@ def test_issue_triage_command_with_org():
         res = runner.invoke(app, ["issue-triage", "--org", "rtkelly-labs"])
         assert res.exit_code == 0
         assert "rtkelly-labs" in res.output or "Open Issues Across 1 Repos" in res.output
-
-
-@pytest.mark.ci
-def test_align_license_preserves_existing_notices(tmp_path: pathlib.Path):
-    from rig.repo_governance.license_manager import align_license
-
-    lic = tmp_path / "LICENSE"
-    lic.write_text("MIT License\n\nCopyright (c) 2023 Ryan Kelly\n\nPermission is hereby granted\n")
-    aligned = align_license(tmp_path, license_type="MIT", copyright_holder="rtkelly-labs")
-    text = lic.read_text()
-    assert aligned.changed is True
-    assert "Ryan Kelly" in text and "2023" in text
-    assert "rtkelly-labs" in text

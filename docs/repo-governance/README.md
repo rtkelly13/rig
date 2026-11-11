@@ -19,7 +19,8 @@ makes the planned writes and `--json` emits the plan. It exits 0 when every repo
 drift or a refused write (the check-name guard), 2 when GitHub could not be read or a write failed. Each
 resource is a `Resource` in `src/Rig.Core/Governance/Resources.cs`, reading and writing through the
 `IGitHubApi` port, so tests drive it with `tests/Rig.Core.Tests/Fakes/FakeGitHub.cs`. `plan`, `sync-labels`,
-`environments` and `pages` run from C#.
+`environments`, `pages`, `license`, `sync-templates`, `gitignore` and `apps` run from C#: in-repo files
+through `Licenses`, `OssTemplates`, `Gitignores` and `ReviewToolConfigs`, apps through `GitHubApps`.
 
 ## Guides
 
