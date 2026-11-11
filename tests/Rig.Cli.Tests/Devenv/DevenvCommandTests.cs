@@ -50,7 +50,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "obsidian-plugins", "opencode"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "gh", "obsidian-plugins", "opencode"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -420,6 +420,63 @@ public sealed class DevenvCommandTests : IDisposable
         Assert.StartsWith("Failed to configure agent shortcut: ", error, StringComparison.Ordinal);
     }
 
+    private string Overlay => GhScopes.Target(_home.Path, null);
+
+    [Fact]
+    public async Task Gh_installs_the_overlay_then_reports_it_installed()
+    {
+        var (missing, report, _) = await InvokeAsync(null, ["gh", "--check"]);
+
+        Assert.Equal(1, missing);
+        Assert.Equal($"gh scope overlay ({Overlay}): not installed\n", report);
+
+        var (code, output, error) = await InvokeAsync(null, ["gh"]);
+
+        Assert.Equal(0, code);
+        Assert.Empty(error);
+        Assert.Equal($"✓ Wrote gh scope overlay (admin:org, read:user) to {Overlay}\n  Check and reconcile the token with: devenv doctor git auth (workspace)\n", output);
+        Assert.Equal(GhScopes.Overlay, await File.ReadAllTextAsync(Overlay, TestContext.Current.CancellationToken));
+
+        var (again, second, _) = await InvokeAsync(null, ["gh"]);
+
+        Assert.Equal(0, again);
+        Assert.StartsWith("✓ gh scope overlay is installed (admin:org, read:user).\n", second, StringComparison.Ordinal);
+        Assert.Equal(0, (await InvokeAsync(null, ["gh", "--check"])).Code);
+    }
+
+    [Fact]
+    public async Task Gh_dry_run_writes_nothing()
+    {
+        var (code, output, _) = await InvokeAsync(null, ["gh", "--dry-run"]);
+
+        Assert.Equal(0, code);
+        Assert.Equal($"Would write gh scope overlay (admin:org, read:user) to {Overlay}\n", output);
+        Assert.False(File.Exists(Overlay));
+    }
+
+    [Fact]
+    public async Task Gh_reports_a_failed_write()
+    {
+        _ = _home.File(".config/devenv");
+
+        var (code, _, error) = await InvokeAsync(null, ["gh"]);
+
+        Assert.Equal(1, code);
+        Assert.StartsWith("Failed to write the gh scope overlay: ", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Gh_honours_xdg_config_home_only_for_the_default_home()
+    {
+        var config = Path.Join(_home.Path, "xdg");
+        var command = new DevenvCommand(new DevenvHost(_home.Path, PolicyFiles.Real, false, Checkout, _home.Path, null, _ => null, config), _server.Plugins, TextWriter.Null, TextWriter.Null).Build();
+
+        Assert.Equal(0, await command.Parse(["gh"]).InvokeAsync(cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.True(File.Exists(GhScopes.Target(_home.Path, config)));
+        Assert.False(File.Exists(Overlay));
+    }
+
     [Theory]
     [InlineData(new[] { "devenv", "claude" }, false)]
     [InlineData(new[] { "devenv", "claude", "--check" }, false)]
@@ -431,6 +488,7 @@ public sealed class DevenvCommandTests : IDisposable
     [InlineData(new[] { "devenv", "obsidian-plugins" }, false)]
     [InlineData(new[] { "devenv", "agents" }, false)]
     [InlineData(new[] { "devenv", "agent-launcher" }, false)]
+    [InlineData(new[] { "devenv", "gh", "--check" }, false)]
     [InlineData(new[] { "devenv", "fonts" }, true)]
     public void Only_the_ported_devenv_subcommands_stay_in_csharp(string[] args, bool forwarded)
     {

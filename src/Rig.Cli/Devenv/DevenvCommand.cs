@@ -13,14 +13,15 @@ namespace Rig.Cli.Devenv;
 /// <param name="CodeRoot">The default code root, where the agent launcher shim goes.</param>
 /// <param name="Shell">The <c>SHELL</c> variable, which picks the POSIX profile.</param>
 /// <param name="Find">Finds a program on the PATH, or null.</param>
-internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find);
+/// <param name="ConfigHome">The <c>XDG_CONFIG_HOME</c> variable, which moves the gh scope overlay; ignored under another <c>--home</c>.</param>
+internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null);
 
 /// <summary>
 /// The ported part of <c>rig devenv</c>: <c>agent-launcher</c>, <c>agents</c>, <c>claude</c>, <c>estate-rules</c>,
-/// <c>obsidian-plugins</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
+/// <c>gh</c>, <c>obsidian-plugins</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
 /// <see cref="Forwarding.Forwarded.Owns"/> hands those lines over before parsing. Ported from devenv's
 /// <c>agent_launcher_setup</c>, <c>agent_shortcut</c>, <c>discovery</c>, <c>claude_code</c>, <c>session_ledger</c>,
-/// <c>estate_rules</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
+/// <c>estate_rules</c>, <c>github_cli</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
 /// </summary>
 /// <param name="host">Where it sets up.</param>
 /// <param name="plugins">Fetches Obsidian plugins from GitHub.</param>
@@ -53,7 +54,52 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Te
         var profile = new Option<string?>("--profile") { Description = "Shell profile to add the shortcut to (default: the active one under --home)." };
         var launcher = new Command("agent-launcher", "Write the agent launcher shim to the code root and the `agent` shortcut to the shell profile.") { dryRun, home, root, profile };
         launcher.SetAction(parsed => Launcher(parsed.GetValue(dryRun), parsed.GetValue(root)!, parsed.GetValue(profile) ?? DefaultProfile(parsed.GetValue(home)!)));
-        return new Command("devenv", Description) { launcher, agents, claude, rules, obsidian, opencode };
+        var ghCheck = new Option<bool>("--check") { Description = "Report whether the gh scope overlay is installed and current, changing nothing; exit 1 when it is not." };
+        var gh = new Command("gh", "Install the personal gh token scope overlay that the workspace devenv merges in.") { dryRun, home, ghCheck };
+        gh.SetAction(parsed => Gh(parsed.GetValue(dryRun), parsed.GetValue(ghCheck), parsed.GetValue(home)!));
+        return new Command("devenv", Description) { launcher, agents, claude, rules, gh, obsidian, opencode };
+    }
+
+    // The overlay goes where the workspace devenv reads it. XDG_CONFIG_HOME applies only to the default home, so a
+    // temporary --home never writes into the real config folder.
+    private int Gh(bool dryRun, bool check, string home)
+    {
+        var target = GhScopes.Target(home, home == host.Home ? host.ConfigHome : null);
+        var scopes = string.Join(", ", GhScopes.Required);
+        var state = GhScopes.State(target);
+        if (check)
+        {
+            output.WriteLine($"gh scope overlay ({target}): {state.Describe()}");
+            return state == OverlayState.InSync ? 0 : 1;
+        }
+
+        if (state == OverlayState.InSync)
+        {
+            output.WriteLine($"✓ gh scope overlay is installed ({scopes}).");
+        }
+        else if (dryRun)
+        {
+            output.WriteLine($"Would write gh scope overlay ({scopes}) to {target}");
+            return 0;
+        }
+        else
+        {
+            try
+            {
+                _ = Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.WriteAllText(target, GhScopes.Overlay);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                error.WriteLine($"Failed to write the gh scope overlay: {e.Message}");
+                return 1;
+            }
+
+            output.WriteLine($"✓ Wrote gh scope overlay ({scopes}) to {target}");
+        }
+
+        output.WriteLine("  Check and reconcile the token with: devenv doctor git auth (workspace)");
+        return 0;
     }
 
     private string DefaultProfile(string home) => host.Windows ? LauncherShim.PowerShellProfile(home) : LauncherShim.PosixProfile(home, host.Shell);

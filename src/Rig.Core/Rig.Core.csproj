@@ -11,5 +11,6 @@
   <ItemGroup>
     <!-- The Claude Code SessionEnd hook devenv installs (Devenv/SessionLedger.cs). -->
     <EmbeddedResource Include="Devenv/session-ledger.mjs" LogicalName="Rig.Core.Devenv.session-ledger.mjs" />
+    <EmbeddedResource Include="Devenv/gh-scopes.json" LogicalName="Rig.Core.Devenv.gh-scopes.json" />
   </ItemGroup>
 </Project>

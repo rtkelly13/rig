@@ -11,7 +11,7 @@ from .doctor.core import run_doctor
 from .engine.context import StepContext, get_current_platform
 from .engine.runner import run_steps
 from .engine.step import Step
-from .steps import ai_tools, fonts, git, github_cli, runtimes, terminal, tools
+from .steps import ai_tools, fonts, git, runtimes, terminal, tools
 from .tool_manager import ToolManager
 
 app = typer.Typer(
@@ -20,6 +20,14 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 console = Console()
+
+
+def _gh_overlay(ctx: StepContext) -> None:
+    """Install the gh scope overlay through ``rig devenv gh``."""
+    code = csharp_cli.run(["devenv", "gh", *(["--dry-run"] if ctx.dry_run else [])])
+    if code != 0:
+        raise RuntimeError(f"rig devenv gh exited {code}")
+
 
 # The order `devenv setup` runs in, and what `--step N` counts.
 SETUP_STEPS: list[Step] = [
@@ -44,7 +52,7 @@ SETUP_STEPS: list[Step] = [
     Step(
         name="GitHub CLI Scopes",
         description="Install the personal gh scope overlay read by the workspace devenv",
-        func=github_cli.run_github_cli_setup,
+        func=_gh_overlay,
         confirm_message="Would you like to install the gh scope overlay?",
     ),
     Step(
@@ -162,16 +170,6 @@ def git_cmd() -> None:
     platform = get_current_platform()
     ctx = StepContext(platform=platform, mode="full")
     git.run_git_setup(ctx)
-
-
-@app.command("gh")
-def gh_cmd(
-    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be written without writing it"),
-) -> None:
-    """Install the personal gh scope overlay that the workspace devenv enforces."""
-    platform = get_current_platform()
-    ctx = StepContext(platform=platform, mode="full", dry_run=dry_run)
-    github_cli.run_github_cli_setup(ctx)
 
 
 @app.command("ai")
