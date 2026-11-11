@@ -173,22 +173,31 @@ public sealed class OtelInstaller(HttpClient http)
                 var reader = new TarReader(gzip);
                 await using (reader.ConfigureAwait(false))
                 {
-                    TarEntry? found = null;
-                    while (await reader.GetNextEntryAsync(copyData: true, cancellationToken).ConfigureAwait(false) is { } entry)
+                    // Streamed, never buffered: each match is copied out as it is read, overwriting an earlier one, so
+                    // the last entry of that name wins (as tarfile's getmember) in memory bounded by the copy buffer.
+                    var regular = false;
+                    while (await reader.GetNextEntryAsync(copyData: false, cancellationToken).ConfigureAwait(false) is { } entry)
                     {
-                        // As tarfile's getmember: the last entry of that name wins.
-                        found = entry.Name == member ? entry : found;
+                        if (entry.Name != member)
+                        {
+                            continue;
+                        }
+
+                        regular = entry is { EntryType: TarEntryType.RegularFile or TarEntryType.V7RegularFile, DataStream: not null };
+                        if (regular)
+                        {
+                            var output = File.Create(partial);
+                            await using (output.ConfigureAwait(false))
+                            {
+                                await entry.DataStream!.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
+                            }
+                        }
                     }
 
-                    if (found is not { EntryType: TarEntryType.RegularFile or TarEntryType.V7RegularFile, DataStream: { } data })
+                    if (!regular)
                     {
+                        File.Delete(partial);
                         throw new DigestMismatchException($"{Path.GetFileName(archive)} has no regular file {member}");
-                    }
-
-                    var output = File.Create(partial);
-                    await using (output.ConfigureAwait(false))
-                    {
-                        await data.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }

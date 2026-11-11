@@ -120,6 +120,31 @@ public sealed class OtelRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task The_last_entry_of_the_name_wins_as_tarfile_s_did()
+    {
+        var archive = TarGz(
+            ("tool", "first"u8.ToArray(), TarEntryType.RegularFile),
+            ("pkg/other", "x"u8.ToArray(), TarEntryType.RegularFile),
+            ("tool", "second"u8.ToArray(), TarEntryType.RegularFile));
+
+        var binary = await Installer(archive).InstallAsync(PinOf(archive, member: "tool"), temp.Path, TestContext.Current.CancellationToken);
+
+        Assert.Equal("second", await File.ReadAllTextAsync(binary, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task A_regular_file_shadowed_by_a_later_link_is_refused_and_nothing_is_left()
+    {
+        var archive = TarGz(("tool", "binary"u8.ToArray(), TarEntryType.RegularFile), ("tool", [], TarEntryType.SymbolicLink));
+        var pin = PinOf(archive, member: "tool");
+
+        var error = await Assert.ThrowsAsync<DigestMismatchException>(() => Installer(archive).InstallAsync(pin, temp.Path, TestContext.Current.CancellationToken));
+
+        Assert.Equal("tool.download has no regular file tool", error.Message);
+        Assert.Empty(Directory.GetFiles(OtelPins.PinDir(pin, temp.Path)));
+    }
+
+    [Fact]
     public async Task The_collector_comes_from_its_release_and_must_match_the_pin()
     {
         var key = OtelPins.PlatformKey("linux", System.Runtime.InteropServices.Architecture.X64);
