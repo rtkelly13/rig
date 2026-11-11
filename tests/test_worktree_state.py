@@ -1,4 +1,4 @@
-"""Tests for rig's per-worktree state folder, `temp/.rig/`, and the gitignore audit that enforces it."""
+"""Tests for rig's per-worktree state folder, `temp/.rig/`. Its gitignore audit is tested in C# (GitignoresTests)."""
 
 from __future__ import annotations
 
@@ -7,8 +7,6 @@ from pathlib import Path
 import pytest
 
 from rig import proc, worktree_state
-from rig.repo_governance.gitignore_manager import WORKTREE_STATE_ENTRY, inspect_gitignore, required_entries
-from rig.repo_governance.policy_config import load_policy_config
 from rig.worktree_state import Ignored
 
 pytestmark = pytest.mark.ci
@@ -56,18 +54,3 @@ def test_state_reads_back_and_a_missing_file_reads_as_none(tmp_path: Path) -> No
     target.parent.mkdir(parents=True)
     _ = target.write_text('{"schema": "x"}', encoding="utf-8")
     assert worktree_state.read_text(tmp_path, "wrapup") == '{"schema": "x"}'
-
-
-def test_audit_flags_a_rule_that_re_includes_the_state_folder(tmp_path: Path) -> None:
-    config = load_policy_config()
-    repo = _repo(tmp_path / "r", None)
-    entries = required_entries(repo, config=config, languages=[])
-    lines = "\n".join(line for e in entries for line in e.write)
-    _ = (repo / ".gitignore").write_text(lines + "\n", encoding="utf-8")
-    assert inspect_gitignore(repo, config=config, languages=[]).status == "CONFIGURED"
-
-    _ = (repo / ".gitignore").write_text(lines + "\n!temp/\n", encoding="utf-8")
-    flagged = inspect_gitignore(repo, config=config, languages=[])
-    assert not flagged.is_aligned
-    assert flagged.missing == (WORKTREE_STATE_ENTRY,)
-    assert flagged.status.startswith("NOT IGNORED temp/.rig/")

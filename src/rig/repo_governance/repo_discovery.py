@@ -2,19 +2,20 @@ from __future__ import annotations
 
 import pathlib
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Annotated, ClassVar, Literal
 
 from pydantic import Field
 
 from rig import proc, roots, scopes
 from rig.gh_origin import origin_args
-from rig.repo_governance.branch_cleanup import repo_identity
 from rig.repo_governance.policy_config import (
     ManageDecision,
     PolicyConfig,
     load_policy_config,
     should_manage_repo,
 )
+from rig.typed_json import try_decode_json
 
 
 def personal_repos_dir() -> pathlib.Path:
@@ -37,6 +38,80 @@ def get_gh_repo_name(repo_path: pathlib.Path) -> str | None:
         "repo", "view", *origin_args(repo_path), "--json", "nameWithOwner", "-q", ".nameWithOwner", cwd=repo_path
     )
     return res.out.strip() if res.ok else None
+
+
+@dataclass(frozen=True)
+class RepoIdentity:
+    """What ``gh`` says about a checkout's origin."""
+
+    slug: str = ""
+    permission: str = ""
+    is_fork: bool = False
+
+    @property
+    def resolved(self) -> bool:
+        return bool(self.slug)
+
+
+class _UnresolvedError(Exception):
+    """Raised inside the cache so an unresolved identity is not remembered; ``lru_cache`` never caches a raise."""
+
+
+@lru_cache(maxsize=64)
+def _repo_identity_cached(repo_path_str: str) -> RepoIdentity:
+    """One ``gh repo view`` per checkout per process, once it has answered.
+
+    An ``--all`` sweep asks the same question of each repo more than once —
+    the selection filter, then the command itself — and a network round-trip
+    per ask makes the sweep noticeably slow for an answer that cannot change
+    mid-run. A failed lookup is asked again, so one transient ``gh`` error does
+    not drop a managed checkout for the rest of the run.
+    """
+    identity = _fetch_repo_identity(pathlib.Path(repo_path_str))
+    if not identity.resolved:
+        raise _UnresolvedError
+    return identity
+
+
+def repo_identity(repo_path: pathlib.Path) -> RepoIdentity:
+    """Return the origin identity for *repo_path*, cached per process once resolved."""
+    try:
+        return _repo_identity_cached(str(repo_path))
+    except _UnresolvedError:
+        return RepoIdentity()
+
+
+def _fetch_repo_identity(repo_path: pathlib.Path) -> RepoIdentity:
+    """Ask ``gh`` for the origin identity.
+
+    Resolved through ``gh`` rather than parsed from the remote URL, because
+    the questions that matter — may *you* push to it, is it a fork — are not
+    answerable from the URL.
+    """
+    res = proc.gh(
+        "repo",
+        "view",
+        *origin_args(repo_path),
+        "--json",
+        "nameWithOwner,viewerPermission,isFork",
+        cwd=repo_path,
+        timeout=120.0,
+    )
+    if not res.ok or not res.out.strip():
+        return RepoIdentity()
+    view = try_decode_json(_RepoView, res.out)
+    if view is None:
+        return RepoIdentity()
+    return RepoIdentity(slug=view.name_with_owner, permission=view.viewer_permission, is_fork=view.is_fork)
+
+
+@dataclass(slots=True, frozen=True)
+class _RepoView:
+    """The fields of ``gh repo view --json`` that identify a checkout's origin."""
+
+    name_with_owner: Annotated[str, Field(alias="nameWithOwner")]
+    viewer_permission: Annotated[str, Field(alias="viewerPermission")]
+    is_fork: Annotated[bool, Field(alias="isFork")]
 
 
 @dataclass(frozen=True, slots=True)

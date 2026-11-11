@@ -115,8 +115,9 @@ Only changed or untracked files that git does not ignore keep the folder.
 ## Why merged branches need care
 
 Under a squash-merge policy a branch's commits never become ancestors of `main`,
-so `git branch --merged` reports nothing: `repo_governance.branch_cleanup`
-measured **zero on a repo with 36 merged PRs**. Asking GitHub is the only
+so `git branch --merged` reports nothing: the Python branch cleanup that preceded
+`Rig.Core.Governance.BranchCleanup` measured **zero on a repo with 36 merged PRs**.
+Asking GitHub is the only
 reliable answer, and that is a network call per clone — which fights the point of
 a cheap sweep.
 

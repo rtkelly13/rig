@@ -120,7 +120,7 @@ Estate convention rule 9 establishes a strict script language policy: automation
 
 This policy is governed centrally through `repo_policies.json` and enforced via `.ls-lint.yml`:
 - `repo_policies.json` maps `language_presets` to `script_extensions` and `banned_script_extensions`.
-- `repo_hygiene.py` dynamically renders scoped `.ls-lint.yml` rules with closed allowlists (`.*: exists:0`).
+- `RepoHygiene.cs` dynamically renders scoped `.ls-lint.yml` rules with closed allowlists (`.*: exists:0`).
 - Local hygiene (`pnpm dlx @ls-lint/ls-lint`) and CI workflows (`ls-lint/action`) gate any PR introducing alien scripts.
 
 For the comprehensive guide covering the full spectrum of filesystem linting capabilities (anti-root-pollution, ADR naming, test suite structures, brand asset isolation, and directory casing), see:

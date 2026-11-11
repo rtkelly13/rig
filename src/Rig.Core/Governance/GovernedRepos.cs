@@ -18,6 +18,8 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
 {
     private static readonly TimeSpan IdentityTimeout = TimeSpan.FromSeconds(120);
 
+    private readonly Dictionary<string, RepoIdentity> _identities = new(StringComparer.Ordinal);
+
     /// <summary>The clones in <paramref name="personalDir"/> and the org folders beside it, each folder's sorted by name.</summary>
     public IReadOnlyList<string> EstateClones(string personalDir)
     {
@@ -35,6 +37,28 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
     /// <summary>Whether <paramref name="repoPath"/> is in scope, and why not when it is not.</summary>
     public async Task<ManageDecision> IsManagedAsync(string repoPath, CancellationToken cancellationToken = default)
     {
+        var identity = await IdentityAsync(repoPath, cancellationToken).ConfigureAwait(false);
+        if (!identity.Resolved)
+        {
+            return new(false, "could not resolve origin");
+        }
+
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(repoPath));
+        return RepoSelection.ShouldManage(policies.SelectionRules(name), policies.IsRegistered(name), identity.IsFork, identity.Permission);
+    }
+
+    /// <summary>
+    /// What gh says about the checkout's origin, asked once per checkout: a sweep asks more than once (the selection
+    /// filter, then the command), and the answer cannot change mid-run. Unresolved when gh cannot say, and an
+    /// unresolved answer is asked again rather than remembered, so one transient gh error does not drop a checkout.
+    /// </summary>
+    public async Task<RepoIdentity> IdentityAsync(string repoPath, CancellationToken cancellationToken = default)
+    {
+        if (_identities.TryGetValue(repoPath, out var known))
+        {
+            return known;
+        }
+
         var origin = (await git.RunAsync(repoPath, ["remote", "get-url", "origin"], cancellationToken: cancellationToken).ConfigureAwait(false)).OutOrEmpty;
         var view = await proc.RunAsync(
             new ProcRequest(["gh", "repo", "view", .. origin.Length > 0 ? [origin] : Array.Empty<string>(), "--json", "nameWithOwner,viewerPermission,isFork"])
@@ -43,13 +67,13 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
                 Timeout = IdentityTimeout,
             },
             cancellationToken).ConfigureAwait(false);
-        if (Identity(view) is not var (permission, isFork))
+        var identity = Identity(view);
+        if (identity.Resolved)
         {
-            return new(false, "could not resolve origin");
+            _identities[repoPath] = identity;
         }
 
-        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(repoPath));
-        return RepoSelection.ShouldManage(policies.SelectionRules(name), policies.IsRegistered(name), isFork, permission);
+        return identity;
     }
 
     /// <summary>
@@ -156,11 +180,11 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
         policies.ExpectedOwner(name) is { } expected && string.Equals(expected, org, StringComparison.OrdinalIgnoreCase);
 
     // The viewer's permission and whether the repo is a fork, from `gh repo view --json`; null when it did not answer.
-    private static (string Permission, bool IsFork)? Identity(Ran view)
+    private static RepoIdentity Identity(Ran view)
     {
         if (!view.Ok || string.IsNullOrWhiteSpace(view.Out))
         {
-            return null;
+            return RepoIdentity.Unresolved;
         }
 
         try
@@ -169,12 +193,25 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
                 && fields["nameWithOwner"] is { } name && name.GetValueKind() == JsonValueKind.String
                 && fields["viewerPermission"] is { } permission && permission.GetValueKind() == JsonValueKind.String
                 && fields["isFork"] is { } fork && fork.GetValueKind() is JsonValueKind.True or JsonValueKind.False
-                ? (permission.GetValue<string>(), fork.GetValue<bool>())
-                : null;
+                ? new(name.GetValue<string>(), permission.GetValue<string>(), fork.GetValue<bool>())
+                : RepoIdentity.Unresolved;
         }
         catch (JsonException)
         {
-            return null;
+            return RepoIdentity.Unresolved;
         }
     }
+}
+
+/// <summary>What gh says about a checkout's origin.</summary>
+/// <param name="Slug">Its <c>owner/name</c>; empty when gh could not say.</param>
+/// <param name="Permission">Your permission on it, such as <c>ADMIN</c> or <c>READ</c>.</param>
+/// <param name="IsFork">Whether it is a fork.</param>
+public sealed record RepoIdentity(string Slug, string Permission, bool IsFork)
+{
+    /// <summary>The identity of an origin gh could not resolve.</summary>
+    public static RepoIdentity Unresolved { get; } = new(string.Empty, string.Empty, false);
+
+    /// <summary>Whether gh resolved the origin.</summary>
+    public bool Resolved => Slug.Length > 0;
 }

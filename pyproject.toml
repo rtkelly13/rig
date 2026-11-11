@@ -245,7 +245,6 @@ ignore = [
 "tests/test_estate.py" = ["TID251"]
 "tests/desktop_manager/test_chrome_site_hosts.py" = ["TID251"]
 "tests/test_estate_connectivity.py" = ["TID251"]
-"tests/test_repo_hygiene_git_hooks.py" = ["TID251"]
 "tests/test_estate_trim.py" = ["TID251"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
@@ -368,7 +367,6 @@ slack = 2  # points coverage may sit above the floor before the floor must rise
 [tool.mutmut]
 source_paths = [
     "src/desktop_manager/placement.py",
-    "src/rig/repo_governance/gitignore_manager.py",
     "src/rig/typed_json.py",
     "src/rig/workspace/layout.py",
 ]
@@ -378,8 +376,6 @@ pytest_add_cli_args_test_selection = [
     "tests/desktop_manager/test_placement_pure.py",
     "tests/desktop_manager/test_placement_properties.py",
     "tests/desktop_manager/test_workspace_align.py",
-    "tests/test_gitignore_manager.py",
-    "tests/test_gitignore_manager_mutants.py",
     "tests/test_workspace_layout.py",
     "tests/test_typed_json.py",
 ]
@@ -459,7 +455,6 @@ patching-allow = [
     "tests/desktop_manager/test_workspace_wait_scope.py",
     "tests/desktop_manager/test_workspace_win32_behavior.py",
     "tests/test_align_repo_conventions.py",
-    "tests/test_branch_cleanup.py",
     "tests/test_c4_okf.py",
     "tests/test_console_ui.py",
     "tests/test_entrypoints_portable.py",
@@ -469,7 +464,6 @@ patching-allow = [
     "tests/test_platforms.py",
     "tests/test_policy_template_engine.py",
     "tests/test_proc.py",
-    "tests/test_repo_owner_governance.py",
     "tests/test_review_threads.py",
     "tests/test_rig_flags.py",
     "tests/test_rig_shim.py",
@@ -498,7 +492,6 @@ loose-dict-allow = [
     "src/rig/estate/discovery.py",
     "src/rig/otel_stack/backfill.py",
     "src/rig/repo_governance/github_rulesets.py",
-    "src/rig/repo_governance/gitignore_manager.py",
     "src/rig/tracing.py",
 ]
 

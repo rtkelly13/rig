@@ -4,7 +4,9 @@ namespace Rig.Core.Governance;
 /// <param name="Status"><c>ALIGNED</c>, <c>WRONG_OWNER</c>, <c>UNAUTHORIZED_OWNER</c> or <c>UNKNOWN_OWNER</c>.</param>
 /// <param name="IsAligned">Whether the owner is authorized.</param>
 /// <param name="Message">Why, as the report prints it.</param>
-public sealed record OwnerInspection(string Status, bool IsAligned, string Message);
+/// <param name="ActualOwner">The owner the slug names, when it names one.</param>
+/// <param name="InferredProfile">The profile the owner maps to (<c>owner_profiles</c>) when no profile names the repo yet.</param>
+public sealed record OwnerInspection(string Status, bool IsAligned, string Message, string? ActualOwner = null, string? InferredProfile = null);
 
 /// <summary>Owner governance: a repo must live under its expected owner, or at least an allowed one. Ported from <c>repo_discovery.inspect_repo_owner</c>.</summary>
 public static class RepoOwners
@@ -34,17 +36,19 @@ public static class RepoOwners
         var inferred = policies.OwnerProfileFor(key);
         if (expected is not null && !string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase))
         {
-            return new("WRONG_OWNER", false, $"Expected owner '{expected}', but repo is owned by '{actual}'");
+            return new("WRONG_OWNER", false, $"Expected owner '{expected}', but repo is owned by '{actual}'", actual, inferred);
         }
 
         if (allowed.Count > 0 && !allowed.Contains(actual, StringComparer.OrdinalIgnoreCase))
         {
-            return new("UNAUTHORIZED_OWNER", false, $"Owner '{actual}' is not in allowed owners ({string.Join(", ", allowed)})");
+            return new("UNAUTHORIZED_OWNER", false, $"Owner '{actual}' is not in allowed owners ({string.Join(", ", allowed)})", actual, inferred);
         }
 
         return new(
             "ALIGNED",
             true,
-            inferred is null ? $"Owner '{actual}' is authorized" : $"Owner '{actual}' is authorized; not adopted: add it to profile {inferred}");
+            inferred is null ? $"Owner '{actual}' is authorized" : $"Owner '{actual}' is authorized; not adopted: add it to profile {inferred}",
+            actual,
+            inferred);
     }
 }
