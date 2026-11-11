@@ -83,7 +83,7 @@ Orca draws only the lucide icons its picker offers, matched by exact name: `Fold
 Any other name shows as a folder, and `repo.update` ignores names that are not alphanumeric (such
 as `git-compare`) but still reports success. For anything else, use `emoji:` (up to 16 characters)
 or an image URL. The doctor fails an icon outside that set, and a test holds `config/orca.json`
-to it. `ORCA_LUCIDE_ICONS` in `src/rig/workspace/orca.py` mirrors the list; update it when Orca's
+to it. `OrcaRepoIcon.Lucide` in `src/Rig.Core/Orca/OrcaState.cs` mirrors the list; update it when Orca's
 picker changes.
 
 ## Worktrees under each repo's `temp/`

@@ -8,7 +8,6 @@ from __future__ import annotations
 import typer
 
 from rig import csharp_cli
-from rig.workspace.orca_cli import orca_cli
 
 app = typer.Typer(
     name="workspace",
@@ -19,7 +18,6 @@ app = typer.Typer(
 csharp_cli.add_stub(app, "skills")
 csharp_cli.add_stub(app, "policy")
 csharp_cli.add_group_stubs(app, "workspace")
-app.add_typer(orca_cli, name="orca")
 
 
 def main() -> None:
