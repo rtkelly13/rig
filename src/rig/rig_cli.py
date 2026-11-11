@@ -4,7 +4,7 @@ Provides a unified interface across all developer tools:
 - AI coding agent launcher (Antigravity, Claude Code, OpenCode, Codex)
 - Estate governance & workspace sync
 - Desktop manager & window IaC reconciliation
-- Development environment doctor & setup
+- Commands C# owns (devenv, doctor and the rest of csharp_cli.PORTED) are stubs that hand over to it
 """
 
 from __future__ import annotations
@@ -18,7 +18,6 @@ from rich.console import Console
 from desktop_manager.web_cli import web_app
 from rig import csharp_cli, tracing
 from rig.c4_okf.cli import app as c4_app
-from rig.devenv.cli import app as devenv_app
 from rig.estate.cli import app as estate_app
 from rig.flags.cli import app as flags_app
 from rig.triage.cli import app as triage_app
@@ -34,7 +33,6 @@ app = typer.Typer(
 )
 
 app.add_typer(workspace_app, name="workspace")
-app.add_typer(devenv_app, name="devenv")
 app.add_typer(estate_app, name="estate")
 app.add_typer(triage_app, name="triage")
 app.add_typer(web_app, name="web")
@@ -58,15 +56,6 @@ def sync_cmd(
     from rig.workspace.cli import sync_command
 
     sync_command(root=root, config=config, gitignore=gitignore)
-
-
-@app.command("doctor")
-def doctor_cmd() -> None:
-    """Validate environment health across tools, runtimes, git, and AI assistants."""
-    from rig.devenv.doctor.core import run_doctor
-
-    rc = run_doctor()
-    raise typer.Exit(code=rc)
 
 
 @app.command("align", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})

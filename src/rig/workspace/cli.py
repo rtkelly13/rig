@@ -14,7 +14,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from rig import csharp_cli, scopes
-from rig.devenv.ui import make_console, table_box
+from rig.console_ui import make_console, table_box
 from rig.repo_governance.gitignore_manager import (
     audit_estate_gitignores,
     sync_estate_gitignores,

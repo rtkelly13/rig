@@ -50,6 +50,19 @@ internal static class Program
         var signals = new ProcessSignals();
         var probe = new TcpPortProbe();
         var otelRuntime = new CollectorRuntime(otelPaths, proc, detached, OperatingSystem.IsWindows());
+        var devenvHost = new DevenvHost(
+            home,
+            Path.Join(checkout, "config", "cli-allowlists.json"),
+            OperatingSystem.IsWindows(),
+            checkout,
+            codeRoot,
+            Environment.GetEnvironmentVariable("SHELL"),
+            ProgramPath.Find,
+            Environment.GetEnvironmentVariable("XDG_CONFIG_HOME"),
+            OperatingSystem.IsMacOS(),
+            Environment.CurrentDirectory,
+            Environment.GetEnvironmentVariable("LOCALAPPDATA"),
+            Console.In);
         var app = new RigApp(
             new PythonRig(proc, checkout, fromPython),
             new GhApi(proc),
@@ -130,24 +143,13 @@ internal static class Program
                     Console.Out,
                     Console.Error).Build,
                 new DevenvCommand(
-                    new DevenvHost(
-                        home,
-                        Path.Join(checkout, "config", "cli-allowlists.json"),
-                        OperatingSystem.IsWindows(),
-                        checkout,
-                        codeRoot,
-                        Environment.GetEnvironmentVariable("SHELL"),
-                        ProgramPath.Find,
-                        Environment.GetEnvironmentVariable("XDG_CONFIG_HOME"),
-                        OperatingSystem.IsMacOS(),
-                        Environment.CurrentDirectory,
-                        Environment.GetEnvironmentVariable("LOCALAPPDATA"),
-                        Console.In),
+                    devenvHost,
                     new ObsidianPlugins(downloads),
                     new NerdFonts(downloads),
                     proc,
                     Console.Out,
                     Console.Error).Build,
+                new DoctorCommand(devenvHost, proc, TimeProvider.System, Console.Out).Build,
             ],
             new AgentLauncher(
                 proc,

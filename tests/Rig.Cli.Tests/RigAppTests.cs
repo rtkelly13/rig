@@ -88,7 +88,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(Ran.NotFound, string.Empty, "uv is not on PATH"), "uv");
 
-        Assert.Equal(2, await Run("doctor"));
+        Assert.Equal(2, await Run("sync"));
         Assert.StartsWith("rig: uv is not on PATH.", _err.ToString(), StringComparison.Ordinal);
     }
 
@@ -97,7 +97,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(Ran.NotFound, string.Empty, string.Empty), "uv");
 
-        Assert.Equal(Ran.NotFound, await Run("doctor"));
+        Assert.Equal(Ran.NotFound, await Run("sync"));
         Assert.Empty(_err.ToString());
     }
 

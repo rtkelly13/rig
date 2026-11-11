@@ -58,22 +58,6 @@ public sealed partial class ForwardedContractTests
         Assert.Equal(ported.Order(StringComparer.Ordinal), owned.Order(StringComparer.Ordinal));
     }
 
-    [Fact]
-    public void Every_subcommand_python_hands_over_is_one_csharp_owns()
-    {
-        // PORTED_SUBCOMMANDS: the subcommands of a group Python still owns that C# runs (devenv claude).
-        var block = PortedSubcommandsBlock().Match(File.ReadAllText(Bridge)).Groups["body"].Value;
-        var python = Group().Matches(block)
-            .SelectMany(m => Name().Matches(m.Groups["subs"].Value).Select(s => $"{m.Groups["group"].Value} {s.Groups["name"].Value}"));
-        var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
-        var csharp = FullApp().BuildRoot().Subcommands
-            .Where(group => forwarded.Contains(group.Name))
-            .SelectMany(group => group.Subcommands.Select(sub => $"{group.Name} {sub.Name}"));
-
-        Assert.NotEmpty(python);
-        Assert.Equal(python.Order(StringComparer.Ordinal), csharp.Order(StringComparer.Ordinal));
-    }
-
     // Every ported command, built with fakes; only the command tree is read.
     private static RigApp FullApp() =>
         new(
@@ -99,6 +83,7 @@ public sealed partial class ForwardedContractTests
                 new SkillsCommand(new SkillsHost("/", "/", "/", "/", false), new Git(new FakeProc(), "/"), new RefusingLinker(), TextWriter.Null, TextWriter.Null).Build,
                 new BrowserCommand(new BrowserHost("/", null, false, _ => null, _ => new ShellProfileEnvironment("/none")), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
                 new DevenvCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new ObsidianPlugins(Refusing), new NerdFonts(Refusing), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
+                new DoctorCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
 
@@ -159,12 +144,6 @@ public sealed partial class ForwardedContractTests
 
     [GeneratedRegex("""PORTED: tuple\[str, \.\.\.\] = \((?<body>[^)]*)\)""")]
     private static partial Regex PortedBlock();
-
-    [GeneratedRegex("""PORTED_SUBCOMMANDS: dict\[str, tuple\[str, \.\.\.\]\] = \{(?<body>[^}]*)\}""")]
-    private static partial Regex PortedSubcommandsBlock();
-
-    [GeneratedRegex(@"""(?<group>[\w-]+)"": \((?<subs>[^)]*)\)")]
-    private static partial Regex Group();
 
     [GeneratedRegex(@"""(?<name>[\w-]+)""")]
     private static partial Regex Name();

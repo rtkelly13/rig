@@ -56,7 +56,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "setup", "ai", "tools", "runtimes", "update", "git", "terminal"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["doctor", "agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "setup", "ai", "tools", "runtimes", "update", "git", "terminal"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -532,31 +532,5 @@ public sealed class DevenvCommandTests : IDisposable
         Assert.Contains("✓ Installed font: CascadiaCode Nerd Font\n", output, StringComparison.Ordinal);
         Assert.StartsWith("! Could not download/install JetBrainsMono Nerd Font: ", error, StringComparison.Ordinal);
         Assert.Contains("! Could not download/install FiraCode Nerd Font: ", error, StringComparison.Ordinal);
-    }
-
-    [Theory]
-    [InlineData(new[] { "devenv", "claude" }, false)]
-    [InlineData(new[] { "devenv", "claude", "--check" }, false)]
-    [InlineData(new[] { "devenv" }, true)]
-    [InlineData(new[] { "devenv", "--help" }, true)]
-    [InlineData(new[] { "devenv", "setup" }, false)]
-    [InlineData(new[] { "devenv", "opencode" }, false)]
-    [InlineData(new[] { "devenv", "estate-rules", "--dry-run" }, false)]
-    [InlineData(new[] { "devenv", "obsidian-plugins" }, false)]
-    [InlineData(new[] { "devenv", "agents" }, false)]
-    [InlineData(new[] { "devenv", "agent-launcher" }, false)]
-    [InlineData(new[] { "devenv", "gh", "--check" }, false)]
-    [InlineData(new[] { "devenv", "fonts", "--check" }, false)]
-    [InlineData(new[] { "devenv", "tools", "--check" }, false)]
-    [InlineData(new[] { "devenv", "runtimes" }, false)]
-    [InlineData(new[] { "devenv", "update" }, false)]
-    [InlineData(new[] { "devenv", "doctor" }, true)]
-    [InlineData(new[] { "devenv", "git", "--check" }, false)]
-    [InlineData(new[] { "devenv", "terminal" }, false)]
-    public void Only_the_ported_devenv_subcommands_stay_in_csharp(string[] args, bool forwarded)
-    {
-        var root = new RootCommand { Build(TextWriter.Null, TextWriter.Null) };
-
-        Assert.Equal(forwarded, Forwarded.Owns(args, root));
     }
 }
