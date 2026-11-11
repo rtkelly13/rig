@@ -91,8 +91,12 @@ public sealed class KnowledgeServer(IProc proc, Launchd launchd, KnowledgeServer
     /// <summary>The LaunchAgent's plist.</summary>
     public string PlistPath => Path.Join(launchd.AgentsDir, $"{Label}.plist");
 
+    // npm's folder for the scoped package, with this platform's separators throughout, as pathlib gives it.
+    private static string PackageDir(string prefix) =>
+        Path.Join([prefix, "node_modules", .. Package.Split('/')]);
+
     /// <summary>The package's CLI module, run with node directly: launchd has no shell PATH for the <c>ok</c> shebang.</summary>
-    public static string EntryPoint(string prefix) => Path.Join(prefix, "node_modules", Package, "dist", "cli.mjs");
+    public static string EntryPoint(string prefix) => Path.Join(PackageDir(prefix), "dist", "cli.mjs");
 
     /// <summary>The installed package's version, or null when it is missing or its manifest unreadable.</summary>
     public static string? InstalledVersion(string prefix)
@@ -100,7 +104,7 @@ public sealed class KnowledgeServer(IProc proc, Launchd launchd, KnowledgeServer
         byte[] manifest;
         try
         {
-            manifest = File.ReadAllBytes(Path.Join(prefix, "node_modules", Package, "package.json"));
+            manifest = File.ReadAllBytes(Path.Join(PackageDir(prefix), "package.json"));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
