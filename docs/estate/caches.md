@@ -29,3 +29,7 @@ NuGet http-cache is cleared outright, and the idle Claude sessions are listed
 exactly. A Claude session counts as idle when neither its newest file nor the
 directory itself has been written for `--idle-days`. `--json` prints the
 results; the command exits 1 when any category failed.
+
+The categories, the tool lookup and the idle-session rule live in
+`src/Rig.Core/Estate/Caches.cs`; the table and `--json` in
+`src/Rig.Cli/Estate/PruneCachesCommand.cs`.

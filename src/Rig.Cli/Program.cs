@@ -16,6 +16,7 @@ using Rig.Cli.Vault;
 using Rig.Cli.Workspace;
 using Rig.Core.Browser;
 using Rig.Core.Devenv;
+using Rig.Core.Estate;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
@@ -175,6 +176,7 @@ internal static class Program
                     proc,
                     new GhApi(proc),
                     TimeProvider.System,
+                    Caches.FindTool,
                     Console.Out,
                     Console.Error).Build,
             ],
