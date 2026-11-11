@@ -265,18 +265,20 @@ def build_ruleset_payload(repo_name: str, cfg: PolicyConfig | None = None) -> Js
         rules.append(_pull_request_rule(extra_approval))
     rules.extend(status_checks)
     if cfg.merge_queue(repo_name):
-        rules.append({
-            "type": "merge_queue",
-            "parameters": {
-                "check_response_timeout_minutes": 60,
-                "grouping_strategy": "ALLGREEN",
-                "max_entries_to_build": 5,
-                "max_entries_to_merge": 5,
-                "merge_method": "SQUASH",
-                "min_entries_to_merge": 1,
-                "min_entries_to_merge_wait_minutes": 1,
-            },
-        })
+        rules.append(
+            {
+                "type": "merge_queue",
+                "parameters": {
+                    "check_response_timeout_minutes": 60,
+                    "grouping_strategy": "ALLGREEN",
+                    "max_entries_to_build": 5,
+                    "max_entries_to_merge": 5,
+                    "merge_method": "SQUASH",
+                    "min_entries_to_merge": 1,
+                    "min_entries_to_merge_wait_minutes": 1,
+                },
+            }
+        )
     return {
         "name": RULESET_NAME,
         "target": "branch",
