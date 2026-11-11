@@ -1,13 +1,17 @@
 using System.CommandLine;
+using System.Text.Json.Nodes;
+using Rig.Cli.Vault;
+using Rig.Cli.Workspace;
 using Rig.Core.Governance;
+using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 
 namespace Rig.Cli.Governance;
 
 /// <summary>
-/// The in-repo files governance writes: <c>license</c> and <c>sync-templates</c>. Ported from
-/// <c>rig.repo_governance.cli_sync</c>.
+/// The in-repo files governance writes: <c>license</c>, <c>sync-templates</c> and <c>gitignore</c>. Ported from
+/// <c>rig.repo_governance.cli_sync</c> and <c>cli_audits</c>.
 /// </summary>
 internal sealed partial class GovernanceCommand
 {
@@ -151,6 +155,76 @@ internal sealed partial class GovernanceCommand
         await SummaryAsync(audit, failures, $"{failures} repo(s) missing community templates.", "Run with --apply to write missing templates.", "all inspected repos have complete community templates.").ConfigureAwait(false);
         return 0;
     }
+
+    private Command Gitignore()
+    {
+        var path = PathArgument();
+        var all = AllOption();
+        var org = OrgOption();
+        var language = new Option<string?>("--language", "-l") { Description = "Language preset(s) to enforce (e.g. 'python', 'dotnet', 'node')" };
+        var apply = new Option<bool>("--apply") { Description = "Apply missing gitignore entries. Without this, audits only." };
+        var dryRun = new Option<bool>("--dry-run") { Description = "Preview mutations without applying changes" };
+        var json = new Option<bool>("--json") { Description = "Output results as JSON" };
+        var command = new Command("gitignore", "Audit or synchronize common .gitignore rules across repositories.") { path, all, org, language, apply, dryRun, json };
+        command.SetAction((parsed, cancellationToken) => GitignoreAsync(
+            new(parsed.GetValue(path), parsed.GetValue(all), parsed.GetValue(org), parsed.GetValue(language), parsed.GetValue(apply), parsed.GetValue(dryRun), parsed.GetValue(json)),
+            cancellationToken));
+        return command;
+    }
+
+    private async Task<int> GitignoreAsync(GitignoreOptions options, CancellationToken cancellationToken)
+    {
+        var (policies, repos) = Governed();
+        var targets = await repos.ResolveTargetsAsync(options.Path, options.All, host.PersonalDir, host.Cwd, options.Org, cancellationToken).ConfigureAwait(false);
+        if (targets.Count == 0)
+        {
+            await output.WriteLineAsync("❌ No target repositories found.").ConfigureAwait(false);
+            return 2;
+        }
+
+        IReadOnlyList<string>? languages = options.Language is { Length: > 0 } given
+            ? [.. given.Split(',').Select(part => part.Trim()).Where(part => part.Length > 0)]
+            : null;
+        var gitignores = new Gitignores(new Git(proc, host.CodeRoot), EstateScopes.Load(host.ScopesFile), policies);
+        var rows = new JsonArray();
+        var mode = options.Apply ? options.DryRun ? "ENFORCE (DRY-RUN)" : "ENFORCE (APPLY)" : "AUDIT";
+        var table = new TextTable("Repository .gitignore Status", [("Repository", false), ("Languages", false), ("Status", false), ("Details", false)]);
+        var drift = false;
+        foreach (var target in targets)
+        {
+            var name = FolderName(target);
+            if (options.Apply)
+            {
+                var aligned = await gitignores.AlignAsync(target, options.DryRun, languages, cancellationToken).ConfigureAwait(false);
+                rows.Add(WorkspaceCommand.Row(name, target, aligned));
+                _ = table.Add(name, WorkspaceCommand.Languages(aligned.Languages), aligned.Status, aligned.Added.Count > 0 ? $"Added: {string.Join(", ", aligned.Added)}" : "Already configured");
+                continue;
+            }
+
+            var inspected = await gitignores.InspectAsync(target, languages, cancellationToken).ConfigureAwait(false);
+            drift |= !inspected.IsAligned;
+            rows.Add(WorkspaceCommand.Row(name, target, inspected));
+            _ = table.Add(name, WorkspaceCommand.Languages(inspected.Languages), inspected.Status, inspected.MissingLines.Count > 0 ? $"Missing: {string.Join(", ", inspected.MissingLines)}" : "Fully compliant");
+        }
+
+        if (options.Json)
+        {
+            await output.WriteLineAsync(PyJson.Dumps(rows)).ConfigureAwait(false);
+            return drift ? 1 : 0;
+        }
+
+        await output.WriteAsync(Panel($"Common .gitignore: {mode}")).ConfigureAwait(false);
+        await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        if (!drift)
+        {
+            return 0;
+        }
+
+        await output.WriteLineAsync("\nRun 'repo-governance gitignore --apply' or 'workspace gitignore sync' to fix.").ConfigureAwait(false);
+        return 1;
+    }
+
+    private sealed record GitignoreOptions(string? Path, bool All, string? Org, string? Language, bool Apply, bool DryRun, bool Json);
 
     private sealed record LicenseOptions(string? Path, bool Audit, bool Enforce, bool Spdx, string? Type, string? Holder, string? Org, bool All);
 }
