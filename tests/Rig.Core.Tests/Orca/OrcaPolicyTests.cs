@@ -1,4 +1,5 @@
 using Rig.Core.Orca;
+using Rig.Core.Workspace;
 using static Rig.Core.Tests.Orca.OrcaFixtures;
 
 namespace Rig.Core.Tests.Orca;
@@ -20,6 +21,24 @@ public sealed class OrcaPolicyTests
         Assert.Equal("auto", policy.AgentPermissions.Wanted("codex"));
         Assert.Equal(("show", "#ec4899", "Palette"), (policy.Repos["design-system"].ExternalWorktreeVisibility, policy.Repos["design-system"].Color, policy.Repos["design-system"].Icon));
         Assert.Equal(("#6366f1", "SquareTerminal"), (policy.Repos["rig"].Color, policy.Repos["rig"].Icon));
+    }
+
+    [Fact]
+    public void The_checked_in_policy_badges_every_active_project_shown_in_Orca()
+    {
+        var policy = OrcaPolicy.Load(CheckedInPolicy);
+        var registry = Path.Join(Path.GetDirectoryName(CheckedInPolicy), ManagedProjects.FileName);
+
+        // hearth is managed outside Orca on purpose.
+        var shown = ManagedProjects.Load(registry).Where(spec => spec.Enabled && spec.OrcaGroup is not null && spec.Name != "hearth").ToList();
+
+        Assert.NotEmpty(shown);
+        Assert.All(shown, spec =>
+        {
+            Assert.True(policy.Repos.TryGetValue(spec.Name, out var repo), $"{spec.Name} is missing from config/orca.json");
+            Assert.False(string.IsNullOrEmpty(repo.Color), $"{spec.Name} has no badge color");
+            Assert.False(string.IsNullOrEmpty(repo.Icon), $"{spec.Name} has no icon");
+        });
     }
 
     [Fact]

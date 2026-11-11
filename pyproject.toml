@@ -183,7 +183,6 @@ ignore_imports = [
     "rig.repo_governance.cli_audits -> rig.workspace.engine",  # G2
     "rig.repo_governance.cli_audits -> rig.workspace.vercel_names",  # G2 (move the module)
     "rig.repo_governance.vercel_projects -> rig.workspace.vercel_names",  # G2 (move the module)
-    "rig.workspace.orca_agent_permissions -> rig.estate.orca_runtime",  # G2 (move the module)
 ]
 
 [tool.ruff]
@@ -253,7 +252,6 @@ ignore = [
 "src/rig/image_drift/simplifier/syntactic.py" = ["TID251"]
 "src/rig/repo_governance/vercel_gating.py" = ["TID251"]
 "src/rig/skills/vendor.py" = ["TID251"]  # git pull/fetch/clone still raw: move onto rig.proc.git
-"src/rig/workspace/orca_rpc.py" = ["TID251"]
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
 "src/rig/connectivity/manifests.py" = ["TID251"]
@@ -531,8 +529,6 @@ patching-allow = [
     "tests/test_vercel_cli_auth.py",
     "tests/test_vercel_gating.py",
     "tests/test_web_spa.py",
-    "tests/test_workspace_orca.py",
-    "tests/test_workspace_orca_rpc.py",
 ]
 pyright-pragma-allow = []
 boundary-modules = [

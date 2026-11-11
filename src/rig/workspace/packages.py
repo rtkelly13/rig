@@ -1,13 +1,12 @@
 """The package bindings declared in ``config/managed-projects.json``.
 
 Tracking, auditing and the dashboard run from C# (``rig workspace packages``). What stays here is the
-config reading that orca and connectivity still share, until they move too.
+config reading that connectivity and the estate's port and Vercel naming still share, until they move too.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 from pathlib import Path
 from typing import Literal
 
@@ -16,14 +15,6 @@ from rig.typed_json import decode_json
 
 Registry = Literal["npm", "nuget"]
 AuthMode = Literal["oidc", "token"]
-
-
-class Status(StrEnum):
-    OK = "ok"
-    WARN = "warn"
-    FAIL = "fail"
-    MANUAL = "manual"
-    SKIP = "skip"
 
 
 @dataclass(slots=True, frozen=True)

@@ -37,7 +37,8 @@ internal sealed record GitignoreArgs(string? Root, string? Repo, string? Languag
 /// <param name="time">The clock the repository name cache is aged by.</param>
 /// <param name="output">Where reports go.</param>
 /// <param name="http">Reads the package registries for <c>workspace packages</c>.</param>
-internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvider time, TextWriter output, HttpClient http)
+/// <param name="orca">How <c>workspace orca</c> reaches Orca; this machine's when null.</param>
+internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvider time, TextWriter output, HttpClient http, OrcaHost? orca = null)
 {
     /// <summary>What <c>rig workspace</c> is.</summary>
     public const string Description = "Virtual monorepo estate management for the personal folder.";
@@ -55,6 +56,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         workspace.Subcommands.Add(Gitignore());
         workspace.Subcommands.Add(Ci());
         workspace.Subcommands.Add(new PackagesCommand(host, proc, http, time, output).Build());
+        workspace.Subcommands.Add(new OrcaCommand(host, orca ?? OrcaHost.Current, proc, time, output).Build());
         workspace.Subcommands.Add(Sync("Synchronize root AGENTS.md, personal.code-workspace, and common gitignores."));
         return workspace;
     }

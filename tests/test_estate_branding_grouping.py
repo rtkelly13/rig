@@ -9,7 +9,6 @@ import pytest
 
 from rig.image_drift.server import StudioRequestHandler
 from rig.workspace.engine import load_managed_specs
-from rig.workspace.orca import load_policy
 
 pytestmark = pytest.mark.ci
 
@@ -70,20 +69,6 @@ def test_managed_specs_decode_orca_group() -> None:
 
     assert "rig" in by_name
     assert by_name["rig"].orca_group == ""
-
-
-def test_orca_json_covers_all_active_managed_projects() -> None:
-    """Verifies every active managed project declared for Orca has color and icon defined in config/orca.json."""
-    specs = load_managed_specs()
-    # Note: hearth is intentionally managed outside Orca as per ADR and #550
-    active_names = {s.name for s in specs if s.enabled and s.orca_group is not None and s.name != "hearth"}
-
-    policy = load_policy(REPO_ROOT / "config" / "orca.json")
-    for name in active_names:
-        assert name in policy.repos, f"Active project '{name}' missing from config/orca.json"
-        repo = policy.repos[name]
-        assert repo.color, f"Project '{name}' in config/orca.json is missing a badge color"
-        assert repo.icon, f"Project '{name}' in config/orca.json is missing an icon"
 
 
 def test_repo_policies_covers_active_managed_projects() -> None:
