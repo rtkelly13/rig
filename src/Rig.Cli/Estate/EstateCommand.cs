@@ -10,11 +10,14 @@ using Rig.Core.Roots;
 namespace Rig.Cli.Estate;
 
 /// <summary>Where <c>rig estate</c> looks.</summary>
-/// <param name="PersonalDir">The personal estate folder, the default <c>--root</c>.</param>
+/// <param name="CodeRoot">The code root: its <c>external/</c> and <c>other/</c> are untrusted, so git there runs hardened.</param>
 /// <param name="Home">The home folder: <c>~</c> in a path, and the folder holding the clone cache.</param>
 /// <param name="WorkingDirectory">Where <c>doctor</c> looks for a clone when given none.</param>
-internal sealed record EstateHost(string PersonalDir, string Home, string WorkingDirectory)
+internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDirectory)
 {
+    /// <summary>The personal estate folder, the default <c>--root</c>.</summary>
+    public string PersonalDir => Path.Join(CodeRoot, "personal");
+
     /// <summary>The clone list cache, shared with the Python commands still in the group.</summary>
     public string CacheFile => CloneDiscovery.CacheFileUnder(Home);
 }
@@ -39,7 +42,7 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
 
     private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(120);
 
-    private readonly Git git = new(proc, host.PersonalDir);
+    private readonly Git git = new(proc, host.CodeRoot);
 
     /// <summary>The <c>estate</c> group with its ported subcommands.</summary>
     public Command Build()

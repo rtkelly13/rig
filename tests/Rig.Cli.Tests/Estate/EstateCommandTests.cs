@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Text.Json.Nodes;
 using Rig.Cli.Estate;
+using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Estate;
@@ -48,13 +49,15 @@ public sealed class EstateCommandTests : IDisposable
         return PathResolution.Resolve(clone);
     }
 
-    private async Task<(int Code, string Out, string Err)> RunAsync(params string[] args)
+    private Task<(int Code, string Out, string Err)> RunAsync(params string[] args) => RunWithAsync(Repos.Proc, args);
+
+    private async Task<(int Code, string Out, string Err)> RunWithAsync(IProc proc, params string[] args)
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
         var command = new EstateCommand(
             new EstateHost(Code, Path.Join(_root.Path, "home"), Risky),
-            Repos.Proc,
+            proc,
             _github,
             _clock,
             output,
@@ -202,6 +205,31 @@ public sealed class EstateCommandTests : IDisposable
         Assert.Equal(0, code);
         Assert.Contains("✓ Fetched 1 of 2 clones.", output, StringComparison.Ordinal);
         Assert.Contains("  risky: ", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Git_in_a_clone_under_the_code_roots_external_folder_runs_hardened()
+    {
+        var external = PathResolution.Resolve(await Repos.InitAsync(Path.Join(Code, "external", "upstream")));
+        var proc = new RecordingProc(Repos.Proc);
+
+        var (code, _, _) = await RunWithAsync(proc, "risk", "--json", "--root", Code);
+
+        Assert.Equal(0, code);
+        var there = proc.Requests.Where(r => r.Argv[0] == "git" && r.WorkingDirectory == external).ToList();
+        Assert.NotEmpty(there);
+        Assert.All(there, r => Assert.Contains("core.fsmonitor=false", r.Argv));
+    }
+
+    private sealed class RecordingProc(IProc inner) : IProc
+    {
+        public List<ProcRequest> Requests { get; } = [];
+
+        public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
+        {
+            Requests.Add(request);
+            return inner.RunAsync(request, cancellationToken);
+        }
     }
 
     [Fact]

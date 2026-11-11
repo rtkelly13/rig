@@ -171,7 +171,7 @@ internal static class Program
                 workspace.Build,
                 workspace.BuildSync,
                 new EstateCommand(
-                    new EstateHost(Path.Join(codeRoot, "personal"), home, Environment.CurrentDirectory),
+                    new EstateHost(codeRoot, home, Environment.CurrentDirectory),
                     proc,
                     new GhApi(proc),
                     TimeProvider.System,
