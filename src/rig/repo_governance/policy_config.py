@@ -78,13 +78,15 @@ def _is_gitignore_token_satisfied(token: str, lines: set[str]) -> bool:
         }
         if any(c in lines for c in candidates):
             return True
+    t_syns = {"temp", "temp/", "/temp", "/temp/", ".temp", ".temp/", "/.temp", "/.temp/"}
+    v_syns = {".venv", ".venv/", "venv", "venv/", "env", "env/", "ENV", "ENV/"}
     synonyms = {
-        "temp": {"temp", "temp/", "/temp", "/temp/", ".temp", ".temp/", "/.temp", "/.temp/"},
-        ".temp": {"temp", "temp/", "/temp", "/temp/", ".temp", ".temp/", "/.temp", "/.temp/"},
+        "temp": t_syns,
+        ".temp": t_syns,
         "bin": {"[Bb]in", "[Bb]in/", "**/bin", "**/bin/", "/bin/"},
         "obj": {"[Oo]bj", "[Oo]bj/", "**/obj", "**/obj/", "/obj/"},
-        "venv": {".venv", ".venv/", "venv", "venv/", "env", "env/", "ENV", "ENV/"},
-        ".venv": {".venv", ".venv/", "venv", "venv/", "env", "env/", "ENV", "ENV/"},
+        "venv": v_syns,
+        ".venv": v_syns,
         "node_modules": {"node_modules", "node_modules/", "/node_modules", "/node_modules/", "**/node_modules"},
     }
     if stripped in synonyms and any(t in lines for t in synonyms[stripped]):
@@ -532,20 +534,20 @@ class PolicyConfig:
 
     def require_extra_approval_for_unattributed_changes(self, repo: str) -> bool:
         """Return True if extra approval for unattributed changes is required for *repo*."""
-        res = self._resolve(repo, lambda layer: layer.require_extra_approval_for_unattributed_changes)
-        return bool(res) if res is not None else False
+        return bool(self._resolve(repo, lambda layer: layer.require_extra_approval_for_unattributed_changes))
 
     def repos_for_org(self, org: str) -> tuple[str, ...]:
         """Return repository names explicitly registered under *org*."""
         org_lower = org.lower()
-        repos: list[str] = []
-        for profile in self.file.profiles.values():
-            if profile.expected_owner and profile.expected_owner.lower() == org_lower:
-                repos.extend(profile.repos)
-        for repo_name, override in self.file.repo_overrides.items():
-            expected = override.expected_owner
-            if expected and expected.lower() == org_lower and repo_name not in repos:
-                repos.append(repo_name)
+        repos = [
+            r
+            for p in self.file.profiles.values()
+            if p.expected_owner and p.expected_owner.lower() == org_lower
+            for r in p.repos
+        ]
+        for name, o in self.file.repo_overrides.items():
+            if o.expected_owner and o.expected_owner.lower() == org_lower and name not in repos:
+                repos.append(name)
         return tuple(repos)
 
     def is_repo_in_org(self, repo_name: str, org: str) -> bool:
@@ -731,16 +733,11 @@ class PolicyConfig:
         has_python = False
         for lang in langs:
             norm = self.normalize_language(lang)
-            if norm == "python":
-                has_python = True
+            has_python = has_python or (norm == "python")
             preset = presets.get(norm)
             if preset:
-                for ext in preset.script_extensions:
-                    if ext not in allowed:
-                        allowed.append(ext)
-                for ext in preset.banned_script_extensions:
-                    if ext not in banned:
-                        banned.append(ext)
+                allowed.extend(e for e in preset.script_extensions if e not in allowed)
+                banned.extend(e for e in preset.banned_script_extensions if e not in banned)
         if has_python and ".py" in banned:
             banned.remove(".py")
         return RepoScriptRules(
@@ -750,10 +747,8 @@ class PolicyConfig:
 
     def has_policy(self, repo: str, policy: str) -> bool:
         """Return True if *repo*'s profile declares *policy* in its policies list."""
-        profile_name = self.profile_for(repo)
-        if not profile_name:
-            return False
-        return policy in self.file.profiles[profile_name].policies
+        name = self.profile_for(repo)
+        return bool(name and policy in self.file.profiles[name].policies)
 
     def github_apps(self) -> dict[str, GitHubAppPolicy]:
         """Return declared GitHub Apps indexed by slug."""
@@ -762,13 +757,7 @@ class PolicyConfig:
     def apps_for_account(self, account: str) -> tuple[GitHubAppPolicy, ...]:
         """Return GitHub Apps declared for *account* (organization or user)."""
         acc_lower = account.lower()
-        result: list[GitHubAppPolicy] = []
-        for app in self.github_apps().values():
-            for acc in app.accounts:
-                if acc.lower() == acc_lower:
-                    result.append(app)
-                    break
-        return tuple(result)
+        return tuple(app for app in self.github_apps().values() if any(a.lower() == acc_lower for a in app.accounts))
 
     def apps_for_repo(self, repo: str, account: str) -> tuple[GitHubAppPolicy, ...]:
         """Return GitHub Apps expected to be enabled on *repo* under *account*."""

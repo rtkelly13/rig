@@ -29,6 +29,7 @@ class RepoMetadata:
     license: str
     author_email: str
     supported_runtimes: str
+    contact_email: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,11 +76,13 @@ def detect_repo_metadata(repo_path: pathlib.Path, cfg: PolicyConfig | None = Non
     elif list(repo_path.glob("*.sln")) or list(repo_path.glob("**/*.fsproj")) or list(repo_path.glob("**/*.csproj")):
         supported_runtimes = ".NET 8 & .NET 9"
 
+    contact = (cfg or load_policy_config()).contact_email(repo_name)
     return RepoMetadata(
         repo_name=repo_name,
         is_public=is_public,
         license=license_name,
-        author_email=(cfg or load_policy_config()).contact_email(repo_name),
+        author_email=contact,
+        contact_email=contact,
         supported_runtimes=supported_runtimes,
     )
 

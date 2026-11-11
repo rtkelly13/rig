@@ -4,8 +4,6 @@
   "version": "1.0.0",
   "defaults": {
     "description": "Applied to every repo unless a profile overrides the same key.",
-    "contact_email": "94ryan.kelly@gmail.com",
-    "copyright_holder": "Ryan Kelly",
     "expected_owner": "rtkelly13",
     "allowed_owners": [
       "rtkelly13",
@@ -270,6 +268,8 @@
       "license": {
         "type": "MIT"
       },
+      "copyright_holder": "Ryan Kelly",
+      "contact_email": "94ryan.kelly@gmail.com",
       "environments": {
         "release": {
           "wait_timer": 0
@@ -384,6 +384,7 @@
       }
     },
     "Diffra.Guardrails": {
+      "copyright_holder": "rtkelly-labs",
       "required_checks": [
         "lint"
       ]
@@ -402,10 +403,10 @@
       "require_extra_approval_for_unattributed_changes": true
     },
     ".github": {
-      "required_checks": [],
-      "merge_queue": false
+      "copyright_holder": "rtkelly-labs"
     },
     "oxbow": {
+      "copyright_holder": "rtkelly-labs",
       "merge_queue": false
     },
     "Lake.NET": {
