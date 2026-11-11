@@ -298,9 +298,9 @@ public static partial class RepoHygiene
         var content = DocsTree.ReadText(file);
         IEnumerable<string> expectedBanned = [".sh", ".ps1"];
         var ban = policies?.ScriptBan(key);
-        if (ban is { Enabled: true })
+        if (ban is not null)
         {
-            expectedBanned = expectedBanned.Where(ban.BannedExtensions.Contains);
+            expectedBanned = ban.Enabled ? expectedBanned.Where(ban.BannedExtensions.Contains) : [];
         }
 
         if (expectedBanned.Any(ext => !content.Contains($"{ext}: exists:0", StringComparison.Ordinal)))
@@ -340,31 +340,37 @@ public static partial class RepoHygiene
         return new("CONFIGURED", true, file);
     }
 
-    /// <summary>The <c>.ls-lint.yml</c> that bans shell and PowerShell scripts, with the given exceptions and <c>scripts/</c> rules.</summary>
-    public static string RenderLsLintConfig(IReadOnlyList<string> allowedExceptions, IReadOnlyList<string> allowedScriptExtensions, IReadOnlyList<string> bannedScriptExtensions)
+    /// <summary>
+    /// The <c>.ls-lint.yml</c> that bans <paramref name="bannedExtensions"/> everywhere (by default shell and
+    /// PowerShell scripts), with the given exceptions and <c>scripts/</c> rules.
+    /// </summary>
+    public static string RenderLsLintConfig(
+        IReadOnlyList<string> allowedExceptions,
+        IReadOnlyList<string> allowedScriptExtensions,
+        IReadOnlyList<string> bannedScriptExtensions,
+        IReadOnlyList<string>? bannedExtensions = null)
     {
         ArgumentNullException.ThrowIfNull(allowedExceptions);
         ArgumentNullException.ThrowIfNull(allowedScriptExtensions);
         ArgumentNullException.ThrowIfNull(bannedScriptExtensions);
+        var banned = (bannedExtensions ?? ScriptBanRules.Default.BannedExtensions).Select(Dotted).ToList();
         List<string> lines =
         [
             "# .ls-lint.yml",
-            "# Estate-wide ban on shell (.sh, .bash, .zsh) and PowerShell (.ps1, .psm1) scripts.",
+            banned.SequenceEqual(ScriptBanRules.Default.BannedExtensions)
+                ? "# Estate-wide ban on shell (.sh, .bash, .zsh) and PowerShell (.ps1, .psm1) scripts."
+                : banned.Count > 0 ? $"# Ban on {string.Join(", ", banned)} scripts, as this repo's script_ban policy sets." : "# This repo's script_ban policy bans no scripts.",
             "# Exceptions must be explicitly listed in the `ignore:` section below.",
             string.Empty,
             "ls:",
-            "  .sh: exists:0",
-            "  .bash: exists:0",
-            "  .zsh: exists:0",
-            "  .ps1: exists:0",
-            "  .psm1: exists:0",
-            "  \"**\":",
-            "    .sh: exists:0",
-            "    .bash: exists:0",
-            "    .zsh: exists:0",
-            "    .ps1: exists:0",
-            "    .psm1: exists:0",
+            .. banned.Select(ext => $"  {ext}: exists:0"),
         ];
+        if (banned.Count > 0)
+        {
+            lines.Add("  \"**\":");
+            lines.AddRange(banned.Select(ext => $"    {ext}: exists:0"));
+        }
+
         if (allowedScriptExtensions.Count > 0 || bannedScriptExtensions.Count > 0)
         {
             foreach (var scope in new[] { "scripts", "\"scripts/**\"" })
@@ -415,19 +421,17 @@ public static partial class RepoHygiene
         }
 
         IReadOnlyList<string> exceptions = [];
+        IReadOnlyList<string>? banned = null;
         RepoScriptRules rules = new([], []);
         if (policies is not null)
         {
-            if (policies.ScriptBan(key) is { Enabled: true } ban)
-            {
-                exceptions = ban.AllowedExceptions;
-            }
-
+            var ban = policies.ScriptBan(key);
+            (exceptions, banned) = ban.Enabled ? (ban.AllowedExceptions, ban.BannedExtensions) : ([], []);
             rules = policies.ScriptRules(key, repoPath);
         }
 
         var file = Path.Join(repoPath, ".ls-lint.yml");
-        Write(file, RenderLsLintConfig(exceptions, rules.AllowedExtensions, rules.BannedExtensions), dryRun);
+        Write(file, RenderLsLintConfig(exceptions, rules.AllowedExtensions, rules.BannedExtensions, banned), dryRun);
         return new("aligned", File: file);
     }
 

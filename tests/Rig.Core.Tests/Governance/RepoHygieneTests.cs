@@ -222,6 +222,27 @@ public sealed class RepoHygieneTests : IDisposable
     }
 
     [Fact]
+    public void Align_renders_only_the_extensions_the_ban_policy_names()
+    {
+        var narrow = Policy("""{"defaults": {"script_ban": {"banned_extensions": ["ps1"]}}}""");
+        var disabled = Policy("""{"defaults": {"script_ban": {"enabled": false}}}""");
+
+        RepoHygiene.AlignLsLint(Repo, narrow, "app", dryRun: false);
+
+        Assert.StartsWith("# .ls-lint.yml\n# Ban on .ps1 scripts, as this repo's script_ban policy sets.\n", Read(".ls-lint.yml"), StringComparison.Ordinal);
+        Assert.Contains("ls:\n  .ps1: exists:0\n  \"**\":\n    .ps1: exists:0\n", Read(".ls-lint.yml"), StringComparison.Ordinal);
+        Assert.DoesNotContain(".sh:", Read(".ls-lint.yml"), StringComparison.Ordinal);
+        Assert.True(RepoHygiene.InspectLsLint(Repo, narrow, "app").IsAligned);
+
+        File.Delete(Path.Join(Repo, ".ls-lint.yml"));
+        RepoHygiene.AlignLsLint(Repo, disabled, "app", dryRun: false);
+
+        Assert.Contains("# This repo's script_ban policy bans no scripts.\n", Read(".ls-lint.yml"), StringComparison.Ordinal);
+        Assert.DoesNotContain("exists:0", Read(".ls-lint.yml"), StringComparison.Ordinal);
+        Assert.True(RepoHygiene.InspectLsLint(Repo, disabled, "app").IsAligned);
+    }
+
+    [Fact]
     public void Renovate_alone_or_with_security_only_dependabot_is_fine()
     {
         Assert.Equal(new HygieneResult("NO_RENOVATE", true), RepoHygiene.InspectDependabotRenovate(Repo));
