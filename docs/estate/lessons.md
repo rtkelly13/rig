@@ -115,7 +115,7 @@ before secret patterns: name patterns alone flagged `tokens.css` and a
 
 | Gap | Next step |
 |:---|:---|
-| `tidy` probably leaves the same junction skeleton | call `sweep_link_skeleton` from `cleanup.py` |
+| `tidy` probably leaves the same junction skeleton | sweep the link skeleton from `src/Rig.Core/Estate/Tidy.cs` |
 | Nothing stops a shelf being merged | a PR check that fails on a `TEMP-SHELVED:` subject |
 | Archiving hand-written files is a one-off script | `estate shelve --archive-handwritten <dir>` |
 | `unshelve` is proven only in tests | unshelve `report-main` and diff the result |

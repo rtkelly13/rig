@@ -138,8 +138,7 @@ The same mistake had two more sites, both found by running it:
 - **Worktrees were measured with `@{upstream}..HEAD`.** A worktree tracking
   `origin/main` after its branch squash-merged reports its originals as "ahead"
   forever — `temp/feat-headless-table` showed 4 ahead and **0** on no remote, a
-  refusal for nothing. `orphaned_count` is the honest measure and
-  `unpushed_count` is kept only for callers that genuinely want "ahead".
+  refusal for nothing. `orphaned_count` is the honest measure.
 - **A finished worktree was judged by age**, so three worktrees holding
   already-merged branches went unreported because none was 14 days idle. A
   worktree exists to carry a branch; the branch landing is what finishes it.

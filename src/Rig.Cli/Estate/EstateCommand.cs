@@ -25,11 +25,11 @@ internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDi
 /// <summary>
 /// <c>rig estate</c>: the subcommands ported from <c>src/rig/estate/cli.py</c>. The group's other subcommands are still
 /// Python's, so <see cref="Forwarding.Forwarded"/> hands any line naming one of them over. Read-only by default:
-/// <c>sync</c> fetches, and only <c>reclaim --apply</c> and <c>trim --apply</c> delete, each entry proving its own safety.
+/// <c>sync</c> fetches, and only <c>reclaim</c>, <c>trim</c> and <c>tidy</c> delete, with <c>--apply</c>, each entry proving its own safety.
 /// </summary>
 /// <param name="host">Where it looks.</param>
-/// <param name="proc">Runs git and du, and icacls on Windows when a tree is removed.</param>
-/// <param name="github">Asks GitHub which head refs have a merged PR, for <c>doctor --merged</c>.</param>
+/// <param name="proc">Runs git, du and lsof, and icacls on Windows when a tree is removed.</param>
+/// <param name="github">Asks GitHub which head refs have a merged PR, for <c>doctor --merged</c> and <c>tidy --merged</c>.</param>
 /// <param name="time">The clock the clone cache is aged by and the worktree checks read.</param>
 /// <param name="output">Where reports go.</param>
 /// <param name="error">Where progress and refusals go, so <c>--json</c> stays clean.</param>
@@ -58,6 +58,7 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
         estate.Subcommands.Add(Clones());
         estate.Subcommands.Add(ReclaimCommand());
         estate.Subcommands.Add(TrimCommand());
+        estate.Subcommands.Add(TidyCommand());
         return estate;
     }
 
@@ -180,6 +181,190 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
         trim.SetAction((parsed, cancellationToken) => TrimAsync(
             parsed.GetValue(root), parsed.GetValue(apply), parsed.GetValue(refresh), parsed.GetValue(idleDays), parsed.GetValue(min) ?? "10MB", cancellationToken));
         return trim;
+    }
+
+    private Command TidyCommand()
+    {
+        var root = RootOption();
+        var repos = new Option<string[]>("--repo")
+        {
+            Description = "Only this clone: a path to a checkout, or a clone's folder name under --root. Repeatable.",
+        };
+        var every = new Option<bool>("--all") { Description = "Every clone under --root. Required when --repo is not given." };
+        var apply = new Option<bool>("--apply") { Description = "Actually delete. Off by default." };
+        var force = new Option<bool>("--force") { Description = "Proceed on uncommitted or unpushed work, or when lsof cannot say what is in use" };
+        var refresh = RefreshOption();
+        var merged = new Option<bool>("--merged") { Description = "Fetch --prune, then ask GitHub which head refs have a merged PR (one call per clone)" };
+        var checks = new Option<string[]>("--check") { Description = $"Act only on this finding check. Repeatable. One of: {string.Join(", ", TidyChecks.All)}." };
+        var tidy = new Command(
+            "tidy",
+            "Stale worktrees and finished branches. Name the scope: --repo (repeatable) or --all. --merged asks GitHub, so a "
+            + "squash-merged branch whose commits are on no remote can go; a folder a process is working in never does.")
+        {
+            root, repos, every, apply, force, refresh, merged, checks,
+        };
+        tidy.SetAction((parsed, cancellationToken) => TidyAsync(
+            new TidyScope(parsed.GetValue(root), parsed.GetValue(repos) ?? [], parsed.GetValue(every), parsed.GetValue(refresh)),
+            parsed.GetValue(apply),
+            parsed.GetValue(force),
+            parsed.GetValue(merged),
+            parsed.GetValue(checks) ?? [],
+            cancellationToken));
+        return tidy;
+    }
+
+    private sealed record TidyScope(string? Root, string[] Repos, bool All, bool Refresh);
+
+    // Squash merges are why --merged exists: a branch's commits never become ancestors of main, and deleting the remote
+    // branch strands them on no remote, so the local "nothing is lost" check refuses every branch that landed. The scope
+    // is always explicit, so a bare `tidy` never starts an estate-wide run nobody asked for.
+    private async Task<int> TidyAsync(TidyScope scope, bool apply, bool force, bool merged, string[] checks, CancellationToken cancellationToken)
+    {
+        if (scope.Repos.Length > 0 == scope.All)
+        {
+            await error.WriteLineAsync("Choose a scope: --repo <path|name> (repeatable), or --all for every clone.".AsMemory(), cancellationToken).ConfigureAwait(false);
+            return 2;
+        }
+
+        var unknown = checks.Except(TidyChecks.All, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        if (unknown.Count > 0)
+        {
+            await error.WriteLineAsync($"Unknown --check {string.Join(", ", unknown)}. Choose from: {string.Join(", ", TidyChecks.All)}.".AsMemory(), cancellationToken).ConfigureAwait(false);
+            return 2;
+        }
+
+        var root = CodeRoot(scope.Root);
+        var clones = scope.All
+            ? await ClonesAsync(root, scope.Refresh, quiet: false, cancellationToken).ConfigureAwait(false)
+            : await SelectedClonesAsync(root, scope.Repos, scope.Refresh, cancellationToken).ConfigureAwait(false);
+        if (clones is null)
+        {
+            return 2;
+        }
+
+        var table = new TextTable(
+            "Tidy" + (apply ? string.Empty : " (dry run — pass --apply)"),
+            [("clone", false), ("check", false), ("subject", false), ("outcome", true), ("detail", false)]);
+        var busy = await Busy.SnapshotAsync(proc, cancellationToken).ConfigureAwait(false);
+        if (busy.Dirs is null)
+        {
+            await error.WriteLineAsync("Cannot read process working directories (lsof); removals need --force.".AsMemory(), cancellationToken).ConfigureAwait(false);
+        }
+
+        var checker = new RepoChecks(git, time);
+        var tidy = new Tidy(git, new TreeRemoval(proc));
+        var counts = new SortedDictionary<string, int>(StringComparer.Ordinal);
+        foreach (var clone in clones)
+        {
+            var heads = merged ? await MergedHeadsAsync(clone, cancellationToken).ConfigureAwait(false) : null;
+            var report = await checker.InspectAsync(clone, heads).ConfigureAwait(false);
+            if (!report.Findings.Any(f => f.Actionable))
+            {
+                continue;
+            }
+
+            var actions = await tidy.CleanRepoAsync(report, apply, force, heads, busy, checks.Length > 0 ? checks : null, cancellationToken).ConfigureAwait(false);
+            foreach (var action in actions)
+            {
+                counts[action.OutcomeName] = counts.GetValueOrDefault(action.OutcomeName) + 1;
+                // A branch is a name, not a path: only a rooted subject is shortened against the clone.
+                var subject = Path.IsPathRooted(action.Subject) ? Short(action.Subject, clone) : action.Subject;
+                _ = table.Add(Path.GetFileName(clone), action.Check, subject, action.OutcomeName, action.Detail);
+            }
+        }
+
+        await output.WriteAsync(table.Render().AsMemory(), cancellationToken).ConfigureAwait(false);
+        await output.WriteLineAsync(
+            (counts.Count > 0 ? "\n" + string.Join(" · ", counts.Select(pair => $"{pair.Value} {pair.Key}")) : "\n✓ Nothing to tidy.").AsMemory(),
+            cancellationToken).ConfigureAwait(false);
+        if (counts.ContainsKey(TidyAction.Name(TidyOutcome.Refused)))
+        {
+            await output.WriteLineAsync("Refusals are deliberate — see `estate risk`, or pass --force.".AsMemory(), cancellationToken).ConfigureAwait(false);
+        }
+
+        return 0;
+    }
+
+    // The clones --repo names: a path to a checkout skips discovery; a name matches a clone's folder name, or its path
+    // relative to the root, ignoring case. Null, with the reason on stderr, when a value names no clone or several.
+    private async Task<IReadOnlyList<string>?> SelectedClonesAsync(string root, string[] wanted, bool refresh, CancellationToken cancellationToken)
+    {
+        var chosen = new List<string>();
+        var names = new List<string>();
+        foreach (var value in wanted)
+        {
+            var candidate = Path.GetFullPath(ExpandHome(value), host.WorkingDirectory);
+            if (!Directory.Exists(Path.Join(candidate, ".git")) && !File.Exists(Path.Join(candidate, ".git")))
+            {
+                names.Add(value);
+                continue;
+            }
+
+            if (await MainCheckoutAsync(candidate).ConfigureAwait(false) is not { } found)
+            {
+                await error.WriteLineAsync($"--repo {value}: cannot find the main working tree of this checkout.".AsMemory(), cancellationToken).ConfigureAwait(false);
+                return null;
+            }
+
+            if (!chosen.Contains(found, PathResolution.Comparer))
+            {
+                chosen.Add(found);
+            }
+        }
+
+        if (names.Count == 0)
+        {
+            return chosen;
+        }
+
+        var known = await ClonesAsync(root, refresh, quiet: false, cancellationToken).ConfigureAwait(false);
+        foreach (var name in names)
+        {
+            var key = name.Trim().Replace('\\', '/').Trim('/');
+            var hits = known.Where(c =>
+                string.Equals(Path.GetFileName(c), key, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(Short(c, root), key, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (hits.Count != 1)
+            {
+                var problem = hits.Count == 0 ? "matches no clone" : "is ambiguous: " + string.Join(", ", hits.Select(c => Short(c, root)));
+                await error.WriteLineAsync($"--repo {name} {problem} under {root}. Pass a path, or --root.".AsMemory(), cancellationToken).ConfigureAwait(false);
+                return null;
+            }
+
+            if (!chosen.Contains(hits[0], PathResolution.Comparer))
+            {
+                chosen.Add(hits[0]);
+            }
+        }
+
+        return chosen;
+    }
+
+    // The clone behind a checkout; a linked worktree resolves to its main checkout. Never derived from where the git dir
+    // lives: --separate-git-dir puts it anywhere. The answer must itself be a working-tree root, because --apply acts on it.
+    private async Task<string?> MainCheckoutAsync(string checkout)
+    {
+        var dirs = await git.LinesAsync(checkout, "rev-parse", "--path-format=absolute", "--git-dir", "--git-common-dir").ConfigureAwait(false);
+        string? chosen;
+        if (dirs is [var gitDir, var commonDir] && !PathResolution.Same(PathResolution.Resolve(gitDir), PathResolution.Resolve(commonDir)))
+        {
+            // A linked worktree: the first `worktree list` entry names the main checkout.
+            var first = (await git.LinesAsync(checkout, "worktree", "list", "--porcelain").ConfigureAwait(false) ?? [])
+                .FirstOrDefault(line => line.StartsWith("worktree ", StringComparison.Ordinal));
+            chosen = first is null ? null : PathResolution.Resolve(first["worktree ".Length..]);
+        }
+        else
+        {
+            chosen = await TopLevelAsync(checkout).ConfigureAwait(false);
+        }
+
+        return chosen is not null && await TopLevelAsync(chosen).ConfigureAwait(false) is { } top && PathResolution.Same(top, chosen) ? chosen : null;
+    }
+
+    private async Task<string?> TopLevelAsync(string path)
+    {
+        var top = await git.OutAsync(path, "rev-parse", "--path-format=absolute", "--show-toplevel").ConfigureAwait(false);
+        return top.Length > 0 ? PathResolution.Resolve(top) : null;
     }
 
     // Safety is per entry, not per clone: a commit is not endangered by deleting node_modules, so only a worktree

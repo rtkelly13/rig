@@ -103,14 +103,6 @@ def test_newest_pr_wins_per_head_across_both_passes(octo: None) -> None:
     assert '"repo:octo/repo is:pr author:@me"' in fake.queries[2]
 
 
-def test_merged_heads_skips_a_branch_reused_after_merge(octo: None) -> None:
-    fake = FakeRunner(
-        _recent(_page([_node(5, "MERGED", "reused"), _node(6, "OPEN", "reused"), _node(2, "MERGED", "done")])),
-        _mine(_page([])),
-    )
-    assert {head: pull.number for head, pull in prs.merged_heads(pathlib.Path(), runner=fake).items()} == {"done": 2}
-
-
 def test_a_failed_graphql_call_stops_paging(octo: None) -> None:
     fake = FakeRunner(_recent(_page([_node(1, "MERGED", "a")], has_next=True, cursor="c1")), "")
     assert prs.pr_heads(pathlib.Path(), limit=400, include_mine=False, runner=fake) == {

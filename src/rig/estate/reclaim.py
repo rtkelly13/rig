@@ -11,7 +11,7 @@ Two rules keep it safe.
 `<repo>/temp/<name>`, alongside scratch files, so the largest reclaim target is
 also where live checkouts live. Every `temp/` entry is classified before
 anything is removed, and a registered worktree is handed to
-`estate.cleanup`, never to `rmtree`.
+`estate tidy` (src/Rig.Core/Estate/Tidy.cs), never to `rmtree`.
 
 **Nothing is removed from a clone holding irreplaceable state**, unless forced.
 Freeing 3.7 GB is worth nothing next to losing an uncommitted afternoon, and the
