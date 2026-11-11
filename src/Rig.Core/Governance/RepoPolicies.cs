@@ -17,6 +17,12 @@ public sealed record LanguagePreset(
     IReadOnlyList<string> DetectFiles,
     IReadOnlyList<GitignoreEntry> GitignoreEntries)
 {
+    /// <summary>The script extensions this language allows in <c>scripts/</c>.</summary>
+    public IReadOnlyList<string> ScriptExtensions { get; init; } = [];
+
+    /// <summary>The script extensions this language bans.</summary>
+    public IReadOnlyList<string> BannedScriptExtensions { get; init; } = [];
+
     /// <summary>Whether <paramref name="fileName"/> is one of <see cref="DetectFiles"/>.</summary>
     public bool MatchesFile(string fileName) =>
         DetectFiles.Any(pattern => pattern == fileName || Glob.Matches(fileName, pattern, OperatingSystem.IsWindows()));
@@ -279,6 +285,48 @@ public sealed class RepoPolicies
     /// <summary>The upstream the repo keyed <paramref name="key"/> tracks, or null when it is not a managed fork.</summary>
     public ForkSpec? Fork(string key) => Resolve(key, layer => layer.Fork);
 
+    /// <summary>Which remote branches cleanup may delete (<c>branch_cleanup</c>).</summary>
+    public BranchCleanupRules BranchCleanup(string key) => Resolve(key, layer => layer.BranchCleanup) ?? BranchCleanupRules.Default;
+
+    /// <summary>The script ban and its exceptions (<c>script_ban</c>).</summary>
+    public ScriptBanRules ScriptBan(string key) => Resolve(key, layer => layer.ScriptBan) ?? ScriptBanRules.Default;
+
+    /// <summary>
+    /// The script extensions a repo allows and bans: the <c>script_ban</c> lists when it declares any, otherwise the
+    /// union of its languages' presets, in order, with <c>.py</c> never banned in a Python repo.
+    /// </summary>
+    public RepoScriptRules ScriptRules(string key, string? repoPath = null)
+    {
+        var ban = ScriptBan(key);
+        if (ban.AllowedScriptExtensions.Count > 0 || ban.BannedScriptExtensions.Count > 0)
+        {
+            return new(ban.AllowedScriptExtensions, ban.BannedScriptExtensions);
+        }
+
+        var allowed = new List<string>();
+        var banned = new List<string>();
+        var hasPython = false;
+        foreach (var language in ResolveLanguages(key, repoPath))
+        {
+            var id = NormalizeLanguage(language);
+            hasPython |= id == "python";
+            if (Presets.FirstOrDefault(preset => preset.Id == id) is not { } preset)
+            {
+                continue;
+            }
+
+            allowed.AddRange(preset.ScriptExtensions.Where(ext => !allowed.Contains(ext)).Distinct());
+            banned.AddRange(preset.BannedScriptExtensions.Where(ext => !banned.Contains(ext)).Distinct());
+        }
+
+        if (hasPython)
+        {
+            _ = banned.Remove(".py");
+        }
+
+        return new(allowed, banned);
+    }
+
     /// <summary>
     /// The profile an unregistered <c>owner/name</c> <paramref name="key"/> falls back to through <c>owner_profiles</c>, or
     /// null: a bare name carries no owner, and a repo a profile names never falls back.
@@ -391,7 +439,11 @@ public sealed class RepoPolicies
             name.Length > 0 ? name : id,
             [.. (Strings(spec, "aliases", source) ?? []).Select(alias => alias.ToLowerInvariant())],
             Strings(spec, "detect_files", source) ?? [],
-            Entries(spec, "gitignore_entries", source) ?? []);
+            Entries(spec, "gitignore_entries", source) ?? [])
+        {
+            ScriptExtensions = Strings(spec, "script_extensions", source) ?? [],
+            BannedScriptExtensions = Strings(spec, "banned_script_extensions", source) ?? [],
+        };
     }
 
     private static List<GitignoreEntry>? Entries(JsonNode? owner, string key, string source)
@@ -604,6 +656,37 @@ public sealed class RepoPolicies
             ? new(Text(block, "upstream", source) ?? throw Bad(source, "fork has no upstream"), Text(block, "upstream_branch", source) ?? "main")
             : null;
 
+    private static BranchCleanupRules? CleanupOf(JsonObject layer, string source)
+    {
+        if (Block(layer, "branch_cleanup", source) is not { } block)
+        {
+            return null;
+        }
+
+        var defaults = BranchCleanupRules.Default;
+        return new(
+            Bool(block, "enabled", source) ?? defaults.Enabled,
+            Strings(block, "protected", source) ?? defaults.Protected,
+            Bool(block, "protect_open_pr_heads", source) ?? defaults.ProtectOpenPrHeads,
+            Strings(block, "protect_prefixes", source) ?? defaults.ProtectPrefixes);
+    }
+
+    private static ScriptBanRules? ScriptBanOf(JsonObject layer, string source)
+    {
+        if (Block(layer, "script_ban", source) is not { } block)
+        {
+            return null;
+        }
+
+        var defaults = ScriptBanRules.Default;
+        return new(
+            Bool(block, "enabled", source) ?? defaults.Enabled,
+            Strings(block, "banned_extensions", source) ?? defaults.BannedExtensions,
+            Strings(block, "allowed_exceptions", source) ?? defaults.AllowedExceptions,
+            Strings(block, "allowed_script_extensions", source) ?? defaults.AllowedScriptExtensions,
+            Strings(block, "banned_script_extensions", source) ?? defaults.BannedScriptExtensions);
+    }
+
     // license: a bare type, or {"type": …}; an object without a type declares the default.
     private static string? LicenseOf(JsonObject layer, string source) =>
         layer["license"] switch
@@ -648,6 +731,10 @@ public sealed class RepoPolicies
 
         public string? License { get; init; }
 
+        public BranchCleanupRules? BranchCleanup { get; init; }
+
+        public ScriptBanRules? ScriptBan { get; init; }
+
         public static Layer From(JsonNode? node, string source)
         {
             var layer = node as JsonObject ?? throw Bad(source, "a policy layer is not an object");
@@ -669,6 +756,8 @@ public sealed class RepoPolicies
                 CopyrightHolder = Text(layer, "copyright_holder", source),
                 ContactEmail = Text(layer, "contact_email", source),
                 License = LicenseOf(layer, source),
+                BranchCleanup = CleanupOf(layer, source),
+                ScriptBan = ScriptBanOf(layer, source),
             };
         }
     }
@@ -693,3 +782,40 @@ public sealed record AppAccountPolicy(bool Required, IReadOnlyList<string> Repos
     public IReadOnlyList<string> EffectiveRepos(IReadOnlyList<string> available) =>
         [.. (AllRepos ? available : Repos).Where(repo => !DisallowRepos.Contains(repo))];
 }
+
+/// <summary>Which remote branches cleanup may delete once their work has landed (<c>branch_cleanup</c>).</summary>
+/// <param name="Enabled">Whether cleanup runs for the repo at all.</param>
+/// <param name="Protected">Branches never deleted, whatever their merge state.</param>
+/// <param name="ProtectOpenPrHeads">Whether a branch with an open PR is kept.</param>
+/// <param name="ProtectPrefixes">Prefixes bots recreate and manage their own branches under.</param>
+public sealed record BranchCleanupRules(bool Enabled, IReadOnlyList<string> Protected, bool ProtectOpenPrHeads, IReadOnlyList<string> ProtectPrefixes)
+{
+    /// <summary>Cleanup on, <c>main</c> and <c>master</c> protected, open-PR heads kept.</summary>
+    public static BranchCleanupRules Default { get; } = new(true, ["main", "master"], true, []);
+
+    /// <summary>Whether <paramref name="branch"/> must never be deleted by cleanup.</summary>
+    public bool IsProtected(string branch) =>
+        Protected.Contains(branch) || ProtectPrefixes.Any(prefix => branch.StartsWith(prefix, StringComparison.Ordinal));
+}
+
+/// <summary>The estate-wide ban on shell and PowerShell scripts, and its exceptions (<c>script_ban</c>).</summary>
+/// <param name="Enabled">Whether the ban applies.</param>
+/// <param name="BannedExtensions">The extensions banned anywhere in the repo.</param>
+/// <param name="AllowedExceptions">Paths exempt from the ban.</param>
+/// <param name="AllowedScriptExtensions">The script extensions allowed in <c>scripts/</c>, overriding the language presets.</param>
+/// <param name="BannedScriptExtensions">The script extensions banned in <c>scripts/</c>, overriding the language presets.</param>
+public sealed record ScriptBanRules(
+    bool Enabled,
+    IReadOnlyList<string> BannedExtensions,
+    IReadOnlyList<string> AllowedExceptions,
+    IReadOnlyList<string> AllowedScriptExtensions,
+    IReadOnlyList<string> BannedScriptExtensions)
+{
+    /// <summary>The ban on, over <c>.sh .bash .zsh .ps1 .psm1</c>, with no exceptions.</summary>
+    public static ScriptBanRules Default { get; } = new(true, [".sh", ".bash", ".zsh", ".ps1", ".psm1"], [], [], []);
+}
+
+/// <summary>The script extensions a repo allows and bans in <c>scripts/</c>.</summary>
+/// <param name="AllowedExtensions">Extensions allowed.</param>
+/// <param name="BannedExtensions">Extensions banned.</param>
+public sealed record RepoScriptRules(IReadOnlyList<string> AllowedExtensions, IReadOnlyList<string> BannedExtensions);
