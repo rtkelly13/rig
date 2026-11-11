@@ -75,7 +75,7 @@ Imports point down this stack and never up or sideways:
    packages' commands. `desktop_manager/web_cli.py` is the web equivalent: features expose a `rig.web_routes.Route`
    and it hands them to `StudioServer(routes=...)`, so the server imports no feature to serve its JSON.
 2. **Features**: `rig.estate`, `rig.workspace`, `rig.repo_governance`, `rig.image_drift`,
-   `rig.devenv`, and the `desktop_manager` features (restore, align, chrome, work, claude_sessions, jobs).
+   and the `desktop_manager` features (restore, align, chrome, work, claude_sessions, jobs).
    Features are independent of each other. When two features need the same thing, it moves down a layer.
 3. **Adapters**: `desktop_manager/win32/`, UIA, `rig/proc.py`. They translate the outside world into typed
    values and contain no planning or policy, so an adapter never imports a feature.

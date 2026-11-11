@@ -27,15 +27,13 @@ public sealed class PythonRigTests
         Assert.Equal("/elsewhere/rig", PythonRig.ResolveCheckout("/elsewhere/rig", "root"));
     }
 
-    private static readonly RootCommand Empty = new();
-
     [Fact]
     public void Every_python_command_is_owned_and_nothing_else()
     {
-        Assert.All(Forwarded.Commands, c => Assert.True(Forwarded.Owns([c.Name, "--help"], Empty)));
-        Assert.False(Forwarded.Owns(["--help"], Empty));
-        Assert.False(Forwarded.Owns(["--version"], Empty));
-        Assert.False(Forwarded.Owns([], Empty));
-        Assert.False(Forwarded.Owns(["-ccc"], Empty));
+        Assert.All(Forwarded.Commands, c => Assert.True(Forwarded.Owns([c.Name, "--help"])));
+        Assert.False(Forwarded.Owns(["--help"]));
+        Assert.False(Forwarded.Owns(["--version"]));
+        Assert.False(Forwarded.Owns([]));
+        Assert.False(Forwarded.Owns(["-ccc"]));
     }
 }

@@ -22,9 +22,8 @@ namespace Rig.Cli.Devenv;
 internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false, string? WorkingDirectory = null, string? LocalAppData = null, TextReader? Input = null);
 
 /// <summary>
-/// The ported part of <c>rig devenv</c>: <see cref="SetupCommand"/>'s <c>setup</c> and <c>ai</c>, <c>agent-launcher</c>, <c>agents</c>, <c>claude</c>, <c>estate-rules</c>,
-/// <c>fonts</c>, <c>gh</c>, <c>obsidian-plugins</c>, <c>opencode</c>, <see cref="ToolsCommands"/>' <c>tools</c>, <c>runtimes</c> and <c>update</c>, and <see cref="GitTerminalCommands"/>' <c>git</c> and <c>terminal</c>. Every other <c>devenv</c> subcommand is still Python's, and
-/// <see cref="Forwarding.Forwarded.Owns"/> hands those lines over before parsing. Ported from devenv's
+/// <c>rig devenv</c>: <see cref="DoctorCommand"/>'s <c>doctor</c>, <see cref="SetupCommand"/>'s <c>setup</c> and <c>ai</c>, <c>agent-launcher</c>, <c>agents</c>, <c>claude</c>, <c>estate-rules</c>,
+/// <c>fonts</c>, <c>gh</c>, <c>obsidian-plugins</c>, <c>opencode</c>, <see cref="ToolsCommands"/>' <c>tools</c>, <c>runtimes</c> and <c>update</c>, and <see cref="GitTerminalCommands"/>' <c>git</c> and <c>terminal</c>. Ported from devenv's
 /// <c>agent_launcher_setup</c>, <c>agent_shortcut</c>, <c>discovery</c>, <c>fonts</c>, <c>claude_code</c>, <c>session_ledger</c>,
 /// <c>estate_rules</c>, <c>github_cli</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
 /// </summary>
@@ -68,7 +67,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var fontsCommand = new Command("fonts", "Download and install the developer Nerd Fonts (JetBrainsMono, CascadiaCode, FiraCode).") { dryRun, home, fontsCheck };
         fontsCommand.SetAction((parsed, cancellationToken) =>
             FontsAsync(parsed.GetValue(dryRun), parsed.GetValue(fontsCheck), NerdFonts.Folder(parsed.GetValue(home)!, host.Windows, host.MacOS), cancellationToken));
-        var group = new Command("devenv", Description) { launcher, agents, claude, rules, fontsCommand, gh, obsidian, opencode };
+        var group = new Command("devenv", Description) { new DoctorCommand(host, proc, TimeProvider.System, output).Build(), launcher, agents, claude, rules, fontsCommand, gh, obsidian, opencode };
         foreach (var command in new SetupCommand(host, output, error).Build(dryRun, home).Concat(new ToolsCommands(host, proc, output, error).Build(dryRun, home)).Concat(new GitTerminalCommands(host, proc, output, error).Build(dryRun, home)))
         {
             group.Subcommands.Add(command);

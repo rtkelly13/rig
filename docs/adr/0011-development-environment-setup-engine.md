@@ -1,7 +1,7 @@
 # ADR 0011: Development Environment Setup Engine (devenv)
 
 - **Status:** Accepted
-- **Applies to:** `src/shared_utilities/devenv`
+- **Applies to:** `src/Rig.Cli/Devenv` (Python `src/rig/devenv` until #85)
 
 ## Context
 Onboarding developers or configuring new machines requires installing tools, runtimes, shell themes, fonts, Git identities, and AI assistants. Manual setup is error-prone and differs widely between macOS and Windows.
@@ -14,7 +14,8 @@ Implement a unified, cross-platform onboarding engine (`devenv`):
 
 ## Consequences
 - Fully automated, reproducible developer environment onboarding on Mac and Windows.
-- Exposes `uv run devenv setup`, `tools`, `runtimes`, `fonts`, `git`, `ai`, and `doctor`.
+- Exposes `rig devenv setup`, `tools`, `runtimes`, `fonts`, `git`, `ai`, and `doctor` (also `rig doctor`).
 
 ## References
 - [`src/Rig.Cli/Devenv/SetupCommand.cs`](../../src/Rig.Cli/Devenv/SetupCommand.cs)
+- [`src/Rig.Cli/Devenv/DoctorCommand.cs`](../../src/Rig.Cli/Devenv/DoctorCommand.cs)

@@ -50,10 +50,7 @@ All packages in `shared-utilities` adhere strictly to our foundational standards
 ## 4. Subsystem Architecture
 
 ```
-src/shared_utilities/
-├── devenv/             # Development environment setup engine
-│   ├── doctor/         # Diagnostic health checks and status reporting
-│   └── cli.py          # Typer CLI: doctor; every other subcommand, setup included, hands off to rig devenv
+src/shared_utilities/          # devenv is C#: src/Rig.Cli/Devenv/
 ├── repo_governance/    # Organization-wide GitHub policy engine
 ├── image_drift/        # Deterministic SVG renderer and drift detection
 └── obsidian/           # Vault note processing and Google Keep staging

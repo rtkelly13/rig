@@ -12,7 +12,7 @@ import typer
 from rich.markup import escape
 from rich.table import Table
 
-from rig.devenv.ui import make_console, table_box
+from rig.console_ui import make_console, table_box
 from rig.typed_json import decode_json
 from rig.workspace.engine import config_file_path, estate_root_path, retired_project_names
 from rig.workspace.orca import (

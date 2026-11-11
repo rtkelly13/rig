@@ -10,7 +10,7 @@ import pytest
 from rich import box
 from rich.table import Table
 
-from rig.devenv import ui
+from rig import console_ui as ui
 
 
 def _force_legacy_terminal(monkeypatch: pytest.MonkeyPatch) -> None:
