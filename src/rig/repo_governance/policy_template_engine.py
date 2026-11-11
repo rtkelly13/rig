@@ -9,15 +9,20 @@ import pathlib
 from dataclasses import asdict, dataclass
 from typing import Annotated
 
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import Field
 
 from rig import proc
 from rig.gh_origin import origin_args
-from rig.repo_governance.oss_templates import get_jinja_env
 from rig.repo_governance.policy_config import PolicyConfig, load_policy_config
 
 TEMPLATES_DIR = pathlib.Path(__file__).parent / "templates"
-jinja_env = get_jinja_env(TEMPLATES_DIR)
+jinja_env = Environment(
+    loader=FileSystemLoader(str(TEMPLATES_DIR)),
+    autoescape=select_autoescape(),
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
 
 
 @dataclass(frozen=True, slots=True)

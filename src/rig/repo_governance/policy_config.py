@@ -30,8 +30,6 @@ __all__ = (
     "BranchCleanupRules",
     "EnvironmentPolicy",
     "ForkSpec",
-    "GitHubAppAccountPolicy",
-    "GitHubAppPolicy",
     "GitignoreEntry",
     "LabelSpec",
     "LanguagePreset",
@@ -272,60 +270,15 @@ class VercelGatingRules:
     window_days: int = 3
 
 
-@dataclass(frozen=True)
-class GitHubAppAccountPolicy:
-    """Policy declaring which repos an installed app should be connected to for a specific account."""
-
-    account: str
-    required: bool = False
-    repos: tuple[str, ...] = ()
-    all_repos: bool = False
-    disallow_repos: tuple[str, ...] = ()
-
-    @property
-    def exclude_repos(self) -> tuple[str, ...]:
-        return self.disallow_repos
-
-    def effective_repos(self, available_repos: Sequence[str] = ()) -> tuple[str, ...]:
-        """Calculates expected repositories after subtracting disallow_repos."""
-        candidates = list(available_repos) if self.all_repos else list(self.repos)
-        excluded = set(self.disallow_repos)
-        return tuple(r for r in candidates if r not in excluded)
-
-
 @dataclass(slots=True, frozen=True)
 class AppAccountSpec:
-    """An app's `accounts` value as written. `exclude_repos` is the older name for `disallow_repos`."""
+    """An app's `accounts` as written, read by the C# `apps` command. `exclude_repos` is the old `disallow_repos`."""
 
     required: bool = False
     repos: tuple[str, ...] = ()
     all_repos: bool = False
     disallow_repos: tuple[str, ...] = ()
     exclude_repos: tuple[str, ...] = ()
-
-    def to_policy(self, account: str) -> GitHubAppAccountPolicy:
-        return GitHubAppAccountPolicy(
-            account=account,
-            required=self.required,
-            repos=self.repos,
-            all_repos=self.all_repos,
-            disallow_repos=self.disallow_repos or self.exclude_repos,
-        )
-
-
-def _empty_account_policies() -> dict[str, GitHubAppAccountPolicy]:
-    return {}
-
-
-@dataclass(frozen=True)
-class GitHubAppPolicy:
-    """A declared GitHub App integration and its account enrollments."""
-
-    slug: str
-    name: str
-    install_url: str = ""
-    config_template: str | None = None
-    accounts: dict[str, GitHubAppAccountPolicy] = field(default_factory=_empty_account_policies)
 
 
 @dataclass(slots=True, frozen=True)
@@ -336,15 +289,6 @@ class AppSpec:
     install_url: str = ""
     config_template: str | None = None
     accounts: dict[str, AppAccountSpec] = field(default_factory=dict[str, AppAccountSpec])
-
-    def to_policy(self, slug: str) -> GitHubAppPolicy:
-        return GitHubAppPolicy(
-            slug=slug,
-            name=self.name or slug,
-            install_url=self.install_url or f"https://github.com/apps/{slug}/installations/new",
-            config_template=self.config_template or None,
-            accounts={acc: spec.to_policy(acc) for acc, spec in self.accounts.items()},
-        )
 
 
 @dataclass(slots=True, frozen=True)
@@ -743,35 +687,6 @@ class PolicyConfig:
         if not profile_name:
             return False
         return policy in self.file.profiles[profile_name].policies
-
-    def github_apps(self) -> dict[str, GitHubAppPolicy]:
-        """Return declared GitHub Apps indexed by slug."""
-        return {slug: spec.to_policy(slug) for slug, spec in self.file.github_apps.items()}
-
-    def apps_for_account(self, account: str) -> tuple[GitHubAppPolicy, ...]:
-        """Return GitHub Apps declared for *account* (organization or user)."""
-        acc_lower = account.lower()
-        result: list[GitHubAppPolicy] = []
-        for app in self.github_apps().values():
-            for acc in app.accounts:
-                if acc.lower() == acc_lower:
-                    result.append(app)
-                    break
-        return tuple(result)
-
-    def apps_for_repo(self, repo: str, account: str) -> tuple[GitHubAppPolicy, ...]:
-        """Return GitHub Apps expected to be enabled on *repo* under *account*."""
-        acc_lower = account.lower()
-        result: list[GitHubAppPolicy] = []
-        for app in self.apps_for_account(account):
-            for acc_name, acc_policy in app.accounts.items():
-                if acc_name.lower() == acc_lower:
-                    if names_match(acc_policy.disallow_repos, repo):
-                        break
-                    if acc_policy.all_repos or names_match(acc_policy.repos, repo):
-                        result.append(app)
-                    break
-        return tuple(result)
 
 
 @lru_cache(maxsize=8)

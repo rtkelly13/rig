@@ -477,7 +477,6 @@ patching-allow = [
     "tests/test_c4_okf.py",
     "tests/test_console_ui.py",
     "tests/test_entrypoints_portable.py",
-    "tests/test_github_apps_governance.py",
     "tests/test_github_prs.py",
     "tests/test_image_drift_explore_promote.py",
     "tests/test_image_drift_metrics.py",
