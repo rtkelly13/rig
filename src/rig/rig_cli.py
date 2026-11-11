@@ -17,7 +17,6 @@ from rich.console import Console
 
 from desktop_manager.web_cli import web_app
 from rig import csharp_cli, tracing
-from rig.agent_browser.cli import app as browser_app
 from rig.c4_okf.cli import app as c4_app
 from rig.devenv.cli import app as devenv_app
 from rig.estate.cli import app as estate_app
@@ -40,7 +39,6 @@ app.add_typer(estate_app, name="estate")
 app.add_typer(triage_app, name="triage")
 app.add_typer(web_app, name="web")
 app.add_typer(flags_app, name="flags")
-app.add_typer(browser_app, name="browser")
 app.add_typer(c4_app, name="c4")
 
 

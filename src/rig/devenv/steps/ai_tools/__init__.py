@@ -10,7 +10,6 @@ from rich.table import Table
 from rig import csharp_cli
 
 from ...engine.context import StepContext
-from .agent_browser import setup_agent_browser_profiles
 from .agent_launcher_setup import setup_agent_launcher
 from .claude_code import setup_claude_code
 from .discovery import detect_installed_agents
@@ -44,7 +43,7 @@ def run_ai_tools_setup(ctx: StepContext) -> None:
     setup_opencode(dry_run=ctx.dry_run)
 
     # 4. Configure agent-browser profiles
-    setup_agent_browser_profiles(dry_run=ctx.dry_run)
+    csharp_cli.run(["browser", "profiles", *(["--dry-run"] if ctx.dry_run else [])])
 
     # 5. Estate-wide agent rules for ~/code/personal
     setup_estate_rules(dry_run=ctx.dry_run)

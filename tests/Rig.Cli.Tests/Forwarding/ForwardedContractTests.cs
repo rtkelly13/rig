@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Rig.Cli.Agent;
+using Rig.Cli.Browser;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
@@ -9,6 +10,7 @@ using Rig.Cli.Policy;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
+using Rig.Core.Browser;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
@@ -69,6 +71,7 @@ public sealed partial class ForwardedContractTests
                 () => new ModelsCommand(new ModelDiscovery(new FakeProc(), "/", _ => null), TextWriter.Null).Build(),
                 new PolicyCommand(new PolicyHost("/none.json", "/", "/", false), TextWriter.Null, TextWriter.Null).Build,
                 new SkillsCommand(new SkillsHost("/", "/", "/", "/", false), new Git(new FakeProc(), "/"), new RefusingLinker(), TextWriter.Null, TextWriter.Null).Build,
+                new BrowserCommand(new BrowserHost("/", null, false, _ => null, _ => new ShellProfileEnvironment("/none")), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
         var owned = app

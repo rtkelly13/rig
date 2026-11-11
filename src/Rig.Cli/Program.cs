@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Agent;
+using Rig.Cli.Browser;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
@@ -9,6 +10,7 @@ using Rig.Cli.Policy;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
+using Rig.Core.Browser;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
@@ -118,6 +120,16 @@ internal static class Program
                     new SkillsHost(checkout, home, Environment.CurrentDirectory, Path.Join(codeRoot, "external"), OperatingSystem.IsWindows()),
                     git,
                     new SystemDirectoryLinker(),
+                    Console.Out,
+                    Console.Error).Build,
+                new BrowserCommand(
+                    new BrowserHost(
+                        home,
+                        Environment.GetEnvironmentVariable("SHELL"),
+                        OperatingSystem.IsWindows(),
+                        Environment.GetEnvironmentVariable,
+                        places => OperatingSystem.IsWindows() ? new WindowsUserEnvironment() : new ShellProfileEnvironment(places.ShellProfile)),
+                    proc,
                     Console.Out,
                     Console.Error).Build,
             ],

@@ -47,7 +47,7 @@ agent-browser open <url>          # uses dev profile (AGENT_BROWSER_PROFILE)
 agent-browser snapshot -i
 ```
 
-`uv run rig browser setup` provisions `AGENT_BROWSER_PROFILE=~/.agent-browser-profiles/dev`
+`rig browser setup` provisions `AGENT_BROWSER_PROFILE=~/.agent-browser-profiles/dev`
 as the machine default, so the bare `agent-browser open <url>` uses it.
 
 ### personal profile
