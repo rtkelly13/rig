@@ -72,7 +72,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Te
     // The shim at the code root (both shims on Windows), then the profile block calling it. 1 when a write fails.
     private int Launcher(bool dryRun, string root, string profile)
     {
-        var cli = LauncherShim.CliProject(host.Checkout);
+        var cli = LauncherShim.CliProject(LauncherShim.MainCheckout(host.Checkout));
         var sh = Path.Join(root, "agent.sh");
         var shim = host.Windows ? Path.Join(root, "agent.ps1") : sh;
         if (dryRun)

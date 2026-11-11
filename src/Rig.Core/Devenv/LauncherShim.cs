@@ -23,6 +23,39 @@ public static class LauncherShim
         "# Managed by `devenv` setup — do not edit between these markers.\n"
         + "# `agent` launches your preferred AI coding agent or selected flag (-agy, -ccc, -agywsl).";
 
+    /// <summary>
+    /// The main checkout behind <paramref name="checkout"/>: when it is a linked git worktree (its <c>.git</c> is a
+    /// <c>gitdir:</c> file pointing into <c>.git/worktrees/</c>), the folder holding that <c>.git</c>; otherwise
+    /// <paramref name="checkout"/>. The shim outlives any worktree, so it must never run one.
+    /// </summary>
+    public static string MainCheckout(string checkout)
+    {
+        var marker = Path.Join(checkout, ".git");
+        if (!File.Exists(marker))
+        {
+            return checkout;
+        }
+
+        try
+        {
+            var line = File.ReadLines(marker).FirstOrDefault() ?? string.Empty;
+            if (!line.StartsWith("gitdir:", StringComparison.Ordinal))
+            {
+                return checkout;
+            }
+
+            var gitDir = Path.GetFullPath(line["gitdir:".Length..].Trim(), checkout);
+            var worktrees = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(gitDir));
+            return worktrees is not null && Path.GetFileName(worktrees) == "worktrees" && Path.GetDirectoryName(worktrees) is { } common
+                ? Path.GetDirectoryName(common) ?? checkout
+                : checkout;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return checkout;
+        }
+    }
+
     /// <summary>The C# CLI project in <paramref name="checkout"/>, which the shims run.</summary>
     public static string CliProject(string checkout) => Path.Join(checkout, "src", "Rig.Cli");
 

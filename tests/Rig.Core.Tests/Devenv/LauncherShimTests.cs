@@ -86,6 +86,25 @@ public sealed class LauncherShimTests : IDisposable
     }
 
     [Fact]
+    public async Task A_linked_worktree_resolves_to_its_main_checkout()
+    {
+        var main = _home.Folder("rig");
+        _ = _home.Folder("rig/.git/worktrees/feature");
+        var worktree = _home.Folder("rig/.worktrees/feature");
+        await File.WriteAllTextAsync(Path.Join(worktree, ".git"), $"gitdir: {Path.Join(main, ".git", "worktrees", "feature")}\n", TestContext.Current.CancellationToken);
+        var relative = _home.Folder("elsewhere/feature");
+        await File.WriteAllTextAsync(Path.Join(relative, ".git"), "gitdir: ../../rig/.git/worktrees/feature", TestContext.Current.CancellationToken);
+        var submodule = _home.Folder("sub");
+        await File.WriteAllTextAsync(Path.Join(submodule, ".git"), "gitdir: ../rig/.git/modules/sub", TestContext.Current.CancellationToken);
+
+        Assert.Equal(main, LauncherShim.MainCheckout(worktree));
+        Assert.Equal(main, LauncherShim.MainCheckout(relative));
+        Assert.Equal(main, LauncherShim.MainCheckout(main));
+        Assert.Equal(submodule, LauncherShim.MainCheckout(submodule));
+        Assert.Equal(Path.Join(_home.Path, "none"), LauncherShim.MainCheckout(Path.Join(_home.Path, "none")));
+    }
+
+    [Fact]
     public void Every_known_agent_has_a_distinct_id_and_command()
     {
         Assert.Equal(9, KnownAgents.All.Count);
