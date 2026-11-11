@@ -4,6 +4,7 @@ using Rig.Cli.Forwarding;
 using Rig.Core.Devenv;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Devenv;
+using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Policy;
 
 namespace Rig.Cli.Tests.Devenv;
@@ -14,6 +15,7 @@ public sealed class DevenvCommandTests : IDisposable
     private readonly TempDir _home = new();
     private readonly PluginServer _server = new();
     private readonly FontServer _fonts = new();
+    private readonly FakeProc _proc = new();
 
     public void Dispose()
     {
@@ -31,6 +33,7 @@ public sealed class DevenvCommandTests : IDisposable
             new DevenvHost(Path.Join(_home.Path, "not-this-home"), policy ?? PolicyFiles.Real, false, Checkout, Path.Join(_home.Path, "not-this-root"), "/bin/zsh", p => p == "claude" ? "/bin/claude" : null),
             _server.Plugins,
             _fonts.Fonts,
+            _proc,
             output,
             error).Build();
 
@@ -53,7 +56,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "tools", "runtimes", "update"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -472,7 +475,7 @@ public sealed class DevenvCommandTests : IDisposable
     public async Task Gh_honours_xdg_config_home_only_for_the_default_home()
     {
         var config = Path.Join(_home.Path, "xdg");
-        var command = new DevenvCommand(new DevenvHost(_home.Path, PolicyFiles.Real, false, Checkout, _home.Path, null, _ => null, config), _server.Plugins, _fonts.Fonts, TextWriter.Null, TextWriter.Null).Build();
+        var command = new DevenvCommand(new DevenvHost(_home.Path, PolicyFiles.Real, false, Checkout, _home.Path, null, _ => null, config), _server.Plugins, _fonts.Fonts, _proc, TextWriter.Null, TextWriter.Null).Build();
 
         Assert.Equal(0, await command.Parse(["gh"]).InvokeAsync(cancellationToken: TestContext.Current.CancellationToken));
 
@@ -544,6 +547,9 @@ public sealed class DevenvCommandTests : IDisposable
     [InlineData(new[] { "devenv", "agent-launcher" }, false)]
     [InlineData(new[] { "devenv", "gh", "--check" }, false)]
     [InlineData(new[] { "devenv", "fonts", "--check" }, false)]
+    [InlineData(new[] { "devenv", "tools", "--check" }, false)]
+    [InlineData(new[] { "devenv", "runtimes" }, false)]
+    [InlineData(new[] { "devenv", "update" }, false)]
     [InlineData(new[] { "devenv", "git" }, true)]
     public void Only_the_ported_devenv_subcommands_stay_in_csharp(string[] args, bool forwarded)
     {

@@ -1,4 +1,4 @@
-"""Tests for system setup steps (runtimes, git, fonts)."""
+"""Tests for system setup steps (git)."""
 
 from pathlib import Path
 
@@ -7,21 +7,6 @@ import pytest
 from rig.devenv.config.models import DevenvConfig, GitIdentity
 from rig.devenv.engine.context import StepContext
 from rig.devenv.steps.git import apply_conditional_git_includes, run_git_setup
-from rig.devenv.steps.runtimes import detect_required_python_version
-
-
-@pytest.mark.ci
-def test_detect_required_python_version_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.chdir(tmp_path)
-    assert detect_required_python_version() == "3.13"
-
-
-@pytest.mark.ci
-def test_detect_required_python_version_from_pyproject(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.chdir(tmp_path)
-    pyproject = tmp_path / "pyproject.toml"
-    pyproject.write_text('[project]\nrequires-python = ">=3.12"\n', encoding="utf-8")
-    assert detect_required_python_version() == "3.12"
 
 
 @pytest.mark.ci

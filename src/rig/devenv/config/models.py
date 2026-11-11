@@ -1,27 +1,8 @@
-"""Pydantic data models for tools, workspace config, and identities."""
+"""Pydantic data models for the devenv user config and git identities."""
 
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
-
-
-class ToolInstallSpec(BaseModel):
-    """Platform installation commands and package identifiers."""
-
-    winget: str | None = None
-    brew: str | None = None
-    check_cmd: str | None = None
-
-
-class ToolDefinition(BaseModel):
-    """Tool metadata and installation specification."""
-
-    id: str
-    name: str
-    description: str
-    category: str = "utilities"
-    install: ToolInstallSpec = Field(default_factory=ToolInstallSpec)
-    required: bool = False
 
 
 class GitIdentity(BaseModel):

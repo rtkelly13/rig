@@ -1,0 +1,258 @@
+[
+  {
+    "id": "antigravity",
+    "name": "Google Antigravity (agy)",
+    "description": "Advanced agentic coding assistant CLI and IDE environment",
+    "category": "ai",
+    "required": true,
+    "install": {
+      "check_cmd": "agy"
+    }
+  },
+  {
+    "id": "claude-code",
+    "name": "Claude Code",
+    "description": "Anthropic's agentic CLI coding assistant",
+    "category": "ai",
+    "required": true,
+    "install": {
+      "brew": "claude-code",
+      "check_cmd": "claude"
+    }
+  },
+  {
+    "id": "opencode",
+    "name": "OpenCode",
+    "description": "Open-source AI coding agent",
+    "category": "ai",
+    "install": {
+      "check_cmd": "opencode"
+    }
+  },
+  {
+    "id": "codex",
+    "name": "OpenAI Codex CLI",
+    "description": "OpenAI Codex / Copilot agent CLI",
+    "category": "ai",
+    "install": {
+      "check_cmd": "codex"
+    }
+  },
+  {
+    "id": "cursor",
+    "name": "Cursor Agent",
+    "description": "AI-first editor and terminal agent",
+    "category": "ai",
+    "install": {
+      "winget": "Anysphere.Cursor",
+      "brew": "cursor",
+      "check_cmd": "cursor"
+    }
+  },
+  {
+    "id": "t3code",
+    "name": "T3 Code",
+    "description": "Desktop GUI for running coding agents (Codex, Claude Code) across projects",
+    "category": "ai",
+    "install": {
+      "winget": "T3Tools.T3Code"
+    }
+  },
+  {
+    "id": "aider",
+    "name": "Aider",
+    "description": "AI pair programming in your terminal",
+    "category": "ai",
+    "install": {
+      "brew": "aider",
+      "check_cmd": "aider"
+    }
+  },
+  {
+    "id": "windsurf",
+    "name": "Windsurf",
+    "description": "Agentic IDE by Codeium",
+    "category": "ai",
+    "install": {
+      "check_cmd": "windsurf"
+    }
+  },
+  {
+    "id": "gemini-cli",
+    "name": "Gemini CLI",
+    "description": "Command-line interface for Google Gemini models",
+    "category": "ai",
+    "install": {
+      "check_cmd": "gemini"
+    }
+  },
+  {
+    "id": "git",
+    "name": "Git",
+    "description": "Distributed version control system",
+    "category": "core",
+    "required": true,
+    "install": {
+      "winget": "Git.Git",
+      "brew": "git",
+      "check_cmd": "git"
+    }
+  },
+  {
+    "id": "gh",
+    "name": "GitHub CLI",
+    "description": "Official GitHub command line tool",
+    "category": "core",
+    "required": true,
+    "install": {
+      "winget": "GitHub.cli",
+      "brew": "gh",
+      "check_cmd": "gh"
+    }
+  },
+  {
+    "id": "uv",
+    "name": "uv",
+    "description": "Extremely fast Python package manager and resolver",
+    "category": "core",
+    "required": true,
+    "install": {
+      "winget": "astral-sh.uv",
+      "brew": "uv",
+      "check_cmd": "uv"
+    }
+  },
+  {
+    "id": "ripgrep",
+    "name": "ripgrep (rg)",
+    "description": "Line-oriented search tool that recursively searches directories",
+    "category": "core",
+    "required": true,
+    "install": {
+      "winget": "BurntSushi.ripgrep.MSVC",
+      "brew": "ripgrep",
+      "check_cmd": "rg"
+    }
+  },
+  {
+    "id": "fzf",
+    "name": "fzf",
+    "description": "General-purpose command-line fuzzy finder",
+    "category": "core",
+    "install": {
+      "winget": "junegunn.fzf",
+      "brew": "fzf",
+      "check_cmd": "fzf"
+    }
+  },
+  {
+    "id": "jq",
+    "name": "jq",
+    "description": "Lightweight command-line JSON processor",
+    "category": "core",
+    "install": {
+      "winget": "jqlang.jq",
+      "brew": "jq",
+      "check_cmd": "jq"
+    }
+  },
+  {
+    "id": "fork",
+    "name": "Fork",
+    "description": "Fast and friendly GUI git client",
+    "category": "git",
+    "install": {
+      "winget": "Fork.Fork",
+      "brew": "fork"
+    }
+  },
+  {
+    "id": "lazygit",
+    "name": "LazyGit",
+    "description": "Simple terminal UI for git commands",
+    "category": "git",
+    "install": {
+      "winget": "JesseDuffield.lazygit",
+      "brew": "lazygit",
+      "check_cmd": "lazygit"
+    }
+  },
+  {
+    "id": "delta",
+    "name": "git-delta",
+    "description": "A syntax-highlighting pager for git, diff, and grep output",
+    "category": "git",
+    "install": {
+      "winget": "dandavison.delta",
+      "brew": "git-delta",
+      "check_cmd": "delta"
+    }
+  },
+  {
+    "id": "vscode",
+    "name": "Visual Studio Code",
+    "description": "Extensible code editor",
+    "category": "ides",
+    "install": {
+      "winget": "Microsoft.VisualStudioCode",
+      "brew": "visual-studio-code",
+      "check_cmd": "code"
+    }
+  },
+  {
+    "id": "cursor",
+    "name": "Cursor",
+    "description": "AI-first code editor",
+    "category": "ides",
+    "install": {
+      "winget": "Anysphere.Cursor",
+      "brew": "cursor",
+      "check_cmd": "cursor"
+    }
+  },
+  {
+    "id": "neovim",
+    "name": "Neovim",
+    "description": "Hyperextensible Vim-based text editor",
+    "category": "ides",
+    "install": {
+      "winget": "Neovim.Neovim",
+      "brew": "neovim",
+      "check_cmd": "nvim"
+    }
+  },
+  {
+    "id": "fnm",
+    "name": "Fast Node Manager (fnm)",
+    "description": "Fast and simple Node.js version manager built in Rust",
+    "category": "runtimes",
+    "required": true,
+    "install": {
+      "winget": "Schniz.fnm",
+      "brew": "fnm",
+      "check_cmd": "fnm"
+    }
+  },
+  {
+    "id": "oh-my-posh",
+    "name": "Oh My Posh",
+    "description": "Prompt theme engine for any shell",
+    "category": "terminal",
+    "install": {
+      "winget": "JanDeDobbeleer.OhMyPosh",
+      "brew": "oh-my-posh",
+      "check_cmd": "oh-my-posh"
+    }
+  },
+  {
+    "id": "starship",
+    "name": "Starship",
+    "description": "Minimal, blazing-fast, and customizable prompt for any shell",
+    "category": "terminal",
+    "install": {
+      "winget": "Starship.Starship",
+      "brew": "starship",
+      "check_cmd": "starship"
+    }
+  }
+]

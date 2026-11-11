@@ -254,9 +254,7 @@ ignore = [
 "src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
 "src/desktop_manager/service_installer.py" = ["TID251"]
 "src/rig/devenv/doctor/core.py" = ["TID251"]
-"src/rig/devenv/providers/base.py" = ["TID251"]
 "src/rig/devenv/steps/git.py" = ["TID251"]
-"src/rig/devenv/steps/runtimes.py" = ["TID251"]
 "src/rig/estate/apps.py" = ["TID251"]
 "src/rig/estate/caches.py" = ["TID251"]
 "src/rig/estate/disksize.py" = ["TID251"]
@@ -512,7 +510,6 @@ patching-allow = [
     "tests/devenv/test_runner.py",
     "tests/devenv/test_steps.py",
     "tests/devenv/test_terminal_compat.py",
-    "tests/devenv/test_tool_manager.py",
     "tests/test_align_repo_conventions.py",
     "tests/test_branch_cleanup.py",
     "tests/test_c4_okf.py",

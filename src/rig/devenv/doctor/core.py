@@ -11,11 +11,9 @@ from rich.table import Table
 from rig import csharp_cli
 
 from ...workspace.repo_resolver import check_repo_folder
-from ..config.loader import load_all_builtin_tools
 from ..engine.context import StepContext, get_current_platform
 from ..steps.git import get_git_config_val
 from ..steps.terminal import get_windows_terminal_status
-from ..tool_manager import ToolManager
 from ..ui import console, table_box
 
 
@@ -23,36 +21,24 @@ def run_doctor() -> int:
     """Run full diagnostic suite across all environment components."""
     platform = get_current_platform()
     ctx = StepContext(platform=platform)
-    tool_mgr = ToolManager(platform)
-    all_tools = load_all_builtin_tools()
 
     issues_found = 0
 
     console.print(f"\n[bold cyan]=== Development Environment Doctor ({platform.value}) ===[/bold cyan]\n")
 
-    # 1. Core Tools Check
-    t_table = Table(title="1. Tools & Utilities", box=table_box(), show_header=True)
-    t_table.add_column("Tool", style="cyan")
-    t_table.add_column("Category", style="magenta")
-    t_table.add_column("Status", justify="center")
-
-    for tool in all_tools:
-        installed = tool_mgr.is_tool_installed(tool)
-        status_str = "[green]✓ Installed[/green]" if installed else "[yellow]✗ Missing[/yellow]"
-        if not installed and tool.required:
-            issues_found += 1
-        t_table.add_row(tool.name, tool.category, status_str)
+    # 1. Tools: `rig devenv tools --check` lists the catalog and exits 1 when a required tool is missing.
+    console.print("[bold]1. Tools & Utilities[/bold]")
+    if csharp_cli.run(["devenv", "tools", "--check"]) != 0:
+        issues_found += 1
 
     if ctx.is_windows:
         wt_stat = get_windows_terminal_status()
         if wt_stat.installed:
             if wt_stat.snap_to_grid is False:
-                t_table.add_row("Windows Terminal (snapToGrid: off)", "terminal", "[green]✓ Configured[/green]")
+                console.print("  Windows Terminal (snapToGrid: off)  [green]✓ Configured[/green]")
             else:
-                t_table.add_row("Windows Terminal (snapToGrid: on)", "terminal", "[yellow]! Jitter Risk[/yellow]")
+                console.print("  Windows Terminal (snapToGrid: on)   [yellow]! Jitter Risk[/yellow]")
                 issues_found += 1
-
-    console.print(t_table)
 
     console.print()
 
