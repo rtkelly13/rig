@@ -36,9 +36,38 @@ public sealed class TempDir : IDisposable
         {
             Directory.Delete(Path, recursive: true);
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Windows refuses to delete a read-only file, and git writes its objects read-only. Links are not entered.
+            Writable();
+            TryDelete();
+        }
         catch (IOException)
         {
             // A process under test may still hold a file open; the OS temp cleaner will get it.
+        }
+    }
+
+    private void Writable()
+    {
+        foreach (var file in new DirectoryInfo(Path).EnumerateFiles("*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint, IgnoreInaccessible = true }))
+        {
+            if (file.Attributes.HasFlag(FileAttributes.ReadOnly))
+            {
+                file.Attributes &= ~FileAttributes.ReadOnly;
+            }
+        }
+    }
+
+    private void TryDelete()
+    {
+        try
+        {
+            Directory.Delete(Path, recursive: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Left for the OS temp cleaner.
         }
     }
 }

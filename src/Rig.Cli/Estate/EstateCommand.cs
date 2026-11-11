@@ -24,11 +24,11 @@ internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDi
 
 /// <summary>
 /// <c>rig estate</c>: the subcommands ported from <c>src/rig/estate/cli.py</c>. The group's other subcommands are still
-/// Python's, so <see cref="Forwarding.Forwarded"/> hands any line naming one of them over. Read-only throughout:
-/// <c>sync</c> fetches, and nothing here deletes.
+/// Python's, so <see cref="Forwarding.Forwarded"/> hands any line naming one of them over. Read-only by default:
+/// <c>sync</c> fetches, and only <c>reclaim --apply</c> and <c>trim --apply</c> delete, each entry proving its own safety.
 /// </summary>
 /// <param name="host">Where it looks.</param>
-/// <param name="proc">Runs git and du.</param>
+/// <param name="proc">Runs git and du, and icacls on Windows when a tree is removed.</param>
 /// <param name="github">Asks GitHub which head refs have a merged PR, for <c>doctor --merged</c>.</param>
 /// <param name="time">The clock the clone cache is aged by and the worktree checks read.</param>
 /// <param name="output">Where reports go.</param>
@@ -42,6 +42,9 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
 
     private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(120);
 
+    // A worktree holding a large node_modules takes a while to delete.
+    private static readonly TimeSpan WorktreeRemoveTimeout = TimeSpan.FromMinutes(10);
+
     private readonly Git git = new(proc, host.CodeRoot);
 
     /// <summary>The <c>estate</c> group with its ported subcommands.</summary>
@@ -53,6 +56,8 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
         estate.Subcommands.Add(Doctor());
         estate.Subcommands.Add(Sync());
         estate.Subcommands.Add(Clones());
+        estate.Subcommands.Add(ReclaimCommand());
+        estate.Subcommands.Add(TrimCommand());
         return estate;
     }
 
@@ -138,6 +143,199 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
             return 0;
         });
         return clones;
+    }
+
+    private Command ReclaimCommand()
+    {
+        var root = RootOption();
+        var apply = new Option<bool>("--apply") { Description = "Actually delete. Off by default." };
+        var force = new Option<bool>("--force") { Description = "Proceed on worktrees holding uncommitted or unpushed work" };
+        var refresh = RefreshOption();
+        var min = new Option<string>("--min") { Description = "Ignore anything smaller (e.g. 500MB, 2GB)", DefaultValueFactory = _ => "100MB" };
+        var reclaim = new Command(
+            "reclaim",
+            "Disk that regenerates from a command. Refuses a dirty or only-copy worktree unless --force, and anything outside its clone.")
+        {
+            root, apply, force, refresh, min,
+        };
+        reclaim.SetAction((parsed, cancellationToken) => ReclaimAsync(
+            parsed.GetValue(root), parsed.GetValue(apply), parsed.GetValue(force), parsed.GetValue(refresh), parsed.GetValue(min) ?? "100MB", cancellationToken));
+        return reclaim;
+    }
+
+    private Command TrimCommand()
+    {
+        var root = RootOption();
+        var apply = new Option<bool>("--apply") { Description = "Actually delete. Off by default." };
+        var refresh = RefreshOption();
+        var idleDays = new Option<int>("--idle-days") { Description = "Days since the worktree was used", DefaultValueFactory = _ => Trim.DefaultIdleDays };
+        var min = new Option<string>("--min") { Description = "Ignore anything freeing less (e.g. 100MB)", DefaultValueFactory = _ => "10MB" };
+        var trim = new Command(
+            "trim",
+            "Regenerable output inside worktrees idle --idle-days or more. The worktree, its branch and its temp/ stay; "
+            + "sizes are freeable bytes, so a tree hardlinked from a store frees far less than it shows.")
+        {
+            root, apply, refresh, idleDays, min,
+        };
+        trim.SetAction((parsed, cancellationToken) => TrimAsync(
+            parsed.GetValue(root), parsed.GetValue(apply), parsed.GetValue(refresh), parsed.GetValue(idleDays), parsed.GetValue(min) ?? "10MB", cancellationToken));
+        return trim;
+    }
+
+    // Safety is per entry, not per clone: a commit is not endangered by deleting node_modules, so only a worktree
+    // entry, the one kind that can hold live state, is refused for being dirty or the only copy of its commits.
+    private async Task<int> ReclaimAsync(string? root, bool apply, bool force, bool refresh, string min, CancellationToken cancellationToken)
+    {
+        var floor = Bytes.ParseSize(min);
+        var clones = await ClonesAsync(CodeRoot(root), refresh, quiet: false, cancellationToken).ConfigureAwait(false);
+        var table = new TextTable(
+            "Reclaimable" + (apply ? string.Empty : " (dry run — pass --apply)"),
+            [("clone", false), ("path", false), ("size", true), ("comes back from", false), (string.Empty, true)]);
+        var scanner = new Reclaim(git, new DiskUsage(proc));
+        var removal = new TreeRemoval(proc);
+        long freed = 0, pending = 0;
+        var noted = new List<string>();
+        foreach (var clone in clones)
+        {
+            var entries = (await scanner.ScanRepoAsync(clone, floor, cancellationToken).ConfigureAwait(false)).Entries.Where(e => e.Bytes >= floor).ToList();
+            if (entries.Count == 0)
+            {
+                continue;
+            }
+
+            var exposure = await Exposure.InspectAsync(git, clone, perBranch: false).ConfigureAwait(false);
+            if (exposure.AtRisk)
+            {
+                noted.Add($"{Path.GetFileName(clone)} — {exposure.LocalOnlyCommits} local-only commit(s), {exposure.DirtyFiles} uncommitted file(s)");
+            }
+
+            foreach (var entry in entries)
+            {
+                var status = await ReclaimOneAsync(clone, entry, apply, force, removal, cancellationToken).ConfigureAwait(false);
+                freed += status == "removed" ? entry.Bytes : 0;
+                pending += status == "would remove" ? entry.Bytes : 0;
+                _ = table.Add(Path.GetFileName(clone), Short(entry.Path, clone), Bytes.Human(entry.Bytes), entry.Regenerate, status);
+            }
+        }
+
+        await output.WriteAsync(table.Render().AsMemory(), cancellationToken).ConfigureAwait(false);
+        await output.WriteLineAsync(
+            (apply ? $"\nFreed {Bytes.Human(freed)}" : $"\nWould free {Bytes.Human(pending)} — pass --apply to do it").AsMemory(), cancellationToken).ConfigureAwait(false);
+        if (noted.Count > 0)
+        {
+            await output.WriteLineAsync(
+                ("\nThese clones hold work that exists only here. It is not endangered by the above —"
+                + " a commit survives a deleted node_modules — but `estate risk` is worth a look:").AsMemory(),
+                cancellationToken).ConfigureAwait(false);
+            foreach (var line in noted)
+            {
+                await output.WriteLineAsync($"  {line}".AsMemory(), cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        return 0;
+    }
+
+    // One entry's fate. A status or history git cannot read counts against removal: an unjudged worktree is never
+    // removed unforced.
+    private async Task<string> ReclaimOneAsync(string clone, Reclaimable entry, bool apply, bool force, TreeRemoval removal, CancellationToken cancellationToken)
+    {
+        if (entry.IsWorktree)
+        {
+            // git deletes a worktree's ignored files with it, and a worktree nested in its temp/ is one of them.
+            var resolved = PathResolution.Resolve(entry.Path);
+            if ((await Worktree.ListAsync(git, clone).ConfigureAwait(false))
+                .Any(tree => Trim.IsStrictlyBelow(PathResolution.Resolve(tree.Path), resolved)))
+            {
+                return "holds a worktree";
+            }
+
+            // A separate clone, or another repository's worktree, in its ignored temp/ would go the same way.
+            if (TreeMeasure.HasCheckoutBelow(entry.Path, ownGit: true))
+            {
+                return "holds a git checkout";
+            }
+
+            if (!force && (await git.LinesAsync(entry.Path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 })
+            {
+                return "dirty worktree";
+            }
+
+            if (!force && await OrphanedAsync(entry.Path).ConfigureAwait(false))
+            {
+                return "only copy";
+            }
+
+            if (!apply)
+            {
+                return "would remove";
+            }
+
+            var done = await git.RunAsync(clone, [.. Trim.LongPaths, "worktree", "remove", entry.Path], WorktreeRemoveTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
+            return done.Ok ? "removed" : "failed";
+        }
+
+        if (!Trim.IsStrictlyBelow(entry.Path, clone))
+        {
+            return "outside clone";
+        }
+
+        // temp/ scratch can hold a clone or another repository's worktree, which no regenerate command brings back.
+        if (entry.Category == "temp" && TreeMeasure.HasCheckoutBelow(entry.Path))
+        {
+            return "holds a git checkout";
+        }
+
+        if (!apply)
+        {
+            return "would remove";
+        }
+
+        try
+        {
+            await removal.RemoveAsync(entry.Path, cancellationToken).ConfigureAwait(false);
+            return "removed";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return "failed";
+        }
+    }
+
+    // Whether HEAD holds a commit on no remote; true when git cannot say.
+    private async Task<bool> OrphanedAsync(string worktree)
+    {
+        var ran = await git.RunAsync(worktree, ["rev-list", "--count", "HEAD", "--not", "--remotes"]).ConfigureAwait(false);
+        return !ran.Ok || !int.TryParse(ran.Out.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var count) || count > 0;
+    }
+
+    // Every folder is rechecked against the disk just before it goes: the scan may be minutes old.
+    private async Task<int> TrimAsync(string? root, bool apply, bool refresh, int idleDays, string min, CancellationToken cancellationToken)
+    {
+        var floor = Bytes.ParseSize(min);
+        var clones = await ClonesAsync(CodeRoot(root), refresh, quiet: false, cancellationToken).ConfigureAwait(false);
+        var table = new TextTable(
+            "Idle worktrees" + (apply ? string.Empty : " (dry run — pass --apply)"),
+            [("worktree", false), ("path", false), ("frees", true), (string.Empty, true)]);
+        var trim = new Trim(git, time);
+        var removal = new TreeRemoval(proc);
+        long freed = 0;
+        foreach (var clone in clones)
+        {
+            foreach (var item in await trim.ScanAsync(clone, idleDays, floor).ConfigureAwait(false))
+            {
+                var refused = item.Refused.Length > 0 || !apply ? item.Refused : await trim.RecheckAsync(item, idleDays).ConfigureAwait(false);
+                var status = refused.Length > 0 ? $"refused: {refused}"
+                    : !apply ? "would remove"
+                    : await Trim.RemoveAsync(item, removal, cancellationToken).ConfigureAwait(false);
+                freed += status is "removed" or "would remove" ? item.Size.Freeable : 0;
+                _ = table.Add(Path.GetFileName(item.Worktree), Short(item.Path, item.Worktree), Bytes.Human(item.Size.Freeable), status);
+            }
+        }
+
+        await output.WriteAsync(table.Render().AsMemory(), cancellationToken).ConfigureAwait(false);
+        await output.WriteLineAsync($"\n{(apply ? "Freed" : "Would free")} {Bytes.Human(freed)}".AsMemory(), cancellationToken).ConfigureAwait(false);
+        return 0;
     }
 
     private async Task<int> AuditAsync(string? root, bool refresh, bool json, bool perBranch, CancellationToken cancellationToken)
@@ -417,7 +615,7 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
         }
 
         var top = await git.OutAsync(host.WorkingDirectory, "rev-parse", "--show-toplevel").ConfigureAwait(false);
-        return top.Length > 0 ? top : host.WorkingDirectory;
+        return top.Length > 0 ? PathResolution.Resolve(top) : host.WorkingDirectory; // git answers with / on Windows
     }
 
     private string ExpandHome(string path) =>

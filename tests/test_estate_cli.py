@@ -17,7 +17,6 @@ from typer.testing import CliRunner
 from rig.estate import apps as apps_mod
 from rig.estate import busy, cli, discovery, prs
 from rig.estate import downloads as downloads_mod
-from rig.estate.reclaim import Reclaimable
 from rig.typed_json import JsonValue
 from tests.fakes.git import git
 
@@ -50,13 +49,6 @@ def _clone(code: pathlib.Path, name: str) -> pathlib.Path:
     git(["commit", "-qm", "first"], root)
     git(["push", "-q", "-u", "origin", "main"], root)
     return root
-
-
-def _node_modules(clone: pathlib.Path) -> pathlib.Path:
-    modules = clone / "node_modules" / "left-pad"
-    modules.mkdir(parents=True)
-    (modules / "index.js").write_text("x" * 4096, encoding="utf-8")
-    return modules.parent
 
 
 class Estate:
@@ -119,92 +111,6 @@ def _json(text: str) -> JsonValue:
 )
 def test_sizes_parse_with_binary_units_and_fall_back_to_zero(text: str, expected: int) -> None:
     assert cli._parse_size(text) == expected
-
-
-# ---------------------------------------------------------------------------
-# reclaim and trim
-# ---------------------------------------------------------------------------
-
-
-def test_reclaim_dry_run_keeps_everything_and_notes_clones_at_risk(estate: Estate) -> None:
-    modules = _node_modules(estate.risky)
-
-    code, out = _run("reclaim", "--min", "0", "--root", str(estate.code))
-
-    assert code == 0
-    assert "would remove" in out
-    assert "Would free" in out
-    assert "risky — 1 local-only commit(s), 1 uncommitted file(s)" in out
-    assert modules.exists()
-
-
-def test_reclaim_apply_removes_regenerable_output(estate: Estate) -> None:
-    modules = _node_modules(estate.safe)
-
-    code, out = _run("reclaim", "--min", "0", "--apply", "--root", str(estate.code))
-
-    assert code == 0
-    assert "removed" in out
-    assert "Freed" in out
-    assert not modules.exists()
-
-
-def _worktree_entry(clone: pathlib.Path, path: pathlib.Path) -> Reclaimable:
-    return Reclaimable(path=path, category="temp", bytes_used=1, regenerate="", is_worktree=True)
-
-
-@pytest.fixture
-def temp_worktree(estate: Estate) -> pathlib.Path:
-    path = estate.safe / "temp" / "wt"
-    git(["worktree", "add", "-q", "-b", "wt", str(path)], estate.safe)
-    git(["push", "-q", "-u", "origin", "wt"], path)
-    return path
-
-
-def test_a_dirty_worktree_is_refused_unless_forced(estate: Estate, temp_worktree: pathlib.Path) -> None:
-    (temp_worktree / "README.md").write_text("edited\n", encoding="utf-8")
-    entry = _worktree_entry(estate.safe, temp_worktree)
-
-    assert cli._reclaim_one(estate.safe, entry, apply=True) == cli._ReclaimOutcome("dirty worktree", "yellow")
-    assert cli._reclaim_one(estate.safe, entry, apply=False, force=True).status == "would remove"
-
-
-def test_a_worktree_holding_the_only_copy_of_a_commit_is_refused(estate: Estate, temp_worktree: pathlib.Path) -> None:
-    (temp_worktree / "new.txt").write_text("new\n", encoding="utf-8")
-    git(["add", "new.txt"], temp_worktree)
-    git(["commit", "-qm", "local"], temp_worktree)
-
-    outcome = cli._reclaim_one(estate.safe, _worktree_entry(estate.safe, temp_worktree), apply=True)
-
-    assert outcome == cli._ReclaimOutcome("only copy", "yellow")
-    assert temp_worktree.exists()
-
-
-def test_a_clean_pushed_worktree_is_removed_through_git(estate: Estate, temp_worktree: pathlib.Path) -> None:
-    outcome = cli._reclaim_one(estate.safe, _worktree_entry(estate.safe, temp_worktree), apply=True)
-
-    assert outcome == cli._ReclaimOutcome("removed", "bold green")
-    assert not temp_worktree.exists()
-    assert "temp/wt" not in git(["worktree", "list"], estate.safe)
-
-
-def test_an_entry_resolving_outside_the_clone_is_never_removed(estate: Estate, tmp_path: pathlib.Path) -> None:
-    outside = tmp_path / "elsewhere"
-    outside.mkdir()
-    entry = Reclaimable(path=outside, category="node_modules", bytes_used=1, regenerate="")
-
-    assert cli._reclaim_one(estate.safe, entry, apply=True) == cli._ReclaimOutcome("outside clone", "bold red")
-    assert outside.exists()
-
-
-def test_trim_reports_idle_worktree_output(estate: Estate, temp_worktree: pathlib.Path) -> None:
-    _node_modules(temp_worktree)
-
-    code, out = _run("trim", "--idle-days", "0", "--min", "0", "--root", str(estate.code))
-
-    assert code == 0
-    assert "Idle worktrees (dry run" in out
-    assert "Would free" in out
 
 
 # ---------------------------------------------------------------------------

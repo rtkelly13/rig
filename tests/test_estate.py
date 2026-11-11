@@ -9,7 +9,7 @@ import subprocess
 
 import pytest
 
-from rig.estate import discovery, risk
+from rig.estate import discovery
 from rig.estate.checks import (
     Finding,
     Severity,
@@ -36,7 +36,7 @@ def repo(tmp_path: pathlib.Path) -> pathlib.Path:
 
     The remote matters: risk is measured as commits on *no remote*, so a repo
     without one legitimately reports every commit as local-only. That is the
-    unusual case, and `_drop_remote` covers it explicitly.
+    unusual case.
     """
     origin = tmp_path / "origin.git"
     _git(["init", "-q", "--bare", "-b", "main", str(origin)], tmp_path)
@@ -52,12 +52,6 @@ def repo(tmp_path: pathlib.Path) -> pathlib.Path:
     _git(["commit", "-qm", "first"], root)
     _git(["push", "-q", "-u", "origin", "main"], root)
     return root
-
-
-def _drop_remote(repo: pathlib.Path) -> pathlib.Path:
-    """Remove the origin, so every commit becomes local-only."""
-    _git(["remote", "remove", "origin"], repo)
-    return repo
 
 
 # ---------------------------------------------------------------------------
@@ -404,41 +398,6 @@ def test_a_path_outside_the_clone_is_refused(repo: pathlib.Path, tmp_path: pathl
     actions = clean_repo(report, apply=True)
     assert actions[-1].outcome is Outcome.REFUSED
     assert outside.exists()
-
-
-# ---------------------------------------------------------------------------
-# risk
-# ---------------------------------------------------------------------------
-
-
-def test_local_only_commits_counts_distinct_not_per_branch(repo: pathlib.Path) -> None:
-    """Two branches sharing a commit must not double-count it."""
-    _drop_remote(repo)
-    (repo / "a.txt").write_text("a\n", encoding="utf-8")
-    _git(["add", "."], repo)
-    _git(["commit", "-qm", "shared"], repo)
-    _git(["branch", "one"], repo)
-    _git(["branch", "two"], repo)
-
-    # no remote at all, so every commit is local-only — but only two of them
-    assert risk.local_only_commits(repo) == 2
-
-
-def test_exposure_flags_a_repo_with_no_remote(repo: pathlib.Path) -> None:
-    exposure = risk.inspect_exposure(_drop_remote(repo))
-    assert not exposure.has_remote
-    assert exposure.at_risk
-
-
-def test_find_duplicates_normalises_ssh_and_https(tmp_path: pathlib.Path) -> None:
-    a = risk.Exposure(repo=tmp_path / "a", origin="git@github.com:me/thing.git", local_only_commits=3)
-    b = risk.Exposure(repo=tmp_path / "b", origin="https://github.com/me/thing", local_only_commits=3)
-    c = risk.Exposure(repo=tmp_path / "c", origin="git@github.com:me/other.git")
-
-    dupes = risk.find_duplicates([a, b, c])
-    assert len(dupes) == 1
-    assert dupes[0].origin == "github.com/me/thing"
-    assert dupes[0].exposure == {"a": 3, "b": 3}
 
 
 # ---------------------------------------------------------------------------

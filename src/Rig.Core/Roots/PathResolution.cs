@@ -26,6 +26,9 @@ public static class PathResolution
     /// </summary>
     public static StringComparison Comparison => OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
+    /// <summary>The same comparison for a set or dictionary of resolved paths.</summary>
+    public static StringComparer Comparer => OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+
     /// <summary>Whether two resolved paths name the same place, trailing separators aside.</summary>
     public static bool Same(string path, string other)
     {

@@ -4,8 +4,8 @@ using Rig.Core.Processes;
 namespace Rig.Core.Estate;
 
 /// <summary>
-/// One clone's irreplaceable state: what exists on this machine and nowhere else. Ported from
-/// <c>src/rig/estate/risk.py</c>, the only estate module about loss; everything else the estate reports regenerates.
+/// One clone's irreplaceable state: what exists on this machine and nowhere else. The only estate measure about loss;
+/// everything else the estate reports regenerates.
 /// </summary>
 /// <param name="Repo">The clone.</param>
 /// <param name="LocalOnlyCommits">Distinct commits reachable from a local ref and on no remote.</param>

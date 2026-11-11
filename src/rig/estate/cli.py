@@ -34,7 +34,6 @@ from __future__ import annotations
 import json
 import pathlib
 import sys
-from dataclasses import dataclass
 
 import typer
 from rich.console import Console
@@ -53,16 +52,13 @@ from rig.estate import (
     wrapup_cli,
 )
 from rig.estate import downloads as downloads_mod
-from rig.estate import reclaim as reclaim_mod
-from rig.estate import risk as risk_mod
-from rig.estate import trim as trim_mod
 from rig.estate.checks import inspect_repo
 from rig.estate.cleanup import TIDY_CHECKS, Busy, Outcome, clean_repo
 from rig.estate.prs import PullRequest
 from rig.estate.reclaim import human
 
 app = typer.Typer(add_completion=False, help="Manage the code assets cloned on this machine.")
-# audit, risk, doctor, sync and clones run on the C# CLI (src/Rig.Cli/Estate).
+# audit, risk, doctor, sync, clones, reclaim and trim run on the C# CLI (src/Rig.Cli/Estate).
 csharp_cli.add_group_stubs(app, "estate")
 console = Console()
 err = Console(stderr=True)
@@ -78,124 +74,6 @@ _OUTCOME_STYLE = {
 # ---------------------------------------------------------------------------
 
 
-@app.command()
-def reclaim(
-    root: str | None = typer.Option(None, "--root", help="Code root to scan"),
-    apply: bool = typer.Option(False, "--apply", help="Actually delete. Off by default."),
-    force: bool = typer.Option(False, "--force", help="Proceed on clones holding uncommitted or unpushed work"),
-    refresh: bool = typer.Option(False, "--refresh", help="Rescan rather than using the cached list"),
-    min_size: str = typer.Option("100MB", "--min", help="Ignore anything smaller (e.g. 500MB, 2GB)"),
-) -> None:
-    """Disk that regenerates from a command.
-
-    Safety is per entry, not per clone, and that distinction was worth getting
-    right: a first cut refused any clone holding local-only commits, which on
-    this estate meant refusing 100% of the 14 GB — every clone with build output
-    also has unpushed work. But a *commit* is not endangered by deleting
-    `node_modules`. Only live state inside the path being removed is, so the
-    refusals are:
-
-    - a `temp/` worktree that is dirty, or holds commits on no remote
-    - anything resolving outside the clone
-
-    Uncommitted files elsewhere in the clone are reported, not blocking. `--force`
-    is therefore only needed for a dirty worktree you are certain about.
-    """
-    scan_root = locate.code_root(root)
-    floor = _parse_size(min_size)
-    clones = locate.clones(scan_root, refresh=refresh, quiet=False, err=err)
-
-    table = Table(title="Reclaimable" + ("" if apply else " (dry run — pass --apply)"), title_style="bold")
-    table.add_column("clone")
-    table.add_column("path", style="dim")
-    table.add_column("size", justify="right")
-    table.add_column("comes back from", style="dim")
-    table.add_column("", justify="right")
-
-    freed = 0
-    pending = 0
-    noted: list[str] = []
-    for clone in clones:
-        entries = [e for e in reclaim_mod.scan_repo(clone, floor=floor).entries if e.bytes_used >= floor]
-        if not entries:
-            continue
-        exposure = risk_mod.inspect_exposure(clone, per_branch=False)
-        if exposure.at_risk:
-            noted.append(
-                f"{clone.name} — {exposure.local_only_commits} local-only commit(s), "
-                f"{exposure.dirty_files} uncommitted file(s)"
-            )
-
-        for entry in entries:
-            outcome = _reclaim_one(clone, entry, apply=apply, force=force)
-            status, style = outcome.status, outcome.style
-            if status == "removed":
-                freed += entry.bytes_used
-            elif status == "would remove":
-                pending += entry.bytes_used
-            table.add_row(
-                clone.name,
-                locate.short(entry.path, clone),
-                human(entry.bytes_used),
-                entry.regenerate,
-                f"[{style}]{status}[/]",
-            )
-
-    console.print(table)
-    if apply:
-        console.print(f"\n[bold]Freed {human(freed)}[/bold]")
-    else:
-        console.print(f"\n[bold]Would free {human(pending)}[/bold] — pass [bold]--apply[/bold] to do it")
-    if noted:
-        console.print(
-            "\n[dim]These clones hold work that exists only here. It is not endangered by the above —"
-            " a commit survives a deleted node_modules — but `estate risk` is worth a look:[/dim]"
-        )
-        for line in noted:
-            console.print(f"  [dim]{line}[/dim]")
-
-
-@dataclass(frozen=True, slots=True)
-class _ReclaimOutcome:
-    """What happened to one reclaimable entry, and the rich style to show it in."""
-
-    status: str
-    style: str
-
-
-def _reclaim_one(
-    clone: pathlib.Path, entry: reclaim_mod.Reclaimable, *, apply: bool, force: bool = False
-) -> _ReclaimOutcome:
-    """Remove one entry, or say what would happen. Returns the status and its rich style.
-
-    A worktree is the only entry kind that can hold live state, so it is the only
-    one with refusals — and `force` overrides them, because occasionally you do
-    know that the dirty worktree is scrap.
-    """
-    if entry.is_worktree:
-        from rig.estate.checks import is_dirty, orphaned_count
-
-        if not force and is_dirty(entry.path):
-            return _ReclaimOutcome("dirty worktree", "yellow")
-        # commits on no remote, not "ahead of upstream" — see `orphaned_count`
-        if not force and orphaned_count(entry.path):
-            return _ReclaimOutcome("only copy", "yellow")
-        if not apply:
-            return _ReclaimOutcome("would remove", "cyan")
-        done = proc.git(*trim_mod.LONG_PATHS, "worktree", "remove", str(entry.path), cwd=clone)
-        return _ReclaimOutcome("removed", "bold green") if done.ok else _ReclaimOutcome("failed", "bold red")
-
-    if clone.resolve() not in entry.path.resolve().parents:
-        return _ReclaimOutcome("outside clone", "bold red")
-    if not apply:
-        return _ReclaimOutcome("would remove", "cyan")
-    try:
-        trim_mod.remove_tree(entry.path)
-    except OSError:
-        return _ReclaimOutcome("failed", "bold red")
-    return _ReclaimOutcome("removed", "bold green")
-
-
 def _parse_size(text: str) -> int:
     """Parse `500MB` / `2GB` / `1024`. Falls back to 0 on nonsense."""
     raw = text.strip().upper()
@@ -207,52 +85,6 @@ def _parse_size(text: str) -> int:
             except ValueError:
                 return 0
     return int(raw) if raw.isdigit() else 0
-
-
-@app.command()
-def trim(
-    root: str | None = typer.Option(None, "--root", help="Code root to scan"),
-    apply: bool = typer.Option(False, "--apply", help="Actually delete. Off by default."),
-    refresh: bool = typer.Option(False, "--refresh", help="Rescan rather than using the cached list"),
-    idle_days: int = typer.Option(trim_mod.DEFAULT_IDLE_DAYS, "--idle-days", help="Days since the worktree was used"),
-    min_size: str = typer.Option("10MB", "--min", help="Ignore anything freeing less (e.g. 100MB)"),
-) -> None:
-    """Regenerable output inside worktrees idle `--idle-days` or more.
-
-    The worktree, its branch and its `temp/` stay; `node_modules`, venvs and
-    build output go. Locked worktrees are skipped. Sizes are freeable bytes:
-    a pnpm or uv tree hardlinked from its store frees far less than it shows.
-    """
-    clones = locate.clones(locate.code_root(root), refresh=refresh, quiet=False, err=err)
-    floor = _parse_size(min_size)
-
-    table = Table(title="Idle worktrees" + ("" if apply else " (dry run — pass --apply)"), title_style="bold")
-    table.add_column("worktree")
-    table.add_column("path", style="dim")
-    table.add_column("frees", justify="right")
-    table.add_column("", justify="right")
-
-    freed = 0
-    for clone in clones:
-        for item in trim_mod.scan(clone, idle_days=idle_days, floor=floor):
-            if item.refused:
-                status, style = f"refused: {item.refused}", "yellow"
-            elif not apply:
-                status, style = "would remove", "cyan"
-            else:
-                status = trim_mod.remove(item)
-                style = "bold green" if status == "removed" else "bold red"
-            if status in ("removed", "would remove"):
-                freed += item.size.freeable
-            table.add_row(
-                item.worktree.name,
-                locate.short(item.path, item.worktree),
-                human(item.size.freeable),
-                f"[{style}]{status}[/]",
-            )
-
-    console.print(table)
-    console.print(f"\n[bold]{'Freed' if apply else 'Would free'} {human(freed)}[/bold]")
 
 
 def _merged_heads(clone: pathlib.Path) -> dict[str, PullRequest]:
