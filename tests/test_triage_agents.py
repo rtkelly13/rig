@@ -10,13 +10,13 @@ import pytest
 
 from rig import proc
 from rig.estate.wrapup_state import AnswerRecord, AskRecord, WrapupState
+from rig.gh_origin import RepoIdentity
 from rig.triage import agents, web
 from rig.triage.agents import AgentSignal
 from rig.triage.facts import Facts
 from rig.triage.models import Entry
 from rig.workspace.layout import project_dir
 from rig.workspace.models import ManagedRepoSpec
-from rig.workspace.repo_resolver import RepoIdentity
 from tests.test_triage_queue import item
 
 pytestmark = pytest.mark.ci

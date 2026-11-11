@@ -13,8 +13,8 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
-from rig import csharp_cli, scopes
-from rig.console_ui import make_console, table_box
+from rig import csharp_cli
+from rig.console_ui import make_console
 from rig.repo_governance.gitignore_manager import (
     audit_estate_gitignores,
     sync_estate_gitignores,
@@ -30,7 +30,6 @@ from rig.workspace.engine import (
 )
 from rig.workspace.orca_cli import orca_cli
 from rig.workspace.packages_cli import packages_cli
-from rig.workspace.repo_resolver import check_estate_repos
 
 app = typer.Typer(
     name="workspace",
@@ -40,6 +39,7 @@ app = typer.Typer(
 )
 csharp_cli.add_stub(app, "skills")
 csharp_cli.add_stub(app, "policy")
+csharp_cli.add_group_stubs(app, "workspace")
 app.add_typer(ci_cli, name="ci")
 app.add_typer(packages_cli, name="packages")
 app.add_typer(packages_cli, name="artifacts")
@@ -151,87 +151,6 @@ def audit_command(
         console.print("\n[bold green]SUCCESS: No unmanaged files or directories in estate root.[/bold green]")
 
     if strict and not audit.is_clean:
-        raise typer.Exit(code=1)
-
-
-@app.command(name="doctor")
-def doctor_command(
-    root: str | None = typer.Option(None, "--root", "-r", help="Path to personal estate root directory"),
-    refresh_cache: bool = typer.Option(False, "--refresh-cache", help="Bypass cache and re-query GitHub GraphQL"),
-    json_output: bool = typer.Option(False, "--json", help="Output doctor report as JSON"),
-    strict: bool = typer.Option(False, "--strict", help="Fail with non-zero exit code if any repo mismatches exist"),
-) -> None:
-    """Diagnose repository folder names and remotes against canonical GitHub names."""
-    estate_dir = estate_root_path(root)
-    checks = check_estate_repos(estate_dir, extra_roots=scopes.org_dirs(estate_dir), force_refresh=refresh_cache)
-
-    has_issues = any(not c.is_match or not c.remote_matches_canonical for c in checks if c.status != "local_only")
-
-    if json_output:
-        payload = {
-            "estate_root": str(estate_dir),
-            "is_clean": not has_issues,
-            "total_repos": len(checks),
-            "checks": [
-                {
-                    "folder_name": c.folder_name,
-                    "canonical_name": c.canonical_name,
-                    "owner": c.owner,
-                    "remote_repo_name": c.remote_repo_name,
-                    "status": c.status,
-                    "is_match": c.is_match,
-                    "remote_matches_canonical": c.remote_matches_canonical,
-                    "is_renamed": c.is_renamed,
-                    "detail": c.detail,
-                }
-                for c in checks
-            ],
-        }
-        typer.echo(json.dumps(payload, indent=2))
-        if strict and has_issues:
-            raise typer.Exit(code=1)
-        return
-
-    title = f"Estate Repository Doctor: {estate_dir}"
-    console.print(Panel.fit(f"[bold cyan]{title}[/bold cyan]", border_style="cyan"))
-
-    table = Table(box=table_box(), show_header=True)
-    table.add_column("Folder", style="cyan")
-    table.add_column("Canonical Upstream", style="magenta")
-    table.add_column("Remote Slug", style="dim")
-    table.add_column("Status", justify="center")
-    table.add_column("Detail", style="dim")
-
-    for c in checks:
-        if c.status == "ok":
-            status_str = "[green]✓ OK[/green]"
-        elif c.status == "folder_renamed":
-            status_str = "[yellow]! Renamed (Outdated)[/yellow]"
-        elif c.status == "folder_mismatch":
-            status_str = "[red]✗ Mismatch[/red]"
-        elif c.status == "remote_outdated":
-            status_str = "[yellow]! Remote Outdated[/yellow]"
-        elif c.status == "local_only":
-            status_str = "[dim]- Local/Non-GH[/dim]"
-        else:
-            status_str = "[dim yellow]? Unresolved[/dim yellow]"
-
-        remote_display = f"{c.owner}/{c.remote_repo_name}" if c.owner and c.remote_repo_name else "-"
-        table.add_row(c.folder_name, c.canonical_name or "-", remote_display, status_str, c.detail)
-
-    console.print(table)
-    console.print()
-
-    if not has_issues:
-        console.print(
-            "[bold green]✓ All estate repository folders match their canonical upstream names.[/bold green]\n"
-        )
-    else:
-        console.print(
-            "[bold yellow]! Repository folder or remote mismatches detected. Review the report above.[/bold yellow]\n"
-        )
-
-    if strict and has_issues:
         raise typer.Exit(code=1)
 
 

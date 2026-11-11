@@ -5,7 +5,7 @@ namespace Rig.Core.Tests.Fakes;
 /// <summary>An <see cref="IProc"/> that records every request and answers from a table keyed by argv prefix.</summary>
 public sealed class FakeProc : IProc
 {
-    private readonly List<(IReadOnlyList<string> Prefix, Ran Answer)> _answers = [];
+    private readonly List<(string? WorkingDirectory, IReadOnlyList<string> Prefix, Ran Answer)> _answers = [];
 
     /// <summary>Every request, in the order it was made.</summary>
     public List<ProcRequest> Requests { get; } = [];
@@ -16,7 +16,14 @@ public sealed class FakeProc : IProc
     /// <summary>Answers any command starting with <paramref name="prefix"/>; later answers win.</summary>
     public FakeProc Answer(Ran answer, params string[] prefix)
     {
-        _answers.Insert(0, (prefix, answer));
+        _answers.Insert(0, (null, prefix, answer));
+        return this;
+    }
+
+    /// <summary>Answers a command starting with <paramref name="prefix"/> run in <paramref name="workingDirectory"/>; later answers win.</summary>
+    public FakeProc AnswerIn(string workingDirectory, Ran answer, params string[] prefix)
+    {
+        _answers.Insert(0, (workingDirectory, prefix, answer));
         return this;
     }
 
@@ -24,7 +31,8 @@ public sealed class FakeProc : IProc
     public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
     {
         Requests.Add(request);
-        var match = _answers.FirstOrDefault(a => request.Argv.Take(a.Prefix.Count).SequenceEqual(a.Prefix));
+        var match = _answers.FirstOrDefault(a =>
+            (a.WorkingDirectory is null || a.WorkingDirectory == request.WorkingDirectory) && request.Argv.Take(a.Prefix.Count).SequenceEqual(a.Prefix));
         return Task.FromResult(match.Answer ?? Unanswered);
     }
 }

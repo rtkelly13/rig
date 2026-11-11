@@ -23,7 +23,11 @@ public sealed class RigAppTests : IDisposable
             _ => Task.FromResult<RepoSlug?>(null),
             _out,
             _err,
-            [() => new Rig.Cli.Models.ModelsCommand(new Rig.Cli.Models.ModelDiscovery(_proc, "/home", _ => null), _out).Build()],
+            [
+                () => new Rig.Cli.Models.ModelsCommand(new Rig.Cli.Models.ModelDiscovery(_proc, "/home", _ => null), _out).Build(),
+                // workspace is partly ported: doctor runs here, the rest of the group on Python.
+                () => new System.CommandLine.Command("workspace", "Estate workspace.") { new System.CommandLine.Command("doctor", "Workspace doctor here.") },
+            ],
             new AgentLauncher(_proc, new AgentHost("/home/none.json", "/work", p => $"/bin/{p}"), _out, _err))
             .RunAsync(args, TestContext.Current.CancellationToken);
 
@@ -143,6 +147,15 @@ public sealed class RigAppTests : IDisposable
 
         Assert.Empty(_proc.Requests);
         Assert.Contains("resolve", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_ported_subcommand_of_a_python_group_is_parsed_here()
+    {
+        Assert.Equal(0, await Run("workspace", "doctor", "--help"));
+
+        Assert.Empty(_proc.Requests);
+        Assert.Contains("Workspace doctor here.", _out.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

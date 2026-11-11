@@ -18,10 +18,10 @@ from typing import Literal
 
 from rig.estate.checks import list_worktrees
 from rig.estate.wrapup_state import StateReader, WrapupState, default_store, parse_timestamp
+from rig.gh_origin import get_repo_root_and_origin
 from rig.repo_slug import RepoSlug
 from rig.workspace.engine import config_file_path, estate_root_path, load_managed_specs
 from rig.workspace.layout import project_dir
-from rig.workspace.repo_resolver import get_repo_root_and_origin
 
 Verdict = Literal["done", "pending", "asked"]
 

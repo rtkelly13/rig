@@ -82,6 +82,13 @@ def test_the_python_cli_hands_a_ported_command_over(csharp_calls: list[list[str]
     assert [call[call.index("--") + 1 :] for call in csharp_calls] == [["gh", "threads", "list", "7", "--help"]]
 
 
+def test_a_ported_subcommand_of_a_python_group_hands_over_with_its_group(csharp_calls: list[list[str]]) -> None:
+    result = CliRunner().invoke(app, ["workspace", "doctor", "--json", "--strict"])
+
+    assert result.exit_code == 0
+    assert [call[call.index("--") + 1 :] for call in csharp_calls] == [["workspace", "doctor", "--json", "--strict"]]
+
+
 def test_a_stub_hands_over_every_argument_and_returns_the_exit_code() -> None:
     handed: list[list[str]] = []
 

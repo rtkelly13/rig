@@ -11,6 +11,7 @@ using Rig.Cli.Policy;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
+using Rig.Cli.Workspace;
 using Rig.Core.Browser;
 using Rig.Core.Devenv;
 using Rig.Core.GitHub;
@@ -150,6 +151,11 @@ internal static class Program
                     Console.Out,
                     Console.Error).Build,
                 new DoctorCommand(devenvHost, proc, TimeProvider.System, Console.Out).Build,
+                new WorkspaceCommand(
+                    new WorkspaceHost(Path.Join(codeRoot, "personal"), Path.Join(checkout, "config", EstateScopes.FileName), home),
+                    proc,
+                    TimeProvider.System,
+                    Console.Out).Build,
             ],
             new AgentLauncher(
                 proc,
