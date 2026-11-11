@@ -18,4 +18,4 @@ Package managers are abstracted behind the `PackageManager` interface with metho
 - Native silent/unattended flags are consistently supported.
 
 ## References
-- [`src/shared_utilities/devenv/providers/base.py`](../../src/rig/devenv/providers/base.py)
+- [`src/Rig.Core/Devenv/PackageManager.cs`](../../src/Rig.Core/Devenv/PackageManager.cs)

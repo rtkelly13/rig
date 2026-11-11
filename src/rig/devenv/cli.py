@@ -13,8 +13,7 @@ from .doctor.core import run_doctor
 from .engine.context import StepContext, get_current_platform
 from .engine.runner import run_steps
 from .engine.step import Step
-from .steps import ai_tools, git, runtimes, terminal, tools
-from .tool_manager import ToolManager
+from .steps import ai_tools, git, terminal
 
 app = typer.Typer(
     name="devenv",
@@ -24,11 +23,15 @@ app = typer.Typer(
 console = Console()
 
 
-def _ported(name: str) -> Callable[[StepContext], None]:
+def _interactive(ctx: StepContext) -> list[str]:
+    return [] if ctx.use_silent_mode else ["--interactive"]
+
+
+def _ported(name: str, flags: Callable[[StepContext], list[str]] = lambda _: []) -> Callable[[StepContext], None]:
     """A setup step that runs ``rig devenv <name>`` on the C# CLI, failing when it exits non-zero."""
 
     def step(ctx: StepContext) -> None:
-        code = csharp_cli.run(["devenv", name, *(["--dry-run"] if ctx.dry_run else [])])
+        code = csharp_cli.run(["devenv", name, *(["--dry-run"] if ctx.dry_run else []), *flags(ctx)])
         if code != 0:
             raise RuntimeError(f"rig devenv {name} exited {code}")
 
@@ -71,13 +74,13 @@ SETUP_STEPS: list[Step] = [
     Step(
         name="Runtimes",
         description="Configure Python (uv) and Node.js (fnm) runtime environments",
-        func=runtimes.run_runtimes_setup,
+        func=_ported("runtimes", _interactive),
         confirm_message="Would you like to configure Python and Node.js runtimes?",
     ),
     Step(
         name="Development Tools",
         description="Install and update curated developer tools & CLI utilities",
-        func=tools.run_tools_setup,
+        func=_ported("tools", lambda ctx: ["--mode", ctx.mode, *_interactive(ctx)]),
         confirm_message="Would you like to install/update development tools?",
     ),
 ]
@@ -109,14 +112,6 @@ def setup_cmd(
         raise typer.Exit(code=130) from None
 
 
-@app.command("update")
-def update_cmd() -> None:
-    """Update installed development tools. Skills are updated by `rig skills update`."""
-    console.print("[bold cyan]Updating development tools...[/bold cyan]\n")
-    ToolManager(get_current_platform()).update_all_tools()
-    console.print("\n[bold green]✓ Environment update complete![/bold green]")
-
-
 @app.command("doctor")
 def doctor_cmd() -> None:
     """Validate environment health across tools, runtimes, git, fonts, and AI assistants.
@@ -124,32 +119,6 @@ def doctor_cmd() -> None:
     For lint, type and test gates on this repo, run `uv run status`.
     """
     raise typer.Exit(code=run_doctor())
-
-
-@app.command("tools")
-def tools_cmd(
-    update: bool = typer.Option(
-        False,
-        "--update",
-        "-u",
-        help="Also upgrade every package the platform package manager owns (brew upgrade / winget upgrade --all)",
-    ),
-) -> None:
-    """Inspect and manage development tools."""
-    platform = get_current_platform()
-    ctx = StepContext(platform=platform, mode="full")
-    tools.run_tools_setup(ctx)
-    if update and not ToolManager(platform).update_all_tools():
-        console.print("[bold red]Package upgrade did not run: no package manager found, or it failed.[/bold red]")
-        raise typer.Exit(code=1)
-
-
-@app.command("runtimes")
-def runtimes_cmd() -> None:
-    """Configure Python (uv) and Node.js (fnm) runtime environments."""
-    platform = get_current_platform()
-    ctx = StepContext(platform=platform, mode="full")
-    runtimes.run_runtimes_setup(ctx)
 
 
 @app.command("terminal")

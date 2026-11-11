@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Text.Json;
 using Rig.Core.Devenv;
 using Rig.Core.Policy;
+using Rig.Core.Processes;
 
 namespace Rig.Cli.Devenv;
 
@@ -15,11 +16,12 @@ namespace Rig.Cli.Devenv;
 /// <param name="Find">Finds a program on the PATH, or null.</param>
 /// <param name="ConfigHome">The <c>XDG_CONFIG_HOME</c> variable, which moves the gh scope overlay; ignored under another <c>--home</c>.</param>
 /// <param name="MacOS">Whether fonts go to <c>~/Library/Fonts</c>; otherwise Windows' or Linux's user font folder.</param>
-internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false);
+/// <param name="WorkingDirectory">Where <c>.devenv/tools</c> catalogs and the Python version are read from (default: <paramref name="Home"/>).</param>
+internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false, string? WorkingDirectory = null);
 
 /// <summary>
 /// The ported part of <c>rig devenv</c>: <c>agent-launcher</c>, <c>agents</c>, <c>claude</c>, <c>estate-rules</c>,
-/// <c>fonts</c>, <c>gh</c>, <c>obsidian-plugins</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
+/// <c>fonts</c>, <c>gh</c>, <c>obsidian-plugins</c>, <c>opencode</c>, and <see cref="ToolsCommands"/>' <c>tools</c>, <c>runtimes</c> and <c>update</c>. Every other <c>devenv</c> subcommand is still Python's, and
 /// <see cref="Forwarding.Forwarded.Owns"/> hands those lines over before parsing. Ported from devenv's
 /// <c>agent_launcher_setup</c>, <c>agent_shortcut</c>, <c>discovery</c>, <c>fonts</c>, <c>claude_code</c>, <c>session_ledger</c>,
 /// <c>estate_rules</c>, <c>github_cli</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
@@ -27,9 +29,10 @@ internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, 
 /// <param name="host">Where it sets up.</param>
 /// <param name="plugins">Fetches Obsidian plugins from GitHub.</param>
 /// <param name="fonts">Downloads the Nerd Fonts.</param>
+/// <param name="proc">Runs the package manager, uv and fnm.</param>
 /// <param name="output">Where progress goes.</param>
 /// <param name="error">Where failures go.</param>
-internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, NerdFonts fonts, TextWriter output, TextWriter error)
+internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, NerdFonts fonts, IProc proc, TextWriter output, TextWriter error)
 {
     /// <summary>What <c>rig devenv</c> is, matching the Python group's help.</summary>
     public const string Description = "Unified development environment manager (tools, runtimes, fonts, git, AI coding agents).";
@@ -63,7 +66,13 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var fontsCommand = new Command("fonts", "Download and install the developer Nerd Fonts (JetBrainsMono, CascadiaCode, FiraCode).") { dryRun, home, fontsCheck };
         fontsCommand.SetAction((parsed, cancellationToken) =>
             FontsAsync(parsed.GetValue(dryRun), parsed.GetValue(fontsCheck), NerdFonts.Folder(parsed.GetValue(home)!, host.Windows, host.MacOS), cancellationToken));
-        return new Command("devenv", Description) { launcher, agents, claude, rules, fontsCommand, gh, obsidian, opencode };
+        var group = new Command("devenv", Description) { launcher, agents, claude, rules, fontsCommand, gh, obsidian, opencode };
+        foreach (var command in new ToolsCommands(host, proc, output, error).Build(dryRun, home))
+        {
+            group.Subcommands.Add(command);
+        }
+
+        return group;
     }
 
     // Each missing family is downloaded in turn; one that fails does not stop the rest, and makes the exit 1.

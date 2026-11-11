@@ -98,7 +98,7 @@ public sealed partial class ForwardedContractTests
                 new PolicyCommand(new PolicyHost("/none.json", "/", "/", false), TextWriter.Null, TextWriter.Null).Build,
                 new SkillsCommand(new SkillsHost("/", "/", "/", "/", false), new Git(new FakeProc(), "/"), new RefusingLinker(), TextWriter.Null, TextWriter.Null).Build,
                 new BrowserCommand(new BrowserHost("/", null, false, _ => null, _ => new ShellProfileEnvironment("/none")), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
-                new DevenvCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new ObsidianPlugins(Refusing), new NerdFonts(Refusing), TextWriter.Null, TextWriter.Null).Build,
+                new DevenvCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new ObsidianPlugins(Refusing), new NerdFonts(Refusing), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
 

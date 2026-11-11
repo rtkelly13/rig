@@ -60,3 +60,29 @@ def test_the_gh_setup_step_fails_when_rig_devenv_gh_does():
             step.func(StepContext(platform=get_current_platform(), mode="full"))
     finally:
         csharp_cli.RUNNER.reset(token)
+
+
+@pytest.mark.ci
+def test_the_tools_setup_step_hands_over_its_mode(csharp_calls: list[list[str]]):
+    from rig.devenv.cli import SETUP_STEPS
+    from rig.devenv.engine.context import StepContext, get_current_platform
+
+    step = next(step for step in SETUP_STEPS if step.name == "Development Tools")
+    step.func(StepContext(platform=get_current_platform(), mode="express", dry_run=True))
+    step.func(StepContext(platform=get_current_platform(), mode="full", use_silent_mode=False))
+
+    assert [call[call.index("--") + 1 :] for call in csharp_calls] == [
+        ["devenv", "tools", "--dry-run", "--mode", "express"],
+        ["devenv", "tools", "--mode", "full", "--interactive"],
+    ]
+
+
+@pytest.mark.ci
+def test_the_runtimes_setup_step_hands_over_to_rig_devenv_runtimes(csharp_calls: list[list[str]]):
+    from rig.devenv.cli import SETUP_STEPS
+    from rig.devenv.engine.context import StepContext, get_current_platform
+
+    step = next(step for step in SETUP_STEPS if step.name == "Runtimes")
+    step.func(StepContext(platform=get_current_platform(), mode="full"))
+
+    assert [call[call.index("--") + 1 :] for call in csharp_calls] == [["devenv", "runtimes"]]

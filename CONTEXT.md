@@ -53,13 +53,11 @@ All packages in `shared-utilities` adhere strictly to our foundational standards
 src/shared_utilities/
 ├── devenv/             # Development environment setup engine
 │   ├── engine/         # StepContext, StepRegistry, Runner
-│   ├── config/         # Pydantic models, JSON catalogs, catalog loader
-│   ├── providers/      # Homebrew and Winget package adapters
+│   ├── config/         # Pydantic models and the user config loader
 │   ├── steps/          # System setup steps & AI tools
 │   │   └── ai_tools/   # Claude Code, OpenCode; browser profiles and skills hand off to rig
 │   ├── doctor/         # Diagnostic health checks and status reporting
-│   ├── cli.py          # Unified Typer CLI entrypoint
-│   └── tool_manager.py # Tool installation orchestrator
+│   └── cli.py          # Unified Typer CLI entrypoint; tools, runtimes and update hand off to rig devenv
 ├── repo_governance/    # Organization-wide GitHub policy engine
 ├── image_drift/        # Deterministic SVG renderer and drift detection
 └── obsidian/           # Vault note processing and Google Keep staging
