@@ -171,7 +171,7 @@ public sealed class VaultLintOracleTests
               ],
               "duplicates": {}
             }
-            """,
+            """.ReplaceLineEndings("\n"),
             report.ToJson());
     }
 
