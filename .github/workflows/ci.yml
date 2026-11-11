@@ -388,6 +388,48 @@ jobs:
       - name: Test
         run: dotnet test --solution rig.slnx --no-build -c Release
 
+  # The nightly run is the only routine Windows check, so its result has to reach someone: a failure opens (or
+  # comments on) one tracking issue, and the next green night closes it. Not part of `ci`: it never runs on a PR.
+  windows-nightly-alarm:
+    name: windows-nightly-alarm
+    needs: [test-windows, dotnet-windows]
+    if: always() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TITLE: Windows nightly regression
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      SHA: ${{ github.sha }}
+      TEST_RESULT: ${{ needs.test-windows.result }}
+      DOTNET_RESULT: ${{ needs.dotnet-windows.result }}
+    steps:
+      - name: Open, update or close the tracking issue
+        run: |
+          # Search by title server-side before the limit applies; the exact match drops near-misses.
+          open="$(gh issue list --state open --search "\"$TITLE\" in:title" --limit 20 --json number,title \
+            --jq '.[] | select(.title == env.TITLE) | .number' | head -n 1)"
+          summary="test-windows: \`$TEST_RESULT\`, dotnet-windows: \`$DOTNET_RESULT\` at $SHA — $RUN_URL"
+          case "$TEST_RESULT $DOTNET_RESULT" in
+            *failure*|*cancelled*)
+              if [ -n "$open" ]; then
+                gh issue comment "$open" --body "Still failing. $summary"
+              else
+                gh issue create --title "$TITLE" --body "The nightly Windows run failed. $summary
+
+          Windows jobs only run nightly and on opted-in PRs (label \`ci:windows\`), so this is the alarm for everything merged since the last green night. This issue closes itself on the next green night."
+              fi
+              ;;
+            "success success")
+              if [ -n "$open" ]; then
+                gh issue close "$open" --comment "Green again. $summary"
+              fi
+              ;;
+          esac
+
   ci:
     name: ci
     if: always()
