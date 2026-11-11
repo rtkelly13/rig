@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from rig.image_drift.snapshots import SnapshotManager
+from image_drift.snapshots import SnapshotManager
 
 pytestmark = pytest.mark.ci
 

@@ -8,8 +8,8 @@ from collections.abc import Iterable, Sequence
 from shapely.errors import ShapelyError
 from shapely.geometry import LineString, MultiPolygon, Polygon
 
-from rig.image_drift.hex_geometry import Point
-from rig.image_drift.simplifier.ast_parser import (
+from image_drift.hex_geometry import Point
+from image_drift.simplifier.ast_parser import (
     PathCommand,
     SubPath,
     SVGPathTokenizer,

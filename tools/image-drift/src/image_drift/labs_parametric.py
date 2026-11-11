@@ -25,11 +25,11 @@ from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Literal
 
-from rig.image_drift.builder_contract import FeatureRegion
-from rig.image_drift.hex_geometry import Point, hexagon_vertices
-from rig.image_drift.labs_builder import FEATURE_REGIONS as _MASTER_FEATURE_REGIONS
-from rig.image_drift.variants import Variant, VariantRegistry, resolve_variant
-from rig.typed_json import decode
+from image_drift.builder_contract import FeatureRegion
+from image_drift.hex_geometry import Point, hexagon_vertices
+from image_drift.labs_builder import FEATURE_REGIONS as _MASTER_FEATURE_REGIONS
+from image_drift.typed_json import decode
+from image_drift.variants import Variant, VariantRegistry, resolve_variant
 
 Orientation = Literal["top", "left", "right", "inner"]
 

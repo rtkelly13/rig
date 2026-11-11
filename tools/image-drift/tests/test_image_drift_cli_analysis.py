@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import pytest
 from typer.testing import CliRunner
 
-from rig.image_drift import cli, cli_base
+from image_drift import cli, cli_base
 
 if TYPE_CHECKING:
     from pathlib import Path

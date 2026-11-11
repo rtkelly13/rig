@@ -19,7 +19,7 @@ const outputFor = (committed) => (checking ? path.join(scratch, committed) : pat
 // its tokens from @rtkelly-labs/design-system.
 const stylesheets = [
   ['web/app.src.css', 'src/rig/web_host/templates/app_assets/app.css'],
-  ['styles/gallery.src.css', 'src/rig/image_drift/templates/gallery.css'],
+  ['tools/image-drift/styles/gallery.src.css', 'tools/image-drift/src/image_drift/templates/gallery.css'],
   ['styles/c4.src.css', 'src/rig/c4_okf/static/c4.css'],
 ];
 

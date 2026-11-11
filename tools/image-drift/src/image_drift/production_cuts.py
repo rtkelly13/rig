@@ -17,8 +17,8 @@ from pathlib import Path
 from PIL import Image
 from pydantic import StrictStr
 
-from rig.image_drift.imaging import render_svg
-from rig.typed_json import decode
+from image_drift.imaging import render_svg
+from image_drift.typed_json import decode
 
 PRODUCTION_CUTS_CSV = "production-cuts.csv"
 FAVICON_VARIANT = "favicon"

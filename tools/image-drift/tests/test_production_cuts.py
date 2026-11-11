@@ -13,8 +13,8 @@ import pytest
 from PIL import Image
 from typer.testing import CliRunner
 
-from rig.image_drift import cli, cli_base
-from rig.image_drift.production_cuts import (
+from image_drift import cli, cli_base
+from image_drift.production_cuts import (
     PRODUCTION_CUTS_CSV,
     CutSpec,
     UnknownCutFormatError,
@@ -42,7 +42,7 @@ def _write_variant(path: Path, variant: str) -> None:
 def test_export_avatar_writes_exactly_the_declared_cuts(
     project: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("rig.image_drift.production_cuts.render_svg", _fake_render)
+    monkeypatch.setattr("image_drift.production_cuts.render_svg", _fake_render)
     cfg = cli_base.PROJECTS[project]
     declared = read_cut_specs(cfg.asset_dir / "production-cuts" / PRODUCTION_CUTS_CSV)
 
@@ -59,7 +59,7 @@ def test_export_avatar_writes_exactly_the_declared_cuts(
 @pytest.mark.parametrize("project", PROJECT_KEYS)
 def test_svg_cuts_match_the_committed_cuts(project: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The master and favicon vector cuts are copies, so a re-export reproduces the committed bytes."""
-    monkeypatch.setattr("rig.image_drift.production_cuts.render_svg", _fake_render)
+    monkeypatch.setattr("image_drift.production_cuts.render_svg", _fake_render)
     cuts_dir = cli_base.PROJECTS[project].asset_dir / "production-cuts"
 
     result = CliRunner().invoke(cli.app, ["export-avatar", "-p", project, "--output-dir", str(tmp_path)])

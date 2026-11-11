@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from rig.image_drift.simplifier.pipeline import (
+from image_drift.simplifier.pipeline import (
     count_svg_path_nodes,
     simplify_svg_document,
 )

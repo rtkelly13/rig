@@ -22,8 +22,8 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
-from rig.image_drift.builder_contract import FeatureRegion
-from rig.image_drift.variants import Variant, VariantRegistry, resolve_variant
+from image_drift.builder_contract import FeatureRegion
+from image_drift.variants import Variant, VariantRegistry, resolve_variant
 
 BUILDER_ASSETS = Path(__file__).parent / "builder_assets" / "rtkelly-labs"
 

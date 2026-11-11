@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from rig.image_drift import cli_base, diamond_parquet_builder
+from image_drift import cli_base, diamond_parquet_builder
 
 pytestmark = pytest.mark.ci
 

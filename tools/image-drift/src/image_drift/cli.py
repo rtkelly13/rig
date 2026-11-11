@@ -23,8 +23,8 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
-from rig.image_drift import cli_analysis, cli_explore, cli_gallery
-from rig.image_drift.cli_base import app, console
+from image_drift import cli_analysis, cli_explore, cli_gallery
+from image_drift.cli_base import app, console
 
 if TYPE_CHECKING:
     pass
@@ -79,7 +79,7 @@ def serve_command(
     """Serve Asset Studio's API for the rig web host's studio page (`/studio`)."""
     import webbrowser
 
-    from rig.image_drift.server import AssetStudioServer
+    from image_drift.server import AssetStudioServer
 
     server_url = f"http://{host}:{port}"
     console.print(
@@ -171,7 +171,7 @@ def snapshot_command(
     ] = Path("temp/variations"),
 ) -> None:
     """Capture an ephemeral vector pipeline snapshot into git-ignored temp/variations/."""
-    from rig.image_drift.snapshots import SnapshotManager
+    from image_drift.snapshots import SnapshotManager
 
     # Resolve svg source
     svg_content: str | None = None
@@ -294,11 +294,11 @@ def simplify_command(
     """Multi-pass SVG simplification: geometric decimation, Scour scrubbing,
     coordinate quantization, and visual drift gating.
     """
-    from rig.image_drift.simplifier.pipeline import (
+    from image_drift.simplifier.pipeline import (
         DriftGateNotMetError,
         optimize_svg_with_drift_gate,
     )
-    from rig.image_drift.snapshots import SnapshotManager
+    from image_drift.snapshots import SnapshotManager
 
     if in_place:
         target_output = svg_path

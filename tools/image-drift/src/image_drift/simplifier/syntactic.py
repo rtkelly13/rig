@@ -17,11 +17,11 @@ from xml.parsers.expat import ExpatError
 from defusedxml.ElementTree import fromstring as _safe_fromstring
 from scour import scour
 
-from rig.image_drift.simplifier.ast_parser import (
+from image_drift.simplifier.ast_parser import (
     parse_path_d,
     serialize_path_d,
 )
-from rig.image_drift.simplifier.svg_attrs import path_data, root_attrs
+from image_drift.simplifier.svg_attrs import path_data, root_attrs
 
 
 def calculate_viewbox_precision(width: float, height: float) -> int:

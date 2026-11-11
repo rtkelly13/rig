@@ -14,12 +14,12 @@ from typing import Any
 
 import pytest
 
-from rig.image_drift import (
+from image_drift import (
     cli_base,
     diamond_parquet_builder,
     labs_builder,
 )
-from rig.image_drift.variants import UnknownVariantError, Variant, resolve_variant
+from image_drift.variants import UnknownVariantError, Variant, resolve_variant
 
 pytestmark = pytest.mark.ci
 

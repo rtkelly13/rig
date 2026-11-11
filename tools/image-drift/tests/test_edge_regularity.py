@@ -12,15 +12,15 @@ import re
 
 import pytest
 
-from rig.image_drift import cli_base
-from rig.image_drift.edge_regularity import (
+from image_drift import cli_base
+from image_drift.edge_regularity import (
     ISOMETRIC_AXES,
     analyze_edges,
     has_curves,
     parse_subpaths,
     regularize_svg,
 )
-from rig.image_drift.hex_geometry import Point
+from image_drift.hex_geometry import Point
 
 pytestmark = pytest.mark.ci
 

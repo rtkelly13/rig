@@ -33,6 +33,9 @@ from hex_shapes import (
     socket_dome_path,
     touches_hexagon,
 )
+from image_drift.builder_contract import FRAME_LINE_WIDTH, NOTCH_RING_RATIO, variant_style
+from image_drift.hex_geometry import HEX_CENTER, Point, hexagon_vertices
+from image_drift.variants import UnknownVariantError
 from rhombille_builder import (
     DEFAULT_VARIANT,
     EMBLEMS,
@@ -51,10 +54,6 @@ from svg_builder import (
     FRAME_NODE_RADIUS,
     SOCKET_HALO_WIDTH,
 )
-
-from rig.image_drift.builder_contract import FRAME_LINE_WIDTH, NOTCH_RING_RATIO, variant_style
-from rig.image_drift.hex_geometry import HEX_CENTER, Point, hexagon_vertices
-from rig.image_drift.variants import UnknownVariantError
 
 pytestmark = pytest.mark.ci
 

@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING, Annotated
 import typer
 from rich.table import Table
 
-from rig.image_drift.builder_contract import FeatureRegion
-from rig.image_drift.cli_base import (
+from image_drift.builder_contract import FeatureRegion
+from image_drift.cli_base import (
     DEFAULT_PROJECT,
     PROJECT_NAME,
     SCRATCH_DIR,
@@ -23,14 +23,14 @@ from rig.image_drift.cli_base import (
     load_builder_module,
     resolve_project,
 )
-from rig.image_drift.imaging import (
+from image_drift.imaging import (
     chromium_available,
     render_svg,
 )
-from rig.image_drift.labs_builder import (
+from image_drift.labs_builder import (
     FEATURE_REGIONS as _DEFAULT_FEATURE_REGIONS,
 )
-from rig.image_drift.metrics import (
+from image_drift.metrics import (
     CandidateScore,
     DriftResult,
     compute_drift,
@@ -109,9 +109,9 @@ def explore(
     """
     from itertools import product
 
-    from rig.image_drift import labs_parametric
-    from rig.image_drift.promotion import evaluate_promotion
-    from rig.image_drift.snapshots import SnapshotManager
+    from image_drift import labs_parametric
+    from image_drift.promotion import evaluate_promotion
+    from image_drift.snapshots import SnapshotManager
 
     cfg = _labs_project(project)
     if not chromium_available():
@@ -235,7 +235,7 @@ def promote(
 
     Exit codes: 0 promoted, 2 the candidate does not (or no longer) win, 1 an error.
     """
-    from rig.image_drift.labs_builder import (
+    from image_drift.labs_builder import (
         BUILDER_ASSETS,
         DEFAULT_VARIANT,
         Promotion,
@@ -243,8 +243,8 @@ def promote(
         manifest,
         reload_builder_assets,
     )
-    from rig.image_drift.promotion import evaluate_promotion
-    from rig.image_drift.snapshots import SnapshotManager
+    from image_drift.promotion import evaluate_promotion
+    from image_drift.snapshots import SnapshotManager
 
     cfg = _labs_project(project)
     if not run_id:
@@ -362,7 +362,7 @@ def edges(
     That trade is a design decision, which is why --fix scores but never
     promotes.
     """
-    from rig.image_drift.edge_regularity import analyze_edges, regularize_svg
+    from image_drift.edge_regularity import analyze_edges, regularize_svg
 
     cfg = resolve_project(project)
     target = svg or cfg.svg_path
@@ -465,8 +465,8 @@ def pathways(
 
     Nothing is promoted. Use `promote` for that.
     """
-    from rig.image_drift.edge_regularity import analyze_edges
-    from rig.image_drift.pathways import PATHWAYS, PathwayContext
+    from image_drift.edge_regularity import analyze_edges
+    from image_drift.pathways import PATHWAYS, PathwayContext
 
     cfg = resolve_project(project)
     try:

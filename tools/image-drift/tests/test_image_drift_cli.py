@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from rig.image_drift import cli, cli_base, cli_gallery, metrics
-from rig.image_drift.builder_contract import FeatureRegion
-from rig.image_drift.variants import Variant
+from image_drift import cli, cli_base, cli_gallery, metrics
+from image_drift.builder_contract import FeatureRegion
+from image_drift.variants import Variant
 
 pytestmark = pytest.mark.ci
 
@@ -318,7 +318,7 @@ def test_favicon_refuses_an_unknown_variant_and_writes_nothing(tmp_path: Path) -
 
     module = tmp_path / "tiny_builder.py"
     _ = module.write_text(
-        "from rig.image_drift.variants import Variant\n"
+        "from image_drift.variants import Variant\n"
         "FEATURE_REGIONS = []\n"
         "VARIANTS = {'full': Variant(name='Full')}\n"
         "def build_svg_logo(output_path, variant='full'):\n"

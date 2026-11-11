@@ -12,8 +12,8 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from PIL.Image import Image as ImageType
 from rich.panel import Panel
 
-from rig.image_drift.builder_contract import variant_style
-from rig.image_drift.cli_base import (
+from image_drift.builder_contract import variant_style
+from image_drift.cli_base import (
     APPLE_TOUCH_SIZE,
     CHOICE_SIZES,
     DEFAULT_OUTPUT_DIR,
@@ -31,10 +31,10 @@ from rig.image_drift.cli_base import (
     load_builder_module,
     resolve_project,
 )
-from rig.image_drift.imaging import (
+from image_drift.imaging import (
     Panel as SheetPanel,
 )
-from rig.image_drift.imaging import (
+from image_drift.imaging import (
     comparison_sheet,
     contact_sheet,
     crop,
@@ -46,13 +46,13 @@ from rig.image_drift.imaging import (
     screenshot_page,
     thumbnail,
 )
-from rig.image_drift.metrics import (
+from image_drift.metrics import (
     FRAME_WEIGHT,
     TIE_THRESHOLD_PCT,
     compute_drift,
     score_candidate,
 )
-from rig.image_drift.variants import Variant
+from image_drift.variants import Variant
 
 if TYPE_CHECKING:
     pass

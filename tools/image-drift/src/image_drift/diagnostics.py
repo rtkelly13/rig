@@ -16,10 +16,10 @@ from pathlib import Path
 
 import numpy as np
 
-from rig.image_drift.geometry import FloatArray
-from rig.image_drift.imaging import NORMALISED_SIZE, load_normalised
-from rig.image_drift.metrics import compute_psnr, compute_ssim
-from rig.image_drift.numeric import axis_length, correlation_pct, gradient_magnitude, rms
+from image_drift.geometry import FloatArray
+from image_drift.imaging import NORMALISED_SIZE, load_normalised
+from image_drift.metrics import compute_psnr, compute_ssim
+from image_drift.numeric import axis_length, correlation_pct, gradient_magnitude, rms
 
 
 @dataclass(frozen=True)

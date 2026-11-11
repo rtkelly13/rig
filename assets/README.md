@@ -29,7 +29,7 @@ assets/<project>/
 ```
 
 The **authoritative** master is not here — it lives with the code, at
-`src/shared_utilities/image_drift/builder_assets/<project>/master.svg`, because `build` writes
+`tools/image-drift/src/image_drift/builder_assets/<project>/master.svg`, because `build` writes
 the file above and a builder cannot read its master from its own output. A test keeps the two
 byte-identical. See [`docs/brand-assets/README.md`](../docs/brand-assets/README.md).
 
@@ -62,18 +62,18 @@ All generation, verification, and export operations are driven via the `image-re
 
 ```bash
 # Export production cuts (routes to assets/<project>/production-cuts/)
-uv run image-reconcile export-avatar --project rtkelly-labs
-uv run image-reconcile export-avatar --project parquet-source-generator
+uv run --project tools/image-drift image-reconcile export-avatar --project rtkelly-labs
+uv run --project tools/image-drift image-reconcile export-avatar --project parquet-source-generator
 
 # Score every pathway, including a fresh VTracer trace, against the reference
-uv run image-reconcile pathways --project rtkelly-labs
+uv run --project tools/image-drift image-reconcile pathways --project rtkelly-labs
 
 # Pixel-by-pixel drift comparison against the primary baseline
-uv run image-reconcile compare --project rtkelly-labs --render
-uv run image-reconcile compare --project parquet-source-generator --render
+uv run --project tools/image-drift image-reconcile compare --project rtkelly-labs --render
+uv run --project tools/image-drift image-reconcile compare --project parquet-source-generator --render
 
 # Propose parametric alternatives; promotion is separate and gated
-uv run image-reconcile explore --project rtkelly-labs --sweep r_outer=150,158,166
+uv run --project tools/image-drift image-reconcile explore --project rtkelly-labs --sweep r_outer=150,158,166
 ```
 
 ## 5. Reference Material Convention (`assets/<project>/reference/`)

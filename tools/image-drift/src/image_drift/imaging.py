@@ -21,7 +21,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 from playwright.async_api import async_playwright
 
-from rig.image_drift.geometry import CropBox
+from image_drift.geometry import CropBox
 
 # The canvas every image is normalised to before cropping or scoring.
 NORMALISED_SIZE = 500

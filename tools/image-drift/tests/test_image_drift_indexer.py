@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from rig.image_drift.indexer import (
+from image_drift.indexer import (
     AssetIndexer,
     ProjectAssetCatalog,
     parse_snapshot_filename,

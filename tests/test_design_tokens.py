@@ -25,7 +25,8 @@ SCANNED = (
     "styles/*.css",
     "web/*.css",
     "web/*.tsx",
-    "src/rig/image_drift/templates/*.jinja",
+    "tools/image-drift/styles/*.css",
+    "tools/image-drift/src/image_drift/templates/*.jinja",
     "src/rig/web_host/templates/*.html",
     "src/rig/web_host/templates/studio.css",
     "src/rig/c4_okf/static/*.html",
@@ -78,7 +79,7 @@ def _scanned_files() -> list[Path]:
 
 def test_scope_covers_the_sources() -> None:
     names = {path.relative_to(REPO_ROOT).as_posix() for path in _scanned_files()}
-    assert {"styles/gallery.src.css", "styles/c4.css", "web/app.src.css", "web/App.tsx"} <= names
+    assert {"tools/image-drift/styles/gallery.src.css", "styles/c4.css", "web/app.src.css", "web/App.tsx"} <= names
 
 
 def test_stylesheets_and_templates_use_design_system_tokens() -> None:

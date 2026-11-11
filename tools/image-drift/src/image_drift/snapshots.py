@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pydantic import JsonValue
 
-from rig.image_drift.indexer import (
+from image_drift.indexer import (
     AssetIndexer,
     SnapshotStep,
     VariationRun,

@@ -2,7 +2,7 @@
 type: C4 Component
 title: Web control plane — components
 description: The handler, its route modules and the static pages it serves.
-resource: https://github.com/rtkelly13/rig/tree/main/src/rig/image_drift
+resource: https://github.com/rtkelly13/rig/tree/main/src/rig/web_host
 tags: [rig, web, c4]
 generated: { by: claude-code/opus-5-5, at: 2026-11-04 }
 ---
@@ -13,10 +13,10 @@ title Web control plane — components
 Person(ryan, "Ryan")
 Container(dm, "desktop-manager", "Python")
 ContainerDb(db, "rig.db", "SQLite", $link="../rig-db.md")
+Container_Ext(studioapi, "Asset Studio API", "image-reconcile serve, :8092", "tools/image-drift: indexes assets/ and temp/variations/")
 
 Container_Boundary(web, "Web control plane") {
   Component(server, "StudioServer", "ThreadingHTTPServer", "Routes /api/* and static files", $link="request-handler.md")
-  Component(indexer, "AssetIndexer", "Python", "Indexes assets/ and temp/variations/")
   Component(c4, "C4 viewer", "rig.c4_okf", "OKF bundle API and zoom UI")
   Component(studio, "studio.js", "Vanilla JS", "Estate operations and Asset Studio tabs")
   Component(c4ui, "c4.js", "Vanilla JS, Pele", "Renders diagrams, zooms on click")
@@ -26,7 +26,7 @@ Rel(ryan, studio, "Uses")
 Rel(ryan, c4ui, "Uses")
 Rel(studio, server, "Fetches", "JSON")
 Rel(c4ui, c4, "Fetches", "JSON")
-Rel(server, indexer, "Catalogues assets")
+Rel(studio, studioapi, "Fetches", "JSON, CORS")
 Rel(server, c4, "Delegates /c4 and /api/c4")
 Rel(server, db, "Reads and backs up job runs")
 Rel(dm, server, "Starts")

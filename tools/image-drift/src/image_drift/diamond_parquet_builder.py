@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from rig.image_drift.builder_contract import FeatureRegion
-from rig.image_drift.variants import Variant, VariantRegistry, resolve_variant
+from image_drift.builder_contract import FeatureRegion
+from image_drift.variants import Variant, VariantRegistry, resolve_variant
 
 FEATURE_REGIONS: list[FeatureRegion] = [
     FeatureRegion(key="diamond_tile", label="Diamond Tile", x0=65, y0=65, x1=445, y1=445),

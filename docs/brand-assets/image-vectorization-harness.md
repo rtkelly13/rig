@@ -3,7 +3,7 @@
 > **Thresholds and asset layout are governed by [`brand-assets.md`](./README.md).**
 > Where this document disagrees with it, that one is correct.
 
-Deterministic raster-to-vector extraction and visual regression testing tooling in `shared_utilities.image_drift`.
+Deterministic raster-to-vector extraction and visual regression testing tooling in `image_drift`.
 
 ## 1. Algorithmic Approaches for Raster-to-SVG
 
@@ -18,7 +18,7 @@ Vectorizing raster images (PNG/JPG) requires extracting boundaries, edge contour
 
 ## 2. Drift Measurement & Metrics
 
-The `shared_utilities.image_drift` package evaluates visual fidelity across three complementary dimensions:
+The `image_drift` package evaluates visual fidelity across three complementary dimensions:
 
 - **RMSE (Root Mean Square Error)**: Quantifies global pixel-level color difference as a percentage.
 - **SSIM (Structural Similarity Index)**: Measures structural, luminance, and contrast consistency across spatial blocks rather than raw absolute pixel deltas. Target: **> 98.0%**.
@@ -31,7 +31,7 @@ The `image-reconcile` CLI provides automated vectorization and comparative verif
 
 ### Vectorize Raster to SVG
 ```bash
-uv run image-reconcile vectorize \
+uv run --project tools/image-drift image-reconcile vectorize \
   --image assets/logo.png \
   --output assets/logo.svg \
   --mode spline \
@@ -46,7 +46,7 @@ uv run image-reconcile vectorize \
 
 ### Compare Pre-rendered Images or SVGs
 ```bash
-uv run image-reconcile compare \
+uv run --project tools/image-drift image-reconcile compare \
   --reference assets/logo.png \
   --svg assets/logo.svg \
   --output-sheet temp/comparison-sheet.png
@@ -54,7 +54,7 @@ uv run image-reconcile compare \
 
 ### VTracer as a competing pathway
 ```bash
-uv run image-reconcile pathways -p rtkelly-labs --only traced,autotraced --out-dir temp/pathways
+uv run --project tools/image-drift image-reconcile pathways -p rtkelly-labs --only traced,autotraced --out-dir temp/pathways
 ```
 
 The `autotraced` pathway traces the project's reference afresh with VTracer and scores the
@@ -65,7 +65,7 @@ count, defects), so a raw trace competes with the governed master instead of gra
 ### Export Production Cuts
 Writes every cut declared in `assets/<project>/production-cuts/production-cuts.csv`:
 ```bash
-uv run image-reconcile export-avatar -p rtkelly-labs [--output-dir assets/rtkelly-labs/production-cuts/]
+uv run --project tools/image-drift image-reconcile export-avatar -p rtkelly-labs [--output-dir assets/rtkelly-labs/production-cuts/]
 ```
 
 ## 4. Brand Asset Organization (`assets/`)

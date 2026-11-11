@@ -12,9 +12,9 @@ from typing import Any
 
 import pytest
 
-from rig.image_drift.metrics import DriftResult
-from rig.image_drift.simplifier import pipeline
-from rig.image_drift.simplifier.pipeline import (
+from image_drift.metrics import DriftResult
+from image_drift.simplifier import pipeline
+from image_drift.simplifier.pipeline import (
     DriftGateNotMetError,
     optimize_svg_with_drift_gate,
 )

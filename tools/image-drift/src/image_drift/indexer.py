@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pydantic import JsonValue, StrictInt, StrictStr
 
-from rig.typed_json import Lenient, decode, decode_json
+from image_drift.typed_json import Lenient, decode, decode_json
 
 # Regex pattern matching standardized snapshot file naming:
 # {project}__{run_id}__{step_idx:02d}_{step_name}__{timestamp}.{ext}

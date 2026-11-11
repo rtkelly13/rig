@@ -14,22 +14,23 @@ import typer
 from pydantic import ValidationError
 from rich.console import Console
 
-from rig.image_drift.builder_contract import FeatureRegion
-from rig.image_drift.geometry import CropBox
-from rig.image_drift.labs_builder import (
+from image_drift.builder_contract import FeatureRegion
+from image_drift.geometry import CropBox
+from image_drift.labs_builder import (
     DEFAULT_VARIANT as _DEFAULT_VARIANT_KEY,
 )
-from rig.image_drift.labs_builder import (
+from image_drift.labs_builder import (
     FEATURE_REGIONS as _DEFAULT_FEATURE_REGIONS,
 )
-from rig.image_drift.labs_builder import (
+from image_drift.labs_builder import (
     VARIANTS as _DEFAULT_VARIANTS,
 )
-from rig.image_drift.labs_builder import (
+from image_drift.labs_builder import (
     build_svg_logo as _default_build_svg_logo,
 )
-from rig.image_drift.variants import Variant, VariantRegistry
-from rig.typed_json import decode, decode_json
+from image_drift.repo import REPO_ROOT
+from image_drift.typed_json import decode, decode_json
+from image_drift.variants import Variant, VariantRegistry
 
 if TYPE_CHECKING:
     pass
@@ -40,14 +41,6 @@ console = Console()
 _THIS_MODULE = Path(__file__).resolve()
 
 
-def _repo_root() -> Path:
-    for candidate in _THIS_MODULE.parents:
-        if (candidate / "pyproject.toml").exists():
-            return candidate
-    return Path.cwd()
-
-
-REPO_ROOT = _repo_root()
 ASSETS_DIR = REPO_ROOT / "assets"
 
 
@@ -144,21 +137,9 @@ DEFAULT_REFERENCE = _LABS_PROJECT.reference_path
 DEFAULT_LOGO = _LABS_PROJECT.svg_path
 
 
-def _scratch_root() -> Path:
-    """This repo's gitignored `temp/` directory, for regenerable output.
-
-    Preview output must not land in the target project: `preview.html` inlines
-    every image as a data URI and runs to megabytes, so it would be re-committed
-    on every run. Falls back to the working directory when the package is
-    installed rather than run from a checkout.
-    """
-    for candidate in _THIS_MODULE.parents:
-        if (candidate / "pyproject.toml").exists():
-            return candidate / "temp"
-    return Path.cwd() / "temp"
-
-
-SCRATCH_DIR = _scratch_root()
+# Regenerable output goes to the repository's gitignored temp/, never the target project:
+# preview.html inlines every image as a data URI and runs to megabytes.
+SCRATCH_DIR = REPO_ROOT / "temp"
 DEFAULT_OUTPUT_DIR = SCRATCH_DIR / "logo-preview"
 TEMPLATE_DIR = _THIS_MODULE.parent / "templates"
 

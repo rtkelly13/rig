@@ -13,18 +13,12 @@ dependencies = [
     "httpx>=0.28.0",
     "python-frontmatter>=1.0.0",
     "jinja2>=3.1.6",
-    "numpy>=2.5.1",
-    "pillow>=12.3.0",
     "playwright>=1.62.0",
     "pydantic>=2.12.5",
     "pyvda>=0.5.0; sys_platform == 'win32'",
     "rich>=14.2.0",
-    "svgwrite>=1.4.3",
     "typer>=0.21.1",
     "pyyaml>=6.0.2",
-    "scour>=0.38.2",
-    "shapely>=2.0.0",
-    "vtracer>=0.6.15",
     "defusedxml>=0.7.1",
     "duckdb>=1.5.5",
     "comtypes>=1.4.16; sys_platform == 'win32'",
@@ -43,7 +37,6 @@ otel-stack = "rig.csharp_cli:entry"
 help = "desktop_manager.cli:help_main"
 status = "rig.csharp_cli:entry"
 agent = "rig.csharp_cli:entry"
-image-reconcile = "rig.image_drift.cli:main"
 vault = "rig.csharp_cli:entry"
 md-lint = "rig.csharp_cli:entry"
 repo-governance = "rig.repo_governance.align_repo_conventions:main"
@@ -171,7 +164,6 @@ modules = [
     "rig.estate",
     "rig.workspace",
     "rig.repo_governance",
-    "rig.image_drift",
 ]
 ignore_imports = [
     "rig.repo_governance.cli_audits -> rig.workspace.engine",  # G2
@@ -238,7 +230,6 @@ ignore = [
 "src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
 "src/desktop_manager/service_installer.py" = ["TID251"]
 "src/rig/estate/trim.py" = ["TID251"]
-"src/rig/image_drift/simplifier/syntactic.py" = ["TID251"]
 "src/rig/repo_governance/vercel_gating.py" = ["TID251"]
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
@@ -379,7 +370,6 @@ source_paths = [
     "src/desktop_manager/placement.py",
     "src/rig/repo_governance/gitignore_manager.py",
     "src/rig/typed_json.py",
-    "src/rig/image_drift/simplifier/syntactic.py",
     "src/rig/workspace/layout.py",
 ]
 also_copy = ["tests/", "desktop-manager/", "src/", "typings/", "config/", "data/", "assets/"]
@@ -392,7 +382,6 @@ pytest_add_cli_args_test_selection = [
     "tests/test_gitignore_manager_mutants.py",
     "tests/test_workspace_layout.py",
     "tests/test_typed_json.py",
-    "tests/test_svg_syntactic_minifier.py",
 ]
 
 [tool.repo-health.ratchet]
@@ -475,23 +464,17 @@ patching-allow = [
     "tests/test_console_ui.py",
     "tests/test_entrypoints_portable.py",
     "tests/test_github_prs.py",
-    "tests/test_image_drift_explore_promote.py",
-    "tests/test_image_drift_metrics.py",
     "tests/test_org_governance.py",
     "tests/test_otel_clickhouse.py",
-    "tests/test_pathways.py",
     "tests/test_platforms.py",
     "tests/test_policy_template_engine.py",
     "tests/test_proc.py",
-    "tests/test_production_cuts.py",
     "tests/test_repo_owner_governance.py",
     "tests/test_review_threads.py",
     "tests/test_rig_flags.py",
     "tests/test_rig_shim.py",
     "tests/test_ruleset_thread_resolution.py",
     "tests/test_scopes.py",
-    "tests/test_svg_simplifier_gate.py",
-    "tests/test_svg_syntactic_minifier.py",
     "tests/test_triage_agents.py",
     "tests/test_triage_queue.py",
     "tests/test_vercel_cli_auth.py",

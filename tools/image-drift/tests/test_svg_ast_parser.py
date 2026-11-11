@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from rig.image_drift.simplifier.ast_parser import (
+from image_drift.simplifier.ast_parser import (
     PathCommand,
     SVGPathTokenizer,
     parse_path_d,

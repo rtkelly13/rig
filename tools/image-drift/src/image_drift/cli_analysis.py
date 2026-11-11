@@ -9,7 +9,7 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
-from rig.image_drift.cli_base import (
+from image_drift.cli_base import (
     DEFAULT_PROJECT,
     app,
     console,
@@ -17,20 +17,20 @@ from rig.image_drift.cli_base import (
     load_builder_module,
     resolve_project,
 )
-from rig.image_drift.imaging import (
+from image_drift.imaging import (
     comparison_sheet,
     crop,
     load_normalised,
     render_svg,
 )
-from rig.image_drift.metrics import (
+from image_drift.metrics import (
     compute_drift,
 )
 
 # FeatureRegion is the shared contract type — always imported from svg_builder.
 
 if TYPE_CHECKING:
-    from rig.image_drift.diagnostics import DecomposedDriftReport
+    from image_drift.diagnostics import DecomposedDriftReport
 
 
 @app.command()
@@ -323,7 +323,7 @@ def compare(
             console.print(feature_table)
 
         if decompose:
-            from rig.image_drift.diagnostics import analyze_decomposed_drift
+            from image_drift.diagnostics import analyze_decomposed_drift
 
             diag_report = analyze_decomposed_drift(ref_path, rendered_png)
             _render_diagnostics_report(diag_report)
@@ -375,7 +375,7 @@ def diagnose(
     ] = 1000,
 ) -> None:
     """Decompose visual drift into structural/geometric vs chromatic/color channels with actionable guidance."""
-    from rig.image_drift.diagnostics import analyze_decomposed_drift
+    from image_drift.diagnostics import analyze_decomposed_drift
 
     cfg = resolve_project(project)
     ref_path = reference or cfg.reference_path
@@ -434,7 +434,7 @@ def export_avatar(
 
     Writes to assets/<project>/production-cuts/ (or --output-dir if specified).
     """
-    from rig.image_drift.production_cuts import PRODUCTION_CUTS_CSV, export_production_cuts, read_cut_specs
+    from image_drift.production_cuts import PRODUCTION_CUTS_CSV, export_production_cuts, read_cut_specs
 
     cfg = resolve_project(project)
     cuts = read_cut_specs(cfg.asset_dir / "production-cuts" / PRODUCTION_CUTS_CSV)

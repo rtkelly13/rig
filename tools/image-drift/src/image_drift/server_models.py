@@ -7,7 +7,7 @@ from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr
 
-from rig.typed_json import JsonValue
+from image_drift.typed_json import JsonValue
 
 
 @dataclass(frozen=True, slots=True)

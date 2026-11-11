@@ -66,16 +66,16 @@ measured against a committed reference baseline, so a visual change cannot land 
 
 ```bash
 # Regenerate a brand mark from its builder
-uv run image-reconcile build -p rtkelly-labs
+uv run --project tools/image-drift image-reconcile build -p rtkelly-labs
 
 # Score it against the primary baseline
-uv run image-reconcile compare -p rtkelly-labs --render
+uv run --project tools/image-drift image-reconcile compare -p rtkelly-labs --render
 
 # Export every declared production cut
-uv run image-reconcile export-avatar -p rtkelly-labs
+uv run --project tools/image-drift image-reconcile export-avatar -p rtkelly-labs
 
 # Browse assets, variations, and diffs in the Asset Studio workbench
-uv run image-reconcile serve
+uv run --project tools/image-drift image-reconcile serve
 ```
 
 See [`docs/brand-assets/README.md`](docs/brand-assets/README.md) for the governing model, thresholds, and the

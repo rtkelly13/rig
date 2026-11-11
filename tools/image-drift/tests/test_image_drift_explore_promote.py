@@ -13,9 +13,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from rig.image_drift import cli, cli_base, cli_explore, labs_builder
-from rig.image_drift.builder_contract import FeatureRegion
-from rig.image_drift.metrics import CandidateScore, DriftResult
+from image_drift import cli, cli_base, cli_explore, labs_builder
+from image_drift.builder_contract import FeatureRegion
+from image_drift.metrics import CandidateScore, DriftResult
 
 pytestmark = pytest.mark.ci
 

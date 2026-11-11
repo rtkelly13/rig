@@ -1,0 +1,187 @@
+[project]
+name = "image-drift"
+version = "0.1.0"
+description = "Brand-asset drift reconciler: traced SVG masters, reference comparison, production cuts and Asset Studio's API"
+readme = "README.md"
+authors = [
+    { name = "Ryan Kelly", email = "94ryan.kelly@gmail.com" }
+]
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "defusedxml>=0.7.1",
+    "jinja2>=3.1.6",
+    "numpy>=2.5.1",
+    "pillow>=12.3.0",
+    "playwright>=1.62.0",
+    "pydantic>=2.12.5",
+    "rich>=14.2.0",
+    "scour>=0.38.2",
+    "shapely>=2.0.0",
+    "typer>=0.21.1",
+    "vtracer>=0.6.15",
+]
+
+[project.scripts]
+image-reconcile = "image_drift.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Templates, builder assets and the icon ship inside the package directory.
+[tool.hatch.build.targets.wheel]
+packages = ["src/image_drift"]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'win32'",
+    "sys_platform == 'linux'",
+]
+# Held to the root lock's versions, so this project and the rest of the repository are linted
+# and type-checked by the same tools. Bump them together.
+constraint-dependencies = ["ruff==0.15.9", "ty==0.0.84", "basedpyright==1.40.2"]
+
+[tool.uv.sources]
+type-ratchet = { path = "../../packages/type-ratchet", editable = true }
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.40.2",
+    "bandit>=1.8.3",
+    "coverage>=7.6.12",
+    "pytest>=9.0.2",
+    "pytest-cov>=6.0.0",
+    "pytest-timeout>=2.3",
+    "pytest-xdist>=3.0.0",
+    "ruff>=0.9.9",
+    "ty>=0.0.84",
+    "type-ratchet",
+    "types-defusedxml>=0.7.0.20260504",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+# Per-test cap (pytest-timeout): a hang fails one test with a stack trace instead of eating the job.
+timeout = 300
+markers = [
+    "ci: no external dependencies — safe to run in CI",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "N", "UP", "PL", "C90", "T20", "SIM", "ARG", "PTH", "ERA", "TID251", "BLE001", "DTZ", "S602", "PGH004"]
+ignore = [
+    "PLR0913", # Too many arguments
+    "PLR0915", # Too many statements
+    "PLR2004", # Magic value comparison
+    "B008",    # Typer Option/Argument calls in defaults — standard Typer CLI pattern
+    "PLC0415", # Lazy imports inside CLI commands — intentional for fast startup
+    "C901",    # Complex functions — existing logic, refactor separately
+    "PLR0912", # Too many branches — existing logic, refactor separately
+    "PLR0911", # Too many return statements — existing logic, refactor separately
+    "PLW1510", # subprocess.run without check= — many are fire-and-forget
+    "ARG001",  # Unused function argument — interface-compliance signatures
+    "PLW2901", # Loop variable overwritten — intentional line.strip() patterns
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["image_drift"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test doubles use interface-compliant signatures and lambda stubs whose arguments are unused.
+"tests/**" = ["ARG002", "ARG005", "PLW0108", "BLE001", "DTZ"]
+"typings/**" = ["N801", "N802", "N803", "N815", "N816", "F403"]
+
+# image_drift renders through Playwright and never spawns a process itself.
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"subprocess.Popen".msg = "image_drift does not spawn processes; render through image_drift.imaging"
+"subprocess.call".msg = "image_drift does not spawn processes; render through image_drift.imaging"
+"subprocess.check_call".msg = "image_drift does not spawn processes; render through image_drift.imaging"
+"subprocess.check_output".msg = "image_drift does not spawn processes; render through image_drift.imaging"
+"subprocess.run".msg = "image_drift does not spawn processes; render through image_drift.imaging"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.basedpyright]
+include = ["src"]
+typeCheckingMode = "strict"
+reportExplicitAny = "error"
+reportAny = "error"
+reportIgnoreCommentWithoutRule = "error"
+reportImplicitOverride = "error"
+reportUnannotatedClassAttribute = "error"
+reportImportCycles = "error"
+reportUninitializedInstanceVariable = "error"
+reportUnusedParameter = "error"
+reportPrivateLocalImportUsage = "error"
+pythonVersion = "3.13"
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportMissingModuleSource = false
+executionEnvironments = [
+    { root = "src", extraPaths = ["src"] },
+]
+
+[tool.ty.environment]
+python-version = "3.13"
+python-platform = "all"
+
+[tool.ty.terminal]
+error-on-warning = true
+output-format = "concise"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/__init__.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+# image_drift's own floor, measured when it left the root project (78.68% combined line and
+# branch on main at 2026-11-11). Raise it as coverage rises; never lower it.
+fail_under = 78
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+# Mutation testing: `uv run --with mutmut mutmut run` from this directory.
+[tool.mutmut]
+source_paths = ["src/image_drift/simplifier/syntactic.py"]
+also_copy = ["tests/", "src/"]
+pytest_add_cli_args = ["-p", "no:xdist", "-p", "no:cacheprovider", "-q"]
+pytest_add_cli_args_test_selection = ["tests/test_svg_syntactic_minifier.py"]
+
+[tool.repo-health.ratchet]
+paths = ["src"]
+hint = "Remove them. See docs/python-types.md at the repository root for the replacements."
+disable = ["fake-location", "patching"]
+# Test files that patch modules. Lists only shrink: replace a patch with a fake passed through a seam.
+patching-allow = [
+    "tests/test_image_drift_explore_promote.py",
+    "tests/test_image_drift_metrics.py",
+    "tests/test_pathways.py",
+    "tests/test_production_cuts.py",
+    "tests/test_svg_simplifier_gate.py",
+    "tests/test_svg_syntactic_minifier.py",
+]
+pyright-pragma-allow = []
+boundary-modules = ["src/image_drift/typed_json.py"]
+str-key-receivers = ["self.headers", "handler.headers"]
+loose-dict-aliases = ["JsonObject"]
+
+[[tool.repo-health.ratchet.rule-sets]]
+files = ["tests/*"]
+rules = ["fake-location", "patching"]

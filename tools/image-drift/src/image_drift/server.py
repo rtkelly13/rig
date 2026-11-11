@@ -14,13 +14,13 @@ from typing import ClassVar, override
 
 from pydantic import JsonValue, ValidationError
 
-from rig.image_drift.diagnostics import analyze_decomposed_drift
-from rig.image_drift.indexer import (
+from image_drift.diagnostics import analyze_decomposed_drift
+from image_drift.indexer import (
     AssetIndexer,
     ProjectAssetCatalog,
 )
-from rig.image_drift.metrics import compute_drift
-from rig.image_drift.server_models import (
+from image_drift.metrics import compute_drift
+from image_drift.server_models import (
     CatalogResponse,
     DecomposedResponse,
     DiffQuery,
@@ -33,8 +33,8 @@ from rig.image_drift.server_models import (
     SnapshotStepResponse,
     VariationRunResponse,
 )
-from rig.image_drift.snapshots import SnapshotManager
-from rig.typed_json import decode, decode_json
+from image_drift.snapshots import SnapshotManager
+from image_drift.typed_json import decode, decode_json
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 # pnpm workspace for the Node parts of this otherwise Python-first repo.
 #
 # The root package (`shared-utilities-styles`, the Tailwind build for the
-# image-drift gallery) is an implicit member and is deliberately not listed —
+# image-drift gallery in tools/image-drift/styles) is an implicit member and is deliberately not listed —
 # pnpm always includes the root.
 packages:
   - 'infra/vercel'

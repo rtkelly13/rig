@@ -8,5 +8,5 @@ src/Rig.Core/Governance/Templates/** text eol=lf
 src/rig/web_host/templates/app_assets/*.js -text linguist-generated=true
 src/rig/web_host/templates/app_assets/*.css -text linguist-generated=true
 # Compiled Tailwind stylesheets, built from styles/*.src.css by `pnpm css:build`.
-src/rig/image_drift/templates/gallery.css -text linguist-generated=true
+tools/image-drift/src/image_drift/templates/gallery.css -text linguist-generated=true
 src/rig/c4_okf/static/c4.css -text linguist-generated=true

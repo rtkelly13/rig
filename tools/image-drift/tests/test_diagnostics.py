@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from rig.image_drift.diagnostics import (
+from image_drift.diagnostics import (
     analyze_decomposed_drift,
     compute_boundary_bias,
     generate_reasoning_guidance,

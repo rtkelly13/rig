@@ -14,9 +14,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from rig.image_drift.geometry import CropBox, FloatArray
-from rig.image_drift.imaging import NORMALISED_SIZE, load_normalised
-from rig.image_drift.numeric import axis_length, rms
+from image_drift.geometry import CropBox, FloatArray
+from image_drift.imaging import NORMALISED_SIZE, load_normalised
+from image_drift.numeric import axis_length, rms
 
 # How much of the composite comes from the full frame versus the mean of the
 # feature regions. Full-frame RMSE alone is dominated by the large flat areas,

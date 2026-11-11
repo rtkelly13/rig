@@ -13,11 +13,11 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from rig.image_drift import cli, cli_base, cli_explore, labs_parametric
-from rig.image_drift.builder_contract import FeatureRegion
-from rig.image_drift.edge_regularity import DEFAULT_AXES, analyze_edges
-from rig.image_drift.metrics import CandidateScore, DriftResult
-from rig.image_drift.pathways import (
+from image_drift import cli, cli_base, cli_explore, labs_parametric
+from image_drift.builder_contract import FeatureRegion
+from image_drift.edge_regularity import DEFAULT_AXES, analyze_edges
+from image_drift.metrics import CandidateScore, DriftResult
+from image_drift.pathways import (
     FIT_FIELDS,
     PATHWAYS,
     PathwayContext,

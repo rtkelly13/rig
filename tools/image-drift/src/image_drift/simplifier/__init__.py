@@ -1,24 +1,24 @@
 """SVG Simplification & Vector Reverse-Engineering Package."""
 
-from rig.image_drift.simplifier.ast_parser import (
+from image_drift.simplifier.ast_parser import (
     PathCommand,
     SubPath,
     SVGPathTokenizer,
     parse_path_d,
     serialize_path_d,
 )
-from rig.image_drift.simplifier.geometric import simplify_path_geometry
-from rig.image_drift.simplifier.pipeline import (
+from image_drift.simplifier.geometric import simplify_path_geometry
+from image_drift.simplifier.pipeline import (
     DriftGateNotMetError,
     count_svg_path_nodes,
     optimize_svg_with_drift_gate,
     simplify_svg_document,
 )
-from rig.image_drift.simplifier.report import (
+from image_drift.simplifier.report import (
     OptimizationReport,
     SimplificationPassReport,
 )
-from rig.image_drift.simplifier.syntactic import (
+from image_drift.simplifier.syntactic import (
     quantize_svg_coordinates,
     run_scour_pass,
     syntactic_minify_svg,

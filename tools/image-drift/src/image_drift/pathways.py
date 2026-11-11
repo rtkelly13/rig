@@ -29,9 +29,9 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from rig.image_drift import labs_parametric
-from rig.image_drift.edge_regularity import DEFAULT_AXES, regularize_svg
-from rig.image_drift.labs_parametric import IsoLoopParams
+from image_drift import labs_parametric
+from image_drift.edge_regularity import DEFAULT_AXES, regularize_svg
+from image_drift.labs_parametric import IsoLoopParams
 
 
 @dataclass(frozen=True)

@@ -6,9 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from rig.image_drift import diamond_parquet_builder
-from rig.image_drift.imaging import chromium_available, render_svg
-from rig.image_drift.metrics import compute_drift
+from image_drift import diamond_parquet_builder
+from image_drift.imaging import chromium_available, render_svg
+from image_drift.metrics import compute_drift
+from image_drift.repo import REPO_ROOT
 
 pytestmark = pytest.mark.ci
 
@@ -53,7 +54,7 @@ def test_build_svg_logo_produces_pure_vector(tmp_path: Path) -> None:
 @pytest.mark.skipif(not chromium_available(), reason="Chromium not installed for rendering")
 def test_drift_metrics_against_reference(tmp_path: Path) -> None:
     """Rendered diamond SVG must achieve high fidelity against the baseline raster."""
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = REPO_ROOT
     svg_path = repo_root / "assets" / "parquet-source-generator" / "parquet-diamond.svg"
     ref_path = repo_root / "assets" / "parquet-source-generator" / "reference" / "02-simplified-cad-baseline.jpg"
     if not ref_path.exists():

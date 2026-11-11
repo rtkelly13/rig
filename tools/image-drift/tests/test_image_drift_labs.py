@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from rig.image_drift import cli_base, labs_builder
-from rig.image_drift.imaging import chromium_available, render_svg
-from rig.image_drift.metrics import compute_drift
-from rig.image_drift.variants import UnknownVariantError
+from image_drift import cli_base, labs_builder
+from image_drift.imaging import chromium_available, render_svg
+from image_drift.metrics import compute_drift
+from image_drift.variants import UnknownVariantError
 
 pytestmark = pytest.mark.ci
 

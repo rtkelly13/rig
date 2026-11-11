@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rig.image_drift.geometry import CropBox
-from rig.image_drift.variants import Variant
+from image_drift.geometry import CropBox
+from image_drift.variants import Variant
 
 # Ring radius as a multiple of the dot radius it encircles.
 NOTCH_RING_RATIO = 2.0

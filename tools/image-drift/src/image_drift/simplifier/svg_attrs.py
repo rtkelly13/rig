@@ -8,7 +8,7 @@ from xml.etree import ElementTree
 
 from pydantic import Field
 
-from rig.typed_json import decode
+from image_drift.typed_json import decode
 
 
 @dataclass(frozen=True, slots=True)

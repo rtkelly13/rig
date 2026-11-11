@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from rig.image_drift.server import AssetStudioServer
+from image_drift.server import AssetStudioServer
 
 pytestmark = pytest.mark.ci
 

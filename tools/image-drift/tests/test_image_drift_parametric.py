@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from rig.image_drift import cli_base, hex_geometry, labs_builder, labs_parametric
-from rig.image_drift.hex_geometry import Point
-from rig.image_drift.variants import UnknownVariantError
+from image_drift import cli_base, hex_geometry, labs_builder, labs_parametric
+from image_drift.hex_geometry import Point
+from image_drift.variants import UnknownVariantError
 
 pytestmark = pytest.mark.ci
 

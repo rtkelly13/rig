@@ -1,6 +1,6 @@
 """Image drift reconciliation package."""
 
-from rig.image_drift.diagnostics import (
+from image_drift.diagnostics import (
     DecomposedDriftReport,
     HotspotRegion,
     analyze_decomposed_drift,

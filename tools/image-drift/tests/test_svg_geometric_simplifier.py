@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from rig.image_drift.simplifier.geometric import (
+from image_drift.simplifier.geometric import (
     simplify_path_geometry,
 )
 

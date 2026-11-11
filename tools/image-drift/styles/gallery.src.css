@@ -1,12 +1,12 @@
 /* Tailwind source for the image-drift preview gallery.
  *
- * `pnpm css:build` compiles it to src/rig/image_drift/templates/gallery.css.
+ * `pnpm css:build` compiles it to src/image_drift/templates/gallery.css.
  * That output is committed, because the Python CLI inlines it into a
  * self-contained preview.html and must work without Node installed.
  *
  * Every colour, type size, radius and shadow comes from
  * @rtkelly-labs/design-system: no hand-written values here or in the templates
- * (tests/test_design_tokens.py enforces it). A missing token is fixed upstream
+ * (the root tests/test_design_tokens.py enforces it). A missing token is fixed upstream
  * in rtkelly-labs/design-system, not patched in here.
  */
 
@@ -17,12 +17,12 @@
  * `pnpm css:check`, means an unrelated file elsewhere in the repo turns CI red. */
 @import "tailwindcss" source(none);
 @import "@rtkelly-labs/design-system/theme.css";
-@source "../node_modules/@rtkelly-labs/design-system/dist/**/*.js";
+@source "../../../node_modules/@rtkelly-labs/design-system/dist/**/*.js";
 
 /* Automatic content detection skips files it cannot classify, so point it at
  * the Jinja templates explicitly. Without this the utility classes used in the
  * markup are never emitted. */
-@source "../src/rig/image_drift/templates/**/*.jinja";
+@source "../src/image_drift/templates/**/*.jinja";
 
 /* `_badge_class()` picks `badge-good`/`badge-warn`/`badge-bad` at runtime and
  * passes the result to the template as `badge_class`, so those names appear

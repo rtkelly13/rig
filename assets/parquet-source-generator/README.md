@@ -44,10 +44,10 @@ files there are rogue and are failed by `tests/test_brand_asset_governance.py`.
 
 ```bash
 # Export every declared production cut into production-cuts/
-uv run image-reconcile export-avatar --project parquet-source-generator
+uv run --project tools/image-drift image-reconcile export-avatar --project parquet-source-generator
 
 # Score the master against the primary baseline
-uv run image-reconcile compare --project parquet-source-generator --render
+uv run --project tools/image-drift image-reconcile compare --project parquet-source-generator --render
 ```
 
 See [`docs/brand-assets/README.md`](../../docs/brand-assets/README.md) for the governing model.

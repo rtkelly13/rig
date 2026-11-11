@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from rig.image_drift.simplifier.syntactic import (
+from image_drift.simplifier.syntactic import (
     calculate_viewbox_precision,
     run_scour_pass,
     syntactic_minify_svg,

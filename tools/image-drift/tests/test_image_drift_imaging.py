@@ -11,8 +11,8 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from rig.image_drift.geometry import CropBox
-from rig.image_drift.imaging import (
+from image_drift.geometry import CropBox
+from image_drift.imaging import (
     NORMALISED_SIZE,
     Panel,
     comparison_sheet,

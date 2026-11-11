@@ -21,8 +21,8 @@ committed because the Python CLI and server must work without Node:
 
 | Entry | Output |
 |---|---|
-| `web/app.src.css` | `src/rig/image_drift/templates/app_assets/app.css` (with the SPA bundle) |
-| `styles/gallery.src.css` | `src/rig/image_drift/templates/gallery.css`, inlined into preview pages |
+| `web/app.src.css` | `src/rig/web_host/templates/app_assets/app.css` (with the SPA bundle) |
+| `tools/image-drift/styles/gallery.src.css` | `tools/image-drift/src/image_drift/templates/gallery.css`, inlined into preview pages |
 | `styles/c4.src.css` | `src/rig/c4_okf/static/c4.css` |
 
 Rebuild after touching a template, an entry or a design-system bump. Colours, type sizes and

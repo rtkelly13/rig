@@ -3,7 +3,7 @@
 > **Thresholds and asset layout are governed by [`brand-assets.md`](./README.md).**
 > Where this document disagrees with it, that one is correct.
 
-An industrial-grade, multi-pass SVG simplification architecture and iterative reverse-engineering workflow for `shared_utilities.image_drift`.
+An industrial-grade, multi-pass SVG simplification architecture and iterative reverse-engineering workflow for `image_drift`.
 
 ---
 
@@ -12,7 +12,7 @@ An industrial-grade, multi-pass SVG simplification architecture and iterative re
 In high-assurance vector design, static hand-crafted or auto-traced SVGs are an anti-pattern: they accumulate point jitter, over-segmented Bézier curves, floating-point bloat, and unmaintainable hardcoded numbers.
 
 Instead, the personal estate operates on a **Code-First Vector Architecture**:
-1. **Programmatic Generation**: Assets are defined as parametric mathematical code in dedicated Python builder scripts (e.g. [`diamond_parquet_builder.py`](../../src/rig/image_drift/diamond_parquet_builder.py) and [`labs_builder.py`](../../src/rig/image_drift/labs_builder.py)).
+1. **Programmatic Generation**: Assets are defined as parametric mathematical code in dedicated Python builder scripts (e.g. [`diamond_parquet_builder.py`](../../tools/image-drift/src/image_drift/diamond_parquet_builder.py) and [`labs_builder.py`](../../tools/image-drift/src/image_drift/labs_builder.py)).
 2. **Multi-Pass Simplification**: Vector evolutions are scrubbed through a multi-tier pipeline combining geometric decimation (`shapely`), document scrubbing (`scour`), and viewBox-aware coordinate quantization. Every pass is pure Python, so the same input gives the same output on every machine.
 3. **Closed-Loop Drift Gating**: Playwright renders the vector at 1000×1000 px and enforces strict regression bounds ($\text{SSIM} \ge 0.995$, $\text{RMSE} \le 1.0\%$).
 4. **Iterative Reverse Engineering**: Clean geometric primitives and reduced node coordinates are reverse-engineered directly back into the `.py` builder file, making the refined asset reproducible in code.
@@ -70,7 +70,7 @@ flowchart TD
 - Prunes empty group wrappers (`<g></g>`) and collapses redundant transformation matrices.
 
 ### Pass 2: Geometric & Topological Decimation (`shapely` + Custom Curve Decimator)
-Operates at the path level via [`ast_parser.py`](../../src/rig/image_drift/simplifier/ast_parser.py) and [`geometric.py`](../../src/rig/image_drift/simplifier/geometric.py):
+Operates at the path level via [`ast_parser.py`](../../tools/image-drift/src/image_drift/simplifier/ast_parser.py) and [`geometric.py`](../../tools/image-drift/src/image_drift/simplifier/geometric.py):
 - **Contour Classification**: Partitions path data by `M/m` into independent `SubPath` instances, determining whether each contour is an open stroke line or a closed polygon ring.
 - **Polyline Decimation (Shapely)**:
   - Closed contours are mapped to `shapely.geometry.Polygon` (preserving internal cutout holes for compound paths) and simplified with Douglas-Peucker (`preserve_topology=True`).
@@ -100,7 +100,7 @@ Operates at the path level via [`ast_parser.py`](../../src/rig/image_drift/simpl
 
 ### Basic Simplification
 ```bash
-uv run image-reconcile simplify assets/parquet-source-generator/parquet-diamond.svg
+uv run --project tools/image-drift image-reconcile simplify assets/parquet-source-generator/parquet-diamond.svg
 ```
 Outputs `parquet-diamond.optimized.svg` sidecar alongside the original file and prints a comprehensive metrics table:
 
@@ -120,12 +120,12 @@ Outputs `parquet-diamond.optimized.svg` sidecar alongside the original file and 
 
 ### Snapshotting Directly into Asset Studio
 ```bash
-uv run image-reconcile simplify assets/rtkelly-labs/rtkelly-labs.svg --snapshot
+uv run --project tools/image-drift image-reconcile simplify assets/rtkelly-labs/rtkelly-labs.svg --snapshot
 ```
 
 ### In-Place Production Overwrite with Strict Quality Gating
 ```bash
-uv run image-reconcile simplify assets/rtkelly-labs/rtkelly-labs.svg \
+uv run --project tools/image-drift image-reconcile simplify assets/rtkelly-labs/rtkelly-labs.svg \
   --in-place \
   --tolerance 0.75 \
   --min-ssim 0.998 \
@@ -143,7 +143,7 @@ Follow this 5-step loop to refine SVGs and reverse-engineer their geometric para
 ### Step 1: Run Simplification with Studio Snapshot
 Run `image-reconcile simplify` on your current working SVG with `--snapshot`:
 ```bash
-uv run image-reconcile simplify assets/rtkelly-labs/rtkelly-labs.svg --snapshot -p rtkelly-labs
+uv run --project tools/image-drift image-reconcile simplify assets/rtkelly-labs/rtkelly-labs.svg --snapshot -p rtkelly-labs
 ```
 
 ### Step 2: Inspect Visual Drift in Asset Studio
@@ -158,7 +158,7 @@ Use the `simplifier.ast_parser` API in a scratch script or interactive shell to 
 
 ```python
 from pathlib import Path
-from shared_utilities.image_drift.simplifier.ast_parser import parse_path_d
+from image_drift.simplifier.ast_parser import parse_path_d
 import xml.etree.ElementTree as ET
 
 svg_path = Path("assets/rtkelly-labs/rtkelly-labs.optimized.svg")
@@ -200,11 +200,11 @@ dwg.add(dwg.path(d=d_str, fill="#22d3ee"))
 ### Step 5: Regenerate and Verify Fidelity
 1. Re-run the builder script to produce the updated SVG:
    ```bash
-   uv run src/shared_utilities/image_drift/labs_builder.py
+   uv run --project tools/image-drift tools/image-drift/src/image_drift/labs_builder.py
    ```
 2. Verify visual drift against the baseline:
    ```bash
-   uv run image-reconcile compare \
+   uv run --project tools/image-drift image-reconcile compare \
      --ref assets/rtkelly-labs/reference/01-original-concept.jpg \
      --svg assets/rtkelly-labs/rtkelly-labs.svg
    ```
@@ -262,19 +262,19 @@ When the SVG generation engine is **simplified into clean parametric primitives*
 
 Run the diagnostic engine to inspect the decomposed channels:
 ```bash
-uv run image-reconcile diagnose --project rtkelly-labs
+uv run --project tools/image-drift image-reconcile diagnose --project rtkelly-labs
 ```
 
 Or evaluate a high-resolution canvas:
 ```bash
-uv run image-reconcile diagnose --project parquet-source-generator --size 1000
+uv run --project tools/image-drift image-reconcile diagnose --project parquet-source-generator --size 1000
 ```
 
 The report has two tables: whole-image drift (RMSE, PSNR, SSIM, luminance and chrominance error, edge correlation, contour bias) and the worst localised hotspots, each with its dominant cause. Run the command above to see one.
 
 You can also append `--decompose` (`-D`) to standard comparison:
 ```bash
-uv run image-reconcile compare --project rtkelly-labs --decompose
+uv run --project tools/image-drift image-reconcile compare --project rtkelly-labs --decompose
 ```
 
 ### The 3-Phase Iterative Co-Refinement Loop

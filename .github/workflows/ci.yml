@@ -173,7 +173,7 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync --dev
-      # image_drift renders SVGs through headless Chromium. Cache Playwright's browser
+      # The SPA tests (test_web_spa, test_web_ops_spa) drive headless Chromium. Cache Playwright's browser
       # binaries to avoid 25-35s download overhead on every CI run.
       - name: Cache Playwright Chromium
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -326,6 +326,95 @@ jobs:
       - name: Run tests
         run: uv run pytest -m "not integration" -p no:cacheprovider --basetemp="${{ runner.temp }}/pytest" -ra
 
+  # The brand-asset pipeline is its own uv project (tools/image-drift, ADR 0022): its own lock,
+  # lint, types, ratchet, security scan and coverage floor ([tool.coverage.report] in its pyproject).
+  image-drift:
+    name: image-drift
+    needs: changes
+    if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: tools/image-drift
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: tools/image-drift/uv.lock
+      - name: Install dependencies
+        run: uv sync --locked --dev
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Types
+        run: |
+          uv run basedpyright
+          uv run ty check src
+      - name: Type-soup ratchet
+        run: uv run ratchet
+      - name: Security scan
+        run: uv run bandit -r src/ -ll
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-linux-${{ hashFiles('tools/image-drift/uv.lock') }}
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: uv run playwright install --with-deps chromium
+      - name: Run tests with coverage
+        run: uv run pytest -n auto --durations=10 --cov=src --cov-report=term-missing
+
+  image-drift-windows:
+    name: image-drift-windows
+    needs: changes
+    runs-on: windows-latest
+    timeout-minutes: 15
+    # Same opt-in as test-windows: nightly, workflow_dispatch, a windows/win32 title or branch, or 'ci:windows'.
+    if: |
+      needs.changes.outputs.code == 'true' && (
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.title, '[windows]') ||
+      contains(github.event.pull_request.title, 'win32') ||
+      contains(github.head_ref, 'windows') ||
+      contains(github.head_ref, 'win32') ||
+      contains(github.event.pull_request.labels.*.name, 'ci:windows'))
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: tools/image-drift
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: tools/image-drift/uv.lock
+      - name: Install dependencies
+        run: uv sync --locked --dev
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache-win
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: playwright-windows-${{ hashFiles('tools/image-drift/uv.lock') }}
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache-win.outputs.cache-hit != 'true'
+        run: uv run playwright install chromium
+      - name: Run tests
+        run: uv run pytest -p no:cacheprovider --basetemp="${{ runner.temp }}/pytest" -ra
+
   # The C# side (ADR 0022): format, build with warnings as errors, tests, the coverage ratchet.
   dotnet:
     name: dotnet
@@ -406,7 +495,7 @@ jobs:
   # comments on) one tracking issue, and the next green night closes it. Not part of `ci`: it never runs on a PR.
   windows-nightly-alarm:
     name: windows-nightly-alarm
-    needs: [test-windows, dotnet-windows]
+    needs: [test-windows, image-drift-windows, dotnet-windows]
     if: always() && github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -419,6 +508,7 @@ jobs:
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       SHA: ${{ github.sha }}
       TEST_RESULT: ${{ needs.test-windows.result }}
+      IMAGE_DRIFT_RESULT: ${{ needs.image-drift-windows.result }}
       DOTNET_RESULT: ${{ needs.dotnet-windows.result }}
     steps:
       - name: Open, update or close the tracking issue
@@ -426,8 +516,8 @@ jobs:
           # Search by title server-side before the limit applies; the exact match drops near-misses.
           open="$(gh issue list --state open --search "\"$TITLE\" in:title" --limit 20 --json number,title \
             --jq '.[] | select(.title == env.TITLE) | .number' | head -n 1)"
-          summary="test-windows: \`$TEST_RESULT\`, dotnet-windows: \`$DOTNET_RESULT\` at $SHA — $RUN_URL"
-          case "$TEST_RESULT $DOTNET_RESULT" in
+          summary="test-windows: \`$TEST_RESULT\`, image-drift-windows: \`$IMAGE_DRIFT_RESULT\`, dotnet-windows: \`$DOTNET_RESULT\` at $SHA — $RUN_URL"
+          case "$TEST_RESULT $IMAGE_DRIFT_RESULT $DOTNET_RESULT" in
             *failure*|*cancelled*)
               if [ -n "$open" ]; then
                 gh issue comment "$open" --body "Still failing. $summary"
@@ -437,7 +527,7 @@ jobs:
           Windows jobs only run nightly and on opted-in PRs (label \`ci:windows\`), so this is the alarm for everything merged since the last green night. This issue closes itself on the next green night."
               fi
               ;;
-            "success success")
+            "success success success")
               if [ -n "$open" ]; then
                 gh issue close "$open" --comment "Green again. $summary"
               fi
@@ -447,7 +537,7 @@ jobs:
   ci:
     name: ci
     if: always()
-    needs: [changes, lint, docs-audit, test, test-windows, dotnet, dotnet-windows]
+    needs: [changes, lint, docs-audit, test, test-windows, image-drift, image-drift-windows, dotnet, dotnet-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: read

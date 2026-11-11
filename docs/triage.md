@@ -65,7 +65,7 @@ pnpm css:build
 pnpm css:check
 ```
 
-The compiled JS/CSS/fonts and their licenses are committed under `src/rig/image_drift/templates/app_assets/`, so the Python server does not need Node at runtime. `css:build` also compiles the gallery and C4 viewer stylesheets; `css:check` rebuilds every output into `temp/` and compares bytes. CI checks both TypeScript and committed assets.
+The compiled JS/CSS/fonts and their licenses are committed under `src/rig/web_host/templates/app_assets/`, so the Python server does not need Node at runtime. `css:build` also compiles the gallery and C4 viewer stylesheets; `css:check` rebuilds every output into `temp/` and compares bytes. CI checks both TypeScript and committed assets.
 
 ## Repository scope and estate connectivity
 

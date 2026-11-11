@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from defusedxml.ElementTree import fromstring
 
-from rig.image_drift.simplifier.svg_attrs import SvgRootAttrs, path_data, root_attrs
+from image_drift.simplifier.svg_attrs import SvgRootAttrs, path_data, root_attrs
 
 pytestmark = pytest.mark.ci
 

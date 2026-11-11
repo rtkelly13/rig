@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from rig.image_drift import metrics
-from rig.image_drift.geometry import CropBox
-from rig.image_drift.metrics import (
+from image_drift import metrics
+from image_drift.geometry import CropBox
+from image_drift.metrics import (
     FRAME_WEIGHT,
     Tie,
     compute_drift,

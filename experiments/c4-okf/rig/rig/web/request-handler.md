@@ -2,7 +2,7 @@
 type: C4 Code
 title: StudioServer — code
 description: The request handler classes behind the web control plane.
-resource: https://github.com/rtkelly13/rig/blob/main/src/rig/image_drift/server.py
+resource: https://github.com/rtkelly13/rig/blob/main/src/rig/web_host/server.py
 generated: { by: claude-code/opus-5-5, at: 2026-11-04 }
 ---
 

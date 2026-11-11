@@ -12,7 +12,7 @@ from typing import SupportsFloat
 
 import numpy as np
 
-from rig.image_drift.geometry import FloatArray
+from image_drift.geometry import FloatArray
 
 
 def _at(values: Sequence[int], index: int) -> int:

@@ -1,8 +1,8 @@
 """Interlocking-columns logo explorer, and the document scaffold the explorers share.
 
 Unscored: no promote gate, pathway or test compares it against a reference. It
-was `rig.image_drift.svg_builder`; the types the shipped builders need
-(`FeatureRegion`, `Style`, `variant_style`) stay in `rig.image_drift.builder_contract`.
+was `image_drift.svg_builder`; the types the shipped builders need
+(`FeatureRegion`, `Style`, `variant_style`) stay in `image_drift.builder_contract`.
 The measured hexagon geometry lives in `hex_shapes`.
 
 The layer order below describes the hexagon mark in `rhombille_builder.py`,
@@ -30,11 +30,10 @@ from pathlib import Path
 
 import svgwrite
 from hex_shapes import Block, Box, Circuit, Node, Rect
+from image_drift.builder_contract import FeatureRegion, Style, variant_style
+from image_drift.hex_geometry import Point
+from image_drift.variants import StyleOverrides, Variant, VariantRegistry
 from svgwrite.container import Group
-
-from rig.image_drift.builder_contract import FeatureRegion, Style, variant_style
-from rig.image_drift.hex_geometry import Point
-from rig.image_drift.variants import StyleOverrides, Variant, VariantRegistry
 
 # ---------------------------------------------------------------------------
 # Measured canvas constants

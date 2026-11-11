@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from rig.image_drift.metrics import CandidateScore, DriftResult
-from rig.image_drift.promotion import evaluate_promotion
+from image_drift.metrics import CandidateScore, DriftResult
+from image_drift.promotion import evaluate_promotion
 
 pytestmark = pytest.mark.ci
 

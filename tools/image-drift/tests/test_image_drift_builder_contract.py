@@ -6,10 +6,10 @@ import math
 
 import pytest
 
-from rig.image_drift.builder_contract import STYLE_DEFAULTS, FeatureRegion, variant_style
-from rig.image_drift.geometry import CropBox
-from rig.image_drift.hex_geometry import HEX_CENTER, hexagon_vertices
-from rig.image_drift.variants import StyleOverrides, Variant
+from image_drift.builder_contract import STYLE_DEFAULTS, FeatureRegion, variant_style
+from image_drift.geometry import CropBox
+from image_drift.hex_geometry import HEX_CENTER, hexagon_vertices
+from image_drift.variants import StyleOverrides, Variant
 
 pytestmark = pytest.mark.ci
 

@@ -25,7 +25,7 @@ import re
 from dataclasses import dataclass, field
 from typing import ClassVar, Literal
 
-from rig.image_drift.hex_geometry import Point
+from image_drift.hex_geometry import Point
 
 DefectKind = Literal["micro_segment", "off_axis", "collinear", "staircase"]
 

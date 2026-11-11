@@ -11,15 +11,15 @@ from xml.etree import ElementTree
 # defusedxml: entity expansion on an SVG is a cheap denial of service.
 from defusedxml.ElementTree import fromstring as _safe_fromstring
 
-from rig.image_drift.imaging import render_svg
-from rig.image_drift.metrics import compute_drift
-from rig.image_drift.simplifier.ast_parser import parse_path_d
-from rig.image_drift.simplifier.geometric import simplify_path_geometry
-from rig.image_drift.simplifier.report import (
+from image_drift.imaging import render_svg
+from image_drift.metrics import compute_drift
+from image_drift.simplifier.ast_parser import parse_path_d
+from image_drift.simplifier.geometric import simplify_path_geometry
+from image_drift.simplifier.report import (
     OptimizationReport,
 )
-from rig.image_drift.simplifier.svg_attrs import path_data
-from rig.image_drift.simplifier.syntactic import (
+from image_drift.simplifier.svg_attrs import path_data
+from image_drift.simplifier.syntactic import (
     quantize_svg_coordinates,
     run_scour_pass,
 )

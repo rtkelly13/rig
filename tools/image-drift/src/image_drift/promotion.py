@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from rig.image_drift.metrics import TIE_THRESHOLD_PCT, CandidateScore, DriftResult
+from image_drift.metrics import TIE_THRESHOLD_PCT, CandidateScore, DriftResult
 
 MAX_FEATURE_REGRESSION_PCT = 0.25
 """How far one feature region may regress even when the composite improves.
