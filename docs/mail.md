@@ -8,7 +8,7 @@ It never talks to Gmail itself. The runbook (setup, sweeps, growing the rules) i
 
 | What | Where | In git? |
 |---|---|---|
-| Compiler and CLI | `src/rig/mail/` | yes |
+| Compiler and CLI | `src/Rig.Core/Mail/` (rules, exports, coverage, Apps Script) and `src/Rig.Cli/Mail/` (`rig mail`) | yes |
 | Rules (`rules.yaml`), inbox samples, generated `filters.xml` and `triage.gs` | `temp/mail/` in the **main** rig checkout | **no**: they name real senders |
 | Backup of `rules.yaml` | Personal Google Drive (not the work one): `My Drive/Dev/gmail-triage/rules.yaml`, synced on the Mac under `~/Library/CloudStorage/GoogleDrive-<personal account>/` | no |
 | Running script | Apps Script project **GmailFilter** in the work account (script.google.com → My projects) | no |
