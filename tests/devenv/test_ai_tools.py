@@ -295,35 +295,38 @@ def test_setup_estate_rules_does_not_create_a_claude_md(tmp_path):
     assert not (tmp_path / "CLAUDE.md").is_symlink()
 
 
-@pytest.mark.ci
-def test_the_step_reports_a_failed_browser_profiles_after_running_every_part(
-    isolated_home: Path, monkeypatch: pytest.MonkeyPatch
-):
-    step = "rig.devenv.steps.ai_tools"
-    ran: list[str] = []
-    (isolated_home / "code" / "personal" / "obsidian-vault" / ".obsidian").mkdir(parents=True)
-    parts = (
-        "setup_claude_code",
-        "setup_opencode",
-        "setup_estate_rules",
-        "setup_obsidian_plugins",
-        "setup_agent_launcher",
-    )
-    for part in parts:
-        monkeypatch.setattr(f"{step}.{part}", lambda *_a, name=part, **_k: ran.append(name))
-    monkeypatch.setattr(f"{step}.detect_installed_agents", list)
+def _csharp_calls_with(code_for: dict[str, int]) -> tuple[list[list[str]], str | None]:
+    """Run the step dry in the isolated home; each C# command exits as *code_for* says (default 0)."""
     calls: list[list[str]] = []
 
-    def browser_fails(command: list[str], _env: dict[str, str]) -> int:
-        calls.append(command[command.index("--") + 1 :])
-        return 3 if command[command.index("--") + 1] == "browser" else 0
+    def runner(command: list[str], _env: dict[str, str]) -> int:
+        args = command[command.index("--") + 1 :]
+        calls.append(args)
+        return code_for.get(" ".join(args[:2]), 0)
 
-    token = csharp_cli.RUNNER.set(browser_fails)
+    token = csharp_cli.RUNNER.set(runner)
     try:
-        with pytest.raises(RuntimeError, match=r"^rig browser profiles exited 3$"):
-            run_ai_tools_setup(StepContext(dry_run=True))
+        run_ai_tools_setup(StepContext(dry_run=True))
+    except RuntimeError as failed:
+        return calls, str(failed)
     finally:
         csharp_cli.RUNNER.reset(token)
+    return calls, None
 
-    assert ran == list(parts)
-    assert calls == [["browser", "profiles", "--dry-run"], ["skills", "sync", "--system", "all", "--dry-run"]]
+
+@pytest.mark.ci
+@pytest.mark.usefixtures("isolated_home")
+def test_a_failed_browser_profiles_fails_the_step_after_the_rest_runs():
+    calls, failure = _csharp_calls_with({"browser profiles": 3})
+
+    assert failure == "rig browser profiles exited 3"
+    assert ["browser", "profiles", "--dry-run"] in calls
+    assert calls[-1] == ["skills", "sync", "--system", "all", "--dry-run"]
+
+
+@pytest.mark.ci
+@pytest.mark.usefixtures("isolated_home")
+def test_the_step_reports_every_failed_csharp_part():
+    _, failure = _csharp_calls_with({"browser profiles": 1, "skills sync": 2})
+
+    assert failure == "rig browser profiles exited 1; rig skills sync exited 2"
