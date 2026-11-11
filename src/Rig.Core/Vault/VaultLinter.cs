@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -598,6 +599,65 @@ public sealed record LintReport(
             json.Key("reason").String(item.Reason);
             json.Key("severity").String(item.Severity);
         });
+    }
+
+    /// <summary>
+    /// The report as <c>vault graph lint</c> prints it, ported from <c>VaultLinter.run_lint</c>: each line ends in a newline,
+    /// and a section after the first starts with a blank line.
+    /// </summary>
+    public string ToText()
+    {
+        var text = new StringBuilder();
+        if (Errors.Count > 0)
+        {
+            text.Append(CultureInfo.InvariantCulture, $"Found {Errors.Count} metadata errors:\n");
+            Items(Errors);
+        }
+
+        if (Warnings.Count > 0)
+        {
+            text.Append(CultureInfo.InvariantCulture, $"\nFound {Warnings.Count} metadata warnings:\n");
+            Items(Warnings);
+        }
+
+        if (Filenames.Count > 0)
+        {
+            text.Append(CultureInfo.InvariantCulture, $"\nFound {Filenames.Sum(f => f.Codes.Count)} filename issues:\n");
+            foreach (var f in Filenames)
+            {
+                text.Append(CultureInfo.InvariantCulture, $"  - {string.Join(", ", f.Codes)} {f.Path}: {f.Reason} -> suggest {Name(f.SuggestedPath)}\n");
+            }
+        }
+
+        if (Duplicates.Count > 0)
+        {
+            text.Append(CultureInfo.InvariantCulture, $"\nFound {Duplicates.Count} duplicate groups (excluding genuine links):\n");
+            foreach (var (key, paths) in Duplicates)
+            {
+                text.Append('\n').Append(key).Append('\n');
+                foreach (var path in paths)
+                {
+                    text.Append("  - ").Append(path).Append('\n');
+                }
+            }
+        }
+
+        if (Errors.Count == 0 && Duplicates.Count == 0)
+        {
+            text.Append("✓ Vault is clean. (Required metadata present, no duplicates detected).\n");
+        }
+
+        return text.ToString();
+
+        void Items(IReadOnlyList<MetadataReportItem> items)
+        {
+            foreach (var item in items)
+            {
+                text.Append(CultureInfo.InvariantCulture, $"  - {item.Code} {item.Reason}: {Name(item.Path)}\n");
+            }
+        }
+
+        static string Name(string path) => path[(path.LastIndexOf('/') + 1)..];
     }
 }
 

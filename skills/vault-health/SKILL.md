@@ -59,5 +59,5 @@ not the goal; a vault you can navigate is.
 This is ~2,900 lines doing one job, inside a repo that already exists. It was 18,246
 lines of source and 33,056 of tests doing thirteen, in a repo of its own, and produced
 70 notes in its life. If a new rule is worth having, add it to
-`shared_utilities/obsidian/lint_manager.py`. Before adding anything larger, ask what
+`src/Rig.Core/Vault/LintRules.cs` and `VaultLinter.cs`. Before adding anything larger, ask what
 decision it actually makes for you.

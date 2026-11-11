@@ -26,6 +26,20 @@ internal static class VaultPath
         return Path.Combine(home, "code", "personal", "obsidian-vault", "Vault");
     }
 
+    /// <summary>The variable that overrides the Drive copy.</summary>
+    public const string DriveVariable = "DRIVE_VAULT_PATH";
+
+    /// <summary>
+    /// The Google Drive copy Obsidian opens: <c>DRIVE_VAULT_PATH</c> when set, else <c>~/Google Drive/My Drive/Obsidian/Vault</c>.
+    /// Reported by <c>vault paths</c>; maintenance never writes to it.
+    /// </summary>
+    public static string ResolveDrive(Func<string, string?> environment, string home)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+        var value = environment(DriveVariable);
+        return string.IsNullOrEmpty(value) ? Path.Combine(home, "Google Drive", "My Drive", "Obsidian", "Vault") : ExpandHome(value, home);
+    }
+
     /// <summary>Expands a leading <c>~</c> to <paramref name="home"/>, as Python's <c>expanduser</c> does.</summary>
     public static string ExpandHome(string path, string home)
     {

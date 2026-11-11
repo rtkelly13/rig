@@ -20,7 +20,7 @@ uv run vault knowledge-server uninstall
 |:--|:--|
 | Connector | `http://127.0.0.1:47311/mcp` (streamable HTTP) |
 | Editor | `http://127.0.0.1:47311/` |
-| Package | `@inkeep/open-knowledge` pinned in `rig.obsidian.knowledge_server.VERSION`, installed under rig's data folder |
+| Package | `@inkeep/open-knowledge` pinned in `KnowledgeServer.Version` (`src/Rig.Core/Vault/KnowledgeServer.cs`), installed under rig's data folder |
 | Log | `<rig data>/logs/open-knowledge.log` |
 
 ## What it serves

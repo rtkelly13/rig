@@ -79,7 +79,7 @@ Windows-safe tests (the `test-windows` job catches these, but write them right f
 - **Paths in output**: render paths with `.as_posix()` wherever a report, snapshot or assertion compares text. Otherwise Windows prints backslashes.
 - **Line endings**: when a test hashes a checked-in file, give that file type `-text` in `.gitattributes`, as `*.svg` has. Otherwise CRLF conversion on checkout changes the digest.
 - **Machine state**: never depend on the real monitor count, open windows or running processes. `tests/desktop_manager/conftest.py` fakes three monitors, and the integration conftest reports every process as not running.
-- **Filenames**: Windows cannot create names containing `:`, `?` or `*`. Mark those tests with `skipif(sys.platform == "win32")`, as `needs_colon_filenames` does in `tests/obsidian/test_lint_manager.py`.
+- **Filenames**: Windows cannot create names containing `:`, `?` or `*`. Mark those tests with `skipif(sys.platform == "win32")`. In C#, skip them with `Assert.SkipWhen(OperatingSystem.IsWindows(), ...)`.
 - **Console width**: compare wrapped CLI output with whitespace normalised. The Windows console wraps at 80 columns.
 
 ## Standards and quality gates

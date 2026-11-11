@@ -5,6 +5,8 @@ using Rig.Cli.Vault;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Services;
+using Rig.Core.Vault;
 
 namespace Rig.Cli;
 
@@ -25,6 +27,10 @@ internal static class Program
         var proc = new SystemProc();
         var git = new Git(proc, codeRoot);
         var fromPython = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(PythonRig.BridgeVariable));
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var macOs = OperatingSystem.IsMacOS();
+        // Created per command; HttpClient opens no connection until the health probe asks for one.
+        using var http = new HttpClient();
         var app = new RigApp(
             new PythonRig(proc, checkout, fromPython),
             new GhApi(proc),
@@ -39,7 +45,24 @@ internal static class Program
                     Console.Error).Build,
                 new MdLintCommand(
                     proc,
-                    new MdLintHost(checkout, Environment.GetEnvironmentVariable, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)),
+                    new MdLintHost(checkout, Environment.GetEnvironmentVariable, home),
+                    Console.Error).Build,
+                new VaultCommand(
+                    proc,
+                    new VaultHost(Environment.GetEnvironmentVariable, home),
+                    new KnowledgeServerCommand(
+                        proc,
+                        async ct => new KnowledgeServer(
+                            proc,
+                            new Launchd(proc, Launchd.AgentsDirUnder(home), Launchd.GuiDomain(macOs ? await KnowledgeServerCommand.UserIdAsync(proc, ct).ConfigureAwait(false) : 0)),
+                            new KnowledgeServerPlaces(home, AppData.Current()),
+                            ProgramPath.Find,
+                            http),
+                        macOs,
+                        ProgramPath.Find,
+                        Console.Out,
+                        Console.Error),
+                    Console.Out,
                     Console.Error).Build,
             ]);
         return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
