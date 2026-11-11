@@ -122,6 +122,39 @@ public static class PyText
         return count;
     }
 
+    /// <summary>
+    /// Orders strings as Python's <c>&lt;</c> does, by code point. Ordinal comparison orders UTF-16 units, which puts a
+    /// supplementary-plane character (a surrogate pair) before U+E000 to U+FFFF.
+    /// </summary>
+    public static IComparer<string> CodePointOrder { get; } = Comparer<string>.Create(CompareCodePoints);
+
+    private static int CompareCodePoints(string? a, string? b)
+    {
+        if (a is null || b is null)
+        {
+            return a is null ? (b is null ? 0 : -1) : 1;
+        }
+
+        var length = Math.Min(a.Length, b.Length);
+        for (var i = 0; i < length; i++)
+        {
+            if (a[i] != b[i])
+            {
+                return CodePointRank(a[i]).CompareTo(CodePointRank(b[i]));
+            }
+        }
+
+        return a.Length.CompareTo(b.Length);
+    }
+
+    // Surrogates rank above U+E000 to U+FFFF, as the code points they encode do.
+    private static int CodePointRank(char c) => c switch
+    {
+        >= '\uE000' => c - 0x800,
+        >= '\uD800' => c + 0x2000,
+        _ => c,
+    };
+
     /// <summary>Python's <c>s[:count]</c>: the first <paramref name="count"/> code points.</summary>
     public static string Prefix(string s, int count)
     {

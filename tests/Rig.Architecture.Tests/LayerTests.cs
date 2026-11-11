@@ -28,14 +28,33 @@ public sealed class LayerTests
     {
         // Coverage runs add coverlet's tracker types, and the compiler adds types such as <>z__ReadOnlyArray
         // for collection expressions and <PrivateImplementationDetails> structs (unmarked) for static arrays; none is rig's.
+        // Types nested in those, such as <>z__ReadOnlySingleElementList`1/Enumerator, are the compiler's too.
         var result = Types.InAssembly(Core)
             .That().DoNotResideInNamespaceStartingWith("Coverlet")
-            .And().DoNotHaveCustomAttribute(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute))
+            .And().MeetCustomRule(new NotCompilerOwned())
             .And().DoNotHaveNameStartingWith("__StaticArrayInitTypeSize")
             .Should().ResideInNamespaceStartingWith("Rig.Core")
             .GetResult();
 
         Assert.True(result.IsSuccessful, Offenders(result));
+    }
+
+    // Neither the type nor any type it is nested in is marked compiler-generated or carries a name only the compiler can give.
+    private sealed class NotCompilerOwned : ICustomRule
+    {
+        public bool MeetsRule(Mono.Cecil.TypeDefinition type)
+        {
+            for (var current = type; current is not null; current = current.DeclaringType)
+            {
+                if (current.Name.StartsWith('<')
+                    || current.CustomAttributes.Any(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute"))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 
     private static string Offenders(NetArchTest.Rules.TestResult result) =>

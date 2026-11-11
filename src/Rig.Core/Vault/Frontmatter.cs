@@ -46,18 +46,20 @@ public static partial class Frontmatter
     /// <summary>The frontmatter of a note whose file holds <paramref name="raw"/>.</summary>
     public static FrontmatterRead Read(ReadOnlySpan<byte> raw)
     {
-        string text;
         try
         {
-            text = Strict.GetString(raw);
+            return Parse(Decode(raw));
         }
         catch (DecoderFallbackException exception)
         {
             return Refused($"'utf-8' codec can't decode the note: {exception.Message}");
         }
-
-        return Parse(text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n'));
     }
+
+    /// <summary>A note's text as Python's text mode reads it: strict UTF-8, with universal newlines.</summary>
+    /// <exception cref="DecoderFallbackException"><paramref name="raw"/> is not UTF-8.</exception>
+    public static string Decode(ReadOnlySpan<byte> raw) =>
+        Strict.GetString(raw).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
 
     /// <summary>The frontmatter of a note whose text, already decoded with universal newlines, is <paramref name="text"/>.</summary>
     public static FrontmatterRead Parse(string text)
