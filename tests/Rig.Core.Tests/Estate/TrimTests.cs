@@ -82,6 +82,26 @@ public sealed class TrimTests : IDisposable
     }
 
     [Fact]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void A_folder_the_walk_cannot_list_counts_as_holding_a_checkout()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Unix file modes.");
+        var tree = _temp.Folder("node_modules");
+        _ = Write("node_modules/pkg/big.bin", 1000);
+        var sealedFolder = _temp.Folder("node_modules/sealed");
+        File.SetUnixFileMode(sealedFolder, UnixFileMode.None);
+        try
+        {
+            Assert.Equal(TreeMeasure.Unmeasured, TreeMeasure.Measure(tree));
+            Assert.True(TreeMeasure.HasCheckoutBelow(tree));
+        }
+        finally
+        {
+            File.SetUnixFileMode(sealedFolder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
+    [Fact]
     public void A_symlink_inside_the_tree_is_not_followed_when_measuring()
     {
         var tree = _temp.Folder("tree");

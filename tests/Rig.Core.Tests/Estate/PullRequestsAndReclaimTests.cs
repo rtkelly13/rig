@@ -188,6 +188,6 @@ public sealed class PullRequestsAndReclaimTests
     private sealed class Sizes(Dictionary<string, long> byTail) : IDiskUsage
     {
         public Task<long> SizeAsync(string path, CancellationToken cancellationToken = default) =>
-            Task.FromResult(byTail.Where(pair => path.EndsWith(pair.Key, StringComparison.Ordinal)).OrderByDescending(pair => pair.Key.Length).Select(pair => pair.Value).FirstOrDefault());
+            Task.FromResult(byTail.Where(pair => path.Replace('\\', '/').EndsWith(pair.Key, StringComparison.Ordinal)).OrderByDescending(pair => pair.Key.Length).Select(pair => pair.Value).FirstOrDefault());
     }
 }

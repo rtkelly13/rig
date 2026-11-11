@@ -107,7 +107,7 @@ public sealed class Trim(Git git, TimeProvider time)
         var stack = new Stack<(string Folder, int Depth)>([(root, 0)]);
         while (stack.TryPop(out var current))
         {
-            var children = TreeMeasure.Entries(current.Folder).OfType<DirectoryInfo>()
+            var children = (TreeMeasure.Entries(current.Folder) ?? []).OfType<DirectoryInfo>()
                 .Where(child => !child.Attributes.HasFlag(FileAttributes.ReparsePoint) && !NeverDescend.Contains(child.Name))
                 .Select(child => child.FullName)
                 .Order(PathOrder.Instance);

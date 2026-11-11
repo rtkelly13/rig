@@ -52,7 +52,7 @@ public sealed class DiskUsage(IProc proc) : IDiskUsage
         var stack = new Stack<string>([path]);
         while (stack.TryPop(out var current))
         {
-            foreach (var entry in TreeMeasure.Entries(current))
+            foreach (var entry in TreeMeasure.Entries(current) ?? [])
             {
                 if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
                 {

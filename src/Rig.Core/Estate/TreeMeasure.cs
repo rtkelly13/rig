@@ -3,11 +3,14 @@ namespace Rig.Core.Estate;
 /// <summary>What deleting a tree would free, and whether it may be deleted at all.</summary>
 /// <param name="Apparent">Every file's length.</param>
 /// <param name="Freeable">The lengths of files with no other name: deleting a hardlinked copy frees nothing.</param>
-/// <param name="HoldsCheckout">A <c>.git</c> file or folder exists below the root; the walk stopped there.</param>
+/// <param name="HoldsCheckout">
+/// A <c>.git</c> file or folder exists below the root, or a folder below it could not be listed and might hold one; the
+/// walk stopped there.
+/// </param>
 /// <param name="Estimated">Freeable was extrapolated from a sample of the small files.</param>
 public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckout = false, bool Estimated = false)
 {
-    /// <summary>A tree whose walk stopped at a <c>.git</c>; its sizes are unknown, not zero.</summary>
+    /// <summary>A tree whose walk stopped at a <c>.git</c> or an unlistable folder; its sizes are unknown, not zero.</summary>
     public static readonly TreeMeasure Unmeasured = new(0, 0, HoldsCheckout: true);
 
     /// <summary>Every file of at least this many bytes has its link count read exactly on Windows.</summary>
@@ -36,7 +39,13 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
         var stack = new Stack<string>([path]);
         while (stack.TryPop(out var current))
         {
-            foreach (var entry in Entries(current))
+            // A folder the walk cannot list is one it cannot clear, and the remover would unlock and empty it.
+            if (Entries(current) is not { } entries)
+            {
+                return Unmeasured;
+            }
+
+            foreach (var entry in entries)
             {
                 if (entry.Name == ".git")
                 {
@@ -83,14 +92,20 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
 
     /// <summary>
     /// Whether a <c>.git</c> file or folder lies anywhere below <paramref name="path"/>: a checkout git does not list as
-    /// a worktree of the clone being cleaned. Names only, links not followed, so it costs a listing per folder.
+    /// a worktree of the clone being cleaned. Names only, links not followed, so it costs a listing per folder. A folder
+    /// that cannot be listed counts as holding one.
     /// </summary>
     public static bool HasCheckoutBelow(string path)
     {
         var stack = new Stack<string>([path]);
         while (stack.TryPop(out var current))
         {
-            foreach (var entry in Entries(current))
+            if (Entries(current) is not { } entries)
+            {
+                return true;
+            }
+
+            foreach (var entry in entries)
             {
                 if (entry.Name == ".git")
                 {
@@ -107,8 +122,8 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
         return false;
     }
 
-    /// <summary>One folder's entries, hidden ones included; none when it cannot be listed.</summary>
-    internal static List<FileSystemInfo> Entries(string folder)
+    /// <summary>One folder's entries, hidden ones included; null when it cannot be listed.</summary>
+    internal static List<FileSystemInfo>? Entries(string folder)
     {
         try
         {
@@ -116,12 +131,13 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return [];
+            return null;
         }
     }
 
-    // The defaults skip Hidden and System, and on Unix a dot-name is Hidden: `.git` and `.venv` would vanish.
-    private static readonly EnumerationOptions ListOne = new() { AttributesToSkip = 0, IgnoreInaccessible = true };
+    // The defaults skip Hidden and System, and on Unix a dot-name is Hidden: `.git` and `.venv` would vanish. An
+    // unlistable folder must throw, not read as empty.
+    private static readonly EnumerationOptions ListOne = new() { AttributesToSkip = 0, IgnoreInaccessible = false };
 }
 
 /// <summary>A tree's allocation, split by whether deleting the tree frees it.</summary>

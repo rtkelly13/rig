@@ -97,6 +97,7 @@ public sealed class RepoChecksTests
         var tree = Path.Join(repo, "temp", "moved");
         _ = await Repos.GitAsync(repo, "worktree", "add", "-q", "-b", "moved", tree);
         var other = root.Folder("other/.git/worktrees/moved");
+        File.SetAttributes(Path.Join(tree, ".git"), FileAttributes.Normal); // git on Windows writes it read-only
         await File.WriteAllTextAsync(Path.Join(tree, ".git"), $"gitdir: {other}\n", Token);
 
         var finding = Assert.Single(await Checks(root).CheckWorktreesAsync(repo));
