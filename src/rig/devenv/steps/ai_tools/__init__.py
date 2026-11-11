@@ -57,8 +57,12 @@ def run_ai_tools_setup(ctx: StepContext) -> None:
 
     # 7. Link skills into every agent CLI through `rig skills sync`
     console.print("\n[cyan]Linking skills into agent CLIs...[/cyan]")
-    csharp_cli.run(["skills", "sync", "--system", "all", *(["--dry-run"] if ctx.dry_run else [])])
+    skills = csharp_cli.run(["skills", "sync", "--system", "all", *(["--dry-run"] if ctx.dry_run else [])])
 
     # 8. Agent launcher root shim and shell shortcut
     console.print("\n[cyan]Configuring agent launcher root shim & shell shortcut...[/cyan]")
     setup_agent_launcher(dry_run=ctx.dry_run)
+
+    # The launcher still runs after a failed skills sync; the step then reports the failure.
+    if skills != 0:
+        raise RuntimeError(f"rig skills sync exited {skills}")
