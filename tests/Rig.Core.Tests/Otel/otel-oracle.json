@@ -1,0 +1,1074 @@
+{
+ "home": "/var/folders/jn/5vhvxs997zs1jrq62c0849cr0000gn/T/otel-oracle-qxr8y9eh",
+ "collector_config": [
+  {
+   "data": "/srv/otel/data",
+   "forward": null,
+   "text": "# Written by `otel-stack collector config`; regenerated on every start. See docs/otel-stack.md.\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 127.0.0.1:4317\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    timeout: 10s\nexporters:\n  file/traces:\n    path: '/srv/otel/data/traces.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/metrics:\n    path: '/srv/otel/data/metrics.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/logs:\n    path: '/srv/otel/data/logs.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/traces]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/metrics]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/logs]\n"
+  },
+  {
+   "data": "/srv/otel/data",
+   "forward": "http://127.0.0.1:24318",
+   "text": "# Written by `otel-stack collector config`; regenerated on every start. See docs/otel-stack.md.\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 127.0.0.1:4317\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    timeout: 10s\nexporters:\n  file/traces:\n    path: '/srv/otel/data/traces.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/metrics:\n    path: '/srv/otel/data/metrics.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/logs:\n    path: '/srv/otel/data/logs.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  otlp_http/forward:\n    endpoint: 'http://127.0.0.1:24318'\n    timeout: 2s\n    retry_on_failure:\n      enabled: true\n      initial_interval: 1s\n      max_interval: 5s\n      max_elapsed_time: 30s\n    sending_queue:\n      enabled: true\n      num_consumers: 1\n      queue_size: 200\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/traces, otlp_http/forward]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/metrics, otlp_http/forward]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/logs, otlp_http/forward]\n"
+  },
+  {
+   "data": "/srv/otel/data",
+   "forward": "https://o'k.example:443",
+   "text": "# Written by `otel-stack collector config`; regenerated on every start. See docs/otel-stack.md.\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 127.0.0.1:4317\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    timeout: 10s\nexporters:\n  file/traces:\n    path: '/srv/otel/data/traces.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/metrics:\n    path: '/srv/otel/data/metrics.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/logs:\n    path: '/srv/otel/data/logs.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  otlp_http/forward:\n    endpoint: 'https://o''k.example:443'\n    timeout: 2s\n    retry_on_failure:\n      enabled: true\n      initial_interval: 1s\n      max_interval: 5s\n      max_elapsed_time: 30s\n    sending_queue:\n      enabled: true\n      num_consumers: 1\n      queue_size: 200\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/traces, otlp_http/forward]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/metrics, otlp_http/forward]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/logs, otlp_http/forward]\n"
+  },
+  {
+   "data": "/Users/O'Brien/rig data",
+   "forward": null,
+   "text": "# Written by `otel-stack collector config`; regenerated on every start. See docs/otel-stack.md.\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 127.0.0.1:4317\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    timeout: 10s\nexporters:\n  file/traces:\n    path: '/Users/O''Brien/rig data/traces.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/metrics:\n    path: '/Users/O''Brien/rig data/metrics.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/logs:\n    path: '/Users/O''Brien/rig data/logs.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/traces]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/metrics]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/logs]\n"
+  },
+  {
+   "data": "/Users/O'Brien/rig data",
+   "forward": "http://127.0.0.1:24318",
+   "text": "# Written by `otel-stack collector config`; regenerated on every start. See docs/otel-stack.md.\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 127.0.0.1:4317\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    timeout: 10s\nexporters:\n  file/traces:\n    path: '/Users/O''Brien/rig data/traces.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/metrics:\n    path: '/Users/O''Brien/rig data/metrics.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/logs:\n    path: '/Users/O''Brien/rig data/logs.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  otlp_http/forward:\n    endpoint: 'http://127.0.0.1:24318'\n    timeout: 2s\n    retry_on_failure:\n      enabled: true\n      initial_interval: 1s\n      max_interval: 5s\n      max_elapsed_time: 30s\n    sending_queue:\n      enabled: true\n      num_consumers: 1\n      queue_size: 200\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/traces, otlp_http/forward]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/metrics, otlp_http/forward]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/logs, otlp_http/forward]\n"
+  },
+  {
+   "data": "/Users/O'Brien/rig data",
+   "forward": "https://o'k.example:443",
+   "text": "# Written by `otel-stack collector config`; regenerated on every start. See docs/otel-stack.md.\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 127.0.0.1:4317\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    timeout: 10s\nexporters:\n  file/traces:\n    path: '/Users/O''Brien/rig data/traces.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/metrics:\n    path: '/Users/O''Brien/rig data/metrics.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/logs:\n    path: '/Users/O''Brien/rig data/logs.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  otlp_http/forward:\n    endpoint: 'https://o''k.example:443'\n    timeout: 2s\n    retry_on_failure:\n      enabled: true\n      initial_interval: 1s\n      max_interval: 5s\n      max_elapsed_time: 30s\n    sending_queue:\n      enabled: true\n      num_consumers: 1\n      queue_size: 200\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/traces, otlp_http/forward]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/metrics, otlp_http/forward]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/logs, otlp_http/forward]\n"
+  },
+  {
+   "data": "C:/Users/x/AppData/data",
+   "forward": null,
+   "text": "# Written by `otel-stack collector config`; regenerated on every start. See docs/otel-stack.md.\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 127.0.0.1:4317\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    timeout: 10s\nexporters:\n  file/traces:\n    path: 'C:/Users/x/AppData/data/traces.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/metrics:\n    path: 'C:/Users/x/AppData/data/metrics.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/logs:\n    path: 'C:/Users/x/AppData/data/logs.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/traces]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/metrics]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/logs]\n"
+  },
+  {
+   "data": "C:/Users/x/AppData/data",
+   "forward": "http://127.0.0.1:24318",
+   "text": "# Written by `otel-stack collector config`; regenerated on every start. See docs/otel-stack.md.\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 127.0.0.1:4317\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    timeout: 10s\nexporters:\n  file/traces:\n    path: 'C:/Users/x/AppData/data/traces.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/metrics:\n    path: 'C:/Users/x/AppData/data/metrics.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/logs:\n    path: 'C:/Users/x/AppData/data/logs.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  otlp_http/forward:\n    endpoint: 'http://127.0.0.1:24318'\n    timeout: 2s\n    retry_on_failure:\n      enabled: true\n      initial_interval: 1s\n      max_interval: 5s\n      max_elapsed_time: 30s\n    sending_queue:\n      enabled: true\n      num_consumers: 1\n      queue_size: 200\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/traces, otlp_http/forward]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/metrics, otlp_http/forward]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/logs, otlp_http/forward]\n"
+  },
+  {
+   "data": "C:/Users/x/AppData/data",
+   "forward": "https://o'k.example:443",
+   "text": "# Written by `otel-stack collector config`; regenerated on every start. See docs/otel-stack.md.\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 127.0.0.1:4317\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    timeout: 10s\nexporters:\n  file/traces:\n    path: 'C:/Users/x/AppData/data/traces.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/metrics:\n    path: 'C:/Users/x/AppData/data/metrics.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  file/logs:\n    path: 'C:/Users/x/AppData/data/logs.jsonl'\n    rotation:\n      max_megabytes: 100\n      max_days: 7\n      max_backups: 50\n  otlp_http/forward:\n    endpoint: 'https://o''k.example:443'\n    timeout: 2s\n    retry_on_failure:\n      enabled: true\n      initial_interval: 1s\n      max_interval: 5s\n      max_elapsed_time: 30s\n    sending_queue:\n      enabled: true\n      num_consumers: 1\n      queue_size: 200\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/traces, otlp_http/forward]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/metrics, otlp_http/forward]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [file/logs, otlp_http/forward]\n"
+  }
+ ],
+ "yaml_quoted": {
+  "": "''",
+  "a": "'a'",
+  "it's": "'it''s'",
+  "''": "''''''"
+ },
+ "clickhouse": [
+  {
+   "data": "/srv/ch/data",
+   "users": "/srv/ch/users.xml",
+   "server": "<?xml version=\"1.0\"?>\n<!-- Written by `otel-stack clickhouse up`; regenerated on every start. -->\n<clickhouse>\n    <logger>\n        <level>warning</level>\n        <console>1</console>\n    </logger>\n    <listen_host>127.0.0.1</listen_host>\n    <http_port>18123</http_port>\n    <tcp_port>19000</tcp_port>\n    <path>/srv/ch/data/</path>\n    <tmp_path>/srv/ch/data/tmp/</tmp_path>\n    <user_files_path>/srv/ch/data/user_files/</user_files_path>\n    <format_schema_path>/srv/ch/data/format_schemas/</format_schema_path>\n    <user_directories>\n        <users_xml><path>/srv/ch/users.xml</path></users_xml>\n    </user_directories>\n\n    <max_server_memory_usage>1073741824</max_server_memory_usage>\n    <mark_cache_size>67108864</mark_cache_size>\n    <index_mark_cache_size>33554432</index_mark_cache_size>\n    <uncompressed_cache_size>16777216</uncompressed_cache_size>\n    <index_uncompressed_cache_size>16777216</index_uncompressed_cache_size>\n    <compiled_expression_cache_size>16777216</compiled_expression_cache_size>\n    <background_pool_size>2</background_pool_size>\n    <background_schedule_pool_size>4</background_schedule_pool_size>\n    <max_concurrent_queries>16</max_concurrent_queries>\n    <asynchronous_metrics_update_period_s>60</asynchronous_metrics_update_period_s>\n    <asynchronous_heavy_metrics_update_period_s>600</asynchronous_heavy_metrics_update_period_s>\n    <merge_tree>\n        <number_of_free_entries_in_pool_to_execute_mutation>2</number_of_free_entries_in_pool_to_execute_mutation>\n        <number_of_free_entries_in_pool_to_lower_max_size_of_merge>2</number_of_free_entries_in_pool_to_lower_max_size_of_merge>\n        <number_of_free_entries_in_pool_to_execute_optimize_entire_partition>2</number_of_free_entries_in_pool_to_execute_optimize_entire_partition>\n    </merge_tree>\n\n    <!-- Idle wake-ups, each measured: a sampling profiler, a 2 s config poll, and pools sized for a server. -->\n    <global_profiler_real_time_period_ns>0</global_profiler_real_time_period_ns>\n    <global_profiler_cpu_time_period_ns>0</global_profiler_cpu_time_period_ns>\n    <config_reload_interval_ms>3600000</config_reload_interval_ms>\n    <async_insert_threads>1</async_insert_threads>\n    <background_buffer_flush_schedule_pool_size>1</background_buffer_flush_schedule_pool_size>\n    <background_distributed_schedule_pool_size>1</background_distributed_schedule_pool_size>\n    <background_message_broker_schedule_pool_size>1</background_message_broker_schedule_pool_size>\n    <background_fetches_pool_size>1</background_fetches_pool_size>\n    <background_move_pool_size>1</background_move_pool_size>\n    <background_common_pool_size>2</background_common_pool_size>\n</clickhouse>\n"
+  },
+  {
+   "data": "/a & b/<d>/",
+   "users": "/q/\"u\".xml",
+   "server": "<?xml version=\"1.0\"?>\n<!-- Written by `otel-stack clickhouse up`; regenerated on every start. -->\n<clickhouse>\n    <logger>\n        <level>warning</level>\n        <console>1</console>\n    </logger>\n    <listen_host>127.0.0.1</listen_host>\n    <http_port>18123</http_port>\n    <tcp_port>19000</tcp_port>\n    <path>/a &amp; b/&lt;d&gt;/</path>\n    <tmp_path>/a &amp; b/&lt;d&gt;/tmp/</tmp_path>\n    <user_files_path>/a &amp; b/&lt;d&gt;/user_files/</user_files_path>\n    <format_schema_path>/a &amp; b/&lt;d&gt;/format_schemas/</format_schema_path>\n    <user_directories>\n        <users_xml><path>/q/\"u\".xml</path></users_xml>\n    </user_directories>\n\n    <max_server_memory_usage>1073741824</max_server_memory_usage>\n    <mark_cache_size>67108864</mark_cache_size>\n    <index_mark_cache_size>33554432</index_mark_cache_size>\n    <uncompressed_cache_size>16777216</uncompressed_cache_size>\n    <index_uncompressed_cache_size>16777216</index_uncompressed_cache_size>\n    <compiled_expression_cache_size>16777216</compiled_expression_cache_size>\n    <background_pool_size>2</background_pool_size>\n    <background_schedule_pool_size>4</background_schedule_pool_size>\n    <max_concurrent_queries>16</max_concurrent_queries>\n    <asynchronous_metrics_update_period_s>60</asynchronous_metrics_update_period_s>\n    <asynchronous_heavy_metrics_update_period_s>600</asynchronous_heavy_metrics_update_period_s>\n    <merge_tree>\n        <number_of_free_entries_in_pool_to_execute_mutation>2</number_of_free_entries_in_pool_to_execute_mutation>\n        <number_of_free_entries_in_pool_to_lower_max_size_of_merge>2</number_of_free_entries_in_pool_to_lower_max_size_of_merge>\n        <number_of_free_entries_in_pool_to_execute_optimize_entire_partition>2</number_of_free_entries_in_pool_to_execute_optimize_entire_partition>\n    </merge_tree>\n\n    <!-- Idle wake-ups, each measured: a sampling profiler, a 2 s config poll, and pools sized for a server. -->\n    <global_profiler_real_time_period_ns>0</global_profiler_real_time_period_ns>\n    <global_profiler_cpu_time_period_ns>0</global_profiler_cpu_time_period_ns>\n    <config_reload_interval_ms>3600000</config_reload_interval_ms>\n    <async_insert_threads>1</async_insert_threads>\n    <background_buffer_flush_schedule_pool_size>1</background_buffer_flush_schedule_pool_size>\n    <background_distributed_schedule_pool_size>1</background_distributed_schedule_pool_size>\n    <background_message_broker_schedule_pool_size>1</background_message_broker_schedule_pool_size>\n    <background_fetches_pool_size>1</background_fetches_pool_size>\n    <background_move_pool_size>1</background_move_pool_size>\n    <background_common_pool_size>2</background_common_pool_size>\n</clickhouse>\n"
+  }
+ ],
+ "users_xml": "<?xml version=\"1.0\"?>\n<clickhouse>\n    <profiles>\n        <default>\n            <max_threads>2</max_threads>\n            <max_memory_usage>536870912</max_memory_usage>\n        </default>\n    </profiles>\n    <users>\n        <default>\n            <password></password>\n            <networks>\n                <ip>127.0.0.1</ip>\n                <ip>::1</ip>\n            </networks>\n            <profile>default</profile>\n            <quota>default</quota>\n        </default>\n    </users>\n    <quotas>\n        <default></default>\n    </quotas>\n</clickhouse>\n",
+ "contrib_yaml": "# Written by `otel-stack clickhouse up`; runs only between `up` and `down`.\nreceivers:\n  otlp:\n    protocols:\n      http:\n        endpoint: 127.0.0.1:14318\nprocessors:\n  batch:\n    timeout: 5s\n    send_batch_size: 5000\nexporters:\n  clickhouse:\n    endpoint: tcp://127.0.0.1:19000?dial_timeout=10s\n    database: otel\n    ttl: 168h\n    create_schema: true\n    timeout: 10s\n    retry_on_failure:\n      enabled: true\nservice:\n  telemetry:\n    metrics:\n      level: none\n    logs:\n      level: warn\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [clickhouse]\n    metrics:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [clickhouse]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [clickhouse]\n",
+ "forward": {
+  "http://127.0.0.1:24318": {
+   "ok": "http://127.0.0.1:24318"
+  },
+  " http://127.0.0.1:24318/ ": {
+   "ok": "http://127.0.0.1:24318"
+  },
+  "HTTPS://Host.Example:443": {
+   "ok": "https://Host.Example:443"
+  },
+  "http://h:1?": {
+   "ok": "http://h:1"
+  },
+  "http://h:1#": {
+   "ok": "http://h:1"
+  },
+  "http://user@h:1": {
+   "ok": "http://user@h:1"
+  },
+  "http://[::1]:4318": {
+   "ok": "http://[::1]:4318"
+  },
+  "ftp://h:1": {
+   "error": "forward endpoint must look like http://127.0.0.1:24318, got 'ftp://h:1'"
+  },
+  "http://h": {
+   "error": "forward endpoint must look like http://127.0.0.1:24318, got 'http://h'"
+  },
+  "http://:1": {
+   "error": "forward endpoint must look like http://127.0.0.1:24318, got 'http://:1'"
+  },
+  "http://h:1/v1/traces": {
+   "error": "forward endpoint is a base URL; the collector appends /v1/<signal> itself, got 'http://h:1/v1/traces'"
+  },
+  "http://h:1?a=b": {
+   "error": "forward endpoint is a base URL; the collector appends /v1/<signal> itself, got 'http://h:1?a=b'"
+  },
+  "http://h:1#f": {
+   "error": "forward endpoint is a base URL; the collector appends /v1/<signal> itself, got 'http://h:1#f'"
+  },
+  "127.0.0.1:4318": {
+   "error": "forward endpoint must look like http://127.0.0.1:24318, got '127.0.0.1:4318'"
+  },
+  "": {
+   "error": "forward endpoint must look like http://127.0.0.1:24318, got ''"
+  },
+  "http://h:0": {
+   "ok": "http://h:0"
+  },
+  "http://H:1": {
+   "ok": "http://H:1"
+  }
+ },
+ "netstat": {
+  "text": "\nActive Connections\n\n  Proto  Local Address          Foreign Address        State           PID\n  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       1012\n  TCP    127.0.0.1:4318         0.0.0.0:0              LISTENING       7788\n  TCP    127.0.0.1:14318        0.0.0.0:0              LISTENING       99\n  TCP    [::]:4317              [::]:0                 LISTENING       4242\n  TCP    127.0.0.1:50000        127.0.0.1:4318         ESTABLISHED     12\n  TCP    127.0.0.1:4319         0.0.0.0:0              LISTENING       x1\n",
+  "ports": {
+   "135": 1012,
+   "4318": 7788,
+   "4317": 4242,
+   "14318": 99,
+   "4319": null,
+   "50000": null,
+   "9": null
+  }
+ },
+ "is_collector": {
+  "/Users/a/bin/otelcol --config x": true,
+  "otelcol": true,
+  "OTELCOL.EXE": true,
+  "C:\\x\\otelcol.exe --config y": true,
+  "/opt/my otel/otelcol": true,
+  "/bin/otelcol-contrib --config": false,
+  "otelcolx": false,
+  "docker-proxy -host-port 4318": false,
+  "": false,
+  "/x/otelcol\t--a": true,
+  "/xotelcol": false
+ },
+ "launched": {
+  "123\t/bin/otelcol\tMon Nov  9 10:00:00 2026\n": {
+   "pid": 123,
+   "binary": "/bin/otelcol",
+   "started": "Mon Nov  9 10:00:00 2026",
+   "text": "123\t/bin/otelcol\tMon Nov  9 10:00:00 2026\n"
+  },
+  "45\t/b\n": {
+   "pid": 45,
+   "binary": "/b",
+   "started": "",
+   "text": "45\t/b\t\n"
+  },
+  "7": {
+   "pid": 7,
+   "binary": "",
+   "started": "",
+   "text": "7\t\t\n"
+  },
+  "x\t/b\t\n": null,
+  "": null,
+  "12\t\t\n": {
+   "pid": 12,
+   "binary": "",
+   "started": "",
+   "text": "12\t\t\n"
+  },
+  "9\ta\tb\tc\n": {
+   "pid": 9,
+   "binary": "a",
+   "started": "b",
+   "text": "9\ta\tb\n"
+  }
+ },
+ "releases": {
+  "darwin_arm64": {
+   "asset": "otelcol_0.162.0_darwin_arm64.tar.gz",
+   "sha256": "53de34c02913f54aa240861e0febf67a6839bc8ecf1bfab83a8ae7d355d30674",
+   "binary": "otelcol"
+  },
+  "darwin_amd64": {
+   "asset": "otelcol_0.162.0_darwin_amd64.tar.gz",
+   "sha256": "7292fdb7673283b5fa4422c33703b846011426f79ac7b0505ed9c314a256870d",
+   "binary": "otelcol"
+  },
+  "linux_amd64": {
+   "asset": "otelcol_0.162.0_linux_amd64.tar.gz",
+   "sha256": "f99929987a915d3c6b2c9b15bc4938c5cea903a37a3f49e478024a0fa0772339",
+   "binary": "otelcol"
+  },
+  "windows_amd64": {
+   "asset": "otelcol_0.162.0_windows_amd64.tar.gz",
+   "sha256": "480381f40e182e638ac49def6c28ef6c60bcb8b342056dd9d0b9b906146b8f82",
+   "binary": "otelcol.exe"
+  }
+ },
+ "version": "0.162.0",
+ "clickhouse_pins": {
+  "darwin_arm64": {
+   "url": "https://github.com/ClickHouse/ClickHouse/releases/download/v26.8.23.6-lts/clickhouse-macos-aarch64",
+   "sha256": "ffd86ef015a85753916d6cffeb202c531109b5f35ef485a2ec87805aff5cb66a",
+   "binary": "clickhouse",
+   "member": ""
+  },
+  "darwin_amd64": {
+   "url": "https://github.com/ClickHouse/ClickHouse/releases/download/v26.8.23.6-lts/clickhouse-macos",
+   "sha256": "069fb0f152bbfd1934b9f5194e8d503459b343637b86c3ed9996902d13926f18",
+   "binary": "clickhouse",
+   "member": ""
+  },
+  "linux_amd64": {
+   "url": "https://github.com/ClickHouse/ClickHouse/releases/download/v26.8.23.6-lts/clickhouse-common-static-26.8.23.6-amd64.tgz",
+   "sha256": "14e50330a5b3485e18bb0c6b81637fc1a91567a8eb4ee43062cee5dc552d593b",
+   "binary": "clickhouse",
+   "member": "clickhouse-common-static-26.8.23.6/usr/bin/clickhouse"
+  }
+ },
+ "contrib_pins": {
+  "darwin_arm64": {
+   "url": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.162.0/otelcol-contrib_0.162.0_darwin_arm64.tar.gz",
+   "sha256": "d5e11974d2e4adac3cc001a25137aad52f6e77ec3034ba7735cac7c219a5f97a",
+   "binary": "otelcol-contrib",
+   "member": "otelcol-contrib"
+  },
+  "darwin_amd64": {
+   "url": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.162.0/otelcol-contrib_0.162.0_darwin_amd64.tar.gz",
+   "sha256": "91a6e7a0f5e1981986c897db4535de5ba8d7fc45d4205809aecb9ebebf68c71c",
+   "binary": "otelcol-contrib",
+   "member": "otelcol-contrib"
+  },
+  "linux_amd64": {
+   "url": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.162.0/otelcol-contrib_0.162.0_linux_amd64.tar.gz",
+   "sha256": "fcc063749f730f8c21fe29f2d340ff174f5f1c5885bd3156fb6c985a3036fcc3",
+   "binary": "otelcol-contrib",
+   "member": "otelcol-contrib"
+  },
+  "windows_amd64": {
+   "url": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.162.0/otelcol-contrib_0.162.0_windows_amd64.tar.gz",
+   "sha256": "b371829181e89947a1a6570b8b6c38c20d85e2d215b76bf042f89b365b9e5c3d",
+   "binary": "otelcol-contrib.exe",
+   "member": "otelcol-contrib.exe"
+  }
+ },
+ "head_hash": [
+  {
+   "raw": "",
+   "sent": 0,
+   "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "raw": "",
+   "sent": 2,
+   "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "raw": "",
+   "sent": 4096,
+   "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "raw": "",
+   "sent": 5000,
+   "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "raw": "YWJjCg==",
+   "sent": 0,
+   "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "raw": "YWJjCg==",
+   "sent": 2,
+   "hash": "fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603"
+  },
+  {
+   "raw": "YWJjCg==",
+   "sent": 4096,
+   "hash": "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
+  },
+  {
+   "raw": "YWJjCg==",
+   "sent": 5000,
+   "hash": "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
+  },
+  {
+   "raw": "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",
+   "sent": 0,
+   "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "raw": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=",
+   "sent": 2,
+   "hash": "b413f47d13ee2fe6c845b2ee141af81de858df4ec549a58b7970bb96645bc8d2"
+  },
+  {
+   "raw": "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",
+   "sent": 4096,
+   "hash": "c8f5d0341d54d951a71b136e6e2afcb14d11ed8489a7ae126a8fee0df6ecf193"
+  },
+  {
+   "raw": "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",
+   "sent": 5000,
+   "hash": "c8f5d0341d54d951a71b136e6e2afcb14d11ed8489a7ae126a8fee0df6ecf193"
+  }
+ ],
+ "offsets_text": "{\n  \"100\": {\n    \"inode\": 100,\n    \"sent\": 0,\n    \"head\": \"\"\n  },\n  \"7\": {\n    \"inode\": 7,\n    \"sent\": 5,\n    \"head\": \"\"\n  },\n  \"99\": {\n    \"inode\": 99,\n    \"sent\": 10,\n    \"head\": \"ab\"\n  }\n}\n",
+ "offsets_empty": "{}\n",
+ "backfill": {
+  "text": "{\"resourceSpans\": [{\"resource\": {\"attributes\": [{\"key\": \"service.name\", \"value\": {\"stringValue\": \"rig\"}}]}, \"scopeSpans\": [{\"scope\": {\"name\": \"rig.cli\", \"version\": \"1\"}, \"spans\": [{\"traceId\": \"t1\", \"spanId\": \"a\", \"name\": \"n-a\", \"endTimeUnixNano\": \"200\"}, {\"traceId\": \"t1\", \"spanId\": \"b\", \"name\": \"n-b\", \"startTimeUnixNano\": 150, \"attributes\": [{\"key\": \"span.incomplete\", \"value\": {\"boolValue\": true}}, {\"key\": \"x\", \"value\": {\"stringValue\": \"y\"}}]}]}]}]}\n{\"resourceSpans\": [{\"resource\": {\"attributes\": [{\"key\": \"service.name\", \"value\": {\"stringValue\": \"web\"}}]}, \"scopeSpans\": [{\"scope\": {\"name\": \"rig.cli\", \"version\": \"1\"}, \"spans\": [{\"traceId\": \"t2\", \"spanId\": \"c\", \"name\": \"n-c\", \"endTimeUnixNano\": 300}, {\"traceId\": \"\", \"spanId\": \"d\", \"name\": \"n-d\", \"endTimeUnixNano\": 1}, {\"traceId\": \"t3\"}]}, {\"scope\": null, \"spans\": [{\"traceId\": \"t1\", \"spanId\": \"b\", \"name\": \"n-b\", \"endTimeUnixNano\": 400, \"attributes\": [{\"key\": \"span.incomplete\", \"value\": {\"boolValue\": false}}, {\"key\": \"x\", \"value\": {\"stringValue\": \"y\"}}]}]}]}]}\n{\"resourceSpans\": [{\"resource\": {\"attributes\": [{\"key\": \"service.name\", \"value\": {\"stringValue\": \"rig\"}}]}, \"scopeSpans\": [{\"scope\": {\"name\": \"rig.cli\", \"version\": \"1\"}, \"spans\": [{\"traceId\": \"t1\", \"spanId\": \"a\", \"name\": \"n-a\", \"endTimeUnixNano\": 500, \"attributes\": [{\"key\": \"span.incomplete\", \"value\": {\"boolValue\": true}}, {\"key\": \"x\", \"value\": {\"stringValue\": \"y\"}}]}, {\"traceId\": \"t4\", \"spanId\": \"e\", \"name\": \"n-e\", \"endTimeUnixNano\": \"x\", \"startTimeUnixNano\": 7}, {\"traceId\": \"t5\", \"spanId\": \"f\", \"name\": \"n-f\", \"attributes\": \"nope\"}, {\"traceId\": \"t5\", \"spanId\": \"g\", \"name\": \"n-g\", \"endTimeUnixNano\": true}]}]}]}\n{\"resourceSpans\": \"nope\"}\n{\"other\": 1}\n\nnot json\n[1,2]\n{\"resourceSpans\": [{\"scopeSpans\": [{\"spans\": [{\"traceId\": \"t9\", \"spanId\": \"z\"}]}]}]}\n{\"resourceSpans\": [{\"resource\": 1, \"scopeSpans\": [{\"spans\": [1]}]}]}\n{\"resourceSpans\": [{\"scopeSpans\": [{\"spans\": [{\"traceId\": 5, \"spanId\": \"q\"}]}]}]}\n{\"torn\": ",
+  "spans": [
+   {
+    "trace_id": "t1",
+    "span_id": "a",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t1",
+     "spanId": "a",
+     "name": "n-a",
+     "endTimeUnixNano": "200"
+    },
+    "end_ns": 200,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t1",
+    "span_id": "b",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t1",
+     "spanId": "b",
+     "name": "n-b",
+     "startTimeUnixNano": 150,
+     "attributes": [
+      {
+       "key": "span.incomplete",
+       "value": {
+        "boolValue": true
+       }
+      },
+      {
+       "key": "x",
+       "value": {
+        "stringValue": "y"
+       }
+      }
+     ]
+    },
+    "end_ns": 150,
+    "incomplete": true
+   },
+   {
+    "trace_id": "t2",
+    "span_id": "c",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "web"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t2",
+     "spanId": "c",
+     "name": "n-c",
+     "endTimeUnixNano": 300
+    },
+    "end_ns": 300,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t1",
+    "span_id": "b",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "web"
+       }
+      }
+     ]
+    },
+    "scope": null,
+    "span": {
+     "traceId": "t1",
+     "spanId": "b",
+     "name": "n-b",
+     "endTimeUnixNano": 400,
+     "attributes": [
+      {
+       "key": "span.incomplete",
+       "value": {
+        "boolValue": false
+       }
+      },
+      {
+       "key": "x",
+       "value": {
+        "stringValue": "y"
+       }
+      }
+     ]
+    },
+    "end_ns": 400,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t1",
+    "span_id": "a",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t1",
+     "spanId": "a",
+     "name": "n-a",
+     "endTimeUnixNano": 500,
+     "attributes": [
+      {
+       "key": "span.incomplete",
+       "value": {
+        "boolValue": true
+       }
+      },
+      {
+       "key": "x",
+       "value": {
+        "stringValue": "y"
+       }
+      }
+     ]
+    },
+    "end_ns": 500,
+    "incomplete": true
+   },
+   {
+    "trace_id": "t4",
+    "span_id": "e",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t4",
+     "spanId": "e",
+     "name": "n-e",
+     "endTimeUnixNano": "x",
+     "startTimeUnixNano": 7
+    },
+    "end_ns": 7,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t5",
+    "span_id": "f",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t5",
+     "spanId": "f",
+     "name": "n-f",
+     "attributes": "nope"
+    },
+    "end_ns": 0,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t5",
+    "span_id": "g",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t5",
+     "spanId": "g",
+     "name": "n-g",
+     "endTimeUnixNano": true
+    },
+    "end_ns": 1,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t9",
+    "span_id": "z",
+    "resource": null,
+    "scope": null,
+    "span": {
+     "traceId": "t9",
+     "spanId": "z"
+    },
+    "end_ns": 0,
+    "incomplete": false
+   }
+  ],
+  "best": [
+   {
+    "trace_id": "t1",
+    "span_id": "a",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t1",
+     "spanId": "a",
+     "name": "n-a",
+     "endTimeUnixNano": "200"
+    },
+    "end_ns": 200,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t1",
+    "span_id": "b",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "web"
+       }
+      }
+     ]
+    },
+    "scope": null,
+    "span": {
+     "traceId": "t1",
+     "spanId": "b",
+     "name": "n-b",
+     "endTimeUnixNano": 400,
+     "attributes": [
+      {
+       "key": "span.incomplete",
+       "value": {
+        "boolValue": false
+       }
+      },
+      {
+       "key": "x",
+       "value": {
+        "stringValue": "y"
+       }
+      }
+     ]
+    },
+    "end_ns": 400,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t2",
+    "span_id": "c",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "web"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t2",
+     "spanId": "c",
+     "name": "n-c",
+     "endTimeUnixNano": 300
+    },
+    "end_ns": 300,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t4",
+    "span_id": "e",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t4",
+     "spanId": "e",
+     "name": "n-e",
+     "endTimeUnixNano": "x",
+     "startTimeUnixNano": 7
+    },
+    "end_ns": 7,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t5",
+    "span_id": "f",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t5",
+     "spanId": "f",
+     "name": "n-f",
+     "attributes": "nope"
+    },
+    "end_ns": 0,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t5",
+    "span_id": "g",
+    "resource": {
+     "attributes": [
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "rig"
+       }
+      }
+     ]
+    },
+    "scope": {
+     "name": "rig.cli",
+     "version": "1"
+    },
+    "span": {
+     "traceId": "t5",
+     "spanId": "g",
+     "name": "n-g",
+     "endTimeUnixNano": true
+    },
+    "end_ns": 1,
+    "incomplete": false
+   },
+   {
+    "trace_id": "t9",
+    "span_id": "z",
+    "resource": null,
+    "scope": null,
+    "span": {
+     "traceId": "t9",
+     "spanId": "z"
+    },
+    "end_ns": 0,
+    "incomplete": false
+   }
+  ],
+  "envelopes": [
+   {
+    "resourceSpans": [
+     {
+      "resource": {
+       "attributes": [
+        {
+         "key": "service.name",
+         "value": {
+          "stringValue": "rig"
+         }
+        }
+       ]
+      },
+      "scopeSpans": [
+       {
+        "scope": {
+         "name": "rig.cli",
+         "version": "1"
+        },
+        "spans": [
+         {
+          "traceId": "t1",
+          "spanId": "a",
+          "name": "n-a",
+          "endTimeUnixNano": "200"
+         },
+         {
+          "traceId": "t4",
+          "spanId": "e",
+          "name": "n-e",
+          "endTimeUnixNano": "x",
+          "startTimeUnixNano": 7
+         },
+         {
+          "traceId": "t5",
+          "spanId": "f",
+          "name": "n-f",
+          "attributes": "nope"
+         },
+         {
+          "traceId": "t5",
+          "spanId": "g",
+          "name": "n-g",
+          "endTimeUnixNano": true
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "resource": {
+       "attributes": [
+        {
+         "key": "service.name",
+         "value": {
+          "stringValue": "web"
+         }
+        }
+       ]
+      },
+      "scopeSpans": [
+       {
+        "scope": null,
+        "spans": [
+         {
+          "traceId": "t1",
+          "spanId": "b",
+          "name": "n-b",
+          "endTimeUnixNano": 400,
+          "attributes": [
+           {
+            "key": "span.incomplete",
+            "value": {
+             "boolValue": false
+            }
+           },
+           {
+            "key": "x",
+            "value": {
+             "stringValue": "y"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "scope": {
+         "name": "rig.cli",
+         "version": "1"
+        },
+        "spans": [
+         {
+          "traceId": "t2",
+          "spanId": "c",
+          "name": "n-c",
+          "endTimeUnixNano": 300
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "resource": null,
+      "scopeSpans": [
+       {
+        "scope": null,
+        "spans": [
+         {
+          "traceId": "t9",
+          "spanId": "z"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "envelopes2": [
+   {
+    "resourceSpans": [
+     {
+      "resource": {
+       "attributes": [
+        {
+         "key": "service.name",
+         "value": {
+          "stringValue": "rig"
+         }
+        }
+       ]
+      },
+      "scopeSpans": [
+       {
+        "scope": {
+         "name": "rig.cli",
+         "version": "1"
+        },
+        "spans": [
+         {
+          "traceId": "t1",
+          "spanId": "a",
+          "name": "n-a",
+          "endTimeUnixNano": "200"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "resource": {
+       "attributes": [
+        {
+         "key": "service.name",
+         "value": {
+          "stringValue": "web"
+         }
+        }
+       ]
+      },
+      "scopeSpans": [
+       {
+        "scope": null,
+        "spans": [
+         {
+          "traceId": "t1",
+          "spanId": "b",
+          "name": "n-b",
+          "endTimeUnixNano": 400,
+          "attributes": [
+           {
+            "key": "span.incomplete",
+            "value": {
+             "boolValue": false
+            }
+           },
+           {
+            "key": "x",
+            "value": {
+             "stringValue": "y"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "resourceSpans": [
+     {
+      "resource": {
+       "attributes": [
+        {
+         "key": "service.name",
+         "value": {
+          "stringValue": "web"
+         }
+        }
+       ]
+      },
+      "scopeSpans": [
+       {
+        "scope": {
+         "name": "rig.cli",
+         "version": "1"
+        },
+        "spans": [
+         {
+          "traceId": "t2",
+          "spanId": "c",
+          "name": "n-c",
+          "endTimeUnixNano": 300
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "resource": {
+       "attributes": [
+        {
+         "key": "service.name",
+         "value": {
+          "stringValue": "rig"
+         }
+        }
+       ]
+      },
+      "scopeSpans": [
+       {
+        "scope": {
+         "name": "rig.cli",
+         "version": "1"
+        },
+        "spans": [
+         {
+          "traceId": "t4",
+          "spanId": "e",
+          "name": "n-e",
+          "endTimeUnixNano": "x",
+          "startTimeUnixNano": 7
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "resourceSpans": [
+     {
+      "resource": {
+       "attributes": [
+        {
+         "key": "service.name",
+         "value": {
+          "stringValue": "rig"
+         }
+        }
+       ]
+      },
+      "scopeSpans": [
+       {
+        "scope": {
+         "name": "rig.cli",
+         "version": "1"
+        },
+        "spans": [
+         {
+          "traceId": "t5",
+          "spanId": "f",
+          "name": "n-f",
+          "attributes": "nope"
+         },
+         {
+          "traceId": "t5",
+          "spanId": "g",
+          "name": "n-g",
+          "endTimeUnixNano": true
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "resourceSpans": [
+     {
+      "resource": null,
+      "scopeSpans": [
+       {
+        "scope": null,
+        "spans": [
+         {
+          "traceId": "t9",
+          "spanId": "z"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "plist": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHBsaXN0IFBVQkxJQyAiLS8vQXBwbGUvL0RURCBQTElTVCAxLjAvL0VOIiAiaHR0cDovL3d3dy5hcHBsZS5jb20vRFREcy9Qcm9wZXJ0eUxpc3QtMS4wLmR0ZCI+CjxwbGlzdCB2ZXJzaW9uPSIxLjAiPgo8ZGljdD4KCTxrZXk+S2VlcEFsaXZlPC9rZXk+Cgk8dHJ1ZS8+Cgk8a2V5PkxhYmVsPC9rZXk+Cgk8c3RyaW5nPmRldi5ydGtlbGx5LnJpZy5vdGVsY29sPC9zdHJpbmc+Cgk8a2V5Pkxvd1ByaW9yaXR5SU88L2tleT4KCTx0cnVlLz4KCTxrZXk+TmljZTwva2V5PgoJPGludGVnZXI+MTA8L2ludGVnZXI+Cgk8a2V5PlByb2Nlc3NUeXBlPC9rZXk+Cgk8c3RyaW5nPkJhY2tncm91bmQ8L3N0cmluZz4KCTxrZXk+UHJvZ3JhbUFyZ3VtZW50czwva2V5PgoJPGFycmF5PgoJCTxzdHJpbmc+L29wdC9vdGVsL2Jpbi9vdGVsY29sPC9zdHJpbmc+CgkJPHN0cmluZz4tLWNvbmZpZzwvc3RyaW5nPgoJCTxzdHJpbmc+L29wdC9vdGVsL290ZWxjb2wueWFtbDwvc3RyaW5nPgoJPC9hcnJheT4KCTxrZXk+UnVuQXRMb2FkPC9rZXk+Cgk8dHJ1ZS8+Cgk8a2V5PlN0YW5kYXJkRXJyb3JQYXRoPC9rZXk+Cgk8c3RyaW5nPi92YXIvZm9sZGVycy9qbi81dmh2eHM5OTd6czFqcnE2MmMwODQ5Y3IwMDAwZ24vVC9vdGVsLW9yYWNsZS1xeHI4eTllaC9zaGFyZWQtdXRpbGl0aWVzL2xvZ3Mvb3RlbGNvbC5sb2c8L3N0cmluZz4KCTxrZXk+U3RhbmRhcmRPdXRQYXRoPC9rZXk+Cgk8c3RyaW5nPi92YXIvZm9sZGVycy9qbi81dmh2eHM5OTd6czFqcnE2MmMwODQ5Y3IwMDAwZ24vVC9vdGVsLW9yYWNsZS1xeHI4eTllaC9zaGFyZWQtdXRpbGl0aWVzL2xvZ3Mvb3RlbGNvbC5sb2c8L3N0cmluZz4KCTxrZXk+VGhyb3R0bGVJbnRlcnZhbDwva2V5PgoJPGludGVnZXI+NjA8L2ludGVnZXI+CjwvZGljdD4KPC9wbGlzdD4K",
+ "plist_log": "/var/folders/jn/5vhvxs997zs1jrq62c0849cr0000gn/T/otel-oracle-qxr8y9eh/shared-utilities/logs/otelcol.log"
+}
