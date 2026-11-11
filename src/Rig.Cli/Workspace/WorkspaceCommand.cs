@@ -86,15 +86,16 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
     // Resolved like the Python's Path.resolve(): a linked personal folder's org folders sit beside its target.
     private string EstateDir(string? root) => PathResolution.Resolve(string.IsNullOrEmpty(root) ? host.PersonalDir : root);
 
-    // The code root git hardens untrusted folders under: the estate's parent.
-    private Git GitFor(string estate) => new(proc, Path.GetDirectoryName(estate) ?? estate);
+    // Git hardened under the configured code root (the personal folder's parent), never one derived from --root:
+    // a --root inside other/ would otherwise move the untrusted folders out from under it.
+    private Git CodeGit => new(proc, Path.GetDirectoryName(PathResolution.Resolve(host.PersonalDir)) ?? host.PersonalDir);
 
     private async Task<(string Estate, IReadOnlyList<ManagedRepoSpec> Specs, EstateAuditResult Result, EstateAudit Audit)> RunAuditAsync(
         string? root, string? config, CancellationToken cancellationToken)
     {
         var estate = EstateDir(root);
         var specs = ManagedProjects.Load(string.IsNullOrEmpty(config) ? host.ManagedProjectsFile : PathResolution.Resolve(config));
-        var audit = new EstateAudit(GitFor(estate), EstateScopes.Load(host.ScopesFile));
+        var audit = new EstateAudit(CodeGit, EstateScopes.Load(host.ScopesFile));
         var result = await audit.RunAsync(estate, specs, MachineConfig.SkipRepos(host.MachineConfigFile), cancellationToken).ConfigureAwait(false);
         return (estate, specs, result, audit);
     }
@@ -224,7 +225,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         // The Python skipped the scan when the estate folder is missing; the org folders are only looked at beside it.
         var parents = Directory.Exists(estate) ? EstateScopes.Load(host.ScopesFile).RepoParentDirs(estate) : [];
         var resolver = new RepoResolver(new GhApi(proc), RepoResolver.DefaultCacheFile(host.Home), time);
-        var checks = await RepoFolderCheck.EstateAsync(GitFor(estate), resolver, parents, refresh, cancellationToken).ConfigureAwait(false);
+        var checks = await RepoFolderCheck.EstateAsync(CodeGit, resolver, parents, refresh, cancellationToken).ConfigureAwait(false);
         var clean = !checks.Any(check => check.IsIssue);
 
         if (json)

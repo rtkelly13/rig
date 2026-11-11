@@ -261,6 +261,19 @@ public sealed class WorkspaceEstateCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task A_root_inside_an_untrusted_folder_still_hardens_git()
+    {
+        var collection = Path.Join(Root, "other", "collection");
+        var stray = Path.Join(collection, "stray");
+        _ = Directory.CreateDirectory(Path.Join(stray, ".git"));
+
+        _ = await RunAsync("clean", "--root", collection, "--apply", "--force");
+
+        var status = Assert.Single(_proc.Requests, r => r.Argv.Contains("status"));
+        Assert.Equal(["git", .. Git.HardeningArgs], status.Argv.Take(Git.HardeningArgs.Count + 1));
+    }
+
+    [Fact]
     public async Task Clean_with_nothing_unmanaged_says_so()
     {
         var (code, output) = await RunAsync("clean", "--apply");
