@@ -56,6 +56,20 @@ public sealed class LivePackageFetcherTests : IDisposable
     }
 
     [Fact]
+    public async Task Odd_optional_npm_fields_lose_only_their_metadata()
+    {
+        _http.Routes[Packument] = """
+            {"dist-tags": {"latest": "1.0.0"}, "time": [],
+             "versions": {"1.0.0": {"_npmUser": "someone", "dist": {"attestations": "unexpected"} } } }
+            """;
+
+        var release = await Fetcher.RegistryReleaseAsync(Npm, Token);
+
+        Assert.NotNull(release);
+        Assert.Equal(("1.0.0", (bool?)null, (Provenance?)null), (release.Version, release.TrustedPublisher, release.Provenance));
+    }
+
+    [Fact]
     public async Task A_release_is_fetched_once_per_spec()
     {
         NpmRoutes();

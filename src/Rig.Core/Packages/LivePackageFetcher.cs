@@ -32,7 +32,7 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     {
         var ran = await github.CallAsync(ApiRequest.Get($"repos/{slug}"), cancellationToken).ConfigureAwait(false);
         var repo = ran.Ok ? Parse(ran.Out) : null;
-        return Str(repo?["full_name"]) is { } name && Long(repo?["id"]) is { } id && Long(repo?["owner"]?["id"]) is { } owner
+        return Str(repo.At("full_name")) is { } name && Long(repo.At("id")) is { } id && Long(repo.At("owner").At("id")) is { } owner
             ? new RepoIdentity(name, id, owner)
             : null;
     }
@@ -50,12 +50,12 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     {
         var route = string.Create(CultureInfo.InvariantCulture, $"repos/{slug}/actions/workflows/{workflow}/runs?status=completed&per_page={limit}");
         var ran = await github.CallAsync(ApiRequest.Get(route), cancellationToken).ConfigureAwait(false);
-        if (!ran.Ok || Parse(ran.Out)?["workflow_runs"] is not JsonArray runs)
+        if (!ran.Ok || Parse(ran.Out).At("workflow_runs") is not JsonArray runs)
         {
             return null;
         }
 
-        return [.. runs.Select(run => Str(run?["conclusion"])).OfType<string>().Where(c => c.Length > 0)];
+        return [.. runs.Select(run => Str(run.At("conclusion"))).OfType<string>().Where(c => c.Length > 0)];
     }
 
     /// <inheritdoc/>
@@ -88,31 +88,31 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     /// <summary>The SLSA statement in <c>/-/npm/v1/attestations/&lt;pkg&gt;@&lt;ver&gt;</c>; null when there is none.</summary>
     public static Provenance? ParseNpmProvenance(JsonNode? document)
     {
-        if (document?["attestations"] is not JsonArray attestations)
+        if (document.At("attestations") is not JsonArray attestations)
         {
             return null;
         }
 
         foreach (var attestation in attestations)
         {
-            var payload = Str(attestation?["bundle"]?["dsseEnvelope"]?["payload"]);
-            if (payload is null || !(Str(attestation?["predicateType"]) ?? string.Empty).Contains("slsa.dev/provenance", StringComparison.Ordinal))
+            var payload = Str(attestation.At("bundle").At("dsseEnvelope").At("payload"));
+            if (payload is null || !(Str(attestation.At("predicateType")) ?? string.Empty).Contains("slsa.dev/provenance", StringComparison.Ordinal))
             {
                 continue;
             }
 
-            var build = Decode(payload)?["predicate"]?["buildDefinition"];
-            if (build?["externalParameters"]?["workflow"] is not JsonObject workflow)
+            var build = Decode(payload).At("predicate").At("buildDefinition");
+            if (build.At("externalParameters").At("workflow") is not JsonObject workflow)
             {
                 return null;
             }
 
-            var gh = build["internalParameters"]?["github"];
+            var gh = build.At("internalParameters").At("github");
             return new(
-                Str(workflow["repository"]) ?? string.Empty,
-                Str(workflow["path"]) ?? string.Empty,
-                Long(gh?["repository_id"]),
-                Long(gh?["repository_owner_id"]));
+                Str(workflow.At("repository")) ?? string.Empty,
+                Str(workflow.At("path")) ?? string.Empty,
+                Long(gh.At("repository_id")),
+                Long(gh.At("repository_owner_id")));
         }
 
         return null;
@@ -130,9 +130,9 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         return
         [
             .. entries
-                .Select(entry => entry?["claims"])
+                .Select(entry => entry.At("claims"))
                 .OfType<JsonObject>()
-                .Select(claims => new TrustConfig(Str(claims["repository"]) ?? string.Empty, Str(claims["workflow_ref"]?["file"]) ?? string.Empty, Str(claims["environment"]))),
+                .Select(claims => new TrustConfig(Str(claims.At("repository")) ?? string.Empty, Str(claims.At("workflow_ref").At("file")) ?? string.Empty, Str(claims.At("environment")))),
         ];
     }
 
@@ -155,10 +155,10 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
             return null;
         }
 
-        var versions = packument["versions"] as JsonObject;
-        var times = packument["time"] as JsonObject;
+        var versions = packument.At("versions") as JsonObject;
+        var times = packument.At("time") as JsonObject;
         var all = versions?.Select(pair => pair.Key).ToList() ?? [];
-        var distLatest = Str(packument["dist-tags"]?["latest"]);
+        var distLatest = Str(packument.At("dist-tags").At("latest"));
         if (distLatest is not null && !all.Contains(distLatest))
         {
             all.Add(distLatest);
@@ -173,11 +173,11 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         var stables = all.Where(PackageVersions.IsStable).ToList();
         var stable = stables.Count == 0 ? null : stables.Aggregate(Newer);
         var meta = versions?[latest] as JsonObject ?? (distLatest is null ? null : versions?[distLatest] as JsonObject);
-        var user = meta?["_npmUser"] as JsonObject;
-        var attestations = Str(meta?["dist"]?["attestations"]?["url"]);
+        var user = meta.At("_npmUser") as JsonObject;
+        var attestations = Str(meta.At("dist").At("attestations").At("url"));
         return new(latest, Time(times?[latest]))
         {
-            TrustedPublisher = user is null ? null : user["trustedPublisher"] is JsonObject,
+            TrustedPublisher = user is null ? null : user.At("trustedPublisher") is JsonObject,
             Provenance = attestations is null ? null : ParseNpmProvenance(await GetAsync(attestations, cancellationToken).ConfigureAwait(false)),
             StableVersion = stable,
             StablePublished = stable is null ? null : Time(times?[stable]),
@@ -189,9 +189,9 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         if (_endpoints is null && await GetAsync(NuGetServiceIndex, cancellationToken).ConfigureAwait(false) is { } index)
         {
             // The first resource of exactly each type: nuget.org lists each search host twice.
-            string? Find(string type) => (index["resources"] as JsonArray)?
-                .FirstOrDefault(resource => Str(resource?["@type"]) == type && Str(resource?["@id"]) is not null) is { } found
-                ? Str(found["@id"])
+            string? Find(string type) => (index.At("resources") as JsonArray)?
+                .FirstOrDefault(resource => Str(resource.At("@type")) == type && Str(resource.At("@id")) is not null) is { } found
+                ? Str(found.At("@id"))
                 : null;
             if (Find("RegistrationsBaseUrl/3.6.0") is { } registrations && Find("PackageBaseAddress/3.0.0") is { } flat
                 && Find("SearchQueryService/3.5.0") is { } search)
@@ -206,8 +206,8 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     private async Task<IReadOnlyList<string>?> NuGetOwnersAsync(string search, string name, CancellationToken cancellationToken)
     {
         var found = await GetAsync($"{search}?q=packageid:{name}&prerelease=true&semVerLevel=2.0.0", cancellationToken).ConfigureAwait(false);
-        var hit = (found?["data"] as JsonArray)?.FirstOrDefault(h => string.Equals(Str(h?["id"]), name, StringComparison.OrdinalIgnoreCase));
-        return hit?["owners"] switch
+        var hit = (found.At("data") as JsonArray)?.FirstOrDefault(h => string.Equals(Str(h.At("id")), name, StringComparison.OrdinalIgnoreCase));
+        return hit.At("owners") switch
         {
             JsonArray owners => [.. owners.Select(Str).OfType<string>()],
             JsonValue one when Str(one) is { } owner => [owner],
@@ -224,7 +224,7 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
 
         var id = name.ToLowerInvariant();
         var flat = await GetAsync($"{endpoints.Flat}{id}/index.json", cancellationToken).ConfigureAwait(false);
-        var versions = (flat?["versions"] as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
+        var versions = (flat.At("versions") as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
         if (versions.Count == 0)
         {
             return null;
@@ -237,22 +237,22 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         }
 
         JsonObject? latest = null, stable = null;
-        foreach (var page in ((index["items"] as JsonArray) ?? []).Reverse())
+        foreach (var page in ((index.At("items") as JsonArray) ?? []).Reverse())
         {
-            var leaves = page?["items"] as JsonArray;
-            if (leaves is null && Str(page?["@id"]) is { } pageUrl)
+            var leaves = page.At("items") as JsonArray;
+            if (leaves is null && Str(page.At("@id")) is { } pageUrl)
             {
-                leaves = (await GetAsync(pageUrl, cancellationToken).ConfigureAwait(false))?["items"] as JsonArray;
+                leaves = (await GetAsync(pageUrl, cancellationToken).ConfigureAwait(false)).At("items") as JsonArray;
             }
 
-            var listed = (leaves ?? []).Select(leaf => leaf?["catalogEntry"] as JsonObject)
+            var listed = (leaves ?? []).Select(leaf => leaf.At("catalogEntry") as JsonObject)
                 .OfType<JsonObject>()
-                .Where(entry => Str(entry["version"]) is not null && Str(entry["@id"]) is not null && entry["listed"]?.GetValueKind() != JsonValueKind.False)
+                .Where(entry => Str(entry.At("version")) is not null && Str(entry.At("@id")) is not null && entry.At("listed")?.GetValueKind() != JsonValueKind.False)
                 .Reverse();
             foreach (var entry in listed)
             {
                 latest ??= entry;
-                if (stable is null && PackageVersions.IsStable(Str(entry["version"])!))
+                if (stable is null && PackageVersions.IsStable(Str(entry.At("version"))!))
                 {
                     stable = entry;
                 }
@@ -275,15 +275,15 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
             return new(versions.Aggregate(Newer), null) { Listed = false, Owners = owners };
         }
 
-        var leafDoc = await GetAsync(Str(latest["@id"])!, cancellationToken).ConfigureAwait(false);
-        return new(Str(latest["version"])!, Time(latest["published"]))
+        var leafDoc = await GetAsync(Str(latest.At("@id"))!, cancellationToken).ConfigureAwait(false);
+        return new(Str(latest.At("version"))!, Time(latest.At("published")))
         {
-            SourceRepoUrl = Str(leafDoc?["repository"]?["url"]),
-            StableVersion = stable is null ? null : Str(stable["version"]),
-            StablePublished = stable is null ? null : Time(stable["published"]),
+            SourceRepoUrl = Str(leafDoc.At("repository").At("url")),
+            StableVersion = stable is null ? null : Str(stable.At("version")),
+            StablePublished = stable is null ? null : Time(stable.At("published")),
             Owners = owners,
-            Deprecation = latest["deprecation"] is JsonObject deprecation ? DeprecationSummary(deprecation) : null,
-            Vulnerabilities = latest["vulnerabilities"] is JsonArray vulnerabilities
+            Deprecation = latest.At("deprecation") is JsonObject deprecation ? DeprecationSummary(deprecation) : null,
+            Vulnerabilities = latest.At("vulnerabilities") is JsonArray vulnerabilities
                 ? [.. vulnerabilities.OfType<JsonObject>().Select(VulnerabilitySummary)]
                 : [],
         };
@@ -291,17 +291,17 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
 
     private static string DeprecationSummary(JsonObject deprecation)
     {
-        var reasons = (deprecation["reasons"] as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
-        var message = Str(deprecation["message"]) is { Length: > 0 } text ? $" ({text})" : string.Empty;
-        var alternate = Str(deprecation["alternatePackage"]?["id"]) is { Length: > 0 } other ? $"; use {other}" : string.Empty;
+        var reasons = (deprecation.At("reasons") as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
+        var message = Str(deprecation.At("message")) is { Length: > 0 } text ? $" ({text})" : string.Empty;
+        var alternate = Str(deprecation.At("alternatePackage").At("id")) is { Length: > 0 } other ? $"; use {other}" : string.Empty;
         return $"{(reasons.Count == 0 ? "no reason given" : string.Join(", ", reasons))}{message}{alternate}";
     }
 
     private static string VulnerabilitySummary(JsonObject vulnerability)
     {
-        var level = int.TryParse(Str(vulnerability["severity"]), NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) ? parsed : -1;
+        var level = int.TryParse(Str(vulnerability.At("severity")), NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) ? parsed : -1;
         var name = level >= 0 && level < Severities.Length ? Severities[level] : "unknown";
-        return $"{name} {Str(vulnerability["advisoryUrl"])}".Trim();
+        return $"{name} {Str(vulnerability.At("advisoryUrl"))}".Trim();
     }
 
     private static string Newer(string left, string right) => PackageVersions.Compare(right, left) > 0 ? right : left;

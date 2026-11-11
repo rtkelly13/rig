@@ -120,6 +120,18 @@ public sealed class LiveRegistryInfoTests : IDisposable
     }
 
     [Fact]
+    public async Task Registry_documents_of_an_unexpected_shape_are_read_leniently()
+    {
+        _http.Routes[Flat] = "[]";
+        _http.Routes[Packument] = """{"dist-tags": "latest", "versions": {"1.0.0": "odd"} }""";
+        var live = new LiveRegistryInfo(_client);
+
+        Assert.Same(RegistryInfo.NotPublished, await live.InfoAsync(PackageSpec.NuGet, "Pkg", Token));
+        var npm = await live.InfoAsync(PackageSpec.Npm, "@s/pkg", Token);
+        Assert.Equal(("1.0.0", false), (npm.LatestVersion, npm.Deprecated));
+    }
+
+    [Fact]
     public async Task Npm_with_no_versions_is_unpublished()
     {
         _http.Routes[Packument] = """{"versions": {}}""";

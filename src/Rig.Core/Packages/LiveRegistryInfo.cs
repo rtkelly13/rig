@@ -91,7 +91,7 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
             return unread;
         }
 
-        var versions = (flat!["versions"] as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
+        var versions = (flat.At("versions") as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
         if (versions.Count == 0)
         {
             return RegistryInfo.NotPublished;
@@ -102,15 +102,15 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
         // The registration index says whether the latest version is listed or deprecated; failing that, it is neither.
         JsonObject? target = null;
         var (_, index) = await GetAsync($"{NuGetRegistrations}{id}/index.json", cancellationToken).ConfigureAwait(false);
-        foreach (var page in ((index?["items"] as JsonArray) ?? []).Reverse())
+        foreach (var page in ((index.At("items") as JsonArray) ?? []).Reverse())
         {
-            var leaves = page?["items"] as JsonArray;
-            if (leaves is null && Str(page?["@id"]) is { } pageUrl)
+            var leaves = page.At("items") as JsonArray;
+            if (leaves is null && Str(page.At("@id")) is { } pageUrl)
             {
-                leaves = (await GetAsync(pageUrl, cancellationToken).ConfigureAwait(false)).Body?["items"] as JsonArray;
+                leaves = (await GetAsync(pageUrl, cancellationToken).ConfigureAwait(false)).Body.At("items") as JsonArray;
             }
 
-            foreach (var entry in (leaves ?? []).Reverse().Select(leaf => leaf?["catalogEntry"] as JsonObject).OfType<JsonObject>())
+            foreach (var entry in (leaves ?? []).Reverse().Select(leaf => leaf.At("catalogEntry") as JsonObject).OfType<JsonObject>())
             {
                 target ??= entry;
                 if (IsLatest(entry))
@@ -129,11 +129,11 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
         return new(latest)
         {
             AllVersions = versions,
-            Unlisted = target is not null && target["listed"]?.GetValueKind() == JsonValueKind.False,
-            Deprecated = target?["deprecation"] is JsonObject,
+            Unlisted = target is not null && target.At("listed")?.GetValueKind() == JsonValueKind.False,
+            Deprecated = target.At("deprecation") is JsonObject,
         };
 
-        bool IsLatest(JsonObject entry) => string.Equals(Str(entry["version"]), latest, StringComparison.OrdinalIgnoreCase);
+        bool IsLatest(JsonObject entry) => string.Equals(Str(entry.At("version")), latest, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<RegistryInfo> NpmAsync(string name, CancellationToken cancellationToken)
@@ -144,16 +144,16 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
             return unread;
         }
 
-        if (packument!["versions"] is not JsonObject { Count: > 0 } versions)
+        if (packument.At("versions") is not JsonObject { Count: > 0 } versions)
         {
             return RegistryInfo.NotPublished;
         }
 
         var all = versions.Select(pair => pair.Key).ToList();
-        var latest = Str(packument["dist-tags"]?["latest"]) is { } tagged && all.Contains(tagged)
+        var latest = Str(packument.At("dist-tags").At("latest")) is { } tagged && all.Contains(tagged)
             ? tagged
             : all.Aggregate((a, b) => PackageVersions.Compare(b, a) > 0 ? b : a);
-        var deprecated = Str(versions[latest]?["deprecated"]);
+        var deprecated = Str(versions[latest].At("deprecated"));
         return new(latest) { AllVersions = all, Deprecated = !string.IsNullOrEmpty(deprecated) };
     }
 
