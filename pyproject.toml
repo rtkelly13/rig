@@ -141,7 +141,6 @@ type = "acyclic_siblings"
 ancestors = ["rig", "desktop_manager"]
 # A minimal cut set: every entry is needed for the contract to pass. Each names the item that removes it.
 ignore_imports = [
-    "rig.workspace.nuget_governance -> rig.repo_governance.workflow_yaml",  # G2
     "desktop_manager.work.sessions -> desktop_manager.claude_sessions.discovery",  # G2
     "desktop_manager.work.sessions -> desktop_manager.claude_sessions.folders",  # G2
 ]
@@ -179,7 +178,6 @@ modules = [
 ]
 ignore_imports = [
     "rig.image_drift.server -> rig.workspace.engine",  # G2
-    "rig.workspace.nuget_governance -> rig.repo_governance.workflow_yaml",  # G2
     "rig.image_drift.server -> rig.connectivity.web",  # G2 (the web host mounts routes from rig_cli)
     "rig.image_drift.server -> rig.triage.web",  # G2 (the web host mounts routes from rig_cli)
     "rig.repo_governance.cli_audits -> rig.workspace.engine",  # G2
@@ -256,7 +254,6 @@ ignore = [
 "src/rig/repo_governance/vercel_gating.py" = ["TID251"]
 "src/rig/skills/vendor.py" = ["TID251"]  # git pull/fetch/clone still raw: move onto rig.proc.git
 "src/rig/workspace/orca_rpc.py" = ["TID251"]
-"src/rig/workspace/package_sources.py" = ["TID251"]
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
 "src/rig/connectivity/manifests.py" = ["TID251"]
@@ -448,7 +445,6 @@ fake-location-allow = [
     "tests/test_otel_clickhouse.py",
     "tests/test_otel_web.py",
     "tests/test_web_ops_spa.py",
-    "tests/test_workspace_packages.py",
 ]
 patching-allow = [
     "tests/conftest.py",
@@ -535,11 +531,8 @@ patching-allow = [
     "tests/test_vercel_cli_auth.py",
     "tests/test_vercel_gating.py",
     "tests/test_web_spa.py",
-    "tests/test_workspace_nuget_governance.py",
     "tests/test_workspace_orca.py",
     "tests/test_workspace_orca_rpc.py",
-    "tests/test_workspace_package_dashboard.py",
-    "tests/test_workspace_packages.py",
 ]
 pyright-pragma-allow = []
 boundary-modules = [
@@ -560,7 +553,6 @@ loose-dict-allow = [
     "src/rig/repo_governance/github_rulesets.py",
     "src/rig/repo_governance/gitignore_manager.py",
     "src/rig/tracing.py",
-    "src/rig/workspace/package_dashboard.py",
 ]
 
 # tests/ gates only the test-side rules (docs/testing.md#shared-fakes-and-steps). Fakes live in

@@ -5,6 +5,7 @@
   <ItemGroup Label="Shared doubles">
     <Compile Include="../Rig.Core.Tests/Fakes/FakeProc.cs" Link="Fakes/FakeProc.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakeGitHub.cs" Link="Fakes/FakeGitHub.cs" />
+    <Compile Include="../Rig.Core.Tests/Fakes/FakeHttp.cs" Link="Fakes/FakeHttp.cs" />
     <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="Fakes/TempDir.cs" />
     <Compile Include="../Rig.Core.Tests/Otel/OtelFakes.cs" Link="Fakes/OtelFakes.cs" />
     <Compile Include="../Rig.Core.Tests/RepoTemp.cs" Link="Fakes/RepoTemp.cs" />

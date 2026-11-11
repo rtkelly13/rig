@@ -42,7 +42,13 @@ public sealed class WorkspaceSyncCommandTests : IDisposable
         _ = _root.Folder("personal/stray/.git");
     }
 
-    public void Dispose() => _root.Dispose();
+    private readonly HttpClient _http = new();
+
+    public void Dispose()
+    {
+        _http.Dispose();
+        _root.Dispose();
+    }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -62,7 +68,8 @@ public sealed class WorkspaceSyncCommandTests : IDisposable
                 Path.Join(_root.Path, "home", ".workspace", "config.json")),
             _proc,
             TimeProvider.System,
-            output);
+            output,
+            _http);
 
     private async Task<(int Code, string Out)> RunAsync(params string[] args)
     {

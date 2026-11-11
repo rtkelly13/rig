@@ -56,6 +56,7 @@ public sealed class WorkspaceCommandTests : IDisposable
     private async Task<(int Code, string Out)> RunAsync(params string[] args)
     {
         using var output = new StringWriter();
+        using var http = new HttpClient();
         var host = new WorkspaceHost(
             Personal,
             Path.Join(_root.Path, "rig", "config", EstateScopes.FileName),
@@ -63,7 +64,7 @@ public sealed class WorkspaceCommandTests : IDisposable
             Path.Join(_root.Path, "rig", "config", "managed-projects.json"),
             Path.Join(_root.Path, "home", ".workspace", "config.json"));
         _ = Directory.CreateDirectory(host.Home);
-        var root = new RootCommand { new WorkspaceCommand(host, _proc, TimeProvider.System, output).Build() };
+        var root = new RootCommand { new WorkspaceCommand(host, _proc, TimeProvider.System, output, http).Build() };
         var code = await root.Parse(["workspace", .. args]).InvokeAsync(new InvocationConfiguration { Output = output, Error = output }, Token);
         return (code, output.ToString().ReplaceLineEndings("\n"));
     }

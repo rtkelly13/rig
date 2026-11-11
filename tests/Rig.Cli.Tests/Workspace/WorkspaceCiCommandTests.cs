@@ -29,6 +29,7 @@ public sealed class WorkspaceCiCommandTests : IDisposable
     private async Task<(int Code, string Out)> RunAsync(params string[] args)
     {
         using var output = new StringWriter();
+        using var http = new HttpClient();
         var command = new WorkspaceCommand(
             new WorkspaceHost(
                 Path.Join(_root.Path, "personal"),
@@ -38,7 +39,8 @@ public sealed class WorkspaceCiCommandTests : IDisposable
                 Path.Join(_root.Path, "home", ".workspace", "config.json")),
             _proc,
             TimeProvider.System,
-            output);
+            output,
+            http);
         var code = await new RootCommand { command.Build() }.Parse(args).InvokeAsync(new InvocationConfiguration { Output = output, Error = output }, Token);
         return (code, output.ToString().ReplaceLineEndings("\n"));
     }

@@ -69,7 +69,7 @@ public sealed partial class ForwardedContractTests
         var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
         var csharp = FullApp().BuildRoot().Subcommands
             .Where(group => forwarded.Contains(group.Name))
-            .SelectMany(group => group.Subcommands.Select(sub => $"{group.Name} {sub.Name}"));
+            .SelectMany(group => group.Subcommands.SelectMany(sub => sub.Aliases.Prepend(sub.Name)).Select(name => $"{group.Name} {name}"));
 
         Assert.NotEmpty(python);
         Assert.Equal(python.Order(StringComparer.Ordinal), csharp.Order(StringComparer.Ordinal));
@@ -101,8 +101,8 @@ public sealed partial class ForwardedContractTests
                 new BrowserCommand(new BrowserHost("/", null, false, _ => null, _ => new ShellProfileEnvironment("/none")), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
                 new DevenvCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new ObsidianPlugins(Refusing), new NerdFonts(Refusing), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
                 new DoctorCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
-                new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
-                new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null).BuildSync,
+                new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null, Refusing).Build,
+                new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null, Refusing).BuildSync,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
 
