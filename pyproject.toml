@@ -44,7 +44,7 @@ help = "desktop_manager.cli:help_main"
 status = "repo_health.cli:main"
 agent = "rig.agent_launcher.cli:agent_main"
 image-reconcile = "rig.image_drift.cli:main"
-vault = "rig.obsidian.cli:main"
+vault = "rig.csharp_cli:entry"
 md-lint = "rig.csharp_cli:entry"
 repo-governance = "rig.repo_governance.align_repo_conventions:main"
 workspace = "rig.workspace.cli:main"
@@ -179,7 +179,6 @@ modules = [
     "rig.workspace",
     "rig.repo_governance",
     "rig.image_drift",
-    "rig.obsidian",
     "rig.devenv",
 ]
 ignore_imports = [
@@ -271,8 +270,6 @@ ignore = [
 "src/rig/estate/trim.py" = ["TID251"]
 "src/rig/estate/volume.py" = ["TID251"]
 "src/rig/image_drift/simplifier/syntactic.py" = ["TID251"]
-"src/rig/obsidian/cli.py" = ["TID251"]
-"src/rig/obsidian/orphan_manager.py" = ["TID251"]
 "src/rig/repo_governance/vercel_gating.py" = ["TID251"]
 "src/rig/skills/vendor.py" = ["TID251"]  # git pull/fetch/clone still raw: move onto rig.proc.git
 "src/rig/workspace/orca_rpc.py" = ["TID251"]
@@ -528,9 +525,6 @@ patching-allow = [
     "tests/devenv/test_steps.py",
     "tests/devenv/test_terminal_compat.py",
     "tests/devenv/test_tool_manager.py",
-    "tests/obsidian/test_graph_orphan_edges.py",
-    "tests/obsidian/test_lint_manager.py",
-    "tests/obsidian/test_orphan_manager.py",
     "tests/test_agent_browser_setup.py",
     "tests/test_agent_launcher.py",
     "tests/test_align_repo_conventions.py",

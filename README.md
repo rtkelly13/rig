@@ -1,7 +1,7 @@
 # Shared Utilities
 
 > **`the-vault-system` is archived.** Its simplified remainder is the `vault` CLI here
-> (`src/rig/obsidian/`); see [docs/vault/](docs/vault/README.md).
+> (`src/Rig.Cli/Vault/`, `src/Rig.Core/Vault/`); see [docs/vault/](docs/vault/README.md).
 
 ## Purpose
 
