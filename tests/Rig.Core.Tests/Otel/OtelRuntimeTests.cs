@@ -549,13 +549,24 @@ public sealed class OtelRuntimeTests : IDisposable
         return buffer.ToArray();
     }
 
+    // The child still holds the log open for writing, so it is read sharing write access (File.ReadAllText does not).
+    private static async Task<string> ReadSharedAsync(string path)
+    {
+        var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        await using (stream.ConfigureAwait(false))
+        {
+            using var reader = new StreamReader(stream);
+            return await reader.ReadToEndAsync().ConfigureAwait(false);
+        }
+    }
+
     // Polls the log a detached process writes to, for up to ten seconds.
     private static async Task<string> Eventually(string log, Func<string, bool> done)
     {
         var text = string.Empty;
         for (var i = 0; i < 100; i++)
         {
-            text = File.Exists(log) ? await File.ReadAllTextAsync(log) : string.Empty;
+            text = File.Exists(log) ? await ReadSharedAsync(log) : string.Empty;
             if (done(text))
             {
                 break;
