@@ -121,11 +121,46 @@ public sealed class ShelveTests : IDisposable
         _ = await InitAsync();
         var path = await _fx.AddWorktreeAsync("landed");
         await ShelveFixture.CommitAsync(path, "a.txt", "a\n");
+        var head = await Repos.GitAsync(path, "rev-parse", "HEAD");
 
-        var plan = await _fx.PlanAsync(path, prs: new Dictionary<string, PullRequest> { ["landed"] = new(7, "MERGED", "landed") });
+        var plan = await _fx.PlanAsync(path, prs: new Dictionary<string, PullRequest> { ["landed"] = new(7, "MERGED", "landed", head) });
 
         Assert.Equal(Shelver.Remove, plan.Action);
         Assert.Contains("squash-merged in #7", plan.Reasons);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_commit_made_after_the_pull_request_merged_is_still_shelved(bool knownHead)
+    {
+        _ = await InitAsync();
+        var path = await _fx.AddWorktreeAsync("after-merge");
+        await ShelveFixture.CommitAsync(path, "a.txt", "a\n");
+        var merged = await Repos.GitAsync(path, "rev-parse", "HEAD");
+        await ShelveFixture.CommitAsync(path, "b.txt", "b\n");
+        var pr = new PullRequest(8, "MERGED", "after-merge", knownHead ? merged : string.Empty);
+
+        var plan = await _fx.PlanAsync(path, prs: new Dictionary<string, PullRequest> { ["after-merge"] = pr });
+
+        Assert.Equal(Shelver.Push, plan.Action);
+        Assert.Contains("#8 merged without HEAD; shelved", plan.Reasons);
+    }
+
+    [Theory]
+    [InlineData("status", "could not read the worktree: git status: ")]
+    [InlineData("--others", "could not read the worktree: git ls-files: ")]
+    public async Task A_worktree_git_cannot_read_is_never_taken_for_clean(string verb, string expected)
+    {
+        _ = await InitAsync();
+        var path = await _fx.AddWorktreeAsync($"unreadable{verb}");
+        var blind = _fx.Shelver(new HookedProc(request => request.Argv.Contains(verb) ? new Ran(128, string.Empty, "index locked") : null));
+
+        var plan = await _fx.PlanAsync(path, shelver: blind);
+
+        Assert.Contains(plan.DecisionNeeded, decision => decision.StartsWith(expected, StringComparison.Ordinal));
+        Assert.Equal("needs-decision", (await blind.ApplyAsync(plan)).Outcome);
+        await AssertStillThereAsync(path);
     }
 
     // ------------------------------------------------------------------ decisions a person must make
@@ -443,6 +478,102 @@ public sealed class ShelveTests : IDisposable
         Assert.True(File.Exists(Path.Join(path, ".env")));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_worktree_git_cannot_reread_at_apply_is_kept(bool dirty)
+    {
+        _ = await InitAsync();
+        var path = await _fx.AddWorktreeAsync(dirty ? "reread-dirty" : "reread-clean");
+        if (dirty)
+        {
+            await ShelveFixture.MakeDirtyAsync(path);
+        }
+
+        var plan = await _fx.PlanAsync(path);
+        var blind = _fx.Shelver(new HookedProc(request => request.Argv.Contains("status") ? new Ran(128, string.Empty, "index locked") : null));
+
+        var result = await blind.ApplyAsync(plan);
+
+        Assert.Equal("failed", result.Outcome);
+        Assert.StartsWith("could not re-read the worktree: git status: index locked", result.Detail, StringComparison.Ordinal);
+        await AssertStillThereAsync(path);
+    }
+
+    [Fact]
+    public async Task A_clean_worktree_whose_head_moved_after_planning_is_not_removed()
+    {
+        _ = await InitAsync();
+        var path = await _fx.AddWorktreeAsync("moved-clean");
+        var plan = await _fx.PlanAsync(path);
+        Assert.Equal(Shelver.Remove, plan.Action);
+        await ShelveFixture.CommitAsync(path, "late.txt", "late\n");
+
+        var result = await _fx.Shelver().ApplyAsync(plan);
+
+        Assert.Equal("failed", result.Outcome);
+        Assert.StartsWith("HEAD moved to ", result.Detail, StringComparison.Ordinal);
+        await AssertStillThereAsync(path);
+    }
+
+    [Fact]
+    public async Task A_clean_worktree_given_an_ignored_secret_after_planning_is_not_removed()
+    {
+        _ = await InitAsync();
+        var path = await _fx.AddWorktreeAsync("late-secret");
+        var plan = await _fx.PlanAsync(path);
+        await File.WriteAllTextAsync(Path.Join(path, ".env"), "TOKEN=1\n", Token);
+
+        var result = await _fx.Shelver().ApplyAsync(plan);
+
+        Assert.Equal("failed", result.Outcome);
+        Assert.Equal("new ignored path(s) since planning: .env; worktree kept", result.Detail);
+        Assert.True(File.Exists(Path.Join(path, ".env")));
+    }
+
+    [Fact]
+    public async Task A_clean_worktree_carrying_only_an_ignored_secret_is_shelved_and_restored()
+    {
+        _ = await InitAsync();
+        var path = await _fx.AddWorktreeAsync("only-secret");
+        await File.WriteAllTextAsync(Path.Join(path, ".env"), "TOKEN=1\n", Token);
+
+        var result = await _fx.Shelver().ApplyAsync(await _fx.PlanAsync(path, ShelveFixture.NoIdle with { IncludeIgnored = true }));
+
+        Assert.Equal("shelved", result.Outcome);
+        Assert.False(Directory.Exists(path));
+        var restored = await _fx.Store.UnshelveAsync(Assert.Single(await _fx.Store.ListAsync(Clone)));
+        Assert.True(restored.Ok, restored.Detail);
+        Assert.Equal("TOKEN=1\n", await File.ReadAllTextAsync(Path.Join(path, ".env"), Token));
+    }
+
+    [Fact]
+    public async Task A_force_added_ignored_file_survives_a_shelve_and_unshelve_round_trip()
+    {
+        _ = await InitAsync();
+        var path = await _fx.AddWorktreeAsync("forced");
+        await File.WriteAllTextAsync(Path.Join(path, ".env"), "TOKEN=1\n", Token);
+        _ = await Repos.GitAsync(path, "add", "-f", ".env");
+
+        var result = await _fx.Shelver().ApplyAsync(await _fx.PlanAsync(path));
+
+        Assert.Equal("shelved", result.Outcome);
+        var restored = await _fx.Store.UnshelveAsync(Assert.Single(await _fx.Store.ListAsync(Clone)));
+        Assert.True(restored.Ok, restored.Detail);
+        Assert.Equal("TOKEN=1\n", await File.ReadAllTextAsync(Path.Join(path, ".env"), Token));
+    }
+
+    [Fact]
+    public async Task A_shelf_list_origin_cannot_answer_is_an_error_not_an_empty_list()
+    {
+        _ = await InitAsync();
+        var store = new ShelfStore(new Git(new HookedProc(request => request.Argv.Contains("ls-remote") ? new Ran(128, string.Empty, "no route") : null), _fx.Root));
+
+        var failure = await Assert.ThrowsAsync<ShelfStoreException>(() => store.ListAsync(Clone));
+
+        Assert.EndsWith(": no route", failure.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task An_unreadable_worktree_list_never_finishes_a_delete()
     {
@@ -717,6 +848,7 @@ public sealed class ShelveTests : IDisposable
     [Theory]
     [InlineData("write-tree", "git write-tree: ")]
     [InlineData("read-tree", "git read-tree HEAD: ")]
+    [InlineData("--cached", "git ls-files --cached: ")]
     public async Task A_snapshot_git_cannot_write_fails_without_touching_the_worktree(string verb, string expected)
     {
         _ = await InitAsync();

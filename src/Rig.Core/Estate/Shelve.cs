@@ -18,7 +18,8 @@ public sealed record Porcelain(IReadOnlyList<string> Changed, IReadOnlyList<stri
 /// <param name="Changed">Tracked paths with changes.</param>
 /// <param name="Untracked">Untracked paths.</param>
 /// <param name="Ignored">Ignored paths; a wholly ignored folder ends in <c>/</c>.</param>
-public sealed record ShelveStatus(IReadOnlyList<string> Changed, IReadOnlyList<string> Untracked, IReadOnlyList<string> Ignored)
+/// <param name="Error">Why git could not report the worktree; empty when it did. A worktree git cannot read is never clean.</param>
+public sealed record ShelveStatus(IReadOnlyList<string> Changed, IReadOnlyList<string> Untracked, IReadOnlyList<string> Ignored, string Error = "")
 {
     /// <summary>The worktree holds anything a snapshot would carry.</summary>
     public bool Dirty => Changed.Count > 0 || Untracked.Count > 0;
@@ -346,7 +347,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         var porcelain = ParseStatus(raw.Ok ? raw.Out : string.Empty);
         var listed = await git.RunAsync(path, ["ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory"]).ConfigureAwait(false);
         var ignored = (listed.Ok ? listed.Out : string.Empty).Split('\0').Where(entry => entry.Length > 0).ToList();
-        return new ShelveStatus(porcelain.Changed, porcelain.Untracked, ignored);
+        var error = !raw.Ok ? $"git status: {Failure(raw)}" : !listed.Ok ? $"git ls-files: {Failure(listed)}" : string.Empty;
+        return new ShelveStatus(porcelain.Changed, porcelain.Untracked, ignored, error);
+
+        static string Failure(Ran ran) => (ran.Err.Length > 0 ? ran.Err : ran.Out).Trim();
     }
 
     /// <summary>The namespace segment: the local part of the committer email.</summary>
@@ -500,6 +504,11 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             plan.PrState = pr.State;
         }
 
+        if (status.Error.Length > 0)
+        {
+            plan.DecisionNeeded.Add($"could not read the worktree: {status.Error}");
+        }
+
         if (status.Dirty)
         {
             plan.Action = Snapshot;
@@ -517,9 +526,18 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
 
         if (plan.Action == Push && plan.PrState == "MERGED")
         {
-            // Squash-stranded: the work landed, so there is nothing to keep. Same authority `tidy --merged` uses.
-            plan.Action = Remove;
-            plan.Reasons.Add($"squash-merged in #{plan.Pr}");
+            // Squash-stranded: the work landed, so there is nothing to keep — but only what the PR's merged head holds.
+            // A commit made after the merge is still local-only work. Same authority `tidy --merged` uses.
+            if (pr is { HeadOid.Length: > 0 }
+                && (await git.RunAsync(path, ["merge-base", "--is-ancestor", head, pr.HeadOid]).ConfigureAwait(false)).Ok)
+            {
+                plan.Action = Remove;
+                plan.Reasons.Add($"squash-merged in #{plan.Pr}");
+            }
+            else
+            {
+                plan.Reasons.Add($"#{plan.Pr} merged without HEAD; shelved");
+            }
         }
 
         if (options.ToUpstream && plan.Action != Remove && tree.Branch.Length > 0)
@@ -661,10 +679,9 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         ArgumentNullException.ThrowIfNull(plan);
         var status = await ReadStatusAsync(plan.Path).ConfigureAwait(false);
-        var head = await _store.OutAsync(plan.Path, "rev-parse", "HEAD").ConfigureAwait(false);
-        if (head != plan.Head)
+        if (await MovedAsync(plan, status).ConfigureAwait(false) is { Length: > 0 } moved)
         {
-            return $"HEAD moved to {(head.Length > 0 ? Head(head, 9) : "?")} since planning";
+            return moved;
         }
 
         var held = await HeldAsync(plan, sha, status).ConfigureAwait(false);
@@ -678,8 +695,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             return "changed since planning";
         }
 
-        var fresh = status.Ignored.Where(entry => !IsRegenerable(entry) && !plan.KeepIgnored.Contains(entry, StringComparer.Ordinal)).ToList();
-        return fresh.Count > 0 ? $"new ignored path(s) since planning: {string.Join(", ", fresh.Take(5))}" : string.Empty;
+        return FreshIgnored(plan, status);
     }
 
     // ------------------------------------------------------------------ acting
@@ -688,14 +704,27 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     public async Task<ShelfStep> SnapshotTreeAsync(string path, IReadOnlyList<string> carryIgnored)
     {
         ArgumentNullException.ThrowIfNull(carryIgnored);
+
+        // The scratch index starts from HEAD, so `add -A` skips a file the real index tracks but .gitignore matches
+        // (`git add -f .env`, never committed). Force-add those too.
+        var tracked = await git.RunAsync(path, ["ls-files", "-z", "--cached", "--ignored", "--exclude-standard"]).ConfigureAwait(false);
+        if (!tracked.Ok)
+        {
+            return new ShelfStep(false, $"git ls-files --cached: {(tracked.Err.Length > 0 ? tracked.Err : tracked.Out).Trim()}");
+        }
+
+        var forced = carryIgnored
+            .Concat(tracked.Out.Split('\0').Where(entry => entry.Length > 0 && Exists(System.IO.Path.Join(path, entry))))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
         var scratch = Directory.CreateTempSubdirectory("estate-shelve-");
         try
         {
             var environment = new Dictionary<string, string>(StringComparer.Ordinal) { ["GIT_INDEX_FILE"] = System.IO.Path.Join(scratch.FullName, "index") };
             var steps = new List<string[]> { ReadHead, AddAll };
-            if (carryIgnored.Count > 0)
+            if (forced.Count > 0)
             {
-                steps.Add(["add", "-f", "--", .. carryIgnored]);
+                steps.Add(["add", "-f", "--", .. forced]);
             }
 
             foreach (var step in steps)
@@ -852,6 +881,14 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
 
         if (plan.Action == Remove)
         {
+            // The plain remove refuses a dirty tree, but deletes ignored files and leaves a moved HEAD unjudged.
+            var status = await ReadStatusAsync(plan.Path).ConfigureAwait(false);
+            var moved = await MovedAsync(plan, status).ConfigureAwait(false);
+            if ((moved.Length > 0 ? moved : FreshIgnored(plan, status)) is { Length: > 0 } stale)
+            {
+                return new ShelveResult(plan, "failed", $"{stale}; worktree kept");
+            }
+
             var removed = await RemoveAsync(plan, force: false).ConfigureAwait(false);
             return Ledger(new ShelveResult(plan, removed.Ok ? "removed" : "failed", removed.Detail));
         }
@@ -965,7 +1002,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         }
 
         var tree = plan.Head;
-        if (status.Dirty)
+        if (status.Dirty || plan.CarryIgnored.Count > 0)
         {
             var written = await SnapshotTreeAsync(plan.Path, plan.CarryIgnored).ConfigureAwait(false);
             if (!written.Ok)
@@ -979,6 +1016,25 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         var have = await _store.OutAsync(plan.Path, "rev-parse", $"{sha}^{{tree}}").ConfigureAwait(false);
         var want = await _store.OutAsync(plan.Path, "rev-parse", $"{tree}^{{tree}}").ConfigureAwait(false);
         return new ShelfStep(true, have.Length > 0 && have == want ? have : string.Empty);
+    }
+
+    // Why the worktree cannot be judged against its plan any more: git cannot read it, or HEAD moved. Empty when neither.
+    private async Task<string> MovedAsync(ShelvePlan plan, ShelveStatus status)
+    {
+        if (status.Error.Length > 0)
+        {
+            return $"could not re-read the worktree: {status.Error}";
+        }
+
+        var head = await _store.OutAsync(plan.Path, "rev-parse", "HEAD").ConfigureAwait(false);
+        return head != plan.Head ? $"HEAD moved to {(head.Length > 0 ? Head(head, 9) : "?")} since planning" : string.Empty;
+    }
+
+    // Ignored, non-regenerable paths that appeared after planning: nothing decided to keep or drop them.
+    private static string FreshIgnored(ShelvePlan plan, ShelveStatus status)
+    {
+        var fresh = status.Ignored.Where(entry => !IsRegenerable(entry) && !plan.KeepIgnored.Contains(entry, StringComparer.Ordinal)).ToList();
+        return fresh.Count > 0 ? $"new ignored path(s) since planning: {string.Join(", ", fresh.Take(5))}" : string.Empty;
     }
 
     // Removes the worktree, then its branch if nothing on it is local-only.

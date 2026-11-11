@@ -8,6 +8,30 @@ namespace Rig.Core.Estate;
 /// <param name="Detail">What it printed, or why it failed.</param>
 public sealed record ShelfStep(bool Ok, string Detail);
 
+/// <summary>origin could not be asked which shelves it holds. Never read as "none": a push or prune would act blind.</summary>
+public sealed class ShelfStoreException : Exception
+{
+    /// <summary>Initializes a new instance of the <see cref="ShelfStoreException"/> class.</summary>
+    public ShelfStoreException()
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="ShelfStoreException"/> class.</summary>
+    /// <param name="message">Why origin could not be read.</param>
+    public ShelfStoreException(string message)
+        : base(message)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="ShelfStoreException"/> class.</summary>
+    /// <param name="message">Why origin could not be read.</param>
+    /// <param name="innerException">The cause.</param>
+    public ShelfStoreException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
+}
+
 /// <summary>The <c>Shelved-*</c> trailers of a marker commit; empty where one is absent.</summary>
 /// <param name="Branch">The branch the worktree had checked out.</param>
 /// <param name="Base">The commit the marker sits on.</param>
@@ -120,10 +144,17 @@ public sealed class ShelfStore(Git git)
     }
 
     /// <summary><c>{ref: sha}</c> for every shelf on origin. One network call per clone.</summary>
+    /// <exception cref="ShelfStoreException">origin could not be listed.</exception>
     public async Task<Dictionary<string, string>> RemoteShelvesAsync(string clone)
     {
+        var listed = await RunAsync(clone, ["ls-remote", Remote, $"{RefRoot}/*"]).ConfigureAwait(false);
+        if (!listed.Ok)
+        {
+            throw new ShelfStoreException($"could not list shelves on {Remote} for {clone}: {listed.Detail}");
+        }
+
         var shelves = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var line in (await OutAsync(clone, "ls-remote", Remote, $"{RefRoot}/*").ConfigureAwait(false)).Split('\n'))
+        foreach (var line in listed.Detail.Split('\n'))
         {
             var tab = line.IndexOf('\t', StringComparison.Ordinal);
             if (tab >= 0 && tab + 1 < line.Length)
@@ -136,6 +167,7 @@ public sealed class ShelfStore(Git git)
     }
 
     /// <summary>Every shelf on origin for <paramref name="clone"/>, with its trailers, in ref order.</summary>
+    /// <exception cref="ShelfStoreException">origin could not be listed.</exception>
     public async Task<IReadOnlyList<Shelf>> ListAsync(string clone, bool fetch = true)
     {
         var shelves = await RemoteShelvesAsync(clone).ConfigureAwait(false);
