@@ -312,13 +312,12 @@ def current_environment() -> Environment:
 
     from desktop_manager import runtime
     from desktop_manager.plan import LOG_DIR_ENV, default_plan_path
-    from rig import scopes
+    from rig import roots, scopes
     from rig.estate.decisions import default_feed_path
     from rig.estate.orca_runtime import estate_user_data
-    from rig.repo_governance.repo_discovery import personal_repos_dir
     from rig.tracing import TRACE_HOME_ENV
 
-    personal_root = personal_repos_dir()
+    personal_root = roots.personal_dir()
     if runtime.running_copy(__file__):
         plan = runtime.current_link() / runtime.PLAN_RELATIVE
         os.environ.setdefault(LOG_DIR_ENV, str(runtime.workspace_logs_dir()))

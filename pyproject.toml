@@ -12,7 +12,6 @@ dependencies = [
     "mdformat>=1.0.0",
     "httpx>=0.28.0",
     "python-frontmatter>=1.0.0",
-    "jinja2>=3.1.6",
     "playwright>=1.62.0",
     "pydantic>=2.12.5",
     "pyvda>=0.5.0; sys_platform == 'win32'",
@@ -39,7 +38,7 @@ status = "rig.csharp_cli:entry"
 agent = "rig.csharp_cli:entry"
 vault = "rig.csharp_cli:entry"
 md-lint = "rig.csharp_cli:entry"
-repo-governance = "rig.repo_governance.align_repo_conventions:main"
+repo-governance = "rig.csharp_cli:entry"
 workspace = "rig.workspace.cli:main"
 devenv = "rig.csharp_cli:entry"
 latex = "rig.csharp_cli:entry"
@@ -449,19 +448,15 @@ patching-allow = [
     "tests/desktop_manager/test_workspace_paths.py",
     "tests/desktop_manager/test_workspace_wait_scope.py",
     "tests/desktop_manager/test_workspace_win32_behavior.py",
-    "tests/test_align_repo_conventions.py",
     "tests/test_c4_okf.py",
     "tests/test_console_ui.py",
     "tests/test_entrypoints_portable.py",
     "tests/test_github_prs.py",
-    "tests/test_org_governance.py",
     "tests/test_otel_clickhouse.py",
     "tests/test_platforms.py",
-    "tests/test_policy_template_engine.py",
     "tests/test_proc.py",
     "tests/test_rig_flags.py",
     "tests/test_rig_shim.py",
-    "tests/test_ruleset_thread_resolution.py",
     "tests/test_scopes.py",
     "tests/test_triage_agents.py",
     "tests/test_triage_queue.py",
@@ -483,7 +478,6 @@ loose-dict-allow = [
     "src/desktop_manager/work/serialize.py",
     "src/rig/estate/discovery.py",
     "src/rig/otel_stack/backfill.py",
-    "src/rig/repo_governance/github_rulesets.py",
     "src/rig/tracing.py",
 ]
 

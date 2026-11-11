@@ -66,12 +66,8 @@ Ruleset drift on rtkelly-labs/design-system (dry run — would update):
 When a repo's rules change, run `enforce --dry-run` before `enforce`. Any repo whose ruleset drifted gets
 corrected on its next run, and the first sight of that should be a list, not a surprise.
 
-To apply only the ruleset, without the rest of `enforce` (repo settings, local files):
-
-```bash
-uv run python -c "from rig.repo_governance.github_rulesets import align_github_ruleset as a; \
-print(a('<owner/repo>', dry_run=True))"   # then again without dry_run
-```
+`enforce` applies the ruleset together with the rest (repo settings, local files); there is no
+ruleset-only command. Point it at one repo (`enforce <path> --dry-run`) to limit what it touches.
 
 ## Review threads must be resolved before merge
 

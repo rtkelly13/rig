@@ -41,7 +41,7 @@ A perfect root `AGENTS.md` should ideally contain only:
 
 - **No Auto-Generation**: Never use scripts to auto-generate `AGENTS.md`. They prioritize comprehensiveness over restraint.
 - **No `CLAUDE.md`**: Claude Code reads `AGENTS.md` natively (v2.1.277+), and prefers `CLAUDE.md` over it when both exist. A copy, stub or symlink therefore *shadows* `AGENTS.md`. Keep `AGENTS.md` as the only instruction file.
-- **No Per-Tool Instruction Files**: The same reasoning applies to every tool that shipped its own instruction file before `AGENTS.md` was a standard — `.github/copilot-instructions.md`, `.cursorrules`, `GEMINI.md`, `.clinerules`, `.windsurfrules`, and the rest. Each tool reads its own file *instead* of `AGENTS.md`, so a copy drifts and a pointer only adds indirection. The canonical list lives in [`agent_files.py`](../../src/rig/repo_governance/agent_files.py); `repo-governance agents-audit` fails a repo that still carries one, and `workspace sync` writes the same paths into `.gitignore` so a tool cannot reintroduce one behind the audit's back. Tool *feature* definitions — `.github/agents/`, `.github/prompts/`, `.claude/skills/` — are not in the list: they extend a tool rather than competing with `AGENTS.md`.
+- **No Per-Tool Instruction Files**: The same reasoning applies to every tool that shipped its own instruction file before `AGENTS.md` was a standard — `.github/copilot-instructions.md`, `.cursorrules`, `GEMINI.md`, `.clinerules`, `.windsurfrules`, and the rest. Each tool reads its own file *instead* of `AGENTS.md`, so a copy drifts and a pointer only adds indirection. The canonical list lives in [`BespokeAgentFiles.cs`](../../src/Rig.Core/Governance/BespokeAgentFiles.cs); `repo-governance agents-audit` fails a repo that still carries one, and `workspace sync` writes the same paths into `.gitignore` so a tool cannot reintroduce one behind the audit's back. Tool *feature* definitions — `.github/agents/`, `.github/prompts/`, `.claude/skills/` — are not in the list: they extend a tool rather than competing with `AGENTS.md`.
 - **Ruthless Pruning**: Periodically remove redundant, vague, or obvious instructions.
 
 ### 6. Where Content Belongs
@@ -78,8 +78,8 @@ The source guide calls these out explicitly; the last one is the easiest to comm
 ## Append-Only Alignment Causes Drift
 
 Learned here rather than from the source guide, and worth stating because our own tooling did
-it. `repo_governance.align_repo_conventions` appends its expected conventions block to
-`AGENTS.md` when a marker string is missing. A repo that has *rewritten* that section still
+it. `repo-governance enforce` (then Python's `align_repo_conventions`) appended its expected conventions block to
+`AGENTS.md` when a marker string was missing. A repo that has *rewritten* that section still
 lacks the marker, so the block is appended anyway — and the file ends up with two conventions
 sections that contradict each other. `rtkelly13/design-system` carried exactly that for months.
 

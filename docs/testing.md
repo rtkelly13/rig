@@ -128,7 +128,7 @@ in the same pull request:
 | Wave | Area | Missed units | Floor after, roughly |
 | --- | --- | ---: | ---: |
 | 1 (done) | `rig/estate` CLIs: `cli.py`, `shelve_cli.py` | 520 | 77 |
-| 2 | `rig/repo_governance` CLIs: `cli_triage` (`cli_repo_checks` and `cli_audits` moved to C#) | 1,660 | 81 |
+| 2 (done) | `rig/repo_governance` CLIs: moved to C# | 1,660 | 81 |
 | 3 | moved out: `image_drift` is its own project (`tools/image-drift`) with its own floor | — | — |
 | 4 | `rig/estate` remainder, `rig/devenv/steps`, `rig/workspace` | 2,230 | 88 |
 | 5 | `rig/otel_stack`, `rig/skills` (`rig/obsidian` moved to C#); `desktop_manager` `work`, `jobs`, `handlers`, `claude_sessions` | 2,000 | 92 |

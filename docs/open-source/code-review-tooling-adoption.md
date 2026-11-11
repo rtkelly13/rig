@@ -97,7 +97,7 @@ Each app names its install URL, an optional in-repo `config_template`, and per-a
 
 ### 2. Standardized Status Check Names
 
-Branch protection rulesets require check names from the canonical lexicon in [`check_names.py`](../../src/rig/repo_governance/check_names.py):
+Branch protection rulesets require check names from the canonical lexicon in [`CheckNames.cs`](../../src/Rig.Core/Governance/CheckNames.cs):
 - `ci`: The umbrella PR aggregate check.
 - `security`: SAST (CodeQL) and dependency scans.
 - `coverage`: Codecov patch coverage gate.

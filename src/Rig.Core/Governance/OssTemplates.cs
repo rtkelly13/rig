@@ -65,11 +65,17 @@ public static partial class OssTemplates
             ["repo_full_name"] = context.RepoFullName,
             ["contact_email"] = context.ContactEmail,
         };
-        var filled = Placeholder().Replace(
-            Source(template),
-            match => values.TryGetValue(match.Groups["name"].Value, out var value) ? value : match.Groups["fallback"].Value);
-        return filled.Trim() + "\n";
+        return Fill("oss", template, values).Trim() + "\n";
     }
+
+    /// <summary>
+    /// The template embedded under <c>Templates/<paramref name="folder"/></c>, its <c>{{ name }}</c> placeholders
+    /// filled from <paramref name="values"/> (an unknown name takes its <c>default("…")</c>, else nothing).
+    /// </summary>
+    internal static string Fill(string folder, string template, IReadOnlyDictionary<string, string> values) =>
+        Placeholder().Replace(
+            Source(folder, template),
+            match => values.TryGetValue(match.Groups["name"].Value, out var value) ? value : match.Groups["fallback"].Value);
 
     /// <summary>
     /// Writes every template whose rendered text differs from what <paramref name="repoPath"/> holds (ignoring
@@ -101,9 +107,9 @@ public static partial class OssTemplates
         return new(messages.Count > 0, messages);
     }
 
-    private static string Source(string template)
+    private static string Source(string folder, string template)
     {
-        using var stream = typeof(OssTemplates).Assembly.GetManifestResourceStream($"Rig.Core.Governance.Templates.oss.{template}")
+        using var stream = typeof(OssTemplates).Assembly.GetManifestResourceStream($"Rig.Core.Governance.Templates.{folder}.{template}")
             ?? throw new ArgumentException($"no embedded template {template}", nameof(template));
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd().ReplaceLineEndings("\n");

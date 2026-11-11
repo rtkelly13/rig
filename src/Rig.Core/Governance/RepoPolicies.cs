@@ -4,6 +4,12 @@ using Rig.Core.Policy;
 
 namespace Rig.Core.Governance;
 
+/// <summary>A declared profile: the repos it registers and the policy files <c>sync-policies</c> writes to them.</summary>
+/// <param name="Name">Its key under <c>profiles</c>.</param>
+/// <param name="Repos">The repos it registers, by folder name.</param>
+/// <param name="Policies">Its <c>policies</c> list, such as <c>ai_policy</c>.</param>
+public sealed record PolicyProfile(string Name, IReadOnlyList<string> Repos, IReadOnlyList<string> Policies);
+
 /// <summary>A configured language: the files that reveal it and the <c>.gitignore</c> entries it needs.</summary>
 /// <param name="Id">The key it sits under in <c>language_presets</c>.</param>
 /// <param name="Name">Its display name, matched ignoring case.</param>
@@ -31,7 +37,7 @@ public sealed record LanguagePreset(
 /// <summary>
 /// <c>config/repo_policies.json</c>, as far as the <c>.gitignore</c> policy, repo selection and the AGENTS.md audit read it. A key resolves from the repo's
 /// override, then the profile naming it, then <c>defaults</c>, taking the first that declares it (no deep merge).
-/// Ported from <c>rig.repo_governance.policy_config</c>, whose other keys the repo-governance audits still read.
+/// Ported from <c>rig.repo_governance.policy_config</c>.
 /// </summary>
 public sealed class RepoPolicies
 {
@@ -70,6 +76,9 @@ public sealed class RepoPolicies
 
     /// <summary>The language presets, in the file's order.</summary>
     public IReadOnlyList<LanguagePreset> Presets { get; }
+
+    /// <summary>The declared <c>profiles</c>, in the file's order.</summary>
+    public IReadOnlyList<PolicyProfile> Profiles { get; private init; } = [];
 
     /// <summary>
     /// The policy in <paramref name="path"/>. A missing or unparseable file requires nothing; a file of the wrong
@@ -117,7 +126,10 @@ public sealed class RepoPolicies
             [.. Map(file, "repo_overrides", source).Select(pair => (pair.Key, Layer.From(pair.Value, source)))],
             [.. Map(file, "language_presets", source).Select(pair => Preset(pair.Key, pair.Value, source))],
             owners,
-            [.. Map(file, "github_apps", source).Select(pair => App(pair.Key, pair.Value, source))]);
+            [.. Map(file, "github_apps", source).Select(pair => App(pair.Key, pair.Value, source))])
+        {
+            Profiles = [.. profiles.Select(p => new PolicyProfile(p.Key, p.Item3, Strings(file["profiles"]![p.Key], "policies", source) ?? []))],
+        };
     }
 
     /// <summary>The apps declared for <paramref name="account"/>, matched ignoring case.</summary>

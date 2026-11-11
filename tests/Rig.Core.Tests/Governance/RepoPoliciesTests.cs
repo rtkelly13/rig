@@ -46,6 +46,24 @@ public sealed class RepoPoliciesTests : IDisposable
         Assert.Same(RepoPolicies.Empty, RepoPolicies.Load(garbled));
     }
 
+    [Fact]
+    public void Profiles_are_listed_in_the_file_order_with_their_repos_and_policy_files()
+    {
+        var policies = RepoPolicies.Parse(
+            JsonNode.Parse("""{"profiles": {"oss": {"repos": ["a", "b"], "policies": ["ai_policy"]}, "work": {"repos": ["c"]}}}"""), "policy.json");
+
+        Assert.Equal(
+            [("oss", "a,b", "ai_policy"), ("work", "c", "")],
+            policies.Profiles.Select(p => (p.Name, string.Join(',', p.Repos), string.Join(',', p.Policies))));
+    }
+
+    [Fact]
+    public void A_profile_policies_entry_must_be_a_list_of_strings() =>
+        Assert.Contains(
+            "policies is not a list of strings",
+            Assert.Throws<InvalidDataException>(() => RepoPolicies.Parse(JsonNode.Parse("""{"profiles": {"oss": {"policies": "ai_policy"}}}"""), "p")).Message,
+            StringComparison.Ordinal);
+
     [Theory]
     [InlineData("[]", "the document is not an object")]
     [InlineData("""{"profiles": []}""", "profiles is not an object")]
@@ -129,6 +147,54 @@ public sealed class RepoPoliciesTests : IDisposable
 
         Assert.Contains(policies.Presets, p => p.Id == "python");
         Assert.Contains(policies.GitignoreEntries("rtkelly13/rig"), e => e.Name == "temp");
+    }
+
+    private static string Checkout => Path.GetDirectoryName(RepoTemp.Root)!;
+
+    private static RepoPolicies Shipped => RepoPolicies.Load(Path.Join(Checkout, "config", RepoPolicies.FileName));
+
+    [Fact]
+    public void The_checked_in_required_checks_are_ones_the_workflows_declare()
+    {
+        // A required check no pull_request job reports makes every PR unmergeable.
+        Assert.Equal(["ci"], Shipped.RequiredChecks("rtkelly13/rig"));
+        Assert.Contains("ci", CheckNames.DiscoverPrCheckNames(Checkout).Keys);
+        Assert.Equal(["ci", "regression"], Shipped.RequiredChecks("rtkelly-labs/design-system"));
+        Assert.Equal(["build"], Shipped.RequiredChecks("docs"));
+    }
+
+    [Fact]
+    public void No_checked_in_required_checks_list_is_empty_or_repeats_a_check()
+    {
+        var file = JsonNode.Parse(File.ReadAllText(Path.Join(Checkout, "config", RepoPolicies.FileName)))!.AsObject();
+        var layers = new List<(string Where, JsonNode? Layer)> { ("defaults", file["defaults"]) };
+        layers.AddRange(file["profiles"]!.AsObject().Select(p => ($"profile {p.Key}", p.Value)));
+        layers.AddRange(file["repo_overrides"]!.AsObject().Select(p => ($"override {p.Key}", p.Value)));
+
+        foreach (var (where, layer) in layers)
+        {
+            if (layer?["required_checks"] is JsonArray checks)
+            {
+                var names = checks.Select(c => c!.GetValue<string>()).ToList();
+                Assert.True(names.Count > 0, $"{where}: a ruleset with no required checks gates nothing");
+                Assert.True(names.Distinct(StringComparer.Ordinal).Count() == names.Count, $"{where}: {string.Join(", ", names)}");
+            }
+        }
+    }
+
+    [Fact]
+    public void The_checked_in_labs_profile_governs_the_org_and_exempts_the_demos()
+    {
+        Assert.Superset(new HashSet<string>([".github", "design-system", "Parquet.SourceGenerator", "Parquet.TypeProvider"]), Shipped.ReposForOrg("rtkelly-labs").ToHashSet());
+        Assert.Equal("rtkelly-labs", Shipped.CopyrightHolder("design-system"));
+        foreach (var demo in new[] { "MySQLEFConcurrencyBug", "AWSBatch-MapReduce" })
+        {
+            var decision = RepoSelection.ShouldManage(Shipped.SelectionRules(demo), Shipped.IsRegistered(demo), isFork: false, "ADMIN");
+            Assert.False(decision.Managed, demo);
+            Assert.Contains("exempt", decision.Reason, StringComparison.Ordinal);
+        }
+
+        Assert.True(RepoSelection.ShouldManage(Shipped.SelectionRules("docs"), Shipped.IsRegistered("docs"), isFork: false, "ADMIN").Managed);
     }
 
     private const string Identity = """

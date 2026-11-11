@@ -31,33 +31,13 @@ PORTED: tuple[str, ...] = (
     "gh",
     "models",
     "policy",
+    "repo-governance",
     "skills",
     "status",
     "sync",
 )
 #: Subcommands of a group the Python CLI still owns that run on C#: ``rig workspace doctor``.
 PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
-    "repo-governance": (
-        "agents-audit",
-        "apps",
-        "audit",
-        "check-names",
-        "enforce",
-        "environments",
-        "gitignore",
-        "issue-triage",
-        "license",
-        "pages",
-        "plan",
-        "pr-triage",
-        "prune-branches",
-        "status",
-        "sync-labels",
-        "sync-templates",
-        "vercel-gating",
-        "vercel-projects",
-        "verify-pr-checks",
-    ),
     "workspace": ("artifacts", "audit", "ci", "clean", "doctor", "gitignore", "orca", "packages", "status", "sync"),
 }
 
