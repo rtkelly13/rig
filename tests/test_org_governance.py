@@ -7,16 +7,12 @@ import pathlib
 from unittest.mock import MagicMock, patch
 
 import pytest
-from typer.testing import CliRunner
 
 from rig.repo_governance.align_repo_conventions import (
-    app,
     discover_org_repos,
     resolve_target_directories,
 )
 from rig.repo_governance.policy_config import ManageDecision, PolicyConfig, load_policy_config, should_manage_repo
-
-runner = CliRunner()
 
 
 @pytest.fixture
@@ -162,16 +158,3 @@ def test_resolve_target_directories_filters_by_org(tmp_path: pathlib.Path, org_p
         org_targets = resolve_target_directories(None, all_repos=False, org="rtkelly-labs")
         assert len(org_targets) == 1
         assert org_targets[0].name == "experimental-tool"
-
-
-@pytest.mark.ci
-def test_issue_triage_command_with_org():
-    mock_gh_output = json.dumps([{"nameWithOwner": "rtkelly-labs/sample-repo"}])
-    with (
-        patch("subprocess.run") as mock_gh,
-        patch("rig.repo_governance.cli_triage.fetch_repo_issues", return_value=[]),
-    ):
-        mock_gh.return_value = MagicMock(stdout=mock_gh_output, returncode=0)
-        res = runner.invoke(app, ["issue-triage", "--org", "rtkelly-labs"])
-        assert res.exit_code == 0
-        assert "rtkelly-labs" in res.output or "Open Issues Across 1 Repos" in res.output

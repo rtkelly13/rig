@@ -71,6 +71,9 @@ internal sealed partial class GovernanceCommand(
         governance.Subcommands.Add(PruneBranches());
         governance.Subcommands.Add(VercelProjectsCommand());
         governance.Subcommands.Add(VercelGatingCommand());
+        governance.Subcommands.Add(IssueTriage());
+        governance.Subcommands.Add(PrTriage());
+        governance.Subcommands.Add(VerifyPrChecks());
         return governance;
     }
 
