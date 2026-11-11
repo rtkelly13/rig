@@ -2,16 +2,30 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
 
 from desktop_manager.windows_workspace import load_plan
-from rig.devenv.config.loader import load_all_builtin_tools
+from rig.typed_json import try_decode_json
 
 pytestmark = pytest.mark.ci
 
+
+@dataclass(frozen=True)
+class _Install:
+    winget: str | None = None
+
+
+@dataclass(frozen=True)
+class _Tool:
+    id: str
+    install: _Install = field(default_factory=_Install)
+
+
 BUNDLE_PLAN_PATH = Path(__file__).resolve().parents[2] / "desktop-manager" / "workspace-plan.bundle.json"
+TOOL_CATALOG_PATH = Path(__file__).resolve().parents[2] / "src" / "Rig.Core" / "Devenv" / "dev-tools.json"
 
 
 def test_lab_desktop_is_on_by_default_with_t3_code_and_a_claude_terminal():
@@ -39,6 +53,8 @@ def test_disabling_the_feature_drops_the_lab_desktop():
 
 
 def test_lab_desktop_tooling_is_installable_through_devenv():
-    tools = {tool.id: tool for tool in load_all_builtin_tools()}
-    assert tools["t3code"].install.winget == "T3Tools.T3Code"
-    assert tools["fork"].install.winget == "Fork.Fork"
+    catalog = try_decode_json(list[_Tool], TOOL_CATALOG_PATH.read_text(encoding="utf-8"))
+    assert catalog is not None
+    winget = {tool.id: tool.install.winget for tool in catalog}
+    assert winget["t3code"] == "T3Tools.T3Code"
+    assert winget["fork"] == "Fork.Fork"
