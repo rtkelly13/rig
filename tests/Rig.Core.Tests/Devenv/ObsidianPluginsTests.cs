@@ -52,10 +52,12 @@ public sealed class ObsidianPluginsTests : IDisposable
         await File.WriteAllTextAsync(_vault.File(".obsidian/plugins/dataview/manifest.json"), """{"version": "0.5.67"}""", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(_vault.File(".obsidian/plugins/bare/manifest.json"), """{"id": "bare"}""", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(_vault.File(".obsidian/plugins/broken/manifest.json"), "{not json", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(_vault.File(".obsidian/plugins/listed/manifest.json"), "[]", TestContext.Current.CancellationToken);
 
         Assert.Equal("0.5.67", ObsidianPlugins.InstalledVersion(_vault.Path, "dataview"));
         Assert.Null(ObsidianPlugins.InstalledVersion(_vault.Path, "bare"));
         Assert.Null(ObsidianPlugins.InstalledVersion(_vault.Path, "broken"));
+        Assert.Null(ObsidianPlugins.InstalledVersion(_vault.Path, "listed"));
         Assert.Null(ObsidianPlugins.InstalledVersion(_vault.Path, "absent"));
     }
 

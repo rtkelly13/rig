@@ -84,7 +84,8 @@ public sealed class ObsidianPlugins(HttpClient http)
     {
         try
         {
-            return JsonNode.Parse(File.ReadAllBytes(Path.Join(vault, ".obsidian", "plugins", id, "manifest.json")))?["version"] is JsonValue version
+            return JsonNode.Parse(File.ReadAllBytes(Path.Join(vault, ".obsidian", "plugins", id, "manifest.json"))) is JsonObject manifest
+                && manifest["version"] is JsonValue version
                 && version.TryGetValue(out string? text) ? text : null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
