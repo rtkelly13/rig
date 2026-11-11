@@ -38,7 +38,7 @@ dependencies = [
 [project.scripts]
 rig = "rig.rig_cli:main"
 desktop-manager = "desktop_manager.cli:main"
-estate = "rig.estate.cli:main"
+estate = "rig.csharp_cli:entry"
 otel-stack = "rig.csharp_cli:entry"
 help = "desktop_manager.cli:help_main"
 status = "rig.csharp_cli:entry"

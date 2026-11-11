@@ -35,9 +35,8 @@ internal sealed record EstateHost(
 }
 
 /// <summary>
-/// <c>rig estate</c>: the subcommands ported from <c>src/rig/estate/cli.py</c>. The group's other subcommands are still
-/// Python's, so <see cref="Forwarding.Forwarded"/> hands any line naming one of them over. Read-only by default:
-/// <c>sync</c> fetches, and only <c>reclaim</c>, <c>trim</c>, <c>tidy</c> and <c>prune-caches</c> delete, with <c>--apply</c>, each entry proving its own safety.
+/// <c>rig estate</c> (and the <c>estate</c> entry point): the code assets cloned on this machine. Read-only by default:
+/// <c>sync</c> fetches, and only <c>reclaim</c>, <c>trim</c>, <c>tidy</c>, <c>prune-caches</c> and <c>shelve</c> delete, with <c>--apply</c>, each entry proving its own safety.
 /// </summary>
 /// <param name="host">Where it looks.</param>
 /// <param name="orca">Where each Orca profile keeps its files and how it is reached, for <c>orca</c> and <c>orca-worktrees</c>.</param>
