@@ -717,6 +717,22 @@ internal sealed class PyJsonWriter
         return this;
     }
 
+    /// <summary>Writes <c>null</c>.</summary>
+    public PyJsonWriter Null()
+    {
+        Separate();
+        text.Append("null");
+        return this;
+    }
+
+    /// <summary>Writes an integer.</summary>
+    public PyJsonWriter Number(int value)
+    {
+        Separate();
+        text.Append(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        return this;
+    }
+
     /// <inheritdoc/>
     public override string ToString() => text.ToString();
 

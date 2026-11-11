@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
+using Rig.Cli.Mail;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
@@ -64,6 +65,10 @@ internal static class Program
                         ProgramPath.Find,
                         Console.Out,
                         Console.Error),
+                    Console.Out,
+                    Console.Error).Build,
+                new MailCommand(
+                    new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),
                     Console.Out,
                     Console.Error).Build,
             ]);

@@ -50,7 +50,7 @@ repo-governance = "rig.repo_governance.align_repo_conventions:main"
 workspace = "rig.workspace.cli:main"
 devenv = "rig.devenv.cli:main"
 latex = "rig.csharp_cli:entry"
-mail = "rig.mail.cli:main"
+mail = "rig.csharp_cli:entry"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
+using Rig.Cli.Mail;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
 using Rig.Core.Tests.Fakes;
@@ -50,6 +51,7 @@ public sealed partial class ForwardedContractTests
                     new KnowledgeServerCommand(new FakeProc(), _ => throw new InvalidOperationException(), false, _ => null, TextWriter.Null, TextWriter.Null),
                     TextWriter.Null,
                     TextWriter.Null).Build,
+                new MailCommand(new MailHost(_ => null, "/", "/", TimeProvider.System), TextWriter.Null, TextWriter.Null).Build,
             ]);
         var owned = app
             .BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));
