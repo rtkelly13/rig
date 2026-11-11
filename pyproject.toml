@@ -587,7 +587,6 @@ loose-dict-allow = [
     "src/rig/devenv/steps/terminal.py",
     "src/rig/estate/discovery.py",
     "src/rig/otel_stack/backfill.py",
-    "src/rig/policy/projections.py",
     "src/rig/repo_governance/github_rulesets.py",
     "src/rig/repo_governance/gitignore_manager.py",
     "src/rig/tracing.py",

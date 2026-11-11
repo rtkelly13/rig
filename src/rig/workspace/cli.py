@@ -13,9 +13,8 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
-from rig import scopes
+from rig import csharp_cli, scopes
 from rig.devenv.ui import make_console, table_box
-from rig.policy.cli import policy_cli
 from rig.repo_governance.gitignore_manager import (
     audit_estate_gitignores,
     sync_estate_gitignores,
@@ -41,7 +40,7 @@ app = typer.Typer(
     add_completion=False,
 )
 app.add_typer(skills_cli, name="skills")
-app.add_typer(policy_cli, name="policy")
+csharp_cli.add_stub(app, "policy")
 app.add_typer(ci_cli, name="ci")
 app.add_typer(packages_cli, name="packages")
 app.add_typer(packages_cli, name="artifacts")

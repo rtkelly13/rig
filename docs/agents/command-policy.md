@@ -4,8 +4,8 @@ One policy decides what an AI agent may run on this machine, and every harness i
 projection of it.
 
 - **Source of truth**: [`config/cli-allowlists.json`](../../config/cli-allowlists.json)
-- **Classifier**: [`src/shared_utilities/policy/engine.py`](../../src/rig/policy/engine.py)
-- **Projections**: [`src/shared_utilities/policy/projections.py`](../../src/rig/policy/projections.py)
+- **Classifier**: [`src/Rig.Core/Policy/CommandPolicy.cs`](../../src/Rig.Core/Policy/CommandPolicy.cs)
+- **Projections**: [`src/Rig.Core/Policy/NativeProjection.cs`](../../src/Rig.Core/Policy/NativeProjection.cs)
 
 Nothing here is hand-authored per harness. A rule added to the JSON reaches Claude
 Code, Antigravity, OpenCode and Codex the next time `workspace policy sync` runs.
@@ -139,8 +139,8 @@ the long tail of `ask`.
    earlier sync wrote, so un-scoping a rule takes effect without hand-editing.
 2. `uv run workspace policy sync --dry-run` to see the projection diff.
 3. `uv run workspace policy sync`.
-4. `uv run pytest tests/test_policy.py`.
+4. `dotnet test --project tests/Rig.Core.Tests -- --filter-namespace Rig.Core.Tests.Policy`.
 
 A misshapen rule fails closed: the loader raises rather than dropping it, so a
 patternless entry breaks `uv run status --ci` instead of silently widening the
-policy (`test_policy_file_fails_closed_on_a_misshapen_rule`).
+policy (`A_misshapen_policy_fails_closed`).
