@@ -211,22 +211,6 @@ def test_issue_triage_command_with_org():
 
 
 @pytest.mark.ci
-def test_sync_labels_command_with_org():
-    mock_gh_output = json.dumps([{"nameWithOwner": "rtkelly-labs/sample-repo"}])
-    with (
-        patch("subprocess.run") as mock_gh,
-        patch(
-            "rig.repo_governance.cli_sync.inspect_repo_labels",
-            return_value=MagicMock(is_fully_aligned=True, total_standard=11, missing=[], mismatched=[]),
-        ),
-    ):
-        mock_gh.return_value = MagicMock(stdout=mock_gh_output, returncode=0)
-        res = runner.invoke(app, ["sync-labels", "--org", "rtkelly-labs"])
-        assert res.exit_code == 0
-        assert "sample-repo" in res.output
-
-
-@pytest.mark.ci
 def test_align_license_preserves_existing_notices(tmp_path: pathlib.Path):
     from rig.repo_governance.license_manager import align_license
 

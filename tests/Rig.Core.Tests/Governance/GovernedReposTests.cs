@@ -102,7 +102,7 @@ public sealed class GovernedReposTests : IDisposable
         _ = _dir.Folder("personal/theirs/.git");
         _ = _proc.Answer(new Ran(0, """{"nameWithOwner": "o/r", "viewerPermission": "READ", "isFork": false}""", string.Empty), "gh", "repo", "view");
 
-        Assert.Equal([kept], await Subject.ResolveTargetsAsync(null, all: true, Personal, _dir.Path, Token));
+        Assert.Equal([kept], await Subject.ResolveTargetsAsync(null, all: true, Personal, _dir.Path, cancellationToken: Token));
     }
 
     [Fact]
@@ -110,9 +110,77 @@ public sealed class GovernedReposTests : IDisposable
     {
         var repo = PathResolution.Resolve(_dir.Folder("personal/blog"));
 
-        Assert.Equal([repo], await Subject.ResolveTargetsAsync("blog", all: false, Personal, Personal, Token));
-        Assert.Empty(await Subject.ResolveTargetsAsync("absent", all: false, Personal, Personal, Token));
-        Assert.Equal([Personal], await Subject.ResolveTargetsAsync(null, all: false, Personal, Personal, Token));
+        Assert.Equal([repo], await Subject.ResolveTargetsAsync("blog", all: false, Personal, Personal, cancellationToken: Token));
+        Assert.Empty(await Subject.ResolveTargetsAsync("absent", all: false, Personal, Personal, cancellationToken: Token));
+        Assert.Equal([Personal], await Subject.ResolveTargetsAsync(null, all: false, Personal, Personal, cancellationToken: Token));
         Assert.Empty(_proc.Requests);
+    }
+
+    private GovernedRepos InOrgs => new(
+        _proc,
+        new Git(_proc, _dir.Path),
+        new EstateScopes(["rtkelly13"], ["labs"]),
+        RepoPolicies.Parse(
+            System.Text.Json.Nodes.JsonNode.Parse("""
+                {
+                  "defaults": {},
+                  "profiles": {"lab": {"expected_owner": "labs", "repos": ["lake", "labs/remote-only"]}},
+                  "repo_overrides": {"owned": {"expected_owner": "labs"}}
+                }
+                """),
+            "policy.json"));
+
+    [Fact]
+    public async Task The_gh_name_is_read_from_the_origin_and_a_failure_is_null()
+    {
+        var repo = _dir.Folder("personal/blog");
+        _ = _proc.Answer(new Ran(0, "git@github.com:o/blog.git\n", string.Empty), "git", "remote", "get-url", "origin");
+        _ = _proc.Answer(new Ran(0, "o/blog\n", string.Empty), "gh", "repo", "view");
+
+        Assert.Equal("o/blog", await Subject.GhRepoNameAsync(repo, Token));
+        Assert.Equal(["gh", "repo", "view", "git@github.com:o/blog.git", "--json", "nameWithOwner", "-q", ".nameWithOwner"], _proc.Requests[^1].Argv);
+
+        _ = _proc.Answer(new Ran(1, string.Empty, "no"), "gh", "repo", "view");
+        Assert.Null(await Subject.GhRepoNameAsync(repo, Token));
+    }
+
+    [Fact]
+    public async Task An_org_s_repos_come_from_gh_repo_list()
+    {
+        _ = _proc.Answer(new Ran(0, """[{"nameWithOwner": "labs/a"}, {"nameWithOwner": "labs/b"}, {}]""", string.Empty), "gh", "repo", "list");
+
+        Assert.Equal(["labs/a", "labs/b"], await InOrgs.DiscoverOrgReposAsync("labs", Personal, Token));
+        Assert.Equal(["gh", "repo", "list", "labs", "--no-archived", "--limit", "100", "--json", "nameWithOwner"], _proc.Requests[0].Argv);
+    }
+
+    [Fact]
+    public async Task Without_gh_an_org_s_repos_are_its_registrations_and_clones()
+    {
+        var lake = _dir.Folder("labs/lake");
+        _ = _dir.Folder("labs/lake/.git");
+        var owned = _dir.Folder("personal/owned");
+        _ = _dir.Folder("personal/owned/.git");
+        _ = _dir.Folder("personal/stray/.git");
+        _ = _proc.Answer(new Ran(1, string.Empty, "offline"), "gh", "repo", "list");
+        _ = _proc.AnswerIn(lake, new Ran(0, "labs/lake\n", string.Empty), "gh", "repo", "view");
+        _ = _proc.AnswerIn(owned, new Ran(1, string.Empty, "no"), "gh", "repo", "view");
+
+        Assert.Equal(["labs/lake", "labs/remote-only", "labs/owned"], await InOrgs.DiscoverOrgReposAsync("labs", Personal, Token));
+    }
+
+    [Fact]
+    public async Task An_org_scopes_the_targets_to_its_clones()
+    {
+        var lake = _dir.Folder("labs/lake");
+        _ = _dir.Folder("labs/lake/.git");
+        var other = _dir.Folder("personal/other");
+        _ = _dir.Folder("personal/other/.git");
+        _ = _proc.AnswerIn(lake, new Ran(0, """{"nameWithOwner": "labs/lake", "viewerPermission": "ADMIN", "isFork": false}""", string.Empty), "gh", "repo", "view", "--json", "nameWithOwner,viewerPermission,isFork");
+        _ = _proc.AnswerIn(lake, new Ran(0, "labs/lake\n", string.Empty), "gh", "repo", "view", "--json", "nameWithOwner", "-q");
+        _ = _proc.AnswerIn(other, new Ran(0, "rtkelly13/other\n", string.Empty), "gh", "repo", "view");
+
+        Assert.Equal([lake], await InOrgs.ResolveTargetsAsync(null, all: false, Personal, Personal, org: "labs", cancellationToken: Token));
+        Assert.Equal([lake], await InOrgs.ResolveTargetsAsync(null, all: true, Personal, other, org: "LABS", cancellationToken: Token));
+        Assert.Equal([PathResolution.Resolve(other)], await InOrgs.ResolveTargetsAsync(other, all: false, Personal, Personal, org: "labs", cancellationToken: Token));
     }
 }

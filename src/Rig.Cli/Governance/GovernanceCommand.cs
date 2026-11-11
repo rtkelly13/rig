@@ -34,7 +34,8 @@ internal sealed record GovernanceHost(string CodeRoot, string Cwd, string Checko
 /// <param name="proc">Runs git and gh.</param>
 /// <param name="time">The clock waivers expire by.</param>
 /// <param name="output">Where reports go.</param>
-internal sealed class GovernanceCommand(GovernanceHost host, IProc proc, TimeProvider time, TextWriter output)
+/// <param name="gitHub">The GitHub REST seam; <c>gh api</c> through <paramref name="proc"/> when null.</param>
+internal sealed partial class GovernanceCommand(GovernanceHost host, IProc proc, TimeProvider time, TextWriter output, IGitHubApi? gitHub = null)
 {
     /// <summary>What <c>rig repo-governance</c> is.</summary>
     public const string Description = "CLI tool to audit, inspect status, and enforce repository conventions across GitHub repos.";
@@ -46,6 +47,10 @@ internal sealed class GovernanceCommand(GovernanceHost host, IProc proc, TimePro
     {
         var governance = new Command("repo-governance", Description);
         governance.Subcommands.Add(AgentsAudit());
+        governance.Subcommands.Add(Plan());
+        governance.Subcommands.Add(SyncLabels());
+        governance.Subcommands.Add(Environments());
+        governance.Subcommands.Add(Pages());
         return governance;
     }
 
@@ -83,7 +88,7 @@ internal sealed class GovernanceCommand(GovernanceHost host, IProc proc, TimePro
         // `--remote` on its own means "GitHub only"; with a path or --all it sweeps both.
         IReadOnlyList<string> targets = options.Remote && !(!string.IsNullOrEmpty(options.Path) || options.All)
             ? []
-            : await new GovernedRepos(proc, git, scopes, policies).ResolveTargetsAsync(options.Path, options.All, host.PersonalDir, host.Cwd, cancellationToken).ConfigureAwait(false);
+            : await new GovernedRepos(proc, git, scopes, policies).ResolveTargetsAsync(options.Path, options.All, host.PersonalDir, host.Cwd, cancellationToken: cancellationToken).ConfigureAwait(false);
         var results = new List<AgentsMdAuditResult>();
         foreach (var target in targets)
         {
