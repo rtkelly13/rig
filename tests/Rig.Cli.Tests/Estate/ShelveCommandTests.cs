@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Text.Json.Nodes;
 using Rig.Cli.Estate;
 using Rig.Core.Estate;
+using Rig.Core.Processes;
 using Rig.Core.Tests.Estate;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;
@@ -18,6 +19,7 @@ public sealed class ShelveCommandTests : IDisposable
     private readonly ShelveFixture _fx = new();
     private TimeProvider _clock = new ManualClock(ShelveFixture.Now);
     private readonly FakeGitHub _github = new();
+    private Func<ProcRequest, Ran?> _answer = _ => null;
 
     public void Dispose() => _fx.Dispose();
 
@@ -32,7 +34,7 @@ public sealed class ShelveCommandTests : IDisposable
         _ = Directory.CreateDirectory(Home);
         using var output = new StringWriter();
         using var error = new StringWriter();
-        var command = new EstateCommand(new EstateHost(_fx.Root, Home, cwd), NoOrca.Host, Repos.Proc, _github, _clock, _ => null, output, error);
+        var command = new EstateCommand(new EstateHost(_fx.Root, Home, cwd), NoOrca.Host, new AnsweringProc(_answer), _github, _clock, _ => null, output, error);
         var code = await new RootCommand { command.Build() }.Parse(["estate", .. args]).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, Token);
         return (code, output.ToString().ReplaceLineEndings("\n"), error.ToString().ReplaceLineEndings("\n"));
     }
@@ -331,6 +333,36 @@ public sealed class ShelveCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Prune_drops_a_shelf_whose_pull_request_merged_its_commits()
+    {
+        _ = await _fx.InitAsync();
+        var path = await _fx.AddWorktreeAsync("squashed", push: false);
+        await ShelveFixture.CommitAsync(path, "a.txt", "a\n");
+        var plan = await _fx.PlanAsync(path, prs: new Dictionary<string, PullRequest> { ["squashed"] = new(5, "OPEN", "squashed") });
+        Assert.Equal("shelved", (await _fx.Shelver().ApplyAsync(plan)).Outcome);
+        _answer = request => request.Argv.Contains("get-url") ? new Ran(0, "https://github.com/o/r.git\n", string.Empty) : null;
+        var node = $$"""{"number": 5, "state": "MERGED", "headRefName": "squashed", "headRefOid": "{{plan.Head}}"}""";
+        var page = $$"""{"pageInfo": {"hasNextPage": false}, "nodes": [{{node}}]}""";
+        _ = _github.On("POST", "graphql", $$$"""{"data": {"repository": {"pullRequests": {{{page}}}}, "search": {{{page}}}}}""");
+
+        var (code, output, _) = await RunAsync("shelved", "--repo", Clone, "--prune", "--json");
+
+        Assert.Equal(0, code);
+        Assert.Equal("PR #5 merged", Assert.Single(JsonNode.Parse(output)!.AsArray())!["prune"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task A_path_that_does_not_exist_is_refused()
+    {
+        _ = await _fx.InitAsync();
+
+        var (code, _, error) = await RunAsync("shelve", Path.Join(_fx.Root, "missing"));
+
+        Assert.Equal(2, code);
+        Assert.NotEmpty(error);
+    }
+
+    [Fact]
     public async Task The_shelved_table_marks_snapshots_and_prune_verdicts()
     {
         _ = await _fx.InitAsync();
@@ -413,5 +445,12 @@ public sealed class ShelveCommandTests : IDisposable
         Assert.Contains("matches 2 shelves", error, StringComparison.Ordinal);
         Assert.Equal(0, named);
         Assert.StartsWith("✓ shelved/someone/dirty → ", output, StringComparison.Ordinal);
+    }
+
+    // Real processes, unless the test answers a request itself.
+    private sealed class AnsweringProc(Func<ProcRequest, Ran?> answer) : IProc
+    {
+        public async Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) =>
+            answer(request) ?? await Repos.Proc.RunAsync(request, cancellationToken);
     }
 }
