@@ -52,6 +52,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         workspace.Subcommands.Add(Clean());
         workspace.Subcommands.Add(Doctor());
         workspace.Subcommands.Add(Gitignore());
+        workspace.Subcommands.Add(Ci());
         workspace.Subcommands.Add(Sync("Synchronize root AGENTS.md, personal.code-workspace, and common gitignores."));
         return workspace;
     }
@@ -388,6 +389,65 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         };
 
     private static JsonArray Strings(IEnumerable<string> items) => new([.. items.Select(item => (JsonNode)item)]);
+
+    private Command Ci()
+    {
+        var group = new Command("ci", "Audit and analyze CI utilisation and runner costs across the estate.");
+        var repo = new Option<string?>("--repo", "-r") { Description = "Specific repository name (e.g. rig)" };
+        var limit = new Option<int>("--limit", "-l") { Description = "Number of recent workflow runs to evaluate per repo", DefaultValueFactory = _ => 10 };
+        var config = ConfigOption();
+        var audit = new Command("audit", "Audit recent CI runs and billable runner minutes.") { repo, limit, config };
+        audit.SetAction((parsed, cancellationToken) => CiAuditAsync(parsed.GetValue(repo), parsed.GetValue(limit), parsed.GetValue(config), cancellationToken));
+        group.Subcommands.Add(audit);
+        return group;
+    }
+
+    // A --repo matches a project's name exactly or any part of its remote, ignoring case.
+    private async Task<int> CiAuditAsync(string? repo, int limit, string? config, CancellationToken cancellationToken)
+    {
+        var specs = Specs(config);
+        if (!string.IsNullOrEmpty(repo))
+        {
+            specs = [.. specs.Where(spec => string.Equals(spec.Name, repo, StringComparison.OrdinalIgnoreCase)
+                || spec.Repo.Contains(repo, StringComparison.OrdinalIgnoreCase))];
+            if (specs.Count == 0)
+            {
+                await output.WriteLineAsync($"Error: repository '{repo}' not found in managed projects.").ConfigureAwait(false);
+                return 1;
+            }
+        }
+
+        var telemetry = new CiTelemetry(new GhApi(proc));
+        var table = new TextTable(
+            "Estate CI Utilisation Audit",
+            [("Repository", false), ("Workflow", false), ("Event / Branch", false), ("Conclusion", false), ("Wall Time", true), ("Billable Equiv.", true)]);
+        var billable = 0.0;
+        var checkedRuns = 0;
+        foreach (var spec in specs)
+        {
+            if (RepoSlug.FromRemote(spec.Repo) is not { } slug)
+            {
+                continue;
+            }
+
+            foreach (var run in await telemetry.RecentAsync(spec.Name, slug.FullName, limit, cancellationToken).ConfigureAwait(false))
+            {
+                billable += run.BillableSeconds;
+                checkedRuns++;
+                var branch = run.HeadBranch.Length > 18 ? run.HeadBranch[..18] : run.HeadBranch;
+                _ = table.Add(spec.Name, run.WorkflowName, $"{run.Event} ({branch})", run.Conclusion, Minutes(run.DurationSeconds), Minutes(run.BillableSeconds));
+            }
+        }
+
+        await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        await output.WriteLineAsync(string.Create(
+            CultureInfo.InvariantCulture,
+            $"\nTotal Evaluated: {checkedRuns} runs | Total Billable Minutes Equivalent: {billable / 60.0:F1}m\n")).ConfigureAwait(false);
+        return 0;
+    }
+
+    private static string Minutes(double seconds) =>
+        string.Create(CultureInfo.InvariantCulture, $"{(int)(seconds / 60)}m {(int)(seconds % 60)}s");
 
     private Command Doctor()
     {
