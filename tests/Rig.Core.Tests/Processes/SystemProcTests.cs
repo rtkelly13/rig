@@ -8,6 +8,15 @@ public sealed class SystemProcTests
 {
     private readonly SystemProc _proc = new();
 
+    [Theory]
+    [InlineData(new[] { @"C:\npm\opencode.cmd", "models" }, true, "/d /s /c \"C:\\npm\\opencode.cmd models\"")]
+    [InlineData(new[] { @"C:\npm\codex.CMD", "fix a & b", "", "say \"hi\"" }, true, "/d /s /c \"C:\\npm\\codex.CMD \"fix a & b\" \"\" \"say \"\"hi\"\"\"\"")]
+    [InlineData(new[] { @"C:\Program Files\x.bat" }, true, "/d /s /c \"\"C:\\Program Files\\x.bat\"\"")]
+    [InlineData(new[] { "opencode.exe", "models" }, true, null)]
+    [InlineData(new[] { "/usr/bin/opencode.cmd" }, false, null)]
+    public void A_windows_batch_file_runs_through_cmd(string[] argv, bool windows, string? line) =>
+        Assert.Equal(line, SystemProc.BatchLine(argv, windows));
+
     [Fact]
     public async Task Captures_standard_output()
     {

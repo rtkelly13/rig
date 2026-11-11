@@ -29,7 +29,7 @@ public sealed class SystemProc : IProc
         activity?.SetTag("process.command_args", string.Join(' ', request.Argv));
 
         var captured = !request.Attached;
-        var info = new ProcessStartInfo(request.Argv[0])
+        var info = new ProcessStartInfo
         {
             RedirectStandardInput = captured,
             RedirectStandardOutput = captured,
@@ -40,9 +40,18 @@ public sealed class SystemProc : IProc
             CreateNoWindow = captured,
             WorkingDirectory = request.WorkingDirectory ?? string.Empty,
         };
-        foreach (var argument in request.Argv.Skip(1))
+        if (BatchLine(request.Argv, OperatingSystem.IsWindows()) is { } line)
         {
-            info.ArgumentList.Add(argument);
+            info.FileName = "cmd.exe";
+            info.Arguments = line;
+        }
+        else
+        {
+            info.FileName = request.Argv[0];
+            foreach (var argument in request.Argv.Skip(1))
+            {
+                info.ArgumentList.Add(argument);
+            }
         }
 
         foreach (var (name, value) in request.Environment)
@@ -103,6 +112,28 @@ public sealed class SystemProc : IProc
 
         return Finish(activity, new Ran(process.ExitCode, output, errors));
     }
+
+    /// <summary>
+    /// The <c>cmd.exe</c> arguments that run a Windows batch file, such as an npm <c>.cmd</c> shim, or null when the
+    /// program is not one: Windows cannot start a batch file without its command interpreter. Arguments are quoted
+    /// whole, so spaces and <c>&amp; | &lt; &gt;</c> pass through as text; <c>%</c> is still expanded by cmd.
+    /// </summary>
+    public static string? BatchLine(IReadOnlyList<string> argv, bool windows)
+    {
+        ArgumentNullException.ThrowIfNull(argv);
+        var program = argv[0];
+        if (!windows || !(program.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) || program.EndsWith(".bat", StringComparison.OrdinalIgnoreCase)))
+        {
+            return null;
+        }
+
+        return $"/d /s /c \"{string.Join(' ', argv.Select(Quote))}\"";
+    }
+
+    private static string Quote(string argument) =>
+        argument.Length > 0 && !argument.Any(c => char.IsWhiteSpace(c) || c is '"' or '&' or '|' or '<' or '>' or '^' or '(' or ')')
+            ? argument
+            : $"\"{argument.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
 
     private static async Task FeedAsync(Process process, string? text, CancellationToken cancellationToken)
     {
