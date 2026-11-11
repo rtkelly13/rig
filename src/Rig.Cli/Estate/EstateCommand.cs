@@ -20,20 +20,28 @@ internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDi
 
     /// <summary>The clone list cache, shared with the Python commands still in the group.</summary>
     public string CacheFile => CloneDiscovery.CacheFileUnder(Home);
+
+    /// <summary><paramref name="path"/> with a leading <c>~</c> replaced by <see cref="Home"/>.</summary>
+    public string ExpandHome(string path) =>
+        path == "~" ? Home
+        : path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal) ? Path.Join(Home, path[2..])
+        : path;
 }
 
 /// <summary>
 /// <c>rig estate</c>: the subcommands ported from <c>src/rig/estate/cli.py</c>. The group's other subcommands are still
 /// Python's, so <see cref="Forwarding.Forwarded"/> hands any line naming one of them over. Read-only by default:
-/// <c>sync</c> fetches, and only <c>reclaim</c>, <c>trim</c> and <c>tidy</c> delete, with <c>--apply</c>, each entry proving its own safety.
+/// <c>sync</c> fetches, and only <c>reclaim</c>, <c>trim</c>, <c>tidy</c> and <c>prune-caches</c> delete, with <c>--apply</c>, each entry proving its own safety.
 /// </summary>
 /// <param name="host">Where it looks.</param>
-/// <param name="proc">Runs git, du and lsof, and icacls on Windows when a tree is removed.</param>
+/// <param name="proc">Runs git, du and lsof, the cache tools, and icacls on Windows when a tree is removed.</param>
 /// <param name="github">Asks GitHub which head refs have a merged PR, for <c>doctor --merged</c> and <c>tidy --merged</c>.</param>
 /// <param name="time">The clock the clone cache is aged by and the worktree checks read.</param>
+/// <param name="findTool">Finds uv, pnpm, dotnet and docker for <c>prune-caches</c>; <see cref="Caches.FindTool"/> outside tests.</param>
 /// <param name="output">Where reports go.</param>
 /// <param name="error">Where progress and refusals go, so <c>--json</c> stays clean.</param>
-internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi github, TimeProvider time, TextWriter output, TextWriter error)
+internal sealed class EstateCommand(
+    EstateHost host, IProc proc, IGitHubApi github, TimeProvider time, Func<string, string?> findTool, TextWriter output, TextWriter error)
 {
     /// <summary>What <c>rig estate</c> is.</summary>
     public const string Description = "Manage the code assets cloned on this machine.";
@@ -59,6 +67,7 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
         estate.Subcommands.Add(ReclaimCommand());
         estate.Subcommands.Add(TrimCommand());
         estate.Subcommands.Add(TidyCommand());
+        estate.Subcommands.Add(new PruneCachesCommand(host, proc, findTool, time, output, error).Build());
         return estate;
     }
 
@@ -805,10 +814,7 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
         return top.Length > 0 ? PathResolution.Resolve(top) : host.WorkingDirectory; // git answers with / on Windows
     }
 
-    private string ExpandHome(string path) =>
-        path == "~" ? host.Home
-        : path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal) ? Path.Join(host.Home, path[2..])
-        : path;
+    private string ExpandHome(string path) => host.ExpandHome(path);
 
     // A path inside the clone relative to it, else in full: a worktree can live outside its clone.
     private static string Short(string path, string clone)

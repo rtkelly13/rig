@@ -61,6 +61,7 @@ public sealed class EstateCommandTests : IDisposable
             proc,
             _github,
             _clock,
+            _ => null,
             output,
             error);
         var code = await new RootCommand { command.Build() }.Parse(["estate", .. args]).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, Token);
