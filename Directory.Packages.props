@@ -6,6 +6,9 @@
   <ItemGroup Label="Vault">
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
+  <ItemGroup Label="Orca">
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+  </ItemGroup>
   <ItemGroup Label="Tests">
     <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.3" />
     <PackageVersion Include="Verify.XunitV3" Version="33.3.4" />
