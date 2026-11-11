@@ -18,4 +18,4 @@ If a local requirement is detected, `uv python install <version>` installs that 
 - Leverages `uv`'s fast, isolated Python binary management.
 
 ## References
-- [`src/shared_utilities/devenv/steps/runtimes.py`](../../src/rig/devenv/steps/runtimes.py)
+- [`src/Rig.Core/Devenv/Runtimes.cs`](../../src/Rig.Core/Devenv/Runtimes.cs)

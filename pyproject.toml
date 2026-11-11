@@ -387,7 +387,7 @@ omit = [
 [tool.coverage.report]
 # The floor. A ratchet (rig.repo_governance.coverage_floor, run in CI) stops it falling and
 # makes it follow coverage up to [tool.rig.coverage_ratchet] target. See docs/testing.md.
-fail_under = 79
+fail_under = 81
 show_missing = true
 skip_covered = true
 exclude_lines = [
