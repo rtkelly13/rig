@@ -158,7 +158,7 @@ public sealed class TreeRemoval(IProc proc)
     private static void OpenToOwner(string folder) =>
         File.SetUnixFileMode(folder, File.GetUnixFileMode(folder) | UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 
-    [ExcludeFromCodeCoverage(Justification = "Windows-only; exercised by the Windows test job.")]
+    [ExcludeFromCodeCoverage(Justification = "Windows-only ACL repair; no test creates a deny-delete or protected ACL.")]
     private async Task GrantDeleteChildAsync(string folder, CancellationToken cancellationToken)
     {
         if (_sid is null)
@@ -170,7 +170,7 @@ public sealed class TreeRemoval(IProc proc)
         await IcaclsAsync([folder, "/grant", $"*{_sid}:(DC)"], cancellationToken).ConfigureAwait(false);
     }
 
-    [ExcludeFromCodeCoverage(Justification = "Windows-only; exercised by the Windows test job.")]
+    [ExcludeFromCodeCoverage(Justification = "Windows-only ACL repair; no test creates a deny-delete or protected ACL.")]
     private async Task IcaclsAsync(IReadOnlyList<string> args, CancellationToken cancellationToken) =>
         _ = await proc.RunAsync(new ProcRequest(["icacls", .. args]), cancellationToken).ConfigureAwait(false);
 }
