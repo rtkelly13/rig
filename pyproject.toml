@@ -575,7 +575,6 @@ loose-dict-allow = [
     "src/desktop_manager/models.py",
     "src/desktop_manager/work/serialize.py",
     "src/rig/devenv/steps/ai_tools/obsidian_plugins.py",
-    "src/rig/devenv/steps/ai_tools/opencode.py",
     "src/rig/devenv/steps/terminal.py",
     "src/rig/estate/discovery.py",
     "src/rig/otel_stack/backfill.py",

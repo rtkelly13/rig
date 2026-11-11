@@ -65,27 +65,6 @@ public static class ClaudeBaseline
     public static string SettingsPath(string home) => Path.Join(home, ".claude", "settings.json");
 
     /// <summary>
-    /// The settings at <paramref name="path"/>: empty when there is no file, null when it is not a JSON object (or
-    /// repeats a key), since writing it back would lose content.
-    /// </summary>
-    public static JsonObject? Load(string path)
-    {
-        if (!File.Exists(path))
-        {
-            return [];
-        }
-
-        try
-        {
-            return JsonNode.Parse(File.ReadAllBytes(path), documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false }) as JsonObject;
-        }
-        catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException or ArgumentException)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
     /// <paramref name="existing"/> with the baseline and the session-ledger hook (<paramref name="sessionEndCommand"/>)
     /// merged in. A wrong-typed <c>permissions</c>, <c>env</c>, <c>attribution</c> or <c>mcpServers</c> is replaced by
     /// an object; an existing MCP server is never modified, even when it differs from the baseline (ADR 0015: clobbering
@@ -111,30 +90,6 @@ public static class ClaudeBaseline
 
         changes.AddRange(SessionLedger.Merge(merged, sessionEndCommand));
         return new SettingsMerge(merged, changes);
-    }
-
-    /// <summary>
-    /// Writes <paramref name="settings"/> to <paramref name="path"/> as Python's <c>json.dump(indent=2,
-    /// ensure_ascii=False)</c> did, CRLF on Windows, through a staging file so a failed write never truncates it.
-    /// Throws <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/> when it cannot.
-    /// </summary>
-    public static void Save(string path, JsonObject settings, bool windows)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        var full = Path.GetFullPath(path);
-        var staging = $"{full}.{Environment.ProcessId}.tmp";
-        try
-        {
-            _ = Directory.CreateDirectory(Path.GetDirectoryName(full)!);
-            var text = PyJson.Dumps(settings, ensureAscii: false) + "\n";
-            File.WriteAllText(staging, windows ? text.Replace("\n", "\r\n", StringComparison.Ordinal) : text);
-            File.Move(staging, full, overwrite: true);
-        }
-        catch
-        {
-            File.Delete(staging);
-            throw;
-        }
     }
 
     /// <summary>Python's <c>repr</c> of a baseline value, as the change lines show it: <c>'text'</c>, <c>True</c>, <c>3</c>.</summary>

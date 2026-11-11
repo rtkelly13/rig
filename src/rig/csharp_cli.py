@@ -25,7 +25,7 @@ from rig import tracing
 PORTED: tuple[str, ...] = ("agent", "browser", "gh", "models", "policy", "skills", "status")
 
 #: Subcommands the C# CLI owns inside a group Python still owns; ``tests/Rig.Cli.Tests`` checks C# has exactly these.
-PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {"devenv": ("claude",)}
+PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {"devenv": ("claude", "estate-rules", "opencode")}
 
 #: Set for the C# CLI so it refuses to forward a command back to Python.
 BRIDGE_VARIABLE = "RIG_FROM_PYTHON"

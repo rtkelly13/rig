@@ -12,9 +12,7 @@ from rig import csharp_cli
 from ...engine.context import StepContext
 from .agent_launcher_setup import setup_agent_launcher
 from .discovery import detect_installed_agents
-from .estate_rules import setup_estate_rules
 from .obsidian_plugins import setup_obsidian_plugins
-from .opencode import setup_opencode
 
 console = Console()
 
@@ -39,14 +37,14 @@ def run_ai_tools_setup(ctx: StepContext) -> None:
     dry_run = ["--dry-run"] if ctx.dry_run else []
     failed = {"devenv claude": csharp_cli.run(["devenv", "claude", *dry_run])}
 
-    # 3. Configure OpenCode
-    setup_opencode(dry_run=ctx.dry_run)
+    # 3. OpenCode defaults and policy, through `rig devenv opencode`
+    failed["devenv opencode"] = csharp_cli.run(["devenv", "opencode", *dry_run])
 
     # 4. Configure agent-browser profiles through `rig browser profiles`
     failed["browser profiles"] = csharp_cli.run(["browser", "profiles", *dry_run])
 
-    # 5. Estate-wide agent rules for ~/code/personal
-    setup_estate_rules(dry_run=ctx.dry_run)
+    # 5. Estate-wide agent rules for ~/code/personal, through `rig devenv estate-rules`
+    failed["devenv estate-rules"] = csharp_cli.run(["devenv", "estate-rules", *dry_run])
 
     # 6. Obsidian plugins for the agent-facing vault
     vault = Path.home() / "code" / "personal" / "obsidian-vault"

@@ -12,9 +12,9 @@ namespace Rig.Cli.Devenv;
 internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows);
 
 /// <summary>
-/// The ported part of <c>rig devenv</c>: <c>claude</c>. Every other <c>devenv</c> subcommand is still Python's, and
+/// The ported part of <c>rig devenv</c>: <c>claude</c>, <c>estate-rules</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
 /// <see cref="Forwarding.Forwarded.Owns"/> hands those lines over before parsing. Ported from devenv's
-/// <c>claude_code</c> and <c>session_ledger</c>.
+/// <c>claude_code</c>, <c>session_ledger</c>, <c>estate_rules</c> and <c>opencode</c>.
 /// </summary>
 /// <param name="host">Where it sets up.</param>
 /// <param name="output">Where progress goes.</param>
@@ -32,12 +32,16 @@ internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWrit
         var check = new Option<bool>("--check") { Description = "Report whether the session-ledger hook is wired and current, changing nothing; exit 1 when it is not." };
         var claude = new Command("claude", "Merge the Claude Code settings baseline and install the session-ledger SessionEnd hook.") { dryRun, home, check };
         claude.SetAction(parsed => parsed.GetValue(check) ? Check(parsed.GetValue(home)!) : Claude(parsed.GetValue(dryRun), parsed.GetValue(home)!));
-        return new Command("devenv", Description) { claude };
+        var opencode = new Command("opencode", "Merge OpenCode's default config and project the estate command policy into it.") { dryRun, home };
+        opencode.SetAction(parsed => Opencode(parsed.GetValue(dryRun), parsed.GetValue(home)!));
+        var rules = new Command("estate-rules", "Install or refresh the estate-wide AGENTS.md under ~/code/personal.") { dryRun, home };
+        rules.SetAction(parsed => Rules(parsed.GetValue(dryRun), parsed.GetValue(home)!));
+        return new Command("devenv", Description) { claude, rules, opencode };
     }
 
     private int Check(string home)
     {
-        var settings = ClaudeBaseline.Load(ClaudeBaseline.SettingsPath(home));
+        var settings = SettingsFile.Load(ClaudeBaseline.SettingsPath(home));
         var state = settings is null ? LedgerHookState.NotWired : SessionLedger.State(settings, SessionLedger.HookPath(home));
         output.WriteLine($"Session-ledger hook: {state.Describe()}");
         return state == LedgerHookState.Current ? 0 : 1;
@@ -48,7 +52,7 @@ internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWrit
     {
         var path = ClaudeBaseline.SettingsPath(home);
         var hook = SessionLedger.HookPath(home);
-        if (ClaudeBaseline.Load(path) is not { } existing)
+        if (SettingsFile.Load(path) is not { } existing)
         {
             error.WriteLine($"! {path} is not a readable JSON object; fix it by hand, then re-run.");
             return 1;
@@ -59,7 +63,7 @@ internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWrit
         if (merge.Changes.Count == 0 && !stale)
         {
             output.WriteLine($"✓ Claude Code settings up to date: {path}");
-            return Project(dryRun, home);
+            return Project("claude", dryRun, home);
         }
 
         if (merge.Changes.Count > 0)
@@ -79,7 +83,7 @@ internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWrit
         if (dryRun)
         {
             output.WriteLine("Dry run: no changes written.");
-            return Project(dryRun, home);
+            return Project("claude", dryRun, home);
         }
 
         // Install the script before wiring it, so the hook never points at nothing.
@@ -92,7 +96,7 @@ internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWrit
         {
             try
             {
-                ClaudeBaseline.Save(path, merge.Settings, host.Windows);
+                SettingsFile.Save(path, merge.Settings, host.Windows);
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
@@ -103,7 +107,7 @@ internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWrit
             output.WriteLine($"✓ Successfully updated Claude Code settings at {path}");
         }
 
-        return Project(dryRun, home);
+        return Project("claude", dryRun, home);
     }
 
     private bool Install(string hook)
@@ -122,18 +126,95 @@ internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWrit
         return true;
     }
 
-    // The estate policy's command rules, projected into Claude's permissions as `rig policy sync --system claude` does.
-    private int Project(bool dryRun, string home)
+    // Merge the OpenCode defaults without clobbering, then project the policy; 1 when the config is unreadable or a write fails.
+    private int Opencode(bool dryRun, string home)
+    {
+        var path = OpencodeDefaults.ConfigPath(home);
+        if (SettingsFile.Load(path) is not { } existing)
+        {
+            error.WriteLine($"! {path} is not a readable JSON object; fix it by hand, then re-run.");
+            return 1;
+        }
+
+        if (OpencodeDefaults.Merge(existing) is not { } merged)
+        {
+            output.WriteLine($"✓ OpenCode config already configured: {path}");
+        }
+        else if (dryRun)
+        {
+            output.WriteLine($"Dry run: would merge defaults into {path}");
+        }
+        else
+        {
+            try
+            {
+                SettingsFile.Save(path, merged, host.Windows);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                error.WriteLine($"! Failed to write OpenCode config: {e.Message}");
+                return 1;
+            }
+
+            output.WriteLine($"✓ Configured OpenCode default settings at {path}");
+        }
+
+        return Project("opencode", dryRun, home);
+    }
+
+    // The estate-wide AGENTS.md: only the marked block is managed. 1 when the write fails.
+    private int Rules(bool dryRun, string home)
+    {
+        var root = EstateRules.Root(home);
+        if (!Directory.Exists(root))
+        {
+            output.WriteLine($"Estate root not present, skipping: {root}");
+            return 0;
+        }
+
+        var target = Path.Join(root, "AGENTS.md");
+        // Read and compared with \n line ends, as Python's text mode does; written with the platform's.
+        var merge = EstateRules.Merge(File.Exists(target) ? File.ReadAllText(target).ReplaceLineEndings("\n") : null);
+        var action = merge.Action.ToString().ToLowerInvariant();
+        if (merge.Action == EstateRulesAction.Unchanged)
+        {
+            output.WriteLine($"✓ Estate agent rules up to date: {target}");
+            return 0;
+        }
+
+        output.WriteLine($"{merge.Action} estate agent rules at {target}");
+        if (dryRun)
+        {
+            output.WriteLine("Dry run: no changes written.");
+            return 0;
+        }
+
+        try
+        {
+            File.WriteAllText(target, host.Windows ? merge.Content.ReplaceLineEndings("\r\n") : merge.Content);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            error.WriteLine($"Failed to write estate rules: {e.Message}");
+            return 1;
+        }
+
+        output.WriteLine($"✓ Estate agent rules {action} at {target}");
+        return 0;
+    }
+
+    // The estate policy's command rules, projected into the system's native config as `rig policy sync` does.
+    private int Project(string system, bool dryRun, string home)
     {
         try
         {
-            var result = NativeProjection.For("claude", home, host.Windows).Apply(CommandPolicy.Load(host.PolicyPath, host.Windows), dryRun);
+            var result = NativeProjection.For(system, home, host.Windows).Apply(CommandPolicy.Load(host.PolicyPath, host.Windows), dryRun);
             output.WriteLine($"{result.System}: {result.Status.Name()} — {result.Path ?? "no native path"} ({result.Detail})");
             return result.Status == ProjectionStatus.Failed ? 1 : 0;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
         {
-            error.WriteLine($"rig devenv claude: {e.Message}");
+            error.WriteLine($"rig devenv {system}: {e.Message}");
             return 1;
         }
     }
