@@ -13,7 +13,6 @@ namespace Rig.Core.Tests.Vault;
 public sealed class VaultLintOracleTests
 {
     private const string ExtraFixtureVariable = "RIG_LINT_ORACLE";
-    private static readonly string[] TriggerSubstrings = [".git", ".obsidian", "Archive", "Resources", "Social Media Posts", "Areas", "Projects"];
 
     [Fact]
     public void Lints_every_recorded_vault_as_python_did()
@@ -34,8 +33,7 @@ public sealed class VaultLintOracleTests
                 continue;
             }
 
-            var root = Path.Combine(RepoTemp.NewPath("rig-lint"), "Vault");
-            Assert.DoesNotContain(TriggerSubstrings, root.Contains);
+            var root = Path.Combine(RepoTemp.NewVaultParent("rig-lint"), "Vault");
             try
             {
                 Materialize(root, oracle.Files);
@@ -99,6 +97,7 @@ public sealed class VaultLintOracleTests
         File.SetUnixFileMode(shut, UnixFileMode.None);
         try
         {
+            Assert.SkipWhen(Listable(shut), "File modes do not restrict this user (root).");
             Assert.Equal(["Resources/Open/a.md"], VaultWalk.Markdown(vault.Root).Select(e => e.Relative.ToString()));
         }
         finally
@@ -327,9 +326,22 @@ public sealed class VaultLintOracleTests
 
     private sealed record OracleCase(string Name, bool PosixOnly, JsonArray Files, string? Vault, JsonObject Expected);
 
+    private static bool Listable(string folder)
+    {
+        try
+        {
+            _ = Directory.GetFileSystemEntries(folder);
+            return true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     private sealed class TempVault : IDisposable
     {
-        private readonly string parent = RepoTemp.NewPath("rig-lint");
+        private readonly string parent = RepoTemp.NewVaultParent("rig-lint");
 
         public TempVault()
         {
