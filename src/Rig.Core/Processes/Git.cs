@@ -18,6 +18,13 @@ public sealed class Git(IProc proc, string codeRoot)
     /// <summary>Folders under the code root whose clones are untrusted (see the code root's AGENTS.md).</summary>
     public static readonly IReadOnlyList<string> UntrustedFolders = ["external", "other"];
 
+    /// <summary>
+    /// Variables that point git at a repository other than the working directory's. Every call names its directory, so an
+    /// inherited one (rig run from a git hook, say) is dropped unless the caller sets it.
+    /// </summary>
+    public static readonly IReadOnlyList<string> LocationVariables =
+        ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE", "GIT_PREFIX"];
+
     /// <summary>Prepended to every git call under an untrusted folder.</summary>
     public static readonly IReadOnlyList<string> HardeningArgs =
     [
@@ -69,6 +76,7 @@ public sealed class Git(IProc proc, string codeRoot)
                 WorkingDirectory = workingDirectory,
                 Timeout = timeout ?? DefaultTimeout,
                 Environment = env,
+                Unset = [.. LocationVariables.Where(name => !env.ContainsKey(name))],
                 StdinText = stdinText,
             },
             cancellationToken);

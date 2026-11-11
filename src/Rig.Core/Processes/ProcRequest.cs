@@ -13,6 +13,9 @@ public sealed record ProcRequest(IReadOnlyList<string> Argv)
     /// <summary>Variables added to the inherited environment (never replacing it).</summary>
     public IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>();
 
+    /// <summary>Inherited variables removed from the process's environment; <see cref="Environment"/> is applied after.</summary>
+    public IReadOnlyList<string> Unset { get; init; } = [];
+
     /// <summary>Text written to standard input; when null, standard input is closed.</summary>
     public string? StdinText { get; init; }
 

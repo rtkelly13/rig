@@ -88,7 +88,7 @@ public sealed class DecisionsCommandTests : IDisposable
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
-        var command = new EstateCommand(new EstateHost(_root.Path, Home, _root.Path), new SystemProc(), new FakeGitHub(), _clock, _ => null, output, error);
+        var command = new EstateCommand(new EstateHost(_root.Path, Home, _root.Path), NoOrca.Host, new SystemProc(), new FakeGitHub(), _clock, _ => null, output, error);
         var code = await new RootCommand { command.Build() }.Parse(["estate", "decisions", .. args]).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, Token);
         return (code, output.ToString().ReplaceLineEndings("\n"), error.ToString().ReplaceLineEndings("\n"));
     }

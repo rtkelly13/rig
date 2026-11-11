@@ -15,5 +15,6 @@
     <Compile Include="../Rig.Core.Tests/Devenv/FontServer.cs" Link="Fakes/FontServer.cs" />
     <Compile Include="../Rig.Core.Tests/Estate/Repos.cs" Link="Fakes/Repos.cs" />
     <Compile Include="../Rig.Core.Tests/Estate/Walked.cs" Link="Fakes/Walked.cs" />
+    <Compile Include="../Rig.Core.Tests/Orca/FakeOrca.cs" Link="Fakes/FakeOrca.cs" />
   </ItemGroup>
 </Project>

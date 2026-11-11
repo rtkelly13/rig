@@ -32,6 +32,8 @@ PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
         "decisions",
         "doctor",
         "downloads",
+        "orca",
+        "orca-worktrees",
         "prune-caches",
         "reclaim",
         "risk",

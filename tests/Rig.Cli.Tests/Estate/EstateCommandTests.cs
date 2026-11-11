@@ -58,6 +58,7 @@ public sealed class EstateCommandTests : IDisposable
         using var error = new StringWriter();
         var command = new EstateCommand(
             new EstateHost(Code, Path.Join(_root.Path, "home"), Risky),
+            NoOrca.Host,
             proc,
             _github,
             _clock,

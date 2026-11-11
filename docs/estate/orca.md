@@ -98,8 +98,10 @@ CLI and Orca's mobile app both use, has all of it: `repo.list`, `repo.add`,
 `projectGroup.list`, `projectGroup.create`, `projectGroup.moveProject`,
 `projectGroup.delete`, `folderWorkspace.list` and `repo.rm`.
 
-- `estate/orca_runtime.py` reads `orca-runtime.json` from Orca's user-data
-  folder (`--orca-data` and `--work-orca-data` override it) for the socket and auth token.
+- The command runs on the C# CLI (`src/Rig.Cli/Estate/OrcaLayoutCommand.cs`, logic in
+  `src/Rig.Core/Estate/OrcaLayout.cs`). `OrcaRuntime` (`src/Rig.Core/Orca/`) reads
+  `orca-runtime.json` from Orca's user-data folder (`--orca-data` and `--work-orca-data`
+  override it) for the socket and auth token.
 - Each request is one JSON line over that socket, as in stablyai/orca
   `src/cli/runtime/transport.ts`.
 - Orca makes the change and saves it. Nothing here writes to Orca's

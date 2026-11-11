@@ -36,15 +36,13 @@ import sys
 import typer
 
 from rig import csharp_cli, tracing
-from rig.estate import orca_cli, orca_worktrees_cli, shelve_cli, wrapup_cli
+from rig.estate import shelve_cli, wrapup_cli
 
 app = typer.Typer(add_completion=False, help="Manage the code assets cloned on this machine.")
 # The subcommands in csharp_cli.PORTED_SUBCOMMANDS["estate"] run on the C# CLI (src/Rig.Cli/Estate).
 csharp_cli.add_group_stubs(app, "estate")
 
-_ = app.command(name="orca")(orca_cli.orca_layout)
 app.add_typer(wrapup_cli.wrapup_app, name="wrapup")
-_ = app.command(name="orca-worktrees")(orca_worktrees_cli.orca_worktrees)
 app.add_typer(shelve_cli.app)
 
 

@@ -245,7 +245,6 @@ ignore = [
 "src/rig/estate/apps.py" = ["TID251"]
 "src/rig/estate/caches.py" = ["TID251"]
 "src/rig/estate/disksize.py" = ["TID251"]
-"src/rig/estate/orca.py" = ["TID251"]
 "src/rig/estate/trim.py" = ["TID251"]
 "src/rig/estate/volume.py" = ["TID251"]
 "src/rig/image_drift/simplifier/syntactic.py" = ["TID251"]
@@ -435,7 +434,6 @@ fake-location-allow = [
     "tests/desktop_manager/test_workspace_win32_behavior.py",
     "tests/test_c4_okf.py",
     "tests/test_estate_caches.py",
-    "tests/test_estate_orca.py",
     "tests/test_estate_prs.py",
     "tests/test_estate_web.py",
     "tests/test_estate_wrapup.py",
@@ -496,7 +494,6 @@ patching-allow = [
     "tests/test_estate_caches.py",
     "tests/test_estate_cli.py",
     "tests/test_estate_decisions.py",
-    "tests/test_estate_orca.py",
     "tests/test_estate_prs.py",
     "tests/test_estate_shelve.py",
     "tests/test_estate_shelve_cli.py",

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Vault;
+using Rig.Cli.Workspace;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
@@ -16,7 +17,9 @@ namespace Rig.Cli.Estate;
 /// <param name="ScopesFile">The checkout's <c>config/estate-scopes.json</c>, naming the org folders <c>decisions</c> scans.</param>
 /// <param name="MachineConfigFile">This machine's <c>~/.workspace/config.json</c>, naming its work folders.</param>
 /// <param name="LocalAppData">The <c>LOCALAPPDATA</c> variable, under which the decisions feed lives.</param>
-internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDirectory, string ScopesFile = "", string MachineConfigFile = "", string? LocalAppData = null)
+/// <param name="ManagedProjectsFile">The checkout's <c>config/managed-projects.json</c>, the default <c>orca --config</c>.</param>
+internal sealed record EstateHost(
+    string CodeRoot, string Home, string WorkingDirectory, string ScopesFile = "", string MachineConfigFile = "", string? LocalAppData = null, string ManagedProjectsFile = "")
 {
     /// <summary>The personal estate folder, the default <c>--root</c>.</summary>
     public string PersonalDir => Path.Join(CodeRoot, "personal");
@@ -37,6 +40,7 @@ internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDi
 /// <c>sync</c> fetches, and only <c>reclaim</c>, <c>trim</c>, <c>tidy</c> and <c>prune-caches</c> delete, with <c>--apply</c>, each entry proving its own safety.
 /// </summary>
 /// <param name="host">Where it looks.</param>
+/// <param name="orca">Where each Orca profile keeps its files and how it is reached, for <c>orca</c> and <c>orca-worktrees</c>.</param>
 /// <param name="proc">Runs git, du and lsof, the cache tools, defaults for an app's version, WizTree and tasklist for <c>volume</c>, and icacls on Windows when a tree is removed.</param>
 /// <param name="github">Asks GitHub which head refs have a merged PR, for <c>doctor --merged</c> and <c>tidy --merged</c>.</param>
 /// <param name="time">The clock the clone cache is aged by and the worktree checks read.</param>
@@ -44,7 +48,7 @@ internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDi
 /// <param name="output">Where reports go.</param>
 /// <param name="error">Where progress and refusals go, so <c>--json</c> stays clean.</param>
 internal sealed class EstateCommand(
-    EstateHost host, IProc proc, IGitHubApi github, TimeProvider time, Func<string, string?> findTool, TextWriter output, TextWriter error)
+    EstateHost host, OrcaHost orca, IProc proc, IGitHubApi github, TimeProvider time, Func<string, string?> findTool, TextWriter output, TextWriter error)
 {
     /// <summary>What <c>rig estate</c> is.</summary>
     public const string Description = "Manage the code assets cloned on this machine.";
@@ -72,6 +76,8 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(TidyCommand());
         estate.Subcommands.Add(new PruneCachesCommand(host, proc, findTool, time, output, error).Build());
         estate.Subcommands.Add(new DecisionsCommand(host, git, github, time, OperatingSystem.IsWindows(), output, error).Build());
+        estate.Subcommands.Add(new OrcaLayoutCommand(host, orca, proc, github, output, error).Build());
+        estate.Subcommands.Add(new OrcaWorktreesCommand(host, orca, git, proc, time, output, error).Build());
         var disk = new DiskUsage(proc);
         estate.Subcommands.Add(new AppsCommand(
             new InstalledApps(proc, disk, time), InstalledApps.DefaultAppDirs(host.Home), OperatingSystem.IsWindows() ? new UninstallRegistry() : null, time, output).Build());
