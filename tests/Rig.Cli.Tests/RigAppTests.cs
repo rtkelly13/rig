@@ -20,7 +20,7 @@ public sealed class RigAppTests : IDisposable
 
     [Theory]
     [InlineData("workspace", "sync", "--dry-run")]
-    [InlineData("status", "--help")]
+    [InlineData("estate", "--help")]
     [InlineData("-ccc")]
     public async Task A_python_command_goes_over_whole_and_attached(params string[] args)
     {
