@@ -21,8 +21,6 @@ from rig.repo_governance.gitignore_manager import GitignoreInspection
 from rig.repo_governance.policy_config import PolicyConfig
 from rig.repo_governance.repo_discovery import RepoFound
 from rig.repo_governance.repo_hygiene import HygieneResult
-from rig.workspace.engine import audit_estate, normalize_git_url
-from rig.workspace.models import EstateItemKind, ManagedRepoSpec
 
 runner = CliRunner()
 
@@ -310,40 +308,3 @@ def test_enforce_blocks_mutation_on_owner_drift(tmp_path: pathlib.Path, mock_pol
         mock_settings.assert_not_called()
         mock_ruleset.assert_not_called()
         assert "refusing to enforce conventions" in result.output
-
-
-@pytest.mark.ci
-def test_normalize_git_url():
-    assert normalize_git_url("git@github.com:rtkelly13/blog.git") == "github.com/rtkelly13/blog"
-    assert normalize_git_url("https://github.com/rtkelly13/blog.git") == "github.com/rtkelly13/blog"
-    assert normalize_git_url("https://github.com/rtkelly13/blog") == "github.com/rtkelly13/blog"
-    assert normalize_git_url("ssh://git@github.com:rtkelly13/blog.git") == "github.com/rtkelly13/blog"
-    assert normalize_git_url(None) is None
-
-
-@pytest.mark.ci
-def test_workspace_audit_detects_remote_mismatch(tmp_path: pathlib.Path):
-    estate_dir = tmp_path / "personal"
-    estate_dir.mkdir()
-
-    repo_dir = estate_dir / "blog"
-    repo_dir.mkdir()
-    (repo_dir / ".git").mkdir()
-
-    specs = [
-        ManagedRepoSpec(
-            name="blog",
-            repo="git@github.com:rtkelly13/blog.git",
-            description="Personal blog",
-        )
-    ]
-
-    with patch(
-        "rig.workspace.engine.get_git_remote_url",
-        return_value="git@github.com:wrong-owner/blog.git",
-    ):
-        audit = audit_estate(estate_dir, specs=specs)
-        assert not audit.is_clean
-        assert len(audit.unmanaged_items) == 1
-        assert audit.unmanaged_items[0].kind == EstateItemKind.UNMANAGED_REPO
-        assert "Remote URL mismatch" in audit.unmanaged_items[0].detail

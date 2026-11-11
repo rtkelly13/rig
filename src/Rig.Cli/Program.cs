@@ -21,6 +21,7 @@ using Rig.Core.Roots;
 using Rig.Core.Services;
 using Rig.Core.Skills;
 using Rig.Core.Vault;
+using Rig.Core.Workspace;
 
 namespace Rig.Cli;
 
@@ -152,7 +153,12 @@ internal static class Program
                     Console.Error).Build,
                 new DoctorCommand(devenvHost, proc, TimeProvider.System, Console.Out).Build,
                 new WorkspaceCommand(
-                    new WorkspaceHost(Path.Join(codeRoot, "personal"), Path.Join(checkout, "config", EstateScopes.FileName), home),
+                    new WorkspaceHost(
+                        Path.Join(codeRoot, "personal"),
+                        Path.Join(checkout, "config", EstateScopes.FileName),
+                        home,
+                        Path.Join(checkout, "config", ManagedProjects.FileName),
+                        AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home)),
                     proc,
                     TimeProvider.System,
                     Console.Out).Build,

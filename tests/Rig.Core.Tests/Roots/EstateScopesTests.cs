@@ -55,4 +55,19 @@ public sealed class EstateScopesTests : IDisposable
             scopes.RepoParentDirs(personal));
         Assert.Equal(scopes.OrgDirs(personal), scopes.OrgDirs(personal + Path.DirectorySeparatorChar));
     }
+    [Fact]
+    public void An_org_owned_project_sits_in_its_org_folder_and_the_rest_in_the_estate()
+    {
+        var scopes = new EstateScopes(["rtkelly13"], ["rtkelly-labs"]);
+        var personal = Path.Join(_dir.Path, "code", "personal");
+
+        Assert.Equal("rtkelly-labs", scopes.OrgFolder("RTKelly-Labs"));
+        Assert.Null(scopes.OrgFolder("rtkelly13"));
+        Assert.Equal("rtkelly-labs", scopes.OrgFolderOf("git@github.com:RTKELLY-LABS/lake.git"));
+        Assert.Null(scopes.OrgFolderOf("local/scratch"));
+        Assert.Equal("../rtkelly-labs/lake", scopes.ProjectRelPath("lake", "https://github.com/rtkelly-labs/lake"));
+        Assert.Equal("rig", scopes.ProjectRelPath("rig", "git@github.com:rtkelly13/rig.git"));
+        Assert.Equal(Path.Join(_dir.Path, "code", "rtkelly-labs", "lake"), scopes.ProjectDir(personal + Path.DirectorySeparatorChar, "lake", "git@github.com:rtkelly-labs/lake.git"));
+        Assert.Equal(Path.Join(personal, "rig"), scopes.ProjectDir(personal, "rig", "git@github.com:rtkelly13/rig.git"));
+    }
 }
