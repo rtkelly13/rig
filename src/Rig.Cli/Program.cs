@@ -38,6 +38,16 @@ internal static class Program
         var fromPython = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(PythonRig.BridgeVariable));
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var macOs = OperatingSystem.IsMacOS();
+        var workspace = new WorkspaceCommand(
+            new WorkspaceHost(
+                Path.Join(codeRoot, "personal"),
+                Path.Join(checkout, "config", EstateScopes.FileName),
+                home,
+                ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory),
+                AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home)),
+            proc,
+            TimeProvider.System,
+            Console.Out);
         // Created per command; HttpClient opens no connection until the health probe asks for one. Redirects are not
         // followed, so only a 200 from the health endpoint itself counts as healthy.
         using var handler = new HttpClientHandler { AllowAutoRedirect = false, CheckCertificateRevocationList = true };
@@ -152,16 +162,8 @@ internal static class Program
                     Console.Out,
                     Console.Error).Build,
                 new DoctorCommand(devenvHost, proc, TimeProvider.System, Console.Out).Build,
-                new WorkspaceCommand(
-                    new WorkspaceHost(
-                        Path.Join(codeRoot, "personal"),
-                        Path.Join(checkout, "config", EstateScopes.FileName),
-                        home,
-                        ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory),
-                        AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home)),
-                    proc,
-                    TimeProvider.System,
-                    Console.Out).Build,
+                workspace.Build,
+                workspace.BuildSync,
             ],
             new AgentLauncher(
                 proc,

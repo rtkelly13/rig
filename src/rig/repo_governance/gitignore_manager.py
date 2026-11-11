@@ -23,7 +23,6 @@ from rig.repo_governance.policy_config import (
     load_policy_config,
 )
 from rig.repo_governance.policy_key import policy_key
-from rig.scopes import repo_parent_dirs
 from rig.typed_json import JsonObject, JsonValue, decode_json
 
 __all__ = [
@@ -32,10 +31,8 @@ __all__ = [
     "RepoGitignoreAlignment",
     "RepoGitignoreInspection",
     "align_gitignore",
-    "audit_estate_gitignores",
     "inspect_gitignore",
     "required_entries",
-    "sync_estate_gitignores",
 ]
 
 #: Reported as missing when git does not ignore rig's per-worktree state folder (`rig.worktree_state`).
@@ -252,48 +249,3 @@ def align_gitignore(
     return GitignoreAlignment(
         status="aligned", file=str(gitignore_file), languages=tuple(resolved_languages), added=tuple(added_lines)
     )
-
-
-def _discover_repos(estate_root: pathlib.Path, repos: Sequence[str] | None = None) -> list[pathlib.Path]:
-    """Discovers git repository roots within the estate directory."""
-    parents = [parent for parent in repo_parent_dirs(estate_root) if parent.is_dir()]
-    if repos:
-        candidates = [parent / name for name in repos for parent in parents]
-    else:
-        candidates = [child for parent in parents for child in parent.iterdir()]
-    return sorted(child for child in candidates if child.is_dir() and (child / ".git").exists())
-
-
-def audit_estate_gitignores(
-    estate_root: pathlib.Path,
-    repos: Sequence[str] | None = None,
-    config: PolicyConfig | None = None,
-    languages: Sequence[str] | None = None,
-) -> list[RepoGitignoreInspection]:
-    """Audits common .gitignore alignment across repositories in the estate."""
-    targets = _discover_repos(estate_root, repos)
-    results: list[RepoGitignoreInspection] = []
-
-    for target in targets:
-        inspection = inspect_gitignore(target, config=config, languages=languages)
-        results.append(RepoGitignoreInspection(repo_name=target.name, repo_path=str(target), result=inspection))
-
-    return results
-
-
-def sync_estate_gitignores(
-    estate_root: pathlib.Path,
-    repos: Sequence[str] | None = None,
-    dry_run: bool = False,
-    config: PolicyConfig | None = None,
-    languages: Sequence[str] | None = None,
-) -> list[RepoGitignoreAlignment]:
-    """Synchronizes common .gitignore rules across repositories in the estate."""
-    targets = _discover_repos(estate_root, repos)
-    results: list[RepoGitignoreAlignment] = []
-
-    for target in targets:
-        alignment = align_gitignore(target, dry_run=dry_run, config=config, languages=languages)
-        results.append(RepoGitignoreAlignment(repo_name=target.name, repo_path=str(target), result=alignment))
-
-    return results

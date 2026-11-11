@@ -11,7 +11,6 @@ internal static class Forwarded
     /// <summary>Each Python command and the one-line help it shows in <c>rig --help</c>.</summary>
     public static readonly IReadOnlyList<(string Name, string Description)> Commands =
     [
-        ("sync", "Synchronize estate index (AGENTS.md) and personal.code-workspace."),
         ("align", "Reconcile desktop window layout and virtual desktop state."),
         ("workspace", "Virtual monorepo estate management for the personal folder."),
         ("estate", "Manage the code assets cloned on this machine."),

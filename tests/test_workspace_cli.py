@@ -6,15 +6,7 @@ import pathlib
 import pytest
 from typer.testing import CliRunner
 
-from rig.workspace.cli import app
-from rig.workspace.engine import (
-    PROJECTS_TABLE_END_MARKER,
-    PROJECTS_TABLE_START_MARKER,
-    load_managed_specs,
-    sync_estate_code_workspace,
-    sync_estate_router,
-)
-from tests.links import file_symlink_or_skip
+from rig.workspace.engine import load_managed_specs
 
 runner = CliRunner()
 
@@ -84,83 +76,3 @@ def test_load_managed_specs(mock_estate: tuple[pathlib.Path, pathlib.Path]):
     assert specs[0].stack == "Python / uv"
     assert specs[1].name == "missing-app"
     assert specs[1].stack == ".NET 10 / C#"
-
-
-def test_sync_estate_router_removes_a_claude_md_symlink(mock_estate: tuple[pathlib.Path, pathlib.Path]):
-    """A pre-existing symlink is cleaned up, so repeated syncs converge on absent."""
-    estate_dir, config_file = mock_estate
-    specs = load_managed_specs(config_file)
-    sync_estate_router(estate_dir, specs)
-
-    file_symlink_or_skip(estate_dir / "CLAUDE.md", "AGENTS.md")
-    sync_estate_router(estate_dir, specs)
-    assert not (estate_dir / "CLAUDE.md").is_symlink()
-
-
-def test_sync_engine_router_and_workspace(mock_estate: tuple[pathlib.Path, pathlib.Path]):
-    estate_dir, config_file = mock_estate
-    specs = load_managed_specs(config_file)
-
-    agents_path = sync_estate_router(estate_dir, specs)
-    assert agents_path.is_file()
-    # Claude Code reads AGENTS.md natively; no CLAUDE.md shim is generated.
-    assert not (estate_dir / "CLAUDE.md").exists()
-
-    # A real CLAUDE.md is somebody's content - never delete it.
-    (estate_dir / "CLAUDE.md").write_text("# hand written\n", encoding="utf-8")
-    sync_estate_router(estate_dir, specs)
-    assert (estate_dir / "CLAUDE.md").is_file()
-    (estate_dir / "CLAUDE.md").unlink()
-
-    content = agents_path.read_text(encoding="utf-8")
-    assert "Personal code estate virtual monorepo" in content
-    assert PROJECTS_TABLE_START_MARKER in content
-    assert PROJECTS_TABLE_END_MARKER in content
-    assert "Tech Stack" in content
-    assert "Python / uv" in content
-    assert "my-managed-app" in content
-
-    ws_file = sync_estate_code_workspace(estate_dir, specs)
-    assert ws_file.is_file()
-    ws_data = json.loads(ws_file.read_text(encoding="utf-8"))
-    assert "folders" in ws_data
-    # Only present folders should be included
-    folder_names = [f["name"] for f in ws_data["folders"]]
-    assert "my-managed-app" in folder_names
-    assert "missing-app" not in folder_names
-
-
-def test_cli_sync(mock_estate: tuple[pathlib.Path, pathlib.Path]):
-    estate_dir, config_file = mock_estate
-    res = runner.invoke(
-        app,
-        ["sync", "--root", str(estate_dir), "--config", str(config_file)],
-    )
-    assert res.exit_code == 0
-    assert "Estate orchestration successfully synchronized" in res.stdout
-    assert (estate_dir / "AGENTS.md").is_file()
-    assert not (estate_dir / "CLAUDE.md").exists()
-    assert (estate_dir / "personal.code-workspace").is_file()
-
-
-@pytest.mark.ci
-def test_root_agents_md_carries_the_estate_invariants(mock_estate: tuple[pathlib.Path, pathlib.Path]):
-    """The root AGENTS.md is fully regenerated, so every rule must live in the generator.
-
-    Rules 4 and 5 were once hand-appended to the file and would have been silently
-    destroyed by the next `workspace sync`.
-    """
-    estate_dir, config_file = mock_estate
-    specs = load_managed_specs(config_file)
-
-    agents_path = sync_estate_router(estate_dir, specs)
-    content = agents_path.read_text(encoding="utf-8")
-
-    assert "Brand Asset & Production Cuts Invariant" in content
-    assert "production-cuts.csv" in content
-    assert "Domain Skills Live in the Vault" in content
-    assert "mcp__open-knowledge__skills" in content
-
-    # Regenerating is idempotent: the invariants survive a second sync.
-    sync_estate_router(estate_dir, specs)
-    assert agents_path.read_text(encoding="utf-8") == content

@@ -24,9 +24,7 @@ from rig.repo_governance.gitignore_manager import (
     RepoGitignoreAlignment,
     RepoGitignoreInspection,
     align_gitignore,
-    audit_estate_gitignores,
     inspect_gitignore,
-    sync_estate_gitignores,
 )
 from rig.repo_governance.policy_config import PolicyConfig
 
@@ -230,39 +228,3 @@ def test_alignment_json_row_is_flat_and_complete():
 
 
 # -- estate-wide audit and sync ------------------------------------------------------------------
-
-
-@pytest.fixture
-def estate(tmp_path: pathlib.Path) -> pathlib.Path:
-    """A personal folder with one clone, a plain directory, and a clone in an org folder."""
-    personal = tmp_path / "personal"
-    _repo(personal / "blog", "")
-    _repo(personal / "notes", git=False)
-    _repo(tmp_path / "rtkelly-labs" / "Diffra", "")
-    return personal
-
-
-def test_audit_finds_only_git_clones_across_org_folders(estate: pathlib.Path):
-    """Kills _discover_repos 7 (`and` -> `or`) and audit 16, 21 (repo_path blanked)."""
-    rows = audit_estate_gitignores(estate, config=EMPTY)
-    assert [(r.repo_name, r.repo_path) for r in rows] == [
-        ("blog", str(estate / "blog")),
-        ("Diffra", str(estate.parent / "rtkelly-labs" / "Diffra")),
-    ]
-
-
-def test_audit_named_repos_and_languages_are_passed_through(estate: pathlib.Path):
-    """Kills _discover_repos 3, 4 and audit 3, 5, 10, 13: the repo filter or languages dropped."""
-    rows = audit_estate_gitignores(estate, repos=["Diffra", "notes", "absent"], config=PRESET_ONLY, languages=["py"])
-    assert [(r.repo_name, r.result.languages, r.result.missing_lines) for r in rows] == [
-        ("Diffra", ("python",), ("__pycache__/",))
-    ]
-
-
-def test_sync_named_repos_dry_run_and_languages_are_passed_through(estate: pathlib.Path):
-    """Kills sync 4, 6, 10, 12, 14, 16, 19, 24: filter, dry_run, languages or repo_path dropped."""
-    rows = sync_estate_gitignores(estate, repos=["blog"], dry_run=True, config=PRESET_ONLY, languages=["py"])
-    assert [(r.repo_name, r.repo_path, r.result.status, r.result.added) for r in rows] == [
-        ("blog", str(estate / "blog"), "aligned", ("__pycache__/",))
-    ]
-    assert (estate / "blog" / ".gitignore").read_text(encoding="utf-8") == ""

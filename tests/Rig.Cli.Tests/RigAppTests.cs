@@ -32,7 +32,7 @@ public sealed class RigAppTests : IDisposable
             .RunAsync(args, TestContext.Current.CancellationToken);
 
     [Theory]
-    [InlineData("workspace", "sync", "--dry-run")]
+    [InlineData("workspace", "orca", "--check")]
     [InlineData("estate", "--help")]
     public async Task A_python_command_goes_over_whole_and_attached(params string[] args)
     {
@@ -84,7 +84,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(1, string.Empty, string.Empty), "uv");
 
-        Assert.Equal(1, await Run("sync"));
+        Assert.Equal(1, await Run("triage"));
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(Ran.NotFound, string.Empty, "uv is not on PATH"), "uv");
 
-        Assert.Equal(2, await Run("sync"));
+        Assert.Equal(2, await Run("triage"));
         Assert.StartsWith("rig: uv is not on PATH.", _err.ToString(), StringComparison.Ordinal);
     }
 
@@ -101,7 +101,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(Ran.NotFound, string.Empty, string.Empty), "uv");
 
-        Assert.Equal(Ran.NotFound, await Run("sync"));
+        Assert.Equal(Ran.NotFound, await Run("triage"));
         Assert.Empty(_err.ToString());
     }
 
@@ -163,11 +163,11 @@ public sealed class RigAppTests : IDisposable
     {
         _fromPython = true;
 
-        Assert.Equal(2, await Run("sync"));
+        Assert.Equal(2, await Run("triage"));
 
         Assert.Empty(_proc.Requests);
         Assert.Contains("refusing to loop", _err.ToString(), StringComparison.Ordinal);
-        Assert.Contains("'sync'", _err.ToString(), StringComparison.Ordinal);
+        Assert.Contains("'triage'", _err.ToString(), StringComparison.Ordinal);
     }
 
     public void Dispose()

@@ -5,6 +5,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
+using Rig.Core.Governance;
+using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Workspace;
@@ -18,6 +20,13 @@ namespace Rig.Cli.Workspace;
 /// <param name="ManagedProjectsFile">The rig checkout's <c>config/managed-projects.json</c>, the default <c>--config</c>.</param>
 /// <param name="MachineConfigFile">This machine's <c>~/.workspace/config.json</c>, naming the projects it skips.</param>
 internal sealed record WorkspaceHost(string PersonalDir, string ScopesFile, string Home, string ManagedProjectsFile, string MachineConfigFile);
+
+/// <summary>The options <c>workspace gitignore audit</c> and <c>sync</c> share.</summary>
+/// <param name="Root">The estate root, when not the personal folder.</param>
+/// <param name="Repo">The one repository to look at, when not every registered one.</param>
+/// <param name="Language">The language presets to enforce, comma-separated, when not each repo's own.</param>
+/// <param name="Config">The registry, when not the checkout's.</param>
+internal sealed record GitignoreArgs(string? Root, string? Repo, string? Language, string? Config);
 
 /// <summary>
 /// <c>rig workspace</c>: the subcommands ported from <c>src/rig/workspace/cli.py</c>. The group's other subcommands are
@@ -42,6 +51,8 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         workspace.Subcommands.Add(Status());
         workspace.Subcommands.Add(Clean());
         workspace.Subcommands.Add(Doctor());
+        workspace.Subcommands.Add(Gitignore());
+        workspace.Subcommands.Add(Sync("Synchronize root AGENTS.md, personal.code-workspace, and common gitignores."));
         return workspace;
     }
 
@@ -206,6 +217,177 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         new() { ["name"] = item.Name, ["path"] = item.Path, ["kind"] = EstateAudit.Value(item.Kind), ["detail"] = item.Detail };
 
     private static JsonArray Items<T>(IEnumerable<T> items, Func<T, JsonObject> shape) => new([.. items.Select(item => (JsonNode)shape(item))]);
+
+    /// <summary><c>rig sync</c>: the same as <c>rig workspace sync</c>, at the top level.</summary>
+    public Command BuildSync() => Sync("Synchronize estate index (AGENTS.md) and personal.code-workspace.");
+
+    private Command Sync(string description)
+    {
+        var root = RootOption();
+        var config = ConfigOption();
+        var gitignore = new Option<bool>("--gitignore") { Description = "Synchronize common gitignores across managed projects (the default)" };
+        var noGitignore = new Option<bool>("--no-gitignore") { Description = "Leave the managed projects' gitignores alone" };
+        var sync = new Command("sync", description) { root, config, gitignore, noGitignore };
+        sync.SetAction((parsed, cancellationToken) =>
+            SyncAsync(parsed.GetValue(root), parsed.GetValue(config), parsed.GetValue(gitignore) || !parsed.GetValue(noGitignore), cancellationToken));
+        return sync;
+    }
+
+    private Command Gitignore()
+    {
+        var group = new Command("gitignore", "Audit and synchronize common .gitignore rules across estate repositories.");
+
+        var root = RootOption();
+        var repo = new Option<string?>("--repo") { Description = "Check only this repository name" };
+        var language = LanguageOption();
+        var config = ConfigOption();
+        var json = new Option<bool>("--json") { Description = "Output audit report as JSON" };
+        var strict = new Option<bool>("--strict") { Description = "Fail with non-zero exit code if drift is detected" };
+        var audit = new Command("audit", "Audit common .gitignore rules across estate repositories.") { root, repo, language, config, json, strict };
+        audit.SetAction((parsed, cancellationToken) => GitignoreAuditAsync(
+            new(parsed.GetValue(root), parsed.GetValue(repo), parsed.GetValue(language), parsed.GetValue(config)), parsed.GetValue(json), parsed.GetValue(strict), cancellationToken));
+        group.Subcommands.Add(audit);
+
+        var syncRoot = RootOption();
+        var syncRepo = new Option<string?>("--repo") { Description = "Synchronize only this repository name" };
+        var syncLanguage = LanguageOption();
+        var syncConfig = ConfigOption();
+        var dryRun = new Option<bool>("--dry-run") { Description = "Preview mutations without applying changes" };
+        var syncJson = new Option<bool>("--json") { Description = "Output sync results as JSON" };
+        var sync = new Command("sync", "Synchronize common .gitignore rules across estate repositories.") { syncRoot, syncRepo, syncLanguage, syncConfig, dryRun, syncJson };
+        sync.SetAction((parsed, cancellationToken) => GitignoreSyncAsync(
+            new(parsed.GetValue(syncRoot), parsed.GetValue(syncRepo), parsed.GetValue(syncLanguage), parsed.GetValue(syncConfig)), parsed.GetValue(dryRun), parsed.GetValue(syncJson), cancellationToken));
+        group.Subcommands.Add(sync);
+        return group;
+    }
+
+    private static Option<string?> LanguageOption() =>
+        new("--language", "-l") { Description = "Language preset(s) to enforce (e.g. 'python', 'dotnet', 'node')" };
+
+    // The registry's projects; --config names another registry.
+    private IReadOnlyList<ManagedRepoSpec> Specs(string? config) =>
+        ManagedProjects.Load(string.IsNullOrEmpty(config) ? host.ManagedProjectsFile : PathResolution.Resolve(config));
+
+    // The repo policy beside the checkout's registry, not beside a --config one.
+    private Gitignores GitignoresFor(EstateScopes scopes) =>
+        new(CodeGit, scopes, RepoPolicies.Load(Path.Join(Path.GetDirectoryName(host.ManagedProjectsFile), RepoPolicies.FileName)));
+
+    private (string Estate, Gitignores Gitignores, IReadOnlyList<string> Repos, IReadOnlyList<string>? Languages) GitignoreTargets(GitignoreArgs args)
+    {
+        var estate = EstateDir(args.Root);
+        // Every registered name, retired ones too; an empty registry checks every clone.
+        IReadOnlyList<string> repos = string.IsNullOrEmpty(args.Repo) ? [.. Specs(args.Config).Select(spec => spec.Name)] : [args.Repo];
+        IReadOnlyList<string>? languages = string.IsNullOrEmpty(args.Language)
+            ? null
+            : [.. args.Language.Split(',').Select(part => part.Trim()).Where(part => part.Length > 0)];
+        return (estate, GitignoresFor(EstateScopes.Load(host.ScopesFile)), repos, languages);
+    }
+
+    private async Task<int> GitignoreAuditAsync(GitignoreArgs args, bool json, bool strict, CancellationToken cancellationToken)
+    {
+        var (estate, gitignores, repos, languages) = GitignoreTargets(args);
+        var results = await gitignores.AuditEstateAsync(estate, repos, languages, cancellationToken).ConfigureAwait(false);
+        var drift = results.Any(r => !r.Result.IsAligned);
+        var exit = strict && drift ? 1 : 0;
+        if (json)
+        {
+            await output.WriteLineAsync(PyJson.Dumps(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))]))).ConfigureAwait(false);
+            return exit;
+        }
+
+        var table = new TextTable("Managed Repositories .gitignore Alignment", [("Repository", false), ("Languages", false), ("Status", false), ("Missing Patterns", false)]);
+        foreach (var (name, _, result) in results)
+        {
+            _ = table.Add(name, Languages(result.Languages), result.Status, result.MissingLines.Count > 0 ? string.Join(", ", result.MissingLines) : "None (Compliant)");
+        }
+
+        await output.WriteLineAsync($"Estate .gitignore Audit: {estate}").ConfigureAwait(false);
+        await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        await output.WriteLineAsync(drift
+            ? "\nRun 'workspace gitignore sync' or 'workspace sync' to align missing rules."
+            : "\n✓ All repositories have compliant common .gitignore entries.").ConfigureAwait(false);
+        return exit;
+    }
+
+    private async Task<int> GitignoreSyncAsync(GitignoreArgs args, bool dryRun, bool json, CancellationToken cancellationToken)
+    {
+        var (estate, gitignores, repos, languages) = GitignoreTargets(args);
+        var results = await gitignores.SyncEstateAsync(estate, repos, dryRun, languages, cancellationToken).ConfigureAwait(false);
+        if (json)
+        {
+            await output.WriteLineAsync(PyJson.Dumps(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))]))).ConfigureAwait(false);
+            return 0;
+        }
+
+        var table = new TextTable("Synchronization Results", [("Repository", false), ("Languages", false), ("Action", false), ("Patterns Added", false)]);
+        foreach (var (name, _, result) in results)
+        {
+            _ = table.Add(name, Languages(result.Languages), result.Status, result.Added.Count > 0 ? string.Join(", ", result.Added) : "None (already compliant)");
+        }
+
+        var updated = results.Count(r => r.Result.Status == "aligned");
+        await output.WriteLineAsync($"Estate .gitignore Sync ({(dryRun ? "DRY-RUN" : "APPLY")}): {estate}").ConfigureAwait(false);
+        await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        await output.WriteLineAsync(updated > 0
+            ? $"\n✓ {(dryRun ? "Would update" : "Updated")} .gitignore in {updated} repository/repositories."
+            : "\n✓ All repositories already have compliant .gitignore files.").ConfigureAwait(false);
+        return 0;
+    }
+
+    private async Task<int> SyncAsync(string? root, string? config, bool gitignore, CancellationToken cancellationToken)
+    {
+        var estate = EstateDir(root);
+        var specs = Specs(config);
+        var scopes = EstateScopes.Load(host.ScopesFile);
+        var sync = new EstateSync(scopes);
+        await output.WriteLineAsync($"Synchronizing estate orchestration in {estate}...\n").ConfigureAwait(false);
+
+        var agents = await sync.SyncRouterAsync(estate, specs, cancellationToken).ConfigureAwait(false);
+        await output.WriteLineAsync($"  ✓ Generated {Path.GetFileName(agents)} ({specs.Count} managed projects mapped)").ConfigureAwait(false);
+        var workspace = await sync.SyncCodeWorkspaceAsync(estate, specs, cancellationToken).ConfigureAwait(false);
+        await output.WriteLineAsync($"  ✓ Synchronized {Path.GetFileName(workspace)}").ConfigureAwait(false);
+
+        if (gitignore)
+        {
+            var results = await GitignoresFor(scopes).SyncEstateAsync(estate, [.. specs.Select(spec => spec.Name)], cancellationToken: cancellationToken).ConfigureAwait(false);
+            var updated = results.Where(r => r.Result.Status == "aligned").Select(r => r.RepoName).ToList();
+            await output.WriteLineAsync(updated.Count > 0
+                ? $"  ✓ Synchronized .gitignore across {results.Count} repos ({updated.Count} updated: {string.Join(", ", updated)})"
+                : $"  ✓ Verified .gitignore across {results.Count} repos (all compliant)").ConfigureAwait(false);
+        }
+
+        await output.WriteLineAsync("\nEstate orchestration successfully synchronized.").ConfigureAwait(false);
+        return 0;
+    }
+
+    private static string Languages(IReadOnlyList<string> languages) => languages.Count > 0 ? string.Join(", ", languages) : "common";
+
+    // The row the Python's --json printed: the repo, then the result's fields in their declared order.
+    private static JsonObject Row(string name, string path, GitignoreInspection result) =>
+        new()
+        {
+            ["repo_name"] = name,
+            ["repo_path"] = path,
+            ["status"] = result.Status,
+            ["is_aligned"] = result.IsAligned,
+            ["languages"] = Strings(result.Languages),
+            ["missing"] = Strings(result.Missing),
+            ["missing_lines"] = Strings(result.MissingLines),
+            ["file"] = result.File,
+        };
+
+    private static JsonObject Row(string name, string path, GitignoreAlignment result) =>
+        new()
+        {
+            ["repo_name"] = name,
+            ["repo_path"] = path,
+            ["status"] = result.Status,
+            ["file"] = result.File,
+            ["languages"] = Strings(result.Languages),
+            ["added"] = Strings(result.Added),
+        };
+
+    private static JsonArray Strings(IEnumerable<string> items) => new([.. items.Select(item => (JsonNode)item)]);
 
     private Command Doctor()
     {
