@@ -328,18 +328,6 @@ wheels = [
 ]
 
 [[package]]
-name = "gherkin-official"
-version = "42.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/7a/fbc8bd486d1ede3805542e01be84cdfc0726f1d10647b2db20abafebf50f/gherkin_official-42.0.1.tar.gz", hash = "sha256:adcc1f392d97dc044861bb645a614e335632330cc2653d23acb7097c923f75cd", size = 35497, upload-time = "2026-08-05T20:03:18.768Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4b/04/1f16eba1ffc5e0f5ae7b5bfd1847e8f0355c03bf67c34381d6cc5b7b2b2b/gherkin_official-42.0.1-py3-none-any.whl", hash = "sha256:6bf291733d126712eb167f6f75be57931dd8b9c9eb606de28013f3669007ec06", size = 40041, upload-time = "2026-08-05T20:03:17.765Z" },
-]
-
-[[package]]
 name = "greenlet"
 version = "3.5.4"
 source = { registry = "https://pypi.org/simple" }
@@ -613,18 +601,6 @@ wheels = [
 ]
 
 [[package]]
-name = "mako"
-version = "1.4.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "markupsafe" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5a/09/e07c4b5579a79f4b16f8d4f29f6c54514ac787c4ad506b8c4f28a0e6b0bf/mako-1.4.3.tar.gz", hash = "sha256:cd6537fe88d5fec315c55c2f8529bc4ce7a9a352ad7db3eeaa6a66e2dd4ec37a", size = 412799, upload-time = "2026-09-22T20:54:31.509Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/a0/053d6af3e8f871e0073b4a36732d9e65be77a72e5434c31b94f6af78a6bb/mako-1.4.3-py3-none-any.whl", hash = "sha256:723296007c870bfd6b3f0c3230dba7198096e5269297ebf5e4eff9e7ffa39d4f", size = 80164, upload-time = "2026-09-22T20:54:33.128Z" },
-]
-
-[[package]]
 name = "markdown-it-py"
 version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -838,28 +814,6 @@ wheels = [
 ]
 
 [[package]]
-name = "parse"
-version = "1.22.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/9e/0f/4bada23d2848aaa61f3577181dbd83895fa49fb9beb406835ed7eaca1b96/parse-1.22.4.tar.gz", hash = "sha256:706d458feed5a81b02768d3156e8070baf6cee7d150a3a3c0cd43101a875c3b5", size = 40279, upload-time = "2026-10-20T21:16:07.702Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/5f/fbe039e06108eefad9e6b1f7d915a9c73ca0451700c7d48ce05eaa3a2833/parse-1.22.4-py2.py3-none-any.whl", hash = "sha256:ae430a4477316eed4a9710f642b2db968ec89d5d82e6b0908b8169673b476847", size = 21919, upload-time = "2026-10-20T21:16:06.547Z" },
-]
-
-[[package]]
-name = "parse-type"
-version = "0.6.6"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "parse" },
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/19/ea/42ba6ce0abba04ab6e0b997dcb9b528a4661b62af1fe1b0d498120d5ea78/parse_type-0.6.6.tar.gz", hash = "sha256:513a3784104839770d690e04339a8b4d33439fcd5dd99f2e4580f9fc1097bfb2", size = 98012, upload-time = "2025-08-11T22:53:48.066Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/8d/eef3d8cdccc32abdd91b1286884c99b8c3a6d3b135affcc2a7a0f383bb32/parse_type-0.6.6-py2.py3-none-any.whl", hash = "sha256:3ca79bbe71e170dfccc8ec6c341edfd1c2a0fc1e5cfd18330f93af938de2348c", size = 27085, upload-time = "2025-08-11T22:53:46.396Z" },
-]
-
-[[package]]
 name = "pillow"
 version = "12.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1030,24 +984,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d1/db/7ef3487e0fb0049ddb5ce41d3a49c235bf9ad299b6a25d5780a89f19230f/pytest-9.0.2.tar.gz", hash = "sha256:75186651a92bd89611d1d9fc20f0b4345fd827c41ccd5c299a868a05d70edf11", size = 1568901, upload-time = "2025-12-06T21:30:51.014Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/ab/b3226f0bd7cdcf710fbede2b3548584366da3b19b5021e74f5bde2a8fa3f/pytest-9.0.2-py3-none-any.whl", hash = "sha256:711ffd45bf766d5264d487b917733b453d917afd2b0ad65223959f59089f875b", size = 374801, upload-time = "2025-12-06T21:30:49.154Z" },
-]
-
-[[package]]
-name = "pytest-bdd"
-version = "9.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "gherkin-official" },
-    { name = "mako" },
-    { name = "packaging" },
-    { name = "parse" },
-    { name = "parse-type" },
-    { name = "pytest" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c7/b4/0a03542a8842791587a18e3a970badec23deb42fcbdfa89b1294da957100/pytest_bdd-9.0.1.tar.gz", hash = "sha256:0a0c8e54e1646d384c79c47f5756fea1b4bebf97251ff2cb52105aac951276bc", size = 59391, upload-time = "2026-10-31T14:19:39.613Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c5/21/325481927d82a905707c87f84ffe6a6cf007c8c43853e5359b6b657b4f12/pytest_bdd-9.0.1-py3-none-any.whl", hash = "sha256:54e84b8d497ac87af76cfbc1a285584d34eeb762072f81793c9ed7ef0993883d", size = 51220, upload-time = "2026-10-31T14:19:38.074Z" },
 ]
 
 [[package]]
@@ -1235,7 +1171,6 @@ dev = [
     { name = "mdformat-ruff" },
     { name = "pre-commit" },
     { name = "pytest" },
-    { name = "pytest-bdd" },
     { name = "pytest-cov" },
     { name = "pytest-timeout" },
     { name = "pytest-xdist" },
@@ -1288,7 +1223,6 @@ dev = [
     { name = "mdformat-ruff", specifier = ">=0.1.3" },
     { name = "pre-commit", specifier = ">=4.0.0" },
     { name = "pytest", specifier = ">=9.0.2" },
-    { name = "pytest-bdd", specifier = ">=8.1.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-timeout", specifier = ">=2.3" },
     { name = "pytest-xdist", specifier = ">=3.0.0" },

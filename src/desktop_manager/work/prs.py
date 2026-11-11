@@ -1,9 +1,9 @@
 """The newest pull request for each work-item branch: one aliased GraphQL query per repo, cached briefly.
 
-`estate.prs.pr_heads` pages through a repo's 200 most recent PRs to learn about every head;
-a work list only cares about the handful of branches checked out locally, so it asks for
-exactly those. One `gh api graphql` call per repo, with one aliased `pullRequests(headRefName:)`
-lookup per branch, returns the newest PR per head with draft state and URL. Transport is
+Listing a repo's recent PRs would page through hundreds of heads; a work list only cares
+about the handful of branches checked out locally, so it asks for exactly those. One
+`gh api graphql` call per repo, with one aliased `pullRequests(headRefName:)` lookup per
+branch, returns the newest PR per head with draft state and URL. Transport is
 `rig.proc.run_gh`, injectable as a `GhRunner` so tests never touch the network.
 
 Answers are cached in `~/.work-items-prs.json` for `DEFAULT_TTL`. A failed call is never

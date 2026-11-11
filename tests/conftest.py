@@ -190,9 +190,9 @@ def pytest_configure(config: pytest.Config) -> None:
 def pytest_collection_modifyitems(config, items) -> None:
     """Tag each test by style, and skip tests marked ``windows`` when not on Windows.
 
-    Style markers are derived, never hand-applied, so the split cannot drift:
-    ``property`` for Hypothesis tests and ``bdd`` for pytest-bdd scenarios. Select
-    them with ``-m property`` / ``-m bdd``; everything else is example-based.
+    The style marker is derived, never hand-applied, so the split cannot drift:
+    ``property`` for Hypothesis tests. Select them with ``-m property``; everything
+    else is example-based.
 
     Windows tests exercise win32 APIs and Windows path semantics that only behave
     correctly on the target OS; on Linux CI they would fail spuriously.
@@ -201,9 +201,6 @@ def pytest_collection_modifyitems(config, items) -> None:
         function = getattr(item, "function", None)
         if getattr(function, "is_hypothesis_test", False):
             item.add_marker(pytest.mark.property)
-        # pytest-bdd 8 marks a scenario only by this fixture (``__scenario__`` went in 8.0).
-        if "_pytest_bdd_example" in getattr(item, "fixturenames", ()):
-            item.add_marker(pytest.mark.bdd)
 
     if not sys.platform.startswith("win"):
         skip_windows = pytest.mark.skip(reason="requires Windows OS with win32 APIs")
@@ -231,11 +228,3 @@ def work_scope() -> tuple[str, ...]:
     config = Path(os.environ["WORKSPACE_HOME"]) / "config.json"
     _ = config.write_text(f'{{"tools": {{"estate": {{"work_dirs": ["{dirs[0]}", "{dirs[1]}"]}}}}}}', encoding="utf-8")
     return dirs
-
-
-@pytest.fixture
-def clone(tmp_path: Path) -> Path:
-    """A real clone with `main` pushed to a bare origin (`tests.fakes.git.clone_with_origin`)."""
-    from tests.fakes.git import clone_with_origin
-
-    return clone_with_origin(tmp_path)

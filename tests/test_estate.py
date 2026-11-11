@@ -11,7 +11,6 @@ import pytest
 
 from rig.estate import discovery
 from rig.estate.checks import parse_worktrees
-from rig.estate.reclaim import human, scan_repo
 
 
 def _git(args: list[str], cwd: pathlib.Path) -> None:
@@ -157,36 +156,6 @@ def test_parse_worktrees_marks_the_first_as_main() -> None:
     assert "non-existent" in trees[2].prune_reason
 
 
-def test_human_formats_at_one_decimal() -> None:
-    assert human(0) == "0B"
-    assert human(1536) == "1.5KB"
-    assert human(5 * 1024**3) == "5.0GB"
-
-
-# ---------------------------------------------------------------------------
-# reclaim
-# ---------------------------------------------------------------------------
-
-
-def test_reclaim_classifies_a_temp_worktree_separately(repo: pathlib.Path) -> None:
-    _git(["worktree", "add", "-q", "-b", "spike", "temp/spike"], repo)
-    (repo / "temp" / "scratch").mkdir()
-
-    entries = {e.path.name: e for e in scan_repo(repo, floor=0).entries}
-    assert entries["spike"].is_worktree
-    assert not entries["spike"].safe_to_rmtree
-    assert not entries["scratch"].is_worktree
-    assert entries["scratch"].safe_to_rmtree
-
-
-def test_reclaim_finds_nested_node_modules(repo: pathlib.Path) -> None:
-    nested = repo / "frontend" / "node_modules"
-    nested.mkdir(parents=True)
-    (nested / "big.js").write_text("x" * 2048, encoding="utf-8")
-    categories = {e.category for e in scan_repo(repo, floor=0).entries}
-    assert "node_modules" in categories
-
-
 def test_a_sibling_worktree_is_not_a_clone(tmp_path: pathlib.Path, repo: pathlib.Path) -> None:
     """A worktree outside its clone must not be discovered as a clone of its own.
 
@@ -202,13 +171,3 @@ def test_a_sibling_worktree_is_not_a_clone(tmp_path: pathlib.Path, repo: pathlib
 
     assert repo in found
     assert sibling not in found
-
-
-def test_a_worktree_outside_the_clone_does_not_crash_rendering(repo: pathlib.Path, tmp_path: pathlib.Path) -> None:
-    """`relative_to` raises on exactly the case `worktree-off-convention` reports."""
-    from rig.estate.locate import short as _short
-
-    outside = tmp_path / "elsewhere"
-    _git(["worktree", "add", "-q", "-b", "spike", str(outside)], repo)
-    assert _short(outside, repo) == str(outside)
-    assert _short(repo / "temp" / "x", repo) == "temp/x"

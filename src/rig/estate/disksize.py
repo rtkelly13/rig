@@ -20,19 +20,12 @@ direction for a number that justifies deleting things.
 
 Pure Python on purpose: `du` is not on the PATH a scheduled task gets on
 Windows, and a size of zero there would silently skip every candidate.
-`du` answers the general question for any tree, checkouts included, and
-exactly: POSIX shells out to `du`, and Windows walks the tree counting a
-hardlinked file only once every one of its links has been seen inside it,
-rounded up to the cluster. It is slower than `measure`, so it serves the
-interactive commands (`apps`, `downloads`, `reclaim`), not the scheduled ones.
 """
 
 from __future__ import annotations
 
 import os
 import pathlib
-import subprocess
-import sys
 from dataclasses import dataclass
 
 SAMPLE_STRIDE = 32
@@ -126,101 +119,3 @@ def _nlink(path: str) -> int:
         return pathlib.Path(path).stat(follow_symlinks=False).st_nlink
     except OSError:
         return 1
-
-
-#: NTFS default cluster size; allocation is a whole number of these.
-CLUSTER = 4096
-
-
-@dataclass(slots=True, frozen=True)
-class TreeSize:
-    """Allocation of one tree, split by whether deleting it frees the bytes."""
-
-    #: Bytes that go when the tree goes: every link to the file is inside it.
-    freeable: int
-    #: Bytes also linked from outside the tree: deleting it frees none of them.
-    shared: int
-
-
-def _allocated(size: int) -> int:
-    return -(-size // CLUSTER) * CLUSTER
-
-
-@dataclass(slots=True, frozen=True)
-class _FileId:
-    """A file's identity on the volume, shared by all of its hardlinks."""
-
-    device: int
-    inode: int
-
-
-@dataclass(slots=True)
-class _Linked:
-    """A hardlinked file met during the walk: how many links it has and how many were inside."""
-
-    nlink: int
-    allocated: int
-    seen: int = 0
-
-
-def measure_windows(path: pathlib.Path) -> TreeSize:
-    """Walk *path*, counting each inode once and only when all its links are inside."""
-    inodes: dict[_FileId, _Linked] = {}
-    plain = 0
-    stack = [str(path)]
-    while stack:
-        current = stack.pop()
-        try:
-            entries = list(os.scandir(current))
-        except OSError:
-            continue
-        for entry in entries:
-            try:
-                # Junctions and symlinks point elsewhere; their target is not this tree's.
-                if entry.is_symlink() or entry.is_junction():
-                    continue
-                if entry.is_dir(follow_symlinks=False):
-                    stack.append(entry.path)
-                    continue
-                # DirEntry.stat() on Windows carries no inode or link count; os.stat does.
-                st = pathlib.Path(entry.path).stat(follow_symlinks=False)
-            except OSError:
-                continue
-            if st.st_nlink <= 1:
-                plain += _allocated(st.st_size)
-                continue
-            linked = inodes.setdefault(
-                _FileId(device=st.st_dev, inode=st.st_ino),
-                _Linked(nlink=st.st_nlink, allocated=_allocated(st.st_size)),
-            )
-            linked.seen += 1
-
-    freeable = plain
-    shared = 0
-    for linked in inodes.values():
-        if linked.seen >= linked.nlink:
-            freeable += linked.allocated
-        else:
-            shared += linked.allocated
-    return TreeSize(freeable=freeable, shared=shared)
-
-
-def _du_posix(path: pathlib.Path) -> int:
-    try:
-        done = subprocess.run(["du", "-sk", str(path)], capture_output=True, text=True, check=False, timeout=120)
-    except (OSError, subprocess.SubprocessError):
-        return 0
-    head = done.stdout.split()
-    return int(head[0]) * 1024 if head and head[0].isdigit() else 0
-
-
-def du(path: pathlib.Path) -> int:
-    """Return the bytes deleting *path* would free (best effort; 0 if unreadable)."""
-    if sys.platform == "win32":
-        if path.is_file():
-            try:
-                return _allocated(path.stat().st_size)
-            except OSError:
-                return 0
-        return measure_windows(path).freeable
-    return _du_posix(path)

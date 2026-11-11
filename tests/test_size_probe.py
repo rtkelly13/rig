@@ -146,13 +146,11 @@ def test_without_the_option_nothing_is_recorded(pytester: pytest.Pytester) -> No
     assert not any(pathlib.Path(pytester.path).rglob("*.json"))
 
 
-def test_the_derived_style_markers_reach_the_suites_own_tests(request: pytest.FixtureRequest) -> None:
-    """``-m bdd`` selected nothing for months: pytest-bdd 8 renamed what conftest looked for."""
+def test_the_derived_style_marker_reaches_the_suites_own_tests(request: pytest.FixtureRequest) -> None:
+    """A derived marker can silently stop applying when a plugin renames what conftest looks for."""
     items = request.session.items
-    scenarios = [i for i in items if i.path.name == "test_estate_shelve_bdd.py"]
     properties = [i for i in items if i.path.name == "test_coverage_by_test.py" and "never_own_fewer" in i.name]
-    if not scenarios or not properties:
+    if not properties:
         pytest.skip("run with the whole suite collected")
 
-    assert all(i.get_closest_marker("bdd") for i in scenarios)
     assert all(i.get_closest_marker("property") for i in properties)
