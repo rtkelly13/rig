@@ -12,8 +12,6 @@ from rig import csharp_cli
 
 from ...workspace.repo_resolver import check_repo_folder
 from ..engine.context import StepContext, get_current_platform
-from ..steps.git import get_git_config_val
-from ..steps.terminal import get_windows_terminal_status
 from ..ui import console, table_box
 
 
@@ -31,14 +29,9 @@ def run_doctor() -> int:
     if csharp_cli.run(["devenv", "tools", "--check"]) != 0:
         issues_found += 1
 
-    if ctx.is_windows:
-        wt_stat = get_windows_terminal_status()
-        if wt_stat.installed:
-            if wt_stat.snap_to_grid is False:
-                console.print("  Windows Terminal (snapToGrid: off)  [green]✓ Configured[/green]")
-            else:
-                console.print("  Windows Terminal (snapToGrid: on)   [yellow]! Jitter Risk[/yellow]")
-                issues_found += 1
+    # `rig devenv terminal --check` reports Windows Terminal's snapToGrid and exits 1 when it risks jitter.
+    if ctx.is_windows and csharp_cli.run(["devenv", "terminal", "--check"]) != 0:
+        issues_found += 1
 
     console.print()
 
@@ -89,20 +82,9 @@ def run_doctor() -> int:
     g_table.add_column("Status", justify="center")
     g_table.add_column("Details", style="dim")
 
-    git_user = get_git_config_val("user.name")
-    git_email = get_git_config_val("user.email")
-
-    if git_user and git_email:
-        g_table.add_row("Git Identity", "[green]✓ Configured[/green]", f"{git_user} <{git_email}>")
-    else:
-        g_table.add_row("Git Identity", "[red]✗ Incomplete[/red]", "Run 'devenv setup' to configure")
+    # `rig devenv git --check` prints the identity and SSH key, and exits 1 when the identity is incomplete.
+    if csharp_cli.run(["devenv", "git", "--check"]) != 0:
         issues_found += 1
-
-    try:
-        ssh_key = (Path.home() / ".ssh" / "id_ed25519").exists() or (Path.home() / ".ssh" / "id_rsa").exists()
-    except OSError:
-        ssh_key = False
-    g_table.add_row("SSH Key", "[green]✓ Found[/green]" if ssh_key else "[yellow]! Missing[/yellow]", "~/.ssh")
 
     repo_check = check_repo_folder(Path.cwd())
     if repo_check.status == "ok":

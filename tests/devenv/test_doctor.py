@@ -7,11 +7,7 @@ from rig.devenv.doctor.core import run_doctor
 
 
 @pytest.mark.ci
-def test_run_doctor_runs_cleanly(monkeypatch: pytest.MonkeyPatch):
-    def fake_git_config(key: str) -> str:
-        return "developer" if key == "user.name" else "dev@example.com"
-
-    monkeypatch.setattr("rig.devenv.steps.git.get_git_config_val", fake_git_config)
+def test_run_doctor_runs_cleanly(csharp_calls: list[list[str]]):
     rc = run_doctor()
     # Returns 0 when all required tools are healthy or 1 if missing tools
     assert rc in (0, 1)
@@ -55,3 +51,10 @@ def test_doctor_checks_the_tools_through_rig_devenv_tools(csharp_calls: list[lis
     _ = run_doctor()
 
     assert ["devenv", "tools", "--check"] in [call[call.index("--") + 1 :] for call in csharp_calls]
+
+
+@pytest.mark.ci
+def test_doctor_checks_git_through_rig_devenv_git(csharp_calls: list[list[str]]):
+    _ = run_doctor()
+
+    assert ["devenv", "git", "--check"] in [call[call.index("--") + 1 :] for call in csharp_calls]

@@ -17,11 +17,13 @@ namespace Rig.Cli.Devenv;
 /// <param name="ConfigHome">The <c>XDG_CONFIG_HOME</c> variable, which moves the gh scope overlay; ignored under another <c>--home</c>.</param>
 /// <param name="MacOS">Whether fonts go to <c>~/Library/Fonts</c>; otherwise Windows' or Linux's user font folder.</param>
 /// <param name="WorkingDirectory">Where <c>.devenv/tools</c> catalogs and the Python version are read from (default: <paramref name="Home"/>).</param>
-internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false, string? WorkingDirectory = null);
+/// <param name="LocalAppData">The <c>LOCALAPPDATA</c> variable, where Windows Terminal's settings live; ignored under another <c>--home</c>.</param>
+/// <param name="Input">Where <c>git --interactive</c> reads its answers (default: none, so every prompt takes its default).</param>
+internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false, string? WorkingDirectory = null, string? LocalAppData = null, TextReader? Input = null);
 
 /// <summary>
 /// The ported part of <c>rig devenv</c>: <c>agent-launcher</c>, <c>agents</c>, <c>claude</c>, <c>estate-rules</c>,
-/// <c>fonts</c>, <c>gh</c>, <c>obsidian-plugins</c>, <c>opencode</c>, and <see cref="ToolsCommands"/>' <c>tools</c>, <c>runtimes</c> and <c>update</c>. Every other <c>devenv</c> subcommand is still Python's, and
+/// <c>fonts</c>, <c>gh</c>, <c>obsidian-plugins</c>, <c>opencode</c>, <see cref="ToolsCommands"/>' <c>tools</c>, <c>runtimes</c> and <c>update</c>, and <see cref="GitTerminalCommands"/>' <c>git</c> and <c>terminal</c>. Every other <c>devenv</c> subcommand is still Python's, and
 /// <see cref="Forwarding.Forwarded.Owns"/> hands those lines over before parsing. Ported from devenv's
 /// <c>agent_launcher_setup</c>, <c>agent_shortcut</c>, <c>discovery</c>, <c>fonts</c>, <c>claude_code</c>, <c>session_ledger</c>,
 /// <c>estate_rules</c>, <c>github_cli</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
@@ -67,7 +69,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         fontsCommand.SetAction((parsed, cancellationToken) =>
             FontsAsync(parsed.GetValue(dryRun), parsed.GetValue(fontsCheck), NerdFonts.Folder(parsed.GetValue(home)!, host.Windows, host.MacOS), cancellationToken));
         var group = new Command("devenv", Description) { launcher, agents, claude, rules, fontsCommand, gh, obsidian, opencode };
-        foreach (var command in new ToolsCommands(host, proc, output, error).Build(dryRun, home))
+        foreach (var command in new ToolsCommands(host, proc, output, error).Build(dryRun, home).Concat(new GitTerminalCommands(host, proc, output, error).Build(dryRun, home)))
         {
             group.Subcommands.Add(command);
         }
