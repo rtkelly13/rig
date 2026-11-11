@@ -40,5 +40,10 @@ session looks from outside.
 change was staged is not preserved. `estate shelved --prune` drops a shelf whose
 PR merged or whose base reached the default branch, and never drops a snapshot.
 
+Each `--apply` that reaches removal appends its outcome to `~/.estate-shelved.jsonl`, one
+JSON object per worktree. The ref and its trailers are the record; the ledger is a convenience. The planning and the steps live in
+`src/Rig.Core/Estate/Shelve.cs`, the shelf refs and their trailers in `ShelfStore.cs`, and the
+three commands in `src/Rig.Cli/Estate/ShelveCommand.cs`.
+
 `TEMP-SHELVED:` is a contract, and it makes a guard easy: a PR check that fails
 on any commit with that subject prefix stops a shelf being merged by accident.

@@ -58,7 +58,7 @@ Mark tests so the CI-safe subset can be run without external dependencies:
 - `@pytest.mark.ci` — no Windows APIs, no live system state; runs in any CI environment
 - `@pytest.mark.windows` — requires Windows OS with pyvda/win32 APIs
 - `@pytest.mark.integration` — requires live state (open windows, virtual desktops running)
-- `property` / `bdd` — applied automatically to Hypothesis tests and pytest-bdd scenarios; see [testing.md](testing.md)
+- `property` — applied automatically to Hypothesis tests; see [testing.md](testing.md)
 
 CI runs the suite on Ubuntu (`test`, with coverage and Windows portability lint gates). To conserve runner minutes on private repos, `test-windows` on `windows-latest` runs conditionally:
 - Nightly on `main` (03:43 UTC), not on every merge — a break that lands on `main` surfaces the next morning. Linux jobs skip the nightly run.

@@ -35,9 +35,8 @@ internal sealed record EstateHost(
 }
 
 /// <summary>
-/// <c>rig estate</c>: the subcommands ported from <c>src/rig/estate/cli.py</c>. The group's other subcommands are still
-/// Python's, so <see cref="Forwarding.Forwarded"/> hands any line naming one of them over. Read-only by default:
-/// <c>sync</c> fetches, and only <c>reclaim</c>, <c>trim</c>, <c>tidy</c> and <c>prune-caches</c> delete, with <c>--apply</c>, each entry proving its own safety.
+/// <c>rig estate</c> (and the <c>estate</c> entry point): the code assets cloned on this machine. Read-only by default:
+/// <c>sync</c> fetches, and only <c>reclaim</c>, <c>trim</c>, <c>tidy</c>, <c>prune-caches</c> and <c>shelve</c> delete, with <c>--apply</c>, each entry proving its own safety.
 /// </summary>
 /// <param name="host">Where it looks.</param>
 /// <param name="orca">Where each Orca profile keeps its files and how it is reached, for <c>orca</c> and <c>orca-worktrees</c>.</param>
@@ -88,6 +87,11 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(new OrcaLayoutCommand(host, orca, proc, github, output, error).Build());
         estate.Subcommands.Add(new OrcaWorktreesCommand(host, orca, git, proc, time, output, error).Build());
         estate.Subcommands.Add(new WrapupCommand(host, git, proc, time, wrapup ?? WrapupHost.Inert(time), output, error).Build());
+        foreach (var command in new ShelveCommand(host, git, proc, github, time, ClonesAsync, CodeRoot, OneCloneAsync, output, error).Build())
+        {
+            estate.Subcommands.Add(command);
+        }
+
         var disk = new DiskUsage(proc);
         estate.Subcommands.Add(new AppsCommand(
             new InstalledApps(proc, disk, time), InstalledApps.DefaultAppDirs(host.Home), OperatingSystem.IsWindows() ? new UninstallRegistry() : null, time, output).Build());
@@ -843,7 +847,7 @@ internal sealed class EstateCommand(
     private string ExpandHome(string path) => host.ExpandHome(path);
 
     // A path inside the clone relative to it, else in full: a worktree can live outside its clone.
-    private static string Short(string path, string clone)
+    internal static string Short(string path, string clone)
     {
         var relative = Path.GetRelativePath(clone, path);
         return relative == ".." || relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) || Path.IsPathRooted(relative)

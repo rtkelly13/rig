@@ -38,7 +38,7 @@ dependencies = [
 [project.scripts]
 rig = "rig.rig_cli:main"
 desktop-manager = "desktop_manager.cli:main"
-estate = "rig.estate.cli:main"
+estate = "rig.csharp_cli:entry"
 otel-stack = "rig.csharp_cli:entry"
 help = "desktop_manager.cli:help_main"
 status = "rig.csharp_cli:entry"
@@ -89,7 +89,6 @@ markers = [
     "macos: requires macOS with Chrome scripting and accessibility",
     "integration: requires live system state (open windows, virtual desktops)",
     "property: Hypothesis property-based test (applied automatically in tests/conftest.py)",
-    "bdd: pytest-bdd scenario driven by a .feature file (applied automatically)",
 ]
 
 [dependency-groups]
@@ -113,7 +112,6 @@ dev = [
     "import-linter>=2.15",
     "hypothesis>=6.140",
     "pytest-timeout>=2.3",
-    "pytest-bdd>=8.1.0",
 ]
 
 [tool.importlinter]
@@ -242,14 +240,9 @@ ignore = [
 "src/desktop_manager/restore_fallbacks.py" = ["TID251"]
 "src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
 "src/desktop_manager/service_installer.py" = ["TID251"]
-"src/rig/estate/apps.py" = ["TID251"]
-"src/rig/estate/caches.py" = ["TID251"]
-"src/rig/estate/disksize.py" = ["TID251"]
 "src/rig/estate/trim.py" = ["TID251"]
-"src/rig/estate/volume.py" = ["TID251"]
 "src/rig/image_drift/simplifier/syntactic.py" = ["TID251"]
 "src/rig/repo_governance/vercel_gating.py" = ["TID251"]
-"src/rig/skills/vendor.py" = ["TID251"]  # git pull/fetch/clone still raw: move onto rig.proc.git
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
 "src/rig/connectivity/manifests.py" = ["TID251"]
@@ -263,9 +256,6 @@ ignore = [
 "tests/desktop_manager/test_cli_machine_checkout.py" = ["TID251"]
 "tests/test_agents_md_audit.py" = ["TID251"]
 "tests/test_estate.py" = ["TID251"]
-"tests/test_estate_caches.py" = ["TID251"]
-"tests/test_estate_decisions.py" = ["TID251"]
-"tests/test_estate_shelve.py" = ["TID251"]
 "tests/desktop_manager/test_chrome_site_hosts.py" = ["TID251"]
 "tests/test_estate_connectivity.py" = ["TID251"]
 "tests/test_repo_hygiene_git_hooks.py" = ["TID251"]
@@ -433,8 +423,6 @@ fake-location-allow = [
     "tests/desktop_manager/test_workspace_wait_scope.py",
     "tests/desktop_manager/test_workspace_win32_behavior.py",
     "tests/test_c4_okf.py",
-    "tests/test_estate_caches.py",
-    "tests/test_estate_prs.py",
     "tests/test_estate_web.py",
     "tests/test_otel_clickhouse.py",
     "tests/test_otel_web.py",
@@ -490,13 +478,6 @@ patching-allow = [
     "tests/test_c4_okf.py",
     "tests/test_console_ui.py",
     "tests/test_entrypoints_portable.py",
-    "tests/test_estate_caches.py",
-    "tests/test_estate_cli.py",
-    "tests/test_estate_decisions.py",
-    "tests/test_estate_prs.py",
-    "tests/test_estate_shelve.py",
-    "tests/test_estate_shelve_cli.py",
-    "tests/test_estate_tidy.py",
     "tests/test_github_apps_governance.py",
     "tests/test_github_prs.py",
     "tests/test_image_drift_explore_promote.py",

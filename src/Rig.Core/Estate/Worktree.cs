@@ -3,7 +3,7 @@ using Rig.Core.Processes;
 namespace Rig.Core.Estate;
 
 /// <summary>One entry of <c>git worktree list --porcelain</c>. Ported from <c>src/rig/estate/checks.py</c>.</summary>
-/// <param name="Path">The worktree's folder, as git reports it.</param>
+/// <param name="Path">The worktree's folder, as git reports it but with the platform's separators: git prints <c>/</c> on Windows too.</param>
 /// <param name="Head">The commit HEAD names.</param>
 /// <param name="Branch">The branch checked out, without <c>refs/heads/</c>; empty when detached.</param>
 /// <param name="Detached">HEAD is detached.</param>
@@ -41,7 +41,7 @@ public sealed record Worktree(
             {
                 var branch = fields.GetValueOrDefault("branch", string.Empty);
                 found.Add(new Worktree(
-                    path,
+                    path.Replace('/', System.IO.Path.DirectorySeparatorChar),
                     fields.GetValueOrDefault("HEAD", string.Empty),
                     branch.StartsWith("refs/heads/", StringComparison.Ordinal) ? branch["refs/heads/".Length..] : branch,
                     fields.ContainsKey("detached"),

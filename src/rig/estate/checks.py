@@ -122,26 +122,3 @@ def list_worktrees(repo: pathlib.Path) -> list[Worktree]:
 def is_dirty(path: pathlib.Path) -> bool:
     """Return True if *path* has uncommitted changes, staged or not."""
     return bool(proc.git_out("status", "--porcelain", cwd=path))
-
-
-def orphaned_count(path: pathlib.Path) -> int:
-    """Return commits reachable from HEAD and present on no remote.
-
-    This is the measure that means "would be lost". "ahead of upstream" is not:
-    a worktree tracking `origin/main` after its own branch was squash-merged
-    reports its original commits as "ahead" *forever*, even though every one of
-    them still exists on a remote ref. Measured on `design-system`,
-    `temp/feat-headless-table` reported 4 ahead and 0 orphaned — a refusal for
-    nothing.
-    """
-    out = proc.git_out("rev-list", "--count", "HEAD", "--not", "--remotes", cwd=path)
-    return int(out) if out.isdigit() else 0
-
-
-def merged_by_ancestry(repo: pathlib.Path, branch: str, *, base: str = "origin/main") -> bool:
-    """Return True if *branch* is an ancestor of *base*.
-
-    True only for merge-commit and fast-forward landings. A squash merge leaves
-    no ancestry, which is why a False here means "unknown", not "unmerged".
-    """
-    return proc.git("merge-base", "--is-ancestor", branch, base, cwd=repo).ok

@@ -33,7 +33,7 @@ public sealed class RigAppTests : IDisposable
 
     [Theory]
     [InlineData("workspace", "orca", "--check")]
-    [InlineData("estate", "--help")]
+    [InlineData("triage", "--help")]
     public async Task A_python_command_goes_over_whole_and_attached(params string[] args)
     {
         _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");

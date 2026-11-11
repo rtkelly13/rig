@@ -217,11 +217,3 @@ def repos(
     )
     _write_cache(cache_file, cache)
     return Discovered(paths=found, from_cache=False)
-
-
-def cache_age(root: pathlib.Path, *, cache_file: pathlib.Path = CACHE_FILE) -> dt.timedelta | None:
-    """Return how old *root*'s cached scan is, or None when uncached."""
-    entry = _read_cache(cache_file).get(str(root.expanduser().resolve()))
-    if entry is None:
-        return None
-    return dt.datetime.now(dt.UTC) - entry.scanned_at

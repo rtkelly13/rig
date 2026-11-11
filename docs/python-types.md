@@ -94,7 +94,7 @@ whole value (a wrong shape or a model-level check); `_decode` falls back to "exp
 | `uv run ratchet` `isinstance-dict` | `isinstance(x, dict)`, alone or in a tuple | the same `boundary-modules` |
 | `uv run ratchet` `str-key-get`, `str-key-subscript` | reads by string literal: `x.get("k")` and a Load-context `x["k"]` | `os.environ`, and `[tool.repo-health.ratchet] str-key-receivers`: `self.headers`, `handler.headers` |
 | `uv run ratchet` `loose-dict` | `dict[str, object]`, `Mapping[str, object]`, `MutableMapping[str, object]` and the `loose-dict-aliases` (`JsonObject`) in any annotation, type alias or type argument (`try_decode(dict[str, object], ...)`) | the `boundary-modules`, and `[tool.repo-health.ratchet] loose-dict-allow`: the JSON output serializers and foreign-config round-trips |
-| `uv run ratchet` `fake-location`, `patching` (tests/ only) | `Fake*`/`Stub*` classes outside `tests/fakes/`; `mock.patch`, `monkeypatch.setattr` and `sys.modules[...] =` | `[tool.repo-health.ratchet] fake-location-allow` and `patching-allow`: today's files, shrinking ([testing.md](testing.md#shared-fakes-and-steps)) |
+| `uv run ratchet` `fake-location`, `patching` (tests/ only) | `Fake*`/`Stub*` classes outside `tests/fakes/`; `mock.patch`, `monkeypatch.setattr` and `sys.modules[...] =` | `[tool.repo-health.ratchet] fake-location-allow` and `patching-allow`: today's files, shrinking ([testing.md](testing.md#shared-fakes)) |
 | ruff `BLE001` | `except Exception` | none |
 | ruff `DTZ`, `S602`, `PGH004` | naive datetimes, `shell=True`, blanket `noqa` | none |
 

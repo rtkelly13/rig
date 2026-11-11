@@ -78,6 +78,12 @@ public sealed class TextFormatTests
         Assert.Equal("\"é日本\\u0001\\n\u007f\"", PyJson.Dumps(JsonValue.Create("é日本\u0001\n\u007f"), ensureAscii: false));
 
     [Fact]
+    public void Dumps_line_is_compact_with_python_separators() =>
+        Assert.Equal(
+            "{\"a\": 1, \"b\": [1, {}, []], \"c\": null, \"d\": \"\\u00e9\"}",
+            PyJson.DumpsLine(JsonNode.Parse("""{"a": 1, "b": [1, {}, []], "c": null, "d": "é"}""")));
+
+    [Fact]
     public void Dumps_with_ensure_ascii_escapes_delete() =>
         Assert.Equal("\"\\u007f\"", PyJson.Dumps(JsonValue.Create("\u007f")));
 

@@ -10,8 +10,8 @@ import subprocess
 import pytest
 
 from rig.estate import discovery
-from rig.estate.checks import parse_worktrees
-from rig.estate.reclaim import human, scan_repo
+from rig.estate.checks import is_dirty, parse_worktrees
+from rig.typed_json import JsonValue
 
 
 def _git(args: list[str], cwd: pathlib.Path) -> None:
@@ -157,34 +157,27 @@ def test_parse_worktrees_marks_the_first_as_main() -> None:
     assert "non-existent" in trees[2].prune_reason
 
 
-def test_human_formats_at_one_decimal() -> None:
-    assert human(0) == "0B"
-    assert human(1536) == "1.5KB"
-    assert human(5 * 1024**3) == "5.0GB"
+def test_parse_worktrees_reads_bare_locked_and_unborn_entries() -> None:
+    porcelain = (
+        "worktree /code/proj.git\nbare\n\n"
+        "worktree /code/proj/temp/usb\nHEAD abc123\nbranch refs/heads/usb\nlocked on a stick\n\n"
+        f"worktree /code/proj/temp/fresh\nHEAD {'0' * 40}\nbranch refs/heads/fresh\n\n"
+    )
+
+    bare, locked, fresh = parse_worktrees(porcelain)
+
+    assert bare.bare
+    assert (locked.name, locked.locked, locked.lock_reason) == ("usb", True, "on a stick")
+    assert fresh.unborn
+    assert not locked.unborn
 
 
-# ---------------------------------------------------------------------------
-# reclaim
-# ---------------------------------------------------------------------------
+def test_is_dirty_sees_an_untracked_file(repo: pathlib.Path) -> None:
+    assert not is_dirty(repo)
 
+    _ = (repo / "new.txt").write_text("x\n", encoding="utf-8")
 
-def test_reclaim_classifies_a_temp_worktree_separately(repo: pathlib.Path) -> None:
-    _git(["worktree", "add", "-q", "-b", "spike", "temp/spike"], repo)
-    (repo / "temp" / "scratch").mkdir()
-
-    entries = {e.path.name: e for e in scan_repo(repo, floor=0).entries}
-    assert entries["spike"].is_worktree
-    assert not entries["spike"].safe_to_rmtree
-    assert not entries["scratch"].is_worktree
-    assert entries["scratch"].safe_to_rmtree
-
-
-def test_reclaim_finds_nested_node_modules(repo: pathlib.Path) -> None:
-    nested = repo / "frontend" / "node_modules"
-    nested.mkdir(parents=True)
-    (nested / "big.js").write_text("x" * 2048, encoding="utf-8")
-    categories = {e.category for e in scan_repo(repo, floor=0).entries}
-    assert "node_modules" in categories
+    assert is_dirty(repo)
 
 
 def test_a_sibling_worktree_is_not_a_clone(tmp_path: pathlib.Path, repo: pathlib.Path) -> None:
@@ -204,11 +197,24 @@ def test_a_sibling_worktree_is_not_a_clone(tmp_path: pathlib.Path, repo: pathlib
     assert sibling not in found
 
 
-def test_a_worktree_outside_the_clone_does_not_crash_rendering(repo: pathlib.Path, tmp_path: pathlib.Path) -> None:
-    """`relative_to` raises on exactly the case `worktree-off-convention` reports."""
-    from rig.estate.locate import short as _short
+def test_scan_of_a_missing_root_finds_nothing(tmp_path: pathlib.Path) -> None:
+    assert discovery.scan(tmp_path / "missing") == []
 
-    outside = tmp_path / "elsewhere"
-    _git(["worktree", "add", "-q", "-b", "spike", str(outside)], repo)
-    assert _short(outside, repo) == str(outside)
-    assert _short(repo / "temp" / "x", repo) == "temp/x"
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "not an entry",
+        {"scanned_at": "last tuesday", "repos": []},
+    ],
+)
+def test_a_junk_cache_entry_parses_as_none(raw: JsonValue) -> None:
+    assert discovery.CachedScan.from_json(raw) is None
+
+
+def test_a_cache_entry_without_a_timezone_is_read_as_utc() -> None:
+    entry = discovery.CachedScan.from_json({"scanned_at": "2026-11-07T12:00:00", "repos": ["/code/a"], "root": "/code"})
+
+    assert entry is not None
+    assert entry.scanned_at.tzinfo is dt.UTC
+    assert entry.paths() == [pathlib.Path("/code/a")]

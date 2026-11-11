@@ -13,7 +13,6 @@ internal static class Forwarded
     [
         ("align", "Reconcile desktop window layout and virtual desktop state."),
         ("workspace", "Virtual monorepo estate management for the personal folder."),
-        ("estate", "Manage the code assets cloned on this machine."),
         ("triage", "Persistent PR and issue triage queue."),
         ("web", "Rig web dashboard & visual studio (static site + Python API)."),
         ("flags", "Feature flags shared across the rig stack (defaults in code, overrides in rig.db)."),

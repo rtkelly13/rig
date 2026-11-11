@@ -86,10 +86,10 @@ the first time a command met the real estate.
 | Merged-PR lookup capped at 200 | an older PR's worktree looked unmerged | window raised to 1000 |
 | `--all` fell through to the cwd | planned one repository, not the estate | fallthrough removed |
 | Default root resolved to the worktrees dir | run inside a worktree, it scanned only its siblings | root resolution fixed |
-| Junction leftovers | removal left a directory of links behind | `sweep_link_skeleton` |
+| Junction leftovers | removal left a directory of links behind | `Shelver.SweepLinkSkeleton` |
 | Nested repository | removal would delete another repository's worktree | a decision no flag clears |
 | Estate outputs counted as hand-written | shelving tool outputs blocked their own worktrees | classified as regenerable |
-| Locked `.pytest_cache` | 32 worktrees unregistered but left on disk | `remove_tree` resets the ACL; shelve finishes the delete |
+| Locked `.pytest_cache` | 32 worktrees unregistered but left on disk | `TreeRemoval` resets the ACL; shelve finishes the delete |
 
 - **Dry-run the whole estate first.** It costs nothing and found most of the
   bugs above.

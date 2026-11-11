@@ -289,13 +289,6 @@ def _allow_delete_child(directory: str) -> None:
     _ = subprocess.run(["icacls", directory, "/grant", f"*{_user_sid()}:(DC)"], capture_output=True, check=False)
 
 
-#: git for anything that deletes or moves files. Windows git stops at 260
-#: characters without `core.longpaths`, part-way through a tree: a worktree
-#: holding `node_modules` is unregistered first and then left half-deleted.
-#: Prepended to git writes, so a write never stops part-way through a tree with long paths.
-LONG_PATHS: tuple[str, ...] = ("-c", "core.longpaths=true")
-
-
 def long_path(path: pathlib.Path) -> str:
     """Return *path* absolute, with the long-path prefix on Windows that lifts the 260-character limit."""
     target = str(path.absolute())
