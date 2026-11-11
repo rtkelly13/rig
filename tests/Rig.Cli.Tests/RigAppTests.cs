@@ -1,3 +1,4 @@
+using Rig.Cli.Agent;
 using Rig.Cli.Forwarding;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
@@ -16,12 +17,19 @@ public sealed class RigAppTests : IDisposable
     private bool _fromPython;
 
     private Task<int> Run(params string[] args) =>
-        new RigApp(new PythonRig(_proc, Checkout, _fromPython), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), _out, _err).RunAsync(args, TestContext.Current.CancellationToken);
+        new RigApp(
+            new PythonRig(_proc, Checkout, _fromPython),
+            new FakeGitHub(),
+            _ => Task.FromResult<RepoSlug?>(null),
+            _out,
+            _err,
+            [() => new Rig.Cli.Models.ModelsCommand(new Rig.Cli.Models.ModelDiscovery(_proc, "/home", _ => null), _out).Build()],
+            new AgentLauncher(_proc, new AgentHost("/home/none.json", "/work", p => $"/bin/{p}"), _out, _err))
+            .RunAsync(args, TestContext.Current.CancellationToken);
 
     [Theory]
     [InlineData("workspace", "sync", "--dry-run")]
     [InlineData("estate", "--help")]
-    [InlineData("-ccc")]
     public async Task A_python_command_goes_over_whole_and_attached(params string[] args)
     {
         _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
@@ -33,14 +41,38 @@ public sealed class RigAppTests : IDisposable
         Assert.True(request.Attached);
     }
 
-    [Fact]
-    public async Task A_bare_rig_launches_the_preferred_agent_in_python()
+    [Theory]
+    [InlineData(new string[0], new[] { "/bin/claude", "--model", "opus" })]
+    [InlineData(new[] { "-ccc", "--resume" }, new[] { "/bin/claude", "--model", "opus", "--resume" })]
+    [InlineData(new[] { "agent", "-codex", "exec", "--help" }, new[] { "/bin/codex", "exec", "--help" })]
+    [InlineData(new[] { "--print-config" }, null)]
+    public async Task An_agent_launch_goes_to_the_launcher_unparsed(string[] args, string[]? launched)
     {
-        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
+        _proc.Answer(new Ran(3, string.Empty, string.Empty), "/bin/claude").Answer(new Ran(3, string.Empty, string.Empty), "/bin/codex");
 
-        await Run();
+        Assert.Equal(launched is null ? 0 : 3, await Run(args));
 
-        Assert.Equal(Uv, Assert.Single(_proc.Requests).Argv);
+        Assert.Equal(launched, _proc.Requests.SingleOrDefault()?.Argv);
+        Assert.DoesNotContain(_proc.Requests, r => r.Argv[0] == "uv");
+    }
+
+    [Theory]
+    [InlineData("agent", "models", "-a", "codex")]
+    [InlineData("agent", "--models", "-a", "codex")]
+    public async Task Agent_models_lists_the_models(params string[] args)
+    {
+        Assert.Equal(0, await Run(args));
+
+        Assert.Contains("gpt-6.1-sol", _out.ToString(), StringComparison.Ordinal);
+        Assert.Empty(_proc.Requests);
+    }
+
+    [Fact]
+    public async Task Help_lists_the_agent_command()
+    {
+        Assert.Equal(0, await Run("--help"));
+
+        Assert.Contains(AgentLauncher.Description, _out.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

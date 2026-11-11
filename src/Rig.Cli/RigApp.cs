@@ -1,4 +1,5 @@
 using System.CommandLine;
+using Rig.Cli.Agent;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Gh.Threads;
 using Rig.Core;
@@ -7,11 +8,18 @@ using Rig.Core.Processes;
 namespace Rig.Cli;
 
 /// <summary>
-/// The rig command line. A line the Python CLI still owns is handed to it whole; everything else (help, version and
-/// every ported command) is parsed here. Exit codes follow <see cref="ExitCode"/>: a line that does not parse is 2.
+/// The rig command line. An agent launch (a bare <c>rig</c>, a shortcut flag such as <c>-ccc</c>, or <c>rig agent</c>)
+/// goes to the launcher unparsed, so the agent gets its arguments untouched. A line the Python CLI still owns is handed
+/// to it whole; everything else (help, version and every ported command) is parsed here. Exit codes follow <see cref="ExitCode"/>: a line that does not parse is 2.
 /// </summary>
 internal sealed class RigApp(
-    PythonRig python, IGitHubApi github, OriginReader origin, TextWriter output, TextWriter error, IReadOnlyList<Func<Command>>? ported = null)
+    PythonRig python,
+    IGitHubApi github,
+    OriginReader origin,
+    TextWriter output,
+    TextWriter error,
+    IReadOnlyList<Func<Command>>? ported = null,
+    AgentLauncher? agent = null)
 {
     /// <summary>What <c>rig --help</c> says rig is.</summary>
     public const string Description =
@@ -27,6 +35,12 @@ internal sealed class RigApp(
             root.Subcommands.Add(build());
         }
 
+        if (agent is not null)
+        {
+            // Listed for help only: RunAsync sends every agent line to the launcher before parsing.
+            root.Subcommands.Add(new Command(AgentLauncher.CommandName, AgentLauncher.Description));
+        }
+
         foreach (var (name, description) in Forwarded.Commands)
         {
             root.Subcommands.Add(new Command(name, $"{description} (Python)"));
@@ -39,6 +53,14 @@ internal sealed class RigApp(
     public async Task<int> RunAsync(IReadOnlyList<string> args, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(args);
+        if (agent is not null && AgentLauncher.LauncherArgs(args) is { } launch)
+        {
+            // agent models lists the models the agents run: the ported models command.
+            return launch.Count > 0 && launch[0] is "models" or "--models"
+                ? await RunAsync(["models", .. launch.Skip(1)], cancellationToken).ConfigureAwait(false)
+                : await agent.RunAsync(launch).ConfigureAwait(false);
+        }
+
         if (Forwarded.Owns(args))
         {
             return await python.RunAsync(args, error).ConfigureAwait(false);

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Rig.Cli.Agent;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
@@ -41,7 +42,7 @@ public sealed partial class ForwardedContractTests
         var block = PortedBlock().Match(File.ReadAllText(Bridge)).Groups["body"].Value;
         var ported = Name().Matches(block).Select(m => m.Groups["name"].Value)
             .Concat(HandedOverScript().Matches(File.ReadAllText(Project)).Select(m => m.Groups["name"].Value))
-            .Distinct(StringComparer.Ordinal) // status is both a rig subcommand and an entry point
+            .Distinct(StringComparer.Ordinal) // agent and status are both rig subcommands and entry points
             .ToList();
         var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
         var app = new RigApp(
@@ -63,7 +64,8 @@ public sealed partial class ForwardedContractTests
                 InertOtelStack().Build,
                 new StatusCommand(new FakeProc(), new Git(new FakeProc(), "/"), "/", TextWriter.Null).Build,
                 () => new ModelsCommand(new ModelDiscovery(new FakeProc(), "/", _ => null), TextWriter.Null).Build(),
-            ]);
+            ],
+            new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
         var owned = app
             .BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));
 
@@ -101,7 +103,7 @@ public sealed partial class ForwardedContractTests
         var block = ShortcutBlock().Match(source).Groups["body"].Value;
         var python = Quoted().Matches(block).Select(m => m.Groups["flag"].Value);
 
-        Assert.Equal(python.Order(StringComparer.Ordinal), Forwarded.AgentShortcutFlags.Order(StringComparer.Ordinal));
+        Assert.Equal(python.Order(StringComparer.Ordinal), AgentLauncher.ShortcutFlags.Order(StringComparer.Ordinal));
     }
 
     private static string RepoRoot()

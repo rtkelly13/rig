@@ -42,7 +42,7 @@ estate = "rig.estate.cli:main"
 otel-stack = "rig.csharp_cli:entry"
 help = "desktop_manager.cli:help_main"
 status = "rig.csharp_cli:entry"
-agent = "rig.agent_launcher.cli:agent_main"
+agent = "rig.csharp_cli:entry"
 image-reconcile = "rig.image_drift.cli:main"
 vault = "rig.csharp_cli:entry"
 md-lint = "rig.csharp_cli:entry"
@@ -257,7 +257,6 @@ ignore = [
 "src/desktop_manager/restore_fallbacks.py" = ["TID251"]
 "src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
 "src/desktop_manager/service_installer.py" = ["TID251"]
-"src/rig/agent_launcher/cli.py" = ["TID251"]
 "src/rig/devenv/doctor/core.py" = ["TID251"]
 "src/rig/devenv/providers/base.py" = ["TID251"]
 "src/rig/devenv/steps/git.py" = ["TID251"]
@@ -521,7 +520,6 @@ patching-allow = [
     "tests/devenv/test_terminal_compat.py",
     "tests/devenv/test_tool_manager.py",
     "tests/test_agent_browser_setup.py",
-    "tests/test_agent_launcher.py",
     "tests/test_align_repo_conventions.py",
     "tests/test_branch_cleanup.py",
     "tests/test_c4_okf.py",

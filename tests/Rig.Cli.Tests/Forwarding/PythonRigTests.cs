@@ -32,5 +32,7 @@ public sealed class PythonRigTests
         Assert.All(Forwarded.Commands, c => Assert.True(Forwarded.Owns([c.Name, "--help"])));
         Assert.False(Forwarded.Owns(["--help"]));
         Assert.False(Forwarded.Owns(["--version"]));
+        Assert.False(Forwarded.Owns([]));
+        Assert.False(Forwarded.Owns(["-ccc"]));
     }
 }
