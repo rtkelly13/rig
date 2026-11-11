@@ -34,7 +34,7 @@ public sealed class VaultLintOracleTests
                 continue;
             }
 
-            var root = Path.Combine(Path.GetTempPath(), $"rig-lint-{Guid.NewGuid():N}", "Vault");
+            var root = Path.Combine(RepoTemp.NewPath("rig-lint"), "Vault");
             Assert.DoesNotContain(TriggerSubstrings, root.Contains);
             try
             {
@@ -329,7 +329,7 @@ public sealed class VaultLintOracleTests
 
     private sealed class TempVault : IDisposable
     {
-        private readonly string parent = Path.Combine(Path.GetTempPath(), $"rig-lint-{Guid.NewGuid():N}");
+        private readonly string parent = RepoTemp.NewPath("rig-lint");
 
         public TempVault()
         {
