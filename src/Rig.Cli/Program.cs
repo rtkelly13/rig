@@ -186,7 +186,12 @@ internal static class Program
                     TimeProvider.System,
                     Caches.FindTool,
                     Console.Out,
-                    Console.Error).Build,
+                    Console.Error,
+                    new WrapupHost(
+                        WrapupAgentRig(checkout),
+                        new WrapupFollower(AppData.Current(), detached, SelfArgv()),
+                        new SystemWrapupClock(TimeProvider.System),
+                        WrapupStamps.NewAskId)).Build,
             ],
             new AgentLauncher(
                 proc,
@@ -200,5 +205,20 @@ internal static class Program
         }
 
         return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
+    }
+
+    // The rig the asked agent runs `report` with: the checkout's own, since the agent's shell is another repo's worktree.
+    private static string WrapupAgentRig(string checkout)
+    {
+        var found = OperatingSystem.IsWindows() ? Path.Join(checkout, ".venv", "Scripts", "rig.exe") : Path.Join(checkout, ".venv", "bin", "rig");
+        return File.Exists(found) ? found : "rig";
+    }
+
+    // How to start this same rig again, for the background wrap-up follower.
+    private static string[] SelfArgv()
+    {
+        var process = Environment.ProcessPath ?? "rig";
+        var entry = typeof(Program).Assembly.Location;
+        return Path.GetFileNameWithoutExtension(process).Equals("dotnet", StringComparison.OrdinalIgnoreCase) && entry.Length > 0 ? [process, entry] : [process];
     }
 }

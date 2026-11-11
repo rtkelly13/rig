@@ -98,22 +98,6 @@ def forbid_real_virtual_desktop_changes(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 @pytest.fixture(autouse=True)
-def forbid_real_wrapup_follower(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Fail any test that starts a real `estate wrapup` background follower.
-
-    The follower is a separate process, so none of a test's in-process fakes reach it: it reads
-    the live Orca and types into real agent sessions (it did: two live sessions got a test's
-    "Done yet?"). A test that covers the background path patches ``wrapup_follow.start`` itself.
-    """
-    from rig.estate import wrapup_follow
-
-    def refuse(args: list[str], *, now: object) -> Path:
-        raise AssertionError(f"test tried to start a real wrap-up follower: {args}")
-
-    monkeypatch.setattr(wrapup_follow, "start", refuse)
-
-
-@pytest.fixture(autouse=True)
 def forbid_real_chrome(monkeypatch: pytest.MonkeyPatch) -> None:
     """Fail any test that reaches the developer's own Chrome.
 

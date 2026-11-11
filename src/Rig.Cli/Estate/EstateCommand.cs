@@ -47,8 +47,17 @@ internal sealed record EstateHost(
 /// <param name="findTool">Finds uv, pnpm, dotnet and docker for <c>prune-caches</c>; <see cref="Caches.FindTool"/> outside tests.</param>
 /// <param name="output">Where reports go.</param>
 /// <param name="error">Where progress and refusals go, so <c>--json</c> stays clean.</param>
+/// <param name="wrapup">The agent's rig, the background follower, the clock and ask ids for <c>wrapup</c>; none starts a follower when omitted.</param>
 internal sealed class EstateCommand(
-    EstateHost host, OrcaHost orca, IProc proc, IGitHubApi github, TimeProvider time, Func<string, string?> findTool, TextWriter output, TextWriter error)
+    EstateHost host,
+    OrcaHost orca,
+    IProc proc,
+    IGitHubApi github,
+    TimeProvider time,
+    Func<string, string?> findTool,
+    TextWriter output,
+    TextWriter error,
+    WrapupHost? wrapup = null)
 {
     /// <summary>What <c>rig estate</c> is.</summary>
     public const string Description = "Manage the code assets cloned on this machine.";
@@ -78,6 +87,7 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(new DecisionsCommand(host, git, github, time, OperatingSystem.IsWindows(), output, error).Build());
         estate.Subcommands.Add(new OrcaLayoutCommand(host, orca, proc, github, output, error).Build());
         estate.Subcommands.Add(new OrcaWorktreesCommand(host, orca, git, proc, time, output, error).Build());
+        estate.Subcommands.Add(new WrapupCommand(host, git, proc, time, wrapup ?? WrapupHost.Inert(time), output, error).Build());
         var disk = new DiskUsage(proc);
         estate.Subcommands.Add(new AppsCommand(
             new InstalledApps(proc, disk, time), InstalledApps.DefaultAppDirs(host.Home), OperatingSystem.IsWindows() ? new UninstallRegistry() : null, time, output).Build());

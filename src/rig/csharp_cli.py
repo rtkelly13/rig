@@ -41,6 +41,7 @@ PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
         "tidy",
         "trim",
         "volume",
+        "wrapup",
     ),
     "workspace": ("artifacts", "audit", "ci", "clean", "doctor", "gitignore", "orca", "packages", "status", "sync"),
 }

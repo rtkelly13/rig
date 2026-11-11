@@ -40,38 +40,22 @@ def test_ignored_asks_git(tmp_path: Path, gitignore: str | None, expected: Ignor
     assert worktree_state.ignored(_repo(tmp_path / "r", gitignore)) is expected
 
 
-def test_outside_a_repo_nothing_is_written(tmp_path: Path) -> None:
+def test_outside_a_repo_is_not_a_repo(tmp_path: Path) -> None:
     assert worktree_state.ignored(tmp_path) is Ignored.NOT_A_REPO
-    assert worktree_state.write_text(tmp_path, "wrapup", "{}") == "not a git worktree"
-    assert not (tmp_path / "temp").exists()
-    gone = tmp_path / "removed-worktree"
-    assert worktree_state.write_text(gone, "wrapup", "{}") == "not a git worktree"
-    assert not gone.exists()
 
 
-def test_an_unignored_folder_is_never_written(tmp_path: Path) -> None:
-    repo = _repo(tmp_path / "r", None)
-    assert worktree_state.write_text(repo, "wrapup", "{}") == "temp/.rig/wrapup.json is not gitignored here"
-    assert not (repo / "temp").exists()
-
-
-def test_a_re_included_state_file_is_never_written(tmp_path: Path) -> None:
+def test_a_re_included_state_file_is_not_ignored(tmp_path: Path) -> None:
     repo = _repo(tmp_path / "r", "temp/.rig/*\n!temp/.rig/wrapup.json\n")
     assert worktree_state.ignored(repo) is Ignored.YES
     assert worktree_state.ignored(repo, "wrapup.json") is Ignored.NO
-    assert worktree_state.write_text(repo, "wrapup", "{}") == "temp/.rig/wrapup.json is not gitignored here"
-    assert not (repo / "temp" / ".rig" / "wrapup.json").exists()
 
 
-def test_written_state_reads_back_and_leaves_the_worktree_clean(tmp_path: Path) -> None:
-    repo = _repo(tmp_path / "r", "temp/\n")
-    _ = proc.git("add", ".gitignore", cwd=repo)
-    _ = proc.git("-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "init", cwd=repo)
-    assert worktree_state.read_text(repo, "wrapup") is None
-    assert worktree_state.write_text(repo, "wrapup", '{"schema": "x"}') is None
-    assert worktree_state.read_text(repo, "wrapup") == '{"schema": "x"}'
-    assert [p.name for p in worktree_state.state_dir(repo).iterdir()] == ["wrapup.json"]
-    assert proc.git_out("status", "--porcelain", cwd=repo) == ""
+def test_state_reads_back_and_a_missing_file_reads_as_none(tmp_path: Path) -> None:
+    assert worktree_state.read_text(tmp_path, "wrapup") is None
+    target = worktree_state.state_file(tmp_path, "wrapup")
+    target.parent.mkdir(parents=True)
+    _ = target.write_text('{"schema": "x"}', encoding="utf-8")
+    assert worktree_state.read_text(tmp_path, "wrapup") == '{"schema": "x"}'
 
 
 def test_audit_flags_a_rule_that_re_includes_the_state_folder(tmp_path: Path) -> None:

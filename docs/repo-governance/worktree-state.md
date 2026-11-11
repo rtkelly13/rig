@@ -39,7 +39,8 @@ implements it, and every feature uses that module rather than choosing its own p
   missing entry `worktree-state`. `--apply` can't fix that safely, so it is reported for a hand edit.
 - **Writers check before writing.** A repo outside governance (a work repo, a clone without the
   ignore) never gets a state file. The feature reports `state not recorded: temp/.rig/ is not
-  gitignored here` instead.
+  gitignored here` instead. The check and the atomic write live in `WorktreeState` (`src/Rig.Core/Estate/WrapupState.cs`);
+  Python (`rig.worktree_state`) only reads.
 
 ## Files in use
 
