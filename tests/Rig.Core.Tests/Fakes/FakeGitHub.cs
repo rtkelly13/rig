@@ -27,6 +27,13 @@ public sealed class FakeGitHub : IGitHubApi
         return this;
     }
 
+    /// <summary>Fails <paramref name="method"/> <paramref name="route"/> with <paramref name="error"/> on stderr, as gh prints it.</summary>
+    public FakeGitHub Fail(string method, string route, string error)
+    {
+        _routes[(method, route)] = new Ran(1, string.Empty, error);
+        return this;
+    }
+
     /// <inheritdoc />
     public Task<Ran> CallAsync(ApiRequest request, CancellationToken cancellationToken = default)
     {

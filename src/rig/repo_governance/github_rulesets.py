@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import pathlib
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from rig.proc import ApiRequest, GitHubApi, Ran, gh_api
@@ -11,7 +10,7 @@ from rig.repo_governance.check_names import (
     lint_check_name,
 )
 from rig.repo_governance.policy_config import PolicyConfig, load_policy_config
-from rig.repo_governance.resource import Change, GitHubReadError, Target, read_json, send
+from rig.repo_governance.resource import GitHubReadError, read_json, send
 from rig.typed_json import JsonObject, JsonValue, decode_json, encode_json, try_decode_json
 
 HARDCODED_REQUIRED_CHECKS: list[str] = [
@@ -362,29 +361,6 @@ def align_github_repo_settings(
     return AlignResult(status="error", error=ran.err.strip())
 
 
-@dataclass(frozen=True, slots=True)
-class RepoSettingsResource:
-    """Merge settings and default branch (`gh api repos/<repo>`)."""
-
-    name: str = "repo-settings"
-
-    def desired(self, cfg: PolicyConfig, target: Target) -> RepoSettings:
-        return desired_settings(cfg, target.slug, cfg.expected_base_branch(target.slug))
-
-    def read(self, api: GitHubApi, target: Target) -> _RepoSettings:
-        return read_json(api, _RepoSettings, f"repos/{target.slug}")
-
-    def diff(self, desired: RepoSettings, observed: _RepoSettings) -> list[Change]:
-        drift = settings_drift(desired, observed)
-        return [Change(self.name, "update", "; ".join(drift))] if drift else []
-
-    def apply(self, api: GitHubApi, target: Target, desired: RepoSettings, changes: Sequence[Change]) -> list[str]:
-        if not any(change.kind == "apply" for change in changes):
-            return []
-        ran = send(api, "PATCH", f"repos/{target.slug}", encode_json(RepoSettings, desired))
-        return [] if ran.ok else [f"PATCH repos/{target.slug}: {ran.err.strip()}"]
-
-
 def inspect_check_names(repo_path: pathlib.Path, repo_name: str, cfg: PolicyConfig | None = None) -> CheckNamesResult:
     """Checks a repo's required check names against its workflows on disk, and against the lexicon.
 
@@ -436,15 +412,6 @@ class LiveRuleset:
     rules: _RulesetRules | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class DeclaredRuleset:
-    """The ruleset a repo should carry, and why it must not be written when the check-name guard refuses."""
-
-    payload: str
-    rules: _RulesetRules
-    refusal: str | None = None
-
-
 def read_ruleset(api: GitHubApi, repo_name: str) -> LiveRuleset:
     """Read the managed ruleset; raises :class:`GitHubReadError` when GitHub cannot be read."""
     listed = api(ApiRequest("GET", f"repos/{repo_name}/rulesets"))
@@ -460,24 +427,6 @@ def read_ruleset(api: GitHubApi, repo_name: str) -> LiveRuleset:
         return LiveRuleset()
     chosen = next((r for r in named if r.enforcement == "active"), named[0])
     return LiveRuleset(id=chosen.id, rules=read_json(api, _RulesetRules, f"repos/{repo_name}/rulesets/{chosen.id}"))
-
-
-def check_name_refusal(repo_path: pathlib.Path, repo_name: str, cfg: PolicyConfig) -> str | None:
-    """Why the ruleset must not be written, or None. The check-name guard, on every enforcement path.
-
-    A required check no `pull_request` job reports blocks every PR, and undoing it means editing the
-    ruleset in the GitHub UI. A repo with no registered checks gets no status-checks rule, so there is
-    nothing to verify. See docs/repo-governance/required-checks.md.
-    """
-    if not cfg.required_checks(repo_name):
-        return None
-    names = inspect_check_names(repo_path, repo_name, cfg)
-    if names.status == "no_pr_workflows" and names.required:
-        return f"required checks {list(names.required)}: no pull_request workflow exists to report them"
-    if names.missing:
-        declared = sorted(names.declared)
-        return f"required checks {list(names.missing)}: no pull_request job declares them (declared: {declared})"
-    return None
 
 
 def inspect_github_ruleset(repo_name: str, api: GitHubApi = gh_api) -> RulesetInspection:
@@ -524,42 +473,3 @@ def align_github_ruleset(repo_name: str, dry_run: bool = False, api: GitHubApi =
     if _RULESETS_UNSERVED in ran.err:
         return AlignResult(status="skipped (private repo restriction)")
     return AlignResult(status="error", error=ran.err.strip())
-
-
-@dataclass(frozen=True, slots=True)
-class RulesetResource:
-    """The Main Branch Governance Ruleset, behind the check-name guard."""
-
-    name: str = "ruleset"
-
-    def desired(self, cfg: PolicyConfig, target: Target) -> DeclaredRuleset:
-        payload = json.dumps(build_ruleset_payload(target.slug, cfg))
-        return DeclaredRuleset(
-            payload=payload,
-            rules=decode_json(_RulesetRules, payload),
-            refusal=check_name_refusal(target.path, target.slug, cfg),
-        )
-
-    def read(self, api: GitHubApi, target: Target) -> LiveRuleset:
-        return read_ruleset(api, target.slug)
-
-    def diff(self, desired: DeclaredRuleset, observed: LiveRuleset) -> list[Change]:
-        if not observed.served:
-            return [Change(self.name, "unserved", "rulesets are not served for this private repo's plan", kind="note")]
-        if desired.refusal is not None:
-            return [Change(self.name, "refused", desired.refusal, kind="refused")]
-        if observed.rules is None:
-            return [Change(self.name, "create", f"{RULESET_NAME} is missing")]
-        drift = _drift(desired.rules, observed.rules)
-        return [Change(self.name, "update", "; ".join(drift), subject=str(observed.id))] if drift else []
-
-    def apply(self, api: GitHubApi, target: Target, desired: DeclaredRuleset, changes: Sequence[Change]) -> list[str]:
-        failures: list[str] = []
-        for change in changes:
-            if change.kind != "apply":
-                continue
-            ruleset_id = int(change.subject) if change.subject else None
-            ran = _write_ruleset(api, target.slug, ruleset_id, desired.payload)
-            if not ran.ok:
-                failures.append(f"{change.action} {RULESET_NAME} on {target.slug}: {ran.err.strip()}")
-        return failures

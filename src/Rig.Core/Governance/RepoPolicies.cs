@@ -231,6 +231,88 @@ public sealed class RepoPolicies
     /// <summary>The owner the repo keyed <paramref name="key"/> is expected under, or null when none is configured.</summary>
     public string? ExpectedOwner(string key) => Resolve(key, layer => layer.ExpectedOwner, identity: true) is { Length: > 0 } owner ? owner : null;
 
+    /// <summary>The default branch the repo keyed <paramref name="key"/> should have (<c>expected_base_branch</c>), else <c>main</c>.</summary>
+    public string ExpectedBaseBranch(string key) => Resolve(key, layer => layer.ExpectedBaseBranch) is { Length: > 0 } branch ? branch : "main";
+
+    /// <summary>The merge settings the repo keyed <paramref name="key"/> should carry (<c>repo_settings</c>).</summary>
+    public MergeSettings RepoSettings(string key) => Resolve(key, layer => layer.RepoSettings) ?? MergeSettings.Default;
+
+    /// <summary>The label taxonomy of the repo keyed <paramref name="key"/>; empty means labels are not governed.</summary>
+    public IReadOnlyList<LabelSpec> Labels(string key) => Resolve(key, layer => layer.Labels) ?? [];
+
+    /// <summary>The deployment environments the repo keyed <paramref name="key"/> declares, in the file's order; most declare none.</summary>
+    public IReadOnlyList<EnvironmentPolicy> Environments(string key) => Resolve(key, layer => layer.Environments) ?? [];
+
+    /// <summary>The required check names of the repo keyed <paramref name="key"/>; empty when none are registered.</summary>
+    public IReadOnlyList<string> RequiredChecks(string key) => Resolve(key, layer => layer.RequiredChecks) ?? [];
+
+    /// <summary>The GitHub Pages policy of the repo keyed <paramref name="key"/>.</summary>
+    public PagesPolicy Pages(string key) => Resolve(key, layer => layer.Pages) ?? PagesPolicy.Default;
+
+    /// <summary>The upstream the repo keyed <paramref name="key"/> tracks, or null when it is not a managed fork.</summary>
+    public ForkSpec? Fork(string key) => Resolve(key, layer => layer.Fork);
+
+    /// <summary>
+    /// The profile an unregistered <c>owner/name</c> <paramref name="key"/> falls back to through <c>owner_profiles</c>, or
+    /// null: a bare name carries no owner, and a repo a profile names never falls back.
+    /// </summary>
+    public string? OwnerProfileFor(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        var slash = key.IndexOf('/', StringComparison.Ordinal);
+        if (slash < 0 || IsRegistered(key))
+        {
+            return null;
+        }
+
+        var owner = key[..slash];
+        return _ownerProfiles.FirstOrDefault(pair => string.Equals(pair.Owner, owner, StringComparison.OrdinalIgnoreCase)).Profile;
+    }
+
+    /// <summary>The repo names registered under <paramref name="org"/>: those of profiles and overrides expecting it as owner.</summary>
+    public IReadOnlyList<string> ReposForOrg(string org)
+    {
+        ArgumentNullException.ThrowIfNull(org);
+        var repos = new List<string>();
+        foreach (var (_, layer, names) in _profiles)
+        {
+            if (layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase))
+            {
+                repos.AddRange(names);
+            }
+        }
+
+        foreach (var (name, layer) in _overrides)
+        {
+            if (layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase) && !repos.Contains(name))
+            {
+                repos.Add(name);
+            }
+        }
+
+        return repos;
+    }
+
+    /// <summary>Whether <paramref name="repo"/> belongs to <paramref name="org"/>: by its slug's owner, its expected owner or registration.</summary>
+    public bool IsRepoInOrg(string repo, string org)
+    {
+        ArgumentNullException.ThrowIfNull(repo);
+        var slash = repo.IndexOf('/', StringComparison.Ordinal);
+        if (slash >= 0 && string.Equals(repo[..slash], org, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var bare = repo[(repo.LastIndexOf('/') + 1)..];
+        if (ExpectedOwner(bare) is { } expected && string.Equals(expected, org, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var wanted = BareName(bare);
+        return ReposForOrg(org).Any(name => BareName(name) == wanted);
+    }
+
     // The first layer that declares the key: the repo's override, the profile naming it, then defaults. An unregistered
     // `owner/name` key whose owner has an owner_profiles entry takes that profile in the middle, but only for the
     // identity keys (who owns it); the others never come from an inferred profile.
@@ -408,6 +490,69 @@ public sealed class RepoPolicies
             Bool(selection, "exempt", source) ?? defaults.Exempt);
     }
 
+    private static MergeSettings? Merge(JsonObject layer, string source)
+    {
+        if (Block(layer, "repo_settings", source) is not { } block)
+        {
+            return null;
+        }
+
+        var defaults = MergeSettings.Default;
+        return new(
+            Bool(block, "delete_branch_on_merge", source) ?? defaults.DeleteBranchOnMerge,
+            Bool(block, "allow_squash_merge", source) ?? defaults.AllowSquashMerge,
+            Bool(block, "allow_merge_commit", source) ?? defaults.AllowMergeCommit,
+            Bool(block, "allow_rebase_merge", source) ?? defaults.AllowRebaseMerge,
+            Bool(block, "allow_auto_merge", source) ?? defaults.AllowAutoMerge);
+    }
+
+    private static List<LabelSpec>? LabelsOf(JsonObject layer, string source) =>
+        layer["labels"] switch
+        {
+            null => null,
+            JsonArray items => [.. items.Select(item => item is JsonObject label
+                ? new LabelSpec(
+                    Text(label, "name", source) ?? throw Bad(source, "a label has no name"),
+                    Text(label, "color", source) ?? throw Bad(source, "a label has no color"),
+                    Text(label, "description", source) ?? throw Bad(source, "a label has no description"))
+                : throw Bad(source, "a label is not an object"))],
+            _ => throw Bad(source, "labels is not a list"),
+        };
+
+    // environments: name -> {wait_timer, reviewers}, in the file's order; a null wait_timer is 0.
+    private static List<EnvironmentPolicy>? EnvironmentsOf(JsonObject layer, string source)
+    {
+        if (Block(layer, "environments", source) is not { } block)
+        {
+            return null;
+        }
+
+        return [.. block.Select(pair => pair.Value is JsonObject spec
+            ? new EnvironmentPolicy(pair.Key, Int(spec, "wait_timer", source) ?? 0, Strings(spec, "reviewers", source) ?? [])
+            : throw Bad(source, $"environments.{pair.Key} is not an object"))];
+    }
+
+    private static PagesPolicy? PagesOf(JsonObject layer, string source)
+    {
+        if (Block(layer, "pages", source) is not { } block)
+        {
+            return null;
+        }
+
+        var buildType = Text(block, "build_type", source) ?? "workflow";
+        if (buildType is not ("workflow" or "legacy"))
+        {
+            throw Bad(source, $"pages.build_type '{buildType}' is neither 'workflow' nor 'legacy'");
+        }
+
+        return new(Bool(block, "enabled", source) ?? false, buildType, Text(block, "cname", source), Bool(block, "https_enforced", source) ?? true);
+    }
+
+    private static ForkSpec? ForkOf(JsonObject layer, string source) =>
+        Block(layer, "fork", source) is { } block
+            ? new(Text(block, "upstream", source) ?? throw Bad(source, "fork has no upstream"), Text(block, "upstream_branch", source) ?? "main")
+            : null;
+
     // expected_owner: null declares "no expected owner", which the Python keeps as "" so it still stops the lookup.
     private static string? ExpectedOwnerOf(JsonObject layer, string source) =>
         layer.TryGetPropertyValue("expected_owner", out var node) ? node is null ? string.Empty : Text(layer, "expected_owner", source) : null;
@@ -423,6 +568,20 @@ public sealed class RepoPolicies
     {
         public static Layer None { get; } = new(null, null, null, null, null, null);
 
+        public string? ExpectedBaseBranch { get; init; }
+
+        public MergeSettings? RepoSettings { get; init; }
+
+        public IReadOnlyList<LabelSpec>? Labels { get; init; }
+
+        public IReadOnlyList<EnvironmentPolicy>? Environments { get; init; }
+
+        public IReadOnlyList<string>? RequiredChecks { get; init; }
+
+        public PagesPolicy? Pages { get; init; }
+
+        public ForkSpec? Fork { get; init; }
+
         public static Layer From(JsonNode? node, string source)
         {
             var layer = node as JsonObject ?? throw Bad(source, "a policy layer is not an object");
@@ -432,7 +591,16 @@ public sealed class RepoPolicies
                 Hygiene(layer, source),
                 Selection(layer, source),
                 Strings(layer, "allowed_owners", source),
-                ExpectedOwnerOf(layer, source));
+                ExpectedOwnerOf(layer, source))
+            {
+                ExpectedBaseBranch = Text(layer, "expected_base_branch", source),
+                RepoSettings = Merge(layer, source),
+                Labels = LabelsOf(layer, source),
+                Environments = EnvironmentsOf(layer, source),
+                RequiredChecks = Strings(layer, "required_checks", source),
+                Pages = PagesOf(layer, source),
+                Fork = ForkOf(layer, source),
+            };
         }
     }
 }

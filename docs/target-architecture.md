@@ -154,7 +154,7 @@ Where rig guards an irreversible or shared outcome, no path bypasses the gate:
 - **Gates are tested by their refusals.** Each safety gate has a test that the unsafe path is refused.
 
 Size follows from this. The suite should be smaller than the code it covers and organised by behaviour
-(`test_restore_behaviour.py`, `test_governance_plan.py`), not by module.
+(`test_restore_behaviour.py`, `GovernancePlanTests.cs`), not by module.
 
 ### Behaviour suites share one vocabulary
 

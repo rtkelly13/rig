@@ -17,8 +17,9 @@ lists every command.
 GitHub-side state: repo settings, the ruleset, environments, labels and Pages. It reads only; `--apply`
 makes the planned writes and `--json` emits the plan. It exits 0 when every repo matches its policy, 1 on
 drift or a refused write (the check-name guard), 2 when GitHub could not be read or a write failed. Each
-resource is a `Resource` in `src/rig/repo_governance/resource.py`, reading and writing through the
-`GitHubApi` port in `rig.proc`, so tests drive it with `tests/fakes/github_rest.py`.
+resource is a `Resource` in `src/Rig.Core/Governance/Resources.cs`, reading and writing through the
+`IGitHubApi` port, so tests drive it with `tests/Rig.Core.Tests/Fakes/FakeGitHub.cs`. `plan`, `sync-labels`,
+`environments` and `pages` run from C#.
 
 ## Guides
 

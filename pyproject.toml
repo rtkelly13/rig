@@ -483,7 +483,6 @@ patching-allow = [
     "tests/test_image_drift_metrics.py",
     "tests/test_org_governance.py",
     "tests/test_otel_clickhouse.py",
-    "tests/test_pages_manager.py",
     "tests/test_pathways.py",
     "tests/test_platforms.py",
     "tests/test_policy_template_engine.py",

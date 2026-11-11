@@ -57,13 +57,19 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
     /// <paramref name="path"/> resolved against <paramref name="cwd"/> (none when it does not exist); else
     /// <paramref name="cwd"/> itself.
     /// </summary>
-    public async Task<IReadOnlyList<string>> ResolveTargetsAsync(string? path, bool all, string personalDir, string cwd, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<string>> ResolveTargetsAsync(
+        string? path, bool all, string personalDir, string cwd, string? org = null, CancellationToken cancellationToken = default)
     {
-        if (all)
+        if (all || (!string.IsNullOrEmpty(org) && string.IsNullOrEmpty(path)))
         {
             var targets = new List<string>();
             foreach (var clone in EstateClones(personalDir))
             {
+                if (!string.IsNullOrEmpty(org) && !await InOrgAsync(clone, org, cancellationToken).ConfigureAwait(false))
+                {
+                    continue;
+                }
+
                 if ((await IsManagedAsync(clone, cancellationToken).ConfigureAwait(false)).Managed)
                 {
                     targets.Add(clone);
@@ -79,8 +85,75 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
             return DocsTree.Exists(target) ? [target] : [];
         }
 
-        return [cwd];
+        return !string.IsNullOrEmpty(org) && !await InOrgAsync(cwd, org, cancellationToken).ConfigureAwait(false) ? [] : [cwd];
     }
+
+    /// <summary>
+    /// The checkout's GitHub <c>owner/name</c>, from <c>gh repo view</c> on its origin; null when gh cannot say.
+    /// </summary>
+    public async Task<string?> GhRepoNameAsync(string repoPath, CancellationToken cancellationToken = default)
+    {
+        var origin = (await git.RunAsync(repoPath, ["remote", "get-url", "origin"], cancellationToken: cancellationToken).ConfigureAwait(false)).OutOrEmpty;
+        var view = await proc.RunAsync(
+            new ProcRequest(["gh", "repo", "view", .. origin.Length > 0 ? [origin] : Array.Empty<string>(), "--json", "nameWithOwner", "-q", ".nameWithOwner"])
+            {
+                WorkingDirectory = repoPath,
+                Timeout = IdentityTimeout,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return view.Ok ? view.Out.Trim() : null;
+    }
+
+    /// <summary>
+    /// <paramref name="org"/>'s unarchived repos from <c>gh repo list</c>; when that lists none, the repos the policy
+    /// registers under it and the estate clones that belong to it.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> DiscoverOrgReposAsync(string org, string personalDir, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(org);
+        var repos = new List<string>();
+        var listed = await proc.RunAsync(
+            new ProcRequest(["gh", "repo", "list", org, "--no-archived", "--limit", "100", "--json", "nameWithOwner"]) { Timeout = IdentityTimeout },
+            cancellationToken).ConfigureAwait(false);
+        if (listed.Ok && GitHubCalls.Parse(listed.Out) is JsonArray rows)
+        {
+            repos.AddRange(rows.Select(row => GitHubCalls.Str(row, "nameWithOwner")).OfType<string>());
+        }
+
+        if (repos.Count > 0)
+        {
+            return repos;
+        }
+
+        repos.AddRange(policies.ReposForOrg(org).Select(name => name.Contains('/', StringComparison.Ordinal) ? name : $"{org}/{name}"));
+        foreach (var clone in EstateClones(personalDir))
+        {
+            var name = Path.GetFileName(clone);
+            if (OwnedBy(name, org) || policies.IsRepoInOrg(name, org))
+            {
+                var slug = await GhRepoNameAsync(clone, cancellationToken).ConfigureAwait(false) is { Length: > 0 } found ? found : $"{org}/{name}";
+                if (!repos.Contains(slug))
+                {
+                    repos.Add(slug);
+                }
+            }
+        }
+
+        return repos;
+    }
+
+    // Whether a checkout belongs to `org`: by its GitHub owner, its policy's expected owner or its registration.
+    private async Task<bool> InOrgAsync(string repoPath, string org, CancellationToken cancellationToken)
+    {
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(repoPath));
+        var slug = await GhRepoNameAsync(repoPath, cancellationToken).ConfigureAwait(false);
+        return (!string.IsNullOrEmpty(slug) && slug.StartsWith($"{org}/", StringComparison.OrdinalIgnoreCase))
+            || OwnedBy(name, org)
+            || policies.IsRepoInOrg(name, org);
+    }
+
+    private bool OwnedBy(string name, string org) =>
+        policies.ExpectedOwner(name) is { } expected && string.Equals(expected, org, StringComparison.OrdinalIgnoreCase);
 
     // The viewer's permission and whether the repo is a fork, from `gh repo view --json`; null when it did not answer.
     private static (string Permission, bool IsFork)? Identity(Ran view)
