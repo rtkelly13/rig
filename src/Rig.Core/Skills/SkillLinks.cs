@@ -150,7 +150,7 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
             }
 
             _ = Directory.CreateDirectory(folder);
-            foreach (var skill in catalog)
+            foreach (var skill in catalog.Where(s => SkillCatalog.IsPlainName(s.Name)))
             {
                 Install(skill, Path.Join(folder, skill.Name));
             }

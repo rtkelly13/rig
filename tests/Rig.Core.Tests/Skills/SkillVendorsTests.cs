@@ -75,6 +75,24 @@ public sealed class SkillVendorsTests : IDisposable
     }
 
     [Fact]
+    public void Extract_never_follows_a_link_in_an_upstream_skill()
+    {
+        var repo = Repo("skill-a");
+        var secret = _root.File("home/.ssh/id_rsa");
+        File.WriteAllText(secret, "private");
+        var skill = Path.Join(repo, "skills", "skill-a");
+        _ = File.CreateSymbolicLink(Path.Join(skill, "key"), secret);
+        _ = Directory.CreateSymbolicLink(Path.Join(skill, "loop"), repo);
+
+        Assert.Equal(["skill-a"], Vendors().Extract(Vendor(), repo));
+
+        var copied = Path.Join(Vendored, "repo-x", "skill-a");
+        Assert.True(File.Exists(Path.Join(copied, "SKILL.md")));
+        Assert.False(Path.Exists(Path.Join(copied, "key")));
+        Assert.False(Path.Exists(Path.Join(copied, "loop")));
+    }
+
+    [Fact]
     public void Extract_searches_the_whole_repository_without_its_skills_folder()
     {
         var repo = _root.Folder("flat");
@@ -92,7 +110,7 @@ public sealed class SkillVendorsTests : IDisposable
 
         Assert.Equal(Path.Join(Clones, "repo-x"), repo);
         var request = Assert.Single(_proc.Requests);
-        Assert.Equal(["git", .. Git.HardeningArgs, "clone", "--depth", "1", "--branch", "main", "https://example.com/x.git", repo], request.Argv);
+        Assert.Equal(["git", .. Git.HardeningArgs, "clone", "--depth", "1", "--branch", "main", "--", "https://example.com/x.git", repo], request.Argv);
         Assert.Equal(Clones, request.WorkingDirectory);
         Assert.Equal(SkillVendors.NetworkTimeout, request.Timeout);
         Assert.Equal(["Cloning repo-x from https://example.com/x.git...", "✓ Cloned repo-x"], _said);
@@ -132,6 +150,22 @@ public sealed class SkillVendorsTests : IDisposable
             [["pull", "--ff-only"], ["fetch", "origin", "main"], ["reset", "--hard", "origin/main"]],
             _proc.Requests.Select(r => r.Argv.Skip(1 + Git.HardeningArgs.Count).ToArray()));
         Assert.Contains("Fast-forward failed, fetching origin/main...", _said);
+    }
+
+    [Theory]
+    [InlineData("fetch")]
+    [InlineData("reset")]
+    public async Task A_failed_fetch_or_reset_throws_rather_than_reporting_an_update(string step)
+    {
+        _root.Folder("external/skills/repo-x/.git");
+        _proc.Answer(new Ran(0, string.Empty, string.Empty), "git")
+            .Answer(new Ran(1, string.Empty, "diverged"), ["git", .. Git.HardeningArgs, "pull"])
+            .Answer(new Ran(128, string.Empty, " offline \n"), ["git", .. Git.HardeningArgs, step]);
+
+        var error = await Assert.ThrowsAsync<IOException>(() => Vendors().CloneOrUpdateAsync(Vendor(), _said.Add, TestContext.Current.CancellationToken));
+
+        Assert.Equal($"Git {step} failed for repo-x: offline", error.Message);
+        Assert.DoesNotContain("✓ Updated repo-x", _said);
     }
 
     [Fact]
@@ -191,6 +225,13 @@ public sealed class SkillVendorsTests : IDisposable
     [InlineData("""[{"name": "n", "url": "u", "include": [1]}]""", "include must be a list of strings")]
     [InlineData("""[{"name": "n", "url": "u", "allowlist": "x"}]""", "allowlist must be a list of strings")]
     [InlineData("""["n"]""", "a vendor must be an object")]
+    [InlineData("""[{"name": "..", "url": "u"}]""", "name must be a single folder name")]
+    [InlineData("""[{"name": "a/b", "url": "u"}]""", "name must be a single folder name")]
+    [InlineData("""[{"name": "n", "url": "u", "folder_name": "../out"}]""", "folder_name must be a single folder name")]
+    [InlineData("""[{"name": "n", "url": "u", "skills_subdir": "../.."}]""", "skills_subdir must stay inside the repository")]
+    [InlineData("""[{"name": "n", "url": "u", "skills_subdir": "/etc"}]""", "skills_subdir must stay inside the repository")]
+    [InlineData("""[{"name": "n", "url": "--upload-pack=x"}]""", "url and branch must not start with '-'")]
+    [InlineData("""[{"name": "n", "url": "u", "branch": "-b"}]""", "url and branch must not start with '-'")]
     [InlineData("""{}""", "the registry must be a list")]
     [InlineData("""not json""", "Schema validation error")]
     public void An_invalid_registry_is_rejected(string json, string problem)

@@ -158,7 +158,7 @@ The estate allowlist, `config/skills-allowlist.json`, decides which skills are l
 
 1. Remove a skill (or narrow a pattern) in `config/skills-allowlist.json`.
 2. Run `rig skills sync`. Skills that are no longer allowed are pruned from every CLI environment.
-3. For a temporary, reversible overlay of hidden skills, use `rig skills activate <name>` and `rig skills deactivate --all`.
+3. For a temporary, reversible overlay of hidden skills, use `rig skills activate --only <name>` and `rig skills deactivate --all`.
 
 ### 6. Grounded & Vendored Skills Estate
 All skills in the estate must be grounded in maintained upstream repositories (configured in `config/upstream-skills.json`). Upstream repositories are synced into `~/code/external/` and extracted cleanly to `skills/vendored/`.

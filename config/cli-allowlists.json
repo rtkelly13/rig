@@ -33,6 +33,8 @@
       {"pattern": "git tag*", "rationale": "Inspect repository tags."},
       {"pattern": "workspace skills status", "rationale": "Audit skill links."},
       {"pattern": "workspace skills list*", "rationale": "Inspect the skill catalog."},
+      {"pattern": "rig skills status", "rationale": "Audit skill links."},
+      {"pattern": "rig skills list*", "rationale": "Inspect the skill catalog."},
       {"pattern": "workspace policy *", "rationale": "Inspect or evaluate estate policy."},
       {"pattern": "git push*", "rationale": "Branches require pull requests and status checks before merge."},
       {"pattern": "gh auth status*", "rationale": "Shows the account and token scopes; never prints the token."},
@@ -127,7 +129,12 @@
       {"pattern": "pnpm start*", "rationale": "Starts a server."},
       {"pattern": "pnpm serve*", "rationale": "Starts a server."},
       {"pattern": "workspace skills sync*", "rationale": "Changes global skill links."},
-      {"pattern": "workspace skills update*", "rationale": "Updates vendored skill sources."}
+      {"pattern": "workspace skills update*", "rationale": "Updates vendored skill sources."},
+      {"pattern": "rig skills sync*", "rationale": "Changes global skill links."},
+      {"pattern": "rig skills update*", "rationale": "Updates vendored skill sources."},
+      {"pattern": "rig skills activate*", "rationale": "Links hidden skills into agent CLIs."},
+      {"pattern": "rig skills deactivate*", "rationale": "Removes activated skill links."},
+      {"pattern": "rig skills prune*", "rationale": "Removes broken skill links."}
     ],
     "external": [
       {"pattern": "pnpm publish*", "rationale": "Publishes a package."},

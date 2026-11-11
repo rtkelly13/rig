@@ -27,6 +27,30 @@ public sealed class SkillCatalogTests : IDisposable
         Assert.Equal("test", skills[0].Source);
     }
 
+    [Theory]
+    [InlineData("../../Documents")]
+    [InlineData("/etc")]
+    [InlineData("a\\b")]
+    [InlineData("..")]
+    public void A_skill_whose_name_is_a_path_is_left_out(string name)
+    {
+        var root = _dir.Folder("skills");
+        SkillFixtures.Write(root, "bad", name);
+        SkillFixtures.Write(root, "good", "good");
+
+        Assert.Equal(["good"], SkillFixtures.Catalog(root).Everything().Select(s => s.Name));
+    }
+
+    [Theory]
+    [InlineData("tdd", true)]
+    [InlineData("", false)]
+    [InlineData(".", false)]
+    [InlineData("C:x", false)]
+    public void Plain_names_are_single_entries(string name, bool plain)
+    {
+        Assert.Equal(plain, SkillCatalog.IsPlainName(name));
+    }
+
     [Fact]
     public void The_first_source_with_a_name_wins()
     {

@@ -112,6 +112,12 @@ public static class DirectoryLinks
                 continue;
             }
 
+            // A link is never followed: an upstream clone is untrusted, and a link could copy in a local file or loop.
+            if (IsLink(entry))
+            {
+                continue;
+            }
+
             var target = Path.Join(destination, name);
             if (Directory.Exists(entry))
             {

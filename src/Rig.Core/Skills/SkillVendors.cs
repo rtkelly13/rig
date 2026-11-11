@@ -110,8 +110,17 @@ public sealed class SkillVendors(Git git, string clones, string vendored, bool w
             if (!pulled.Ok)
             {
                 say($"Fast-forward failed, fetching origin/{vendor.Branch}...");
-                _ = await git.RunAsync(repo, ["fetch", "origin", vendor.Branch], NetworkTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
-                _ = await git.RunAsync(repo, ["reset", "--hard", $"origin/{vendor.Branch}"], cancellationToken: cancellationToken).ConfigureAwait(false);
+                var fetched = await git.RunAsync(repo, ["fetch", "origin", vendor.Branch], NetworkTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
+                if (!fetched.Ok)
+                {
+                    throw new IOException($"Git fetch failed for {vendor.Name}: {fetched.Err.Trim()}");
+                }
+
+                var reset = await git.RunAsync(repo, ["reset", "--hard", $"origin/{vendor.Branch}"], cancellationToken: cancellationToken).ConfigureAwait(false);
+                if (!reset.Ok)
+                {
+                    throw new IOException($"Git reset failed for {vendor.Name}: {reset.Err.Trim()}");
+                }
             }
 
             say($"✓ Updated {vendor.Name}");
@@ -120,7 +129,7 @@ public sealed class SkillVendors(Git git, string clones, string vendored, bool w
 
         say($"Cloning {vendor.Name} from {vendor.Remote}...");
         var cloned = await git.RunAsync(
-            clones, ["clone", "--depth", "1", "--branch", vendor.Branch, vendor.Remote, repo], NetworkTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
+            clones, ["clone", "--depth", "1", "--branch", vendor.Branch, "--", vendor.Remote, repo], NetworkTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!cloned.Ok)
         {
             throw new IOException($"Git clone failed for {vendor.Name}: {cloned.Err.Trim()}");
@@ -198,12 +207,38 @@ public sealed class SkillVendors(Git git, string clones, string vendored, bool w
             throw Invalid(at, "a vendor must be an object");
         }
 
+        var name = Text(fields, "name", at, required: true)!;
+        var folder = Text(fields, "folder_name", at) ?? string.Empty;
+        var url = Text(fields, "url", at, required: true)!;
+        var branch = Text(fields, "branch", at) ?? "main";
+        var subdir = Text(fields, "skills_subdir", at) ?? "skills";
+        // Each becomes a path or a git argument: none may leave its folder or read as an option.
+        if (!SkillCatalog.IsPlainName(name))
+        {
+            throw Invalid(at, "name must be a single folder name");
+        }
+
+        if (folder.Length > 0 && !SkillCatalog.IsPlainName(folder))
+        {
+            throw Invalid(at, "folder_name must be a single folder name");
+        }
+
+        if (Path.IsPathRooted(subdir) || subdir.Split('/', '\\').Contains(".."))
+        {
+            throw Invalid(at, "skills_subdir must stay inside the repository");
+        }
+
+        if (url.StartsWith('-') || branch.StartsWith('-'))
+        {
+            throw Invalid(at, "url and branch must not start with '-'");
+        }
+
         return new(
-            Text(fields, "name", at, required: true)!,
-            Text(fields, "url", at, required: true)!,
-            Text(fields, "folder_name", at) ?? string.Empty,
-            Text(fields, "branch", at) ?? "main",
-            Text(fields, "skills_subdir", at) ?? "skills",
+            name,
+            url,
+            folder,
+            branch,
+            subdir,
             fields["allowlist"] is null ? null : Names(fields, "allowlist", at),
             fields.ContainsKey("include") ? Names(fields, "include", at) : ["*"],
             fields.ContainsKey("exclude") ? Names(fields, "exclude", at) : []);

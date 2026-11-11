@@ -197,6 +197,13 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
         }
     }
 
+    /// <summary>
+    /// Whether <paramref name="name"/> names one folder entry: not empty, <c>.</c> or <c>..</c>, rooted, or holding a
+    /// separator. A skill's name becomes a link's path, so anything else could reach outside a skills folder.
+    /// </summary>
+    public static bool IsPlainName(string name) =>
+        !string.IsNullOrEmpty(name) && name is not ("." or "..") && name.IndexOfAny(['/', '\\', ':']) < 0 && !Path.IsPathRooted(name);
+
     /// <summary>Whether <paramref name="name"/> matches <paramref name="allowlist"/>; null or one holding <c>*</c> matches all.</summary>
     public static bool IsAllowed(string name, IReadOnlyList<string>? allowlist, bool windows) =>
         allowlist is null || allowlist.Contains("*") || allowlist.Any(pattern => Glob.Matches(name, pattern, windows));
@@ -221,7 +228,8 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
             {
                 var folder = Path.GetDirectoryName(skillMd)!;
                 var (name, description) = ReadFrontmatter(skillMd);
-                if (seen.Contains(name)
+                if (!IsPlainName(name)
+                    || seen.Contains(name)
                     || (!IsAllowed(name, allowlist, windows) && !IsAllowed(Path.GetFileName(folder), allowlist, windows)))
                 {
                     continue;

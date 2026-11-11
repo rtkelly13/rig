@@ -20,11 +20,11 @@ public static class SkillFixtures
         new([new("test", root)], allowlist, windows: false);
 }
 
-/// <summary>Makes real symlinks.</summary>
+/// <summary>Makes real links as rig does: a symlink, else on Windows without the privilege a junction.</summary>
 public sealed class SymlinkLinker : IDirectoryLinker
 {
     /// <inheritdoc/>
-    public void Link(string link, string target) => _ = Directory.CreateSymbolicLink(link, target);
+    public void Link(string link, string target) => new SystemDirectoryLinker().Link(link, target);
 }
 
 /// <summary>Refuses every link, as a Windows machine without the privilege or junction support would.</summary>
