@@ -28,8 +28,8 @@ plugin API. Harnesses enforce the projected rules themselves — see
 
 ### Session-end ledger
 
-`uv run devenv claude` (also part of `devenv ai` and `devenv setup`) copies
-`steps/ai_tools/claude_hooks/session-ledger.mjs` to `~/.claude/hooks/session-ledger.mjs` and wires it as a
+`rig devenv claude` (also part of `devenv ai` and `devenv setup`) copies the
+`session-ledger.mjs` embedded in Rig.Core to `~/.claude/hooks/session-ledger.mjs` and wires it as a
 `SessionEnd` hook (`node "<path>"`, 5s timeout). The workspace repo's devenv installs the same script to the same
 path and detects an existing install by the same rule, so either repo can install it and neither adds a second
 entry. A script that differs from the bundled copy (ignoring line endings) is replaced. `devenv doctor` reports
@@ -59,5 +59,6 @@ record means nothing. A record whose `ended_at` is older than the transcript's l
 - Keeps unknown and external commands at the harness approval boundary rather than broadening the allowlist.
 
 ## References
-- [`src/rig/devenv/steps/ai_tools/claude_code.py`](../../src/rig/devenv/steps/ai_tools/claude_code.py)
-- [`src/rig/devenv/steps/ai_tools/session_ledger.py`](../../src/rig/devenv/steps/ai_tools/session_ledger.py)
+- [`src/Rig.Core/Devenv/ClaudeBaseline.cs`](../../src/Rig.Core/Devenv/ClaudeBaseline.cs)
+- [`src/Rig.Core/Devenv/SessionLedger.cs`](../../src/Rig.Core/Devenv/SessionLedger.cs)
+- [`src/Rig.Cli/Devenv/DevenvCommand.cs`](../../src/Rig.Cli/Devenv/DevenvCommand.cs)

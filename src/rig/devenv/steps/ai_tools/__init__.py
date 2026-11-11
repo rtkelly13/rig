@@ -11,7 +11,6 @@ from rig import csharp_cli
 
 from ...engine.context import StepContext
 from .agent_launcher_setup import setup_agent_launcher
-from .claude_code import setup_claude_code
 from .discovery import detect_installed_agents
 from .estate_rules import setup_estate_rules
 from .obsidian_plugins import setup_obsidian_plugins
@@ -36,15 +35,15 @@ def run_ai_tools_setup(ctx: StepContext) -> None:
     console.print(table)
     console.print()
 
-    # 2. Configure Claude Code settings baseline
-    setup_claude_code(dry_run=ctx.dry_run)
+    # 2. Claude Code settings baseline and session-ledger hook, through `rig devenv claude`
+    dry_run = ["--dry-run"] if ctx.dry_run else []
+    failed = {"devenv claude": csharp_cli.run(["devenv", "claude", *dry_run])}
 
     # 3. Configure OpenCode
     setup_opencode(dry_run=ctx.dry_run)
 
     # 4. Configure agent-browser profiles through `rig browser profiles`
-    dry_run = ["--dry-run"] if ctx.dry_run else []
-    failed = {"browser profiles": csharp_cli.run(["browser", "profiles", *dry_run])}
+    failed["browser profiles"] = csharp_cli.run(["browser", "profiles", *dry_run])
 
     # 5. Estate-wide agent rules for ~/code/personal
     setup_estate_rules(dry_run=ctx.dry_run)

@@ -24,6 +24,9 @@ from rig import tracing
 #: Commands the C# CLI owns. ``tests/Rig.Cli.Tests`` checks each is registered there and gone from here.
 PORTED: tuple[str, ...] = ("agent", "browser", "gh", "models", "policy", "skills", "status")
 
+#: Subcommands the C# CLI owns inside a group Python still owns; ``tests/Rig.Cli.Tests`` checks C# has exactly these.
+PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {"devenv": ("claude",)}
+
 #: Set for the C# CLI so it refuses to forward a command back to Python.
 BRIDGE_VARIABLE = "RIG_FROM_PYTHON"
 
@@ -82,6 +85,12 @@ def add_stub(app: typer.Typer, name: str, handover: Callable[[list[str]], int] |
         context_settings={"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": list[str]()},
         help="Runs on the C# rig CLI.",
     )(stub)
+
+
+def add_group_stubs(app: typer.Typer, group: str) -> None:
+    """Register *group*'s :data:`PORTED_SUBCOMMANDS` on *app*, each handing ``rig <group> <name> …`` to the C# CLI."""
+    for name in PORTED_SUBCOMMANDS[group]:
+        add_stub(app, name, handover=lambda args: run([group, *args]))
 
 
 def entry(argv0_and_args: Sequence[str] | None = None, handover: Callable[[list[str]], int] = run) -> None:

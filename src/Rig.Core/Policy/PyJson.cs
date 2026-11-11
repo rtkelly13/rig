@@ -12,11 +12,11 @@ namespace Rig.Core.Policy;
 /// </summary>
 public static class PyJson
 {
-    /// <summary><paramref name="node"/> as Python prints it.</summary>
-    public static string Dumps(JsonNode? node)
+    /// <summary><paramref name="node"/> as Python prints it; <paramref name="ensureAscii"/> false keeps non-ASCII as itself, as <c>ensure_ascii=False</c> does.</summary>
+    public static string Dumps(JsonNode? node, bool ensureAscii = true)
     {
         var text = new StringBuilder();
-        Write(text, node, 0);
+        Write(text, node, 0, ensureAscii);
         return text.ToString();
     }
 
@@ -58,7 +58,7 @@ public static class PyJson
         return (digits, whole - leading + exponent);
     }
 
-    private static void Write(StringBuilder text, JsonNode? node, int depth)
+    private static void Write(StringBuilder text, JsonNode? node, int depth, bool ascii)
     {
         switch (node)
         {
@@ -74,9 +74,9 @@ public static class PyJson
                 foreach (var (key, value) in obj)
                 {
                     _ = text.Append(first ? "\n" : ",\n").Append(' ', (depth + 1) * 2);
-                    String(text, key);
+                    String(text, key, ascii);
                     _ = text.Append(": ");
-                    Write(text, value, depth + 1);
+                    Write(text, value, depth + 1, ascii);
                     first = false;
                 }
 
@@ -90,23 +90,23 @@ public static class PyJson
                 for (var i = 0; i < array.Count; i++)
                 {
                     _ = text.Append(i == 0 ? "\n" : ",\n").Append(' ', (depth + 1) * 2);
-                    Write(text, array[i], depth + 1);
+                    Write(text, array[i], depth + 1, ascii);
                 }
 
                 _ = text.Append('\n').Append(' ', depth * 2).Append(']');
                 break;
             default:
-                Scalar(text, (JsonValue)node);
+                Scalar(text, (JsonValue)node, ascii);
                 break;
         }
     }
 
-    private static void Scalar(StringBuilder text, JsonValue value)
+    private static void Scalar(StringBuilder text, JsonValue value, bool ascii)
     {
         switch (value.GetValueKind())
         {
             case JsonValueKind.String:
-                String(text, value.GetValue<string>());
+                String(text, value.GetValue<string>(), ascii);
                 break;
             case JsonValueKind.True:
                 _ = text.Append("true");
@@ -126,7 +126,8 @@ public static class PyJson
         }
     }
 
-    private static void String(StringBuilder text, string value)
+    // ASCII mode escapes everything outside ' '..'~' (DEL included), as Python's ESCAPE_ASCII does.
+    private static void String(StringBuilder text, string value, bool ascii)
     {
         _ = text.Append('"');
         foreach (var c in value)
@@ -140,7 +141,8 @@ public static class PyJson
                 '\t' => text.Append("\\t"),
                 '\b' => text.Append("\\b"),
                 '\f' => text.Append("\\f"),
-                < ' ' or > '\x7f' => text.Append(CultureInfo.InvariantCulture, $"\\u{(int)c:x4}"),
+                < ' ' => text.Append(CultureInfo.InvariantCulture, $"\\u{(int)c:x4}"),
+                >= '\x7f' when ascii => text.Append(CultureInfo.InvariantCulture, $"\\u{(int)c:x4}"),
                 _ => text.Append(c),
             };
         }

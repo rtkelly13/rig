@@ -41,13 +41,18 @@ internal sealed class RigApp(
             root.Subcommands.Add(new Command(AgentLauncher.CommandName, AgentLauncher.Description));
         }
 
-        foreach (var (name, description) in Forwarded.Commands)
+        // A group partly ported (devenv) is already registered: the rest of its lines are handed over by Forwarded.Owns.
+        foreach (var (name, description) in Forwarded.Commands.Where(c => !root.Subcommands.Any(s => s.Name == c.Name)))
         {
             root.Subcommands.Add(new Command(name, $"{description} (Python)"));
         }
 
         return root;
     }
+
+    /// <summary>Whether <paramref name="args"/> go to another process sharing this console: the Python CLI or an agent.</summary>
+    public bool HandsOver(IReadOnlyList<string> args) =>
+        Forwarded.Owns(args, BuildRoot()) || (agent is not null && AgentLauncher.LauncherArgs(args) is not null);
 
     /// <summary>Runs one command line and returns its exit code.</summary>
     public async Task<int> RunAsync(IReadOnlyList<string> args, CancellationToken cancellationToken)
@@ -61,12 +66,13 @@ internal sealed class RigApp(
                 : await agent.RunAsync(launch).ConfigureAwait(false);
         }
 
-        if (Forwarded.Owns(args))
+        var root = BuildRoot();
+        if (Forwarded.Owns(args, root))
         {
             return await python.RunAsync(args, error).ConfigureAwait(false);
         }
 
-        var parsed = BuildRoot().Parse(args);
+        var parsed = root.Parse(args);
         if (parsed.Errors.Count > 0)
         {
             foreach (var problem in parsed.Errors)
