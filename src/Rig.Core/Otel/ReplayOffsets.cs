@@ -6,10 +6,10 @@ using Rig.Core.Vault;
 namespace Rig.Core.Otel;
 
 /// <summary>How far one file (by inode) has been replayed.</summary>
-/// <param name="Inode">The file's inode.</param>
+/// <param name="Inode">The file's inode (its file id on Windows), as <see cref="FileIds.Inode"/> reads it.</param>
 /// <param name="Sent">Bytes of complete lines already sent.</param>
 /// <param name="Head">The sha256 of the first <c>min(Sent, 4096)</c> bytes; empty in state written before it existed.</param>
-public sealed record ReplayOffset(long Inode, long Sent, string Head = "");
+public sealed record ReplayOffset(ulong Inode, long Sent, string Head = "");
 
 /// <summary>
 /// The replay state file, ported from <c>rig.otel_stack.replay</c>: a JSON object keyed by inode, each entry the byte
@@ -69,7 +69,7 @@ public static class ReplayOffsets
             foreach (var entry in document.RootElement.EnumerateObject())
             {
                 if (entry.Value.ValueKind != JsonValueKind.Object
-                    || LaxJson.Int(LaxJson.Field(entry.Value, "inode")) is not { } inode
+                    || Inode(LaxJson.Field(entry.Value, "inode")) is not { } inode
                     || LaxJson.Int(LaxJson.Field(entry.Value, "sent")) is not { } sent)
                 {
                     return [];
@@ -92,6 +92,12 @@ public static class ReplayOffsets
         }
     }
 
+    // An inode is unsigned and can pass long.MaxValue; a negative one (only a hand-edited file holds one) is malformed.
+    private static ulong? Inode(JsonElement? value) =>
+        value is { ValueKind: JsonValueKind.Number } n && n.TryGetUInt64(out var whole) ? whole
+        : LaxJson.Int(value) is { } lax and >= 0 ? (ulong)lax
+        : null;
+
     /// <summary>The state file's text: sorted by key, two-space indented, ending in a newline.</summary>
     public static string Render(IReadOnlyDictionary<string, ReplayOffset> offsets)
     {
@@ -105,7 +111,7 @@ public static class ReplayOffsets
                 _ = w.Key(key).Object(() => w.Key("inode").Number(offset.Inode).Key("sent").Number(offset.Sent).Key("head").String(offset.Head));
             }
         });
-        return w + "\n";
+        return w.ToString() + "\n";
     }
 
     /// <summary>Writes <paramref name="offsets"/> to <paramref name="path"/> through a temporary file, so a crash never leaves it half written.</summary>
