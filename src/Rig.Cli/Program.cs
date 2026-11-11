@@ -3,6 +3,7 @@ using System.Net;
 using Rig.Cli.Agent;
 using Rig.Cli.Browser;
 using Rig.Cli.Devenv;
+using Rig.Cli.Estate;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
@@ -169,6 +170,13 @@ internal static class Program
                 new DoctorCommand(devenvHost, proc, TimeProvider.System, Console.Out).Build,
                 workspace.Build,
                 workspace.BuildSync,
+                new EstateCommand(
+                    new EstateHost(Path.Join(codeRoot, "personal"), home, Environment.CurrentDirectory),
+                    proc,
+                    new GhApi(proc),
+                    TimeProvider.System,
+                    Console.Out,
+                    Console.Error).Build,
             ],
             new AgentLauncher(
                 proc,

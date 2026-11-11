@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Rig.Cli.Agent;
 using Rig.Cli.Browser;
 using Rig.Cli.Devenv;
+using Rig.Cli.Estate;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
@@ -103,6 +104,7 @@ public sealed partial class ForwardedContractTests
                 new DoctorCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
                 new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null, Refusing).Build,
                 new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null, Refusing).BuildSync,
+                new EstateCommand(new EstateHost("/", "/", "/"), new FakeProc(), new FakeGitHub(), TimeProvider.System, TextWriter.Null, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
 
