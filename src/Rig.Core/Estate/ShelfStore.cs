@@ -243,7 +243,7 @@ public sealed class ShelfStore(Git git)
             return new ShelfStep(false, $"{shelf.Ref} tip is not a {Prefix} commit; refusing to guess");
         }
 
-        var target = path ?? Path.Combine(clone, shelf.Trailers.Path.Length > 0 ? shelf.Trailers.Path : $".worktrees/{shelf.Name}");
+        var target = path ?? Path.Combine(clone, (shelf.Trailers.Path.Length > 0 ? shelf.Trailers.Path : $".worktrees/{shelf.Name}").Replace('/', Path.DirectorySeparatorChar));
         if (Directory.Exists(target) || File.Exists(target))
         {
             return new ShelfStep(false, $"{target} already exists");

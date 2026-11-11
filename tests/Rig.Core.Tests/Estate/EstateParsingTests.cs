@@ -68,6 +68,16 @@ public sealed class EstateParsingTests
     }
 
     [Fact]
+    public void Worktree_paths_from_porcelain_use_the_platform_separator()
+    {
+        // git prints forward slashes on Windows as well; the paths are compared and printed as the platform writes them.
+        var trees = Worktree.Parse("worktree C:/code/proj\nHEAD abc\nbranch refs/heads/main\n\nworktree C:/code/proj/.worktrees/a\nHEAD def\ndetached\n\n");
+
+        var separator = Path.DirectorySeparatorChar;
+        Assert.Equal([$"C:{separator}code{separator}proj", $"C:{separator}code{separator}proj{separator}.worktrees{separator}a"], trees.Select(tree => tree.Path));
+    }
+
+    [Fact]
     public void Branches_parse_upstream_gone_current_and_elsewhere()
     {
         const string refs = "refs/heads/main\trefs/remotes/origin/main\t\nrefs/heads/old\trefs/remotes/origin/old\t[gone]\nrefs/heads/wt\t\t\n\n";
