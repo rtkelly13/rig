@@ -371,6 +371,21 @@ public sealed class EstateCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Reclaim_never_removes_a_worktree_with_another_nested_inside_it()
+    {
+        await BuildEstateAsync();
+        var outer = await TempWorktreeAsync();
+        var inner = Path.Join(outer, "temp", "inner");
+        _ = await Repos.GitAsync(Safe, "worktree", "add", "-q", "-b", "inner", inner);
+        _ = await Repos.GitAsync(inner, "push", "-q", "-u", "origin", "inner");
+
+        var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--force", "--root", Code);
+
+        Assert.Contains("holds a worktree", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(outer));
+    }
+
+    [Fact]
     public async Task Reclaim_refuses_temp_scratch_holding_a_checkout_git_does_not_list()
     {
         await BuildEstateAsync();

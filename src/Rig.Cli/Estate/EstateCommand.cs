@@ -242,6 +242,14 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
     {
         if (entry.IsWorktree)
         {
+            // git deletes a worktree's ignored files with it, and a worktree nested in its temp/ is one of them.
+            var resolved = PathResolution.Resolve(entry.Path);
+            if ((await Worktree.ListAsync(git, clone).ConfigureAwait(false))
+                .Any(tree => Trim.IsStrictlyBelow(PathResolution.Resolve(tree.Path), resolved)))
+            {
+                return "holds a worktree";
+            }
+
             if (!force && (await git.LinesAsync(entry.Path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 })
             {
                 return "dirty worktree";
