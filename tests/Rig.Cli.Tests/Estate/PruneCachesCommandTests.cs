@@ -111,6 +111,19 @@ public sealed class PruneCachesCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task A_negative_idle_period_is_refused_before_any_category_runs()
+    {
+        var proc = new FakeProc();
+
+        var (code, output, error) = await RunAsync(proc, ["uv", "pnpm", "dotnet", "docker"], "--apply", "--idle-days", "-1", "--claude-temp", _root.Path);
+
+        Assert.Equal(2, code);
+        Assert.Equal(string.Empty, output);
+        Assert.Equal("--idle-days must be 0 or more, not -1.\n", error);
+        Assert.Empty(proc.Requests);
+    }
+
+    [Fact]
     public async Task Apply_removes_idle_claude_sessions_under_a_home_relative_root()
     {
         var session = _root.Folder(Path.Join("home", "ct", "project", "0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d"));

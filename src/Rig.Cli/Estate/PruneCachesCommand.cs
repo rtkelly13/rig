@@ -18,7 +18,8 @@ namespace Rig.Cli.Estate;
 /// <param name="findTool">Finds each tool's executable.</param>
 /// <param name="time">The clock a Claude session's idleness is measured by.</param>
 /// <param name="output">Where the report goes.</param>
-internal sealed class PruneCachesCommand(EstateHost host, IProc proc, Func<string, string?> findTool, TimeProvider time, TextWriter output)
+/// <param name="error">Where a refused option goes.</param>
+internal sealed class PruneCachesCommand(EstateHost host, IProc proc, Func<string, string?> findTool, TimeProvider time, TextWriter output, TextWriter error)
 {
     // As Python's json writes it: a `+` or a non-ASCII path stays as it is, not escaped.
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
@@ -48,6 +49,13 @@ internal sealed class PruneCachesCommand(EstateHost host, IProc proc, Func<strin
 
     private async Task<int> RunAsync(bool apply, int idleDays, string? claudeTemp, bool json, CancellationToken cancellationToken)
     {
+        // A negative period puts the cutoff in the future, so every session, even a live one, would read as idle.
+        if (idleDays < 0)
+        {
+            await error.WriteLineAsync($"--idle-days must be 0 or more, not {idleDays}.".AsMemory(), cancellationToken).ConfigureAwait(false);
+            return 2;
+        }
+
         var root = string.IsNullOrEmpty(claudeTemp) ? Caches.DefaultClaudeTemp() : host.ExpandHome(claudeTemp);
         var caches = new Caches(proc, findTool, new TreeRemoval(proc), time);
         var results = await caches.PruneAllAsync(apply, root, idleDays, cancellationToken).ConfigureAwait(false);

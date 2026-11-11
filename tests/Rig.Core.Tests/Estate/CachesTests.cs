@@ -237,6 +237,21 @@ public sealed class CachesTests : IDisposable
     }
 
     [Fact]
+    public async Task A_negative_idle_period_throws_before_anything_is_pruned()
+    {
+        var root = _temp.Folder("claude");
+        var fresh = Session("p", SessionId, ageDays: 0, bytes: 5);
+        var proc = new FakeProc();
+        var caches = With(proc, "uv");
+
+        _ = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => caches.PruneAllAsync(apply: true, root, idleDays: -1, Token));
+        _ = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => caches.PruneClaudeTempAsync(root, apply: true, idleDays: -1, Token));
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => caches.IdleSessions(root, idleDays: -1));
+        Assert.True(Directory.Exists(fresh));
+        Assert.Empty(proc.Requests);
+    }
+
+    [Fact]
     public async Task A_missing_claude_temp_is_skipped()
     {
         var root = Path.Join(_temp.Path, "absent");

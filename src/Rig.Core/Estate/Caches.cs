@@ -193,8 +193,10 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
     }
 
     /// <summary>Every category, in a fixed order, each independent of the others.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="idleDays"/> is negative, before anything is pruned.</exception>
     public async Task<IReadOnlyList<Pruned>> PruneAllAsync(bool apply, string claudeTemp, int idleDays, CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(idleDays);
         var results = new List<Pruned>();
         foreach (var cache in ToolCaches)
         {
@@ -281,8 +283,12 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
     /// <paramref name="idleDays"/> days. The folder's own write time counts, so a session that has only just created its
     /// empty scratchpad is not idle.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="idleDays"/> is negative: the cutoff would be in the future and every session would read as idle.
+    /// </exception>
     public IReadOnlyList<IdleSession> IdleSessions(string root, int idleDays)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(idleDays);
         var cutoff = time.GetUtcNow().UtcDateTime.AddDays(-idleDays);
         var idle = new List<IdleSession>();
         foreach (var project in Subdirs(root))
@@ -318,8 +324,10 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
     }
 
     /// <summary>Deletes the Claude Code session folders idle <paramref name="idleDays"/> or more.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="idleDays"/> is negative.</exception>
     public async Task<Pruned> PruneClaudeTempAsync(string root, bool apply, int idleDays, CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(idleDays);
         const string category = "claude temp";
         var command = $"delete session dirs idle {idleDays}+ days under {root}";
         if (!Directory.Exists(root))

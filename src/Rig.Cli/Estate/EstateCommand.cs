@@ -67,7 +67,7 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(ReclaimCommand());
         estate.Subcommands.Add(TrimCommand());
         estate.Subcommands.Add(TidyCommand());
-        estate.Subcommands.Add(new PruneCachesCommand(host, proc, findTool, time, output).Build());
+        estate.Subcommands.Add(new PruneCachesCommand(host, proc, findTool, time, output, error).Build());
         return estate;
     }
 
