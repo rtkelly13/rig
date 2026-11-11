@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Core/Rig.Core.csproj" />
+    <PackageReference Include="CsCheck" />
   </ItemGroup>
 
   <ItemGroup>

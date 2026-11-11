@@ -6,7 +6,7 @@ import pathlib
 import pytest
 
 from rig.repo_governance.gitignore_manager import audit_estate_gitignores
-from rig.workspace.engine import audit_estate, render_managed_projects_table, sync_estate_code_workspace
+from rig.workspace.engine import render_managed_projects_table, sync_estate_code_workspace
 from rig.workspace.layout import org_folder, project_dir, project_relpath
 from rig.workspace.models import ManagedRepoSpec
 
@@ -37,22 +37,6 @@ def test_project_paths(tmp_path: pathlib.Path):
     assert project_dir(estate, LABS.name, LABS.repo) == tmp_path / "rtkelly-labs" / "Diffra"
     assert project_dir(estate, FORK.name, FORK.repo) == estate / "starter"
     assert project_relpath(RESULTFUL.name, RESULTFUL.repo) == "../Resultful/Resultful"
-
-
-@pytest.mark.ci
-def test_audit_finds_org_repos_and_misses_absent_ones(tmp_path: pathlib.Path):
-    estate = tmp_path / "personal"
-    _clone(estate / "blog")
-    _clone(tmp_path / "rtkelly-labs" / "Diffra")
-
-    result = audit_estate(estate, specs=[PERSONAL, LABS, RESULTFUL])
-
-    assert {item.name: item.path for item in result.managed_repos} == {
-        "blog": estate / "blog",
-        "Diffra": tmp_path / "rtkelly-labs" / "Diffra",
-    }
-    assert [spec.name for spec in result.missing_managed_repos] == ["Resultful"]
-    assert result.unmanaged_items == []
 
 
 @pytest.mark.ci

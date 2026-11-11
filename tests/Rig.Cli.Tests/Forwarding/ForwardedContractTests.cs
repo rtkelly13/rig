@@ -62,7 +62,7 @@ public sealed partial class ForwardedContractTests
     [Fact]
     public void Every_subcommand_python_hands_over_is_one_csharp_owns()
     {
-        // PORTED_SUBCOMMANDS: the subcommands of a group Python still owns that C# runs (workspace doctor).
+        // PORTED_SUBCOMMANDS: the subcommands of a group Python still owns that C# runs (workspace doctor, audit, status, clean).
         var block = PortedSubcommandsBlock().Match(File.ReadAllText(Bridge)).Groups["body"].Value;
         var python = Group().Matches(block)
             .SelectMany(m => Name().Matches(m.Groups["subs"].Value).Select(s => $"{m.Groups["group"].Value} {s.Groups["name"].Value}"));
@@ -101,7 +101,7 @@ public sealed partial class ForwardedContractTests
                 new BrowserCommand(new BrowserHost("/", null, false, _ => null, _ => new ShellProfileEnvironment("/none")), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
                 new DevenvCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new ObsidianPlugins(Refusing), new NerdFonts(Refusing), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
                 new DoctorCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
-                new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/"), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
+                new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
 

@@ -56,10 +56,15 @@ public sealed class WorkspaceCommandTests : IDisposable
     private async Task<(int Code, string Out)> RunAsync(params string[] args)
     {
         using var output = new StringWriter();
-        var host = new WorkspaceHost(Personal, Path.Join(_root.Path, "rig", "config", EstateScopes.FileName), Path.Join(_root.Path, "home"));
+        var host = new WorkspaceHost(
+            Personal,
+            Path.Join(_root.Path, "rig", "config", EstateScopes.FileName),
+            Path.Join(_root.Path, "home"),
+            Path.Join(_root.Path, "rig", "config", "managed-projects.json"),
+            Path.Join(_root.Path, "home", ".workspace", "config.json"));
         _ = Directory.CreateDirectory(host.Home);
         var root = new RootCommand { new WorkspaceCommand(host, _proc, TimeProvider.System, output).Build() };
-        var code = await root.Parse(["workspace", "doctor", .. args]).InvokeAsync(new InvocationConfiguration { Output = output, Error = output }, Token);
+        var code = await root.Parse(["workspace", .. args]).InvokeAsync(new InvocationConfiguration { Output = output, Error = output }, Token);
         return (code, output.ToString().ReplaceLineEndings("\n"));
     }
 
@@ -70,7 +75,7 @@ public sealed class WorkspaceCommandTests : IDisposable
         Clone("labs", "lake", "labs/lake");
         GitHubNames("lake", "rig");
 
-        var (code, output) = await RunAsync("--strict");
+        var (code, output) = await RunAsync("doctor", "--strict");
 
         Assert.Equal(0, code);
         Assert.StartsWith($"Estate Repository Doctor: {Personal}\nFolder  Canonical Upstream  Remote Slug    Status  Detail\n", output, StringComparison.Ordinal);
@@ -88,8 +93,8 @@ public sealed class WorkspaceCommandTests : IDisposable
         Clone("personal", "e", "rtkelly13/e");
         GitHubNames("a", "b2", "c", "", "e");
 
-        var (lax, output) = await RunAsync();
-        var (strict, _) = await RunAsync("--strict", "--refresh-cache");
+        var (lax, output) = await RunAsync("doctor");
+        var (strict, _) = await RunAsync("doctor", "--strict", "--refresh-cache");
 
         Assert.Equal(0, lax);
         Assert.Equal(1, strict);
@@ -107,7 +112,7 @@ public sealed class WorkspaceCommandTests : IDisposable
         Clone("personal", "shared-utilities", "rtkelly13/shared-utilities");
         GitHubNames("rig");
 
-        var (code, output) = await RunAsync("--json", "--strict");
+        var (code, output) = await RunAsync("doctor", "--json", "--strict");
 
         Assert.Equal(1, code);
         var report = JsonNode.Parse(output)!;
@@ -131,7 +136,7 @@ public sealed class WorkspaceCommandTests : IDisposable
         _ = Directory.CreateDirectory(Personal);
         _ = Directory.CreateSymbolicLink(link, Personal);
 
-        var (code, output) = await RunAsync("--root", link, "--json");
+        var (code, output) = await RunAsync("doctor", "--root", link, "--json");
 
         Assert.Equal(0, code);
         var report = JsonNode.Parse(output)!;
@@ -142,7 +147,7 @@ public sealed class WorkspaceCommandTests : IDisposable
     [Fact]
     public async Task A_missing_estate_root_is_clean_and_asks_nothing()
     {
-        var (code, output) = await RunAsync("--root", Path.Join(_root.Path, "nowhere"), "--json");
+        var (code, output) = await RunAsync("doctor", "--root", Path.Join(_root.Path, "nowhere"), "--json");
 
         Assert.Equal(0, code);
         Assert.Equal(0, (int)JsonNode.Parse(output)!["total_repos"]!);
