@@ -52,6 +52,8 @@ PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
         "status",
         "sync-labels",
         "sync-templates",
+        "vercel-gating",
+        "vercel-projects",
     ),
     "workspace": ("artifacts", "audit", "ci", "clean", "doctor", "gitignore", "orca", "packages", "status", "sync"),
 }

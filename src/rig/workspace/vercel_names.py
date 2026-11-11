@@ -72,13 +72,6 @@ def load_vercel_claims(cfg: Path) -> list[VercelClaim]:
     return claims
 
 
-def load_repo_slugs(cfg: Path) -> dict[str, str]:
-    """Each enabled managed project's GitHub ``owner/repo``, by project name."""
-    managed = decode_json(_ManagedProjects, cfg.read_text(encoding="utf-8"))
-    slugs = {project.name: repo_slug(project.repo) for project in managed.projects if project.enabled}
-    return {name: slug for name, slug in slugs.items() if slug is not None}
-
-
 def claim_for_host(claims: Sequence[VercelClaim], host: str) -> VercelClaim | None:
     """The project whose declared name is the longest prefix of a ``*.vercel.app`` host, or None.
 
