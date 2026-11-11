@@ -21,4 +21,10 @@ public sealed record ProcRequest(IReadOnlyList<string> Argv)
     /// so <see cref="Ran.Out"/> and <see cref="Ran.Err"/> stay empty. Used to hand a whole command to another program.
     /// </summary>
     public bool Attached { get; init; }
+
+    /// <summary>
+    /// Whether the process reads this console's input and writes its errors there while its output is still captured:
+    /// for a program that may prompt, such as npm asking for a one-time password, whose answer rig still parses.
+    /// </summary>
+    public bool ConsoleInput { get; init; }
 }

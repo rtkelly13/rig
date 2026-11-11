@@ -54,6 +54,23 @@ public sealed class SystemProcTests
     }
 
     [Fact]
+    public async Task A_process_on_the_console_s_input_still_has_its_output_captured()
+    {
+        var ran = await _proc.RunAsync(new ProcRequest(["git", "--version"]) { ConsoleInput = true }, TestContext.Current.CancellationToken);
+
+        Assert.StartsWith("git version", ran.Out, StringComparison.Ordinal);
+        Assert.Empty(ran.Err);
+    }
+
+    [Fact]
+    public async Task A_process_on_the_console_s_input_cannot_be_given_stdin_text()
+    {
+        var request = new ProcRequest(["git", "--version"]) { ConsoleInput = true, StdinText = "x" };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => _proc.RunAsync(request, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task A_missing_program_is_127()
     {
         var ran = await _proc.RunAsync(new ProcRequest(["rig-no-such-program"]), TestContext.Current.CancellationToken);

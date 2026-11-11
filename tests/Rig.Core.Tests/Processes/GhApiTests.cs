@@ -38,6 +38,16 @@ public sealed class GhApiTests
     }
 
     [Fact]
+    public async Task Headers_go_before_the_input()
+    {
+        var request = new ApiRequest("PUT", "repos/o/r/x", "{}") { Headers = ["Accept: application/vnd.github.raw"] };
+
+        await new GhApi(_proc).CallAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(["gh", "api", "-X", "PUT", "repos/o/r/x", "-H", "Accept: application/vnd.github.raw", "--input", "-"], Assert.Single(_proc.Requests).Argv);
+    }
+
+    [Fact]
     public async Task A_graphql_call_posts_the_document_and_its_variables_on_stdin()
     {
         var request = ApiRequest.GraphQL("query Q($n: Int!) { x }", new Dictionary<string, object?> { ["n"] = 7, ["cursor"] = null, ["s"] = "a\"b" });
