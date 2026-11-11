@@ -25,10 +25,19 @@ public sealed class TreeRemoval(IProc proc)
 {
     private string? _sid;
 
-    /// <summary>Deletes <paramref name="path"/>. Throws <see cref="IOException"/> when it is a link or cannot be removed.</summary>
+    /// <summary>
+    /// Deletes <paramref name="path"/>, a folder or a plain file. Throws <see cref="IOException"/> when it is a link or
+    /// cannot be removed.
+    /// </summary>
     public async Task RemoveAsync(string path, CancellationToken cancellationToken = default)
     {
         var root = new DirectoryInfo(path);
+        if (root.LinkTarget is null && !root.Exists && File.Exists(path) && new FileInfo(path).LinkTarget is null)
+        {
+            await DeleteAsync(new FileInfo(path), null, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         if (root.LinkTarget is null && !root.Exists)
         {
             throw new DirectoryNotFoundException($"{path} does not exist.");

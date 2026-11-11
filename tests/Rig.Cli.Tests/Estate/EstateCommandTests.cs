@@ -399,6 +399,34 @@ public sealed class EstateCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Reclaim_never_removes_a_worktree_holding_a_separate_clone()
+    {
+        await BuildEstateAsync();
+        var worktree = await TempWorktreeAsync();
+        var clone = Path.Join(worktree, "temp", "clone");
+        _ = await Repos.GitAsync(Safe, "clone", "-q", Safe, clone);
+
+        var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--force", "--root", Code);
+
+        Assert.Contains("holds a git checkout", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(Path.Join(clone, ".git")));
+    }
+
+    [Fact]
+    public async Task Reclaim_removes_a_plain_file_directly_under_temp()
+    {
+        await BuildEstateAsync();
+        var file = Path.Join(Safe, "temp", "scratch.log");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        await File.WriteAllTextAsync(file, "log", Token);
+
+        var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
+
+        Assert.Contains("removed", output, StringComparison.Ordinal);
+        Assert.False(File.Exists(file));
+    }
+
+    [Fact]
     public async Task Reclaim_reports_a_worktree_git_will_not_remove_as_failed()
     {
         await BuildEstateAsync();

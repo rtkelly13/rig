@@ -93,10 +93,16 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
     /// <summary>
     /// Whether a <c>.git</c> file or folder lies anywhere below <paramref name="path"/>: a checkout git does not list as
     /// a worktree of the clone being cleaned. Names only, links not followed, so it costs a listing per folder. A folder
-    /// that cannot be listed counts as holding one.
+    /// that cannot be listed counts as holding one; a plain file holds none. With <paramref name="ownGit"/>, the root's
+    /// own <c>.git</c> is the checkout being judged and is skipped.
     /// </summary>
-    public static bool HasCheckoutBelow(string path)
+    public static bool HasCheckoutBelow(string path, bool ownGit = false)
     {
+        if (File.Exists(path))
+        {
+            return false;
+        }
+
         var stack = new Stack<string>([path]);
         while (stack.TryPop(out var current))
         {
@@ -109,6 +115,11 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
             {
                 if (entry.Name == ".git")
                 {
+                    if (ownGit && current == path)
+                    {
+                        continue;
+                    }
+
                     return true;
                 }
 

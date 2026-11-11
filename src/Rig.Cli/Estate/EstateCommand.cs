@@ -250,6 +250,12 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
                 return "holds a worktree";
             }
 
+            // A separate clone, or another repository's worktree, in its ignored temp/ would go the same way.
+            if (TreeMeasure.HasCheckoutBelow(entry.Path, ownGit: true))
+            {
+                return "holds a git checkout";
+            }
+
             if (!force && (await git.LinesAsync(entry.Path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 })
             {
                 return "dirty worktree";
