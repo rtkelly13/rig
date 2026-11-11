@@ -15,7 +15,6 @@ from ..config.loader import load_all_builtin_tools
 from ..engine.context import StepContext, get_current_platform
 from ..steps.fonts import NERD_FONTS, is_nerd_font_installed
 from ..steps.git import get_git_config_val
-from ..steps.github_cli import OverlayState, overlay_state, overlay_target
 from ..steps.terminal import get_windows_terminal_status
 from ..tool_manager import ToolManager
 from ..ui import console, table_box
@@ -153,11 +152,11 @@ def run_doctor() -> int:
     else:
         g_table.add_row("Repository Folder", "[dim]- Unresolved[/dim]", repo_check.detail)
 
-    overlay = overlay_state()
-    if overlay is OverlayState.IN_SYNC:
-        g_table.add_row("gh Scope Overlay", "[green]✓ In sync[/green]", str(overlay_target()))
+    # `rig devenv gh --check` prints the overlay's state and exits 1 unless it is installed and current.
+    if csharp_cli.run(["devenv", "gh", "--check"]) == 0:
+        g_table.add_row("gh Scope Overlay", "[green]✓ In sync[/green]", "")
     else:
-        g_table.add_row("gh Scope Overlay", f"[yellow]! {overlay.value.capitalize()}[/yellow]", "Run 'devenv gh'")
+        g_table.add_row("gh Scope Overlay", "[yellow]! Not current[/yellow]", "Run 'devenv gh'")
         issues_found += 1
 
     console.print(g_table)
