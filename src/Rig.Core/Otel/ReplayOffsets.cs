@@ -30,9 +30,13 @@ public static class ReplayOffsets
         return Convert.ToHexStringLower(SHA256.HashData(raw[..length]));
     }
 
-    /// <summary>Whether <paramref name="held"/> still describes <paramref name="raw"/>: no longer than it, and the same start.</summary>
+    /// <summary>
+    /// Whether <paramref name="held"/> still describes <paramref name="raw"/>: no longer than it, and the same start. A
+    /// negative offset (only a hand-edited or corrupt state file holds one) is refused, so the file is replayed from its
+    /// start; the Python accepted it and sliced from the end.
+    /// </summary>
     public static bool SameFile(ReplayOffset? held, ReadOnlySpan<byte> raw) =>
-        held is not null && held.Sent <= raw.Length && (held.Head.Length == 0 || held.Head == HeadHash(raw, held.Sent));
+        held is not null && held.Sent >= 0 && held.Sent <= raw.Length && (held.Head.Length == 0 || held.Head == HeadHash(raw, held.Sent));
 
     /// <summary>The offsets in <paramref name="path"/>; none when it is missing, unreadable, or any entry is malformed.</summary>
     public static Dictionary<string, ReplayOffset> Read(string path)

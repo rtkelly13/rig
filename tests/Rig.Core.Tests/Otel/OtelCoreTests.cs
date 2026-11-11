@@ -134,6 +134,7 @@ public sealed class OtelCoreTests : IDisposable
         Assert.False(ReplayOffsets.SameFile(new ReplayOffset(1, 9, "stale"), raw));
         Assert.False(ReplayOffsets.SameFile(new ReplayOffset(1, raw.Length + 1), raw));
         Assert.False(ReplayOffsets.SameFile(null, raw));
+        Assert.False(ReplayOffsets.SameFile(new ReplayOffset(1, -1), raw));
     }
 
     [Fact]
