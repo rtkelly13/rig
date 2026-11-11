@@ -17,6 +17,8 @@ public sealed class ClickHouseStackTests : IDisposable
 {
     private static readonly Uri Server = new("http://clickhouse.test:1");
 
+    private const string Started = "Tue Nov 11 09:00:00 2026";
+
     private readonly TempDir temp = new();
     private readonly FakeClickHouse clickhouse = new();
     private readonly HttpClient http;
@@ -31,7 +33,7 @@ public sealed class ClickHouseStackTests : IDisposable
     public ClickHouseStackTests()
     {
         http = new HttpClient(clickhouse, disposeHandler: false);
-        detached = new RecordingDetached(signals);
+        detached = new RecordingDetached(signals, proc);
         paths = new OtelPaths(temp.Path);
         pair = new ClickHousePair(paths, signals, detached, probe, new CollectorRuntime(paths, proc, detached, windows: false), clock, clock.SleepAsync);
     }
@@ -252,8 +254,8 @@ public sealed class ClickHouseStackTests : IDisposable
         Assert.Equal(paths.ContribLog, collectorLog);
         Assert.Equal(paths.ClickHouseHome, collectorDir);
         Assert.Null(collectorEnv);
-        Assert.Equal("100\n", await File.ReadAllTextAsync(pair.Server.PidFile, Ct));
-        Assert.Equal("101\n", await File.ReadAllTextAsync(pair.Collector.PidFile, Ct));
+        Assert.Equal("100\t/bin/clickhouse\t\n", await File.ReadAllTextAsync(pair.Server.PidFile, Ct));
+        Assert.Equal("101\t/bin/otelcol-contrib\t\n", await File.ReadAllTextAsync(pair.Collector.PidFile, Ct));
         Assert.True(Directory.Exists(Path.GetDirectoryName(paths.ContribLog)));
     }
 
@@ -311,15 +313,30 @@ public sealed class ClickHouseStackTests : IDisposable
     }
 
     [Fact]
-    public void A_running_pid_needs_a_live_process()
+    public async Task A_running_pid_needs_a_live_process()
     {
-        Assert.Null(pair.RunningPid(pair.Server));
+        Assert.Null(await pair.RunningPidAsync(pair.Server, Ct));
 
         Running(pair.Server, 7);
-        Assert.Equal(7, pair.RunningPid(pair.Server));
+        Assert.Equal(7, await pair.RunningPidAsync(pair.Server, Ct));
 
         _ = signals.Living.Remove(7);
-        Assert.Null(pair.RunningPid(pair.Server));
+        Assert.Null(await pair.RunningPidAsync(pair.Server, Ct));
+        Assert.False(File.Exists(pair.Server.PidFile));
+    }
+
+    [Theory]
+    [InlineData("/usr/sbin/nginx")]
+    [InlineData("/bin/clickhouse server", "Mon Nov 10 08:00:00 2026")]
+    public async Task A_pid_reused_by_another_process_is_not_signalled(string command, string started = Started)
+    {
+        Running(pair.Server, 7);
+        _ = proc.Answer(new Ran(0, command + "\n", string.Empty), "ps", "-o", "command=", "-p", "7");
+        _ = proc.Answer(new Ran(0, started + "\n", string.Empty), "ps", "-o", "lstart=", "-p", "7");
+
+        Assert.Empty(await pair.DownAsync(Ct));
+
+        Assert.Empty(signals.Sent);
         Assert.False(File.Exists(pair.Server.PidFile));
     }
 
@@ -328,12 +345,14 @@ public sealed class ClickHouseStackTests : IDisposable
     [InlineData("-7")]
     [InlineData("seven")]
     [InlineData("99999999999")]
-    public void A_pid_file_that_is_not_a_pid_is_removed(string text)
+    [InlineData("7\n")]
+    public async Task A_pid_file_that_is_not_a_launch_record_is_removed(string text)
     {
         _ = Directory.CreateDirectory(paths.ClickHouseHome);
-        File.WriteAllText(pair.Server.PidFile, text);
+        _ = signals.Living.Add(7);
+        await File.WriteAllTextAsync(pair.Server.PidFile, text, Ct);
 
-        Assert.Null(pair.RunningPid(pair.Server));
+        Assert.Null(await pair.RunningPidAsync(pair.Server, Ct));
         Assert.False(File.Exists(pair.Server.PidFile));
     }
 
@@ -479,10 +498,14 @@ public sealed class ClickHouseStackTests : IDisposable
     public void A_missing_file_has_no_id() =>
         Assert.Null(FileIds.Inode(Path.Join(temp.Path, "gone.jsonl")));
 
+    // `pid` is alive and is the part's binary, started when its pid file says.
     private void Running(StackPart part, int pid)
     {
+        var binary = $"/bin/{part.Name}";
         _ = Directory.CreateDirectory(Path.GetDirectoryName(part.PidFile)!);
-        File.WriteAllText(part.PidFile, $"{pid}\n");
+        File.WriteAllText(part.PidFile, new Launched(pid, binary, Started).Serialise());
         _ = signals.Living.Add(pid);
+        _ = proc.Answer(new Ran(0, $"{binary} --flag\n", string.Empty), "ps", "-o", "command=", "-p", $"{pid}");
+        _ = proc.Answer(new Ran(0, $"{Started}\n", string.Empty), "ps", "-o", "lstart=", "-p", $"{pid}");
     }
 }

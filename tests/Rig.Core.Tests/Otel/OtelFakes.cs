@@ -1,7 +1,10 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
 using Rig.Core.Otel;
+using Rig.Core.Processes;
+using Rig.Core.Tests.Fakes;
 
 namespace Rig.Core.Tests.Otel;
 
@@ -191,7 +194,8 @@ internal sealed class FakeSignals : IProcessSignals
 }
 
 /// <summary>Starts nothing: hands out pids from 100 up, which the fake signals then count alive, and records each start.</summary>
-internal sealed class RecordingDetached(FakeSignals signals) : IDetachedStart
+/// <summary>Records each start; with <paramref name="proc"/>, <c>ps</c> then shows the started process's command line.</summary>
+internal sealed class RecordingDetached(FakeSignals signals, FakeProc? proc = null) : IDetachedStart
 {
     private int next = 100;
 
@@ -207,6 +211,7 @@ internal sealed class RecordingDetached(FakeSignals signals) : IDetachedStart
         if (!DieAtOnce)
         {
             _ = signals.Living.Add(pid);
+            _ = proc?.Answer(new Ran(0, string.Join(' ', argv) + "\n", string.Empty), "ps", "-o", "command=", "-p", pid.ToString(CultureInfo.InvariantCulture));
         }
 
         return Task.FromResult(pid);

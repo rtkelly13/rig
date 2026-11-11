@@ -104,23 +104,29 @@ public sealed class ClickHousePair(
         return written;
     }
 
-    /// <summary>The recorded pid while that process still exists; a stale pid file is removed.</summary>
-    public int? RunningPid(StackPart part)
+    /// <summary>
+    /// The recorded pid while it is still the process that was started: alive, and the same binary and start time
+    /// (<see cref="CollectorRuntime.StillOursAsync"/>). The pid file outlives reboots, so a pid alone could name a later,
+    /// unrelated process, which <see cref="DownAsync"/> would then signal. Anything else is stale and its file removed.
+    /// </summary>
+    public async Task<int?> RunningPidAsync(StackPart part, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(part);
         string text;
         try
         {
-            text = File.ReadAllText(part.PidFile, Encoding.UTF8).Trim();
+            text = await File.ReadAllTextAsync(part.PidFile, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return null;
         }
 
-        if (CollectorProcess.IsDigits(text) && int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var pid) && signals.Alive(pid))
+        if (Launched.Parse(text) is { Binary.Length: > 0 } record
+            && signals.Alive(record.Pid)
+            && await runtime.StillOursAsync(record, cancellationToken).ConfigureAwait(false))
         {
-            return pid;
+            return record.Pid;
         }
 
         File.Delete(part.PidFile);
@@ -154,7 +160,7 @@ public sealed class ClickHousePair(
         List<string> stopped = [];
         foreach (var part in Parts.Reverse())
         {
-            if (RunningPid(part) is not { } pid)
+            if (await RunningPidAsync(part, cancellationToken).ConfigureAwait(false) is not { } pid)
             {
                 continue;
             }
@@ -184,7 +190,7 @@ public sealed class ClickHousePair(
         List<PartStatus> statuses = [];
         foreach (var part in Parts)
         {
-            var pid = RunningPid(part);
+            var pid = await RunningPidAsync(part, cancellationToken).ConfigureAwait(false);
             var memory = pid is { } running ? await runtime.ResidentMbAsync(running, cancellationToken).ConfigureAwait(false) : null;
             statuses.Add(new PartStatus(part.Name, pid, memory));
         }
@@ -215,7 +221,7 @@ public sealed class ClickHousePair(
         List<string> already,
         CancellationToken cancellationToken)
     {
-        if (RunningPid(part) is not null)
+        if (await RunningPidAsync(part, cancellationToken).ConfigureAwait(false) is not null)
         {
             already.Add(part.Name);
             return;
@@ -223,7 +229,8 @@ public sealed class ClickHousePair(
 
         _ = Directory.CreateDirectory(Path.GetDirectoryName(part.Log)!);
         var pid = await detached.StartAsync(argv, part.Log, workingDirectory, environment, cancellationToken).ConfigureAwait(false);
-        await File.WriteAllTextAsync(part.PidFile, pid.ToString(CultureInfo.InvariantCulture) + "\n", new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+        var record = new Launched(pid, argv[0], await runtime.ProcessStartedAsync(pid, cancellationToken).ConfigureAwait(false));
+        await File.WriteAllTextAsync(part.PidFile, record.Serialise(), new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
         started.Add(part.Name);
     }
 
@@ -232,7 +239,7 @@ public sealed class ClickHousePair(
         var begun = time.GetTimestamp();
         while (!await ready(cancellationToken).ConfigureAwait(false))
         {
-            if (RunningPid(part) is null)
+            if (await RunningPidAsync(part, cancellationToken).ConfigureAwait(false) is null)
             {
                 throw new StartupException($"{part.Name} exited during startup; see {part.Log}");
             }
