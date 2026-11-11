@@ -608,7 +608,7 @@ public sealed class EstateCommandTests : IDisposable
         var tree = await TempWorktreeAsync();
         await File.WriteAllTextAsync(Path.Join(tree, "notes.txt"), "unsaved", Token);
         _clock.Advance(TimeSpan.FromDays(60));
-        File.SetLastWriteTimeUtc(tree, _clock.GetUtcNow().UtcDateTime.AddDays(-30));
+        Directory.SetLastWriteTimeUtc(tree, _clock.GetUtcNow().UtcDateTime.AddDays(-30));
 
         var (_, output, _) = await RunWithAsync(NothingBusy(), "tidy", "--root", Code, "--repo", "safe", "--check", "temp-stale-worktree");
 
@@ -641,6 +641,7 @@ public sealed class EstateCommandTests : IDisposable
     [UnsupportedOSPlatform("windows")]
     public async Task Tidy_repo_resolves_a_link_before_its_parent_segment()
     {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Windows collapses `..` before following a link.");
         var alpha = await CloneAsync("alpha");
         var beta = await CloneAsync("beta");
         var inner = Directory.CreateDirectory(Path.Join(beta, "inner")).FullName;
