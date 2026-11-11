@@ -55,6 +55,11 @@ public sealed class SystemProc : IProc
             }
         }
 
+        foreach (var name in request.Unset)
+        {
+            _ = info.Environment.Remove(name);
+        }
+
         foreach (var (name, value) in request.Environment)
         {
             info.Environment[name] = value;

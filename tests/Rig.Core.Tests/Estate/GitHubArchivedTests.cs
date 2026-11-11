@@ -58,6 +58,8 @@ public sealed class GitHubArchivedTests
     [InlineData("""{"data": {"r0": {"nameWithOwner": 3, "isArchived": true}}}""")]
     [InlineData("""{"data": {"r0": {"nameWithOwner": "a/b", "isArchived": "yes"}}}""")]
     [InlineData("""{"data": {"r0": []}}""")]
+    [InlineData("""{"data": {"r0": {}}}""")]
+    [InlineData("""{"data": {"r0": {"nameWithOwner": "a/b"}}}""")]
     public void An_unreadable_reply_is_null(string reply) => Assert.Null(GitHubArchived.Parse(reply));
 
     private sealed class Answering(Ran answer) : IGitHubApi

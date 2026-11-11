@@ -277,6 +277,22 @@ public sealed class OrcaWorktreesTests : IDisposable
     }
 
     [Fact]
+    public async Task A_worktree_an_agent_started_in_since_review_is_kept()
+    {
+        var repo = await RepoAsync();
+        var fake = Orca(repo);
+        var id = fake.AddWorktree(await WorktreeAsync(repo, "landed", commit: false), "landed");
+        var rows = await ReviewAsync(fake, repo);
+        Assert.Equal([OrcaWorktrees.Landed], rows.Select(r => r.Verdict));
+
+        fake.Activity.Add(new() { ["worktreeId"] = id, ["agents"] = new System.Text.Json.Nodes.JsonArray(new System.Text.Json.Nodes.JsonObject { ["state"] = "working" }) });
+        var done = await Subject().ApplyAsync(fake.Runtime(), rows, Token);
+
+        Assert.Equal("skipped: an agent started since review", done[0].Outcome);
+        Assert.Empty(fake.Removed);
+    }
+
+    [Fact]
     public async Task A_removal_orca_does_not_confirm_is_a_failure()
     {
         var repo = await RepoAsync();

@@ -39,6 +39,8 @@ public sealed class GitTests : IDisposable
         Assert.Equal(env, request.Environment);
         Assert.Equal(TimeSpan.FromSeconds(5), request.Timeout);
         Assert.Equal("in", request.StdinText);
+        Assert.DoesNotContain("GIT_DIR", request.Unset);
+        Assert.Contains("GIT_WORK_TREE", request.Unset);
     }
 
     [Fact]

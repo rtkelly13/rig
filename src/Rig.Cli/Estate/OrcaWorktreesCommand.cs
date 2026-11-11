@@ -136,6 +136,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
         var nowMs = (double)time.GetUtcNow().ToUnixTimeMilliseconds();
         var finished = new OrcaWorktrees(git, proc);
         var rows = new List<WorktreeRow>();
+        var profileFailed = false;
         for (var i = 0; i < live.Count; i++)
         {
             var (name, runtime) = live[i];
@@ -152,12 +153,18 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             catch (OrcaUnavailableException e)
             {
                 await error.WriteLineAsync($"{name} Orca profile failed: {e.Message}".AsMemory(), cancellationToken).ConfigureAwait(false);
-                return 2;
+                if (i == 0 && rows.Count == 0)
+                {
+                    return 2;
+                }
+
+                // A later profile failing keeps what earlier ones found, and removed, on the report.
+                profileFailed = true;
             }
         }
 
         await ReportAsync(rows, args, cancellationToken).ConfigureAwait(false);
-        return args.Apply && rows.Any(r => r.Failed) ? 1 : 0;
+        return (args.Apply && rows.Any(r => r.Failed)) || profileFailed ? 1 : 0;
     }
 
     private List<(string Name, string Folder)> Profiles(Args args)
@@ -209,9 +216,24 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
         foreach (var name in wanted)
         {
             var hits = new List<IReadOnlySet<string>>();
-            foreach (var (_, runtime) in live)
+            for (var i = 0; i < live.Count; i++)
             {
-                hits.Add(await OrcaWorktrees.SelectAsync(runtime, name, host.Home, cancellationToken).ConfigureAwait(false));
+                try
+                {
+                    hits.Add(await OrcaWorktrees.SelectAsync(live[i].Runtime, name, host.Home, cancellationToken).ConfigureAwait(false));
+                }
+                catch (OrcaUnavailableException e)
+                {
+                    if (i == 0)
+                    {
+                        await error.WriteLineAsync(e.Message.AsMemory(), cancellationToken).ConfigureAwait(false);
+                        return null;
+                    }
+
+                    // As when connecting: a work profile that stops answering only warns, and matches nothing.
+                    await error.WriteLineAsync($"{live[i].Name} Orca profile not checked: {e.Message}".AsMemory(), cancellationToken).ConfigureAwait(false);
+                    hits.Add(new HashSet<string>(StringComparer.Ordinal));
+                }
             }
 
             if (hits.Any(h => h.Count > 1))

@@ -542,11 +542,18 @@ public static class OrcaLayout
             log($"removed {found.Name} from the work Orca profile");
         }
 
-        foreach (var group in emptied)
+        if (emptied.Count == 0)
+        {
+            return;
+        }
+
+        // Occupancy is read again once the repos are gone: a folder workspace or repo added since planning keeps its group.
+        var fresh = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
+        foreach (var group in EmptyGroups(fresh, within: emptied.Select(g => g.Id)))
         {
             if (await runtime.DeleteGroupAsync(group.Id, cancellationToken).ConfigureAwait(false))
             {
-                log($"deleted work-profile group {state.Groups.PathOf(group.Id) ?? group.Name}");
+                log($"deleted work-profile group {fresh.Groups.PathOf(group.Id) ?? group.Name}");
             }
         }
     }

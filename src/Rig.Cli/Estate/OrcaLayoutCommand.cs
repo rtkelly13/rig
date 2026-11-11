@@ -96,7 +96,7 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
         Func<string, bool> isEstateOwner;
         try
         {
-            var declared = OrcaLayout.LoadDeclared(string.IsNullOrEmpty(args.Config) ? host.ManagedProjectsFile : Path.GetFullPath(host.ExpandHome(args.Config)));
+            var declared = OrcaLayout.LoadDeclared(string.IsNullOrEmpty(args.Config) ? host.ManagedProjectsFile : PathResolution.Resolve(host.ExpandHome(args.Config)));
             IReadOnlySet<string>? only = args.Repos.Length > 0 ? args.Repos.ToHashSet(StringComparer.Ordinal) : null;
             if (only is not null && only.Except(declared.Select(d => d.Name), StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList() is { Count: > 0 } unknown)
             {
@@ -112,7 +112,7 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
             if (args.Apply)
             {
                 carried = await OrcaLayout.ApplyAsync(
-                    runtime, declared, root, isEstateOwner, InUse(), log, archived: archived, skipped: skipped, only: only, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    runtime, declared, root, isEstateOwner, InUse(cancellationToken), log, archived: archived, skipped: skipped, only: only, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
             var state = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
@@ -164,12 +164,12 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
     }
 
     // Whether a process works in a folder; null where that cannot be known. lsof runs once, and only when asked.
-    private Func<string, Task<bool?>> InUse()
+    private Func<string, Task<bool?>> InUse(CancellationToken cancellationToken)
     {
         Busy? busy = null;
         return async path =>
         {
-            busy ??= await Busy.SnapshotAsync(proc).ConfigureAwait(false);
+            busy ??= await Busy.SnapshotAsync(proc, cancellationToken).ConfigureAwait(false);
             return busy.Dirs is null ? null : Busy.InUse(path, busy.Dirs);
         };
     }

@@ -137,6 +137,22 @@ public sealed class OrcaRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task A_missing_list_is_an_unknown_shape_but_missing_groups_are_none()
+    {
+        _ = await Assert.ThrowsAsync<OrcaUnavailableException>(() => Runtime(new ScriptedExchange(Answer("{}"))).WorktreesAsync(Token));
+        _ = await Assert.ThrowsAsync<OrcaUnavailableException>(() => Runtime(new ScriptedExchange(Answer("""{"truncated": false}"""))).ActivityAsync(Token));
+        Assert.Empty(await Runtime(new ScriptedExchange(Answer("{}"))).GroupsAsync(Token));
+        Assert.Empty(await Runtime(new ScriptedExchange(Answer("{}"))).FolderWorkspacesAsync(Token));
+    }
+
+    [Theory]
+    [InlineData("""[1]""")]
+    [InlineData("""{"state": "working"}""")]
+    public async Task Unreadable_agents_fail_the_activity_call(string agents) =>
+        _ = await Assert.ThrowsAsync<OrcaUnavailableException>(() =>
+            Runtime(new ScriptedExchange(Answer($$"""{"worktrees": [{"worktreeId": "w", "agents": {{agents}}}]}"""))).ActivityAsync(Token));
+
+    [Fact]
     public async Task Live_reports_success_and_failure_without_throwing()
     {
         var up = new OrcaLive(Runtime(new ScriptedExchange(Answer("{}"))));

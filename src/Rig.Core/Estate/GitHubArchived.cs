@@ -93,13 +93,13 @@ public static partial class GitHubArchived
         }
     }
 
-    // A field that is absent, or of the expected kind (a boolean when expecting True).
+    // A field that is present and of the expected kind (a boolean when expecting True): a repository missing either is unreadable.
     private static bool TryField(JsonObject parent, string key, JsonValueKind kind, out JsonNode? value)
     {
         value = parent[key];
         if (!parent.ContainsKey(key))
         {
-            return true;
+            return false;
         }
 
         var actual = value?.GetValueKind();

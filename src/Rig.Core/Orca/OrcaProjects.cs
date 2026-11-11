@@ -57,14 +57,14 @@ public static class OrcaProjects
 
     /// <summary>Every project group.</summary>
     public static async Task<IReadOnlyList<OrcaGroup>> GroupsAsync(this OrcaRuntime runtime, CancellationToken cancellationToken = default) =>
-        Read(await Call(runtime, "projectGroup.list", null, cancellationToken).ConfigureAwait(false), "projectGroup.list", result => List(result, "groups", Group));
+        Read(await Call(runtime, "projectGroup.list", null, cancellationToken).ConfigureAwait(false), "projectGroup.list", result => OptionalList(result, "groups", Group));
 
     /// <summary>Every folder workspace.</summary>
     public static async Task<IReadOnlyList<OrcaFolderWorkspace>> FolderWorkspacesAsync(this OrcaRuntime runtime, CancellationToken cancellationToken = default) =>
         Read(
             await Call(runtime, "folderWorkspace.list", null, cancellationToken).ConfigureAwait(false),
             "folderWorkspace.list",
-            result => List(result, "folderWorkspaces", raw => new OrcaFolderWorkspace(Required(raw, "id"), LenientString(raw, "projectGroupId"))));
+            result => OptionalList(result, "folderWorkspaces", raw => new OrcaFolderWorkspace(Required(raw, "id"), LenientString(raw, "projectGroupId"))));
 
     /// <summary>Registers the checkout at <paramref name="path"/>.</summary>
     public static async Task<OrcaProject> AddProjectAsync(this OrcaRuntime runtime, string path, CancellationToken cancellationToken = default) =>
@@ -144,8 +144,14 @@ public static class OrcaProjects
         }
     }
 
+    // A missing list is a shape rig does not know, not an empty one: an empty worktree.ps would read every worktree as idle.
     private static List<T> List<T>(JsonObject parent, string key, Func<JsonObject, T> item) =>
-        [.. (OrcaJson.Array(parent, key) ?? []).Select(raw => item(raw as JsonObject ?? throw new InvalidDataException($"{key}: expected objects")))];
+        [.. (OrcaJson.Array(parent, key) ?? throw new InvalidDataException($"{key}: missing"))
+            .Select(raw => item(raw as JsonObject ?? throw new InvalidDataException($"{key}: expected objects")))];
+
+    // Project groups and folder workspaces, which an older Orca may not report at all.
+    private static List<T> OptionalList<T>(JsonObject parent, string key, Func<JsonObject, T> item) =>
+        parent.ContainsKey(key) ? List(parent, key, item) : [];
 
     private static OrcaProject Project(JsonObject raw) => new(
         Required(raw, "id"),
@@ -167,10 +173,11 @@ public static class OrcaProjects
 
     private static OrcaActivity Activity(JsonObject raw)
     {
-        var agents = OrcaJson.Lenient(() => OrcaJson.Array(raw, "agents"));
-        IReadOnlyList<string?> states = agents is null || agents.Any(agent => agent is not JsonObject)
+        // Agents that are present but unreadable fail the call: read as none, a busy worktree would look idle.
+        var agents = OrcaJson.Array(raw, "agents");
+        IReadOnlyList<string?> states = agents is null
             ? []
-            : [.. agents.Cast<JsonObject>().Select(agent => LenientString(agent, "state"))];
+            : [.. agents.Select(agent => LenientString(agent as JsonObject ?? throw new InvalidDataException("agents: expected objects"), "state"))];
         return new OrcaActivity(Required(raw, "worktreeId"), states);
     }
 

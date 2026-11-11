@@ -374,7 +374,7 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         var path = worktree.Path;
         var busy = activity?.AgentStates.Count(state => state is not null && BusyStates.Contains(state)) ?? 0;
         var idle = worktree.LastActivityMs is { } last && last != 0 ? (nowMs - last) / MsPerDay : 0.0;
-        var facts = new WorktreeFacts(Directory.Exists(path), false, IsWithin(cwd, path), busy, IdleDays: Math.Max(idle, 0.0));
+        var facts = new WorktreeFacts(Directory.Exists(path), false, IsCurrent(cwd, path), busy, IdleDays: Math.Max(idle, 0.0));
         if (!facts.Exists || facts.IsCurrent || busy > 0)
         {
             return facts;
@@ -508,6 +508,13 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
             byId[worktree.Id] = worktree;
         }
 
+        // Agents are read again: one may have started in a worktree during the review's PR lookups.
+        var busy = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var running in await runtime.ActivityAsync(cancellationToken).ConfigureAwait(false))
+        {
+            busy[running.WorktreeId] = running.AgentStates.Count(state => state is not null && BusyStates.Contains(state));
+        }
+
         var done = new List<WorktreeRow>();
         foreach (var row in rows)
         {
@@ -520,6 +527,12 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
             if (byId.GetValueOrDefault(row.WorktreeId) is not { } worktree || Comparable(worktree.Path) != Comparable(row.Path))
             {
                 done.Add(row with { Outcome = "skipped: Orca no longer lists the worktree reviewed" });
+                continue;
+            }
+
+            if (busy.GetValueOrDefault(row.WorktreeId) > 0)
+            {
+                done.Add(row with { Outcome = "skipped: an agent started since review" });
                 continue;
             }
 
@@ -537,6 +550,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         var trimmed = Path.TrimEndingDirectorySeparator(normal);
         return OperatingSystem.IsWindows() ? trimmed.ToLowerInvariant() : trimmed;
     }
+
+    /// <summary>Whether <paramref name="cwd"/> is in <paramref name="path"/>, by spelling or once symlinks are resolved (<c>/tmp</c> is <c>/private/tmp</c> on macOS).</summary>
+    internal static bool IsCurrent(string cwd, string path) =>
+        IsWithin(cwd, path) || (Path.IsPathRooted(cwd) && Path.IsPathRooted(path) && PathResolution.IsUnder(PathResolution.Resolve(cwd), PathResolution.Resolve(path)));
 
     /// <summary>Whether <paramref name="path"/> is <paramref name="root"/> or inside it, by spelling.</summary>
     internal static bool IsWithin(string path, string root)
