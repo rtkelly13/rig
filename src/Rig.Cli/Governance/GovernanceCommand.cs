@@ -35,7 +35,16 @@ internal sealed record GovernanceHost(string CodeRoot, string Cwd, string Checko
 /// <param name="time">The clock waivers expire by.</param>
 /// <param name="output">Where reports go.</param>
 /// <param name="gitHub">The GitHub REST seam; <c>gh api</c> through <paramref name="proc"/> when null.</param>
-internal sealed partial class GovernanceCommand(GovernanceHost host, IProc proc, TimeProvider time, TextWriter output, IGitHubApi? gitHub = null)
+/// <param name="vercel">The Vercel API the Vercel audits read; they fail when it is null.</param>
+/// <param name="environment">Reads an environment variable; the process's own when null.</param>
+internal sealed partial class GovernanceCommand(
+    GovernanceHost host,
+    IProc proc,
+    TimeProvider time,
+    TextWriter output,
+    IGitHubApi? gitHub = null,
+    IVercelApi? vercel = null,
+    Func<string, string?>? environment = null)
 {
     /// <summary>What <c>rig repo-governance</c> is.</summary>
     public const string Description = "CLI tool to audit, inspect status, and enforce repository conventions across GitHub repos.";
@@ -60,6 +69,8 @@ internal sealed partial class GovernanceCommand(GovernanceHost host, IProc proc,
         governance.Subcommands.Add(Enforce());
         governance.Subcommands.Add(CheckNamesCommand());
         governance.Subcommands.Add(PruneBranches());
+        governance.Subcommands.Add(VercelProjectsCommand());
+        governance.Subcommands.Add(VercelGatingCommand());
         return governance;
     }
 

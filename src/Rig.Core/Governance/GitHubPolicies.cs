@@ -29,6 +29,15 @@ public sealed record LabelSpec(string Name, string Color, string Description);
 /// <param name="Reviewers">Logins that must approve a job deploying to it.</param>
 public sealed record EnvironmentPolicy(string Name, int WaitTimer, IReadOnlyList<string> Reviewers);
 
+/// <summary>The Vercel account facts the deployment-creation audit reads (<c>vercel</c>).</summary>
+/// <param name="TeamId">The Vercel team the projects live in; empty when not declared.</param>
+/// <param name="WindowDays">How many days of observed deployments the audit weighs.</param>
+public sealed record VercelGatingRules(string TeamId = "", int WindowDays = 3)
+{
+    /// <summary>No team, a three-day window.</summary>
+    public static VercelGatingRules Default { get; } = new();
+}
+
 /// <summary>A repo's GitHub Pages policy (<c>pages</c>).</summary>
 /// <param name="Enabled">Whether Pages should be on.</param>
 /// <param name="BuildType"><c>workflow</c> or <c>legacy</c>.</param>

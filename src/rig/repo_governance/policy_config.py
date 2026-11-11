@@ -633,10 +633,6 @@ class PolicyConfig:
         """Return the `AGENTS.md` hygiene rules for *repo*."""
         return self._resolve(repo, lambda layer: layer.agents_md_hygiene) or AgentsMdRules()
 
-    def vercel_gating(self, repo: str) -> VercelGatingRules:
-        """Return the Vercel account facts used by the creation-gate audit."""
-        return self._resolve(repo, lambda layer: layer.vercel) or VercelGatingRules()
-
     def pages(self, repo: str) -> PagesPolicy:
         """Return the GitHub Pages policy for *repo*."""
         return self._resolve(repo, lambda layer: layer.pages) or PagesPolicy()
