@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Rig.Core.Packages;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Tests.Otel;
 
 namespace Rig.Core.Tests.Packages;
 
@@ -250,6 +251,24 @@ public sealed class LivePackageFetcherTests : IDisposable
     [InlineData("""[{"claims":{"repository":"o/r","workflow_ref":{"file":"p.yml"}}}, {"id":"no-claims"}]""", "o/r", null)]
     public void Npm_trust_is_one_entry_or_a_list(string json, string repository, string? environment) =>
         Assert.Equal([new TrustConfig(repository, "p.yml", environment)], LivePackageFetcher.ParseNpmTrust(json));
+
+    [Fact]
+    public async Task A_registry_that_cannot_be_reached_reads_as_no_release()
+    {
+        using var handler = new StubHandler(_ => throw new HttpRequestException("offline"));
+        using var client = new HttpClient(handler);
+
+        Assert.Null(await new LivePackageFetcher(client, _github, _proc).RegistryReleaseAsync(Npm, Token));
+    }
+
+    [Fact]
+    public void Npm_trust_reads_the_cli_shape_and_one_document_per_entry() =>
+        Assert.Equal(
+            [new TrustConfig("o/r", "p.yml", "npm"), new TrustConfig("o/s", "q.yml", null)],
+            LivePackageFetcher.ParseNpmTrust("""
+                {"type": "github", "repository": "o/r", "file": "p.yml", "environment": "npm"}
+                {"claims": {"repository": "o/s", "workflow_ref": {"file": "q.yml"}}}
+                """));
 
     [Theory]
     [InlineData("not json")]

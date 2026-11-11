@@ -99,29 +99,25 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
 
         var latest = versions.Aggregate((a, b) => PackageVersions.Compare(b, a) > 0 ? b : a);
 
-        // The registration index says whether the latest version is listed or deprecated; failing that, it is neither.
+        // The registration index says whether the latest version is listed or deprecated. An index or page that could
+        // not be read leaves both unknown, so the lookup counts as failed rather than as confirmed listed.
         JsonObject? target = null;
-        var (_, index) = await GetAsync($"{NuGetRegistrations}{id}/index.json", cancellationToken).ConfigureAwait(false);
+        var (indexStatus, index) = await GetAsync($"{NuGetRegistrations}{id}/index.json", cancellationToken).ConfigureAwait(false);
+        var failed = Unread(indexStatus, index) == RegistryInfo.LookupFailed;
         foreach (var page in ((index.At("items") as JsonArray) ?? []).Reverse())
         {
             var leaves = page.At("items") as JsonArray;
             if (leaves is null && Str(page.At("@id")) is { } pageUrl)
             {
-                leaves = (await GetAsync(pageUrl, cancellationToken).ConfigureAwait(false)).Body.At("items") as JsonArray;
+                var (pageStatus, pageBody) = await GetAsync(pageUrl, cancellationToken).ConfigureAwait(false);
+                failed |= Unread(pageStatus, pageBody) == RegistryInfo.LookupFailed;
+                leaves = pageBody.At("items") as JsonArray;
             }
 
-            foreach (var entry in (leaves ?? []).Reverse().Select(leaf => leaf.At("catalogEntry") as JsonObject).OfType<JsonObject>())
+            target = (leaves ?? []).Select(leaf => leaf.At("catalogEntry") as JsonObject).OfType<JsonObject>().LastOrDefault(IsLatest);
+            if (target is not null)
             {
-                target ??= entry;
-                if (IsLatest(entry))
-                {
-                    target = entry;
-                    break;
-                }
-            }
-
-            if (target is not null && IsLatest(target))
-            {
+                failed = false;
                 break;
             }
         }
@@ -131,6 +127,7 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
             AllVersions = versions,
             Unlisted = target is not null && target.At("listed")?.GetValueKind() == JsonValueKind.False,
             Deprecated = target.At("deprecation") is JsonObject,
+            Failed = failed,
         };
 
         bool IsLatest(JsonObject entry) => string.Equals(Str(entry.At("version")), latest, StringComparison.OrdinalIgnoreCase);

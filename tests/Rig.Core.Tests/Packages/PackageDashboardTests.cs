@@ -152,6 +152,20 @@ public sealed class PackageDashboardTests : IDisposable
     }
 
     [Fact]
+    public async Task Tags_that_cannot_be_listed_are_flagged_and_are_not_a_missing_tag()
+    {
+        Directory.CreateDirectory(_root.Folder("Repo"));
+        _ = _proc.Answer(new Ran(128, string.Empty, "not a git repository"), "git", "tag", "-l");
+        var binding = new PackageBinding("Repo", "git@github.com:o/Repo.git", new(PackageSpec.NuGet, "Pkg", "Pkg.csproj", "release.yml"));
+
+        var row = Assert.Single(await PackageDashboard.CollectAsync(
+            [binding], new FakeRegistry(new() { ["Pkg"] = Published("1.0.0") }), new Git(_proc, _root.Path), _root.Path, _root.Folder("code"),
+            new Dictionary<string, string>(), Token));
+
+        Assert.Equal(["tags-unavailable"], row.Flags);
+    }
+
+    [Fact]
     public async Task A_tag_ahead_of_the_registry_is_flagged()
     {
         var row = Assert.Single(await Collect("Repo", ["v1.0.0", "v1.1.0"], new() { ["my-pkg"] = Published("1.0.0") }, "my-pkg"));

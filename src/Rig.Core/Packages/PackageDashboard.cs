@@ -73,6 +73,9 @@ public static partial class PackageDashboard
     /// <summary>The flag for a registry that could not be read.</summary>
     public const string RegistryUnavailable = "registry-unavailable";
 
+    /// <summary>The flag for a clone whose tags could not be listed.</summary>
+    public const string TagsUnavailable = "tags-unavailable";
+
     /// <summary>The flag for a tag the registry does not have.</summary>
     public const string TagWithoutRegistry = "tag-without-registry";
 
@@ -237,7 +240,8 @@ public static partial class PackageDashboard
             var spec = binding.Spec;
             var clone = ResolveClone(binding.Project, groups.GetValueOrDefault(binding.Project), root, codeRoot);
             var info = await registry.InfoAsync(spec.Registry, spec.Name, cancellationToken).ConfigureAwait(false);
-            var tags = clone is null ? [] : await git.LinesAsync(clone, "tag", "-l").ConfigureAwait(false) ?? [];
+            IReadOnlyList<string>? listed = clone is null ? [] : await git.LinesAsync(clone, "tag", "-l").ConfigureAwait(false);
+            var tags = listed ?? [];
             var matching = FindMatchingTags(tags, spec.Name);
             var latest = matching.Count == 0 ? null : matching.Aggregate((a, b) => PackageVersions.Compare(b.Version, a.Version) > 0 ? b : a);
             var changelog = clone is null ? new ChangelogState(false, false) : ReadChangelog(clone, spec.Manifest);
@@ -246,6 +250,11 @@ public static partial class PackageDashboard
             if (changelog.HasUnreleased)
             {
                 flags.Add(UnreleasedChanges);
+            }
+
+            if (listed is null)
+            {
+                flags.Add(TagsUnavailable);
             }
 
             if (info.Failed)
@@ -257,7 +266,7 @@ public static partial class PackageDashboard
                 flags.Add(TagWithoutRegistry);
             }
 
-            if (info.LatestVersion is not null && !matching.Any(m => m.Version == info.LatestVersion))
+            if (listed is not null && info.LatestVersion is not null && !matching.Any(m => m.Version == info.LatestVersion))
             {
                 flags.Add(RegistryWithoutTag);
             }

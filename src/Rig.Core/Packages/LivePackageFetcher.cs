@@ -118,33 +118,79 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         return null;
     }
 
-    /// <summary><c>npm trust list --json</c>: one entry or a list of them, each carrying the claims it was created with.</summary>
+    /// <summary>
+    /// <c>npm trust list --json</c>: one entry, a list of them, or one JSON document per entry. An entry carries its
+    /// fields under <c>claims</c> (the registry's shape) or at the top level (the CLI's: <c>repository</c>, <c>file</c>).
+    /// </summary>
     public static IReadOnlyList<TrustConfig> ParseNpmTrust(string text)
     {
-        var entries = Parse(text) switch
+        ArgumentNullException.ThrowIfNull(text);
+        var configs = new List<TrustConfig>();
+        foreach (var document in Documents(text))
         {
-            JsonArray list => list.ToList(),
-            JsonObject single => [single],
-            _ => [],
-        };
-        return
-        [
-            .. entries
-                .Select(entry => entry.At("claims"))
-                .OfType<JsonObject>()
-                .Select(claims => new TrustConfig(Str(claims.At("repository")) ?? string.Empty, Str(claims.At("workflow_ref").At("file")) ?? string.Empty, Str(claims.At("environment")))),
-        ];
+            IEnumerable<JsonNode?> entries = document switch
+            {
+                JsonArray list => list,
+                JsonObject single => [single],
+                _ => [],
+            };
+            foreach (var entry in entries)
+            {
+                if (entry.At("claims") is JsonObject claims)
+                {
+                    configs.Add(new(Str(claims.At("repository")) ?? string.Empty, Str(claims.At("workflow_ref").At("file")) ?? string.Empty, Str(claims.At("environment"))));
+                }
+                else if (Str(entry.At("repository")) is { } repository)
+                {
+                    configs.Add(new(repository, Str(entry.At("file")) ?? string.Empty, Str(entry.At("environment"))));
+                }
+            }
+        }
+
+        return configs;
+    }
+
+    private static List<JsonNode?> Documents(string text)
+    {
+        var documents = new List<JsonNode?>();
+        var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(text), new JsonReaderOptions { AllowMultipleValues = true });
+        try
+        {
+            while (reader.Read())
+            {
+                documents.Add(JsonNode.Parse(ref reader));
+            }
+        }
+        catch (JsonException)
+        {
+            // Keep the documents read before the unreadable one.
+        }
+
+        return documents;
     }
 
     private async Task<JsonNode?> GetAsync(string url, CancellationToken cancellationToken)
     {
-        using var response = await http.GetAsync(new Uri(url), cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
+        try
         {
+            using var response = await http.GetAsync(new Uri(url), cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+        }
+        catch (HttpRequestException)
+        {
+            // Offline, DNS or TLS: the lookup reads as no answer rather than ending the audit.
             return null;
         }
-
-        return Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // HttpClient's own timeout.
+            return null;
+        }
     }
 
     private async Task<Release?> NpmAsync(string name, CancellationToken cancellationToken)

@@ -88,6 +88,30 @@ public sealed class LiveRegistryInfoTests : IDisposable
     }
 
     [Fact]
+    public async Task An_unreadable_registration_leaves_the_flags_unknown_and_the_lookup_failed()
+    {
+        using var handler = new StubHandler(request => Task.FromResult(request.RequestUri!.OriginalString == Flat
+            ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"versions": ["1.0.0"]}""") }
+            : new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)));
+        using var client = new HttpClient(handler);
+
+        var info = await new LiveRegistryInfo(client).InfoAsync(PackageSpec.NuGet, "Pkg", Token);
+
+        Assert.Equal(("1.0.0", true, false), (info.LatestVersion, info.Failed, info.Unlisted));
+    }
+
+    [Fact]
+    public async Task An_older_entry_lends_its_flags_to_nothing()
+    {
+        _http.Routes[Flat] = """{"versions": ["0.9.0", "1.0.0"]}""";
+        _http.Routes[Index] = """{"items": [{"items": [{"catalogEntry": {"version": "0.9.0", "listed": false, "deprecation": {}}}]}]}""";
+
+        var info = await new LiveRegistryInfo(_client).InfoAsync(PackageSpec.NuGet, "Pkg", Token);
+
+        Assert.Equal(("1.0.0", false, false, false), (info.LatestVersion, info.Unlisted, info.Deprecated, info.Failed));
+    }
+
+    [Fact]
     public async Task NuGet_with_no_versions_is_unpublished()
     {
         _http.Routes[Flat] = """{"versions": []}""";
