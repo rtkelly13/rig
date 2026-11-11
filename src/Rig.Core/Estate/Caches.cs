@@ -152,7 +152,11 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
 
     private static readonly Dictionary<string, long> DockerUnits = new(StringComparer.Ordinal)
     {
-        ["B"] = 1, ["KB"] = 1000, ["MB"] = 1000L * 1000, ["GB"] = 1000L * 1000 * 1000, ["TB"] = 1000L * 1000 * 1000 * 1000,
+        ["B"] = 1,
+        ["KB"] = 1000,
+        ["MB"] = 1000L * 1000,
+        ["GB"] = 1000L * 1000 * 1000,
+        ["TB"] = 1000L * 1000 * 1000 * 1000,
     };
 
     /// <summary>Where Claude Code keeps per-session scratch: <c>&lt;temp&gt;/claude/&lt;project&gt;/&lt;session-id&gt;</c>.</summary>
