@@ -45,24 +45,26 @@ def test_a_failed_browser_profiles_fails_the_step_after_the_rest_runs():
     calls, failure = _csharp_calls_with({"browser profiles": 3})
 
     assert failure == "rig browser profiles exited 3"
-    assert calls[0] == ["devenv", "claude", "--dry-run"]
-    assert calls[1:5] == [
+    assert calls[:2] == [["devenv", "agents"], ["devenv", "claude", "--dry-run"]]
+    assert calls[2:6] == [
         ["devenv", "opencode", "--dry-run"],
         ["browser", "profiles", "--dry-run"],
         ["devenv", "estate-rules", "--dry-run"],
         ["devenv", "obsidian-plugins", "--dry-run"],
     ]
-    assert calls[-1] == ["skills", "sync", "--system", "all", "--dry-run"]
+    assert calls[-2:] == [["skills", "sync", "--system", "all", "--dry-run"], ["devenv", "agent-launcher", "--dry-run"]]
 
 
 @pytest.mark.ci
 @pytest.mark.usefixtures("isolated_home")
 def test_the_step_reports_every_failed_csharp_part():
-    _, failure = _csharp_calls_with({"devenv claude": 4, "devenv opencode": 5, "browser profiles": 1, "skills sync": 2})
+    _, failure = _csharp_calls_with(
+        {"devenv claude": 4, "devenv opencode": 5, "browser profiles": 1, "skills sync": 2, "devenv agent-launcher": 6}
+    )
 
     assert failure == (
         "rig devenv claude exited 4; rig devenv opencode exited 5; "
-        "rig browser profiles exited 1; rig skills sync exited 2"
+        "rig browser profiles exited 1; rig skills sync exited 2; rig devenv agent-launcher exited 6"
     )
 
 

@@ -3,36 +3,23 @@
 from __future__ import annotations
 
 from rich.console import Console
-from rich.table import Table
 
 from rig import csharp_cli
 
 from ...engine.context import StepContext
-from .agent_launcher_setup import setup_agent_launcher
-from .discovery import detect_installed_agents
 
 console = Console()
 
 
 def run_ai_tools_setup(ctx: StepContext) -> None:
     """Configure AI agent environments and baselines."""
-    # 1. Report installed agents
-    agents = detect_installed_agents()
-    table = Table(title="Detected AI Coding Assistants", show_header=True)
-    table.add_column("Assistant", style="cyan")
-    table.add_column("Command", style="dim")
-    table.add_column("Status", justify="center")
-
-    for a in agents:
-        status_str = "[green]Found[/green]" if a.is_installed else "[dim]Not Found[/dim]"
-        table.add_row(a.display_name, a.command, status_str)
-
-    console.print(table)
+    # 1. Report installed agents, through `rig devenv agents`
+    failed = {"devenv agents": csharp_cli.run(["devenv", "agents"])}
     console.print()
 
     # 2. Claude Code settings baseline and session-ledger hook, through `rig devenv claude`
     dry_run = ["--dry-run"] if ctx.dry_run else []
-    failed = {"devenv claude": csharp_cli.run(["devenv", "claude", *dry_run])}
+    failed["devenv claude"] = csharp_cli.run(["devenv", "claude", *dry_run])
 
     # 3. OpenCode defaults and policy, through `rig devenv opencode`
     failed["devenv opencode"] = csharp_cli.run(["devenv", "opencode", *dry_run])
@@ -50,9 +37,9 @@ def run_ai_tools_setup(ctx: StepContext) -> None:
     console.print("\n[cyan]Linking skills into agent CLIs...[/cyan]")
     failed["skills sync"] = csharp_cli.run(["skills", "sync", "--system", "all", *dry_run])
 
-    # 8. Agent launcher root shim and shell shortcut
+    # 8. Agent launcher root shim and shell shortcut, through `rig devenv agent-launcher`
     console.print("\n[cyan]Configuring agent launcher root shim & shell shortcut...[/cyan]")
-    setup_agent_launcher(dry_run=ctx.dry_run)
+    failed["devenv agent-launcher"] = csharp_cli.run(["devenv", "agent-launcher", *dry_run])
 
     # Every part runs even after one fails; the step then reports each failure.
     failures = [f"rig {command} exited {code}" for command, code in failed.items() if code != 0]

@@ -8,13 +8,19 @@ namespace Rig.Cli.Devenv;
 /// <summary>Where <c>rig devenv</c> sets things up.</summary>
 /// <param name="Home">The default home folder.</param>
 /// <param name="PolicyPath">The checkout's <c>config/cli-allowlists.json</c>, projected into Claude's permissions.</param>
-/// <param name="Windows">Whether settings files are written with CRLF and globs match case-insensitively.</param>
-internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows);
+/// <param name="Windows">Whether settings files are written with CRLF and globs match case-insensitively, and which shim and profile the launcher writes.</param>
+/// <param name="Checkout">The rig checkout whose C# CLI the agent launcher runs.</param>
+/// <param name="CodeRoot">The default code root, where the agent launcher shim goes.</param>
+/// <param name="Shell">The <c>SHELL</c> variable, which picks the POSIX profile.</param>
+/// <param name="Find">Finds a program on the PATH, or null.</param>
+internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find);
 
 /// <summary>
-/// The ported part of <c>rig devenv</c>: <c>claude</c>, <c>estate-rules</c>, <c>obsidian-plugins</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
+/// The ported part of <c>rig devenv</c>: <c>agent-launcher</c>, <c>agents</c>, <c>claude</c>, <c>estate-rules</c>,
+/// <c>obsidian-plugins</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
 /// <see cref="Forwarding.Forwarded.Owns"/> hands those lines over before parsing. Ported from devenv's
-/// <c>claude_code</c>, <c>session_ledger</c>, <c>estate_rules</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
+/// <c>agent_launcher_setup</c>, <c>agent_shortcut</c>, <c>discovery</c>, <c>claude_code</c>, <c>session_ledger</c>,
+/// <c>estate_rules</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
 /// </summary>
 /// <param name="host">Where it sets up.</param>
 /// <param name="plugins">Fetches Obsidian plugins from GitHub.</param>
@@ -41,7 +47,96 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Te
         var obsidian = new Command("obsidian-plugins", "Install and enable the estate's Obsidian community and core plugins in a vault.") { dryRun, home, vault };
         obsidian.SetAction((parsed, cancellationToken) =>
             ObsidianAsync(parsed.GetValue(dryRun), parsed.GetValue(vault) ?? ObsidianPlugins.DefaultVault(parsed.GetValue(home)!), cancellationToken));
-        return new Command("devenv", Description) { claude, rules, obsidian, opencode };
+        var agents = new Command("agents", "List the AI coding agents devenv knows and whether each is on the PATH.");
+        agents.SetAction(_ => Agents());
+        var root = new Option<string>("--root") { Description = "Code root to write the shim to (default: this estate's).", DefaultValueFactory = _ => host.CodeRoot };
+        var profile = new Option<string?>("--profile") { Description = "Shell profile to add the shortcut to (default: the active one under --home)." };
+        var launcher = new Command("agent-launcher", "Write the agent launcher shim to the code root and the `agent` shortcut to the shell profile.") { dryRun, home, root, profile };
+        launcher.SetAction(parsed => Launcher(parsed.GetValue(dryRun), parsed.GetValue(root)!, parsed.GetValue(profile) ?? DefaultProfile(parsed.GetValue(home)!)));
+        return new Command("devenv", Description) { launcher, agents, claude, rules, obsidian, opencode };
+    }
+
+    private string DefaultProfile(string home) => host.Windows ? LauncherShim.PowerShellProfile(home) : LauncherShim.PosixProfile(home, host.Shell);
+
+    private int Agents()
+    {
+        output.WriteLine("Detected AI coding assistants:");
+        foreach (var agent in KnownAgents.All)
+        {
+            output.WriteLine($"  {agent.Name,-26} {agent.Command,-9} {(host.Find(agent.Command) is null ? "not found" : "found")}");
+        }
+
+        return 0;
+    }
+
+    // The shim at the code root (both shims on Windows), then the profile block calling it. 1 when a write fails.
+    private int Launcher(bool dryRun, string root, string profile)
+    {
+        var cli = LauncherShim.CliProject(LauncherShim.MainCheckout(host.Checkout));
+        var sh = Path.Join(root, "agent.sh");
+        var shim = host.Windows ? Path.Join(root, "agent.ps1") : sh;
+        if (dryRun)
+        {
+            output.WriteLine($"[dry-run] Would write agent launcher shim to {root}");
+        }
+        else
+        {
+            try
+            {
+                _ = Directory.CreateDirectory(root);
+                File.WriteAllText(sh, LauncherShim.Posix(cli));
+                if (host.Windows)
+                {
+                    File.WriteAllText(shim, LauncherShim.PowerShell(cli));
+                }
+                else if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(sh, (UnixFileMode)0b111_101_101);
+                }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                error.WriteLine($"Failed to write the agent launcher shim: {e.Message}");
+                return 1;
+            }
+
+            output.WriteLine($"OK: Agent launcher shim ready: {shim}");
+        }
+
+        return Shortcut(dryRun, profile, host.Windows ? LauncherShim.PowerShellBlock(shim) : LauncherShim.PosixBlock(shim));
+    }
+
+    private int Shortcut(bool dryRun, string profile, string block)
+    {
+        try
+        {
+            var existed = File.Exists(profile);
+            // Compared with \n line ends, as Python's text mode does; written with the platform's.
+            var existing = existed ? File.ReadAllText(profile).ReplaceLineEndings("\n") : string.Empty;
+            var updated = LauncherShim.Upsert(existing, block);
+            if (existed && updated == existing)
+            {
+                output.WriteLine($"Agent shortcut block in {Path.GetFileName(profile)} is already up to date.");
+                return 0;
+            }
+
+            if (dryRun)
+            {
+                output.WriteLine($"[dry-run] Would update agent shortcut in {profile}");
+                return 0;
+            }
+
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(profile))!);
+            File.WriteAllText(profile, host.Windows ? updated.ReplaceLineEndings("\r\n") : updated);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            error.WriteLine($"Failed to configure agent shortcut: {e.Message}");
+            return 1;
+        }
+
+        output.WriteLine($"OK: Agent shortcut configured in {Path.GetFileName(profile)}");
+        return 0;
     }
 
     private int Check(string home)

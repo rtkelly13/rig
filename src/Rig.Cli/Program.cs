@@ -130,7 +130,14 @@ internal static class Program
                     Console.Out,
                     Console.Error).Build,
                 new DevenvCommand(
-                    new DevenvHost(home, Path.Join(checkout, "config", "cli-allowlists.json"), OperatingSystem.IsWindows()),
+                    new DevenvHost(
+                        home,
+                        Path.Join(checkout, "config", "cli-allowlists.json"),
+                        OperatingSystem.IsWindows(),
+                        checkout,
+                        codeRoot,
+                        Environment.GetEnvironmentVariable("SHELL"),
+                        ProgramPath.Find),
                     new ObsidianPlugins(downloads),
                     Console.Out,
                     Console.Error).Build,
