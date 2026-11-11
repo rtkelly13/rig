@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import typer
 from rich.console import Console
 
@@ -11,7 +13,7 @@ from .doctor.core import run_doctor
 from .engine.context import StepContext, get_current_platform
 from .engine.runner import run_steps
 from .engine.step import Step
-from .steps import ai_tools, fonts, git, runtimes, terminal, tools
+from .steps import ai_tools, git, runtimes, terminal, tools
 from .tool_manager import ToolManager
 
 app = typer.Typer(
@@ -22,11 +24,15 @@ app = typer.Typer(
 console = Console()
 
 
-def _gh_overlay(ctx: StepContext) -> None:
-    """Install the gh scope overlay through ``rig devenv gh``."""
-    code = csharp_cli.run(["devenv", "gh", *(["--dry-run"] if ctx.dry_run else [])])
-    if code != 0:
-        raise RuntimeError(f"rig devenv gh exited {code}")
+def _ported(name: str) -> Callable[[StepContext], None]:
+    """A setup step that runs ``rig devenv <name>`` on the C# CLI, failing when it exits non-zero."""
+
+    def step(ctx: StepContext) -> None:
+        code = csharp_cli.run(["devenv", name, *(["--dry-run"] if ctx.dry_run else [])])
+        if code != 0:
+            raise RuntimeError(f"rig devenv {name} exited {code}")
+
+    return step
 
 
 # The order `devenv setup` runs in, and what `--step N` counts.
@@ -40,7 +46,7 @@ SETUP_STEPS: list[Step] = [
     Step(
         name="Font Installation",
         description="Install developer Nerd Fonts (JetBrainsMono, CascadiaCode, FiraCode)",
-        func=fonts.run_fonts_setup,
+        func=_ported("fonts"),
         confirm_message="Would you like to install Nerd Fonts?",
     ),
     Step(
@@ -52,7 +58,7 @@ SETUP_STEPS: list[Step] = [
     Step(
         name="GitHub CLI Scopes",
         description="Install the personal gh scope overlay read by the workspace devenv",
-        func=_gh_overlay,
+        func=_ported("gh"),
         confirm_message="Would you like to install the gh scope overlay?",
     ),
     Step(
@@ -144,14 +150,6 @@ def runtimes_cmd() -> None:
     platform = get_current_platform()
     ctx = StepContext(platform=platform, mode="full")
     runtimes.run_runtimes_setup(ctx)
-
-
-@app.command("fonts")
-def fonts_cmd() -> None:
-    """Install or check developer Nerd Fonts."""
-    platform = get_current_platform()
-    ctx = StepContext(platform=platform, mode="full")
-    fonts.run_fonts_setup(ctx)
 
 
 @app.command("terminal")

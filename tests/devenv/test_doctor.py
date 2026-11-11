@@ -41,3 +41,10 @@ def test_doctor_checks_the_gh_overlay_through_rig_devenv_gh(csharp_calls: list[l
     _ = run_doctor()
 
     assert ["devenv", "gh", "--check"] in [call[call.index("--") + 1 :] for call in csharp_calls]
+
+
+@pytest.mark.ci
+def test_doctor_lists_fonts_through_rig_devenv_fonts(csharp_calls: list[list[str]]):
+    _ = run_doctor()
+
+    assert ["devenv", "fonts", "--check"] in [call[call.index("--") + 1 :] for call in csharp_calls]

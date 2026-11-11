@@ -14,20 +14,22 @@ namespace Rig.Cli.Devenv;
 /// <param name="Shell">The <c>SHELL</c> variable, which picks the POSIX profile.</param>
 /// <param name="Find">Finds a program on the PATH, or null.</param>
 /// <param name="ConfigHome">The <c>XDG_CONFIG_HOME</c> variable, which moves the gh scope overlay; ignored under another <c>--home</c>.</param>
-internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null);
+/// <param name="MacOS">Whether fonts go to <c>~/Library/Fonts</c>; otherwise Windows' or Linux's user font folder.</param>
+internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false);
 
 /// <summary>
 /// The ported part of <c>rig devenv</c>: <c>agent-launcher</c>, <c>agents</c>, <c>claude</c>, <c>estate-rules</c>,
-/// <c>gh</c>, <c>obsidian-plugins</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
+/// <c>fonts</c>, <c>gh</c>, <c>obsidian-plugins</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
 /// <see cref="Forwarding.Forwarded.Owns"/> hands those lines over before parsing. Ported from devenv's
-/// <c>agent_launcher_setup</c>, <c>agent_shortcut</c>, <c>discovery</c>, <c>claude_code</c>, <c>session_ledger</c>,
+/// <c>agent_launcher_setup</c>, <c>agent_shortcut</c>, <c>discovery</c>, <c>fonts</c>, <c>claude_code</c>, <c>session_ledger</c>,
 /// <c>estate_rules</c>, <c>github_cli</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
 /// </summary>
 /// <param name="host">Where it sets up.</param>
 /// <param name="plugins">Fetches Obsidian plugins from GitHub.</param>
+/// <param name="fonts">Downloads the Nerd Fonts.</param>
 /// <param name="output">Where progress goes.</param>
 /// <param name="error">Where failures go.</param>
-internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, TextWriter output, TextWriter error)
+internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, NerdFonts fonts, TextWriter output, TextWriter error)
 {
     /// <summary>What <c>rig devenv</c> is, matching the Python group's help.</summary>
     public const string Description = "Unified development environment manager (tools, runtimes, fonts, git, AI coding agents).";
@@ -57,7 +59,53 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Te
         var ghCheck = new Option<bool>("--check") { Description = "Report whether the gh scope overlay is installed and current, changing nothing; exit 1 when it is not." };
         var gh = new Command("gh", "Install the personal gh token scope overlay that the workspace devenv merges in.") { dryRun, home, ghCheck };
         gh.SetAction(parsed => Gh(parsed.GetValue(dryRun), parsed.GetValue(ghCheck), parsed.GetValue(home)!));
-        return new Command("devenv", Description) { launcher, agents, claude, rules, gh, obsidian, opencode };
+        var fontsCheck = new Option<bool>("--check") { Description = "Report which Nerd Fonts are installed, changing nothing; exit 1 when one is missing." };
+        var fontsCommand = new Command("fonts", "Download and install the developer Nerd Fonts (JetBrainsMono, CascadiaCode, FiraCode).") { dryRun, home, fontsCheck };
+        fontsCommand.SetAction((parsed, cancellationToken) =>
+            FontsAsync(parsed.GetValue(dryRun), parsed.GetValue(fontsCheck), NerdFonts.Folder(parsed.GetValue(home)!, host.Windows, host.MacOS), cancellationToken));
+        return new Command("devenv", Description) { launcher, agents, claude, rules, fontsCommand, gh, obsidian, opencode };
+    }
+
+    // Each missing family is downloaded in turn; one that fails does not stop the rest, and makes the exit 1.
+    private async Task<int> FontsAsync(bool dryRun, bool check, string folder, CancellationToken cancellationToken)
+    {
+        if (check)
+        {
+            foreach (var font in NerdFonts.All)
+            {
+                await output.WriteLineAsync($"  {font.Name,-26} {(NerdFonts.Installed(folder, font) ? "installed" : "missing")}").ConfigureAwait(false);
+            }
+
+            return NerdFonts.All.All(font => NerdFonts.Installed(folder, font)) ? 0 : 1;
+        }
+
+        var failed = false;
+        foreach (var font in NerdFonts.All)
+        {
+            if (NerdFonts.Installed(folder, font))
+            {
+                await output.WriteLineAsync($"✓ Font already present: {font.Name}").ConfigureAwait(false);
+            }
+            else if (dryRun)
+            {
+                await output.WriteLineAsync($"Dry run: would download and install {font.Name}").ConfigureAwait(false);
+            }
+            else
+            {
+                await output.WriteLineAsync($"Downloading {font.Name} from {NerdFonts.Url(font)}...").ConfigureAwait(false);
+                if (await fonts.InstallAsync(font, folder, cancellationToken).ConfigureAwait(false) is { } problem)
+                {
+                    await error.WriteLineAsync($"! Could not download/install {font.Name}: {problem}").ConfigureAwait(false);
+                    failed = true;
+                }
+                else
+                {
+                    await output.WriteLineAsync($"✓ Installed font: {font.Name}").ConfigureAwait(false);
+                }
+            }
+        }
+
+        return failed ? 1 : 0;
     }
 
     // The overlay goes where the workspace devenv reads it. XDG_CONFIG_HOME applies only to the default home, so a

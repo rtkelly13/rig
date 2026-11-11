@@ -34,6 +34,17 @@ def test_the_gh_setup_step_hands_over_to_rig_devenv_gh(csharp_calls: list[list[s
 
 
 @pytest.mark.ci
+def test_the_fonts_setup_step_hands_over_to_rig_devenv_fonts(csharp_calls: list[list[str]]):
+    from rig.devenv.cli import SETUP_STEPS
+    from rig.devenv.engine.context import StepContext, get_current_platform
+
+    step = next(step for step in SETUP_STEPS if step.name == "Font Installation")
+    step.func(StepContext(platform=get_current_platform(), mode="full"))
+
+    assert [call[call.index("--") + 1 :] for call in csharp_calls] == [["devenv", "fonts"]]
+
+
+@pytest.mark.ci
 def test_the_gh_setup_step_fails_when_rig_devenv_gh_does():
     from rig import csharp_cli
     from rig.devenv.cli import SETUP_STEPS
