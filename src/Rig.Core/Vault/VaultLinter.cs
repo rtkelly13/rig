@@ -441,12 +441,12 @@ public sealed partial class VaultLinter
 
     private static string? Truthy(string? text) => string.IsNullOrEmpty(text) ? null : text;
 
-    private static bool Excluded(string fullPath, params string[] extra) =>
+    internal static bool Excluded(string fullPath, params string[] extra) =>
         fullPath.Contains(".git", StringComparison.Ordinal)
         || fullPath.Contains("Archive", StringComparison.Ordinal)
         || extra.Any(e => fullPath.Contains(e, StringComparison.Ordinal));
 
-    private static bool ShouldLint(VaultEntry note) =>
+    internal static bool ShouldLint(VaultEntry note) =>
         !Excluded(note.FullPath, ".obsidian") && LintRoots.Any(root => note.Relative.ToString().Contains(root, StringComparison.Ordinal));
 
     private bool IsHubLike(VaultEntry note)

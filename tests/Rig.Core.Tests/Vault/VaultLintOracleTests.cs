@@ -287,7 +287,7 @@ public sealed class VaultLintOracleTests
         }
     }
 
-    private static void Materialize(string root, JsonArray files)
+    internal static void Materialize(string root, JsonArray files)
     {
         Directory.CreateDirectory(root);
         foreach (var node in files)
