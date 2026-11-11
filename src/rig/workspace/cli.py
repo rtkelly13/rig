@@ -8,7 +8,6 @@ from __future__ import annotations
 import typer
 
 from rig import csharp_cli
-from rig.workspace.ci_cli import ci_cli
 from rig.workspace.orca_cli import orca_cli
 from rig.workspace.packages_cli import packages_cli
 
@@ -21,7 +20,6 @@ app = typer.Typer(
 csharp_cli.add_stub(app, "skills")
 csharp_cli.add_stub(app, "policy")
 csharp_cli.add_group_stubs(app, "workspace")
-app.add_typer(ci_cli, name="ci")
 app.add_typer(packages_cli, name="packages")
 app.add_typer(packages_cli, name="artifacts")
 app.add_typer(orca_cli, name="orca")
