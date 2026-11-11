@@ -16,7 +16,15 @@ public static class PyJson
     public static string Dumps(JsonNode? node, bool ensureAscii = true)
     {
         var text = new StringBuilder();
-        Write(text, node, 0, ensureAscii);
+        Write(text, node, 0, ensureAscii, indented: true);
+        return text.ToString();
+    }
+
+    /// <summary><paramref name="node"/> on one line, as Python's <c>json.dumps(value)</c> prints it: <c>", "</c> and <c>": "</c> between items.</summary>
+    public static string DumpsLine(JsonNode? node)
+    {
+        var text = new StringBuilder();
+        Write(text, node, 0, ascii: true, indented: false);
         return text.ToString();
     }
 
@@ -58,7 +66,7 @@ public static class PyJson
         return (digits, whole - leading + exponent);
     }
 
-    private static void Write(StringBuilder text, JsonNode? node, int depth, bool ascii)
+    private static void Write(StringBuilder text, JsonNode? node, int depth, bool ascii, bool indented)
     {
         switch (node)
         {
@@ -73,14 +81,14 @@ public static class PyJson
                 var first = true;
                 foreach (var (key, value) in obj)
                 {
-                    _ = text.Append(first ? "\n" : ",\n").Append(' ', (depth + 1) * 2);
+                    Separate(text, first, depth + 1, indented);
                     String(text, key, ascii);
                     _ = text.Append(": ");
-                    Write(text, value, depth + 1, ascii);
+                    Write(text, value, depth + 1, ascii, indented);
                     first = false;
                 }
 
-                _ = text.Append('\n').Append(' ', depth * 2).Append('}');
+                Close(text, '}', depth, indented);
                 break;
             case JsonArray array when array.Count == 0:
                 _ = text.Append("[]");
@@ -89,17 +97,24 @@ public static class PyJson
                 _ = text.Append('[');
                 for (var i = 0; i < array.Count; i++)
                 {
-                    _ = text.Append(i == 0 ? "\n" : ",\n").Append(' ', (depth + 1) * 2);
-                    Write(text, array[i], depth + 1, ascii);
+                    Separate(text, i == 0, depth + 1, indented);
+                    Write(text, array[i], depth + 1, ascii, indented);
                 }
 
-                _ = text.Append('\n').Append(' ', depth * 2).Append(']');
+                Close(text, ']', depth, indented);
                 break;
             default:
                 Scalar(text, (JsonValue)node, ascii);
                 break;
         }
     }
+
+    // Before an item: a newline and its indent, or ", " between items on one line.
+    private static void Separate(StringBuilder text, bool first, int depth, bool indented) =>
+        _ = indented ? text.Append(first ? "\n" : ",\n").Append(' ', depth * 2) : first ? text : text.Append(", ");
+
+    private static void Close(StringBuilder text, char bracket, int depth, bool indented) =>
+        _ = indented ? text.Append('\n').Append(' ', depth * 2).Append(bracket) : text.Append(bracket);
 
     private static void Scalar(StringBuilder text, JsonValue value, bool ascii)
     {

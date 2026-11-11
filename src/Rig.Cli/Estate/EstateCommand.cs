@@ -88,6 +88,11 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(new OrcaLayoutCommand(host, orca, proc, github, output, error).Build());
         estate.Subcommands.Add(new OrcaWorktreesCommand(host, orca, git, proc, time, output, error).Build());
         estate.Subcommands.Add(new WrapupCommand(host, git, proc, time, wrapup ?? WrapupHost.Inert(time), output, error).Build());
+        foreach (var command in new ShelveCommand(host, git, proc, github, time, ClonesAsync, CodeRoot, OneCloneAsync, output, error).Build())
+        {
+            estate.Subcommands.Add(command);
+        }
+
         var disk = new DiskUsage(proc);
         estate.Subcommands.Add(new AppsCommand(
             new InstalledApps(proc, disk, time), InstalledApps.DefaultAppDirs(host.Home), OperatingSystem.IsWindows() ? new UninstallRegistry() : null, time, output).Build());
@@ -843,7 +848,7 @@ internal sealed class EstateCommand(
     private string ExpandHome(string path) => host.ExpandHome(path);
 
     // A path inside the clone relative to it, else in full: a worktree can live outside its clone.
-    private static string Short(string path, string clone)
+    internal static string Short(string path, string clone)
     {
         var relative = Path.GetRelativePath(clone, path);
         return relative == ".." || relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) || Path.IsPathRooted(relative)
