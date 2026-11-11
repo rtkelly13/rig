@@ -429,7 +429,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
         }
 
         var parent = Path.GetDirectoryName(PathResolution.Resolve(admin));
-        return parent == PathResolution.Resolve(ownWorktrees) ? null : admin;
+        return parent is not null && PathResolution.Same(parent, PathResolution.Resolve(ownWorktrees)) ? null : admin;
     }
 
     /// <summary>The commit a worktree's HEAD last pointed at, from its own reflog; empty when none survives.</summary>
@@ -524,7 +524,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
     private static bool IsBelow(string path, string folder)
     {
         var (inner, outer) = (PathResolution.Resolve(path), PathResolution.Resolve(folder));
-        return inner != outer && PathResolution.IsUnder(inner, outer);
+        return !PathResolution.Same(inner, outer) && PathResolution.IsUnder(inner, outer);
     }
 
     private static string Prefix(string text, int length) => text.Length > length ? text[..length] : text;
