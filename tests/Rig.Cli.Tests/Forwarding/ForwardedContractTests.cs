@@ -12,6 +12,7 @@ using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
 using Rig.Core.Browser;
+using Rig.Core.Devenv;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
@@ -97,7 +98,7 @@ public sealed partial class ForwardedContractTests
                 new PolicyCommand(new PolicyHost("/none.json", "/", "/", false), TextWriter.Null, TextWriter.Null).Build,
                 new SkillsCommand(new SkillsHost("/", "/", "/", "/", false), new Git(new FakeProc(), "/"), new RefusingLinker(), TextWriter.Null, TextWriter.Null).Build,
                 new BrowserCommand(new BrowserHost("/", null, false, _ => null, _ => new ShellProfileEnvironment("/none")), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
-                new DevenvCommand(new DevenvHost("/", "/none.json", false), TextWriter.Null, TextWriter.Null).Build,
+                new DevenvCommand(new DevenvHost("/", "/none.json", false), new ObsidianPlugins(Refusing), TextWriter.Null, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
 
