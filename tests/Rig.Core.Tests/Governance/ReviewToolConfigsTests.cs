@@ -105,4 +105,44 @@ public sealed class ReviewToolConfigsTests : IDisposable
         Assert.StartsWith("CONFLICT: disallowed by policy but .coderabbit.yml", change.Message, StringComparison.Ordinal);
         Assert.Equal("reviews:\n  auto_review:\n    enabled: true\n", File.ReadAllText(file));
     }
+
+    [Fact]
+    public void A_dotnet_repo_without_qodana_gets_its_config_and_workflow()
+    {
+        _root.File("app/App.sln");
+
+        var dry = ReviewToolConfigs.AlignQodana(Repo, dryRun: true);
+        var wrote = ReviewToolConfigs.AlignQodana(Repo, dryRun: false);
+
+        Assert.Equal((true, "would create qodana.yaml, .github/workflows/qodana.yml"), dry);
+        Assert.Equal((true, "created qodana.yaml, .github/workflows/qodana.yml"), wrote);
+        Assert.Equal((false, "already configured"), ReviewToolConfigs.AlignQodana(Repo, dryRun: false));
+        Assert.True(ReviewToolConfigs.InspectQodana(Repo).IsAligned);
+    }
+
+    [Fact]
+    public void Deepsource_enables_csharp_and_finds_python_or_javascript_one_level_down()
+    {
+        _root.File("app/App.csproj");
+        _root.File("app/package.json");
+        _root.File("app/tools/run.py");
+
+        var config = ReviewToolConfigs.DeepSourceConfig(Repo);
+
+        Assert.Contains("name = \"csharp\"", config, StringComparison.Ordinal);
+        Assert.Contains("name = \"python\"", config, StringComparison.Ordinal);
+        Assert.Contains("name = \"javascript\"", config, StringComparison.Ordinal);
+        Assert.Contains("name = \"secrets\"", config, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_unparseable_coderabbit_config_does_not_count_as_a_suppressor()
+    {
+        var file = _root.File("app/.coderabbit.yaml");
+        File.WriteAllText(file, "reviews: [unclosed\n");
+
+        var change = ReviewToolConfigs.Align(Repo, "o", Disallowing("coderabbitai"), dryRun: false)[0];
+
+        Assert.StartsWith("CONFLICT: disallowed by policy but .coderabbit.yaml", change.Message, StringComparison.Ordinal);
+    }
 }

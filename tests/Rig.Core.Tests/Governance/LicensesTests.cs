@@ -82,6 +82,15 @@ public sealed class LicensesTests : IDisposable
     }
 
     [Fact]
+    public void Text_without_notices_on_either_side_is_left_as_generated()
+    {
+        var unlicense = Licenses.Generate("Unlicense", "Ryan Kelly", 2026);
+
+        Assert.Equal(unlicense, Licenses.PreserveExistingNotices(unlicense, "Copyright (c) 2020 Ryan Kelly\n", "Ryan Kelly", 2026));
+        Assert.Equal("generated\n", Licenses.PreserveExistingNotices("generated\n", "no notices here\n", "Ryan Kelly", 2026));
+    }
+
+    [Fact]
     public void A_new_holder_is_added_beside_the_existing_notices()
     {
         var kept = Licenses.PreserveExistingNotices(Licenses.Generate("MIT", "rtkelly-labs", 2026), "Copyright (c) 2020 Ryan Kelly\n", "rtkelly-labs", 2026);

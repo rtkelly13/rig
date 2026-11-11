@@ -186,6 +186,20 @@ public sealed class GitHubAppsTests
     }
 
     [Fact]
+    public async Task Sync_stops_when_the_installations_repositories_cannot_be_read()
+    {
+        _ = _api.On("GET", "users/labs", """{"type": "Organization"}""")
+            .On("GET", Installations, """{"installations": [{"id": 7, "app_slug": "renovate", "repository_selection": "selected"}]}""")
+            .Fail("GET", RenovateRepos, "gh: HTTP 502");
+
+        var sync = await Subject.SyncAsync("labs", "renovate", dryRun: false, Token);
+
+        Assert.False(sync.Ok);
+        Assert.StartsWith($"Cannot sync repositories: repository lookup failed: GET {RenovateRepos}: ", sync.Messages.Single(), StringComparison.Ordinal);
+        Assert.All(_api.Calls, call => Assert.Equal("GET", call.Method));
+    }
+
+    [Fact]
     public async Task Sync_is_a_no_op_when_aligned_or_installed_on_all()
     {
         var aligned = await Installed("selected", "a", "b").SyncAsync("labs", "renovate", dryRun: false, Token);

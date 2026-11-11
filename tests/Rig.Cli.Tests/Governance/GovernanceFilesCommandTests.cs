@@ -145,6 +145,34 @@ public sealed class GovernanceFilesCommandTests : IDisposable
         Assert.Empty(Directory.EnumerateFileSystemEntries(Repo));
     }
 
+    [Fact]
+    public async Task Gitignore_drift_as_a_table_says_how_to_fix_it()
+    {
+        var (code, output) = await RunAsync(new FakeGitHub(), "gitignore", Repo, "-l", "node");
+
+        Assert.Equal(1, code);
+        Assert.Contains("Common .gitignore: AUDIT", output, StringComparison.Ordinal);
+        Assert.EndsWith("\nRun 'repo-governance gitignore --apply' or 'workspace gitignore sync' to fix.\n", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_selected_installation_missing_a_repo_drifts_and_a_failed_sync_exits_1()
+    {
+        var api = new FakeGitHub().On("GET", "users/acme", """{"type": "Organization"}""")
+            .On("GET", Installations, """{"installations": [{"id": 7, "app_slug": "renovate", "repository_selection": "selected"}]}""")
+            .On("GET", "user/installations/7/repositories?per_page=100&page=1", """{"repositories": []}""");
+
+        var (audit, report) = await RunAsync(api, "apps", "--org", "acme");
+        var (enforce, synced) = await RunAsync(api, "apps", "--org", "acme", "--enforce");
+
+        Assert.Equal(1, audit);
+        Assert.Contains("\n⚠ Renovate is missing connections to: widget\n", report, StringComparison.Ordinal);
+        Assert.EndsWith("\nFAILED: 1 required GitHub App(s) drifted on @acme.\n", report, StringComparison.Ordinal);
+        Assert.Equal(1, enforce);
+        Assert.EndsWith("\nFAILED: 1 GitHub App sync(s) failed on @acme.\n", synced, StringComparison.Ordinal);
+        Assert.DoesNotContain(api.Calls, call => call.Method != "GET");
+    }
+
     private async Task<(int Code, string Out)> RunAsync(FakeGitHub api, params string[] args)
     {
         using var output = new StringWriter();
