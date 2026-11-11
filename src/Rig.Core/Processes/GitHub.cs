@@ -11,6 +11,9 @@ public sealed record ApiRequest(string Method, string Route, string? Body = null
     /// <summary>A GET of <paramref name="route"/>.</summary>
     public static ApiRequest Get(string route) => new("GET", route);
 
+    /// <summary>Extra request headers, each as <c>Name: value</c>; <c>Accept: application/vnd.github.raw</c> reads a file's bytes.</summary>
+    public IReadOnlyList<string> Headers { get; init; } = [];
+
     /// <summary>
     /// A GraphQL call: <c>POST graphql</c> with the document and its variables as the JSON body, so a variable can hold
     /// any characters and keeps its JSON type. <c>gh api graphql</c> answers a GraphQL error with a non-zero exit and the
@@ -51,6 +54,11 @@ public sealed class GhApi(IProc proc) : IGitHubApi
         List<string> argv = request.Method == "GET"
             ? ["gh", "api", request.Route]
             : ["gh", "api", "-X", request.Method, request.Route];
+        foreach (var header in request.Headers)
+        {
+            argv.AddRange(["-H", header]);
+        }
+
         if (request.Body is not null)
         {
             argv.AddRange(["--input", "-"]);
