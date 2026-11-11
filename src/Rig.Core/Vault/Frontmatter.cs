@@ -86,6 +86,49 @@ public static partial class Frontmatter
         return Empty;
     }
 
+    /// <summary>
+    /// <c>frontmatter.loads(text).content</c>: what follows the first two rules, stripped, or the whole text stripped when
+    /// there is no frontmatter.
+    /// </summary>
+    public static string Content(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var stripped = PyText.Strip(text);
+        foreach (var boundary in new[] { YamlBoundary(), JsonBoundary() })
+        {
+            if (boundary.Match(stripped) is { Success: true, Index: 0 } first)
+            {
+                var second = first.NextMatch();
+                return second.Success ? PyText.Strip(stripped[(second.Index + second.Length)..]) : stripped;
+            }
+        }
+
+        return stripped;
+    }
+
+    /// <summary>
+    /// Where the YAML between a note's first two <c>---</c> rules sits in <paramref name="text"/>, found as
+    /// <see cref="Parse"/> finds it, or <see langword="null"/> when the note opens with no YAML block.
+    /// </summary>
+    internal static Range? YamlBlock(string text)
+    {
+        var start = 0;
+        while (start < text.Length && PyText.IsSpace(text[start]))
+        {
+            start++;
+        }
+
+        // Matched from the first non-space character, as Parse matches the stripped text, so `^` holds there.
+        var first = YamlBoundary().Match(text[start..]);
+        if (first is not { Success: true, Index: 0 })
+        {
+            return null;
+        }
+
+        var second = first.NextMatch();
+        return second.Success ? (start + first.Length)..(start + second.Index) : null;
+    }
+
     private static FrontmatterRead Empty { get; } = new(new Dictionary<string, PyValue>(), null);
 
     private static FrontmatterRead Refused(string reason) => new(new Dictionary<string, PyValue>(), reason);

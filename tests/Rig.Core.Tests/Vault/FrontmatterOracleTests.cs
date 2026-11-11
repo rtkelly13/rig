@@ -68,6 +68,12 @@ public sealed class FrontmatterOracleTests
     [Fact]
     public void A_stream_of_two_documents_is_refused() => Assert.Throws<PyYamlException>(() => PyYaml.Load("a: 1\n---\nb: 2\n"));
 
+    // Known gap: PyYAML reads a block scalar whose first line is only spaces as '', YamlDotNet refuses it, so such a note
+    // is logged and passed over where the Python read it. Pinned so a fix shows up here.
+    [Fact]
+    public void A_block_scalar_opened_by_a_line_of_spaces_is_refused_where_pyyaml_read_it_as_empty() =>
+        Assert.Throws<PyYamlException>(() => PyYaml.Load("status: |\n  \ncreated: x\n"));
+
     [Fact]
     public void An_empty_stream_holds_no_document() => Assert.Null(PyYaml.Load(string.Empty));
 
