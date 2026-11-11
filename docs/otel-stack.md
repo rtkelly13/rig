@@ -18,7 +18,7 @@ uv run otel-stack collector forward set <url> | off | show  # also send to anoth
 
 | | |
 |---|---|
-| Binary | official **core** `otelcol` 0.162.0, sha256 pinned per platform in `otel_stack/collector.py` |
+| Binary | official **core** `otelcol` 0.162.0, sha256 pinned per platform in `src/Rig.Core/Otel/OtelPins.cs` |
 | Listens | OTLP gRPC `127.0.0.1:4317`, OTLP HTTP `127.0.0.1:4318` (loopback only) |
 | Pipeline | `otlp` → `batch` (10 s) → `file/<signal>` for traces, metrics, logs |
 | Data | `<rig data>/otel/data/<signal>.jsonl` (OTLP JSON, one batch per line) |
@@ -118,7 +118,7 @@ This replaces #275's Docker stack with native binaries, so it needs no Docker.
 
 | | |
 |---|---|
-| ClickHouse | official `v26.8.23.6-lts` single binary, sha256 pinned in `otel_stack/pinned.py`; HTTP `127.0.0.1:18123`, native `127.0.0.1:19000`, user `default` from loopback only |
+| ClickHouse | official `v26.8.23.6-lts` single binary, sha256 pinned in `src/Rig.Core/Otel/OtelPins.cs`; HTTP `127.0.0.1:18123`, native `127.0.0.1:19000`, user `default` from loopback only |
 | Collector | `otelcol-contrib` 0.162.0 (same release as core, sha256 pinned), OTLP HTTP `127.0.0.1:14318`, the `clickhouse` exporter into database `otel` |
 | Retention | the exporter creates every `otel` table with a **7-day TTL** |
 | Files | configs, pids and backfill state in `<rig data>/otel/clickhouse/`, data in its `data/`; logs in `<rig data>/logs/clickhouse.log` and `otelcol-contrib.log` |

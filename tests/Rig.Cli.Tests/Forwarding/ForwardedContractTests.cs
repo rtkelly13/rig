@@ -2,9 +2,12 @@ using System.Text.RegularExpressions;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
+using Rig.Cli.Otel;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
+using Rig.Core.Otel;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Tests.Otel;
 
 namespace Rig.Cli.Tests.Forwarding;
 
@@ -17,6 +20,7 @@ public sealed partial class ForwardedContractTests
     private static readonly string PythonCli = Path.Combine(RepoRoot(), "src", "rig", "rig_cli.py");
     private static readonly string Bridge = Path.Combine(RepoRoot(), "src", "rig", "csharp_cli.py");
     private static readonly string Project = Path.Combine(RepoRoot(), "pyproject.toml");
+    private static readonly HttpClient Refusing = new(new StubHandler(_ => throw new InvalidOperationException("nothing may connect")));
 
     [Fact]
     public void The_table_names_exactly_the_python_commands()
@@ -52,12 +56,36 @@ public sealed partial class ForwardedContractTests
                     TextWriter.Null,
                     TextWriter.Null).Build,
                 new MailCommand(new MailHost(_ => null, "/", "/", TimeProvider.System), TextWriter.Null, TextWriter.Null).Build,
+                InertOtelStack().Build,
             ]);
         var owned = app
             .BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));
 
         Assert.NotEmpty(ported);
         Assert.Equal(ported.Order(StringComparer.Ordinal), owned.Order(StringComparer.Ordinal));
+    }
+
+    // Only its command tree is read; nothing here runs.
+    private static OtelStackCommand InertOtelStack()
+    {
+        var paths = new OtelPaths("/otel");
+        var signals = new FakeSignals();
+        var detached = new RecordingDetached(signals);
+        var probe = new FakeProbe();
+        var runtime = new CollectorRuntime(paths, new FakeProc(), detached, windows: false);
+        return new OtelStackCommand(
+            new OtelHost(paths, () => "darwin_arm64", true, "/traces", _ => null, TimeProvider.System, TimeZoneInfo.Utc),
+            new OtelParts(
+                runtime,
+                probe,
+                new OtelInstaller(Refusing),
+                _ => throw new InvalidOperationException("nothing may run"),
+                new ClickHousePair(paths, signals, detached, probe, runtime, TimeProvider.System, (_, _) => Task.CompletedTask),
+                new ClickHouseClient(Refusing, new Uri("http://clickhouse.test:1")),
+                new FakeSender(),
+                (_, _) => Task.CompletedTask),
+            TextWriter.Null,
+            TextWriter.Null);
     }
 
     [Fact]

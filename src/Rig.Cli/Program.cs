@@ -2,8 +2,10 @@ using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
+using Rig.Cli.Otel;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
+using Rig.Core.Otel;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Services;
@@ -34,6 +36,15 @@ internal static class Program
         // followed, so only a 200 from the health endpoint itself counts as healthy.
         using var handler = new HttpClientHandler { AllowAutoRedirect = false, CheckCertificateRevocationList = true };
         using var http = new HttpClient(handler);
+        // otel-stack's clients, each with the Python's timeout: downloads 120 s to the headers, ClickHouse and the sender 30 s.
+        using var downloads = new HttpClient { Timeout = TimeSpan.FromSeconds(120) };
+        using var clickhouseHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        using var otlp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        var otelPaths = new OtelPaths(AppData.Current());
+        var detached = OperatingSystem.IsWindows() ? (IDetachedStart)new WindowsDetachedStart() : new UnixDetachedStart(proc);
+        var signals = new ProcessSignals();
+        var probe = new TcpPortProbe();
+        var otelRuntime = new CollectorRuntime(otelPaths, proc, detached, OperatingSystem.IsWindows());
         var app = new RigApp(
             new PythonRig(proc, checkout, fromPython),
             new GhApi(proc),
@@ -69,6 +80,26 @@ internal static class Program
                     Console.Error).Build,
                 new MailCommand(
                     new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),
+                    Console.Out,
+                    Console.Error).Build,
+                new OtelStackCommand(
+                    new OtelHost(
+                        otelPaths,
+                        OtelPins.PlatformKey,
+                        macOs,
+                        Path.Join(checkout, "temp", "traces", "sdk"),
+                        Environment.GetEnvironmentVariable,
+                        TimeProvider.System,
+                        TimeZoneInfo.Local),
+                    new OtelParts(
+                        otelRuntime,
+                        probe,
+                        new OtelInstaller(downloads),
+                        async ct => new Launchd(proc, Launchd.AgentsDirUnder(home), Launchd.GuiDomain(await KnowledgeServerCommand.UserIdAsync(proc, ct).ConfigureAwait(false))),
+                        new ClickHousePair(otelPaths, signals, detached, probe, otelRuntime, TimeProvider.System, Task.Delay),
+                        new ClickHouseClient(clickhouseHttp),
+                        new OtlpSender(otlp, new Uri($"http://{ClickHouseConfig.Host}:{ClickHouseConfig.CollectorPort}")),
+                        Task.Delay),
                     Console.Out,
                     Console.Error).Build,
             ]);
