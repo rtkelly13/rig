@@ -1,7 +1,7 @@
-"""The `estate` commands end to end, against a small estate of real clones under `tmp_path`.
+"""The `estate` commands still on Python, end to end: `--min` parsing, `apps` and `downloads`.
 
-Discovery is stubbed (it caches under the home directory); everything else runs: git,
-the risk and reclaim scans, and the tables and `--json` payloads the commands print.
+The clone commands (audit, risk, reclaim, trim, tidy, ...) run on the C# CLI and are tested in
+tests/Rig.Cli.Tests/Estate/EstateCommandTests.cs.
 """
 
 from __future__ import annotations
@@ -15,67 +15,13 @@ from rich.console import Console
 from typer.testing import CliRunner
 
 from rig.estate import apps as apps_mod
-from rig.estate import busy, cli, discovery, prs
+from rig.estate import cli
 from rig.estate import downloads as downloads_mod
 from rig.typed_json import JsonValue
-from tests.fakes.git import git
-
-
-@pytest.fixture(autouse=True)
-def nothing_is_busy(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`tidy` snapshots process working directories with `lsof`; pin that to "none" so runs are deterministic."""
-    monkeypatch.setattr(busy, "working_dirs", frozenset[pathlib.Path])
-
 
 pytestmark = pytest.mark.ci
 
 runner = CliRunner()
-
-
-def _clone(code: pathlib.Path, name: str) -> pathlib.Path:
-    """A clone of a fresh bare origin, with main pushed and `node_modules/` ignored."""
-    origin = code.parent / "origins" / f"{name}.git"
-    origin.parent.mkdir(exist_ok=True)
-    git(["init", "-q", "--bare", "-b", "main", str(origin)], code.parent)
-    root = code / name
-    root.mkdir(parents=True)
-    git(["init", "-q", "-b", "main"], root)
-    for key, value in [("user.email", "t.user@example.com"), ("user.name", "T"), ("core.autocrlf", "false")]:
-        git(["config", key, value], root)
-    git(["remote", "add", "origin", str(origin)], root)
-    (root / ".gitignore").write_text("node_modules/\n", encoding="utf-8")
-    (root / "README.md").write_text("hi\n", encoding="utf-8")
-    git(["add", "."], root)
-    git(["commit", "-qm", "first"], root)
-    git(["push", "-q", "-u", "origin", "main"], root)
-    return root
-
-
-class Estate:
-    """`safe` has everything on origin; `risky` holds an unpushed branch and an uncommitted file."""
-
-    def __init__(self, code: pathlib.Path) -> None:
-        self.code = code
-        self.safe = _clone(code, "safe")
-        self.risky = _clone(code, "risky")
-        git(["switch", "-q", "-c", "wip"], self.risky)
-        (self.risky / "wip.txt").write_text("only here\n", encoding="utf-8")
-        git(["add", "wip.txt"], self.risky)
-        git(["commit", "-qm", "wip"], self.risky)
-        (self.risky / "README.md").write_text("edited\n", encoding="utf-8")
-        self.clones = [self.safe, self.risky]
-
-
-@pytest.fixture
-def estate(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> Estate:
-    built = Estate(tmp_path / "code")
-    monkeypatch.setattr(
-        discovery, "repos", lambda _root, **_kwargs: discovery.Discovered(paths=built.clones, from_cache=True)
-    )
-    monkeypatch.setattr(discovery, "cache_age", lambda _root, **_kwargs: dt.timedelta(hours=3))
-    # Wide enough that no table cell wraps or truncates.
-    monkeypatch.setattr(cli, "console", Console(width=240))
-    return built
 
 
 def _run(*args: str) -> tuple[int, str]:
@@ -111,43 +57,6 @@ def _json(text: str) -> JsonValue:
 )
 def test_sizes_parse_with_binary_units_and_fall_back_to_zero(text: str, expected: int) -> None:
     assert cli._parse_size(text) == expected
-
-
-# ---------------------------------------------------------------------------
-# tidy
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.parametrize("args", [[], ["--all", "--repo", "safe"]])
-def test_tidy_demands_exactly_one_scope(estate: Estate, args: list[str]) -> None:
-    code, out = _run("tidy", "--root", str(estate.code), *args)
-
-    assert code == 2
-    assert out == ""
-
-
-def test_tidy_on_a_tidy_clone_has_nothing_to_do(estate: Estate, monkeypatch: pytest.MonkeyPatch) -> None:
-    asked: list[pathlib.Path] = []
-    monkeypatch.setattr(prs, "merged_heads", lambda clone: asked.append(clone) or {})
-
-    code, out = _run("tidy", "--root", str(estate.code), "--repo", str(estate.safe), "--merged")
-
-    assert code == 0
-    assert "Tidy (dry run" in out
-    assert "✓ Nothing to tidy." in out
-    assert asked == [estate.safe]
-
-
-def test_tidy_all_refuses_to_touch_work_found_nowhere_else(estate: Estate) -> None:
-    git(["switch", "-q", "main"], estate.risky)
-    git(["stash", "push", "-q", "-m", "keep"], estate.risky)
-
-    code, out = _run("tidy", "--root", str(estate.code), "--all", "--apply")
-
-    assert code == 0
-    assert "Tidy" in out
-    assert "dry run" not in out
-    assert git(["branch", "--list", "wip"], estate.risky) != ""
 
 
 # ---------------------------------------------------------------------------

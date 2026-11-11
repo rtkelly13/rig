@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Runtime.Versioning;
 using System.Text.Json.Nodes;
 using Rig.Cli.Estate;
 using Rig.Core.Processes;
@@ -11,7 +12,7 @@ using Rig.Core.Tests.Otel;
 namespace Rig.Cli.Tests.Estate;
 
 /// <summary>
-/// <c>rig estate audit|risk|doctor|sync|clones|reclaim|trim</c> end to end over a small estate of real clones in a temp folder:
+/// <c>rig estate audit|risk|doctor|sync|clones|reclaim|trim|tidy</c> end to end over a small estate of real clones in a temp folder:
 /// <c>safe</c> has everything on its origin; <c>risky</c> holds an unpushed branch and an uncommitted file.
 /// </summary>
 public sealed class EstateCommandTests : IDisposable
@@ -500,5 +501,191 @@ public sealed class EstateCommandTests : IDisposable
 
         Assert.Contains("Freed 0B", output, StringComparison.Ordinal);
         Assert.True(Directory.Exists(modules));
+    }
+
+    // ---- tidy ----------------------------------------------------------------------------------------------------
+
+    // Answers lsof itself, so a run never depends on what this machine's processes are doing; the rest runs for real.
+    private sealed class LsofProc(IProc inner, Ran lsof) : IProc
+    {
+        public List<ProcRequest> Requests { get; } = [];
+
+        public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
+        {
+            Requests.Add(request);
+            return request.Argv[0] == "lsof" ? Task.FromResult(lsof) : inner.RunAsync(request, cancellationToken);
+        }
+    }
+
+    private static LsofProc NothingBusy() => new(Repos.Proc, new Ran(0, string.Empty, string.Empty));
+
+    // The clones a run looked at, in the order it first ran git in each.
+    private static List<string> Inspected(LsofProc proc, params string[] clones) =>
+        [.. proc.Requests.Select(r => r.WorkingDirectory).OfType<string>().Where(clones.Contains).Distinct()];
+
+    [Theory]
+    [InlineData]
+    [InlineData("--all", "--repo", "safe")]
+    public async Task Tidy_needs_exactly_one_explicit_scope(params string[] scope)
+    {
+        await BuildEstateAsync();
+        var proc = NothingBusy();
+
+        var (code, output, error) = await RunWithAsync(proc, ["tidy", "--root", Code, .. scope]);
+
+        Assert.Equal(2, code);
+        Assert.Equal(string.Empty, output);
+        Assert.Contains("Choose a scope: --repo <path|name> (repeatable), or --all for every clone.", error, StringComparison.Ordinal);
+        Assert.Empty(proc.Requests);
+    }
+
+    [Fact]
+    public async Task Tidy_rejects_a_check_it_never_acts_on()
+    {
+        var (code, _, error) = await RunWithAsync(NothingBusy(), "tidy", "--root", Code, "--all", "--check", "worktree-dirty");
+
+        Assert.Equal(2, code);
+        Assert.Contains("Unknown --check worktree-dirty. Choose from: worktree-prunable, branch-upstream-gone", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Tidy_merged_on_a_tidy_clone_fetches_only_it_and_has_nothing_to_do()
+    {
+        await BuildEstateAsync();
+        var proc = NothingBusy();
+
+        var (code, output, error) = await RunWithAsync(proc, "tidy", "--root", Code, "--repo", Safe, "--merged");
+
+        Assert.Equal(0, code);
+        Assert.StartsWith("Tidy (dry run — pass --apply)\n", output, StringComparison.Ordinal);
+        Assert.Contains("\n✓ Nothing to tidy.\n", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("clones under", error, StringComparison.Ordinal);
+        Assert.Equal([Safe], proc.Requests.Where(r => r.Argv.Contains("fetch")).Select(r => r.WorkingDirectory));
+    }
+
+    [Fact]
+    public async Task Tidy_all_apply_keeps_work_found_nowhere_else_and_warns_when_lsof_cannot_answer()
+    {
+        await BuildEstateAsync();
+        _ = await Repos.GitAsync(Risky, "branch", "-f", "done", "main");
+
+        var (code, output, error) = await RunWithAsync(new LsofProc(Repos.Proc, new Ran(Ran.NotFound, string.Empty, string.Empty)), "tidy", "--root", Code, "--all", "--apply");
+
+        Assert.Equal(0, code);
+        Assert.StartsWith("Tidy\n", output, StringComparison.Ordinal);
+        Assert.Contains("Cannot read process working directories (lsof); removals need --force.", error, StringComparison.Ordinal);
+        Assert.Contains("2 clones under", error, StringComparison.Ordinal);
+        Assert.NotEqual(string.Empty, await Repos.GitAsync(Risky, "branch", "--list", "wip"));
+        Assert.Equal(string.Empty, await Repos.GitAsync(Risky, "branch", "--list", "done"));
+        Assert.Matches(@"risky\s+branch-merged\s+done\s+cleaned", output);
+    }
+
+    [Fact]
+    public async Task Tidy_check_leaves_other_findings_alone_and_tabulates_what_it_did()
+    {
+        await BuildEstateAsync();
+        _ = await Repos.GitAsync(Safe, "branch", "done");
+
+        var (_, skipped, _) = await RunWithAsync(NothingBusy(), "tidy", "--root", Code, "--repo", Safe, "--check", "temp-stale", "--apply");
+        var kept = await Repos.GitAsync(Safe, "branch", "--list", "done");
+        var (code, dry, _) = await RunWithAsync(NothingBusy(), "tidy", "--root", Code, "--repo", "safe");
+        var (_, applied, _) = await RunWithAsync(NothingBusy(), "tidy", "--root", Code, "--repo", "safe", "--apply");
+
+        Assert.Contains("✓ Nothing to tidy.", skipped, StringComparison.Ordinal);
+        Assert.NotEqual(string.Empty, kept);
+        Assert.Equal(0, code);
+        Assert.Contains("clone  check          subject      outcome  detail\n", dry, StringComparison.Ordinal);
+        Assert.Contains("safe   branch-merged  done     would-clean  no commits outside a remote · git branch -D done\n", dry, StringComparison.Ordinal);
+        Assert.EndsWith("\n1 would-clean\n", dry, StringComparison.Ordinal);
+        Assert.EndsWith("\n1 cleaned\n", applied, StringComparison.Ordinal);
+        Assert.Equal(string.Empty, await Repos.GitAsync(Safe, "branch", "--list", "done"));
+    }
+
+    [Fact]
+    public async Task Tidy_shortens_a_worktree_inside_its_clone_and_says_refusals_are_deliberate()
+    {
+        await BuildEstateAsync();
+        var tree = await TempWorktreeAsync();
+        await File.WriteAllTextAsync(Path.Join(tree, "notes.txt"), "unsaved", Token);
+        _clock.Advance(TimeSpan.FromDays(60));
+        Directory.SetLastWriteTimeUtc(tree, _clock.GetUtcNow().UtcDateTime.AddDays(-30));
+
+        var (_, output, _) = await RunWithAsync(NothingBusy(), "tidy", "--root", Code, "--repo", "safe", "--check", "temp-stale-worktree");
+
+        // Windows has no lsof, so the unreadable snapshot refuses before git status is asked.
+        var reason = OperatingSystem.IsWindows() ? @"cannot tell whether a process is working in it \(lsof unavailable\)" : "uncommitted changes";
+        Assert.Matches($@"safe\s+temp-stale-worktree\s+temp/wt\s+refused\s+{reason}", output);
+        Assert.EndsWith("\nRefusals are deliberate — see `estate risk`, or pass --force.\n", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Tidy_repo_takes_paths_and_names_in_order_once_each_and_a_worktree_path_means_its_clone()
+    {
+        var alpha = await CloneAsync("alpha");
+        var beta = await CloneAsync("team/beta");
+        var worktree = Path.Join(alpha, ".worktrees", "feature");
+        _ = await Repos.GitAsync(alpha, "worktree", "add", "-q", "-b", "feature", worktree);
+        var byPath = NothingBusy();
+        var byName = NothingBusy();
+
+        var (pathCode, _, pathError) = await RunWithAsync(byPath, "tidy", "--root", Code, "--repo", worktree, "--repo", alpha);
+        var (nameCode, _, _) = await RunWithAsync(byName, "tidy", "--root", Code, "--repo", "TEAM/BETA", "--repo", "alpha", "--repo", "beta/");
+
+        Assert.Equal((0, 0), (pathCode, nameCode));
+        Assert.DoesNotContain("clones under", pathError, StringComparison.Ordinal);
+        Assert.Equal([alpha], Inspected(byPath, alpha, beta));
+        Assert.Equal([beta, alpha], Inspected(byName, alpha, beta));
+    }
+
+    [Fact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task Tidy_repo_resolves_a_link_before_its_parent_segment()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Windows collapses `..` before following a link.");
+        var alpha = await CloneAsync("alpha");
+        var beta = await CloneAsync("beta");
+        var inner = Directory.CreateDirectory(Path.Join(beta, "inner")).FullName;
+        _ = Directory.CreateSymbolicLink(Path.Join(alpha, "link"), inner);
+        var proc = NothingBusy();
+
+        var (code, _, _) = await RunWithAsync(proc, "tidy", "--root", Code, "--repo", Path.Join(alpha, "link", ".."));
+
+        Assert.Equal(0, code);
+        Assert.Equal([beta], Inspected(proc, alpha, beta));
+    }
+
+    [Theory]
+    [InlineData("beta", "is ambiguous: beta, team/beta")]
+    [InlineData("gamma", "matches no clone")]
+    public async Task Tidy_repo_refuses_a_name_matching_several_clones_or_none(string name, string problem)
+    {
+        _ = await CloneAsync("beta");
+        _ = await CloneAsync("team/beta");
+
+        var (code, output, error) = await RunWithAsync(NothingBusy(), "tidy", "--root", Code, "--repo", name);
+
+        Assert.Equal(2, code);
+        Assert.Equal(string.Empty, output);
+        Assert.Contains($"--repo {name} {problem} under {Code}. Pass a path, or --root.", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Tidy_repo_takes_a_checkout_with_a_separate_git_dir_but_not_a_worktree_of_one()
+    {
+        var split = Path.Join(Code, "split");
+        _ = Directory.CreateDirectory(split);
+        _ = await Repos.GitAsync(split, "init", "-q", "-b", "main", "--separate-git-dir", Path.Join(_root.Path, "elsewhere.git"));
+        await Repos.CommitAsync(split, "first");
+        var worktree = Path.Join(Code, "wt");
+        _ = await Repos.GitAsync(split, "worktree", "add", "-q", "-b", "wt", worktree);
+        var proc = NothingBusy();
+
+        var (code, _, _) = await RunWithAsync(proc, "tidy", "--root", Code, "--repo", split);
+        var (refused, _, error) = await RunWithAsync(NothingBusy(), "tidy", "--root", Code, "--repo", worktree);
+
+        Assert.Equal(0, code);
+        Assert.Equal([split], Inspected(proc, split));
+        Assert.Equal(2, refused);
+        Assert.Contains($"--repo {worktree}: cannot find the main working tree of this checkout.", error, StringComparison.Ordinal);
     }
 }
