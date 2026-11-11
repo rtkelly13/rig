@@ -300,7 +300,7 @@ public static partial class RepoHygiene
         var ban = policies?.ScriptBan(key);
         if (ban is not null)
         {
-            expectedBanned = ban.Enabled ? expectedBanned.Where(ban.BannedExtensions.Contains) : [];
+            expectedBanned = ban.Enabled ? expectedBanned.Where(ban.BannedExtensions.Select(Dotted).Contains) : [];
         }
 
         if (expectedBanned.Any(ext => !content.Contains($"{ext}: exists:0", StringComparison.Ordinal)))
@@ -362,7 +362,8 @@ public static partial class RepoHygiene
                 : banned.Count > 0 ? $"# Ban on {string.Join(", ", banned)} scripts, as this repo's script_ban policy sets." : "# This repo's script_ban policy bans no scripts.",
             "# Exceptions must be explicitly listed in the `ignore:` section below.",
             string.Empty,
-            "ls:",
+            // An empty `ls:` is null to ls-lint; `{}` keeps the file valid when the ban and scripts/ rules are both empty.
+            banned.Count > 0 || allowedScriptExtensions.Count > 0 || bannedScriptExtensions.Count > 0 ? "ls:" : "ls: {}",
             .. banned.Select(ext => $"  {ext}: exists:0"),
         ];
         if (banned.Count > 0)

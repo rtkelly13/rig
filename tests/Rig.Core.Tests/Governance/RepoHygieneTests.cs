@@ -233,11 +233,14 @@ public sealed class RepoHygieneTests : IDisposable
         Assert.Contains("ls:\n  .ps1: exists:0\n  \"**\":\n    .ps1: exists:0\n", Read(".ls-lint.yml"), StringComparison.Ordinal);
         Assert.DoesNotContain(".sh:", Read(".ls-lint.yml"), StringComparison.Ordinal);
         Assert.True(RepoHygiene.InspectLsLint(Repo, narrow, "app").IsAligned);
+        Put(".ls-lint.yml", "ls:\n  .sh: exists:0\n");
+        Assert.Equal("INCOMPLETE_RULES", RepoHygiene.InspectLsLint(Repo, narrow, "app").Status);
 
         File.Delete(Path.Join(Repo, ".ls-lint.yml"));
         RepoHygiene.AlignLsLint(Repo, disabled, "app", dryRun: false);
 
         Assert.Contains("# This repo's script_ban policy bans no scripts.\n", Read(".ls-lint.yml"), StringComparison.Ordinal);
+        Assert.Contains("\nls: {}\n", Read(".ls-lint.yml"), StringComparison.Ordinal);
         Assert.DoesNotContain("exists:0", Read(".ls-lint.yml"), StringComparison.Ordinal);
         Assert.True(RepoHygiene.InspectLsLint(Repo, disabled, "app").IsAligned);
     }
