@@ -22,9 +22,11 @@ import typer
 from rig import tracing
 
 #: Commands the C# CLI owns. ``tests/Rig.Cli.Tests`` checks each is registered there and gone from here.
-PORTED: tuple[str, ...] = ("agent", "browser", "devenv", "doctor", "gh", "models", "policy", "skills", "status")
+PORTED: tuple[str, ...] = ("agent", "browser", "devenv", "doctor", "gh", "models", "policy", "skills", "status", "sync")
 #: Subcommands of a group the Python CLI still owns that run on C#: ``rig workspace doctor``.
-PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {"workspace": ("audit", "clean", "doctor", "status")}
+PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
+    "workspace": ("audit", "clean", "doctor", "gitignore", "status", "sync")
+}
 
 #: Set for the C# CLI so it refuses to forward a command back to Python.
 BRIDGE_VARIABLE = "RIG_FROM_PYTHON"

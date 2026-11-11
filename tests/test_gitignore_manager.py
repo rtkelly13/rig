@@ -10,10 +10,8 @@ from rig.repo_governance.agent_files import (
 )
 from rig.repo_governance.gitignore_manager import (
     align_gitignore,
-    audit_estate_gitignores,
     inspect_gitignore,
     required_entries,
-    sync_estate_gitignores,
 )
 from rig.repo_governance.policy_config import (
     GitignoreEntry,
@@ -181,54 +179,6 @@ def test_align_partial_missing_lines_no_duplication(tmp_path: pathlib.Path):
     lines = gi_file.read_text(encoding="utf-8").splitlines()
     assert lines.count("TODO.md") == 1
     assert lines.count("todo.md") == 1
-
-
-@pytest.mark.ci
-def test_estate_batch_audit_and_sync(tmp_path: pathlib.Path):
-    policy = PolicyConfig.parse(
-        {
-            "defaults": {
-                "agents_md_hygiene": {"bespoke_agent_files": []},
-                "gitignore_entries": [
-                    {
-                        "name": "todo",
-                        "comment": "Local TODO files",
-                        "write": ["TODO.md", "todo.md"],
-                        "satisfied_by": ["TODO.md", "todo.md"],
-                        "match_mode": "all",
-                    }
-                ],
-            }
-        }
-    )
-
-    repo_a = tmp_path / "repo-a"
-    repo_b = tmp_path / "repo-b"
-    repo_a.mkdir()
-    repo_b.mkdir()
-    (repo_a / ".git").mkdir()
-    (repo_b / ".git").mkdir()
-
-    (repo_a / ".gitignore").write_text("TODO.md\ntodo.md\n", encoding="utf-8")
-    (repo_b / ".gitignore").write_text("TODO.md\n", encoding="utf-8")
-
-    audit_res = audit_estate_gitignores(tmp_path, config=policy)
-    assert len(audit_res) == 2
-    res_a = next(r for r in audit_res if r.repo_name == "repo-a")
-    res_b = next(r for r in audit_res if r.repo_name == "repo-b")
-    assert res_a.result.is_aligned is True
-    assert res_b.result.is_aligned is False
-    assert res_b.result.missing_lines == ("todo.md",)
-
-    sync_res = sync_estate_gitignores(tmp_path, config=policy)
-    assert len(sync_res) == 2
-    synced_b = next(r for r in sync_res if r.repo_name == "repo-b")
-    assert synced_b.result.status == "aligned"
-    assert synced_b.result.added == ("todo.md",)
-
-    # Re-audit verifies all aligned
-    audit_after = audit_estate_gitignores(tmp_path, config=policy)
-    assert all(r.result.is_aligned for r in audit_after)
 
 
 @pytest.mark.ci

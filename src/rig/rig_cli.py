@@ -44,20 +44,6 @@ for _name in csharp_cli.PORTED:
     csharp_cli.add_stub(app, _name)
 
 
-@app.command("sync")
-def sync_cmd(
-    root: str | None = typer.Option(None, "--root", "-r", help="Path to personal estate root directory"),
-    config: str | None = typer.Option(None, "--config", "-c", help="Path to managed-projects.json registry file"),
-    gitignore: bool = typer.Option(
-        True, "--gitignore/--no-gitignore", help="Synchronize common gitignores across managed projects"
-    ),
-) -> None:
-    """Synchronize estate index (AGENTS.md) and personal.code-workspace."""
-    from rig.workspace.cli import sync_command
-
-    sync_command(root=root, config=config, gitignore=gitignore)
-
-
 @app.command("align", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def align_cmd(ctx: typer.Context) -> None:
     """Reconcile desktop window layout and virtual desktop state."""

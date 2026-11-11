@@ -142,7 +142,6 @@ ancestors = ["rig", "desktop_manager"]
 # A minimal cut set: every entry is needed for the contract to pass. Each names the item that removes it.
 ignore_imports = [
     "rig.workspace.ci_cli -> rig.estate.ci_telemetry",  # G2 (move the module)
-    "rig.workspace.cli -> rig.repo_governance.gitignore_manager",  # G2 (mount from rig_cli)
     "rig.workspace.nuget_governance -> rig.repo_governance.workflow_yaml",  # G2
     "desktop_manager.work.sessions -> desktop_manager.claude_sessions.discovery",  # G2
     "desktop_manager.work.sessions -> desktop_manager.claude_sessions.folders",  # G2
@@ -182,7 +181,6 @@ modules = [
 ignore_imports = [
     "rig.image_drift.server -> rig.workspace.engine",  # G2
     "rig.workspace.ci_cli -> rig.estate.ci_telemetry",  # G2 (move the module)
-    "rig.workspace.cli -> rig.repo_governance.gitignore_manager",  # G2 (mount from rig_cli)
     "rig.workspace.nuget_governance -> rig.repo_governance.workflow_yaml",  # G2
     "rig.image_drift.server -> rig.connectivity.web",  # G2 (the web host mounts routes from rig_cli)
     "rig.image_drift.server -> rig.triage.web",  # G2 (the web host mounts routes from rig_cli)
