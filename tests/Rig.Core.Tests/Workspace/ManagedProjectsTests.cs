@@ -20,6 +20,19 @@ public sealed class ManagedProjectsTests : IDisposable
     }
 
     [Fact]
+    public void The_registry_is_the_checkout_s_else_the_working_directory_s()
+    {
+        var checkout = _dir.Folder("checkout");
+        var cwd = _dir.Folder("cwd");
+
+        Assert.Equal(Path.Join(cwd, "config", ManagedProjects.FileName), ManagedProjects.RegistryFile(checkout, cwd));
+
+        var own = Write(Path.Join("checkout", "config", ManagedProjects.FileName), "{}");
+
+        Assert.Equal(own, ManagedProjects.RegistryFile(checkout, cwd));
+    }
+
+    [Fact]
     public void Every_field_is_read_and_retired_projects_follow_disabled()
     {
         var path = Write(ManagedProjects.FileName, """

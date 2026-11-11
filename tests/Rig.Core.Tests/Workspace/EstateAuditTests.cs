@@ -1,5 +1,6 @@
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Skills;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Workspace;
 
@@ -274,7 +275,7 @@ public sealed class EstateAuditTests : IDisposable
     {
         var target = Path.GetDirectoryName(_root.File("elsewhere/precious.txt"))!;
         var link = Path.Join(_root.Folder("personal"), "link");
-        _ = Directory.CreateSymbolicLink(link, target);
+        new SystemDirectoryLinker().Link(link, target);
 
         var outcome = await Audit.CleanAsync(new("link", link, EstateItemKind.UnmanagedDir, true, null, string.Empty), dryRun: false, Token);
 

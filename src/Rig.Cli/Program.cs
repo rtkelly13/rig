@@ -157,7 +157,7 @@ internal static class Program
                         Path.Join(codeRoot, "personal"),
                         Path.Join(checkout, "config", EstateScopes.FileName),
                         home,
-                        Path.Join(checkout, "config", ManagedProjects.FileName),
+                        ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory),
                         AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home)),
                     proc,
                     TimeProvider.System,

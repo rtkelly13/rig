@@ -159,9 +159,11 @@ public sealed class WorkspaceEstateCommandTests : IDisposable
             report.Select(p => p.Key));
         Assert.Equal(Personal, (string?)report["estate_root"]);
         Assert.Equal(5, (int)report["total_items"]!);
+        var junk = report["unmanaged_items"]![0]!.AsObject();
+        Assert.Equal(["name", "path", "kind", "detail"], junk.Select(p => p.Key));
         Assert.Equal(
-            $$"""{"name":"junk.txt","path":"{{Path.Join(Personal, "junk.txt")}}","kind":"unmanaged_file","detail":"Orphaned unmanaged file in personal directory root"}""",
-            report["unmanaged_items"]![0]!.ToJsonString(new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+            ["junk.txt", Path.Join(Personal, "junk.txt"), "unmanaged_file", "Orphaned unmanaged file in personal directory root"],
+            junk.Select(p => (string?)p.Value));
         Assert.Equal("""{"name":"gone","repo":"git@github.com:o/gone.git","description":"Not cloned"}""", report["missing_managed_repos"]![0]!.ToJsonString());
         Assert.Equal("Retained archive (Legacy)", (string?)report["retained_archives"]![0]!["detail"]);
         Assert.StartsWith("{\n  \"estate_root\": ", output, StringComparison.Ordinal);

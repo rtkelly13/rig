@@ -32,6 +32,16 @@ public static class ManagedProjects
     public const string ArchivedFileName = "archived-projects.json";
 
     /// <summary>
+    /// The registry rig reads: <paramref name="checkout"/>'s, else the one under <paramref name="workingDirectory"/>,
+    /// as Python's <c>rig.roots.checkout_config</c> chose.
+    /// </summary>
+    public static string RegistryFile(string checkout, string workingDirectory)
+    {
+        var candidate = Path.Join(checkout, "config", FileName);
+        return File.Exists(candidate) ? candidate : Path.Join(workingDirectory, "config", FileName);
+    }
+
+    /// <summary>
     /// Every project in <paramref name="path"/>, then every retired one in the archive file beside it, disabled so
     /// their clones stay retained archives and are never offered for cleanup. A missing or malformed file has no
     /// projects, and an entry with a field of the wrong type is skipped.
