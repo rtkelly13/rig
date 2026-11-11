@@ -29,6 +29,7 @@ PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
     "devenv": (
         "agent-launcher",
         "agents",
+        "ai",
         "claude",
         "estate-rules",
         "fonts",
@@ -37,6 +38,7 @@ PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
         "obsidian-plugins",
         "opencode",
         "runtimes",
+        "setup",
         "terminal",
         "tools",
         "update",

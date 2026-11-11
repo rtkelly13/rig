@@ -9,16 +9,15 @@ from pathlib import Path
 from rich.table import Table
 
 from rig import csharp_cli
+from rig.platforms import Platform, get_current_platform
 
 from ...workspace.repo_resolver import check_repo_folder
-from ..engine.context import StepContext, get_current_platform
 from ..ui import console, table_box
 
 
 def run_doctor() -> int:
     """Run full diagnostic suite across all environment components."""
     platform = get_current_platform()
-    ctx = StepContext(platform=platform)
 
     issues_found = 0
 
@@ -30,7 +29,7 @@ def run_doctor() -> int:
         issues_found += 1
 
     # `rig devenv terminal --check` reports Windows Terminal's snapToGrid and exits 1 when it risks jitter.
-    if ctx.is_windows and csharp_cli.run(["devenv", "terminal", "--check"]) != 0:
+    if platform == Platform.WINDOWS and csharp_cli.run(["devenv", "terminal", "--check"]) != 0:
         issues_found += 1
 
     console.print()
