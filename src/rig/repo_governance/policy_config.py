@@ -514,8 +514,8 @@ class PolicyConfig:
         return self._resolve(repo, lambda layer: layer.copyright_holder) or "Ryan Kelly"
 
     def contact_email(self, repo: str) -> str:
-        """Return contact email for *repo*, falling back to 'ryan@ryankelly.dev'."""
-        return self._resolve(repo, lambda layer: layer.contact_email) or "ryan@ryankelly.dev"
+        """Return contact email for *repo*, falling back to empty string."""
+        return self._resolve(repo, lambda layer: layer.contact_email) or ""
 
     def license_type(self, repo: str) -> str:
         """Return expected license type for *repo*, falling back to 'MIT'."""

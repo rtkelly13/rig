@@ -19,7 +19,7 @@ EXPECTED_AGENTS_CONVENTIONS = """## 🛑 Repository Conventions & Workflow Polic
 1. **Squash Merge Only**: All pull requests must be merged into `main` using **Squash and Merge** exclusively.
 2. **Delete Branch on Merge**: Feature branches must be automatically deleted immediately upon merge into `main`.
 3. **Linear History**: Maintain a strictly linear history. Rebase feature branches onto `main` before merging.
-4. **Direct Push Protection**: Direct pushes to `main` are blocked; PR mechanism required (force push allowed).
+4. **Direct Push Protection**: Direct pushes to `main` are blocked; PR mechanism required.
 5. **Local Temp & Worktree Directory**: All temporary files, databases, and worktrees go in `/temp/` (gitignored).
 6. **Gitignored Local TODO File**: A root `TODO.md` file MUST exist for local task tracking and be gitignored.
 7. **Auto-Merge Enabled**: PRs may enable auto-merge (squash) so they merge automatically once required checks pass.

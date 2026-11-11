@@ -100,3 +100,24 @@ def test_sync_oss_templates_language_rendering(tmp_path: Path):
     pr_tmpl = (dotnet_dir / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(encoding="utf-8")
     assert "`build`, `pr-title`" in pr_tmpl
     assert pr_tmpl.startswith("# Pull Request")
+
+    coc = (dotnet_dir / "CODE_OF_CONDUCT.md").read_text(encoding="utf-8")
+    assert "Security Advisories" in coc
+    assert "@" not in coc
+
+
+def test_sync_oss_templates_no_checks_omits_generic_names(tmp_path: Path):
+    repo_dir = tmp_path / "generic_repo"
+    repo_dir.mkdir()
+    sync_oss_templates(
+        repo_dir,
+        context={
+            "repo_name": "SimpleLib",
+            "repo_full_name": "rtkelly-labs/SimpleLib",
+            "required_checks": [],
+        },
+        dry_run=False,
+    )
+    pr_tmpl = (repo_dir / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(encoding="utf-8")
+    assert "ci` / `test` / `lint" not in pr_tmpl
+    assert "All required CI checks pass." in pr_tmpl

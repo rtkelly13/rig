@@ -220,8 +220,6 @@
       "allowed_owners": [
         "rtkelly-labs"
       ],
-      "copyright_holder": "rtkelly-labs",
-      "contact_email": "ryan@ryankelly.dev",
       "policies": [
         "squash_merge_only",
         "pinned_action_shas",
@@ -257,8 +255,6 @@
       "allowed_owners": [
         "rtkelly-labs"
       ],
-      "copyright_holder": "rtkelly-labs",
-      "contact_email": "ryan@ryankelly.dev",
       "policies": [
         "ai_policy",
         "readme_ai_disclosure",
@@ -299,8 +295,6 @@
       "allowed_owners": [
         "rtkelly-labs"
       ],
-      "copyright_holder": "rtkelly-labs",
-      "contact_email": "ryan@ryankelly.dev",
       "policies": [
         "ai_policy",
         "readme_ai_disclosure",

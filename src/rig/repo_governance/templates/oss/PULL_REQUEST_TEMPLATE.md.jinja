@@ -30,5 +30,5 @@
 
 - [ ] My branch is rebased onto latest `main` with a clean linear history.
 - [ ] Unit and/or integration tests have been added or updated.
-- [ ] All required CI checks pass ({% if required_checks %}`{{ required_checks | join('`, `') }}`{% else %}`ci` / `test` / `lint`{% endif %}).
+- [ ] All required CI checks pass{% if required_checks %} (`{{ required_checks | join('`, `') }}`){% endif %}.
 - [ ] Relevant documentation has been updated.
