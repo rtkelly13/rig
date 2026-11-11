@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
+using Rig.Cli.Models;
 using Rig.Cli.Otel;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
@@ -61,6 +62,7 @@ public sealed partial class ForwardedContractTests
                 new MailCommand(new MailHost(_ => null, "/", "/", TimeProvider.System), TextWriter.Null, TextWriter.Null).Build,
                 InertOtelStack().Build,
                 new StatusCommand(new FakeProc(), new Git(new FakeProc(), "/"), "/", TextWriter.Null).Build,
+                () => new ModelsCommand(new ModelDiscovery(new FakeProc(), "/", _ => null), TextWriter.Null).Build(),
             ]);
         var owned = app
             .BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));

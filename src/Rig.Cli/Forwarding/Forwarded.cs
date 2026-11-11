@@ -16,7 +16,6 @@ internal static class Forwarded
         ("workspace", "Virtual monorepo estate management for the personal folder."),
         ("devenv", "Unified development environment manager (tools, runtimes, fonts, git, AI coding agents)."),
         ("estate", "Manage the code assets cloned on this machine."),
-        ("models", "Enumerate AI models supported across coding agent CLIs in rig."),
         ("triage", "Persistent PR and issue triage queue."),
         ("web", "Rig web dashboard & visual studio (static site + Python API)."),
         ("flags", "Feature flags shared across the rig stack (defaults in code, overrides in rig.db)."),

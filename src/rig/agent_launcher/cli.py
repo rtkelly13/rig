@@ -355,10 +355,9 @@ def main(
     raw_args = list(sys.argv[1:] if argv is None else argv)
 
     if raw_args and raw_args[0] in ("models", "--models"):
-        from rig.models.cli import app as models_app
+        from rig import csharp_cli
 
-        models_app(raw_args[1:], prog_name="agent models")
-        return 0
+        return csharp_cli.run(["models", *raw_args[1:]])
 
     try:
         parsed = parse_args(raw_args)
