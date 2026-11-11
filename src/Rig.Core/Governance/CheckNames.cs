@@ -23,9 +23,17 @@ public static class CheckNames
             return found;
         }
 
-        var files = Directory.EnumerateFiles(workflows)
-            .Where(file => IsWorkflowName(Path.GetFileName(file)))
-            .Order(StringComparer.Ordinal);
+        List<string> files;
+        try
+        {
+            files = [.. Directory.EnumerateFiles(workflows).Where(file => IsWorkflowName(Path.GetFileName(file))).Order(StringComparer.Ordinal)];
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // An unreadable workflows directory names no checks, as an absent one does.
+            return found;
+        }
+
         foreach (var file in files)
         {
             if (Load(file) is not { } workflow || Lookup(workflow, "jobs") is not PyDict jobs || !Triggers(workflow).Contains("pull_request"))

@@ -297,10 +297,9 @@ public sealed class GovernancePlanTests : IDisposable
         var policies = Policy(["lint"], new() { ["environments"] = new JsonObject { ["release"] = new JsonObject { ["wait_timer"] = 5, ["reviewers"] = new JsonArray("octo") } } });
         var api = Aligned(policies)
             .On("GET", $"repos/{Slug}/environments", """{"environments": [{"name": "release"}, {"name": "github-pages"}]}""")
-            .On("GET", $"repos/{Slug}/environments/release/deploy_reviewers", """{"reviewers": []}""")
+            .On("GET", $"repos/{Slug}/environments/release", """{"name": "release"}""")
             .On("GET", "users/octo", """{"id": 42}""")
-            .On("PUT", $"repos/{Slug}/environments/release", "{}")
-            .On("PATCH", $"repos/{Slug}/environments/release/deploy_reviewers", "{}");
+            .On("PUT", $"repos/{Slug}/environments/release", "{}");
 
         var plan = await PlanAsync(policies, api);
 
@@ -312,10 +311,7 @@ public sealed class GovernancePlanTests : IDisposable
 
         Assert.Equal(0, GovernancePlan.ExitCode([applied], applied: true));
         Assert.Equal(
-            [
-                ("PUT", $"repos/{Slug}/environments/release", """{"wait_timer":5}"""),
-                ("PATCH", $"repos/{Slug}/environments/release/deploy_reviewers", """{"reviewers":[{"id":42,"reviewer_type":"User"}]}"""),
-            ],
+            [("PUT", $"repos/{Slug}/environments/release", """{"wait_timer":5,"reviewers":[{"type":"User","id":42}]}""")],
             api.Calls.Where(c => c.Method != "GET").Select(c => (c.Method, c.Route, c.Body)));
     }
 

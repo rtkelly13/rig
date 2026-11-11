@@ -6,14 +6,11 @@ namespace Rig.Core.Governance;
 /// <summary>What GitHub reports for one environment today.</summary>
 /// <param name="Name">The environment.</param>
 /// <param name="WaitTimer">Minutes a job waits before it may deploy.</param>
-/// <param name="Reviewers">
-/// User reviewer logins, or null when GitHub does not serve protection rules for this repo's plan: "cannot tell" must
-/// not collapse into "empty".
-/// </param>
+/// <param name="Reviewers">User reviewer logins from its <c>required_reviewers</c> protection rule; null reads as none.</param>
 public sealed record CurrentEnvironment(string Name, long WaitTimer = 0, IReadOnlyList<string>? Reviewers = null);
 
 /// <summary>One mutation, or one report-only finding, the environment plan decided on.</summary>
-/// <param name="Kind"><c>create</c>, <c>wait-timer</c>, <c>add-reviewers</c>, <c>reviewers-unavailable</c> or <c>undeclared</c>.</param>
+/// <param name="Kind"><c>create</c>, <c>wait-timer</c>, <c>add-reviewers</c> or <c>undeclared</c>.</param>
 /// <param name="Environment">The environment.</param>
 /// <param name="Detail">What exactly.</param>
 public sealed record EnvironmentAction(string Kind, string Environment, string Detail = "")
@@ -24,7 +21,7 @@ public sealed record EnvironmentAction(string Kind, string Environment, string D
 
 /// <summary>What <see cref="ReleaseEnvironments.SyncAsync"/> decided and the log of what it did about it.</summary>
 /// <param name="Actions">What the plan decided.</param>
-/// <param name="Log">A line per action.</param>
+/// <param name="Log">A line per report-only or dry-run action, and one per environment written.</param>
 public sealed record EnvironmentSync(IReadOnlyList<EnvironmentAction> Actions, IReadOnlyList<string> Log);
 
 /// <summary>
@@ -53,16 +50,9 @@ public static class ReleaseEnvironments
                 actions.Add(new("wait-timer", policy.Name, $"{env.WaitTimer} -> {policy.WaitTimer}"));
             }
 
-            if (policy.Reviewers.Count > 0)
+            if (policy.Reviewers.Except(env.Reviewers ?? [], StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList() is { Count: > 0 } missing)
             {
-                if (env.Reviewers is null)
-                {
-                    actions.Add(new("reviewers-unavailable", policy.Name, "GitHub does not serve protection rules for this repo's plan"));
-                }
-                else if (policy.Reviewers.Except(env.Reviewers, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList() is { Count: > 0 } missing)
-                {
-                    actions.Add(new("add-reviewers", policy.Name, string.Join(", ", missing)));
-                }
+                actions.Add(new("add-reviewers", policy.Name, string.Join(", ", missing)));
             }
         }
 
@@ -95,74 +85,94 @@ public static class ReleaseEnvironments
                 continue;
             }
 
-            found[name] = new(name, GitHubCalls.Number(entry, "wait_timer") ?? 0, await DeployReviewersAsync(api, repo, name, cancellationToken).ConfigureAwait(false));
+            found[name] = new(name, WaitTimer(entry), ReviewerLogins(entry));
         }
 
         return found;
     }
 
-    /// <summary><see cref="ReadAsync"/>, reading an unreadable list as no environments.</summary>
-    public static async Task<IReadOnlyDictionary<string, CurrentEnvironment>> FetchAsync(IGitHubApi api, string repo, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            return await ReadAsync(api, repo, cancellationToken).ConfigureAwait(false);
-        }
-        catch (GitHubReadException)
-        {
-            return new Dictionary<string, CurrentEnvironment>();
-        }
-    }
-
-    /// <summary>Applies the plan, or with <paramref name="dryRun"/> logs it; a log line per action.</summary>
+    /// <summary>
+    /// Applies the plan, or with <paramref name="dryRun"/> logs it. Throws <see cref="GitHubReadException"/> when the
+    /// environments cannot be read.
+    /// </summary>
     public static async Task<EnvironmentSync> SyncAsync(IGitHubApi api, string repo, IReadOnlyList<EnvironmentPolicy> desired, bool dryRun, CancellationToken cancellationToken = default)
     {
-        var actions = PlanActions(desired, await FetchAsync(api, repo, cancellationToken).ConfigureAwait(false));
+        ArgumentNullException.ThrowIfNull(desired);
+        var actions = PlanActions(desired, await ReadAsync(api, repo, cancellationToken).ConfigureAwait(false));
         var log = new List<string>();
-        foreach (var action in actions)
+        foreach (var action in actions.Where(a => !a.Mutates || dryRun))
         {
-            if (!action.Mutates)
+            log.Add(action.Mutates ? $"dry-run {action.Kind}: {action.Environment} — {action.Detail}" : $"{action.Kind}: {action.Environment} — {action.Detail}");
+        }
+
+        if (!dryRun)
+        {
+            foreach (var group in actions.Where(a => a.Mutates).GroupBy(a => a.Environment, StringComparer.Ordinal))
             {
-                log.Add($"{action.Kind}: {action.Environment} — {action.Detail}");
-            }
-            else if (dryRun)
-            {
-                log.Add($"dry-run {action.Kind}: {action.Environment} — {action.Detail}");
-            }
-            else
-            {
-                log.Add(await ApplyAsync(api, repo, desired.First(p => p.Name == action.Environment), action, cancellationToken).ConfigureAwait(false));
+                log.Add(await ApplyAsync(api, repo, desired.First(p => p.Name == group.Key), [.. group.Select(a => a.Kind)], cancellationToken).ConfigureAwait(false));
             }
         }
 
         return new(actions, log);
     }
 
-    /// <summary>Makes one mutating action; returns its log line, starting <c>FAILED</c> when it failed.</summary>
-    internal static async Task<string> ApplyAsync(IGitHubApi api, string repo, EnvironmentPolicy policy, EnvironmentAction action, CancellationToken cancellationToken)
+    /// <summary>
+    /// Writes one environment in a single PUT, which replaces its protection rules: an undeclared wait timer and every
+    /// reviewer already there are carried over, and the declared ones added. Returns its log line, starting
+    /// <c>FAILED</c> when it failed.
+    /// </summary>
+    internal static async Task<string> ApplyAsync(IGitHubApi api, string repo, EnvironmentPolicy policy, IReadOnlyList<string> kinds, CancellationToken cancellationToken)
     {
-        var route = $"repos/{repo}/environments/{action.Environment}";
-        if (action.Kind is "create" or "wait-timer")
+        var route = $"repos/{repo}/environments/{policy.Name}";
+        var what = string.Join(", ", kinds);
+        JsonNode? existing = null;
+        if (!kinds.Contains("create"))
         {
-            var ran = await GitHubCalls.SendAsync(api, "PUT", route, PyRepr.Json(new JsonObject { ["wait_timer"] = policy.WaitTimer }), cancellationToken).ConfigureAwait(false);
-            var verb = action.Kind == "create" ? "created" : "updated wait_timer on";
-            return ran.Ok ? $"{verb} {action.Environment}" : $"FAILED {action.Kind} {action.Environment}: {ran.Err}";
+            try
+            {
+                existing = await GitHubCalls.ReadJsonAsync(api, route, cancellationToken).ConfigureAwait(false);
+            }
+            catch (GitHubReadException e)
+            {
+                return $"FAILED {what} {policy.Name}: {e.Message}";
+            }
         }
 
+        var rule = ReviewersRule(existing);
         var reviewers = new JsonArray();
-        foreach (var login in policy.Reviewers)
+        foreach (var reviewer in rule?["reviewers"] as JsonArray ?? [])
+        {
+            if (GitHubCalls.Str(reviewer, "type") is { } type && GitHubCalls.Number(reviewer?["reviewer"], "id") is { } id)
+            {
+                reviewers.Add(new JsonObject { ["type"] = type, ["id"] = id });
+            }
+        }
+
+        foreach (var login in policy.Reviewers.Except(ReviewerLogins(existing), StringComparer.Ordinal))
         {
             if (await UserIdAsync(api, login, cancellationToken).ConfigureAwait(false) is not { } id)
             {
-                return $"FAILED add-reviewers {action.Environment}: cannot resolve user {login}";
+                return $"FAILED {what} {policy.Name}: cannot resolve user {login}";
             }
 
-            reviewers.Add(new JsonObject { ["id"] = id, ["reviewer_type"] = "User" });
+            reviewers.Add(new JsonObject { ["type"] = "User", ["id"] = id });
         }
 
-        var patched = await GitHubCalls.SendAsync(api, "PATCH", $"{route}/deploy_reviewers", PyRepr.Json(new JsonObject { ["reviewers"] = reviewers }), cancellationToken)
-            .ConfigureAwait(false);
-        return patched.Ok ? $"configured reviewers on {action.Environment}" : $"FAILED add-reviewers {action.Environment}: {patched.Err}";
+        var body = new JsonObject { ["wait_timer"] = policy.WaitTimer != 0 ? policy.WaitTimer : WaitTimer(existing) };
+        if (reviewers.Count > 0)
+        {
+            body["reviewers"] = reviewers;
+        }
+
+        if (rule?["prevent_self_review"] is JsonValue preventSelfReview && preventSelfReview.TryGetValue<bool>(out var prevent))
+        {
+            body["prevent_self_review"] = prevent;
+        }
+
+        var ran = await GitHubCalls.SendAsync(api, "PUT", route, PyRepr.Json(body), cancellationToken).ConfigureAwait(false);
+        return !ran.Ok ? $"FAILED {what} {policy.Name}: {ran.Err}"
+            : kinds.Contains("create") ? $"created {policy.Name}"
+            : $"updated {policy.Name}: {what}";
     }
 
     private static async Task<long?> UserIdAsync(IGitHubApi api, string login, CancellationToken cancellationToken)
@@ -177,26 +187,22 @@ public static class ReleaseEnvironments
         }
     }
 
-    // User reviewer logins, or null when GitHub does not serve the protection rules for this repo.
-    private static async Task<IReadOnlyList<string>?> DeployReviewersAsync(IGitHubApi api, string repo, string environment, CancellationToken cancellationToken)
-    {
-        JsonNode served;
-        try
-        {
-            served = await GitHubCalls.ReadJsonAsync(api, $"repos/{repo}/environments/{environment}/deploy_reviewers", cancellationToken).ConfigureAwait(false);
-        }
-        catch (GitHubReadException)
-        {
-            return null;
-        }
+    // GitHub serves the wait timer as a protection rule, not a field of the environment.
+    private static long WaitTimer(JsonNode? environment) =>
+        environment?["protection_rules"] is JsonArray rules
+            ? rules.Where(r => GitHubCalls.Str(r, "type") == "wait_timer").Select(r => GitHubCalls.Number(r, "wait_timer")).FirstOrDefault(t => t is not null) ?? 0
+            : 0;
 
-        if (served is not JsonObject { } body || body["reviewers"] is not JsonArray entries || entries.Any(e => e is not JsonObject { } entry || entry["reviewer"] is not JsonObject))
-        {
-            return null;
-        }
+    private static JsonNode? ReviewersRule(JsonNode? environment) =>
+        (environment?["protection_rules"] as JsonArray ?? []).FirstOrDefault(r => GitHubCalls.Str(r, "type") == "required_reviewers");
 
-        return [.. entries.Select(e => GitHubCalls.Str(e!["reviewer"], "login")).OfType<string>().Where(login => login.Length > 0)];
-    }
+    // The user reviewers' logins; a team reviewer has no login and is left to whoever added it.
+    private static List<string> ReviewerLogins(JsonNode? environment) =>
+        [.. (ReviewersRule(environment)?["reviewers"] as JsonArray ?? [])
+            .Where(r => GitHubCalls.Str(r, "type") == "User")
+            .Select(r => GitHubCalls.Str(r?["reviewer"], "login"))
+            .OfType<string>()
+            .Where(login => login.Length > 0)];
 }
 
 /// <summary>Deployment environments a profile declares (<c>environments</c> in <c>config/repo_policies.json</c>).</summary>
@@ -232,9 +238,9 @@ public sealed class EnvironmentsResource : Resource<IReadOnlyList<EnvironmentPol
         ArgumentNullException.ThrowIfNull(desired);
         ArgumentNullException.ThrowIfNull(changes);
         var failures = new List<string>();
-        foreach (var change in changes.Where(c => c.Kind == Change.Apply))
+        foreach (var group in changes.Where(c => c.Kind == Change.Apply).GroupBy(c => c.Subject, StringComparer.Ordinal))
         {
-            var line = await ReleaseEnvironments.ApplyAsync(api, target.Slug, desired.First(p => p.Name == change.Subject), new(change.Action, change.Subject, change.Detail), cancellationToken)
+            var line = await ReleaseEnvironments.ApplyAsync(api, target.Slug, desired.First(p => p.Name == group.Key), [.. group.Select(c => c.Action)], cancellationToken)
                 .ConfigureAwait(false);
             if (line.StartsWith("FAILED", StringComparison.Ordinal))
             {

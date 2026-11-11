@@ -94,18 +94,29 @@ internal sealed partial class GovernanceCommand
         var targets = await ReposToSyncAsync(repos, path, all, org, cancellationToken).ConfigureAwait(false);
         await output.WriteAsync(Panel("GitHub Label Taxonomy Governance")).ConfigureAwait(false);
         var api = Api;
-        var failures = 0;
+        var (failures, unreadable) = (0, 0);
         foreach (var (repo, display) in targets)
         {
             var taxonomy = policies.Labels(repo);
             if (apply)
             {
-                var synced = await LabelTaxonomy.SyncAsync(api, repo, taxonomy, dryRun, cancellationToken).ConfigureAwait(false);
+                if (await ReadOrReportAsync(display, repo, () => LabelTaxonomy.SyncAsync(api, repo, taxonomy, dryRun, cancellationToken)).ConfigureAwait(false) is not { } synced)
+                {
+                    unreadable++;
+                    continue;
+                }
+
                 await WriteGroupAsync(synced.Changed, $"{display} ({repo})", synced.Messages, "all labels up to date").ConfigureAwait(false);
                 continue;
             }
 
-            var result = LabelTaxonomy.Inspect(taxonomy, await LabelTaxonomy.FetchAsync(api, repo, cancellationToken).ConfigureAwait(false));
+            if (await ReadOrReportAsync(display, repo, () => LabelTaxonomy.ReadAsync(api, repo, cancellationToken)).ConfigureAwait(false) is not { } labels)
+            {
+                unreadable++;
+                continue;
+            }
+
+            var result = LabelTaxonomy.Inspect(taxonomy, labels);
             if (result.IsFullyAligned)
             {
                 await output.WriteLineAsync($"✓ {display} ({repo}): all {result.TotalStandard} labels aligned").ConfigureAwait(false);
@@ -118,6 +129,11 @@ internal sealed partial class GovernanceCommand
             {
                 await output.WriteLineAsync($"   - {difference.LabelName} ({difference.Action}: {difference.Details})").ConfigureAwait(false);
             }
+        }
+
+        if (unreadable > 0)
+        {
+            return await UnreadableAsync(unreadable).ConfigureAwait(false);
         }
 
         await SummaryAsync(audit, failures, $"{failures} repo(s) drifted from label taxonomy.", "Run with --apply to synchronize labels.", "all inspected repos match standard label taxonomy.").ConfigureAwait(false);
@@ -146,7 +162,7 @@ internal sealed partial class GovernanceCommand
         var targets = await ReposToSyncAsync(repos, path, all, org, cancellationToken).ConfigureAwait(false);
         await output.WriteAsync(Panel("GitHub Deployment Environment Governance")).ConfigureAwait(false);
         var api = Api;
-        var failures = 0;
+        var (failures, unreadable) = (0, 0);
         foreach (var (repo, display) in targets)
         {
             var desired = policies.Environments(repo);
@@ -158,12 +174,22 @@ internal sealed partial class GovernanceCommand
 
             if (apply)
             {
-                var synced = await ReleaseEnvironments.SyncAsync(api, repo, desired, dryRun, cancellationToken).ConfigureAwait(false);
+                if (await ReadOrReportAsync(display, repo, () => ReleaseEnvironments.SyncAsync(api, repo, desired, dryRun, cancellationToken)).ConfigureAwait(false) is not { } synced)
+                {
+                    unreadable++;
+                    continue;
+                }
+
                 await WriteGroupAsync(synced.Actions.Count > 0, $"{display} ({repo})", synced.Log, "environments up to date").ConfigureAwait(false);
                 continue;
             }
 
-            var current = await ReleaseEnvironments.FetchAsync(api, repo, cancellationToken).ConfigureAwait(false);
+            if (await ReadOrReportAsync(display, repo, () => ReleaseEnvironments.ReadAsync(api, repo, cancellationToken)).ConfigureAwait(false) is not { } current)
+            {
+                unreadable++;
+                continue;
+            }
+
             var missing = desired.Select(e => e.Name).Where(name => !current.ContainsKey(name)).Distinct().Order(StringComparer.Ordinal).ToList();
             if (missing.Count > 0)
             {
@@ -175,6 +201,11 @@ internal sealed partial class GovernanceCommand
                 var present = desired.Select(e => e.Name).Distinct().Order(StringComparer.Ordinal);
                 await output.WriteLineAsync($"✓ {display} ({repo}): {string.Join(", ", present)} present").ConfigureAwait(false);
             }
+        }
+
+        if (unreadable > 0)
+        {
+            return await UnreadableAsync(unreadable).ConfigureAwait(false);
         }
 
         await SummaryAsync(audit, failures, $"{failures} repo(s) missing declared environments.", "Run with --apply to synchronize.", "all inspected repos have their declared environments.").ConfigureAwait(false);
@@ -201,7 +232,7 @@ internal sealed partial class GovernanceCommand
         var targets = await repos.ResolveTargetsAsync(path, all, host.PersonalDir, host.Cwd, cancellationToken: cancellationToken).ConfigureAwait(false);
         await output.WriteAsync(Panel("GitHub Pages Governance")).ConfigureAwait(false);
         var api = Api;
-        var failures = 0;
+        var (failures, unreadable) = (0, 0);
         foreach (var target in targets)
         {
             var name = FolderName(target);
@@ -235,7 +266,12 @@ internal sealed partial class GovernanceCommand
             }
 
             var current = await PagesGovernance.InspectAsync(api, repo, policy, cancellationToken).ConfigureAwait(false);
-            if (current.IsAligned)
+            if (current.Error is { } error)
+            {
+                unreadable++;
+                await output.WriteLineAsync($"✗ {name} ({repo}): cannot read Pages ({error})").ConfigureAwait(false);
+            }
+            else if (current.IsAligned)
             {
                 await output.WriteLineAsync($"✓ {name} ({repo}): Pages aligned ({OrDefaultDomain(current.Cname)})").ConfigureAwait(false);
             }
@@ -245,6 +281,11 @@ internal sealed partial class GovernanceCommand
                 var reasons = current.DriftReasons.Count > 0 ? string.Join(", ", current.DriftReasons) : "not aligned";
                 await output.WriteLineAsync($"! {name} ({repo}): Pages drift detected: {reasons}").ConfigureAwait(false);
             }
+        }
+
+        if (unreadable > 0)
+        {
+            return await UnreadableAsync(unreadable).ConfigureAwait(false);
         }
 
         if (audit && failures > 0)
@@ -321,6 +362,27 @@ internal sealed partial class GovernanceCommand
         }
 
         return found;
+    }
+
+    // Runs a GitHub read for one repo; a failed read is reported against the repo and comes back null, never as an empty state.
+    private async Task<T?> ReadOrReportAsync<T>(string display, string repo, Func<Task<T>> read)
+        where T : class
+    {
+        try
+        {
+            return await read().ConfigureAwait(false);
+        }
+        catch (GitHubReadException ex)
+        {
+            await output.WriteLineAsync($"✗ {display} ({repo}): {ex.Message}").ConfigureAwait(false);
+            return null;
+        }
+    }
+
+    private async Task<int> UnreadableAsync(int unreadable)
+    {
+        await output.WriteLineAsync($"\nIncomplete: {unreadable} repo(s) could not be read from GitHub.").ConfigureAwait(false);
+        return 2;
     }
 
     private async Task WriteGroupAsync(bool changed, string label, IReadOnlyList<string> lines, string upToDate)

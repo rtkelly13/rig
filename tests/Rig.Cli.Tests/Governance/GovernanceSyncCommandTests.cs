@@ -247,6 +247,30 @@ public sealed class GovernanceSyncCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task An_unreadable_repo_is_reported_and_exits_2_not_read_as_empty()
+    {
+        var api = new FakeGitHub()
+            .Fail("GET", $"repos/{Slug}/labels?per_page=100", 500)
+            .Fail("GET", $"repos/{Slug}/environments", 500)
+            .Fail("GET", $"repos/{Slug}/pages", 500);
+
+        var (labels, labelsOut) = await RunAsync(api, "sync-labels");
+        var (labelsApply, labelsApplyOut) = await RunAsync(api, "sync-labels", "--apply");
+        var (environments, environmentsOut) = await RunAsync(api, "environments");
+        var (environmentsApply, _) = await RunAsync(api, "environments", "--apply");
+        var (pages, pagesOut) = await RunAsync(api, "pages");
+
+        Assert.Equal([2, 2, 2, 2, 2], new[] { labels, labelsApply, environments, environmentsApply, pages });
+        Assert.EndsWith(
+            $"✗ widget (acme/widget): GET repos/{Slug}/labels?per_page=100: gh: HTTP 500\n\nIncomplete: 1 repo(s) could not be read from GitHub.\n", labelsOut, StringComparison.Ordinal);
+        Assert.Contains("✗ widget (acme/widget): GET repos/", labelsApplyOut, StringComparison.Ordinal);
+        Assert.Contains($"✗ widget (acme/widget): GET repos/{Slug}/environments: gh: HTTP 500\n", environmentsOut, StringComparison.Ordinal);
+        Assert.Contains($"✗ widget (acme/widget): cannot read Pages (GET repos/{Slug}/pages: gh: HTTP 500)\n", pagesOut, StringComparison.Ordinal);
+        Assert.DoesNotContain("Run with --apply", pagesOut, StringComparison.Ordinal);
+        Assert.DoesNotContain(api.Calls, c => c.Method != "GET");
+    }
+
+    [Fact]
     public async Task Pages_without_a_github_remote_are_skipped()
     {
         _ = _proc.Answer(new Ran(1, string.Empty, "no remote"), "gh", "repo", "view");

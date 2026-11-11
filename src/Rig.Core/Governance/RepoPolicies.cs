@@ -528,9 +528,15 @@ public sealed class RepoPolicies
         }
 
         return [.. block.Select(pair => pair.Value is JsonObject spec
-            ? new EnvironmentPolicy(pair.Key, Int(spec, "wait_timer", source) ?? 0, Strings(spec, "reviewers", source) ?? [])
+            ? new EnvironmentPolicy(pair.Key, Int(spec, "wait_timer", source) ?? 0, Reviewers(spec, pair.Key, source))
             : throw Bad(source, $"environments.{pair.Key} is not an object"))];
     }
+
+    // An omitted reviewers list is none; an explicit null is a mistake, not a way of saying none.
+    private static List<string> Reviewers(JsonObject spec, string environment, string source) =>
+        spec.TryGetPropertyValue("reviewers", out var value) && value is null
+            ? throw Bad(source, $"environments.{environment}.reviewers is null")
+            : Strings(spec, "reviewers", source) ?? [];
 
     private static PagesPolicy? PagesOf(JsonObject layer, string source)
     {

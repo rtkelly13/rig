@@ -82,17 +82,19 @@ public sealed class GovernanceResourcesTests : IDisposable
     }
 
     [Fact]
-    public async Task Aligned_labels_sync_to_nothing_and_unreadable_labels_read_as_none()
+    public async Task Aligned_labels_sync_to_nothing_and_unreadable_labels_write_nothing()
     {
         var aligned = new FakeGitHub().On("GET", $"repos/{Repo}/labels?per_page=100", LabelsJson(("type: bug", "d73a4a", "Something is broken")));
-        var created = new FakeGitHub().On("GET", $"repos/{Repo}/labels?per_page=100", """{"message": "nope"}""").On("POST", $"repos/{Repo}/labels", "{}");
+        var created = new FakeGitHub().On("GET", $"repos/{Repo}/labels?per_page=100", "[]").On("POST", $"repos/{Repo}/labels", "{}");
+        var unreadable = new FakeGitHub().On("GET", $"repos/{Repo}/labels?per_page=100", """{"message": "nope"}""").On("POST", $"repos/{Repo}/labels", "{}");
 
         var nothing = await LabelTaxonomy.SyncAsync(aligned, Repo, Taxonomy[..1], dryRun: false, Token);
         var everything = await LabelTaxonomy.SyncAsync(created, Repo, Taxonomy[..1], dryRun: false, Token);
 
         Assert.Equal((false, "All standard labels already aligned."), (nothing.Changed, Assert.Single(nothing.Messages)));
         Assert.Equal("Created label 'type: bug' (#d73a4a)", Assert.Single(everything.Messages));
-        await Assert.ThrowsAsync<GitHubReadException>(() => LabelTaxonomy.ReadAsync(created, Repo, Token));
+        await Assert.ThrowsAsync<GitHubReadException>(() => LabelTaxonomy.SyncAsync(unreadable, Repo, Taxonomy[..1], dryRun: false, Token));
+        Assert.Empty(Writes(unreadable));
     }
 
     // ---- pages ----
@@ -131,6 +133,28 @@ public sealed class GovernanceResourcesTests : IDisposable
         Assert.Equal((false, false, "Pages is disabled"), (off.Enabled, off.IsAligned, Assert.Single(off.DriftReasons)));
         Assert.Equal($"GET repos/{Repo}/pages: gh: HTTP 500", broken.Error);
         Assert.Equal($"GET repos/{Repo}/pages: unreadable response", garbled.Error);
+    }
+
+    [Fact]
+    public async Task An_unreadable_site_is_never_aligned()
+    {
+        var api = new FakeGitHub().Fail("GET", $"repos/{Repo}/pages", 500);
+
+        var result = await PagesGovernance.AlignAsync(api, Repo, Site, dryRun: false, Token);
+
+        Assert.Equal(new PagesAlignResult("error", [], $"GET repos/{Repo}/pages: gh: HTTP 500"), result with { Actions = [] });
+        Assert.Empty(result.Actions);
+        Assert.Empty(Writes(api));
+    }
+
+    [Fact]
+    public async Task An_existing_site_takes_its_build_type_on_the_update()
+    {
+        var api = new FakeGitHub().On("GET", $"repos/{Repo}/pages", """{"build_type": "legacy", "https_enforced": false}""");
+
+        var result = await PagesGovernance.AlignAsync(api, Repo, Site with { Cname = null, HttpsEnforced = false }, dryRun: true, Token);
+
+        Assert.Equal([$"PUT repos/{Repo}/pages {{\"build_type\":\"workflow\"}}"], result.Actions);
     }
 
     [Fact]
@@ -200,36 +224,48 @@ public sealed class GovernanceResourcesTests : IDisposable
     }
 
     [Fact]
-    public void Unserved_protection_rules_and_undeclared_environments_are_reported_not_written()
+    public void Undeclared_environments_are_reported_not_written_and_unknown_reviewers_count_as_none()
     {
         var actions = ReleaseEnvironments.PlanActions([Release], Current(new CurrentEnvironment("release", 0, null), new CurrentEnvironment("staging")));
 
-        Assert.Equal(["reviewers-unavailable", "undeclared"], actions.Select(a => a.Kind));
-        Assert.DoesNotContain(actions, a => a.Mutates);
+        Assert.Equal([new("add-reviewers", "release", "octo"), new("undeclared", "staging", "exists on GitHub but no profile declares it")], actions);
+        Assert.Equal([true, false], actions.Select(a => a.Mutates));
     }
 
     [Fact]
-    public async Task Environments_are_read_with_their_reviewers_and_unserved_rules_as_null()
+    public async Task Environments_are_read_with_their_protection_rules()
     {
-        var api = new FakeGitHub()
-            .On("GET", $"repos/{Repo}/environments", """{"environments": [{"name": "release", "wait_timer": 5}, {"name": "pages"}, {"name": ""}]}""")
-            .On("GET", $"repos/{Repo}/environments/release/deploy_reviewers", """{"reviewers": [{"reviewer": {"login": "octo"}}, {"reviewer": {"id": 1}}]}""");
+        var api = new FakeGitHub().On(
+            "GET",
+            $"repos/{Repo}/environments",
+            """
+            {"environments": [
+              {"name": "release", "protection_rules": [
+                {"type": "wait_timer", "wait_timer": 5},
+                {"type": "required_reviewers", "reviewers": [
+                  {"type": "User", "reviewer": {"login": "octo", "id": 1}},
+                  {"type": "Team", "reviewer": {"slug": "core", "id": 2}},
+                  {"type": "User", "reviewer": {"id": 3}}]}]},
+              {"name": "pages", "wait_timer": 9},
+              {"name": ""}]}
+            """);
 
         var found = await ReleaseEnvironments.ReadAsync(api, Repo, Token);
 
         Assert.Equal(["pages", "release"], found.Keys.Order(StringComparer.Ordinal));
-        Assert.Equal(5L, found["release"].WaitTimer);
+        Assert.Equal((5L, 0L), (found["release"].WaitTimer, found["pages"].WaitTimer));
         Assert.Equal(["octo"], found["release"].Reviewers!);
-        Assert.Null(found["pages"].Reviewers);
+        Assert.Empty(found["pages"].Reviewers!);
+        Assert.Single(api.Calls);
     }
 
     [Fact]
-    public async Task An_unreadable_environment_list_throws_but_fetches_as_none()
+    public async Task An_unreadable_environment_list_throws_from_read_and_sync()
     {
         var api = new FakeGitHub().On("GET", $"repos/{Repo}/environments", """{"environments": [{"id": 1}]}""");
 
         await Assert.ThrowsAsync<GitHubReadException>(() => ReleaseEnvironments.ReadAsync(api, Repo, Token));
-        Assert.Empty(await ReleaseEnvironments.FetchAsync(api, Repo, Token));
+        await Assert.ThrowsAsync<GitHubReadException>(() => ReleaseEnvironments.SyncAsync(api, Repo, [Release], dryRun: true, Token));
     }
 
     [Fact]
@@ -237,7 +273,7 @@ public sealed class GovernanceResourcesTests : IDisposable
     {
         var api = new FakeGitHub()
             .On("GET", $"repos/{Repo}/environments", """{"environments": [{"name": "release"}, {"name": "old"}]}""")
-            .On("GET", $"repos/{Repo}/environments/release/deploy_reviewers", """{"reviewers": []}""")
+            .On("GET", $"repos/{Repo}/environments/release", """{"name": "release"}""")
             .On("PUT", $"repos/{Repo}/environments/build", "{}");
         EnvironmentPolicy[] desired = [Release, new("build", 0, [])];
 
@@ -247,28 +283,68 @@ public sealed class GovernanceResourcesTests : IDisposable
         Assert.Equal(
             ["dry-run create: build — wait_timer=0", "dry-run add-reviewers: release — octo", "undeclared: old — exists on GitHub but no profile declares it"],
             dry.Log);
-        Assert.Equal(["created build", "FAILED add-reviewers release: cannot resolve user octo", "undeclared: old — exists on GitHub but no profile declares it"], wet.Log);
+        Assert.Equal(["undeclared: old — exists on GitHub but no profile declares it", "created build", "FAILED add-reviewers release: cannot resolve user octo"], wet.Log);
         Assert.Equal([("PUT", $"repos/{Repo}/environments/build", """{"wait_timer":0}""")], Writes(api));
     }
 
     [Fact]
-    public async Task Environment_write_failures_name_the_action()
+    public async Task One_put_per_environment_keeps_what_is_there_and_adds_what_is_declared()
     {
         var api = new FakeGitHub()
-            .On("GET", $"repos/{Repo}/environments", """{"environments": [{"name": "release", "wait_timer": 1}]}""")
-            .On("GET", $"repos/{Repo}/environments/release/deploy_reviewers", """{"reviewers": []}""")
+            .On("GET", $"repos/{Repo}/environments", """{"environments": [{"name": "release", "protection_rules": [{"type": "wait_timer", "wait_timer": 1}]}]}""")
+            .On(
+                "GET",
+                $"repos/{Repo}/environments/release",
+                """
+                {"name": "release", "protection_rules": [
+                  {"type": "wait_timer", "wait_timer": 1},
+                  {"type": "required_reviewers", "prevent_self_review": true, "reviewers": [{"type": "Team", "reviewer": {"slug": "core", "id": 7}}]}]}
+                """)
             .On("GET", "users/octo", """{"id": 42}""")
-            .Fail("PUT", $"repos/{Repo}/environments/release", "nope")
-            .Fail("PATCH", $"repos/{Repo}/environments/release/deploy_reviewers", "denied");
-        var ok = new FakeGitHub()
-            .On("GET", $"repos/{Repo}/environments", """{"environments": [{"name": "release", "wait_timer": 1}]}""")
             .On("PUT", $"repos/{Repo}/environments/release", "{}");
 
-        var failed = await ReleaseEnvironments.SyncAsync(api, Repo, [Release with { WaitTimer = 9 }], dryRun: false, Token);
-        var updated = await ReleaseEnvironments.SyncAsync(ok, Repo, [Release with { WaitTimer = 9, Reviewers = [] }], dryRun: false, Token);
+        var synced = await ReleaseEnvironments.SyncAsync(api, Repo, [Release with { WaitTimer = 9 }], dryRun: false, Token);
 
-        Assert.Equal(["FAILED wait-timer release: nope", "FAILED add-reviewers release: denied"], failed.Log);
-        Assert.Equal(["updated wait_timer on release"], updated.Log);
+        Assert.Equal(["updated release: wait-timer, add-reviewers"], synced.Log);
+        Assert.Equal(
+            [("PUT", $"repos/{Repo}/environments/release", """{"wait_timer":9,"reviewers":[{"type":"Team","id":7},{"type":"User","id":42}],"prevent_self_review":true}""")],
+            Writes(api));
+    }
+
+    [Fact]
+    public async Task An_undeclared_wait_timer_is_carried_over()
+    {
+        var api = new FakeGitHub()
+            .On("GET", $"repos/{Repo}/environments", """{"environments": [{"name": "release", "protection_rules": [{"type": "wait_timer", "wait_timer": 4}]}]}""")
+            .On("GET", $"repos/{Repo}/environments/release", """{"name": "release", "protection_rules": [{"type": "wait_timer", "wait_timer": 4}]}""")
+            .On("GET", "users/octo", """{"id": 42}""")
+            .On("PUT", $"repos/{Repo}/environments/release", "{}");
+
+        _ = await ReleaseEnvironments.SyncAsync(api, Repo, [Release], dryRun: false, Token);
+
+        Assert.Equal([("PUT", $"repos/{Repo}/environments/release", """{"wait_timer":4,"reviewers":[{"type":"User","id":42}]}""")], Writes(api));
+    }
+
+    [Fact]
+    public async Task Environment_write_failures_name_the_actions()
+    {
+        var listed = """{"environments": [{"name": "release", "protection_rules": [{"type": "wait_timer", "wait_timer": 1}]}]}""";
+        var denied = new FakeGitHub()
+            .On("GET", $"repos/{Repo}/environments", listed)
+            .On("GET", $"repos/{Repo}/environments/release", """{"name": "release"}""")
+            .On("GET", "users/octo", """{"id": 42}""")
+            .Fail("PUT", $"repos/{Repo}/environments/release", "nope");
+        var unreadable = new FakeGitHub()
+            .On("GET", $"repos/{Repo}/environments", listed)
+            .Fail("GET", $"repos/{Repo}/environments/release", "gone");
+
+        var failed = await ReleaseEnvironments.SyncAsync(denied, Repo, [Release with { WaitTimer = 9 }], dryRun: false, Token);
+        var unread = await ReleaseEnvironments.SyncAsync(unreadable, Repo, [Release with { WaitTimer = 9, Reviewers = [] }], dryRun: false, Token);
+
+        Assert.Equal(["FAILED wait-timer, add-reviewers release: nope"], failed.Log);
+        Assert.Single(unread.Log);
+        Assert.StartsWith("FAILED wait-timer release: GET repos/", unread.Log[0], StringComparison.Ordinal);
+        Assert.Empty(Writes(unreadable));
     }
 
     private static Dictionary<string, CurrentEnvironment> Current(params CurrentEnvironment[] environments) =>
@@ -356,6 +432,7 @@ public sealed class GovernanceResourcesTests : IDisposable
     [InlineData("""{"labels": [{"name": "x", "description": ""}]}""", "a label has no color")]
     [InlineData("""{"labels": [{"name": "x", "color": "f"}]}""", "a label has no description")]
     [InlineData("""{"environments": {"release": 1}}""", "environments.release is not an object")]
+    [InlineData("""{"environments": {"release": {"reviewers": null}}}""", "environments.release.reviewers is null")]
     [InlineData("""{"pages": {"build_type": "jekyll"}}""", "pages.build_type 'jekyll' is neither 'workflow' nor 'legacy'")]
     [InlineData("""{"fork": {}}""", "fork has no upstream")]
     public void A_malformed_github_key_is_refused(string defaults, string reason)
@@ -384,6 +461,24 @@ public sealed class GovernanceResourcesTests : IDisposable
         Assert.Equal("status.yaml :: post", names["post"]);
         Assert.False(names.ContainsKey("ship") || names.ContainsKey("x"));
         Assert.Empty(CheckNames.DiscoverPrCheckNames(_dir.Folder("empty")));
+    }
+
+    [Fact]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void An_unreadable_workflows_folder_names_no_checks()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "POSIX file modes");
+        Workflow("ci.yml", "on: pull_request\njobs:\n  lint: {}\n");
+        var workflows = Path.Join(_dir.Path, "repo", ".github", "workflows");
+        File.SetUnixFileMode(workflows, UnixFileMode.None);
+        try
+        {
+            Assert.Empty(CheckNames.DiscoverPrCheckNames(Path.Join(_dir.Path, "repo")));
+        }
+        finally
+        {
+            File.SetUnixFileMode(workflows, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     private void Workflow(string name, string text) => File.WriteAllText(_dir.File($"repo/.github/workflows/{name}"), text);

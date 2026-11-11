@@ -73,19 +73,6 @@ public static class LabelTaxonomy
         }
     }
 
-    /// <summary><see cref="ReadAsync"/>, reading an unreadable list as no labels.</summary>
-    public static async Task<IReadOnlyDictionary<string, RepoLabel>> FetchAsync(IGitHubApi api, string repo, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            return await ReadAsync(api, repo, cancellationToken).ConfigureAwait(false);
-        }
-        catch (GitHubReadException)
-        {
-            return new Dictionary<string, RepoLabel>();
-        }
-    }
-
     /// <summary>What it takes to bring <paramref name="labels"/> up to <paramref name="taxonomy"/>.</summary>
     public static IReadOnlyList<LabelDifference> Differences(IReadOnlyList<LabelSpec> taxonomy, IReadOnlyDictionary<string, RepoLabel> labels)
     {
@@ -132,10 +119,10 @@ public static class LabelTaxonomy
             differences);
     }
 
-    /// <summary>Brings <paramref name="repo"/>'s labels up to <paramref name="taxonomy"/>, or with <paramref name="dryRun"/> says what it would do.</summary>
+    /// <summary>Brings <paramref name="repo"/>'s labels up to <paramref name="taxonomy"/>, or with <paramref name="dryRun"/> says what it would do. Throws <see cref="GitHubReadException"/> when the labels cannot be read.</summary>
     public static async Task<SyncOutcome> SyncAsync(IGitHubApi api, string repo, IReadOnlyList<LabelSpec> taxonomy, bool dryRun, CancellationToken cancellationToken = default)
     {
-        var audit = Inspect(taxonomy, await FetchAsync(api, repo, cancellationToken).ConfigureAwait(false));
+        var audit = Inspect(taxonomy, await ReadAsync(api, repo, cancellationToken).ConfigureAwait(false));
         if (audit.IsFullyAligned)
         {
             return new(false, ["All standard labels already aligned."]);

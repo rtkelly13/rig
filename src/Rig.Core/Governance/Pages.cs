@@ -107,6 +107,11 @@ public static class PagesGovernance
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(policy);
         var current = await InspectAsync(api, repo, policy, cancellationToken).ConfigureAwait(false);
+        if (current.Error is { } error)
+        {
+            return new("error", [], error);
+        }
+
         if (current.IsAligned)
         {
             return new("aligned", []);
@@ -141,14 +146,22 @@ public static class PagesGovernance
             writes.Add(new("POST", route, PyRepr.Json(new JsonObject { ["build_type"] = policy.BuildType })));
         }
 
+        // An existing site takes its build type on the update; a new one got it from the POST.
+        var update = enabled ? new JsonObject { ["build_type"] = policy.BuildType } : new JsonObject();
         if (!string.IsNullOrEmpty(policy.Cname))
         {
-            writes.Add(new("PUT", route, PyRepr.Json(new JsonObject { ["cname"] = policy.Cname, ["https_enforced"] = policy.HttpsEnforced })));
+            update["cname"] = policy.Cname;
+            update["https_enforced"] = policy.HttpsEnforced;
         }
         else if (policy.HttpsEnforced)
         {
             // No `cname` key: GitHub reads `"cname": null` as removing the custom domain.
-            writes.Add(new("PUT", route, PyRepr.Json(new JsonObject { ["https_enforced"] = true })));
+            update["https_enforced"] = true;
+        }
+
+        if (update.Count > 0)
+        {
+            writes.Add(new("PUT", route, PyRepr.Json(update)));
         }
 
         return writes;
