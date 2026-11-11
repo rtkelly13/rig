@@ -29,8 +29,10 @@ internal static class Program
         var fromPython = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(PythonRig.BridgeVariable));
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var macOs = OperatingSystem.IsMacOS();
-        // Created per command; HttpClient opens no connection until the health probe asks for one.
-        using var http = new HttpClient();
+        // Created per command; HttpClient opens no connection until the health probe asks for one. Redirects are not
+        // followed, so only a 200 from the health endpoint itself counts as healthy.
+        using var handler = new HttpClientHandler { AllowAutoRedirect = false, CheckCertificateRevocationList = true };
+        using var http = new HttpClient(handler);
         var app = new RigApp(
             new PythonRig(proc, checkout, fromPython),
             new GhApi(proc),
