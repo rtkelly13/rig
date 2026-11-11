@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Rig.Cli.Agent;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
@@ -23,9 +24,9 @@ internal static class Program
     {
         var codeRoot = CodeRoot.Current();
         var checkout = PythonRig.ResolveCheckout(Environment.GetEnvironmentVariable(PythonRig.HomeVariable), codeRoot);
-        if (Forwarded.Owns(args))
+        if (Forwarded.Owns(args) || AgentLauncher.LauncherArgs(args) is not null)
         {
-            // The Python CLI shares this console and handles Ctrl+C itself; rig waits for it and returns its code.
+            // The Python CLI or the agent shares this console and handles Ctrl+C itself; rig waits for it and returns its code.
             Console.CancelKeyPress += (_, e) => e.Cancel = true;
         }
 
@@ -106,7 +107,12 @@ internal static class Program
                     Console.Error).Build,
                 new StatusCommand(proc, git, Environment.CurrentDirectory, Console.Out).Build,
                 () => new ModelsCommand(new ModelDiscovery(proc, home, ProgramPath.Find), Console.Out).Build(),
-            ]);
+            ],
+            new AgentLauncher(
+                proc,
+                new AgentHost(AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home), Environment.CurrentDirectory, ProgramPath.Find),
+                Console.Out,
+                Console.Error));
         return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
     }
 }

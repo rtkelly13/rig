@@ -1,8 +1,8 @@
 """Install root agent launcher shims and shell shortcut.
 
 Writes ``agent.ps1`` (Windows) and ``agent.sh`` (POSIX) to the estate code root
-(``C:\\code`` or ``~/code``). The shim executes ``python -m rig.agent_launcher``
-with passthrough arguments.
+(``C:\\code`` or ``~/code``). The shim runs ``rig agent`` on the C# CLI in this checkout
+(``dotnet run --project src/Rig.Cli``) with passthrough arguments.
 """
 
 from __future__ import annotations
@@ -51,19 +51,19 @@ def get_estate_root(project_root: Path | None = None) -> Path:
 
 def generate_ps1_content(project_root: Path) -> str:
     """Generate the body for agent.ps1."""
-    proj_str = str(project_root)
+    cli = str(project_root / "src" / "Rig.Cli")
     return f"""{SHIM_HEADER}
-uv run --no-sync --project "{proj_str}" python -m rig.agent_launcher @args
+dotnet run --project "{cli}" -- agent @args
 exit $LASTEXITCODE
 """
 
 
 def generate_sh_content(project_root: Path) -> str:
     """Generate the body for agent.sh."""
-    proj_posix = project_root.as_posix()
+    cli = (project_root / "src" / "Rig.Cli").as_posix()
     return f"""#!/usr/bin/env bash
 {SHIM_HEADER}
-exec uv run --no-sync --project "{proj_posix}" python -m rig.agent_launcher "$@"
+exec dotnet run --project "{cli}" -- agent "$@"
 """
 
 

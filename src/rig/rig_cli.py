@@ -18,7 +18,6 @@ from rich.console import Console
 from desktop_manager.web_cli import web_app
 from rig import csharp_cli, tracing
 from rig.agent_browser.cli import app as browser_app
-from rig.agent_launcher.cli import agent_main
 from rig.c4_okf.cli import app as c4_app
 from rig.devenv.cli import app as devenv_app
 from rig.estate.cli import app as estate_app
@@ -47,13 +46,6 @@ app.add_typer(c4_app, name="c4")
 
 for _name in csharp_cli.PORTED:
     csharp_cli.add_stub(app, _name)
-
-
-@app.command("agent", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
-def agent_cmd(ctx: typer.Context) -> None:
-    """Launch preferred AI coding agent or selected flag (-agy, -ccc, -oc, -codex, -dng)."""
-    exit_code = agent_main(ctx.args)
-    raise typer.Exit(code=exit_code)
 
 
 @app.command("sync")
@@ -108,17 +100,11 @@ AGENT_SHORTCUT_FLAGS = {
 def main(argv: Sequence[str] | None = None) -> int:
     """Unified entry point for the rig CLI.
 
-    Dispatches directly to agent_main if invoked with agent shortcut flags or empty args.
+    A bare ``rig`` or a leading agent shortcut flag launches an agent: the C# CLI's launcher takes the line whole.
     """
     raw_args = list(sys.argv[1:] if argv is None else argv)
-
-    # If first token is an agent flag, dispatch straight to agent launcher
-    if raw_args and raw_args[0] in AGENT_SHORTCUT_FLAGS:
-        return agent_main(raw_args)
-
-    # If no args at all, default to launching preferred agent
-    if not raw_args:
-        return agent_main([])
+    if not raw_args or raw_args[0] in AGENT_SHORTCUT_FLAGS:
+        return csharp_cli.run(raw_args)
 
     tracing.init_tracing("rig")
     tracing.flush_periodically(30)

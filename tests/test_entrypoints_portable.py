@@ -43,7 +43,7 @@ def test_every_script_is_covered():
     hand_rolled = {
         entry.script for entry in ENTRY_POINTS if entry.function != "main" and entry.target != "rig.csharp_cli:entry"
     }
-    assert hand_rolled == {"agent", "help"}, "a new non-main entry point needs its own smoke test here"
+    assert hand_rolled == {"help"}, "a new non-main entry point needs its own smoke test here"
 
 
 @pytest.mark.parametrize("entry", ENTRY_POINTS, ids=lambda entry: entry.script)
@@ -82,15 +82,6 @@ def test_help_script_runs_on_linux(monkeypatch, capsys):
     monkeypatch.setattr("sys.platform", "linux")
     help_main()
     assert "desktop-manager" in capsys.readouterr().out
-
-
-def test_agent_script_runs_on_linux(monkeypatch, capsys):
-    from rig.agent_launcher.cli import agent_main
-
-    monkeypatch.setattr("sys.platform", "linux")
-    exit_code = agent_main(["-h"])
-    assert exit_code == 0
-    assert "Usage: agent" in capsys.readouterr().out
 
 
 def test_some_commands_are_gated():
