@@ -127,8 +127,7 @@ public sealed class ClickHouseClient(HttpClient http, Uri? baseUrl = null)
     {
         try
         {
-            var parameters = new Dictionary<string, string>(StringComparer.Ordinal) { ["database"] = ClickHouseConfig.Database, ["table"] = table };
-            return (await TextAsync(HasTableSql, parameters, cancellationToken).ConfigureAwait(false)).Trim() == "1";
+            return await TableExistsAsync(table, cancellationToken).ConfigureAwait(false);
         }
         catch (ClickHouseException)
         {
@@ -155,7 +154,8 @@ public sealed class ClickHouseClient(HttpClient http, Uri? baseUrl = null)
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(chunk);
         var ids = traceIds.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         var found = new HashSet<SpanKey>();
-        if (ids.Count == 0 || !await HasTableAsync("otel_traces", cancellationToken).ConfigureAwait(false))
+        // An error here must not read as "no table": every span would then look missing and be sent again.
+        if (ids.Count == 0 || !await TableExistsAsync("otel_traces", cancellationToken).ConfigureAwait(false))
         {
             return found;
         }
@@ -172,6 +172,12 @@ public sealed class ClickHouseClient(HttpClient http, Uri? baseUrl = null)
         }
 
         return found;
+    }
+
+    private async Task<bool> TableExistsAsync(string table, CancellationToken cancellationToken)
+    {
+        var parameters = new Dictionary<string, string>(StringComparer.Ordinal) { ["database"] = ClickHouseConfig.Database, ["table"] = table };
+        return (await TextAsync(HasTableSql, parameters, cancellationToken).ConfigureAwait(false)).Trim() == "1";
     }
 
     // Runs `sql` (without a FORMAT clause) as JSONEachRow and reads each non-blank line with `read`.

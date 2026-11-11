@@ -243,6 +243,28 @@ public sealed class BackfillReplayTests : IDisposable
     }
 
     [Fact]
+    public async Task An_unreadable_file_is_reported_left_unmarked_and_the_rest_still_run()
+    {
+        var locked = Traces("a.ndjson", TraceLines.Span("t1", "s1", Settled));
+        var open = Traces("b.ndjson", TraceLines.Span("t2", "s2", Settled));
+
+        BackfillReport report;
+        using (new FileStream(locked, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            report = await backfill.RunAsync([locked, open], marks, cancellationToken: Ct);
+        }
+
+        Assert.Equal([new FileResult(locked, 0, 0, 0, 0, Confirmed: false), new FileResult(open, 1, 0, 1, 0, Confirmed: true)], report.Files);
+        Assert.StartsWith("a.ndjson: ", Assert.Single(report.Errors), StringComparison.Ordinal);
+        Assert.False(Backfill.ReadMarks(marks).ContainsKey(Backfill.NormCase(locked)));
+
+        var again = await backfill.RunAsync([locked, open], marks, cancellationToken: Ct);
+
+        Assert.Equal([new FileResult(locked, 1, 0, 1, 0, Confirmed: true)], again.Files);
+        Assert.Empty(again.Errors);
+    }
+
+    [Fact]
     public async Task A_marked_unchanged_file_is_skipped()
     {
         var file = Traces("a.ndjson", TraceLines.Span("t1", "s1", Settled));

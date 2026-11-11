@@ -262,7 +262,10 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
                 if (outcome.Problem is { } problem)
                 {
                     errors.Add(problem);
-                    break;
+                    if (outcome.Result is null)
+                    {
+                        break;
+                    }
                 }
 
                 result = outcome.Result!;
@@ -311,7 +314,18 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
 
     private async Task<(FileResult? Result, string? Problem)> FileAsync(string path, int settleSeconds, bool dryRun, CancellationToken cancellationToken)
     {
-        var spans = TraceSpans.BestCopies(TraceSpans.Read(path));
+        string text;
+        try
+        {
+            text = await File.ReadAllTextAsync(path, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Unread is not empty: left unconfirmed, so the next run reads it again; the files after it still run.
+            return (new FileResult(path, 0, 0, 0, 0, Confirmed: false), $"{Path.GetFileName(path)}: {e.Message}");
+        }
+
+        var spans = TraceSpans.BestCopies(TraceSpans.Parse(text));
         var present = await clickhouse.ExistingSpansAsync(spans.Select(span => span.TraceId), cancellationToken: cancellationToken).ConfigureAwait(false);
         var settleFrom = ((time.GetUtcNow().UtcTicks - DateTime.UnixEpoch.Ticks) * 100) - (settleSeconds * 1_000_000_000L);
         var fileMtime = MtimeNs(new FileInfo(path));

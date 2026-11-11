@@ -211,6 +211,14 @@ public sealed class ClickHouseStackTests : IDisposable
     }
 
     [Fact]
+    public async Task A_failing_table_check_is_an_error_not_an_empty_table()
+    {
+        clickhouse.Error = "boom";
+
+        _ = await Assert.ThrowsAsync<ClickHouseException>(() => Client.ExistingSpansAsync(["t1"], cancellationToken: Ct));
+    }
+
+    [Fact]
     public async Task No_spans_exist_before_the_traces_table_does()
     {
         clickhouse.HasTraces = false;
