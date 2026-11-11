@@ -39,7 +39,7 @@ dependencies = [
 rig = "rig.rig_cli:main"
 desktop-manager = "desktop_manager.cli:main"
 estate = "rig.estate.cli:main"
-otel-stack = "rig.otel_stack.cli:main"
+otel-stack = "rig.csharp_cli:entry"
 help = "desktop_manager.cli:help_main"
 status = "repo_health.cli:main"
 agent = "rig.agent_launcher.cli:agent_main"
@@ -132,7 +132,6 @@ ignore_imports = [
     "rig.rig_cli -> desktop_manager.cli",  # G2 (composition root, allowed explicitly)
     "rig.rig_cli -> desktop_manager.web_cli",  # G2 (composition root, allowed explicitly)
     "rig.otel_stack.backfill -> desktop_manager.runtime",  # B1 (roots.app_data_dir)
-    "rig.otel_stack.paths -> desktop_manager.runtime",  # B1 (roots.app_data_dir)
 ]
 
 [[tool.importlinter.contracts]]
@@ -277,10 +276,7 @@ ignore = [
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
 "src/rig/connectivity/manifests.py" = ["TID251"]
-"src/rig/launchd.py" = ["TID251"]
 "src/rig/models/discovery.py" = ["TID251"]
-"src/rig/otel_stack/clickhouse.py" = ["TID251"]
-"src/rig/otel_stack/runtime.py" = ["TID251"]
 "src/rig/repo_governance/vercel_projects.py" = ["TID251"]
 "src/rig/triage/github.py" = ["TID251"]
 # Temporary: tests that build real temp repos with raw git. F2 moves them onto the
@@ -548,7 +544,6 @@ patching-allow = [
     "tests/test_models_discovery.py",
     "tests/test_org_governance.py",
     "tests/test_otel_clickhouse.py",
-    "tests/test_otel_stack.py",
     "tests/test_pages_manager.py",
     "tests/test_pathways.py",
     "tests/test_platforms.py",

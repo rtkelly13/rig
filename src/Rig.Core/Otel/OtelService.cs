@@ -35,4 +35,37 @@ public static class OtelService
             ["StandardOutPath"] = log,
             ["StandardErrorPath"] = log,
         });
+
+    /// <summary>Where the agent's plist lives in <paramref name="launchd"/>'s agents folder.</summary>
+    public static string PlistPath(Launchd launchd)
+    {
+        ArgumentNullException.ThrowIfNull(launchd);
+        return Path.Join(launchd.AgentsDir, PlistName);
+    }
+
+    /// <summary>Whether the agent's plist is in place, loaded or not.</summary>
+    public static bool Installed(Launchd launchd) => File.Exists(PlistPath(launchd));
+
+    /// <summary>Whether launchd has the agent loaded.</summary>
+    public static Task<bool> LoadedAsync(Launchd launchd, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(launchd);
+        return launchd.LoadedAsync(Label, cancellationToken);
+    }
+
+    /// <summary>Writes the agent for <paramref name="binary"/> and <paramref name="config"/> and loads it; returns the plist's path.</summary>
+    /// <exception cref="Processes.ProcException"><c>launchctl bootstrap</c> failed.</exception>
+    public static async Task<string> InstallAsync(Launchd launchd, OtelPaths paths, string binary, string config, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(launchd);
+        ArgumentNullException.ThrowIfNull(paths);
+        var path = PlistPath(launchd);
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(paths.Log)!);
+        await launchd.LoadAsync(path, Render(binary, config, paths.Log), cancellationToken).ConfigureAwait(false);
+        return path;
+    }
+
+    /// <summary>Unloads and deletes the agent; false when it was not installed.</summary>
+    public static Task<bool> UninstallAsync(Launchd launchd, CancellationToken cancellationToken = default) =>
+        launchd is null ? throw new ArgumentNullException(nameof(launchd)) : launchd.RemoveAsync(PlistPath(launchd), cancellationToken);
 }
