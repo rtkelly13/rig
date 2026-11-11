@@ -88,9 +88,9 @@ def test_shipped_config_rtkelly_labs_profile():
     assert "design-system" in org_repos
     assert "Parquet.SourceGenerator" in org_repos
     assert "Parquet.TypeProvider" in org_repos
-    assert cfg.copyright_holder(".github") == "rtkelly-labs"
-    assert cfg.copyright_holder("design-system") == "rtkelly-labs"
-    assert cfg.copyright_holder("Parquet.SourceGenerator") == "rtkelly-labs"
+    assert cfg.copyright_holder(".github") == "Ryan Kelly"
+    assert cfg.copyright_holder("design-system") == "Ryan Kelly"
+    assert cfg.copyright_holder("Parquet.SourceGenerator") == "Ryan Kelly"
     assert cfg.has_policy(".github", "license")
     assert cfg.has_policy(".github", "community_templates")
     assert cfg.has_policy(".github", "security_policy")
