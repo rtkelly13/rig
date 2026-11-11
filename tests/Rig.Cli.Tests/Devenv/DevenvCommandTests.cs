@@ -13,9 +13,11 @@ public sealed class DevenvCommandTests : IDisposable
 {
     private readonly TempDir _home = new();
     private readonly PluginServer _server = new();
+    private readonly FontServer _fonts = new();
 
     public void Dispose()
     {
+        _fonts.Dispose();
         _server.Dispose();
         _home.Dispose();
     }
@@ -28,6 +30,7 @@ public sealed class DevenvCommandTests : IDisposable
         new DevenvCommand(
             new DevenvHost(Path.Join(_home.Path, "not-this-home"), policy ?? PolicyFiles.Real, false, Checkout, Path.Join(_home.Path, "not-this-root"), "/bin/zsh", p => p == "claude" ? "/bin/claude" : null),
             _server.Plugins,
+            _fonts.Fonts,
             output,
             error).Build();
 
@@ -50,7 +53,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "gh", "obsidian-plugins", "opencode"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -469,12 +472,63 @@ public sealed class DevenvCommandTests : IDisposable
     public async Task Gh_honours_xdg_config_home_only_for_the_default_home()
     {
         var config = Path.Join(_home.Path, "xdg");
-        var command = new DevenvCommand(new DevenvHost(_home.Path, PolicyFiles.Real, false, Checkout, _home.Path, null, _ => null, config), _server.Plugins, TextWriter.Null, TextWriter.Null).Build();
+        var command = new DevenvCommand(new DevenvHost(_home.Path, PolicyFiles.Real, false, Checkout, _home.Path, null, _ => null, config), _server.Plugins, _fonts.Fonts, TextWriter.Null, TextWriter.Null).Build();
 
         Assert.Equal(0, await command.Parse(["gh"]).InvokeAsync(cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.True(File.Exists(GhScopes.Target(_home.Path, config)));
         Assert.False(File.Exists(Overlay));
+    }
+
+    private string Fonts => NerdFonts.Folder(_home.Path, windows: false, macOS: false);
+
+    [Fact]
+    public async Task Fonts_installs_each_missing_family_then_reports_them_present()
+    {
+        _ = _fonts.WithAll();
+        var (missing, report, _) = await InvokeAsync(null, ["fonts", "--check"]);
+
+        Assert.Equal(1, missing);
+        Assert.Equal("  JetBrainsMono Nerd Font    missing\n  CascadiaCode Nerd Font     missing\n  FiraCode Nerd Font         missing\n", report);
+
+        var (code, output, error) = await InvokeAsync(null, ["fonts"]);
+
+        Assert.Equal(0, code);
+        Assert.Empty(error);
+        Assert.Equal(
+            string.Concat(NerdFonts.All.Select(f => $"Downloading {f.Name} from {NerdFonts.Url(f)}...\n✓ Installed font: {f.Name}\n")),
+            output);
+        Assert.True(File.Exists(Path.Join(Fonts, "FiraCodeNerdFont-Regular.ttf")));
+
+        var (again, second, _) = await InvokeAsync(null, ["fonts"]);
+
+        Assert.Equal(0, again);
+        Assert.Equal(string.Concat(NerdFonts.All.Select(f => $"✓ Font already present: {f.Name}\n")), second);
+        Assert.Equal(0, (await InvokeAsync(null, ["fonts", "--check"])).Code);
+        Assert.Equal(3, _fonts.Asked.Count);
+    }
+
+    [Fact]
+    public async Task Fonts_dry_run_downloads_nothing()
+    {
+        var (code, output, _) = await InvokeAsync(null, ["fonts", "--dry-run"]);
+
+        Assert.Equal(0, code);
+        Assert.Equal(string.Concat(NerdFonts.All.Select(f => $"Dry run: would download and install {f.Name}\n")), output);
+        Assert.Empty(_fonts.Asked);
+    }
+
+    [Fact]
+    public async Task Fonts_keeps_going_after_a_failed_family_and_exits_1()
+    {
+        _ = _fonts.With(NerdFonts.All[1], "CascadiaCodeNerdFont-Regular.ttf");
+
+        var (code, output, error) = await InvokeAsync(null, ["fonts"]);
+
+        Assert.Equal(1, code);
+        Assert.Contains("✓ Installed font: CascadiaCode Nerd Font\n", output, StringComparison.Ordinal);
+        Assert.StartsWith("! Could not download/install JetBrainsMono Nerd Font: ", error, StringComparison.Ordinal);
+        Assert.Contains("! Could not download/install FiraCode Nerd Font: ", error, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -489,7 +543,8 @@ public sealed class DevenvCommandTests : IDisposable
     [InlineData(new[] { "devenv", "agents" }, false)]
     [InlineData(new[] { "devenv", "agent-launcher" }, false)]
     [InlineData(new[] { "devenv", "gh", "--check" }, false)]
-    [InlineData(new[] { "devenv", "fonts" }, true)]
+    [InlineData(new[] { "devenv", "fonts", "--check" }, false)]
+    [InlineData(new[] { "devenv", "git" }, true)]
     public void Only_the_ported_devenv_subcommands_stay_in_csharp(string[] args, bool forwarded)
     {
         var root = new RootCommand { Build(TextWriter.Null, TextWriter.Null) };

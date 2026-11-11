@@ -13,7 +13,6 @@ from rig import csharp_cli
 from ...workspace.repo_resolver import check_repo_folder
 from ..config.loader import load_all_builtin_tools
 from ..engine.context import StepContext, get_current_platform
-from ..steps.fonts import NERD_FONTS, is_nerd_font_installed
 from ..steps.git import get_git_config_val
 from ..steps.terminal import get_windows_terminal_status
 from ..tool_manager import ToolManager
@@ -162,16 +161,9 @@ def run_doctor() -> int:
     console.print(g_table)
     console.print()
 
-    # 4. Fonts Check
-    f_table = Table(title="4. Developer Fonts", box=table_box(), show_header=True)
-    f_table.add_column("Font Family", style="cyan")
-    f_table.add_column("Status", justify="center")
-
-    for f in NERD_FONTS:
-        present = is_nerd_font_installed(ctx, f.name)
-        f_table.add_row(f.name, "[green]✓ Installed[/green]" if present else "[dim]- Missing[/dim]")
-
-    console.print(f_table)
+    # 4. Fonts Check: `rig devenv fonts --check` lists each family; informational, so its code is not an issue.
+    console.print("[bold]4. Developer Fonts[/bold]")
+    csharp_cli.run(["devenv", "fonts", "--check"])
     console.print()
 
     # 5. AI Coding Tools Check

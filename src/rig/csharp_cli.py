@@ -26,7 +26,7 @@ PORTED: tuple[str, ...] = ("agent", "browser", "gh", "models", "policy", "skills
 
 #: Subcommands the C# CLI owns inside a group Python still owns; ``tests/Rig.Cli.Tests`` checks C# has exactly these.
 PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
-    "devenv": ("agent-launcher", "agents", "claude", "estate-rules", "gh", "obsidian-plugins", "opencode")
+    "devenv": ("agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode")
 }
 
 #: Set for the C# CLI so it refuses to forward a command back to Python.
