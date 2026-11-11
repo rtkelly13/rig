@@ -25,7 +25,21 @@ from rig import tracing
 PORTED: tuple[str, ...] = ("agent", "browser", "devenv", "doctor", "gh", "models", "policy", "skills", "status", "sync")
 #: Subcommands of a group the Python CLI still owns that run on C#: ``rig workspace doctor``.
 PORTED_SUBCOMMANDS: dict[str, tuple[str, ...]] = {
-    "estate": ("audit", "clones", "decisions", "doctor", "prune-caches", "reclaim", "risk", "sync", "tidy", "trim"),
+    "estate": (
+        "apps",
+        "audit",
+        "clones",
+        "decisions",
+        "doctor",
+        "downloads",
+        "prune-caches",
+        "reclaim",
+        "risk",
+        "sync",
+        "tidy",
+        "trim",
+        "volume",
+    ),
     "workspace": ("artifacts", "audit", "ci", "clean", "doctor", "gitignore", "orca", "packages", "status", "sync"),
 }
 

@@ -128,48 +128,6 @@ def _nlink(path: str) -> int:
         return 1
 
 
-@dataclass(frozen=True, slots=True)
-class Footprint:
-    """Apparent bytes under a tree, and when its newest file was written."""
-
-    bytes_used: int = 0
-    #: Epoch mtime of the newest file; 0.0 for a tree with no files.
-    newest: float = 0.0
-
-
-def footprint(path: pathlib.Path) -> Footprint:
-    """Walk all of *path*, `.git` included, summing apparent size and the newest mtime.
-
-    Unlike `measure` this never stops early and never asks for link counts, so
-    on Windows it costs only the directory listings (about 10s for 300,000
-    files). It answers "how big is this, and is anyone still writing to it".
-    Symlinks and junctions are not followed: a workspace checkout links whole
-    clones in under `projects/`, which would otherwise count them again.
-    """
-    total = 0
-    newest = 0.0
-    stack = [os.fspath(path)]
-    while stack:
-        current = stack.pop()
-        try:
-            with os.scandir(current) as entries:
-                for entry in entries:
-                    try:
-                        if entry.is_symlink() or entry.is_junction():
-                            continue
-                        if entry.is_dir(follow_symlinks=False):
-                            stack.append(entry.path)
-                        elif entry.is_file(follow_symlinks=False):
-                            st = entry.stat(follow_symlinks=False)
-                            total += st.st_size
-                            newest = max(newest, st.st_mtime)
-                    except OSError:
-                        continue
-        except OSError:
-            continue
-    return Footprint(total, newest)
-
-
 #: NTFS default cluster size; allocation is a whole number of these.
 CLUSTER = 4096
 
