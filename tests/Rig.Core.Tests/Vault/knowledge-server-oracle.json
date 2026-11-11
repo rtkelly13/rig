@@ -1,0 +1,986 @@
+{
+ "constants": {
+  "label": "dev.rtkelly.rig.open-knowledge",
+  "package": "@inkeep/open-knowledge",
+  "version": "0.89.4",
+  "port": 47311,
+  "server_name": "open-knowledge",
+  "mcp_url": "http://127.0.0.1:47311/mcp",
+  "editor_url": "http://127.0.0.1:47311/",
+  "throttle": 60
+ },
+ "registrations": [
+  {
+   "b64": "",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "bnVsbA==",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "W10=",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "MQ==",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "Ingi",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "e30=",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogbnVsbH0=",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogW119",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogM30=",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3Bfc2VydmVycyI6IHsib3Blbi1rbm93bGVkZ2UiOiB7InR5cGUiOiAiaHR0cCIsICJ1cmwiOiAiaHR0cDovLzEyNy4wLjAuMTo0NzMxMS9tY3AifX19",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjoge319",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvdGhlciI6IHsidHlwZSI6ICJodHRwIn19fQ==",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IG51bGx9fQ==",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IFtdfX0=",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6ICJzIn19",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHt9fX0=",
+   "transport": "stdio",
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6IG51bGx9fX0=",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6IDMsICJ1cmwiOiB0cnVlfX19",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIiwgInVybCI6ICJodHRwOi8vMTI3LjAuMC4xOjQ3MzExL21jcCJ9fX0=",
+   "transport": "http",
+   "target": "http://127.0.0.1:47311/mcp",
+   "shared": true,
+   "connect": []
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIiwgInVybCI6ICJodHRwOi8vMTI3LjAuMC4xOjQ3MzExL21jcC8ifX19",
+   "transport": "http",
+   "target": "http://127.0.0.1:47311/mcp/",
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJzc2UiLCAidXJsIjogImh0dHA6Ly8xMjcuMC4wLjE6NDczMTEvbWNwIn19fQ==",
+   "transport": "sse",
+   "target": "http://127.0.0.1:47311/mcp",
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJzdGRpbyIsICJjb21tYW5kIjogIm5weCJ9fX0=",
+   "transport": "stdio",
+   "target": "npx",
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsiY29tbWFuZCI6ICJucHgiLCAiYXJncyI6IFsib2siXX19fQ==",
+   "transport": "stdio",
+   "target": "npx",
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidXJsIjogIiIsICJjb21tYW5kIjogIm5weCJ9fX0=",
+   "transport": "stdio",
+   "target": "npx",
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidXJsIjogIiJ9fX0=",
+   "transport": "stdio",
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidXJsIjogMSwgImNvbW1hbmQiOiAibnB4In19fQ==",
+   "transport": "stdio",
+   "target": "npx",
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIiwgInVybCI6ICJhIn0sICJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJzdGRpbyIsICJjb21tYW5kIjogImMifX19",
+   "transport": "stdio",
+   "target": "c",
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIiwgInVybCI6ICJhIn19LCAibWNwU2VydmVycyI6IDF9",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJ4IjogTmFOLCAibWNwU2VydmVycyI6IHsib3Blbi1rbm93bGVkZ2UiOiB7InR5cGUiOiAiaHR0cCJ9fX0=",
+   "transport": "http",
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJ4IjogSW5maW5pdHksICJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIn19fQ==",
+   "transport": "http",
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIix9fX0=",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIn19fSAvLyBj",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIn19fSAgCg==",
+   "transport": "http",
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIn19fSB4",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "77u/eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIn19fQ==",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodP90cCJ9fX0=",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJow6lcdTAwZTlcdWQ4M2RcdWRlMDAifX19",
+   "transport": "héé😀",
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "remove",
+     "--scope",
+     "user",
+     "open-knowledge"
+    ],
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJcdWQ4MDAifX19",
+   "transport": null,
+   "target": null,
+   "shared": false,
+   "connect": [
+    [
+     "/bin/claude",
+     "mcp",
+     "add",
+     "--scope",
+     "user",
+     "--transport",
+     "http",
+     "open-knowledge",
+     "http://127.0.0.1:47311/mcp"
+    ]
+   ]
+  },
+  {
+   "b64": "eyJtY3BTZXJ2ZXJzIjogeyJvcGVuLWtub3dsZWRnZSI6IHsidHlwZSI6ICJodHRwIiwgInVybCI6ICJodHRwOi8vMTI3LjAuMC4xOjQ3MzExL21jcCIsICJoZWFkZXJzIjoge319fSwgInByb2plY3RzIjogeyIveCI6IHt9fX0=",
+   "transport": "http",
+   "target": "http://127.0.0.1:47311/mcp",
+   "shared": true,
+   "connect": []
+  }
+ ],
+ "manifests": [
+  {
+   "b64": "",
+   "version": null
+  },
+  {
+   "b64": "e30=",
+   "version": null
+  },
+  {
+   "b64": "W10=",
+   "version": null
+  },
+  {
+   "b64": "eyJ2ZXJzaW9uIjogIjAuODkuNCJ9",
+   "version": "0.89.4"
+  },
+  {
+   "b64": "eyJ2ZXJzaW9uIjogMX0=",
+   "version": null
+  },
+  {
+   "b64": "eyJ2ZXJzaW9uIjogbnVsbH0=",
+   "version": null
+  },
+  {
+   "b64": "eyJ2ZXJzaW9uIjogIiJ9",
+   "version": ""
+  },
+  {
+   "b64": "eyJuYW1lIjogIngiLCAidmVyc2lvbiI6ICIxLjIuMyIsICJkZXBlbmRlbmNpZXMiOiB7ImEiOiAiMSJ9fQ==",
+   "version": "1.2.3"
+  },
+  {
+   "b64": "77u/eyJ2ZXJzaW9uIjogIjEifQ==",
+   "version": null
+  },
+  {
+   "b64": "eyJ2ZXJzaW9uIjogIjEiLH0=",
+   "version": null
+  }
+ ],
+ "plists": [
+  {
+   "node": "/opt/homebrew/bin/node",
+   "script": "/Users/someone/Library/Application Support/shared-utilities/open-knowledge/node_modules/@inkeep/open-knowledge/dist/cli.mjs",
+   "root": "/Users/someone/code/personal/obsidian-vault",
+   "local_app_data": "/Users/someone/Library/Application Support/shared-utilities",
+   "port": 47311,
+   "log": "/Users/someone/Library/Application Support/shared-utilities/shared-utilities/logs/open-knowledge.log",
+   "args": [
+    "/opt/homebrew/bin/node",
+    "/Users/someone/Library/Application Support/shared-utilities/open-knowledge/node_modules/@inkeep/open-knowledge/dist/cli.mjs",
+    "--cwd",
+    "/Users/someone/code/personal/obsidian-vault",
+    "start",
+    "--port",
+    "47311",
+    "--idle-shutdown",
+    "off",
+    "--no-open-browser"
+   ],
+   "b64": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHBsaXN0IFBVQkxJQyAiLS8vQXBwbGUvL0RURCBQTElTVCAxLjAvL0VOIiAiaHR0cDovL3d3dy5hcHBsZS5jb20vRFREcy9Qcm9wZXJ0eUxpc3QtMS4wLmR0ZCI+CjxwbGlzdCB2ZXJzaW9uPSIxLjAiPgo8ZGljdD4KCTxrZXk+S2VlcEFsaXZlPC9rZXk+Cgk8dHJ1ZS8+Cgk8a2V5PkxhYmVsPC9rZXk+Cgk8c3RyaW5nPmRldi5ydGtlbGx5LnJpZy5vcGVuLWtub3dsZWRnZTwvc3RyaW5nPgoJPGtleT5Mb3dQcmlvcml0eUlPPC9rZXk+Cgk8dHJ1ZS8+Cgk8a2V5Pk5pY2U8L2tleT4KCTxpbnRlZ2VyPjEwPC9pbnRlZ2VyPgoJPGtleT5Qcm9jZXNzVHlwZTwva2V5PgoJPHN0cmluZz5CYWNrZ3JvdW5kPC9zdHJpbmc+Cgk8a2V5PlByb2dyYW1Bcmd1bWVudHM8L2tleT4KCTxhcnJheT4KCQk8c3RyaW5nPi9vcHQvaG9tZWJyZXcvYmluL25vZGU8L3N0cmluZz4KCQk8c3RyaW5nPi9Vc2Vycy9zb21lb25lL0xpYnJhcnkvQXBwbGljYXRpb24gU3VwcG9ydC9zaGFyZWQtdXRpbGl0aWVzL29wZW4ta25vd2xlZGdlL25vZGVfbW9kdWxlcy9AaW5rZWVwL29wZW4ta25vd2xlZGdlL2Rpc3QvY2xpLm1qczwvc3RyaW5nPgoJCTxzdHJpbmc+LS1jd2Q8L3N0cmluZz4KCQk8c3RyaW5nPi9Vc2Vycy9zb21lb25lL2NvZGUvcGVyc29uYWwvb2JzaWRpYW4tdmF1bHQ8L3N0cmluZz4KCQk8c3RyaW5nPnN0YXJ0PC9zdHJpbmc+CgkJPHN0cmluZz4tLXBvcnQ8L3N0cmluZz4KCQk8c3RyaW5nPjQ3MzExPC9zdHJpbmc+CgkJPHN0cmluZz4tLWlkbGUtc2h1dGRvd248L3N0cmluZz4KCQk8c3RyaW5nPm9mZjwvc3RyaW5nPgoJCTxzdHJpbmc+LS1uby1vcGVuLWJyb3dzZXI8L3N0cmluZz4KCTwvYXJyYXk+Cgk8a2V5PlJ1bkF0TG9hZDwva2V5PgoJPHRydWUvPgoJPGtleT5TdGFuZGFyZEVycm9yUGF0aDwva2V5PgoJPHN0cmluZz4vVXNlcnMvc29tZW9uZS9MaWJyYXJ5L0FwcGxpY2F0aW9uIFN1cHBvcnQvc2hhcmVkLXV0aWxpdGllcy9zaGFyZWQtdXRpbGl0aWVzL2xvZ3Mvb3Blbi1rbm93bGVkZ2UubG9nPC9zdHJpbmc+Cgk8a2V5PlN0YW5kYXJkT3V0UGF0aDwva2V5PgoJPHN0cmluZz4vVXNlcnMvc29tZW9uZS9MaWJyYXJ5L0FwcGxpY2F0aW9uIFN1cHBvcnQvc2hhcmVkLXV0aWxpdGllcy9zaGFyZWQtdXRpbGl0aWVzL2xvZ3Mvb3Blbi1rbm93bGVkZ2UubG9nPC9zdHJpbmc+Cgk8a2V5PlRocm90dGxlSW50ZXJ2YWw8L2tleT4KCTxpbnRlZ2VyPjYwPC9pbnRlZ2VyPgoJPGtleT5Xb3JraW5nRGlyZWN0b3J5PC9rZXk+Cgk8c3RyaW5nPi9Vc2Vycy9zb21lb25lL2NvZGUvcGVyc29uYWwvb2JzaWRpYW4tdmF1bHQ8L3N0cmluZz4KPC9kaWN0Pgo8L3BsaXN0Pgo="
+  },
+  {
+   "node": "/a b/node",
+   "script": "/x&y/<z>/cli.mjs",
+   "root": "/résumé/漢字 \"q\" 'a'",
+   "local_app_data": "/tmp/app data & <more>",
+   "port": 1234,
+   "log": "/tmp/app data & <more>/shared-utilities/logs/open-knowledge.log",
+   "args": [
+    "/a b/node",
+    "/x&y/<z>/cli.mjs",
+    "--cwd",
+    "/résumé/漢字 \"q\" 'a'",
+    "start",
+    "--port",
+    "1234",
+    "--idle-shutdown",
+    "off",
+    "--no-open-browser"
+   ],
+   "b64": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHBsaXN0IFBVQkxJQyAiLS8vQXBwbGUvL0RURCBQTElTVCAxLjAvL0VOIiAiaHR0cDovL3d3dy5hcHBsZS5jb20vRFREcy9Qcm9wZXJ0eUxpc3QtMS4wLmR0ZCI+CjxwbGlzdCB2ZXJzaW9uPSIxLjAiPgo8ZGljdD4KCTxrZXk+S2VlcEFsaXZlPC9rZXk+Cgk8dHJ1ZS8+Cgk8a2V5PkxhYmVsPC9rZXk+Cgk8c3RyaW5nPmRldi5ydGtlbGx5LnJpZy5vcGVuLWtub3dsZWRnZTwvc3RyaW5nPgoJPGtleT5Mb3dQcmlvcml0eUlPPC9rZXk+Cgk8dHJ1ZS8+Cgk8a2V5Pk5pY2U8L2tleT4KCTxpbnRlZ2VyPjEwPC9pbnRlZ2VyPgoJPGtleT5Qcm9jZXNzVHlwZTwva2V5PgoJPHN0cmluZz5CYWNrZ3JvdW5kPC9zdHJpbmc+Cgk8a2V5PlByb2dyYW1Bcmd1bWVudHM8L2tleT4KCTxhcnJheT4KCQk8c3RyaW5nPi9hIGIvbm9kZTwvc3RyaW5nPgoJCTxzdHJpbmc+L3gmYW1wO3kvJmx0O3omZ3Q7L2NsaS5tanM8L3N0cmluZz4KCQk8c3RyaW5nPi0tY3dkPC9zdHJpbmc+CgkJPHN0cmluZz4vcsOpc3Vtw6kv5ryi5a2XICJxIiAnYSc8L3N0cmluZz4KCQk8c3RyaW5nPnN0YXJ0PC9zdHJpbmc+CgkJPHN0cmluZz4tLXBvcnQ8L3N0cmluZz4KCQk8c3RyaW5nPjEyMzQ8L3N0cmluZz4KCQk8c3RyaW5nPi0taWRsZS1zaHV0ZG93bjwvc3RyaW5nPgoJCTxzdHJpbmc+b2ZmPC9zdHJpbmc+CgkJPHN0cmluZz4tLW5vLW9wZW4tYnJvd3Nlcjwvc3RyaW5nPgoJPC9hcnJheT4KCTxrZXk+UnVuQXRMb2FkPC9rZXk+Cgk8dHJ1ZS8+Cgk8a2V5PlN0YW5kYXJkRXJyb3JQYXRoPC9rZXk+Cgk8c3RyaW5nPi90bXAvYXBwIGRhdGEgJmFtcDsgJmx0O21vcmUmZ3Q7L3NoYXJlZC11dGlsaXRpZXMvbG9ncy9vcGVuLWtub3dsZWRnZS5sb2c8L3N0cmluZz4KCTxrZXk+U3RhbmRhcmRPdXRQYXRoPC9rZXk+Cgk8c3RyaW5nPi90bXAvYXBwIGRhdGEgJmFtcDsgJmx0O21vcmUmZ3Q7L3NoYXJlZC11dGlsaXRpZXMvbG9ncy9vcGVuLWtub3dsZWRnZS5sb2c8L3N0cmluZz4KCTxrZXk+VGhyb3R0bGVJbnRlcnZhbDwva2V5PgoJPGludGVnZXI+NjA8L2ludGVnZXI+Cgk8a2V5PldvcmtpbmdEaXJlY3Rvcnk8L2tleT4KCTxzdHJpbmc+L3LDqXN1bcOpL+a8ouWtlyAicSIgJ2EnPC9zdHJpbmc+CjwvZGljdD4KPC9wbGlzdD4K"
+  }
+ ],
+ "app_data": [
+  {
+   "local_app_data": null,
+   "xdg_data_home": null,
+   "home": "/home/someone",
+   "mac": "/home/someone/Library/Application Support/shared-utilities",
+   "linux": "/home/someone/.local/share/shared-utilities"
+  },
+  {
+   "local_app_data": "",
+   "xdg_data_home": null,
+   "home": "/home/someone",
+   "mac": "/home/someone/Library/Application Support/shared-utilities",
+   "linux": "/home/someone/.local/share/shared-utilities"
+  },
+  {
+   "local_app_data": "/L",
+   "xdg_data_home": null,
+   "home": "/home/someone",
+   "mac": "/L/shared-utilities",
+   "linux": "/L/shared-utilities"
+  },
+  {
+   "local_app_data": "/L/",
+   "xdg_data_home": "/X",
+   "home": "/home/someone",
+   "mac": "/L/shared-utilities",
+   "linux": "/L/shared-utilities"
+  },
+  {
+   "local_app_data": null,
+   "xdg_data_home": "/X",
+   "home": "/home/someone",
+   "mac": "/X/shared-utilities",
+   "linux": "/X/shared-utilities"
+  },
+  {
+   "local_app_data": null,
+   "xdg_data_home": "  /X  ",
+   "home": "/home/someone",
+   "mac": "/X/shared-utilities",
+   "linux": "/X/shared-utilities"
+  },
+  {
+   "local_app_data": null,
+   "xdg_data_home": "   ",
+   "home": "/home/someone",
+   "mac": "/home/someone/Library/Application Support/shared-utilities",
+   "linux": "/home/someone/.local/share/shared-utilities"
+  },
+  {
+   "local_app_data": null,
+   "xdg_data_home": "",
+   "home": "/home/someone",
+   "mac": "/home/someone/Library/Application Support/shared-utilities",
+   "linux": "/home/someone/.local/share/shared-utilities"
+  },
+  {
+   "local_app_data": "",
+   "xdg_data_home": "/X",
+   "home": "/home/someone",
+   "mac": "/X/shared-utilities",
+   "linux": "/X/shared-utilities"
+  }
+ ]
+}
