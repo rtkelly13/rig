@@ -128,7 +128,6 @@ layers = ["desktop_manager", "rig"]
 # Today's violations (plan item G1, #30). Each entry names the item that removes it;
 # G3 deletes every ignore_imports list.
 ignore_imports = [
-    "rig.estate.apps_windows -> desktop_manager.win32.dlls",  # G2
     "rig.rig_cli -> desktop_manager.cli",  # G2 (composition root, allowed explicitly)
     "rig.rig_cli -> desktop_manager.web_cli",  # G2 (composition root, allowed explicitly)
     "rig.otel_stack.backfill -> desktop_manager.runtime",  # B1 (roots.app_data_dir)

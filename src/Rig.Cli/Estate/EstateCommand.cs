@@ -13,7 +13,10 @@ namespace Rig.Cli.Estate;
 /// <param name="CodeRoot">The code root: its <c>external/</c> and <c>other/</c> are untrusted, so git there runs hardened.</param>
 /// <param name="Home">The home folder: <c>~</c> in a path, and the folder holding the clone cache.</param>
 /// <param name="WorkingDirectory">Where <c>doctor</c> looks for a clone when given none.</param>
-internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDirectory)
+/// <param name="ScopesFile">The checkout's <c>config/estate-scopes.json</c>, naming the org folders <c>decisions</c> scans.</param>
+/// <param name="MachineConfigFile">This machine's <c>~/.workspace/config.json</c>, naming its work folders.</param>
+/// <param name="LocalAppData">The <c>LOCALAPPDATA</c> variable, under which the decisions feed lives.</param>
+internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDirectory, string ScopesFile = "", string MachineConfigFile = "", string? LocalAppData = null)
 {
     /// <summary>The personal estate folder, the default <c>--root</c>.</summary>
     public string PersonalDir => Path.Join(CodeRoot, "personal");
@@ -34,7 +37,7 @@ internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDi
 /// <c>sync</c> fetches, and only <c>reclaim</c>, <c>trim</c>, <c>tidy</c> and <c>prune-caches</c> delete, with <c>--apply</c>, each entry proving its own safety.
 /// </summary>
 /// <param name="host">Where it looks.</param>
-/// <param name="proc">Runs git, du and lsof, the cache tools, and icacls on Windows when a tree is removed.</param>
+/// <param name="proc">Runs git, du and lsof, the cache tools, defaults for an app's version, WizTree and tasklist for <c>volume</c>, and icacls on Windows when a tree is removed.</param>
 /// <param name="github">Asks GitHub which head refs have a merged PR, for <c>doctor --merged</c> and <c>tidy --merged</c>.</param>
 /// <param name="time">The clock the clone cache is aged by and the worktree checks read.</param>
 /// <param name="findTool">Finds uv, pnpm, dotnet and docker for <c>prune-caches</c>; <see cref="Caches.FindTool"/> outside tests.</param>
@@ -68,6 +71,13 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(TrimCommand());
         estate.Subcommands.Add(TidyCommand());
         estate.Subcommands.Add(new PruneCachesCommand(host, proc, findTool, time, output, error).Build());
+        estate.Subcommands.Add(new DecisionsCommand(host, git, github, time, OperatingSystem.IsWindows(), output, error).Build());
+        var disk = new DiskUsage(proc);
+        estate.Subcommands.Add(new AppsCommand(
+            new InstalledApps(proc, disk, time), InstalledApps.DefaultAppDirs(host.Home), OperatingSystem.IsWindows() ? new UninstallRegistry() : null, time, output).Build());
+        estate.Subcommands.Add(new DownloadsCommand(new Downloads(disk), Downloads.DefaultFolder(host.Home), () => Downloads.DefaultCloudRoots(host.Home), output).Build());
+        estate.Subcommands.Add(new VolumeCommand(
+            host, new WizTreeExport(proc, time, (delay, token) => Task.Delay(delay, time, token)), Environment.GetEnvironmentVariable, DriveSpace.Of, output, error).Build());
         return estate;
     }
 

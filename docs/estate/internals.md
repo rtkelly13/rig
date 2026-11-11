@@ -53,19 +53,20 @@ a clone ends up with prunable entries pointing at nothing.
 
 `apps`, `downloads` and `reclaim` were written against macOS: they shelled out to
 `du` and walked `/Applications` for `.app` bundles. On Windows there is no `du`
-on a native Python's PATH, so every size read **0** and failed silently —
+on the PATH a scheduled task gets, so every size read **0** and failed silently:
 `reclaim` reported nothing reclaimable and `downloads` dropped every directory.
+All of them now run on the C# CLI (`src/Rig.Cli/Estate/`, logic in `src/Rig.Core/Estate/`).
 
-- **Sizing** (`estate.disksize.du`) keeps `du` on POSIX and walks the tree on
+- **Sizing** (`DiskUsage`) keeps `du -sk` on POSIX and walks the tree on
   Windows, counting a hardlinked file only when *every* link is inside the tree.
   uv builds `.venv`s from hardlinks into its cache, so logical size overstates
   what deleting one frees by 2-3x; the walker reports what deletion would
   actually free.
-- **Apps** (`estate.apps_windows`) reads the three Uninstall registry hives.
+- **Apps** (`InstalledApps`, `UninstallRegistry`) reads the three Uninstall registry hives.
   Windows keeps no reliable last-used time, so "dormant" means *not installed or
   updated in 180 days*. Side-by-side IDE and SDK versions are the stronger
   signal.
-- **Volume** (`estate volume`) answers the question the clone-scoped commands
+- **Volume** (`estate volume`, `Volume` and `WizTreeExport`) answers the question the clone-scoped commands
   cannot: where did the *drive* go. Walking is hopeless at volume scale (a
   repo-root `du` ran 40+ minutes), so it drives WizTree, which reads the MFT and
   exports allocated sizes in about a minute. It needs a UAC approval, and its
