@@ -23,7 +23,13 @@ internal sealed class RigApp(
 {
     /// <summary>What <c>rig --help</c> says rig is.</summary>
     public const string Description =
-        "Developer rig: workspace management, AI agents and estate tooling. Commands marked (Python) still run on the Python CLI.";
+        "Developer rig: workspace management, AI agents and estate tooling. Commands marked (Python) still run in Python.";
+
+    /// <summary>The command, and the <c>help</c> entry point, that print the overview.</summary>
+    public const string HelpCommand = "help";
+
+    /// <summary>The overview's last line: the desktop tools are a separate CLI with their own help.</summary>
+    public const string DesktopPointer = "Desktop windows, sessions, tabs and jobs: run 'desktop-manager --help'.";
 
     /// <summary>The root command: the ported commands, plus the forwarded ones so help lists them all.</summary>
     public RootCommand BuildRoot()
@@ -41,8 +47,18 @@ internal sealed class RigApp(
             root.Subcommands.Add(new Command(AgentLauncher.CommandName, AgentLauncher.Description));
         }
 
-        // A group partly ported (workspace) is already registered: the rest of its lines are handed over by Forwarded.Owns.
-        foreach (var (name, description) in Forwarded.Commands.Where(c => !root.Subcommands.Any(s => s.Name == c.Name)))
+        var help = new Command(HelpCommand, "The rig overview: every command, then where the desktop tools are listed.");
+        help.SetAction(async (_, cancellationToken) =>
+        {
+            var code = await root.Parse(["--help"]).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, cancellationToken)
+                .ConfigureAwait(false);
+            await output.WriteLineAsync(DesktopPointer).ConfigureAwait(false);
+            return code;
+        });
+        root.Subcommands.Add(help);
+
+        // A group partly ported is already registered: the rest of its lines are handed over by Forwarded.Owns.
+        foreach (var (name, description, _) in Forwarded.Commands.Where(c => !root.Subcommands.Any(s => s.Name == c.Name)))
         {
             root.Subcommands.Add(new Command(name, $"{description} (Python)"));
         }

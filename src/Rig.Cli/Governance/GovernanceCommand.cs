@@ -27,8 +27,7 @@ internal sealed record GovernanceHost(string CodeRoot, string Cwd, string Checko
 }
 
 /// <summary>
-/// <c>rig repo-governance</c>: the subcommands ported from <c>src/rig/repo_governance</c>. The group's other subcommands
-/// are still Python's, so <see cref="Forwarding.Forwarded"/> hands any line naming one of them over.
+/// <c>rig repo-governance</c>: the subcommands ported from <c>src/rig/repo_governance</c>.
 /// </summary>
 /// <param name="host">Where it looks.</param>
 /// <param name="proc">Runs git and gh.</param>

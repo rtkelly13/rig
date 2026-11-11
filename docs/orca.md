@@ -61,7 +61,7 @@ policy: they are uninstalled, so Orca does not detect them.
 
 The rule behind it: no constant prompting, and nothing run dangerously. An agent uses its own
 auto mode where it has a workable one: Claude Code's auto mode keeps the allow and deny rules that
-`workspace policy sync` projects, and OpenCode has `--auto`. Full access is only for a tool that
+`rig policy sync` projects, and OpenCode has `--auto`. Full access is only for a tool that
 prompts on every step and has no workable auto mode, as Antigravity does.
 
 ## Where the doctor reads from

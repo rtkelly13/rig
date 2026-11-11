@@ -137,11 +137,6 @@ def help_cmd() -> None:
     console.print()
 
 
-def help_main() -> None:
-    """Entry point for `uv run help`."""
-    help_cmd()
-
-
 def _filter_plan_to_desktop(plan: WorkspacePlan, *, desktop: str) -> WorkspacePlan:
     filtered_desktops = [item for item in plan.desktops if item.name == desktop]
     return WorkspacePlan(

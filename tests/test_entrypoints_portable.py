@@ -39,11 +39,11 @@ def _gated_off_linux() -> list[CommandRecord]:
 
 def test_every_script_is_covered():
     assert {entry.script for entry in ENTRY_POINTS} >= {"desktop-manager", "help", "md-lint", "workspace"}
-    # Ported entry points hand over to the C# CLI; tests/test_csharp_cli.py covers that handover.
+    # Every other entry point hands over to the C# CLI; tests/test_csharp_cli.py covers that handover.
     hand_rolled = {
         entry.script for entry in ENTRY_POINTS if entry.function != "main" and entry.target != "rig.csharp_cli:entry"
     }
-    assert hand_rolled == {"help"}, "a new non-main entry point needs its own smoke test here"
+    assert hand_rolled == set(), "a new non-main entry point needs its own smoke test here"
 
 
 @pytest.mark.parametrize("entry", ENTRY_POINTS, ids=lambda entry: entry.script)
@@ -74,14 +74,6 @@ def test_every_subcommand_help_runs_on_linux(monkeypatch, entry: EntryPoint):
         result = runner.invoke(app, [*record.path[1:], "--help"], prog_name=entry.script)
         assert result.exit_code == 0, f"{record.invocation} --help: {result.output}"
         assert "Traceback" not in result.output, record.invocation
-
-
-def test_help_script_runs_on_linux(monkeypatch, capsys):
-    from desktop_manager.cli import help_main
-
-    monkeypatch.setattr("sys.platform", "linux")
-    help_main()
-    assert "desktop-manager" in capsys.readouterr().out
 
 
 def test_some_commands_are_gated():

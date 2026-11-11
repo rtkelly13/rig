@@ -29,17 +29,17 @@ dependencies = [
 ]
 
 [project.scripts]
-rig = "rig.rig_cli:main"
+rig = "rig.csharp_cli:entry"
 desktop-manager = "desktop_manager.cli:main"
 estate = "rig.csharp_cli:entry"
 otel-stack = "rig.csharp_cli:entry"
-help = "desktop_manager.cli:help_main"
+help = "rig.csharp_cli:entry"
 status = "rig.csharp_cli:entry"
 agent = "rig.csharp_cli:entry"
 vault = "rig.csharp_cli:entry"
 md-lint = "rig.csharp_cli:entry"
 repo-governance = "rig.csharp_cli:entry"
-workspace = "rig.workspace.cli:main"
+workspace = "rig.csharp_cli:entry"
 devenv = "rig.csharp_cli:entry"
 latex = "rig.csharp_cli:entry"
 mail = "rig.csharp_cli:entry"
@@ -118,8 +118,6 @@ layers = ["desktop_manager", "rig"]
 # Today's violations (plan item G1, #30). Each entry names the item that removes it;
 # G3 deletes every ignore_imports list.
 ignore_imports = [
-    "rig.rig_cli -> desktop_manager.cli",  # G2 (composition root, allowed explicitly)
-    "rig.rig_cli -> desktop_manager.web_cli",  # G2 (composition root, allowed explicitly)
     "rig.otel_stack.backfill -> desktop_manager.runtime",  # B1 (roots.app_data_dir)
 ]
 

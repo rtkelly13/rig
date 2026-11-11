@@ -1,15 +1,19 @@
-"""The bridge that hands ported commands from the Python rig CLI to the C# one."""
+"""The rig scripts, which start the C# rig CLI, and the Python commands it forwards back."""
 
 from __future__ import annotations
 
+import importlib
+import re
 from pathlib import Path
 
 import pytest
 import typer
 from typer.testing import CliRunner
 
+from desktop_manager.cli import app as desktop_manager_app
 from rig import csharp_cli
-from rig.rig_cli import app
+
+FORWARDED = Path(__file__).resolve().parents[1] / "src" / "Rig.Cli" / "Forwarding" / "Forwarded.cs"
 
 
 def _project(tmp_path: Path) -> Path:
@@ -29,7 +33,7 @@ def test_the_default_project_is_this_checkouts() -> None:
     assert (csharp_cli.cli_project() / "Rig.Cli.csproj").is_file()
 
 
-def test_a_ported_command_runs_on_dotnet_with_the_bridge_variable_set(tmp_path: Path) -> None:
+def test_a_command_runs_on_dotnet_with_the_checkout_set(tmp_path: Path) -> None:
     project = _project(tmp_path)
     calls: list[tuple[list[str], dict[str, str]]] = []
 
@@ -43,7 +47,7 @@ def test_a_ported_command_runs_on_dotnet_with_the_bridge_variable_set(tmp_path: 
     assert calls == [
         (
             ["dotnet", "run", "--project", str(project), "--", "gh", "threads", "list", "7"],
-            {csharp_cli.BRIDGE_VARIABLE: "1", csharp_cli.HOME_VARIABLE: str(project.parents[1])},
+            {csharp_cli.HOME_VARIABLE: str(project.parents[1])},
         )
     ]
 
@@ -74,38 +78,6 @@ def test_the_attached_runner_adds_its_environment_to_this_one(monkeypatch: pytes
     assert csharp_cli._attached(["git", "config", "--get", "rig.absent"], extra) == 1  # pyright: ignore[reportPrivateUsage]
 
 
-def test_the_python_cli_hands_a_ported_command_over(csharp_calls: list[list[str]]) -> None:
-    # The whole line, --help included, reaches the C# runner after dotnet's `--`.
-    result = CliRunner().invoke(app, ["gh", "threads", "list", "7", "--help"])
-
-    assert result.exit_code == 0
-    assert [call[call.index("--") + 1 :] for call in csharp_calls] == [["gh", "threads", "list", "7", "--help"]]
-
-
-def test_a_ported_subcommand_of_a_python_group_hands_over_with_its_group(csharp_calls: list[list[str]]) -> None:
-    result = CliRunner().invoke(app, ["workspace", "doctor", "--json", "--strict"])
-
-    assert result.exit_code == 0
-    assert [call[call.index("--") + 1 :] for call in csharp_calls] == [["workspace", "doctor", "--json", "--strict"]]
-
-
-def test_a_stub_hands_over_every_argument_and_returns_the_exit_code() -> None:
-    handed: list[list[str]] = []
-
-    def handover(args: list[str]) -> int:
-        handed.append(args)
-        return 1
-
-    app_under_test = typer.Typer()
-    csharp_cli.add_stub(app_under_test, "gh", handover)
-    _ = app_under_test.command("other")(lambda: None)
-
-    result = CliRunner().invoke(app_under_test, ["gh", "threads", "list", "7", "--repo", "o/r", "--json", "--help"])
-
-    assert result.exit_code == 1
-    assert handed == [["gh", "threads", "list", "7", "--repo", "o/r", "--json", "--help"]]
-
-
 @pytest.mark.parametrize("script", ["/venv/bin/latex", "C:/venv/Scripts/latex.exe"])
 def test_a_ported_entry_point_hands_over_as_the_rig_command_of_its_name(script: str) -> None:
     handed: list[list[str]] = []
@@ -119,3 +91,62 @@ def test_a_ported_entry_point_hands_over_as_the_rig_command_of_its_name(script: 
 
     assert exited.value.code == 1
     assert handed == [["latex", "build", "--no-sync-data"]]
+
+
+@pytest.mark.parametrize("script", ["/venv/bin/rig", "C:/venv/Scripts/rig.exe"])
+def test_the_rig_script_hands_its_line_over_as_typed(script: str) -> None:
+    handed: list[list[str]] = []
+
+    def handover(args: list[str]) -> int:
+        handed.append(args)
+        return 0
+
+    with pytest.raises(SystemExit):
+        csharp_cli.entry([script, "gh", "threads", "list", "7"], handover)
+
+    assert handed == [["gh", "threads", "list", "7"]]
+
+
+def _launches() -> list[tuple[str, list[str]]]:
+    rows = re.findall(r'\("(?P<name>[\w-]+)", "[^"]*", \[(?P<launch>[^\]]*)\]\)', FORWARDED.read_text(encoding="utf-8"))
+    return [(name, re.findall(r'"([^"]+)"', launch)) for name, launch in rows]
+
+
+def test_the_forwarded_table_is_read() -> None:
+    assert {name for name, _ in _launches()} >= {"triage", "web"}
+
+
+@pytest.mark.parametrize(("name", "launch"), _launches(), ids=[name for name, _ in _launches()])
+def test_every_forwarded_command_reaches_a_python_program(name: str, launch: list[str]) -> None:
+    # The C# CLI starts `uv run … <launch> <args>`: a desktop-manager command, or a module run with python -m.
+    if launch[:2] == ["python", "-m"]:
+        module = importlib.import_module(launch[2])
+        source = Path(module.__file__ or "").read_text(encoding="utf-8")
+        assert 'if __name__ == "__main__":' in source, f"{launch[2]} has no __main__ block"
+        app: typer.Typer = module.app
+        args = launch[3:]
+    else:
+        assert launch[0] == "desktop-manager", f"rig {name} launches {launch[0]}: not python -m or desktop-manager"
+        app, args = desktop_manager_app, launch[1:]
+
+    result = CliRunner().invoke(app, [*args, "--help"], prog_name=f"rig {name}")
+
+    assert result.exit_code == 0, result.output
+
+
+def test_a_python_command_runs_as_the_rig_command_of_its_name(capsys: pytest.CaptureFixture[str]) -> None:
+    from rig.python_command import main
+
+    app = typer.Typer()
+    ran: list[str] = []
+    _ = app.command("go")(lambda: ran.append("go"))
+    _ = app.command("stop")(lambda: None)
+
+    with pytest.raises(SystemExit) as exited:
+        main(app, "triage", ["--help"])
+
+    assert exited.value.code == 0
+    assert "rig triage" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        main(app, "triage", ["go"])
+    assert ran == ["go"]

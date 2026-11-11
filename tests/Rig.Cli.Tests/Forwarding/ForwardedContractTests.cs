@@ -27,55 +27,44 @@ using Rig.Core.Tests.Skills;
 namespace Rig.Cli.Tests.Forwarding;
 
 /// <summary>
-/// The forwarding table is copied from the Python CLI, so it is checked against it: a command added to or ported out
-/// of <c>src/rig/rig_cli.py</c> without the table following fails here, rather than vanishing from <c>rig</c>.
+/// The rig scripts and the forwarding table, checked against <c>pyproject.toml</c>: every script but
+/// <c>desktop-manager</c> starts this CLI, each names a command it owns, and nothing forwarded goes back to <c>rig</c>.
+/// Each forwarded Python program is checked to answer <c>--help</c> by <c>tests/test_csharp_cli.py</c>.
 /// </summary>
 public sealed partial class ForwardedContractTests
 {
-    private static readonly string PythonCli = Path.Combine(RepoRoot(), "src", "rig", "rig_cli.py");
-    private static readonly string Bridge = Path.Combine(RepoRoot(), "src", "rig", "csharp_cli.py");
     private static readonly string Project = Path.Combine(RepoRoot(), "pyproject.toml");
     private static readonly HttpClient Refusing = new(new StubHandler(_ => throw new InvalidOperationException("nothing may connect")));
 
     [Fact]
-    public void The_table_names_exactly_the_python_commands()
+    public void Every_script_but_desktop_manager_starts_the_csharp_cli()
     {
-        var source = File.ReadAllText(PythonCli);
-        var python = SubApp().Matches(source).Concat(Command().Matches(source)).Select(m => m.Groups["name"].Value);
+        var scripts = Scripts();
 
-        Assert.Equal(python.Order(StringComparer.Ordinal), Forwarded.Commands.Select(c => c.Name).Order(StringComparer.Ordinal));
+        Assert.Contains("rig", scripts.Keys);
+        Assert.All(
+            scripts.Where(s => s.Key != "desktop-manager"),
+            s => Assert.True(s.Value == "rig.csharp_cli:entry", $"{s.Key} = {s.Value}, not the C# CLI"));
     }
 
     [Fact]
-    public void Every_command_python_hands_over_is_one_csharp_owns()
+    public void Every_script_names_a_command_csharp_owns()
     {
-        // Python hands over the PORTED rig subcommands, and each entry point whose script is the bridge's entry().
-        var block = PortedBlock().Match(File.ReadAllText(Bridge)).Groups["body"].Value;
-        var ported = Name().Matches(block).Select(m => m.Groups["name"].Value)
-            .Concat(HandedOverScript().Matches(File.ReadAllText(Project)).Select(m => m.Groups["name"].Value))
-            .Distinct(StringComparer.Ordinal) // agent and status are both rig subcommands and entry points
-            .ToList();
+        // `uv run latex build` runs `rig latex build`, so latex must be a C# command, not a forwarded one.
         var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
-        var owned = FullApp().BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));
+        var owned = FullApp().BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name)).ToHashSet(StringComparer.Ordinal);
+        var handedOver = Scripts().Where(s => s.Value == "rig.csharp_cli:entry" && s.Key != "rig").Select(s => s.Key).ToList();
 
-        Assert.NotEmpty(ported);
-        Assert.Equal(ported.Order(StringComparer.Ordinal), owned.Order(StringComparer.Ordinal));
+        Assert.NotEmpty(handedOver);
+        Assert.All(handedOver, name => Assert.Contains(name, owned));
     }
 
     [Fact]
-    public void Every_subcommand_python_hands_over_is_one_csharp_owns()
+    public void Nothing_forwarded_goes_back_to_rig()
     {
-        // PORTED_SUBCOMMANDS: the subcommands of a group Python still owns that C# runs (workspace doctor, audit, status, clean).
-        var block = PortedSubcommandsBlock().Match(File.ReadAllText(Bridge)).Groups["body"].Value;
-        var python = Group().Matches(block)
-            .SelectMany(m => Name().Matches(m.Groups["subs"].Value).Select(s => $"{m.Groups["group"].Value} {s.Groups["name"].Value}"));
-        var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
-        var csharp = FullApp().BuildRoot().Subcommands
-            .Where(group => forwarded.Contains(group.Name))
-            .SelectMany(group => group.Subcommands.SelectMany(sub => sub.Aliases.Prepend(sub.Name)).Select(name => $"{group.Name} {name}"));
-
-        Assert.NotEmpty(python);
-        Assert.Equal(python.Order(StringComparer.Ordinal), csharp.Order(StringComparer.Ordinal));
+        // The rig script is this CLI: a row launching it would loop.
+        Assert.All(Forwarded.Commands, c => Assert.NotEqual("rig", c.Launch[0]));
+        Assert.All(Forwarded.Commands, c => Assert.True(c.Launch[0] is "python" or "desktop-manager", $"{c.Name} launches {c.Launch[0]}"));
     }
 
     // Every ported command, built with fakes; only the command tree is read.
@@ -134,14 +123,11 @@ public sealed partial class ForwardedContractTests
             TextWriter.Null);
     }
 
-    [Fact]
-    public void The_shortcut_flags_match_the_python_ones()
+    private static Dictionary<string, string> Scripts()
     {
-        var source = File.ReadAllText(PythonCli);
-        var block = ShortcutBlock().Match(source).Groups["body"].Value;
-        var python = Quoted().Matches(block).Select(m => m.Groups["flag"].Value);
-
-        Assert.Equal(python.Order(StringComparer.Ordinal), AgentLauncher.ShortcutFlags.Order(StringComparer.Ordinal));
+        var source = File.ReadAllText(Project);
+        var block = ScriptsBlock().Match(source).Groups["body"].Value;
+        return Script().Matches(block).ToDictionary(m => m.Groups["name"].Value, m => m.Groups["target"].Value, StringComparer.Ordinal);
     }
 
     private static string RepoRoot()
@@ -157,30 +143,9 @@ public sealed partial class ForwardedContractTests
         throw new InvalidOperationException("rig.slnx is not above the test output folder.");
     }
 
-    [GeneratedRegex("""add_typer\(\w+, name="(?<name>[\w-]+)"\)""")]
-    private static partial Regex SubApp();
+    [GeneratedRegex(@"^\[project\.scripts\]\r?\n(?<body>(?:[^\[\r\n].*\r?\n)*)", RegexOptions.Multiline)]
+    private static partial Regex ScriptsBlock();
 
-    [GeneratedRegex(@"@app\.command\(""(?<name>[\w-]+)""")]
-    private static partial Regex Command();
-
-    [GeneratedRegex("""AGENT_SHORTCUT_FLAGS = \{(?<body>[^}]*)\}""")]
-    private static partial Regex ShortcutBlock();
-
-    [GeneratedRegex("""PORTED: tuple\[str, \.\.\.\] = \((?<body>[^)]*)\)""")]
-    private static partial Regex PortedBlock();
-
-    [GeneratedRegex(@"PORTED_SUBCOMMANDS: dict\[str, tuple\[str, \.\.\.\]\] = \{(?<body>[^}]*)\}")]
-    private static partial Regex PortedSubcommandsBlock();
-
-    [GeneratedRegex(@"""(?<group>[\w-]+)"": \((?<subs>[^)]*)\)")]
-    private static partial Regex Group();
-
-    [GeneratedRegex(@"""(?<name>[\w-]+)""")]
-    private static partial Regex Name();
-
-    [GeneratedRegex(@"^(?<name>[\w-]+) = ""rig\.csharp_cli:entry""\r?$", RegexOptions.Multiline)]
-    private static partial Regex HandedOverScript();
-
-    [GeneratedRegex(@"""(?<flag>-[\w-]+)""")]
-    private static partial Regex Quoted();
+    [GeneratedRegex(@"^(?<name>[\w-]+) = ""(?<target>[^""]+)""\r?$", RegexOptions.Multiline)]
+    private static partial Regex Script();
 }

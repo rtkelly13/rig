@@ -9,40 +9,52 @@ namespace Rig.Cli.Tests;
 public sealed class RigAppTests : IDisposable
 {
     private const string Checkout = "/code/personal/rig";
-    private static readonly string[] Uv = ["uv", "run", "--no-sync", "--project", Checkout, "rig"];
+    private static readonly string[] Uv = ["uv", "run", "--no-sync", "--project", Checkout];
 
     private readonly FakeProc _proc = new();
     private readonly StringWriter _out = new();
     private readonly StringWriter _err = new();
-    private bool _fromPython;
 
     private Task<int> Run(params string[] args) =>
         new RigApp(
-            new PythonRig(_proc, Checkout, _fromPython),
+            new PythonRig(_proc, Checkout),
             new FakeGitHub(),
             _ => Task.FromResult<RepoSlug?>(null),
             _out,
             _err,
             [
                 () => new Rig.Cli.Models.ModelsCommand(new Rig.Cli.Models.ModelDiscovery(_proc, "/home", _ => null), _out).Build(),
-                // workspace is partly ported: doctor runs here, the rest of the group on Python.
-                () => new System.CommandLine.Command("workspace", "Estate workspace.") { new System.CommandLine.Command("doctor", "Workspace doctor here.") },
+                // web stands in for a group partly ported: doctor runs here, the rest of the group on Python.
+                () => new System.CommandLine.Command("web", "Rig web.") { new System.CommandLine.Command("doctor", "Web doctor here.") },
             ],
             new AgentLauncher(_proc, new AgentHost("/home/none.json", "/work", p => $"/bin/{p}"), _out, _err))
             .RunAsync(args, TestContext.Current.CancellationToken);
 
     [Theory]
-    [InlineData("workspace", "orca", "--check")]
-    [InlineData("triage", "--help")]
-    public async Task A_python_command_goes_over_whole_and_attached(params string[] args)
+    [InlineData(new[] { "web", "mcp", "--help" }, new[] { "desktop-manager", "web", "mcp", "--help" })]
+    [InlineData(new[] { "triage", "--help" }, new[] { "python", "-m", "rig.triage.cli", "--help" })]
+    [InlineData(new[] { "align" }, new[] { "desktop-manager", "workspace", "align" })]
+    public async Task A_python_command_goes_over_whole_and_attached_to_its_program(string[] args, string[] launched)
     {
         _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
 
         Assert.Equal(0, await Run(args));
 
         var request = Assert.Single(_proc.Requests);
-        Assert.Equal([.. Uv, .. args], request.Argv);
+        Assert.Equal([.. Uv, .. launched], request.Argv);
         Assert.True(request.Attached);
+    }
+
+    [Fact]
+    public async Task Help_prints_the_overview_and_points_at_the_desktop_tools()
+    {
+        Assert.Equal(0, await Run("help"));
+
+        Assert.Empty(_proc.Requests);
+        var help = _out.ToString();
+        Assert.Contains(RigApp.Description, help, StringComparison.Ordinal);
+        Assert.Contains("  triage ", help, StringComparison.Ordinal);
+        Assert.EndsWith(RigApp.DesktopPointer, help.TrimEnd(), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -113,7 +125,7 @@ public sealed class RigAppTests : IDisposable
         Assert.Empty(_proc.Requests);
         var help = _out.ToString();
         Assert.Contains(RigApp.Description, help, StringComparison.Ordinal);
-        foreach (var (name, _) in Forwarded.Commands)
+        foreach (var (name, _, _) in Forwarded.Commands)
         {
             Assert.Contains($"  {name} ", help, StringComparison.Ordinal);
         }
@@ -152,22 +164,10 @@ public sealed class RigAppTests : IDisposable
     [Fact]
     public async Task A_ported_subcommand_of_a_python_group_is_parsed_here()
     {
-        Assert.Equal(0, await Run("workspace", "doctor", "--help"));
+        Assert.Equal(0, await Run("web", "doctor", "--help"));
 
         Assert.Empty(_proc.Requests);
-        Assert.Contains("Workspace doctor here.", _out.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task A_python_command_sent_from_python_is_refused_not_sent_back()
-    {
-        _fromPython = true;
-
-        Assert.Equal(2, await Run("triage"));
-
-        Assert.Empty(_proc.Requests);
-        Assert.Contains("refusing to loop", _err.ToString(), StringComparison.Ordinal);
-        Assert.Contains("'triage'", _err.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Web doctor here.", _out.ToString(), StringComparison.Ordinal);
     }
 
     public void Dispose()
