@@ -55,6 +55,8 @@ internal sealed partial class GovernanceCommand(GovernanceHost host, IProc proc,
         governance.Subcommands.Add(SyncTemplates());
         governance.Subcommands.Add(Gitignore());
         governance.Subcommands.Add(Apps());
+        governance.Subcommands.Add(CheckNamesCommand());
+        governance.Subcommands.Add(PruneBranches());
         return governance;
     }
 
