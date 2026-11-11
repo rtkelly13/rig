@@ -54,25 +54,8 @@ public sealed class Gitignores(Git git, EstateScopes scopes, RepoPolicies polici
     /// <c>&lt;org&gt;/&lt;folder&gt;</c> for a checkout in an org folder, else the folder name. Only a folder that is
     /// itself a checkout is asked for a remote, since git would otherwise answer for an enclosing repo.
     /// </summary>
-    public async Task<string> PolicyKeyAsync(string repoPath, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(repoPath);
-        string? origin = null;
-        if (Path.Exists(Path.Join(repoPath, ".git")))
-        {
-            var ran = await git.RunAsync(repoPath, ["config", "--get", "remote.origin.url"], TimeSpan.FromSeconds(5), cancellationToken: cancellationToken).ConfigureAwait(false);
-            origin = ran.OutOrEmpty;
-        }
-
-        if (RepoSlug.FromRemote(origin) is { } slug)
-        {
-            return slug.FullName;
-        }
-
-        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(repoPath));
-        var org = scopes.OrgFolder(Path.GetFileName(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(repoPath))) ?? string.Empty);
-        return org is null ? name : $"{org}/{name}";
-    }
+    public Task<string> PolicyKeyAsync(string repoPath, CancellationToken cancellationToken = default) =>
+        PolicyKeys.OfAsync(git, scopes, repoPath, cancellationToken);
 
     /// <summary>
     /// Every entry the repo keyed <paramref name="key"/> must hold, ending with the bespoke agent files block unless

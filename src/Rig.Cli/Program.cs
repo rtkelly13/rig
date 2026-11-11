@@ -5,6 +5,7 @@ using Rig.Cli.Browser;
 using Rig.Cli.Devenv;
 using Rig.Cli.Estate;
 using Rig.Cli.Forwarding;
+using Rig.Cli.Governance;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
 using Rig.Cli.Models;
@@ -192,6 +193,7 @@ internal static class Program
                         new WrapupFollower(AppData.Current(), detached, SelfArgv()),
                         new SystemWrapupClock(TimeProvider.System),
                         WrapupStamps.NewAskId)).Build,
+                new GovernanceCommand(new GovernanceHost(codeRoot, Environment.CurrentDirectory, checkout), proc, TimeProvider.System, Console.Out).Build,
             ],
             new AgentLauncher(
                 proc,

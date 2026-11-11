@@ -1,5 +1,6 @@
 import typer
 
+from rig import csharp_cli
 from rig.repo_governance import cli_audits, cli_plan, cli_repo_checks, cli_sync, cli_triage
 from rig.repo_governance.github_rulesets import (
     HARDCODED_REQUIRED_CHECKS,
@@ -78,6 +79,7 @@ app.registered_commands.extend(
     for sub_app in (cli_plan.app, cli_repo_checks.app, cli_sync.app, cli_triage.app, cli_audits.app)
     for command in sub_app.registered_commands
 )
+csharp_cli.add_group_stubs(app, "repo-governance")
 
 
 def main():

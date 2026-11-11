@@ -54,6 +54,12 @@ public sealed class RepoPoliciesTests : IDisposable
     [InlineData("""{"defaults": {"gitignore_entries": [{"write": ["a"], "match_mode": "some"}]}}""", "match_mode 'some' is neither 'any' nor 'all'")]
     [InlineData("""{"defaults": {"agents_md_hygiene": []}}""", "agents_md_hygiene is not an object")]
     [InlineData("""{"owner_profiles": {"b": "nope", "a": "gone"}}""", "owner_profiles names undeclared profile(s): a -> gone, b -> nope")]
+    [InlineData("""{"defaults": {"agents_md_hygiene": {"claude_md": "copy"}}}""", "claude_md 'copy' is not one of symlink, absent, any")]
+    [InlineData("""{"defaults": {"agents_md_hygiene": {"max_lines": "ten"}}}""", "max_lines is not an integer")]
+    [InlineData("""{"defaults": {"agents_md_hygiene": {"check_paths": 1}}}""", "check_paths is not a boolean")]
+    [InlineData("""{"defaults": {"repo_selection": []}}""", "repo_selection is not an object")]
+    [InlineData("""{"defaults": {"repo_selection": {"exempt": "yes"}}}""", "exempt is not a boolean")]
+    [InlineData("""{"defaults": {"expected_owner": 3}}""", "expected_owner is not a string")]
     public void A_file_of_the_wrong_shape_is_refused(string json, string why)
     {
         var file = _dir.File("policy.json");
@@ -123,5 +129,57 @@ public sealed class RepoPoliciesTests : IDisposable
 
         Assert.Contains(policies.Presets, p => p.Id == "python");
         Assert.Contains(policies.GitignoreEntries("rtkelly13/rig"), e => e.Name == "temp");
+    }
+
+    private const string Identity = """
+        {
+          "defaults": {"repo_selection": {"manage_forks": true}, "agents_md_hygiene": {"max_lines": 50}},
+          "profiles": {
+            "labs": {"repos": ["Lake.NET"], "expected_owner": "rtkelly-labs", "allowed_owners": ["rtkelly-labs"],
+                     "repo_selection": {"exempt": true}, "agents_md_hygiene": {"claude_md": "absent"}},
+            "loose": {"repos": [], "expected_owner": null}
+          },
+          "owner_profiles": {"RTKELLY-LABS": "labs", "else": "loose"},
+          "repo_overrides": {"lake.net": {"agents_md_hygiene": {"max_lines": 7}}}
+        }
+        """;
+
+    private static RepoPolicies Owners => RepoPolicies.Parse(JsonNode.Parse(Identity), "policy.json");
+
+    [Fact]
+    public void Owners_default_to_the_personal_accounts_and_none_is_expected()
+    {
+        Assert.Equal(["rtkelly13", "rtkelly-labs"], RepoPolicies.Empty.AllowedOwners("x"));
+        Assert.Null(RepoPolicies.Empty.ExpectedOwner("x"));
+    }
+
+    [Theory]
+    [InlineData("lake.net")]
+    [InlineData("someone/LAKE.NET")]
+    [InlineData("rtkelly-labs/unlisted")]
+    public void A_profile_or_its_owner_supplies_identity(string key)
+    {
+        Assert.Equal(["rtkelly-labs"], Owners.AllowedOwners(key));
+        Assert.Equal("rtkelly-labs", Owners.ExpectedOwner(key));
+    }
+
+    [Fact]
+    public void An_owner_profile_supplies_identity_only_and_a_null_owner_declares_none()
+    {
+        Assert.False(Owners.IsRegistered("rtkelly-labs/unlisted"));
+        Assert.Equal(RepoSelectionRules.Default with { ManageForks = true }, Owners.SelectionRules("rtkelly-labs/unlisted"));
+        Assert.Equal(50, Owners.AgentsMd("rtkelly-labs/unlisted").MaxLines);
+        Assert.Null(Owners.ExpectedOwner("else/thing"));
+        Assert.Null(Owners.ExpectedOwner("nobody/thing"));
+    }
+
+    [Fact]
+    public void Registration_selection_and_hygiene_resolve_by_bare_name()
+    {
+        Assert.True(Owners.IsRegistered("o/lake.NET"));
+        Assert.Equal(new RepoSelectionRules(Exempt: true), Owners.SelectionRules("lake.net"));
+        Assert.Equal((7, "any"), (Owners.AgentsMd("lake.net").MaxLines, Owners.AgentsMd("lake.net").ClaudeMd));
+        Assert.Equal(RepoSelectionRules.Default, RepoPolicies.Empty.SelectionRules("x"));
+        Assert.Same(AgentsMdRules.Default, RepoPolicies.Empty.AgentsMd("x"));
     }
 }

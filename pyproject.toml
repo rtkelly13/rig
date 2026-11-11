@@ -254,7 +254,6 @@ ignore = [
 "tests/desktop_manager/test_projects.py" = ["TID251"]
 "tests/desktop_manager/test_runtime.py" = ["TID251"]
 "tests/desktop_manager/test_cli_machine_checkout.py" = ["TID251"]
-"tests/test_agents_md_audit.py" = ["TID251"]
 "tests/test_estate.py" = ["TID251"]
 "tests/desktop_manager/test_chrome_site_hosts.py" = ["TID251"]
 "tests/test_estate_connectivity.py" = ["TID251"]
