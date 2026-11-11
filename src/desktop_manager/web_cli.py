@@ -49,7 +49,7 @@ def web_main(
         return
 
     effective_port = 8091 if (preview and port == 8090) else port
-    from rig.image_drift.server import StudioServer
+    from rig.web_host.server import StudioServer
 
     server = StudioServer(host=host, port=effective_port, is_preview=preview, routes=mounted_routes())
     url = f"http://{host}:{effective_port}"

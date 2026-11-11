@@ -18,12 +18,12 @@ const outputFor = (committed) => (checking ? path.join(scratch, committed) : pat
 // Every Tailwind entry and the committed file it compiles to. Each entry imports
 // its tokens from @rtkelly-labs/design-system.
 const stylesheets = [
-  ['web/app.src.css', 'src/rig/image_drift/templates/app_assets/app.css'],
-  ['styles/gallery.src.css', 'src/rig/image_drift/templates/gallery.css'],
+  ['web/app.src.css', 'src/rig/web_host/templates/app_assets/app.css'],
+  ['tools/image-drift/styles/gallery.src.css', 'tools/image-drift/src/image_drift/templates/gallery.css'],
   ['styles/c4.src.css', 'src/rig/c4_okf/static/c4.css'],
 ];
 
-const appAssets = 'src/rig/image_drift/templates/app_assets';
+const appAssets = 'src/rig/web_host/templates/app_assets';
 await mkdir(outputFor(appAssets), { recursive: true });
 await build({
   entryPoints: [path.join(root, 'web/App.tsx')],

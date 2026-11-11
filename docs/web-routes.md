@@ -1,6 +1,6 @@
 # Serving JSON from `rig web`
 
-`rig web` is one server (`rig.image_drift.server.StudioServer`) that serves the SPA in `web/`, the
+`rig web` is one server (`rig.web_host.server.StudioServer`) that serves the SPA in `web/`, the
 legacy studio, and JSON for any feature that wants a page. Features never import the server, and the
 server never imports a feature. A feature exposes a **route**, and one composition root mounts it.
 
@@ -13,7 +13,7 @@ server never imports a feature. A feature exposes a **route**, and one compositi
 | `respond` | `src/rig/web_routes.py` | runs a producer and maps failures to the `{"error": ...}` envelope |
 | `json_body` | `src/rig/web_routes.py` | the write guard: loopback Host, matching Origin, JSON content type, size cap |
 | `mounted_routes()` | `src/desktop_manager/web_cli.py` | the composition root: the one place that imports several features |
-| `StudioServer(routes=...)` | `src/rig/image_drift/server.py` | offers each request to the mounted routes before its own handlers |
+| `StudioServer(routes=...)` | `src/rig/web_host/server.py` | offers each request to the mounted routes before its own handlers |
 
 ## Adding a route
 

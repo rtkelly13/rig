@@ -8,7 +8,7 @@ with a seam-locked circuit network, a notched socket dot and etched emblems.
 Drive it through the CLI's builder-module hook, which is the supported way to run
 a structurally different mark:
 
-    PYTHONPATH=experiments/logo-explorers uv run image-reconcile build \\
+    PYTHONPATH=experiments/logo-explorers uv run --project tools/image-drift --with svgwrite image-reconcile build \\
         -B experiments/logo-explorers/rhombille_builder.py \\
         --variant rhombille_reference --svg /tmp/hex.svg
 
@@ -39,6 +39,9 @@ from hex_shapes import (
     scaled_circuit_point,
     socket_dome_path,
 )
+from image_drift.builder_contract import NODE_RADIUS_SCALE, FeatureRegion, variant_style
+from image_drift.hex_geometry import HEX_CENTER, Point, hexagon_vertices
+from image_drift.variants import StyleOverrides, Variant, VariantRegistry, resolve_variant
 from svg_builder import (
     BEVEL_COLOUR,
     CANVAS,
@@ -54,10 +57,6 @@ from svg_builder import (
     strip_unused_root_attributes,
 )
 from svgwrite.container import Group
-
-from rig.image_drift.builder_contract import NODE_RADIUS_SCALE, FeatureRegion, variant_style
-from rig.image_drift.hex_geometry import HEX_CENTER, Point, hexagon_vertices
-from rig.image_drift.variants import StyleOverrides, Variant, VariantRegistry, resolve_variant
 
 DEFAULT_VARIANT = "rhombille_reference"
 

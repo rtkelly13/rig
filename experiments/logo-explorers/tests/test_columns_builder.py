@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 from hex_shapes import distance
+from image_drift.hex_geometry import Point
+from image_drift.imaging import chromium_available, load_normalised, render_svg
 from PIL import Image
 from svg_builder import (
     COLUMN_BOX,
@@ -31,9 +33,6 @@ from svg_builder import (
     fork_graph,
     parquet_blocks,
 )
-
-from rig.image_drift.hex_geometry import Point
-from rig.image_drift.imaging import chromium_available, load_normalised, render_svg
 
 pytestmark = pytest.mark.ci
 
@@ -218,9 +217,8 @@ def test_image_mode_is_rgb_after_normalising(tmp_path: Path) -> None:
 def test_graph_survives_a_one_colour_threshold(tmp_path: Path) -> None:
     """The fork must still read after flattening to two tones, since that is
     what a one-colour reproduction does."""
+    from image_drift.imaging import load_normalised, render_svg
     from PIL import ImageOps
-
-    from rig.image_drift.imaging import load_normalised, render_svg
 
     svg = tmp_path / "logo.svg"
     build_svg_logo(svg)

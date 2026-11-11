@@ -20,7 +20,7 @@ from rig.estate.decisions import Decision
 from rig.estate.disksize import Measure
 from rig.estate.trim import Trimmable
 from rig.estate.web import TrimCache, make_route, read_decisions
-from rig.image_drift.server import StudioServer
+from rig.web_host.server import StudioServer
 from tests.links import dir_link
 
 pytestmark = pytest.mark.ci
@@ -288,7 +288,6 @@ def served(tmp_path: Path) -> Iterator[str]:
         templates_dir=templates,
         db_path=tmp_path / "rig.db",
         assets_root=tmp_path / "assets",
-        variations_root=tmp_path / "variations",
         routes=(make_route(cache, feed_path=lambda: feed, root=lambda: tmp_path),),
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)

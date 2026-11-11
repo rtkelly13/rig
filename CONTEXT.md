@@ -16,7 +16,7 @@ This document establishes the canonical domain model, ubiquitous language, and a
 | **Skill Plugin** | A vendored collection of skills sourced from a Git repository or local directory path. | Cached in `~/.config/devenv/vendors/<plugin-name>` and synchronized on-demand. |
 | **Mirroring** | Managed reflection of active skills into global agent directories (`~/.gemini/config/skills/`, `~/.agents/skills/`, `~/.claude/skills/`, `~/.config/opencode/skills/`, `~/.codex/skills/`). | Target directories are exact mirrors; stale links are automatically pruned (ADR 0016). |
 | **Governance Policy** | Declarative branch protection, required status checks, and workflow rules for GitHub repositories. | Governed by `shared_utilities.repo_governance`. Automatically accounts for public vs private repo visibility (ADR 0008). |
-| **Drift Detection** | Automated validation ensuring checked-in visual assets match deterministic SVG render outputs. | Governed by `shared_utilities.image_drift`. Guarantees pixel-identical rendering across platforms (ADR 0009). |
+| **Drift Detection** | Automated validation ensuring checked-in visual assets match deterministic SVG render outputs. | Governed by `image_drift`. Guarantees pixel-identical rendering across platforms (ADR 0009). |
 | **Browser Profile** | Isolated user data directory and profile state for automated and agent-driven browser workflows. | Governed by `Rig.Core.Browser` (`rig browser setup` and `rig browser profiles`). Separates `dev` and `personal` state with dedicated persistent contexts. |
 | **Vault Staging** | Intermediate ingestion pipeline for processing external notes (e.g. Google Keep) into markdown. | Governed by `shared_utilities.obsidian`. Converts raw data into structured Obsidian vault schemas. |
 | **Infrastructure Stack** | Declarative Pulumi programs managing cloud resources, Vercel deployments, and Storybook hosting. | Managed under `infrastructure/`. Enforces IaC discipline with no manual console configuration (ADR 0007). |
@@ -52,6 +52,6 @@ All packages in `shared-utilities` adhere strictly to our foundational standards
 ```
 src/shared_utilities/          # devenv is C#: src/Rig.Cli/Devenv/
 ├── repo_governance/    # Organization-wide GitHub policy engine
-├── image_drift/        # Deterministic SVG renderer and drift detection
+├── image_drift/        # now tools/image-drift, its own uv project: SVG renderer and drift detection
 └── obsidian/           # Vault note processing and Google Keep staging
 ```

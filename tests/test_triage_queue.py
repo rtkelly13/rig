@@ -16,11 +16,11 @@ import pytest
 from typer.testing import CliRunner
 
 from rig.db.migrations import run_migrations
-from rig.image_drift.server import StudioServer
 from rig.triage import agents, github, markdown, service, store
 from rig.triage.cli import app
 from rig.triage.models import Activity, Entry, Interaction, Item, rank
 from rig.typed_json import decode_json
+from rig.web_host.server import StudioServer
 
 pytestmark = pytest.mark.ci
 

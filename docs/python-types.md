@@ -133,7 +133,7 @@ be avoided, keep it in one tiny adapter module, add that path to `pyright-pragma
 `reportAny` catches `Any` that a library hands back. Decode JSON and other payloads with `typed_json` instead of
 indexing them. For a foreign function that returns `Any` (ctypes, `winreg`, `np.gradient`), pass it through a typed
 `Callable` parameter so the result comes back typed: `desktop_manager.win32.dlls.call_int` and `registry_value`, and
-`shared_utilities.image_drift.numeric`. Annotating the variable (`x: object = untyped()`) does not help, because the
+`image_drift.numeric` (tools/image-drift). Annotating the variable (`x: object = untyped()`) does not help, because the
 narrowed type is still `Any`.
 
 Catch what the guarded code can raise, not `Exception`. Windows calls have shared tuples: `WIN32_ERRORS`

@@ -37,7 +37,7 @@ live in [`experiments/logo-explorers/`](../../experiments/logo-explorers/README.
 ### Layout
 
 ```
-src/shared_utilities/image_drift/builder_assets/<project>/
+tools/image-drift/src/image_drift/builder_assets/<project>/
     master.svg      AUTHORITATIVE — written only by `promote`
     favicon.svg     AUTHORITATIVE — hand-authored small-size cut
     manifest.json   per-variant sha256, `gated` flag, provenance
@@ -72,7 +72,7 @@ an installed wheel, where `assets/` does not exist.
    (geometry/edges) and chrominance (palette/tint).
 
 All six are enforced by `tests/test_brand_asset_governance.py` and
-`tests/test_image_drift_labs.py`.
+`tools/image-drift/tests/test_image_drift_labs.py`.
 
 ### `production-cuts.csv` schema
 
@@ -89,7 +89,7 @@ All six are enforced by `tests/test_brand_asset_governance.py` and
 | `favicon` | Favicon raster or `.ico` bundle |
 
 `image-reconcile export-avatar -p <project>` writes one file per row and nothing else
-(`src/rig/image_drift/production_cuts.py`). `svg` rows are copies, `png` rows are Chromium
+(`tools/image-drift/src/image_drift/production_cuts.py`). `svg` rows are copies, `png` rows are Chromium
 renders at the row's size, and `ico` rows bundle 48/32/16px up to the row's width. `favicon*`
 cut types come from the builder's `favicon` variant; every other cut comes from the canonical
 master. `tests/test_production_cuts.py` checks the export against each CSV.
@@ -145,9 +145,9 @@ The 81.2% figure independently corroborates the **81.6%** edge correlation that
 same defect.
 
 ```bash
-uv run image-reconcile edges -p rtkelly-labs                    # report
-uv run image-reconcile edges -p rtkelly-labs --min-conformance 36   # CI ratchet
-uv run image-reconcile edges -p rtkelly-labs --fix out.svg      # repair + score
+uv run --project tools/image-drift image-reconcile edges -p rtkelly-labs                    # report
+uv run --project tools/image-drift image-reconcile edges -p rtkelly-labs --min-conformance 36   # CI ratchet
+uv run --project tools/image-drift image-reconcile edges -p rtkelly-labs --fix out.svg      # repair + score
 ```
 
 ### Why it works as a gate
@@ -203,7 +203,7 @@ both axes. Measured on `rtkelly-labs`:
 | **Fitted** — constructed, dimensions fitted to the reference | **100.0%** | **148** | **0** | 0.6365 | 25.866% |
 
 ```bash
-uv run image-reconcile pathways -p rtkelly-labs --out-dir temp/pathways
+uv run --project tools/image-drift image-reconcile pathways -p rtkelly-labs --out-dir temp/pathways
 ```
 
 ### What the numbers say
@@ -257,11 +257,11 @@ PSNR is reported but not gated: it tracks SSIM closely and gating it only over-c
 
 ```bash
 # Propose. Read-only w.r.t. assets/ and builder_assets/; snapshots to temp/variations/.
-uv run image-reconcile explore -p rtkelly-labs --sweep r_outer=150,158,166
+uv run --project tools/image-drift image-reconcile explore -p rtkelly-labs --sweep r_outer=150,158,166
 #   exit 0 = a candidate won   exit 2 = none did   exit 1 = error
 
 # Inspect, then promote. Without --confirm this is a dry run.
-uv run image-reconcile promote -p rtkelly-labs --run-id <id> --candidate <N> --confirm
+uv run --project tools/image-drift image-reconcile promote -p rtkelly-labs --run-id <id> --candidate <N> --confirm
 ```
 
 `promote` backs the incumbent up beside the run before writing, updates the manifest digest and

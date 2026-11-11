@@ -16,7 +16,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from rig.image_drift.hex_geometry import HEX_CENTER, Point, hexagon_vertices
+from image_drift.hex_geometry import HEX_CENTER, Point, hexagon_vertices
 
 
 def distance(a: Point, b: Point) -> float:

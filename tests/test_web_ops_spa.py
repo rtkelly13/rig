@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import Page, expect, sync_playwright
 
-from rig.image_drift.server import StudioServer
+from rig.web_host.server import StudioServer
 from rig.web_routes import Request, json_body, send_json
 
 pytestmark = pytest.mark.ci
@@ -173,7 +173,6 @@ def ops_app(tmp_path: Path) -> Iterator[OpsApp]:
         port=0,
         db_path=tmp_path / "rig.db",
         assets_root=tmp_path / "assets",
-        variations_root=tmp_path / "variations",
         routes=(ops,),
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)

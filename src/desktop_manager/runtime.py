@@ -213,7 +213,7 @@ def check(copy: Path, runner: Runner = run) -> list[str]:
     if sys.platform == "win32":
         commands.append([python, "-c", "import desktop_manager.chrome.scheduled, desktop_manager.windows_workspace"])
     else:
-        commands.append([python, "-c", "import rig.image_drift.server"])
+        commands.append([python, "-c", "import rig.web_host.server"])
     plan = copy / PLAN_RELATIVE
     if plan.is_file():
         commands.append([desktop_manager, "workspace", "validate-plan", "--config", str(plan)])

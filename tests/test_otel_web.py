@@ -20,12 +20,12 @@ import httpx
 import pytest
 
 from desktop_manager.web_cli import mounted_routes
-from rig.image_drift.server import StudioServer
 from rig.otel_stack.explorers import Explorers, ExplorerSettings
 from rig.otel_stack.query import ClickHouse
 from rig.otel_stack.trace_list import ClickHouseTraces, FileTraces, TraceQuery, recent_files
 from rig.otel_stack.web import Telemetry, TelemetryRoute, telemetry_route
 from rig.typed_json import JsonObject, JsonValue
+from rig.web_host.server import StudioServer
 
 pytestmark = pytest.mark.ci
 
@@ -304,7 +304,6 @@ def serving(tmp_path: Path, route: TelemetryRoute) -> Iterator[str]:
         templates_dir=templates,
         db_path=tmp_path / "rig.db",
         assets_root=tmp_path / "assets",
-        variations_root=tmp_path / "variations",
         routes=(route,),
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
