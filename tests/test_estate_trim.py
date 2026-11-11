@@ -220,3 +220,133 @@ def test_long_path_prefixes_once() -> None:
 
     assert once == "\\\\?\\C:\\code\\x"
     assert trim.long_path(pathlib.Path(once)) == once
+
+
+@pytest.mark.parametrize(
+    ("layout", "name", "category"),
+    [
+        (["Cargo.toml"], "target", "rust build output"),
+        (["App.sln"], "packages", "dotnet build output"),
+        ([], "target", None),
+        ([], "packages", None),
+    ],
+)
+def test_category_of_needs_the_project_file_beside_it(
+    tmp_path: pathlib.Path, layout: list[str], name: str, category: str | None
+) -> None:
+    for file in layout:
+        _ = (tmp_path / file).write_text("", encoding="utf-8")
+
+    assert trim.category_of(tmp_path / name) == category
+
+
+def test_remove_reports_a_failed_delete(tmp_path: pathlib.Path) -> None:
+    gone = tmp_path / "wt" / "node_modules"
+    item = trim.Trimmable(tmp_path / "wt", gone, "node_modules", measure(tmp_path))
+
+    assert trim.remove(item).startswith("failed: ")
+
+
+def test_a_directory_resolving_outside_the_worktree_is_refused(repo: pathlib.Path, tmp_path: pathlib.Path) -> None:
+    outside = _fill(tmp_path / "elsewhere")
+    link = repo / "node_modules"
+    link.symlink_to(outside, target_is_directory=True)
+
+    assert trim.refusal(repo, link, ignored=True) == "resolves outside the worktree"
+
+
+def test_an_unignored_directory_is_refused(repo: pathlib.Path) -> None:
+    loose = _fill(repo / "loose")
+
+    assert trim.refusal(repo, loose, ignored=False) == "not gitignored"
+
+
+def test_a_worktree_pointer_without_a_gitdir_counts_as_active(tmp_path: pathlib.Path) -> None:
+    _ = (tmp_path / ".git").write_text("not a pointer\n", encoding="utf-8")
+    before = time.time()
+
+    assert trim.last_activity(tmp_path) >= before
+
+
+def test_a_relative_worktree_pointer_is_read_from_the_worktree(tmp_path: pathlib.Path) -> None:
+    admin = tmp_path / "admin"
+    admin.mkdir()
+    _ = (admin / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    os.utime(admin / "HEAD", (1000.0, 1000.0))
+    _ = (tmp_path / ".git").write_text("gitdir: admin\n", encoding="utf-8")
+
+    assert trim.last_activity(tmp_path) == 1000.0
+
+
+class TestRecheck:
+    """`recheck` refuses whatever changed on disk since the scan."""
+
+    @staticmethod
+    def _item(worktree: pathlib.Path, category: str = "node_modules") -> trim.Trimmable:
+        path = worktree / "node_modules"
+        return trim.Trimmable(worktree, path, category, measure(worktree))
+
+    @staticmethod
+    def _later() -> float:
+        return time.time() + 30 * DAY
+
+    def test_a_link_is_refused(self, repo: pathlib.Path, tmp_path: pathlib.Path) -> None:
+        tree = _worktree(repo, "linked")
+        (tree / "node_modules").symlink_to(_fill(tmp_path / "store"), target_is_directory=True)
+
+        assert trim.recheck(self._item(tree), now=self._later()) == "is a link"
+
+    def test_a_vanished_directory_is_refused(self, repo: pathlib.Path) -> None:
+        tree = _worktree(repo, "vanished")
+
+        assert trim.recheck(self._item(tree), now=self._later()) == "no longer exists"
+
+    def test_an_unregistered_worktree_is_refused(self, tmp_path: pathlib.Path) -> None:
+        tree = tmp_path / "plain"
+        _ = _fill(tree / "node_modules")
+
+        assert trim.recheck(self._item(tree), now=self._later()) == "worktree is no longer registered"
+
+    def test_a_locked_worktree_is_refused(self, repo: pathlib.Path) -> None:
+        tree = _worktree(repo, "locked")
+        _ = _fill(tree / "node_modules")
+        _ = _git(["worktree", "lock", str(tree)], repo)
+
+        assert trim.recheck(self._item(tree), now=self._later()) == "worktree is locked"
+
+    def test_the_main_checkout_is_refused(self, repo: pathlib.Path) -> None:
+        _ = _fill(repo / "node_modules")
+
+        assert trim.recheck(self._item(repo), now=self._later()) == "no longer a linked worktree"
+
+    def test_a_directory_no_longer_regenerable_is_refused(self, repo: pathlib.Path) -> None:
+        tree = _worktree(repo, "renamed")
+        _ = _fill(tree / "node_modules")
+
+        assert trim.recheck(self._item(tree, "rust build output"), now=self._later()) == "no longer regenerable output"
+
+    def test_a_worktree_used_again_is_refused(self, repo: pathlib.Path) -> None:
+        tree = _worktree(repo, "busy")
+        _ = _fill(tree / "node_modules")
+
+        assert trim.recheck(self._item(tree), now=time.time()) == "worktree is in use again"
+
+    def test_a_directory_that_gained_a_checkout_is_refused(self, repo: pathlib.Path) -> None:
+        tree = _worktree(repo, "nested")
+        _ = _fill(tree / "node_modules" / "pkg" / ".git")
+
+        assert trim.recheck(self._item(tree), now=self._later()) == "holds a git checkout"
+
+    def test_a_directory_still_safe_passes(self, repo: pathlib.Path) -> None:
+        tree = _worktree(repo, "idle")
+        _ = _fill(tree / "node_modules")
+
+        assert trim.recheck(self._item(tree), now=self._later()) == ""
+
+
+def test_measure_skips_links_and_unreadable_folders(tmp_path: pathlib.Path) -> None:
+    root = _fill(tmp_path / "tree")
+    (root / "link").symlink_to(_fill(tmp_path / "store"), target_is_directory=True)
+
+    assert measure(root).apparent == 4096
+    assert measure(tmp_path / "missing").apparent == 0

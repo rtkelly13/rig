@@ -10,7 +10,8 @@ import subprocess
 import pytest
 
 from rig.estate import discovery
-from rig.estate.checks import parse_worktrees
+from rig.estate.checks import is_dirty, parse_worktrees
+from rig.typed_json import JsonValue
 
 
 def _git(args: list[str], cwd: pathlib.Path) -> None:
@@ -156,6 +157,29 @@ def test_parse_worktrees_marks_the_first_as_main() -> None:
     assert "non-existent" in trees[2].prune_reason
 
 
+def test_parse_worktrees_reads_bare_locked_and_unborn_entries() -> None:
+    porcelain = (
+        "worktree /code/proj.git\nbare\n\n"
+        "worktree /code/proj/temp/usb\nHEAD abc123\nbranch refs/heads/usb\nlocked on a stick\n\n"
+        f"worktree /code/proj/temp/fresh\nHEAD {'0' * 40}\nbranch refs/heads/fresh\n\n"
+    )
+
+    bare, locked, fresh = parse_worktrees(porcelain)
+
+    assert bare.bare
+    assert (locked.name, locked.locked, locked.lock_reason) == ("usb", True, "on a stick")
+    assert fresh.unborn
+    assert not locked.unborn
+
+
+def test_is_dirty_sees_an_untracked_file(repo: pathlib.Path) -> None:
+    assert not is_dirty(repo)
+
+    _ = (repo / "new.txt").write_text("x\n", encoding="utf-8")
+
+    assert is_dirty(repo)
+
+
 def test_a_sibling_worktree_is_not_a_clone(tmp_path: pathlib.Path, repo: pathlib.Path) -> None:
     """A worktree outside its clone must not be discovered as a clone of its own.
 
@@ -171,3 +195,26 @@ def test_a_sibling_worktree_is_not_a_clone(tmp_path: pathlib.Path, repo: pathlib
 
     assert repo in found
     assert sibling not in found
+
+
+def test_scan_of_a_missing_root_finds_nothing(tmp_path: pathlib.Path) -> None:
+    assert discovery.scan(tmp_path / "missing") == []
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "not an entry",
+        {"scanned_at": "last tuesday", "repos": []},
+    ],
+)
+def test_a_junk_cache_entry_parses_as_none(raw: JsonValue) -> None:
+    assert discovery.CachedScan.from_json(raw) is None
+
+
+def test_a_cache_entry_without_a_timezone_is_read_as_utc() -> None:
+    entry = discovery.CachedScan.from_json({"scanned_at": "2026-11-07T12:00:00", "repos": ["/code/a"], "root": "/code"})
+
+    assert entry is not None
+    assert entry.scanned_at.tzinfo is dt.UTC
+    assert entry.paths() == [pathlib.Path("/code/a")]
