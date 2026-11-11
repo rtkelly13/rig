@@ -13,7 +13,6 @@ from rig import csharp_cli
 from ...workspace.repo_resolver import check_repo_folder
 from ..config.loader import load_all_builtin_tools
 from ..engine.context import StepContext, get_current_platform
-from ..steps.ai_tools.discovery import detect_installed_agents
 from ..steps.fonts import NERD_FONTS, is_nerd_font_installed
 from ..steps.git import get_git_config_val
 from ..steps.github_cli import OverlayState, overlay_state, overlay_target
@@ -191,11 +190,9 @@ def run_doctor() -> int:
         ai_table.add_row("Session-Ledger Hook", "[yellow]! Not current (run 'devenv claude')[/yellow]")
         issues_found += 1
 
-    for agent in detect_installed_agents():
-        st = "[green]✓ Available[/green]" if agent.is_installed else "[dim]- Not Found[/dim]"
-        ai_table.add_row(f"Agent: {agent.display_name}", st)
-
     console.print(ai_table)
+    # Which agents are on the PATH, through `rig devenv agents`; informational, so its code is not an issue.
+    csharp_cli.run(["devenv", "agents"])
     console.print()
 
     if issues_found == 0:

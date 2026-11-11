@@ -25,7 +25,13 @@ public sealed class DevenvCommandTests : IDisposable
     private string Hook => SessionLedger.HookPath(_home.Path);
 
     private Command Build(TextWriter output, TextWriter error, string? policy = null) =>
-        new DevenvCommand(new DevenvHost(Path.Join(_home.Path, "not-this-home"), policy ?? PolicyFiles.Real, false), _server.Plugins, output, error).Build();
+        new DevenvCommand(
+            new DevenvHost(Path.Join(_home.Path, "not-this-home"), policy ?? PolicyFiles.Real, false, Checkout, Path.Join(_home.Path, "not-this-root"), "/bin/zsh", p => p == "claude" ? "/bin/claude" : null),
+            _server.Plugins,
+            output,
+            error).Build();
+
+    private static string Checkout => Path.Join(Path.GetTempPath(), "rig");
 
     private async Task<(int Code, string Out, string Err)> RunAsync(params string[] args) => await RunWithAsync(null, args);
 
@@ -44,7 +50,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["claude", "estate-rules", "obsidian-plugins", "opencode"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["agent-launcher", "agents", "claude", "estate-rules", "obsidian-plugins", "opencode"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -341,6 +347,79 @@ public sealed class DevenvCommandTests : IDisposable
         Assert.EndsWith(Restart, output, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Agents_lists_each_known_agent_and_whether_it_is_on_the_path()
+    {
+        using var writer = new StringWriter();
+        var code = await Build(writer, TextWriter.Null).Parse(["agents"]).InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var output = writer.ToString().ReplaceLineEndings("\n");
+
+        Assert.Equal(0, code);
+        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal("Detected AI coding assistants:", lines[0]);
+        Assert.Equal(KnownAgents.All.Count + 1, lines.Length);
+        Assert.Equal("  Claude Code                claude    found", lines[2]);
+        Assert.Equal("  OpenAI Codex               codex     not found", lines[3]);
+    }
+
+    private string Root => Path.Join(_home.Path, "code");
+
+    private string Zshrc => Path.Join(_home.Path, ".zshrc");
+
+    [Fact]
+    public async Task Agent_launcher_writes_an_executable_shim_and_the_shortcut_then_reports_up_to_date()
+    {
+        var (code, output, error) = await InvokeAsync(null, ["agent-launcher", "--root", Root]);
+
+        var shim = Path.Join(Root, "agent.sh");
+        Assert.Equal((0, string.Empty), (code, error));
+        Assert.Equal($"OK: Agent launcher shim ready: {shim}\nOK: Agent shortcut configured in .zshrc\n", output);
+        Assert.Equal(LauncherShim.Posix(LauncherShim.CliProject(Checkout)), await File.ReadAllTextAsync(shim, TestContext.Current.CancellationToken));
+        Assert.Equal(LauncherShim.PosixBlock(shim) + "\n", await File.ReadAllTextAsync(Zshrc, TestContext.Current.CancellationToken));
+        Assert.False(File.Exists(Path.Join(Root, "agent.ps1")));
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Equal((UnixFileMode)0b111_101_101, File.GetUnixFileMode(shim));
+        }
+
+        var (again, second, _) = await InvokeAsync(null, ["agent-launcher", "--root", Root]);
+
+        Assert.Equal((0, $"OK: Agent launcher shim ready: {shim}\nAgent shortcut block in .zshrc is already up to date.\n"), (again, second));
+    }
+
+    [Fact]
+    public async Task Agent_launcher_dry_run_writes_nothing()
+    {
+        var (code, output, _) = await InvokeAsync(null, ["agent-launcher", "--root", Root, "--dry-run"]);
+
+        Assert.Equal((0, $"[dry-run] Would write agent launcher shim to {Root}\n[dry-run] Would update agent shortcut in {Zshrc}\n"), (code, output));
+        Assert.False(Directory.Exists(Root));
+        Assert.False(File.Exists(Zshrc));
+    }
+
+    [Fact]
+    public async Task Agent_launcher_reports_a_failed_shim_write()
+    {
+        await File.WriteAllTextAsync(Root, "a file where the root goes", TestContext.Current.CancellationToken);
+
+        var (code, _, error) = await InvokeAsync(null, ["agent-launcher", "--root", Root]);
+
+        Assert.Equal(1, code);
+        Assert.StartsWith("Failed to write the agent launcher shim: ", error, StringComparison.Ordinal);
+        Assert.False(File.Exists(Zshrc));
+    }
+
+    [Fact]
+    public async Task Agent_launcher_reports_a_failed_profile_write()
+    {
+        var profile = _home.Folder("profile-is-a-folder");
+
+        var (code, _, error) = await InvokeAsync(null, ["agent-launcher", "--root", Root, "--profile", profile]);
+
+        Assert.Equal(1, code);
+        Assert.StartsWith("Failed to configure agent shortcut: ", error, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(new[] { "devenv", "claude" }, false)]
     [InlineData(new[] { "devenv", "claude", "--check" }, false)]
@@ -350,6 +429,8 @@ public sealed class DevenvCommandTests : IDisposable
     [InlineData(new[] { "devenv", "opencode" }, false)]
     [InlineData(new[] { "devenv", "estate-rules", "--dry-run" }, false)]
     [InlineData(new[] { "devenv", "obsidian-plugins" }, false)]
+    [InlineData(new[] { "devenv", "agents" }, false)]
+    [InlineData(new[] { "devenv", "agent-launcher" }, false)]
     [InlineData(new[] { "devenv", "fonts" }, true)]
     public void Only_the_ported_devenv_subcommands_stay_in_csharp(string[] args, bool forwarded)
     {
