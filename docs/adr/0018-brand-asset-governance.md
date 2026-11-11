@@ -60,6 +60,6 @@ bridge between them.**
 
 ## References
 - [`docs/brand-assets/README.md`](../brand-assets/README.md)
-- [`src/shared_utilities/image_drift/promotion.py`](../../src/rig/image_drift/promotion.py)
-- [`src/shared_utilities/image_drift/labs_parametric.py`](../../src/rig/image_drift/labs_parametric.py)
-- [`tests/test_brand_asset_governance.py`](../../tests/test_brand_asset_governance.py)
+- [`src/shared_utilities/image_drift/promotion.py`](../../tools/image-drift/src/image_drift/promotion.py)
+- [`src/shared_utilities/image_drift/labs_parametric.py`](../../tools/image-drift/src/image_drift/labs_parametric.py)
+- [`tests/test_brand_asset_governance.py`](../../tools/image-drift/tests/test_brand_asset_governance.py)

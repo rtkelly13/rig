@@ -15,4 +15,4 @@ Adopt a deterministic SVG pipeline in `shared_utilities.image_drift`:
 - Visual artifacts are testable and deterministic in version control.
 
 ## References
-- [`src/shared_utilities/image_drift`](../../src/rig/image_drift)
+- [`src/shared_utilities/image_drift`](../../tools/image-drift/src/image_drift)
