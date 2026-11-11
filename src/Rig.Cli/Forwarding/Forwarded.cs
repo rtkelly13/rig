@@ -17,7 +17,6 @@ internal static class Forwarded
         ("web", "Rig web dashboard & visual studio (static site + Python API)."),
         ("flags", "Feature flags shared across the rig stack (defaults in code, overrides in rig.db)."),
         ("c4", "C4 diagrams as an Open Knowledge Format bundle. Experimental."),
-        ("repo-governance", "CLI tool to audit, inspect status, and enforce repository conventions across GitHub repos."),
     ];
 
     private static readonly HashSet<string> Names = Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);

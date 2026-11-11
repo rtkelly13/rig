@@ -439,7 +439,7 @@ External community contributors are enthusiastically invited to use AI tools whe
    ```
 
 ### Estate-Wide AI Policy Alignment (`AI_POLICY.md`)
-Repositories enrolled in the `public_open_source` profile automatically deploy the canonical [`AI_POLICY.md`](../../src/rig/repo_governance/templates/AI_POLICY.md.jinja) and display the AI-assisted badge:
+Repositories enrolled in the `public_open_source` profile automatically deploy the canonical [`AI_POLICY.md`](../../src/Rig.Core/Governance/Templates/policy/AI_POLICY.md.jinja) and display the AI-assisted badge:
 
 [![AI Assisted](https://img.shields.io/badge/development-AI%20assisted-792ee5.svg?logo=openai&logoColor=white)](../AI_POLICY.md)
 

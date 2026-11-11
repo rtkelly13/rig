@@ -74,6 +74,8 @@ internal sealed partial class GovernanceCommand(
         governance.Subcommands.Add(IssueTriage());
         governance.Subcommands.Add(PrTriage());
         governance.Subcommands.Add(VerifyPrChecks());
+        governance.Subcommands.Add(ApplyPolicy());
+        governance.Subcommands.Add(SyncPolicies());
         return governance;
     }
 
