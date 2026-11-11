@@ -220,8 +220,6 @@
       "allowed_owners": [
         "rtkelly-labs"
       ],
-      "copyright_holder": "rtkelly-labs",
-      "contact_email": "ryan@ryankelly.dev",
       "policies": [
         "squash_merge_only",
         "pinned_action_shas",
@@ -257,8 +255,6 @@
       "allowed_owners": [
         "rtkelly-labs"
       ],
-      "copyright_holder": "rtkelly-labs",
-      "contact_email": "ryan@ryankelly.dev",
       "policies": [
         "ai_policy",
         "readme_ai_disclosure",
@@ -272,11 +268,14 @@
       "license": {
         "type": "MIT"
       },
+      "copyright_holder": "Ryan Kelly",
+      "contact_email": "94ryan.kelly@gmail.com",
       "environments": {
         "release": {
           "wait_timer": 0
         }
       },
+      "merge_queue": true,
       "required_checks": [
         "build",
         "pr-title"
@@ -299,8 +298,6 @@
       "allowed_owners": [
         "rtkelly-labs"
       ],
-      "copyright_holder": "rtkelly-labs",
-      "contact_email": "ryan@ryankelly.dev",
       "policies": [
         "ai_policy",
         "readme_ai_disclosure",
@@ -387,6 +384,7 @@
       }
     },
     "Diffra.Guardrails": {
+      "copyright_holder": "rtkelly-labs",
       "required_checks": [
         "lint"
       ]
@@ -401,9 +399,20 @@
         "build",
         "pr-title",
         "protected-paths"
-      ]
+      ],
+      "require_extra_approval_for_unattributed_changes": true
+    },
+    ".github": {
+      "copyright_holder": "rtkelly-labs"
+    },
+    "oxbow": {
+      "copyright_holder": "rtkelly-labs",
+      "merge_queue": false
     },
     "Lake.NET": {
+      "license": {
+        "type": "Apache-2.0"
+      },
       "script_ban": {
         "banned_extensions": [
           ".ps1",
@@ -428,7 +437,8 @@
     "mermaid-toolkit": {
       "required_checks": [
         "pr-checks"
-      ]
+      ],
+      "require_extra_approval_for_unattributed_changes": true
     },
     "parquet-dotnet": {
       "expected_base_branch": "master",

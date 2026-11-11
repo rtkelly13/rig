@@ -132,6 +132,13 @@ class _RuleParameters:
     require_last_push_approval: bool | None = None
     required_review_thread_resolution: bool | None = None
     require_extra_approval_for_unattributed_changes: bool | None = None
+    check_response_timeout_minutes: int | None = None
+    grouping_strategy: str | None = None
+    max_entries_to_build: int | None = None
+    max_entries_to_merge: int | None = None
+    merge_method: str | None = None
+    min_entries_to_merge: int | None = None
+    min_entries_to_merge_wait_minutes: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,6 +186,13 @@ def _ruleset_shape(ruleset: _RulesetRules) -> dict[str, str]:
                 params.require_last_push_approval,
                 params.required_review_thread_resolution,
                 params.require_extra_approval_for_unattributed_changes,
+                params.check_response_timeout_minutes,
+                params.grouping_strategy,
+                params.max_entries_to_build,
+                params.max_entries_to_merge,
+                params.merge_method,
+                params.min_entries_to_merge,
+                params.min_entries_to_merge_wait_minutes,
             )
         )
     return shape
@@ -234,7 +248,7 @@ def build_ruleset_payload(repo_name: str, cfg: PolicyConfig | None = None) -> Js
             {
                 "type": "required_status_checks",
                 "parameters": {
-                    "strict_required_status_checks_policy": True,
+                    "strict_required_status_checks_policy": not cfg.merge_queue(repo_name),
                     "required_status_checks": req_checks,
                 },
             }
@@ -247,8 +261,24 @@ def build_ruleset_payload(repo_name: str, cfg: PolicyConfig | None = None) -> Js
         rules.append({"type": "non_fast_forward"})
     rules.append({"type": "required_linear_history"})
     if not is_fork:
-        rules.append(_pull_request_rule())
+        extra_approval = cfg.require_extra_approval_for_unattributed_changes(repo_name)
+        rules.append(_pull_request_rule(extra_approval))
     rules.extend(status_checks)
+    if cfg.merge_queue(repo_name):
+        rules.append(
+            {
+                "type": "merge_queue",
+                "parameters": {
+                    "check_response_timeout_minutes": 60,
+                    "grouping_strategy": "ALLGREEN",
+                    "max_entries_to_build": 5,
+                    "max_entries_to_merge": 5,
+                    "merge_method": "SQUASH",
+                    "min_entries_to_merge": 1,
+                    "min_entries_to_merge_wait_minutes": 1,
+                },
+            }
+        )
     return {
         "name": RULESET_NAME,
         "target": "branch",
@@ -259,7 +289,7 @@ def build_ruleset_payload(repo_name: str, cfg: PolicyConfig | None = None) -> Js
     }
 
 
-def _pull_request_rule() -> JsonObject:
+def _pull_request_rule(require_extra_approval: bool = False) -> JsonObject:
     """A fresh `pull_request` rule each call, so a caller editing one payload cannot change the next."""
     return {
         "type": "pull_request",
@@ -272,7 +302,7 @@ def _pull_request_rule() -> JsonObject:
             # State every parameter: GitHub defaults anything omitted, so an undeclared one
             # is reset on every `enforce`. This one made design-system#69 unmergeable by
             # anyone with all checks green — see docs/repo-governance/rulesets.md.
-            "require_extra_approval_for_unattributed_changes": False,
+            "require_extra_approval_for_unattributed_changes": require_extra_approval,
         },
     }
 

@@ -107,6 +107,10 @@ class OssTemplateContext(TypedDict, total=False):
     repo_name: str
     repo_full_name: str
     contact_email: str
+    languages: tuple[str, ...]
+    primary_language: str
+    discussions_enabled: bool
+    required_checks: list[str]
 
 
 def sync_oss_templates(
@@ -116,7 +120,7 @@ def sync_oss_templates(
 ) -> SyncOutcome:
     """Renders and writes all standard OSS templates to the target repository."""
     cfg = load_policy_config()
-    ctx: OssTemplateContext = context or {}
+    ctx: OssTemplateContext = context.copy() if context is not None else {}
     key = policy_key(repo_path)
     slug = RepoSlug.from_path(key)
     name = slug.name if slug is not None else repo_path.name
@@ -124,6 +128,13 @@ def sync_oss_templates(
     ctx.setdefault("repo_name", name)
     ctx.setdefault("repo_full_name", f"{owner}/{name}" if owner else name)
     ctx.setdefault("contact_email", cfg.contact_email(key))
+    langs = cfg.resolve_languages(key, repo_path=repo_path)
+    ctx.setdefault("languages", langs)
+    primary = langs[0] if langs else ""
+    ctx.setdefault("primary_language", primary)
+    checks = list(cfg.required_checks(key))
+    ctx.setdefault("required_checks", checks)
+    ctx.setdefault("discussions_enabled", False)
 
     env = get_jinja_env()
     changes: list[str] = []

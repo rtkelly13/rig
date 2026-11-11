@@ -12,7 +12,7 @@ All contributors and maintainers are expected to follow the [Code of Conduct](CO
 
 ## Development Workflow
 
-We follow a strict, modern GitHub workflow across our repositories:
+We follow a clean, consistent GitHub workflow:
 
 1. **Fork or Branch**:
    - Create a feature or bugfix branch using clear naming:
@@ -24,6 +24,7 @@ We follow a strict, modern GitHub workflow across our repositories:
 2. **Linear History & Rebase**:
    - We enforce a strictly linear history on `main`.
    - Before opening a PR or marking it ready for review, rebase your branch on latest `main`:
+
      ```bash
      git fetch origin
      git rebase origin/main
@@ -31,19 +32,33 @@ We follow a strict, modern GitHub workflow across our repositories:
 
 3. **Code Quality & Testing**:
    - Ensure your code passes all local linting, type checks, and automated tests.
+{% if "dotnet" in languages or primary_language == "dotnet" %}
+   - For .NET projects:
+
+     ```bash
+     dotnet build --configuration Release
+     dotnet test --configuration Release
+     ```
+{% elif "python" in languages or primary_language == "python" %}
    - For Python projects:
+
      ```bash
      uv run ruff check .
      uv run ruff format --check .
      uv run pyright
      uv run pytest
      ```
+{% elif "node" in languages or primary_language == "node" %}
    - For TypeScript/Node projects:
+
      ```bash
      pnpm lint
      pnpm typecheck
      pnpm test
      ```
+{% else %}
+   - Run the repository's local build, test, and lint commands before submitting.
+{% endif %}
 
 4. **Pull Requests**:
    - Fill out the PR template completely with linked issues and verification steps.

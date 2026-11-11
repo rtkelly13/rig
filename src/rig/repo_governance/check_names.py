@@ -196,7 +196,9 @@ def discover_pr_check_names(repo_path: pathlib.Path) -> dict[str, str]:
 
     for path in sorted(workflows_dir.glob("*.y*ml")):
         workflow = _load_workflow(path)
-        if workflow is None or workflow.jobs is None or "pull_request" not in workflow.on:
+        if workflow is None or workflow.jobs is None:
+            continue
+        if "pull_request" not in workflow.on and "pull_request_target" not in workflow.on:
             continue
 
         for job_id, job in workflow.jobs.items():
