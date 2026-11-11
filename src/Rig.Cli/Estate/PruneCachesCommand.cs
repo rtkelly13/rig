@@ -10,7 +10,7 @@ namespace Rig.Cli.Estate;
 
 /// <summary>
 /// <c>rig estate prune-caches</c>: prune the caches that refill themselves and say what each gave back. Ported from
-/// <c>src/rig/estate/tiers_cli.py</c> <c>prune_caches</c>; the scheduled <c>estate-prune-caches</c> job runs it with
+/// the Python <c>tiers_cli.prune_caches</c>; the scheduled <c>estate-prune-caches</c> job runs it with
 /// <c>--apply</c>.
 /// </summary>
 /// <param name="host">Expands <c>~</c> in <c>--claude-temp</c>.</param>

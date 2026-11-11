@@ -13,7 +13,10 @@ namespace Rig.Cli.Estate;
 /// <param name="CodeRoot">The code root: its <c>external/</c> and <c>other/</c> are untrusted, so git there runs hardened.</param>
 /// <param name="Home">The home folder: <c>~</c> in a path, and the folder holding the clone cache.</param>
 /// <param name="WorkingDirectory">Where <c>doctor</c> looks for a clone when given none.</param>
-internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDirectory)
+/// <param name="ScopesFile">The checkout's <c>config/estate-scopes.json</c>, naming the org folders <c>decisions</c> scans.</param>
+/// <param name="MachineConfigFile">This machine's <c>~/.workspace/config.json</c>, naming its work folders.</param>
+/// <param name="LocalAppData">The <c>LOCALAPPDATA</c> variable, under which the decisions feed lives.</param>
+internal sealed record EstateHost(string CodeRoot, string Home, string WorkingDirectory, string ScopesFile = "", string MachineConfigFile = "", string? LocalAppData = null)
 {
     /// <summary>The personal estate folder, the default <c>--root</c>.</summary>
     public string PersonalDir => Path.Join(CodeRoot, "personal");
@@ -68,6 +71,7 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(TrimCommand());
         estate.Subcommands.Add(TidyCommand());
         estate.Subcommands.Add(new PruneCachesCommand(host, proc, findTool, time, output, error).Build());
+        estate.Subcommands.Add(new DecisionsCommand(host, git, github, time, OperatingSystem.IsWindows(), output, error).Build());
         return estate;
     }
 

@@ -46,7 +46,6 @@ from rig.estate import (
     orca_cli,
     orca_worktrees_cli,
     shelve_cli,
-    tiers_cli,
     volume_report,
     wrapup_cli,
 )
@@ -54,7 +53,7 @@ from rig.estate import downloads as downloads_mod
 from rig.estate.reclaim import human
 
 app = typer.Typer(add_completion=False, help="Manage the code assets cloned on this machine.")
-# audit, risk, doctor, sync, clones, reclaim, trim and tidy run on the C# CLI (src/Rig.Cli/Estate).
+# The subcommands in csharp_cli.PORTED_SUBCOMMANDS["estate"] run on the C# CLI (src/Rig.Cli/Estate).
 csharp_cli.add_group_stubs(app, "estate")
 console = Console()
 err = Console(stderr=True)
@@ -191,7 +190,6 @@ def downloads_command(
     )
 
 
-_ = app.command(name="decisions")(tiers_cli.decisions)
 _ = app.command(name="orca")(orca_cli.orca_layout)
 app.add_typer(wrapup_cli.wrapup_app, name="wrapup")
 _ = app.command(name="orca-worktrees")(orca_worktrees_cli.orca_worktrees)

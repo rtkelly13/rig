@@ -172,7 +172,13 @@ internal static class Program
                 workspace.Build,
                 workspace.BuildSync,
                 new EstateCommand(
-                    new EstateHost(codeRoot, home, Environment.CurrentDirectory),
+                    new EstateHost(
+                        codeRoot,
+                        home,
+                        Environment.CurrentDirectory,
+                        Path.Join(checkout, "config", EstateScopes.FileName),
+                        AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home),
+                        Environment.GetEnvironmentVariable("LOCALAPPDATA")),
                     proc,
                     new GhApi(proc),
                     TimeProvider.System,

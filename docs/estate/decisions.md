@@ -27,7 +27,7 @@ leftover workspace checkout does not count the clones linked under its
 `projects/`.
 
 `--root` repeats; without it the personal folder, its org folders and this
-machine's work folders (`tools.estate.work_dirs`, see `rig.scopes`) are scanned,
+machine's work folders (`tools.estate.work_dirs` in `~/.workspace/config.json`) are scanned,
 where they exist. `--json` prints the feed and `--write PATH`
 writes it. Each entry is a `Decision`:
 
@@ -48,7 +48,8 @@ the code root plus any configured work folders outside it, and writes the
 feed to **`%LOCALAPPDATA%\shared-utilities\jobs\decisions.json`**, beside the
 coordinator's own state. The file is a JSON array of `Decision` objects,
 replaced in one step; its modified time is when it was collected.
-`rig.estate.decisions.read_feed` reads it back.
+The command runs on the C# CLI (`src/Rig.Core/Estate/Decisions.cs`), and
+`rig.estate.decisions.read_feed` reads the feed back for the Python web console.
 
 `rig web` serves it as `GET /api/ops/decisions` (`rig.estate.web`): the
 decisions, the file's modified time as `written` (UTC), and a `note` when the

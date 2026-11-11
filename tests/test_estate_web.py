@@ -9,14 +9,14 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import pytest
 
 from rig import proc
 from rig.estate import trim
-from rig.estate.decisions import Decision, write_feed
+from rig.estate.decisions import Decision
 from rig.estate.disksize import Measure
 from rig.estate.trim import Trimmable
 from rig.estate.web import TrimCache, make_route, read_decisions
@@ -82,6 +82,12 @@ def _scanned(cache: TrimCache) -> None:
 
 def _decision(path: str) -> Decision:
     return Decision("no-pr-worktree", "rig", path, "idle", 10, "remove it", f"git worktree remove {path}")
+
+
+def write_feed(path: Path, decisions: list[Decision]) -> None:
+    """The feed as `rig estate decisions --write` leaves it."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _ = path.write_text(json.dumps([asdict(d) for d in decisions], indent=2) + "\n", encoding="utf-8")
 
 
 def test_a_missing_feed_is_an_empty_list_with_a_note(tmp_path: Path) -> None:
