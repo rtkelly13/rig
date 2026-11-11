@@ -21,6 +21,7 @@ using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;
 using Rig.Core.Tests.Skills;
+using Rig.Cli.Tests.Estate;
 
 namespace Rig.Cli.Tests.Forwarding;
 
@@ -104,7 +105,7 @@ public sealed partial class ForwardedContractTests
                 new DoctorCommand(new DevenvHost("/", "/none.json", false, "/", "/", null, _ => null), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
                 new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null, Refusing).Build,
                 new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null, Refusing).BuildSync,
-                new EstateCommand(new EstateHost("/", "/", "/"), new FakeProc(), new FakeGitHub(), TimeProvider.System, _ => null, TextWriter.Null, TextWriter.Null).Build,
+                new EstateCommand(new EstateHost("/", "/", "/"), NoOrca.Host, new FakeProc(), new FakeGitHub(), TimeProvider.System, _ => null, TextWriter.Null, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
 

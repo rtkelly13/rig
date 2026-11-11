@@ -29,6 +29,7 @@ public sealed class PruneCachesCommandTests : IDisposable
         using var error = new StringWriter();
         var command = new EstateCommand(
             new EstateHost(_root.Path, Home, _root.Path),
+            NoOrca.Host,
             proc,
             new FakeGitHub(),
             _clock,
