@@ -136,6 +136,21 @@ public sealed class ClaudeBaselineTests : IDisposable
     }
 
     [Fact]
+    public void Save_writes_through_a_symlink_and_keeps_the_link()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Creating a symlink needs developer mode on Windows.");
+        var target = _dir.File("dotfiles/settings.json");
+        var link = Path.Join(_dir.Folder(".claude"), "settings.json");
+        _ = File.CreateSymbolicLink(link, target);
+
+        SettingsFile.Save(link, new JsonObject { ["a"] = 1 }, windows: false);
+
+        Assert.Equal(target, new FileInfo(link).LinkTarget);
+        Assert.Equal("{\n  \"a\": 1\n}\n", File.ReadAllText(target));
+        Assert.Equal(["settings.json"], Directory.GetFileSystemEntries(Path.GetDirectoryName(link)!).Select(Path.GetFileName));
+    }
+
+    [Fact]
     public void A_failed_save_removes_its_staging_file_and_keeps_the_original()
     {
         var path = _dir.Folder("settings.json"); // a folder where the file goes: the final move fails

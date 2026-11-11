@@ -30,13 +30,18 @@ public static class SettingsFile
 
     /// <summary>
     /// Writes <paramref name="settings"/> to <paramref name="path"/> as Python's <c>json.dump(indent=2,
-    /// ensure_ascii=False)</c> does, CRLF on Windows, through a staging file so a failed write never truncates it.
-    /// Throws <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/> when it cannot.
+    /// ensure_ascii=False)</c> does, CRLF on Windows, through a staging file so a failed write never truncates it. A
+    /// symlinked file (a dotfiles checkout) is written through: the link stays and its target changes. Throws <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/> when it cannot.
     /// </summary>
     public static void Save(string path, JsonObject settings, bool windows)
     {
         ArgumentNullException.ThrowIfNull(settings);
         var full = Path.GetFullPath(path);
+        if (new FileInfo(full).LinkTarget is not null)
+        {
+            full = File.ResolveLinkTarget(full, returnFinalTarget: true)!.FullName;
+        }
+
         var staging = $"{full}.{Environment.ProcessId}.tmp";
         try
         {
