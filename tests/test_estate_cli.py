@@ -122,99 +122,6 @@ def test_sizes_parse_with_binary_units_and_fall_back_to_zero(text: str, expected
 
 
 # ---------------------------------------------------------------------------
-# audit and risk
-# ---------------------------------------------------------------------------
-
-
-def test_audit_json_inventories_every_clone(estate: Estate) -> None:
-    code, out = _run("audit", "--json", "--branches", "--root", str(estate.code))
-
-    assert code == 0
-    payload = _json(out)
-    assert isinstance(payload, dict)
-    assert payload["root"] == str(estate.code.resolve())
-    assert payload["duplicate_clones"] == []
-    clones = payload["clones"]
-    assert isinstance(clones, list)
-    rows = {pathlib.Path(str(c["repo"])).name: c for c in clones if isinstance(c, dict)}
-    assert {k: v for k, v in rows["risky"].items() if not k.startswith("reclaimable")} == {
-        "repo": str(estate.risky),
-        "local_only_commits": 1,
-        "unpushed_branches": ["wip"],
-        "dirty_files": 1,
-        "stashes": 0,
-        "has_remote": True,
-    }
-    assert (rows["risky"]["reclaimable_bytes"], rows["risky"]["reclaimable_by_category"]) == (0, {})
-    assert (rows["safe"]["local_only_commits"], rows["safe"]["dirty_files"]) == (0, 0)
-
-
-def test_audit_table_puts_the_riskiest_clone_first(estate: Estate) -> None:
-    code, out = _run("audit", "--root", str(estate.code))
-
-    assert code == 0
-    assert out.index("risky") < out.index("safe")
-    assert "1 commits exist on no remote" in out
-
-
-def test_the_same_origin_cloned_twice_is_reported_as_a_duplicate(estate: Estate, tmp_path: pathlib.Path) -> None:
-    twin = estate.code / "twin"
-    git(["clone", "-q", git(["remote", "get-url", "origin"], estate.safe), str(twin)], tmp_path)
-    estate.clones.append(twin)
-
-    _, out = _run("audit", "--root", str(estate.code))
-
-    assert "Duplicate clones" in out
-    assert "safe (0 local-only), twin (0 local-only)" in out
-
-
-def test_risk_json_lists_only_clones_holding_work_found_nowhere_else(estate: Estate) -> None:
-    code, out = _run("risk", "--json", "--root", str(estate.code))
-
-    assert code == 0
-    assert _json(out) == [
-        {
-            "repo": str(estate.risky),
-            "local_only_commits": 1,
-            "unpushed_branches": ["wip"],
-            "dirty_files": 1,
-            "stashes": 0,
-            "has_remote": True,
-        }
-    ]
-
-
-def test_risk_names_the_push_that_saves_each_branch(estate: Estate) -> None:
-    code, out = _run("risk", "--root", str(estate.code))
-
-    assert code == 0
-    assert f"cd {estate.risky} && git push -u origin wip" in out
-    assert "1 uncommitted file(s)" in out
-    assert "1 commits across 1 clones exist only here." in out
-
-
-def test_risk_reports_a_clone_with_no_remote_and_its_stash(estate: Estate) -> None:
-    git(["remote", "remove", "origin"], estate.safe)
-    (estate.safe / "README.md").write_text("stashed\n", encoding="utf-8")
-    git(["stash", "push", "-q", "-m", "test-stash"], estate.safe)
-    estate.clones.remove(estate.risky)
-
-    _, out = _run("risk", "--root", str(estate.code))
-
-    assert "no remote at all" in out
-    assert "1 stash entry" in out
-
-
-def test_risk_with_everything_pushed_says_so(estate: Estate) -> None:
-    estate.clones.remove(estate.risky)
-
-    assert _run("risk", "--root", str(estate.code)) == (
-        0,
-        "✓ Nothing at risk — every commit is on a remote, every tree clean.\n",
-    )
-
-
-# ---------------------------------------------------------------------------
 # reclaim and trim
 # ---------------------------------------------------------------------------
 
@@ -301,7 +208,7 @@ def test_trim_reports_idle_worktree_output(estate: Estate, temp_worktree: pathli
 
 
 # ---------------------------------------------------------------------------
-# tidy, doctor, sync and clones
+# tidy
 # ---------------------------------------------------------------------------
 
 
@@ -335,58 +242,6 @@ def test_tidy_all_refuses_to_touch_work_found_nowhere_else(estate: Estate) -> No
     assert "Tidy" in out
     assert "dry run" not in out
     assert git(["branch", "--list", "wip"], estate.risky) != ""
-
-
-def test_doctor_refuses_a_folder_that_is_not_a_checkout(tmp_path: pathlib.Path) -> None:
-    assert _run("doctor", str(tmp_path)) == (2, "")
-
-
-def test_doctor_json_reports_the_clones_exposure(estate: Estate, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(prs, "merged_heads", lambda _clone: {})
-
-    code, out = _run("doctor", str(estate.risky), "--json", "--merged")
-
-    assert code == 0
-    payload = _json(out)
-    assert isinstance(payload, dict)
-    assert (payload["repo"], payload["local_only_commits"], payload["dirty_files"]) == (str(estate.risky), 1, 1)
-    assert payload["unpushed_branches"] == ["wip"]
-    assert isinstance(payload["findings"], list)
-
-
-def test_doctor_on_a_clean_clone_says_so(estate: Estate) -> None:
-    code, out = _run("doctor", str(estate.safe))
-
-    assert code == 0
-    assert "0 worktree(s) · 1 local branch(es) · 0 local-only commit(s) · 0B reclaimable" in out
-    assert "✓ Clean." in out
-
-
-def test_doctor_tabulates_findings_with_their_fix(estate: Estate) -> None:
-    code, out = _run("doctor", str(estate.risky))
-
-    assert code == 0
-    assert "risky" in out
-    assert "✓ Clean." not in out
-
-
-def test_sync_fetches_every_clone_and_names_the_ones_that_fail(estate: Estate, tmp_path: pathlib.Path) -> None:
-    git(["remote", "set-url", "origin", str(tmp_path / "gone.git")], estate.risky)
-
-    code, out = _run("sync", "--root", str(estate.code))
-
-    assert code == 0
-    assert "✓ Fetched 1 of 2 clones." in out
-    assert "risky:" in out
-
-
-def test_clones_lists_the_cached_scan_and_its_age(estate: Estate) -> None:
-    code, out = _run("clones", "--root", str(estate.code))
-
-    assert code == 0
-    assert f"2 clones under {estate.code.resolve()}" in out
-    assert "cached, scanned 3h ago" in out
-    assert str(estate.safe) in out
 
 
 # ---------------------------------------------------------------------------

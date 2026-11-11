@@ -40,11 +40,10 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from rig import proc, roots, tracing
+from rig import csharp_cli, proc, roots, tracing
 from rig.estate import apps as apps_mod
 from rig.estate import (
     apps_windows,
-    discovery,
     locate,
     orca_cli,
     orca_worktrees_cli,
@@ -63,10 +62,11 @@ from rig.estate.prs import PullRequest
 from rig.estate.reclaim import human
 
 app = typer.Typer(add_completion=False, help="Manage the code assets cloned on this machine.")
+# audit, risk, doctor, sync and clones run on the C# CLI (src/Rig.Cli/Estate).
+csharp_cli.add_group_stubs(app, "estate")
 console = Console()
 err = Console(stderr=True)
 
-_SEVERITY_STYLE = {"error": "bold red", "warn": "yellow", "info": "dim"}
 _OUTCOME_STYLE = {
     "cleaned": "bold green",
     "would-clean": "cyan",
@@ -76,154 +76,6 @@ _OUTCOME_STYLE = {
 
 
 # ---------------------------------------------------------------------------
-
-
-@app.command()
-def audit(
-    root: str | None = typer.Option(None, "--root", help="Code root to scan (default: the personal repos dir)"),
-    refresh: bool = typer.Option(False, "--refresh", help="Rescan rather than using the cached clone list"),
-    json_output: bool = typer.Option(False, "--json", help="Emit the inventory for a machine"),
-    per_branch: bool = typer.Option(False, "--branches", help="Also name the branches carrying unpushed work"),
-) -> None:
-    """The dashboard: every clone, what is at risk, and what is reclaimable.
-
-    Sorted by risk, because that is the column you act on first. Reclaimable
-    disk is worth nothing next to work that exists nowhere else, and the two
-    live in the same directory tree.
-    """
-    scan_root = locate.code_root(root)
-    clones = locate.clones(scan_root, refresh=refresh, quiet=json_output, err=err)
-
-    exposures = [risk_mod.inspect_exposure(c, per_branch=per_branch) for c in clones]
-    reclaims = [reclaim_mod.scan_repo(c) for c in clones]
-    by_repo = {r.repo: r for r in reclaims}
-    duplicates = risk_mod.find_duplicates(exposures)
-
-    if json_output:
-        typer.echo(
-            json.dumps(
-                {
-                    "root": str(scan_root),
-                    "clones": [
-                        {
-                            "repo": str(e.repo),
-                            "local_only_commits": e.local_only_commits,
-                            "unpushed_branches": list(e.unpushed_branches),
-                            "dirty_files": e.dirty_files,
-                            "stashes": e.stashes,
-                            "has_remote": e.has_remote,
-                            "reclaimable_bytes": by_repo[e.repo].total,
-                            "reclaimable_by_category": by_repo[e.repo].by_category(),
-                        }
-                        for e in exposures
-                    ],
-                    "duplicate_clones": [
-                        {"origin": d.origin, "repos": [str(p) for p in d.repos], "exposure": d.exposure}
-                        for d in duplicates
-                    ],
-                },
-                indent=2,
-            )
-        )
-        return
-
-    table = Table(title=f"Estate — {len(clones)} clones under {scan_root}", title_style="bold")
-    table.add_column("clone")
-    table.add_column("local-only", justify="right")
-    table.add_column("dirty", justify="right")
-    table.add_column("stash", justify="right")
-    table.add_column("reclaimable", justify="right")
-    table.add_column("largest", style="dim")
-
-    for exposure in sorted(exposures, key=lambda e: -e.score):
-        entry = by_repo[exposure.repo]
-        largest = entry.entries[0] if entry.entries else None
-        table.add_row(
-            exposure.repo.name,
-            f"[bold red]{exposure.local_only_commits}[/]" if exposure.local_only_commits else "—",
-            f"[yellow]{exposure.dirty_files}[/]" if exposure.dirty_files else "—",
-            f"[yellow]{exposure.stashes}[/]" if exposure.stashes else "—",
-            human(entry.total) if entry.total else "—",
-            f"{largest.category} {human(largest.bytes_used)}" if largest else "",
-        )
-    console.print(table)
-
-    at_risk = sum(e.local_only_commits for e in exposures)
-    console.print(
-        f"\n[bold]{at_risk}[/bold] commits exist on no remote · "
-        f"[bold]{human(sum(r.total for r in reclaims))}[/bold] regenerates from a command"
-    )
-    if duplicates:
-        console.print("\n[yellow]Duplicate clones — estate totals double-count these:[/yellow]")
-        for dup in duplicates:
-            names = ", ".join(f"{k} ({v} local-only)" for k, v in dup.exposure.items())
-            console.print(f"  {dup.origin} → {names}")
-    console.print("\n[dim]`estate risk` before deleting anything · `estate reclaim` for the disk[/dim]")
-
-
-@app.command()
-def risk(
-    root: str | None = typer.Option(None, "--root", help="Code root to scan"),
-    refresh: bool = typer.Option(False, "--refresh", help="Rescan rather than using the cached list"),
-    json_output: bool = typer.Option(False, "--json", help="Emit for a machine"),
-) -> None:
-    """Only what exists on this machine and nowhere else.
-
-    Uncommitted changes, stash entries, and commits reachable from no remote.
-    Run this before `reclaim --apply` or `tidy --apply`: everything else those
-    commands touch comes back from a command, and nothing here does.
-    """
-    scan_root = locate.code_root(root)
-    exposures = [
-        risk_mod.inspect_exposure(c, per_branch=True)
-        for c in locate.clones(scan_root, refresh=refresh, quiet=json_output, err=err)
-    ]
-    exposed = [e for e in exposures if e.at_risk]
-
-    if json_output:
-        typer.echo(
-            json.dumps(
-                [
-                    {
-                        "repo": str(e.repo),
-                        "local_only_commits": e.local_only_commits,
-                        "unpushed_branches": list(e.unpushed_branches),
-                        "dirty_files": e.dirty_files,
-                        "stashes": e.stashes,
-                        "has_remote": e.has_remote,
-                    }
-                    for e in sorted(exposed, key=lambda e: -e.score)
-                ],
-                indent=2,
-            )
-        )
-        return
-
-    if not exposed:
-        console.print("[bold green]✓ Nothing at risk[/bold green] — every commit is on a remote, every tree clean.")
-        return
-
-    for exposure in sorted(exposed, key=lambda e: -e.score):
-        console.print(f"\n[bold]{exposure.repo.name}[/bold]")
-        if not exposure.has_remote:
-            console.print("  [bold red]no remote at all[/bold red] — every commit here is local-only")
-        if exposure.local_only_commits:
-            console.print(f"  [bold red]{exposure.local_only_commits}[/bold red] commit(s) on no remote")
-            shown = exposure.unpushed_branches[:8]
-            for branch in shown:
-                console.print(f"      [dim]cd {exposure.repo} && git push -u origin {branch}[/dim]")
-            if len(exposure.unpushed_branches) > len(shown):
-                console.print(f"      [dim]… and {len(exposure.unpushed_branches) - len(shown)} more branches[/dim]")
-        if exposure.dirty_files:
-            console.print(f"  [yellow]{exposure.dirty_files}[/yellow] uncommitted file(s)")
-        if exposure.stashes:
-            console.print(
-                f"  [yellow]{exposure.stashes}[/yellow] stash entr{'y' if exposure.stashes == 1 else 'ies'}"
-                " [dim](one stack shared by every worktree of this repo)[/dim]"
-            )
-
-    total = sum(e.local_only_commits for e in exposed)
-    console.print(f"\n[bold red]{total}[/bold red] commits across {len(exposed)} clones exist only here.")
 
 
 @app.command()
@@ -520,117 +372,6 @@ def tidy(
         console.print("\n[bold green]✓ Nothing to tidy.[/bold green]")
     if counts.get(Outcome.REFUSED):
         console.print("[dim]Refusals are deliberate — see `estate risk`, or pass --force.[/dim]")
-
-
-@app.command()
-def doctor(
-    path: str | None = typer.Argument(None, help="Clone to inspect (default: the one containing the cwd)"),
-    json_output: bool = typer.Option(False, "--json", help="Emit findings for a machine"),
-    merged: bool = typer.Option(
-        False, "--merged", help="Fetch --prune, then ask GitHub which head refs have a merged PR"
-    ),
-) -> None:
-    """One clone, every finding, each with the command that resolves it."""
-    clone = locate.one_clone(path)
-    if not (clone / ".git").exists():
-        err.print(f"[bold red]{clone} is not a git checkout.[/bold red]")
-        raise typer.Exit(code=2)
-
-    heads = _merged_heads(clone) if merged else None
-    report = inspect_repo(clone, merged_heads=heads)
-    exposure = risk_mod.inspect_exposure(clone, per_branch=True)
-    disk = reclaim_mod.scan_repo(clone)
-
-    if json_output:
-        typer.echo(
-            json.dumps(
-                {
-                    "repo": str(clone),
-                    "findings": [
-                        {
-                            "check": f.check,
-                            "severity": str(f.severity),
-                            "subject": f.subject,
-                            "message": f.message,
-                            "fix": f.fix,
-                            "actionable": f.actionable,
-                        }
-                        for f in report.findings
-                    ],
-                    "local_only_commits": exposure.local_only_commits,
-                    "unpushed_branches": list(exposure.unpushed_branches),
-                    "dirty_files": exposure.dirty_files,
-                    "stashes": exposure.stashes,
-                    "reclaimable_bytes": disk.total,
-                    "reclaimable_by_category": disk.by_category(),
-                },
-                indent=2,
-            )
-        )
-        return
-
-    console.print(f"\n[bold]{clone.name}[/bold]  [dim]{clone}[/dim]")
-    console.print(
-        f"  {report.worktree_count} worktree(s) · {report.branch_count} local branch(es) · "
-        f"{exposure.local_only_commits} local-only commit(s) · {human(disk.total)} reclaimable"
-    )
-
-    if not report.findings:
-        console.print("\n[bold green]✓ Clean.[/bold green]")
-        return
-
-    table = Table(show_header=True, header_style="dim")
-    table.add_column("check", style="cyan", no_wrap=True)
-    table.add_column("subject", no_wrap=True)
-    table.add_column("finding")
-    for finding in sorted(report.findings, key=lambda f: ["error", "warn", "info"].index(str(f.severity))):
-        subject = locate.short(finding.subject, clone)
-        body = finding.message + (f"\n[dim]{finding.fix}[/dim]" if finding.fix else "")
-        table.add_row(f"[{_SEVERITY_STYLE.get(str(finding.severity), 'white')}]{finding.check}[/]", subject, body)
-    console.print(table)
-
-    if report.blocked:
-        console.print("\n[yellow]Errors above are live work — `tidy` will refuse this clone until they clear.[/yellow]")
-
-
-@app.command()
-def sync(
-    root: str | None = typer.Option(None, "--root", help="Code root to scan"),
-    refresh: bool = typer.Option(False, "--refresh", help="Rescan rather than using the cached list"),
-) -> None:
-    """`git fetch --prune` across the estate.
-
-    A precondition for `tidy` being truthful: an upstream is only reported
-    `gone` after a fetch has pruned the ref that no longer exists.
-    """
-    clones = locate.clones(locate.code_root(root), refresh=refresh, quiet=False, err=err)
-    failed: list[str] = []
-    with console.status("fetching…") as status:
-        for clone in clones:
-            status.update(f"fetching {clone.name}")
-            done = proc.git("fetch", "--prune", "--quiet", cwd=clone, timeout=120)
-            if not done.ok:
-                failed.append(f"{clone.name}: {done.err.strip().splitlines()[-1:] or ['failed']}")
-    console.print(f"[bold green]✓ Fetched {len(clones) - len(failed)} of {len(clones)} clones.[/bold green]")
-    for line in failed:
-        console.print(f"  [yellow]{line}[/yellow]")
-
-
-@app.command(name="clones")
-def clones_command(
-    root: str | None = typer.Option(None, "--root", help="Code root to scan"),
-    refresh: bool = typer.Option(False, "--refresh", help="Rescan now and rewrite the cache"),
-) -> None:
-    """Show the cached clone list, and when it was last scanned."""
-    scan_root = locate.code_root(root)
-    discovered = discovery.repos(scan_root, refresh=refresh)
-    found, cached = discovered.paths, discovered.from_cache
-    age = discovery.cache_age(scan_root)
-    console.print(f"[bold]{len(found)}[/bold] clones under {scan_root}")
-    provenance = f"cached, scanned {locate.ago(age)}" if cached else "freshly scanned"
-    console.print(f"[dim]{provenance} · {discovery.CACHE_FILE}[/dim]\n")
-    for clone in found:
-        console.print(f"  {clone}")
 
 
 @app.command(name="apps")

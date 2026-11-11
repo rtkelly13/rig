@@ -13,5 +13,6 @@
     <Compile Include="../Rig.Core.Tests/Skills/SkillFixtures.cs" Link="Fakes/SkillFixtures.cs" />
     <Compile Include="../Rig.Core.Tests/Devenv/PluginServer.cs" Link="Fakes/PluginServer.cs" />
     <Compile Include="../Rig.Core.Tests/Devenv/FontServer.cs" Link="Fakes/FontServer.cs" />
+    <Compile Include="../Rig.Core.Tests/Estate/Repos.cs" Link="Fakes/Repos.cs" />
   </ItemGroup>
 </Project>
