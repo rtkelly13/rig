@@ -27,11 +27,14 @@ public sealed class WorkspaceCommandTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private string Personal => Path.Join(_root.Path, "personal");
+    // The temp folder resolved, as the scan resolves the estate root (macOS's temp folder is behind a link).
+    private string Root => PathResolution.Resolve(_root.Path);
+
+    private string Personal => Path.Join(Root, "personal");
 
     private void Clone(string parent, string name, string remote)
     {
-        var folder = Path.Join(_root.Path, parent, name);
+        var folder = Path.Join(Root, parent, name);
         _ = Directory.CreateDirectory(Path.Join(folder, ".git"));
         _ = _proc
             .AnswerIn(folder, new(0, ".git\n", string.Empty), "git", "rev-parse")
@@ -116,6 +119,24 @@ public sealed class WorkspaceCommandTests : IDisposable
             """{"folder_name":"shared-utilities","canonical_name":"rig","owner":"rtkelly13","remote_repo_name":"shared-utilities","status":"folder_renamed","is_match":false,"remote_matches_canonical":false,"is_renamed":true,"detail":"Folder 'shared-utilities' is named after a previous repository name; renamed upstream to 'rig'"}""",
             check.ToJsonString(new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
         Assert.Contains("\n  \"estate_root\": ", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_linked_estate_root_finds_the_org_folders_beside_its_target()
+    {
+        Clone("labs", "lake", "labs/lake");
+        GitHubNames("lake");
+        var link = Path.Join(Root, "elsewhere", "personal");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(link)!);
+        _ = Directory.CreateDirectory(Personal);
+        _ = Directory.CreateSymbolicLink(link, Personal);
+
+        var (code, output) = await RunAsync("--root", link, "--json");
+
+        Assert.Equal(0, code);
+        var report = JsonNode.Parse(output)!;
+        Assert.Equal(Personal, (string?)report["estate_root"]);
+        Assert.Equal(1, (int)report["total_repos"]!);
     }
 
     [Fact]

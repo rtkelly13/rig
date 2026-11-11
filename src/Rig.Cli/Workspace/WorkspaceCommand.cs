@@ -51,7 +51,8 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
 
     private async Task<int> DoctorAsync(string? root, bool refresh, bool json, bool strict, CancellationToken cancellationToken)
     {
-        var estate = Path.GetFullPath(string.IsNullOrEmpty(root) ? host.PersonalDir : root);
+        // Resolved like the Python's Path.resolve(): a linked personal folder's org folders sit beside its target.
+        var estate = PathResolution.Resolve(string.IsNullOrEmpty(root) ? host.PersonalDir : root);
         // The Python skipped the scan when the estate folder is missing; the org folders are only looked at beside it.
         var parents = Directory.Exists(estate) ? EstateScopes.Load(host.ScopesFile).RepoParentDirs(estate) : [];
         var resolver = new RepoResolver(new GhApi(proc), RepoResolver.DefaultCacheFile(host.Home), time);
