@@ -46,10 +46,11 @@ def test_a_failed_browser_profiles_fails_the_step_after_the_rest_runs():
 
     assert failure == "rig browser profiles exited 3"
     assert calls[0] == ["devenv", "claude", "--dry-run"]
-    assert calls[1:4] == [
+    assert calls[1:5] == [
         ["devenv", "opencode", "--dry-run"],
         ["browser", "profiles", "--dry-run"],
         ["devenv", "estate-rules", "--dry-run"],
+        ["devenv", "obsidian-plugins", "--dry-run"],
     ]
     assert calls[-1] == ["skills", "sync", "--system", "all", "--dry-run"]
 

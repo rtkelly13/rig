@@ -12,6 +12,7 @@ using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
 using Rig.Core.Browser;
+using Rig.Core.Devenv;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
@@ -40,6 +41,7 @@ internal static class Program
         using var handler = new HttpClientHandler { AllowAutoRedirect = false, CheckCertificateRevocationList = true };
         using var http = new HttpClient(handler);
         // otel-stack's clients, each with the Python's timeout: downloads 120 s to the headers, ClickHouse and the sender 30 s.
+        // Obsidian plugin downloads share the downloads client.
         using var downloads = new HttpClient { Timeout = TimeSpan.FromSeconds(120) };
         using var clickhouseHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         using var otlp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
@@ -129,6 +131,7 @@ internal static class Program
                     Console.Error).Build,
                 new DevenvCommand(
                     new DevenvHost(home, Path.Join(checkout, "config", "cli-allowlists.json"), OperatingSystem.IsWindows()),
+                    new ObsidianPlugins(downloads),
                     Console.Out,
                     Console.Error).Build,
             ],

@@ -3,6 +3,7 @@ using Rig.Cli.Devenv;
 using Rig.Cli.Forwarding;
 using Rig.Core.Devenv;
 using Rig.Core.Tests;
+using Rig.Core.Tests.Devenv;
 using Rig.Core.Tests.Policy;
 
 namespace Rig.Cli.Tests.Devenv;
@@ -11,15 +12,20 @@ namespace Rig.Cli.Tests.Devenv;
 public sealed class DevenvCommandTests : IDisposable
 {
     private readonly TempDir _home = new();
+    private readonly PluginServer _server = new();
 
-    public void Dispose() => _home.Dispose();
+    public void Dispose()
+    {
+        _server.Dispose();
+        _home.Dispose();
+    }
 
     private string Settings => ClaudeBaseline.SettingsPath(_home.Path);
 
     private string Hook => SessionLedger.HookPath(_home.Path);
 
     private Command Build(TextWriter output, TextWriter error, string? policy = null) =>
-        new DevenvCommand(new DevenvHost(Path.Join(_home.Path, "not-this-home"), policy ?? PolicyFiles.Real, false), output, error).Build();
+        new DevenvCommand(new DevenvHost(Path.Join(_home.Path, "not-this-home"), policy ?? PolicyFiles.Real, false), _server.Plugins, output, error).Build();
 
     private async Task<(int Code, string Out, string Err)> RunAsync(params string[] args) => await RunWithAsync(null, args);
 
@@ -38,7 +44,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["claude", "estate-rules", "opencode"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["claude", "estate-rules", "obsidian-plugins", "opencode"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -264,6 +270,77 @@ public sealed class DevenvCommandTests : IDisposable
         Assert.StartsWith("Failed to write estate rules: ", error, StringComparison.Ordinal);
     }
 
+    private string Vault => ObsidianPlugins.DefaultVault(_home.Path);
+
+    private const string Restart =
+        "Restart Obsidian to load newly installed plugins. Plugins needing an in-app API key must be configured in Obsidian's settings.\n";
+
+    [Fact]
+    public async Task Obsidian_plugins_skip_a_folder_that_is_not_a_vault()
+    {
+        Assert.Equal((0, $"Not an Obsidian vault, skipping: {Vault}\n", string.Empty), await InvokeAsync(null, ["obsidian-plugins"]));
+        Assert.Empty(_server.Asked);
+    }
+
+    [Fact]
+    public async Task Obsidian_plugins_install_enable_then_report_installed()
+    {
+        await File.WriteAllTextAsync(_home.File("code/personal/obsidian-vault/.obsidian/core-plugins.json"), "{}", TestContext.Current.CancellationToken);
+        _ = _server.WithPlugins("1.0", [.. ObsidianPlugins.DefaultPlugins]);
+
+        var (code, output, error) = await InvokeAsync(null, ["obsidian-plugins"]);
+
+        Assert.Equal((0, string.Empty), (code, error));
+        Assert.Equal(
+            string.Concat(ObsidianPlugins.DefaultPlugins.Select(id => $"installed Plugin {id} 1.0\n  + enabled {id}\n")) + "enabled core plugin: properties\n" + Restart,
+            output);
+        Assert.Equal("1.0", ObsidianPlugins.InstalledVersion(Vault, "templater-obsidian"));
+
+        var (again, second, _) = await InvokeAsync(null, ["obsidian-plugins"]);
+
+        Assert.Equal(0, again);
+        Assert.Equal(string.Concat(ObsidianPlugins.DefaultPlugins.Select(id => $"✓ Plugin {id} 1.0 already installed\n")) + Restart, second);
+    }
+
+    [Fact]
+    public async Task An_obsidian_dry_run_into_another_vault_writes_nothing()
+    {
+        var vault = _home.Folder("elsewhere/.obsidian");
+        _ = _server.WithPlugins("2.0", [.. ObsidianPlugins.DefaultPlugins]);
+
+        var (code, output, _) = await InvokeAsync(null, ["obsidian-plugins", "--dry-run", "--vault", Path.GetDirectoryName(vault)!]);
+
+        Assert.Equal(0, code);
+        Assert.StartsWith("would install Plugin obsidian-local-rest-api 2.0\n  + enabled obsidian-local-rest-api\n", output, StringComparison.Ordinal);
+        Assert.Empty(Directory.GetFileSystemEntries(vault));
+    }
+
+    [Fact]
+    public async Task An_unreachable_registry_fails()
+    {
+        _ = _home.Folder("code/personal/obsidian-vault/.obsidian");
+
+        var (code, output, error) = await InvokeAsync(null, ["obsidian-plugins"]);
+
+        Assert.Equal((1, string.Empty), (code, output));
+        Assert.StartsWith("Could not fetch the Obsidian plugin registry: ", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_plugin_that_cannot_install_fails_after_the_rest()
+    {
+        _ = _home.Folder("code/personal/obsidian-vault/.obsidian");
+        _ = _server.WithPlugins("1.0", [.. ObsidianPlugins.DefaultPlugins.Skip(1)]);
+        _ = _server.Bodies.Remove(PluginServer.Release("templater-obsidian"));
+
+        var (code, output, error) = await InvokeAsync(null, ["obsidian-plugins"]);
+
+        Assert.Equal(1, code);
+        Assert.StartsWith("obsidian-local-rest-api: not in the community plugin registry\ntemplater-obsidian: could not read latest release (", error, StringComparison.Ordinal);
+        Assert.Contains("installed Plugin obsidian-tasks-plugin 1.0\n", output, StringComparison.Ordinal);
+        Assert.EndsWith(Restart, output, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(new[] { "devenv", "claude" }, false)]
     [InlineData(new[] { "devenv", "claude", "--check" }, false)]
@@ -272,6 +349,7 @@ public sealed class DevenvCommandTests : IDisposable
     [InlineData(new[] { "devenv", "setup" }, true)]
     [InlineData(new[] { "devenv", "opencode" }, false)]
     [InlineData(new[] { "devenv", "estate-rules", "--dry-run" }, false)]
+    [InlineData(new[] { "devenv", "obsidian-plugins" }, false)]
     [InlineData(new[] { "devenv", "fonts" }, true)]
     public void Only_the_ported_devenv_subcommands_stay_in_csharp(string[] args, bool forwarded)
     {

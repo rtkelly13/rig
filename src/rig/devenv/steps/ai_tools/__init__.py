@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from rich.console import Console
 from rich.table import Table
 
@@ -12,7 +10,6 @@ from rig import csharp_cli
 from ...engine.context import StepContext
 from .agent_launcher_setup import setup_agent_launcher
 from .discovery import detect_installed_agents
-from .obsidian_plugins import setup_obsidian_plugins
 
 console = Console()
 
@@ -46,11 +43,8 @@ def run_ai_tools_setup(ctx: StepContext) -> None:
     # 5. Estate-wide agent rules for ~/code/personal, through `rig devenv estate-rules`
     failed["devenv estate-rules"] = csharp_cli.run(["devenv", "estate-rules", *dry_run])
 
-    # 6. Obsidian plugins for the agent-facing vault
-    vault = Path.home() / "code" / "personal" / "obsidian-vault"
-    if (vault / ".obsidian").is_dir():
-        console.print("\n[cyan]Installing Obsidian plugins...[/cyan]")
-        setup_obsidian_plugins(vault, dry_run=ctx.dry_run)
+    # 6. Obsidian plugins for the agent-facing vault, through `rig devenv obsidian-plugins` (it skips a missing vault)
+    failed["devenv obsidian-plugins"] = csharp_cli.run(["devenv", "obsidian-plugins", *dry_run])
 
     # 7. Link skills into every agent CLI through `rig skills sync`
     console.print("\n[cyan]Linking skills into agent CLIs...[/cyan]")
