@@ -52,14 +52,30 @@ internal sealed partial class GovernanceCommand
         await output.WriteAsync(Panel("Required Check Names: DRIFT & SHAPE")).ConfigureAwait(false);
         var (policies, repos) = Governed();
         var targets = await repos.ResolveTargetsAsync(path, all, host.PersonalDir, host.Cwd, org, cancellationToken).ConfigureAwait(false);
+        if (targets.Count == 0)
+        {
+            await output.WriteLineAsync("❌ No target repositories found.").ConfigureAwait(false);
+            return 2;
+        }
+
+        var git = new Git(proc, host.CodeRoot);
         var drifted = new HashSet<string>(StringComparer.Ordinal);
         var warned = new HashSet<string>(StringComparer.Ordinal);
+        var unresolved = 0;
         foreach (var target in targets)
         {
             var name = FolderName(target);
             if (await repos.GhRepoNameAsync(target, cancellationToken).ConfigureAwait(false) is not { Length: > 0 } repo)
             {
-                await output.WriteLineAsync($"? {name}: no GitHub remote, skipped").ConfigureAwait(false);
+                // No origin is a local-only checkout; an origin gh cannot look up is a check that did not run.
+                if ((await git.RunAsync(target, ["remote", "get-url", "origin"], cancellationToken: cancellationToken).ConfigureAwait(false)).OutOrEmpty.Length == 0)
+                {
+                    await output.WriteLineAsync($"? {name}: no GitHub remote, skipped").ConfigureAwait(false);
+                    continue;
+                }
+
+                unresolved++;
+                await output.WriteLineAsync($"✗ {name}: gh could not look up its origin, not checked").ConfigureAwait(false);
                 continue;
             }
 
@@ -112,6 +128,12 @@ internal sealed partial class GovernanceCommand
             return 1;
         }
 
+        if (unresolved > 0)
+        {
+            await output.WriteLineAsync($"FAILED: {unresolved} repo(s) could not be looked up on GitHub.").ConfigureAwait(false);
+            return 1;
+        }
+
         if (warned.Count > 0)
         {
             await output.WriteLineAsync(strict
@@ -158,13 +180,14 @@ internal sealed partial class GovernanceCommand
 
         await output.WriteAsync(Panel($"Branch Cleanup: {(apply ? "APPLY" : "DRY RUN")}")).ConfigureAwait(false);
         var cleanup = new BranchCleanup(proc, new Git(proc, host.CodeRoot), repos, policies);
-        var (deletable, deleted) = (0, 0);
+        var (deletable, deleted, failed) = (0, 0, 0);
         var seen = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var target in targets.Where(target => Path.Exists(Path.Join(target, ".git"))))
         {
             var plan = await cleanup.PlanAsync(target, cancellationToken).ConfigureAwait(false);
             if (plan.Skipped.Length > 0)
             {
+                failed += plan.Unreadable ? 1 : 0;
                 await output.WriteLineAsync($"- {plan.Repo}: skipped ({plan.Skipped})").ConfigureAwait(false);
                 continue;
             }
@@ -201,6 +224,7 @@ internal sealed partial class GovernanceCommand
 
                 var result = await cleanup.DeleteAsync(target, verdict.Branch, cancellationToken).ConfigureAwait(false);
                 deleted += result.Deleted ? 1 : 0;
+                failed += result.Deleted ? 0 : 1;
                 await output.WriteLineAsync(result.Deleted
                     ? $"  ✗ deleted {verdict.Branch} (PR #{verdict.Pr})"
                     : $"  ! failed {verdict.Branch}: {result.Error}").ConfigureAwait(false);
@@ -221,6 +245,6 @@ internal sealed partial class GovernanceCommand
             apply ? $"Deleted {deleted}/{deletable} merged branch(es)."
             : deletable > 0 ? $"{deletable} merged branch(es) would be deleted. Re-run with --apply."
             : "No merged branches left behind.").ConfigureAwait(false);
-        return 0;
+        return failed > 0 ? 1 : 0;
     }
 }

@@ -213,7 +213,7 @@ public static partial class RepoHygiene
                 return new("ENFORCED", true);
             }
 
-            if (content.Contains(MainBlockMarker, StringComparison.Ordinal))
+            if (Runs(content, MainBlockMarker))
             {
                 return new("OUTDATED", Reason: "pre-push hook skips git-lfs uploads");
             }
@@ -534,8 +534,11 @@ public static partial class RepoHygiene
         return limits;
     }
 
-    private static bool HookIsCurrent(string content) =>
-        content.Contains(MainBlockMarker, StringComparison.Ordinal) && content.Contains(LfsHandoffMarker, StringComparison.Ordinal);
+    private static bool HookIsCurrent(string content) => Runs(content, MainBlockMarker) && Runs(content, LfsHandoffMarker);
+
+    // Whether marker is on a line that runs: a hook that only mentions it in a comment guards nothing.
+    private static bool Runs(string content, string marker) =>
+        content.Split('\n').Select(line => line.TrimStart()).Any(line => !line.StartsWith('#') && line.Contains(marker, StringComparison.Ordinal));
 
     private static string Dotted(string extension) => extension.StartsWith('.') ? extension : "." + extension;
 
@@ -564,7 +567,7 @@ public static partial class RepoHygiene
         }
     }
 
-    [GeneratedRegex(@"(uses:\s+)([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([A-Za-z0-9_.-]+)(.*)", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"(uses:\s+[""']?)([A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+)@([A-Za-z0-9_.-]+)(.*)", RegexOptions.CultureInvariant)]
     private static partial Regex UsesPattern();
 
     [GeneratedRegex("^[0-9a-fA-F]{40}$", RegexOptions.CultureInvariant)]

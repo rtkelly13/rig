@@ -102,12 +102,27 @@ public sealed class GovernanceChecksCommandTests : IDisposable
     public async Task Repos_without_a_remote_or_pr_workflows_are_skipped()
     {
         var (_, noWorkflows) = await RunAsync("check-names", Repo);
-        _ = _proc.Answer(new Ran(1, string.Empty, "no remote"), "gh", "repo", "view");
+        _ = _proc.Answer(new Ran(1, string.Empty, "no remote"), "gh", "repo", "view")
+            .Answer(new Ran(2, string.Empty, "error: No such remote 'origin'"), "git", "remote", "get-url", "origin");
         var (code, noRemote) = await RunAsync("check-names", Repo);
 
         Assert.Equal($"{ChecksPanel}· widget ({Slug}): no pull_request workflows, skipped{Rule}SUCCESS: every required check is declared and well-named.\n", noWorkflows);
         Assert.Equal((0, $"{ChecksPanel}? widget: no GitHub remote, skipped{Rule}SUCCESS: every required check is declared and well-named.\n"), (code, noRemote));
     }
+
+    [Fact]
+    public async Task An_origin_gh_cannot_look_up_fails_the_check()
+    {
+        _ = _proc.Answer(new Ran(1, string.Empty, "HTTP 401"), "gh", "repo", "view");
+
+        Assert.Equal(
+            (1, $"{ChecksPanel}✗ widget: gh could not look up its origin, not checked{Rule}FAILED: 1 repo(s) could not be looked up on GitHub.\n"),
+            await RunAsync("check-names", Repo));
+    }
+
+    [Fact]
+    public async Task A_path_that_resolves_to_nothing_fails_the_check() =>
+        Assert.Equal((2, $"{ChecksPanel}❌ No target repositories found.\n"), await RunAsync("check-names", Path.Join(_root.Path, "nowhere")));
 
     [Fact]
     public async Task A_dry_run_reports_merged_and_prless_branches_and_deletes_nothing()
@@ -136,7 +151,19 @@ public sealed class GovernanceChecksCommandTests : IDisposable
         var (code, output) = await RunAsync("prune-branches", Repo, "--apply", "--hide-no-pr");
 
         var panel = GovernanceCommand.Panel("Branch Cleanup: APPLY");
-        Assert.Equal((0, $"{panel}\nwidget\n  ✗ deleted feat (PR #3)\n  ! failed gone: error: gone already\n\nDeleted 1/2 merged branch(es).\n"), (code, output));
+        Assert.Equal((1, $"{panel}\nwidget\n  ✗ deleted feat (PR #3)\n  ! failed gone: error: gone already\n\nDeleted 1/2 merged branch(es).\n"), (code, output));
+    }
+
+    [Fact]
+    public async Task A_repo_whose_prs_cannot_be_read_fails_the_run()
+    {
+        GitDir();
+        _ = _proc.Answer(new Ran(1, string.Empty, "HTTP 502"), "gh", "pr", "list", "--state", "open");
+
+        var (code, output) = await RunAsync("prune-branches", Repo);
+
+        Assert.Equal(1, code);
+        Assert.Contains("- widget: skipped (could not read pull requests from gh)\n", output, StringComparison.Ordinal);
     }
 
     [Fact]

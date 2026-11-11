@@ -90,6 +90,28 @@ public sealed class RepoHygieneTests : IDisposable
     }
 
     [Fact]
+    public void Quoted_and_reusable_workflow_refs_are_checked_too()
+    {
+        Put(".github/workflows/ci.yml", """
+                  - uses: "actions/checkout@v4"
+                  - uses: 'actions/cache@main'
+              build:
+                uses: acme/workflows/.github/workflows/build.yml@main
+            """);
+
+        Assert.Equal(new HygieneResult("UNPINNED (3 actions)", UnpinnedCount: 3), RepoHygiene.InspectPinnedShas(Repo));
+    }
+
+    [Fact]
+    public void Markers_only_in_comments_are_not_a_guard()
+    {
+        Put(".git/hooks/pre-push", "#!/bin/sh\n# DIRECT PUSH TO MAIN BLOCKED\n# git lfs pre-push\nexit 0\n");
+
+        Assert.Equal("MISSING", RepoHygiene.InspectGitHooks(Repo).Status);
+        Assert.Equal("aligned", RepoHygiene.AlignGitHooks(Repo, dryRun: true).Status);
+    }
+
+    [Fact]
     public void Hooks_need_a_hooks_folder()
     {
         Assert.Equal("MISSING", RepoHygiene.InspectGitHooks(Repo).Status);

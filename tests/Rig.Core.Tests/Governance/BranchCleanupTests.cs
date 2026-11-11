@@ -49,7 +49,7 @@ public sealed class BranchCleanupTests : IDisposable
         Assert.Equal(["feat"], plan.Deletable.Select(v => v.Branch));
         Assert.Equal(["stray"], plan.Of("no-pr").Select(v => v.Branch));
         Assert.DoesNotContain(_proc.Requests, r => r.Argv.Contains("--delete"));
-        Assert.Contains(_proc.Requests, r => r.Argv.SequenceEqual(["gh", "pr", "list", "--state", "merged", "--limit", "500", "--json", "number,headRefName"]));
+        Assert.Contains(_proc.Requests, r => r.Argv.SequenceEqual(["gh", "pr", "list", "--state", "merged", "--limit", "500", "--json", "number,headRefName,isCrossRepository"]));
     }
 
     [Fact]
@@ -95,15 +95,32 @@ public sealed class BranchCleanupTests : IDisposable
 
         var plan = await Subject().PlanAsync(Repo, Token);
 
-        Assert.Equal(("could not read pull requests from gh", 0), (plan.Skipped, plan.Verdicts.Count));
+        Assert.Equal(("could not read pull requests from gh", 0, true), (plan.Skipped, plan.Verdicts.Count, plan.Unreadable));
+    }
+
+    [Theory]
+    [InlineData("fetch")]
+    [InlineData("branch")]
+    public async Task Unfetchable_or_unlistable_branches_skip_the_repo(string failing)
+    {
+        _ = _proc.Answer(new Ran(128, string.Empty, "fatal"), "git", failing);
+
+        var plan = await Subject().PlanAsync(Repo, Token);
+
+        Assert.Equal(("could not fetch or list remote branches with git", 0, true), (plan.Skipped, plan.Verdicts.Count, plan.Unreadable));
     }
 
     [Fact]
-    public async Task Unlistable_branches_plan_nothing()
+    public async Task A_merged_fork_pr_does_not_mark_origins_branch_of_that_name()
     {
-        _ = _proc.Answer(new Ran(128, string.Empty, "fatal"), "git", "branch", "-r");
+        _ = _proc.Answer(
+            new Ran(0, """[{"number": 3, "headRefName": "feat", "isCrossRepository": true}, {"number": 4, "headRefName": "stray", "isCrossRepository": false}]""", string.Empty),
+            "gh", "pr", "list", "--state", "merged");
 
-        Assert.Empty((await Subject().PlanAsync(Repo, Token)).Verdicts);
+        var plan = await Subject().PlanAsync(Repo, Token);
+
+        Assert.Equal(["stray"], plan.Deletable.Select(v => v.Branch));
+        Assert.Contains(new BranchVerdict("feat", "no-pr"), plan.Verdicts);
     }
 
     [Fact]

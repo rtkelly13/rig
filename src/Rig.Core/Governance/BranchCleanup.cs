@@ -23,7 +23,8 @@ public sealed record BranchVerdict(string Branch, string Status, long? Pr = null
 /// <param name="Verdicts">One per remote branch.</param>
 /// <param name="Slug">The origin's <c>owner/name</c>, to dedupe repeat clones.</param>
 /// <param name="Skipped">Why the repo must not be pruned at all; empty when it may be.</param>
-public sealed record CleanupPlan(string Repo, IReadOnlyList<BranchVerdict> Verdicts, string Slug = "", string Skipped = "")
+/// <param name="Unreadable">Skipped because git or gh could not be read, which a run should report as a failure.</param>
+public sealed record CleanupPlan(string Repo, IReadOnlyList<BranchVerdict> Verdicts, string Slug = "", string Skipped = "", bool Unreadable = false)
 {
     /// <summary>The verdicts with <paramref name="status"/>.</summary>
     public IReadOnlyList<BranchVerdict> Of(string status) => [.. Verdicts.Where(v => v.Status == status)];
@@ -98,11 +99,15 @@ public sealed class BranchCleanup(IProc proc, Git git, GovernedRepos repos, Repo
             return new(name, [], identity.Slug, "cleanup disabled in policy");
         }
 
-        var branches = await RemoteBranchesAsync(repoPath, cancellationToken).ConfigureAwait(false);
+        if (await RemoteBranchesAsync(repoPath, cancellationToken).ConfigureAwait(false) is not { } branches)
+        {
+            return new(name, [], identity.Slug, "could not fetch or list remote branches with git", Unreadable: true);
+        }
+
         var merged = await PrHeadsAsync(repoPath, "merged", cancellationToken).ConfigureAwait(false);
         var open = await PrHeadsAsync(repoPath, "open", cancellationToken).ConfigureAwait(false);
         return merged is null || open is null
-            ? new(name, [], identity.Slug, "could not read pull requests from gh")
+            ? new(name, [], identity.Slug, "could not read pull requests from gh", Unreadable: true)
             : new(name, Classify(branches, merged, open, rules), identity.Slug);
     }
 
@@ -113,13 +118,18 @@ public sealed class BranchCleanup(IProc proc, Git git, GovernedRepos repos, Repo
         return ran.Ok ? new(branch, true) : new(branch, false, ran.Err.Trim());
     }
 
-    // The remote branches without origin/, sorted and deduped, after pruning refs the server no longer has.
-    private async Task<List<string>> RemoteBranchesAsync(string repoPath, CancellationToken cancellationToken)
+    // The remote branches without origin/, sorted and deduped, after pruning refs the server no longer has; null when
+    // either git call fails, since stale or missing refs are not a plan to act on.
+    private async Task<List<string>?> RemoteBranchesAsync(string repoPath, CancellationToken cancellationToken)
     {
-        _ = await git.RunAsync(repoPath, ["fetch", "--prune", "--quiet"], Timeout, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var fetched = await git.RunAsync(repoPath, ["fetch", "--prune", "--quiet"], Timeout, cancellationToken: cancellationToken).ConfigureAwait(false);
         var listed = await git.RunAsync(repoPath, ["branch", "-r", "--format=%(refname:short)"], Timeout, cancellationToken: cancellationToken).ConfigureAwait(false);
-        var output = listed.Ok ? listed.Out : string.Empty;
-        return [.. output.Split('\n')
+        if (!fetched.Ok || !listed.Ok)
+        {
+            return null;
+        }
+
+        return [.. listed.Out.Split('\n')
             .Select(line => line.Trim())
             .Where(name => name.Length > 0 && !name.Contains("->", StringComparison.Ordinal) && name != "origin")
             .Select(name => name.StartsWith("origin/", StringComparison.Ordinal) ? name["origin/".Length..] : name)
@@ -128,12 +138,13 @@ public sealed class BranchCleanup(IProc proc, Git git, GovernedRepos repos, Repo
     }
 
     // {head ref: highest PR number} for PRs in state; null when gh gave no readable list, which is not the same as
-    // empty: reading it as "no PRs" would let a branch with an open PR be classified as merged and deleted.
+    // empty: reading it as "no PRs" would let a branch with an open PR be classified as merged and deleted. A merged
+    // PR from a fork says nothing about origin's branch of the same name, so those are left out.
     private async Task<Dictionary<string, long>?> PrHeadsAsync(string repoPath, string state, CancellationToken cancellationToken)
     {
         var limit = PrPageLimit.ToString(CultureInfo.InvariantCulture);
         var ran = await proc.RunAsync(
-            new ProcRequest(["gh", "pr", "list", "--state", state, "--limit", limit, "--json", "number,headRefName"]) { WorkingDirectory = repoPath, Timeout = Timeout },
+            new ProcRequest(["gh", "pr", "list", "--state", state, "--limit", limit, "--json", "number,headRefName,isCrossRepository"]) { WorkingDirectory = repoPath, Timeout = Timeout },
             cancellationToken).ConfigureAwait(false);
         if (!ran.Ok || string.IsNullOrWhiteSpace(ran.Out) || GitHubCalls.Parse(ran.Out) is not JsonArray rows)
         {
@@ -148,6 +159,11 @@ public sealed class BranchCleanup(IProc proc, Git git, GovernedRepos repos, Repo
                 || fields["headRefName"] is not { } headNode || headNode.GetValueKind() != JsonValueKind.String)
             {
                 return null;
+            }
+
+            if (state == "merged" && fields["isCrossRepository"] is { } fork && fork.GetValueKind() == JsonValueKind.True)
+            {
+                continue;
             }
 
             // Keep the highest PR number per head: a reused branch is described by its most recent PR.

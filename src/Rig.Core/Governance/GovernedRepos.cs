@@ -49,7 +49,8 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
 
     /// <summary>
     /// What gh says about the checkout's origin, asked once per checkout: a sweep asks more than once (the selection
-    /// filter, then the command), and the answer cannot change mid-run. Unresolved when gh cannot say.
+    /// filter, then the command), and the answer cannot change mid-run. Unresolved when gh cannot say, and an
+    /// unresolved answer is asked again rather than remembered, so one transient gh error does not drop a checkout.
     /// </summary>
     public async Task<RepoIdentity> IdentityAsync(string repoPath, CancellationToken cancellationToken = default)
     {
@@ -66,7 +67,13 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
                 Timeout = IdentityTimeout,
             },
             cancellationToken).ConfigureAwait(false);
-        return _identities[repoPath] = Identity(view);
+        var identity = Identity(view);
+        if (identity.Resolved)
+        {
+            _identities[repoPath] = identity;
+        }
+
+        return identity;
     }
 
     /// <summary>

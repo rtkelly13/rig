@@ -464,7 +464,6 @@ patching-allow = [
     "tests/test_platforms.py",
     "tests/test_policy_template_engine.py",
     "tests/test_proc.py",
-    "tests/test_repo_owner_governance.py",
     "tests/test_review_threads.py",
     "tests/test_rig_flags.py",
     "tests/test_rig_shim.py",
