@@ -60,20 +60,34 @@ public static class LauncherShim
     public static string CliProject(string checkout) => Path.Join(checkout, "src", "Rig.Cli");
 
     /// <summary>The body of <c>agent.ps1</c>.</summary>
-    public static string PowerShell(string cliProject) =>
-        $"{Header}\ndotnet run --project \"{cliProject}\" -- agent @args\nexit $LASTEXITCODE\n";
+    public static string PowerShell(string cliProject)
+    {
+        ArgumentNullException.ThrowIfNull(cliProject);
+        return $"{Header}\ndotnet run --project \"{PowerShellDouble(cliProject)}\" -- agent @args\nexit $LASTEXITCODE\n";
+    }
 
     /// <summary>The body of <c>agent.sh</c>; the project path uses forward slashes.</summary>
     public static string Posix(string cliProject) =>
-        $"#!/usr/bin/env bash\n{Header}\nexec dotnet run --project \"{Slashes(cliProject)}\" -- agent \"$@\"\n";
+        $"#!/usr/bin/env bash\n{Header}\nexec dotnet run --project \"{PosixDouble(Slashes(cliProject))}\" -- agent \"$@\"\n";
 
     /// <summary>The PowerShell profile block calling <paramref name="shim"/> with <c>@args</c>.</summary>
-    public static string PowerShellBlock(string shim) =>
-        $"{Begin}\n{BlockComment}\nfunction agent {{\n    & '{shim}' @args\n}}\n{End}";
+    public static string PowerShellBlock(string shim)
+    {
+        ArgumentNullException.ThrowIfNull(shim);
+        return $"{Begin}\n{BlockComment}\nfunction agent {{\n    & '{shim.Replace("'", "''", StringComparison.Ordinal)}' @args\n}}\n{End}";
+    }
 
     /// <summary>The POSIX profile block calling <paramref name="shim"/> with <c>"$@"</c>.</summary>
     public static string PosixBlock(string shim) =>
-        $"{Begin}\n{BlockComment}\nagent() {{\n    \"{Slashes(shim)}\" \"$@\"\n}}\n{End}";
+        $"{Begin}\n{BlockComment}\nagent() {{\n    \"{PosixDouble(Slashes(shim))}\" \"$@\"\n}}\n{End}";
+
+    // A path as literal text inside double quotes: POSIX shells read \ " $ and ` there, PowerShell reads ` " and $.
+    private static string PosixDouble(string text) =>
+        text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)
+            .Replace("$", "\\$", StringComparison.Ordinal).Replace("`", "\\`", StringComparison.Ordinal);
+
+    private static string PowerShellDouble(string text) =>
+        text.Replace("`", "``", StringComparison.Ordinal).Replace("\"", "`\"", StringComparison.Ordinal).Replace("$", "`$", StringComparison.Ordinal);
 
     /// <summary>
     /// <paramref name="existing"/> with <paramref name="block"/> in place of the marked region, or appended after a

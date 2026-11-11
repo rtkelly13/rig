@@ -31,6 +31,15 @@ public sealed class LauncherShimTests : IDisposable
         Assert.EndsWith(LauncherShim.End, posix, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Paths_are_escaped_for_their_quoting()
+    {
+        Assert.Contains("--project \"C:\\O'Brien\\`$x`\"q``\" --", LauncherShim.PowerShell("C:\\O'Brien\\$x\"q`"), StringComparison.Ordinal);
+        Assert.Contains("--project \"/home/O'Brien/\\$x\\\"q\\`\" --", LauncherShim.Posix("/home/O'Brien/$x\"q`"), StringComparison.Ordinal);
+        Assert.Contains("& 'C:\\O''Brien\\agent.ps1' @args", LauncherShim.PowerShellBlock("C:\\O'Brien\\agent.ps1"), StringComparison.Ordinal);
+        Assert.Contains("    \"/home/\\$me/agent.sh\" \"$@\"", LauncherShim.PosixBlock("/home/$me/agent.sh"), StringComparison.Ordinal);
+    }
+
     private const string Block = $"{LauncherShim.Begin}\nnew\n{LauncherShim.End}";
 
     [Theory]
