@@ -80,7 +80,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
     public async Task<RepoReclaim> ScanRepoAsync(string repo, long floor = ReportFloor, CancellationToken cancellationToken = default)
     {
         var trees = (await Worktree.ListAsync(git, repo).ConfigureAwait(false)).Where(tree => !tree.IsMain).ToList();
-        var worktrees = trees.Select(tree => PathResolution.Resolve(tree.Path)).ToHashSet(StringComparer.Ordinal);
+        var worktrees = trees.Select(tree => PathResolution.Resolve(tree.Path)).ToHashSet(PathResolution.Comparer);
         var entries = new List<Reclaimable>();
         foreach (var category in Categories)
         {
@@ -108,7 +108,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
         foreach (var tree in trees)
         {
             var resolved = PathResolution.Resolve(tree.Path);
-            if (resolved == root || PathResolution.IsUnder(resolved, root) || !Directory.Exists(resolved))
+            if (PathResolution.IsUnder(resolved, root) || !Directory.Exists(resolved))
             {
                 continue;
             }
@@ -179,7 +179,15 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
                 continue;
             }
 
-            var isTree = worktrees.Contains(PathResolution.Resolve(child));
+            var resolved = PathResolution.Resolve(child);
+            var isTree = worktrees.Contains(resolved);
+            if (!isTree && worktrees.Any(tree => PathResolution.IsUnder(tree, resolved)))
+            {
+                // A folder of worktrees (temp/rig/<name>) goes one worktree at a time, each with its own guards.
+                found.AddRange(await ExplodeTempAsync(child, worktrees, category, floor, cancellationToken).ConfigureAwait(false));
+                continue;
+            }
+
             found.Add(new Reclaimable(child, category.Name, size, isTree ? "git worktree add" : category.Regenerate, isTree));
         }
 

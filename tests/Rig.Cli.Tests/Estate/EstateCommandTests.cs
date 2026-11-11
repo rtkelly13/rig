@@ -11,7 +11,7 @@ using Rig.Core.Tests.Otel;
 namespace Rig.Cli.Tests.Estate;
 
 /// <summary>
-/// <c>rig estate audit|risk|doctor|sync|clones</c> end to end over a small estate of real clones in a temp folder:
+/// <c>rig estate audit|risk|doctor|sync|clones|reclaim|trim</c> end to end over a small estate of real clones in a temp folder:
 /// <c>safe</c> has everything on its origin; <c>risky</c> holds an unpushed branch and an uncommitted file.
 /// </summary>
 public sealed class EstateCommandTests : IDisposable
@@ -246,5 +246,216 @@ public sealed class EstateCommandTests : IDisposable
         Assert.Contains($"2 clones under {Code}", second, StringComparison.Ordinal);
         Assert.Contains($"cached, scanned 3h ago · {Path.Join(_root.Path, "home", ".estate-repos.json")}", second, StringComparison.Ordinal);
         Assert.Contains($"  {Safe}", second, StringComparison.Ordinal);
+    }
+
+    // ---- reclaim -------------------------------------------------------------------------------------------------
+
+    private static string NodeModules(string clone)
+    {
+        var modules = Path.Join(clone, "node_modules");
+        _ = Directory.CreateDirectory(Path.Join(modules, "left-pad"));
+        File.WriteAllText(Path.Join(modules, "left-pad", "index.js"), new string('x', 4096));
+        return modules;
+    }
+
+    // A pushed worktree at safe/temp/wt: clean, and every commit on origin.
+    private async Task<string> TempWorktreeAsync()
+    {
+        var path = Path.Join(Safe, "temp", "wt");
+        _ = await Repos.GitAsync(Safe, "worktree", "add", "-q", "-b", "wt", path);
+        _ = await Repos.GitAsync(path, "push", "-q", "-u", "origin", "wt");
+        return path;
+    }
+
+    [Fact]
+    public async Task Reclaim_dry_run_keeps_everything_and_notes_clones_at_risk()
+    {
+        await BuildEstateAsync();
+        var modules = NodeModules(Risky);
+
+        var (code, output, _) = await RunAsync("reclaim", "--min", "0", "--root", Code);
+
+        Assert.Equal(0, code);
+        Assert.Contains("Reclaimable (dry run — pass --apply)", output, StringComparison.Ordinal);
+        Assert.Contains("would remove", output, StringComparison.Ordinal);
+        Assert.Contains("Would free", output, StringComparison.Ordinal);
+        Assert.Contains("risky — 1 local-only commit(s), 2 uncommitted file(s)", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(modules));
+    }
+
+    [Fact]
+    public async Task Reclaim_apply_removes_regenerable_output()
+    {
+        await BuildEstateAsync();
+        var modules = NodeModules(Safe);
+
+        var (code, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
+
+        Assert.Equal(0, code);
+        Assert.Contains("removed", output, StringComparison.Ordinal);
+        Assert.Contains("Freed", output, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(modules));
+    }
+
+    [Fact]
+    public async Task Reclaim_refuses_a_dirty_worktree_unless_forced()
+    {
+        await BuildEstateAsync();
+        var worktree = await TempWorktreeAsync();
+        await File.WriteAllTextAsync(Path.Join(worktree, "first.txt"), "edited", Token);
+
+        var (_, refused, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
+        var (_, forced, _) = await RunAsync("reclaim", "--min", "0", "--force", "--root", Code);
+
+        Assert.Contains("dirty worktree", refused, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(worktree));
+        Assert.Contains("would remove", forced, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Reclaim_refuses_a_worktree_holding_the_only_copy_of_a_commit()
+    {
+        await BuildEstateAsync();
+        var worktree = await TempWorktreeAsync();
+        await Repos.CommitAsync(worktree, "local");
+
+        var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
+
+        Assert.Contains("only copy", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(worktree));
+    }
+
+    [Fact]
+    public async Task Reclaim_removes_a_clean_pushed_worktree_through_git()
+    {
+        await BuildEstateAsync();
+        var worktree = await TempWorktreeAsync();
+
+        var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
+
+        Assert.Contains("removed", output, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(worktree));
+        Assert.DoesNotContain("temp/wt", await Repos.GitAsync(Safe, "worktree", "list"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Reclaim_never_removes_an_entry_resolving_outside_its_clone()
+    {
+        await BuildEstateAsync();
+        var outside = NodeModules(_root.Folder("elsewhere"));
+        _ = Directory.CreateSymbolicLink(Path.Join(Safe, "packages"), Path.GetDirectoryName(outside)!);
+
+        var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
+
+        Assert.Contains("outside clone", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(outside));
+    }
+
+    [Fact]
+    public async Task Reclaim_judges_each_worktree_in_a_temp_folder_of_worktrees_on_its_own()
+    {
+        await BuildEstateAsync();
+        var group = Path.Join(Safe, "temp", "group");
+        var kept = Path.Join(group, "kept");
+        var gone = Path.Join(group, "gone");
+        _ = await Repos.GitAsync(Safe, "worktree", "add", "-q", "-b", "kept", kept);
+        await Repos.CommitAsync(kept, "local");
+        _ = await Repos.GitAsync(Safe, "worktree", "add", "-q", "-b", "gone", gone);
+        _ = await Repos.GitAsync(gone, "push", "-q", "-u", "origin", "gone");
+
+        var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
+
+        Assert.Contains("only copy", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(kept));
+        Assert.False(Directory.Exists(gone));
+    }
+
+    [Fact]
+    public async Task Reclaim_refuses_temp_scratch_holding_a_checkout_git_does_not_list()
+    {
+        await BuildEstateAsync();
+        var scratch = Path.Join(Safe, "temp", "scratch");
+        _ = await Repos.GitAsync(Safe, "clone", "-q", Safe, Path.Join(scratch, "clone"));
+
+        var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
+
+        Assert.Contains("holds a git checkout", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(Path.Join(scratch, "clone", ".git")));
+    }
+
+    [Fact]
+    public async Task Reclaim_reports_a_worktree_git_will_not_remove_as_failed()
+    {
+        await BuildEstateAsync();
+        var worktree = await TempWorktreeAsync();
+        _ = await Repos.GitAsync(Safe, "worktree", "lock", worktree);
+
+        var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
+
+        Assert.Contains("failed", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(worktree));
+    }
+
+    // ---- trim ----------------------------------------------------------------------------------------------------
+
+    private async Task IgnoreNodeModulesAsync()
+    {
+        await File.WriteAllTextAsync(Path.Join(Safe, ".gitignore"), "node_modules/\n", Token);
+        _ = await Repos.GitAsync(Safe, "add", ".gitignore");
+        _ = await Repos.GitAsync(Safe, "commit", "-q", "-m", "ignore");
+        _ = await Repos.GitAsync(Safe, "push", "-q");
+    }
+
+    [Fact]
+    public async Task Trim_reports_idle_worktree_output_and_refuses_what_git_does_not_ignore()
+    {
+        await BuildEstateAsync();
+        await IgnoreNodeModulesAsync();
+        var worktree = await TempWorktreeAsync();
+        var modules = NodeModules(worktree);
+        _ = Directory.CreateDirectory(Path.Join(worktree, "dist"));
+        await File.WriteAllTextAsync(Path.Join(worktree, "dist", "out.js"), new string('y', 4096), Token);
+        _clock.Advance(TimeSpan.FromDays(400));
+
+        var (code, output, _) = await RunAsync("trim", "--min", "0", "--root", Code);
+
+        Assert.Equal(0, code);
+        Assert.Contains("Idle worktrees (dry run", output, StringComparison.Ordinal);
+        Assert.Contains("would remove", output, StringComparison.Ordinal);
+        Assert.Contains("refused: not gitignored", output, StringComparison.Ordinal);
+        Assert.Contains("Would free 4.0KB", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(modules));
+    }
+
+    [Fact]
+    public async Task Trim_apply_removes_the_output_and_keeps_the_worktree()
+    {
+        await BuildEstateAsync();
+        await IgnoreNodeModulesAsync();
+        var worktree = await TempWorktreeAsync();
+        var modules = NodeModules(worktree);
+        _clock.Advance(TimeSpan.FromDays(400));
+
+        var (code, output, _) = await RunAsync("trim", "--min", "0", "--apply", "--root", Code);
+
+        Assert.Equal(0, code);
+        Assert.Contains("removed", output, StringComparison.Ordinal);
+        Assert.Contains("Freed 4.0KB", output, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(modules));
+        Assert.True(Directory.Exists(worktree));
+    }
+
+    [Fact]
+    public async Task Trim_leaves_a_worktree_in_use_alone()
+    {
+        await BuildEstateAsync();
+        await IgnoreNodeModulesAsync();
+        var modules = NodeModules(await TempWorktreeAsync());
+        _clock.Advance(TimeSpan.FromDays(400));
+
+        var (_, output, _) = await RunAsync("trim", "--min", "0", "--idle-days", "100000", "--apply", "--root", Code);
+
+        Assert.Contains("Freed 0B", output, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(modules));
     }
 }
