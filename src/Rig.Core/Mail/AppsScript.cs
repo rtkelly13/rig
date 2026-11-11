@@ -284,7 +284,8 @@ function ensureLabel_(cache, name) {
         var stepsJson = MailExport.SweepJson(steps);
         var filtersJson = MailExport.ApiFiltersJson(filters);
         var version = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(stepsJson + filtersJson)))[..12];
-        return (Template + "\n")
+        // A Windows checkout may hold the template with CRLF endings; the script is always LF, as the Python wrote it.
+        return (Template.Replace("\r\n", "\n", StringComparison.Ordinal) + "\n")
             .Replace("__VERSION__", version, StringComparison.Ordinal)
             .Replace("__STEPS__", stepsJson, StringComparison.Ordinal)
             .Replace("__FILTERS__", filtersJson, StringComparison.Ordinal);
