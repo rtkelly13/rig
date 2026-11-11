@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using Rig.Cli.Agent;
 using Rig.Cli.Browser;
 using Rig.Cli.Devenv;
@@ -38,6 +39,9 @@ internal static class Program
         var fromPython = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(PythonRig.BridgeVariable));
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var macOs = OperatingSystem.IsMacOS();
+        // The package registries (npm, NuGet), read by `workspace packages`. NuGet's registration resource is served gzipped.
+        using var registryHandler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All, CheckCertificateRevocationList = true };
+        using var registries = new HttpClient(registryHandler) { Timeout = TimeSpan.FromSeconds(30) };
         var workspace = new WorkspaceCommand(
             new WorkspaceHost(
                 Path.Join(codeRoot, "personal"),
@@ -47,7 +51,8 @@ internal static class Program
                 AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home)),
             proc,
             TimeProvider.System,
-            Console.Out);
+            Console.Out,
+            registries);
         // Created per command; HttpClient opens no connection until the health probe asks for one. Redirects are not
         // followed, so only a 200 from the health endpoint itself counts as healthy.
         using var handler = new HttpClientHandler { AllowAutoRedirect = false, CheckCertificateRevocationList = true };

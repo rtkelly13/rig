@@ -37,6 +37,6 @@ internal static class Forwarded
         }
 
         var ported = root.Subcommands.FirstOrDefault(c => c.Name == args[0])?.Subcommands ?? [];
-        return args.Count == 1 || !ported.Any(c => c.Name == args[1]);
+        return args.Count == 1 || !ported.Any(c => c.Name == args[1] || c.Aliases.Contains(args[1]));
     }
 }

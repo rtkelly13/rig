@@ -36,7 +36,8 @@ internal sealed record GitignoreArgs(string? Root, string? Repo, string? Languag
 /// <param name="proc">Runs git and gh.</param>
 /// <param name="time">The clock the repository name cache is aged by.</param>
 /// <param name="output">Where reports go.</param>
-internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvider time, TextWriter output)
+/// <param name="http">Reads the package registries for <c>workspace packages</c>.</param>
+internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvider time, TextWriter output, HttpClient http)
 {
     /// <summary>What <c>rig workspace</c> is.</summary>
     public const string Description = "Virtual monorepo estate management for the personal folder.";
@@ -53,6 +54,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         workspace.Subcommands.Add(Doctor());
         workspace.Subcommands.Add(Gitignore());
         workspace.Subcommands.Add(Ci());
+        workspace.Subcommands.Add(new PackagesCommand(host, proc, http, time, output).Build());
         workspace.Subcommands.Add(Sync("Synchronize root AGENTS.md, personal.code-workspace, and common gitignores."));
         return workspace;
     }

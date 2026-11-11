@@ -169,6 +169,6 @@ public sealed class EstateSyncTests : IDisposable
         var expected = specs.Where(s => s.Enabled && Path.Exists(Scopes.ProjectDir(estate, s.Name, s.Repo))).Select(s => s.Name).Distinct().Order(StringComparer.Ordinal);
         var listed = JsonNode.Parse(workspace)!["folders"]!.AsArray().Select(f => (string)f!["name"]!).ToList();
         Assert.Equal(expected, listed.Distinct().Order(StringComparer.Ordinal));
-        Assert.All(listed, name => Assert.True(Path.Exists(Scopes.ProjectDir(estate, name, specs.First(s => s.Name == name && s.Enabled).Repo))));
+        Assert.All(listed, name => Assert.Contains(specs, s => s.Name == name && s.Enabled && Path.Exists(Scopes.ProjectDir(estate, name, s.Repo))));
     }
 }
