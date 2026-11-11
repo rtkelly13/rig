@@ -375,7 +375,7 @@ public static partial class Licenses
         }
     }
 
-    [GeneratedRegex(@"^\s*Copyright\b.*$", RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^[ \t]*Copyright\b.*$", RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex CopyrightLine();
 
     [GeneratedRegex(@"\b((?:19|20)\d{2})\b", RegexOptions.CultureInvariant)]
