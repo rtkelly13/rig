@@ -45,7 +45,8 @@ public sealed record Busy(IReadOnlyList<string>? Dirs)
         }
 
         var ran = await proc.RunAsync(new ProcRequest(["lsof", "-n", "-d", "cwd", "-Fn"]) { Timeout = LsofTimeout }, cancellationToken).ConfigureAwait(false);
-        if (ran.Code == Ran.NotFound || (!ran.Ok && ran.Out.Length == 0))
+        // A timed-out run may have printed only some processes: a partial list would clear a folder that is in use.
+        if (ran.Code is Ran.NotFound or Ran.TimedOut || (!ran.Ok && ran.Out.Length == 0))
         {
             return Unknown;
         }

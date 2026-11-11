@@ -103,14 +103,15 @@ public sealed class Tidy(Git git, TreeRemoval removal)
         var actions = new List<TidyAction>();
         if (actionable.Any(f => f.Check == "worktree-prunable"))
         {
-            actions.Add(await PruneAsync(report.Repo, apply).ConfigureAwait(false));
+            actions.Add(await PruneAsync(report.Repo, apply, cancellationToken).ConfigureAwait(false));
         }
 
         foreach (var finding in actionable)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (TidyChecks.Branch.Contains(finding.Check))
             {
-                actions.Add(await BranchAsync(report.Repo, finding, apply, mergedHeads).ConfigureAwait(false));
+                actions.Add(await BranchAsync(report.Repo, finding, apply, mergedHeads, cancellationToken).ConfigureAwait(false));
             }
             else if (TidyChecks.Worktree.Contains(finding.Check))
             {
@@ -125,14 +126,14 @@ public sealed class Tidy(Git git, TreeRemoval removal)
         return actions;
     }
 
-    private async Task<TidyAction> PruneAsync(string repo, bool apply)
+    private async Task<TidyAction> PruneAsync(string repo, bool apply, CancellationToken cancellationToken)
     {
         if (!apply)
         {
             return new TidyAction("worktree-prunable", repo, TidyOutcome.WouldClean, "git worktree prune");
         }
 
-        var ran = await git.RunAsync(repo, [.. Trim.LongPaths, "worktree", "prune"], RemoveTimeout).ConfigureAwait(false);
+        var ran = await git.RunAsync(repo, [.. Trim.LongPaths, "worktree", "prune"], RemoveTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
         return new TidyAction("worktree-prunable", repo, ran.Ok ? TidyOutcome.Cleaned : TidyOutcome.Failed, Said(ran, "pruned"));
     }
 
@@ -140,7 +141,12 @@ public sealed class Tidy(Git git, TreeRemoval removal)
     // commit on main, and deleting the remote branch strands the originals on no remote for good: measured on
     // design-system, all 12 branches whose upstream was deleted held 1-6 "local-only" commits, and all 12 had merged.
     // So a merged PR holding the tip authorises deletion when the commits look local-only.
-    private async Task<TidyAction> BranchAsync(string repo, Finding finding, bool apply, IReadOnlyDictionary<string, PullRequest>? mergedHeads)
+    private async Task<TidyAction> BranchAsync(
+        string repo,
+        Finding finding,
+        bool apply,
+        IReadOnlyDictionary<string, PullRequest>? mergedHeads,
+        CancellationToken cancellationToken)
     {
         var branch = finding.Subject;
         var trees = await Worktree.ListAsync(git, repo).ConfigureAwait(false);
@@ -167,7 +173,7 @@ public sealed class Tidy(Git git, TreeRemoval removal)
             return new TidyAction(finding.Check, branch, TidyOutcome.WouldClean, $"{authority} · git branch -D {branch}");
         }
 
-        var ran = await git.RunAsync(repo, [.. Trim.LongPaths, "branch", "-D", branch]).ConfigureAwait(false);
+        var ran = await git.RunAsync(repo, [.. Trim.LongPaths, "branch", "-D", branch], cancellationToken: cancellationToken).ConfigureAwait(false);
         return new TidyAction(finding.Check, branch, ran.Ok ? TidyOutcome.Cleaned : TidyOutcome.Failed, Said(ran, authority));
     }
 

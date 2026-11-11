@@ -34,6 +34,16 @@ public sealed class BusyTests
     }
 
     [Fact]
+    public async Task A_timed_out_lsof_is_unknown_even_with_some_processes_printed()
+    {
+        var proc = new FakeProc().Answer(new Ran(Ran.TimedOut, "p12\nfcwd\nn/work/a\n", string.Empty), "lsof");
+
+        var busy = await Busy.SnapshotAsync(proc, windows: false, Token);
+
+        Assert.Null(busy.Dirs);
+    }
+
+    [Fact]
     public async Task Windows_is_unknown_without_asking()
     {
         var proc = new FakeProc();

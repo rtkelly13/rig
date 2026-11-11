@@ -293,7 +293,9 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
         var names = new List<string>();
         foreach (var value in wanted)
         {
-            var candidate = Path.GetFullPath(ExpandHome(value), host.WorkingDirectory);
+            // On Unix `link/..` is the link target's parent, so links resolve before `..` collapses, never lexically.
+            var joined = Path.Combine(host.WorkingDirectory, ExpandHome(value));
+            var candidate = OperatingSystem.IsWindows() ? Path.GetFullPath(joined) : PathResolution.Resolve(joined);
             if (!Directory.Exists(Path.Join(candidate, ".git")) && !File.Exists(Path.Join(candidate, ".git")))
             {
                 names.Add(value);

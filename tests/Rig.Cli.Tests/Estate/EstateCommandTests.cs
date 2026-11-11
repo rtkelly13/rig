@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Runtime.Versioning;
 using System.Text.Json.Nodes;
 using Rig.Cli.Estate;
 using Rig.Core.Processes;
@@ -634,6 +635,22 @@ public sealed class EstateCommandTests : IDisposable
         Assert.DoesNotContain("clones under", pathError, StringComparison.Ordinal);
         Assert.Equal([alpha], Inspected(byPath, alpha, beta));
         Assert.Equal([beta, alpha], Inspected(byName, alpha, beta));
+    }
+
+    [Fact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task Tidy_repo_resolves_a_link_before_its_parent_segment()
+    {
+        var alpha = await CloneAsync("alpha");
+        var beta = await CloneAsync("beta");
+        var inner = Directory.CreateDirectory(Path.Join(beta, "inner")).FullName;
+        _ = Directory.CreateSymbolicLink(Path.Join(alpha, "link"), inner);
+        var proc = NothingBusy();
+
+        var (code, _, _) = await RunWithAsync(proc, "tidy", "--root", Code, "--repo", Path.Join(alpha, "link", ".."));
+
+        Assert.Equal(0, code);
+        Assert.Equal([beta], Inspected(proc, alpha, beta));
     }
 
     [Theory]
