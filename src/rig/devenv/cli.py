@@ -5,6 +5,8 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
+from rig import csharp_cli
+
 from .doctor.core import run_doctor
 from .engine.context import StepContext, get_current_platform
 from .engine.runner import run_steps
@@ -189,30 +191,7 @@ def ai_cmd() -> None:
     ai_tools.run_ai_tools_setup(ctx)
 
 
-@app.command("models")
-def models_cmd(
-    agent: str | None = typer.Option(
-        None,
-        "--agent",
-        "-a",
-        help="Filter by agent CLI: codex, opencode, antigravity (agy), or claude-code (claude).",
-    ),
-    provider: str | None = typer.Option(
-        None,
-        "--provider",
-        "-p",
-        help="Filter by upstream model provider: openai, anthropic, google, deepseek, github-copilot, etc.",
-    ),
-    as_json: bool = typer.Option(
-        False,
-        "--json",
-        help="Output models list as formatted JSON.",
-    ),
-) -> None:
-    """Enumerate AI models supported across coding assistants in rig."""
-    from rig.models.cli import list_models_cmd
-
-    list_models_cmd(agent=agent, provider=provider, as_json=as_json)
+csharp_cli.add_stub(app, "models")
 
 
 def main() -> None:

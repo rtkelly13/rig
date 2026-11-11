@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
+using Rig.Cli.Models;
 using Rig.Cli.Otel;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
@@ -104,6 +105,7 @@ internal static class Program
                     Console.Out,
                     Console.Error).Build,
                 new StatusCommand(proc, git, Environment.CurrentDirectory, Console.Out).Build,
+                () => new ModelsCommand(new ModelDiscovery(proc, home, ProgramPath.Find), Console.Out).Build(),
             ]);
         return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
     }

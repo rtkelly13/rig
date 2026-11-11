@@ -276,7 +276,6 @@ ignore = [
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
 "src/rig/connectivity/manifests.py" = ["TID251"]
-"src/rig/models/discovery.py" = ["TID251"]
 "src/rig/repo_governance/vercel_projects.py" = ["TID251"]
 "src/rig/triage/github.py" = ["TID251"]
 # Temporary: tests that build real temp repos with raw git. F2 moves them onto the
@@ -541,7 +540,6 @@ patching-allow = [
     "tests/test_github_prs.py",
     "tests/test_image_drift_explore_promote.py",
     "tests/test_image_drift_metrics.py",
-    "tests/test_models_discovery.py",
     "tests/test_org_governance.py",
     "tests/test_otel_clickhouse.py",
     "tests/test_pages_manager.py",
