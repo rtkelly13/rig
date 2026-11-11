@@ -12,14 +12,15 @@ namespace Rig.Cli.Devenv;
 internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows);
 
 /// <summary>
-/// The ported part of <c>rig devenv</c>: <c>claude</c>, <c>estate-rules</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
+/// The ported part of <c>rig devenv</c>: <c>claude</c>, <c>estate-rules</c>, <c>obsidian-plugins</c> and <c>opencode</c>. Every other <c>devenv</c> subcommand is still Python's, and
 /// <see cref="Forwarding.Forwarded.Owns"/> hands those lines over before parsing. Ported from devenv's
-/// <c>claude_code</c>, <c>session_ledger</c>, <c>estate_rules</c> and <c>opencode</c>.
+/// <c>claude_code</c>, <c>session_ledger</c>, <c>estate_rules</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
 /// </summary>
 /// <param name="host">Where it sets up.</param>
+/// <param name="plugins">Fetches Obsidian plugins from GitHub.</param>
 /// <param name="output">Where progress goes.</param>
 /// <param name="error">Where failures go.</param>
-internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWriter error)
+internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, TextWriter output, TextWriter error)
 {
     /// <summary>What <c>rig devenv</c> is, matching the Python group's help.</summary>
     public const string Description = "Unified development environment manager (tools, runtimes, fonts, git, AI coding agents).";
@@ -36,7 +37,11 @@ internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWrit
         opencode.SetAction(parsed => Opencode(parsed.GetValue(dryRun), parsed.GetValue(home)!));
         var rules = new Command("estate-rules", "Install or refresh the estate-wide AGENTS.md under ~/code/personal.") { dryRun, home };
         rules.SetAction(parsed => Rules(parsed.GetValue(dryRun), parsed.GetValue(home)!));
-        return new Command("devenv", Description) { claude, rules, opencode };
+        var vault = new Option<string?>("--vault") { Description = "Vault to set up (default: ~/code/personal/obsidian-vault under --home)." };
+        var obsidian = new Command("obsidian-plugins", "Install and enable the estate's Obsidian community and core plugins in a vault.") { dryRun, home, vault };
+        obsidian.SetAction((parsed, cancellationToken) =>
+            ObsidianAsync(parsed.GetValue(dryRun), parsed.GetValue(vault) ?? ObsidianPlugins.DefaultVault(parsed.GetValue(home)!), cancellationToken));
+        return new Command("devenv", Description) { claude, rules, obsidian, opencode };
     }
 
     private int Check(string home)
@@ -201,6 +206,64 @@ internal sealed class DevenvCommand(DevenvHost host, TextWriter output, TextWrit
 
         output.WriteLine($"✓ Estate agent rules {action} at {target}");
         return 0;
+    }
+
+    // Install the default plugins from their latest releases and enable them; 1 when any could not be.
+    private async Task<int> ObsidianAsync(bool dryRun, string vault, CancellationToken cancellationToken)
+    {
+        if (!Directory.Exists(Path.Join(vault, ".obsidian")))
+        {
+            await output.WriteLineAsync($"Not an Obsidian vault, skipping: {vault}").ConfigureAwait(false);
+            return 0;
+        }
+
+        IReadOnlyList<PluginSpec> registry;
+        try
+        {
+            registry = await plugins.RegistryAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e) when (ObsidianPlugins.Fetching(e))
+        {
+            await error.WriteLineAsync($"Could not fetch the Obsidian plugin registry: {e.Message}").ConfigureAwait(false);
+            return 1;
+        }
+
+        var failed = false;
+        foreach (var id in ObsidianPlugins.DefaultPlugins)
+        {
+            if (registry.FirstOrDefault(spec => spec.Id == id) is not { } spec)
+            {
+                await error.WriteLineAsync($"{id}: not in the community plugin registry").ConfigureAwait(false);
+                failed = true;
+                continue;
+            }
+
+            var have = ObsidianPlugins.InstalledVersion(vault, id);
+            var install = await plugins.InstallAsync(vault, spec, dryRun, cancellationToken).ConfigureAwait(false);
+            if (install.Tag is not { } tag)
+            {
+                await error.WriteLineAsync(install.Problem).ConfigureAwait(false);
+                failed = true;
+                continue;
+            }
+
+            await output.WriteLineAsync(have is not null && tag.Contains(have, StringComparison.Ordinal)
+                ? $"✓ {spec.Name} {have} already installed"
+                : $"{(dryRun ? "would install" : "installed")} {spec.Name} {tag}").ConfigureAwait(false);
+            if (ObsidianPlugins.Enable(vault, id, dryRun))
+            {
+                await output.WriteLineAsync($"  + enabled {id}").ConfigureAwait(false);
+            }
+        }
+
+        foreach (var id in ObsidianPlugins.EnableCore(vault, ObsidianPlugins.DefaultCorePlugins, dryRun))
+        {
+            await output.WriteLineAsync($"enabled core plugin: {id}").ConfigureAwait(false);
+        }
+
+        await output.WriteLineAsync(
+            "Restart Obsidian to load newly installed plugins. Plugins needing an in-app API key must be configured in Obsidian's settings.").ConfigureAwait(false);
+        return failed ? 1 : 0;
     }
 
     // The estate policy's command rules, projected into the system's native config as `rig policy sync` does.
