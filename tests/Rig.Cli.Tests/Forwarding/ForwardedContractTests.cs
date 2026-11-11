@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
+using Rig.Cli.Vault;
 using Rig.Core.GitHub;
 using Rig.Core.Tests.Fakes;
 
@@ -40,7 +41,10 @@ public sealed partial class ForwardedContractTests
             _ => Task.FromResult<RepoSlug?>(null),
             TextWriter.Null,
             TextWriter.Null,
-            new LatexCommand(new FakeProc(), new LatexHost(_ => null, string.Empty, "/", "/"), TextWriter.Null, TextWriter.Null));
+            [
+                new LatexCommand(new FakeProc(), new LatexHost(_ => null, string.Empty, "/", "/"), TextWriter.Null, TextWriter.Null).Build,
+                new MdLintCommand(new FakeProc(), new MdLintHost("/rig", _ => null, "/"), TextWriter.Null).Build,
+            ]);
         var owned = app
             .BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));
 
