@@ -15,6 +15,29 @@ public static class PyText
     /// </summary>
     public const string Space = @"\s\x1c-\x1f";
 
+    /// <summary>Python's <c>repr()</c> of a <c>str</c>, for messages that quote one.</summary>
+    public static string Repr(string s)
+    {
+        ArgumentNullException.ThrowIfNull(s);
+        var quote = s.Contains('\'', StringComparison.Ordinal) && !s.Contains('"', StringComparison.Ordinal) ? '"' : '\'';
+        var text = new StringBuilder().Append(quote);
+        foreach (var c in s)
+        {
+            _ = c switch
+            {
+                '\\' => text.Append("\\\\"),
+                '\n' => text.Append("\\n"),
+                '\r' => text.Append("\\r"),
+                '\t' => text.Append("\\t"),
+                _ when c == quote => text.Append('\\').Append(c),
+                < ' ' or '\x7f' => text.Append("\\x").Append(((int)c).ToString("x2", CultureInfo.InvariantCulture)),
+                _ => text.Append(c),
+            };
+        }
+
+        return text.Append(quote).ToString();
+    }
+
     /// <summary>Whether <paramref name="c"/> is whitespace to Python.</summary>
     public static bool IsSpace(char c) => char.IsWhiteSpace(c) || c is >= '\x1c' and <= '\x1f';
 

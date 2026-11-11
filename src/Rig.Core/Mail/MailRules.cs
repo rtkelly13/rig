@@ -284,31 +284,9 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
 
             if (rule.OlderThan is { } age && !Duration().IsMatch(age))
             {
-                throw new RulesException($"{prefix}: older_than must look like 3d, 2m or 1y, not {PyRepr(age)}");
+                throw new RulesException($"{prefix}: older_than must look like 3d, 2m or 1y, not {PyText.Repr(age)}");
             }
         }
-    }
-
-    // Python's repr() of a str, as the older_than message shows it.
-    private static string PyRepr(string s)
-    {
-        var quote = s.Contains('\'', StringComparison.Ordinal) && !s.Contains('"', StringComparison.Ordinal) ? '"' : '\'';
-        var text = new StringBuilder().Append(quote);
-        foreach (var c in s)
-        {
-            _ = c switch
-            {
-                '\\' => text.Append("\\\\"),
-                '\n' => text.Append("\\n"),
-                '\r' => text.Append("\\r"),
-                '\t' => text.Append("\\t"),
-                _ when c == quote => text.Append('\\').Append(c),
-                < ' ' or '\x7f' => text.Append("\\x").Append(((int)c).ToString("x2", System.Globalization.CultureInfo.InvariantCulture)),
-                _ => text.Append(c),
-            };
-        }
-
-        return text.Append(quote).ToString();
     }
 
     // Python's re.match with ^...$: $ also matches before a final newline.
