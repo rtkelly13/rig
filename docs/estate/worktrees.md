@@ -194,6 +194,20 @@ estate triage.
 `tidy --check <check>` narrows a run to one kind of finding, for example
 `--check worktree-merged`, alongside `--repo` for one clone.
 
+## The safety matrix
+
+`tests/test_estate_safety_matrix.py` runs every command that removes things (`tidy`, `shelve`,
+`reclaim`, `trim`) against every worktree shape that has bitten the estate, or that git documents as
+holding state a removal drops: dirty, ignored notes, ignored build output, unborn, another clone's,
+in use, locked, reflog-only commits and relative gitdirs. Each one runs at its most aggressive
+ordinary flags. Canaries planted in each worktree are ranked by how recoverable they are (on disk or
+reachable from a ref; only in a reflog; gone) before and after, and no command may lower a rank. The
+matrix also records whether the command refused or only git did, so a cell that survives on git's
+refusal alone does not count as guarded.
+
+Known gaps are strict `xfail` rows that accept only a lost canary or a missing guard. Fixing one
+turns its row into a failure until the marker comes off. Add a row whenever a new shape turns up.
+
 ## Cleanup cascades, so run it twice
 
 Removing a worktree frees the branch it held, which until then was refused as
