@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "defaults": {
     "description": "Applied to every repo unless a profile overrides the same key.",
+    "contact_email": "94ryan.kelly@gmail.com",
+    "copyright_holder": "Ryan Kelly",
     "expected_owner": "rtkelly13",
     "allowed_owners": [
       "rtkelly13",
