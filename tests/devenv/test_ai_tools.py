@@ -5,6 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from rig import csharp_cli
+from rig.devenv.engine.context import StepContext
+from rig.devenv.steps.ai_tools import run_ai_tools_setup
 from rig.devenv.steps.ai_tools.claude_code import (
     BASELINE_ATTRIBUTION,
     BASELINE_ENV,
@@ -290,3 +293,37 @@ def test_setup_estate_rules_does_not_create_a_claude_md(tmp_path):
     assert (tmp_path / "AGENTS.md").is_file()
     assert not (tmp_path / "CLAUDE.md").exists()
     assert not (tmp_path / "CLAUDE.md").is_symlink()
+
+
+@pytest.mark.ci
+def test_the_step_reports_a_failed_browser_profiles_after_running_every_part(
+    isolated_home: Path, monkeypatch: pytest.MonkeyPatch
+):
+    step = "rig.devenv.steps.ai_tools"
+    ran: list[str] = []
+    (isolated_home / "code" / "personal" / "obsidian-vault" / ".obsidian").mkdir(parents=True)
+    parts = (
+        "setup_claude_code",
+        "setup_opencode",
+        "setup_estate_rules",
+        "setup_obsidian_plugins",
+        "setup_agent_launcher",
+    )
+    for part in parts:
+        monkeypatch.setattr(f"{step}.{part}", lambda *_a, name=part, **_k: ran.append(name))
+    monkeypatch.setattr(f"{step}.detect_installed_agents", list)
+    calls: list[list[str]] = []
+
+    def browser_fails(command: list[str], _env: dict[str, str]) -> int:
+        calls.append(command[command.index("--") + 1 :])
+        return 3 if command[command.index("--") + 1] == "browser" else 0
+
+    token = csharp_cli.RUNNER.set(browser_fails)
+    try:
+        with pytest.raises(RuntimeError, match=r"^rig browser profiles exited 3$"):
+            run_ai_tools_setup(StepContext(dry_run=True))
+    finally:
+        csharp_cli.RUNNER.reset(token)
+
+    assert ran == list(parts)
+    assert calls == [["browser", "profiles", "--dry-run"], ["skills", "sync", "--system", "all", "--dry-run"]]
