@@ -248,7 +248,7 @@ def build_ruleset_payload(repo_name: str, cfg: PolicyConfig | None = None) -> Js
             {
                 "type": "required_status_checks",
                 "parameters": {
-                    "strict_required_status_checks_policy": True,
+                    "strict_required_status_checks_policy": not cfg.merge_queue(repo_name),
                     "required_status_checks": req_checks,
                 },
             }

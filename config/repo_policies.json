@@ -401,6 +401,10 @@
       ],
       "require_extra_approval_for_unattributed_changes": true
     },
+    ".github": {
+      "required_checks": [],
+      "merge_queue": false
+    },
     "oxbow": {
       "merge_queue": false
     },
