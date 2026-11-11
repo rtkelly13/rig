@@ -172,9 +172,9 @@ Host languages declare their allowed and banned script extensions under `languag
 }
 ```
 
-### 2. Rendering & Inspection via `repo_hygiene.py`
-- `inspect_ls_lint(repo_path, expected_owner, repo_name)` verifies that `.ls-lint.yml` exists, bans `.sh` and `.ps1`, enforces `scripts/` rules matching the repo's language preset, and that CI contains the validation step.
-- `align_ls_lint(repo_path, expected_owner, repo_name)` programmatically generates or updates the compliant `.ls-lint.yml` configuration and workflow steps.
+### 2. Rendering & Inspection via `RepoHygiene.cs`
+- `RepoHygiene` (in `src/Rig.Core/Governance/RepoHygiene.cs`) verifies that `.ls-lint.yml` exists, bans `.sh` and `.ps1`, enforces `scripts/` rules matching the repo's language preset, and that CI contains the validation step.
+- Its align path programmatically generates or updates the compliant `.ls-lint.yml` configuration and workflow steps.
 
 ### 3. Agent Convention Rule 9 in `AGENTS.md`
 All repository agent prompts (`AGENTS.md`) encode the invariant:
