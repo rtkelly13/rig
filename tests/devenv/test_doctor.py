@@ -2,6 +2,7 @@
 
 import pytest
 
+from rig import csharp_cli
 from rig.devenv.doctor.core import run_doctor
 
 
@@ -14,3 +15,22 @@ def test_run_doctor_runs_cleanly(monkeypatch: pytest.MonkeyPatch):
     rc = run_doctor()
     # Returns 0 when all required tools are healthy or 1 if missing tools
     assert rc in (0, 1)
+
+
+@pytest.mark.ci
+def test_doctor_checks_the_hook_through_rig_devenv_claude(csharp_calls: list[list[str]]):
+    _ = run_doctor()
+
+    assert ["devenv", "claude", "--check"] in [call[call.index("--") + 1 :] for call in csharp_calls]
+
+
+@pytest.mark.ci
+def test_doctor_counts_a_hook_that_is_not_current():
+    def not_current(_command: list[str], _env: dict[str, str]) -> int:
+        return 1
+
+    token = csharp_cli.RUNNER.set(not_current)
+    try:
+        assert run_doctor() == 1
+    finally:
+        csharp_cli.RUNNER.reset(token)

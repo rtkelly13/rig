@@ -12,7 +12,6 @@ from .engine.context import StepContext, get_current_platform
 from .engine.runner import run_steps
 from .engine.step import Step
 from .steps import ai_tools, fonts, git, github_cli, runtimes, terminal, tools
-from .steps.ai_tools.claude_code import setup_claude_code
 from .tool_manager import ToolManager
 
 app = typer.Typer(
@@ -175,14 +174,6 @@ def gh_cmd(
     github_cli.run_github_cli_setup(ctx)
 
 
-@app.command("claude")
-def claude_cmd(
-    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would change without writing it"),
-) -> None:
-    """Merge the Claude Code settings baseline and install the session-ledger SessionEnd hook."""
-    setup_claude_code(dry_run=dry_run)
-
-
 @app.command("ai")
 def ai_cmd() -> None:
     """Configure AI coding assistants (AGY, Claude Code baseline, OpenCode, browser profiles, skills)."""
@@ -192,6 +183,7 @@ def ai_cmd() -> None:
 
 
 csharp_cli.add_stub(app, "models")
+csharp_cli.add_group_stubs(app, "devenv")
 
 
 def main() -> None:

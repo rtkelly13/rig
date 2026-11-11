@@ -8,12 +8,12 @@ from pathlib import Path
 
 from rich.table import Table
 
+from rig import csharp_cli
+
 from ...workspace.repo_resolver import check_repo_folder
 from ..config.loader import load_all_builtin_tools
 from ..engine.context import StepContext, get_current_platform
-from ..steps.ai_tools.claude_code import get_claude_settings_path, load_settings
 from ..steps.ai_tools.discovery import detect_installed_agents
-from ..steps.ai_tools.session_ledger import LedgerHookState, session_ledger_hook_path, session_ledger_state
 from ..steps.fonts import NERD_FONTS, is_nerd_font_installed
 from ..steps.git import get_git_config_val
 from ..steps.github_cli import OverlayState, overlay_state, overlay_target
@@ -181,14 +181,14 @@ def run_doctor() -> int:
     ai_table.add_column("Assistant / Config", style="cyan")
     ai_table.add_column("Status", justify="center")
 
-    claude_cfg = get_claude_settings_path().is_file()
+    claude_cfg = (Path.home() / ".claude" / "settings.json").is_file()
     ai_table.add_row("Claude Code Settings", "[green]✓ Configured[/green]" if claude_cfg else "[dim]Not Seeded[/dim]")
 
-    ledger = session_ledger_state(load_settings(get_claude_settings_path()), session_ledger_hook_path())
-    if ledger is LedgerHookState.CURRENT:
+    # `rig devenv claude --check` prints the hook's state and exits 1 unless it is wired and current.
+    if csharp_cli.run(["devenv", "claude", "--check"]) == 0:
         ai_table.add_row("Session-Ledger Hook", "[green]✓ Installed[/green]")
     else:
-        ai_table.add_row("Session-Ledger Hook", f"[yellow]! {ledger.value.capitalize()} (run 'devenv claude')[/yellow]")
+        ai_table.add_row("Session-Ledger Hook", "[yellow]! Not current (run 'devenv claude')[/yellow]")
         issues_found += 1
 
     for agent in detect_installed_agents():

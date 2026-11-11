@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Rig.Cli.Agent;
 using Rig.Cli.Browser;
+using Rig.Cli.Devenv;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
@@ -50,7 +51,31 @@ public sealed partial class ForwardedContractTests
             .Distinct(StringComparer.Ordinal) // agent and status are both rig subcommands and entry points
             .ToList();
         var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
-        var app = new RigApp(
+        var owned = FullApp().BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));
+
+        Assert.NotEmpty(ported);
+        Assert.Equal(ported.Order(StringComparer.Ordinal), owned.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Every_subcommand_python_hands_over_is_one_csharp_owns()
+    {
+        // PORTED_SUBCOMMANDS: the subcommands of a group Python still owns that C# runs (devenv claude).
+        var block = PortedSubcommandsBlock().Match(File.ReadAllText(Bridge)).Groups["body"].Value;
+        var python = Group().Matches(block)
+            .SelectMany(m => Name().Matches(m.Groups["subs"].Value).Select(s => $"{m.Groups["group"].Value} {s.Groups["name"].Value}"));
+        var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
+        var csharp = FullApp().BuildRoot().Subcommands
+            .Where(group => forwarded.Contains(group.Name))
+            .SelectMany(group => group.Subcommands.Select(sub => $"{group.Name} {sub.Name}"));
+
+        Assert.NotEmpty(python);
+        Assert.Equal(python.Order(StringComparer.Ordinal), csharp.Order(StringComparer.Ordinal));
+    }
+
+    // Every ported command, built with fakes; only the command tree is read.
+    private static RigApp FullApp() =>
+        new(
             new PythonRig(new FakeProc(), "/rig"),
             new FakeGitHub(),
             _ => Task.FromResult<RepoSlug?>(null),
@@ -72,14 +97,9 @@ public sealed partial class ForwardedContractTests
                 new PolicyCommand(new PolicyHost("/none.json", "/", "/", false), TextWriter.Null, TextWriter.Null).Build,
                 new SkillsCommand(new SkillsHost("/", "/", "/", "/", false), new Git(new FakeProc(), "/"), new RefusingLinker(), TextWriter.Null, TextWriter.Null).Build,
                 new BrowserCommand(new BrowserHost("/", null, false, _ => null, _ => new ShellProfileEnvironment("/none")), new FakeProc(), TextWriter.Null, TextWriter.Null).Build,
+                new DevenvCommand(new DevenvHost("/", "/none.json", false), TextWriter.Null, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
-        var owned = app
-            .BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name));
-
-        Assert.NotEmpty(ported);
-        Assert.Equal(ported.Order(StringComparer.Ordinal), owned.Order(StringComparer.Ordinal));
-    }
 
     // Only its command tree is read; nothing here runs.
     private static OtelStackCommand InertOtelStack()
@@ -138,6 +158,12 @@ public sealed partial class ForwardedContractTests
 
     [GeneratedRegex("""PORTED: tuple\[str, \.\.\.\] = \((?<body>[^)]*)\)""")]
     private static partial Regex PortedBlock();
+
+    [GeneratedRegex("""PORTED_SUBCOMMANDS: dict\[str, tuple\[str, \.\.\.\]\] = \{(?<body>[^}]*)\}""")]
+    private static partial Regex PortedSubcommandsBlock();
+
+    [GeneratedRegex(@"""(?<group>[\w-]+)"": \((?<subs>[^)]*)\)")]
+    private static partial Regex Group();
 
     [GeneratedRegex(@"""(?<name>[\w-]+)""")]
     private static partial Regex Name();
