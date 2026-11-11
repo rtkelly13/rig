@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import sys
 from collections.abc import Callable, Sequence
+from contextvars import ContextVar
 from pathlib import Path
 
 import typer
@@ -21,7 +22,7 @@ import typer
 from rig import tracing
 
 #: Commands the C# CLI owns. ``tests/Rig.Cli.Tests`` checks each is registered there and gone from here.
-PORTED: tuple[str, ...] = ("agent", "gh", "models", "status")
+PORTED: tuple[str, ...] = ("agent", "gh", "models", "policy", "status")
 
 #: Set for the C# CLI so it refuses to forward a command back to Python.
 BRIDGE_VARIABLE = "RIG_FROM_PYTHON"
@@ -32,6 +33,9 @@ HOME_VARIABLE = "RIG_HOME"
 
 #: Runs an attached command with extra environment and returns its exit code.
 type Runner = Callable[[list[str], dict[str, str]], int]
+
+#: The runner :func:`run` uses when given none: the test suite sets one, so a delegated command never starts dotnet.
+RUNNER: ContextVar[Runner | None] = ContextVar("rig_csharp_runner", default=None)
 
 
 def cli_project(here: Path | None = None) -> Path:
@@ -49,8 +53,9 @@ def _attached(command: list[str], env: dict[str, str]) -> int:
     return tracing.run(command, scope="rig.csharp_cli", env={**os.environ, **env}).returncode
 
 
-def run(args: Sequence[str], *, project: Path | None = None, runner: Runner = _attached) -> int:
+def run(args: Sequence[str], *, project: Path | None = None, runner: Runner | None = None) -> int:
     """Run *args* (a ported command and its arguments) on the C# CLI; return its exit code."""
+    send = runner or RUNNER.get() or _attached
     target = project or cli_project()
     name = args[0] if args else "rig"
     if not (target / "Rig.Cli.csproj").is_file():
@@ -59,7 +64,7 @@ def run(args: Sequence[str], *, project: Path | None = None, runner: Runner = _a
         )
         return 2
     try:
-        return runner(argv(target, args), {BRIDGE_VARIABLE: "1", HOME_VARIABLE: str(target.parents[1])})
+        return send(argv(target, args), {BRIDGE_VARIABLE: "1", HOME_VARIABLE: str(target.parents[1])})
     except FileNotFoundError:
         _ = sys.stderr.write(f"rig {name}: this command now runs on the C# rig CLI, which needs dotnet on PATH.\n")
         return 2

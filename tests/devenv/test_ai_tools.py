@@ -23,9 +23,8 @@ from rig.devenv.steps.ai_tools.estate_rules import (
 )
 from rig.devenv.steps.ai_tools.opencode import (
     merge_dicts_non_destructive,
+    setup_opencode,
 )
-from rig.policy.engine import load_policy
-from rig.policy.projections import project_native_permissions
 
 
 def _written(merge: SettingsMerge):
@@ -205,27 +204,37 @@ def _permissions(home: Path) -> dict[str, list[str]]:
     return json.loads(get_claude_settings_path(home).read_text(encoding="utf-8"))["permissions"]
 
 
+def _handed_over(calls: list[list[str]]) -> list[list[str]]:
+    """The rig commands handed to the C# CLI: each argv after dotnet's ``--``."""
+    return [call[call.index("--") + 1 :] for call in calls]
+
+
 @pytest.mark.ci
-def test_devenv_claude_permissions_are_the_policy_projection(isolated_home: Path, tmp_path: Path):
-    """`devenv claude` writes exactly the rules `workspace policy sync` would, and nothing broader."""
+def test_devenv_claude_projects_the_policy_through_rig_policy_sync(isolated_home: Path, csharp_calls: list[list[str]]):
+    """`devenv claude` leaves command rules to `rig policy sync`, aimed at the same home."""
     setup_claude_code(home=isolated_home)
 
-    synced_home = tmp_path / "policy-sync-home"
-    project_native_permissions(load_policy(), systems=["claude"], home=synced_home)
-
-    devenv_permissions = _permissions(isolated_home)
-    synced_permissions = _permissions(synced_home)
-    assert devenv_permissions["allow"] == synced_permissions["allow"]
-    assert devenv_permissions["deny"] == synced_permissions["deny"]
-    for blanket in ("Bash(git:*)", "Bash(curl:*)", "Bash(pkill:*)", "Bash(python:*)", "Bash(chmod:*)"):
-        assert blanket not in devenv_permissions["allow"]
+    assert _handed_over(csharp_calls) == [["policy", "sync", "--system", "claude", "--home", str(isolated_home)]]
+    assert "allow" not in _permissions(isolated_home)
 
 
 @pytest.mark.ci
-def test_devenv_claude_dry_run_writes_no_permissions(isolated_home: Path):
+def test_devenv_claude_dry_run_writes_nothing_and_syncs_dry(isolated_home: Path, csharp_calls: list[list[str]]):
     setup_claude_code(dry_run=True, home=isolated_home)
 
     assert not get_claude_settings_path(isolated_home).exists()
+    assert _handed_over(csharp_calls) == [
+        ["policy", "sync", "--system", "claude", "--home", str(isolated_home), "--dry-run"]
+    ]
+
+
+@pytest.mark.ci
+def test_devenv_opencode_projects_the_policy_into_the_users_home(isolated_home: Path, csharp_calls: list[list[str]]):
+    setup_opencode(dry_run=True)
+
+    assert _handed_over(csharp_calls) == [
+        ["policy", "sync", "--system", "opencode", "--home", str(Path.home()), "--dry-run"]
+    ]
 
 
 def test_estate_rules_created_when_absent():

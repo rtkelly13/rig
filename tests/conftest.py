@@ -170,6 +170,27 @@ def isolate_app_state_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: py
     monkeypatch.setenv("WORKSPACE_HOME", str(tmp_path_factory.mktemp("workspace-home")))
 
 
+@pytest.fixture(autouse=True)
+def csharp_calls() -> Iterator[list[list[str]]]:
+    """Record each hand-over to the C# rig CLI instead of starting dotnet; every one succeeds.
+
+    A Python caller of a ported command (devenv projecting the command policy, say) would
+    otherwise build and run the real C# CLI against the developer's home. A test that cares
+    what was handed over asks for this fixture and reads the argv lists.
+    """
+    from rig import csharp_cli
+
+    calls: list[list[str]] = []
+
+    def record(command: list[str], _env: dict[str, str]) -> int:
+        calls.append(command)
+        return 0
+
+    token = csharp_cli.RUNNER.set(record)
+    yield calls
+    csharp_cli.RUNNER.reset(token)
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     from tests import sizes
 

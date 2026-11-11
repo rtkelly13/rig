@@ -74,14 +74,12 @@ def test_the_attached_runner_adds_its_environment_to_this_one(monkeypatch: pytes
     assert csharp_cli._attached(["git", "config", "--get", "rig.absent"], extra) == 1  # pyright: ignore[reportPrivateUsage]
 
 
-def test_the_python_cli_hands_a_ported_command_over(monkeypatch: pytest.MonkeyPatch) -> None:
-    # With no dotnet to find, the hand-over reaches the C# runner and reports it, naming the command.
-    monkeypatch.setenv("PATH", "")
-
+def test_the_python_cli_hands_a_ported_command_over(csharp_calls: list[list[str]]) -> None:
+    # The whole line, --help included, reaches the C# runner after dotnet's `--`.
     result = CliRunner().invoke(app, ["gh", "threads", "list", "7", "--help"])
 
-    assert result.exit_code == 2
-    assert "rig gh: this command now runs on the C# rig CLI, which needs dotnet on PATH." in result.output
+    assert result.exit_code == 0
+    assert [call[call.index("--") + 1 :] for call in csharp_calls] == [["gh", "threads", "list", "7", "--help"]]
 
 
 def test_a_stub_hands_over_every_argument_and_returns_the_exit_code() -> None:

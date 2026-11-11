@@ -5,6 +5,7 @@ using Rig.Cli.Latex;
 using Rig.Cli.Mail;
 using Rig.Cli.Models;
 using Rig.Cli.Otel;
+using Rig.Cli.Policy;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
@@ -64,6 +65,7 @@ public sealed partial class ForwardedContractTests
                 InertOtelStack().Build,
                 new StatusCommand(new FakeProc(), new Git(new FakeProc(), "/"), "/", TextWriter.Null).Build,
                 () => new ModelsCommand(new ModelDiscovery(new FakeProc(), "/", _ => null), TextWriter.Null).Build(),
+                new PolicyCommand(new PolicyHost("/none.json", "/", "/", false), TextWriter.Null, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
         var owned = app
