@@ -105,7 +105,7 @@ public sealed class ClaudeBaselineTests : IDisposable
     }
 
     [Fact]
-    public void A_missing_file_loads_as_empty() => Assert.Equal("{}", ClaudeBaseline.Load(_dir.Path + "/none.json")!.ToJsonString());
+    public void A_missing_file_loads_as_empty() => Assert.Equal("{}", SettingsFile.Load(_dir.Path + "/none.json")!.ToJsonString());
 
     [Theory]
     [InlineData("[1, 2]")]
@@ -117,7 +117,7 @@ public sealed class ClaudeBaselineTests : IDisposable
         var path = _dir.File("settings.json");
         File.WriteAllText(path, text);
 
-        Assert.Null(ClaudeBaseline.Load(path));
+        Assert.Null(SettingsFile.Load(path));
     }
 
     [Theory]
@@ -127,7 +127,7 @@ public sealed class ClaudeBaselineTests : IDisposable
     {
         var path = Path.Join(_dir.Path, ".claude", "settings.json");
 
-        ClaudeBaseline.Save(path, JsonNode.Parse("""{"name":"Zoë","list":[1],"tab":"\t"}""")!.AsObject(), windows);
+        SettingsFile.Save(path, JsonNode.Parse("""{"name":"Zoë","list":[1],"tab":"\t"}""")!.AsObject(), windows);
 
         Assert.Equal(
             "{\n  \"name\": \"Zoë\",\n  \"list\": [\n    1\n  ],\n  \"tab\": \"\\t\"\n}\n".Replace("\n", newline, StringComparison.Ordinal),
@@ -136,11 +136,26 @@ public sealed class ClaudeBaselineTests : IDisposable
     }
 
     [Fact]
+    public void Save_writes_through_a_symlink_and_keeps_the_link()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Creating a symlink needs developer mode on Windows.");
+        var target = _dir.File("dotfiles/settings.json");
+        var link = Path.Join(_dir.Folder(".claude"), "settings.json");
+        _ = File.CreateSymbolicLink(link, target);
+
+        SettingsFile.Save(link, new JsonObject { ["a"] = 1 }, windows: false);
+
+        Assert.Equal(target, new FileInfo(link).LinkTarget);
+        Assert.Equal("{\n  \"a\": 1\n}\n", File.ReadAllText(target));
+        Assert.Equal(["settings.json"], Directory.GetFileSystemEntries(Path.GetDirectoryName(link)!).Select(Path.GetFileName));
+    }
+
+    [Fact]
     public void A_failed_save_removes_its_staging_file_and_keeps_the_original()
     {
         var path = _dir.Folder("settings.json"); // a folder where the file goes: the final move fails
 
-        _ = Assert.ThrowsAny<IOException>(() => ClaudeBaseline.Save(path, [], windows: false));
+        _ = Assert.ThrowsAny<IOException>(() => SettingsFile.Save(path, [], windows: false));
 
         Assert.True(Directory.Exists(path));
         Assert.Equal(["settings.json"], Directory.GetFileSystemEntries(_dir.Path).Select(Path.GetFileName));
