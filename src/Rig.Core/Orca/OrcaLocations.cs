@@ -36,7 +36,7 @@ public sealed record OrcaLocations(Func<string, string?> Variable, string Home, 
         OperatingSystem.IsMacOS() ? OrcaOs.MacOs : OperatingSystem.IsWindows() ? OrcaOs.Windows : OrcaOs.Linux);
 
     /// <summary>The user-data folder <c>--orca-data</c> named, else the one <c>ORCA_USER_DATA_PATH</c> names, else null for the default instance.</summary>
-    public string? UserData(string? flag) => Set(flag) ?? Set(Variable(UserDataVariable));
+    public string? UserData(string? flag) => (Set(flag) ?? Set(Variable(UserDataVariable))) is { } chosen ? ExpandHome(chosen) : null;
 
     /// <summary>The default instance's user-data folder on this platform.</summary>
     public string DefaultUserData()

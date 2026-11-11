@@ -71,6 +71,7 @@ public sealed class OrcaProfileTests : IDisposable
         Assert.Equal("/flag", withVariable.UserData("/flag"));
         Assert.Equal("/env", withVariable.UserData(null));
         Assert.Null(Locations(OrcaOs.Linux, (OrcaLocations.UserDataVariable, "")).UserData(""));
+        Assert.Equal("/h/orca-personal", Slashed(withVariable.UserData("~/orca-personal")!));
     }
 
     [Fact]
@@ -124,11 +125,13 @@ public sealed class OrcaProfileTests : IDisposable
     [Fact]
     public void A_backup_in_a_folder_with_awkward_characters_still_opens()
     {
-        var folder = _dir.Folder("Application Support #1 %20 ?x");
+        // Windows forbids ? in a file name; ImmutablePath escapes it all the same (below).
+        var folder = _dir.Folder(OperatingSystem.IsWindows() ? "Application Support #1 %20" : "Application Support #1 %20 ?x");
         var path = Path.Join(folder, "b.db");
         File.Copy(Database("seed.db", Settings, Older), path);
 
         Assert.Equal("~/orca/workspaces", OrcaProfile.ReadSettings(path, live: false)?.WorkspaceDir);
+        Assert.Equal("~/orca/workspaces", OrcaProfile.ReadSettings(Path.GetRelativePath(Environment.CurrentDirectory, path), live: false)?.WorkspaceDir);
         Assert.Equal("/C:/a%25b%3f%23", OrcaProfile.ImmutablePath(@"C:\a%b?#"));
     }
 

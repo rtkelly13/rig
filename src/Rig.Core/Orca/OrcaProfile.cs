@@ -65,7 +65,7 @@ public static class OrcaProfile
 
         var builder = new SqliteConnectionStringBuilder
         {
-            DataSource = live ? dbPath : $"file:{ImmutablePath(dbPath)}?immutable=1",
+            DataSource = live ? dbPath : $"file:{ImmutablePath(Path.GetFullPath(dbPath))}?immutable=1",
             Mode = SqliteOpenMode.ReadOnly,
             Pooling = false,
         };
