@@ -111,13 +111,13 @@ internal sealed class ShelveCommand(
         {
             worktrees, repo, every, root, refresh, apply, json, idle, include, discard, upstream,
         };
-        shelve.SetAction((parsed, cancellationToken) => ShelveAsync(
+        shelve.SetAction((parsed, cancellationToken) => GuardedAsync(() => ShelveAsync(
             new ShelveScope(parsed.GetValue(worktrees) ?? [], parsed.GetValue(repo), parsed.GetValue(every), parsed.GetValue(root), parsed.GetValue(refresh)),
             parsed.GetValue(idle) ?? "2h",
             new ShelveOptions(TimeSpan.Zero, parsed.GetValue(include), parsed.GetValue(discard), parsed.GetValue(upstream)),
             parsed.GetValue(apply),
             parsed.GetValue(json),
-            cancellationToken));
+            cancellationToken), cancellationToken));
         return shelve;
     }
 
@@ -166,6 +166,8 @@ internal sealed class ShelveCommand(
         {
             foreach (var plan in plans)
             {
+                // Between plans, never inside one: an interrupted apply leaves each worktree either shelved or untouched.
+                cancellationToken.ThrowIfCancellationRequested();
                 results.Add(await shelver.ApplyAsync(plan).ConfigureAwait(false));
             }
         }
@@ -247,7 +249,7 @@ internal sealed class ShelveCommand(
 
             var match = (await Worktree.ListAsync(git, clone).ConfigureAwait(false))
                 .Where(tree => PathResolution.IsUnder(want, PathResolution.Resolve(tree.Path)))
-                .OrderByDescending(tree => tree.Path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Length)
+                .OrderByDescending(tree => PathResolution.Resolve(tree.Path).Length) // git prints / on Windows: compare resolved paths
                 .FirstOrDefault();
             if (match is null || !Shelvable(match))
             {
@@ -261,7 +263,10 @@ internal sealed class ShelveCommand(
                 grouped.Add(target);
             }
 
-            target.Trees.Add(match);
+            if (!target.Trees.Any(tree => PathResolution.Same(PathResolution.Resolve(tree.Path), PathResolution.Resolve(match.Path))))
+            {
+                target.Trees.Add(match);
+            }
         }
 
         return (grouped, null);
@@ -293,14 +298,17 @@ internal sealed class ShelveCommand(
         var user = new Option<string?>("--user") { Description = "Whose shelf (default: yours)" };
         var drop = new Option<bool>("--drop") { Description = "Delete the shelf from origin once restored" };
         var unshelve = new Command("unshelve", "Recreate a shelved worktree; uncommitted work comes back unstaged.") { name, repo, path, user, drop };
-        unshelve.SetAction((parsed, cancellationToken) => UnshelveAsync(
-            parsed.GetValue(name)!, parsed.GetValue(repo), parsed.GetValue(path), parsed.GetValue(user), parsed.GetValue(drop), cancellationToken));
+        unshelve.SetAction((parsed, cancellationToken) => GuardedAsync(() => UnshelveAsync(
+            parsed.GetValue(name)!, parsed.GetValue(repo), parsed.GetValue(path), parsed.GetValue(user), parsed.GetValue(drop), cancellationToken), cancellationToken));
         return unshelve;
     }
 
     private async Task<int> UnshelveAsync(string name, string? repo, string? path, string? user, bool drop, CancellationToken cancellationToken)
     {
-        var clone = await oneClone(repo).ConfigureAwait(false);
+        // The main checkout, not the cwd's worktree: Shelved-Path is relative to it.
+        var clone = repo is null
+            ? await CloneOfAsync(PathResolution.Resolve(host.WorkingDirectory)).ConfigureAwait(false) ?? await oneClone(null).ConfigureAwait(false)
+            : await oneClone(repo).ConfigureAwait(false);
         var shelves = await store.ListAsync(clone).ConfigureAwait(false);
         var mine = Shelver.ShelfRef(user ?? await new Shelver(git, new TreeRemoval(proc), time, null).ShelfUserAsync(clone).ConfigureAwait(false), name);
         var exact = shelves.Where(shelf => shelf.Ref == name || shelf.Ref == $"refs/heads/{name}" || shelf.Ref == mine).ToList();
@@ -328,6 +336,7 @@ internal sealed class ShelveCommand(
         {
             var dropped = await store.DropAsync(chosen).ConfigureAwait(false);
             await output.WriteLineAsync((dropped.Ok ? $"  shelf dropped from {ShelfStore.Remote}" : $"  drop failed: {dropped.Detail}").AsMemory(), cancellationToken).ConfigureAwait(false);
+            return dropped.Ok ? 0 : 1;
         }
 
         return 0;
@@ -349,8 +358,8 @@ internal sealed class ShelveCommand(
         {
             repo, every, root, refresh, prune, apply, json,
         };
-        shelved.SetAction((parsed, cancellationToken) => ShelvedAsync(
-            parsed.GetValue(repo), parsed.GetValue(every), parsed.GetValue(root), parsed.GetValue(refresh), parsed.GetValue(prune), parsed.GetValue(apply), parsed.GetValue(json), cancellationToken));
+        shelved.SetAction((parsed, cancellationToken) => GuardedAsync(() => ShelvedAsync(
+            parsed.GetValue(repo), parsed.GetValue(every), parsed.GetValue(root), parsed.GetValue(refresh), parsed.GetValue(prune), parsed.GetValue(apply), parsed.GetValue(json), cancellationToken), cancellationToken));
         return shelved;
     }
 
@@ -384,10 +393,11 @@ internal sealed class ShelveCommand(
             rows.AddRange(await RowsAsync(clone, prune, apply, cancellationToken).ConfigureAwait(false));
         }
 
+        var code = rows.Any(row => row.Pruned == false) ? 1 : 0; // a drop that was asked for and failed
         if (json)
         {
             await output.WriteLineAsync(PyJson.Dumps(new JsonArray([.. rows.Select(row => (JsonNode)row.ToJson())])).AsMemory(), cancellationToken).ConfigureAwait(false);
-            return 0;
+            return code;
         }
 
         if (rows.Count == 0)
@@ -416,7 +426,7 @@ internal sealed class ShelveCommand(
         }
 
         await output.WriteAsync(table.Render().AsMemory(), cancellationToken).ConfigureAwait(false);
-        return 0;
+        return code;
     }
 
     private async Task<List<ShelvedRow>> RowsAsync(string clone, bool prune, bool apply, CancellationToken cancellationToken)
@@ -466,6 +476,20 @@ internal sealed class ShelveCommand(
     }
 
     private string Absolute(string path) => PathResolution.Resolve(Path.Combine(host.WorkingDirectory, host.ExpandHome(path)));
+
+    // origin could not say which shelves it holds: fail rather than act as if it holds none.
+    private async Task<int> GuardedAsync(Func<Task<int>> run, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await run().ConfigureAwait(false);
+        }
+        catch (ShelfStoreException failure)
+        {
+            await error.WriteLineAsync($"✗ {failure.Message}".AsMemory(), cancellationToken).ConfigureAwait(false);
+            return 1;
+        }
+    }
 
     private async Task<int> RefuseAsync(string message, CancellationToken cancellationToken)
     {

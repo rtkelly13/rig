@@ -206,6 +206,35 @@ public sealed class ShelveCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Two_paths_inside_one_worktree_plan_it_once()
+    {
+        _ = await _fx.InitAsync();
+        var one = await _fx.AddWorktreeAsync("one");
+        var sub = Directory.CreateDirectory(Path.Join(one, "sub")).FullName;
+
+        var (code, rows) = await ShelveJsonAsync(one, sub);
+
+        Assert.Equal(0, code);
+        Assert.Equal(["one"], rows.Select(p => p!["name"]!.GetValue<string>()));
+    }
+
+    [Fact]
+    public async Task An_origin_that_cannot_list_shelves_fails_rather_than_acting_blind()
+    {
+        _ = await _fx.InitAsync();
+        _ = await _fx.AddWorktreeAsync("one");
+        _answer = request => request.Argv.Contains("ls-remote") ? new Ran(128, string.Empty, "no route") : null;
+
+        var shelve = await RunAsync("shelve", "--repo", Clone, "--idle", "0", "--apply");
+        var shelved = await RunAsync("shelved", "--repo", Clone);
+
+        Assert.Equal((1, string.Empty), (shelve.Code, shelve.Out));
+        Assert.Contains("✗ could not list shelves on origin for ", shelve.Err, StringComparison.Ordinal);
+        Assert.Equal(1, shelved.Code);
+        Assert.True(Directory.Exists(Path.Join(Clone, ".worktrees", "one")));
+    }
+
+    [Fact]
     public async Task With_no_path_the_worktree_holding_the_cwd_is_the_target()
     {
         _ = await _fx.InitAsync();
@@ -403,6 +432,60 @@ public sealed class ShelveCommandTests : IDisposable
         Assert.Contains("shelf dropped from origin", output, StringComparison.Ordinal);
         Assert.Empty(await RemoteRefsAsync());
     }
+
+    [Fact]
+    public async Task Unshelve_from_inside_another_worktree_restores_beside_the_main_checkout()
+    {
+        _ = await _fx.InitAsync();
+        var dirty = await ShelvedDirtyAsync();
+        var other = await _fx.AddWorktreeAsync("other");
+
+        var (code, _, error) = await RunInAsync(other, "unshelve", "dirty");
+
+        Assert.True(code == 0, error);
+        Assert.Equal("untracked\n", await File.ReadAllTextAsync(Path.Join(dirty, "new.txt"), Token));
+        Assert.False(Directory.Exists(Path.Join(other, ".worktrees")));
+    }
+
+    [Fact]
+    public async Task A_drop_origin_refuses_fails_the_unshelve()
+    {
+        _ = await _fx.InitAsync();
+        _ = await ShelvedDirtyAsync();
+        _answer = RefuseDrops;
+
+        var (code, output, _) = await RunAsync("unshelve", "dirty", "--repo", Clone, "--drop");
+
+        Assert.Equal(1, code);
+        Assert.Contains("drop failed: rejected", output, StringComparison.Ordinal);
+        Assert.Equal(["refs/heads/shelved/t.user/dirty"], await RemoteRefsAsync());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_prune_origin_refuses_fails_the_listing(bool json)
+    {
+        _ = await _fx.InitAsync();
+        var ahead = await _fx.AddWorktreeAsync("ahead");
+        await ShelveFixture.CommitAsync(ahead, "local.txt", "only here\n");
+        Assert.Equal(0, (await ShelveJsonAsync("--repo", Clone, "--apply")).Code);
+        var shelf = Assert.Single(await _fx.Store.ListAsync(Clone));
+        _ = await Repos.GitAsync(Clone, "push", "-q", "origin", $"{shelf.Trailers.Base}:main");
+        _ = await Repos.GitAsync(Clone, "fetch", "-q", "origin");
+        _answer = RefuseDrops;
+
+        var (code, output, _) = json
+            ? await RunAsync("shelved", "--repo", Clone, "--prune", "--apply", "--json")
+            : await RunAsync("shelved", "--repo", Clone, "--prune", "--apply");
+
+        Assert.Equal(1, code);
+        Assert.Contains("failed: rejected", output, StringComparison.Ordinal);
+        Assert.Single(await RemoteRefsAsync());
+    }
+
+    private static Ran? RefuseDrops(ProcRequest request) =>
+        request.Argv.Any(arg => arg.StartsWith("--force-with-lease=", StringComparison.Ordinal)) ? new Ran(1, string.Empty, "rejected") : null;
 
     [Fact]
     public async Task Unshelve_to_an_occupied_path_fails_and_keeps_the_shelf()
