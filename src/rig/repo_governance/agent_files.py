@@ -6,7 +6,9 @@ instructions instead of supplementing them, and a pointer stub only adds
 indirection — the same failure that removed `CLAUDE.md`.
 
 This tuple is the single source of truth for both halves of the policy:
-`agents_md_audit` fails a repository that still carries one, and
+the C# `repo-governance agents-audit` (`Rig.Core.Governance.AgentsMdAudit`,
+which reads the same list from `BespokeAgentFiles`) fails a repository that
+still carries one, and
 `gitignore_manager` writes the same paths into `.gitignore`, so a tool cannot
 reintroduce one behind the audit's back.
 

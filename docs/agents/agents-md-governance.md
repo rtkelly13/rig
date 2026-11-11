@@ -174,7 +174,8 @@ one in **this repo**, at `AGENTS.md:170`. The tool did it to its own source of t
 ## 6. Sequencing
 
 **Done** — all eight deterministic checks, the waiver mechanism, and `--json` for the agent
-rubric. 20 tests in `tests/test_agents_md_audit.py`.
+rubric. The audit runs from C# (`src/Rig.Core/Governance/AgentsMdAudit.cs`), tested in
+`tests/Rig.Core.Tests/Governance/`.
 
 Still outstanding, in order:
 

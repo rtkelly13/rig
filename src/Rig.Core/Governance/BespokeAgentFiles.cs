@@ -3,8 +3,8 @@ namespace Rig.Core.Governance;
 /// <summary>
 /// Per-tool agent instruction files that <c>AGENTS.md</c> replaced. Most tools that shipped their own file before
 /// <c>AGENTS.md</c> still read it first, so a copy shadows the real instructions. The gitignore policy writes these
-/// paths into <c>.gitignore</c> so a tool cannot reintroduce one. Ported from <c>rig.repo_governance.agent_files</c>,
-/// which the AGENTS.md audit still reads until it moves too.
+/// paths into <c>.gitignore</c> so a tool cannot reintroduce one, and the AGENTS.md audit fails a repo that carries one.
+/// Ported from <c>rig.repo_governance.agent_files</c>, which the Python gitignore manager still reads.
 /// </summary>
 public static class BespokeAgentFiles
 {

@@ -4,6 +4,7 @@ using Rig.Cli.Browser;
 using Rig.Cli.Devenv;
 using Rig.Cli.Estate;
 using Rig.Cli.Forwarding;
+using Rig.Cli.Governance;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
 using Rig.Cli.Models;
@@ -106,6 +107,7 @@ public sealed partial class ForwardedContractTests
                 new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null, Refusing).Build,
                 new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null, Refusing).BuildSync,
                 new EstateCommand(new EstateHost("/", "/", "/"), NoOrca.Host, new FakeProc(), new FakeGitHub(), TimeProvider.System, _ => null, TextWriter.Null, TextWriter.Null).Build,
+                new GovernanceCommand(new GovernanceHost("/", "/", "/"), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
 

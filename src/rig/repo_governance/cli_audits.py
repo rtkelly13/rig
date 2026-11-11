@@ -1,9 +1,8 @@
-"""AGENTS.md, Vercel gating, .gitignore and GitHub Apps audits.
+"""Vercel gating, .gitignore and GitHub Apps audits.
 
 Registered on the ``repo-governance`` app by :mod:`.align_repo_conventions`.
 """
 
-import contextlib
 import json
 import os
 import pathlib
@@ -14,19 +13,6 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
-from rig.repo_governance.agent_files_remote import (
-    RemoteSweep,
-    sweep_remote_agent_files,
-)
-from rig.repo_governance.agents_md_audit import (
-    GATING_CHECKS,
-    REPORT_ONLY_CHECKS,
-    WAIVER_FILENAME,
-    AuditResult,
-    Waiver,
-    audit_repo,
-    load_waivers,
-)
 from rig.repo_governance.cli_common import SEVERITY_STYLES, console
 from rig.repo_governance.gitignore_manager import (
     RepoGitignoreAlignment,
@@ -37,7 +23,6 @@ from rig.repo_governance.gitignore_manager import (
 from rig.repo_governance.policy_config import (
     load_policy_config,
 )
-from rig.repo_governance.policy_key import policy_key
 from rig.repo_governance.repo_discovery import (
     personal_repos_dir,
     resolve_target_directories,
@@ -45,171 +30,6 @@ from rig.repo_governance.repo_discovery import (
 from rig.repo_governance.vercel_gating import audit_projects
 
 app = typer.Typer()
-
-
-@app.command(name="agents-audit")
-def agents_audit_command(
-    path: str | None = typer.Argument(None, help="Target repository directory path (defaults to CWD)"),
-    all: bool = typer.Option(False, "--all", "-a", help="Audit all personal repositories under <code root>/personal"),
-    json_output: bool = typer.Option(False, "--json", help="Emit findings as JSON for an agent to act on"),
-    remote: bool = typer.Option(
-        False,
-        "--remote",
-        help=(
-            "Also sweep default branches on GitHub, including repos with no local clone "
-            "and archived ones (which are reported but do not fail the audit)"
-        ),
-    ),
-    strict: bool = typer.Option(False, "--strict", help="Fail on warnings too, not only errors"),
-    write_waivers: bool = typer.Option(
-        False, "--write-waivers", help=f"Append a stub for every surviving finding to {WAIVER_FILENAME}"
-    ),
-) -> None:
-    """Audits AGENTS.md and the docs tree against the machine-decidable rules.
-
-    Only the deterministic half of `docs/agents/agent-consistency.md` is gated here. Whether an
-    instruction belongs in the root file, whether it is vague, and whether two contradict each
-    other need judgement — `--json` exists so an agent can pick those up with that document as
-    its rubric.
-
-    A repo dismisses a finding by committing a waiver to `.agents-audit.json`. Waivers need a
-    reason, may carry an `expires` date, and are reported once they stop suppressing anything —
-    so the dismissal list cannot quietly become the ball of mud the rules exist to prevent.
-    `--write-waivers` emits the stubs with an empty reason, which the audit then fails on until
-    each one is justified.
-
-    `--remote` sweeps each default branch over the GitHub API as well, which catches repositories
-    that have no local clone — the blind spot that let an archived repo keep a `CLAUDE.md`
-    through an earlier sweep.
-    """
-    # Repo selection narrates which repos it skipped. In `--json` mode stdout
-    # belongs to the payload, so that narration goes to stderr instead.
-    # `--remote` on its own means "GitHub only"; combined with --all it sweeps both.
-    config = load_policy_config()
-    results: list[AuditResult] = []
-    targets: list[pathlib.Path] = []
-    if not (remote and not (path or all)):
-        if json_output:
-            with contextlib.redirect_stdout(sys.stderr):
-                targets = resolve_target_directories(path, all)
-        else:
-            targets = resolve_target_directories(path, all)
-
-    for target in targets:
-        rules = config.agents_md(policy_key(target))
-        results.append(audit_repo(target, rules))
-
-    sweep = (
-        sweep_remote_agent_files(config.allowed_owners(""), is_registered=config.is_registered)
-        if remote
-        else RemoteSweep()
-    )
-    remote_findings = sweep.findings
-
-    if json_output:
-        payload = {
-            "results": [r.model_dump(mode="json") for r in results],
-            "remote": [finding.to_json() for finding in remote_findings],
-            "remote_unread": list(sweep.unread),
-            "gating_checks": list(GATING_CHECKS),
-            "report_only_checks": list(REPORT_ONLY_CHECKS),
-            "rubric": "docs/agents/agent-consistency.md",
-        }
-        # Plain stdout, not `console.print_json` — Rich adds ANSI colour and
-        # wrapping, which is the structured-output anti-pattern
-        # `docs/agents/agent-consistency.md` § *Agent DX* warns about. This stream is
-        # for a machine.
-        typer.echo(json.dumps(payload, indent=2))
-    else:
-        _render_audit(results)
-        if remote:
-            _render_remote(sweep)
-
-    if write_waivers:
-        for target, result in zip(targets, results, strict=True):
-            written = _append_waiver_stubs(target, result)
-            if written:
-                console.print(
-                    f"[yellow]{target.name}: wrote {written} stub(s) to {WAIVER_FILENAME} — "
-                    f"fill in each `reason` or the audit stays red.[/yellow]"
-                )
-
-    failed = (
-        any(r.failed or (strict and r.findings) for r in results)
-        or any(not finding.archived for finding in remote_findings)
-        or bool(sweep.unread)
-    )
-    if failed:
-        raise typer.Exit(code=1)
-
-
-def _render_audit(results: list[AuditResult]) -> None:
-    """Print one table per repo that has findings, plus the report-only metrics."""
-
-    for result in results:
-        if not result.findings and not result.suppressed:
-            console.print(f"[green]✓ {result.repo}: clean[/green]")
-            continue
-
-        table = Table(title=f"{result.repo} — AGENTS.md audit", title_style="bold")
-        table.add_column("Check", style="cyan", no_wrap=True)
-        table.add_column("Where", no_wrap=True)
-        table.add_column("Finding")
-        for finding in result.findings:
-            where = finding.path if finding.line is None else f"{finding.path}:{finding.line}"
-            table.add_row(
-                f"[{SEVERITY_STYLES.get(finding.severity, 'white')}]{finding.check}[/]",
-                where,
-                finding.message,
-            )
-        console.print(table)
-
-        if result.suppressed:
-            console.print(f"  [dim]{len(result.suppressed)} finding(s) waived in {WAIVER_FILENAME}[/dim]")
-        metrics = ", ".join(f"{k} {v}" for k, v in result.metrics.items())
-        console.print(f"  [dim]metrics (not gated): {metrics}[/dim]\n")
-
-
-def _render_remote(sweep: RemoteSweep) -> None:
-    """Print the GitHub-side sweep. Archived rows are reported, never gated.
-
-    An archived repo is read-only, so removing a file there means unarchive,
-    commit, re-archive. Reporting it keeps the sweep honest without demanding
-    that churn. Anything the sweep could not read is listed and fails the audit.
-    """
-    for name in sweep.unread:
-        console.print(f"[red]✗ GitHub sweep could not read {name}: check `gh auth status` and retry[/red]")
-    findings = sweep.findings
-    if not findings:
-        if not sweep.unread:
-            console.print("[green]✓ GitHub sweep: no redundant agent files[/green]")
-        return
-
-    table = Table(title="GitHub default branches — redundant agent files", title_style="bold")
-    table.add_column("Repository", style="cyan", no_wrap=True)
-    table.add_column("Path", no_wrap=True)
-    table.add_column("State")
-    for finding in findings:
-        state = "[yellow]archived — left as-is[/yellow]" if finding.archived else "[red]remove[/red]"
-        table.add_row(finding.repo, finding.path, state)
-    console.print(table)
-
-
-def _append_waiver_stubs(repo_path: pathlib.Path, result: AuditResult) -> int:
-    """Add an unreasoned stub per surviving finding. Returns how many were new."""
-    waiver_path = repo_path / WAIVER_FILENAME
-    existing = load_waivers(repo_path)
-    known = {w.key for w in existing.waivers}
-    additions = [
-        Waiver(check=f.check, path=f.path, reason="")
-        for f in result.findings
-        if f.key not in known and f.check in GATING_CHECKS
-    ]
-    if not additions:
-        return 0
-    existing.waivers.extend(additions)
-    waiver_path.write_text(json.dumps(existing.model_dump(mode="json"), indent=2) + "\n", encoding="utf-8")
-    return len(additions)
 
 
 @app.command(name="vercel-projects")

@@ -19,6 +19,7 @@ from desktop_manager.web_cli import web_app
 from rig import csharp_cli, tracing
 from rig.c4_okf.cli import app as c4_app
 from rig.flags.cli import app as flags_app
+from rig.repo_governance.align_repo_conventions import app as repo_governance_app
 from rig.triage.cli import app as triage_app
 from rig.workspace.cli import app as workspace_app
 
@@ -36,6 +37,7 @@ app.add_typer(triage_app, name="triage")
 app.add_typer(web_app, name="web")
 app.add_typer(flags_app, name="flags")
 app.add_typer(c4_app, name="c4")
+app.add_typer(repo_governance_app, name="repo-governance")
 
 
 for _name in csharp_cli.PORTED:
