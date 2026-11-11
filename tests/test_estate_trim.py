@@ -11,6 +11,7 @@ import pytest
 from desktop_manager.jobs.registry import Cadence, Environment, default_jobs
 from rig.estate import trim
 from rig.estate.disksize import measure
+from tests.links import dir_link
 
 DAY = 86400.0
 
@@ -250,7 +251,7 @@ def test_remove_reports_a_failed_delete(tmp_path: pathlib.Path) -> None:
 def test_a_directory_resolving_outside_the_worktree_is_refused(repo: pathlib.Path, tmp_path: pathlib.Path) -> None:
     outside = _fill(tmp_path / "elsewhere")
     link = repo / "node_modules"
-    link.symlink_to(outside, target_is_directory=True)
+    _ = dir_link(link, outside)
 
     assert trim.refusal(repo, link, ignored=True) == "resolves outside the worktree"
 
@@ -292,7 +293,7 @@ class TestRecheck:
 
     def test_a_link_is_refused(self, repo: pathlib.Path, tmp_path: pathlib.Path) -> None:
         tree = _worktree(repo, "linked")
-        (tree / "node_modules").symlink_to(_fill(tmp_path / "store"), target_is_directory=True)
+        _ = dir_link(tree / "node_modules", _fill(tmp_path / "store"))
 
         assert trim.recheck(self._item(tree), now=self._later()) == "is a link"
 
@@ -346,7 +347,7 @@ class TestRecheck:
 
 def test_measure_skips_links_and_unreadable_folders(tmp_path: pathlib.Path) -> None:
     root = _fill(tmp_path / "tree")
-    (root / "link").symlink_to(_fill(tmp_path / "store"), target_is_directory=True)
+    _ = dir_link(root / "link", _fill(tmp_path / "store"))
 
     assert measure(root).apparent == 4096
     assert measure(tmp_path / "missing").apparent == 0
