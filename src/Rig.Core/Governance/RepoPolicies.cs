@@ -45,9 +45,11 @@ public sealed class RepoPolicies
         List<(string, Layer, IReadOnlyList<string>)> profiles,
         List<(string, Layer)> overrides,
         IReadOnlyList<LanguagePreset> presets,
-        List<(string, string)> ownerProfiles)
+        List<(string, string)> ownerProfiles,
+        IReadOnlyList<AppPolicy> apps)
     {
         _defaults = defaults;
+        Apps = apps;
         _profiles = profiles;
         _overrides = overrides;
         _ownerProfiles = ownerProfiles;
@@ -55,7 +57,10 @@ public sealed class RepoPolicies
     }
 
     /// <summary>A policy that requires nothing.</summary>
-    public static RepoPolicies Empty { get; } = new(Layer.None, [], [], [], []);
+    public static RepoPolicies Empty { get; } = new(Layer.None, [], [], [], [], []);
+
+    /// <summary>The declared GitHub Apps (<c>github_apps</c>), in the file's order.</summary>
+    public IReadOnlyList<AppPolicy> Apps { get; }
 
     /// <summary>The language presets, in the file's order.</summary>
     public IReadOnlyList<LanguagePreset> Presets { get; }
@@ -105,7 +110,20 @@ public sealed class RepoPolicies
             profiles,
             [.. Map(file, "repo_overrides", source).Select(pair => (pair.Key, Layer.From(pair.Value, source)))],
             [.. Map(file, "language_presets", source).Select(pair => Preset(pair.Key, pair.Value, source))],
-            owners);
+            owners,
+            [.. Map(file, "github_apps", source).Select(pair => App(pair.Key, pair.Value, source))]);
+    }
+
+    /// <summary>The apps declared for <paramref name="account"/>, matched ignoring case.</summary>
+    public IReadOnlyList<AppPolicy> AppsForAccount(string account) =>
+        [.. Apps.Where(app => app.Accounts.Keys.Any(name => string.Equals(name, account, StringComparison.OrdinalIgnoreCase)))];
+
+    /// <summary>Whether <paramref name="repo"/> (bare or <c>owner/name</c>) is in <paramref name="slug"/>'s <c>disallow_repos</c> on <paramref name="account"/>.</summary>
+    public bool IsAppDisallowed(string repo, string account, string slug)
+    {
+        ArgumentNullException.ThrowIfNull(repo);
+        var bare = repo[(repo.LastIndexOf('/') + 1)..];
+        return Apps.FirstOrDefault(app => app.Slug == slug)?.Accounts.GetValueOrDefault(account) is { } policy && policy.DisallowRepos.Contains(bare);
     }
 
     /// <summary>A preset's id for a language name, alias or id, ignoring case; an unknown one comes back trimmed and lowercased.</summary>
@@ -407,6 +425,24 @@ public sealed class RepoPolicies
             mode == "all");
     }
 
+    private static AppPolicy App(string slug, JsonNode? spec, string source)
+    {
+        var where = $"{source}: github_apps.{slug}";
+        var accounts = new Dictionary<string, AppAccountPolicy>(StringComparer.Ordinal);
+        foreach (var (account, value) in spec?["accounts"] is { } node ? node as JsonObject ?? throw Bad(where, "accounts is not an object") : [])
+        {
+            var disallow = Strings(value, "disallow_repos", where) is { Count: > 0 } named ? named : Strings(value, "exclude_repos", where) ?? [];
+            accounts[account] = new(Bool(value, "required", where) ?? false, Strings(value, "repos", where) ?? [], Bool(value, "all_repos", where) ?? false, disallow);
+        }
+
+        return new(
+            slug,
+            Text(spec, "name", where) is { Length: > 0 } name ? name : slug,
+            Text(spec, "install_url", where) is { Length: > 0 } url ? url : $"https://github.com/apps/{slug}/installations/new",
+            Text(spec, "config_template", where) is { Length: > 0 } template ? template : null,
+            accounts);
+    }
+
     private static JsonObject Map(JsonObject file, string key, string source) =>
         file[key] switch
         {
@@ -636,4 +672,24 @@ public sealed class RepoPolicies
             };
         }
     }
+}
+
+/// <summary>A declared GitHub App: <c>github_apps.{slug}</c>.</summary>
+/// <param name="Slug">The app's slug, the key it is declared under.</param>
+/// <param name="Name">Its display name; the slug when none is given.</param>
+/// <param name="InstallPage">Where a person installs it.</param>
+/// <param name="ConfigTemplate">The in-repo config file it reads, if any.</param>
+/// <param name="Accounts">Its enrolment on each account, by account name.</param>
+public sealed record AppPolicy(string Slug, string Name, string InstallPage, string? ConfigTemplate, IReadOnlyDictionary<string, AppAccountPolicy> Accounts);
+
+/// <summary>Which repos an app should reach on one account.</summary>
+/// <param name="Required">Whether its absence fails the audit.</param>
+/// <param name="Repos">The repos it should reach, when not <paramref name="AllRepos"/>.</param>
+/// <param name="AllRepos">Whether it should reach every repo of the account.</param>
+/// <param name="DisallowRepos">Repos it must not reach; <c>exclude_repos</c> is the older name.</param>
+public sealed record AppAccountPolicy(bool Required, IReadOnlyList<string> Repos, bool AllRepos, IReadOnlyList<string> DisallowRepos)
+{
+    /// <summary>The repos it should reach: <paramref name="available"/> (when <see cref="AllRepos"/>) or <see cref="Repos"/>, less <see cref="DisallowRepos"/>.</summary>
+    public IReadOnlyList<string> EffectiveRepos(IReadOnlyList<string> available) =>
+        [.. (AllRepos ? available : Repos).Where(repo => !DisallowRepos.Contains(repo))];
 }

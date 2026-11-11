@@ -19,5 +19,6 @@
     <EmbeddedResource Include="Workspace/root-agents-md.md" LogicalName="Rig.Core.Workspace.root-agents-md.md" />
     <!-- The community health files `repo-governance sync-templates` writes (Governance/OssTemplates.cs). -->
     <EmbeddedResource Include="Governance/Templates/oss/*.jinja" LogicalName="Rig.Core.Governance.Templates.oss.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Governance/Templates/review/*" LogicalName="Rig.Core.Governance.Templates.review.%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
