@@ -155,7 +155,9 @@ public sealed class ClaudeBaselineTests : IDisposable
     {
         var path = _dir.Folder("settings.json"); // a folder where the file goes: the final move fails
 
-        _ = Assert.ThrowsAny<IOException>(() => SettingsFile.Save(path, [], windows: false));
+        var thrown = Record.Exception(() => SettingsFile.Save(path, [], windows: false));
+
+        Assert.True(thrown is IOException or UnauthorizedAccessException, $"unexpected {thrown}"); // Windows denies the move
 
         Assert.True(Directory.Exists(path));
         Assert.Equal(["settings.json"], Directory.GetFileSystemEntries(_dir.Path).Select(Path.GetFileName));

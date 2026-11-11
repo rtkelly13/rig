@@ -609,7 +609,7 @@ internal sealed class EstateCommand(EstateHost host, IProc proc, IGitHubApi gith
         }
 
         var top = await git.OutAsync(host.WorkingDirectory, "rev-parse", "--show-toplevel").ConfigureAwait(false);
-        return top.Length > 0 ? top : host.WorkingDirectory;
+        return top.Length > 0 ? PathResolution.Resolve(top) : host.WorkingDirectory; // git answers with / on Windows
     }
 
     private string ExpandHome(string path) =>
