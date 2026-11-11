@@ -99,6 +99,6 @@ public static partial class PackageVersions
 
     private static bool IsDigits(string text) => text.Length > 0 && text.All(char.IsAsciiDigit);
 
-    [GeneratedRegex("[0-9]+|[^0-9]+",RegexOptions.CultureInvariant)]
+    [GeneratedRegex("[0-9]+|[^0-9]+", RegexOptions.CultureInvariant)]
     private static partial Regex ChunkPattern();
 }
