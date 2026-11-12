@@ -38,7 +38,8 @@ Tests share one vocabulary rather than each file building its own doubles
 
 - **`tests/fakes/`** holds one stand-in per port, typed as that port with an `as_port()` so a
   signature change breaks the fake visibly: `gh_runner.FakeGh` for `rig.proc.GhRunner`,
-  `gh_graphql.FakeGitHub` for `rig.gh_threads.github.GraphQL`. Git has no fake class: `git.py`
+  `gh_graphql.FakeGitHub` for `rig.gh_threads.github.GraphQL` (review threads and a PR's landing state),
+  `clock.FakeClock` for loops that take `monotonic` and `sleep`. Git has no fake class: `git.py`
   runs real git through `rig.proc` against a temp clone with a bare origin, and `tests/conftest.py`
   serves that clone as the `clone` fixture.
 - **`tests/behaviour/steps/`** holds typed given/when/then functions over those fakes, such as

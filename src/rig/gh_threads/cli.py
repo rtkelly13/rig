@@ -6,21 +6,18 @@ resolve, 2 an error talking to GitHub.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 
 import typer
 from pydantic import TypeAdapter
 
-from rig import proc
+from rig.gh_target import OriginReader, origin_slug, resolve_target
 from rig.gh_threads import github
 from rig.gh_threads.github import GitHubError, GraphQL
 from rig.gh_threads.model import ResolvePlan, Thread, plan_resolve
 from rig.repo_slug import RepoSlug
 
 _RETIRE = "TEMPORARY: retire once `gh` can list, reply to and resolve PR review threads itself."
-
-type OriginReader = Callable[[], RepoSlug | None]
 
 CLEAN = 0
 DRIFT = 1
@@ -44,14 +41,8 @@ _THREADS: TypeAdapter[list[Thread]] = TypeAdapter(list[Thread])
 _OUTCOME: TypeAdapter[ResolveOutcome] = TypeAdapter(ResolveOutcome)
 
 
-def origin_slug() -> RepoSlug | None:
-    """The GitHub repo the working directory's ``origin`` points at."""
-    return RepoSlug.from_remote(proc.git_out("remote", "get-url", "origin"))
-
-
 def make_app(graphql: GraphQL = github.gh_graphql, origin: OriginReader = origin_slug) -> typer.Typer:
-    """The `rig gh` command group, talking to GitHub through *graphql*."""
-    gh_app = typer.Typer(no_args_is_help=True, help=f"Fill gaps in the GitHub CLI. {_RETIRE}")
+    """The `rig gh threads` command group, talking to GitHub through *graphql*."""
     threads_app = typer.Typer(
         no_args_is_help=True,
         help=(
@@ -59,19 +50,9 @@ def make_app(graphql: GraphQL = github.gh_graphql, origin: OriginReader = origin
             "A thread is resolved only after its fix is pushed, with a reply naming the fix commit."
         ),
     )
-    gh_app.add_typer(threads_app, name="threads")
 
     def target(repo: str | None) -> RepoSlug:
-        slug = RepoSlug.from_path(repo) if repo else origin()
-        if slug is None:
-            typer.echo(
-                f"Cannot tell which repo: pass --repo owner/name ({repo!r} is not one)"
-                if repo
-                else "Cannot tell which repo: no GitHub origin here; pass --repo owner/name",
-                err=True,
-            )
-            raise typer.Exit(ERROR)
-        return slug
+        return resolve_target(repo, origin)
 
     @threads_app.command("list")
     def list_cmd(
@@ -125,7 +106,7 @@ def make_app(graphql: GraphQL = github.gh_graphql, origin: OriginReader = origin
         else:
             _print_outcome(plan, outcome)
 
-    return gh_app
+    return threads_app
 
 
 def _apply(graphql: GraphQL, plan: ResolvePlan, *, dry_run: bool, as_json: bool) -> ResolveOutcome:
@@ -172,6 +153,3 @@ def _print_outcome(plan: ResolvePlan, outcome: ResolveOutcome) -> None:
     replied = f"replied {outcome.reply_url}" if outcome.replied else "reply already posted"
     resolved = "resolved" if plan.resolve else "was already resolved"
     typer.echo(f"{where}: {replied}; {resolved} (fix {plan.sha[:12]}).")
-
-
-app = make_app()

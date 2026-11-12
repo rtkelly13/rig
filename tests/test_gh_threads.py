@@ -43,7 +43,7 @@ def _github(**kwargs: int) -> FakeGitHub:
 
 def _run(github: FakeGitHub, *args: str, origin: RepoSlug | None = None) -> Result:
     app = make_app(as_port(github), origin=lambda: origin)
-    return CliRunner().invoke(app, ["threads", *args])
+    return CliRunner().invoke(app, [*args])
 
 
 def _resolve(github: FakeGitHub, *args: str) -> Result:

@@ -6,7 +6,8 @@ thread resolved before merge, and the rule for agents is to resolve a thread onl
 pushed, replying on it with the fix commit first. This package wraps those GraphQL calls and enforces
 that rule (`resolve` refuses a SHA that is not one of the PR's commits).
 
-Retire it once `gh` handles review threads natively: delete this package, its mount in `rig.rig_cli`,
-`tests/fakes/gh_graphql.py`, `tests/test_gh_threads.py` and the allowlist entry in
-`config/cli-allowlists.json`.
+Retire it once `gh` handles review threads natively: delete this package, its mount in `rig.gh_cli`,
+`tests/test_gh_threads.py` and the allowlist entry in `config/cli-allowlists.json`. `rig.gh_pr` reads
+unresolved threads through `github.fetch_threads` and shares `tests/fakes/gh_graphql.py`: move that
+read onto `gh` first, and keep the part of the fake it still uses.
 """
