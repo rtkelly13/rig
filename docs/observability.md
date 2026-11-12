@@ -69,6 +69,21 @@ Tests get an autouse fixture (`tests/conftest.py::isolate_trace_output`) that po
 `SHARED_UTILITIES_TRACE_DIR` at a temp directory, so suite runs never write to the
 repo's trace files.
 
+## C# tools
+
+`Rig.Core.Otel.TraceFileWriter` writes the same day files from .NET: an `ActivityListener`
+over the `ActivitySource`s it is given, each source mapped to the scope name its spans
+are written under. It honours the variables above plus `SHARED_UTILITIES_TRACE_HOME`
+(replaces only the default root), appends one envelope per write, and writes when
+2000 spans are buffered, on `Flush`, every interval after `FlushPeriodically`, and on
+`Dispose`. `Flush(includeOpen: true)` also writes each running span as it stands,
+marked `span.incomplete`; readers keep the finished copy once it lands. A span's
+trace id is its `Activity`'s, so each root activity is its own trace. Status `Error`
+becomes `code: 2` with the status description as the message.
+
+Chrome spans keep the Python names (`chrome_tabs.<step>` under scope
+`desktop_manager.chrome`), so `chrome-tabs traces` reads either language's runs.
+
 ## Querying traces (DuckDB)
 
 ```python

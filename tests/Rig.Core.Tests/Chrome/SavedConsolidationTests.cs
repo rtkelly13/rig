@@ -106,7 +106,7 @@ public sealed class SavedConsolidationTests
         _desktops.ReturnTo(1);
         _desktops.ReturnTo(null);
 
-        var restore = Assert.Single(spans.Stopped, activity => activity.OperationName == "restore_desktop");
+        var restore = Assert.Single(spans.Stopped, activity => activity.OperationName == "chrome_tabs.restore_desktop");
         Assert.Equal(2, restore.GetTagItem("desktop.from"));
         Assert.Equal(1, restore.GetTagItem("desktop.to"));
         Assert.Equal([1], _desktops.Went);

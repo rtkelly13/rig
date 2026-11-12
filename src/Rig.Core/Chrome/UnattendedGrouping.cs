@@ -81,7 +81,7 @@ public sealed class UnattendedGrouping(
     /// </summary>
     public GroupingWait Await(Func<IEnumerable<ChromeWindow>> readWindows, double idleMinutes, double waitMinutes)
     {
-        using var activity = Source.StartActivity("wait_for_idle");
+        using var activity = Source.StartActivity("chrome_tabs.wait_for_idle");
         activity?.SetTag("wait.budget_s", waitMinutes * 60);
         activity?.SetTag("wait.idle_minutes", idleMinutes);
         Block? Blocked()
