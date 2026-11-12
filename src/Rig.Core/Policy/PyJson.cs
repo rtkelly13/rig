@@ -131,7 +131,7 @@ public static class PyJson
                 break;
             case JsonValueKind.Number:
                 var raw = value.ToJsonString();
-                _ = text.Append(raw.IndexOfAny(['.', 'e', 'E']) >= 0
+                _ = text.Append(raw.IndexOfAny(['.', 'e', 'E']) >= 0 || IsFloat(value)
                     ? FloatRepr(double.Parse(raw, NumberStyles.Float, CultureInfo.InvariantCulture))
                     : raw == "-0" ? "0" : raw);
                 break;
@@ -140,6 +140,13 @@ public static class PyJson
                 break;
         }
     }
+
+    // A float built in C# keeps its type even when whole: 1.0 prints as Python's 1.0, not 1. Parsed JSON has no such
+    // type, so its text alone decides.
+    private static bool IsFloat(JsonValue value) =>
+        (value.TryGetValue<double>(out _) || value.TryGetValue<float>(out _) || value.TryGetValue<decimal>(out _))
+        && !value.TryGetValue<long>(out _)
+        && !value.TryGetValue<ulong>(out _);
 
     // ASCII mode escapes everything outside ' '..'~' (DEL included), as Python's ESCAPE_ASCII does.
     private static void String(StringBuilder text, string value, bool ascii)
