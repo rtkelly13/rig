@@ -445,8 +445,12 @@ jobs:
         run: dotnet format rig.slnx --no-restore --verify-no-changes
       - name: Build
         run: dotnet build rig.slnx --no-restore -c Release
+      # The COM source generator's stubs (Desktop/Windows) are Windows-only and generated, so they are left out like
+      # the [ExcludeFromCodeCoverage] interop they serve; the Windows job exercises them.
       - name: Test with coverage
-        run: dotnet test --solution rig.slnx --no-build -c Release --coverlet --coverlet-output-format json
+        run: >-
+          dotnet test --solution rig.slnx --no-build -c Release --coverlet --coverlet-output-format json
+          --coverlet-exclude-by-file "**/Microsoft.Interop.ComInterfaceGenerator/**"
       # Same ratchet as the Python floor: never falls, must follow coverage up to 95%.
       - name: Fetch the base branch's coverage floor
         if: github.event_name == 'pull_request'
