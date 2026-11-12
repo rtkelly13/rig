@@ -325,3 +325,37 @@ env -u ORCA_RUNTIME_SOURCE_ID ORCA_USER_DATA_PATH="$APPDATA/orca" orca repo list
 
 Write paths with forward slashes in `--command`: it is typed into `pwsh`, and backslashes
 picked up shell escaping on the way.
+
+## Driving Orca from outside
+
+What a tool outside Orca (a script, a Stream Deck key, a scheduled job) can use, as found on
+Orca 1.4.250 on Windows. Everything below the CLI is an Orca internal, not a published API, so
+check it again after an Orca update.
+
+- **The CLI is the stable surface.** It has 312 commands; `orca agent-context --json` prints
+  every command with its usage and flags, which is quicker than reading `--help` one at a time.
+  The ones that start work:
+
+  ```bash
+  orca agent launch --agent claude --worktree id:<repoId>::<path> --focus   # an agent in an existing worktree
+  orca worktree create --repo id:<repoId> --agent claude --activate         # a new worktree with an agent in it
+  ```
+
+  `--worktree` also takes `name:`, `branch:`, `path:`, `active` and other selectors. From
+  outside an Orca terminal, pick the instance with `ORCA_USER_DATA_PATH` and clear the other
+  `ORCA_*` variables (see [Driving the other instance's CLI](#driving-the-other-instances-cli)).
+- **The runtime API tells you which agents need input.** It is the socket or named pipe in each
+  instance's `orca-runtime.json` (`%APPDATA%\orca` for work, `%APPDATA%\orca-personal` for the
+  estate), one JSON line per request (`{id, authToken, method, params}`), the same transport
+  `OrcaRuntime` uses for [the sidebar](estate/orca.md). Methods seen working:
+  - `worktree.ps`: every agent with its state, one of `working`, `blocked`, `waiting`, `done`
+    or `idle`. `blocked` and `waiting` mean it needs a human.
+  - `terminal.list`, `terminal.focus {terminal, navigation: "host"}` (raises its window; not
+    yet exercised), `terminal.send`, `worktree.list`, `worktree.create`, `status.get`,
+    `settings.get` and the `repo.*` methods.
+
+  Only some agent panes keep a terminal handle; for the rest, focus the worktree's terminal.
+- **`orca://` links only reach the default instance.** The scheme is registered once, to the
+  work Orca, so a link cannot open anything in `orca-personal`. Use the CLI or the runtime API.
+- **Agent hooks.** Orca sets `ORCA_AGENT_HOOK_*` variables in agent terminals, and has its own
+  plugin system and automations; none of these are used by rig yet.
