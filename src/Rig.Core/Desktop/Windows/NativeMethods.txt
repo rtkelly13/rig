@@ -24,3 +24,8 @@ PKEY_AppUserModel_RelaunchCommand
 PKEY_AppUserModel_RelaunchDisplayNameResource
 GetWindowPlacement
 CoTaskMemFree
+GetTickCount
+GetLastInputInfo
+OpenInputDesktop
+SwitchDesktop
+CloseDesktop
