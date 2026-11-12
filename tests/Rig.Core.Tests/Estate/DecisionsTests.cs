@@ -306,9 +306,14 @@ public sealed class DecisionsTests : IDisposable
     // Real git, except that reading the clone's git dir fails as it does for a folder another account owns.
     private sealed class Refusing(string clone) : IProc
     {
+        public Ran Run(ProcRequest request) => Refused(request) ?? Repos.Proc.Run(request);
+
         public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) =>
+            Refused(request) is { } refused ? Task.FromResult(refused) : Repos.Proc.RunAsync(request, cancellationToken);
+
+        private Ran? Refused(ProcRequest request) =>
             request.Argv.Contains("rev-parse") && request.Argv.Contains("--git-dir") && request.WorkingDirectory == clone
-                ? Task.FromResult(new Ran(128, string.Empty, $"fatal: detected dubious ownership in repository at '{clone.Replace('\\', '/')}'\n"))
-                : Repos.Proc.RunAsync(request, cancellationToken);
+                ? new Ran(128, string.Empty, $"fatal: detected dubious ownership in repository at '{clone.Replace('\\', '/')}'\n")
+                : null;
     }
 }

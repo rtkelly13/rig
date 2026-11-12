@@ -1059,6 +1059,8 @@ public sealed class ShelveTests : IDisposable
     // Real processes, with a hook that may run something first or answer a request itself.
     private sealed class HookedProc(Func<ProcRequest, Ran?> hook) : IProc
     {
+        public Ran Run(ProcRequest request) => hook(request) ?? Repos.Proc.Run(request);
+
         public async Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) =>
             hook(request) ?? await Repos.Proc.RunAsync(request, cancellationToken);
     }

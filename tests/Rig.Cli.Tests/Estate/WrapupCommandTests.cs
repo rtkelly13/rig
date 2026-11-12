@@ -404,6 +404,9 @@ public sealed class WrapupCommandTests : IDisposable
     // Orca is faked; git runs for real against the temp repos.
     private sealed class Routed(FakeProc orca) : IProc
     {
+        public Ran Run(ProcRequest request) =>
+            request.Argv[0] == "orca" ? orca.Run(request) : Repos.Proc.Run(request);
+
         public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) =>
             request.Argv[0] == "orca" ? orca.RunAsync(request, cancellationToken) : Repos.Proc.RunAsync(request, cancellationToken);
     }

@@ -353,6 +353,12 @@ public sealed class CachesTests : IDisposable
     // Runs a side effect before answering, as a real prune changes the folder it was pointed at.
     private sealed class ActingProc(IProc inner, Action<ProcRequest> act) : IProc
     {
+        public Ran Run(ProcRequest request)
+        {
+            act(request);
+            return inner.Run(request);
+        }
+
         public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
         {
             act(request);
