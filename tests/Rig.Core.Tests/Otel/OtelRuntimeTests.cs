@@ -313,8 +313,13 @@ public sealed class OtelRuntimeTests : IDisposable
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
 
         Assert.True(await probe.ListeningAsync(port, cancellationToken: TestContext.Current.CancellationToken));
-        listener.Stop();
-        Assert.False(await probe.ListeningAsync(port, cancellationToken: TestContext.Current.CancellationToken));
+
+        // A port this test keeps bound but never listens on: a stopped listener's port is free for a parallel test to
+        // take, and then the probe rightly sees a listener there.
+        using var bound = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        bound.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+        var empty = ((IPEndPoint)bound.LocalEndPoint!).Port;
+        Assert.False(await probe.ListeningAsync(empty, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
