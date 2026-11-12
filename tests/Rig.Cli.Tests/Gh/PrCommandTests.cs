@@ -162,6 +162,20 @@ public sealed class PrCommandTests
         Assert.Equal(3, github.RulesReads);
     }
 
+    [Fact]
+    public async Task Rules_are_read_again_when_the_pr_is_retargeted_to_another_base()
+    {
+        var github = GitHub(
+            1,
+            new FakeLandingState { Base = "release/1", Checks = [new("build", "PENDING")] },
+            new FakeLandingState { MergeState = "BLOCKED", Checks = Green });
+        github.OtherRulesJson = "[]";
+
+        var result = await Wait(github, "--json");
+
+        Assert.Equal((1, "unresolved_threads", 2), (result.Code, result.Json["reason"]!.GetValue<string>(), github.RulesReads));
+    }
+
     // -- landing ------------------------------------------------------------------------
 
     [Fact]

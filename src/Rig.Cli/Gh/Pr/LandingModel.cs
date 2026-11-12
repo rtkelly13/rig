@@ -82,8 +82,10 @@ internal sealed record Snapshot(
     public IReadOnlyList<string> ClassicRequiredChecks { get; init; } = [];
 }
 
-/// <summary>What the base branch's rulesets demand. <see cref="ThreadResolution"/> is null when they could not be read.</summary>
-internal sealed record Rules(bool? ThreadResolution, IReadOnlyList<string> RequiredChecks);
+/// <summary>
+/// What the rulesets of the branch <see cref="Base"/> demand. <see cref="ThreadResolution"/> is null when they could not be read.
+/// </summary>
+internal sealed record Rules(string Base, bool? ThreadResolution, IReadOnlyList<string> RequiredChecks);
 
 /// <summary>Everything one poll saw. <see cref="Threads"/> holds the unresolved review threads only.</summary>
 internal sealed record Observation(Snapshot Snapshot, Rules Rules, IReadOnlyList<ReviewThread> Threads)

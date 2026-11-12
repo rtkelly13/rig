@@ -20,6 +20,8 @@ public sealed record FakeLandingState
 
     public string? ReviewDecision { get; init; }
 
+    public string Base { get; init; } = "main";
+
     public bool AutoMerge { get; init; } = true;
 
     public int? QueuePosition { get; init; }
@@ -37,12 +39,13 @@ public sealed record FakeLandingState
 /// </summary>
 public sealed class FakeLanding(FakeGraphQL threads, params FakeLandingState[] script) : IGitHubApi
 {
-    public const string RulesRoute = "repos/octo/repo/rules/branches/main?per_page=100";
-
     public FakeGraphQL Threads { get; } = threads;
 
-    /// <summary>The rules REST answers with; null answers HTTP 404.</summary>
+    /// <summary>The rules REST answers with for <c>main</c>; null answers HTTP 404.</summary>
     public string? RulesJson { get; set; } = "[]";
+
+    /// <summary>The rules of every other base branch.</summary>
+    public string OtherRulesJson { get; set; } = "[]";
 
     public bool ClassicThreadResolution { get; set; }
 
@@ -63,9 +66,11 @@ public sealed class FakeLanding(FakeGraphQL threads, params FakeLandingState[] s
         ArgumentNullException.ThrowIfNull(request);
         if (request.Method == "GET")
         {
-            Assert.Equal(RulesRoute, request.Route);
+            Assert.StartsWith("repos/octo/repo/rules/branches/", request.Route, StringComparison.Ordinal);
+            Assert.EndsWith("?per_page=100", request.Route, StringComparison.Ordinal);
             RulesReads++;
-            return Task.FromResult(RulesJson is { } rules ? new Ran(0, rules, string.Empty) : new Ran(1, string.Empty, "gh: Not Found (HTTP 404)"));
+            var json = request.Route.Contains("/branches/main?", StringComparison.Ordinal) ? RulesJson : OtherRulesJson;
+            return Task.FromResult(json is { } rules ? new Ran(0, rules, string.Empty) : new Ran(1, string.Empty, "gh: Not Found (HTTP 404)"));
         }
 
         var body = JsonNode.Parse(request.Body!)!.AsObject();
@@ -120,7 +125,7 @@ public sealed class FakeLanding(FakeGraphQL threads, params FakeLandingState[] s
             ["mergeStateStatus"] = state.MergeState,
             ["reviewDecision"] = state.ReviewDecision,
             ["url"] = "https://github.com/octo/repo/pull/7",
-            ["baseRefName"] = "main",
+            ["baseRefName"] = state.Base,
             ["autoMergeRequest"] = state.AutoMerge ? new JsonObject { ["enabledAt"] = "2026-01-01T00:00:00Z" } : null,
             ["mergeQueueEntry"] = state.QueuePosition is { } position ? new JsonObject { ["position"] = position, ["state"] = "QUEUED" } : null,
             ["baseRef"] = new JsonObject { ["branchProtectionRule"] = protection },

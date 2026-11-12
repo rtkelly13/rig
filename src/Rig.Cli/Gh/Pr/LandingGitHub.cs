@@ -109,11 +109,12 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
         var rules = ran.Ok ? DecodeRules(ran.Out) : null;
         if (rules is null)
         {
-            return new Rules(null, []);
+            return new Rules(baseBranch, null, []);
         }
 
         var parameters = rules.Select(rule => rule.Parameters).OfType<WireRuleParameters>().ToList();
         return new Rules(
+            baseBranch,
             parameters.Any(found => found.ThreadResolution),
             [.. parameters.SelectMany(found => found.RequiredStatusChecks ?? []).Select(check => check.Context)]);
     }
@@ -121,12 +122,13 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
     /// <summary>
     /// One poll: the snapshot and, while the PR is open and threads could block it, its unresolved threads.
     /// <paramref name="known"/> is the rules an earlier poll read. They are read again only while they are missing or were
-    /// unreadable, and come back on the observation for the caller to pass in next time.
+    /// unreadable, or when the PR has been retargeted to another base branch, and come back on the observation for the
+    /// caller to pass in next time.
     /// </summary>
     public async Task<Observation> ObserveAsync(RepoSlug repo, int number, Rules? known, CancellationToken cancellationToken)
     {
         var snapshot = await FetchSnapshotAsync(repo, number, cancellationToken).ConfigureAwait(false);
-        var rules = known is { ThreadResolution: not null }
+        var rules = known is { ThreadResolution: not null } && known.Base == snapshot.Base
             ? known
             : await FetchRulesAsync(repo, snapshot.Base, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<ReviewThread> open = [];
