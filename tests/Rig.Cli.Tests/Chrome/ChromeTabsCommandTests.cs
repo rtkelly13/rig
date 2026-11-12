@@ -8,6 +8,7 @@ using Rig.Core.Chrome;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Tests;
+using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.Chrome;
 
@@ -298,8 +299,8 @@ public sealed class ChromeTabsCommandTests : IDisposable
         new(202, "Home", "Default", null, 2, true, null, [new(new RuntimeId([7]), 202, 0, "Home", "Home", true, false, true, false) { MemoryMb = 80.5 }]),
     ];
 
-    private readonly CountingGitHub _github = new();
-    private readonly FakeActions _actions = new();
+    private readonly FakeGitHub _github = new();
+    private readonly FakeChromeTabActions _actions = new();
     private readonly FakePresence _presence = new();
     private long _foreground;
     private IReadOnlyList<ChromeWindow> _windows = Windows;
@@ -344,7 +345,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
         Assert.Empty(_actions.Closed);
         Assert.Contains(Lines, line => line.Contains("Flaky build", StringComparison.Ordinal));
         Assert.Matches(@"^Dry run: nothing closed\. enumerate \d+\.\d\ds, resolve \d+\.\d\ds \(0 repos\), plan \d+\.\d{3}s, total \d+\.\d\ds$", Lines[^1]);
-        Assert.Equal(0, _github.Calls);
+        Assert.Empty(_github.Calls);
     }
 
     [Fact]
@@ -355,7 +356,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
         Assert.Equal(0, await Tabs("prune", "--no-github"));
 
         Assert.Equal([1, 2], _actions.Closed.Select(tab => tab.Index));
-        Assert.Equal([301L], _actions.Restored);
+        Assert.Equal([301L], _actions.Restored.SelectMany(restore => restore.Windows));
         Assert.Matches(@"^Closed 2/2 enumerate .*, \d+\.\d\ds per close, total \d+\.\d\ds$", Lines[^1]);
     }
 
@@ -363,7 +364,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     public async Task Prune_reports_each_close_that_failed_and_exits_one()
     {
         _windows = Duplicates;
-        _actions.Fails = true;
+        _actions.FailWith = "tab not found";
 
         Assert.Equal(1, await Tabs("prune", "--no-github"));
 
@@ -474,7 +475,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     {
         Assert.Equal(0, await Tabs("rank", "--no-github"));
 
-        Assert.Equal(0, _github.Calls);
+        Assert.Empty(_github.Calls);
         var ranked = TabRank.Rank(Windows, Resolution.Empty);
         Assert.Equal(
             [
@@ -490,7 +491,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     {
         Assert.Equal(0, await Tabs("rank", "--limit", "1", "--json"));
 
-        Assert.Equal(1, _github.Calls);
+        _ = Assert.Single(_github.Calls);
         var row = Assert.Single(JsonNode.Parse(_out.ToString())!.AsArray())!.AsObject();
         Assert.Equal(
             ["label", "title", "profile", "window", "tab", "protected", "score", "memory_mb", "reasons", "flags", "details"],
@@ -595,57 +596,5 @@ public sealed class ChromeTabsCommandTests : IDisposable
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
-    }
-
-    // Answers every query as a refused call, so nothing resolves; counts the calls.
-    private sealed class FakeActions : IChromeTabActions
-    {
-        public bool Fails { get; set; }
-
-        public List<ChromeTab> Closed { get; } = [];
-
-        public List<long> Restored { get; } = [];
-
-        public CloseOutcome CloseTab(ChromeTab tab)
-        {
-            if (Fails)
-            {
-                return new CloseOutcome(false, "tab not found", TimeSpan.Zero);
-            }
-
-            Closed.Add(tab);
-            return new CloseOutcome(true, "closed", TimeSpan.FromMilliseconds(10));
-        }
-
-        public IReadOnlyDictionary<long, ChromeTab?> RestoreSelection(IEnumerable<ChromeWindow> before, IReadOnlyDictionary<long, ChromeTab>? fallbacks = null)
-        {
-            var handles = before.Select(window => window.Handle).ToList();
-            Restored.AddRange(handles);
-            return handles.ToDictionary(handle => handle, _ => (ChromeTab?)null);
-        }
-    }
-
-    private sealed class FakePresence : IPresence
-    {
-        public IReadOnlyList<string> Devices { get; set; } = [];
-
-        public uint NowTick() => 100_000;
-
-        public uint LastInputTick() => 100_000;
-
-        public bool SessionLocked() => false;
-
-        public IReadOnlyList<string> DevicesInUse() => Devices;
-    }
-
-    private sealed class CountingGitHub : IGitHubApi
-    {
-        public int Calls { get; private set; }
-
-        public Task<Ran> CallAsync(ApiRequest request, CancellationToken cancellationToken = default)
-        {
-            Calls++;
-            return Task.FromResult(new Ran(1, string.Empty, "HTTP 502"));
-        }
     }
 }
