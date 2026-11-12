@@ -44,6 +44,8 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var dryRun = new Option<bool>("--dry-run") { Description = "Show what would change without writing it." };
         var home = new Option<string>("--home") { Description = "Home folder to set up (default: yours).", DefaultValueFactory = _ => host.Home };
         var check = new Option<bool>("--check") { Description = "Report whether the session-ledger hook is wired and current, changing nothing; exit 1 when it is not." };
+        var agy = new Command("agy", "Install or refresh the global rig context block in ~/.gemini/GEMINI.md.") { dryRun, home };
+        agy.SetAction(parsed => Agy(parsed.GetValue(dryRun), parsed.GetValue(home)!));
         var claude = new Command("claude", "Merge the Claude Code settings baseline and install the session-ledger SessionEnd hook.") { dryRun, home, check };
         claude.SetAction(parsed => parsed.GetValue(check) ? Check(parsed.GetValue(home)!) : Claude(parsed.GetValue(dryRun), parsed.GetValue(home)!));
         var opencode = new Command("opencode", "Merge OpenCode's default config and project the estate command policy into it.") { dryRun, home };
@@ -67,7 +69,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var fontsCommand = new Command("fonts", "Download and install the developer Nerd Fonts (JetBrainsMono, CascadiaCode, FiraCode).") { dryRun, home, fontsCheck };
         fontsCommand.SetAction((parsed, cancellationToken) =>
             FontsAsync(parsed.GetValue(dryRun), parsed.GetValue(fontsCheck), NerdFonts.Folder(parsed.GetValue(home)!, host.Windows, host.MacOS), cancellationToken));
-        var group = new Command("devenv", Description) { new DoctorCommand(host, proc, TimeProvider.System, output).Build(), launcher, agents, claude, rules, fontsCommand, gh, obsidian, opencode };
+        var group = new Command("devenv", Description) { new DoctorCommand(host, proc, TimeProvider.System, output).Build(), launcher, agents, agy, claude, rules, fontsCommand, gh, obsidian, opencode };
         foreach (var command in new SetupCommand(host, output, error).Build(dryRun, home).Concat(new ToolsCommands(host, proc, output, error).Build(dryRun, home)).Concat(new GitTerminalCommands(host, proc, output, error).Build(dryRun, home)))
         {
             group.Subcommands.Add(command);
@@ -364,6 +366,38 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         }
 
         return Project("opencode", dryRun, home);
+    }
+
+    // The AGY global context in ~/.gemini/GEMINI.md: only the marked block is managed.
+    private int Agy(bool dryRun, string home)
+    {
+        var target = AgyRules.FilePath(home);
+        var merge = AgyRules.Merge(File.Exists(target) ? File.ReadAllText(target).ReplaceLineEndings("\n") : null);
+        if (merge.Action == AgyRulesAction.Unchanged)
+        {
+            output.WriteLine($"✓ AGY global context up to date: {target}");
+            return 0;
+        }
+
+        output.WriteLine($"{merge.Action} AGY global context at {target}");
+        if (dryRun)
+        {
+            output.WriteLine("Dry run: no changes written.");
+            return 0;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.WriteAllText(target, host.Windows ? merge.Content.ReplaceLineEndings("\r\n") : merge.Content);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            error.WriteLine($"Failed to write AGY global context: {e.Message}");
+            return 1;
+        }
+
+        return 0;
     }
 
     // The estate-wide AGENTS.md: only the marked block is managed. 1 when the write fails.

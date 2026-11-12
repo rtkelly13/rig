@@ -13,7 +13,7 @@ namespace Rig.Cli.Tests.Devenv;
 public sealed class SetupCommandTests : IDisposable
 {
     private static readonly string[] Stubbed =
-        ["agents", "claude", "opencode", "estate-rules", "obsidian-plugins", "agent-launcher", "fonts", "git", "gh", "terminal", "runtimes", "tools"];
+        ["agents", "agy", "claude", "opencode", "estate-rules", "obsidian-plugins", "agent-launcher", "fonts", "git", "gh", "terminal", "runtimes", "tools"];
 
     private readonly TempDir _home = new();
     private readonly List<string> _ran = [];
@@ -72,6 +72,7 @@ public sealed class SetupCommandTests : IDisposable
         Assert.Equal(
             [
                 "devenv agents",
+                $"devenv agy {common}",
                 $"devenv claude {common}",
                 $"devenv opencode {common}",
                 $"browser profiles {common}",
@@ -127,7 +128,7 @@ public sealed class SetupCommandTests : IDisposable
         var (code, output, error) = await RunAsync(string.Empty, "--mode", "agent");
 
         Assert.Equal(1, code);
-        Assert.Equal(14, _ran.Count);
+        Assert.Equal(15, _ran.Count);
         Assert.Contains("✗ Step 'AI Coding Tools & Skills' failed: rig devenv claude exited 1; rig skills sync exited 2\n", error, StringComparison.Ordinal);
         Assert.Contains("✗ Step 'Font Installation' failed: rig devenv fonts exited 1\n", error, StringComparison.Ordinal);
         Assert.EndsWith("! Setup finished with failed steps.\n", output, StringComparison.Ordinal);
@@ -155,7 +156,7 @@ public sealed class SetupCommandTests : IDisposable
         var (code, output, error) = await InvokeAsync(string.Empty, ["devenv", "ai", "--dry-run"]);
 
         Assert.Equal(1, code);
-        Assert.Equal(8, _ran.Count);
+        Assert.Equal(9, _ran.Count);
         Assert.Equal($"devenv agent-launcher --dry-run --home {Home}", _ran[^1]);
         Assert.DoesNotContain("[Y/n]", output, StringComparison.Ordinal);
         Assert.Equal("✗ rig devenv opencode exited 1\n", error);
@@ -178,7 +179,7 @@ public sealed class SetupCommandTests : IDisposable
 
         var lines = SetupCommand.Steps.SelectMany(step => step.Lines(run)).Where(line => line[0] == "devenv").ToList();
 
-        Assert.Equal(12, lines.Count);
+        Assert.Equal(13, lines.Count);
         Assert.All(lines, line => Assert.Empty(root.Parse([.. line]).Errors));
     }
 }

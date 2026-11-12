@@ -56,7 +56,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["doctor", "agent-launcher", "agents", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "setup", "ai", "tools", "runtimes", "update", "git", "terminal"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["doctor", "agent-launcher", "agents", "agy", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "setup", "ai", "tools", "runtimes", "update", "git", "terminal"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -280,6 +280,31 @@ public sealed class DevenvCommandTests : IDisposable
 
         Assert.Equal(1, code);
         Assert.StartsWith("Failed to write estate rules: ", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Agy_global_context_is_created_then_up_to_date()
+    {
+        var target = AgyRules.FilePath(_home.Path);
+        var (code, output, _) = await InvokeAsync(null, ["agy"]);
+
+        Assert.Equal(0, code);
+        Assert.Equal($"Created AGY global context at {target}\n", output);
+        Assert.True(File.Exists(target));
+        Assert.Contains(AgyRules.Begin, await File.ReadAllTextAsync(target, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+
+        Assert.Equal((0, $"✓ AGY global context up to date: {target}\n", string.Empty), await InvokeAsync(null, ["agy"]));
+    }
+
+    [Fact]
+    public async Task An_agy_dry_run_writes_nothing()
+    {
+        var target = AgyRules.FilePath(_home.Path);
+        var (code, output, _) = await InvokeAsync(null, ["agy", "--dry-run"]);
+
+        Assert.Equal(0, code);
+        Assert.Equal($"Created AGY global context at {target}\nDry run: no changes written.\n", output);
+        Assert.False(File.Exists(target));
     }
 
     private string Vault => ObsidianPlugins.DefaultVault(_home.Path);
