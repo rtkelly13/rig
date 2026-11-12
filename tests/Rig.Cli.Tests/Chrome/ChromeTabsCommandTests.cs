@@ -9,6 +9,7 @@ using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Workspace;
 
 namespace Rig.Cli.Tests.Chrome;
 
@@ -302,14 +303,19 @@ public sealed class ChromeTabsCommandTests : IDisposable
     private readonly FakeGitHub _github = new();
     private readonly FakeChromeTabActions _actions = new();
     private readonly FakePresence _presence = new();
+    private readonly FakeChromeGroupActions _grouping = new();
+    private readonly FakeChromeSavedGroupActions _saved = new();
+    private readonly FakeChromeDesktops _desktops = new() { Number = null };
     private long _foreground;
     private IReadOnlyList<ChromeWindow> _windows = Windows;
 
     private ChromeSession Session(IReadOnlyList<ChromeWindow> windows) =>
-        new(() => windows, _actions, new NoChromeDesktops(), () => _foreground, _presence);
+        new(() => windows, _actions, _grouping, _saved, _desktops, () => _foreground, _presence, (_, _) => new Dictionary<string, string>());
+
+    private ChromeTabsDriver Driver() => new(() => Session(_windows), _github, () => UrlOwners.None);
 
     private ChromeTabsCommand WithDriver(bool driver = true) =>
-        new(_ => null, "/home", new FixedTime(Now), TimeZoneInfo.Utc, _out, driver ? new ChromeTabsDriver(() => Session(_windows), _github) : null);
+        new(_ => null, "/home", new FixedTime(Now), TimeZoneInfo.Utc, _out, driver ? Driver() : null);
 
     private async Task<int> Tabs(params string[] args) =>
         await WithDriver().Build().Parse(args).InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
@@ -509,6 +515,101 @@ public sealed class ChromeTabsCommandTests : IDisposable
         Assert.Equal(5, Lines.Length);
     }
 
+    [Fact]
+    public async Task Group_dry_run_prints_the_plan_and_moves_nothing()
+    {
+        _windows = Duplicates;
+
+        Assert.Equal(0, await Tabs("group", "--dry-run"));
+
+        Assert.Empty(_grouping.Log);
+        Assert.Contains(Lines, line => line.Contains("acme-corp/playbook", StringComparison.Ordinal));
+        Assert.Matches(@"^Dry run: nothing moved\. planned in \d+\.\d\ds$", Lines[^1]);
+    }
+
+    [Fact]
+    public async Task Group_runs_the_plan_and_counts_the_moves()
+    {
+        _windows = Duplicates;
+
+        Assert.Equal(0, await Tabs("group"));
+
+        Assert.NotEmpty(_grouping.Grouped);
+        Assert.Matches(@"^Moved (\d+)/\1 in \d+\.\d\ds$", Lines[^1]);
+    }
+
+    [Fact]
+    public async Task Group_that_stops_exits_1_and_says_how_far_it_got()
+    {
+        _windows = Duplicates;
+        _grouping.GroupFailure = "menu never opened";
+
+        Assert.Equal(1, await Tabs("group"));
+
+        Assert.Matches(@"^Stopped .*menu never opened.*\. 0/\d+ moved\.$", Lines[^1]);
+    }
+
+    [Fact]
+    public async Task Group_with_nothing_to_move_only_plans()
+    {
+        Assert.Equal(0, await Tabs("group", "--min-size", "9"));
+
+        Assert.Empty(_grouping.Log);
+        Assert.Matches(@"^planned in \d+\.\d\ds$", Lines[^1]);
+    }
+
+    [Fact]
+    public void Group_min_size_must_be_positive()
+    {
+        var parsed = WithDriver().Build().Parse(["group", "--min-size", "0"]);
+
+        Assert.Equal("Invalid value for '--min-size': 0 is not in the range x>=1.", Assert.Single(parsed.Errors).Message);
+    }
+
+    [Fact]
+    public async Task Saved_groups_only_looks_without_consolidate()
+    {
+        _ = _saved.Bar(101, "Profile 4", "+Work", "-Work");
+
+        Assert.Equal(0, await Tabs("saved-groups"));
+
+        Assert.Empty(_saved.Log);
+        Assert.Matches(@"^Looked only: pass --consolidate to delete\. read in \d+\.\d\ds$", Lines[^1]);
+    }
+
+    [Fact]
+    public async Task Saved_groups_consolidate_deletes_the_closed_copies()
+    {
+        _ = _saved.Bar(101, "Profile 4", "+Work", "-Work");
+
+        Assert.Equal(0, await Tabs("saved-groups", "--consolidate"));
+
+        Assert.Equal(["101 Profile 4 Work"], _saved.Log);
+        Assert.Matches(@"^Deleted 1/1 in \d+\.\d\ds$", Lines[^1]);
+    }
+
+    [Fact]
+    public async Task Saved_groups_that_fail_exit_1_and_name_the_title()
+    {
+        _ = _saved.Bar(101, "Profile 4", "+Work", "-Work");
+        _saved.Refuses["Work"] = "chip not found";
+
+        Assert.Equal(1, await Tabs("saved-groups", "--consolidate"));
+
+        Assert.Contains("  kept Work: chip not found", Lines);
+        Assert.Equal("Stopped deleting saved groups 'Work' [Profile 4]: chip not found. 0/1 deleted.", Lines[^1]);
+    }
+
+    [Fact]
+    public async Task Saved_groups_with_nothing_to_delete_says_how_long_the_read_took()
+    {
+        _ = _saved.Bar(101, "Profile 4", "+Work");
+
+        Assert.Equal(0, await Tabs("saved-groups", "--consolidate"));
+
+        Assert.Matches(@"^read in \d+\.\d\ds$", Lines[^1]);
+    }
+
     [Theory]
     [InlineData(true, false, "chrome-tabs", "list")]
     [InlineData(true, false, "chrome-tabs", "rank", "--json")]
@@ -516,7 +617,11 @@ public sealed class ChromeTabsCommandTests : IDisposable
     [InlineData(false, true, "chrome-tabs", "rank")]
     [InlineData(true, false, "chrome-tabs", "prune")]
     [InlineData(false, true, "chrome-tabs", "prune")]
-    [InlineData(true, true, "chrome-tabs", "group")]
+    [InlineData(true, false, "chrome-tabs", "group", "--dry-run")]
+    [InlineData(false, true, "chrome-tabs", "group")]
+    [InlineData(true, false, "chrome-tabs", "saved-groups")]
+    [InlineData(false, true, "chrome-tabs", "saved-groups")]
+    [InlineData(true, true, "chrome-tabs", "organise")]
     [InlineData(true, false, "chrome-tabs", "install")]
     [InlineData(true, false, "chrome-tabs", "uninstall")]
     [InlineData(false, true, "chrome-tabs", "install")]
@@ -538,7 +643,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
 
     private async Task<int> Installs(params string[] args) =>
         await new ChromeTabsCommand(
-                name => name == "LOCALAPPDATA" ? Local : null, Home, new FixedTime(Now), TimeZoneInfo.Utc, _out, new ChromeTabsDriver(() => Session(Windows), _github))
+                name => name == "LOCALAPPDATA" ? Local : null, Home, new FixedTime(Now), TimeZoneInfo.Utc, _out, Driver())
             .Build()
             .Parse(args)
             .InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);

@@ -133,7 +133,11 @@ internal static class Program
                     TimeProvider.System,
                     TimeZoneInfo.Local,
                     Console.Out,
-                    OperatingSystem.IsWindowsVersionAtLeast(8, 1) ? new ChromeTabsDriver(WindowsChrome.Open, new GhApi(proc)) : null).Build,
+                    OperatingSystem.IsWindowsVersionAtLeast(8, 1) ? new ChromeTabsDriver(
+                            WindowsChrome.Open,
+                            new GhApi(proc),
+                            () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
+                        : null).Build,
                 new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out).Build,
                 new JobsCommand(JobsHostFor(codeRoot, checkout, home, proc), Console.Out).Build,
                 new MailCommand(

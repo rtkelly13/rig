@@ -11,6 +11,8 @@
     <Compile Include="../Rig.Core.Tests/Fakes/FakeGitHub.cs" Link="Fakes/FakeGitHub.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakeChromeTabActions.cs" Link="Fakes/FakeChromeTabActions.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakePresence.cs" Link="Fakes/FakePresence.cs" />
+    <Compile Include="../Rig.Core.Tests/Fakes/FakeChromeGroupActions.cs" Link="Fakes/FakeChromeGroupActions.cs" />
+    <Compile Include="../Rig.Core.Tests/Fakes/FakeChromeSavedGroupActions.cs" Link="Fakes/FakeChromeSavedGroupActions.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakeHttp.cs" Link="Fakes/FakeHttp.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakeVercel.cs" Link="Fakes/FakeVercel.cs" />
     <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="Fakes/TempDir.cs" />

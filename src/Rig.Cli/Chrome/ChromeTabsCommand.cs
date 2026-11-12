@@ -9,7 +9,7 @@ namespace Rig.Cli.Chrome;
 
 /// <summary>
 /// <c>rig chrome-tabs</c>: the ported half of <c>desktop-manager chrome-tabs</c>. <c>traces</c> runs here everywhere;
-/// <c>list</c>, <c>rank</c>, <c>prune</c>, <c>install</c> and <c>uninstall</c> where there is a driver. The forwarding
+/// <c>list</c>, <c>rank</c>, <c>prune</c>, <c>group</c>, <c>saved-groups</c>, <c>install</c> and <c>uninstall</c> where there is a driver. The forwarding
 /// table hands every other line to the Python group. Ported from <c>desktop_manager.chrome.traces_cli</c> and
 /// <c>desktop_manager.chrome.cli</c>, whose messages all go to stdout.
 /// </summary>
@@ -18,7 +18,7 @@ namespace Rig.Cli.Chrome;
 /// <param name="time">The clock that picks today's day file.</param>
 /// <param name="zone">The zone run start times are shown in.</param>
 /// <param name="output">Where every line goes.</param>
-/// <param name="driver">Opens Chrome for <c>list</c>, <c>rank</c> and <c>prune</c>; null where only the Python has a driver (macOS).</param>
+/// <param name="driver">Opens Chrome for the commands that read it; null where only the Python has a driver (macOS).</param>
 internal sealed class ChromeTabsCommand(
     Func<string, string?> environment, string home, TimeProvider time, TimeZoneInfo zone, TextWriter output, ChromeTabsDriver? driver = null)
 {
@@ -33,7 +33,7 @@ internal sealed class ChromeTabsCommand(
     public const int NoRunExit = 1;
 
     /// <summary>
-    /// The <c>chrome-tabs</c> command. <c>list</c>, <c>rank</c>, <c>prune</c>, <c>install</c> and <c>uninstall</c> are only registered
+    /// The <c>chrome-tabs</c> command. <c>list</c>, <c>rank</c>, <c>prune</c>, <c>group</c>, <c>saved-groups</c>, <c>install</c> and <c>uninstall</c> are only registered
     /// with a driver (Windows): without one, the forwarding table hands them to the Python, which has the macOS driver
     /// and refuses the Windows-only installs itself.
     /// </summary>
@@ -45,6 +45,8 @@ internal sealed class ChromeTabsCommand(
             command.Subcommands.Add(List(driver));
             command.Subcommands.Add(Rank(driver));
             command.Subcommands.Add(Prune(driver));
+            command.Subcommands.Add(Group(driver));
+            command.Subcommands.Add(SavedGroupsCommand(driver));
             command.Subcommands.Add(Install());
             command.Subcommands.Add(Uninstall());
         }
@@ -128,6 +130,52 @@ internal sealed class ChromeTabsCommand(
                 parsed.GetValue(unattended)),
             cancellationToken));
         return prune;
+    }
+
+    private Command Group(ChromeTabsDriver chrome)
+    {
+        var group = new Command(
+            "group",
+            "Gather GitHub tabs into one group per repo, all in the window holding the most GitHub tabs, and Google, Asana, "
+            + "YouTrack and Claude tabs into one group per site. [Windows/macOS only]\n\n"
+            + "Chrome only groups through the tab's right-click menu, so this brings each window forward in turn and uses the "
+            + "mouse for a moment per tab: leave the mouse and keyboard alone until it finishes. A window on another desktop is "
+            + "brought onto this one while it is worked on, then sent back. Call tabs never move.");
+        var dryRun = new Option<bool>("--dry-run") { Description = "Print the plan; move nothing." };
+        var profile = Profile();
+        var minSize = AtLeastOne(new Option<int>("--min-size")
+        {
+            Description = "Fewest tabs of one repo or site that start a new group.",
+            DefaultValueFactory = _ => 2,
+        });
+        var thisDesktop = new Option<bool>("--this-desktop") { Description = "Group only windows on the current desktop; never bring others over." };
+        foreach (var option in new Option[] { dryRun, profile, minSize, thisDesktop })
+        {
+            group.Options.Add(option);
+        }
+
+        group.SetAction(parsed => GroupTabs(
+            chrome, parsed.GetValue(dryRun), parsed.GetValue(profile), parsed.GetValue(minSize), parsed.GetValue(thisDesktop)));
+        return group;
+    }
+
+    private Command SavedGroupsCommand(ChromeTabsDriver chrome)
+    {
+        var saved = new Command(
+            "saved-groups",
+            "List Chrome's saved tab groups, and plan (or with --consolidate, make) one per title. [Windows only]\n\n"
+            + "Chrome saves every group, and a group created with an old group's title saves a new copy beside the closed one, so "
+            + "the bookmarks bar fills with closed duplicates. This deletes a closed copy only when the same title is open, or "
+            + "another closed copy of it stays: never an open group, never the last copy of a title. Deleting a saved group "
+            + "forgets the tabs it held; they are printed as each one goes.\n\n"
+            + "Reads the bookmarks bar, so a profile with the bar hidden shows nothing, and chips that only fit in the bar's "
+            + "overflow are not seen until deletes make room. Needs no focus and leaves the mouse alone.");
+        var consolidate = new Option<bool>("--consolidate") { Description = "Delete the closed duplicates the plan lists; otherwise only look." };
+        var profile = Profile();
+        saved.Options.Add(consolidate);
+        saved.Options.Add(profile);
+        saved.SetAction(parsed => ConsolidateSaved(chrome, parsed.GetValue(consolidate), parsed.GetValue(profile)));
+        return saved;
     }
 
     private static Option<string?> Profile() =>
@@ -416,6 +464,58 @@ internal sealed class ChromeTabsCommand(
             CultureInfo.InvariantCulture,
             $"Closed {applied.Count - failures.Count}/{applied.Count} {timings}, {perClose:F2}s per close, total {time.GetElapsedTime(started).TotalSeconds:F2}s"));
         return failures.Count > 0 ? 1 : 0;
+    }
+
+    private int GroupTabs(ChromeTabsDriver chrome, bool dryRun, string? profile, int minSize, bool thisDesktop)
+    {
+        var started = time.GetTimestamp();
+        var session = chrome.Open();
+        var windows = FilterProfile(session.ReadWindows(), profile);
+        var current = session.Desktops.Current();
+        var plan = GroupRunner.Plan(ChromeWindow.ScreenOrder(windows, current), current, minSize, thisDesktop, session.HostsByTitle, chrome.Owners());
+        SayAll(TabPlanText.Groups(plan));
+        if (dryRun || plan.Moves.Count == 0)
+        {
+            var prefix = dryRun ? "Dry run: nothing moved. " : "";
+            Say(string.Create(CultureInfo.InvariantCulture, $"{prefix}planned in {time.GetElapsedTime(started).TotalSeconds:F2}s"));
+            return 0;
+        }
+
+        var ran = new GroupRunner(session.Grouping, session.Desktops, session.Presence.SessionLocked).Run(plan);
+        if (ran.Stopped is { } error)
+        {
+            Say(string.Create(CultureInfo.InvariantCulture, $"Stopped {error}. {ran.Moved}/{plan.Moves.Count} moved."));
+            return 1;
+        }
+
+        Say(string.Create(CultureInfo.InvariantCulture, $"Moved {ran.Moved}/{plan.Moves.Count} in {time.GetElapsedTime(started).TotalSeconds:F2}s"));
+        return 0;
+    }
+
+    private int ConsolidateSaved(ChromeTabsDriver chrome, bool consolidate, string? profile)
+    {
+        var started = time.GetTimestamp();
+        var session = chrome.Open();
+        var consolidation = new SavedConsolidation(session.Saved, session.Desktops, Say);
+        var planned = consolidation.Plan(FilterProfile(session.ReadWindows(), profile));
+        var plan = planned.Plan;
+        SayAll(TabPlanText.SavedGroups(plan));
+        if (!consolidate || plan.Deletes.Count == 0)
+        {
+            var prefix = consolidate ? "" : "Looked only: pass --consolidate to delete. ";
+            Say(string.Create(CultureInfo.InvariantCulture, $"{prefix}read in {time.GetElapsedTime(started).TotalSeconds:F2}s"));
+            return 0;
+        }
+
+        var done = consolidation.Consolidate(planned);
+        if (done.Stopped is { } error)
+        {
+            Say(string.Create(CultureInfo.InvariantCulture, $"Stopped {error}. {done.Deleted}/{plan.Total} deleted."));
+            return 1;
+        }
+
+        Say(string.Create(CultureInfo.InvariantCulture, $"Deleted {done.Deleted}/{plan.Total} in {time.GetElapsedTime(started).TotalSeconds:F2}s"));
+        return 0;
     }
 
     /// <summary>Every close plan <c>prune</c> runs, each printed as it is made. Ported from <c>_make_close_plans</c>.</summary>
