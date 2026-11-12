@@ -16,6 +16,7 @@ and findings are in each CLI's `--help`; these guides hold what `--help` can't.
 | [desktop-manager/](desktop-manager/README.md) | Windows workspace restore, runtime copies, work items, Chrome tabs |
 | [agent-browser/](agent-browser/README.md) | Browser automation profiles, connection approaches, ChatGPT Work schedules |
 | [project-reviews/](project-reviews/README.md) | Live scheduled-review policies and their evaluation |
+| [daily-orchestrator/](daily-orchestrator/README.md) | The weekday Orca automation: policy, bootstrap and how it dispatches sessions |
 | [brand-assets/](brand-assets/README.md) | **Authoritative** for brand asset layout, thresholds and the promotion gate |
 | [vault/](vault/README.md) | Maintaining the Obsidian vault with the `vault` CLI |
 | [adr/](adr/) | Architecture decision records |

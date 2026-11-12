@@ -11,6 +11,13 @@ machine, while other machines still get them:
 folder under the code root, an absolute path is used as it is. None listed means no work scope:
 `estate wrapup --work` selects nothing and `estate decisions` scans only the personal estate.
 
+`tools.estate.work_orgs` lists the GitHub owners whose repos are this machine's work. They live here,
+not in the tracked config, because rig is public. `rig.scopes.owner_class` reads them.
+
+`tools.machine.role` is `personal` or `work`: what this machine is for. Scheduled tooling reads it to
+decide which side it writes to (the daily orchestrator triages the work orgs on a work machine).
+Unset means `personal`. `estate scopes` prints the role and how every owner is classed.
+
 `tools.estate.workspace_repo` is the work workspace checkout whose `workspace_cli` the scheduled
 `worktree-reclaim` and `workspace-maintain` jobs run, resolved like a work folder. Unset, those
 jobs are not registered.
@@ -21,7 +28,11 @@ jobs are not registered.
 ```json
 {
   "tools": {
-    "estate": { "skip_repos": ["hearth"], "work_dirs": ["acme", "~/work/acme"], "workspace_repo": "workspace" },
+    "machine": { "role": "work" },
+    "estate": {
+      "skip_repos": ["hearth"], "work_dirs": ["acme", "~/work/acme"], "work_orgs": ["acme"],
+      "workspace_repo": "workspace"
+    },
     "desktop": { "aliases": { "chrome-profile-work": "Profile 4" } }
   }
 }
@@ -33,6 +44,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from pydantic import StrictStr
 
@@ -40,6 +52,12 @@ from rig.typed_json import Lenient, try_decode_json
 
 #: Where the skip list lives, as shown in messages.
 SKIP_REPOS_KEY = "tools.estate.skip_repos"
+#: Where the machine role lives, as shown in messages.
+ROLE_KEY = "tools.machine.role"
+#: Where the work orgs live, as shown in messages.
+WORK_ORGS_KEY = "tools.estate.work_orgs"
+
+type MachineRole = Literal["personal", "work"]
 
 
 def workspace_config_path() -> Path:
@@ -52,6 +70,7 @@ def workspace_config_path() -> Path:
 class _EstateConfig:
     skip_repos: Lenient[tuple[StrictStr, ...]] = None
     work_dirs: Lenient[tuple[StrictStr, ...]] = None
+    work_orgs: Lenient[tuple[StrictStr, ...]] = None
     workspace_repo: Lenient[StrictStr] = None
 
 
@@ -61,9 +80,15 @@ class _DesktopConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class _MachineConfig:
+    role: Lenient[StrictStr] = None
+
+
+@dataclass(frozen=True, slots=True)
 class _Tools:
     estate: Lenient[_EstateConfig] = None
     desktop: Lenient[_DesktopConfig] = None
+    machine: Lenient[_MachineConfig] = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,6 +117,23 @@ def load_skip_repos(config_path: Path | None = None) -> frozenset[str]:
 def load_work_dirs(config_path: Path | None = None) -> tuple[str, ...]:
     """This machine's work folders as written (names or paths); empty when none are listed."""
     return tuple(name.strip() for name in _estate(config_path).work_dirs or () if name.strip())
+
+
+def load_work_orgs(config_path: Path | None = None) -> tuple[str, ...]:
+    """This machine's work GitHub owners as written; empty when none are listed."""
+    return tuple(name.strip() for name in _estate(config_path).work_orgs or () if name.strip())
+
+
+def load_machine_role(config_path: Path | None = None) -> MachineRole | None:
+    """This machine's role (`personal` or `work`, any case), or None when unset or unrecognised."""
+    machine = _tools(config_path).machine
+    match ((machine.role if machine else None) or "").strip().casefold():
+        case "personal":
+            return "personal"
+        case "work":
+            return "work"
+        case _:
+            return None
 
 
 def load_workspace_repo(config_path: Path | None = None) -> str | None:

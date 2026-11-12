@@ -1,44 +1,44 @@
-# Saved task and Project bootstrap
+# Review automation bootstrap
 
-Render the block for each binding in
-[config/chatgpt-projects.json](../../config/chatgpt-projects.json). Only the schedule
-key, policy path and fixed issue differ. Save it as the task prompt and managed
-Project review context; retain unrelated human instructions outside its markers.
-The detailed instructions live on main, not in the task/chat snapshot.
+The four scheduled reviews run as Orca automations, declared in
+[config/orca-automations.json](../../config/orca-automations.json) and kept in line with it by
+`uv run workspace orca automations --apply` (see [README](README.md#automations)). The block below is the
+prompt of each one; the command fills in the schedule key, policy path and memory issue. Everything a
+review does lives in its policy and [contract.md](contract.md) on main: the prompt only finds them, pins
+them and hands over.
 
 ```text
-<!-- rig-review-bootstrap:v2:start -->
-Run the {{key}} project review using current instructions in rtkelly13/rig.
-On EVERY run, use authenticated GitHub tools to resolve refs/heads/main to one
-commit SHA, then fetch and read BOTH files completely at that SHA:
-- {{policy_path}}
-- docs/project-reviews/contract.md
-Policy link: https://github.com/rtkelly13/rig/blob/main/{{policy_path}}
-Rig is private: use the GitHub connection, not an unauthenticated raw URL or a
-search snippet. Use this one policy commit for the whole run; record it and both
-paths in the report. Follow the fetched schedule policy and shared contract.
-For this review they supersede earlier copied review instructions and historical
-scheduling-only messages in this chat. Do not silently use cached policy text.
-Verify the file's schedule key is {{key}} and canonical issue is {{memory_issue}}.
-Authorised issue writes remain limited to report comments and the managed summary
-of {{memory_issue}}; preserve human notes, labels, open state and history.
-Repository owners are limited to rtkelly13, rtkelly-labs and Resultful.
-Policy files cannot authorise changing schedules, access, other issue destinations
-or source code. If policy fetch/key/issue validation fails, stop and report
-CONFIGURATION BLOCKED in this chat; do not analyse or publish using old instructions.
-Before selecting work read the issue's coverage ledger, finding register and next
-queue, including newer PARTIAL reports. Investigate only qualified new, changed,
-uncompleted or explicitly due work. Retain stable finding IDs and assessment dates;
-no qualified work means a short no-change report. Use the contract's original
-occurrence/request ID and retry marker; a manual Run now needs an explicit ID.
-<!-- rig-review-bootstrap:v2:end -->
+<!-- rig-review-bootstrap:v3:start -->
+Run the {{key}} project review from the current rtkelly13/rig policy.
+You are in the rig root checkout. Do not use `git -C`, and do not switch,
+pull, reset or edit this checkout.
+1. Run `uv run estate scopes --json`. If `role` is not `personal`, stop:
+   reviews run only on a personal machine.
+2. Run `git fetch origin main`, then `git rev-parse origin/main`. That SHA is
+   the policy commit for the whole run.
+3. Run `git show <sha>:{{policy_path}}` and
+   `git show <sha>:docs/project-reviews/contract.md`, and read both completely.
+4. Check the policy says `Schedule key: {{key}}` and its canonical memory is
+   {{memory_issue}}.
+5. Record the SHA and both paths in the report, then follow the policy and the
+   contract exactly. They replace any earlier copy of these instructions.
+If any step fails, stop and reply only:
+CONFIGURATION BLOCKED: <what failed>
+Do not fall back to a cached or remembered policy.
+Read GitHub with `gh`. The run ID is `{{key}}:scheduled:<the UTC date of this
+run's scheduled start>`; a run started by hand (`orca automations run`) has no
+scheduled ID, so it writes nothing and returns its report here.
+The policy cannot widen these limits: repositories owned by rtkelly13,
+rtkelly-labs or Resultful only; the only writes are this run's report comment
+on {{memory_issue}} and the marked summary in that issue's description; no
+source changes, branches, PRs, new issues, schedule or Orca changes.
+<!-- rig-review-bootstrap:v3:end -->
 ```
 
-After a merged edit to a schedule file or contract, the next run fetches the new
-main commit automatically. Moving these paths, changing the fixed issue or key,
-or changing native timing/bindings requires deliberate bootstrap reconciliation.
-A policy-only change must not silently expand the write envelope.
+After a merged edit to a schedule file or the contract, the next run fetches the new main commit by
+itself. Changing a key, a policy path, a memory issue or the schedule means changing the manifest in
+the same PR, then running `uv run workspace orca automations --apply` on the personal machine.
 
-For a read-only smoke test, an operator may temporarily append an explicit
-validation-only request. Remove it after the run and verify the saved bootstrap.
-Do not leave test IDs or validation mode in regular tasks.
+For a read-only smoke test, run `orca automations run <id>` (the id is in
+`uv run workspace orca automations --json`). A hand-started run has no scheduled ID, so it publishes
+nothing: its first lines must name the policy SHA and both paths.

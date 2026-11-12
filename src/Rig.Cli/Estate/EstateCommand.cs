@@ -7,6 +7,7 @@ using Rig.Cli.Workspace;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Workspace;
 
 namespace Rig.Cli.Estate;
 
@@ -15,7 +16,7 @@ namespace Rig.Cli.Estate;
 /// <param name="Home">The home folder: <c>~</c> in a path, and the folder holding the clone cache.</param>
 /// <param name="WorkingDirectory">Where <c>doctor</c> looks for a clone when given none.</param>
 /// <param name="ScopesFile">The checkout's <c>config/estate-scopes.json</c>, naming the org folders <c>decisions</c> scans.</param>
-/// <param name="MachineConfigFile">This machine's <c>~/.workspace/config.json</c>, naming its work folders.</param>
+/// <param name="MachineConfigFile">This machine's <c>~/.workspace/config.json</c>, naming its role, work orgs and work folders.</param>
 /// <param name="LocalAppData">The <c>LOCALAPPDATA</c> variable, under which the decisions feed lives.</param>
 /// <param name="ManagedProjectsFile">The checkout's <c>config/managed-projects.json</c>, the default <c>orca --config</c>.</param>
 internal sealed record EstateHost(
@@ -98,6 +99,8 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(new DownloadsCommand(new Downloads(disk), Downloads.DefaultFolder(host.Home), () => Downloads.DefaultCloudRoots(host.Home), output).Build());
         estate.Subcommands.Add(new VolumeCommand(
             host, new WizTreeExport(proc, time, (delay, token) => Task.Delay(delay, time, token)), Environment.GetEnvironmentVariable, DriveSpace.Of, output, error).Build());
+        estate.Subcommands.Add(DailyTriageCommand());
+        estate.Subcommands.Add(ScopesCommand());
         return estate;
     }
 
@@ -407,6 +410,106 @@ internal sealed class EstateCommand(
         var top = await git.OutAsync(path, "rev-parse", "--path-format=absolute", "--show-toplevel").ConfigureAwait(false);
         return top.Length > 0 ? PathResolution.Resolve(top) : null;
     }
+    private Command DailyTriageCommand()
+    {
+        var root = RootOption();
+        var refresh = RefreshOption();
+        var json = JsonOption();
+        var owner = new Option<string[]>("--owner")
+        {
+            Description = "An owner whose repos may be written to; repeat it. Every other clone is report-only (default: the "
+                + "owners this machine's role writes to; see `estate scopes`)",
+        };
+        var staleDays = new Option<int>("--stale-days") { Description = "Days without activity before a PR is stale", DefaultValueFactory = _ => DailyTriage.DefaultStaleDays };
+        var author = new Option<string?>("--author")
+        {
+            Description = "Only this login's PRs; @me is the gh login (default: @me on a work machine, everyone on a personal one)",
+        };
+        var allAuthors = new Option<bool>("--all-authors") { Description = "Every author's PRs, even on a work machine" };
+        var command = new Command(
+            "daily-triage",
+            "Every open PR in every repo this machine's role writes to, with its signals (failing checks, conflict, behind, "
+            + "unresolved threads, superseded, stale, ready) and a lane: work, owner or wait. Read-only; the daily orchestrator's input.")
+        {
+            root, refresh, json, owner, staleDays, author, allAuthors,
+        };
+        command.SetAction((parsed, cancellationToken) => DailyTriageAsync(
+            parsed.GetValue(root),
+            parsed.GetValue(refresh),
+            parsed.GetValue(json),
+            parsed.GetValue(owner),
+            parsed.GetValue(staleDays),
+            parsed.GetValue(allAuthors) ? null : parsed.GetValue(author),
+            parsed.GetValue(allAuthors),
+            cancellationToken));
+        return command;
+    }
+
+    private async Task<int> DailyTriageAsync(
+        string? root, bool refresh, bool json, string[]? owners, int staleDays, string? author, bool allAuthors, CancellationToken cancellationToken)
+    {
+        var scopes = OwnerScopes.Load(host.ScopesFile, host.MachineConfigFile);
+        IReadOnlyList<string> writable = owners is { Length: > 0 } ? owners : scopes.Writable;
+        if (writable.Count == 0)
+        {
+            var missing = scopes.Role == MachineRole.Work ? MachineConfig.WorkOrgsKey : $"config/{EstateScopes.FileName}";
+            await error.WriteLineAsync(
+                $"No owners to triage for the {Role(scopes.Role)} role: list them in {missing}, or pass --owner.".AsMemory(), cancellationToken).ConfigureAwait(false);
+            return 2;
+        }
+
+        var triage = new DailyTriage(git, github, time);
+        author ??= scopes.Role == MachineRole.Work && !allAuthors ? "@me" : null;
+        if (author == "@me")
+        {
+            author = await triage.ViewerAsync(cancellationToken).ConfigureAwait(false);
+            if (author is null)
+            {
+                await error.WriteLineAsync("Could not read the gh login for @me; pass --author <login> or --all-authors.".AsMemory(), cancellationToken).ConfigureAwait(false);
+                return 2;
+            }
+        }
+
+        var scanRoot = CodeRoot(root);
+        var clones = await ClonesAsync(scanRoot, refresh, quiet: json, cancellationToken).ConfigureAwait(false);
+        var report = await triage.ScanAsync(clones, writable, staleDays, author, cancellationToken).ConfigureAwait(false);
+        var text = json
+            ? DailyTriageOutput.Json(report, scanRoot, Role(scopes.Role), writable, author, time.GetUtcNow()).ToJsonString(Indented)
+            : DailyTriageOutput.Text(report);
+        await output.WriteLineAsync(text.AsMemory(), cancellationToken).ConfigureAwait(false);
+        return 0;
+    }
+
+    private Command ScopesCommand()
+    {
+        var root = new Option<string?>("--root") { Description = "Code root whose clones are counted (default: the whole code root)" };
+        var refresh = RefreshOption();
+        var json = JsonOption();
+        var command = new Command(
+            "scopes",
+            "This machine's role, which GitHub owners are personal (config/estate-scopes.json) and which are work "
+            + "(tools.estate.work_orgs in ~/.workspace/config.json), and every owner the clones under the root belong to. Read-only.")
+        {
+            root, refresh, json,
+        };
+        command.SetAction((parsed, cancellationToken) => ScopesAsync(parsed.GetValue(root), parsed.GetValue(refresh), parsed.GetValue(json), cancellationToken));
+        return command;
+    }
+
+    private async Task<int> ScopesAsync(string? root, bool refresh, bool json, CancellationToken cancellationToken)
+    {
+        var scopes = OwnerScopes.Load(host.ScopesFile, host.MachineConfigFile);
+        var scanRoot = PathResolution.Resolve(string.IsNullOrEmpty(root) ? host.CodeRoot : ExpandHome(root));
+        var clones = await ClonesAsync(scanRoot, refresh, quiet: json, cancellationToken).ConfigureAwait(false);
+        var (owners, unowned) = await new OwnerCensus(git).CountAsync(scopes, clones, cancellationToken).ConfigureAwait(false);
+        var text = json
+            ? ScopesOutput.Json(scopes, scanRoot, owners, unowned).ToJsonString(Indented)
+            : ScopesOutput.Text(scopes, owners, unowned);
+        await output.WriteLineAsync(text.AsMemory(), cancellationToken).ConfigureAwait(false);
+        return 0;
+    }
+
+    private static string Role(MachineRole role) => MachineConfig.RoleName(role);
 
     // Safety is per entry, not per clone: a commit is not endangered by deleting node_modules, so only a worktree
     // entry, the one kind that can hold live state, is refused for being dirty or the only copy of its commits.

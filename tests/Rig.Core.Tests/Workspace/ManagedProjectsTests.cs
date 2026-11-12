@@ -104,4 +104,41 @@ public sealed class ManagedProjectsTests : IDisposable
     [Fact]
     public void A_missing_machine_config_skips_nothing() =>
         Assert.Empty(MachineConfig.SkipRepos(Path.Join(_dir.Path, "none.json")));
+
+    [Theory]
+    [InlineData("""{"tools": {"machine": {"role": "work"}}}""", MachineRole.Work)]
+    [InlineData("""{"tools": {"machine": {"role": " Personal "}}}""", MachineRole.Personal)]
+    [InlineData("""{"tools": {"machine": {"role": "WORK"}}}""", MachineRole.Work)]
+    public void The_role_is_read_in_any_case(string json, MachineRole expected) =>
+        Assert.Equal(expected, MachineConfig.Role(Write("config.json", json)));
+
+    [Theory]
+    [InlineData("{not json")]
+    [InlineData("""{"tools": {"machine": {"role": "1"}}}""")]
+    [InlineData("""{"tools": {"machine": {"role": "laptop"}}}""")]
+    [InlineData("""{"tools": {"machine": {"role": 1}}}""")]
+    [InlineData("""{"tools": {}}""")]
+    public void An_unset_or_unknown_role_reads_as_none(string json) =>
+        Assert.Null(MachineConfig.Role(Write("config.json", json)));
+
+    [Fact]
+    public void Work_orgs_are_listed_as_written_without_blanks()
+    {
+        var path = Write("config.json", """{"tools": {"estate": {"work_orgs": [" Acme ", "", "acme-data"]}}}""");
+
+        Assert.Equal(["Acme", "acme-data"], MachineConfig.WorkOrgs(path));
+        Assert.Empty(MachineConfig.WorkOrgs(Path.Join(_dir.Path, "none.json")));
+    }
+
+    [Fact]
+    public void An_Orca_instance_maps_to_its_folder_as_written_and_an_unmapped_one_to_none()
+    {
+        var path = Write("config.json", """{"tools": {"orca": {"instances": {"personal": "%APPDATA%/orca-personal", "blank": "", "number": 1}}}}""");
+
+        Assert.Equal("%APPDATA%/orca-personal", MachineConfig.OrcaInstance(path, "personal"));
+        Assert.Null(MachineConfig.OrcaInstance(path, "work"));
+        Assert.Null(MachineConfig.OrcaInstance(path, "blank"));
+        Assert.Null(MachineConfig.OrcaInstance(path, "number"));
+        Assert.Null(MachineConfig.OrcaInstance(Path.Join(_dir.Path, "none.json"), "personal"));
+    }
 }

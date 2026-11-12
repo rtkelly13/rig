@@ -81,3 +81,32 @@ def test_the_workspace_repo_is_unset_unless_the_machine_names_it(tmp_path: Path)
     _ = config.write_text('{"tools": {"estate": {"workspace_repo": "workspace"}}}', encoding="utf-8")
 
     assert scopes.workspace_repo(tmp_path) == tmp_path / "workspace"
+
+
+def _write_machine(text: str) -> None:
+    _ = (Path(os.environ["WORKSPACE_HOME"]) / "config.json").write_text(text, encoding="utf-8")
+
+
+def test_a_machine_with_no_role_is_personal() -> None:
+    assert scopes.machine_role() == "personal"
+
+
+@pytest.mark.parametrize(
+    ("role", "expected"), [("work", "work"), (" Work ", "work"), ("PERSONAL", "personal"), ("laptop", "personal")]
+)
+def test_the_role_is_read_in_any_case_and_an_unknown_one_is_personal(role: str, expected: str) -> None:
+    _write_machine(f'{{"tools": {{"machine": {{"role": "{role}"}}}}}}')
+
+    assert scopes.machine_role() == expected
+
+
+def test_owners_are_personal_from_the_tracked_scopes_and_work_from_the_machine(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _scopes_file(tmp_path, '{"personal": {"owners": ["rtkelly13"], "orgs": ["Resultful"]}}', monkeypatch)
+    _write_machine('{"tools": {"estate": {"work_orgs": [" Acme ", "rtkelly13"]}}}')
+
+    assert scopes.owner_class("RTKELLY13") == "personal"
+    assert scopes.owner_class("resultful") == "personal"
+    assert scopes.owner_class("acme") == "work"
+    assert scopes.owner_class("someone") == "other"

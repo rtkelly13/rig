@@ -1,10 +1,11 @@
 # Review policies on main
 
-These files are the editable instructions for the four native ChatGPT Work review
-tasks. Codex maintains them through rig PRs; after squash merge the next task run
-fetches the updated main policy. A task does not automatically refresh an attached
-file or its chat history: the [saved bootstrap](bootstrap.md) explicitly fetches
-current GitHub content every time.
+These files are the instructions for the four weekly project reviews. They run as
+Orca automations on the personal machine, declared in
+[config/orca-automations.json](../../config/orca-automations.json) next to the
+daily estate orchestrator. Codex maintains the policies through rig PRs; after a
+squash merge the next run fetches the updated main policy, because the
+[bootstrap](bootstrap.md) prompt resolves main on every run.
 
 | Schedule | Policy | Canonical memory |
 | --- | --- | --- |
@@ -13,35 +14,46 @@ current GitHub content every time.
 | Developer Tooling & Design, including Resultful | [tooling-design.md](tooling-design.md) | [#25](https://github.com/rtkelly13/rig/issues/25) |
 | Personal | [personal.md](personal.md) | [#24](https://github.com/rtkelly13/rig/issues/24) |
 
-Each group runs once every week at 02:00 Europe/London: Data Monday, Diffra
-Tuesday, Tooling & Design Thursday, Personal Friday. Exact starts and RRULEs live
-in the manifest; see the [weekly layout](../agent-browser/five-review-groups.md).
-The native scheduler must be reconciled when timing changes; policy edits alone
-do not reschedule a task.
+Each group runs once a week at 02:00 Europe/London: Data Monday, Diffra Tuesday,
+Tooling & Design Thursday, Personal Friday. A run missed while the machine slept
+still starts within 12 hours. Each policy imports [contract.md](contract.md),
+which defines continuation, coverage, finding identities, delta selection and
+publication. Policy text lives here; changing analysis state lives in the issue
+description and dated reports.
 
-Each policy imports [contract.md](contract.md). The contract defines continuation,
-coverage, finding identities, delta selection and publication. Policy text lives
-here; changing analysis state lives in the issue description and dated reports.
-The [binding manifest](../../config/chatgpt-projects.json) holds identities,
-frequency, fixed write destination and policy path; repository allowlists/focus
-live only in the schedule files. Resultful/c11n context and paused task history
-remain retained as documented in the [layout](../agent-browser/five-review-groups.md).
+## Automations
+
+The reviews used to be native ChatGPT Work tasks driven through the browser
+([config/chatgpt-projects.json](../../config/chatgpt-projects.json) keeps that
+history). Nothing could change them without a person at the UI, so they moved to
+Orca, which rig reconciles from the CLI:
+
+```bash
+uv run workspace orca automations           # plan
+uv run workspace orca automations --apply   # create or update them
+```
+
+Entries are `personal`-role only: on a work machine they show as `skip`, and the
+bootstrap stops a run whose machine is not personal. Each entry picks its agent
+(`provider.agent`, `codex` for the reviews). See
+[Orca: scheduled automations](../orca.md#scheduled-automations) for how instances,
+binding and fields work.
 
 ## Editing and rollout
 
 1. Change the appropriate policy, or the shared contract for a common behaviour.
-   Keep the schedule key and canonical issue compatible with the saved bootstrap.
+   Keep the schedule key and canonical issue matching the manifest.
 2. Review changed repository scope, revisit triggers, finding-state transitions,
    publication boundaries and the no-change path. Update memory rows deliberately
    when adding/removing scope; do not erase evidence or reset assessment dates.
 3. Validate relative links and bindings, then use rig's normal PR checks and squash
    merge. No direct main push and no automatic policy edits by scheduled workers.
 4. Each run resolves main once, fetches both policy files at that commit and records
-   it. A merge during a run takes effect next run. An unavailable file/connection
-   blocks the review rather than falling back to a stale copy.
-5. When changing a path, key, fixed issue, native cadence or destination, reconcile
-   saved task/Project bootstraps and verify readback. Policy edits alone do not
-   change those bindings. Keep the independent Resultful task paused.
+   it. A merge during a run takes effect next run. An unavailable file blocks the
+   review rather than falling back to a stale copy.
+5. Changing a path, key, issue, agent or schedule is a manifest change in the same
+   PR; after merge, run `uv run workspace orca automations --apply` on the personal
+   machine and check the plan comes back `ok`.
 
 ## Evaluation and continual refinement
 
@@ -62,14 +74,9 @@ report exists. Carry stable finding IDs and the next queue across occurrences.
 
 ## Evidence boundary
 
-The previous native Run now publication test proved a worker could post a report
-and update the issue while preserving outside text/labels/state. A live-policy
-smoke test must additionally demonstrate authenticated reads from main and report
-the fetched policy commit/paths. The first calendar runs still need operational
-monitoring; neither the bootstrap nor a prompt is a hard guarantee against every
-future model repetition or service failure.
-
-[OpenAI scheduled-task documentation](https://learn.chatgpt.com/docs/automations)
-explains that web tasks can use connected tools and accessible source material.
-Fetching versioned policy files on each run is this workflow's explicit convention;
-it is not an assumption that an attachment or saved prompt refreshes itself.
+The ChatGPT runs proved a worker can post a report and update the issue while
+preserving outside text, labels and state. The Orca runs must show the same: the
+first scheduled run of each group needs its report checked for the policy commit,
+paths and run ID, and its issue description read back. Neither the bootstrap nor
+a prompt is a hard guarantee against every future model repetition or service
+failure.
