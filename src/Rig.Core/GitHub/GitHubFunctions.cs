@@ -65,7 +65,7 @@ public static class GitHubFunctions
             body["operationName"] = operationName;
         }
 
-        return new ApiRequest("POST", "graphql", JsonSerializer.Serialize(body));
+        return new ApiRequest("POST", "graphql", JsonSerializer.Serialize(body, GitHubSerializerDefaults.Options));
     }
 
     /// <summary>Executes a REST request via <paramref name="api"/> without asserting success.</summary>
@@ -291,8 +291,7 @@ public static class GitHubFunctions
     public static bool IsNotFound(Ran ran)
     {
         ArgumentNullException.ThrowIfNull(ran);
-        return !ran.Ok && (ran.Err.Contains("HTTP 404", StringComparison.Ordinal)
-            || ran.Err.Contains("Not Found", StringComparison.Ordinal));
+        return !ran.Ok && ran.Err.Contains("HTTP 404", StringComparison.Ordinal);
     }
 
     /// <summary>Returns a trimmed error message from <paramref name="ran"/>, or exit code description if empty.</summary>
