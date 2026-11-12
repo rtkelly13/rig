@@ -29,7 +29,7 @@ internal sealed class RigApp(
     public const string HelpCommand = "help";
 
     /// <summary>The overview's last line: the desktop tools are a separate CLI with their own help.</summary>
-    public const string DesktopPointer = "Desktop windows, sessions, tabs and jobs: run 'desktop-manager --help'.";
+    public const string DesktopPointer = "Desktop windows, sessions and tabs: run 'desktop-manager --help'.";
 
     /// <summary>The root command: the ported commands, plus the forwarded ones so help lists them all.</summary>
     public RootCommand BuildRoot()

@@ -2,8 +2,9 @@
 
 `state.json` maps job name to its last `Outcome`. `last-<trigger>.json` is the
 latest run on that trigger as a `RunRecord`: every job it ran or skipped, and why,
-so `jobs last --trigger logon` answers "what did sign-in do?" from one file.
-Nothing else reads either file, so their shapes can change; an unreadable file
+so `rig jobs last --trigger logon` answers "what did sign-in do?" from one file.
+`Rig.Core.Jobs` reads and writes both files too, so a change to their shape changes
+`tests/Rig.Cli.Tests/Jobs/jobs-oracle.json` and the C# with it; an unreadable file
 reads as empty, which only makes every job due once.
 """
 
@@ -28,10 +29,6 @@ def jobs_dir() -> Path:
     from desktop_manager.runtime import base_dir
 
     return base_dir() / "jobs"
-
-
-def logs_dir() -> Path:
-    return jobs_dir() / "logs"
 
 
 def last_run_path(directory: Path, trigger: str) -> Path:
@@ -122,10 +119,6 @@ class RunRecord:
     #: None while the run is still going, or when it was killed part-way.
     finished: str | None
     decisions: tuple[Decision, ...]
-
-    @property
-    def failed(self) -> tuple[Decision, ...]:
-        return tuple(item for item in self.decisions if item.outcome is not None and not item.outcome.ok)
 
 
 @dataclass(frozen=True, slots=True)

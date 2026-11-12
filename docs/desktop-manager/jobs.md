@@ -6,15 +6,20 @@ is one place to see what runs at logon, what runs every 15 minutes, and what run
 daily.
 
 ```bash
-desktop-manager jobs status            # each job: when it runs, last outcome, whether the next tick takes it
-desktop-manager jobs status --trigger logon
-desktop-manager jobs last              # the latest sign-in run: every job, why it ran or not, how it went
-desktop-manager jobs last --trigger tick
+rig jobs status                        # each job: when it runs, last outcome, whether the next tick takes it
+rig jobs status --trigger logon
+rig jobs last                          # the latest sign-in run: every job, why it ran or not, how it went
+rig jobs last --trigger tick
+rig jobs log chrome-organise
 desktop-manager jobs run --dry-run     # what a tick would run now
 desktop-manager jobs run --only estate-risk   # one job, due or not
-desktop-manager jobs log chrome-organise
 desktop-manager jobs install           # register the tasks (run from the runtime copy)
 ```
+
+`status`, `last` and `log` run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`); `run`,
+`install` and `uninstall` are still Python, and `rig jobs <those>` hands them to `desktop-manager jobs`.
+Both sides read and write the same `state.json` and `last-<trigger>.json`, held byte for byte to
+`tests/Rig.Cli.Tests/Jobs/jobs-oracle.json`, which Python records.
 
 ## Scheduled tasks
 
@@ -59,7 +64,7 @@ A run takes its jobs in registry order, one at a time:
   last start is 20 hours old. `once per boot` runs on the first matching trigger
   after a boot.
 - **Flagged jobs.** A job with a `feature` runs only while that
-  [rig flag](../feature-flags.md) is on, and `jobs status` shows `flag <name> off`
+  [rig flag](../feature-flags.md) is on, and `rig jobs status` shows `flag <name> off`
   otherwise. Naming the job with `--only` runs it anyway.
 - **C# jobs.** The `estate`, `workspace orca` and `otel-stack` jobs run `rig <group> …` from the
   runtime copy, which starts the C# CLI with `dotnet run`. The task's pythonw inherits the logged-on
@@ -103,17 +108,17 @@ Every `coordinator.log` line names it, it heads that run's section of each job l
 (`--- <time> [<id>] <command>`), and the job sees it as `SHARED_UTILITIES_JOB_RUN`.
 
 - **Summary.** Each outcome keeps the last line the job printed, such as
-  `align: 0 moved, 11 in place`. `coordinator.log`, `jobs status` and `jobs last`
+  `align: 0 moved, 11 in place`. `coordinator.log`, `rig jobs status` and `rig jobs last`
   show it beside the exit code.
 - **Why it failed.** A failed job also keeps the last 12 lines of its output.
-  `coordinator.log` prints them under the failure, and `jobs status` and `jobs last`
+  `coordinator.log` prints them under the failure, and `rig jobs status` and `rig jobs last`
   print them below the table. A job that writes its narrative to its own log, as
   `chrome-organise` does to `chrome-tabs\organise.log`, is read from that log's
   last section instead.
 - **The latest run.** `last-logon.json` and `last-tick.json` record each trigger's
   latest run: every job it ran or skipped, with the reason, and each outcome. The
   record is saved after every job, so a run killed part-way shows as not finished.
-  `jobs last` reads it.
+  `rig jobs last` reads it.
 - **Run history.** Every job run also appends one line to `runs.ndjson`: job, run
   id, start, duration, exit code, trigger, error, its output file, and the trace
   and span ids it ran under. That run's slice of the job log is saved as

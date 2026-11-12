@@ -26,6 +26,22 @@ public static class MachineConfig
         [.. EstateNames(path, "work_dirs").Select(entry => Path.Combine(codeRoot, ExpandHome(entry, home)))];
 
     /// <summary>
+    /// <c>tools.estate.workspace_repo</c> in <paramref name="path"/>: this machine's work workspace checkout, resolved as a
+    /// work folder is; null when it is unset, blank or not text.
+    /// </summary>
+    /// <param name="path">The machine config file.</param>
+    /// <param name="codeRoot">The code root a bare name sits in.</param>
+    /// <param name="home">What a leading <c>~</c> stands for.</param>
+    public static string? WorkspaceRepo(string path, string codeRoot, string home) =>
+        (Read(path) as JsonObject)?["tools"] is JsonObject tools
+        && tools["estate"] is JsonObject estate
+        && estate["workspace_repo"] is JsonValue value
+        && value.GetValueKind() == JsonValueKind.String
+        && value.GetValue<string>().Trim() is { Length: > 0 } configured
+            ? Path.Combine(codeRoot, ExpandHome(configured, home))
+            : null;
+
+    /// <summary>
     /// <c>tools.desktop.aliases</c> in <paramref name="path"/>: this machine's desktop plan aliases, applied over the
     /// plan's own. Names are trimmed and blank ones dropped; empty when any value is not text.
     /// </summary>
