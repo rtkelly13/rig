@@ -481,13 +481,33 @@ public sealed class PrCommandTests
     }
 
     [Fact]
-    public async Task Wait_help_documents_the_exit_codes_and_the_settle_time()
+    public async Task Help_for_wait_and_land_names_the_reasons_the_exit_codes_examples_and_the_guide()
     {
-        var result = await Run(GitHub(0, Merged), null, "wait", "--help");
+        var wait = await Run(GitHub(0, Merged), null, "wait", "--help");
+        var land = await Run(GitHub(0, Merged), null, "land", "--help");
+
+        Assert.Equal((0, 0), (wait.Code, land.Code));
+        foreach (var expected in (string[])["--settle", "unresolved_threads", "auto_merge_off", "  3  --timeout passed", "Examples:", PrCommand.Guide])
+        {
+            Assert.Contains(expected, wait.Out, StringComparison.Ordinal);
+            Assert.Contains(expected, land.Out, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("instead of a loop over `gh pr view`", wait.Out, StringComparison.Ordinal);
+        Assert.Contains("rig gh pr wait 141 --timeout 0", wait.Out, StringComparison.Ordinal);
+        Assert.Contains("or the merge could not be queued", land.Out, StringComparison.Ordinal);
+        Assert.DoesNotContain("{0}", wait.Out + land.Out, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_group_lists_both_commands_in_one_line_each_without_their_notes()
+    {
+        var result = await Run(GitHub(0, Merged), null, "--help");
 
         Assert.Equal(0, result.Code);
-        Assert.Contains("--settle", result.Out, StringComparison.Ordinal);
-        Assert.Contains("Exits 0 merged, 1 blocked", result.Out.ReplaceLineEndings(" "), StringComparison.Ordinal);
+        Assert.Contains("  wait <pr>  Wait for the PR to merge", result.Out, StringComparison.Ordinal);
+        Assert.Contains("  land <pr>  Queue a squash auto-merge", result.Out, StringComparison.Ordinal);
+        Assert.DoesNotContain("Exit codes:", result.Out, StringComparison.Ordinal);
     }
 
     // -- land -----------------------------------------------------------------------------
