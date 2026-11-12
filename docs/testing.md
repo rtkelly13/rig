@@ -152,7 +152,8 @@ ported to C# arrives with its tests.
 
 ```bash
 dotnet build rig.slnx -m:2
-dotnet test --solution rig.slnx --no-build --coverlet --coverlet-output-format json
+dotnet test --solution rig.slnx --no-build --coverlet --coverlet-output-format json \
+  --coverlet-exclude-by-file "**/Microsoft.Interop.ComInterfaceGenerator/**"
 dotnet run scripts/coverage-floor.cs -- TestResults/coverage.*.json
 ```
 
