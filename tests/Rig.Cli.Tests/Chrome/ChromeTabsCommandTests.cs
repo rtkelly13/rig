@@ -13,7 +13,7 @@ namespace Rig.Cli.Tests.Chrome;
 
 /// <summary>
 /// <c>rig chrome-tabs</c>. <c>traces</c> runs over <see cref="ChromeTraces"/>, which its own tests hold to Python's
-/// reports; <c>list</c> and <c>rank</c> over a fake driver. These check what the command adds: the files it picks, the lines,
+/// reports; <c>list</c> and <c>rank</c> over a fake driver; <c>install</c> and <c>uninstall</c> over a temp home. These check what the command adds: the files it picks, the lines,
 /// the JSON and its key order, the exit codes, and which lines stay with the Python.
 /// </summary>
 public sealed class ChromeTabsCommandTests : IDisposable
@@ -407,11 +407,78 @@ public sealed class ChromeTabsCommandTests : IDisposable
     [InlineData(false, true, "chrome-tabs", "list")]
     [InlineData(false, true, "chrome-tabs", "rank")]
     [InlineData(true, true, "chrome-tabs", "prune")]
-    public void List_and_rank_run_here_only_with_a_driver(bool withDriver, bool forwarded, params string[] args)
+    [InlineData(true, false, "chrome-tabs", "install")]
+    [InlineData(true, false, "chrome-tabs", "uninstall")]
+    [InlineData(false, true, "chrome-tabs", "install")]
+    [InlineData(false, true, "chrome-tabs", "uninstall")]
+    public void Driver_commands_run_here_only_with_a_driver(bool withDriver, bool forwarded, params string[] args)
     {
         var root = new RootCommand { WithDriver(withDriver).Build() };
 
         Assert.Equal(forwarded, Rig.Cli.Forwarding.Forwarded.Owns(args, root));
+    }
+
+    private string Home => Path.Join(_temp.Path, "home");
+
+    private string Local => Path.Join(_temp.Path, "local");
+
+    private string Shim => Path.Join(Home, ".local", "bin", "chrome-tabs.cmd");
+
+    private string Target => Path.Join(Local, "shared-utilities", "runtime", "current", ".venv", "Scripts", "desktop-manager.exe");
+
+    private async Task<int> Installs(params string[] args) =>
+        await new ChromeTabsCommand(
+                name => name == "LOCALAPPDATA" ? Local : null, Home, new FixedTime(Now), TimeZoneInfo.Utc, _out, new ChromeTabsDriver(() => Windows, _github))
+            .Build()
+            .Parse(args)
+            .InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+    [Fact]
+    public async Task Install_writes_a_crlf_shim_to_the_runtime_copy_and_says_when_there_is_no_copy_yet()
+    {
+        Assert.Equal(0, await Installs("install"));
+
+        Assert.Equal($"@echo off\r\n\"{Target}\" chrome-tabs %*\r\n", await File.ReadAllTextAsync(Shim, TestContext.Current.CancellationToken));
+        Assert.Equal([$"Command: {Shim} -> {Target}", "No runtime copy yet: run `desktop-manager runtime install`."], Lines);
+    }
+
+    [Fact]
+    public async Task Install_over_an_existing_copy_rewrites_the_shim_and_says_nothing_more()
+    {
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(Target)!);
+        await File.WriteAllTextAsync(Target, "", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(Shim)!);
+        await File.WriteAllTextAsync(Shim, "old", TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, await Installs("install"));
+
+        Assert.StartsWith("@echo off", await File.ReadAllTextAsync(Shim, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Equal([$"Command: {Shim} -> {Target}"], Lines);
+    }
+
+    [Fact]
+    public async Task Uninstall_removes_the_shim_and_the_old_snapshot_but_keeps_the_logs()
+    {
+        var root = Path.Join(Local, "shared-utilities", "chrome-tabs");
+        _ = Directory.CreateDirectory(Path.Join(root, "venv", "Scripts"));
+        await File.WriteAllTextAsync(Path.Join(root, "organise.log"), "kept", TestContext.Current.CancellationToken);
+        Assert.Equal(0, await Installs("install"));
+        _out.GetStringBuilder().Clear();
+
+        Assert.Equal(0, await Installs("uninstall"));
+
+        Assert.False(File.Exists(Shim));
+        Assert.False(Directory.Exists(Path.Join(root, "venv")));
+        Assert.True(File.Exists(Path.Join(root, "organise.log")));
+        Assert.Equal([$"Removed the command; kept logs in {root}"], Lines);
+    }
+
+    [Fact]
+    public async Task Uninstall_with_nothing_installed_still_succeeds()
+    {
+        Assert.Equal(0, await Installs("uninstall"));
+
+        Assert.Equal([$"Removed the command; kept logs in {Path.Join(Local, "shared-utilities", "chrome-tabs")}"], Lines);
     }
 
     private IReadOnlyList<TraceRun> Load() => ChromeTraces.Runs(ChromeTraces.LoadSpans(Traces, DateOnly.FromDateTime(Now.UtcDateTime), 30));
