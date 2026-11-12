@@ -6,37 +6,11 @@ using Rig.Core.Vault;
 namespace Rig.Core.Chrome.Windows;
 
 /// <summary>
-/// The window brought to the front for an action, which disposing puts back: the cursor, the window that had the
-/// foreground, and a minimised window's state.
-/// </summary>
-public sealed class ForegroundLease : IDisposable
-{
-    private Action? _restore;
-
-    internal ForegroundLease(bool arrived, Action? restore)
-    {
-        Arrived = arrived;
-        _restore = restore;
-    }
-
-    /// <summary>The window reached the foreground; act on it only then.</summary>
-    public bool Arrived { get; }
-
-    /// <summary>Puts the cursor, the previous foreground window and a minimised window back. Runs once.</summary>
-    public void Dispose()
-    {
-        var restore = _restore;
-        _restore = null;
-        restore?.Invoke();
-    }
-}
-
-/// <summary>
 /// The half of <see cref="ChromeUiaActions"/> that needs the window in front: grouping, moving and ungrouping a tab.
 /// Chrome offers these only on context menus and the group editor, which open only for a real right-click on a
 /// foreground window, so these move the mouse. Run each inside <see cref="Foreground"/>.
 /// </summary>
-public sealed partial class ChromeUiaActions
+public sealed partial class ChromeUiaActions : IChromeGroupActions
 {
     private const string BubbleButtonClass = "BubbleMenuItemButton";
     private const string TitleFieldClassHint = "TitleField";
