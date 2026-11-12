@@ -5,8 +5,11 @@ Nothing here is a naming convention; each list is configuration:
 - **Personal** is tracked in ``config/estate-scopes.json``: the GitHub accounts whose repos
   are cloned straight into ``personal/`` (``owners``), and the GitHub orgs whose repos sit in
   a sibling folder of ``personal/`` named for the org (``orgs``, spelled as the folder is).
-- **Work** differs between machines, so it lives in ``~/.workspace/config.json`` under
-  ``tools.estate.work_dirs`` (see `rig.workspace_config`). Unset means no work scope.
+- **Work** differs between machines, so it lives in ``~/.workspace/config.json``: the folders
+  under ``tools.estate.work_dirs`` and the GitHub owners under ``tools.estate.work_orgs`` (see
+  `rig.workspace_config`). Unset means no work scope.
+- **Role**: ``tools.machine.role`` says which side this machine is for; unset means personal.
+  `estate scopes` prints all of it.
 """
 
 from __future__ import annotations
@@ -14,14 +17,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import StrictStr
 
 from rig import roots
 from rig.typed_json import decode_json
-from rig.workspace_config import load_work_dirs, load_workspace_repo
+from rig.workspace_config import MachineRole, load_machine_role, load_work_dirs, load_work_orgs, load_workspace_repo
 
 SCOPES_FILE = "estate-scopes.json"
+
+type OwnerClass = Literal["personal", "work", "other"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,3 +97,17 @@ def workspace_repo(code_root: Path | None = None, config: Path | None = None) ->
     if configured is None:
         return None
     return (code_root or roots.code_root()) / Path(configured).expanduser()
+
+
+def machine_role(config: Path | None = None) -> MachineRole:
+    """This machine's role from ``tools.machine.role``; ``personal`` when unset."""
+    return load_machine_role(config) or "personal"
+
+
+def owner_class(owner: str, config: Path | None = None) -> OwnerClass:
+    """The side a GitHub *owner* (any case) is on: personal wins when it is listed on both."""
+    if is_estate_owner(owner):
+        return "personal"
+    if owner.casefold() in {org.casefold() for org in load_work_orgs(config)}:
+        return "work"
+    return "other"

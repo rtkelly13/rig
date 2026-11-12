@@ -6,8 +6,8 @@ Contract: [contract.md](contract.md), fetched at the same main commit as this fi
 
 Follow the shared contract. This file is the current schedule-specific policy;
 read it afresh on every run. Review scope and focus can change through merged
-rig PRs without editing the saved ChatGPT task. This file does not alter schedule
-frequency, native identities, credentials or the allowed issue-write destination.
+rig PRs without editing the Orca automation. This file does not alter schedule
+frequency, the automation, credentials or the allowed issue-write destination.
 
 ## Repository allowlist
 

@@ -1,0 +1,141 @@
+{
+  "schema_version": 2,
+  "automations": [
+    {
+      "key": "daily-estate",
+      "name": "Daily estate review",
+      "roles": [
+        "personal",
+        "work"
+      ],
+      "management": "manage",
+      "orca": {
+        "instance": "personal"
+      },
+      "trigger": {
+        "timezone": "Europe/London",
+        "rrule": "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=30",
+        "missed_run_grace_minutes": 720
+      },
+      "provider": {
+        "agent": "claude",
+        "reuse_session": false
+      },
+      "workspace": {
+        "mode": "existing",
+        "path": "{personal}/rig"
+      },
+      "bootstrap": "docs/daily-orchestrator/bootstrap.md",
+      "policy_path": "docs/daily-orchestrator/policy.md",
+      "memory_issue": null
+    },
+    {
+      "key": "data",
+      "name": "Data deep project review",
+      "roles": [
+        "personal"
+      ],
+      "management": "manage",
+      "orca": {
+        "instance": "personal"
+      },
+      "trigger": {
+        "timezone": "Europe/London",
+        "rrule": "FREQ=WEEKLY;BYDAY=MO;BYHOUR=2;BYMINUTE=0",
+        "missed_run_grace_minutes": 720
+      },
+      "provider": {
+        "agent": "codex",
+        "reuse_session": false
+      },
+      "workspace": {
+        "mode": "existing",
+        "path": "{personal}/rig"
+      },
+      "bootstrap": "docs/project-reviews/bootstrap.md",
+      "policy_path": "docs/project-reviews/data.md",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/22"
+    },
+    {
+      "key": "diffra",
+      "name": "Diffra deep project review",
+      "roles": [
+        "personal"
+      ],
+      "management": "manage",
+      "orca": {
+        "instance": "personal"
+      },
+      "trigger": {
+        "timezone": "Europe/London",
+        "rrule": "FREQ=WEEKLY;BYDAY=TU;BYHOUR=2;BYMINUTE=0",
+        "missed_run_grace_minutes": 720
+      },
+      "provider": {
+        "agent": "codex",
+        "reuse_session": false
+      },
+      "workspace": {
+        "mode": "existing",
+        "path": "{personal}/rig"
+      },
+      "bootstrap": "docs/project-reviews/bootstrap.md",
+      "policy_path": "docs/project-reviews/diffra.md",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/12"
+    },
+    {
+      "key": "tooling-design",
+      "name": "Developer Tooling & Design deep project review",
+      "roles": [
+        "personal"
+      ],
+      "management": "manage",
+      "orca": {
+        "instance": "personal"
+      },
+      "trigger": {
+        "timezone": "Europe/London",
+        "rrule": "FREQ=WEEKLY;BYDAY=TH;BYHOUR=2;BYMINUTE=0",
+        "missed_run_grace_minutes": 720
+      },
+      "provider": {
+        "agent": "codex",
+        "reuse_session": false
+      },
+      "workspace": {
+        "mode": "existing",
+        "path": "{personal}/rig"
+      },
+      "bootstrap": "docs/project-reviews/bootstrap.md",
+      "policy_path": "docs/project-reviews/tooling-design.md",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/25"
+    },
+    {
+      "key": "personal",
+      "name": "Personal deep project review",
+      "roles": [
+        "personal"
+      ],
+      "management": "manage",
+      "orca": {
+        "instance": "personal"
+      },
+      "trigger": {
+        "timezone": "Europe/London",
+        "rrule": "FREQ=WEEKLY;BYDAY=FR;BYHOUR=2;BYMINUTE=0",
+        "missed_run_grace_minutes": 720
+      },
+      "provider": {
+        "agent": "codex",
+        "reuse_session": false
+      },
+      "workspace": {
+        "mode": "existing",
+        "path": "{personal}/rig"
+      },
+      "bootstrap": "docs/project-reviews/bootstrap.md",
+      "policy_path": "docs/project-reviews/personal.md",
+      "memory_issue": "https://github.com/rtkelly13/rig/issues/24"
+    }
+  ]
+}

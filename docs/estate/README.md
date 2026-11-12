@@ -31,11 +31,26 @@ convention (`rig.scopes`):
   `estate wrapup --work` selects nothing and `estate decisions` scans only the personal estate.
 
 ```json
-{ "tools": { "estate": { "work_dirs": ["acme", "workspace"], "workspace_repo": "workspace" } } }
+{
+  "tools": {
+    "machine": { "role": "work" },
+    "estate": { "work_dirs": ["acme", "workspace"], "work_orgs": ["acme"], "workspace_repo": "workspace" },
+    "orca": { "instances": { "personal": "%APPDATA%/orca-personal" } }
+  }
+}
 ```
 
 `workspace_repo` names the work workspace checkout, resolved the same way. The scheduled
 `worktree-reclaim` and `workspace-maintain` jobs run its CLI, and exist only when it is set.
+
+`work_orgs` names the GitHub owners whose repos are work; they stay on the machine because rig is
+public. `machine.role` (`personal`, the default, or `work`) says which side the machine is for:
+the daily orchestrator triages the role's owners only. `estate scopes` prints the role and classes
+every owner of the clones under the code root as personal, work or other.
+
+`orca.instances` maps the Orca instance names that `config/orca-automations.json` uses to this
+machine's user-data folders (`%VAR%` and `~` expand). An unmapped name is the default instance, so a
+machine that runs one Orca needs no entry. See [Orca automations](../orca.md#scheduled-automations).
 
 ## The commands
 
@@ -51,6 +66,8 @@ convention (`rig.scopes`):
 | `estate doctor` | one clone, every finding, each with its fix. Defaults to the cwd's repo |  |
 | `estate sync` | `fetch --prune` everywhere, so `tidy` tells the truth about gone upstreams |  |
 | `estate clones` | the cached clone list and its age |  |
+| `estate scopes` | this machine's role and which GitHub owners are personal, work or other, with their clones | [↑](#personal-and-work-scope) |
+| `estate daily-triage` | every open PR in the role's repos, with signals and a lane (work, owner, wait). `--json` feeds the daily orchestrator | [→](../daily-orchestrator/policy.md#reading-estate-daily-triage) |
 | `estate prune-caches` | the tool caches that refill themselves: uv, pnpm, NuGet http, Claude temp, Docker build | [→](./caches.md) |
 | `estate decisions` | what only a human can decide: dubious ownership, unpushed or PR-less idle worktrees, leftovers | [→](./decisions.md) |
 | `estate orca` | Orca's projects and groups against the `orca.group` each managed project declares. `--apply` registers, creates groups and moves | [→](./orca.md) |

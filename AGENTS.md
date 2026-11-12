@@ -60,6 +60,9 @@ basedpyright is strict with `Any` banned, and the ratchet blocks the shapes it l
 - **Scheduled ChatGPT reviews**: policy lives in [docs/project-reviews/](docs/project-reviews/README.md)
   and changes only through PRs. Workers never grade themselves or edit policy;
   [evaluations.md](docs/project-reviews/evaluations.md) is the operator's process.
+- **Daily estate orchestrator**: the Orca automation's policy lives in
+  [docs/daily-orchestrator/](docs/daily-orchestrator/README.md) and changes only through PRs; its
+  prompt is the fixed bootstrap there.
 - **Brand assets**: [docs/brand-assets/README.md](docs/brand-assets/README.md) is authoritative.
   The traced master changes only through `image-reconcile promote`, and cuts derive only from
   `production-cuts.csv`.

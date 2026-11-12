@@ -31,8 +31,20 @@ public sealed class EstateCommandTests : IDisposable
 
     private string Risky => Path.Join(Code, "risky");
 
+    private string ScopesFile => Path.Join(_root.Path, "estate-scopes.json");
+
+    private string MachineFile => Path.Join(_root.Path, "home", ".workspace", "config.json");
+
+    // The tracked personal scope every test sees, and this machine's config when a test sets one.
+    private void Machine(string json)
+    {
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(MachineFile)!);
+        File.WriteAllText(MachineFile, json);
+    }
+
     private async Task BuildEstateAsync()
     {
+        await File.WriteAllTextAsync(ScopesFile, """{"personal": {"owners": ["rtkelly13"], "orgs": ["rtkelly-labs"]}}""", Token);
         _ = await CloneAsync("safe");
         var risky = await CloneAsync("risky");
         _ = await Repos.GitAsync(risky, "switch", "-q", "-c", "wip");
@@ -57,7 +69,7 @@ public sealed class EstateCommandTests : IDisposable
         using var output = new StringWriter();
         using var error = new StringWriter();
         var command = new EstateCommand(
-            new EstateHost(Code, Path.Join(_root.Path, "home"), Risky),
+            new EstateHost(Code, Path.Join(_root.Path, "home"), Risky, ScopesFile, MachineFile),
             NoOrca.Host,
             proc,
             _github,
@@ -689,5 +701,157 @@ public sealed class EstateCommandTests : IDisposable
         Assert.Equal([split], Inspected(proc, split));
         Assert.Equal(2, refused);
         Assert.Contains($"--repo {worktree}: cannot find the main working tree of this checkout.", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Daily_triage_json_asks_github_about_owned_repos_only()
+    {
+        await BuildEstateAsync();
+        _ = await Repos.GitAsync(Safe, "remote", "set-url", "origin", "git@github.com:rtkelly13/safe.git");
+        _ = _github.On("POST", "graphql", """
+            {"data":{"repository":{"pullRequests":{"nodes":[
+              {"number":7,"title":"t","url":"https://github.com/rtkelly13/safe/pull/7","isDraft":false,"headRefName":"fix",
+               "baseRefName":"main","mergeable":"MERGEABLE","mergeStateStatus":"BEHIND","updatedAt":"2026-11-10T09:00:00Z",
+               "author":{"login":"rtkelly13"},"reviewThreads":{"nodes":[]},"closingIssuesReferences":{"nodes":[]},
+               "commits":{"nodes":[{"commit":{"statusCheckRollup":null}}]}}
+            ]}}}}
+            """);
+
+        var (code, output, error) = await RunAsync("daily-triage", "--json", "--root", Code);
+
+        Assert.Equal(0, code);
+        Assert.Empty(error);
+        var payload = JsonNode.Parse(output)!;
+        Assert.Equal(Code, payload["root"]!.GetValue<string>());
+        Assert.Equal("rtkelly13/safe", payload["repos"]![0]!["repo"]!.GetValue<string>());
+        Assert.Equal(Risky, payload["report_only"]![0]!["path"]!.GetValue<string>());
+        var pull = payload["pulls"]![0]!;
+        Assert.Equal("pr:rtkelly13/safe#7", pull["id"]!.GetValue<string>());
+        Assert.Equal("work", pull["lane"]!.GetValue<string>());
+        Assert.Equal("behind", pull["signals"]![0]!.GetValue<string>());
+        Assert.Single(_github.Calls);
+    }
+
+    [Fact]
+    public async Task Daily_triage_with_another_owner_reads_as_a_list_by_lane()
+    {
+        await BuildEstateAsync();
+        _ = await Repos.GitAsync(Safe, "remote", "set-url", "origin", "git@github.com:rtkelly13/safe.git");
+        _ = _github.Fail("POST", "graphql", 502);
+
+        var (code, output, _) = await RunAsync("daily-triage", "--owner", "nobody", "--root", Code);
+
+        Assert.Equal(0, code);
+        Assert.Contains("0 open PRs across 0 owned repos (2 clones report-only)", output, StringComparison.Ordinal);
+        Assert.Empty(_github.Calls);
+
+        (_, output, _) = await RunAsync("daily-triage", "--root", Code);
+
+        Assert.Contains("0 open PRs across 1 owned repos (1 clones report-only)", output, StringComparison.Ordinal);
+        Assert.Contains("! rtkelly13/safe: gh: HTTP 502", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Daily_triage_on_a_work_machine_triages_the_work_orgs_only()
+    {
+        await BuildEstateAsync();
+        _ = await Repos.GitAsync(Safe, "remote", "set-url", "origin", "git@github.com:rtkelly13/safe.git");
+        _ = await Repos.GitAsync(Risky, "remote", "set-url", "origin", "git@github.com:acme/risky.git");
+        Machine("""{"tools": {"machine": {"role": "work"}, "estate": {"work_orgs": ["Acme"]}}}""");
+        _ = _github.Fail("POST", "graphql", 502);
+
+        var (code, output, _) = await RunAsync("daily-triage", "--json", "--root", Code, "--author", "me");
+
+        Assert.Equal(0, code);
+        var payload = JsonNode.Parse(output)!;
+        Assert.Equal("work", payload["role"]!.GetValue<string>());
+        Assert.Equal("me", payload["author"]!.GetValue<string>());
+        Assert.Equal("Acme", payload["owners"]![0]!.GetValue<string>());
+        Assert.Equal("acme/risky", payload["repos"]![0]!["repo"]!.GetValue<string>());
+        Assert.Equal(Safe, payload["report_only"]![0]!["path"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task Daily_triage_on_a_work_machine_with_no_work_orgs_says_where_to_list_them()
+    {
+        await BuildEstateAsync();
+        Machine("""{"tools": {"machine": {"role": "work"}}}""");
+
+        var (code, _, error) = await RunAsync("daily-triage", "--json", "--root", Code);
+
+        Assert.Equal(2, code);
+        Assert.Contains("No owners to triage for the work role: list them in tools.estate.work_orgs", error, StringComparison.Ordinal);
+        Assert.Empty(_github.Calls);
+    }
+
+    [Fact]
+    public async Task Scopes_name_the_role_and_classify_every_owner_the_clones_belong_to()
+    {
+        await BuildEstateAsync();
+        _ = await Repos.GitAsync(Safe, "remote", "set-url", "origin", "git@github.com:rtkelly13/safe.git");
+        _ = await Repos.GitAsync(Risky, "remote", "set-url", "origin", "git@github.com:acme/risky.git");
+        Machine("""{"tools": {"machine": {"role": "Work"}, "estate": {"work_orgs": ["acme", "acme-data"]}}}""");
+
+        var (code, output, error) = await RunAsync("scopes", "--json", "--root", Code);
+
+        Assert.Equal(0, code);
+        Assert.Empty(error);
+        var payload = JsonNode.Parse(output)!;
+        Assert.Equal("work", payload["role"]!.GetValue<string>());
+        Assert.True(payload["role_set"]!.GetValue<bool>());
+        Assert.Equal(["rtkelly13", "rtkelly-labs"], payload["personal"]!.AsArray().Select(n => n!.GetValue<string>()));
+        Assert.Equal(["acme", "acme-data"], payload["writable"]!.AsArray().Select(n => n!.GetValue<string>()));
+        var owners = payload["owners"]!.AsArray();
+        Assert.Equal(["rtkelly13", "acme"], owners.Select(n => n!["owner"]!.GetValue<string>()));
+        Assert.Equal(["personal", "work"], owners.Select(n => n!["class"]!.GetValue<string>()));
+        Assert.Equal([false, true], owners.Select(n => n!["writable"]!.GetValue<bool>()));
+    }
+
+    [Fact]
+    public async Task Scopes_without_a_machine_config_default_to_personal_and_say_so()
+    {
+        await BuildEstateAsync();
+        _ = await Repos.GitAsync(Safe, "remote", "set-url", "origin", "https://github.com/someone/safe");
+
+        var (code, output, _) = await RunAsync("scopes", "--root", Code);
+
+        Assert.Equal(0, code);
+        Assert.Contains("Role: personal (default; set tools.machine.role)", output, StringComparison.Ordinal);
+        Assert.Contains("Work:     (none) (tools.estate.work_orgs)", output, StringComparison.Ordinal);
+        Assert.Contains("Writes to: rtkelly13, rtkelly-labs", output, StringComparison.Ordinal);
+        Assert.Matches(@"^\s+someone\s+other\s+1 clone\(s\)$", output.Split('\n').Single(line => line.Contains("someone", StringComparison.Ordinal)));
+        Assert.Contains("(1 clone(s) with no GitHub origin)", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Daily_triage_on_a_work_machine_lists_only_the_gh_users_own_pulls()
+    {
+        await BuildEstateAsync();
+        _ = await Repos.GitAsync(Risky, "remote", "set-url", "origin", "git@github.com:acme/risky.git");
+        Machine("""{"tools": {"machine": {"role": "work"}, "estate": {"work_orgs": ["acme"]}}}""");
+        _ = _github.On("POST", "graphql", """
+            {"data":{"viewer":{"login":"Me"},"repository":{"pullRequests":{"nodes":[
+              {"number":1,"title":"mine","url":"u1","isDraft":false,"headRefName":"a","baseRefName":"main","mergeable":"MERGEABLE",
+               "mergeStateStatus":"BEHIND","updatedAt":"2026-11-10T09:00:00Z","author":{"login":"me"},"reviewThreads":{"nodes":[]},
+               "closingIssuesReferences":{"nodes":[]},"commits":{"nodes":[{"commit":{"statusCheckRollup":null}}]}},
+              {"number":2,"title":"a colleague's","url":"u2","isDraft":false,"headRefName":"b","baseRefName":"main","mergeable":"MERGEABLE",
+               "mergeStateStatus":"BEHIND","updatedAt":"2026-11-10T09:00:00Z","author":{"login":"colleague"},"reviewThreads":{"nodes":[]},
+               "closingIssuesReferences":{"nodes":[]},"commits":{"nodes":[{"commit":{"statusCheckRollup":null}}]}}
+            ]}}}}
+            """);
+
+        var (code, output, _) = await RunAsync("daily-triage", "--json", "--root", Code);
+
+        Assert.Equal(0, code);
+        var payload = JsonNode.Parse(output)!;
+        Assert.Equal("Me", payload["author"]!.GetValue<string>());
+        Assert.Equal([1], payload["pulls"]!.AsArray().Select(p => p!["number"]!.GetValue<int>()));
+        Assert.Equal(1, payload["repos"]![0]!["open_prs"]!.GetValue<int>());
+
+        (_, output, _) = await RunAsync("daily-triage", "--json", "--root", Code, "--all-authors");
+
+        payload = JsonNode.Parse(output)!;
+        Assert.Null(payload["author"]);
+        Assert.Equal(2, payload["pulls"]!.AsArray().Count);
     }
 }

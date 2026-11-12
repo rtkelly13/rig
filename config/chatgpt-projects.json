@@ -1,8 +1,9 @@
 {
   "schema_version": 2,
+  "status": "retired: the four reviews run as Orca automations in config/orca-automations.json; this file records the former ChatGPT Work bindings",
   "group_name": "personal-project-reviews",
   "transport": "agent-browser-ui",
-  "context_template": "docs/project-reviews/bootstrap.md",
+  "context_template": null,
   "report_template": "docs/project-reviews/contract.md",
   "memory_index": "https://github.com/rtkelly13/rig/issues/21",
   "projects": [
@@ -16,14 +17,14 @@
       "task": {
         "title": "Data deep project review",
         "destination": "continue_project_review_chat",
-        "enabled": true,
+        "enabled": false,
         "timezone": "Europe/London",
         "rrule": "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
         "dtstart": "20261102T020000",
         "observed_identifier": "6ae06524f40081918583082f9f4af9c4",
         "conversation_binding": "6ae064f7-000c-83ed-b630-fa910a11ea1a"
       },
-      "management": "manage",
+      "management": "retired",
       "memory_issue": "https://github.com/rtkelly13/rig/issues/22",
       "policy_path": "docs/project-reviews/data.md"
     },
@@ -37,14 +38,14 @@
       "task": {
         "title": "Diffra deep project review",
         "destination": "continue_project_review_chat",
-        "enabled": true,
+        "enabled": false,
         "timezone": "Europe/London",
         "rrule": "FREQ=WEEKLY;INTERVAL=1;BYDAY=TU;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
         "dtstart": "20261103T020000",
         "observed_identifier": "6ae066c0c760819191c1b6c317e264c7",
         "conversation_binding": "6ae06692-9af0-83ed-92e3-da966390f1f2"
       },
-      "management": "manage",
+      "management": "retired",
       "memory_issue": "https://github.com/rtkelly13/rig/issues/12",
       "policy_path": "docs/project-reviews/diffra.md"
     },
@@ -58,14 +59,14 @@
       "task": {
         "title": "Developer Tooling & Design deep project review",
         "destination": "continue_project_review_chat",
-        "enabled": true,
+        "enabled": false,
         "timezone": "Europe/London",
         "rrule": "FREQ=WEEKLY;INTERVAL=1;BYDAY=TH;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
         "dtstart": "20261029T020000",
         "observed_identifier": "6ae076b428648191ab85f87a0915976a",
         "conversation_binding": "6ae07667-8f88-83eb-83a2-c6f4ab3ffa2f"
       },
-      "management": "manage",
+      "management": "retired",
       "memory_issue": "https://github.com/rtkelly13/rig/issues/25",
       "policy_path": "docs/project-reviews/tooling-design.md"
     },
@@ -79,14 +80,14 @@
       "task": {
         "title": "Personal deep project review",
         "destination": "continue_project_review_chat",
-        "enabled": true,
+        "enabled": false,
         "timezone": "Europe/London",
         "rrule": "FREQ=WEEKLY;INTERVAL=1;BYDAY=FR;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
         "dtstart": "20261030T020000",
         "observed_identifier": "6ae069da2d188191949429c6359fe9e8",
         "conversation_binding": "6ae067ef-7fd8-83ed-9e7c-a4f3a051b7de"
       },
-      "management": "manage",
+      "management": "retired",
       "memory_issue": "https://github.com/rtkelly13/rig/issues/24",
       "policy_path": "docs/project-reviews/personal.md"
     }

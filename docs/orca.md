@@ -211,6 +211,34 @@ edited under it. So `doctor` checks it from the newest settings backup, and `syn
 A sleeping session has no live terminal, so [`estate wrapup`](estate/wrapup.md) shows it as
 `no-terminal` and cannot ask it. Run wrap-up inside the idle window, or open the tab first.
 
+## Scheduled automations
+
+`config/orca-automations.json` declares the scheduled Orca automations: the daily estate orchestrator
+and the four weekly project reviews. `workspace orca automations` reconciles Orca with it; like `sync`
+it is a dry run until `--apply`.
+
+```bash
+uv run workspace orca automations            # plan: ok / create / update / skip per automation
+uv run workspace orca automations --apply    # create the missing ones, edit the drifted fields
+uv run workspace orca automations --key data --json
+```
+
+- **Roles.** Each entry lists the machine roles it runs on (`tools.machine.role`). Entries for another
+  role are reported as `skip` and never touched, so the reviews (personal only) are created only on
+  a personal machine, and the daily orchestrator (both roles) everywhere.
+- **Instances.** Each entry names a logical Orca instance (`personal`); `tools.orca.instances` in
+  `~/.workspace/config.json` maps it to a user-data folder on this machine, else the default
+  instance answers. On the Windows work machine `personal` maps to `%APPDATA%/orca-personal`.
+- **Binding.** An automation is found by name in its instance, because ids differ per machine. A
+  rename creates a new automation; remove the old one by hand. Two with one name are an error.
+- **Prompt.** Rendered from the single `text` block of the entry's `bootstrap` doc, with `{{key}}`,
+  `{{name}}`, `{{policy_path}}` and `{{memory_issue}}` filled in. Prompts only point at a policy on
+  main, so a policy edit needs no reconcile; a manifest or bootstrap edit does.
+- **Fields.** Name, prompt, agent, RRULE, timezone, missed-run grace, session reuse, the existing
+  workspace (`{personal}` is this machine's personal estate folder) and enabled. Only the fields
+  that differ are sent to `orca automations edit`. `management: "adopt"` reports drift and changes
+  nothing. Automations in the instance that the manifest does not declare are listed as `unmanaged`.
+
 ## Restoring agent sessions into Orca
 
 Open a session as a terminal tab in the worktree it belongs to:

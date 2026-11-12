@@ -68,7 +68,8 @@ public sealed class WorkspaceOrcaCommandTests : IDisposable
             output,
             http,
             new OrcaHost(locations, _orca, error));
-        string[] full = [.. args, "--orca-data", OrcaData];
+        // automations names its instance in the manifest, so it takes no --orca-data.
+        string[] full = args.Contains("automations") ? args : [.. args, "--orca-data", OrcaData];
         var code = await new RootCommand { command.Build() }.Parse(full).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, Token);
         return (code, output.ToString().ReplaceLineEndings("\n"), error.ToString().ReplaceLineEndings("\n"));
     }
@@ -165,6 +166,58 @@ public sealed class WorkspaceOrcaCommandTests : IDisposable
 
         Assert.Equal(0, code);
         Assert.StartsWith("Orca vs elsewhere.json", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Automations_reconcile_the_manifest_in_the_instance_this_machine_maps_and_skip_other_roles()
+    {
+        await File.WriteAllTextAsync(_root.File(Path.Join("rig", "config", AutomationManifest.FileName)), """
+            {"schema_version": 2, "automations": [
+              {"key": "rev", "name": "Review", "roles": ["personal"], "orca": {"instance": "personal"},
+               "trigger": {"rrule": "FREQ=WEEKLY;BYDAY=MO", "timezone": "Europe/London"}, "provider": {"agent": "codex"},
+               "workspace": {"path": "{personal}/rig"}, "bootstrap": "docs/b.md", "policy_path": "docs/rev.md"},
+              {"key": "job", "name": "Work job", "roles": ["work"], "orca": {"instance": "work"},
+               "trigger": {"rrule": "FREQ=DAILY", "timezone": "Europe/London"}, "provider": {"agent": "claude"},
+               "workspace": {"path": "/w"}, "bootstrap": "docs/b.md", "policy_path": "docs/job.md"}]}
+            """, Token);
+        await File.WriteAllTextAsync(_root.File(Path.Join("rig", "docs", "b.md")), "```text\nRun {{key}} from {{policy_path}}.\n```\n", Token);
+        await File.WriteAllTextAsync(_root.File(Path.Join("home", ".workspace", "config.json")), """
+            {"tools": {"machine": {"role": "personal"}, "orca": {"instances": {"personal": "~/orca-p"}}}}
+            """, Token);
+        _ = _proc.Answer(new Ran(0, """{"result": {"automations": []}}""", string.Empty), "orca", "automations", "list");
+        _ = _proc.Answer(new Ran(0, """{"result": {"automation": {"id": "made"}}}""", string.Empty), "orca", "automations", "create");
+
+        var (code, output, _) = await RunAsync("workspace", "orca", "automations", "--json");
+
+        Assert.Equal(0, code);
+        var payload = JsonNode.Parse(output)!;
+        Assert.Equal("personal", (string?)payload["role"]);
+        Assert.Equal(
+            [("rev", "create"), ("job", "skip")],
+            payload["changes"]!.AsArray().Select(c => ((string)c!["key"]!, (string)c["action"]!)));
+        var list = Assert.Single(_proc.Requests);
+        Assert.Equal(Path.Join(_root.Path, "home", "orca-p"), list.Environment[OrcaLocations.UserDataVariable]);
+
+        (code, output, _) = await RunAsync("workspace", "orca", "automations", "--apply", "--key", "rev");
+
+        Assert.Equal(0, code);
+        Assert.Contains("create (applied)", output, StringComparison.Ordinal);
+        var create = _proc.Requests[^1].Argv;
+        Assert.Equal("Run rev from docs/rev.md.", create[create.ToList().IndexOf("--prompt") + 1]);
+        Assert.Equal("path:" + Path.Join(_root.Path, "personal").Replace('\\', '/') + "/rig", create[create.ToList().IndexOf("--workspace") + 1]);
+    }
+
+    [Fact]
+    public async Task Automations_with_an_unknown_key_or_no_manifest_exit_2()
+    {
+        var (code, _, error) = await RunAsync("workspace", "orca", "automations");
+        Assert.Equal(2, code);
+        Assert.Contains("Cannot read", error, StringComparison.Ordinal);
+
+        await File.WriteAllTextAsync(_root.File(Path.Join("rig", "config", AutomationManifest.FileName)), """{"schema_version": 2, "automations": []}""", Token);
+        (code, _, error) = await RunAsync("workspace", "orca", "automations", "--key", "nope");
+        Assert.Equal(2, code);
+        Assert.Contains("No automation with key \"nope\"", error, StringComparison.Ordinal);
     }
 
     /// <summary>A running Orca's runtime: answers <c>settings.get</c>, <c>settings.update</c> and <c>repo.update</c> from its own state.</summary>

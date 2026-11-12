@@ -45,7 +45,103 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
         var group = new Command("orca", "Manage Orca workspace configuration (agent flags, repos, hooks, base refs, colors).");
         group.Subcommands.Add(Doctor());
         group.Subcommands.Add(Sync());
+        group.Subcommands.Add(Automations());
         return group;
+    }
+
+    private Command Automations()
+    {
+        var apply = new Option<bool>("--apply") { Description = "Create or edit the automations (default is dry-run)" };
+        var config = new Option<string?>("--config", "-c") { Description = "Path to orca-automations.json" };
+        var key = new Option<string?>("--key", "-k") { Description = "Reconcile only the automation with this key" };
+        var json = new Option<bool>("--json") { Description = "Output changes as JSON" };
+        var automations = new Command(
+            "automations",
+            "Reconcile scheduled Orca automations with config/orca-automations.json: prompt (rendered from its bootstrap doc), "
+            + "agent, schedule, workspace and state. Only automations for this machine's role (tools.machine.role) are touched; "
+            + "each names its Orca instance. Exits 1 when an automation errored or a change failed.")
+        {
+            apply, config, key, json,
+        };
+        automations.SetAction((parsed, cancellationToken) => AutomationsAsync(
+            parsed.GetValue(apply), parsed.GetValue(config), parsed.GetValue(key), parsed.GetValue(json), cancellationToken));
+        return automations;
+    }
+
+    private async Task<int> AutomationsAsync(bool apply, string? config, string? key, bool json, CancellationToken cancellationToken)
+    {
+        var configDir = Path.GetDirectoryName(host.ManagedProjectsFile) ?? string.Empty;
+        var manifest = string.IsNullOrEmpty(config) ? Path.Join(configDir, AutomationManifest.FileName) : Path.GetFullPath(config);
+        var checkout = Path.GetDirectoryName(Path.GetDirectoryName(manifest)) ?? string.Empty;
+        IReadOnlyList<AutomationSpec> all;
+        try
+        {
+            all = AutomationManifest.Load(manifest);
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            await orca.Error.WriteLineAsync($"Cannot read {manifest}: {e.Message}").ConfigureAwait(false);
+            return 2;
+        }
+
+        var specs = all.Where(s => key is null || s.Key == key).ToList();
+        if (specs.Count == 0)
+        {
+            await orca.Error.WriteLineAsync($"No automation with key \"{key}\" in {manifest}.").ConfigureAwait(false);
+            return 2;
+        }
+
+        var role = MachineConfig.Role(host.MachineConfigFile) ?? MachineRole.Personal;
+        var personal = PathResolution.Resolve(host.PersonalDir).Replace('\\', '/');
+        var wanted = specs
+            .Select(s => (s with { WorkspacePath = s.WorkspacePath.Replace("{personal}", personal, StringComparison.Ordinal) }, AutomationManifest.Prompt(s, checkout)))
+            .ToList();
+        var reconciler = new AutomationReconciler(instance => new OrcaCliRunner(proc, MachineConfig.OrcaInstance(host.MachineConfigFile, instance) is { } data ? Expand(data) : null));
+        var changes = await reconciler.ReconcileAsync(wanted, role, apply, cancellationToken).ConfigureAwait(false);
+
+        if (json)
+        {
+            var payload = new JsonObject
+            {
+                ["role"] = MachineConfig.RoleName(role),
+                ["applied"] = apply,
+                ["changes"] = new JsonArray([.. changes.Select(c => (JsonNode)new JsonObject
+                {
+                    ["key"] = c.Key,
+                    ["name"] = c.Name,
+                    ["instance"] = c.Instance,
+                    ["action"] = c.Action,
+                    ["fields"] = new JsonArray([.. c.Fields.Select(f => (JsonNode)f)]),
+                    ["id"] = c.Id,
+                    ["applied"] = c.Applied,
+                    ["detail"] = c.Detail,
+                })]),
+            };
+            await output.WriteLineAsync(payload.ToJsonString(Indented)).ConfigureAwait(false);
+        }
+        else
+        {
+            var mode = apply ? "APPLIED" : "DRY-RUN (pass --apply to execute)";
+            var table = new TextTable(
+                $"Orca automations vs {Path.GetFileName(manifest)}, {MachineConfig.RoleName(role)} role ({mode})",
+                [("Key", false), ("Name", false), ("Instance", false), ("Action", false), ("Fields", false), ("Detail", false)]);
+            foreach (var c in changes)
+            {
+                _ = table.Add(c.Key, c.Name, c.Instance, c.Applied ? c.Action + " (applied)" : c.Action, string.Join(", ", c.Fields), c.Detail);
+            }
+
+            await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        }
+
+        return changes.Any(c => c.Action == "error" || (apply && c.Action is "create" or "update" && !c.Applied)) ? 1 : 0;
+    }
+
+    // %NAME% and a leading ~ in a machine-config path, from this process's environment (or the test's).
+    private string Expand(string path)
+    {
+        var expanded = System.Text.RegularExpressions.Regex.Replace(path, "%([A-Za-z_][A-Za-z0-9_]*)%", m => orca.Locations.Variable(m.Groups[1].Value) ?? m.Value);
+        var home = expanded == "~" || expanded.StartsWith("~/", StringComparison.Ordinal) ? Path.Join(host.Home, expanded[1..]) : expanded;
+        return Path.GetFullPath(home);
     }
 
     private static Option<string?> ConfigOption() => new("--config", "-c") { Description = "Path to orca.json" };
