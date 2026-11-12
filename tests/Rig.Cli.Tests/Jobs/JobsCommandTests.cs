@@ -104,6 +104,21 @@ public sealed class JobsCommandTests : IDisposable
         Assert.Equal("two\nthree\n", _out.ToString());
     }
 
+    [Fact]
+    public async Task Log_reads_a_log_the_running_job_still_holds_open()
+    {
+        Directory.CreateDirectory(Path.Join(_temp.Path, "logs"));
+        await using (var writer = new FileStream(Path.Join(_temp.Path, "logs", "every.log"), FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+        {
+            await writer.WriteAsync("still going\n"u8.ToArray(), TestContext.Current.CancellationToken);
+            await writer.FlushAsync(TestContext.Current.CancellationToken);
+
+            Assert.Equal(0, await Run(null, "log", "every"));
+        }
+
+        Assert.Equal("still going\n", _out.ToString());
+    }
+
     [Theory]
     [InlineData("0", "one\ntwo\nthree\n")]
     [InlineData("-1", "two\nthree\n")]

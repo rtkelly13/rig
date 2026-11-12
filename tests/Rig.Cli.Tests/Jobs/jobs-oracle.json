@@ -450,7 +450,7 @@
    }
   },
   {
-   "text": "{\"bad-started\": {\"started\": \"yesterday\", \"seconds\": 1.0, \"trigger\": \"tick\"}, \"missing-trigger\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": 1.0}, \"bool-seconds\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": true, \"trigger\": \"tick\"}, \"string-seconds\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": \"3\", \"trigger\": \"tick\"}, \"not-an-object\": 7, \"loose-fields\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": 2.5, \"trigger\": \"logon\", \"returncode\": \"3\", \"error\": 5, \"run_id\": null, \"summary\": [\"x\"], \"detail\": [\"a\", 1], \"extra\": \"ignored\"}, \"float-returncode\": {\"started\": \"2026-11-12T09:00Z\", \"seconds\": 100.0, \"trigger\": \"tick\", \"returncode\": 3.0}, \"negative-returncode\": {\"started\": \"2026-11-12T09\", \"seconds\": 1, \"trigger\": \"tick\", \"returncode\": -1}, \"date-only\": {\"started\": \"2026-11-12\", \"seconds\": 0, \"trigger\": \"logon\", \"error\": \"\", \"summary\": \"\"}, \"space-and-compact-offset\": {\"started\": \"2026-11-12 09:00:00.1234567+0100\", \"seconds\": 1.25, \"trigger\": \"tick\"}, \"null-started\": {\"started\": null, \"seconds\": 1, \"trigger\": \"tick\"}, \"kept\": {\"started\": \"2026-11-12T08:00:00-05:00\", \"seconds\": 0.5, \"trigger\": \"tick\", \"returncode\": true, \"detail\": [\"end\", \"of\", \"output\"]}}",
+   "text": "{\"bad-started\": {\"started\": \"yesterday\", \"seconds\": 1.0, \"trigger\": \"tick\"}, \"missing-trigger\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": 1.0}, \"bool-seconds\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": true, \"trigger\": \"tick\"}, \"string-seconds\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": \"3\", \"trigger\": \"tick\"}, \"not-an-object\": 7, \"loose-fields\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": 2.5, \"trigger\": \"logon\", \"returncode\": \"3\", \"error\": 5, \"run_id\": null, \"summary\": [\"x\"], \"detail\": [\"a\", 1], \"extra\": \"ignored\"}, \"float-returncode\": {\"started\": \"2026-11-12T09:00Z\", \"seconds\": 100.0, \"trigger\": \"tick\", \"returncode\": 3.0}, \"windows-ntstatus\": {\"started\": \"2026-11-12T09\", \"seconds\": 1, \"trigger\": \"tick\", \"returncode\": 3221225477}, \"negative-returncode\": {\"started\": \"2026-11-12T09\", \"seconds\": 1, \"trigger\": \"tick\", \"returncode\": -1}, \"date-only\": {\"started\": \"2026-11-12\", \"seconds\": 0, \"trigger\": \"logon\", \"error\": \"\", \"summary\": \"\"}, \"space-and-compact-offset\": {\"started\": \"2026-11-12 09:00:00.1234567+0100\", \"seconds\": 1.25, \"trigger\": \"tick\"}, \"null-started\": {\"started\": null, \"seconds\": 1, \"trigger\": \"tick\"}, \"kept\": {\"started\": \"2026-11-12T08:00:00-05:00\", \"seconds\": 0.5, \"trigger\": \"tick\", \"returncode\": true, \"detail\": [\"end\", \"of\", \"output\"]}}",
    "state": {
     "loose-fields": {
      "started": "2026-11-12T09:00:00+00:00",
@@ -466,6 +466,16 @@
      "started": "2026-11-12T09:00Z",
      "seconds": 100.0,
      "returncode": null,
+     "trigger": "tick",
+     "error": null,
+     "run_id": null,
+     "summary": null,
+     "detail": []
+    },
+    "windows-ntstatus": {
+     "started": "2026-11-12T09",
+     "seconds": 1.0,
+     "returncode": 3221225477,
      "trigger": "tick",
      "error": null,
      "run_id": null,

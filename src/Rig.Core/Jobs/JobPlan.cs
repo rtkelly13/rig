@@ -67,7 +67,7 @@ public static class JobPlan
 
     // Why a tick reruns a job whose run this boot said it could not run yet; null if it does not.
     private static string? Retry(Job job, JobTrigger trigger, Outcome? last, DateTimeOffset booted) =>
-        trigger == JobTrigger.Tick && last is { ReturnCode: { } code } && last.StartedAt >= booted && job.RetryExitCodes.Contains(code)
+        trigger == JobTrigger.Tick && last is { ReturnCode: { } code } && last.StartedAt >= booted && job.RetryExitCodes.Any(retry => retry == code)
             ? string.Create(CultureInfo.InvariantCulture, $"retry: last run exited {code}")
             : null;
 }

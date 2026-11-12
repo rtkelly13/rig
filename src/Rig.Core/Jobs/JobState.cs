@@ -12,7 +12,7 @@ namespace Rig.Core.Jobs;
 /// <param name="Seconds">How long it took.</param>
 /// <param name="ReturnCode">Its exit code; null when it never exited on its own (stopped, or never started).</param>
 /// <param name="Trigger">The trigger of the run that started it.</param>
-public sealed record Outcome(string Started, double Seconds, int? ReturnCode, string Trigger)
+public sealed record Outcome(string Started, double Seconds, long? ReturnCode, string Trigger)
 {
     /// <summary>Why it did not run to an exit code, such as <c>timed out after 20 min</c>.</summary>
     public string? Error { get; init; }
@@ -269,12 +269,13 @@ public static class JobState
     private static string? Text(JsonElement parent, string name) =>
         parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
-    // StrictInt: a number written without a point or exponent; 3.0 and true are not.
-    private static int? Integer(JsonElement parent, string name) =>
+    // StrictInt: a number written without a point or exponent; 3.0 and true are not. Long, since a Windows NTSTATUS
+    // exit such as 3221225477 (0xC0000005) is past int's range.
+    private static long? Integer(JsonElement parent, string name) =>
         parent.TryGetProperty(name, out var value)
         && value.ValueKind == JsonValueKind.Number
         && value.GetRawText().IndexOfAny(['.', 'e', 'E']) < 0
-        && value.TryGetInt32(out var number)
+        && value.TryGetInt64(out var number)
             ? number
             : null;
 

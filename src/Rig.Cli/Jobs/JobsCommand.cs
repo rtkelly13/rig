@@ -159,7 +159,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             return 0;
         }
 
-        output.Write(string.Join('\n', Tail(File.ReadAllText(path, Encoding.UTF8), lines)) + "\n");
+        output.Write(string.Join('\n', Tail(ReadShared(path), lines)) + "\n");
         return 0;
     }
 
@@ -170,6 +170,15 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         var count = all.Length > 0 && all[^1].Length == 0 ? all.Length - 1 : all.Length;
         var start = lines > 0 ? Math.Max(0, count - lines) : Math.Min(count, -lines);
         return all.Take(count).Skip(start);
+    }
+
+    // The log as it stands while a running job may still be appending to it: Windows refuses a plain read of a file
+    // another process holds open for writing.
+    private static string ReadShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        return reader.ReadToEnd();
     }
 
     // Only when the outcome kept the end of its output.

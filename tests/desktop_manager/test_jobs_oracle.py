@@ -116,6 +116,7 @@ _STATE_TEXTS: list[str] = [
                 "extra": "ignored",
             },
             "float-returncode": {"started": "2026-11-12T09:00Z", "seconds": 1e2, "trigger": "tick", "returncode": 3.0},
+            "windows-ntstatus": {"started": "2026-11-12T09", "seconds": 1, "trigger": "tick", "returncode": 3221225477},
             "negative-returncode": {"started": "2026-11-12T09", "seconds": 1, "trigger": "tick", "returncode": -1},
             "date-only": {"started": "2026-11-12", "seconds": 0, "trigger": "logon", "error": "", "summary": ""},
             "space-and-compact-offset": {
