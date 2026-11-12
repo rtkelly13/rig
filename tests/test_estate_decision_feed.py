@@ -63,8 +63,9 @@ def test_the_cleanup_jobs_pass_explicit_roots_and_paths(tmp_path: pathlib.Path) 
     )
     jobs = {job.name: job for job in default_jobs(env)}
 
-    assert jobs["estate-prune-caches"].argv[1:] == ("prune-caches", "--apply")
+    assert jobs["estate-prune-caches"].argv[1:] == ("estate", "prune-caches", "--apply")
     assert jobs["estate-decisions"].argv[1:] == (
+        "estate",
         "decisions",
         "--root",
         str(tmp_path),
