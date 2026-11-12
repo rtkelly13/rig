@@ -101,7 +101,7 @@ public sealed class GroupRunner(
         }
         finally
         {
-            KeepDesktop(start);
+            desktops.ReturnTo(start);
         }
 
         activity?.SetTag("group.moved", ran.Moved);
@@ -111,26 +111,6 @@ public sealed class GroupRunner(
         }
 
         return ran;
-    }
-
-    // Bringing a window forward, or sending it home while it has the focus, can take Windows to that window's desktop.
-    private void KeepDesktop(int? start)
-    {
-        try
-        {
-            if (start is { } from && desktops.Current() is { } now && now != from)
-            {
-                using var activity = Source.StartActivity("restore_desktop");
-                activity?.SetTag("desktop.from", now);
-                activity?.SetTag("desktop.to", from);
-                desktops.SwitchTo(from);
-            }
-        }
-#pragma warning disable CA1031 // Putting the user back is best effort, as in Python.
-        catch (Exception)
-#pragma warning restore CA1031
-        {
-        }
     }
 
     private GroupRun Steps(GroupPlan plan, Func<string?> interrupted)
