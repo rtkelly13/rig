@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
@@ -32,8 +33,8 @@ public sealed record JobRunnerSeams(
 /// <summary>
 /// One coordinator run: takes the run lock, runs each due job in turn, and records every decision in
 /// <c>last-&lt;trigger&gt;.json</c>, every outcome in <c>state.json</c> and every run in <c>runs.ndjson</c>. Ported from
-/// <c>desktop_manager.jobs.runner.run</c>; the history's <c>trace_id</c> and <c>span_id</c> are written empty, since
-/// the C# runner makes no spans yet.
+/// <c>desktop_manager.jobs.runner.run</c>. Each job runs inside a <c>job &lt;name&gt;</c> span of <see cref="Source"/>,
+/// whose ids its history line keeps.
 /// </summary>
 public sealed class JobRunner(JobRunnerSeams seams)
 {
@@ -49,6 +50,16 @@ public sealed class JobRunner(JobRunnerSeams seams)
     /// <summary>How long the summary line may be.</summary>
     public const int SummaryChars = 200;
 
+    /// <summary>The scope Python's runner wrote its job spans under, kept so the trace readers find them.</summary>
+    public const string Scope = "desktop_manager.jobs";
+
+    /// <summary>The source of the <c>job &lt;name&gt;</c> spans.</summary>
+    public static readonly ActivitySource Source = new("Rig.Jobs");
+
+    /// <summary>A run's id: its trigger and local start time, as <c>tick-20261112-090000</c>.</summary>
+    public static string RunId(JobTrigger trigger, DateTimeOffset started) =>
+        string.Create(CultureInfo.InvariantCulture, $"{JobWords.Wire(trigger)}-{started:yyyyMMdd-HHmmss}");
+
     /// <summary>
     /// Runs the due jobs of <paramref name="jobs"/> on <paramref name="trigger"/>, recording them under
     /// <paramref name="directory"/>. 0 when every job that ran succeeded, or when another run holds the lock; else 1.
@@ -62,6 +73,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
     /// <param name="flags">The rig flags' effective state.</param>
     /// <param name="only">The jobs asked for by name.</param>
     /// <param name="force">Run every job, due or not.</param>
+    /// <param name="runId">The run's id; null names it from the clock with <see cref="RunId"/>.</param>
     public int Run(
         IEnumerable<Job> jobs,
         JobTrigger trigger,
@@ -69,7 +81,8 @@ public sealed class JobRunner(JobRunnerSeams seams)
         DateTimeOffset booted,
         IReadOnlyDictionary<string, bool> flags,
         IReadOnlySet<string>? only = null,
-        bool force = false)
+        bool force = false,
+        string? runId = null)
     {
         Directory.CreateDirectory(directory);
         var lockPath = Path.Join(directory, JobState.LockName);
@@ -81,7 +94,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
         }
 
         var started = seams.Clock.GetLocalNow();
-        var runId = string.Create(CultureInfo.InvariantCulture, $"{JobWords.Wire(trigger)}-{started:yyyyMMdd-HHmmss}");
+        runId ??= RunId(trigger, started);
         var statePath = Path.Join(directory, JobState.StateName);
         var recordPath = JobState.LastRunPath(directory, JobWords.Wire(trigger));
         var state = new Dictionary<string, Outcome>(JobState.ReadState(statePath), StringComparer.Ordinal);
@@ -161,6 +174,8 @@ public sealed class JobRunner(JobRunnerSeams seams)
         var detailOffset = JobLog.Size(job.DetailLog);
         long? returnCode;
         string? error = null;
+        using var span = Source.StartActivity($"job {job.Name}");
+        _ = span?.SetTag("job.trigger", JobWords.Wire(trigger)).SetTag("job.run_id", runId);
         try
         {
             returnCode = seams.Executor.Execute(job, logs, runId);
@@ -172,6 +187,14 @@ public sealed class JobRunner(JobRunnerSeams seams)
             returnCode = null;
             error = $"{crash.GetType().Name}: {crash.Message}";
         }
+
+        _ = span?.SetTag("job.returncode", returnCode ?? -1);
+        if (error is not null || returnCode != 0)
+        {
+            _ = span?.SetStatus(ActivityStatusCode.Error, error ?? string.Create(CultureInfo.InvariantCulture, $"exit {returnCode}"));
+        }
+
+        span?.Stop();
 
         var seconds = Math.Round(seams.Clock.GetElapsedTime(begun).TotalSeconds, 1, MidpointRounding.ToEven);
         var printed = JobLog.RunOutput(log, runId);
@@ -195,7 +218,19 @@ public sealed class JobRunner(JobRunnerSeams seams)
             Detail = failed ? [.. printed.TakeLast(DetailLines)] : [],
         };
         var output = RunHistory.SaveOutput(directory, job.Name, runId, [.. JobLog.ReadFrom(log, offset), .. detail]);
-        RunHistory.Append(directory, new JobRun(job.Name, runId, outcome.Started, seconds, returnCode, outcome.Trigger, error, output));
+        RunHistory.Append(
+            directory,
+            new JobRun(
+                job.Name,
+                runId,
+                outcome.Started,
+                seconds,
+                returnCode,
+                outcome.Trigger,
+                error,
+                output,
+                span?.TraceId.ToHexString() ?? string.Empty,
+                span?.SpanId.ToHexString() ?? string.Empty));
         return outcome;
     }
 
