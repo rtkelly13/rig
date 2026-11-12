@@ -32,8 +32,9 @@ internal sealed class ChromeTabsCommand(
     public const int NoRunExit = 1;
 
     /// <summary>
-    /// The <c>chrome-tabs</c> command. <c>list</c> and <c>rank</c> are only registered with a driver
-    /// (Windows): without one, the forwarding table hands them to the Python, which has the macOS driver.
+    /// The <c>chrome-tabs</c> command. <c>list</c>, <c>rank</c>, <c>install</c> and <c>uninstall</c> are only registered
+    /// with a driver (Windows): without one, the forwarding table hands them to the Python, which has the macOS driver
+    /// and refuses the Windows-only installs itself.
     /// </summary>
     public Command Build()
     {
@@ -42,6 +43,8 @@ internal sealed class ChromeTabsCommand(
         {
             command.Subcommands.Add(List(driver));
             command.Subcommands.Add(Rank(driver));
+            command.Subcommands.Add(Install());
+            command.Subcommands.Add(Uninstall());
         }
 
         return command;
@@ -80,6 +83,23 @@ internal sealed class ChromeTabsCommand(
 
     private static Option<string?> Profile() =>
         new("--profile") { Description = "Only this profile: directory ('Profile 4') or display name." };
+
+    private Command Install()
+    {
+        var install = new Command(
+            "install",
+            "Put a `chrome-tabs` command on PATH that runs the installed runtime copy. [Windows only]\n\n"
+            + "Install the copy with `desktop-manager runtime install`; scheduled organise runs come from `jobs install`.");
+        install.SetAction(_ => WriteShim());
+        return install;
+    }
+
+    private Command Uninstall()
+    {
+        var uninstall = new Command("uninstall", "Remove the `chrome-tabs` command, and the snapshot environment older installs built. [Windows only]");
+        uninstall.SetAction(_ => RemoveShim());
+        return uninstall;
+    }
 
     private Command Traces()
     {
@@ -241,6 +261,43 @@ internal sealed class ChromeTabsCommand(
         }
 
         Say($"{(dryRun ? "Would delete" : "Deleted")} {removed.Count.ToString(CultureInfo.InvariantCulture)} trace files older than {keepDays.ToString(CultureInfo.InvariantCulture)} days");
+        return 0;
+    }
+
+    private int WriteShim()
+    {
+        var target = ChromeInstall.RuntimeDesktopManager(environment, home);
+        var shim = ChromeInstall.ShimPath(home);
+        _ = System.IO.Directory.CreateDirectory(Path.GetDirectoryName(shim)!);
+        File.WriteAllText(shim, ChromeInstall.RenderShim(target));
+        Say($"Command: {shim} -> {target}");
+        if (!File.Exists(target))
+        {
+            Say("No runtime copy yet: run `desktop-manager runtime install`.");
+        }
+
+        return 0;
+    }
+
+    private int RemoveShim()
+    {
+        var root = ChromeInstall.Root(environment, home);
+        var shim = ChromeInstall.ShimPath(home);
+        if (File.Exists(shim))
+        {
+            File.Delete(shim);
+        }
+
+        try
+        {
+            System.IO.Directory.Delete(Path.Join(root, "venv"), recursive: true);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            // As shutil.rmtree(ignore_errors=True): a missing or locked snapshot environment is left alone.
+        }
+
+        Say($"Removed the command; kept logs in {root}");
         return 0;
     }
 
