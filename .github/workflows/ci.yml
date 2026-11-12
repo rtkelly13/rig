@@ -184,7 +184,20 @@ jobs:
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: uv run playwright install --with-deps chromium
+      # The SPA tests drive the C# rig web host (tests/rig_web_host.py); build it once for every worker.
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+      - name: Build the C# rig CLI
+        run: dotnet build src/Rig.Cli -c Release -o "${{ runner.temp }}/rig-cli"
       - name: Run tests with coverage
+        env:
+          RIG_CLI_DLL: ${{ runner.temp }}/rig-cli/rig.dll
         run: |
           uv run pytest -n auto --durations=15 --cov=src --cov-context=test --record-sizes=coverage-by-test/sizes.json --cov-report=xml:coverage.xml --cov-report=json:coverage.json --cov-report=term-missing
 
@@ -323,7 +336,20 @@ jobs:
       - name: Install Playwright Chromium
         if: steps.playwright-cache-win.outputs.cache-hit != 'true'
         run: uv run playwright install chromium
+      # The SPA tests drive the C# rig web host (tests/rig_web_host.py).
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+      - name: Build the C# rig CLI
+        run: dotnet build src/Rig.Cli -c Release -o "${{ runner.temp }}/rig-cli"
       - name: Run tests
+        env:
+          RIG_CLI_DLL: ${{ runner.temp }}/rig-cli/rig.dll
         run: uv run pytest -m "not integration" -p no:cacheprovider --basetemp="${{ runner.temp }}/pytest" -ra
 
   # The brand-asset pipeline is its own uv project (tools/image-drift, ADR 0022): its own lock,

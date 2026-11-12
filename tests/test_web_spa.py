@@ -19,6 +19,7 @@ from rig.triage import github, service, store
 from rig.triage.facts import Check, Facts, Related, Stack, StackMember
 from rig.triage.models import Activity, Interaction, Item
 from rig.web_host.server import StudioServer
+from tests import rig_web_host
 
 pytestmark = pytest.mark.ci
 
@@ -91,16 +92,25 @@ def browser_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Bro
     server = StudioServer(port=0, db_path=db, assets_root=tmp_path / "assets")
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    with sync_playwright() as playwright:
+    routes = f"http://127.0.0.1:{server.server_address[1]}"
+    with rig_web_host.fronting(routes, rig_web_host.checkout(tmp_path)) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         page = browser.new_page(viewport={"width": 1440, "height": 1000})
         try:
-            yield BrowserApp(f"http://127.0.0.1:{server.server_address[1]}", db, page)
+            yield BrowserApp(url, db, page)
         finally:
             browser.close()
             server.shutdown()
             server.server_close()
             thread.join()
+
+
+def test_the_browser_talks_to_the_csharp_host(browser_app: BrowserApp) -> None:
+    # /api/status is answered only by the C# host (the Python routes have no such route), on the port it bound.
+    status = browser_app.page.request.get(browser_app.url + "/api/status")
+
+    assert status.ok
+    assert status.json()["port"] == int(browser_app.url.rsplit(":", 1)[1])
 
 
 def test_deep_links_filters_reload_and_history_are_one_document(browser_app: BrowserApp) -> None:

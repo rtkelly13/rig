@@ -18,6 +18,7 @@ from playwright.sync_api import Page, expect, sync_playwright
 
 from rig.web_host.server import StudioServer
 from rig.web_routes import Request, json_body, send_json
+from tests import rig_web_host
 
 pytestmark = pytest.mark.ci
 
@@ -177,11 +178,12 @@ def ops_app(tmp_path: Path) -> Iterator[OpsApp]:
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    with sync_playwright() as playwright:
+    routes = f"http://127.0.0.1:{server.server_address[1]}"
+    with rig_web_host.fronting(routes, rig_web_host.checkout(tmp_path)) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         page = browser.new_page(viewport={"width": 1440, "height": 1000})
         try:
-            yield OpsApp(f"http://127.0.0.1:{server.server_address[1]}", page, ops)
+            yield OpsApp(url, page, ops)
         finally:
             browser.close()
             server.shutdown()
