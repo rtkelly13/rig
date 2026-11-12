@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -48,3 +49,18 @@ def test_the_csharp_oracle_records_this_registry():
     recorded = json.loads(oracle.read_text(encoding="utf-8"))["flags"]
 
     assert recorded == [{"name": f.name, "default": f.default, "description": f.description} for f in FLAGS]
+
+
+def test_a_database_the_csharp_store_created_still_migrates(tmp_path: Path):
+    """C#'s FlagStore creates feature_flags itself; Python's migrations must still run on that file."""
+    oracle = Path(__file__).parent / "Rig.Cli.Tests" / "Flags" / "flags-oracle.json"
+    db = tmp_path / "rig.db"
+    with sqlite3.connect(db) as conn:
+        conn.execute(json.loads(oracle.read_text(encoding="utf-8"))["schema"])
+        conn.execute("INSERT INTO feature_flags VALUES ('orca-sessions', 0, '2026-11-12T00:00:00.000000+00:00')")
+    conn.close()
+
+    set_override("work-fork", True, db)
+
+    assert effective_flags(db)["orca-sessions"] is False
+    assert effective_flags(db)["work-fork"] is True
