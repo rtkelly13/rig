@@ -215,7 +215,12 @@ internal static class Program
                         WrapupStamps.NewAskId)).Build,
                 new GovernanceCommand(new GovernanceHost(codeRoot, Environment.CurrentDirectory, checkout), proc, TimeProvider.System, Console.Out, vercel: vercel).Build,
                 new WebCommand(
-                    new WebPlaces(checkout, ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory), Environment.CurrentDirectory, Path.Join(AppData.Current(), "rig.db")),
+                    new WebPlaces(
+                        checkout,
+                        ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory),
+                        Environment.CurrentDirectory,
+                        Path.Join(AppData.Current(), "rig.db"),
+                        WebPlaces.PythonRoutesFrom(Environment.GetEnvironmentVariable(WebPlaces.PythonRoutesVariable))),
                     args => ProcessChildServer.Start(python.Argv(args)),
                     probe,
                     OpenBrowser,

@@ -17,6 +17,25 @@ public sealed class WebCommandTests : IDisposable
     private readonly FakeChild _child = new();
     private readonly List<IReadOnlyList<string>> _started = [];
     private readonly List<Uri> _opened = [];
+    private Uri? _pythonRoutes;
+
+    // Accepts one connection, answers it with `body` and returns its request line, giving up when `cancel` fires.
+    private static async Task<string> AnswerOnceAsync(TcpListener listener, string body, CancellationToken cancel)
+    {
+        using var client = await listener.AcceptTcpClientAsync(cancel);
+        var stream = client.GetStream();
+        using var reader = new StreamReader(stream, leaveOpen: true);
+        var requestLine = await reader.ReadLineAsync(cancel) ?? "";
+        while (!string.IsNullOrEmpty(await reader.ReadLineAsync(cancel)))
+        {
+            // The headers; the request has no body.
+        }
+
+        var response = System.Text.Encoding.ASCII.GetBytes(
+            $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n{body}");
+        await stream.WriteAsync(response, cancel);
+        return requestLine;
+    }
 
     [Fact]
     public async Task Serves_until_stopped_then_stops_the_python_routes()
@@ -104,6 +123,41 @@ public sealed class WebCommandTests : IDisposable
         Assert.Null(_child.StoppedWith);
     }
 
+    [Fact]
+    public async Task Python_routes_already_running_are_fronted_and_no_child_is_started()
+    {
+        using var upstream = new TcpListener(IPAddress.Loopback, 0);
+        upstream.Start();
+        _pythonRoutes = new Uri($"http://127.0.0.1:{((IPEndPoint)upstream.LocalEndpoint).Port}");
+        using var stop = new CancellationTokenSource();
+        string? forwarded = null;
+        string? requestLine = null;
+
+        var code = await RunAsync(["web", "--port", "0"], stop, async page =>
+        {
+            using var client = new HttpClient();
+            var get = client.GetStringAsync(new Uri(page, "/api/not-ported"));
+            using var bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            bound.CancelAfter(TimeSpan.FromSeconds(30));
+            requestLine = await AnswerOnceAsync(upstream, "from the running routes", bound.Token);
+            forwarded = await get;
+        });
+
+        Assert.Equal(0, code);
+        Assert.Equal("from the running routes", forwarded);
+        Assert.Equal("GET /api/not-ported HTTP/1.1", requestLine);
+        Assert.Empty(_started);
+    }
+
+    [Theory]
+    [InlineData("http://127.0.0.1:5123", "http://127.0.0.1:5123/")]
+    [InlineData("https://127.0.0.1:5123", null)]
+    [InlineData("127.0.0.1:5123", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void The_running_routes_variable_takes_only_an_absolute_http_url(string? configured, string? expected) =>
+        Assert.Equal(expected, WebPlaces.PythonRoutesFrom(configured)?.ToString());
+
     public void Dispose()
     {
         _output.Dispose();
@@ -115,7 +169,7 @@ public sealed class WebCommandTests : IDisposable
     private async Task<int> RunAsync(string[] args, CancellationTokenSource stop, Func<Uri, Task> opened)
     {
         var command = new WebCommand(
-            new WebPlaces(_dir.Path, Path.Join(_dir.Path, "managed-projects.json"), _dir.Path, Path.Join(_dir.Path, "rig.db")),
+            new WebPlaces(_dir.Path, Path.Join(_dir.Path, "managed-projects.json"), _dir.Path, Path.Join(_dir.Path, "rig.db"), _pythonRoutes),
             argv =>
             {
                 _started.Add(argv);

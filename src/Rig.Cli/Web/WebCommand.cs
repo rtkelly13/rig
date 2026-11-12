@@ -11,8 +11,19 @@ namespace Rig.Cli.Web;
 /// <param name="RegistryFile">The managed-projects registry the estate cards are read from.</param>
 /// <param name="WorkingDirectory">The folder rig was run from.</param>
 /// <param name="DbPath">The shared SQLite database.</param>
-internal sealed record WebPlaces(string Checkout, string RegistryFile, string WorkingDirectory, string DbPath)
+/// <param name="PythonRoutes">
+/// Python web routes already listening, fronted instead of starting a child: the browser tests serve them in-process
+/// with faked state (<c>tests/rig_web_host.py</c>). Null starts the child, as a normal launch does.
+/// </param>
+internal sealed record WebPlaces(string Checkout, string RegistryFile, string WorkingDirectory, string DbPath, Uri? PythonRoutes = null)
 {
+    /// <summary>The variable naming Python web routes already listening (<see cref="PythonRoutes"/>).</summary>
+    public const string PythonRoutesVariable = "RIG_WEB_PYTHON_ROUTES";
+
+    /// <summary>The routes <paramref name="configured"/> names: an absolute <c>http</c> URL, else null.</summary>
+    public static Uri? PythonRoutesFrom(string? configured) =>
+        Uri.TryCreate(configured, UriKind.Absolute, out var address) && address.Scheme == Uri.UriSchemeHttp ? address : null;
+
     /// <summary>The built frontend.</summary>
     public string TemplatesDir => Path.Join(Checkout, "src", "rig", "web_host", "templates");
 
@@ -74,6 +85,16 @@ internal sealed class WebCommand(
             places.DbPath,
             places.RegistryFile,
             places.WorkingDirectory);
+        if (places.PythonRoutes is { } running)
+        {
+            using var fronting = RigWebHost.ForwardingClient();
+            var fronted = RigWebHost.Create(settings, fronting, () => running);
+            await using (fronted.ConfigureAwait(false))
+            {
+                return await ServeAsync(fronted, settings, open, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         var python = new PythonRoutes(
             childPort => startPython(["web", "upstream", "--port", childPort.ToString(CultureInfo.InvariantCulture)]),
             probe,

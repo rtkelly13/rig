@@ -86,6 +86,12 @@ Test the view builders directly. To test the HTTP surface, start a `StudioServer
 just your route and call it, as `tests/test_web_routes.py` does. Browser tests of a page mount a
 fake route that serves canned JSON, so they need no real data on the machine.
 
+The browser talks to the C# host, as it does in production. `tests/rig_web_host.py` starts the
+built C# `rig web` on port 0 in front of the in-process `StudioServer`
+(`RIG_WEB_PYTHON_ROUTES` names it, so the host starts no Python child), from a temp checkout that
+holds a copy of the frontend and no registry. CI builds the CLI before pytest and passes it in
+`RIG_CLI_DLL`; locally the first test to need it builds it into `temp/rig-web-tests/`.
+
 ## Why not import the feature into the server
 
 `server.py` still calls a few older handlers directly (`rig.connectivity.web`, `rig.triage.web`).

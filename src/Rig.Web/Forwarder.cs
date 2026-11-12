@@ -35,8 +35,48 @@ internal sealed class Forwarder(HttpClient client, Func<Uri?> upstream)
             return;
         }
 
-        using var request = new HttpRequestMessage(new HttpMethod(context.Request.Method), Destination(baseAddress, target));
-        if (context.Request.ContentLength > 0 || context.Request.Headers.TransferEncoding.Count > 0)
+        // A safe request that never got an answer is sent once more (RFC 9110 section 9.2.2): on Windows the Python server
+        // now and then aborts a fresh connection before it answers, and nothing was done upstream that a retry repeats.
+        var retries = Safe(context.Request) ? 1 : 0;
+        HttpResponseMessage response;
+        while (true)
+        {
+            using var request = Build(context, baseAddress, target);
+            try
+            {
+                response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted).ConfigureAwait(false);
+                break;
+            }
+            catch (HttpRequestException) when (retries-- > 0)
+            {
+            }
+            catch (HttpRequestException e)
+            {
+                await Fail(context, StatusCodes.Status502BadGateway, $"The Python web routes did not answer: {Reason(e)}").ConfigureAwait(false);
+                return;
+            }
+        }
+
+        using (response)
+        {
+            context.Response.StatusCode = (int)response.StatusCode;
+            var dropped = Listed(response.Headers.Connection);
+            foreach (var (name, values) in response.Headers.Concat(response.Content.Headers))
+            {
+                if (!HopByHop.Contains(name) && !dropped.Contains(name))
+                {
+                    context.Response.Headers[name] = values.ToArray();
+                }
+            }
+
+            await response.Content.CopyToAsync(context.Response.Body, context.RequestAborted).ConfigureAwait(false);
+        }
+    }
+
+    private static HttpRequestMessage Build(HttpContext context, Uri baseAddress, string target)
+    {
+        var request = new HttpRequestMessage(new HttpMethod(context.Request.Method), Destination(baseAddress, target));
+        if (HasBody(context.Request))
         {
             request.Content = new StreamContent(context.Request.Body);
         }
@@ -56,32 +96,18 @@ internal sealed class Forwarder(HttpClient client, Func<Uri?> upstream)
         }
 
         request.Headers.Host = context.Request.Host.Value;
-        HttpResponseMessage response;
-        try
-        {
-            response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted).ConfigureAwait(false);
-        }
-        catch (HttpRequestException e)
-        {
-            await Fail(context, StatusCodes.Status502BadGateway, $"The Python web routes did not answer: {e.Message}").ConfigureAwait(false);
-            return;
-        }
 
-        using (response)
-        {
-            context.Response.StatusCode = (int)response.StatusCode;
-            var dropped = Listed(response.Headers.Connection);
-            foreach (var (name, values) in response.Headers.Concat(response.Content.Headers))
-            {
-                if (!HopByHop.Contains(name) && !dropped.Contains(name))
-                {
-                    context.Response.Headers[name] = values.ToArray();
-                }
-            }
-
-            await response.Content.CopyToAsync(context.Response.Body, context.RequestAborted).ConfigureAwait(false);
-        }
+        // Python's http.server answers HTTP/1.0 and closes the connection after every answer, but HttpClient pools it
+        // anyway. A request sent on it as Python closes it is reset (on Windows, most often), so each one asks for its own.
+        request.Headers.ConnectionClose = true;
+        return request;
     }
+
+    private static bool HasBody(HttpRequest request) => request.ContentLength > 0 || request.Headers.TransferEncoding.Count > 0;
+
+    // A body is read once, so only a bodiless request of a safe method can go again.
+    private static bool Safe(HttpRequest request) =>
+        !HasBody(request) && (HttpMethods.IsGet(request.Method) || HttpMethods.IsHead(request.Method) || HttpMethods.IsOptions(request.Method));
 
     /// <summary>
     /// The upstream URL for <paramref name="target"/>: only its path and query travel, onto the upstream's own scheme and
@@ -99,6 +125,10 @@ internal sealed class Forwarder(HttpClient client, Func<Uri?> upstream)
         new(
             connection.SelectMany(v => (v ?? string.Empty).Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)),
             StringComparer.OrdinalIgnoreCase);
+
+    // HttpClient's own message is often only "An error occurred while sending the request"; the cause is inside it.
+    internal static string Reason(HttpRequestException error) =>
+        error.InnerException is { } inner ? $"{error.Message} ({inner.Message})" : error.Message;
 
     private static Task Fail(HttpContext context, int status, string message)
     {

@@ -84,6 +84,7 @@ Pure Windows unit tests, path semantics, and mock wrappers execute on Linux CI v
 Test isolation guards (autouse, so new tests get them for free):
 
 - `tests/conftest.py` points `LOCALAPPDATA` and `APPDATA` at per-test temp dirs and clears `DESKTOP_MANAGER_LOG_DIR`, so no test writes into the live runtime, restore logs or plans.
+- The browser tests (`test_web_spa`, `test_web_ops_spa`) run against the C# `rig web` host, so they need `dotnet` on PATH and fail without it. `tests/rig_web_host.py` builds the CLI once (or takes `RIG_CLI_DLL`), runs it on port 0 from a temp checkout, and stops only the process it started ([web-routes.md](web-routes.md#testing)).
 - `tests/desktop_manager/integration/conftest.py` fakes desktop navigation, reports every process as not running, and fails a test that reaches the real `move_existing_window_to_entry`. A test exercising window reuse patches that move itself.
 
 Windows-safe tests (the `test-windows` job catches these, but write them right first time):
