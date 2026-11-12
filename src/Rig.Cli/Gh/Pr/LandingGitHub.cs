@@ -139,8 +139,7 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
         }
 
         var all = await threads.FetchThreadsAsync(repo, number, cancellationToken).ConfigureAwait(false);
-        var open = all.Select(item => item.Thread).Where(thread => !thread.Resolved).ToList();
-        return new Observation(snapshot, rules, open);
+        return new Observation(snapshot, rules, [.. all.Select(item => item.Thread).Where(thread => !thread.Resolved)]);
     }
 
     private async Task<WirePullRequest> LandingPageAsync(RepoSlug repo, int number, string? cursor, CancellationToken cancellationToken)
