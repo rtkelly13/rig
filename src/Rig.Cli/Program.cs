@@ -295,6 +295,14 @@ internal static class Program
             windows ? new Schtasks(proc) : null,
             new ProcessJobExecutor(TimeProvider.System, site.Environment),
             () => OperatingSystem.IsWindowsVersionAtLeast(6, 1) ? Rig.Core.Chrome.Presence.IdleSeconds(new Rig.Core.Chrome.Windows.NativePresence()) : double.PositiveInfinity,
-            (path, wait) => RunLock.Hold(path, wait, Thread.Sleep));
+            (path, wait) => RunLock.Hold(path, wait, Thread.Sleep),
+            () => new TraceFileWriter(
+                "desktop-manager-jobs",
+                new Dictionary<string, string> { [JobRunner.Source.Name] = JobRunner.Scope },
+                name => Environment.GetEnvironmentVariable(name) ?? site.Environment.GetValueOrDefault(name),
+                Path.Join(checkout, "temp", "traces", "sdk"),
+                TimeProvider.System),
+            ShellWindow.WaitFor,
+            Path.Join(AppData.Current(), "traces"));
     }
 }

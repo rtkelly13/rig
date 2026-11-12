@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using Rig.Core.Jobs;
 
@@ -87,6 +88,24 @@ public sealed class JobRunnerTests : IDisposable
         Assert.Equal(["skip idle: in use (idle 300s, needs 5 min)"], report);
         Assert.Empty(executor.Ran);
         Assert.Empty(JobState.ReadState(Path.Join(_temp.Path, JobState.StateName)));
+    }
+
+    [Fact]
+    public void Each_job_runs_in_a_span_whose_ids_the_history_keeps_and_a_failure_is_an_error()
+    {
+        using var spans = new RecordedSpans(JobRunner.Source.Name);
+        var job = new Job("fails", string.Empty, ["x"], new HashSet<JobTrigger> { JobTrigger.Tick }, JobCadence.EveryRun, 5);
+
+        _ = Runner(new ScriptExecutor { Exit = 3 }, []).Run([job], JobTrigger.Tick, _temp.Path, Booted, new Dictionary<string, bool>());
+
+        var span = Assert.Single(spans.Stopped);
+        Assert.Equal("job fails", span.OperationName);
+        Assert.Equal("tick", span.GetTagItem("job.trigger"));
+        Assert.Equal("tick-20261112-090000", span.GetTagItem("job.run_id"));
+        Assert.Equal(3L, span.GetTagItem("job.returncode"));
+        Assert.Equal((ActivityStatusCode.Error, "exit 3"), (span.Status, span.StatusDescription));
+        var line = File.ReadAllText(Path.Join(_temp.Path, RunHistory.HistoryName));
+        Assert.Contains($"\"trace_id\":\"{span.TraceId.ToHexString()}\",\"span_id\":\"{span.SpanId.ToHexString()}\"", line, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -197,6 +216,8 @@ public sealed class JobRunnerTests : IDisposable
 
         public string? Line { get; init; }
 
+        public long Exit { get; init; }
+
         public long Execute(Job job, string logsDir, string runId)
         {
             Ran.Add(job.Name);
@@ -207,7 +228,7 @@ public sealed class JobRunnerTests : IDisposable
                 File.WriteAllText(own, Own);
             }
 
-            return 0;
+            return Exit;
         }
     }
 
