@@ -97,11 +97,6 @@ def delete(name: str) -> bool:
     return result.returncode == 0
 
 
-def exists(name: str) -> bool:
-    result = subprocess.run(["schtasks", "/Query", "/TN", name], capture_output=True, text=True, check=False)
-    return result.returncode == 0
-
-
 def _run(command: list[str]) -> None:
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:

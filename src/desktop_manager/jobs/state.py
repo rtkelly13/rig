@@ -31,10 +31,6 @@ def jobs_dir() -> Path:
     return base_dir() / "jobs"
 
 
-def logs_dir() -> Path:
-    return jobs_dir() / "logs"
-
-
 def last_run_path(directory: Path, trigger: str) -> Path:
     return directory / LAST_RUN_NAME.format(trigger=trigger)
 
@@ -123,10 +119,6 @@ class RunRecord:
     #: None while the run is still going, or when it was killed part-way.
     finished: str | None
     decisions: tuple[Decision, ...]
-
-    @property
-    def failed(self) -> tuple[Decision, ...]:
-        return tuple(item for item in self.decisions if item.outcome is not None and not item.outcome.ok)
 
 
 @dataclass(frozen=True, slots=True)

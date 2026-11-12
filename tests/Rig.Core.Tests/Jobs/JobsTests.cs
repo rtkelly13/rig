@@ -89,7 +89,7 @@ public sealed class JobsTests : IDisposable
     [Fact]
     public void Off_windows_case_tells_estate_roots_apart()
     {
-        var env = new JobsEnvironment("/rig/bin", "plan", "/Code/work/ws", "/code/personal", ["/code/work", "work"], "feed", "orca", "log", Windows: false);
+        var env = new JobsEnvironment("/rig/bin", "plan", "/Code/work/ws", "/code/personal", ["work"], "feed", "orca", "log", Windows: false);
 
         Assert.Equal([env.CodeRoot, "work", "/Code/work/ws"], env.EstateRoots);
         Assert.Equal(Path.Join("/rig/bin", "rig"), env.Script("rig"));
