@@ -3,7 +3,7 @@
 A feature flag groups launch entries, so a whole layout variant can be paused
 without deleting its configuration. Tag an entry (or a desktop ref) with a
 `feature` name. The flags themselves are [rig flags](../feature-flags.md): each one's
-default is declared in `src/rig/flags/registry.py`, and `rig flags enable|disable`
+default is declared in `src/Rig.Core/Flags/FeatureFlags.cs`, and `rig flags enable|disable`
 stores a machine override in `rig.db`.
 
 A plan resolves each flag in this order, the later winning:

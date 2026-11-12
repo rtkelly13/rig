@@ -1,0 +1,369 @@
+{
+ "source": "rig.flags (Python) at origin/main 883a2df1, recorded by driving rig.flags.cli with typer's CliRunner against a fresh rig.db",
+ "flags": [
+  {
+   "name": "orca-sessions",
+   "default": true,
+   "description": "Work desktop: the Work and Personal Orca windows."
+  },
+  {
+   "name": "wt-terminals",
+   "default": false,
+   "description": "Work desktop: Windows Terminal sessions each running `claude`."
+  },
+  {
+   "name": "warp-terminals",
+   "default": false,
+   "description": "Work desktop: the earlier Warp terminal sessions."
+  },
+  {
+   "name": "work-chrome",
+   "default": true,
+   "description": "Work desktop screen 2: the work-profile Chrome window."
+  },
+  {
+   "name": "work-fork",
+   "default": false,
+   "description": "Work desktop screen 2: the Fork window, now on the Review desktop."
+  },
+  {
+   "name": "personal-desktop",
+   "default": false,
+   "description": "The Personal virtual desktop."
+  },
+  {
+   "name": "experimental-desktop",
+   "default": true,
+   "description": "The Lab virtual desktop."
+  },
+  {
+   "name": "claude-session-restore",
+   "default": false,
+   "description": "At sign-in, resume cut-off Claude sessions and start `claude` in empty terminals."
+  }
+ ],
+ "schema": "CREATE TABLE feature_flags ( name TEXT PRIMARY KEY, enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)), updated_at TEXT NOT NULL )",
+ "steps": [
+  {
+   "args": [
+    "list"
+   ],
+   "exit": 0,
+   "rows": [
+    [
+     "orca-sessions",
+     "on",
+     "on",
+     "-",
+     "Work desktop: the Work and Personal Orca windows."
+    ],
+    [
+     "wt-terminals",
+     "off",
+     "off",
+     "-",
+     "Work desktop: Windows Terminal sessions each running `claude`."
+    ],
+    [
+     "warp-terminals",
+     "off",
+     "off",
+     "-",
+     "Work desktop: the earlier Warp terminal sessions."
+    ],
+    [
+     "work-chrome",
+     "on",
+     "on",
+     "-",
+     "Work desktop screen 2: the work-profile Chrome window."
+    ],
+    [
+     "work-fork",
+     "off",
+     "off",
+     "-",
+     "Work desktop screen 2: the Fork window, now on the Review desktop."
+    ],
+    [
+     "personal-desktop",
+     "off",
+     "off",
+     "-",
+     "The Personal virtual desktop."
+    ],
+    [
+     "experimental-desktop",
+     "on",
+     "on",
+     "-",
+     "The Lab virtual desktop."
+    ],
+    [
+     "claude-session-restore",
+     "off",
+     "off",
+     "-",
+     "At sign-in, resume cut-off Claude sessions and start `claude` in empty terminals."
+    ]
+   ]
+  },
+  {
+   "args": [
+    "enable",
+    "work-fork"
+   ],
+   "exit": 0,
+   "output": "work-fork: on (stored override)\n"
+  },
+  {
+   "args": [
+    "disable",
+    "orca-sessions"
+   ],
+   "exit": 0,
+   "output": "orca-sessions: off (stored override)\n"
+  },
+  {
+   "args": [
+    "enable",
+    "orca-sessions"
+   ],
+   "exit": 0,
+   "output": "orca-sessions: on (stored override)\n"
+  },
+  {
+   "args": [
+    "list"
+   ],
+   "exit": 0,
+   "rows": [
+    [
+     "orca-sessions",
+     "on",
+     "on",
+     "on",
+     "Work desktop: the Work and Personal Orca windows."
+    ],
+    [
+     "wt-terminals",
+     "off",
+     "off",
+     "-",
+     "Work desktop: Windows Terminal sessions each running `claude`."
+    ],
+    [
+     "warp-terminals",
+     "off",
+     "off",
+     "-",
+     "Work desktop: the earlier Warp terminal sessions."
+    ],
+    [
+     "work-chrome",
+     "on",
+     "on",
+     "-",
+     "Work desktop screen 2: the work-profile Chrome window."
+    ],
+    [
+     "work-fork",
+     "on",
+     "off",
+     "on",
+     "Work desktop screen 2: the Fork window, now on the Review desktop."
+    ],
+    [
+     "personal-desktop",
+     "off",
+     "off",
+     "-",
+     "The Personal virtual desktop."
+    ],
+    [
+     "experimental-desktop",
+     "on",
+     "on",
+     "-",
+     "The Lab virtual desktop."
+    ],
+    [
+     "claude-session-restore",
+     "off",
+     "off",
+     "-",
+     "At sign-in, resume cut-off Claude sessions and start `claude` in empty terminals."
+    ]
+   ]
+  },
+  {
+   "args": [
+    "reset",
+    "work-fork"
+   ],
+   "exit": 0,
+   "output": "work-fork: override removed\n"
+  },
+  {
+   "args": [
+    "reset",
+    "work-fork"
+   ],
+   "exit": 0,
+   "output": "work-fork: no override stored\n"
+  },
+  {
+   "args": [
+    "enable",
+    "nope"
+   ],
+   "exit": 1,
+   "output": "Unknown flag: nope. Declared flags: claude-session-restore, experimental-desktop, orca-sessions, personal-desktop, warp-terminals, work-chrome, work-fork, wt-terminals\n"
+  },
+  {
+   "args": [
+    "disable",
+    "nope"
+   ],
+   "exit": 1,
+   "output": "Unknown flag: nope. Declared flags: claude-session-restore, experimental-desktop, orca-sessions, personal-desktop, warp-terminals, work-chrome, work-fork, wt-terminals\n"
+  },
+  {
+   "args": [
+    "reset",
+    "nope"
+   ],
+   "exit": 1,
+   "output": "Unknown flag: nope. Declared flags: claude-session-restore, experimental-desktop, orca-sessions, personal-desktop, warp-terminals, work-chrome, work-fork, wt-terminals\n"
+  },
+  {
+   "args": [
+    "list"
+   ],
+   "exit": 0,
+   "rows": [
+    [
+     "orca-sessions",
+     "on",
+     "on",
+     "on",
+     "Work desktop: the Work and Personal Orca windows."
+    ],
+    [
+     "wt-terminals",
+     "off",
+     "off",
+     "-",
+     "Work desktop: Windows Terminal sessions each running `claude`."
+    ],
+    [
+     "warp-terminals",
+     "off",
+     "off",
+     "-",
+     "Work desktop: the earlier Warp terminal sessions."
+    ],
+    [
+     "work-chrome",
+     "on",
+     "on",
+     "-",
+     "Work desktop screen 2: the work-profile Chrome window."
+    ],
+    [
+     "work-fork",
+     "off",
+     "off",
+     "-",
+     "Work desktop screen 2: the Fork window, now on the Review desktop."
+    ],
+    [
+     "personal-desktop",
+     "off",
+     "off",
+     "-",
+     "The Personal virtual desktop."
+    ],
+    [
+     "experimental-desktop",
+     "on",
+     "on",
+     "-",
+     "The Lab virtual desktop."
+    ],
+    [
+     "claude-session-restore",
+     "off",
+     "off",
+     "-",
+     "At sign-in, resume cut-off Claude sessions and start `claude` in empty terminals."
+    ]
+   ]
+  },
+  {
+   "args": [
+    "list"
+   ],
+   "exit": 0,
+   "rows": [
+    [
+     "orca-sessions",
+     "on",
+     "on",
+     "on",
+     "Work desktop: the Work and Personal Orca windows."
+    ],
+    [
+     "wt-terminals",
+     "off",
+     "off",
+     "-",
+     "Work desktop: Windows Terminal sessions each running `claude`."
+    ],
+    [
+     "warp-terminals",
+     "off",
+     "off",
+     "-",
+     "Work desktop: the earlier Warp terminal sessions."
+    ],
+    [
+     "work-chrome",
+     "on",
+     "on",
+     "-",
+     "Work desktop screen 2: the work-profile Chrome window."
+    ],
+    [
+     "work-fork",
+     "off",
+     "off",
+     "-",
+     "Work desktop screen 2: the Fork window, now on the Review desktop."
+    ],
+    [
+     "personal-desktop",
+     "off",
+     "off",
+     "-",
+     "The Personal virtual desktop."
+    ],
+    [
+     "experimental-desktop",
+     "on",
+     "on",
+     "-",
+     "The Lab virtual desktop."
+    ],
+    [
+     "claude-session-restore",
+     "off",
+     "off",
+     "-",
+     "At sign-in, resume cut-off Claude sessions and start `claude` in empty terminals."
+    ]
+   ],
+   "note": "after a row for an undeclared name"
+  }
+ ]
+}

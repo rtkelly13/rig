@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import json
+import sqlite3
 from pathlib import Path
 
 import pytest
-from typer.testing import CliRunner
 
 from rig.flags import FLAGS, UnknownFlagError, clear_override, effective_flags, flag_states, is_enabled, set_override
-from rig.flags import cli as flags_cli
 
 pytestmark = pytest.mark.ci
 
@@ -43,20 +43,24 @@ def test_unknown_flag_is_refused(tmp_path: Path):
         is_enabled("no-such-flag", tmp_path / "rig.db")
 
 
-def test_cli_enable_list_reset(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_the_csharp_oracle_records_this_registry():
+    """rig flags runs in C#; Rig.Core.Flags keeps the same list while desktop_manager still reads this one."""
+    oracle = Path(__file__).parent / "Rig.Cli.Tests" / "Flags" / "flags-oracle.json"
+    recorded = json.loads(oracle.read_text(encoding="utf-8"))["flags"]
+
+    assert recorded == [{"name": f.name, "default": f.default, "description": f.description} for f in FLAGS]
+
+
+def test_a_database_the_csharp_store_created_still_migrates(tmp_path: Path):
+    """C#'s FlagStore creates feature_flags itself; Python's migrations must still run on that file."""
+    oracle = Path(__file__).parent / "Rig.Cli.Tests" / "Flags" / "flags-oracle.json"
     db = tmp_path / "rig.db"
-    monkeypatch.setattr("rig.flags.store.get_db_connection", lambda _path=None: _connect(db))
-    runner = CliRunner()
+    with sqlite3.connect(db) as conn:
+        conn.execute(json.loads(oracle.read_text(encoding="utf-8"))["schema"])
+        conn.execute("INSERT INTO feature_flags VALUES ('orca-sessions', 0, '2026-11-12T00:00:00.000000+00:00')")
+    conn.close()
 
-    assert runner.invoke(flags_cli.app, ["enable", "work-fork"]).exit_code == 0
-    listed = runner.invoke(flags_cli.app, ["list"])
-    assert listed.exit_code == 0
-    assert "work-fork" in listed.output
-    assert runner.invoke(flags_cli.app, ["reset", "work-fork"]).exit_code == 0
-    assert runner.invoke(flags_cli.app, ["enable", "nope"]).exit_code == 1
+    set_override("work-fork", True, db)
 
-
-def _connect(db: Path):
-    from rig.db.connection import get_db_connection
-
-    return get_db_connection(db)
+    assert effective_flags(db)["orca-sessions"] is False
+    assert effective_flags(db)["work-fork"] is True

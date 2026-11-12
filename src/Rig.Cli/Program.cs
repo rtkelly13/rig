@@ -4,6 +4,7 @@ using Rig.Cli.Agent;
 using Rig.Cli.Browser;
 using Rig.Cli.Devenv;
 using Rig.Cli.Estate;
+using Rig.Cli.Flags;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Governance;
 using Rig.Cli.Latex;
@@ -19,6 +20,7 @@ using Rig.Cli.Workspace;
 using Rig.Core.Browser;
 using Rig.Core.Devenv;
 using Rig.Core.Estate;
+using Rig.Core.Flags;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
@@ -121,6 +123,7 @@ internal static class Program
                         Console.Error),
                     Console.Out,
                     Console.Error).Build,
+                new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out).Build,
                 new MailCommand(
                     new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),
                     Console.Out,

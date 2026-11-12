@@ -18,7 +18,6 @@ internal static class Forwarded
         ("align", "Move open plan windows back to their planned desktop and slot.", ["desktop-manager", "workspace", "align"]),
         ("triage", "Persistent PR and issue triage queue.", ["python", "-m", "rig.triage.cli"]),
         ("web", "Rig web dashboard & visual studio (static site + Python API).", ["desktop-manager", "web"]),
-        ("flags", "Feature flags shared across the rig stack (defaults in code, overrides in rig.db).", ["python", "-m", "rig.flags.cli"]),
         ("c4", "C4 diagrams as an Open Knowledge Format bundle. Experimental.", ["python", "-m", "rig.c4_okf.cli"]),
     ];
 
