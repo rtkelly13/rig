@@ -158,6 +158,9 @@ def _zoom_findings(bundle: Bundle, links: Links) -> list[Finding]:
         source, target = bundle.concepts[edge.source], bundle.concepts[edge.target]
         if source.level is None or target.level is None:
             continue
+        # Code views link sideways to each other, where a call leaves one namespace for another: not a zoom.
+        if source.type == target.type == "C4 Code":
+            continue
         if target.level != source.level + 1:
             message = f"`{edge.alias}` zooms from {source.type} to {target.type}; a zoom normally goes one level deeper"
             findings.append(Finding("zoom-level", Severity.WARNING, edge.source, message))

@@ -296,15 +296,19 @@ def reference_edges(owned: dict[str, tuple[SourceFile, ...]], index: TypeIndex) 
 
 
 def _type_of(member: str) -> str:
-    """``A.B.Type.Method/(args)`` is declared on ``A.B.Type``."""
-    return member.split("/", 1)[0].rsplit(".", 1)[0]
+    """``A.B.Type.Method/(args)`` is declared on ``A.B.Type``, and so is its constructor ``A.B.Type..ctor/()``."""
+    head = member.split("/", 1)[0]
+    for special in ("..ctor", "..cctor"):
+        if head.endswith(special):
+            return head.removesuffix(special)
+    return head.rsplit(".", 1)[0]
 
 
 def call_edges(path: Path, owner_of: dict[str, str]) -> Counter[Edge]:
     """Pathway 2. ``owner_of`` maps a fully qualified type to its owner; calls inside one owner are dropped."""
     edges: Counter[Edge] = Counter()
     for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.startswith("E:") or " | " not in line:
+        if not line.startswith("E:") or " | " not in line:  # T:, M: and X: records describe, they do not call
             continue
         caller, callee = line[2:].split(" | ", 1)
         source, target = owner_of.get(_type_of(caller)), owner_of.get(_type_of(callee.strip()))

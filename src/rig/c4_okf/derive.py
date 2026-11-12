@@ -19,6 +19,7 @@ from pathlib import Path, PurePosixPath
 from typing import final
 
 from rig.c4_okf.bundle import load_bundle
+from rig.c4_okf.callgraph import Call, CallGraph, MemberKey
 from rig.c4_okf.dotnet_scan import (
     Component,
     Edge,
@@ -32,26 +33,15 @@ from rig.c4_okf.dotnet_scan import (
     sources,
     type_index,
 )
+from rig.c4_okf.views import Origin
+from rig.c4_okf.views import diagram as _diagram
+from rig.c4_okf.views import node_id as _node_id
+from rig.c4_okf.views import plural as _n
+from rig.c4_okf.views import quote as _q
 from rig.proc import git_out
 
 PRODUCER = "rig-c4-derive/0.1"
 _COMPILER = "csc"
-
-
-@dataclass(frozen=True, slots=True)
-class Origin:
-    """Where the code came from: the commit pins every derived view to one state of the repository."""
-
-    commit: str
-    date: str
-    web: str | None
-
-    def blob(self, repo: Path, path: Path) -> str | None:
-        rel = path.relative_to(repo).as_posix()
-        return f"{self.web}/blob/{self.commit}/{rel}" if self.web else None
-
-    def tree(self) -> str | None:
-        return f"{self.web}/tree/{self.commit}" if self.web else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,10 +66,6 @@ def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_") or "root"
 
 
-def _q(text: str) -> str:
-    return text.replace('"', "'")
-
-
 def _frontmatter(kind: str, title: str, description: str, where: Origin, resource: str | None = None) -> str:
     lines = [
         "---",
@@ -93,10 +79,6 @@ def _frontmatter(kind: str, title: str, description: str, where: Origin, resourc
         "",
     ]
     return "\n".join(lines)
-
-
-def _diagram(lines: list[str]) -> str:
-    return "```mermaid\n" + "\n".join(lines) + "\n```\n"
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,14 +138,20 @@ class _Neighbours:
 
 @final
 class _Deriver:
-    def __init__(self, repo: Path, where: Origin, callgraph: Path | None) -> None:
+    def __init__(self, repo: Path, where: Origin, callgraph: Path | None, roots: tuple[str, ...] = ("src",)) -> None:
         self.repo = repo
+        self.roots = roots
         self.where = where
         self.callgraph = callgraph
-        self.scans = {p.path: _ProjectScan(p, f, components(p, f)) for p in discover(repo) for f in (sources(p),)}
+        self.scans = {
+            p.path: _ProjectScan(p, f, components(p, f)) for p in discover(repo, roots) for f in (sources(p),)
+        }
         self.common = _common_namespace([s.project.root_namespace for s in self.scans.values()])
         self.alias = {p: slug(self.short(s.project.name)) for p, s in self.scans.items()}
         self.code_ids = self._code_ids()
+        self.graph = CallGraph.load(callgraph, (s.project.name for s in self.scans.values())) if callgraph else None
+        # The code view each fully qualified type is drawn in, so a call that leaves a namespace can link onward.
+        self.home = {_qualified(c.namespace, t): c for s in self.scans.values() for c in s.parts for t in c.types}
 
     def short(self, name: str) -> str:
         """A name without the prefix every project shares; the shared root itself keeps its last segment."""
@@ -184,6 +172,10 @@ class _Deriver:
                     taken[base] += 1
                     seen[key] = f"code/{base}" if taken[base] == 1 else f"code/{base}--{self.alias[path]}"
         return seen
+
+    def parts(self) -> list[Component]:
+        """Every namespace part of every project, in project order."""
+        return [part for scan in self.scans.values() for part in scan.parts]
 
     def code_id(self, part: Component) -> str:
         return self.code_ids[_CodeKey(part.namespace, tuple(f.path for f in part.files))]
@@ -250,7 +242,8 @@ class _Deriver:
         head = _frontmatter(
             "C4 Container",
             f"{name} — projects",
-            "Every project under src/ and what it references, read from the .csproj files.",
+            f"Every project under {', '.join(r + '/' for r in self.roots)} and what it references, read from the"
+            " .csproj files.",
             self.where,
         )
         intro = (
@@ -309,6 +302,8 @@ class _Deriver:
         return call_edges(path, owner_of)
 
     def code_view(self, part: Component) -> str:
+        if self.graph is not None and self.graph.types:  # an edges-only file keeps the class view
+            return self.flow_view(part, self.graph)
         types = set(part.types)
         declared = sorted(((t, f) for f in part.files for t in f.types), key=lambda pair: pair[0].name)
         lines = ["classDiagram", "direction LR"]
@@ -328,6 +323,108 @@ class _Deriver:
             self.where,
         )
         return head + _diagram(lines) + "\n" + "\n".join(notes)
+
+    def flow_view(self, part: Component, graph: CallGraph) -> str:
+        """Members are the nodes and calls the edges: one subgraph per type, and calls that leave the namespace
+        end on a node that links to the namespace they land in."""
+        mine = sorted({_qualified(part.namespace, t) for t in part.types})
+        local = set(mine)
+
+        def drawable(key: MemberKey) -> bool:
+            return key.type in self.home and graph.callable(key)
+
+        def shown(call: Call) -> bool:
+            ends = (call.source, call.target)
+            return all(drawable(k) for k in ends) and bool(local & {k.type for k in ends})
+
+        calls = sorted(c for c in graph.calls if shown(c))
+        impls = sorted(c for c in graph.implements if shown(c))
+        linked = {k for c in [*calls, *impls] for k in (c.source, c.target)}
+        lines = ["flowchart LR"]
+        clicks: list[str] = []
+        for type_id in mine:
+            decl = graph.types.get(type_id)
+            kind = decl.kind if decl else "type"
+            name = type_id.rsplit(".", 1)[-1]
+            members = [k for k in graph.of_type(type_id) if graph.callable(k)]
+            if not members:
+                lines.append(f'  {_node_id("type " + type_id)}["{_q(name)} · {kind}"]')
+            else:
+                lines += [f'  subgraph {_node_id("type " + type_id)}["{_q(name)} · {kind}"]', "    direction TB"]
+                lines += [f'    {_node_id(k.type + "." + k.name)}["{_q(graph.label(k))}"]' for k in members]
+                lines.append("  end")
+            for k in members:
+                url = self._member_url(graph, k)
+                if url:
+                    clicks.append(f'  click {_node_id(k.type + "." + k.name)} href "{url}"')
+        away: dict[str, list[MemberKey]] = {}
+        for k in sorted(linked):
+            if k.type not in local:
+                away.setdefault(self.code_id(self.home[k.type]), []).append(k)
+        for code_id, keys in sorted(away.items()):
+            lines.append(f'  subgraph {_node_id("away " + code_id)}["↗ {_q(self.label(self.home[keys[0].type]))}"]')
+            lines += [
+                f'    {_node_id(k.type + "." + k.name)}["{_q(k.type.rsplit(".", 1)[-1])}.{_q(graph.label(k))}"]'
+                for k in keys
+            ]
+            lines.append("  end")
+            clicks += [f'  click {_node_id(k.type + "." + k.name)} href "/{code_id}.md"' for k in keys]
+        lines += [f"  {_member_node(c.source)} --> {_member_node(c.target)}" for c in calls]
+        lines += [f"  {_member_node(c.source)} -.-> {_member_node(c.target)}" for c in impls]
+        lines += clicks
+        notes = [self._flow_note(graph, t, local) for t in mine]
+        inbound = len({c.source for c in calls if c.source.type not in local})
+        outbound = len({c.target for c in calls if c.target.type not in local})
+        intro = (
+            "Each box is a type and each node one of its members, overloads together. A solid arrow is a call; a"
+            " dotted one is where a call through an interface or base class lands. Boxes marked ↗ are other"
+            " namespaces and link to their own view; a member here links to its source.\n\n"
+            f"{_n(len(calls), 'call')} touch this namespace: {_n(inbound, 'member')} outside call in, and it calls"
+            f" {_n(outbound, 'member')} outside.\n"
+        )
+        head = _frontmatter(
+            "C4 Code",
+            f"{part.namespace or 'global'} — members and calls",
+            "Types in the namespace, their members, and which member calls which, as the compiler binds them.",
+            self.where,
+        )
+        return head + _diagram(lines) + "\n" + intro + "\n" + "\n".join(notes)
+
+    def _member_url(self, graph: CallGraph, key: MemberKey) -> str | None:
+        decl = graph.types.get(key.type)
+        first = min(graph.members.get(key, ()), key=lambda d: d.line, default=None)
+        if decl is None or first is None:
+            return None
+        url = self.where.blob(self.repo, self.repo / decl.path)
+        return f"{url}#L{first.line}" if url else None
+
+    def _flow_note(self, graph: CallGraph, type_id: str, local: set[str]) -> str:
+        decl = graph.types.get(type_id)
+        name = type_id.rsplit(".", 1)[-1]
+        part = self.home.get(type_id)
+        info = next((t for f in part.files for t in f.types if t.name == name), None) if part else None
+        head = f"**{decl.access} {decl.kind}**" if decl else "**type**"
+        lines = [f"## {name}", "", head + (f" · {info.summary}" if info and info.summary else "")]
+        if decl:
+            url = self.where.blob(self.repo, self.repo / decl.path)
+            file = PurePosixPath(decl.path)
+            where = f"[{file.name}]({url}#L{decl.line})" if url else f"`{file.name}`"
+            lines += ["", f"{where} in {file.parent.as_posix()}/"]
+        rows: list[str] = []
+        for key in graph.of_type(type_id):
+            decls = graph.members[key]
+            kinds = ", ".join(sorted({d.kind for d in decls}))
+            access = ", ".join(sorted({d.access for d in decls}))
+            count = f" ×{len(decls)}" if len(decls) > 1 else ""
+            out = sorted({c.target for c in graph.calls if c.source == key and c.target.type in self.home})
+            into = sorted({c.source for c in graph.calls if c.target == key and c.source.type in self.home})
+            rows.append(
+                f"| `{graph.label(key)}`{count} | {kinds} | {access} | {_names(out, local, graph)}"
+                f" | {_names(into, local, graph)} |"
+            )
+        if rows:
+            lines += ["", "| Member | Kind | Access | Calls | Called by |", "|---|---|---|---|---|", *rows]
+        return "\n".join(lines) + "\n"
 
 
 def _rel(repo: Path, path: Path) -> str:
@@ -351,8 +448,22 @@ def _common_namespace(names: list[str]) -> str:
     return ".".join(shared)
 
 
+def _qualified(namespace: str, name: str) -> str:
+    return f"{namespace}.{name}" if namespace else name
+
+
+def _member_node(key: MemberKey) -> str:
+    return _node_id(key.type + "." + key.name)
+
+
+def _names(keys: list[MemberKey], local: set[str], graph: CallGraph) -> str:
+    """Members as a reader writes them: ``Type.Run()``, with the namespace only when it is another one."""
+    shown = [f"`{k.type.rsplit('.', 1)[-1] if k.type in local else k.type}.{graph.label(k)}`" for k in keys]
+    return ", ".join(shown[:12]) + (f" and {len(shown) - 12} more" if len(shown) > 12 else "")
+
+
 def _component_line(alias: str, label: str, part: Component, code_id: str) -> str:
-    shown = ", ".join(part.types[:4]) + (" …" if len(part.types) > 4 else "")
+    shown = ", ".join(part.types[:6]) + (" …" if len(part.types) > 6 else "")
     count = f"{len(part.types)} type{'' if len(part.types) == 1 else 's'}"
     return f'Component({alias}, "{_q(label)}", "{count}", "{_q(shown)}", $link="/{code_id}.md")'
 
@@ -411,10 +522,6 @@ def _endpoints(rel: str) -> tuple[str, ...]:
     return tuple(part.strip() for part in rel.split("(", 1)[-1].split(",")[:2])
 
 
-def _n(count: int, noun: str) -> str:
-    return f"{count} {noun}{'' if count == 1 else 's'}"
-
-
 def _where(repo: Path, path: Path) -> str:
     """A file as ``Name.cs`` in ``dir/``: the name is what a reader scans for, the directory is context."""
     parent = PurePosixPath(_rel(repo, path)).parent.as_posix()
@@ -465,8 +572,19 @@ def _parent_neighbours(root: Path, parent: Parent | None) -> _Neighbours:
     return _Neighbours(copied + [source[r.line].strip() for r in touching], label)
 
 
-def derive(repo: Path, root: Path, *, parent: Parent | None, callgraph: Path | None) -> Derived:
-    deriver = _Deriver(repo.resolve(), origin(repo), callgraph)
+def derive(
+    repo: Path,
+    root: Path,
+    *,
+    parent: Parent | None,
+    callgraph: Path | None,
+    guides: tuple[str, ...] = (),
+    changes: int = 0,
+    roots: tuple[str, ...] = ("src",),
+) -> Derived:
+    from rig.c4_okf.narrate import change_pages, guide_pages
+
+    deriver = _Deriver(repo.resolve(), origin(repo), callgraph, roots)
     files = {"containers.md": deriver.containers(parent, root)}
     pathways: dict[str, PathwayScore] = {}
     for scan in deriver.scans.values():
@@ -477,6 +595,8 @@ def derive(repo: Path, root: Path, *, parent: Parent | None, callgraph: Path | N
         files[f"components/{alias}.md"], pathways[alias] = view.text, view.score
         for part in scan.parts:
             files.setdefault(f"{deriver.code_id(part)}.md", deriver.code_view(part))
+    files |= guide_pages(deriver, list(guides), PRODUCER)
+    files |= change_pages(deriver, changes, PRODUCER)
     return Derived(files, pathways)
 
 
