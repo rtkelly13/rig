@@ -96,6 +96,13 @@ public sealed class TextFormatTests
     }
 
     [Theory]
+    [InlineData("18446744073709551617")]
+    [InlineData("-9223372036854775809")]
+    [InlineData("123456789012345678901234567890")]
+    public void Parsed_integers_past_64_bits_keep_every_digit(string number) =>
+        Assert.Equal(number, PyJson.Dumps(JsonNode.Parse(number)));
+
+    [Theory]
     [InlineData(0.0, "0.0")]
     [InlineData(-0.0, "-0.0")]
     [InlineData(1.0, "1.0")]
