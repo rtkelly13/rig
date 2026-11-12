@@ -20,11 +20,11 @@ in every repository. That is the budget this catalog spends.
 1. **Harness baseline** — `config/skills-allowlist.json`, currently **33 skills**, mirrored
    globally. Only skills that help the coding harness itself work well: planning, review, TDD,
    debugging, worktrees, writing, and estate tooling. Nothing domain-specific.
-2. **Vault library** — the ~96 domain skills (.NET, EF Core, Redis, Elasticsearch, OpenTelemetry,
+1. **Vault library** — the ~96 domain skills (.NET, EF Core, Redis, Elasticsearch, OpenTelemetry,
    Postgres/MySQL, React, Tailwind, SEO, Vercel, Obsidian) live in the Obsidian vault as an
    OpenKnowledge project under `.agents/skills/`, installed into no editor host. They cost no
    baseline context and are read on demand through the `open-knowledge` MCP `skills` tool.
-3. **Dormant** — the remaining ~24 harness-adjacent skills from the vendored families
+1. **Dormant** — the remaining ~24 harness-adjacent skills from the vendored families
    (`wizard`, `arena`, `retro`, `prototype`, …): vendored but not exposed, reachable via the
    activation overlay below, and promotable into the baseline without re-adding a vendor.
 

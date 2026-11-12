@@ -64,7 +64,8 @@ inspection tools (`cat`, `grep`, `jq`, `du`, `ps`, `lsof`, …).
 
 Merge steps are the one group of writes in the safe tier, because an agent runs them only
 once the user has asked to merge, and branch protection still gates every one of them:
-`gh pr ready *`, `gh pr merge * --auto --squash`, `gh pr merge * --disable-auto` (requeues a
+`gh pr ready *`, `gh pr merge * --auto --squash`, `rig gh pr land *` (the same merge, then
+`rig gh pr wait`, which is read-only and safe on its own), `gh pr merge * --disable-auto` (requeues a
 PR in a label-driven merge queue), `gh stack merge * --yes*` (a method flag such as `--squash`
 may follow `--yes`) and `gh run rerun *`. `gh stack sync` sits beside `git push`: it rebases
 each stack layer onto its parent and pushes with `--force-with-lease --atomic`, and it never
@@ -137,9 +138,9 @@ the long tail of `ask`.
    rule out of particular agents, add `"exclude_systems": ["claude"]` (any of
    `claude`, `codex`, `opencode` or `antigravity`). Sync then also removes a copy an
    earlier sync wrote, so un-scoping a rule takes effect without hand-editing.
-2. `rig policy sync --dry-run` to see the projection diff.
-3. `rig policy sync`.
-4. `dotnet test --project tests/Rig.Core.Tests -- --filter-namespace Rig.Core.Tests.Policy`.
+1. `rig policy sync --dry-run` to see the projection diff.
+1. `rig policy sync`.
+1. `dotnet test --project tests/Rig.Core.Tests -- --filter-namespace Rig.Core.Tests.Policy`.
 
 A misshapen rule fails closed: the loader raises rather than dropping it, so a
 patternless entry breaks `rig status --ci` instead of silently widening the

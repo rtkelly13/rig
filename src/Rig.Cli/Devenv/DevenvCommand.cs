@@ -44,6 +44,8 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var dryRun = new Option<bool>("--dry-run") { Description = "Show what would change without writing it." };
         var home = new Option<string>("--home") { Description = "Home folder to set up (default: yours).", DefaultValueFactory = _ => host.Home };
         var check = new Option<bool>("--check") { Description = "Report whether the session-ledger hook is wired and current, changing nothing; exit 1 when it is not." };
+        var agy = new Command("agy", "Install or refresh the global rig context block in ~/.gemini/GEMINI.md.") { dryRun, home };
+        agy.SetAction(parsed => Agy(parsed.GetValue(dryRun), parsed.GetValue(home)!));
         var claude = new Command("claude", "Merge the Claude Code settings baseline and install the session-ledger SessionEnd hook.") { dryRun, home, check };
         claude.SetAction(parsed => parsed.GetValue(check) ? Check(parsed.GetValue(home)!) : Claude(parsed.GetValue(dryRun), parsed.GetValue(home)!));
         var opencode = new Command("opencode", "Merge OpenCode's default config and project the estate command policy into it.") { dryRun, home };
@@ -67,7 +69,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var fontsCommand = new Command("fonts", "Download and install the developer Nerd Fonts (JetBrainsMono, CascadiaCode, FiraCode).") { dryRun, home, fontsCheck };
         fontsCommand.SetAction((parsed, cancellationToken) =>
             FontsAsync(parsed.GetValue(dryRun), parsed.GetValue(fontsCheck), NerdFonts.Folder(parsed.GetValue(home)!, host.Windows, host.MacOS), cancellationToken));
-        var group = new Command("devenv", Description) { new DoctorCommand(host, proc, TimeProvider.System, output).Build(), launcher, agents, claude, rules, fontsCommand, gh, obsidian, opencode };
+        var group = new Command("devenv", Description) { new DoctorCommand(host, proc, TimeProvider.System, output).Build(), launcher, agents, agy, claude, rules, fontsCommand, gh, obsidian, opencode };
         foreach (var command in new SetupCommand(host, output, error).Build(dryRun, home).Concat(new ToolsCommands(host, proc, output, error).Build(dryRun, home)).Concat(new GitTerminalCommands(host, proc, output, error).Build(dryRun, home)))
         {
             group.Subcommands.Add(command);
@@ -256,6 +258,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
     {
         var path = ClaudeBaseline.SettingsPath(home);
         var hook = SessionLedger.HookPath(home);
+        var rulesPath = ClaudeRules.FilePath(home);
         if (SettingsFile.Load(path) is not { } existing)
         {
             error.WriteLine($"! {path} is not a readable JSON object; fix it by hand, then re-run.");
@@ -264,9 +267,14 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
 
         var merge = ClaudeBaseline.Merge(existing, SessionLedger.Command(hook));
         var stale = !SessionLedger.ScriptCurrent(hook);
-        if (merge.Changes.Count == 0 && !stale)
+        var rulesExisting = File.Exists(rulesPath) ? File.ReadAllText(rulesPath).ReplaceLineEndings("\n") : null;
+        var rulesMerge = ClaudeRules.Merge(rulesExisting);
+        var rulesStale = rulesMerge.Action != ClaudeRulesAction.Unchanged;
+
+        if (merge.Changes.Count == 0 && !stale && !rulesStale)
         {
             output.WriteLine($"✓ Claude Code settings up to date: {path}");
+            output.WriteLine($"✓ Claude Code rules up to date: {rulesPath}");
             return Project("claude", dryRun, home);
         }
 
@@ -282,6 +290,11 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         if (stale)
         {
             output.WriteLine($"Installing the session-ledger hook script at {hook}");
+        }
+
+        if (rulesStale)
+        {
+            output.WriteLine($"{(rulesMerge.Action == ClaudeRulesAction.Created ? "Creating" : "Updating")} Claude Code rules at {rulesPath}");
         }
 
         if (dryRun)
@@ -309,6 +322,20 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
             }
 
             output.WriteLine($"✓ Successfully updated Claude Code settings at {path}");
+        }
+
+        if (rulesStale)
+        {
+            try
+            {
+                ClaudeRules.Write(rulesPath, rulesMerge.Content, host.Windows);
+                output.WriteLine($"✓ Successfully updated Claude Code rules at {rulesPath}");
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                error.WriteLine($"Failed to write Claude Code rules: {e.Message}");
+                return 1;
+            }
         }
 
         return Project("claude", dryRun, home);
@@ -364,6 +391,38 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         }
 
         return Project("opencode", dryRun, home);
+    }
+
+    // The AGY global context in ~/.gemini/GEMINI.md: only the marked block is managed.
+    private int Agy(bool dryRun, string home)
+    {
+        var target = AgyRules.FilePath(home);
+        var merge = AgyRules.Merge(File.Exists(target) ? File.ReadAllText(target).ReplaceLineEndings("\n") : null);
+        if (merge.Action == AgyRulesAction.Unchanged)
+        {
+            output.WriteLine($"✓ AGY global context up to date: {target}");
+            return 0;
+        }
+
+        output.WriteLine($"{merge.Action} AGY global context at {target}");
+        if (dryRun)
+        {
+            output.WriteLine("Dry run: no changes written.");
+            return 0;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.WriteAllText(target, host.Windows ? merge.Content.ReplaceLineEndings("\r\n") : merge.Content);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            error.WriteLine($"Failed to write AGY global context: {e.Message}");
+            return 1;
+        }
+
+        return 0;
     }
 
     // The estate-wide AGENTS.md: only the marked block is managed. 1 when the write fails.

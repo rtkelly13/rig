@@ -94,10 +94,12 @@ internal static class Program
             Environment.GetEnvironmentVariable("LOCALAPPDATA"),
             Console.In);
         var python = new PythonRig(proc, checkout);
+        var github = new GhApi(proc);
+        Gh.OriginReader origin = async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false));
         var app = new RigApp(
             python,
-            new GhApi(proc),
-            async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false)),
+            github,
+            origin,
             Console.Out,
             Console.Error,
             [
@@ -236,7 +238,16 @@ internal static class Program
                 proc,
                 new AgentHost(AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home), Environment.CurrentDirectory, ProgramPath.Find),
                 Console.Out,
-                Console.Error));
+                Console.Error),
+            [
+                new Gh.Pr.PrCommand(
+                    new Gh.Pr.LandingGitHub(github, new Gh.Threads.ThreadsGitHub(github)),
+                    origin,
+                    Gh.Pr.PrCommand.GhMerge(proc),
+                    new Gh.Pr.LandingWait(TimeProvider.System, Task.Delay),
+                    Console.Out,
+                    Console.Error).Build,
+            ]);
         if (app.HandsOver(args))
         {
             // The Python CLI or the agent shares this console and handles Ctrl+C itself; rig waits for it and returns its code.

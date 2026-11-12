@@ -19,6 +19,9 @@ Every merge makes every other open PR stale. So the cycle per PR is:
 rebase onto main  →  push  →  wait for CI  →  merge
 ```
 
+`rig gh pr land <PR>` does the last two steps and says why if the merge cannot happen
+([waiting-for-a-pr.md](waiting-for-a-pr.md)).
+
 There is no batching around it. Ten ready PRs is ten CI cycles, in series. Plan
 for that rather than discovering it at PR three — and if it matters, the only
 real lever is **fewer, larger PRs**, which trades away the review granularity

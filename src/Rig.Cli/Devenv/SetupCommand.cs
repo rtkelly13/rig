@@ -50,6 +50,7 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
             run =>
             [
                 ["devenv", "agents"],
+                ["devenv", "agy", .. run.Common],
                 ["devenv", "claude", .. run.Common],
                 ["devenv", "opencode", .. run.Common],
                 ["browser", "profiles", .. run.Common],

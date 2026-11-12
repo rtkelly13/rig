@@ -182,25 +182,25 @@ Still outstanding, in order:
 1. **Fix the append bug.** `align_repo_conventions` should diff, not append. The audit now
    *reports* the damage as `duplicate-heading`, but the tool that causes it is unchanged, so a
    fixed repo can be re-broken. One-line condition change plus a diff report.
-2. **Clear the 20 errors**, which are mostly `required-content` — nine repos have no commands
+1. **Clear the 20 errors**, which are mostly `required-content` — nine repos have no commands
    section, so an agent cannot learn how to build them from the root file.
-3. **`CLAUDE.md` normalisation** — **done.** The policy default is now `absent`. Claude Code
+1. **`CLAUDE.md` normalisation** — **done.** The policy default is now `absent`. Claude Code
    v2.1.277 reads `AGENTS.md` natively, and on the default `claude-md-or-agents-md` mode a
    present `CLAUDE.md` *wins*, so the pointer stubs in `blog` and `shared-utilities` were
    shadowing 6.2KB and 9.9KB of `AGENTS.md` respectively rather than redirecting to it. All
    three (both stubs and the estate-root symlink) were removed, and `sync_estate_router` no
    longer generates one.
-4. **Bespoke agent files** — **done.** The same rule generalised to every tool that shipped its
+1. **Bespoke agent files** — **done.** The same rule generalised to every tool that shipped its
    own instruction file. One list drives both halves: `agents-audit` fails a repo that carries
    one, and `workspace sync` writes the paths into `.gitignore`. `devenv` no longer creates a
    `CLAUDE.md` symlink at the estate root.
-5. **Remote sweep** — **done.** `agents-audit --remote` reads each default-branch tree over the
+1. **Remote sweep** — **done.** `agents-audit --remote` reads each default-branch tree over the
    GitHub API. `--all` only walks local clones, which is how `the-vault-system` kept a
    `CLAUDE.md` through the first sweep: it has no local clone. Archived repos are reported but
    do not fail the command — removing a file there means unarchive, commit, re-archive, and
    `the-vault-system`'s `CLAUDE.md` is a symlink to `AGENTS.md`, so it resolves correctly and
    harms nothing while the repo stays frozen. An owner it cannot list or a tree it cannot read
    fails the command and is named (`remote_unread` in `--json`), never counted as clean.
-6. **Wire it into CI**, once the errors are cleared, so it gates rather than reports.
-7. **Land the agent rubric** — a `/agents-audit` command that feeds `--json` plus
+1. **Wire it into CI**, once the errors are cleared, so it gates rather than reports.
+1. **Land the agent rubric** — a `/agents-audit` command that feeds `--json` plus
    `agent-consistency.md` to an agent for the judgement calls in §3.

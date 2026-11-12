@@ -12,7 +12,7 @@ and findings are in each CLI's `--help`; these guides hold what `--help` can't.
 | [open-source/](open-source/README.md) | Running public repos: the expectations hub, OSS automation, review tooling, upstream bug reports |
 | [packages/](packages/README.md) | Publishing to npm and NuGet: package audit, trusted publishing, new-package runbooks |
 | [estate/](estate/README.md) | The clones on this machine: disk, worktrees, shelving, caches, Orca's sidebar |
-| [git/](git/README.md) | Stacking, splitting, landing and conflict techniques |
+| [git/](git/README.md) | Stacking, splitting, landing, waiting for a merge (`rig gh pr wait`) and conflict techniques |
 | [desktop-manager/](desktop-manager/README.md) | Windows workspace restore, runtime copies, work items, Chrome tabs |
 | [agent-browser/](agent-browser/README.md) | Browser automation profiles, connection approaches, ChatGPT Work schedules |
 | [project-reviews/](project-reviews/README.md) | Live scheduled-review policies and their evaluation |

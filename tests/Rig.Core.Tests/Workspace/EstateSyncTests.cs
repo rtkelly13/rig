@@ -68,6 +68,8 @@ public sealed class EstateSyncTests : IDisposable
     [InlineData("production-cuts.csv")]
     [InlineData("Domain Skills Live in the Vault")]
     [InlineData("mcp__open-knowledge__skills")]
+    [InlineData("rig gh pr land <PR>")]
+    [InlineData("rig gh pr wait <PR>")]
     [InlineData(EstateSync.TableStart)]
     [InlineData(EstateSync.TableEnd)]
     public void The_embedded_template_keeps_the_estate_rules(string text) =>

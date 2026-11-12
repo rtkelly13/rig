@@ -23,6 +23,11 @@ dotnet test --solution rig.slnx  # C# tests (xUnit v3 on Microsoft.Testing.Platf
 
 Every CLI's `--help` documents its flags, findings and defaults: read it before the docs.
 
+**Landing a PR**: run `rig gh pr land <PR>` (queues squash auto-merge, then waits) or `rig gh pr wait <PR>`
+when the merge is already queued. Never loop on `gh pr view` or `gh pr checks --watch`: they hang on a PR
+blocked by anything but a failed check. Exit 0 is merged; exit 1 names what to fix, and for open review
+threads that is `rig gh threads resolve`. [docs/git/waiting-for-a-pr.md](docs/git/waiting-for-a-pr.md).
+
 [docs/development.md](docs/development.md) has the rest: pytest markers and which tests run where,
 the Windows-safe test rules, every quality gate, and the Tailwind gallery build. Read it before
 writing tests. Shared test doubles live in `tests/fakes/` (one per port); reuse them
@@ -65,31 +70,12 @@ basedpyright is strict with `Any` banned, and the ratchet blocks the shapes it l
   `production-cuts.csv`.
 - **Vercel infra**: [infra/vercel/README.md](infra/vercel/README.md). `sites.ts` is the registry,
   and anything already serving traffic is `adopt`, never `manage`.
-- **Git technique**: [docs/git/README.md](docs/git/README.md); stacking, splitting, landing, conflicts.
+- **Git technique**: [docs/git/README.md](docs/git/README.md); stacking, splitting, landing, waiting on a merge, conflicts.
 - **Estate and packages**: [docs/estate/README.md](docs/estate/README.md) and
   [docs/packages/README.md](docs/packages/README.md).
 - **Command policy**: [docs/agents/command-policy.md](docs/agents/command-policy.md); what an agent
   may run unprompted ([source of truth](config/cli-allowlists.json)).
-
-## Moved repository and pending machine setup
-
-`rtkelly13/rig` was restarted without history on 2026-11-07, so that work content never ships with
-it. The old history, issues closed before the move and every earlier PR stay read-only in
-[`rtkelly13/rig-archive`](https://github.com/rtkelly13/rig-archive).
-
-- **Never push a branch carrying the old history here.** A clone from before the move has
-  unrelated history: fetch the new `main` and rebase each branch onto it with
-  `git rebase --onto origin/main <old main> <branch>`. The trees match, so the rebase is clean.
-  Moving a whole clone (guard, audit, port, teardown):
-  [docs/git/moving-a-clone-across-a-history-restart.md](docs/git/moving-a-clone-across-a-history-restart.md).
-- **Machine-specific values live in `~/.workspace/config.json`, not in the repo**: the work folders
-  (`tools.estate.work_dirs`), the work workspace checkout (`tools.estate.workspace_repo`) and desktop
-  plan aliases (`tools.desktop.aliases`). See [docs/estate/README.md](docs/estate/README.md) and
-  [docs/desktop-manager/plan-files.md](docs/desktop-manager/plan-files.md).
-- **The Windows machine has not been moved yet.** Its steps are in the
-  [handoff comment on rig-archive#647](https://github.com/rtkelly13/rig-archive/pull/647#issuecomment-6714357821).
-  Where the comment says to check out `rtkelly13/orca-wrapup`, re-point the clone at this repo
-  instead (above). Remove this bullet once that machine is done.
+- **Clone migration**: [docs/git/moving-a-clone-across-a-history-restart.md](docs/git/moving-a-clone-across-a-history-restart.md).
 
 ## 🛑 Repository Conventions & Workflow Policy
 
