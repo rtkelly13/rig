@@ -25,7 +25,7 @@ namespace Rig.Core.Chrome.Windows;
 /// invoked: that reopens the group with its old tabs.
 /// </para>
 /// </remarks>
-public sealed partial class ChromeUiaActions
+public sealed partial class ChromeUiaActions : IChromeTabActions
 {
     /// <summary>The accessible names Chrome gives a tab's close button. English only.</summary>
     public static readonly IReadOnlySet<string> CloseButtonNames = new HashSet<string>(StringComparer.Ordinal) { "Close" };
@@ -89,6 +89,9 @@ public sealed partial class ChromeUiaActions
         element.SelectItem();
         return true;
     }
+
+    /// <inheritdoc/>
+    CloseOutcome IChromeTabActions.CloseTab(ChromeTab tab) => CloseTab(tab);
 
     /// <summary>
     /// Selects the tab, presses its close button and waits for it to leave the strip. Refuses, touching nothing, when
