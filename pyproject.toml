@@ -225,7 +225,6 @@ ignore = [
 "src/rig/estate/trim.py" = ["TID251"]
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
-"src/rig/connectivity/manifests.py" = ["TID251"]
 "src/rig/triage/github.py" = ["TID251"]
 # Temporary: tests that build real temp repos with raw git. F2 moves them onto the
 # shared real-git fixture in tests/fakes/; G4 deletes whatever is left.
@@ -235,7 +234,6 @@ ignore = [
 "tests/desktop_manager/test_cli_machine_checkout.py" = ["TID251"]
 "tests/test_estate.py" = ["TID251"]
 "tests/desktop_manager/test_chrome_site_hosts.py" = ["TID251"]
-"tests/test_estate_connectivity.py" = ["TID251"]
 "tests/test_estate_trim.py" = ["TID251"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]

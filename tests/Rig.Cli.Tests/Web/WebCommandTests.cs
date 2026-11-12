@@ -169,7 +169,7 @@ public sealed class WebCommandTests : IDisposable
     private async Task<int> RunAsync(string[] args, CancellationTokenSource stop, Func<Uri, Task> opened)
     {
         var command = new WebCommand(
-            new WebPlaces(_dir.Path, Path.Join(_dir.Path, "managed-projects.json"), _dir.Path, Path.Join(_dir.Path, "rig.db"), _pythonRoutes),
+            new WebPlaces(_dir.Path, Path.Join(_dir.Path, "managed-projects.json"), _dir.Path, Path.Join(_dir.Path, "rig.db"), _dir.Path, _pythonRoutes),
             argv =>
             {
                 _started.Add(argv);

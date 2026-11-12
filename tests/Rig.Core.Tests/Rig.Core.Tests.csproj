@@ -8,5 +8,6 @@
     <None Include="Vault/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Mail/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Otel/*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Connectivity/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
