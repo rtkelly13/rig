@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import Protocol
 
 from rig import roots, tracing
-from rig.typed_json import try_decode_json
 
 #: Folders under the code root whose clones are untrusted (see the code root's AGENTS.md).
 UNTRUSTED_DIRS: tuple[str, ...] = ("external", "other")
@@ -152,14 +151,6 @@ def git_out(*args: str, cwd: Path | None = None, timeout: float = GIT_TIMEOUT) -
     return ran.out.strip() if ran.ok else ""
 
 
-def git_lines(*args: str, cwd: Path | None = None, timeout: float = GIT_TIMEOUT) -> list[str] | None:
-    """The non-empty, stripped lines ``git <args>`` prints, or None when it fails."""
-    ran = git(*args, cwd=cwd, timeout=timeout)
-    if not ran.ok:
-        return None
-    return [line.strip() for line in ran.out.splitlines() if line.strip()]
-
-
 def gh(
     *args: str,
     cwd: Path | None = None,
@@ -169,14 +160,6 @@ def gh(
 ) -> Ran:
     """Run ``gh <args>``. *stdin_text* feeds a ``--input -`` request body."""
     return run(["gh", *args], cwd=cwd, timeout=timeout, check=check, stdin_text=stdin_text, scope="rig.proc.gh")
-
-
-def gh_json[T](kind: type[T], *args: str, cwd: Path | None = None, timeout: float = GH_TIMEOUT) -> T | None:
-    """Run ``gh <args>`` and decode its JSON stdout as *kind*. None when it fails or does not fit."""
-    ran = gh(*args, cwd=cwd, timeout=timeout)
-    if not ran.ok or not ran.out.strip():
-        return None
-    return try_decode_json(kind, ran.out)
 
 
 # -- GraphQL seam ---------------------------------------------------------------
@@ -204,32 +187,3 @@ def run_gh(query: str) -> GhResult:
     """Run one GraphQL query through ``gh api graphql``."""
     ran = gh("api", "graphql", "-f", f"query={query}", timeout=GRAPHQL_TIMEOUT)
     return GhResult(ran.code, ran.out, ran.err)
-
-
-# -- REST seam ------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class ApiRequest:
-    """One GitHub REST call: ``GET repos/o/r/labels``, or a write whose JSON *body* is already encoded."""
-
-    method: str
-    route: str
-    body: str | None = None
-
-
-class GitHubApi(Protocol):
-    """Runs one REST call. Production passes `gh_api`; tests pass a fake that answers by method and route.
-
-    A failed call answers as ``gh api`` does: a non-zero code and ``HTTP <status>`` in ``err``.
-    """
-
-    def __call__(self, request: ApiRequest, /) -> Ran: ...
-
-
-def gh_api(request: ApiRequest) -> Ran:
-    """Run one REST call through ``gh api``; a body goes on stdin as ``--input -``."""
-    args = ["api", request.route] if request.method == "GET" else ["api", "-X", request.method, request.route]
-    if request.body is None:
-        return gh(*args)
-    return gh(*args, "--input", "-", stdin_text=request.body)

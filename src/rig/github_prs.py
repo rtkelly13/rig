@@ -26,7 +26,7 @@ from typing import Annotated, Literal, override
 from pydantic import BeforeValidator, Field
 
 from rig.proc import GhRunner, run_gh
-from rig.typed_json import Lenient, decode, is_object, try_decode, try_decode_json
+from rig.typed_json import Lenient, is_object, try_decode_json
 
 LOCK_LABEL = "locked-merging"
 AUTOMERGE_LABEL = "automerge"
@@ -403,11 +403,6 @@ class _Body:
     errors: tuple[_GraphQlError, ...] | None = None
 
 
-def parse_open_pr(node: object) -> OpenPr:
-    """One node of the open-PR listing. Raises ``pydantic.ValidationError`` (a ``ValueError``) when misshapen."""
-    return _open_pr(decode(_OpenNode, node))
-
-
 def _open_pr(pr: _OpenNode) -> OpenPr:
     labels = frozenset(label.name.lower() for label in (pr.labels.nodes if pr.labels else ()) if label)
     labeled_at: dict[str, str] = {}
@@ -481,11 +476,6 @@ def _open_list(answer: _Answer) -> _OpenList:
         # Chains built from a partial list would be wrong, so this fails the repository.
         raise _GhError("unreadable open-PR list")
     return decoded.open or _OpenList()
-
-
-def parse_details(node: object) -> PrDetails:
-    """What a PR lookup says about size, review and checks. Every field is optional."""
-    return _details(try_decode(_Lookup, node) or _Lookup())
 
 
 def _details(lookup: _Lookup) -> PrDetails:

@@ -4,7 +4,7 @@ import pathlib
 
 import pytest
 
-from rig.workspace.layout import org_folder, project_dir, project_relpath
+from rig.workspace.layout import org_folder, project_dir
 from rig.workspace.models import ManagedRepoSpec
 
 PERSONAL = ManagedRepoSpec(name="blog", repo="git@github.com:rtkelly13/blog.git")
@@ -33,4 +33,3 @@ def test_project_paths(tmp_path: pathlib.Path):
     assert project_dir(estate, PERSONAL.name, PERSONAL.repo) == estate / "blog"
     assert project_dir(estate, LABS.name, LABS.repo) == tmp_path / "rtkelly-labs" / "Diffra"
     assert project_dir(estate, FORK.name, FORK.repo) == estate / "starter"
-    assert project_relpath(RESULTFUL.name, RESULTFUL.repo) == "../Resultful/Resultful"

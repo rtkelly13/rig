@@ -98,8 +98,8 @@ whole value (a wrong shape or a model-level check); `_decode` falls back to "exp
 | ruff `BLE001` | `except Exception` | none |
 | ruff `DTZ`, `S602`, `PGH004` | naive datetimes, `shell=True`, blanket `noqa` | none |
 
-Parse JSON and YAML through `shared_utilities.typed_json` (`decode_json`, `try_decode_json`, `load_json`) and
-`shared_utilities.typed_yaml` (`decode_yaml`, `try_decode_yaml`, `load_yaml`). Those two modules are the only boundary
+Parse JSON and YAML through `rig.typed_json` (`decode_json`, `try_decode_json`, `load_json`) and
+`rig.typed_yaml` (`decode_yaml`, `load_yaml`). Those two modules are the only boundary
 modules allowed to touch `json.load`, `json.loads` or any `yaml.*load*` function; a reference anywhere else, even one
 assigned to a variable, fails the ratchet.
 

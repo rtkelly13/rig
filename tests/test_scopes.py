@@ -36,15 +36,12 @@ def test_org_folders_sit_beside_personal_in_config_order(tmp_path: Path, monkeyp
     personal = tmp_path / "code" / "personal"
 
     assert scopes.org_dirs(personal) == [tmp_path / "code" / "Widgets", tmp_path / "code" / "gadget-labs"]
-    assert scopes.repo_parent_dirs(personal) == [personal, *scopes.org_dirs(personal)]
 
 
 def test_owners_match_in_any_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _scopes_file(tmp_path, '{"personal": {"owners": ["Someone"], "orgs": ["Widgets"]}}', monkeypatch)
 
     assert scopes.estate_owners() == {"someone", "widgets"}
-    assert scopes.is_estate_owner("SOMEONE")
-    assert not scopes.is_estate_owner("acme-corp")
     assert scopes.org_folder("widgets") == "Widgets"
     assert scopes.org_folder("someone") is None
 

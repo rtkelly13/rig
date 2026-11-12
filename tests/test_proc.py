@@ -114,7 +114,7 @@ def test_fetch_still_works_under_hardening(estate: Estate, tmp_path: Path) -> No
 
     _ok(proc.git("fetch", "-q", "origin", cwd=clone))
 
-    assert proc.git_lines("log", "--format=%s", "origin/main", cwd=clone) == ["new", "seed"]
+    assert proc.git_out("log", "--format=%s", "origin/main", cwd=clone).splitlines() == ["new", "seed"]
 
 
 @pytest.mark.parametrize(
@@ -188,26 +188,7 @@ def test_undecodable_output_is_replaced_not_raised() -> None:
     assert "�" in ran.out
 
 
-def test_git_lines_is_none_when_git_fails(tmp_path: Path) -> None:
-    assert proc.git_lines("rev-parse", "HEAD", cwd=tmp_path) is None
-
-
 # -- gh ----------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class _Repo:
-    name: str
-    stars: int = 0
-
-
-def test_gh_json_decodes_or_gives_none(monkeypatch: pytest.MonkeyPatch) -> None:
-    answers = iter([Ran(0, '{"name": "rig", "stars": 3}', ""), Ran(0, "not json", ""), Ran(1, "", "HTTP 404")])
-    monkeypatch.setattr(proc, "gh", lambda *_args, **_kwargs: next(answers))
-
-    assert proc.gh_json(_Repo, "repo", "view") == _Repo("rig", 3)
-    assert proc.gh_json(_Repo, "repo", "view") is None
-    assert proc.gh_json(_Repo, "repo", "view") is None
 
 
 def test_gh_feeds_stdin_text_to_an_input_dash_body(monkeypatch: pytest.MonkeyPatch) -> None:

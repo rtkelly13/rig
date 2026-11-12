@@ -85,7 +85,7 @@ promotion gate that protects the traced masters.
 
 Commands are portable unless listed below. Off their platform, the listed ones exit 1
 with `<command> is only available on <platform>.`, and `--help` tags them `[Windows only]`. The table is generated from the `requires` markers in the code;
-regenerate it with `uv run python -m shared_utilities.platform_table --write`.
+regenerate it with `uv run python -m rig.platform_table --write`.
 
 <!-- platform-table:start -->
 

@@ -50,7 +50,7 @@ and never builds them inline or imports them lazily inside a function.
 
 | Port | Real adapter | Test fake |
 |---|---|---|
-| `Proc`: `git`, `gh`, `gh_json[T]` | `rig/proc.py` over `tracing.run` | `FakeGitHub` (responses keyed by route, write log); real temp git repos for git |
+| `Proc`: `git`, `gh` | `rig/proc.py` over `tracing.run` | `FakeGitHub` (responses keyed by route, write log); real temp git repos for git |
 | `DesktopPort`: desktops, windows, launch, place, clock | Win32 adapters in `desktop_manager/win32/` | `FakeDesktop`, a stateful in-memory model |
 | `ChromeDriver`, `TerminalDriver` | UIA adapters | stateful fakes |
 | Filesystem and roots | `rig/roots.py`, `platformdirs` | `tmp_path`, `HOME=tmp` |

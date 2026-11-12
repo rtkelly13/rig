@@ -17,8 +17,6 @@ from rig.github_prs import (
     build_query,
     build_queue_chains,
     build_stack_chains,
-    parse_details,
-    parse_open_pr,
     parse_ref,
     resolve,
     resolve_pr_states,
@@ -176,59 +174,8 @@ def test_build_query_quotes_names_and_aliases_lookups() -> None:
     assert "open:" not in build_query("o", "r", [3], open_list=False)
 
 
-def test_parse_details_reads_size_review_and_checks() -> None:
-    node: dict[str, object] = {
-        "additions": 700,
-        "deletions": 150,
-        "changedFiles": 12,
-        "isDraft": False,
-        "reviewDecision": "CHANGES_REQUESTED",
-        "viewerDidAuthor": True,
-        "reviewRequests": {"nodes": [{"requestedReviewer": {}}, {"requestedReviewer": {"isViewer": True}}]},
-        "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": "FAILURE"}}}]},
-    }
-    details = parse_details(node)
-    assert details == PrDetails(
-        additions=700,
-        deletions=150,
-        changed_files=12,
-        review_decision="CHANGES_REQUESTED",
-        checks="FAILURE",
-        authored_by_viewer=True,
-        review_requested=True,
-    )
-    assert (details.changed_lines, details.checks_failing) == (850, True)
-
-
-def test_parse_details_tolerates_missing_fields() -> None:
-    assert parse_details({"reviewDecision": None, "commits": {"nodes": [{"commit": {}}]}}) == PrDetails()
-
-
 def test_details_do_not_affect_state_equality() -> None:
     assert PrState("OPEN", details=PrDetails(draft=True)) == PrState("OPEN")
-
-
-def test_parse_open_pr_takes_latest_label_event() -> None:
-    node: dict[str, object] = {
-        "number": 9,
-        "headRefName": "h",
-        "baseRefName": "main",
-        "createdAt": "2026-01-01T00:00:00Z",
-        "isCrossRepository": False,
-        "mergeQueueEntry": {"position": 3},
-        "labels": {"nodes": [{"name": "AutoMerge"}]},
-        "timelineItems": {
-            "nodes": [
-                {"createdAt": "2026-02-02T00:00:00Z", "label": {"name": "automerge"}},
-                {"createdAt": "2026-03-03T00:00:00Z", "label": {"name": "automerge"}},
-                {"createdAt": "2026-01-05T00:00:00Z", "label": {"name": "automerge"}},
-            ]
-        },
-    }
-    pr = parse_open_pr(node)
-    assert pr.labels == frozenset({"automerge"})
-    assert pr.labeled_at == {"automerge": "2026-03-03T00:00:00Z"}
-    assert pr.queue_position == 3
 
 
 # -- resolution through the shared fake GhRunner ------------------------------------------

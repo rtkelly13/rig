@@ -37,9 +37,8 @@ run is one trace. Tracing never breaks the tool: write errors are swallowed.
 
 ## Running processes
 
-Run `git` and `gh` through `rig.proc` (`git`, `git_out`, `git_lines`, `gh`, `gh_json`,
-`run_gh`), never `subprocess` directly. Each call is a span; stdin is closed; output is
-UTF-8 with replacement; there is no console window on Windows. A call whose working
+Run `git` and `gh` through `rig.proc` (`git`, `git_out`, `gh`, `run_gh`), never `subprocess`
+directly. Each call is a span; stdin is closed; output is UTF-8 with replacement; there is no console window on Windows. A call whose working
 directory is under `<code root>/external` or `<code root>/other` is hardened: hooks,
 fsmonitor, `ext::` transports and submodule recursion are off, and git never prompts.
 
