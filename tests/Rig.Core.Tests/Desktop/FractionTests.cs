@@ -54,6 +54,21 @@ public sealed class FractionTests
     }
 
     [Fact]
+    public void Arithmetic_overflows_only_when_the_reduced_result_does_not_fit()
+    {
+        var tiny = new Fraction(1, long.MaxValue);
+
+        Assert.Equal(long.MinValue, new Fraction(long.MinValue).Numerator);
+        Assert.Equal(new Fraction(long.MinValue / 2), new Fraction(long.MinValue, 2));
+        Assert.Equal(new Fraction(2, long.MaxValue), tiny + tiny);
+        Assert.Equal(Fraction.Zero, tiny - tiny);
+        Assert.Equal(Fraction.One, new Fraction(long.MaxValue, 2) * new Fraction(2, long.MaxValue));
+        Assert.Equal(Fraction.One, tiny / tiny);
+        Assert.Throws<OverflowException>(() => new Fraction(long.MaxValue) + Fraction.One);
+        Assert.Throws<OverflowException>(() => new Fraction(long.MinValue, -1));
+    }
+
+    [Fact]
     public void A_fraction_prints_and_converts_as_python_does()
     {
         Assert.Equal("1/3", new Fraction(1, 3).ToString());

@@ -13,22 +13,16 @@ public readonly record struct Fraction : IComparable<Fraction>, IComparable
 
     /// <summary>The fraction <paramref name="numerator"/>/<paramref name="denominator"/>, reduced.</summary>
     /// <exception cref="DivideByZeroException"><paramref name="denominator"/> is zero.</exception>
+    /// <exception cref="OverflowException">The reduced fraction does not fit in <see cref="long"/>.</exception>
     public Fraction(long numerator, long denominator = 1)
+        : this(Reduce(numerator, denominator))
     {
-        if (denominator == 0)
-        {
-            throw new DivideByZeroException("Fraction denominator is zero");
-        }
+    }
 
-        if (denominator < 0)
-        {
-            numerator = checked(-numerator);
-            denominator = checked(-denominator);
-        }
-
-        var divisor = Gcd(Math.Abs(numerator), denominator);
-        Numerator = numerator / divisor;
-        _denominatorLessOne = (denominator / divisor) - 1;
+    private Fraction((long Numerator, long Denominator) reduced)
+    {
+        Numerator = reduced.Numerator;
+        _denominatorLessOne = reduced.Denominator - 1;
     }
 
     /// <summary>Zero.</summary>
@@ -73,22 +67,25 @@ public readonly record struct Fraction : IComparable<Fraction>, IComparable
     /// <summary>A whole number as a fraction.</summary>
     public static Fraction FromInt32(int value) => new(value);
 
+    // The arithmetic works in 128 bits, where products of two longs cannot overflow, and fails only when the reduced
+    // result does not fit.
+
     /// <summary>The sum.</summary>
     public static Fraction Add(Fraction left, Fraction right) =>
-        new(checked((left.Numerator * right.Denominator) + (right.Numerator * left.Denominator)), checked(left.Denominator * right.Denominator));
+        new(Reduce(((Int128)left.Numerator * right.Denominator) + ((Int128)right.Numerator * left.Denominator), (Int128)left.Denominator * right.Denominator));
 
     /// <summary>The difference.</summary>
     public static Fraction Subtract(Fraction left, Fraction right) =>
-        new(checked((left.Numerator * right.Denominator) - (right.Numerator * left.Denominator)), checked(left.Denominator * right.Denominator));
+        new(Reduce(((Int128)left.Numerator * right.Denominator) - ((Int128)right.Numerator * left.Denominator), (Int128)left.Denominator * right.Denominator));
 
     /// <summary>The product.</summary>
     public static Fraction Multiply(Fraction left, Fraction right) =>
-        new(checked(left.Numerator * right.Numerator), checked(left.Denominator * right.Denominator));
+        new(Reduce((Int128)left.Numerator * right.Numerator, (Int128)left.Denominator * right.Denominator));
 
     /// <summary>The quotient.</summary>
     /// <exception cref="DivideByZeroException"><paramref name="right"/> is zero.</exception>
     public static Fraction Divide(Fraction left, Fraction right) =>
-        new(checked(left.Numerator * right.Denominator), checked(left.Denominator * right.Numerator));
+        new(Reduce((Int128)left.Numerator * right.Denominator, (Int128)left.Denominator * right.Numerator));
 
     /// <inheritdoc />
     public int CompareTo(Fraction other) =>
@@ -112,7 +109,23 @@ public readonly record struct Fraction : IComparable<Fraction>, IComparable
             ? Numerator.ToString(CultureInfo.InvariantCulture)
             : string.Create(CultureInfo.InvariantCulture, $"{Numerator}/{Denominator}");
 
-    private static long Gcd(long a, long b)
+    private static (long Numerator, long Denominator) Reduce(Int128 numerator, Int128 denominator)
+    {
+        if (denominator == 0)
+        {
+            throw new DivideByZeroException("Fraction denominator is zero");
+        }
+
+        if (denominator < 0)
+        {
+            (numerator, denominator) = (-numerator, -denominator);
+        }
+
+        var divisor = Gcd(Int128.Abs(numerator), denominator);
+        return (checked((long)(numerator / divisor)), checked((long)(denominator / divisor)));
+    }
+
+    private static Int128 Gcd(Int128 a, Int128 b)
     {
         while (b != 0)
         {
