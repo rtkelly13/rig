@@ -228,6 +228,15 @@ public sealed class VirtualDesktopOperationsTests
         Assert.Throws<ArgumentNullException>(() => VirtualDesktopOperations.RetireSwitchedOff(new FakeVirtualDesktops("a"), 1, null!));
     }
 
+    [Fact]
+    public void Rename_fails_when_the_desktop_goes_between_the_count_and_the_names()
+    {
+        var desktops = new FakeVirtualDesktops("a", "b");
+
+        Assert.False(VirtualDesktopOperations.Rename(new NamesLagCount(desktops), 2, "Work"));
+        Assert.Equal(["a", "b"], desktops.Names());
+    }
+
     // Lets the first removal through and fails the second.
     private sealed class FailingSecondRemove(FakeVirtualDesktops inner, Func<int> count) : IVirtualDesktops
     {
@@ -252,6 +261,30 @@ public sealed class VirtualDesktopOperationsTests
 
             inner.Remove(number, fallbackNumber);
         }
+
+        public void MoveWindow(long handle, int number) => inner.MoveWindow(handle, number);
+
+        public bool IsOnCurrentDesktop(long handle) => inner.IsOnCurrentDesktop(handle);
+
+        public int? DesktopNumberOf(long handle) => inner.DesktopNumberOf(handle);
+    }
+
+    // Reports one desktop more than its names list, as if one went in Task View between the two reads.
+    private sealed class NamesLagCount(FakeVirtualDesktops inner) : IVirtualDesktops
+    {
+        public int Count => inner.Count;
+
+        public int CurrentNumber => inner.CurrentNumber;
+
+        public IReadOnlyList<string> Names() => [.. inner.Names().SkipLast(1)];
+
+        public void SwitchTo(int number) => inner.SwitchTo(number);
+
+        public void Create() => inner.Create();
+
+        public void Rename(int number, string name) => inner.Rename(number, name);
+
+        public void Remove(int number, int fallbackNumber) => inner.Remove(number, fallbackNumber);
 
         public void MoveWindow(long handle, int number) => inner.MoveWindow(handle, number);
 

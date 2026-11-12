@@ -58,7 +58,14 @@ public static class VirtualDesktopOperations
                 return false;
             }
 
-            if (desktops.Names()[number - 1] == name)
+            // Task View can remove a desktop between the count and this read.
+            var before = desktops.Names();
+            if (number > before.Count)
+            {
+                return false;
+            }
+
+            if (before[number - 1] == name)
             {
                 return true;
             }
