@@ -258,6 +258,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
     {
         var path = ClaudeBaseline.SettingsPath(home);
         var hook = SessionLedger.HookPath(home);
+        var rulesPath = ClaudeRules.FilePath(home);
         if (SettingsFile.Load(path) is not { } existing)
         {
             error.WriteLine($"! {path} is not a readable JSON object; fix it by hand, then re-run.");
@@ -266,9 +267,14 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
 
         var merge = ClaudeBaseline.Merge(existing, SessionLedger.Command(hook));
         var stale = !SessionLedger.ScriptCurrent(hook);
-        if (merge.Changes.Count == 0 && !stale)
+        var rulesExisting = File.Exists(rulesPath) ? File.ReadAllText(rulesPath).ReplaceLineEndings("\n") : null;
+        var rulesMerge = ClaudeRules.Merge(rulesExisting);
+        var rulesStale = rulesMerge.Action != ClaudeRulesAction.Unchanged;
+
+        if (merge.Changes.Count == 0 && !stale && !rulesStale)
         {
             output.WriteLine($"✓ Claude Code settings up to date: {path}");
+            output.WriteLine($"✓ Claude Code rules up to date: {rulesPath}");
             return Project("claude", dryRun, home);
         }
 
@@ -284,6 +290,11 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         if (stale)
         {
             output.WriteLine($"Installing the session-ledger hook script at {hook}");
+        }
+
+        if (rulesStale)
+        {
+            output.WriteLine($"{(rulesMerge.Action == ClaudeRulesAction.Created ? "Creating" : "Updating")} Claude Code rules at {rulesPath}");
         }
 
         if (dryRun)
@@ -311,6 +322,20 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
             }
 
             output.WriteLine($"✓ Successfully updated Claude Code settings at {path}");
+        }
+
+        if (rulesStale)
+        {
+            try
+            {
+                ClaudeRules.Write(rulesPath, host.Windows ? rulesMerge.Content.ReplaceLineEndings("\r\n") : rulesMerge.Content);
+                output.WriteLine($"✓ Successfully updated Claude Code rules at {rulesPath}");
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                error.WriteLine($"Failed to write Claude Code rules: {e.Message}");
+                return 1;
+            }
         }
 
         return Project("claude", dryRun, home);

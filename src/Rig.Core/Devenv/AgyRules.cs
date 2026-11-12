@@ -26,27 +26,19 @@ public sealed record AgyRulesMerge(string Content, AgyRulesAction Action);
 public static class AgyRules
 {
     /// <summary>Opens the managed block.</summary>
-    public const string Begin = "<!-- rig:global-context:begin -->";
+    public const string Begin = RigGlobalContext.Begin;
 
     /// <summary>Closes the managed block.</summary>
-    public const string End = "<!-- rig:global-context:end -->";
+    public const string End = RigGlobalContext.End;
 
     /// <summary>The global rig availability context injected for AGY sessions.</summary>
-    public const string ManagedBlock = """
-        ### Rig Global Tooling
-        `rig` CLI is installed globally on PATH across developer machines for estate and PR workflows:
-        - **Landing a PR**: `rig gh pr land <PR>` queues squash auto-merge and waits until landed. Never poll `gh pr view` or `gh pr checks --watch`.
-        - **Waiting on a PR**: `rig gh pr wait <PR>` waits for an already queued PR with backoff and settle time; detects review threads, merge queue stalls, failed checks.
-        - **Review Threads**: `rig gh threads list <PR>` and `rig gh threads resolve <PR> <THREAD_ID> --sha <SHA>` to inspect and resolve review threads truthfully.
-        - **Estate & Status**: `rig status` (health overview across estate repos), `rig estate orca-worktrees` (clean finished worktrees).
-        - **Discovery**: `rig help` or `rig <group> --help` for on-demand details (adheres to progressive disclosure).
-        """;
+    public const string ManagedBlock = RigGlobalContext.ManagedBlock;
 
     /// <summary>Default file path under <paramref name="home"/>: <c>~/.gemini/GEMINI.md</c>.</summary>
     public static string FilePath(string home) => Path.Join(home, ".gemini", "GEMINI.md");
 
     /// <summary>The managed block, marker-wrapped with trailing newline.</summary>
-    public static string Render() => $"{Begin}\n{ManagedBlock.ReplaceLineEndings("\n").TrimEnd('\n')}\n{End}\n";
+    public static string Render() => RigGlobalContext.Render();
 
     /// <summary>
     /// Splices the managed block into <paramref name="existing"/>, or starts a new file when null.
@@ -54,25 +46,7 @@ public static class AgyRules
     /// </summary>
     public static AgyRulesMerge Merge(string? existing)
     {
-        var block = Render();
-        if (existing is null)
-        {
-            return new AgyRulesMerge(block, AgyRulesAction.Created);
-        }
-
-        var begin = existing.IndexOf(Begin, StringComparison.Ordinal);
-        var end = existing.IndexOf(End, StringComparison.Ordinal);
-        string merged;
-        if (begin >= 0 && end >= 0)
-        {
-            var tail = existing[(end + End.Length)..].TrimStart('\n');
-            merged = existing[..begin] + block + (string.IsNullOrWhiteSpace(tail) ? string.Empty : $"\n{tail}");
-        }
-        else
-        {
-            merged = existing.TrimEnd('\n') + $"\n\n{block}";
-        }
-
-        return new AgyRulesMerge(merged, merged == existing ? AgyRulesAction.Unchanged : AgyRulesAction.Updated);
+        var result = RigGlobalContext.Merge(existing);
+        return new AgyRulesMerge(result.Content, (AgyRulesAction)result.Action);
     }
 }

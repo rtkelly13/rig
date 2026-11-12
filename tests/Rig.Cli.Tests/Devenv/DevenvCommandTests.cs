@@ -61,6 +61,7 @@ public sealed class DevenvCommandTests : IDisposable
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
     {
+        var rulesPath = ClaudeRules.FilePath(_home.Path);
         var (code, output, error) = await RunAsync();
 
         Assert.Equal(0, code);
@@ -68,15 +69,18 @@ public sealed class DevenvCommandTests : IDisposable
         Assert.Contains($"Applying 14 baseline updates to {Settings}:\n  + permissions.defaultMode: 'acceptEdits'\n", output, StringComparison.Ordinal);
         Assert.Contains($"✓ Session-ledger hook script installed at {Hook}\n", output, StringComparison.Ordinal);
         Assert.Contains($"✓ Successfully updated Claude Code settings at {Settings}\n", output, StringComparison.Ordinal);
+        Assert.Contains($"✓ Successfully updated Claude Code rules at {rulesPath}\n", output, StringComparison.Ordinal);
         Assert.Contains("\nclaude: ", output, StringComparison.Ordinal);
         Assert.True(SessionLedger.ScriptCurrent(Hook));
         Assert.Equal(LedgerHookState.Current, SessionLedger.State(SettingsFile.Load(Settings)!, Hook));
+        Assert.True(File.Exists(rulesPath));
+        Assert.Contains(ClaudeRules.Begin, await File.ReadAllTextAsync(rulesPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
         Assert.False(Directory.Exists(Path.Join(_home.Path, "not-this-home")));
 
         var (again, second, _) = await RunAsync();
 
         Assert.Equal(0, again);
-        Assert.StartsWith($"✓ Claude Code settings up to date: {Settings}\nclaude: ", second, StringComparison.Ordinal);
+        Assert.StartsWith($"✓ Claude Code settings up to date: {Settings}\n✓ Claude Code rules up to date: {rulesPath}\nclaude: ", second, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -85,7 +89,8 @@ public sealed class DevenvCommandTests : IDisposable
         var (code, output, _) = await RunAsync("--dry-run");
 
         Assert.Equal(0, code);
-        Assert.Contains($"Installing the session-ledger hook script at {Hook}\nDry run: no changes written.\n", output, StringComparison.Ordinal);
+        Assert.Contains($"Installing the session-ledger hook script at {Hook}\n", output, StringComparison.Ordinal);
+        Assert.Contains("Dry run: no changes written.\n", output, StringComparison.Ordinal);
         Assert.False(Directory.Exists(Path.Join(_home.Path, ".claude")));
     }
 
