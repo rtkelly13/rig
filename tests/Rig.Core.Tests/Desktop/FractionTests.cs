@@ -44,6 +44,16 @@ public sealed class FractionTests
     }
 
     [Fact]
+    public void Fractions_near_the_long_limits_still_order()
+    {
+        var larger = new Fraction(long.MaxValue - 1, long.MaxValue);
+        var smaller = new Fraction(long.MaxValue - 2, long.MaxValue - 1);
+
+        Assert.True(smaller < larger);
+        Assert.Equal(1, larger.CompareTo(smaller));
+    }
+
+    [Fact]
     public void A_fraction_prints_and_converts_as_python_does()
     {
         Assert.Equal("1/3", new Fraction(1, 3).ToString());

@@ -92,7 +92,8 @@ public readonly record struct Fraction : IComparable<Fraction>, IComparable
 
     /// <inheritdoc />
     public int CompareTo(Fraction other) =>
-        checked(Numerator * other.Denominator).CompareTo(checked(other.Numerator * Denominator));
+        // 128-bit cross-products cannot overflow, so any two valid fractions order.
+        ((Int128)Numerator * other.Denominator).CompareTo((Int128)other.Numerator * Denominator);
 
     /// <inheritdoc />
     public int CompareTo(object? obj) => obj switch
