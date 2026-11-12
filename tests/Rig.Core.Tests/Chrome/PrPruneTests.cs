@@ -7,7 +7,7 @@ namespace Rig.Core.Tests.Chrome;
 
 /// <summary>
 /// The PR-prune planner as a pure function of (tabs, PR states), and the shared executor. Replaces
-/// <c>test_chrome_pr_prune</c>, except the rendering test, which moves with the renderer.
+/// <c>test_chrome_pr_prune</c>, its rendering test included.
 /// </summary>
 public sealed class PrPruneTests
 {
@@ -416,5 +416,37 @@ public sealed class PrPruneTests
         var item = PrPrune.PrTabs(browser.Windows)[^1];
 
         Assert.Equal("2 in window 2", ClosePlans.Describe(item));
+    }
+
+    [Fact]
+    public void Render_groups_by_reason_in_a_fixed_order()
+    {
+        var browser = new TabBrowser();
+        browser.Window(Tab(12), Tab(1), Tab(1, selected: true), Tab(11), Tab(5), Tab(3));
+        var plan = PrPrune.Plan(
+            browser.Windows,
+            Resolve(new() { [1] = PrStatus.Open, [3] = PrStatus.Merged, [5] = PrStatus.Closed, [11] = PrStatus.Open, [12] = PrStatus.Open }, StackOfThree()));
+
+        Assert.Equal(
+            [
+                "Close: merged",
+                "Close: closed without merging",
+                "Close: duplicate PR tabs",
+                "Close: superseded by a lower stack member",
+                "4 to close, 2 PR tabs kept, 0 reported, 5 PRs seen",
+            ],
+            TabPlanText.Prune(plan).Where(line => !line.StartsWith(' ')).Select(line => line.Split(" (")[0]));
+    }
+
+    [Fact]
+    public void Render_lists_reports_after_closes()
+    {
+        var browser = new TabBrowser();
+        browser.Window(Tab(7), Tab(8, pinned: true), Tab(8));
+        var lines = TabPlanText.Prune(PrPrune.Plan(browser.Windows, Resolve(new() { [7] = PrStatus.Unknown, [8] = PrStatus.Merged })));
+
+        Assert.Equal("Report only: unknown state (never closed) (1)", lines.First(line => line.StartsWith("Report only: unknown", StringComparison.Ordinal)));
+        Assert.Contains(lines, line => line.StartsWith("  acme-corp/data-platform#7  [Profile 4, window 1, tab 1]", StringComparison.Ordinal));
+        Assert.Contains("Report only: pinned or audible (never closed) (1)", lines);
     }
 }
