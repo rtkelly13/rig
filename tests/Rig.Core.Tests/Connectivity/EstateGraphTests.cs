@@ -244,6 +244,21 @@ public sealed class EstateGraphTests : IDisposable
         Assert.Equal(2, (await _estate.Graph(later).LoadAsync(_estate.Registry, _estate.Personal, refresh: false, Token)).Projects.Count);
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{"projects":null,"dependencies":[],"components":[],"edges":[],"scanned_at":"x","warnings":[]}""")]
+    [InlineData("""{"dependencies":[],"components":[],"edges":[],"scanned_at":"x","warnings":[]}""")]
+    public async Task A_snapshot_missing_a_field_is_rebuilt(string snapshot)
+    {
+        _estate.Owned("a");
+        Directory.CreateDirectory(Path.GetDirectoryName(_estate.Snapshot)!);
+        await File.WriteAllTextAsync(_estate.Snapshot, snapshot, Token);
+
+        var rebuilt = await _estate.Graph().LoadAsync(_estate.Registry, _estate.Personal, refresh: false, Token);
+
+        Assert.Single(rebuilt.Projects);
+    }
+
     [Fact]
     public async Task Scanned_at_is_written_as_Python_wrote_it()
     {
