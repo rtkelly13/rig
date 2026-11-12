@@ -8,12 +8,12 @@ serves the same tools to every session instead.
 `vault knowledge-server` runs that server as a macOS LaunchAgent (`dev.rtkelly.rig.open-knowledge`):
 
 ```
-uv run vault knowledge-server install          # pinned package + LaunchAgent; idempotent
-uv run vault knowledge-server connect          # dry run: shows the claude mcp commands
-uv run vault knowledge-server connect --apply  # point Claude Code's user-scope entry at it
-uv run vault knowledge-server status           # package, agent, health, Claude entry; exit 1 if any fail
-uv run vault knowledge-server restart
-uv run vault knowledge-server uninstall
+rig vault knowledge-server install          # pinned package + LaunchAgent; idempotent
+rig vault knowledge-server connect          # dry run: shows the claude mcp commands
+rig vault knowledge-server connect --apply  # point Claude Code's user-scope entry at it
+rig vault knowledge-server status           # package, agent, health, Claude entry; exit 1 if any fail
+rig vault knowledge-server restart
+rig vault knowledge-server uninstall
 ```
 
 | | |

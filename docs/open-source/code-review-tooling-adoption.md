@@ -127,7 +127,7 @@ Phase 1 (Zero-Friction Actions) ──> Phase 2 (Config Alignment) ──> Phase
 Run the governance CLI to verify or deploy canonical configuration baselines:
 ```bash
 # Audit or enforce in-repo configurations across an organization or the estate
-uv run repo-governance apps --org rtkelly-labs --enforce --review-tools
+rig repo-governance apps --org rtkelly-labs --enforce --review-tools
 ```
 
 This ensures the repository root contains:
@@ -147,7 +147,7 @@ This ensures the repository root contains:
 2. **Programmatic Scoping**:
    Whenever a new repository is added to the estate or migrated to `rtkelly-labs`, run:
    ```bash
-   uv run repo-governance apps --org rtkelly-labs --enforce
+   rig repo-governance apps --org rtkelly-labs --enforce
    ```
    This automatically calls the GitHub API (`PUT /user/installations/{id}/repositories/{repo_id}`) to connect the repository to all required apps without clicking around the GitHub web settings.
 
@@ -157,11 +157,11 @@ This ensures the repository root contains:
 Once the workflows and apps are active:
 1. Verify CI status check names match the estate lexicon:
    ```bash
-   uv run repo-governance check-names --org rtkelly-labs
+   rig repo-governance check-names --org rtkelly-labs
    ```
 2. Enforce GitHub branch protection rulesets and squash-merge policies:
    ```bash
-   uv run repo-governance enforce --org rtkelly-labs
+   rig repo-governance enforce --org rtkelly-labs
    ```
 
 ---
@@ -171,30 +171,30 @@ Once the workflows and apps are active:
 ### Audit Installed Apps & Permissions
 ```bash
 # Check GitHub Apps status across rtkelly-labs
-uv run repo-governance apps --org rtkelly-labs --audit
+rig repo-governance apps --org rtkelly-labs --audit
 
 # Check GitHub Apps status across personal account
-uv run repo-governance apps --org rtkelly13 --audit
+rig repo-governance apps --org rtkelly13 --audit
 ```
 
 ### Sync Missing Repository Connections
 ```bash
 # Preview API mutations to add repos to installed apps
-uv run repo-governance apps --org rtkelly-labs --enforce --dry-run
+rig repo-governance apps --org rtkelly-labs --enforce --dry-run
 
 # Connect missing repos to declared GitHub Apps
-uv run repo-governance apps --org rtkelly-labs --enforce
+rig repo-governance apps --org rtkelly-labs --enforce
 ```
 
 ### Deploy In-Repo Tool Configurations
 ```bash
 # Audit and create .coderabbit.yaml and codecov.yml
-uv run repo-governance apps --org rtkelly-labs --enforce --review-tools
+rig repo-governance apps --org rtkelly-labs --enforce --review-tools
 ```
 
 ### Full Repository Hygiene & Ruleset Sync
 ```bash
 # Complete governance synchronization for all public repos
-uv run repo-governance status --org rtkelly-labs
-uv run repo-governance enforce --org rtkelly-labs
+rig repo-governance status --org rtkelly-labs
+rig repo-governance enforce --org rtkelly-labs
 ```

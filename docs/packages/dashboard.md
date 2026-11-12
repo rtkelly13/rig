@@ -15,16 +15,16 @@ It answers four essential release questions at a glance:
 
 ```bash
 # View table dashboard for all declared packages in the estate
-uv run workspace packages dashboard
+rig workspace packages dashboard
 
 # Filter to a specific project (case-insensitive)
-uv run workspace packages dashboard --project Iceberg.NET
+rig workspace packages dashboard --project Iceberg.NET
 
 # Machine-readable JSON output for CI and telemetry
-uv run workspace packages dashboard --json
+rig workspace packages dashboard --json
 
 # Override the code root used to locate local checkouts
-uv run workspace packages dashboard --root ~/code
+rig workspace packages dashboard --root ~/code
 ```
 
 ## Data Sources

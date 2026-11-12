@@ -3,14 +3,14 @@
 Shared development utilities — desktop workspace management, general tooling, and reusable patterns.
 
 > [!IMPORTANT]
-> **Agent Directive**: Always run `uv run help` at the start of every session to familiarize yourself with the available utility toolkit and latest command structures. It prints the `rig` overview; `uv run desktop-manager --help` lists the desktop tools.
+> **Agent Directive**: Always run `rig help` at the start of every session to familiarize yourself with the available utility toolkit and latest command structures. It prints the `rig` overview; `uv run desktop-manager --help` lists the desktop tools. Inside a rig checkout, `dotnet run --project src/Rig.Cli -- <command>` runs that checkout's code instead of the installed copy.
 
 ## Commands
 
 ```bash
 uv sync                          # install
-uv run status                    # git state, lint, types, security (no tests)
-uv run status --tests            # the same plus the test suite
+dotnet run --project src/Rig.Cli -- status          # git state, lint, types, security (no tests)
+dotnet run --project src/Rig.Cli -- status --tests  # the same plus the test suite
 uv run pytest tests/test_file.py -k "test_name"
 uv run ruff check src/ && uv run ruff format src/
 uv run basedpyright && uv run ty check src packages/type-ratchet/src

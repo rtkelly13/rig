@@ -140,10 +140,10 @@ def test_estate_jobs_scan_the_code_root_above_the_personal_clones_not_the_runtim
     )
     jobs = {j.name: j for j in default_jobs(env)}
 
-    assert jobs["estate-trim"].argv[1:] == ("trim", "--apply", "--root", str(root))
+    assert jobs["estate-trim"].argv[1:] == ("estate", "trim", "--apply", "--root", str(root))
     assert jobs["estate-trim"].cadence is Cadence.DAILY
-    assert jobs["estate-sync"].argv[1:] == ("sync", "--root", str(root))
-    assert jobs["estate-risk"].argv[1:] == ("risk", "--root", str(root))
+    assert jobs["estate-sync"].argv[1:] == ("estate", "sync", "--root", str(root))
+    assert jobs["estate-risk"].argv[1:] == ("estate", "risk", "--root", str(root))
 
 
 def test_remove_tree_reaches_past_the_windows_path_limit(tmp_path: pathlib.Path) -> None:

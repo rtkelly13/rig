@@ -1,12 +1,12 @@
 # Published packages and deployed artifacts
 
-`uv run workspace packages` (alias `uv run workspace artifacts`) tracks every npm and NuGet package the estate publishes,
+`rig workspace packages` (alias `rig workspace artifacts`) tracks every npm and NuGet package the estate publishes,
 surfacing local manifest versions alongside both latest deployed releases and latest stable releases on public registries.
 
-`uv run workspace packages audit` performs deep governance validation against the publishing GitHub repositories,
+`rig workspace packages audit` performs deep governance validation against the publishing GitHub repositories,
 verifying provenance, OIDC trust configuration, and workflow health.
 
-`uv run workspace packages dashboard` adds the release view: each package's registry version next to its
+`rig workspace packages dashboard` adds the release view: each package's registry version next to its
 matching git tag and any `[Unreleased]` changelog entries. See [dashboard.md](dashboard.md).
 
 The bindings are declared in `config/managed-projects.json`, under each project's
@@ -61,7 +61,7 @@ names the old owner, so every OIDC publish fails. npm reports it as a bare `E404
 that the package has stopped shipping. `@rtkelly13/design-system` sat at 0.12.0 for three weeks after the move to
 `rtkelly-labs` while `main` went to 0.16.0.
 
-`uv run workspace packages audit --help` lists each check and when it fails.
+`rig workspace packages audit --help` lists each check and when it fails.
 
 NuGet endpoints are resolved from the V3 service index (`https://api.nuget.org/v3/index.json`), all without auth.
 
@@ -98,7 +98,7 @@ npm can't rename or move a scoped package. Publish under the new name and deprec
    OIDC, which binds the trust config and moves `latest` off the placeholder.
 5. Run `npm deprecate <new-name>@0.0.0-bootstrap.0 "placeholder"` and
    `npm deprecate <old-name> "Moved to <new-name>"`.
-6. Update the `packages` entry here, then run `uv run workspace packages audit --project <name> --trust`.
+6. Update the `packages` entry here, then run `rig workspace packages audit --project <name> --trust`.
 
 Don't hand-publish the real version in step 2. If you do, the step 4 rerun finds it already published and skips,
 the trust config waits for the next version bump (and may expire), and that version ships with no provenance.
@@ -168,7 +168,7 @@ Adding a TOTP just for this isn't worth it. After the bootstrap, publishing runs
 
 ## Runbook: after transferring a repository
 
-1. Run `uv run workspace packages audit`. The `repo`, `manifest` and `provenance` findings list what still names the
+1. Run `rig workspace packages audit`. The `repo`, `manifest` and `provenance` findings list what still names the
    old owner.
 2. npm: `npm trust revoke` the old config, then `npm trust github … --repo <new-owner/repo>`.
 3. NuGet: add a new policy for the new owner on nuget.org (the audit's `policy` checklist has the fields). Publish

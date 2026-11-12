@@ -121,6 +121,8 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
     from desktop_manager.chrome.install_location import LOG_NAME, install_root
 
     desktop_manager = env.script("desktop-manager")
+    # The C# front door: `rig estate …` and the rest run on it (#85).
+    rig = env.script("rig")
     python = str(env.scripts / ("python.exe" if os.name == "nt" else "python"))
     both = frozenset({Trigger.LOGON, Trigger.TICK})
     return (
@@ -167,7 +169,7 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
         Job(
             name="estate-sync",
             description="`git fetch --prune` across every clone in the estate, so later checks see gone branches.",
-            argv=(env.script("estate"), "sync", "--root", str(env.code_root)),
+            argv=(rig, "estate", "sync", "--root", str(env.code_root)),
             triggers=both,
             cadence=Cadence.DAILY,
             timeout_minutes=30,
@@ -175,7 +177,7 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
         Job(
             name="estate-risk",
             description="Report clones across the estate holding uncommitted or unpushed work.",
-            argv=(env.script("estate"), "risk", "--root", str(env.code_root)),
+            argv=(rig, "estate", "risk", "--root", str(env.code_root)),
             triggers=both,
             cadence=Cadence.DAILY,
             timeout_minutes=30,
@@ -183,7 +185,7 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
         Job(
             name="estate-trim",
             description="Delete node_modules, venvs and build output in estate worktrees idle 7+ days.",
-            argv=(env.script("estate"), "trim", "--apply", "--root", str(env.code_root)),
+            argv=(rig, "estate", "trim", "--apply", "--root", str(env.code_root)),
             triggers=both,
             cadence=Cadence.DAILY,
             timeout_minutes=30,
@@ -192,7 +194,8 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
             name="estate-orca",
             description="Register every cloned managed project in the personal Orca, in its group.",
             argv=(
-                env.script("estate"),
+                rig,
+                "estate",
                 "orca",
                 "--apply",
                 "--code-root",
@@ -209,7 +212,8 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
             name="orca-sync",
             description="Apply config/orca.json to the personal Orca: agent default args, repo colours, scripts, refs.",
             argv=(
-                env.script("workspace"),
+                rig,
+                "workspace",
                 "orca",
                 "sync",
                 "--apply",
@@ -226,7 +230,7 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
         Job(
             name="otel-collector",
             description="Keep the local OTel collector listening on 127.0.0.1:4317/4318; prune its files past 7 days.",
-            argv=(env.script("otel-stack"), "collector", "ensure"),
+            argv=(rig, "otel-stack", "collector", "ensure"),
             triggers=both,
             cadence=Cadence.EVERY_RUN,
             timeout_minutes=5,
@@ -234,7 +238,7 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
         Job(
             name="estate-prune-caches",
             description="Prune the uv, pnpm, NuGet http and Docker build caches, and Claude temp idle 7+ days.",
-            argv=(env.script("estate"), "prune-caches", "--apply"),
+            argv=(rig, "estate", "prune-caches", "--apply"),
             triggers=both,
             cadence=Cadence.DAILY,
             timeout_minutes=60,
@@ -244,7 +248,8 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
             name="estate-decisions",
             description="Write the feed of worktrees and directories only a human can decide about.",
             argv=(
-                env.script("estate"),
+                rig,
+                "estate",
                 "decisions",
                 *(arg for root in env.estate_roots for arg in ("--root", str(root))),
                 "--write",

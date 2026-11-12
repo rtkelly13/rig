@@ -9,7 +9,7 @@
 Downloads folders naturally accumulate gigabytes of forgotten installers, large CSV/Parquet data dumps, and camera photo backups:
 
 ```bash
-uv run estate downloads --min 20MB
+rig estate downloads --min 20MB
 ```
 
 This classifies each item into:

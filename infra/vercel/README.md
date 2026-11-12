@@ -37,7 +37,7 @@ slots (`slot/*`), and end with `"**": false` so every other branch creates nothi
 `ignoreCommand` on a `SiteSpec`) may still skip builds on refs the allowlist lets through, but
 it never saves quota.
 
-`uv run repo-governance vercel-gating --all` checks every linked project. The incident behind
+`rig repo-governance vercel-gating --all` checks every linked project. The incident behind
 this, and the traps, are in [docs/repo-governance/vercel-gating.md](../../docs/repo-governance/vercel-gating.md).
 
 ## `manage` vs `adopt`

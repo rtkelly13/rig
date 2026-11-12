@@ -31,7 +31,7 @@ implements it, and every feature uses that module rather than choosing its own p
 ## How rig enforces it
 
 - **Ignored in every repo.** The `temp` entry in `gitignore_entries` (`config/repo_policies.json`)
-  applies to every managed repo, and `uv run repo-governance gitignore --apply` appends it where
+  applies to every managed repo, and `rig repo-governance gitignore --apply` appends it where
   it's missing.
 - **The audit asks git, not just the file.** `repo-governance gitignore` also runs `git check-ignore`
   on `temp/.rig/`. A repo whose `.gitignore` has the `temp/` line but re-includes the folder with a

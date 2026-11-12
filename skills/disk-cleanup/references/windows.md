@@ -136,9 +136,9 @@ git -C <repo-path> worktree remove --force <worktree-path>
 git -C <repo-path> worktree prune
 ```
 
-- Prefer `uv run estate tidy --merged --repo <clone>` and `uv run estate shelve` over hand removal: they check that origin holds the work first (see Phase 2).
+- Prefer `rig estate tidy --merged --repo <clone>` and `rig estate shelve` over hand removal: they check that origin holds the work first (see Phase 2).
 - After `git worktree remove`, check the directory is really gone. pnpm junctions survive it as an empty link skeleton.
-- Sizes from a recursive walk overstate what deleting a `.venv` frees: uv hardlinks into its cache. `estate` counts a hardlinked file only when every link is inside the tree. For volume-wide questions use `uv run estate volume` (WizTree, MFT, allocated size).
+- Sizes from a recursive walk overstate what deleting a `.venv` frees: uv hardlinks into its cache. `estate` counts a hardlinked file only when every link is inside the tree. For volume-wide questions use `rig estate volume` (WizTree, MFT, allocated size).
 
 ### Scan & Purge `bin` / `obj` / `node_modules`
 In project root:

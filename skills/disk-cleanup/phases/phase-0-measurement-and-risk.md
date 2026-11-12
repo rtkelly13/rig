@@ -33,7 +33,7 @@ Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{N="Used(GB)";E={[math
 Before running any cleanups across repositories, verify what exists on this machine and nowhere else:
 
 ```bash
-uv run estate risk
+rig estate risk
 ```
 
 This reports:

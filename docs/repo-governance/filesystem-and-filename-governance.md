@@ -23,7 +23,7 @@ In modern codebases—especially those co-authored with autonomous AI coding age
 
 We adopt [`ls-lint`](https://ls-lint.org/) (`@ls-lint/ls-lint` on npm, `ls-lint/action` on GitHub Actions) as our estate-wide filesystem validator because it provides properties AST linters and shell scripts lack:
 
-- **Sub-Millisecond Execution**: Written in Go as a native static binary, `ls-lint` inspects tens of thousands of directories and files in under 15 milliseconds. It runs with zero runtime startup penalty in pre-commit hooks, local health scripts (`uv run status`), and CI jobs.
+- **Sub-Millisecond Execution**: Written in Go as a native static binary, `ls-lint` inspects tens of thousands of directories and files in under 15 milliseconds. It runs with zero runtime startup penalty in pre-commit hooks, local health scripts (`rig status`), and CI jobs.
 - **Cross-Platform Uniformity**: Binary distributions run identically on macOS, Linux, and Windows, eliminating differences in POSIX shell globbing, find commands, or Windows PowerShell quirks.
 - **Closed Allowlists (`.*: exists:0`)**: Rather than playing whack-a-mole with blacklist patterns, `ls-lint` supports a closed-world allowlist model. Explicitly declaring acceptable extensions and appending `.*: exists:0` immediately rejects any unexpected file extension.
 - **Deterministic Structural Rules**: Validates directory naming (`.dir`), file extensions, multi-suffix patterns (`.test.ts`, `.spec.tsx`), and regular expressions.

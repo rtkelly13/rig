@@ -8,7 +8,7 @@ and coding standards live in each child repository's localized `AGENTS.md`.
 ## Estate Governance & Tooling
 
 - **Tooling & Orchestration Source**: All cross-repo tooling, CLI automation, and workspace management
-  reside in `shared-utilities`. Use `uv run workspace <command>` for estate management.
+  reside in `shared-utilities`. Use `rig workspace <command>` for estate management.
 - **Invariants**: Nothing exists in `/Users/ryankelly/code/personal/` without the `workspace` CLI
   managing it.
 - **Org Folders**: Repos owned by the `rtkelly-labs` and `Resultful` GitHub orgs live beside this
@@ -28,7 +28,7 @@ and coding standards live in each child repository's localized `AGENTS.md`.
 2. **Maintain Estate Cleanliness**: Do not create arbitrary scratch folders or files in the estate root.
    Use `shared-utilities/temp/` or in-repo scratch areas.
 3. **Synchronize Changes**: If adding a new repository to the estate, register it in
-   `shared-utilities/config/managed-projects.json` and run `uv run workspace sync`.
+   `shared-utilities/config/managed-projects.json` and run `rig workspace sync`.
 4. **Brand Asset & Production Cuts Invariant**: For any managed brand asset project, production cuts
    **MUST ALWAYS** be derived strictly from `production-cuts.csv` situated within that project's
    `production-cuts/` folder. All exported production cuts must reside in `production-cuts/` to prevent

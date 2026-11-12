@@ -67,13 +67,13 @@ The license manager supports standard Open Source Initiative (OSI) approved lice
 ### Usage
 ```bash
 # Audit license file and copyright year for current repo
-uv run repo-governance license --audit
+rig repo-governance license --audit
 
 # Enforce canonical MIT license with current year
-uv run repo-governance license --enforce --type MIT
+rig repo-governance license --enforce --type MIT
 
 # Audit licenses across all personal repositories
-uv run repo-governance license --all --audit
+rig repo-governance license --all --audit
 ```
 
 ---
@@ -116,10 +116,10 @@ Instead of unstructured freeform markdown, public repositories use schema-valida
 ### Usage
 ```bash
 # Preview template synchronization on current repo
-uv run repo-governance sync-templates --dry-run
+rig repo-governance sync-templates --dry-run
 
 # Deploy templates across all public OSS repos
-uv run repo-governance sync-templates --all --apply
+rig repo-governance sync-templates --all --apply
 ```
 
 ---
@@ -135,10 +135,10 @@ feature, performance, docs, maintenance), `status:` labels (needs-repro, blocked
 ### Usage
 ```bash
 # Audit label differences between repo and standard taxonomy
-uv run repo-governance sync-labels --audit
+rig repo-governance sync-labels --audit
 
 # Apply standard labels to all personal repos
-uv run repo-governance sync-labels --all --apply
+rig repo-governance sync-labels --all --apply
 ```
 
 ---
@@ -170,11 +170,11 @@ The `issue-triage` command scans all open issues across public repositories and 
 ### Usage
 ```bash
 # Triage all open issues across all personal repos
-uv run repo-governance issue-triage --all
+rig repo-governance issue-triage --all
 
 # Filter issues for a specific repo or label
-uv run repo-governance issue-triage --repo rtkelly13/design-system
-uv run repo-governance issue-triage --label "good first issue"
+rig repo-governance issue-triage --repo rtkelly13/design-system
+rig repo-governance issue-triage --label "good first issue"
 ```
 
 ---
@@ -197,13 +197,13 @@ The `pr-triage` engine provides an active operational control center for open pu
 ### Usage
 ```bash
 # View estate PR triage dashboard
-uv run repo-governance pr-triage --all
+rig repo-governance pr-triage --all
 
 # Automatically update all branches that are clean but behind main
-uv run repo-governance pr-triage --all --update-behind
+rig repo-governance pr-triage --all --update-behind
 
 # Batch squash-and-merge all passing PRs
-uv run repo-governance pr-triage --all --merge-ready
+rig repo-governance pr-triage --all --merge-ready
 ```
 
 ---
@@ -225,12 +225,12 @@ For full evaluation, tool selection matrix, and progressive adoption paths for a
 ### Quick Commands
 ```bash
 # Audit installed review apps and permissions on rtkelly-labs
-uv run repo-governance apps --org rtkelly-labs --audit
+rig repo-governance apps --org rtkelly-labs --audit
 
 # Automatically scope repos into installed GitHub Apps
-uv run repo-governance apps --org rtkelly-labs --enforce
+rig repo-governance apps --org rtkelly-labs --enforce
 
 # Deploy canonical in-repo review configs (.coderabbit.yaml, codecov.yml)
-uv run repo-governance apps --org rtkelly-labs --enforce --review-tools
+rig repo-governance apps --org rtkelly-labs --enforce --review-tools
 ```
 

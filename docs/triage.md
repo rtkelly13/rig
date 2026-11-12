@@ -3,16 +3,16 @@
 `rig triage` maintains an estate-wide queue in rig's existing SQLite database and a transient local Markdown projection. `rig web` serves one SPA: triage, the reference catalogue, estate, the operations pages ([web-ops.md](web-ops.md)) and the existing studios share the same document and navigation. The server uses its configured SQLite database, including explicit `StudioServer(db_path=...)` overrides.
 
 ```bash
-uv run rig triage refresh
-uv run rig triage verify
-uv run rig web
+rig triage refresh
+rig triage verify
+rig web
 ```
 
 The default Markdown projection is `temp/triage/queue.md` under the rig root resolved from its managed-project registry. It is regenerable, gitignored runtime output. The vault contains the durable `Areas/Development/PR and Issue Triage.md` process and `Resources/Engineering/Frontend/PR Triage and Inbox UI References.md` source index; queue contents and interaction history stay in rig.
 
 ```bash
-uv run rig triage refresh --db temp/triage.db --output temp/queue.md
-uv run rig triage verify temp/queue.md
+rig triage refresh --db temp/triage.db --output temp/queue.md
+rig triage verify temp/queue.md
 ```
 
 `--config` selects another managed-project registry. Disabled and explicitly archived entries are excluded. Fetches use `gh` authentication, cursor pagination, typed decoding and timeouts. All repository fetches must succeed before any snapshot is updated. Items missing from the open list are looked up explicitly to distinguish merged/closed from a fetch omission.

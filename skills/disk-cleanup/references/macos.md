@@ -148,7 +148,7 @@ Playwright caches full headless builds of Chromium, WebKit, and Firefox:
 Search for large archives and data delivery dumps in `~/Downloads`, and verify whether media/documents already exist in cloud storage (e.g. Google Drive) before removing:
 ```zsh
 # Using estate CLI:
-uv run estate downloads --min 20MB
+rig estate downloads --min 20MB
 
 # Or manual inspection:
 ls -lhS ~/Downloads | head -n 20
@@ -159,7 +159,7 @@ ls -lhS ~/Downloads | head -n 20
 Audit `/Applications` and `~/Applications` to identify bloated, outdated, or dormant applications:
 ```zsh
 # Using estate CLI:
-uv run estate apps --min 100MB
+rig estate apps --min 100MB
 
 # Native UI tools:
 open -a DaisyDisk                                             # Visual sunburst disk map

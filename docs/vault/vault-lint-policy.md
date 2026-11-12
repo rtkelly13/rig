@@ -1,6 +1,6 @@
 # Vault lint policy
 
-`uv run vault graph lint` checks the Obsidian vault's frontmatter, filenames and duplicate
+`rig vault graph lint` checks the Obsidian vault's frontmatter, filenames and duplicate
 notes. `vault graph lint --help` lists every code, its severity, and the `lint_ignore`
 frontmatter that silences one. This page holds the reasoning and the repair order.
 
