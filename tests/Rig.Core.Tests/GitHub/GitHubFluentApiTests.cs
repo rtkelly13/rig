@@ -72,6 +72,18 @@ public sealed class GitHubFluentApiTests
     }
 
     [Fact]
+    public async Task RestRequest_does_not_treat_successful_body_containing_not_found_as_404()
+    {
+        var fake = new FakeGitHub().On("GET", "repos/owner/repo/item", "{\"name\":\"Not Found in database\",\"count\":1}");
+
+        var result = await fake.Get("repos/owner/repo/item").ReadOptionalJsonAsync<Widget>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.Equal("Not Found in database", result.Name);
+        Assert.Equal(1, result.Count);
+    }
+
+    [Fact]
     public async Task RestRequest_read_json_throws_custom_exception_on_failure()
     {
         var fake = new FakeGitHub().Fail("GET", "repos/owner/repo/error", 500);

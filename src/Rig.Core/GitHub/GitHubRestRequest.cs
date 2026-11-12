@@ -232,9 +232,8 @@ public sealed record GitHubRestRequest(IGitHubApi Api, string Method, string Rou
     public static bool IsNotFound(Ran ran)
     {
         ArgumentNullException.ThrowIfNull(ran);
-        return ran.Err.Contains("HTTP 404", StringComparison.Ordinal)
-            || ran.Err.Contains("Not Found", StringComparison.Ordinal)
-            || ran.Out.Contains("Not Found", StringComparison.Ordinal);
+        return !ran.Ok && (ran.Err.Contains("HTTP 404", StringComparison.Ordinal)
+            || ran.Err.Contains("Not Found", StringComparison.Ordinal));
     }
 
     private GitHubApiException CreateException(Ran ran)
