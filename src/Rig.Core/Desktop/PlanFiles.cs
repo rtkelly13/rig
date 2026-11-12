@@ -21,12 +21,15 @@ public static partial class PlanFiles
 
     /// <summary>
     /// The plan <paramref name="text"/> holds. A bundle root (one with a <c>bundle</c> key) reads its desktop files
-    /// relative to <paramref name="baseDirectory"/>; <paramref name="source"/> names the plan in errors.
+    /// relative to <paramref name="baseDirectory"/>; <paramref name="source"/> names the plan in errors. Each
+    /// <c>columns</c> layout gets the count the plan as written asks for (<see cref="Placement.FitColumns"/> with no
+    /// screen widths).
     /// </summary>
     public static WorkspacePlan Parse(string text, string source = "<memory>", string? baseDirectory = null)
     {
         var data = PlanJsonReader.Object(ParseJson(text, source));
-        return data.ContainsKey("bundle") ? ResolveBundle(data, source, baseDirectory) : PlanJsonReader.WorkspacePlan(data);
+        var plan = data.ContainsKey("bundle") ? ResolveBundle(data, source, baseDirectory) : PlanJsonReader.WorkspacePlan(data);
+        return Placement.FitColumns(plan, new Dictionary<int, int>());
     }
 
     /// <summary>The desktop a single desktop file holds, as a bundle lists them.</summary>
