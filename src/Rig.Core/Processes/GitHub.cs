@@ -51,19 +51,13 @@ public sealed class GhApi(IProc proc) : IGitHubApi
     public Task<Ran> CallAsync(ApiRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        List<string> argv = request.Method == "GET"
+        IReadOnlyList<string> baseArgs = request.Method == "GET"
             ? ["gh", "api", request.Route]
             : ["gh", "api", "-X", request.Method, request.Route];
-        foreach (var header in request.Headers)
-        {
-            argv.AddRange(["-H", header]);
-        }
+        IReadOnlyList<string> headerArgs = [.. request.Headers.SelectMany<string, string>(static h => ["-H", h])];
+        IReadOnlyList<string> inputArgs = request.Body is not null ? ["--input", "-"] : [];
 
-        if (request.Body is not null)
-        {
-            argv.AddRange(["--input", "-"]);
-        }
-
+        IReadOnlyList<string> argv = [.. baseArgs, .. headerArgs, .. inputArgs];
         return proc.RunAsync(
             new ProcRequest(argv) { Timeout = DefaultTimeout, StdinText = request.Body },
             cancellationToken);

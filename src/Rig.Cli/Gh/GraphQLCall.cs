@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Rig.Cli.Gh.Threads;
+using Rig.Core.GitHub;
 using Rig.Core.Processes;
 
 namespace Rig.Cli.Gh;
@@ -8,11 +9,7 @@ namespace Rig.Cli.Gh;
 internal static class GraphQLCall
 {
     /// <summary>How GraphQL answers are read: camelCase names, and a missing required member fails the decode.</summary>
-    public static readonly JsonSerializerOptions Wire = new(JsonSerializerDefaults.Web)
-    {
-        RespectRequiredConstructorParameters = true,
-        RespectNullableAnnotations = true,
-    };
+    public static readonly JsonSerializerOptions Wire = GitHubSerializerDefaults.Options;
 
     /// <summary>
     /// Sends <paramref name="query"/> and returns its <c>data</c>. GraphQL errors, a failed <c>gh</c> and an answer that
@@ -22,38 +19,17 @@ internal static class GraphQLCall
         IGitHubApi api, string what, string query, IReadOnlyDictionary<string, object?> variables, CancellationToken cancellationToken)
         where TData : class
     {
-        var ran = await api.CallAsync(ApiRequest.GraphQL(query, variables), cancellationToken).ConfigureAwait(false);
-        var response = string.IsNullOrWhiteSpace(ran.Out) ? null : Decode<TData>(ran.Out);
-        var messages = response?.Errors?.Select(error => error.Message).Where(message => !string.IsNullOrEmpty(message)).ToList() ?? [];
-        if (messages.Count > 0)
-        {
-            throw new GitHubException($"{what}: {string.Join("; ", messages)}");
-        }
-
-        if (!ran.Ok)
-        {
-            var err = ran.Err.Trim();
-            throw new GitHubException($"{what}: {(err.Length > 0 ? err : $"gh exited {ran.Code}")}");
-        }
-
-        return response?.Data ?? throw new GitHubException($"{what}: unreadable response from GitHub");
-    }
-
-    private static Response<TData>? Decode<TData>(string json)
-        where TData : class
-    {
         try
         {
-            return JsonSerializer.Deserialize<Response<TData>>(json, Wire);
+            return await api.GraphQL(query)
+                .Describing(what)
+                .WithVariables(variables)
+                .ExecuteAsync<TData>(Wire, cancellationToken)
+                .ConfigureAwait(false);
         }
-        catch (JsonException)
+        catch (GitHubApiException ex) when (ex is not GitHubException)
         {
-            return null;
+            throw new GitHubException(ex.Message, ex);
         }
     }
-
-    private sealed record WireError(string Message = "");
-
-    private sealed record Response<TData>(TData? Data = null, List<WireError>? Errors = null)
-        where TData : class;
 }
