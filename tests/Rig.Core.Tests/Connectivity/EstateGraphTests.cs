@@ -179,6 +179,25 @@ public sealed class EstateGraphTests : IDisposable
     }
 
     [Fact]
+    public async Task The_rig_checkout_answers_for_itself()
+    {
+        var rig = Path.GetDirectoryName(Path.GetDirectoryName(_estate.Registry))!;
+        Directory.CreateDirectory(rig);
+        await File.WriteAllTextAsync(Path.Join(rig, "package.json"), """{"name":"rig-kit"}""", Token);
+        Assert.True((await _estate.Git.RunAsync(rig, ["init", "--quiet"], cancellationToken: Token)).Ok);
+        Assert.True((await _estate.Git.RunAsync(rig, ["add", "-f", "package.json"], cancellationToken: Token)).Ok);
+        Assert.True((await _estate.Git.RunAsync(rig, ["remote", "add", "origin", "git@github.com:owner/rig.git"], cancellationToken: Token)).Ok);
+        await _estate.CheckoutAsync("consumer", new Dictionary<string, string> { ["package.json"] = """{"dependencies":{"rig-kit":"1"}}""" });
+        _estate.Owned("rig", "consumer");
+
+        var graph = await _estate.BuildAsync();
+
+        Assert.All(graph.Projects, project => Assert.True(project.Scanned));
+        var dependency = Assert.Single(graph.Dependencies);
+        Assert.Equal(("owner/rig", "owner/consumer"), (dependency.Source, dependency.Target));
+    }
+
+    [Fact]
     public async Task A_folder_git_cannot_list_is_unscanned()
     {
         Directory.CreateDirectory(Path.Join(_estate.Personal, "plain"));
