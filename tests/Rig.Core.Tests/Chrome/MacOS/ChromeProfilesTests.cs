@@ -2,10 +2,10 @@ using Rig.Core.Chrome.MacOS;
 
 namespace Rig.Core.Tests.Chrome.MacOS;
 
-/// <summary>Chrome's profiles from a <c>Local State</c> file written to a temp home folder.</summary>
+/// <summary>Chrome's profiles from a <c>Local State</c> file written to a home folder under the checkout's <c>temp/</c>.</summary>
 public sealed class ChromeProfilesTests : IDisposable
 {
-    private readonly string _home = Directory.CreateTempSubdirectory("rig-chrome-profiles-").FullName;
+    private readonly string _home = Directory.CreateDirectory(RepoTemp.NewPath("chrome-profiles")).FullName;
 
     public void Dispose() => Directory.Delete(_home, recursive: true);
 
