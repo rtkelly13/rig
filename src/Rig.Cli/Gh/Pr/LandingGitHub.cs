@@ -131,14 +131,15 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
         var rules = known is { ThreadResolution: not null } && known.Base == snapshot.Base
             ? known
             : await FetchRulesAsync(repo, snapshot.Base, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<ReviewThread> open = [];
+
         var required = snapshot.ClassicThreadResolution ? true : rules.ThreadResolution;
-        if (snapshot.State == "OPEN" && required != false)
+        if (snapshot.State != "OPEN" || required == false)
         {
-            var all = await threads.FetchThreadsAsync(repo, number, cancellationToken).ConfigureAwait(false);
-            open = [.. all.Select(item => item.Thread).Where(thread => !thread.Resolved)];
+            return new Observation(snapshot, rules, []);
         }
 
+        var all = await threads.FetchThreadsAsync(repo, number, cancellationToken).ConfigureAwait(false);
+        var open = all.Select(item => item.Thread).Where(thread => !thread.Resolved).ToList();
         return new Observation(snapshot, rules, open);
     }
 
