@@ -8,7 +8,6 @@ import pytest
 
 from rig.db.backup import backup_database
 from rig.db.connection import get_db_connection
-from rig.db.jobs_repo import get_recent_job_runs, record_job_run, update_job_run
 from rig.db.migrations import (
     MIGRATIONS,
     current_schema_version,
@@ -66,42 +65,6 @@ def test_migrations_are_idempotent(tmp_path: Path) -> None:
         conn.close()
 
 
-def test_job_runs_record_and_query(tmp_path: Path) -> None:
-    db_file = tmp_path / "test_jobs.db"
-    conn = get_db_connection(db_file)
-    try:
-        run_migrations(conn)
-
-        run_id = record_job_run(
-            conn=conn,
-            job_name="tick-maintenance",
-            trigger="tick",
-            environment="PROD",
-            started_at="2026-10-24T14:00:00Z",
-            status="running",
-        )
-        assert run_id > 0
-
-        update_job_run(
-            conn=conn,
-            run_id=run_id,
-            finished_at="2026-10-24T14:00:05Z",
-            status="success",
-            exit_code=0,
-            output="Cleaned up 0 tabs",
-        )
-
-        history = get_recent_job_runs(conn, limit=10)
-        assert len(history) == 1
-        assert history[0].id == run_id
-        assert history[0].job_name == "tick-maintenance"
-        assert history[0].status == "success"
-        assert history[0].exit_code == 0
-        assert history[0].environment == "PROD"
-    finally:
-        conn.close()
-
-
 def test_database_backup_and_pruning(tmp_path: Path) -> None:
     db_file = tmp_path / "test_backup.db"
     backup_dir = tmp_path / "backups"
@@ -109,14 +72,11 @@ def test_database_backup_and_pruning(tmp_path: Path) -> None:
     conn = get_db_connection(db_file)
     try:
         run_migrations(conn)
-        record_job_run(
-            conn=conn,
-            job_name="backup-test",
-            trigger="manual",
-            environment="PREVIEW",
-            started_at="2026-10-24T14:10:00Z",
-            status="success",
+        conn.execute(
+            "INSERT INTO feature_flags (name, enabled, updated_at) "
+            "VALUES ('backup-test', 1, '2026-10-24T14:10:00+00:00')"
         )
+        conn.commit()
     finally:
         conn.close()
 
@@ -129,9 +89,8 @@ def test_database_backup_and_pruning(tmp_path: Path) -> None:
     backup_conn = get_db_connection(backup_path)
     try:
         assert current_schema_version(backup_conn) == LATEST
-        runs = get_recent_job_runs(backup_conn)
-        assert len(runs) == 1
-        assert runs[0].job_name == "backup-test"
+        rows = backup_conn.execute("SELECT name FROM feature_flags").fetchall()
+        assert [str(row[0]) for row in rows] == ["backup-test"]
     finally:
         backup_conn.close()
 
