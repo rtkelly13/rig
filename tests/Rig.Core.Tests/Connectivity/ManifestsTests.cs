@@ -90,4 +90,20 @@ public sealed class ManifestsTests : IDisposable
             inventory.Warnings.Select(w => w[..w.IndexOf(':', StringComparison.Ordinal)]));
         Assert.Empty(inventory.Publications);
     }
+
+    [Fact]
+    public async Task A_malformed_manifest_adds_no_evidence_at_all()
+    {
+        var root = await _estate.CheckoutAsync("partial", new Dictionary<string, string>
+        {
+            ["a/package.json"] = """{"name": "shared", "dependencies": {"left": "1"}, "devDependencies": []}""",
+            ["b/pyproject.toml"] = "[project]\nname = \"shared-py\"\ndependencies = [\"left\"]\noptional-dependencies = 3\n",
+        });
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/partial", Token);
+
+        Assert.Equal(2, inventory.Warnings.Count);
+        Assert.Empty(inventory.Publications);
+        Assert.Empty(inventory.Consumptions);
+    }
 }

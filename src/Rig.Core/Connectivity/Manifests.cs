@@ -216,21 +216,25 @@ public static partial class Manifests
 
     private static void ReadNpm(Inventory inventory, string text, string repo, string evidence)
     {
+        // The whole manifest is validated before any of it counts: a malformed one adds nothing.
         var package = JsonNode.Parse(text) as JsonObject ?? throw new InvalidDataException("expected a JSON object");
         var name = OptionalString(package, "name");
-        if (name.Length > 0)
-        {
-            inventory.PublicationsFound.Add(new Publication("npm", Canonical("npm", name), repo, evidence));
-        }
-
+        var consumptions = new List<Consumption>();
         foreach (var (scope, key) in new[] { ("runtime", "dependencies"), ("development", "devDependencies"), ("peer", "peerDependencies"), ("optional", "optionalDependencies") })
         {
             foreach (var (dependency, version) in StringMap(package, key))
             {
                 var alias = NpmAlias().Match(version);
-                inventory.ConsumptionsFound.Add(new Consumption("npm", Canonical("npm", alias.Success ? alias.Groups[1].Value : dependency), repo, version, scope, evidence));
+                consumptions.Add(new Consumption("npm", Canonical("npm", alias.Success ? alias.Groups[1].Value : dependency), repo, version, scope, evidence));
             }
         }
+
+        if (name.Length > 0)
+        {
+            inventory.PublicationsFound.Add(new Publication("npm", Canonical("npm", name), repo, evidence));
+        }
+
+        inventory.ConsumptionsFound.AddRange(consumptions);
     }
 
     private static void ReadPython(Inventory inventory, string text, string repo, string evidence)
@@ -242,12 +246,8 @@ public static partial class Manifests
         }
 
         var project = value as TomlTable ?? throw new InvalidDataException("project: expected a table");
+        // As for npm, nothing counts until the whole project table has validated.
         var name = project.TryGetValue("name", out var named) ? named as string ?? throw new InvalidDataException("project.name: expected a string") : string.Empty;
-        if (name.Length > 0)
-        {
-            inventory.PublicationsFound.Add(new Publication("pypi", Canonical("pypi", name), repo, evidence));
-        }
-
         var requirements = Strings(project, "dependencies", "project.dependencies").Select(requirement => ("runtime", requirement)).ToList();
         if (project.TryGetValue("optional-dependencies", out var optional))
         {
@@ -256,6 +256,11 @@ public static partial class Manifests
             {
                 requirements.AddRange(Strings(extras, extra, $"project.optional-dependencies.{extra}").Select(requirement => ($"optional:{extra}", requirement)));
             }
+        }
+
+        if (name.Length > 0)
+        {
+            inventory.PublicationsFound.Add(new Publication("pypi", Canonical("pypi", name), repo, evidence));
         }
 
         foreach (var (scope, requirement) in requirements)

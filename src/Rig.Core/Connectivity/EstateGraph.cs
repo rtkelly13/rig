@@ -26,8 +26,16 @@ public sealed class EstateGraph(Git git, TimeProvider time)
     /// <summary>How long a snapshot is reused before reads inventory the checkouts again.</summary>
     public static readonly TimeSpan Reuse = TimeSpan.FromMinutes(1);
 
-    /// <summary>The snapshot's shape: snake_case keys, as the React app reads the graph.</summary>
-    public static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+    /// <summary>
+    /// The snapshot's shape: snake_case keys, as the React app reads the graph. A snapshot missing a field, or holding
+    /// null where the graph has none, is refused and rebuilt.
+    /// </summary>
+    public static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        RespectNullableAnnotations = true,
+        RespectRequiredConstructorParameters = true,
+    };
 
     private const string Unscanned = "Local checkout is unavailable; consumption was not scanned.";
     private const string DeclaredEvidence = "config/managed-projects.json · depends_on";
