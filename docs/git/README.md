@@ -21,6 +21,7 @@ These are notes on *this* setup, not general git advice. The shape of it:
 | [stacked-pull-requests.md](stacked-pull-requests.md) | A PR refuses `gh pr merge` or a base change because it is in a GitHub stack |
 | [splitting-a-branch.md](splitting-a-branch.md) | One long branch needs to become a reviewable chain |
 | [landing-a-queue.md](landing-a-queue.md) | Several PRs are ready and `main` is strict |
+| [waiting-for-a-pr.md](waiting-for-a-pr.md) | Auto-merge is queued and you need to know when it lands, or why it will not |
 | [resolving-conflicts.md](resolving-conflicts.md) | Rebasing a stale branch, especially across many of them |
 | [worktrees.md](worktrees.md) | Working on more than one branch at a time |
 | [moving-a-clone-across-a-history-restart.md](moving-a-clone-across-a-history-restart.md) | A clone from before `rig` was restarted without history |
