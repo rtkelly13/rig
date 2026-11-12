@@ -110,4 +110,7 @@ public interface IDesktopPort
 
     /// <summary>Visit each desktop again and re-place windows that drifted while others launched; the actions taken.</summary>
     IReadOnlyList<string> ApplySecondPassPlacements(WorkspacePlan plan, IReadOnlyDictionary<int, IReadOnlyList<LaunchEntry>> entriesByDesktop, IRunLog log);
+
+    /// <summary><paramref name="placement"/>'s pixels on the live screens, which reuse scoring compares a window's bounds with.</summary>
+    Rect PlacementRect(PlacementSpec placement);
 }

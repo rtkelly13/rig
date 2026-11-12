@@ -75,6 +75,24 @@ public sealed class FakeDesktop : IDesktopPort
     /// <summary>The name of each entry launched, in order.</summary>
     public List<string> Launches { get; } = [];
 
+    /// <summary>Entry name to the message its launch fails with.</summary>
+    public Dictionary<string, string> FailingLaunches { get; } = [];
+
+    /// <summary>Entries whose placement fails.</summary>
+    public HashSet<string> FailingPlacements { get; } = [];
+
+    /// <summary>Titles a terminal never takes over: waiting for one times out.</summary>
+    public HashSet<string> StuckTitles { get; } = [];
+
+    /// <summary>Desktops, from 1, that refuse a new name.</summary>
+    public HashSet<int> Unrenamable { get; } = [];
+
+    /// <summary>Whether the current desktop cannot be read.</summary>
+    public bool CurrentUnknown { get; set; }
+
+    /// <summary>The missing-path fallbacks restore asked to open, as entry names.</summary>
+    public List<string> OpenedFallbacks { get; } = [];
+
     /// <inheritdoc/>
     public TimeSpan Now { get; set; }
 
@@ -110,7 +128,7 @@ public sealed class FakeDesktop : IDesktopPort
     public IReadOnlySet<long> WindowHandlesToPreserve() => new HashSet<long>(InvokingHandles);
 
     /// <inheritdoc/>
-    public int? CurrentDesktopNumber() => Current;
+    public int? CurrentDesktopNumber() => CurrentUnknown ? null : Current;
 
     /// <inheritdoc/>
     public IReadOnlyList<LiveWindow> InventoryReusableWindows(IReadOnlySet<long> excluded) =>
@@ -152,7 +170,16 @@ public sealed class FakeDesktop : IDesktopPort
     }
 
     /// <inheritdoc/>
-    public string? WaitForWindowTitleChange(long handle, string title, TimeSpan timeout, IRunLog log) => Window(handle)?.Title;
+    public string? WaitForWindowTitleChange(long handle, string title, TimeSpan timeout, IRunLog log)
+    {
+        if (StuckTitles.Contains(title))
+        {
+            Now += timeout;
+            return null;
+        }
+
+        return Window(handle)?.Title;
+    }
 
     /// <inheritdoc/>
     public void EnsureAvailable()
@@ -191,6 +218,11 @@ public sealed class FakeDesktop : IDesktopPort
     /// <inheritdoc/>
     public bool RenameDesktop(int desktopIndex, string name)
     {
+        if (Unrenamable.Contains(desktopIndex))
+        {
+            return false;
+        }
+
         DesktopNames[desktopIndex - 1] = name;
         return true;
     }
@@ -259,6 +291,11 @@ public sealed class FakeDesktop : IDesktopPort
     {
         ArgumentNullException.ThrowIfNull(entry);
         Launches.Add(entry.Name);
+        if (FailingLaunches.TryGetValue(entry.Name, out var failure))
+        {
+            throw new DesktopException(failure);
+        }
+
         var pid = 5000 + Launches.Count;
         if (WindowlessLaunches.GetValueOrDefault(entry.Name) > 0)
         {
@@ -280,6 +317,11 @@ public sealed class FakeDesktop : IDesktopPort
     {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(wait);
+        if (FailingPlacements.Contains(entry.Name))
+        {
+            throw new DesktopException($"could not place {entry.Name}");
+        }
+
         var window = (handle is { } known ? Window(known) : null) ?? WaitFor(() => NewestWindowFor(entry, wait.Excluded), wait.Timeout);
         if (window is null)
         {
@@ -300,7 +342,20 @@ public sealed class FakeDesktop : IDesktopPort
     }
 
     /// <inheritdoc/>
-    public IReadOnlyList<string> OpenMissingPathFallbacks(RestoreFailureFallbacks fallbacks, IRunLog log) => [];
+    public IReadOnlyList<string> OpenMissingPathFallbacks(RestoreFailureFallbacks fallbacks, IRunLog log)
+    {
+        ArgumentNullException.ThrowIfNull(fallbacks);
+        var names = fallbacks.MissingPathEntries.SelectMany(pair => pair.Value.Entries).Select(entry => entry.Name).ToList();
+        OpenedFallbacks.AddRange(names);
+        return [.. names.Select(name => $"Open missing-path note for {name}")];
+    }
+
+    /// <inheritdoc/>
+    public Rect PlacementRect(PlacementSpec placement)
+    {
+        ArgumentNullException.ThrowIfNull(placement);
+        return Geometry.PlacementRectIn(new((placement.Screen - 1) * 1920, 0, 1920, 1080), placement);
+    }
 
     /// <inheritdoc/>
     public IReadOnlyList<string> ApplySecondPassPlacements(WorkspacePlan plan, IReadOnlyDictionary<int, IReadOnlyList<LaunchEntry>> entriesByDesktop, IRunLog log)
