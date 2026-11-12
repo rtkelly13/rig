@@ -88,29 +88,7 @@ internal sealed record Snapshot(
 internal sealed record Rules(string Base, bool? ThreadResolution, IReadOnlyList<string> RequiredChecks);
 
 /// <summary>Everything one poll saw. <see cref="Threads"/> holds the unresolved review threads only.</summary>
-internal sealed record Observation(Snapshot Snapshot, Rules Rules, IReadOnlyList<ReviewThread> Threads)
-{
-    /// <summary>Whether unresolved threads block the merge; null when the rulesets could not be read.</summary>
-    public bool? ThreadsRequired => Snapshot.ClassicThreadResolution ? true : Rules.ThreadResolution;
-
-    /// <summary>Required checks that have not reported on the head commit yet, so the rollup does not list them.</summary>
-    public IReadOnlyList<string> MissingChecks
-    {
-        get
-        {
-            var reported = Snapshot.Checks.Select(check => check.Name).ToHashSet(StringComparer.Ordinal);
-            return [.. Rules.RequiredChecks.Concat(Snapshot.ClassicRequiredChecks).Distinct(StringComparer.Ordinal).Where(name => !reported.Contains(name))];
-        }
-    }
-
-    /// <summary>Checks still running, then the required ones that have not reported.</summary>
-    public IReadOnlyList<string> PendingChecks =>
-        [.. Snapshot.Checks.Where(check => check.State is CheckState.Pending).Select(check => check.Name), .. MissingChecks];
-
-    /// <summary>Required checks that failed or were cancelled.</summary>
-    public IReadOnlyList<string> FailedChecks =>
-        [.. Snapshot.Checks.Where(check => check.Required && check.State is CheckState.Failed).Select(check => check.Name)];
-}
+internal sealed record Observation(Snapshot Snapshot, Rules Rules, IReadOnlyList<ReviewThread> Threads);
 
 /// <summary>What one observation means: the kind, the <see cref="Pr.Reason"/> and a sentence for a person.</summary>
 internal sealed record Verdict(VerdictKind Kind, string Reason, string Message);
@@ -123,6 +101,37 @@ internal static class LandingModel
 
     /// <summary>Merge states in which GitHub would merge (or enqueue) the PR itself once auto-merge is on.</summary>
     private static readonly HashSet<string> ReadyStates = new(StringComparer.Ordinal) { "CLEAN", "UNSTABLE", "HAS_HOOKS" };
+
+    /// <summary>Whether unresolved threads block the merge; null when the rulesets could not be read.</summary>
+    public static bool? ThreadsRequired(Snapshot snapshot, Rules rules) =>
+        snapshot.ClassicThreadResolution ? true : rules.ThreadResolution;
+
+    /// <summary>Whether unresolved threads block the merge; null when the rulesets could not be read.</summary>
+    public static bool? ThreadsRequired(Observation seen) =>
+        ThreadsRequired(seen.Snapshot, seen.Rules);
+
+    /// <summary>Required checks that have not reported on the head commit yet, so the rollup does not list them.</summary>
+    public static IReadOnlyList<string> MissingChecks(Snapshot snapshot, Rules rules)
+    {
+        var reported = snapshot.Checks.Select(check => check.Name).ToHashSet(StringComparer.Ordinal);
+        return [.. rules.RequiredChecks.Concat(snapshot.ClassicRequiredChecks).Distinct(StringComparer.Ordinal).Where(name => !reported.Contains(name))];
+    }
+
+    /// <summary>Checks still running, then the required ones that have not reported.</summary>
+    public static IReadOnlyList<string> PendingChecks(Snapshot snapshot, Rules rules) =>
+        [.. snapshot.Checks.Where(check => check.State is CheckState.Pending).Select(check => check.Name), .. MissingChecks(snapshot, rules)];
+
+    /// <summary>Checks still running, then the required ones that have not reported.</summary>
+    public static IReadOnlyList<string> PendingChecks(Observation seen) =>
+        PendingChecks(seen.Snapshot, seen.Rules);
+
+    /// <summary>Required checks that failed or were cancelled.</summary>
+    public static IReadOnlyList<string> FailedChecks(Snapshot snapshot) =>
+        [.. snapshot.Checks.Where(check => check.Required && check.State is CheckState.Failed).Select(check => check.Name)];
+
+    /// <summary>Required checks that failed or were cancelled.</summary>
+    public static IReadOnlyList<string> FailedChecks(Observation seen) =>
+        FailedChecks(seen.Snapshot);
 
     /// <summary>
     /// Decides whether the PR has landed, is still moving, or cannot land without someone acting. A cause GitHub names
@@ -169,7 +178,7 @@ internal static class LandingModel
             return Unsettled(Reason.AutoMergeOff, $"auto-merge is off{ready}, so nothing will merge it");
         }
 
-        var pending = seen.PendingChecks;
+        var pending = PendingChecks(seen);
         return pending.Count > 0
             ? Waiting(Reason.ChecksPending, $"{pending.Count} check(s) pending: {Names(pending)}")
             : SettledState(seen);
@@ -184,7 +193,7 @@ internal static class LandingModel
             return Stuck(Reason.Draft, "the pull request is a draft; mark it ready for review");
         }
 
-        var failed = seen.FailedChecks;
+        var failed = FailedChecks(seen);
         if (failed.Count > 0)
         {
             return Stuck(Reason.CheckFailed, $"{failed.Count} required check(s) failed or were cancelled: {Names(failed)}");
@@ -195,7 +204,7 @@ internal static class LandingModel
             return Stuck(Reason.ChangesRequested, "a reviewer requested changes");
         }
 
-        if (seen.Threads.Count > 0 && seen.ThreadsRequired == true)
+        if (seen.Threads.Count > 0 && ThreadsRequired(seen) == true)
         {
             return Stuck(
                 Reason.UnresolvedThreads,
@@ -216,7 +225,7 @@ internal static class LandingModel
     private static Verdict SettledState(Observation seen)
     {
         var pr = seen.Snapshot;
-        if (pr.MergeState == "BLOCKED" && seen.Threads.Count > 0 && seen.ThreadsRequired is null)
+        if (pr.MergeState == "BLOCKED" && seen.Threads.Count > 0 && ThreadsRequired(seen) is null)
         {
             return Stuck(
                 Reason.UnresolvedThreads,

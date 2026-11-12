@@ -301,8 +301,8 @@ internal sealed partial class PrCommand(
                 pr?.MergeState ?? string.Empty,
                 pr?.AutoMerge ?? false,
                 pr?.Queue?.Position,
-                seen?.PendingChecks ?? [],
-                seen?.FailedChecks ?? [],
+                seen is null ? [] : LandingModel.PendingChecks(seen),
+                seen is null ? [] : LandingModel.FailedChecks(seen),
                 [.. (seen?.Threads ?? []).Select(t => new ReportedThread(t.Id, t.Location, t.Author, t.Summary, t.Url))]);
         }
     }
