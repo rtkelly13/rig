@@ -2,9 +2,12 @@ using Rig.Core.Chrome;
 
 namespace Rig.Core.Tests.Fakes;
 
-/// <summary>Records closes and selection restores; every close succeeds.</summary>
+/// <summary>Records closes and selection restores; every close succeeds unless <see cref="FailWith"/> is set.</summary>
 internal sealed class FakeChromeTabActions : IChromeTabActions
 {
+    /// <summary>When set, every close is refused with this detail and nothing is closed.</summary>
+    public string? FailWith { get; set; }
+
     /// <summary>Every call, as (action, window, tab index); a restore logs index -1 per window.</summary>
     public List<(string Action, long Window, int Index)> Log { get; } = [];
 
@@ -16,6 +19,11 @@ internal sealed class FakeChromeTabActions : IChromeTabActions
 
     public CloseOutcome CloseTab(ChromeTab tab)
     {
+        if (FailWith is { } detail)
+        {
+            return new CloseOutcome(false, detail, TimeSpan.Zero);
+        }
+
         Closed.Add(tab);
         Log.Add(("close", tab.WindowHandle, tab.Index));
         return new CloseOutcome(true, "closed", TimeSpan.Zero);

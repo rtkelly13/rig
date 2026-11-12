@@ -8,12 +8,13 @@ using Rig.Core.Chrome;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Tests;
+using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.Chrome;
 
 /// <summary>
 /// <c>rig chrome-tabs</c>. <c>traces</c> runs over <see cref="ChromeTraces"/>, which its own tests hold to Python's
-/// reports; <c>list</c> and <c>rank</c> over a fake driver; <c>install</c> and <c>uninstall</c> over a temp home. These check what the command adds: the files it picks, the lines,
+/// reports; <c>list</c>, <c>rank</c> and <c>prune</c> over a fake session; <c>install</c> and <c>uninstall</c> over a temp home. These check what the command adds: the files it picks, the lines,
 /// the JSON and its key order, the exit codes, and which lines stay with the Python.
 /// </summary>
 public sealed class ChromeTabsCommandTests : IDisposable
@@ -298,13 +299,120 @@ public sealed class ChromeTabsCommandTests : IDisposable
         new(202, "Home", "Default", null, 2, true, null, [new(new RuntimeId([7]), 202, 0, "Home", "Home", true, false, true, false) { MemoryMb = 80.5 }]),
     ];
 
-    private readonly CountingGitHub _github = new();
+    private readonly FakeGitHub _github = new();
+    private readonly FakeChromeTabActions _actions = new();
+    private readonly FakePresence _presence = new();
+    private long _foreground;
+    private IReadOnlyList<ChromeWindow> _windows = Windows;
+
+    private ChromeSession Session(IReadOnlyList<ChromeWindow> windows) =>
+        new(() => windows, _actions, new NoChromeDesktops(), () => _foreground, _presence);
 
     private ChromeTabsCommand WithDriver(bool driver = true) =>
-        new(_ => null, "/home", new FixedTime(Now), TimeZoneInfo.Utc, _out, driver ? new ChromeTabsDriver(() => Windows, _github) : null);
+        new(_ => null, "/home", new FixedTime(Now), TimeZoneInfo.Utc, _out, driver ? new ChromeTabsDriver(() => Session(_windows), _github) : null);
 
     private async Task<int> Tabs(params string[] args) =>
         await WithDriver().Build().Parse(args).InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+    private const string Issue = "Flaky build · Issue #12 · acme-corp/playbook";
+
+    // Two windows of one profile: the newer (302) shows the issue selected, the older (301) a selected "Home" and the issue twice more.
+    private static readonly IReadOnlyList<ChromeWindow> Duplicates =
+    [
+        new(
+            301,
+            "Home",
+            "Default",
+            null,
+            1,
+            false,
+            1,
+            [
+                new(new RuntimeId([1]), 301, 0, "Home", "Home", true, false, true, false),
+                new(new RuntimeId([2]), 301, 1, Issue, Issue, false, false, true, false) { MemoryMb = 50 },
+                new(new RuntimeId([3]), 301, 2, Issue, Issue, false, false, false, false),
+            ]),
+        new(302, Issue, "Default", null, 2, false, 1, [new(new RuntimeId([4]), 302, 0, Issue, Issue, true, false, true, false)]),
+    ];
+
+    [Fact]
+    public async Task Prune_dry_run_prints_the_plan_and_closes_nothing()
+    {
+        _windows = Duplicates;
+
+        Assert.Equal(0, await Tabs("prune", "--no-github", "--dry-run"));
+
+        Assert.Empty(_actions.Closed);
+        Assert.Contains(Lines, line => line.Contains("Flaky build", StringComparison.Ordinal));
+        Assert.Matches(@"^Dry run: nothing closed\. enumerate \d+\.\d\ds, resolve \d+\.\d\ds \(0 repos\), plan \d+\.\d{3}s, total \d+\.\d\ds$", Lines[^1]);
+        Assert.Empty(_github.Calls);
+    }
+
+    [Fact]
+    public async Task Prune_closes_the_duplicates_window_by_window_and_restores_each_selection()
+    {
+        _windows = Duplicates;
+
+        Assert.Equal(0, await Tabs("prune", "--no-github"));
+
+        Assert.Equal([1, 2], _actions.Closed.Select(tab => tab.Index));
+        Assert.Equal([301L], _actions.Restored.SelectMany(restore => restore.Windows));
+        Assert.Matches(@"^Closed 2/2 enumerate .*, \d+\.\d\ds per close, total \d+\.\d\ds$", Lines[^1]);
+    }
+
+    [Fact]
+    public async Task Prune_reports_each_close_that_failed_and_exits_one()
+    {
+        _windows = Duplicates;
+        _actions.FailWith = "tab not found";
+
+        Assert.Equal(1, await Tabs("prune", "--no-github"));
+
+        Assert.Contains(Lines, line => line.StartsWith("Not closed ", StringComparison.Ordinal) && line.EndsWith(": tab not found", StringComparison.Ordinal));
+        Assert.StartsWith("Closed 0/2 ", Lines[^1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Unattended_prune_holds_back_the_foreground_window()
+    {
+        _windows = Duplicates;
+        _foreground = 301;
+
+        Assert.Equal(0, await Tabs("prune", "--no-github", "--unattended"));
+
+        Assert.Empty(_actions.Closed);
+        Assert.Contains("Held back: active tab or foreground window (2)", Lines);
+        Assert.Equal(2, Lines.Count(line => line.Contains("left for an attended run", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task Unattended_prune_leaves_everything_alone_during_a_call()
+    {
+        _windows = Duplicates;
+        _presence.Devices = ["microphone"];
+
+        Assert.Equal(0, await Tabs("prune", "--no-github", "--unattended"));
+
+        Assert.Empty(_actions.Closed);
+        Assert.Equal(["Skipped: a call is live: Chrome is using the microphone; left everything for the next run"], Lines);
+    }
+
+    [Fact]
+    public async Task Prune_with_a_memory_budget_adds_the_memory_plan()
+    {
+        _windows = Duplicates;
+
+        Assert.Equal(0, await Tabs("prune", "--no-github", "--no-sites", "--max-memory", "0.1", "--dry-run"));
+
+        Assert.NotEmpty(Lines[..^1]);
+        Assert.Empty(_actions.Closed);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("0.05")]
+    public void Prune_rejects_a_memory_budget_under_a_tenth_of_a_gigabyte(string budget) =>
+        Assert.NotEmpty(WithDriver().Build().Parse(["prune", "--max-memory", budget]).Errors);
 
     [Fact]
     public async Task List_prints_each_window_and_its_tabs_with_flags_memory_and_key()
@@ -367,7 +475,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     {
         Assert.Equal(0, await Tabs("rank", "--no-github"));
 
-        Assert.Equal(0, _github.Calls);
+        Assert.Empty(_github.Calls);
         var ranked = TabRank.Rank(Windows, Resolution.Empty);
         Assert.Equal(
             [
@@ -383,7 +491,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     {
         Assert.Equal(0, await Tabs("rank", "--limit", "1", "--json"));
 
-        Assert.Equal(1, _github.Calls);
+        _ = Assert.Single(_github.Calls);
         var row = Assert.Single(JsonNode.Parse(_out.ToString())!.AsArray())!.AsObject();
         Assert.Equal(
             ["label", "title", "profile", "window", "tab", "protected", "score", "memory_mb", "reasons", "flags", "details"],
@@ -406,7 +514,9 @@ public sealed class ChromeTabsCommandTests : IDisposable
     [InlineData(true, false, "chrome-tabs", "rank", "--json")]
     [InlineData(false, true, "chrome-tabs", "list")]
     [InlineData(false, true, "chrome-tabs", "rank")]
-    [InlineData(true, true, "chrome-tabs", "prune")]
+    [InlineData(true, false, "chrome-tabs", "prune")]
+    [InlineData(false, true, "chrome-tabs", "prune")]
+    [InlineData(true, true, "chrome-tabs", "group")]
     [InlineData(true, false, "chrome-tabs", "install")]
     [InlineData(true, false, "chrome-tabs", "uninstall")]
     [InlineData(false, true, "chrome-tabs", "install")]
@@ -428,7 +538,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
 
     private async Task<int> Installs(params string[] args) =>
         await new ChromeTabsCommand(
-                name => name == "LOCALAPPDATA" ? Local : null, Home, new FixedTime(Now), TimeZoneInfo.Utc, _out, new ChromeTabsDriver(() => Windows, _github))
+                name => name == "LOCALAPPDATA" ? Local : null, Home, new FixedTime(Now), TimeZoneInfo.Utc, _out, new ChromeTabsDriver(() => Session(Windows), _github))
             .Build()
             .Parse(args)
             .InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
@@ -486,17 +596,5 @@ public sealed class ChromeTabsCommandTests : IDisposable
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
-    }
-
-    // Answers every query as a refused call, so nothing resolves; counts the calls.
-    private sealed class CountingGitHub : IGitHubApi
-    {
-        public int Calls { get; private set; }
-
-        public Task<Ran> CallAsync(ApiRequest request, CancellationToken cancellationToken = default)
-        {
-            Calls++;
-            return Task.FromResult(new Ran(1, string.Empty, "HTTP 502"));
-        }
     }
 }
