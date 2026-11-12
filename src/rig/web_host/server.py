@@ -1,7 +1,8 @@
 """The Python half of the rig web host: the SPA, its static files and the mounted feature routes.
 
 The C# host (``src/Rig.Web``) owns the port and serves status, live reload and the estate; it forwards every other
-path here, to this server on a loopback port (``desktop-manager web upstream``). Each #85 s25 slice moves a route group across.
+path here, to this server on a loopback port (``desktop-manager web upstream``). Each #85 s25 slice moves a
+route group across.
 """
 
 from __future__ import annotations
