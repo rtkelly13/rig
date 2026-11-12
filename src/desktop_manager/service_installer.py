@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import os
 import socket
 import subprocess
 import sys
 import time
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 from desktop_manager.runtime import current_link, running_copy
 
@@ -63,6 +65,7 @@ def install_web_service(preview: bool = False, port: int | None = None) -> str:
         if plist_path.is_file():
             subprocess.run(["launchctl", "unload", str(plist_path)], capture_output=True, check=False)
 
+        # launchd's PATH is /usr/bin:/bin:/usr/sbin:/sbin; `rig web` runs on dotnet and starts uv: keep the installer's.
         plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -88,6 +91,11 @@ def install_web_service(preview: bool = False, port: int | None = None) -> str:
     <string>{stderr_log}</string>
     <key>WorkingDirectory</key>
     <string>{Path.cwd()}</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>{escape(os.environ.get("PATH", ""))}</string>
+    </dict>
 </dict>
 </plist>
 """

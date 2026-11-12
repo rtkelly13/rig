@@ -25,9 +25,15 @@ internal static class Forwarded
     private static readonly Dictionary<string, string[]> Launches = Commands.ToDictionary(c => c.Name, c => c.Launch, StringComparer.Ordinal);
 
     /// <summary>
+    /// Groups the Python CLI still owns whose bare form, the group with options and no subcommand, runs on C#:
+    /// <c>rig web --port 8095</c> starts the C# host while <c>rig web install</c> and <c>rig web --help</c> stay in Python.
+    /// </summary>
+    public static readonly IReadOnlyList<string> RunsBare = ["web"];
+
+    /// <summary>
     /// Whether <paramref name="args"/> belong to the Python CLI: they start with a command it still owns, and, for a group
-    /// partly ported to <paramref name="root"/>, do not go on to name a subcommand C# runs. The whole line goes over
-    /// unparsed, so its own help and flags work.
+    /// partly ported to <paramref name="root"/>, do not go on to name a subcommand C# runs, nor, for one in
+    /// <see cref="RunsBare"/>, run it bare. The whole line goes over unparsed, so its own help and flags work.
     /// </summary>
     public static bool Owns(IReadOnlyList<string> args, Command root)
     {
@@ -38,7 +44,13 @@ internal static class Forwarded
             return false;
         }
 
-        var ported = root.Subcommands.FirstOrDefault(c => c.Name == args[0])?.Subcommands ?? [];
+        var registered = root.Subcommands.FirstOrDefault(c => c.Name == args[0]);
+        if (registered is not null && RunsBare.Contains(args[0]) && IsBare(args))
+        {
+            return false;
+        }
+
+        var ported = registered?.Subcommands ?? [];
         return args.Count == 1 || !ported.Any(c => c.Name == args[1] || c.Aliases.Contains(args[1]));
     }
 
@@ -47,5 +59,25 @@ internal static class Forwarded
     {
         ArgumentNullException.ThrowIfNull(args);
         return [.. Launches[args[0]], .. args.Skip(1)];
+    }
+
+    // Options only: no subcommand anywhere on the line (`web --no-open backup` is Python's backup), and no help asked for,
+    // since help lists the Python subcommands too. The values of the options that take one are not subcommands.
+    private static bool IsBare(IReadOnlyList<string> args)
+    {
+        for (var i = 1; i < args.Count; i++)
+        {
+            if (args[i] is "--help" or "-h" or "-?" or "/?" || !args[i].StartsWith('-'))
+            {
+                return false;
+            }
+
+            if (args[i] is "--port" or "-p" or "--host")
+            {
+                i++;
+            }
+        }
+
+        return true;
     }
 }

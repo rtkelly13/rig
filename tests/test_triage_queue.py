@@ -231,8 +231,6 @@ def running(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Running
 
 
 def test_dashboard_uses_its_database_and_records_actions(running: Running) -> None:
-    with urllib.request.urlopen(running.url + "/api/status") as response:
-        assert json.load(response)["db_path"] == str(running.db)
     with urllib.request.urlopen(running.url + "/api/triage") as response:
         assert len(json.load(response)["entries"]) == 1
     request = urllib.request.Request(

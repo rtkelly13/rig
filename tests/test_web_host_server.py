@@ -1,8 +1,10 @@
-"""The rig web host's own files and endpoints: the SPA shell, static files, brand media and live reload."""
+"""The Python web routes' own files and endpoints: the SPA shell, static files and brand media.
+
+Status, live reload and the estate are served by the C# host (tests/Rig.Web.Tests).
+"""
 
 from __future__ import annotations
 
-import json
 import threading
 import urllib.error
 import urllib.request
@@ -68,14 +70,6 @@ def test_paths_outside_their_folder_or_missing_are_not_found(base_url: str, path
         urllib.request.urlopen(f"{base_url}{path}")
 
     assert err.value.code == 404
-
-
-def test_live_reload_reports_template_mtimes(base_url: str) -> None:
-    data = json.loads(_get(f"{base_url}/api/dev/mtime")[1])
-
-    assert data["mtime"] > 0
-    assert data["css_mtime"] > 0
-    assert data["is_preview"] is False
 
 
 @pytest.mark.parametrize(

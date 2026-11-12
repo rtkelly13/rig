@@ -2,10 +2,12 @@
   <Folder Name="/src/">
     <Project Path="src/Rig.Cli/Rig.Cli.csproj" />
     <Project Path="src/Rig.Core/Rig.Core.csproj" />
+    <Project Path="src/Rig.Web/Rig.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Rig.Architecture.Tests/Rig.Architecture.Tests.csproj" />
     <Project Path="tests/Rig.Cli.Tests/Rig.Cli.Tests.csproj" />
     <Project Path="tests/Rig.Core.Tests/Rig.Core.Tests.csproj" />
+    <Project Path="tests/Rig.Web.Tests/Rig.Web.Tests.csproj" />
   </Folder>
 </Solution>

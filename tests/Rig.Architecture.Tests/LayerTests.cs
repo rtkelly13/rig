@@ -16,6 +16,8 @@ public sealed class LayerTests
     [InlineData("Spectre.Console")]
     [InlineData("System.CommandLine")]
     [InlineData("Rig.Cli")]
+    [InlineData("Microsoft.AspNetCore")]
+    [InlineData("Rig.Web")]
     public void Core_does_not_depend_on_presentation(string presentation)
     {
         var result = Types.InAssembly(Core).ShouldNot().HaveDependencyOn(presentation).GetResult();

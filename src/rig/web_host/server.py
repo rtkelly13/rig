@@ -1,4 +1,9 @@
-"""The rig web host: the SPA, its static files, estate and status APIs, and the mounted feature routes."""
+"""The Python half of the rig web host: the SPA, its static files and the mounted feature routes.
+
+The C# host (``src/Rig.Web``) owns the port and serves status, live reload and the estate; it forwards every other
+path here, to this server on a loopback port (``desktop-manager web upstream``). Each #85 s25 slice moves a
+route group across.
+"""
 
 from __future__ import annotations
 
@@ -16,20 +21,8 @@ from pydantic import JsonValue
 from rig.c4_okf.web import serve_c4
 from rig.connectivity.web import handle as handle_connectivity
 from rig.triage.web import handle as handle_triage
-from rig.typed_json import try_decode_json
-from rig.web_host.models import (
-    BackupResponse,
-    ChangeTimestamps,
-    EstateProjectResponse,
-    EstateResponse,
-    MtimeResponse,
-    OrcaBadgeConfig,
-    ProjectBrandAssets,
-    StatusResponse,
-    find_project_brand_assets,
-)
-from rig.web_routes import Route, dispatch, frontend_files, serve_app
-from rig.workspace.engine import config_file_path, load_managed_specs
+from rig.web_host.models import BackupResponse
+from rig.web_routes import Route, dispatch, serve_app
 
 logger = logging.getLogger(__name__)
 
@@ -39,27 +32,6 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
 
     assets_root: ClassVar[Path]
     templates_dir: ClassVar[Path]
-    environment: ClassVar[str] = "PROD"
-    is_preview: ClassVar[bool] = False
-    server_port: ClassVar[int] = 8090
-
-    @property
-    def env_name(self) -> str:
-        if isinstance(self.server, StudioServer):
-            return self.server.environment
-        return self.environment
-
-    @property
-    def env_port(self) -> int:
-        if isinstance(self.server, StudioServer):
-            return self.server.server_port
-        return self.server_port
-
-    @property
-    def env_is_preview(self) -> bool:
-        if isinstance(self.server, StudioServer):
-            return self.server.is_preview
-        return self.is_preview
 
     @property
     def env_db_path(self) -> Path | None:
@@ -100,50 +72,6 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             return
         self.send_error(404, f"{what} not found: {rel_path}")
 
-    def _compute_change_timestamps(self) -> ChangeTimestamps:
-        """Compute latest overall and CSS mtime across bounded critical frontend files."""
-        overall: float = 0.0
-        css: float = 0.0
-        for target in frontend_files(self.templates_dir):
-            try:
-                m = target.stat().st_mtime
-                overall = max(overall, m)
-                if target.suffix == ".css":
-                    css = max(css, m)
-            except OSError:
-                continue
-        return ChangeTimestamps(overall=overall, css=css)
-
-    def _find_project_brand_assets(self, project_name: str) -> ProjectBrandAssets:
-        return find_project_brand_assets(self.assets_root, project_name)
-
-    def _estate(self) -> EstateResponse:
-        specs = load_managed_specs()
-        orca_cfg = config_file_path().parent / "orca.json"
-        if not orca_cfg.is_file():
-            orca_cfg = Path("config/orca.json")
-        orca_badges = try_decode_json(OrcaBadgeConfig, orca_cfg.read_bytes()) if orca_cfg.is_file() else None
-        items: list[EstateProjectResponse] = []
-        for s in specs:
-            assets = self._find_project_brand_assets(s.name)
-            repo_badge = orca_badges.repos.get(s.name) if orca_badges else None
-            items.append(
-                EstateProjectResponse(
-                    name=s.name,
-                    repo=s.repo,
-                    description=s.description,
-                    domain=s.domain,
-                    stack=s.stack,
-                    enabled=s.enabled,
-                    logo_url=assets.logo_url,
-                    banner_url=assets.banner_url,
-                    orca_group=s.orca_group,
-                    color=repo_badge.color if repo_badge else None,
-                    icon=repo_badge.icon if repo_badge else None,
-                )
-            )
-        return EstateResponse(projects=items)
-
     def do_GET(self) -> None:
         if isinstance(self.server, StudioServer) and dispatch(self.server.routes, self, "GET"):
             return
@@ -165,35 +93,6 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
         # Read-only brand assets, for the estate cards' logos and banners.
         if path.startswith("/media/assets/"):
             self._send_under(self.assets_root, urllib.parse.unquote(path[len("/media/assets/") :]), "Asset")
-            return
-
-        if path == "/api/estate":
-            self._send_json(self._estate().model_dump(mode="json"))
-            return
-
-        if path == "/api/status":
-            from rig.db.connection import default_db_path
-
-            self._send_json(
-                StatusResponse(
-                    environment=self.env_name,
-                    port=self.env_port,
-                    is_preview=self.env_is_preview,
-                    db_path=str(self.env_db_path or default_db_path()),
-                ).model_dump(mode="json")
-            )
-            return
-
-        # Live reload polling.
-        if path == "/api/dev/mtime":
-            ts = self._compute_change_timestamps()
-            self._send_json(
-                MtimeResponse(
-                    mtime=ts.overall,
-                    css_mtime=ts.css,
-                    is_preview=self.env_is_preview,
-                ).model_dump(mode="json")
-            )
             return
 
         self.send_error(404, f"Endpoint not found: {path}")
@@ -232,7 +131,6 @@ class StudioServer(ThreadingHTTPServer):
         self,
         host: str = "127.0.0.1",
         port: int = 8090,
-        is_preview: bool = False,
         assets_root: Path | None = None,
         templates_dir: Path | None = None,
         db_path: Path | None = None,
@@ -243,9 +141,6 @@ class StudioServer(ThreadingHTTPServer):
 
         self.assets_root: Path = assets_root or (repo_root / "assets")
         self.templates_dir: Path = templates_dir or (module_dir / "templates")
-        self.is_preview: bool = is_preview
-        self.environment: str = "PREVIEW" if is_preview else "PROD"
-        self.server_port: int = port
         self.routes: tuple[Route, ...] = tuple(routes)
 
         # Initialize and migrate SQLite database
@@ -259,8 +154,5 @@ class StudioServer(ThreadingHTTPServer):
         # Configure RequestHandler class variables
         StudioRequestHandler.assets_root = self.assets_root
         StudioRequestHandler.templates_dir = self.templates_dir
-        StudioRequestHandler.environment = self.environment
-        StudioRequestHandler.is_preview = self.is_preview
-        StudioRequestHandler.server_port = self.server_port
 
         super().__init__((host, port), StudioRequestHandler)

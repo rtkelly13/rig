@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import webbrowser
 from typing import TYPE_CHECKING
 
 import typer
@@ -44,26 +43,42 @@ def web_main(
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Open in browser on launch."),
     preview: bool = typer.Option(False, "--preview", help="Run as preview environment (defaults to port 8091)."),
 ) -> None:
-    """Launch the persistent rig web dashboard & visual studio."""
+    """Launch the persistent rig web dashboard & visual studio. Runs on the C# rig CLI."""
     if ctx.invoked_subcommand is not None:
         return
 
-    effective_port = 8091 if (preview and port == 8090) else port
+    from rig import csharp_cli
+
+    args = ["web", "--port", str(port), "--host", host, "--open" if open_browser else "--no-open"]
+    raise typer.Exit(code=csharp_cli.run([*args, "--preview"] if preview else args))
+
+
+@web_app.command(name="upstream", hidden=True)
+def web_upstream_cmd(
+    port: int = typer.Option(..., "--port", help="Loopback port to serve on."),
+) -> None:
+    """Serve the routes the C# web host has not taken over yet, on loopback, until standard input closes.
+
+    Started by ``rig web`` only, which forwards to it and closes its standard input to stop it; the C# host owns the
+    port the browser uses. Deleted with the forwarder when the last route group is ported (#85 s25).
+    """
+    import sys
+    import threading
+
     from rig.web_host.server import StudioServer
 
-    server = StudioServer(host=host, port=effective_port, is_preview=preview, routes=mounted_routes())
-    url = f"http://{host}:{effective_port}"
-    mode_str = "[bold magenta][PREVIEW MODE][/bold magenta]" if preview else "[bold green][PROD MODE][/bold green]"
-    console.print(f"{mode_str} Rig Web Dashboard running at [cyan]{url}[/cyan]")
-    console.print("[dim]Static site hosted with Python API · Low resource consumption[/dim]")
+    server = StudioServer(host="127.0.0.1", port=port, routes=mounted_routes())
 
-    if open_browser:
-        webbrowser.open(url)
+    def stop_at_eof() -> None:
+        _ = sys.stdin.buffer.read()
+        server.shutdown()
 
+    threading.Thread(target=stop_at_eof, name="rig-web-upstream-stdin", daemon=True).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        console.print("\n[yellow]Stopping server...[/yellow]")
+        pass
+    finally:
         server.server_close()
 
 
