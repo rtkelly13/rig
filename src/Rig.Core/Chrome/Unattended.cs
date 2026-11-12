@@ -4,7 +4,7 @@ namespace Rig.Core.Chrome;
 
 /// <summary>
 /// Unattended runs: leave Chrome alone during calls, and wait for an idle machine before grouping. Ported from the pure
-/// part of <c>desktop_manager.chrome.unattended</c>; the retrying grouping run moves with the grouping executor.
+/// part of <c>desktop_manager.chrome.unattended</c>; <see cref="UnattendedGrouping"/> runs the waits and retries.
 /// </summary>
 public static class Unattended
 {

@@ -53,6 +53,53 @@ public sealed record SavedDeleteOutcome(bool Deleted, string Detail, IReadOnlyLi
 public sealed record MoveOutcome(GroupOutcome Outcome, ChromeTab? Tab = null);
 
 /// <summary>
+/// The window brought to the front for an action, which disposing puts back: the cursor, the window that had the
+/// foreground, and a minimised window's state.
+/// </summary>
+public sealed class ForegroundLease : IDisposable
+{
+    private Action? _restore;
+
+    /// <summary>A lease that <paramref name="arrived"/> or not, which runs <paramref name="restore"/> once when disposed.</summary>
+    public ForegroundLease(bool arrived, Action? restore = null)
+    {
+        Arrived = arrived;
+        _restore = restore;
+    }
+
+    /// <summary>The window reached the foreground; act on it only then.</summary>
+    public bool Arrived { get; }
+
+    /// <summary>Puts the cursor, the previous foreground window and a minimised window back. Runs once.</summary>
+    public void Dispose()
+    {
+        var restore = _restore;
+        _restore = null;
+        restore?.Invoke();
+    }
+}
+
+/// <summary>
+/// The steps grouping takes, each with the window in front: what the grouping executor needs from a platform's driver.
+/// Every step re-finds its target and checks it before acting, and reports what happened rather than throwing on a
+/// refusal.
+/// </summary>
+public interface IChromeGroupActions
+{
+    /// <summary>Brings <paramref name="handle"/> to the front until the lease is disposed.</summary>
+    ForegroundLease Foreground(long handle, TimeSpan? timeout = null);
+
+    /// <summary>Puts <paramref name="tab"/> into a new group called <paramref name="title"/>, or into the profile's existing one.</summary>
+    GroupOutcome GroupTab(ChromeTab tab, string title, bool isNew, long? homeHandle = null, TimeSpan? timeout = null);
+
+    /// <summary>Dissolves the group holding <paramref name="tab"/>, checked by its <paramref name="title"/>.</summary>
+    GroupOutcome Ungroup(ChromeTab tab, string title, TimeSpan? timeout = null);
+
+    /// <summary>Moves <paramref name="tab"/> into the window <paramref name="targetHandle"/>.</summary>
+    MoveOutcome MoveToWindow(ChromeTab tab, long targetHandle, TimeSpan? timeout = null);
+}
+
+/// <summary>
 /// The virtual desktops a platform's Chrome windows live on. Windows numbers its desktops and the run loops bring a
 /// window over while they work on it; macOS Spaces are not addressable (<see cref="NoChromeDesktops"/>).
 /// </summary>
