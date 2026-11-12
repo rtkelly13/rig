@@ -98,6 +98,43 @@ public static class PyText
         return builder.ToString();
     }
 
+    /// <summary>
+    /// Python's <c>s.casefold()</c> for the text it meets here: <see cref="Lower"/> plus the full and special foldings
+    /// of sharp s, the Latin ligatures, final sigma, long s, micro and the Greek symbol variants. Rarer full foldings
+    /// (precomposed Greek with iota, Armenian ligatures) are left as <see cref="Lower"/> gives them.
+    /// </summary>
+    public static string CaseFold(string s)
+    {
+        var lower = Lower(s);
+        var builder = new StringBuilder(lower.Length);
+        foreach (var c in lower)
+        {
+            builder.Append(c switch
+            {
+                'ß' => "ss",
+                'ς' => "σ",
+                'ſ' => "s",
+                'µ' => "μ",
+                'ϐ' => "β",
+                'ϑ' => "θ",
+                'ϕ' => "φ",
+                'ϖ' => "π",
+                'ϰ' => "κ",
+                'ϱ' => "ρ",
+                'ϵ' => "ε",
+                'ﬀ' => "ff",
+                'ﬁ' => "fi",
+                'ﬂ' => "fl",
+                'ﬃ' => "ffi",
+                'ﬄ' => "ffl",
+                'ﬅ' or 'ﬆ' => "st",
+                _ => c.ToString(),
+            });
+        }
+
+        return builder.ToString();
+    }
+
     // Unicode's Final_Sigma condition: a cased letter before (past case-ignorable marks) and none after.
     private static bool FinalSigma(Rune[] runes, int at)
     {
