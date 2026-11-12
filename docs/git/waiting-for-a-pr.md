@@ -9,7 +9,20 @@ rig gh pr wait 141 --repo rtkelly-labs/Diffra --json   # one JSON report on stdo
 rig gh pr land 141 --repo rtkelly-labs/Diffra          # gh pr merge --auto --squash, then wait
 ```
 
-`--repo` defaults to this clone's origin.
+`--repo` defaults to this clone's origin. `rig gh pr wait --help` carries the same reasons and exit
+codes as this page, so an agent does not need to open it.
+
+## What to do with the answer
+
+| Result | Next step |
+|:-------|:----------|
+| Exit 0 | Done: it merged |
+| `unresolved_threads` | Fix and push, then `rig gh threads resolve <PR> <thread> --sha <fix>` for each one listed, and wait again |
+| `check_failed` | Read the failed check (`gh run view --log-failed`), fix, push, wait again |
+| `behind`, `conflicts` | Rebase onto the base branch, push, wait again |
+| `auto_merge_off` | Nothing is queued to merge it: use `rig gh pr land`, once the user has asked for the merge |
+| `changes_requested`, `review_required`, `draft`, `closed` | A person has to act; report it and stop |
+| Exit 3 | Still moving when `--timeout` passed; run it again, or raise `--timeout` |
 
 ## Why not a loop
 

@@ -15,6 +15,10 @@ and coding standards live in each child repository's localized `AGENTS.md`.
   folder in `../rtkelly-labs/` and `../Resultful/`; the table below links to them there.
 - **Python Execution**: Always use `uv run` or `uv`. Never run bare `python` or `python3`.
 - **Git Conventions**: Linear history with PR squash-and-merge; never commit directly to primary branches.
+- **Landing a PR**: `rig gh pr land <PR>` queues the squash auto-merge and waits; `rig gh pr wait <PR>` waits
+  on one already queued. Both exit 0 when it merges and 1 with the reason as soon as it cannot (a failed
+  check, unresolved review threads, conflicts). Never poll `gh pr view` or `gh pr checks --watch` in a loop.
+  `rig gh pr wait --help` lists the reasons.
 
 ## Domain Map & Managed Repositories
 

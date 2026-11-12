@@ -19,7 +19,64 @@ internal delegate Task<Ran> AutoMerger(RepoSlug repo, int number, CancellationTo
 internal sealed partial class PrCommand(
     LandingGitHub github, OriginReader origin, AutoMerger merge, LandingWait waiter, TextWriter output, TextWriter error)
 {
-    private const string ExitCodes = "Exits 0 merged, 1 blocked (someone has to act), 2 GitHub could not be read, 3 timed out still waiting.";
+    /// <summary>The guide both commands point at.</summary>
+    public const string Guide = "docs/git/waiting-for-a-pr.md";
+
+    private const string Stops = """
+        Stops at once, exit 1, with one of these reasons:
+          check_failed              a required check failed or was cancelled
+          unresolved_threads        review threads are open and the rules require them resolved; lists them
+          changes_requested         a reviewer asked for changes
+          review_required           a required review has not been given
+          conflicts                 the branch conflicts with its base
+          draft, closed             the PR is a draft, or was closed without merging
+
+        Stops, exit 1, once the state has lasted --settle:
+          blocked, behind           BLOCKED or BEHIND with no check pending and none of the causes above
+          auto_merge_off            auto-merge is off and it is not in the merge queue, even if checks still run
+          removed_from_merge_queue  it was in the merge queue and left without merging
+
+        While it waits, stderr gets one line each time what it waits on changes: the pending checks, the
+        merge-queue position. It looks again 5s after a change, slowing to every 60s while nothing changes.
+
+        Exit codes:
+          0  merged
+          1  blocked: someone has to act, and the reason says what
+          2  GitHub could not be read{0}
+          3  --timeout passed while it was still moving
+        """;
+
+    private const string WaitNotes = """
+        Use this instead of a loop over `gh pr view` or `gh pr checks --watch`. Those wait for ever on a PR that is
+        blocked by anything other than a failed check, such as an unresolved review thread. Read-only.
+
+
+        """ + Stops + """
+
+
+        Examples:
+          rig gh pr wait 141                           this clone's PR 141
+          rig gh pr wait 141 --repo owner/name --json  one JSON report on stdout, for an agent
+          rig gh pr wait 141 --timeout 0               look once: can this land as it stands?
+
+        Guide: 
+        """ + Guide;
+
+    private const string LandNotes = """
+        The one command for "merge this when it is ready". It runs `gh pr merge <PR> --auto --squash`, then waits as
+        `rig gh pr wait` does. It skips the queueing when the PR is already merged, has auto-merge on or is in the
+        merge queue. Branch protection still gates the merge.
+
+
+        """ + Stops + """
+
+
+        Examples:
+          rig gh pr land 141
+          rig gh pr land 141 --repo owner/name --json
+
+        Guide: 
+        """ + Guide;
 
     /// <summary>The real <see cref="AutoMerger"/>, through <paramref name="proc"/>.</summary>
     public static AutoMerger GhMerge(IProc proc) => (repo, number, cancellationToken) =>
@@ -51,26 +108,21 @@ internal sealed partial class PrCommand(
     /// <summary>The <c>rig gh pr</c> command group.</summary>
     public Command Build()
     {
-        var pr = new Command("pr", "Wait for a pull request to land, and stop with the reason as soon as it cannot.");
+        var pr = new Command("pr", "Land a pull request: wait for the merge, and stop with the reason as soon as it cannot happen.");
         pr.Subcommands.Add(BuildCommand(
             "wait",
-            "Wait until the PR merges, or stop as soon as it cannot land without someone acting. Stops at once for a failed "
-            + "or cancelled required check, unresolved review threads when the ruleset requires them resolved, requested "
-            + "changes, a required review not given, merge conflicts, a draft, or a closed PR. Stops after --settle for a "
-            + "merge that stays BLOCKED or BEHIND with no check pending, for auto-merge being off, and for a PR that left "
-            + "the merge queue. While waiting it prints what it is waiting on to stderr each time that changes. Polls 5s "
-            + $"after a change, growing to 60s while nothing changes. Read-only. {ExitCodes}",
+            "Wait for the PR to merge, or stop with the reason as soon as it cannot land without someone acting.",
+            WaitNotes.Replace("{0}", string.Empty, StringComparison.Ordinal),
             queue: false));
         pr.Subcommands.Add(BuildCommand(
             "land",
-            "Queue a squash auto-merge (gh pr merge <PR> --auto --squash), then wait as `wait` does. Skips the queueing "
-            + "when the PR is already merged, has auto-merge on or is in the merge queue. Branch protection still gates "
-            + $"the merge. {ExitCodes} Also exits 2 when the merge could not be queued.",
+            "Queue a squash auto-merge, then wait for the PR to merge or stop with the reason it cannot.",
+            LandNotes.Replace("{0}", ", or the merge could not be queued", StringComparison.Ordinal),
             queue: true));
         return pr;
     }
 
-    private Command BuildCommand(string name, string description, bool queue)
+    private NotedCommand BuildCommand(string name, string description, string notes, bool queue)
     {
         var pr = new Argument<int>("pr") { Description = "Pull request number." };
         var repo = new Option<string?>("--repo") { Description = "owner/name; defaults to this clone's origin." };
@@ -81,12 +133,12 @@ internal sealed partial class PrCommand(
         };
         var settle = new Option<string>("--settle")
         {
-            Description = "How long a state with no named cause (BLOCKED or BEHIND with nothing pending, auto-merge off, out of "
-                + "the merge queue) must last before the wait stops. GitHub lags between the last check passing and merging.",
+            Description = "How long a state GitHub gives no cause for must last before the wait stops; GitHub lags between "
+                + "the last check passing and merging.",
             DefaultValueFactory = _ => "30s",
         };
         var json = new Option<bool>("--json") { Description = "Print the final report as one JSON document on stdout." };
-        var command = new Command(name, description) { pr, repo, timeout, settle, json };
+        var command = new NotedCommand(name, description, notes) { pr, repo, timeout, settle, json };
         command.SetAction((parsed, ct) => RunAsync(
             new Args(parsed.GetValue(pr), parsed.GetValue(repo), parsed.GetValue(timeout)!, parsed.GetValue(settle)!, parsed.GetValue(json), queue),
             ct));

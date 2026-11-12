@@ -37,7 +37,8 @@ internal sealed class RigApp(
     public RootCommand BuildRoot()
     {
         var root = new RootCommand(Description);
-        var group = new Command("gh", "Fill gaps in the GitHub CLI: wait for a pull request to land, handle its review threads.");
+        NotedCommand.AddToHelp(root);
+        var group = new Command("gh", "Fill gaps in the GitHub CLI: land a pull request and wait for it (pr), handle its review threads (threads).");
         group.Subcommands.Add(new ThreadsCommand(new ThreadsGitHub(github), origin, output, error).Build());
         foreach (var build in gh ?? [])
         {
