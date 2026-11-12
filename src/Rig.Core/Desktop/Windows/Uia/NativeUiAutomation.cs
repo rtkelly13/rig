@@ -22,11 +22,19 @@ public sealed class NativeUiAutomation : IUiAutomation
     private readonly IUIAutomationTreeWalker _raw;
 
     /// <summary>Creates the session: one per command.</summary>
+    /// <exception cref="UiaException">UI Automation could not be started.</exception>
     public NativeUiAutomation()
     {
-        _automation = (IUIAutomation)new CUIAutomation();
-        _control = _automation.ControlViewWalker;
-        _raw = _automation.RawViewWalker;
+        try
+        {
+            _automation = (IUIAutomation)new CUIAutomation();
+            _control = _automation.ControlViewWalker;
+            _raw = _automation.RawViewWalker;
+        }
+        catch (COMException error)
+        {
+            throw new UiaException($"UI Automation could not be started: {error.Message}", error);
+        }
     }
 
     /// <inheritdoc/>
@@ -37,9 +45,13 @@ public sealed class NativeUiAutomation : IUiAutomation
             var element = _automation.ElementFromHandle(new HWND((nint)handle));
             return Wrap(element);
         }
-        catch (COMException)
+        catch (COMException) when (!UiaNative.IsWindow(new HWND((nint)handle)))
         {
             return null;
+        }
+        catch (COMException error)
+        {
+            throw new UiaException($"UI Automation could not read window {handle}: {error.Message}", error);
         }
     }
 

@@ -96,6 +96,7 @@ public sealed class UiaException : Exception
 public interface IUiAutomation
 {
     /// <summary>The element for window <paramref name="handle"/>; null when the window has gone or exposes nothing.</summary>
+    /// <exception cref="UiaException">The window is there but UI Automation could not read it.</exception>
     IUiaElement? ElementFromHandle(long handle);
 }
 

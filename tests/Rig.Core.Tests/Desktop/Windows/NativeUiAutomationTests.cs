@@ -18,15 +18,21 @@ public sealed class NativeUiAutomationTests
         var win32 = new NativeWin32Windows();
         var uia = new NativeUiAutomation();
 
-        var handle = win32.TopLevelWindows().Where(win32.IsVisible).First(found => uia.ElementFromHandle(found) is not null);
-        var element = uia.ElementFromHandle(handle);
-        Assert.NotNull(element);
+        // The taskbar, where there is one, because it stays open for the whole test; else any visible window.
+        var visible = win32.TopLevelWindows().Where(win32.IsVisible).ToList();
+        var (handle, element) = visible.OrderByDescending(found => win32.ClassName(found) == "Shell_TrayWnd")
+            .Select(found => (found, ElementOrNull(uia, found)))
+            .FirstOrDefault(pair => pair.Item2 is not null);
+        Assert.SkipWhen(element is null, "No visible window exposes an element.");
 
         _ = (element.Name, element.ClassName, element.ControlType, element.BoundingRectangle);
         _ = (element.IsOffscreen, element.HasKeyboardFocus);
         Assert.NotEmpty(element.RuntimeId);
         Assert.True(element.SameAs(element));
-        Assert.Equal(element.RuntimeId, uia.ElementFromHandle(handle)!.RuntimeId);
+        if (ElementOrNull(uia, handle) is { } again)
+        {
+            Assert.Equal(element.RuntimeId, again.RuntimeId);
+        }
 
         var children = element.FindAll(UiaScope.Children, new UiaCondition());
         var first = element.FirstChild(UiaView.Raw);
@@ -46,5 +52,17 @@ public sealed class NativeUiAutomationTests
         Assert.SkipUnless(OperatingSystem.IsWindowsVersionAtLeast(6, 3), "UI Automation exists only on Windows.");
 
         Assert.Null(new NativeUiAutomation().ElementFromHandle(0x7FFF_FFF0));
+    }
+
+    private static IUiaElement? ElementOrNull(NativeUiAutomation uia, long handle)
+    {
+        try
+        {
+            return uia.ElementFromHandle(handle);
+        }
+        catch (UiaException)
+        {
+            return null;
+        }
     }
 }

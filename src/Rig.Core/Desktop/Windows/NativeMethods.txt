@@ -13,4 +13,6 @@ SafeArrayGetLBound
 SafeArrayGetUBound
 SafeArrayGetElement
 SafeArrayDestroy
+SysFreeString
+IsWindow
 CoCreateInstance
