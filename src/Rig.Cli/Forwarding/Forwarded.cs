@@ -19,6 +19,7 @@ internal static class Forwarded
         ("triage", "Persistent PR and issue triage queue.", ["python", "-m", "rig.triage.cli"]),
         ("web", "Rig web dashboard & visual studio (static site + Python API).", ["desktop-manager", "web"]),
         ("c4", "C4 diagrams as an Open Knowledge Format bundle. Experimental.", ["python", "-m", "rig.c4_okf.cli"]),
+        ("chrome-tabs", "Chrome tabs via UI Automation: list them, prune GitHub PR tabs and duplicate pages, group by repo, or organise (both, window by window).", ["desktop-manager", "chrome-tabs"]),
     ];
 
     private static readonly Dictionary<string, string[]> Launches = Commands.ToDictionary(c => c.Name, c => c.Launch, StringComparer.Ordinal);

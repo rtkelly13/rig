@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using Rig.Cli.Agent;
 using Rig.Cli.Browser;
+using Rig.Cli.Chrome;
 using Rig.Cli.Devenv;
 using Rig.Cli.Estate;
 using Rig.Cli.Flags;
@@ -123,6 +124,7 @@ internal static class Program
                         Console.Error),
                     Console.Out,
                     Console.Error).Build,
+                new ChromeTabsCommand(Environment.GetEnvironmentVariable, home, TimeProvider.System, TimeZoneInfo.Local, Console.Out).Build,
                 new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out).Build,
                 new MailCommand(
                     new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),

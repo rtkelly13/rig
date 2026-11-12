@@ -87,6 +87,14 @@ public sealed class TextFormatTests
     public void Dumps_with_ensure_ascii_escapes_delete() =>
         Assert.Equal("\"\\u007f\"", PyJson.Dumps(JsonValue.Create("\u007f")));
 
+    [Fact]
+    public void Whole_floats_built_in_csharp_print_as_floats_and_parsed_integers_stay_integers()
+    {
+        var node = new JsonArray(1.0, 30.0f, 2m, 3, 4L, JsonNode.Parse("5"), JsonNode.Parse("6.0"));
+
+        Assert.Equal("[\n  1.0,\n  30.0,\n  2.0,\n  3,\n  4,\n  5,\n  6.0\n]", PyJson.Dumps(node));
+    }
+
     [Theory]
     [InlineData(0.0, "0.0")]
     [InlineData(-0.0, "-0.0")]
