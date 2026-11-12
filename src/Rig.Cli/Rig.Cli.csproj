@@ -17,6 +17,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Rig.Core/Rig.Core.csproj" />
+    <ProjectReference Include="../Rig.Web/Rig.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Rig.Cli.Tests" />

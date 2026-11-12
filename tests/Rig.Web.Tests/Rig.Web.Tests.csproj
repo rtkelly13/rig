@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/Rig.Web/Rig.Web.csproj" />
+  </ItemGroup>
+  <ItemGroup Label="Shared doubles">
+    <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="Fakes/TempDir.cs" />
+  </ItemGroup>
+  <ItemGroup Label="Responses recorded from the Python StudioServer, the parity baseline">
+    <None Include="Recorded/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

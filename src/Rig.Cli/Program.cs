@@ -14,6 +14,7 @@ using Rig.Cli.Policy;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
+using Rig.Cli.Web;
 using Rig.Cli.Workspace;
 using Rig.Core.Browser;
 using Rig.Core.Devenv;
@@ -26,6 +27,7 @@ using Rig.Core.Services;
 using Rig.Core.Skills;
 using Rig.Core.Vault;
 using Rig.Core.Workspace;
+using Rig.Web;
 
 namespace Rig.Cli;
 
@@ -85,8 +87,9 @@ internal static class Program
             Environment.CurrentDirectory,
             Environment.GetEnvironmentVariable("LOCALAPPDATA"),
             Console.In);
+        var python = new PythonRig(proc, checkout);
         var app = new RigApp(
-            new PythonRig(proc, checkout),
+            python,
             new GhApi(proc),
             async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false)),
             Console.Out,
@@ -196,6 +199,14 @@ internal static class Program
                         new SystemWrapupClock(TimeProvider.System),
                         WrapupStamps.NewAskId)).Build,
                 new GovernanceCommand(new GovernanceHost(codeRoot, Environment.CurrentDirectory, checkout), proc, TimeProvider.System, Console.Out, vercel: vercel).Build,
+                new WebCommand(
+                    new WebPlaces(checkout, ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory), Environment.CurrentDirectory, Path.Join(AppData.Current(), "rig.db")),
+                    args => ProcessChildServer.Start(python.Argv(args)),
+                    probe,
+                    OpenBrowser,
+                    Task.Delay,
+                    Console.Out,
+                    Console.Error).Build,
             ],
             new AgentLauncher(
                 proc,
@@ -217,6 +228,10 @@ internal static class Program
         var found = OperatingSystem.IsWindows() ? Path.Join(checkout, ".venv", "Scripts", "rig.exe") : Path.Join(checkout, ".venv", "bin", "rig");
         return File.Exists(found) ? found : "rig";
     }
+
+    // The default browser, as Python's webbrowser.open: the shell opens the URL.
+    private static void OpenBrowser(Uri page) =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(page.AbsoluteUri) { UseShellExecute = true })?.Dispose();
 
     // How to start this same rig again, for the background wrap-up follower.
     private static string[] SelfArgv()

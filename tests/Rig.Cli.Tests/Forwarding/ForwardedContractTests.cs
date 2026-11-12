@@ -14,6 +14,7 @@ using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Tests.Estate;
 using Rig.Cli.Vault;
+using Rig.Cli.Web;
 using Rig.Cli.Workspace;
 using Rig.Core.Browser;
 using Rig.Core.Devenv;
@@ -97,6 +98,14 @@ public sealed partial class ForwardedContractTests
                 new WorkspaceCommand(new WorkspaceHost("/", "/none.json", "/", "/none.json", "/none.json"), new FakeProc(), TimeProvider.System, TextWriter.Null, Refusing).BuildSync,
                 new EstateCommand(new EstateHost("/", "/", "/"), NoOrca.Host, new FakeProc(), new FakeGitHub(), TimeProvider.System, _ => null, TextWriter.Null, TextWriter.Null).Build,
                 new GovernanceCommand(new GovernanceHost("/", "/", "/"), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
+                new WebCommand(
+                    new WebPlaces("/rig", "/none.json", "/", "/rig.db"),
+                    _ => throw new InvalidOperationException("nothing may start"),
+                    new FakeProbe(),
+                    _ => throw new InvalidOperationException("nothing may open"),
+                    (_, _) => Task.CompletedTask,
+                    TextWriter.Null,
+                    TextWriter.Null).Build,
             ],
             new AgentLauncher(new FakeProc(), new AgentHost("/none.json", "/", _ => null), TextWriter.Null, TextWriter.Null));
 
@@ -128,6 +137,18 @@ public sealed partial class ForwardedContractTests
         var source = File.ReadAllText(Project);
         var block = ScriptsBlock().Match(source).Groups["body"].Value;
         return Script().Matches(block).ToDictionary(m => m.Groups["name"].Value, m => m.Groups["target"].Value, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Every_group_run_bare_on_csharp_is_forwarded_and_registered()
+    {
+        // A bare `rig web --port 8095` runs on C#, so C# registers `web`; its subcommands still go to Python.
+        var registered = FullApp().BuildRoot().Subcommands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
+        var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
+
+        Assert.NotEmpty(Forwarded.RunsBare);
+        Assert.All(Forwarded.RunsBare, name => Assert.Contains(name, registered));
+        Assert.All(Forwarded.RunsBare, name => Assert.Contains(name, forwarded));
     }
 
     private static string RepoRoot()

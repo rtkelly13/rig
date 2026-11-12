@@ -156,17 +156,3 @@ def serve_app(handler: BaseHTTPRequestHandler, path: str, templates: Path) -> bo
     handler.end_headers()
     handler.wfile.write(content)
     return True
-
-
-def frontend_files(templates: Path) -> tuple[Path, ...]:
-    """Both the compiled SPA and existing studio files participate in live reload."""
-    return tuple(
-        templates / name
-        for name in (
-            "index.html",
-            "studio.js",
-            "studio.css",
-            "app_assets/app.js",
-            "app_assets/app.css",
-        )
-    )

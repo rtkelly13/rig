@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The rig web host (#85 s25): one ASP.NET minimal-API server for the SPA in web/ and every JSON route. -->
+  <PropertyGroup>
+    <RootNamespace>Rig.Web</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rig.Core/Rig.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rig.Web.Tests" />
+  </ItemGroup>
+</Project>

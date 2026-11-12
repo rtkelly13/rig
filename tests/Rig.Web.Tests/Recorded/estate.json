@@ -1,0 +1,82 @@
+{
+  "projects": [
+    {
+      "name": "Parquet.SourceGenerator",
+      "repo": "git@github.com:o/p.git",
+      "description": "Gen",
+      "domain": "Data",
+      "stack": ".NET",
+      "enabled": true,
+      "logo_url": "/media/assets/parquet-source-generator/production-cuts/parquet-diamond-1000x1000.png",
+      "banner_url": "/media/assets/parquet-source-generator/production-cuts/parquet-og-1200x630.png",
+      "orca_group": "labs",
+      "color": null,
+      "icon": null
+    },
+    {
+      "name": "fluent-assertions",
+      "repo": "git@github.com:o/f.git",
+      "description": "FA",
+      "domain": "D",
+      "stack": "C#",
+      "enabled": true,
+      "logo_url": "/media/assets/fluent-assertions/fluentassertions-resultful-logo.jpg",
+      "banner_url": null,
+      "orca_group": null,
+      "color": null,
+      "icon": null
+    },
+    {
+      "name": "blog",
+      "repo": "git@github.com:o/b.git",
+      "description": "Blog",
+      "domain": "Web",
+      "stack": "Next",
+      "enabled": true,
+      "logo_url": "/media/assets/blog/blog-mark.svg",
+      "banner_url": "/media/assets/blog/blog-banner.png",
+      "orca_group": null,
+      "color": "#ff0000",
+      "icon": "book"
+    },
+    {
+      "name": "rig",
+      "repo": "git@github.com:o/r.git",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "logo_url": "/media/assets/rig/rig-avatar.png",
+      "banner_url": null,
+      "orca_group": null,
+      "color": null,
+      "icon": "wrench"
+    },
+    {
+      "name": "no-assets",
+      "repo": "local/x",
+      "description": "Nothing",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "logo_url": null,
+      "banner_url": null,
+      "orca_group": null,
+      "color": null,
+      "icon": null
+    },
+    {
+      "name": "old",
+      "repo": "git@github.com:o/old.git",
+      "description": "Old",
+      "domain": "",
+      "stack": "",
+      "enabled": false,
+      "logo_url": null,
+      "banner_url": null,
+      "orca_group": null,
+      "color": null,
+      "icon": null
+    }
+  ]
+}
