@@ -50,7 +50,7 @@ All packages in `shared-utilities` adhere strictly to our foundational standards
 ## 4. Subsystem Architecture
 
 ```
-src/shared_utilities/          # devenv is C#: src/Rig.Cli/Devenv/
+src/rig/                       # devenv is C#: src/Rig.Cli/Devenv/
 ├── repo_governance/    # Organization-wide GitHub policy engine
 ├── image_drift/        # now tools/image-drift, its own uv project: SVG renderer and drift detection
 └── obsidian/           # Vault note processing and Google Keep staging

@@ -61,7 +61,7 @@ members = ["packages/type-ratchet"]
 type-ratchet = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/desktop_manager", "src/rig", "src/shared_utilities"]
+packages = ["src/desktop_manager", "src/rig"]
 
 [tool.hatch.build.targets.wheel.force-include]
 # The installed chrome-tabs snapshot has no checkout; site_hosts falls back to this copy.
@@ -447,7 +447,6 @@ patching-allow = [
     "tests/desktop_manager/test_workspace_wait_scope.py",
     "tests/desktop_manager/test_workspace_win32_behavior.py",
     "tests/test_c4_okf.py",
-    "tests/test_console_ui.py",
     "tests/test_entrypoints_portable.py",
     "tests/test_github_prs.py",
     "tests/test_otel_clickhouse.py",

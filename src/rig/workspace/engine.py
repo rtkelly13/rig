@@ -65,12 +65,6 @@ def load_managed_specs(path: pathlib.Path | None = None) -> list[ManagedRepoSpec
     return _decode_specs(cfg, retired=False) + retired
 
 
-def retired_project_names(path: pathlib.Path | None = None) -> frozenset[str]:
-    """Names in the ``archived-projects.json`` beside *path*: projects that never belong in Orca again."""
-    cfg = path or config_file_path()
-    return frozenset(spec.name for spec in _decode_specs(cfg.with_name(roots.ARCHIVED_PROJECTS), retired=True))
-
-
 def _decode_specs(cfg: pathlib.Path, *, retired: bool) -> list[ManagedRepoSpec]:
     if not cfg.is_file():
         return []

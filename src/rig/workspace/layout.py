@@ -24,12 +24,6 @@ def org_folder(repo: str) -> str | None:
     return scopes.org_folder(slug.owner)
 
 
-def project_relpath(name: str, repo: str) -> str:
-    """A project's location relative to the estate root, as a POSIX path."""
-    org = org_folder(repo)
-    return f"../{org}/{name}" if org else name
-
-
 def project_dir(estate_dir: pathlib.Path, name: str, repo: str) -> pathlib.Path:
     """The directory a managed project is expected to be cloned into."""
     org = org_folder(repo)

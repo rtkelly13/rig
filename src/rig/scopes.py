@@ -57,12 +57,6 @@ def org_dirs(personal_dir: Path | None = None) -> list[Path]:
     return [base.parent / org for org in personal().orgs]
 
 
-def repo_parent_dirs(personal_dir: Path | None = None) -> list[Path]:
-    """Every folder whose children are personal clones: the personal folder, then each org folder."""
-    base = personal_dir or roots.personal_dir()
-    return [base, *org_dirs(base)]
-
-
 def org_folder(owner: str) -> str | None:
     """The org folder for a GitHub *owner* (any case), or None when it is not a personal org."""
     return next((org for org in personal().orgs if org.casefold() == owner.casefold()), None)
@@ -72,11 +66,6 @@ def estate_owners() -> frozenset[str]:
     """Every GitHub account and org whose repos are the personal estate, lowercased."""
     scope = personal()
     return frozenset(owner.casefold() for owner in (*scope.owners, *scope.orgs))
-
-
-def is_estate_owner(owner: str) -> bool:
-    """Whether a GitHub *owner* (any case) is part of the personal estate."""
-    return owner.casefold() in estate_owners()
 
 
 def work_dirs(code_root: Path | None = None, config: Path | None = None) -> tuple[Path, ...]:
