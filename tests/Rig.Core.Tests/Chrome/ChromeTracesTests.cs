@@ -68,6 +68,7 @@ public sealed class ChromeTracesTests
     [Fact]
     public void A_file_that_cannot_be_deleted_is_left()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Only Windows refuses to delete a file that is held open.");
         using var temp = new TempDir();
         DayFiles(temp.Path, "2026-01-01");
         using var held = new FileStream(temp.File("2026-01-01.ndjson"), FileMode.Open, FileAccess.Read, FileShare.None);
