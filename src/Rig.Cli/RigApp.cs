@@ -1,6 +1,7 @@
 using System.CommandLine;
 using Rig.Cli.Agent;
 using Rig.Cli.Forwarding;
+using Rig.Cli.Gh;
 using Rig.Cli.Gh.Threads;
 using Rig.Core;
 using Rig.Core.Processes;
@@ -19,7 +20,8 @@ internal sealed class RigApp(
     TextWriter output,
     TextWriter error,
     IReadOnlyList<Func<Command>>? ported = null,
-    AgentLauncher? agent = null)
+    AgentLauncher? agent = null,
+    IReadOnlyList<Func<Command>>? gh = null)
 {
     /// <summary>What <c>rig --help</c> says rig is.</summary>
     public const string Description =
@@ -35,7 +37,14 @@ internal sealed class RigApp(
     public RootCommand BuildRoot()
     {
         var root = new RootCommand(Description);
-        root.Subcommands.Add(new ThreadsCommand(new ThreadsGitHub(github), origin, output, error).Build());
+        var group = new Command("gh", "Fill gaps in the GitHub CLI: wait for a pull request to land, handle its review threads.");
+        group.Subcommands.Add(new ThreadsCommand(new ThreadsGitHub(github), origin, output, error).Build());
+        foreach (var build in gh ?? [])
+        {
+            group.Subcommands.Add(build());
+        }
+
+        root.Subcommands.Add(group);
         foreach (var build in ported ?? [])
         {
             root.Subcommands.Add(build());

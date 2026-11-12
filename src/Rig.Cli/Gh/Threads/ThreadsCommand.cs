@@ -6,9 +6,6 @@ using Rig.Core.GitHub;
 
 namespace Rig.Cli.Gh.Threads;
 
-/// <summary>Reads the GitHub repo the working directory's <c>origin</c> points at, or null when there is none.</summary>
-internal delegate Task<RepoSlug?> OriginReader(CancellationToken cancellationToken);
-
 /// <summary>What <c>resolve</c> did, or with <c>--dry-run</c> would do.</summary>
 internal sealed record ResolveOutcome(string ThreadId, string Sha, string? ReplyUrl, bool Replied, bool Resolved, bool DryRun);
 
@@ -31,18 +28,16 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
 
     private static readonly JsonSerializerOptions Compact = new(Printed) { WriteIndented = false };
 
-    /// <summary>The <c>rig gh</c> command group.</summary>
+    /// <summary>The <c>rig gh threads</c> command group.</summary>
     public Command Build()
     {
-        var gh = new Command("gh", $"Fill gaps in the GitHub CLI. {Retire}");
         var threads = new Command(
             "threads",
             $"List, reply to and resolve pull-request review threads. {Retire} "
             + "A thread is resolved only after its fix is pushed, with a reply naming the fix commit.");
-        gh.Subcommands.Add(threads);
         threads.Subcommands.Add(BuildList());
         threads.Subcommands.Add(BuildResolve());
-        return gh;
+        return threads;
     }
 
     private static Argument<int> PrArgument() => new("pr") { Description = "Pull request number." };
@@ -211,19 +206,8 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
         return new ResolveOutcome(threadId, plan.Sha, url, Replied: url is not null, Resolved: true, DryRun: false);
     }
 
-    private async Task<RepoSlug?> TargetAsync(string? repo, CancellationToken cancellationToken)
-    {
-        var slug = repo is not null ? RepoSlug.FromPath(repo) : await origin(cancellationToken).ConfigureAwait(false);
-        if (slug is null)
-        {
-            await error.WriteLineAsync(
-                repo is not null
-                    ? $"Cannot tell which repo: pass --repo owner/name ({PyRepr.Of(repo)} is not one)"
-                    : "Cannot tell which repo: no GitHub origin here; pass --repo owner/name").ConfigureAwait(false);
-        }
-
-        return slug;
-    }
+    private Task<RepoSlug?> TargetAsync(string? repo, CancellationToken cancellationToken) =>
+        GhTarget.ResolveAsync(repo, origin, error, cancellationToken);
 
     private async Task PrintThreadsAsync(RepoSlug slug, int pr, List<ReviewThread> threads)
     {
