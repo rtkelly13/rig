@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import threading
 import time
+import urllib.request
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
@@ -87,7 +88,7 @@ def cli_assembly() -> Path:
     """The built C# CLI: ``RIG_CLI_DLL`` when CI built it, else a local build."""
     configured = os.environ.get("RIG_CLI_DLL")
     if configured:
-        return Path(configured)
+        return Path(configured).resolve()
     return _build_cli()
 
 
@@ -97,6 +98,17 @@ def checkout(root: Path) -> Path:
     _ = shutil.copytree(TEMPLATES, home / "src" / "rig" / "web_host" / "templates")
     (home / "assets").mkdir()
     return home
+
+
+def _warm(address: str) -> None:
+    """Ask the host for its own route and a page once, so the first page a test loads is not also its JIT warm-up.
+
+    Each test starts a fresh host, and on a loaded Windows runner its first answers took longer than Playwright's
+    five-second expectations.
+    """
+    for path in ("/api/status", "/"):
+        with urllib.request.urlopen(address + path, timeout=_START) as answer:  # noqa: S310 - the loopback host above
+            _ = answer.read()
 
 
 def _lines(stream: IO[str], into: queue.Queue[str | None]) -> None:
@@ -139,6 +151,7 @@ def fronting(python_routes: str, home: Path) -> Generator[str]:
             seen.append(line)
             if match := _BANNER.search(line):
                 address = match.group(1)
+        _warm(address)
         yield address
     finally:
         # Only the process started above is ever signalled.

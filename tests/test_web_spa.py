@@ -93,16 +93,18 @@ def browser_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Bro
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     routes = f"http://127.0.0.1:{server.server_address[1]}"
-    with rig_web_host.fronting(routes, rig_web_host.checkout(tmp_path)) as url, sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page(viewport={"width": 1440, "height": 1000})
-        try:
-            yield BrowserApp(url, db, page)
-        finally:
-            browser.close()
-            server.shutdown()
-            server.server_close()
-            thread.join()
+    try:
+        with rig_web_host.fronting(routes, rig_web_host.checkout(tmp_path)) as url, sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            page = browser.new_page(viewport={"width": 1440, "height": 1000})
+            try:
+                yield BrowserApp(url, db, page)
+            finally:
+                browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
 
 
 def test_the_browser_talks_to_the_csharp_host(browser_app: BrowserApp) -> None:

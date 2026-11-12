@@ -179,16 +179,18 @@ def ops_app(tmp_path: Path) -> Iterator[OpsApp]:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     routes = f"http://127.0.0.1:{server.server_address[1]}"
-    with rig_web_host.fronting(routes, rig_web_host.checkout(tmp_path)) as url, sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page(viewport={"width": 1440, "height": 1000})
-        try:
-            yield OpsApp(url, page, ops)
-        finally:
-            browser.close()
-            server.shutdown()
-            server.server_close()
-            thread.join()
+    try:
+        with rig_web_host.fronting(routes, rig_web_host.checkout(tmp_path)) as url, sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            page = browser.new_page(viewport={"width": 1440, "height": 1000})
+            try:
+                yield OpsApp(url, page, ops)
+            finally:
+                browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
 
 
 def test_attention_lists_failed_jobs_and_decisions_and_opens_the_run(ops_app: OpsApp) -> None:

@@ -19,21 +19,21 @@ public sealed class WebCommandTests : IDisposable
     private readonly List<Uri> _opened = [];
     private Uri? _pythonRoutes;
 
-    // Accepts one connection, answers it with `body` and returns its request line.
-    private static async Task<string> AnswerOnceAsync(TcpListener listener, string body)
+    // Accepts one connection, answers it with `body` and returns its request line, giving up when `cancel` fires.
+    private static async Task<string> AnswerOnceAsync(TcpListener listener, string body, CancellationToken cancel)
     {
-        using var client = await listener.AcceptTcpClientAsync();
+        using var client = await listener.AcceptTcpClientAsync(cancel);
         var stream = client.GetStream();
         using var reader = new StreamReader(stream, leaveOpen: true);
-        var requestLine = await reader.ReadLineAsync() ?? "";
-        while (!string.IsNullOrEmpty(await reader.ReadLineAsync()))
+        var requestLine = await reader.ReadLineAsync(cancel) ?? "";
+        while (!string.IsNullOrEmpty(await reader.ReadLineAsync(cancel)))
         {
             // The headers; the request has no body.
         }
 
         var response = System.Text.Encoding.ASCII.GetBytes(
             $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n{body}");
-        await stream.WriteAsync(response);
+        await stream.WriteAsync(response, cancel);
         return requestLine;
     }
 
@@ -137,7 +137,9 @@ public sealed class WebCommandTests : IDisposable
         {
             using var client = new HttpClient();
             var get = client.GetStringAsync(new Uri(page, "/api/not-ported"));
-            requestLine = await AnswerOnceAsync(upstream, "from the running routes");
+            using var bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            bound.CancelAfter(TimeSpan.FromSeconds(30));
+            requestLine = await AnswerOnceAsync(upstream, "from the running routes", bound.Token);
             forwarded = await get;
         });
 
