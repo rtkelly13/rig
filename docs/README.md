@@ -27,6 +27,7 @@ and findings are in each CLI's `--help`; these guides hold what `--help` can't.
 |:------|:-------------|
 | [target-architecture.md](target-architecture.md) | Before restructuring code: the end state rig converges on, its layers and how they are enforced |
 | [development.md](development.md) | Before writing tests or touching CI: markers, Windows-safe test rules, every quality gate |
+| [csharp-quality-and-guardrails.md](csharp-quality-and-guardrails.md) | C# static analysis, banned APIs, performance mode, and functional coding guardrails |
 | [testing.md](testing.md) | Choosing BDD, property or example tests, and measuring test quality with coverage and mutation score |
 | [test-quality.md](test-quality.md) | What the research says about measuring test quality, and the scorecard for each type of test |
 | [python-types.md](python-types.md) | Before writing Python in `src/`: the banned shapes the type ratchet blocks and their replacements |

@@ -169,7 +169,7 @@ public sealed class GeometryPropertyTests
 
     private static int Lcm(int a, int b)
     {
-        int Gcd(int x, int y) => y == 0 ? x : Gcd(y, x % y);
+        static int Gcd(int x, int y) => y == 0 ? x : Gcd(y, x % y);
         return a / Gcd(a, b) * b;
     }
 

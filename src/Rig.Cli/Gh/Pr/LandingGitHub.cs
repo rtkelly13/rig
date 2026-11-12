@@ -67,7 +67,7 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
         ArgumentNullException.ThrowIfNull(repo);
         var pr = await LandingPageAsync(repo, number, null, cancellationToken).ConfigureAwait(false);
         var contexts = ContextsOf(pr);
-        List<WireContext> nodes = [.. contexts.Nodes];
+        IReadOnlyList<WireContext> nodes = [.. contexts.Nodes];
         HashSet<string> seen = new(StringComparer.Ordinal);
         while (contexts.PageInfo.HasNextPage)
         {
@@ -78,7 +78,7 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
             }
 
             contexts = ContextsOf(await LandingPageAsync(repo, number, cursor, cancellationToken).ConfigureAwait(false));
-            nodes.AddRange(contexts.Nodes);
+            nodes = [.. nodes, .. contexts.Nodes];
         }
 
         var protection = pr.BaseRef?.BranchProtectionRule;
