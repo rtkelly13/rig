@@ -8,7 +8,7 @@ namespace Rig.Core.Chrome.MacOS;
 /// osascript, never in a web page. Ported from <c>desktop_manager.chrome.drivers.macos_jxa</c>.
 /// </summary>
 /// <param name="proc">Runs osascript.</param>
-public sealed class ChromeJxa(IProc proc)
+public sealed class ChromeJxa(IProc proc) : IChromeJxa
 {
     /// <summary>The osascript command a script is piped to.</summary>
     public static readonly IReadOnlyList<string> Osascript = ["/usr/bin/osascript", "-l", "JavaScript", "-"];
@@ -22,9 +22,9 @@ public sealed class ChromeJxa(IProc proc)
     /// Runs <paramref name="script"/> and parses its JSON reply, still to be decoded. A failed, timed-out or non-JSON
     /// run throws <see cref="ChromeMacException"/>.
     /// </summary>
-    public async Task<JsonElement> RunAsync(string script, CancellationToken cancellationToken = default)
+    public JsonElement Run(string script)
     {
-        var ran = await proc.RunAsync(new ProcRequest(Osascript) { StdinText = script, Timeout = Timeout }, cancellationToken).ConfigureAwait(false);
+        var ran = proc.Run(new ProcRequest(Osascript) { StdinText = script, Timeout = Timeout });
         if (!ran.Ok)
         {
             throw new ChromeMacException(Failed, new ProcException(Osascript, ran));
@@ -41,17 +41,27 @@ public sealed class ChromeJxa(IProc proc)
         }
     }
 
+    /// <inheritdoc/>
+    public JxaSnapshot Snapshot() => JxaDecode.Snapshot(Run(JxaScripts.Snapshot));
+
+    /// <inheritdoc/>
+    public int? FrontmostPid() => JxaDecode.FrontmostPid(Run(JxaScripts.Frontmost));
+
+    /// <inheritdoc/>
+    public string Act(string script) => JxaDecode.Status(Run(script));
+}
+
+/// <summary>Chrome's scripting dictionary, as the macOS driver uses it. Every call throws <see cref="ChromeMacException"/> on failure.</summary>
+public interface IChromeJxa
+{
     /// <summary>Chrome's windows and tabs now.</summary>
-    public async Task<JxaSnapshot> SnapshotAsync(CancellationToken cancellationToken = default) =>
-        JxaDecode.Snapshot(await RunAsync(JxaScripts.Snapshot, cancellationToken).ConfigureAwait(false));
+    JxaSnapshot Snapshot();
 
     /// <summary>The frontmost application's process, from AppKit; null when there is none.</summary>
-    public async Task<int?> FrontmostPidAsync(CancellationToken cancellationToken = default) =>
-        JxaDecode.FrontmostPid(await RunAsync(JxaScripts.Frontmost, cancellationToken).ConfigureAwait(false));
+    int? FrontmostPid();
 
     /// <summary>Runs an action script and returns the status it replied with.</summary>
-    public async Task<string> ActAsync(string script, CancellationToken cancellationToken = default) =>
-        JxaDecode.Status(await RunAsync(script, cancellationToken).ConfigureAwait(false));
+    string Act(string script);
 }
 
 /// <summary>Chrome's profiles on macOS, from its <c>Local State</c> file.</summary>

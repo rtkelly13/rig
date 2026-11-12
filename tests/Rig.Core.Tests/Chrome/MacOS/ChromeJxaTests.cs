@@ -46,10 +46,10 @@ public sealed class ChromeJxaTests
     private static ChromeTab Tab(long window, params int[] id) => new(new RuntimeId(id), window, 0, "t", "t", true, false, true, false);
 
     [Fact]
-    public async Task Snapshot_pipes_the_script_to_osascript_and_decodes_the_reply()
+    public void Snapshot_pipes_the_script_to_osascript_and_decodes_the_reply()
     {
         var (jxa, proc) = Bridge(Recorded().ToJsonString(new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
-        var snapshot = await jxa.SnapshotAsync(TestContext.Current.CancellationToken);
+        var snapshot = jxa.Snapshot();
 
         var request = Assert.Single(proc.Requests);
         Assert.Equal(["/usr/bin/osascript", "-l", "JavaScript", "-"], request.Argv);
@@ -228,19 +228,19 @@ public sealed class ChromeJxaTests
     }
 
     [Fact]
-    public async Task A_failed_run_names_the_automation_permission()
+    public void A_failed_run_names_the_automation_permission()
     {
         var (jxa, _) = Bridge(string.Empty, code: 1);
-        var error = await Assert.ThrowsAsync<ChromeMacException>(() => jxa.SnapshotAsync(TestContext.Current.CancellationToken));
+        var error = Assert.Throws<ChromeMacException>(() => jxa.Snapshot());
         Assert.Contains("Automation permission", error.Message, StringComparison.Ordinal);
         Assert.IsType<ProcException>(error.InnerException);
     }
 
     [Fact]
-    public async Task A_timed_out_run_names_the_automation_permission()
+    public void A_timed_out_run_names_the_automation_permission()
     {
         var (jxa, _) = Bridge(string.Empty, code: Ran.TimedOut);
-        var error = await Assert.ThrowsAsync<ChromeMacException>(() => jxa.RunAsync("query", TestContext.Current.CancellationToken));
+        var error = Assert.Throws<ChromeMacException>(() => jxa.Run("query"));
         Assert.Contains("Automation permission", error.Message, StringComparison.Ordinal);
     }
 
@@ -248,18 +248,18 @@ public sealed class ChromeJxaTests
     [InlineData("")]
     [InlineData("not json")]
     [InlineData("{\"pid\": 1")]
-    public async Task A_reply_that_is_not_json_names_the_automation_permission(string stdout)
+    public void A_reply_that_is_not_json_names_the_automation_permission(string stdout)
     {
         var (jxa, _) = Bridge(stdout);
-        var error = await Assert.ThrowsAsync<ChromeMacException>(() => jxa.RunAsync("query", TestContext.Current.CancellationToken));
+        var error = Assert.Throws<ChromeMacException>(() => jxa.Run("query"));
         Assert.Contains("Automation permission", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Run_preserves_strings_exactly()
+    public void Run_preserves_strings_exactly()
     {
         var (jxa, proc) = Bridge("{\"title\":\"雪, \\\"quoted\\\"\\nline\",\"url\":\"https://example.test/?a=1,2\"}\n");
-        var reply = await jxa.RunAsync("query", TestContext.Current.CancellationToken);
+        var reply = jxa.Run("query");
         Assert.Equal("query", proc.Requests[0].StdinText);
         Assert.Equal("雪, \"quoted\"\nline", reply.GetProperty("title").GetString());
         Assert.Equal("https://example.test/?a=1,2", reply.GetProperty("url").GetString());
@@ -268,26 +268,26 @@ public sealed class ChromeJxaTests
     [Theory]
     [InlineData("{\"pid\": 501}", 501)]
     [InlineData("{\"pid\": 0}", null)]
-    public async Task Frontmost_pid_is_null_when_no_application_is_frontmost(string stdout, int? pid)
+    public void Frontmost_pid_is_null_when_no_application_is_frontmost(string stdout, int? pid)
     {
         var (jxa, proc) = Bridge(stdout);
-        Assert.Equal(pid, await jxa.FrontmostPidAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(pid, jxa.FrontmostPid());
         Assert.Equal(JxaScripts.Frontmost, proc.Requests[0].StdinText);
     }
 
     [Fact]
-    public async Task A_frontmost_reply_that_does_not_fit_is_refused()
+    public void A_frontmost_reply_that_does_not_fit_is_refused()
     {
         var (jxa, _) = Bridge("{\"pid\": \"501\"}");
-        var error = await Assert.ThrowsAsync<ChromeMacException>(() => jxa.FrontmostPidAsync(TestContext.Current.CancellationToken));
+        var error = Assert.Throws<ChromeMacException>(() => jxa.FrontmostPid());
         Assert.Equal("Invalid Chrome frontmost application", error.Message);
     }
 
     [Fact]
-    public async Task Act_returns_the_status_the_script_replied_with()
+    public void Act_returns_the_status_the_script_replied_with()
     {
         var (jxa, proc) = Bridge("{\"status\": \"invoked\"}");
-        Assert.Equal("invoked", await jxa.ActAsync("script", TestContext.Current.CancellationToken));
+        Assert.Equal("invoked", jxa.Act("script"));
         Assert.Equal("script", proc.Requests[0].StdinText);
     }
 
