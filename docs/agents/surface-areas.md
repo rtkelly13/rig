@@ -41,15 +41,17 @@ flowchart TD
 
 Modern AI assistants support dedicated rule directories rather than relying solely on a single monolithic instruction file. **The rules approach is our preferred integration pattern across all tools**:
 
+- **Two-Tier Isolation Architecture**:
+  - **Tier 1 (File-Level Isolation)**: Because `rules/` is a modular directory rather than a monolithic file, each tool or domain owns its own dedicated file (e.g., `rig.md`, `python-style.md`, `git.md`). Adding, updating, or decommissioning a tool involves only that file, completely preventing write races, lock contention, or monolithic git merge conflicts.
+  - **Tier 2 (Marker-Level Isolation)**: Inside any rule file (or shared instruction files like `~/.gemini/GEMINI.md`), deterministic HTML comment markers guarantee boundary isolation:
+    ```markdown
+    <!-- rig:global-context:begin -->
+    ... managed block ...
+    <!-- rig:global-context:end -->
+    ```
+    `rig` reads and writes strictly between its markers. Personal notes and other tools' sections outside the markers are preserved byte-for-byte across runs ([ADR 0015](../adr/0015-non-destructive-ai-assistant-configuration.md)).
 - **Additive & Non-Shadowing**: Rules enrich agent knowledge without triggering legacy file fallback logic (e.g., avoiding the risk of a `CLAUDE.md` causing an agent to skip `AGENTS.md`).
 - **Path-Scoped Activation**: Assistants like Claude Code support YAML frontmatter `paths: [...]` to conditionally load rules only when files matching specific globs are touched.
-- **Marker-Isolated Multi-Tool Concurrency**: Every managed rule file uses the deterministic marker standard:
-  ```markdown
-  <!-- rig:global-context:begin -->
-  ... managed block ...
-  <!-- rig:global-context:end -->
-  ```
-  `rig` manages only its marked slice. Hand-written user notes and sections managed by other tools co-exist in parallel and survive across runs ([ADR 0015](../adr/0015-non-destructive-ai-assistant-configuration.md)).
 
 #### Surfaces & Harness Locations
 
