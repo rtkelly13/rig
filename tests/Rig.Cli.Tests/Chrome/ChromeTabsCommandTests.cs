@@ -1,15 +1,20 @@
 using System.CommandLine;
 using System.Globalization;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Chrome;
 using Rig.Core.Chrome;
+using Rig.Core.GitHub;
+using Rig.Core.Processes;
 using Rig.Core.Tests;
 
 namespace Rig.Cli.Tests.Chrome;
 
 /// <summary>
-/// <c>rig chrome-tabs traces</c>: the commands over <see cref="ChromeTraces"/>, which its own tests hold to Python's
-/// reports. These check what the command adds: the day files it picks, the messages, the JSON and the exit codes.
+/// <c>rig chrome-tabs</c>. <c>traces</c> runs over <see cref="ChromeTraces"/>, which its own tests hold to Python's
+/// reports; <c>list</c> and <c>rank</c> over a fake driver. These check what the command adds: the files it picks, the lines,
+/// the JSON and its key order, the exit codes, and which lines stay with the Python.
 /// </summary>
 public sealed class ChromeTabsCommandTests : IDisposable
 {
@@ -267,10 +272,164 @@ public sealed class ChromeTabsCommandTests : IDisposable
     public void The_forwarded_row_shows_the_groups_help() =>
         Assert.Contains((ChromeTabsCommand.Name, ChromeTabsCommand.Description), Rig.Cli.Forwarding.Forwarded.Commands.Select(row => (row.Name, row.Description)));
 
+    // Two windows: a "Work" profile window with a PR tab and a plain page, and a minimised "Default" window on no known desktop.
+    private static readonly IReadOnlyList<ChromeWindow> Windows =
+    [
+        new(
+            101,
+            "Fix it · Pull Request #12 · Owner/Repo",
+            "Profile 4",
+            "Work",
+            1,
+            false,
+            2,
+            [
+                new(new RuntimeId([42, 1]), 101, 0, "Fix it · Pull Request #12 · Owner/Repo - 120 MB", "Fix it · Pull Request #12 · Owner/Repo", true, false, true, false)
+                {
+                    MemoryMb = 120.0,
+                    Group = new TabGroup(new RuntimeId([42, 9]), "café"),
+                },
+                new(new RuntimeId([42, 2]), 101, 1, "Notes", "Notes", false, true, false, true) { Alerts = ["Playing audio"] },
+            ])
+        {
+            Rect = new WindowRect(0, 0, 800, 600),
+            Monitor = new ScreenPoint(0, 0),
+        },
+        new(202, "Home", "Default", null, 2, true, null, [new(new RuntimeId([7]), 202, 0, "Home", "Home", true, false, true, false) { MemoryMb = 80.5 }]),
+    ];
+
+    private readonly CountingGitHub _github = new();
+
+    private ChromeTabsCommand WithDriver(bool driver = true) =>
+        new(_ => null, "/home", new FixedTime(Now), TimeZoneInfo.Utc, _out, driver ? new ChromeTabsDriver(() => Windows, _github) : null);
+
+    private async Task<int> Tabs(params string[] args) =>
+        await WithDriver().Build().Parse(args).InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+    [Fact]
+    public async Task List_prints_each_window_and_its_tabs_with_flags_memory_and_key()
+    {
+        Assert.Equal(0, await Tabs("list"));
+
+        Assert.Equal(
+            [
+                "Window 1 [Work / Profile 4] desktop 2: 2 tabs",
+                $"    1 S.L. {TabRank.FormatSize(120),7} owner/repo#12 Fix it · Pull Request #12 · Owner/Repo",
+                "    2 .P.A       - title:Notes Notes",
+                "Window 2 [Default / Default] desktop ?, minimised: 1 tabs",
+                $"    1 S.L. {TabRank.FormatSize(80.5),7} title:Home Home",
+            ],
+            Lines[..^1]);
+        Assert.Matches(@"^2 windows, 3 tabs, .+ reported by tabs, enumerated in \d+\.\d\ds$", Lines[^1]);
+    }
+
+    [Fact]
+    public async Task List_prs_only_skips_other_tabs_and_profile_picks_windows_by_name_or_directory()
+    {
+        Assert.Equal(0, await Tabs("list", "--prs-only", "--profile", "WORK"));
+        Assert.Equal(3, Lines.Length);
+        Assert.Equal("Window 1 [Work / Profile 4] desktop 2: 2 tabs", Lines[0]);
+        Assert.Contains("owner/repo#12", Lines[1], StringComparison.Ordinal);
+
+        _out.GetStringBuilder().Clear();
+        Assert.Equal(0, await Tabs("list", "--profile", "default"));
+        Assert.StartsWith("Window 1 [Default / Default]", Lines[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task List_as_json_has_the_python_fields_in_order()
+    {
+        Assert.Equal(0, await Tabs("list", "--json", "--prs-only"));
+
+        var text = _out.ToString();
+        Assert.Contains("café", text, StringComparison.Ordinal);
+        Assert.Contains("\"memory_mb\": 120.0", text, StringComparison.Ordinal);
+        var windows = JsonNode.Parse(text)!.AsArray();
+        var first = windows[0]!.AsObject();
+        Assert.Equal(
+            ["hwnd", "title", "profile_dir", "profile_name", "age_rank", "minimized", "desktop_number", "tabs", "rect", "monitor", "profile_scope"],
+            first.Select(pair => pair.Key));
+        Assert.Equal("[0,0,800,600]", first["rect"]!.ToJsonString());
+        Assert.Equal("[0,0]", first["monitor"]!.ToJsonString());
+        var tab = Assert.Single(first["tabs"]!.AsArray())!.AsObject();
+        Assert.Equal(
+            ["runtime_id", "window_hwnd", "index", "name", "title", "selected", "pinned", "loaded", "audible", "alerts", "memory_mb", "group", "url"],
+            tab.Select(pair => pair.Key));
+        Assert.Equal(
+            """{"runtime_id":[42,9],"title":"café"}""",
+            tab["group"]!.ToJsonString(new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+        Assert.Empty(windows[1]!["tabs"]!.AsArray());
+        Assert.Null(windows[1]!["rect"]);
+    }
+
+    [Fact]
+    public async Task Rank_without_github_asks_nothing_and_prints_the_ranking()
+    {
+        Assert.Equal(0, await Tabs("rank", "--no-github"));
+
+        Assert.Equal(0, _github.Calls);
+        var ranked = TabRank.Rank(Windows, Resolution.Empty);
+        Assert.Equal(
+            [
+                "  #  score   memory  page",
+                .. TabPlanText.Rank(ranked),
+                $"3 tabs, {ranked.Count(item => item.Protected.Length > 0)} protected, {TabRank.FormatSize(200.5)} reported by tabs",
+            ],
+            Lines);
+    }
+
+    [Fact]
+    public async Task Rank_asks_github_about_the_prs_and_limit_keeps_the_lowest()
+    {
+        Assert.Equal(0, await Tabs("rank", "--limit", "1", "--json"));
+
+        Assert.Equal(1, _github.Calls);
+        var row = Assert.Single(JsonNode.Parse(_out.ToString())!.AsArray())!.AsObject();
+        Assert.Equal(
+            ["label", "title", "profile", "window", "tab", "protected", "score", "memory_mb", "reasons", "flags", "details"],
+            row.Select(pair => pair.Key));
+        Assert.Equal(TabRank.Rank(Windows, Resolution.Empty)[^1].Label, row["label"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task Rank_limit_must_be_positive_and_may_exceed_the_tabs()
+    {
+        var parsed = WithDriver().Build().Parse(["rank", "--limit", "0"]);
+        Assert.Equal("Invalid value for '--limit': 0 is not in the range x>=1.", Assert.Single(parsed.Errors).Message);
+
+        Assert.Equal(0, await Tabs("rank", "--no-github", "--limit", "9"));
+        Assert.Equal(5, Lines.Length);
+    }
+
+    [Theory]
+    [InlineData(true, false, "chrome-tabs", "list")]
+    [InlineData(true, false, "chrome-tabs", "rank", "--json")]
+    [InlineData(false, true, "chrome-tabs", "list")]
+    [InlineData(false, true, "chrome-tabs", "rank")]
+    [InlineData(true, true, "chrome-tabs", "prune")]
+    public void List_and_rank_run_here_only_with_a_driver(bool withDriver, bool forwarded, params string[] args)
+    {
+        var root = new RootCommand { WithDriver(withDriver).Build() };
+
+        Assert.Equal(forwarded, Rig.Cli.Forwarding.Forwarded.Owns(args, root));
+    }
+
     private IReadOnlyList<TraceRun> Load() => ChromeTraces.Runs(ChromeTraces.LoadSpans(Traces, DateOnly.FromDateTime(Now.UtcDateTime), 30));
 
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
+    }
+
+    // Answers every query as a refused call, so nothing resolves; counts the calls.
+    private sealed class CountingGitHub : IGitHubApi
+    {
+        public int Calls { get; private set; }
+
+        public Task<Ran> CallAsync(ApiRequest request, CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            return Task.FromResult(new Ran(1, string.Empty, "HTTP 502"));
+        }
     }
 }

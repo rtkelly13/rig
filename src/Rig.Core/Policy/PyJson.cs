@@ -142,11 +142,11 @@ public static class PyJson
     }
 
     // A float built in C# keeps its type even when whole: 1.0 prints as Python's 1.0, not 1. Parsed JSON has no such
-    // type, so its text alone decides.
+    // type, so its text alone decides: a parsed integer stays one however large, since a JsonElement-backed value converts
+    // to double whenever it fits.
     private static bool IsFloat(JsonValue value) =>
-        (value.TryGetValue<double>(out _) || value.TryGetValue<float>(out _) || value.TryGetValue<decimal>(out _))
-        && !value.TryGetValue<long>(out _)
-        && !value.TryGetValue<ulong>(out _);
+        !value.TryGetValue<JsonElement>(out _)
+        && (value.TryGetValue<double>(out _) || value.TryGetValue<float>(out _) || value.TryGetValue<decimal>(out _));
 
     // ASCII mode escapes everything outside ' '..'~' (DEL included), as Python's ESCAPE_ASCII does.
     private static void String(StringBuilder text, string value, bool ascii)
