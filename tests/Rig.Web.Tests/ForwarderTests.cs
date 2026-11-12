@@ -56,6 +56,18 @@ public sealed class ForwarderTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Each_forwarded_request_closes_its_connection_as_python_does()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/api/triage", UriKind.Relative));
+        request.Headers.ConnectionClose = false;
+
+        using var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        var (sent, _) = Assert.Single(_upstream.Seen);
+        Assert.True(sent.Headers.ConnectionClose);
+    }
+
+    [Fact]
     public async Task A_post_carries_its_body_and_content_type()
     {
         using var content = new StringContent("""{"paths":[]}""", Encoding.UTF8);

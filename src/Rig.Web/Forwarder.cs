@@ -56,6 +56,10 @@ internal sealed class Forwarder(HttpClient client, Func<Uri?> upstream)
         }
 
         request.Headers.Host = context.Request.Host.Value;
+
+        // Python's http.server answers HTTP/1.0 and closes the connection after every answer, but HttpClient pools it
+        // anyway. A request sent on it as Python closes it is reset (on Windows, most often), so each one asks for its own.
+        request.Headers.ConnectionClose = true;
         HttpResponseMessage response;
         try
         {
