@@ -57,6 +57,7 @@ internal sealed class EstateTree : IDisposable
             Registry,
             _dir.Path,
             _dir.Path,
+            _dir.Path,
             Path.Join(_dir.Path, "decisions.json"),
             Path.Join(_dir.Path, "temp", "triage", "queue.md"),
             Path.Join(_dir.Path, "temp", "traces", "sdk"));

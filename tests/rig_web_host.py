@@ -1,11 +1,12 @@
 """The C# ``rig web`` host in front of Python web routes served in-process, for the browser tests.
 
-The browser tests fake the Python routes' state in-process (monkeypatched GitHub, connectivity, a temp
-database), so the C# host is told to front those routes (``RIG_WEB_PYTHON_ROUTES``) rather than start
-its own child. The browser then talks to the C# host only, as it does in production.
+The browser tests fake the Python routes' state in-process (monkeypatched GitHub, a temp database), so
+the C# host is told to front those routes (``RIG_WEB_PYTHON_ROUTES``) rather than start its own child.
+The browser then talks to the C# host only, as it does in production.
 
 The host reads nothing of this machine's: its checkout (``RIG_HOME``) is a temp folder holding a copy of
-the frontend and no registry, its code root (``CODE_ROOT``) is an empty temp folder beside it, it runs from
+the frontend and, when a test lays one out with `estate`, a registry; its code root (``CODE_ROOT``) is
+the temp ``code/`` folder beside it, whose ``personal/`` holds that estate's git checkouts. It runs from
 the checkout, and the suite's ``LOCALAPPDATA`` is already a temp folder (tests/conftest.py). It binds
 port 0 and is stopped by the pid this module started.
 
@@ -16,6 +17,7 @@ locally the first worker to get here builds it into ``temp/rig-web-tests`` while
 from __future__ import annotations
 
 import functools
+import json
 import os
 import queue
 import re
@@ -96,8 +98,7 @@ def cli_assembly() -> Path:
 def checkout(root: Path) -> Path:
     """A rig checkout under *root* holding a copy of the frontend and nothing else: no registry, no brand assets.
 
-    Beside it is an empty code root, ``code/`` with an AGENTS.md and ``personal/``, that `fronting` points the host at,
-    so no route reads or scans this machine's estate.
+    Beside it is an empty code root, ``code/`` with an AGENTS.md and ``personal/``, that `fronting` points the host at.
     """
     home = root / "rig-checkout"
     _ = shutil.copytree(TEMPLATES, home / "src" / "rig" / "web_host" / "templates")
@@ -105,6 +106,25 @@ def checkout(root: Path) -> Path:
     (_code_root(home) / "personal").mkdir(parents=True)
     _ = (_code_root(home) / "AGENTS.md").write_text("# code root\n", encoding="utf-8")
     return home
+
+
+def estate(home: Path, projects: dict[str, dict[str, str]]) -> None:
+    """Lay out an estate for the checkout *home*: each project ``owner/<name>`` in the registry, and a git checkout
+    under the code root's ``personal/<name>`` holding its manifests (path to text), staged so git lists them."""
+    entries = [
+        {"name": name, "repo": f"https://github.com/owner/{name}", "description": name.title(), "domain": "Libraries"}
+        for name in projects
+    ]
+    registry = home / "config" / "managed-projects.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    _ = registry.write_text(json.dumps({"projects": entries}), encoding="utf-8")
+    for name, files in projects.items():
+        folder = _code_root(home) / "personal" / name
+        folder.mkdir(parents=True)
+        for relative, text in files.items():
+            _ = (folder / relative).write_text(text, encoding="utf-8")
+        _ = tracing.run(["git", "init", "--quiet"], cwd=folder, check=True)
+        _ = tracing.run(["git", "add", "-f", "."], cwd=folder, check=True)
 
 
 def _code_root(home: Path) -> Path:

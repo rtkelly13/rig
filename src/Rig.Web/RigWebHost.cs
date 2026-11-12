@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Rig.Core.Connectivity;
+using Rig.Core.Processes;
 using Rig.Web.Mcp;
 
 namespace Rig.Web;
@@ -79,6 +81,8 @@ public sealed class RigWebHost : IAsyncDisposable
         FrontendRoutes.Map(app, settings);
         _ = app.MapMcp("/api/mcp");
         (routes ?? owned!).Map(app, settings.RegistryFile);
+        var git = new Git(new SystemProc(), settings.CodeRoot);
+        ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System), Path.Join(settings.CodeRoot, "personal"));
         var forwarder = new Forwarder(forwarding, upstream);
         app.Map("/{**path}", forwarder.ForwardAsync);
         return host;

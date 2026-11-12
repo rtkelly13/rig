@@ -1,0 +1,494 @@
+{
+  "projects": [
+    {
+      "id": "owner/ui",
+      "name": "ui",
+      "description": "Components",
+      "domain": "Frontend",
+      "stack": "TypeScript",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 1,
+      "packages": [
+        "@scope/new-ui",
+        "@scope/old-ui"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "owner/library",
+      "name": "library",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 2,
+      "packages": [
+        "managed.lib"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "owner/python",
+      "name": "python",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 1,
+      "packages": [
+        "managed-tool"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "owner/app",
+      "name": "app",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 12,
+      "packages": [
+        "app",
+        "app-python"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "owner/a",
+      "name": "a",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 1,
+      "packages": [
+        "a"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "owner/b",
+      "name": "b",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 1,
+      "packages": [
+        "b"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "owner/c",
+      "name": "c",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 1,
+      "packages": [],
+      "warnings": []
+    },
+    {
+      "id": "owner/same-one",
+      "name": "same-one",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 1,
+      "packages": [
+        "same"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "owner/same-two",
+      "name": "same-two",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 1,
+      "packages": [
+        "same"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "owner/missing",
+      "name": "missing",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": false,
+      "scanned": false,
+      "manifests": 0,
+      "packages": [],
+      "warnings": [
+        "Local checkout is unavailable; consumption was not scanned."
+      ]
+    },
+    {
+      "id": "owner/loop",
+      "name": "loop",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 1,
+      "packages": [
+        "loop"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "owner/consumer",
+      "name": "consumer",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 0,
+      "packages": [],
+      "warnings": []
+    },
+    {
+      "id": "owner/provider",
+      "name": "provider",
+      "description": "",
+      "domain": "",
+      "stack": "",
+      "enabled": true,
+      "scanned": true,
+      "manifests": 1,
+      "packages": [
+        "managed"
+      ],
+      "warnings": []
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "owner/a",
+      "target": "owner/app",
+      "registry": "npm",
+      "package": "a",
+      "requirement": "3",
+      "scope": "optional",
+      "evidence": "package.json"
+    },
+    {
+      "source": "owner/a",
+      "target": "owner/b",
+      "registry": "npm",
+      "package": "a",
+      "requirement": "1",
+      "scope": "runtime",
+      "evidence": "package.json"
+    },
+    {
+      "source": "owner/a",
+      "target": "owner/c",
+      "registry": "npm",
+      "package": "a",
+      "requirement": "1",
+      "scope": "runtime",
+      "evidence": "package.json"
+    },
+    {
+      "source": "owner/b",
+      "target": "owner/a",
+      "registry": "npm",
+      "package": "b",
+      "requirement": "1",
+      "scope": "runtime",
+      "evidence": "package.json"
+    },
+    {
+      "source": "owner/b",
+      "target": "owner/app",
+      "registry": "npm",
+      "package": "b",
+      "requirement": "2",
+      "scope": "peer",
+      "evidence": "package.json"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app",
+      "registry": "nuget",
+      "package": "managed.lib",
+      "requirement": "1.2",
+      "scope": "runtime",
+      "evidence": "app.csproj"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app",
+      "registry": "nuget",
+      "package": "managed.lib",
+      "requirement": "1.0",
+      "scope": "runtime",
+      "evidence": "central.csproj"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app",
+      "registry": "nuget",
+      "package": "managed.lib",
+      "requirement": "4.0",
+      "scope": "runtime",
+      "evidence": "child-override.csproj"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app",
+      "registry": "nuget",
+      "package": "managed.lib",
+      "requirement": "2.5",
+      "scope": "runtime",
+      "evidence": "child.csproj"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app",
+      "registry": "nuget",
+      "package": "managed.lib",
+      "requirement": "5.0",
+      "scope": "runtime",
+      "evidence": "included.csproj"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app",
+      "registry": "nuget",
+      "package": "managed.lib",
+      "requirement": "2.0",
+      "scope": "runtime",
+      "evidence": "nested/test.csproj"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app",
+      "registry": "nuget",
+      "package": "managed.lib",
+      "requirement": "3.0",
+      "scope": "runtime",
+      "evidence": "override.csproj"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app",
+      "registry": "project",
+      "package": "gen.csproj",
+      "requirement": "project reference",
+      "scope": "runtime",
+      "evidence": "app.csproj"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app",
+      "registry": "project",
+      "package": "lib.csproj",
+      "requirement": "project reference",
+      "scope": "runtime",
+      "evidence": "app.csproj"
+    },
+    {
+      "source": "owner/provider",
+      "target": "owner/consumer",
+      "registry": "declared",
+      "package": "owner/provider",
+      "requirement": "declared dependency",
+      "scope": "runtime",
+      "evidence": "config/managed-projects.json \u00b7 depends_on"
+    },
+    {
+      "source": "owner/python",
+      "target": "owner/app",
+      "registry": "declared",
+      "package": "python",
+      "requirement": "declared dependency",
+      "scope": "runtime",
+      "evidence": "config/managed-projects.json \u00b7 depends_on"
+    },
+    {
+      "source": "owner/python",
+      "target": "owner/app",
+      "registry": "pypi",
+      "package": "managed-tool",
+      "requirement": "Managed.Tool[extra]",
+      "scope": "runtime",
+      "evidence": "pyproject.toml"
+    },
+    {
+      "source": "owner/python",
+      "target": "owner/app",
+      "registry": "pypi",
+      "package": "managed-tool",
+      "requirement": "managed-tool>=1",
+      "scope": "runtime",
+      "evidence": "pyproject.toml"
+    },
+    {
+      "source": "owner/ui",
+      "target": "owner/app",
+      "registry": "npm",
+      "package": "@scope/new-ui",
+      "requirement": "npm:@scope/new-ui",
+      "scope": "development",
+      "evidence": "package.json"
+    },
+    {
+      "source": "owner/ui",
+      "target": "owner/app",
+      "registry": "npm",
+      "package": "@scope/new-ui",
+      "requirement": "^1.0",
+      "scope": "runtime",
+      "evidence": "package.json"
+    },
+    {
+      "source": "owner/ui",
+      "target": "owner/app",
+      "registry": "npm",
+      "package": "@scope/old-ui",
+      "requirement": "npm:@scope/old-ui@^0.5",
+      "scope": "development",
+      "evidence": "package.json"
+    }
+  ],
+  "components": [
+    {
+      "id": "cycle:f00134fa9283",
+      "members": [
+        "owner/a",
+        "owner/b"
+      ],
+      "cyclic": true
+    },
+    {
+      "id": "owner/app",
+      "members": [
+        "owner/app"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/c",
+      "members": [
+        "owner/c"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/consumer",
+      "members": [
+        "owner/consumer"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/library",
+      "members": [
+        "owner/library"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/loop",
+      "members": [
+        "owner/loop"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/missing",
+      "members": [
+        "owner/missing"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/provider",
+      "members": [
+        "owner/provider"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/python",
+      "members": [
+        "owner/python"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/same-one",
+      "members": [
+        "owner/same-one"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/same-two",
+      "members": [
+        "owner/same-two"
+      ],
+      "cyclic": false
+    },
+    {
+      "id": "owner/ui",
+      "members": [
+        "owner/ui"
+      ],
+      "cyclic": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "cycle:f00134fa9283",
+      "target": "owner/app"
+    },
+    {
+      "source": "cycle:f00134fa9283",
+      "target": "owner/c"
+    },
+    {
+      "source": "owner/library",
+      "target": "owner/app"
+    },
+    {
+      "source": "owner/provider",
+      "target": "owner/consumer"
+    },
+    {
+      "source": "owner/python",
+      "target": "owner/app"
+    },
+    {
+      "source": "owner/ui",
+      "target": "owner/app"
+    }
+  ],
+  "scanned_at": "recorded",
+  "warnings": [
+    "Ambiguous publisher for npm:same; no connection was guessed.",
+    "Unknown or self dependency unknown for owner/app",
+    "Unknown or self dependency app for owner/app"
+  ]
+}
