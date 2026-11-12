@@ -10,7 +10,7 @@ of each job log, reaches the job as `RUN_ID_ENV`, and names the run in
 `last-<trigger>.json`, which lists every job the run took or skipped. A job's
 outcome keeps the last line it printed as its summary and, when it failed, the
 end of its output, read from `Job.detail_log` when the job logs there instead of
-to stdout. `jobs status` and `jobs last` then show why a job failed without
+to stdout. `rig jobs status` and `rig jobs last` then show why a job failed without
 opening a log.
 
 Each job run also goes into the run history (`history`): one `JobRun` line in
@@ -182,7 +182,7 @@ def run(
                 decisions.append(Decision(item.job.name, ran=False, reason=reason))
                 continue
             report(f"run  {item.job.name} ({item.reason})")
-            # Recorded before the job starts, so a run killed part way still shows in `jobs last`.
+            # Recorded before the job starts, so a run killed part way still shows in `rig jobs last`.
             save(None)
             outcome = _run_one(item.job, trigger, directory, execute, clock, run_id)
             state[item.job.name] = outcome

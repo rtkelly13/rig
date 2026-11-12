@@ -17,6 +17,7 @@ internal static class Forwarded
     [
         ("align", "Move open plan windows back to their planned desktop and slot.", ["desktop-manager", "workspace", "align"]),
         ("triage", "Persistent PR and issue triage queue.", ["python", "-m", "rig.triage.cli"]),
+        ("jobs", "Logon, every-15-minute and daily jobs that keep this machine aligned, run from one registry.", ["desktop-manager", "jobs"]),
         ("web", "Rig web dashboard & visual studio (static site + Python API).", ["desktop-manager", "web"]),
         ("c4", "C4 diagrams as an Open Knowledge Format bundle. Experimental.", ["python", "-m", "rig.c4_okf.cli"]),
         ("chrome-tabs", "Chrome tabs via UI Automation: list them, prune GitHub PR tabs and duplicate pages, group by repo, or organise (both, window by window).", ["desktop-manager", "chrome-tabs"]),

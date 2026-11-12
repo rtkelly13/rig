@@ -1,0 +1,1002 @@
+{
+ "source": "desktop_manager.jobs (Python), recorded by tests/desktop_manager/test_jobs_oracle.py",
+ "local_app_data": "/local",
+ "environment": {
+  "scripts": "/rig/.venv/bin",
+  "plan": "/plans/windows-workspace.json",
+  "workspace_root": "/code/work/workspace",
+  "personal_root": "/code/personal",
+  "work_roots": [
+   "/code/work",
+   "/elsewhere/work"
+  ],
+  "decisions_feed": "/state/jobs/decisions.json",
+  "orca_user_data": "/orca/orca-personal"
+ },
+ "registry": [
+  {
+   "name": "restore",
+   "description": "Open and place every window in the workspace plan.",
+   "argv": [
+    "/rig/.venv/bin/desktop-manager",
+    "workspace",
+    "restore",
+    "--config",
+    "/plans/windows-workspace.json",
+    "--defer-logon-commands"
+   ],
+   "triggers": [
+    "logon"
+   ],
+   "cadence": "every-run",
+   "timeout_minutes": 45,
+   "requires": [
+    "/plans/windows-workspace.json"
+   ],
+   "idle_minutes": 0,
+   "retry_exit_codes": [
+    4
+   ],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "claude-sessions",
+   "description": "Resume Claude sessions the last shutdown cut off; start `claude` in empty terminals.",
+   "argv": [
+    "/rig/.venv/bin/desktop-manager",
+    "claude-sessions",
+    "startup",
+    "--config",
+    "/plans/windows-workspace.json"
+   ],
+   "triggers": [
+    "logon"
+   ],
+   "cadence": "every-run",
+   "timeout_minutes": 20,
+   "requires": [
+    "/plans/windows-workspace.json"
+   ],
+   "idle_minutes": 0,
+   "retry_exit_codes": [
+    4
+   ],
+   "detail_log": null,
+   "feature": "claude-session-restore"
+  },
+  {
+   "name": "chrome-organise",
+   "description": "Close merged, duplicate and superseded Chrome tabs, and group the rest, once idle.",
+   "argv": [
+    "/rig/.venv/bin/python",
+    "-m",
+    "desktop_manager.chrome.scheduled",
+    "--wait-minutes",
+    "10"
+   ],
+   "triggers": [
+    "tick"
+   ],
+   "cadence": "every-run",
+   "timeout_minutes": 20,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": "/local/shared-utilities/chrome-tabs/organise.log",
+   "feature": null
+  },
+  {
+   "name": "align",
+   "description": "Put open plan windows back on their desktop and slot, launching nothing.",
+   "argv": [
+    "/rig/.venv/bin/desktop-manager",
+    "workspace",
+    "align",
+    "--config",
+    "/plans/windows-workspace.json"
+   ],
+   "triggers": [
+    "tick"
+   ],
+   "cadence": "every-run",
+   "timeout_minutes": 5,
+   "requires": [
+    "/plans/windows-workspace.json"
+   ],
+   "idle_minutes": 3,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "estate-sync",
+   "description": "`git fetch --prune` across every clone in the estate, so later checks see gone branches.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "estate",
+    "sync",
+    "--root",
+    "/code"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "daily",
+   "timeout_minutes": 30,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "estate-risk",
+   "description": "Report clones across the estate holding uncommitted or unpushed work.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "estate",
+    "risk",
+    "--root",
+    "/code"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "daily",
+   "timeout_minutes": 30,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "estate-trim",
+   "description": "Delete node_modules, venvs and build output in estate worktrees idle 7+ days.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "estate",
+    "trim",
+    "--apply",
+    "--root",
+    "/code"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "daily",
+   "timeout_minutes": 30,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "estate-orca",
+   "description": "Register every cloned managed project in the personal Orca, in its group.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "estate",
+    "orca",
+    "--apply",
+    "--code-root",
+    "/code",
+    "--orca-data",
+    "/orca/orca-personal"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "daily",
+   "timeout_minutes": 10,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [
+    3
+   ],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "orca-sync",
+   "description": "Apply config/orca.json to the personal Orca: agent default args, repo colours, scripts, refs.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "workspace",
+    "orca",
+    "sync",
+    "--apply",
+    "--root",
+    "/code/personal",
+    "--orca-data",
+    "/orca/orca-personal"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "daily",
+   "timeout_minutes": 10,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [
+    3
+   ],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "otel-collector",
+   "description": "Keep the local OTel collector listening on 127.0.0.1:4317/4318; prune its files past 7 days.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "otel-stack",
+    "collector",
+    "ensure"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "every-run",
+   "timeout_minutes": 5,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "estate-prune-caches",
+   "description": "Prune the uv, pnpm, NuGet http and Docker build caches, and Claude temp idle 7+ days.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "estate",
+    "prune-caches",
+    "--apply"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "daily",
+   "timeout_minutes": 60,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "worktree-reclaim",
+   "description": "Remove merged worktrees across every work repo (`workspace worktree reclaim`).",
+   "argv": [
+    "/code/work/workspace/.venv/Scripts/python",
+    "-m",
+    "workspace_cli.main",
+    "worktree",
+    "reclaim",
+    "--all-repos",
+    "--apply"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "daily",
+   "timeout_minutes": 60,
+   "requires": [
+    "/code/work/workspace/.venv/Scripts/python",
+    "/code/work/workspace/src/workspace_cli/main.py"
+   ],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "estate-decisions",
+   "description": "Write the feed of worktrees and directories only a human can decide about.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "estate",
+    "decisions",
+    "--root",
+    "/code",
+    "--root",
+    "/elsewhere/work",
+    "--write",
+    "/state/jobs/decisions.json"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "daily",
+   "timeout_minutes": 30,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  },
+  {
+   "name": "workspace-maintain",
+   "description": "The workspace repo's own due housekeeping (`workspace maintain run --due`).",
+   "argv": [
+    "/code/work/workspace/.venv/Scripts/python",
+    "-m",
+    "workspace_cli.maintain",
+    "run",
+    "--due"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "every-run",
+   "timeout_minutes": 60,
+   "requires": [
+    "/code/work/workspace/.venv/Scripts/python",
+    "/code/work/workspace/src/workspace_cli/maintain/__main__.py"
+   ],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  }
+ ],
+ "registry_without_workspace": [
+  "restore",
+  "claude-sessions",
+  "chrome-organise",
+  "align",
+  "estate-sync",
+  "estate-risk",
+  "estate-trim",
+  "estate-orca",
+  "orca-sync",
+  "otel-collector",
+  "estate-prune-caches",
+  "estate-decisions"
+ ],
+ "state_writes": [
+  {
+   "state": {},
+   "text": "{}\n"
+  },
+  {
+   "state": {
+    "restore": {
+     "started": "2026-11-12T09:00:00.123456+00:00",
+     "seconds": 42.5,
+     "returncode": 0,
+     "trigger": "logon",
+     "error": null,
+     "run_id": "logon-20261112-090000",
+     "summary": "restore: 12 placed",
+     "detail": []
+    },
+    "align": {
+     "started": "2026-11-12T09:00:00.123456+00:00",
+     "seconds": 1e-05,
+     "returncode": 0,
+     "trigger": "tick",
+     "error": null,
+     "run_id": null,
+     "summary": "align: 0 moved, 11 in place",
+     "detail": []
+    },
+    "estate-sync": {
+     "started": "2026-11-11T22:15:03.5+01:00",
+     "seconds": 125.0,
+     "returncode": 1,
+     "trigger": "tick",
+     "error": null,
+     "run_id": null,
+     "summary": "fatal: caf\u00e9 <unreachable> & 'gone' +1",
+     "detail": [
+      "line one",
+      "tab\tand \"quote\"",
+      "\u2603 snow"
+     ]
+    },
+    "chrome-organise": {
+     "started": "2026-11-12T09:00:00.123456+00:00",
+     "seconds": 3600.0,
+     "returncode": null,
+     "trigger": "tick",
+     "error": "timed out after 20 min",
+     "run_id": null,
+     "summary": null,
+     "detail": []
+    }
+   },
+   "text": "{\n  \"align\": {\n    \"started\": \"2026-11-12T09:00:00.123456+00:00\",\n    \"seconds\": 1e-05,\n    \"returncode\": 0,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": null,\n    \"summary\": \"align: 0 moved, 11 in place\",\n    \"detail\": []\n  },\n  \"chrome-organise\": {\n    \"started\": \"2026-11-12T09:00:00.123456+00:00\",\n    \"seconds\": 3600.0,\n    \"returncode\": null,\n    \"trigger\": \"tick\",\n    \"error\": \"timed out after 20 min\",\n    \"run_id\": null,\n    \"summary\": null,\n    \"detail\": []\n  },\n  \"estate-sync\": {\n    \"started\": \"2026-11-11T22:15:03.5+01:00\",\n    \"seconds\": 125.0,\n    \"returncode\": 1,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": null,\n    \"summary\": \"fatal: caf\\u00e9 <unreachable> & 'gone' +1\",\n    \"detail\": [\n      \"line one\",\n      \"tab\\tand \\\"quote\\\"\",\n      \"\\u2603 snow\"\n    ]\n  },\n  \"restore\": {\n    \"started\": \"2026-11-12T09:00:00.123456+00:00\",\n    \"seconds\": 42.5,\n    \"returncode\": 0,\n    \"trigger\": \"logon\",\n    \"error\": null,\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": \"restore: 12 placed\",\n    \"detail\": []\n  }\n}\n"
+  }
+ ],
+ "state_reads": [
+  {
+   "text": "",
+   "state": {}
+  },
+  {
+   "text": "not json",
+   "state": {}
+  },
+  {
+   "text": "[]",
+   "state": {}
+  },
+  {
+   "text": "{\"ok\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": 3, \"trigger\": \"tick\", \"returncode\": 0}}",
+   "state": {
+    "ok": {
+     "started": "2026-11-12T09:00:00+00:00",
+     "seconds": 3.0,
+     "returncode": 0,
+     "trigger": "tick",
+     "error": null,
+     "run_id": null,
+     "summary": null,
+     "detail": []
+    }
+   }
+  },
+  {
+   "text": "{\"bad-started\": {\"started\": \"yesterday\", \"seconds\": 1.0, \"trigger\": \"tick\"}, \"missing-trigger\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": 1.0}, \"bool-seconds\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": true, \"trigger\": \"tick\"}, \"string-seconds\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": \"3\", \"trigger\": \"tick\"}, \"not-an-object\": 7, \"loose-fields\": {\"started\": \"2026-11-12T09:00:00+00:00\", \"seconds\": 2.5, \"trigger\": \"logon\", \"returncode\": \"3\", \"error\": 5, \"run_id\": null, \"summary\": [\"x\"], \"detail\": [\"a\", 1], \"extra\": \"ignored\"}, \"float-returncode\": {\"started\": \"2026-11-12T09:00Z\", \"seconds\": 100.0, \"trigger\": \"tick\", \"returncode\": 3.0}, \"negative-returncode\": {\"started\": \"2026-11-12T09\", \"seconds\": 1, \"trigger\": \"tick\", \"returncode\": -1}, \"date-only\": {\"started\": \"2026-11-12\", \"seconds\": 0, \"trigger\": \"logon\", \"error\": \"\", \"summary\": \"\"}, \"space-and-compact-offset\": {\"started\": \"2026-11-12 09:00:00.1234567+0100\", \"seconds\": 1.25, \"trigger\": \"tick\"}, \"null-started\": {\"started\": null, \"seconds\": 1, \"trigger\": \"tick\"}, \"kept\": {\"started\": \"2026-11-12T08:00:00-05:00\", \"seconds\": 0.5, \"trigger\": \"tick\", \"returncode\": true, \"detail\": [\"end\", \"of\", \"output\"]}}",
+   "state": {
+    "loose-fields": {
+     "started": "2026-11-12T09:00:00+00:00",
+     "seconds": 2.5,
+     "returncode": null,
+     "trigger": "logon",
+     "error": null,
+     "run_id": null,
+     "summary": null,
+     "detail": []
+    },
+    "float-returncode": {
+     "started": "2026-11-12T09:00Z",
+     "seconds": 100.0,
+     "returncode": null,
+     "trigger": "tick",
+     "error": null,
+     "run_id": null,
+     "summary": null,
+     "detail": []
+    },
+    "negative-returncode": {
+     "started": "2026-11-12T09",
+     "seconds": 1.0,
+     "returncode": -1,
+     "trigger": "tick",
+     "error": null,
+     "run_id": null,
+     "summary": null,
+     "detail": []
+    },
+    "date-only": {
+     "started": "2026-11-12",
+     "seconds": 0.0,
+     "returncode": null,
+     "trigger": "logon",
+     "error": "",
+     "run_id": null,
+     "summary": "",
+     "detail": []
+    },
+    "space-and-compact-offset": {
+     "started": "2026-11-12 09:00:00.1234567+0100",
+     "seconds": 1.25,
+     "returncode": null,
+     "trigger": "tick",
+     "error": null,
+     "run_id": null,
+     "summary": null,
+     "detail": []
+    },
+    "kept": {
+     "started": "2026-11-12T08:00:00-05:00",
+     "seconds": 0.5,
+     "returncode": null,
+     "trigger": "tick",
+     "error": null,
+     "run_id": null,
+     "summary": null,
+     "detail": [
+      "end",
+      "of",
+      "output"
+     ]
+    }
+   }
+  }
+ ],
+ "run_writes": [
+  {
+   "text": "{\n  \"run_id\": \"logon-20261112-090000\",\n  \"trigger\": \"logon\",\n  \"started\": \"2026-11-12T09:00:00.000001+00:00\",\n  \"finished\": null,\n  \"decisions\": [\n    {\n      \"job\": \"restore\",\n      \"ran\": true,\n      \"reason\": \"every-run\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00.123456+00:00\",\n        \"seconds\": 61.25,\n        \"returncode\": 0,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": null,\n        \"summary\": null,\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"align\",\n      \"ran\": false,\n      \"reason\": \"not on logon\",\n      \"outcome\": null\n    },\n    {\n      \"job\": \"estate-sync\",\n      \"ran\": true,\n      \"reason\": \"daily\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00.123456+00:00\",\n        \"seconds\": 3.0,\n        \"returncode\": 2,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": null,\n        \"summary\": null,\n        \"detail\": [\n          \"boom\"\n        ]\n      }\n    }\n  ]\n}\n"
+  },
+  {
+   "text": "{\n  \"run_id\": \"tick-20261112-091500\",\n  \"trigger\": \"tick\",\n  \"started\": \"2026-11-12T09:15:00+00:00\",\n  \"finished\": \"2026-11-12T09:16:00+00:00\",\n  \"decisions\": []\n}\n"
+  }
+ ],
+ "run_reads": [
+  {
+   "text": "{\n  \"run_id\": \"logon-20261112-090000\",\n  \"trigger\": \"logon\",\n  \"started\": \"2026-11-12T09:00:00.000001+00:00\",\n  \"finished\": null,\n  \"decisions\": [\n    {\n      \"job\": \"restore\",\n      \"ran\": true,\n      \"reason\": \"every-run\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00.123456+00:00\",\n        \"seconds\": 61.25,\n        \"returncode\": 0,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": null,\n        \"summary\": null,\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"align\",\n      \"ran\": false,\n      \"reason\": \"not on logon\",\n      \"outcome\": null\n    },\n    {\n      \"job\": \"estate-sync\",\n      \"ran\": true,\n      \"reason\": \"daily\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00.123456+00:00\",\n        \"seconds\": 3.0,\n        \"returncode\": 2,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": null,\n        \"summary\": null,\n        \"detail\": [\n          \"boom\"\n        ]\n      }\n    }\n  ]\n}\n",
+   "run": {
+    "run_id": "logon-20261112-090000",
+    "trigger": "logon",
+    "started": "2026-11-12T09:00:00.000001+00:00",
+    "finished": null,
+    "decisions": [
+     {
+      "job": "restore",
+      "ran": true,
+      "reason": "every-run",
+      "outcome": {
+       "started": "2026-11-12T09:00:00.123456+00:00",
+       "seconds": 61.25,
+       "returncode": 0,
+       "trigger": "logon",
+       "error": null,
+       "run_id": null,
+       "summary": null,
+       "detail": []
+      }
+     },
+     {
+      "job": "align",
+      "ran": false,
+      "reason": "not on logon",
+      "outcome": null
+     },
+     {
+      "job": "estate-sync",
+      "ran": true,
+      "reason": "daily",
+      "outcome": {
+       "started": "2026-11-12T09:00:00.123456+00:00",
+       "seconds": 3.0,
+       "returncode": 2,
+       "trigger": "tick",
+       "error": null,
+       "run_id": null,
+       "summary": null,
+       "detail": [
+        "boom"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "text": "{\n  \"run_id\": \"tick-20261112-091500\",\n  \"trigger\": \"tick\",\n  \"started\": \"2026-11-12T09:15:00+00:00\",\n  \"finished\": \"2026-11-12T09:16:00+00:00\",\n  \"decisions\": []\n}\n",
+   "run": {
+    "run_id": "tick-20261112-091500",
+    "trigger": "tick",
+    "started": "2026-11-12T09:15:00+00:00",
+    "finished": "2026-11-12T09:16:00+00:00",
+    "decisions": []
+   }
+  },
+  {
+   "text": "{}",
+   "run": null
+  },
+  {
+   "text": "{\"run_id\": \"r\", \"trigger\": \"tick\", \"started\": \"s\", \"decisions\": [{\"job\": \"a\", \"ran\": \"yes\", \"reason\": \"x\"}]}",
+   "run": null
+  },
+  {
+   "text": "{\"run_id\": \"r\", \"trigger\": \"tick\", \"started\": \"2026-11-12T09:00:00+00:00\", \"finished\": 3, \"decisions\": [{\"job\": \"a\", \"ran\": true, \"reason\": \"daily\", \"outcome\": {\"started\": \"nope\", \"seconds\": 1, \"trigger\": \"tick\"}}, {\"job\": \"b\", \"ran\": true, \"reason\": \"daily\", \"outcome\": {\"seconds\": 1}}, {\"job\": \"c\", \"ran\": false, \"reason\": \"not due (daily)\", \"outcome\": null}]}",
+   "run": {
+    "run_id": "r",
+    "trigger": "tick",
+    "started": "2026-11-12T09:00:00+00:00",
+    "finished": null,
+    "decisions": [
+     {
+      "job": "a",
+      "ran": true,
+      "reason": "daily",
+      "outcome": null
+     },
+     {
+      "job": "b",
+      "ran": true,
+      "reason": "daily",
+      "outcome": null
+     },
+     {
+      "job": "c",
+      "ran": false,
+      "reason": "not due (daily)",
+      "outcome": null
+     }
+    ]
+   }
+  }
+ ],
+ "plan_state": {
+  "logon-only": {
+   "started": "2026-11-12T08:30:00+00:00",
+   "returncode": 4,
+   "trigger": "logon"
+  },
+  "boot": {
+   "started": "2026-11-12T08:30:00+00:00",
+   "returncode": 0,
+   "trigger": "logon"
+  },
+  "daily": {
+   "started": "2026-11-11T13:00:00+00:00",
+   "returncode": 0,
+   "trigger": "tick"
+  }
+ },
+ "plans": [
+  {
+   "trigger": "tick",
+   "now": "2026-11-12T09:00:00+00:00",
+   "booted": "2026-11-12T08:00:00+00:00",
+   "flags": {},
+   "planned": [
+    [
+     "every",
+     true,
+     "every-run"
+    ],
+    [
+     "logon-only",
+     true,
+     "retry: last run exited 4"
+    ],
+    [
+     "boot",
+     false,
+     "not due (once-per-boot)"
+    ],
+    [
+     "daily",
+     true,
+     "daily"
+    ],
+    [
+     "needs",
+     false,
+     "missing {root}/absent"
+    ],
+    [
+     "has",
+     true,
+     "every-run"
+    ],
+    [
+     "flagged",
+     false,
+     "flag claude-session-restore off"
+    ]
+   ]
+  },
+  {
+   "trigger": "logon",
+   "now": "2026-11-12T09:00:00+00:00",
+   "booted": "2026-11-12T08:00:00+00:00",
+   "flags": {},
+   "planned": [
+    [
+     "every",
+     false,
+     "not on logon"
+    ],
+    [
+     "logon-only",
+     true,
+     "every-run"
+    ],
+    [
+     "boot",
+     false,
+     "not due (once-per-boot)"
+    ],
+    [
+     "daily",
+     true,
+     "daily"
+    ],
+    [
+     "needs",
+     false,
+     "missing {root}/absent"
+    ],
+    [
+     "has",
+     false,
+     "not on logon"
+    ],
+    [
+     "flagged",
+     false,
+     "flag claude-session-restore off"
+    ]
+   ]
+  },
+  {
+   "trigger": "tick",
+   "now": "2026-11-12T08:59:59+00:00",
+   "booted": "2026-11-12T08:45:00+00:00",
+   "flags": {
+    "claude-session-restore": true
+   },
+   "planned": [
+    [
+     "every",
+     true,
+     "every-run"
+    ],
+    [
+     "logon-only",
+     false,
+     "not on tick"
+    ],
+    [
+     "boot",
+     true,
+     "once-per-boot"
+    ],
+    [
+     "daily",
+     false,
+     "not due (daily)"
+    ],
+    [
+     "needs",
+     false,
+     "missing {root}/absent"
+    ],
+    [
+     "has",
+     true,
+     "every-run"
+    ],
+    [
+     "flagged",
+     true,
+     "every-run"
+    ]
+   ]
+  },
+  {
+   "trigger": "tick",
+   "now": "2026-11-12T10:00:00+01:00",
+   "booted": "2026-11-12T08:00:00+00:00",
+   "flags": {},
+   "force": true,
+   "planned": [
+    [
+     "every",
+     true,
+     "requested"
+    ],
+    [
+     "logon-only",
+     true,
+     "requested"
+    ],
+    [
+     "boot",
+     true,
+     "requested"
+    ],
+    [
+     "daily",
+     true,
+     "requested"
+    ],
+    [
+     "needs",
+     false,
+     "missing {root}/absent"
+    ],
+    [
+     "has",
+     true,
+     "requested"
+    ],
+    [
+     "flagged",
+     false,
+     "flag claude-session-restore off"
+    ]
+   ]
+  },
+  {
+   "trigger": "logon",
+   "now": "2026-11-12T09:00:00+00:00",
+   "booted": "2026-11-12T08:00:00+00:00",
+   "flags": {},
+   "only": [
+    "flagged",
+    "daily"
+   ],
+   "planned": [
+    [
+     "daily",
+     true,
+     "requested"
+    ],
+    [
+     "flagged",
+     true,
+     "requested"
+    ]
+   ]
+  },
+  {
+   "trigger": "tick",
+   "now": "2026-11-12T09:00:00+00:00",
+   "booted": "2026-11-12T08:00:00+00:00",
+   "flags": {},
+   "state": "none",
+   "planned": [
+    [
+     "every",
+     true,
+     "every-run"
+    ],
+    [
+     "logon-only",
+     false,
+     "not on tick"
+    ],
+    [
+     "boot",
+     true,
+     "once-per-boot"
+    ],
+    [
+     "daily",
+     true,
+     "daily"
+    ],
+    [
+     "needs",
+     false,
+     "missing {root}/absent"
+    ],
+    [
+     "has",
+     true,
+     "every-run"
+    ],
+    [
+     "flagged",
+     false,
+     "flag claude-session-restore off"
+    ]
+   ]
+  }
+ ],
+ "cells": [
+  {
+   "outcome": {
+    "started": "2026-11-12T09:00:00.123456+00:00",
+    "seconds": 3.0,
+    "returncode": 0,
+    "trigger": "tick",
+    "error": null,
+    "run_id": null,
+    "summary": null,
+    "detail": []
+   },
+   "result": "ok",
+   "last_run": "Thu 09:00 (3s)"
+  },
+  {
+   "outcome": {
+    "started": "2026-11-12T09:00:00.123456+00:00",
+    "seconds": 0.5,
+    "returncode": 0,
+    "trigger": "tick",
+    "error": null,
+    "run_id": null,
+    "summary": "align: 0 moved",
+    "detail": []
+   },
+   "result": "ok: align: 0 moved",
+   "last_run": "Thu 09:00 (0s)"
+  },
+  {
+   "outcome": {
+    "started": "2026-11-12T09:00:00.123456+00:00",
+    "seconds": 1.5,
+    "returncode": 3,
+    "trigger": "tick",
+    "error": null,
+    "run_id": null,
+    "summary": null,
+    "detail": []
+   },
+   "result": "exit 3",
+   "last_run": "Thu 09:00 (2s)"
+  },
+  {
+   "outcome": {
+    "started": "2026-11-12T09:00:00.123456+00:00",
+    "seconds": 2.5,
+    "returncode": null,
+    "trigger": "tick",
+    "error": "timed out",
+    "run_id": null,
+    "summary": null,
+    "detail": []
+   },
+   "result": "timed out",
+   "last_run": "Thu 09:00 (2s)"
+  },
+  {
+   "outcome": {
+    "started": "2026-11-12T09:00:00.123456+00:00",
+    "seconds": 59.49,
+    "returncode": 0,
+    "trigger": "tick",
+    "error": "killed",
+    "run_id": null,
+    "summary": "half way",
+    "detail": []
+   },
+   "result": "killed: half way",
+   "last_run": "Thu 09:00 (59s)"
+  },
+  {
+   "outcome": {
+    "started": "2026-11-08T23:59:00-08:00",
+    "seconds": 1234.5,
+    "returncode": 0,
+    "trigger": "tick",
+    "error": null,
+    "run_id": null,
+    "summary": null,
+    "detail": []
+   },
+   "result": "ok",
+   "last_run": "Sun 23:59 (1234s)"
+  },
+  {
+   "outcome": {
+    "started": "2026-11-12T09:00:00.123456+00:00",
+    "seconds": 0.0,
+    "returncode": null,
+    "trigger": "tick",
+    "error": null,
+    "run_id": null,
+    "summary": null,
+    "detail": []
+   },
+   "result": "exit None",
+   "last_run": "Thu 09:00 (0s)"
+  },
+  {
+   "outcome": {
+    "started": "2026-11-12T09:00:00.123456+00:00",
+    "seconds": 7.0,
+    "returncode": 0,
+    "trigger": "tick",
+    "error": "",
+    "run_id": null,
+    "summary": "",
+    "detail": []
+   },
+   "result": "exit 0",
+   "last_run": "Thu 09:00 (7s)"
+  }
+ ]
+}

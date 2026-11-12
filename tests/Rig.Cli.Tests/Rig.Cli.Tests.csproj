@@ -4,6 +4,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Flags/*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Jobs/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup Label="Shared doubles">
     <Compile Include="../Rig.Core.Tests/Fakes/FakeProc.cs" Link="Fakes/FakeProc.cs" />

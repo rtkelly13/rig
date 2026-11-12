@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -10,20 +9,14 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.markup import escape
-from rich.table import Table
 
 from desktop_manager.jobs import install as installer
 from desktop_manager.jobs.registry import Job, Trigger, current_environment, default_jobs
-from desktop_manager.jobs.runner import log_path, plan, run
+from desktop_manager.jobs.runner import plan, run
 from desktop_manager.jobs.session_windows import boot_time
 from desktop_manager.jobs.state import (
     STATE_NAME,
-    Outcome,
-    RunRecord,
     jobs_dir,
-    last_run_path,
-    logs_dir,
-    read_run,
     read_state,
 )
 from rig.platforms import Platform, requires
@@ -38,85 +31,6 @@ console = Console()
 
 def _jobs() -> tuple[Job, ...]:
     return default_jobs(current_environment())
-
-
-@jobs_app.command(name="status")
-def status(
-    trigger: Trigger = typer.Option(Trigger.TICK, "--trigger", help="Show what a run on this trigger would do."),
-) -> None:
-    """Each job: when it runs, its last outcome, and whether the next run takes it."""
-    state = read_state(jobs_dir() / STATE_NAME)
-    table = Table(show_header=True, box=None, padding=(0, 2, 0, 0))
-    for column in ("job", "runs on", "last run", "result", f"next {trigger}"):
-        table.add_column(column)
-    failed: dict[str, Outcome] = {}
-    for item in plan(_jobs(), trigger, state, now=datetime.now().astimezone(), booted=boot_time()):
-        job = item.job
-        last = state.get(job.name)
-        triggers = ", ".join(sorted(job.triggers))
-        if last is not None and not last.ok:
-            failed[job.name] = last
-        table.add_row(
-            job.name,
-            f"{triggers} ({job.cadence})",
-            "-" if last is None else f"{last.started_at:%a %H:%M} ({last.seconds:.0f}s)",
-            "-" if last is None else escape(_result(last)),
-            "run" if item.run else f"[dim]{escape(item.reason)}[/dim]",
-        )
-    console.print(table)
-    for name, outcome in failed.items():
-        _print_detail(name, outcome)
-    tasks = [installer.LOGON_TASK, installer.TICK_TASK, installer.GUARD_TASK]
-    missing = [name for name in tasks if sys.platform == "win32" and not installer.exists(name)]
-    if missing:
-        console.print(f"[yellow]Not registered:[/yellow] {', '.join(missing)}. Run `desktop-manager jobs install`.")
-    console.print(f"[dim]Logs: {logs_dir()}[/dim]")
-
-
-@jobs_app.command(name="last")
-def last(
-    trigger: Trigger = typer.Option(Trigger.LOGON, "--trigger", help="Show the latest run on this trigger."),
-) -> None:
-    """The latest run on a trigger: every job it ran or skipped, why, and how each went."""
-    record = read_run(last_run_path(jobs_dir(), trigger))
-    if record is None:
-        console.print(f"[dim]No {trigger} run recorded yet.[/dim]")
-        return
-    _print_run(record)
-
-
-def _print_run(record: RunRecord) -> None:
-    finished = record.finished or "[yellow]did not finish[/yellow]"
-    console.print(f"[bold]{record.run_id}[/bold]  {record.started} -> {finished}")
-    table = Table(show_header=True, box=None, padding=(0, 2, 0, 0))
-    for column in ("job", "", "took", "result"):
-        table.add_column(column)
-    for item in record.decisions:
-        if item.outcome is None:
-            table.add_row(item.job, "[dim]skip[/dim]", "", f"[dim]{escape(item.reason)}[/dim]")
-            continue
-        colour = "green" if item.outcome.ok else "red"
-        table.add_row(
-            item.job, f"[{colour}]ran[/{colour}]", f"{item.outcome.seconds:.0f}s", escape(_result(item.outcome))
-        )
-    console.print(table)
-    for item in record.failed:
-        if item.outcome is not None:
-            _print_detail(item.job, item.outcome)
-    console.print(f"[dim]Job logs: {logs_dir()} (sections headed [{escape(record.run_id)}])[/dim]")
-
-
-def _result(outcome: Outcome) -> str:
-    status = "ok" if outcome.ok else (outcome.error or f"exit {outcome.returncode}")
-    return f"{status}: {outcome.summary}" if outcome.summary else status
-
-
-def _print_detail(name: str, outcome: Outcome) -> None:
-    if not outcome.detail:
-        return
-    console.print(f"\n[red]{escape(name)}[/red] failed; the end of its output:")
-    for line in outcome.detail:
-        console.print(f"  [dim]|[/dim] {escape(line)}")
 
 
 @jobs_app.command(name="run")
@@ -149,21 +63,6 @@ def run_cmd(
         report=lambda line: console.print(escape(line)),
     )
     raise typer.Exit(code=code)
-
-
-@jobs_app.command(name="log")
-def log(job: str = typer.Argument(..., help="Job name."), lines: int = typer.Option(40, "--lines", "-n")) -> None:
-    """Show the end of a job's log."""
-    match = next((item for item in _jobs() if item.name == job), None)
-    if match is None:
-        console.print(f"[red]Unknown job:[/red] {escape(job)}")
-        raise typer.Exit(code=2)
-    path = log_path(logs_dir(), match)
-    if not path.exists():
-        console.print(f"[dim]No log yet: {path}[/dim]")
-        return
-    tail = path.read_text(encoding="utf-8", errors="replace").splitlines()[-lines:]
-    console.print(escape("\n".join(tail)))
 
 
 @dataclass(frozen=True, slots=True)

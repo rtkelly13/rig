@@ -8,6 +8,7 @@ using Rig.Cli.Estate;
 using Rig.Cli.Flags;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Governance;
+using Rig.Cli.Jobs;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
 using Rig.Cli.Models;
@@ -23,6 +24,8 @@ using Rig.Core.Devenv;
 using Rig.Core.Estate;
 using Rig.Core.Flags;
 using Rig.Core.GitHub;
+using Rig.Core.Jobs;
+using Rig.Core.Orca;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
@@ -132,6 +135,7 @@ internal static class Program
                     Console.Out,
                     OperatingSystem.IsWindowsVersionAtLeast(8, 1) ? new ChromeTabsDriver(WindowsChrome.ListWindows, new GhApi(proc)) : null).Build,
                 new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out).Build,
+                new JobsCommand(JobsHostFor(codeRoot, checkout, home, proc), Console.Out).Build,
                 new MailCommand(
                     new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),
                     Console.Out,
@@ -250,5 +254,30 @@ internal static class Program
         var process = Environment.ProcessPath ?? "rig";
         var entry = typeof(Program).Assembly.Location;
         return Path.GetFileNameWithoutExtension(process).Equals("dotnet", StringComparison.OrdinalIgnoreCase) && entry.Length > 0 ? [process, entry] : [process];
+    }
+
+    // The registry as the checkout's `desktop-manager jobs` built it: this checkout's scripts and the per-user plan.
+    private static JobsHost JobsHostFor(string codeRoot, string checkout, string home, IProc proc)
+    {
+        var windows = OperatingSystem.IsWindows();
+        var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        var machineConfig = AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home);
+        var environment = new JobsEnvironment(
+            Path.Join(checkout, ".venv", windows ? "Scripts" : "bin"),
+            JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows),
+            MachineConfig.WorkspaceRepo(machineConfig, codeRoot, home),
+            Path.Join(codeRoot, "personal"),
+            MachineConfig.WorkDirs(machineConfig, codeRoot, home),
+            Decisions.DefaultFeedPath(localAppData, home),
+            OrcaLocations.Current.EstateUserData(),
+            JobRegistry.ChromeTabsLog(localAppData, home),
+            windows);
+        return new JobsHost(
+            JobState.JobsDir(AppData.Current()),
+            () => JobRegistry.Default(environment),
+            () => new FlagStore(Path.Join(AppData.Current(), "rig.db")).Effective(),
+            TimeProvider.System,
+            now => BootTime.At(now, TimeSpan.FromMilliseconds(Environment.TickCount64), windows),
+            windows ? new Schtasks(proc) : null);
     }
 }

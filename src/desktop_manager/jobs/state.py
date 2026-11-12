@@ -2,8 +2,9 @@
 
 `state.json` maps job name to its last `Outcome`. `last-<trigger>.json` is the
 latest run on that trigger as a `RunRecord`: every job it ran or skipped, and why,
-so `jobs last --trigger logon` answers "what did sign-in do?" from one file.
-Nothing else reads either file, so their shapes can change; an unreadable file
+so `rig jobs last --trigger logon` answers "what did sign-in do?" from one file.
+`Rig.Core.Jobs` reads and writes both files too, so a change to their shape changes
+`tests/Rig.Cli.Tests/Jobs/jobs-oracle.json` and the C# with it; an unreadable file
 reads as empty, which only makes every job due once.
 """
 
