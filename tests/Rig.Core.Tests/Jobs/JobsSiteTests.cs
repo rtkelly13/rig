@@ -15,6 +15,28 @@ public sealed class JobsSiteTests : IDisposable
 
     private string Personal => Path.Join(_temp.Path, "code", "personal");
 
+    [Theory]
+    [InlineData("abc123def456")]
+    [InlineData("current")]
+    public void A_rig_published_in_a_runtime_copy_runs_as_that_copy_by_its_name_or_the_current_junction(string copy)
+    {
+        var folder = Path.Join(AppData, JobsSite.RuntimeFolder, copy);
+
+        Assert.Equal(folder, JobsSite.CopyOf(Path.Join(folder, JobsSite.PublishFolder) + Path.DirectorySeparatorChar, AppData));
+        Assert.Equal(folder, JobsSite.CopyOf(Path.Join(folder, JobsSite.PublishFolder), AppData));
+    }
+
+    [Theory]
+    [InlineData("code/personal/rig/src/Rig.Cli/bin/Debug/net10.0")]
+    [InlineData("app/runtime/abc/rig/sub")]
+    [InlineData("app/runtime/rig")]
+    [InlineData("app/elsewhere/abc/rig")]
+    [InlineData("app/runtime/abc/bin")]
+    public void A_rig_anywhere_else_is_no_runtime_copy(string relative)
+    {
+        Assert.Null(JobsSite.CopyOf(Path.Join(_temp.Path, relative), AppData));
+    }
+
     [Fact]
     public void A_checkout_uses_the_per_user_plan_and_adds_nothing_to_the_jobs_environment()
     {

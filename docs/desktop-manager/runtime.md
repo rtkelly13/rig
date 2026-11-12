@@ -17,6 +17,7 @@ uv run desktop-manager runtime rollback           # back to the previous copy
 %LOCALAPPDATA%\shared-utilities\
   runtime\
     <sha12>\                     the commit's files (git archive) and its own .venv
+      rig\                        rig and rigw, published from the commit
       installed.json             sha, ref, source repo, install time
     current                      junction to the copy in use
     state.json                   current and previous copy, source repo
@@ -27,7 +28,10 @@ uv run desktop-manager runtime rollback           # back to the previous copy
 A copy keeps the repo's layout, so the workspace plan (`desktop-manager/`) and
 anything else found relative to the code is pinned with it. Its environment is
 built from that commit's `uv.lock` with `uv sync --frozen --no-dev`, copying
-files out of uv's cache rather than hard-linking them.
+files out of uv's cache rather than hard-linking them. `rig` and `rigw` are
+published from the commit's `src/Rig.Launcher` into `rig\` with `dotnet publish`.
+A `rig` started from `<copy>\rig\` (by its own name or through `current`) runs as
+that copy: its jobs use the copy's bundled plan.
 
 Copies are plain directories, not git worktrees, so they never hold a branch and
 `estate` and `git worktree list` don't see them.
@@ -36,8 +40,9 @@ Copies are plain directories, not git worktrees, so they never hold a branch and
 
 1. Fetch `origin` (for an `origin/*` ref) and resolve the ref to a commit. Installing
    the commit already current does nothing.
-2. Extract the commit to `<sha12>.partial`, rename it to `<sha12>`, and build its `.venv`.
-3. Check it runs: `desktop-manager --help`, `chrome-tabs --help`, importing the
+2. Extract the commit to `<sha12>.partial`, rename it to `<sha12>`, build its `.venv`
+   and publish its `rig`.
+3. Check it runs: `desktop-manager --help`, `chrome-tabs --help`, `rig jobs run --help`, importing the
    scheduled entry points, and `workspace validate-plan` on the copy's plan.
    A failure leaves `current` where it was and removes the new copy.
 4. Write `installed.json`, repoint `current`, record the old copy as previous and
