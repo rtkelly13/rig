@@ -538,6 +538,17 @@ public sealed class PrCommandTests
     }
 
     [Fact]
+    public async Task Land_requeues_when_auto_merge_method_is_not_squash()
+    {
+        var github = GitHub(0, new FakeLandingState { AutoMerge = true, AutoMergeMethod = "MERGE", Checks = Green }, Merged);
+
+        var result = await Land(github);
+
+        Assert.Equal(0, result.Code);
+        Assert.Equal([7], _merges);
+    }
+
+    [Fact]
     public async Task Land_on_a_merged_pr_reports_merged_without_queueing()
     {
         var result = await Land(GitHub(0, Merged));

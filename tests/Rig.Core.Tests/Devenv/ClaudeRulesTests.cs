@@ -58,4 +58,35 @@ public sealed class ClaudeRulesTests
 
         Assert.Equal(Path.Combine("/test/home", ".claude", "rules", "rig.md"), path);
     }
+
+    [Fact]
+    public void Orphan_end_marker_before_begin_marker_does_not_corrupt_merge()
+    {
+        var existing = $"Some note\n{ClaudeRules.End}\nAnother note\n{ClaudeRules.Begin}\nOld content\n{ClaudeRules.End}\nTail note\n";
+        var merge = ClaudeRules.Merge(existing);
+
+        Assert.Equal(ClaudeRulesAction.Updated, merge.Action);
+        Assert.StartsWith($"Some note\n{ClaudeRules.End}\nAnother note\n{ClaudeRules.Begin}", merge.Content, StringComparison.Ordinal);
+        Assert.EndsWith("\nTail note\n", merge.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Write_atomically_creates_file_and_replaces_content()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        _ = Directory.CreateDirectory(tempDir);
+        try
+        {
+            var target = Path.Combine(tempDir, "rules.md");
+            ClaudeRules.Write(target, "initial content");
+            Assert.Equal("initial content", File.ReadAllText(target).ReplaceLineEndings("\n"));
+
+            ClaudeRules.Write(target, "updated content");
+            Assert.Equal("updated content", File.ReadAllText(target).ReplaceLineEndings("\n"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }

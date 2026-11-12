@@ -24,6 +24,8 @@ public sealed record FakeLandingState
 
     public bool AutoMerge { get; init; } = true;
 
+    public string AutoMergeMethod { get; init; } = "SQUASH";
+
     public int? QueuePosition { get; init; }
 
     public IReadOnlyList<FakeCheck> Checks { get; init; } = [new FakeCheck("build")];
@@ -126,7 +128,7 @@ public sealed class FakeLanding(FakeGraphQL threads, params FakeLandingState[] s
             ["reviewDecision"] = state.ReviewDecision,
             ["url"] = "https://github.com/octo/repo/pull/7",
             ["baseRefName"] = state.Base,
-            ["autoMergeRequest"] = state.AutoMerge ? new JsonObject { ["enabledAt"] = "2026-01-01T00:00:00Z" } : null,
+            ["autoMergeRequest"] = state.AutoMerge ? new JsonObject { ["enabledAt"] = "2026-01-01T00:00:00Z", ["mergeMethod"] = state.AutoMergeMethod } : null,
             ["mergeQueueEntry"] = state.QueuePosition is { } position ? new JsonObject { ["position"] = position, ["state"] = "QUEUED" } : null,
             ["baseRef"] = new JsonObject { ["branchProtectionRule"] = protection },
             ["commits"] = new JsonObject

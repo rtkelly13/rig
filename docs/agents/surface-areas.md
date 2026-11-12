@@ -60,7 +60,7 @@ Modern AI assistants support dedicated rule directories rather than relying sole
 | **Claude Code** | `~/.claude/rules/rig.md` | Global User | `rig devenv claude` |
 | **Claude Code (Project)** | `.claude/rules/*.md` | Local Repository | Local repository conventions |
 | **Google Antigravity (AGY)** | `~/.gemini/GEMINI.md` | Global User (`RULE[user_global]`) | `rig devenv agy` |
-| **OpenAI Codex** | `~/.codex/rules/default.rules` | Global User | `rig devenv codex` |
+| **OpenAI Codex** | `~/.codex/rules/default.rules` | Global User | `rig policy sync --system codex` |
 | **Cursor** | `.cursor/rules/*.mdc` | Workspace / Project | Project configuration |
 
 ______________________________________________________________________
@@ -71,7 +71,7 @@ ______________________________________________________________________
 
 - **The 200-Rule Budget**: Frontier models follow 150–200 instructions consistently. Root instruction files are ruthlessly pruned to essential project identity, package manager, and critical commands ([docs/agents/agent-consistency.md](agent-consistency.md)).
 - **Progressive Disclosure**: Detailed domain guidance lives in `docs/` or vault skills, referenced by pointers rather than dumped into the root context.
-- **Estate Router**: `~/code/personal/AGENTS.md` is maintained by `rig devenv estate-rules` ([EstateRules.cs](../../src/Rig.Core/Devenv/EstateRules.cs)) to define universal rules across sibling checkouts.
+- **Estate Router**: `~/code/personal/AGENTS.md` is maintained by `rig devenv estate-rules` ([EstateRules.cs](../../src/Rig.Core/Devenv/EstateRules.cs), using `<!-- devenv:estate-rules:begin -->` markers) to define universal rules across sibling checkouts.
 - **Strict Anti-Shadowing Policy**: To keep a single source of truth, redundant per-tool instruction files (`CLAUDE.md`, `.cursorrules`, `GEMINI.md`, `.clinerules`) are strictly audited and excluded via `.gitignore` ([ADR 0017](../adr/0017-virtual-monorepo-estate-workspace-cli.md), [BespokeAgentFiles.cs](../../src/Rig.Core/Governance/BespokeAgentFiles.cs)).
 
 ______________________________________________________________________
@@ -91,7 +91,7 @@ ______________________________________________________________________
 Agent settings baselines are managed as non-destructive unions: existing user configurations, custom MCP servers, and credentials are never overwritten.
 
 - **Claude Code**: `~/.claude/settings.json` is configured by `rig devenv claude` ([ClaudeBaseline.cs](../../src/Rig.Core/Devenv/ClaudeBaseline.cs)). Sets safe model defaults (`opus-5.5`), auto-compaction budgets (200k tokens), workflow guidelines, and suppresses automated attribution trailers.
-- **OpenCode**: `~/.config/opencode/opencode.json` is configured by `rig devenv opencode` ([OpencodeDefaults.cs](../../src/Rig.Core/Devenv/OpencodeDefaults.cs)).
+- **OpenCode**: `~/.config/opencode/config.json` is configured by `rig devenv opencode` ([OpencodeDefaults.cs](../../src/Rig.Core/Devenv/OpencodeDefaults.cs)).
 
 ______________________________________________________________________
 
@@ -144,4 +144,4 @@ When `rig` writes into shared context files (such as `~/.claude/rules/rig.md`, `
 1. **Existing File With Markers**: Rig updates *only* the slice between `begin` and `end`. Everything before `begin` and after `end` is preserved byte-for-byte.
 1. **No Churn**: If the managed content is already identical, no write occurs and the file timestamp remains untouched.
 
-This allows other estate tools, custom shell scripts, and personal developer rules to co-exist in the same files without race conditions or data loss.
+This allows other estate tools, custom shell scripts, and personal developer rules to co-exist in the same files without data loss. Note that concurrent writers modifying the same target file without process locks can still overwrite each other's changes; tools writing to global context should sequence operations or keep assistant-specific rules isolated where possible.

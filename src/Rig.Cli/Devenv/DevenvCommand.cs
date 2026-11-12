@@ -328,7 +328,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         {
             try
             {
-                ClaudeRules.Write(rulesPath, host.Windows ? rulesMerge.Content.ReplaceLineEndings("\r\n") : rulesMerge.Content);
+                ClaudeRules.Write(rulesPath, rulesMerge.Content, host.Windows);
                 output.WriteLine($"✓ Successfully updated Claude Code rules at {rulesPath}");
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)

@@ -59,18 +59,9 @@ public static class ClaudeRules
         return new ClaudeRulesMerge(result.Content, (ClaudeRulesAction)result.Action);
     }
 
-    /// <summary>Writes the rules content to <paramref name="path"/>, creating parent directories if needed.</summary>
-    public static void Write(string path, string content)
+    /// <summary>Writes the rules content to <paramref name="path"/> using an atomic staging file.</summary>
+    public static void Write(string path, string content, bool windows = false)
     {
-        ArgumentNullException.ThrowIfNull(path);
-        ArgumentNullException.ThrowIfNull(content);
-
-        var dir = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(dir))
-        {
-            _ = Directory.CreateDirectory(dir);
-        }
-
-        File.WriteAllText(path, content);
+        RigGlobalContext.Write(path, content, windows);
     }
 }

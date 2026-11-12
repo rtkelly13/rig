@@ -61,7 +61,7 @@ public static class RigGlobalContext
         }
 
         var begin = existing.IndexOf(Begin, StringComparison.Ordinal);
-        var end = existing.IndexOf(End, StringComparison.Ordinal);
+        var end = begin >= 0 ? existing.IndexOf(End, begin + Begin.Length, StringComparison.Ordinal) : -1;
         string merged;
         if (begin >= 0 && end >= 0)
         {
@@ -74,5 +74,50 @@ public static class RigGlobalContext
         }
 
         return new ManagedRulesMerge(merged, merged == existing ? ManagedRulesAction.Unchanged : ManagedRulesAction.Updated);
+    }
+
+    /// <summary>
+    /// Writes <paramref name="content"/> to <paramref name="path"/> through a staging file so a failed write never
+    /// truncates or partially writes the target. A symlinked file (e.g. dotfiles) is written through to its target.
+    /// </summary>
+    public static void Write(string path, string content, bool windows)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(content);
+        var full = Path.GetFullPath(path);
+        if (new FileInfo(full).LinkTarget is not null)
+        {
+            full = File.ResolveLinkTarget(full, returnFinalTarget: true)!.FullName;
+        }
+
+        var dir = Path.GetDirectoryName(full);
+        if (!string.IsNullOrEmpty(dir))
+        {
+            _ = Directory.CreateDirectory(dir);
+        }
+
+        var staging = $"{full}.{Environment.ProcessId}.tmp";
+        try
+        {
+            var text = windows ? content.ReplaceLineEndings("\r\n") : content.ReplaceLineEndings("\n");
+            File.WriteAllText(staging, text);
+            File.Move(staging, full, overwrite: true);
+        }
+        catch
+        {
+            if (File.Exists(staging))
+            {
+                try
+                {
+                    File.Delete(staging);
+                }
+                catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
+                {
+                    // Best-effort cleanup of staging file
+                }
+            }
+
+            throw;
+        }
     }
 }

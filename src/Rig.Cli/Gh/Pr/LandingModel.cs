@@ -71,7 +71,8 @@ internal sealed record Snapshot(
     bool AutoMerge,
     QueueEntry? Queue,
     IReadOnlyList<Check> Checks,
-    string Base)
+    string Base,
+    string? AutoMergeMethod = null)
 {
     public string Url { get; init; } = string.Empty;
 

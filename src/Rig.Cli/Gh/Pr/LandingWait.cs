@@ -71,7 +71,7 @@ internal sealed class LandingWait(TimeProvider time, Sleeper sleep)
         var (polls, errors, wasQueued) = (0, 0, false);
         Observation? last = null;
         Verdict? verdict = null;
-        (string Reason, TimeSpan Since)? unsettled = null;
+        (string Reason, string Base, TimeSpan Since)? unsettled = null;
         var shown = string.Empty;
         while (true)
         {
@@ -85,9 +85,9 @@ internal sealed class LandingWait(TimeProvider time, Sleeper sleep)
                 verdict = LandingModel.Assess(seen, wasQueued);
                 wasQueued = wasQueued || seen.Snapshot.Queue is not null;
                 var at = time.GetElapsedTime(start);
-                if (verdict.Kind is VerdictKind.Unsettled && unsettled?.Reason != verdict.Reason)
+                if (verdict.Kind is VerdictKind.Unsettled && (unsettled?.Reason != verdict.Reason || unsettled?.Base != seen.Snapshot.Base))
                 {
-                    unsettled = (verdict.Reason, at);
+                    unsettled = (verdict.Reason, seen.Snapshot.Base, at);
                 }
                 else if (verdict.Kind is not VerdictKind.Unsettled)
                 {
@@ -124,8 +124,9 @@ internal sealed class LandingWait(TimeProvider time, Sleeper sleep)
             var remaining = pace.Timeout - now;
             if (remaining <= TimeSpan.Zero)
             {
-                // Out of time on a state that only looked stuck: nothing was seen moving, so call it blocked.
-                return verdict is not null && unsettled is not null
+                // Out of time on a zero-timeout one-look check that looked stuck: call it blocked.
+                // If a non-zero timeout was configured, expiring before settling is an outcome of timeout.
+                return pace.Timeout == TimeSpan.Zero && verdict is not null && unsettled is not null
                     ? new WaitResult(Outcome.Blocked, verdict.Reason, verdict.Message, now, polls, last)
                     : new WaitResult(Outcome.Timeout, verdict!.Reason, $"timed out; last seen: {verdict.Message}", now, polls, last);
             }

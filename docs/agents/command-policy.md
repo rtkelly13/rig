@@ -138,9 +138,9 @@ the long tail of `ask`.
    rule out of particular agents, add `"exclude_systems": ["claude"]` (any of
    `claude`, `codex`, `opencode` or `antigravity`). Sync then also removes a copy an
    earlier sync wrote, so un-scoping a rule takes effect without hand-editing.
-2. `rig policy sync --dry-run` to see the projection diff.
-3. `rig policy sync`.
-4. `dotnet test --project tests/Rig.Core.Tests -- --filter-namespace Rig.Core.Tests.Policy`.
+1. `rig policy sync --dry-run` to see the projection diff.
+1. `rig policy sync`.
+1. `dotnet test --project tests/Rig.Core.Tests -- --filter-namespace Rig.Core.Tests.Policy`.
 
 A misshapen rule fails closed: the loader raises rather than dropping it, so a
 patternless entry breaks `rig status --ci` instead of silently widening the

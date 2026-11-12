@@ -206,7 +206,7 @@ internal sealed partial class PrCommand(
             return false;
         }
 
-        if (first.State != "OPEN" || first.AutoMerge || first.Queue is not null)
+        if (first.State != "OPEN" || first.Queue is not null || (first.AutoMerge && string.Equals(first.AutoMergeMethod, "SQUASH", StringComparison.OrdinalIgnoreCase)))
         {
             return true;
         }

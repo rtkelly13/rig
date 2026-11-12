@@ -28,7 +28,7 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
               reviewDecision
               url
               baseRefName
-              autoMergeRequest { enabledAt }
+              autoMergeRequest { enabledAt mergeMethod }
               mergeQueueEntry { position state }
               baseRef { branchProtectionRule { requiresConversationResolution requiredStatusCheckContexts } }
               commits(last: 1) {
@@ -55,7 +55,7 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
     /// <summary>Check-run conclusions and commit-status states that mean the check will not pass without a rerun or a push.</summary>
     private static readonly HashSet<string> FailedResults = new(StringComparer.Ordinal)
     {
-        "FAILURE", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR",
+        "FAILURE", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR", "STALE",
     };
 
     /// <summary>Commit-status states that are still running. A check run is pending whenever its status is not COMPLETED.</summary>
@@ -91,7 +91,8 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
             pr.AutoMergeRequest is not null,
             pr.MergeQueueEntry is { } entry ? new QueueEntry(entry.Position, entry.State) : null,
             [.. nodes.Select(CheckOf)],
-            pr.BaseRefName)
+            pr.BaseRefName,
+            pr.AutoMergeRequest?.MergeMethod)
         {
             Url = pr.Url,
             ClassicThreadResolution = protection?.RequiresConversationResolution ?? false,
@@ -198,7 +199,7 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
 
     private sealed record WireCommits(List<WireCommitNode> Nodes);
 
-    private sealed record WireAutoMerge(string? EnabledAt = null);
+    private sealed record WireAutoMerge(string? EnabledAt = null, string? MergeMethod = null);
 
     private sealed record WireQueueEntry(int Position = 0, string State = "");
 
