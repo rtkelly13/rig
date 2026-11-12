@@ -41,10 +41,14 @@ namespace Rig.Cli;
 [ExcludeFromCodeCoverage(Justification = "Wiring only; RigApp and PythonRig carry the behaviour and are tested.")]
 internal static class Program
 {
-    private static async Task<int> Main(string[] args)
+    internal static async Task<int> Main(string[] args)
     {
         var codeRoot = CodeRoot.Current();
-        var checkout = PythonRig.ResolveCheckout(Environment.GetEnvironmentVariable(PythonRig.HomeVariable), codeRoot);
+        // RIG_HOME first; then the runtime copy a published rigw or rig runs from, so its jobs use that copy; then the checkout.
+        var rigHome = Environment.GetEnvironmentVariable(PythonRig.HomeVariable);
+        var checkout = PythonRig.ResolveCheckout(
+            string.IsNullOrEmpty(rigHome) ? JobsSite.CopyOf(AppContext.BaseDirectory, AppData.Current()) : rigHome,
+            codeRoot);
         var proc = new SystemProc();
         var git = new Git(proc, codeRoot);
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);

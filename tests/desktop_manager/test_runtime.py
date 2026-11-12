@@ -68,6 +68,20 @@ def test_install_copies_the_commit_not_the_working_tree(repo: Path, tmp_path: Pa
     assert json.loads((copy / runtime.INSTALLED_NAME).read_text(encoding="utf-8"))["sha"] == sha
     assert runtime.read_state(root) == runtime.State(current=copy.name, previous=None, repo=os.path.realpath(repo))
     assert ["uv", "sync", "--project", str(copy), "--frozen", "--no-dev", "--link-mode", "copy"] in tools.calls
+    publish = ["dotnet", "publish", str(copy / "src" / "Rig.Launcher"), "-c", "Release", "-o", str(copy / "rig")]
+    assert [call[:7] for call in tools.calls if call[0] == "dotnet"] == [publish]
+    assert [str(runtime.published(copy, "rig")), "jobs", "run", "--help"] in tools.calls
+
+
+def test_a_copy_whose_rig_does_not_publish_is_removed_and_never_current(repo: Path, tmp_path: Path):
+    _commit(repo, {"app.txt": "1\n"})
+    root = tmp_path / "runtime"
+
+    with pytest.raises(runtime.InstallError, match="dotnet publish"):
+        runtime.install(repo, "HEAD", root=root, fetch=False, runner=FakeTools(failing="dotnet publish"))
+
+    assert runtime.read_state(root).current is None
+    assert [path.name for path in root.iterdir()] == []
 
 
 def test_a_new_install_keeps_one_previous_copy_and_removes_older_ones(repo: Path, tmp_path: Path):
