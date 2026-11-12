@@ -5,9 +5,9 @@
       "name": "VS Code Workspace",
       "type": "command",
       "delay_ms": 1600,
-      "command": "uv run --no-sync desktop-manager workspace vscode && \"{vscode-path}\" --new-window \"{rig-root}\\rig.code-workspace\"",
+      "command": "\"{vscode-path}\" --new-window \"{rig-root}\\rig.code-workspace\"",
       "cwd": "{rig-root}",
-      "summary": "Regenerates the multi-root workspace file, then opens it full-screen in VS Code for cross-repo code review.",
+      "summary": "Opens the multi-root workspace file full-screen in VS Code for cross-repo code review.",
       "placement": {
         "screen": 1,
         "layout": {

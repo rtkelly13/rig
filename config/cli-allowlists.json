@@ -138,8 +138,7 @@
     "external": [
       {"pattern": "pnpm publish*", "rationale": "Publishes a package."},
       {"pattern": "pnpm deploy*", "rationale": "May change a deployed environment."},
-      {"pattern": "pulumi destroy*", "rationale": "Destroys infrastructure."},
-      {"pattern": "workspace projects clone*", "rationale": "Creates an external repository clone."}
+      {"pattern": "pulumi destroy*", "rationale": "Destroys infrastructure."}
     ],
     "denied": [
       {"pattern": "git reset --hard*", "rationale": "Discards tracked changes."},

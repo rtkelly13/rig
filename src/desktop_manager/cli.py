@@ -26,13 +26,6 @@ from desktop_manager.cli_common import (
     virtual_desktop_event_callback,
 )
 from desktop_manager.cli_machine import export_plan, guard, name_desktops, wire_machine
-from desktop_manager.cli_projects import (
-    projects_app,
-    workspace_clone_project,
-    workspace_projects,
-    workspace_sync_projects,
-    workspace_vscode,
-)
 from desktop_manager.jobs.cli import jobs_app
 from desktop_manager.models import DesktopPlan, RestoreRunLogger, WorkspacePlan
 from desktop_manager.runtime_cli import runtime_app
@@ -45,7 +38,6 @@ app = typer.Typer(name="desktop-manager", no_args_is_help=True, add_completion=F
 workspace_app = typer.Typer(name="workspace", no_args_is_help=True, help="Windows workspace management commands.")
 
 app.add_typer(workspace_app)
-app.add_typer(projects_app)
 app.add_typer(claude_sessions_app)
 app.add_typer(chrome_tabs_app)
 app.add_typer(runtime_app)
@@ -58,7 +50,6 @@ app.add_typer(web_app)
 def help_cmd() -> None:
     """Show a compact overview of every command, option, and subcommand."""
 
-    from rich.table import Table
     from rich.text import Text
 
     # --- header ---
@@ -91,11 +82,6 @@ def help_cmd() -> None:
     console.print()
     _render_group(workspace_app, "workspace")
 
-    # --- project commands ---
-    console.rule("[bold]Project commands[/bold]", style="dim")
-    console.print()
-    _render_group(projects_app, "projects")
-
     # --- claude session commands ---
     console.rule("[bold]Claude session commands[/bold]", style="dim")
     console.print()
@@ -116,21 +102,6 @@ def help_cmd() -> None:
     console.rule("[bold]Machine jobs[/bold]", style="dim")
     console.print()
     _render_group(jobs_app, "jobs")
-
-    # --- linked project repos ---
-    from desktop_manager.projects import collect_linked_projects
-
-    projects = collect_linked_projects()
-    if projects:
-        console.rule("[bold]Linked project repos[/bold]", style="dim")
-        console.print()
-        tbl = Table(show_header=True, padding=(0, 2, 0, 2), box=None)
-        tbl.add_column("Repo", style="bold green", no_wrap=True)
-        tbl.add_column("Summary", style="white")
-        for proj in projects:
-            tbl.add_row(proj.name, proj.summary or "[dim]--[/dim]")
-        console.print(tbl)
-        console.print()
 
     # --- usage hint ---
     console.print("[dim]Run[/dim] desktop-manager <group> <command> --help [dim]for full details.[/dim]")
@@ -702,10 +673,6 @@ workspace_app.command(name="restart-app")(restart_app)
 workspace_app.command(name="update-orca")(update_orca)
 workspace_app.command(name="launch-file")(launch_file)
 workspace_app.command(name="detect-app")(detect_app)
-workspace_app.command(name="projects")(workspace_projects)
-workspace_app.command(name="sync-projects")(workspace_sync_projects)
-workspace_app.command(name="clone-project")(workspace_clone_project)
-workspace_app.command(name="vscode")(workspace_vscode)
 
 
 def main() -> None:
