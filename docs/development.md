@@ -8,7 +8,7 @@ the commands an agent runs every session.
 `AGENTS.md` lists the everyday ones. Beyond those:
 
 ```bash
-uv run status --ci                                      # CI-safe tests only (@pytest.mark.ci)
+dotnet run --project src/Rig.Cli -- status --ci         # CI-safe tests only (@pytest.mark.ci)
 uv run pytest -m ci                                     # the same subset, directly
 uv run pytest --cov=src --cov-report=term-missing       # coverage
 pnpm install && pnpm css:build                          # rebuild every committed web asset
@@ -35,6 +35,11 @@ added upstream in rtkelly-labs/design-system, not hard-coded here.
 `rig` is moving to C# (ADR 0022, #85). `src/Rig.Cli` is the front door. Every script in `[project.scripts]` but
 `desktop-manager` is `rig.csharp_cli:entry`, which runs `dotnet run --project src/Rig.Cli -- …`: `uv run rig gh …`
 as typed, `uv run latex build` as `rig latex build`, and `uv run help` as `rig help`, the overview.
+
+The docs write commands two ways. `rig <command>` is the installed front door on PATH (the runtime
+copy's shim) and is the form for operating the estate. `dotnet run --project src/Rig.Cli -- <command>`
+runs this checkout's code, so it is the form for developing rig and for CI. The per-tool scripts
+(`uv run status`, `uv run workspace …`) still work while callers outside rig move over (#85 s29b).
 
 C# parses help, version, the agent launcher and every ported command itself. A command still written in Python has
 a row in `src/Rig.Cli/Forwarding/Forwarded.cs` naming the program that runs it, a `desktop-manager` command or a
@@ -103,8 +108,8 @@ Windows-safe tests (the `test-windows` job catches these, but write them right f
 - **Quality tools**:
   - **Ruff**: Strict styling, complexity, and logic rules.
   - **basedpyright**: `typeCheckingMode = "strict"` applies to every file; there is no per-path `strict` list. On top of strict, these rules are errors: `reportExplicitAny`, `reportAny`, `reportIgnoreCommentWithoutRule`, `reportImplicitOverride` (mark overrides with `@override`), `reportUnannotatedClassAttribute`, `reportImportCycles` (lazy imports count too; break cycles by moving shared code into a leaf module), `reportUninitializedInstanceVariable`, `reportUnusedParameter` and `reportPrivateLocalImportUsage`. There is no baseline, so every error fails CI.
-  - **ty**: `uv run ty check src packages/type-ratchet/src` also gates CI and `uv run status`. It checks with `python-platform = "all"`, so Windows-only code is checked the same way on a Linux runner as on a Windows machine. Untyped Windows modules are listed in `[tool.ty.analysis] replace-imports-with-any`.
+  - **ty**: `uv run ty check src packages/type-ratchet/src` also gates CI and `rig status`. It checks with `python-platform = "all"`, so Windows-only code is checked the same way on a Linux runner as on a Windows machine. Untyped Windows modules are listed in `[tool.ty.analysis] replace-imports-with-any`.
   - **Type-soup ratchet**: `uv run ratchet` fails on any fixed tuple, `cast()`, ignore comment, `noqa`, `getattr`, long module, file-level `# pyright:` pragma or string-key read (`x["k"]`, `x.get("k")`, apart from `os.environ` and the `str-key-receivers` in pyproject) under the `paths` in `[tool.repo-health.ratchet]` (`src/` and the ratchet's own package), on any `json`/`yaml` parse or `isinstance(x, dict)` outside the `typed_json`/`typed_yaml` boundary modules (stub untyped libraries in `typings/` instead), and on any `dict[str, object]`, `Mapping[str, object]` or `JsonObject` (`loose-dict`) outside the serializers and config round-trips in `loose-dict-allow`. Follow [python-types.md](python-types.md) for the banned shapes and their replacements. The ratchet is the standalone, stdlib-only `type-ratchet` package in `packages/type-ratchet` (a uv workspace member); its [README](../packages/type-ratchet/README.md) covers the rules, config keys and git install for other repos.
-  - **import-linter**: `uv run lint-imports` checks the `[tool.importlinter]` contracts in pyproject (gates CI and `uv run status`): `desktop_manager` sits above `rig`, sibling subpackages are acyclic, `desktop_manager.win32` does not import features, and the main `rig` features are independent. Each contract's `ignore_imports` lists today's violations with the plan item that removes it. Don't add to it: fix the import or move shared code into a leaf module. An entry that no longer matches fails the run, so delete it in the PR that removes the import.
+  - **import-linter**: `uv run lint-imports` checks the `[tool.importlinter]` contracts in pyproject (gates CI and `rig status`): `desktop_manager` sits above `rig`, sibling subpackages are acyclic, `desktop_manager.win32` does not import features, and the main `rig` features are independent. Each contract's `ignore_imports` lists today's violations with the plan item that removes it. Don't add to it: fix the import or move shared code into a leaf module. An entry that no longer matches fails the run, so delete it in the PR that removes the import.
   - **Bandit**: Automated security scanning.
   - **Pytest**: Coverage-enforced testing.

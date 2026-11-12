@@ -83,5 +83,16 @@ public sealed class ProjectAuditTests : IDisposable
     }
 
     [Fact]
+    public void The_rig_front_door_is_counted_apart_from_its_uv_scripts()
+    {
+        var history = _dir.File(".zsh_history");
+        File.WriteAllText(history, ": 1:0;rig help\n: 2:0;rig status --tests\n: 3:0;uv run status\n: 4:0;my-rig status\n: 5:0;rig workspace status\n");
+
+        Assert.Equal(
+            [("rig validation", 2), ("uv validation", 1), ("workspace inspection", 1)],
+            ProjectAudit.History(history));
+    }
+
+    [Fact]
     public void No_history_file_means_no_counts() => Assert.Empty(ProjectAudit.History(Path.Join(_dir.Path, "none")));
 }

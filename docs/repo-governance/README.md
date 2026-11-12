@@ -10,7 +10,7 @@ invariants, see [Open Source Project Expectations](../open-source/open-source-pr
 
 ## Typical flow
 
-`audit`, then `check-names`, then `enforce --dry-run`, then `enforce`. `uv run repo-governance --help`
+`audit`, then `check-names`, then `enforce --dry-run`, then `enforce`. `rig repo-governance --help`
 lists every command.
 
 `plan` is the desired → plan → apply shape ([target architecture](../target-architecture.md)) for the

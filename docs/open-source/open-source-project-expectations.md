@@ -451,20 +451,20 @@ All governance rules are declared centrally in [`config/repo_policies.json`](../
 
 ```bash
 # Check estate health and convention alignment
-uv run repo-governance status
+rig repo-governance status
 
 # Check specific repository alignment
-uv run repo-governance status /path/to/repo
+rig repo-governance status /path/to/repo
 
 # Automatically align repository (syncs templates, .ls-lint.yml, .gitignore, workflows, AI_POLICY)
-uv run repo-governance align /path/to/repo --apply
+rig repo-governance align /path/to/repo --apply
 
 # Verify check names across all estate repos
-uv run repo-governance check-names --all --strict
+rig repo-governance check-names --all --strict
 
 # Review open issues and pull requests across all repos
-uv run repo-governance issue-triage --all
-uv run repo-governance pr-triage --all
+rig repo-governance issue-triage --all
+rig repo-governance pr-triage --all
 ```
 
 ---

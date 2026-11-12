@@ -51,11 +51,11 @@ Three traps, all learned the hard way:
   *created* off the allowed refs, and what actually reached `Ready`, whatever
   the config claims.
 
-`uv run repo-governance vercel-gating --help` lists the rules this audit applies.
+`rig repo-governance vercel-gating --help` lists the rules this audit applies.
 
 ## Ownership (`vercel-projects`)
 
-`uv run repo-governance vercel-projects` establishes which repository each
+`rig repo-governance vercel-projects` establishes which repository each
 Vercel project in the team deploys from, and checks it against the `vercel`
 names declared in `config/managed-projects.json`
 ([local ports and Vercel names](../estate/url-ownership.md)). It reports; it

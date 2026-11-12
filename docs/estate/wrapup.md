@@ -10,12 +10,12 @@ sessions at a time, and as each one answers it asks the next, until every idle s
 Run it again without `--apply` to read the answers.
 
 ```bash
-uv run estate wrapup --personal --all                    # preview: who would be asked, and why not the rest
-uv run estate wrapup --personal --all --apply            # ask them all in the background, 5 at a time
-uv run estate wrapup --personal --all                    # later: read each verdict
-uv run estate wrapup --personal -r rig --show-prompt     # see the exact text each session would get
-uv run estate wrapup --personal -w dragonfish --children # one worktree and its subtasks, across repos
-uv run estate wrapup --work --all --json                 # work repos, machine-readable
+rig estate wrapup --personal --all                    # preview: who would be asked, and why not the rest
+rig estate wrapup --personal --all --apply            # ask them all in the background, 5 at a time
+rig estate wrapup --personal --all                    # later: read each verdict
+rig estate wrapup --personal -r rig --show-prompt     # see the exact text each session would get
+rig estate wrapup --personal -w dragonfish --children # one worktree and its subtasks, across repos
+rig estate wrapup --work --all --json                 # work repos, machine-readable
 ```
 
 ## Targeting

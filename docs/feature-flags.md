@@ -6,10 +6,10 @@ purpose are declared in `src/rig/flags/registry.py`. A stored override in the
 replaces the default until it is reset.
 
 ```bash
-uv run rig flags list                          # effective state, default, override, purpose
-uv run rig flags enable claude-session-restore # store an override
-uv run rig flags disable orca-sessions
-uv run rig flags reset orca-sessions           # back to the default
+rig flags list                          # effective state, default, override, purpose
+rig flags enable claude-session-restore # store an override
+rig flags disable orca-sessions
+rig flags reset orca-sessions           # back to the default
 ```
 
 - Change a default by editing the registry in a PR. Use an override for a

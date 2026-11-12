@@ -20,7 +20,7 @@ nothing falls back to personal defaults.
 
 Review bots, connectors and dependency bots (CodeRabbit, the ChatGPT Codex connector, Renovate) are
 GitHub Apps, declared under `github_apps` in `config/repo_policies.json`.
-`uv run repo-governance apps --help` covers the policy keys, the audit and the repo scoping.
+`rig repo-governance apps --help` covers the policy keys, the audit and the repo scoping.
 
 **An app never follows a repo into a new organisation.** GitHub won't carry an app's permissions
 across accounts, and an app can't be installed without a person approving it. So after a transfer,

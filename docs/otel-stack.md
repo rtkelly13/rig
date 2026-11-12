@@ -6,12 +6,12 @@ files, built to cost nearly nothing while idle. The files are the record; anythi
 richer (a dashboard, SQL) reads or replays them.
 
 ```bash
-uv run otel-stack collector install          # download pinned otelcol, verify sha256, unpack
-uv run otel-stack collector service install  # macOS: LaunchAgent, starts now and at login
-uv run otel-stack collector status           # binary, ports, memory, data folder
-uv run otel-stack collector ensure           # install if missing, start if not listening (idempotent)
-uv run otel-stack collector stop | start | config --print
-uv run otel-stack collector forward set <url> | off | show  # also send to another collector
+rig otel-stack collector install          # download pinned otelcol, verify sha256, unpack
+rig otel-stack collector service install  # macOS: LaunchAgent, starts now and at login
+rig otel-stack collector status           # binary, ports, memory, data folder
+rig otel-stack collector ensure           # install if missing, start if not listening (idempotent)
+rig otel-stack collector stop | start | config --print
+rig otel-stack collector forward set <url> | off | show  # also send to another collector
 ```
 
 ## What runs
@@ -94,9 +94,9 @@ exporter to every pipeline, for a dashboard such as a Docker collector feeding
 Aspire:
 
 ```bash
-uv run otel-stack collector forward set http://127.0.0.1:24318   # OTLP/HTTP base URL
-uv run otel-stack collector forward show | off
-uv run otel-stack collector stop && uv run otel-stack collector start  # apply
+rig otel-stack collector forward set http://127.0.0.1:24318   # OTLP/HTTP base URL
+rig otel-stack collector forward show | off
+rig otel-stack collector stop && rig otel-stack collector start  # apply
 ```
 
 The endpoint lives in `<rig data>/otel/forward`. When the target is down the
@@ -107,11 +107,11 @@ publish 4317/4318 moves to another host port (24317/24318 here) so the two never
 ## ClickHouse on demand
 
 ```bash
-uv run otel-stack clickhouse up         # install if missing (pinned, verified), start both, wait until they answer
-uv run otel-stack clickhouse backfill   # load the recorded files; safe to rerun
-uv run otel-stack clickhouse query "SELECT ServiceName, count() FROM otel.otel_traces GROUP BY ServiceName"
-uv run otel-stack clickhouse status     # each process, its memory, rows and disk per table
-uv run otel-stack clickhouse down       # stop both and wait for them to exit; the data stays
+rig otel-stack clickhouse up         # install if missing (pinned, verified), start both, wait until they answer
+rig otel-stack clickhouse backfill   # load the recorded files; safe to rerun
+rig otel-stack clickhouse query "SELECT ServiceName, count() FROM otel.otel_traces GROUP BY ServiceName"
+rig otel-stack clickhouse status     # each process, its memory, rows and disk per table
+rig otel-stack clickhouse down       # stop both and wait for them to exit; the data stays
 ```
 
 This replaces #275's Docker stack with native binaries, so it needs no Docker.

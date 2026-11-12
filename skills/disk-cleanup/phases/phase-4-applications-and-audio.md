@@ -10,7 +10,7 @@ Installed applications in `/Applications` and `~/Applications` frequently consum
 
 ```bash
 # Run CLI application audit
-uv run estate apps --min 100MB
+rig estate apps --min 100MB
 ```
 
 This reports:

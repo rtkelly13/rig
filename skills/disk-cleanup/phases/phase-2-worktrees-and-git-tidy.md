@@ -16,13 +16,13 @@ To prune safely without deleting unmerged work, `estate tidy --merged` queries t
 
 ```bash
 # 1. Fetch and prune dead remote tracking refs across all clones
-uv run estate sync
+rig estate sync
 
 # 2. Dry run: inspect which branches/worktrees have landed PRs
-uv run estate tidy --merged --all
+rig estate tidy --merged --all
 
 # 3. Apply: delete confirmed merged branches and clean worktrees
-uv run estate tidy --merged --all --apply
+rig estate tidy --merged --all --apply
 ```
 
 ---
@@ -37,7 +37,7 @@ A registered git worktree can live anywhere on disk.
 ### Discovery & Removal:
 `estate reclaim` traverses `git worktree list` from each clone to find external worktrees:
 ```bash
-uv run estate reclaim
+rig estate reclaim
 ```
 
 To remove a worktree cleanly:
@@ -56,7 +56,7 @@ git -C <parent-repo> worktree remove <worktree-path>
 The scheduled jobs already do the safe part every day. `estate-trim` drops regenerable output inside worktrees idle for a week, `estate-prune-caches` empties the tool caches, and `worktree-reclaim` removes merged worktrees. What is left for a human is in the decision feed, `%LOCALAPPDATA%\shared-utilities\jobs\decisions.json`, refreshed daily by `estate-decisions`:
 
 ```bash
-uv run estate decisions          # or read the feed; --json for the raw entries
+rig estate decisions          # or read the feed; --json for the raw entries
 ```
 
 Each entry carries one command. `unpushed-worktree` points at the `estate shelve <path>` preview (section 4). A `locked-path` with no files left says `rmdir /s /q`; one that still holds files lists them instead, because some may be hand-written. If the feed is older than a day, check the `estate-decisions` job before acting on it.
@@ -69,17 +69,17 @@ Each entry carries one command. `unpushed-worktree` points at the `estate shelve
 
 ```bash
 # 1. Dry run across the estate: what resolves, what needs a decision
-uv run estate shelve --all --root <code-root> --json > shelve-plan.json
+rig estate shelve --all --root <code-root> --json > shelve-plan.json
 
 # 2. Prove it on ONE worktree first, then check the directory is really gone
-uv run estate shelve <worktree-path> --apply
+rig estate shelve <worktree-path> --apply
 
 # 3. Only with the user's approval: the resolvable batch
-uv run estate shelve --all --root <code-root> --apply
+rig estate shelve --all --root <code-root> --apply
 
 # Bring one back (the snapshot returns as unstaged changes)
-uv run estate unshelve <name>
-uv run estate shelved            # list shelves; --prune drops merged markers
+rig estate unshelve <name>
+rig estate shelved            # list shelves; --prune drops merged markers
 ```
 
 Exit code 2 means some worktrees need a decision. Do not clear those decisions in bulk:

@@ -6,15 +6,15 @@ doctor` checks the install against it, and `workspace orca sync` remediates and 
 per-repo configuration.
 
 ```bash
-uv run workspace orca doctor          # table; exits 1 on any failure
-uv run workspace orca doctor --json
+rig workspace orca doctor          # table; exits 1 on any failure
+rig workspace orca doctor --json
 
-uv run workspace orca sync            # dry-run: preview changes against Orca
-uv run workspace orca sync --apply    # apply planned changes
-uv run workspace orca sync --apply --repo rig  # target a specific repo
+rig workspace orca sync            # dry-run: preview changes against Orca
+rig workspace orca sync --apply    # apply planned changes
+rig workspace orca sync --apply --repo rig  # target a specific repo
 
 # a second Orca instance, such as the personal one on a work machine, from outside it
-uv run workspace orca sync --orca-data "$APPDATA/orca-personal" --root C:/code --apply
+rig workspace orca sync --orca-data "$APPDATA/orca-personal" --root C:/code --apply
 ```
 
 Both commands take `--orca-data <folder>`, an Orca instance's user-data folder. Without it they

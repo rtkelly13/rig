@@ -49,7 +49,7 @@ the same prefix.
 
 Add the NuGet fields to each package in `config/managed-projects.json`, as the Parquet.SourceGenerator and
 Iceberg.NET entries do: `nuget_owner` (the policy owner; an organisation such as `rtkelly-labs` is normal),
-`nuget_user` (`rtk_13`), `environment`, `owners`, `scopes`. Then `uv run workspace packages audit --project <name>
+`nuget_user` (`rtk_13`), `environment`, `owners`, `scopes`. Then `rig workspace packages audit --project <name>
 --trust` prints the policy to create.
 
 - **A first publish through an organisation's policy makes that organisation the only owner.** Every `Iceberg.Net.*`

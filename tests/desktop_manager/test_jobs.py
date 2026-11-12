@@ -206,6 +206,32 @@ def test_estate_jobs_scan_the_whole_code_root():
     assert roots == [str(code), str(Path("elsewhere") / "workspace")]
 
 
+def test_rig_jobs_start_the_csharp_front_door_with_their_command_group():
+    env = Environment(
+        scripts=Path("scripts"),
+        plan=Path("plan.json"),
+        workspace_root=None,
+        personal_root=Path("code") / "personal",
+        work_roots=(),
+        decisions_feed=Path("jobs") / "decisions.json",
+        orca_user_data=Path("orca-personal"),
+    )
+    jobs = {job.name: job for job in default_jobs(env)}
+    groups = {name: job.argv[1] for name, job in jobs.items() if job.argv[0] == env.script("rig")}
+    assert groups == {
+        "estate-sync": "estate",
+        "estate-risk": "estate",
+        "estate-trim": "estate",
+        "estate-orca": "estate",
+        "orca-sync": "workspace",
+        "otel-collector": "otel-stack",
+        "estate-prune-caches": "estate",
+        "estate-decisions": "estate",
+    }
+    aliases = {env.script(name) for name in ("estate", "workspace", "otel-stack")}
+    assert not [job.name for job in jobs.values() if job.argv[0] in aliases]
+
+
 def test_only_runs_the_named_job_whatever_its_trigger_or_cadence():
     jobs = [_job("a", Cadence.DAILY, triggers=(Trigger.LOGON,)), _job("b")]
     assert _decisions(jobs, state={"a": _ran(1)}, only=frozenset({"a"})) == {"a": "run"}

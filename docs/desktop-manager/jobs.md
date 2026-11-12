@@ -61,6 +61,10 @@ A run takes its jobs in registry order, one at a time:
 - **Flagged jobs.** A job with a `feature` runs only while that
   [rig flag](../feature-flags.md) is on, and `jobs status` shows `flag <name> off`
   otherwise. Naming the job with `--only` runs it anyway.
+- **C# jobs.** The `estate`, `workspace orca` and `otel-stack` jobs run `rig <group> …` from the
+  runtime copy, which starts the C# CLI with `dotnet run`. The task's pythonw inherits the logged-on
+  user's environment, so `dotnet` must be on the user or system `PATH` (the .NET installer puts
+  `C:\Program Files\dotnet` on the system one). Without it those jobs fail and say so in their log.
 - **Optional jobs.** A job whose required paths are missing is skipped, not failed.
   `worktree-reclaim` and `workspace-maintain` run the work workspace repo's own
   CLI, and are registered only when `tools.estate.workspace_repo` in

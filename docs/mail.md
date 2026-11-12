@@ -1,6 +1,6 @@
 # Gmail triage
 
-`uv run mail` compiles triage rules for the work Gmail into Gmail filters and a Google Apps Script.
+`rig mail` compiles triage rules for the work Gmail into Gmail filters and a Google Apps Script.
 It never talks to Gmail itself. The runbook (setup, sweeps, growing the rules) is the vault skill
 `.agents/skills/gmail-triage/SKILL.md`; this page records where the pieces live.
 
@@ -24,7 +24,7 @@ the vault included. Tests and docs use placeholders such as `ci@build.example`.
 
 ```bash
 cp ~/Library/CloudStorage/GoogleDrive-*/"My Drive/Dev/gmail-triage/rules.yaml" temp/mail/rules.yaml
-uv run mail check
+rig mail check
 ```
 
 The backup is a copy, not a sync: after changing the rules, copy `rules.yaml` back to the Drive
@@ -33,8 +33,8 @@ folder.
 ## After a rules change
 
 ```bash
-uv run mail check
-uv run mail apps-script -o temp/mail/triage.gs
+rig mail check
+rig mail apps-script -o temp/mail/triage.gs
 ```
 
 Paste `triage.gs` over `Code.gs` in GmailFilter, save, and run `setup` until it logs `All set.`

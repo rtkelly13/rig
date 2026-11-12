@@ -11,12 +11,12 @@ Maintenance lives in `rig` as the `vault` CLI (ADR 0013 in the vault repo;
 ```bash
 cd ~/code/personal/rig
 
-uv run vault paths                       # which vault is being maintained
-uv run vault graph lint                  # frontmatter, duplicates, filename rules
-uv run vault graph links list            # broken wikilinks
-uv run vault graph orphans list          # notes with no inbound links
-uv run vault graph metrics health        # folder density
-uv run vault graph metrics folder-scores
+rig vault paths                       # which vault is being maintained
+rig vault graph lint                  # frontmatter, duplicates, filename rules
+rig vault graph links list            # broken wikilinks
+rig vault graph orphans list          # notes with no inbound links
+rig vault graph metrics health        # folder density
+rig vault graph metrics folder-scores
 ```
 
 Maintenance targets the **git** vault, not the Google Drive copy Obsidian opens — repairs
@@ -28,13 +28,13 @@ Every repair command is read-only until `--apply`. **Always run without it first
 and read the diff of what it proposes.
 
 ```bash
-uv run vault graph links fix --apply           # repoint resolvable broken links
-uv run vault graph orphans link --apply        # link orphans to their parent hub
-uv run vault graph repair filenames --apply    # rename + rewrite referring wikilinks
-uv run vault graph repair metadata --apply
-uv run vault graph repair backfill-types --apply
-uv run vault graph repair duplicates --apply
-uv run vault graph hubs --apply                # create/maintain PARA root hubs
+rig vault graph links fix --apply           # repoint resolvable broken links
+rig vault graph orphans link --apply        # link orphans to their parent hub
+rig vault graph repair filenames --apply    # rename + rewrite referring wikilinks
+rig vault graph repair metadata --apply
+rig vault graph repair backfill-types --apply
+rig vault graph repair duplicates --apply
+rig vault graph hubs --apply                # create/maintain PARA root hubs
 ```
 
 `repair filenames` is the one worth having: it renames a file *and* rewrites the

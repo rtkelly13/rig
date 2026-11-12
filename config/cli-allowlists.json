@@ -3,11 +3,14 @@
   "skills": {"allowlist_file": "skills-allowlist.json"},
   "commands": {
     "safe": [
+      {"pattern": "rig help", "rationale": "Read command documentation."},
       {"pattern": "uv run help", "rationale": "Read command documentation."},
+      {"pattern": "rig status*", "rationale": "Inspect repository health."},
       {"pattern": "uv run status*", "rationale": "Inspect repository health."},
       {"pattern": "uv run pytest*", "rationale": "Run validation tests."},
       {"pattern": "uv run ruff check*", "rationale": "Run static lint checks."},
       {"pattern": "uv run pyright*", "rationale": "Run type checks."},
+      {"pattern": "rig gh threads list *", "rationale": "Lists a PR's unresolved review threads; read-only. Runs on the C# CLI (src/Rig.Cli/Gh/Threads); temporary until gh resolves threads itself."},
       {"pattern": "uv run rig gh threads list *", "rationale": "Lists a PR's unresolved review threads; read-only. Runs on the C# CLI (src/Rig.Cli/Gh/Threads); temporary until gh resolves threads itself."},
       {"pattern": "pnpm test*", "rationale": "Run project tests."},
       {"pattern": "pnpm typecheck*", "rationale": "Run TypeScript checks."},

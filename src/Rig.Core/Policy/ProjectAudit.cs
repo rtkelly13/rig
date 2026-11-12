@@ -21,6 +21,7 @@ public static partial class ProjectAudit
     private static readonly (string Family, Regex Pattern)[] Families =
     [
         ("uv validation", UvValidation()),
+        ("rig validation", RigValidation()),
         ("pnpm validation", PnpmValidation()),
         ("git inspection", GitInspection()),
         ("workspace inspection", WorkspaceInspection()),
@@ -151,6 +152,9 @@ public static partial class ProjectAudit
 
     [GeneratedRegex(@"\buv run (help|status|pytest|ruff|pyright|check)\b")]
     private static partial Regex UvValidation();
+
+    [GeneratedRegex(@"(?<![\w-])rig (help|status)\b")]
+    private static partial Regex RigValidation();
 
     [GeneratedRegex(@"\bpnpm (test|typecheck|lint|build|check|ci)\b")]
     private static partial Regex PnpmValidation();

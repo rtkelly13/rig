@@ -18,9 +18,9 @@ There is no runtime hook in any harness. See
 ## Commands
 
 ```bash
-uv run rig policy check -- "<command>"         # classify one command
-uv run rig policy sync                         # project into every harness config
-uv run rig policy sync --dry-run               # show the diff without writing
+rig policy check -- "<command>"         # classify one command
+rig policy sync                         # project into every harness config
+rig policy sync --dry-run               # show the diff without writing
 ```
 
 ## Risk tiers
@@ -57,7 +57,7 @@ portable across machines.
 
 ## What is safe, and what is deliberately not
 
-Safe is read-only and idempotent — `uv run help`, `uv run pytest`, git inspection
+Safe is read-only and idempotent — `rig help`, `uv run pytest`, git inspection
 (`status`, `diff`, `log`, `show`, `rev-parse`, `cat-file`, `for-each-ref`, …),
 `gh` reads (`pr view`, `run view`, `search`, …), and the Unix text and process
 inspection tools (`cat`, `grep`, `jq`, `du`, `ps`, `lsof`, …).
@@ -137,10 +137,10 @@ the long tail of `ask`.
    rule out of particular agents, add `"exclude_systems": ["claude"]` (any of
    `claude`, `codex`, `opencode` or `antigravity`). Sync then also removes a copy an
    earlier sync wrote, so un-scoping a rule takes effect without hand-editing.
-2. `uv run rig policy sync --dry-run` to see the projection diff.
-3. `uv run rig policy sync`.
+2. `rig policy sync --dry-run` to see the projection diff.
+3. `rig policy sync`.
 4. `dotnet test --project tests/Rig.Core.Tests -- --filter-namespace Rig.Core.Tests.Policy`.
 
 A misshapen rule fails closed: the loader raises rather than dropping it, so a
-patternless entry breaks `uv run status --ci` instead of silently widening the
+patternless entry breaks `rig status --ci` instead of silently widening the
 policy (`A_misshapen_policy_fails_closed`).

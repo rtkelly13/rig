@@ -85,7 +85,7 @@ jobs:
         run: uvx zizmor@1.31.1 --offline --format github .
       - name: Ruff Check
         run: uv run ruff check .
-      # `uv run status` checks formatting, so CI must too -- otherwise the repo's
+      # `dotnet run --project src/Rig.Cli -- status` checks formatting, so CI must too -- otherwise the repo's
       # own health gate disagrees with the pipeline and main drifts unformatted.
       - name: Ruff Format Check
         run: uv run ruff format --check .
@@ -150,7 +150,7 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
       - name: AGENTS.md and docs audit
-        run: uv run repo-governance agents-audit . --strict
+        run: dotnet run --project src/Rig.Cli -- repo-governance agents-audit . --strict
 
   test:
     name: test

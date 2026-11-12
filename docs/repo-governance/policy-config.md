@@ -110,7 +110,7 @@ is itself explicit. Mutating commands carry their own guards regardless.
 
 Every managed repo ignores `temp/` and both `TODO.md` and `todo.md`: on a case-sensitive filesystem
 `TODO.md` doesn't ignore `todo.md`, and an unignored task file gets committed by mistake.
-`uv run repo-governance gitignore --help` covers the audit and sync.
+`rig repo-governance gitignore --help` covers the audit and sync.
 The audit also asks git whether `temp/.rig/`, rig's
 [per-worktree state folder](worktree-state.md), is really ignored, and flags a rule that re-includes it.
 

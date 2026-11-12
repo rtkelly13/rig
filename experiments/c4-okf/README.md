@@ -10,9 +10,9 @@ checkable rather than just browsable.
 | Piece | Where |
 |---|---|
 | Model, checks, composition | [`src/rig/c4_okf/`](../../src/rig/c4_okf/) (`bundle.py`, `mermaid_c4.py`, `graph.py`) |
-| CLI | `uv run rig c4 check \| tree \| model \| expand CONCEPT ALIAS` |
-| Viewer | `uv run rig web`, then **C4 architecture** in the sidebar, or `/c4/`. Set `RIG_C4_BUNDLE=<dir>` for another bundle |
-| Derive from code | `uv run rig c4 derive dotnet REPO OUT [--parent CONCEPT:ALIAS] [--callgraph DIR] [--check]` (`derive.py`, `dotnet_scan.py`) |
+| CLI | `rig c4 check \| tree \| model \| expand CONCEPT ALIAS` |
+| Viewer | `rig web`, then **C4 architecture** in the sidebar, or `/c4/`. Set `RIG_C4_BUNDLE=<dir>` for another bundle |
+| Derive from code | `rig c4 derive dotnet REPO OUT [--parent CONCEPT:ALIAS] [--callgraph DIR] [--check]` (`derive.py`, `dotnet_scan.py`) |
 | Sample bundles | [`rig/`](rig/): rig documenting itself, 8 hand-written concepts across all four levels. [`parquet-sourcegenerator/`](parquet-sourcegenerator/): one hand-written context view plus 17 views derived from the code. Switch between them with the viewer's bundle picker |
 | Tests | [`tests/test_c4_okf.py`](../../tests/test_c4_okf.py), [`tests/test_c4_derive.py`](../../tests/test_c4_derive.py) |
 
@@ -107,7 +107,7 @@ To regenerate the sample from the rig root (the call graph is optional, and `<di
 ```
 PSG=../../rtkelly-labs/Parquet.SourceGenerator    # from code/personal/rig
 (cd "$PSG" && dotnet run scripts/CallGraph.cs -- --out <dir>)
-uv run rig c4 derive dotnet "$PSG" experiments/c4-okf/parquet-sourcegenerator \
+rig c4 derive dotnet "$PSG" experiments/c4-okf/parquet-sourcegenerator \
   --parent system-context:psg --callgraph <dir>
 ```
 
