@@ -1,3 +1,4 @@
+using System.Globalization;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 
@@ -61,6 +62,9 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
     /// <summary>Below this, an entry is noise in a report about gigabytes.</summary>
     public const long ReportFloor = 20L * 1024 * 1024;
 
+    // A worktree holding a large node_modules takes a while to delete.
+    private static readonly TimeSpan WorktreeRemoveTimeout = TimeSpan.FromMinutes(10);
+
     /// <summary>Every kind of regenerable folder, in report order.</summary>
     public static readonly IReadOnlyList<ReclaimCategory> Categories =
     [
@@ -121,6 +125,93 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
         }
 
         return new RepoReclaim(repo, [.. entries.OrderByDescending(entry => entry.Bytes)]);
+    }
+
+    /// <summary>
+    /// One entry's fate: <c>removed</c>, <c>would remove</c>, <c>failed</c>, or the reason it was refused.
+    /// </summary>
+    /// <remarks>
+    /// Safety is per entry, not per clone: a commit is not endangered by deleting node_modules, so only a worktree
+    /// entry, the one kind that can hold live state, is refused for being dirty or the only copy of its commits.
+    /// A status or history git cannot read counts against removal: an unjudged worktree is never removed unforced.
+    /// </remarks>
+    public async Task<string> ApplyAsync(
+        string clone,
+        Reclaimable entry,
+        bool apply,
+        bool force,
+        TreeRemoval removal,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(removal);
+        if (entry.IsWorktree)
+        {
+            // git deletes a worktree's ignored files with it, and a worktree nested in its temp/ is one of them.
+            var resolved = PathResolution.Resolve(entry.Path);
+            if ((await Worktree.ListAsync(git, clone).ConfigureAwait(false))
+                .Any(tree => Trim.IsStrictlyBelow(PathResolution.Resolve(tree.Path), resolved)))
+            {
+                return "holds a worktree";
+            }
+
+            // A separate clone, or another repository's worktree, in its ignored temp/ would go the same way.
+            if (TreeMeasure.HasCheckoutBelow(entry.Path, ownGit: true))
+            {
+                return "holds a git checkout";
+            }
+
+            if (!force && (await git.LinesAsync(entry.Path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 })
+            {
+                return "dirty worktree";
+            }
+
+            if (!force && await OrphanedAsync(entry.Path).ConfigureAwait(false))
+            {
+                return "only copy";
+            }
+
+            if (!apply)
+            {
+                return "would remove";
+            }
+
+            var done = await git.RunAsync(clone, [.. Trim.LongPaths, "worktree", "remove", entry.Path], WorktreeRemoveTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
+            return done.Ok ? "removed" : "failed";
+        }
+
+        if (!Trim.IsStrictlyBelow(entry.Path, clone))
+        {
+            return "outside clone";
+        }
+
+        // temp/ scratch can hold a clone or another repository's worktree, which no regenerate command brings back.
+        if (entry.Category == "temp" && TreeMeasure.HasCheckoutBelow(entry.Path))
+        {
+            return "holds a git checkout";
+        }
+
+        if (!apply)
+        {
+            return "would remove";
+        }
+
+        try
+        {
+            await removal.RemoveAsync(entry.Path, cancellationToken).ConfigureAwait(false);
+            return "removed";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return "failed";
+        }
+    }
+
+    // Whether HEAD holds a commit on no remote; true when git cannot say.
+    private async Task<bool> OrphanedAsync(string worktree)
+    {
+        var ran = await git.RunAsync(worktree, ["rev-list", "--count", "HEAD", "--not", "--remotes"]).ConfigureAwait(false);
+        return !ran.Ok || !int.TryParse(ran.Out.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var count) || count > 0;
     }
 
     // `name` at the root, then `*/name`: real folders only, never a link to one.

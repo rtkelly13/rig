@@ -65,9 +65,6 @@ internal sealed class EstateCommand(
 
     private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(120);
 
-    // A worktree holding a large node_modules takes a while to delete.
-    private static readonly TimeSpan WorktreeRemoveTimeout = TimeSpan.FromMinutes(10);
-
     private readonly Git git = new(proc, host.CodeRoot);
 
     /// <summary>The <c>estate</c> group with its ported subcommands.</summary>
@@ -408,8 +405,7 @@ internal sealed class EstateCommand(
         return top.Length > 0 ? PathResolution.Resolve(top) : null;
     }
 
-    // Safety is per entry, not per clone: a commit is not endangered by deleting node_modules, so only a worktree
-    // entry, the one kind that can hold live state, is refused for being dirty or the only copy of its commits.
+    // Each entry's guards live in Reclaim.ApplyAsync.
     private async Task<int> ReclaimAsync(string? root, bool apply, bool force, bool refresh, string min, CancellationToken cancellationToken)
     {
         var floor = Bytes.ParseSize(min);
@@ -437,7 +433,7 @@ internal sealed class EstateCommand(
 
             foreach (var entry in entries)
             {
-                var status = await ReclaimOneAsync(clone, entry, apply, force, removal, cancellationToken).ConfigureAwait(false);
+                var status = await scanner.ApplyAsync(clone, entry, apply, force, removal, cancellationToken).ConfigureAwait(false);
                 freed += status == "removed" ? entry.Bytes : 0;
                 pending += status == "would remove" ? entry.Bytes : 0;
                 _ = table.Add(Path.GetFileName(clone), Short(entry.Path, clone), Bytes.Human(entry.Bytes), entry.Regenerate, status);
@@ -460,79 +456,6 @@ internal sealed class EstateCommand(
         }
 
         return 0;
-    }
-
-    // One entry's fate. A status or history git cannot read counts against removal: an unjudged worktree is never
-    // removed unforced.
-    private async Task<string> ReclaimOneAsync(string clone, Reclaimable entry, bool apply, bool force, TreeRemoval removal, CancellationToken cancellationToken)
-    {
-        if (entry.IsWorktree)
-        {
-            // git deletes a worktree's ignored files with it, and a worktree nested in its temp/ is one of them.
-            var resolved = PathResolution.Resolve(entry.Path);
-            if ((await Worktree.ListAsync(git, clone).ConfigureAwait(false))
-                .Any(tree => Trim.IsStrictlyBelow(PathResolution.Resolve(tree.Path), resolved)))
-            {
-                return "holds a worktree";
-            }
-
-            // A separate clone, or another repository's worktree, in its ignored temp/ would go the same way.
-            if (TreeMeasure.HasCheckoutBelow(entry.Path, ownGit: true))
-            {
-                return "holds a git checkout";
-            }
-
-            if (!force && (await git.LinesAsync(entry.Path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 })
-            {
-                return "dirty worktree";
-            }
-
-            if (!force && await OrphanedAsync(entry.Path).ConfigureAwait(false))
-            {
-                return "only copy";
-            }
-
-            if (!apply)
-            {
-                return "would remove";
-            }
-
-            var done = await git.RunAsync(clone, [.. Trim.LongPaths, "worktree", "remove", entry.Path], WorktreeRemoveTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
-            return done.Ok ? "removed" : "failed";
-        }
-
-        if (!Trim.IsStrictlyBelow(entry.Path, clone))
-        {
-            return "outside clone";
-        }
-
-        // temp/ scratch can hold a clone or another repository's worktree, which no regenerate command brings back.
-        if (entry.Category == "temp" && TreeMeasure.HasCheckoutBelow(entry.Path))
-        {
-            return "holds a git checkout";
-        }
-
-        if (!apply)
-        {
-            return "would remove";
-        }
-
-        try
-        {
-            await removal.RemoveAsync(entry.Path, cancellationToken).ConfigureAwait(false);
-            return "removed";
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return "failed";
-        }
-    }
-
-    // Whether HEAD holds a commit on no remote; true when git cannot say.
-    private async Task<bool> OrphanedAsync(string worktree)
-    {
-        var ran = await git.RunAsync(worktree, ["rev-list", "--count", "HEAD", "--not", "--remotes"]).ConfigureAwait(false);
-        return !ran.Ok || !int.TryParse(ran.Out.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var count) || count > 0;
     }
 
     // Every folder is rechecked against the disk just before it goes: the scan may be minutes old.
