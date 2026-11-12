@@ -9,6 +9,12 @@
     <PackageReference Include="YamlDotNet" />
     <!-- Reads Orca's profile-state database, read-only (Orca/OrcaProfile.cs). -->
     <PackageReference Include="Microsoft.Data.Sqlite" />
+    <!-- Build time only: generates the UI Automation COM interop from Windows' metadata (Desktop/Windows/NativeMethods.txt). -->
+    <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="Desktop/Windows/NativeMethods.txt" />
+    <AdditionalFiles Include="Desktop/Windows/NativeMethods.json" />
   </ItemGroup>
   <ItemGroup>
     <!-- The Claude Code SessionEnd hook devenv installs (Devenv/SessionLedger.cs). -->

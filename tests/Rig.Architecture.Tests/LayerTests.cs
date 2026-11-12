@@ -31,8 +31,11 @@ public sealed class LayerTests
         // Coverage runs add coverlet's tracker types, and the compiler adds types such as <>z__ReadOnlyArray
         // for collection expressions and <PrivateImplementationDetails> structs (unmarked) for static arrays; none is rig's.
         // Types nested in those, such as <>z__ReadOnlySingleElementList`1/Enumerator, are the compiler's too.
+        // CsWin32 generates its interop into Windows.Win32, internal, and offers no way to move it; types nested
+        // in it have no namespace of their own.
         var result = Types.InAssembly(Core)
             .That().DoNotResideInNamespaceStartingWith("Coverlet")
+            .And().MeetCustomRule(new NotGeneratedInterop())
             .And().MeetCustomRule(new NotCompilerOwned())
             .And().DoNotHaveNameStartingWith("__StaticArrayInitTypeSize")
             .Should().ResideInNamespaceStartingWith("Rig.Core")
@@ -56,6 +59,21 @@ public sealed class LayerTests
             }
 
             return true;
+        }
+    }
+
+    // The outermost type around this one is not in CsWin32's Windows.Win32 namespace.
+    private sealed class NotGeneratedInterop : ICustomRule
+    {
+        public bool MeetsRule(Mono.Cecil.TypeDefinition type)
+        {
+            var outer = type;
+            while (outer.DeclaringType is { } declaring)
+            {
+                outer = declaring;
+            }
+
+            return !outer.Namespace.StartsWith("Windows.Win32", StringComparison.Ordinal);
         }
     }
 
