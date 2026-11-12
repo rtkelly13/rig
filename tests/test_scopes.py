@@ -91,14 +91,18 @@ def test_a_machine_with_no_role_is_personal() -> None:
     assert scopes.machine_role() == "personal"
 
 
-@pytest.mark.parametrize(("role", "expected"), [("work", "work"), (" Work ", "work"), ("PERSONAL", "personal"), ("laptop", "personal")])
+@pytest.mark.parametrize(
+    ("role", "expected"), [("work", "work"), (" Work ", "work"), ("PERSONAL", "personal"), ("laptop", "personal")]
+)
 def test_the_role_is_read_in_any_case_and_an_unknown_one_is_personal(role: str, expected: str) -> None:
     _write_machine(f'{{"tools": {{"machine": {{"role": "{role}"}}}}}}')
 
     assert scopes.machine_role() == expected
 
 
-def test_owners_are_personal_from_the_tracked_scopes_and_work_from_the_machine(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_owners_are_personal_from_the_tracked_scopes_and_work_from_the_machine(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     _scopes_file(tmp_path, '{"personal": {"owners": ["rtkelly13"], "orgs": ["Resultful"]}}', monkeypatch)
     _write_machine('{"tools": {"estate": {"work_orgs": [" Acme ", "rtkelly13"]}}}')
 
