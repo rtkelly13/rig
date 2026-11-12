@@ -128,6 +128,32 @@ public sealed class ForwarderTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_get_that_got_no_answer_is_sent_once_more()
+    {
+        var attempts = 0;
+        _upstream.Answer = _ => ++attempts == 1
+            ? throw new HttpRequestException("aborted")
+            : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("upstream") };
+
+        using var response = await _client.GetAsync(new Uri("/api/triage", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, _upstream.Seen.Count);
+    }
+
+    [Fact]
+    public async Task A_post_that_got_no_answer_is_not_sent_again()
+    {
+        _upstream.Answer = _ => throw new HttpRequestException("aborted");
+        using var content = new StringContent("{}", Encoding.UTF8, "application/json");
+
+        using var response = await _client.PostAsync(new Uri("/api/ops/estate/trim/apply", UriKind.Relative), content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        _ = Assert.Single(_upstream.Seen);
+    }
+
+    [Fact]
     public void A_failure_names_its_cause()
     {
         var error = new HttpRequestException("An error occurred while sending the request.", new IOException("reset"));
