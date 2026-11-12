@@ -10,6 +10,9 @@ namespace Rig.Core.Tests.Desktop.Windows;
 [SupportedOSPlatform("windows")]
 public sealed class NativeWin32WindowsTests
 {
+    // A handle no window has: 0 would mean the thread queue to PostMessage.
+    private const long DeadWindow = 0x7FFF_FFF0;
+
     [Fact]
     public void Reads_the_live_machine()
     {
@@ -40,5 +43,29 @@ public sealed class NativeWin32WindowsTests
         Assert.Single(monitors, monitor => monitor.IsPrimary);
         Assert.Equal(monitors.Single(monitor => monitor.IsPrimary), win32.PrimaryMonitor());
         Assert.All(monitors, monitor => Assert.StartsWith(@"\\.\DISPLAY", monitor.Device, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Ends_and_waits_for_a_real_process()
+    {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Win32 exists only on Windows.");
+        var actions = new NativeWin32Actions();
+        using var child = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ping.exe", "-n 60 127.0.0.1")
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+        })!;
+
+        Assert.False(actions.WaitForExit(child.Id, TimeSpan.FromMilliseconds(50)));
+        Assert.True(actions.Terminate(child.Id, 3));
+        Assert.True(actions.WaitForExit(child.Id, TimeSpan.FromSeconds(10)));
+        Assert.Equal(3, child.ExitCode);
+        Assert.Null(actions.WaitForExit(-1, TimeSpan.Zero));
+        Assert.False(actions.Terminate(-1, 1));
+        Assert.False(actions.PostClose(DeadWindow));
+        Assert.False(actions.Restack(DeadWindow, ZOrder.Top));
+        Assert.False(actions.Restore(DeadWindow));
+        Assert.Equal(0, actions.SendKeys([]));
     }
 }
