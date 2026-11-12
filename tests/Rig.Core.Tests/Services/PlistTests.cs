@@ -20,6 +20,19 @@ public sealed class PlistTests
             text[text.IndexOf("<dict>", StringComparison.Ordinal)..]);
     }
 
+    [Fact]
+    public void A_string_dictionary_nests_with_its_keys_sorted()
+    {
+        var text = Encoding.UTF8.GetString(Plist.Render(new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["Env"] = new Dictionary<string, string>(StringComparer.Ordinal) { ["Z"] = "1", ["A<"] = "2" },
+        }));
+
+        Assert.Equal(
+            "<dict>\n\t<key>Env</key>\n\t<dict>\n\t\t<key>A&lt;</key>\n\t\t<string>2</string>\n\t\t<key>Z</key>\n\t\t<string>1</string>\n\t</dict>\n</dict>\n</plist>\n",
+            text[text.IndexOf("<dict>", StringComparison.Ordinal)..]);
+    }
+
     [Theory]
     [InlineData("\0")]
     [InlineData("a\u001fb")]

@@ -5,7 +5,7 @@ namespace Rig.Core.Services;
 
 /// <summary>
 /// Writes an XML property list byte for byte as Python's <c>plistlib.dumps</c> did: keys sorted, tab indents, and only
-/// the value kinds a LaunchAgent uses (strings, whole numbers, booleans and lists of strings).
+/// the value kinds a LaunchAgent uses (strings, whole numbers, booleans, lists of strings and string-to-string dictionaries).
 /// </summary>
 public static class Plist
 {
@@ -44,6 +44,16 @@ public static class Plist
             case int number:
                 xml.Append(indent).Append("<integer>").Append(number.ToString(CultureInfo.InvariantCulture)).Append("</integer>\n");
                 break;
+            case IReadOnlyDictionary<string, string> map:
+                xml.Append(indent).Append("<dict>\n");
+                foreach (var (key, item) in map.OrderBy(e => e.Key, StringComparer.Ordinal))
+                {
+                    xml.Append(indent).Append('\t').Append("<key>").Append(Escape(key)).Append("</key>\n");
+                    Value(xml, item, depth + 1);
+                }
+
+                xml.Append(indent).Append("</dict>\n");
+                break;
             case IEnumerable<string> items:
                 xml.Append(indent).Append("<array>\n");
                 foreach (var item in items)
@@ -54,7 +64,7 @@ public static class Plist
                 xml.Append(indent).Append("</array>\n");
                 break;
             default:
-                throw new ArgumentException($"plist values here are strings, ints, bools or string lists, not {value.GetType().Name}", nameof(value));
+                throw new ArgumentException($"plist values here are strings, ints, bools, string lists or string dictionaries, not {value.GetType().Name}", nameof(value));
         }
     }
 

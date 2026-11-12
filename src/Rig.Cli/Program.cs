@@ -18,6 +18,7 @@ using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
 using Rig.Cli.Web;
+using Rig.Cli.Workload;
 using Rig.Cli.Workspace;
 using Rig.Core.Browser;
 using Rig.Core.Devenv;
@@ -32,6 +33,7 @@ using Rig.Core.Roots;
 using Rig.Core.Services;
 using Rig.Core.Skills;
 using Rig.Core.Vault;
+using Rig.Core.Workload;
 using Rig.Core.Workspace;
 using Rig.Web;
 
@@ -162,6 +164,20 @@ internal static class Program
                         new ClickHouseClient(clickhouseHttp),
                         new OtlpSender(otlp, new Uri($"http://{ClickHouseConfig.Host}:{ClickHouseConfig.CollectorPort}")),
                         Task.Delay),
+                    Console.Out,
+                    Console.Error).Build,
+                new WorkloadCommand(
+                    new WorkloadHost(
+                        new WorkloadPaths(AppData.Current()),
+                        macOs,
+                        macOs ? "macos" : "windows",
+                        Environment.MachineName,
+                        TimeProvider.System,
+                        TimeZoneInfo.Local,
+                        ProgramPath.Find),
+                    new WorkloadParts(
+                        OperatingSystem.IsWindows() ? new WindowsProcessTable() : new MacProcessTable(proc, TimeZoneInfo.Local),
+                        async ct => new Launchd(proc, Launchd.AgentsDirUnder(home), Launchd.GuiDomain(await KnowledgeServerCommand.UserIdAsync(proc, ct).ConfigureAwait(false)))),
                     Console.Out,
                     Console.Error).Build,
                 new StatusCommand(proc, git, Environment.CurrentDirectory, Console.Out).Build,

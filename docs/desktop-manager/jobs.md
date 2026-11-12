@@ -59,6 +59,8 @@ A run takes its jobs in registry order, one at a time:
 | `estate-orca` | logon, tick | daily, retried while Orca is down | `estate orca --apply`: register every cloned managed project in the personal Orca, in its group |
 | `orca-sync` | logon, tick | daily, retried while Orca is down | `workspace orca sync --apply`: apply `config/orca.json` (agent default args, repo colours, scripts, base refs) |
 | `workspace-maintain` | logon, tick | every run | the workspace repo's `maintain run --due`, which tracks its own due tasks |
+| `otel-collector` | logon, tick | every run | `otel-stack collector ensure`: keep the local collector listening and prune its files past 7 days ([otel-stack.md](../otel-stack.md)) |
+| `workload-sample` | logon, tick | every run | `workload sample`: record memory use by app, Claude sessions, large processes and bursts; keep 7 days ([workload.md](../workload.md)) |
 
 - **Cadence.** `every run` runs whenever its trigger fires. `daily` runs once its
   last start is 20 hours old. `once per boot` runs on the first matching trigger

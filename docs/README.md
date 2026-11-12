@@ -34,6 +34,7 @@ and findings are in each CLI's `--help`; these guides hold what `--help` can't.
 | [web-routes.md](web-routes.md) | Serving JSON or a page from `rig web`: the `Route` protocol, error envelope, write guard and composition root |
 | [observability.md](observability.md) | Adding or reading traces from the CLI tools |
 | [otel-stack.md](otel-stack.md) | The always-on local OTLP collector on 4317/4318: install, startup job, 7-day files, forwarding |
+| [workload.md](workload.md) | The 15-minute memory sampler: what it records, where, the 7-day retention, cost, and reading a day back |
 | [mail.md](mail.md) | Gmail triage: where the untracked rules, their Drive backup and the Apps Script live; recovery |
 | [forks.md](forks.md) | Managed forks: a repo tracking an upstream we don't own, with our changes on top |
 | [triage.md](triage.md) | `rig triage`: the estate-wide PR and issue queue and its `rig web` page |

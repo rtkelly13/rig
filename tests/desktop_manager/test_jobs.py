@@ -225,6 +225,7 @@ def test_rig_jobs_start_the_csharp_front_door_with_their_command_group():
         "estate-orca": "estate",
         "orca-sync": "workspace",
         "otel-collector": "otel-stack",
+        "workload-sample": "workload",
         "estate-prune-caches": "estate",
         "estate-decisions": "estate",
     }
