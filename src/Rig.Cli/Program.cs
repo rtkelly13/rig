@@ -287,6 +287,9 @@ internal static class Program
             () => new FlagStore(Path.Join(AppData.Current(), "rig.db")).Effective(),
             TimeProvider.System,
             now => BootTime.At(now, TimeSpan.FromMilliseconds(Environment.TickCount64), windows),
-            windows ? new Schtasks(proc) : null);
+            windows ? new Schtasks(proc) : null,
+            new ProcessJobExecutor(TimeProvider.System),
+            () => OperatingSystem.IsWindowsVersionAtLeast(6, 1) ? Rig.Core.Chrome.Presence.IdleSeconds(new Rig.Core.Chrome.Windows.NativePresence()) : double.PositiveInfinity,
+            (path, wait) => RunLock.Hold(path, wait, Thread.Sleep));
     }
 }

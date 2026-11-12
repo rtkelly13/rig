@@ -13,6 +13,9 @@ public sealed class JobsCommandTests : IDisposable
 
     private readonly TempDir _temp = new();
     private readonly StringWriter _out = new();
+    private readonly FakeExecutor _executor = new();
+    private double _idle = double.PositiveInfinity;
+    private bool _held;
 
     public void Dispose()
     {
@@ -146,15 +149,72 @@ public sealed class JobsCommandTests : IDisposable
         Assert.Equal("Unknown job: nope\n", _out.ToString());
     }
 
+    [Fact]
+    public async Task Run_runs_the_due_jobs_reports_each_and_exits_one_when_one_fails()
+    {
+        _executor.Codes["every"] = 3;
+
+        var exit = await Run(null, "run");
+
+        Assert.Equal(1, exit);
+        Assert.Equal(["every", "daily"], _executor.Ran);
+        Assert.Equal(
+            "run  every (every-run)\n     every: exit 3 after 0s: every done\n       | every done\n"
+            + "run  daily (daily)\n     daily: exit 0 after 0s: daily done\n"
+            + "skip never: not on tick\n",
+            _out.ToString());
+        Assert.Equal(3, JobState.ReadState(Path.Join(_temp.Path, JobState.StateName))["every"].ReturnCode);
+        Assert.Equal("tick-20261112-090000", JobState.ReadRun(JobState.LastRunPath(_temp.Path, "tick"))!.RunId);
+    }
+
+    [Fact]
+    public async Task Run_with_only_runs_the_named_job_on_any_trigger()
+    {
+        var exit = await Run(null, "run", "--trigger", "logon", "--only", "every");
+
+        Assert.Equal(0, exit);
+        Assert.Equal(["every"], _executor.Ran);
+        Assert.Equal("run  every (requested)\n     every: exit 0 after 0s: every done\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Run_skips_when_another_run_holds_the_lock()
+    {
+        _held = true;
+
+        Assert.Equal(0, await Run(null, "run", "--force"));
+        Assert.Empty(_executor.Ran);
+        Assert.Equal($"another jobs run holds {Path.Join(_temp.Path, JobState.LockName)}; skipping this tick run\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Run_dry_run_says_what_would_run_and_runs_nothing()
+    {
+        _idle = 0;
+
+        Assert.Equal(0, await Run(null, "run", "--dry-run", "--force"));
+        Assert.Empty(_executor.Ran);
+        Assert.Equal("run  every: requested\nrun  daily: requested\nrun  never: requested\n", _out.ToString());
+        Assert.False(File.Exists(Path.Join(_temp.Path, JobState.StateName)));
+    }
+
+    [Fact]
+    public async Task Run_refuses_jobs_the_registry_does_not_have()
+    {
+        Assert.Equal(JobsCommand.UnknownExit, await Run(null, "run", "--only", "zed", "--only", "every", "--only", "abc"));
+        Assert.Equal("Unknown job: abc, zed\n", _out.ToString());
+        Assert.Empty(_executor.Ran);
+    }
+
     [Theory]
     [InlineData(new[] { "jobs", "status" }, false)]
     [InlineData(new[] { "jobs", "last", "--trigger", "tick" }, false)]
     [InlineData(new[] { "jobs", "log", "align" }, false)]
-    [InlineData(new[] { "jobs", "run", "--trigger", "tick" }, true)]
+    [InlineData(new[] { "jobs", "run", "--trigger", "tick" }, false)]
     [InlineData(new[] { "jobs", "install" }, true)]
     [InlineData(new[] { "jobs", "uninstall" }, true)]
     [InlineData(new[] { "jobs" }, true)]
-    public void Run_and_the_installers_still_go_to_python(string[] args, bool python)
+    public void Only_the_installers_still_go_to_python(string[] args, bool python)
     {
         var root = new RootCommand { new JobsCommand(Host(null), _out).Build() };
 
@@ -174,7 +234,10 @@ public sealed class JobsCommandTests : IDisposable
         () => new Dictionary<string, bool>(),
         new FixedTime(Now),
         now => now - TimeSpan.FromHours(1),
-        tasks);
+        tasks,
+        _executor,
+        () => _idle,
+        (_, _) => _held ? null : new MemoryStream());
 
     private Task<int> Run(IScheduledTasks? tasks, params string[] args) =>
         new JobsCommand(Host(tasks), _out).Build().Parse(args)
@@ -182,7 +245,28 @@ public sealed class JobsCommandTests : IDisposable
 
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider
     {
+        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+
         public override DateTimeOffset GetUtcNow() => now;
+
+        public override long GetTimestamp() => 0;
+    }
+
+    // Writes each job's run as the real executor would, and exits with the code set for it.
+    private sealed class FakeExecutor : IJobExecutor
+    {
+        public Dictionary<string, long> Codes { get; } = [];
+
+        public List<string> Ran { get; } = [];
+
+        public long Execute(Job job, string logsDir, string runId)
+        {
+            Ran.Add(job.Name);
+            var code = Codes.GetValueOrDefault(job.Name);
+            Directory.CreateDirectory(logsDir);
+            File.AppendAllText(JobState.LogPath(logsDir, job.Name), $"--- 2026-11-12 09:00:00 [{runId}] x\n{job.Name} done\n--- exit {code}\n");
+            return code;
+        }
     }
 
     private sealed class FakeTasks(params string[] missing) : IScheduledTasks
