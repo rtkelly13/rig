@@ -31,6 +31,19 @@ internal sealed class FakeUiaElement(string className, UiaControlType type = Uia
 
     public int Selects { get; private set; }
 
+    public int Invokes { get; private set; }
+
+    public int ContextMenus { get; private set; }
+
+    /// <summary>Runs on each <see cref="SelectItem"/>, as Chrome reacting to the selection.</summary>
+    public Action? OnSelect { get; set; }
+
+    /// <summary>Runs on each <see cref="Invoke"/>, as Chrome reacting to the press.</summary>
+    public Action? OnInvoke { get; set; }
+
+    /// <summary>Runs on each <see cref="ShowContextMenu"/>, as Chrome opening the menu.</summary>
+    public Action? OnContextMenu { get; set; }
+
     public string Name
     {
         get
@@ -52,11 +65,25 @@ internal sealed class FakeUiaElement(string className, UiaControlType type = Uia
 
     public IReadOnlyList<int> RuntimeId => Touch(Id);
 
-    public UiaRect BoundingRectangle => Touch(new UiaRect(0, 0, 100, 30));
+    public UiaRect Rect { get; set; } = new(0, 0, 100, 30);
 
-    public bool IsOffscreen => Touch(false);
+    public bool Offscreen { get; set; }
 
-    public bool HasKeyboardFocus => Touch(false);
+    public bool Focused { get; set; }
+
+    /// <summary>Whether the element has an expand pattern; <see cref="Expand"/> answers it.</summary>
+    public bool Expandable { get; set; }
+
+    /// <summary>Runs on each <see cref="Expand"/> of an expandable element, as Chrome opening its submenu.</summary>
+    public Action? OnExpand { get; set; }
+
+    public int Scrolls { get; private set; }
+
+    public UiaRect BoundingRectangle => Touch(Rect);
+
+    public bool IsOffscreen => Touch(Offscreen);
+
+    public bool HasKeyboardFocus => Touch(Focused);
 
     public bool IsSelected => Touch(Selected);
 
@@ -118,15 +145,46 @@ internal sealed class FakeUiaElement(string className, UiaControlType type = Uia
     {
         Touch();
         Selects++;
+        OnSelect?.Invoke();
     }
 
-    public void Invoke() => Touch();
+    public void Invoke()
+    {
+        Touch();
+        Invokes++;
+        OnInvoke?.Invoke();
+    }
 
-    public bool Expand() => Touch(false);
+    public bool Expand()
+    {
+        Touch();
+        if (Expandable)
+        {
+            OnExpand?.Invoke();
+        }
 
-    public bool ScrollIntoView() => Touch(false);
+        return Expandable;
+    }
 
-    public void ShowContextMenu() => Touch();
+    public bool ScrollIntoView()
+    {
+        Touch();
+        Scrolls++;
+        return false;
+    }
+
+    public void ShowContextMenu()
+    {
+        Touch();
+        ContextMenus++;
+        OnContextMenu?.Invoke();
+    }
+
+    public void Remove(FakeUiaElement child)
+    {
+        _ = _children.Remove(child);
+        child._parent = null;
+    }
 
     private List<FakeUiaElement> Children(UiaView view) =>
         view == UiaView.Raw

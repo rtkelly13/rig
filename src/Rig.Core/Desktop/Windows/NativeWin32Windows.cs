@@ -31,6 +31,23 @@ public sealed unsafe partial class NativeWin32Windows : IWin32Windows
     public int CurrentProcessId { get; } = Environment.ProcessId;
 
     /// <inheritdoc/>
+    public IReadOnlyList<long> ChildWindows(long handle)
+    {
+        var handles = new List<long>();
+        var gc = GCHandle.Alloc(handles);
+        try
+        {
+            _ = EnumChildWindows((nint)handle, &CollectWindow, GCHandle.ToIntPtr(gc));
+        }
+        finally
+        {
+            gc.Free();
+        }
+
+        return handles;
+    }
+
+    /// <inheritdoc/>
     public IReadOnlyList<long> TopLevelWindows()
     {
         var handles = new List<long>();
@@ -117,6 +134,12 @@ public sealed unsafe partial class NativeWin32Windows : IWin32Windows
 
     /// <inheritdoc/>
     public long ForegroundWindow() => GetForegroundWindow();
+
+    /// <inheritdoc/>
+    public (int X, int Y)? CursorPosition() => GetCursorPos(out var point) ? (point.X, point.Y) : null;
+
+    /// <inheritdoc/>
+    public long WindowFromPoint(int x, int y) => WindowFromPointNative(new CursorPoint { X = x, Y = y });
 
     /// <inheritdoc/>
     public long ConsoleWindow() => GetConsoleWindow();
@@ -242,6 +265,14 @@ public sealed unsafe partial class NativeWin32Windows : IWin32Windows
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool EnumWindows(delegate* unmanaged[Stdcall]<nint, nint, int> callback, nint state);
 
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool EnumChildWindows(
+        nint parent,
+        delegate* unmanaged[Stdcall]<nint, nint, int> callback,
+        nint state);
+
     [LibraryImport("user32.dll", EntryPoint = "IsWindow")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -302,6 +333,15 @@ public sealed unsafe partial class NativeWin32Windows : IWin32Windows
     [LibraryImport("user32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial nint GetAncestor(nint window, uint flags);
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetCursorPos(out CursorPoint point);
+
+    [LibraryImport("user32.dll", EntryPoint = "WindowFromPoint")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial nint WindowFromPointNative(CursorPoint point);
 
     [LibraryImport("kernel32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
@@ -381,5 +421,12 @@ public sealed unsafe partial class NativeWin32Windows : IWin32Windows
         public NativeRect Work;
         public uint Flags;
         public fixed char Device[32];
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CursorPoint
+    {
+        public int X;
+        public int Y;
     }
 }

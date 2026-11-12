@@ -13,6 +13,9 @@ public interface IWin32Windows
     /// <summary>Every top-level window, in <c>EnumWindows</c> order (top of the z-order first).</summary>
     IReadOnlyList<long> TopLevelWindows();
 
+    /// <summary>Every descendant window of <paramref name="handle"/>, in <c>EnumChildWindows</c> order; empty when it has gone.</summary>
+    IReadOnlyList<long> ChildWindows(long handle);
+
     /// <summary>Whether <paramref name="handle"/> is still a window.</summary>
     bool IsWindow(long handle);
 
@@ -45,6 +48,12 @@ public interface IWin32Windows
 
     /// <summary>The window with keyboard focus, or 0.</summary>
     long ForegroundWindow();
+
+    /// <summary>The cursor's screen position; null while the lock screen holds the input desktop.</summary>
+    (int X, int Y)? CursorPosition();
+
+    /// <summary>The window under the screen point (a child window, not its root), or 0.</summary>
+    long WindowFromPoint(int x, int y);
 
     /// <summary>This process's console window, or 0 when it has none.</summary>
     long ConsoleWindow();

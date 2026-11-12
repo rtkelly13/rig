@@ -28,6 +28,15 @@ public interface IWin32Actions
     /// <summary><c>SetForegroundWindow</c>.</summary>
     bool SetForeground(long handle);
 
+    /// <summary><c>ShowWindow(SW_MINIMIZE)</c>; false only when the window has gone.</summary>
+    bool Minimize(long handle);
+
+    /// <summary><c>SetCursorPos</c>.</summary>
+    bool MoveCursor(int x, int y);
+
+    /// <summary>A right button press and release where the cursor is, through <c>SendInput</c>; answers how many events Windows took.</summary>
+    int RightClick();
+
     /// <summary><c>SendInput</c> with one keyboard <c>INPUT</c> per event; answers how many Windows took.</summary>
     int SendKeys(IReadOnlyList<KeyEvent> events);
 

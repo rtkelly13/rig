@@ -304,8 +304,9 @@ public sealed class ChromeUiaReader
     }
 
     /// <summary>Breadth-first search for a browser view by class that never descends into web content.</summary>
-    private static IUiaElement? FindView(IUiaElement root, string className)
+    public static IUiaElement? FindView(IUiaElement root, string className)
     {
+        ArgumentNullException.ThrowIfNull(root);
         List<IUiaElement> level = [root];
         for (var depth = 0; depth < StripSearchMaxDepth && level.Count > 0; depth++)
         {
