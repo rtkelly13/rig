@@ -36,6 +36,9 @@ internal sealed class FakeWin32Windows : IWin32Windows, IWindowDesktops
 
     public List<MonitorInfo> MonitorList { get; } = [];
 
+    /// <summary>Each window's child windows, as <c>EnumChildWindows</c> lists them.</summary>
+    public Dictionary<long, List<long>> Children { get; } = [];
+
     public int CurrentDesktop { get; set; } = 1;
 
     public int CurrentProcessId { get; set; } = 999;
@@ -50,6 +53,8 @@ internal sealed class FakeWin32Windows : IWin32Windows, IWindowDesktops
         MonitorList.Add(new(bounds, work, primary, $@"\\.\DISPLAY{MonitorList.Count + 1}"));
 
     public IReadOnlyList<long> TopLevelWindows() => [.. Windows.Select(window => window.Handle)];
+
+    public IReadOnlyList<long> ChildWindows(long handle) => Children.TryGetValue(handle, out var children) ? children : [];
 
     public bool IsWindow(long handle) => Find(handle) is not null;
 
@@ -72,6 +77,18 @@ internal sealed class FakeWin32Windows : IWin32Windows, IWindowDesktops
     public Rect? ExtendedFrameBounds(long handle) => Find(handle)?.Frame;
 
     public long ForegroundWindow() => Foreground;
+
+    /// <summary>What <see cref="CursorPosition"/> answers; null as on the lock screen.</summary>
+    public (int X, int Y)? Cursor { get; set; } = (0, 0);
+
+    public (int X, int Y)? CursorPosition() => Cursor;
+
+    /// <summary>The window under each point, for <see cref="WindowFromPoint"/>; <see cref="UnderAnyPoint"/> otherwise.</summary>
+    public Dictionary<(int X, int Y), long> UnderPoint { get; } = [];
+
+    public long UnderAnyPoint { get; set; }
+
+    public long WindowFromPoint(int x, int y) => UnderPoint.GetValueOrDefault((x, y), UnderAnyPoint);
 
     public long ConsoleWindow() => Console;
 

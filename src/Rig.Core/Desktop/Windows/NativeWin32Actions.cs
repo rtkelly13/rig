@@ -11,6 +11,10 @@ public sealed unsafe partial class NativeWin32Actions : IWin32Actions
 {
     private const int ShowRestore = 9;
     private const int ShowNoActivate = 8;
+    private const int ShowMinimize = 6;
+    private const uint MouseInput = 0;
+    private const uint RightDown = 0x8;
+    private const uint RightUp = 0x10;
     private const uint NoSize = 0x1;
     private const uint NoMove = 0x2;
     private const uint NoZOrder = 0x4;
@@ -59,6 +63,21 @@ public sealed unsafe partial class NativeWin32Actions : IWin32Actions
 
     /// <inheritdoc/>
     public bool SetForeground(long handle) => SetForegroundWindow((nint)handle);
+
+    /// <inheritdoc/>
+    public bool Minimize(long handle) => Show(handle, ShowMinimize);
+
+    /// <inheritdoc/>
+    public bool MoveCursor(int x, int y) => SetCursorPos(x, y);
+
+    /// <inheritdoc/>
+    public int RightClick()
+    {
+        var inputs = stackalloc Input[2];
+        inputs[0] = new Input { Type = MouseInput, Union = new InputUnion { Mouse = new MouseInputData { Flags = RightDown } } };
+        inputs[1] = new Input { Type = MouseInput, Union = new InputUnion { Mouse = new MouseInputData { Flags = RightUp } } };
+        return (int)SendInput(2, inputs, sizeof(Input));
+    }
 
     /// <inheritdoc/>
     public int SendKeys(IReadOnlyList<KeyEvent> events)
@@ -155,6 +174,11 @@ public sealed unsafe partial class NativeWin32Actions : IWin32Actions
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetForegroundWindow(nint window);
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetCursorPos(int x, int y);
 
     [LibraryImport("user32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
