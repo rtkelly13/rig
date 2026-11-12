@@ -8,16 +8,17 @@ using Rig.Core.Policy;
 namespace Rig.Cli.Chrome;
 
 /// <summary>
-/// <c>rig chrome-tabs</c>: the ported half of <c>desktop-manager chrome-tabs</c>. Only <c>traces</c> runs here so far;
-/// the forwarding table hands every other line to the Python group. Ported from <c>desktop_manager.chrome.traces_cli</c>,
-/// whose messages all go to stdout.
+/// <c>rig chrome-tabs</c>: the ported half of <c>desktop-manager chrome-tabs</c>. <c>traces</c> runs here everywhere;
+/// <c>list</c>, <c>rank</c>, <c>prune</c>, <c>install</c> and <c>uninstall</c> where there is a driver. The forwarding
+/// table hands every other line to the Python group. Ported from <c>desktop_manager.chrome.traces_cli</c> and
+/// <c>desktop_manager.chrome.cli</c>, whose messages all go to stdout.
 /// </summary>
 /// <param name="environment">Reads an environment variable (<c>LOCALAPPDATA</c> places the traces).</param>
 /// <param name="home">The user's home, where the traces live when <c>LOCALAPPDATA</c> is unset.</param>
 /// <param name="time">The clock that picks today's day file.</param>
 /// <param name="zone">The zone run start times are shown in.</param>
 /// <param name="output">Where every line goes.</param>
-/// <param name="driver">Reads Chrome for <c>list</c> and <c>rank</c>; null where only the Python has a driver (macOS).</param>
+/// <param name="driver">Opens Chrome for <c>list</c>, <c>rank</c> and <c>prune</c>; null where only the Python has a driver (macOS).</param>
 internal sealed class ChromeTabsCommand(
     Func<string, string?> environment, string home, TimeProvider time, TimeZoneInfo zone, TextWriter output, ChromeTabsDriver? driver = null)
 {
@@ -32,7 +33,7 @@ internal sealed class ChromeTabsCommand(
     public const int NoRunExit = 1;
 
     /// <summary>
-    /// The <c>chrome-tabs</c> command. <c>list</c>, <c>rank</c>, <c>install</c> and <c>uninstall</c> are only registered
+    /// The <c>chrome-tabs</c> command. <c>list</c>, <c>rank</c>, <c>prune</c>, <c>install</c> and <c>uninstall</c> are only registered
     /// with a driver (Windows): without one, the forwarding table hands them to the Python, which has the macOS driver
     /// and refuses the Windows-only installs itself.
     /// </summary>
@@ -43,6 +44,7 @@ internal sealed class ChromeTabsCommand(
         {
             command.Subcommands.Add(List(driver));
             command.Subcommands.Add(Rank(driver));
+            command.Subcommands.Add(Prune(driver));
             command.Subcommands.Add(Install());
             command.Subcommands.Add(Uninstall());
         }
@@ -79,6 +81,53 @@ internal sealed class ChromeTabsCommand(
         rank.SetAction((parsed, cancellationToken) => RankTabs(
             chrome, parsed.GetValue(profile), !parsed.GetValue(noGithub), parsed.GetValue(limit), parsed.GetValue(json), cancellationToken));
         return rank;
+    }
+
+    private Command Prune(ChromeTabsDriver chrome)
+    {
+        var prune = new Command(
+            "prune",
+            "Close merged, duplicate and superseded GitHub PR tabs, and duplicate pages, per profile across windows. [Windows/macOS only]\n\n"
+            + "Tabs close one window at a time in screen order, and each window's active tab is put back before the next window starts.");
+        var dryRun = new Option<bool>("--dry-run") { Description = "Print the plan grouped by reason; close nothing." };
+        var profile = Profile();
+        var github = new Option<bool>("--github") { Description = "Query GitHub for PR state, chains, size, review and checks (the default)." };
+        var noGithub = new Option<bool>("--no-github") { Description = "Skip the PR rules and every GitHub call; GitHub pages are still de-duplicated by title." };
+        var sites = new Option<bool>("--sites") { Description = "Close duplicate non-PR pages by per-site title rules (the default)." };
+        var noSites = new Option<bool>("--no-sites") { Description = "Leave duplicate non-PR pages alone." };
+        var maxMemory = new Option<double?>("--max-memory")
+        {
+            Description = "GB budget for the memory Chrome reports per tab. After the other rules, close the lowest-ranked "
+                + "tabs (biggest first) until the rest fit. Calls, audible, pinned and active tabs are never closed.",
+        };
+        maxMemory.Validators.Add(result =>
+        {
+            if (result.GetValueOrDefault<double?>() is < 0.1)
+            {
+                result.AddError("--max-memory must be at least 0.1.");
+            }
+        });
+        var unattended = new Option<bool>("--unattended")
+        {
+            Description = "For scheduled runs: close nothing while a call is live, and hold back every window's active tab "
+                + "and everything in the foreground window.",
+        };
+        foreach (var option in new Option[] { dryRun, profile, github, noGithub, sites, noSites, maxMemory, unattended })
+        {
+            prune.Options.Add(option);
+        }
+
+        prune.SetAction((parsed, cancellationToken) => PruneTabs(
+            chrome,
+            new PruneOptions(
+                parsed.GetValue(dryRun),
+                parsed.GetValue(profile),
+                !parsed.GetValue(noGithub),
+                !parsed.GetValue(noSites),
+                parsed.GetValue(maxMemory),
+                parsed.GetValue(unattended)),
+            cancellationToken));
+        return prune;
     }
 
     private static Option<string?> Profile() =>
@@ -301,10 +350,123 @@ internal sealed class ChromeTabsCommand(
         return 0;
     }
 
+    private async Task<int> PruneTabs(ChromeTabsDriver chrome, PruneOptions options, CancellationToken cancellationToken)
+    {
+        var started = time.GetTimestamp();
+        var session = chrome.Open();
+        var windows = FilterProfile(session.ReadWindows(), options.Profile);
+        if (options.Unattended && !options.DryRun && Unattended.LiveCall(session.Presence, windows) is { } live)
+        {
+            Say($"Skipped: {live}; left everything for the next run");
+            return 0;
+        }
+
+        var enumerated = time.GetTimestamp();
+        var resolution = options.GitHub
+            ? await PrResolver.ResolveAsync(chrome.GitHub, PrPrune.PrTabs(windows).Select(item => item.Pr).Distinct(), cancellationToken: cancellationToken).ConfigureAwait(false)
+            : Resolution.Empty;
+        var resolved = time.GetTimestamp();
+
+        IReadOnlyList<IClosePlan> plans = ClosePlansFor(windows, resolution, options);
+        var planned = time.GetTimestamp();
+        var repos = resolution.States.Keys.Select(pr => pr.Slug).Distinct().Count();
+        var timings = string.Create(
+            CultureInfo.InvariantCulture,
+            $"enumerate {time.GetElapsedTime(started, enumerated).TotalSeconds:F2}s, resolve {time.GetElapsedTime(enumerated, resolved).TotalSeconds:F2}s "
+            + $"({repos} repos), plan {time.GetElapsedTime(resolved, planned).TotalSeconds:F3}s");
+
+        if (options.Unattended)
+        {
+            var runnable = ClosePlans.HoldUnattended(plans, session.Foreground());
+            plans = [runnable];
+            if (runnable.Held.Count > 0)
+            {
+                Say($"Held back: active tab or foreground window ({runnable.Held.Count.ToString(CultureInfo.InvariantCulture)})");
+                SayAll(runnable.Held.Select(close => TabPlanText.PlanLine(close.Item, "left for an attended run")));
+            }
+        }
+
+        if (options.DryRun || !plans.Any(plan => plan.Closes.Count > 0))
+        {
+            var prefix = options.DryRun ? "Dry run: nothing closed. " : "";
+            Say(string.Create(CultureInfo.InvariantCulture, $"{prefix}{timings}, total {time.GetElapsedTime(started, planned).TotalSeconds:F2}s"));
+            return 0;
+        }
+
+        var order = ChromeWindow.ScreenOrder(windows, session.Desktops.Current()).Select(window => window.Handle).ToList();
+        var start = session.Desktops.Current();
+        IReadOnlyList<AppliedClose> applied;
+        try
+        {
+            applied = ClosePlans.Apply(plans, windows, session.Actions, order);
+        }
+        finally
+        {
+            session.Desktops.ReturnTo(start);
+        }
+
+        var failures = applied.Where(result => !result.Closed).ToList();
+        foreach (var failure in failures)
+        {
+            Say($"Not closed {failure.Planned.Item.Label}: {failure.Detail}");
+        }
+
+        var perClose = applied.Sum(result => result.Elapsed.TotalSeconds) / applied.Count;
+        Say(string.Create(
+            CultureInfo.InvariantCulture,
+            $"Closed {applied.Count - failures.Count}/{applied.Count} {timings}, {perClose:F2}s per close, total {time.GetElapsedTime(started).TotalSeconds:F2}s"));
+        return failures.Count > 0 ? 1 : 0;
+    }
+
+    /// <summary>Every close plan <c>prune</c> runs, each printed as it is made. Ported from <c>_make_close_plans</c>.</summary>
+    private List<IClosePlan> ClosePlansFor(IReadOnlyList<ChromeWindow> windows, Resolution resolution, PruneOptions options)
+    {
+        var plans = new List<IClosePlan>();
+        var held = new HashSet<RuntimeId>();
+        if (options.GitHub)
+        {
+            var prPlan = PrPrune.Plan(windows, resolution);
+            plans.Add(prPlan);
+            held.UnionWith(prPlan.Reports.Select(report => report.Item.Tab.RuntimeId));
+            foreach (var (slug, error) in resolution.FailedRepos.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+            {
+                Say($"{slug}: open PRs unreadable, chain rules skipped: {error}");
+            }
+
+            SayAll(TabPlanText.Prune(prPlan));
+        }
+
+        if (options.Sites)
+        {
+            var sitePlan = Dedupe.Plan(windows);
+            plans.Add(sitePlan);
+            held.UnionWith(sitePlan.Reports.Select(report => report.Item.Tab.RuntimeId));
+            SayAll(TabPlanText.Dedupe(sitePlan));
+        }
+
+        if (options.MaxMemoryGb is { } budget)
+        {
+            var closing = plans.SelectMany(plan => plan.Closes).Select(close => close.Item.Tab.RuntimeId).ToHashSet();
+            var memoryPlan = TabRank.PlanMemory(TabRank.Rank(windows, resolution), budget * 1024, closing, held);
+            plans.Add(memoryPlan);
+            SayAll(TabPlanText.Memory(memoryPlan));
+        }
+
+        return plans;
+    }
+
+    private void SayAll(IEnumerable<string> lines)
+    {
+        foreach (var line in lines)
+        {
+            Say(line);
+        }
+    }
+
     private int ListTabs(ChromeTabsDriver chrome, string? profile, bool prsOnly, bool json)
     {
         var started = time.GetTimestamp();
-        var windows = FilterProfile(chrome.ReadWindows(), profile);
+        var windows = FilterProfile(chrome.Open().ReadWindows(), profile);
         var elapsed = time.GetElapsedTime(started);
         if (json)
         {
@@ -340,7 +502,7 @@ internal sealed class ChromeTabsCommand(
 
     private async Task<int> RankTabs(ChromeTabsDriver chrome, string? profile, bool github, int? limit, bool json, CancellationToken cancellationToken)
     {
-        var windows = FilterProfile(chrome.ReadWindows(), profile);
+        var windows = FilterProfile(chrome.Open().ReadWindows(), profile);
         var resolution = github
             ? await PrResolver.ResolveAsync(chrome.GitHub, PrPrune.PrTabs(windows).Select(item => item.Pr).Distinct(), cancellationToken: cancellationToken).ConfigureAwait(false)
             : Resolution.Empty;
@@ -451,3 +613,12 @@ internal sealed class ChromeTabsCommand(
 
     private void Say(string line) => output.Write(line + "\n");
 }
+
+/// <summary><c>chrome-tabs prune</c>'s flags.</summary>
+/// <param name="DryRun">Print the plans; close nothing.</param>
+/// <param name="Profile">Only this profile.</param>
+/// <param name="GitHub">Run the PR rules, asking GitHub.</param>
+/// <param name="Sites">Close duplicate non-PR pages.</param>
+/// <param name="MaxMemoryGb">The memory budget, if any.</param>
+/// <param name="Unattended">A scheduled run: leave calls, active tabs and the foreground window alone.</param>
+internal sealed record PruneOptions(bool DryRun, string? Profile, bool GitHub, bool Sites, double? MaxMemoryGb, bool Unattended);
