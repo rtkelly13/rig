@@ -11,13 +11,16 @@ rig jobs status --trigger logon
 rig jobs last                          # the latest sign-in run: every job, why it ran or not, how it went
 rig jobs last --trigger tick
 rig jobs log chrome-organise
-desktop-manager jobs run --dry-run     # what a tick would run now
-desktop-manager jobs run --only estate-risk   # one job, due or not
+rig jobs run --dry-run                 # what a tick would run now
+rig jobs run --only estate-risk        # one job, due or not
 desktop-manager jobs install           # register the tasks (run from the runtime copy)
 ```
 
-`status`, `last` and `log` run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`); `run`,
-`install` and `uninstall` are still Python, and `rig jobs <those>` hands them to `desktop-manager jobs`.
+`status`, `last`, `log` and `run` run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`); `install` and
+`uninstall` are still Python, and `rig jobs <those>` hands them to `desktop-manager jobs`. The scheduled tasks
+still start the Python runner (`desktop_manager.jobs.scheduled`) until the installers move, because only it
+records spans; the C# runner writes the same `state.json`, `last-<trigger>.json` and `runs.ndjson`, with empty
+`trace_id` and `span_id`, and takes the same `run.lock` byte, so the two never overlap.
 Both sides read and write the same `state.json` and `last-<trigger>.json`, held byte for byte to
 `tests/Rig.Cli.Tests/Jobs/jobs-oracle.json`, which Python records.
 
@@ -160,7 +163,7 @@ web server (`mounted_routes()` in `web_cli.py`): three reads and one write.
 | `GET /api/ops/jobs` | every registered job (name, description, cadence as text, triggers, timeout) with its last outcome from `state.json`, or `null` |
 | `GET /api/ops/runs?job=<name>&limit=1..1000` | job runs, newest first (default 200), optionally of one job |
 | `GET /api/ops/runs/<job>/<run_id>/output` | what that run printed; `output` is `null` when nothing was saved or it has been pruned |
-| `POST /api/ops/jobs/run` with `{"job": <name> \| null}` | starts `jobs run --trigger tick` detached, for one job (due or not) or every due job, and answers `{"job", "pid"}` at once; 404 for a job the registry lacks |
+| `POST /api/ops/jobs/run` with `{"job": <name> \| null}` | starts `rig jobs run --trigger tick` detached, for one job (due or not) or every due job, and answers `{"job", "pid"}` at once; 404 for a job the registry lacks |
 
 Runs made before the history existed still appear: a job's last outcome in
 `state.json` that the history does not hold is listed with an empty `trace_id`,

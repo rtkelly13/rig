@@ -28,7 +28,7 @@ runs it before opening the dashboard as a Chrome app window on screen 3, where t
   server imports none of them, so the `rig-features` independence contract holds.
 - Every error is a JSON `{"error": ...}` with 400, 404 or 503. The writes
   (`jobs/run`, `trim/apply`) require a loopback `Host`, a matching `Origin` and `application/json`.
-- Run now answers at once: the run is a detached `jobs run --trigger tick` (`rig.tracing.spawn_detached`)
+- Run now answers at once: the run is a detached `rig jobs run --trigger tick` (`rig.tracing.spawn_detached`)
   and shows on Runs when it finishes. The coordinator lock makes it skip while a scheduled run holds it.
   It replaces the old studio panel and its blocking `POST /api/jobs/run`, which are gone.
 - Trace links are built in the browser from the `*_trace_url` templates the telemetry status

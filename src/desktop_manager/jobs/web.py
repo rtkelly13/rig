@@ -3,7 +3,7 @@
 - `GET /api/ops/jobs`: every registered job with its last outcome from `state.json`.
 - `GET /api/ops/runs?job=<name>&limit=1..1000`: job runs from the run history, newest first.
 - `GET /api/ops/runs/<job>/<run_id>/output`: what one run printed; 404 for an unknown job or run.
-- `POST /api/ops/jobs/run` with `{"job": <name> | null}`: start `jobs run --trigger tick` in the background,
+- `POST /api/ops/jobs/run` with `{"job": <name> | null}`: start `rig jobs run --trigger tick` in the background,
   for one job (due or not) or for every due job, and answer at once. The coordinator's lock keeps it from
   overlapping a scheduled run: if one is in progress, the started run skips.
 
@@ -17,7 +17,6 @@ ever read from the paths the history recorded.
 
 from __future__ import annotations
 
-import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -215,8 +214,8 @@ class RunStarted:
 
 
 def run_command(job: str | None) -> list[str]:
-    """The coordinator's own CLI, run by this interpreter, as the scheduled tick runs it."""
-    command = [sys.executable, "-m", "desktop_manager.cli", "jobs", "run", "--trigger", "tick"]
+    """The coordinator's run, through this environment's `rig`, as a scheduled tick runs it."""
+    command = [current_environment().script("rig"), "jobs", "run", "--trigger", "tick"]
     return [*command, "--only", job] if job else command
 
 
