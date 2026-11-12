@@ -109,9 +109,40 @@ internal static class FrontendRoutes
             return null;
         }
 
-        // Python resolved links before checking, so a link inside the folder may not lead out of it.
-        var linked = new FileInfo(target).ResolveLinkTarget(returnFinalTarget: true);
-        return linked is null || linked.FullName.StartsWith(folder, StringComparison.Ordinal) ? target : null;
+        // Python resolved links before checking, so a link inside the folder, to a file or to a directory on the way,
+        // may not lead out of it.
+        var realFolder = Real(folder) is { } real ? Path.TrimEndingDirectorySeparator(real) + Path.DirectorySeparatorChar : null;
+        return realFolder is not null && Real(target) is { } realTarget && realTarget.StartsWith(realFolder, StringComparison.Ordinal)
+            ? target
+            : null;
+    }
+
+    /// <summary><paramref name="path"/> with a link at any of its components followed, or null for a cycle.</summary>
+    private static string? Real(string path, int depth = 0)
+    {
+        if (depth > 32)
+        {
+            return null;
+        }
+
+        var full = Path.GetFullPath(path);
+        var current = Path.GetPathRoot(full) ?? string.Empty;
+        foreach (var part in full[current.Length..].Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+        {
+            current = Path.Join(current, part);
+            FileSystemInfo info = Directory.Exists(current) ? new DirectoryInfo(current) : new FileInfo(current);
+            if (info.LinkTarget is { } linked)
+            {
+                if (Real(Path.GetFullPath(linked, Path.GetDirectoryName(current) ?? current), depth + 1) is not { } resolved)
+                {
+                    return null;
+                }
+
+                current = resolved;
+            }
+        }
+
+        return current;
     }
 
     private static IResult Document(string templates)

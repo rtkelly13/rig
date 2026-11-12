@@ -147,6 +147,18 @@ public sealed class FrontendRoutesTests : IAsyncLifetime
         Assert.Equal(Path.Join(_tree.Templates, "alias.css"), FrontendRoutes.Under(_tree.Templates, "alias.css"));
     }
 
+    [Fact]
+    public void A_directory_link_out_of_the_folder_is_refused()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Symlinks need Developer Mode on Windows.");
+        _tree.Write("elsewhere/secret.txt", "secret");
+        Directory.CreateSymbolicLink(Path.Join(_tree.Templates, "linked"), Path.Join(_tree.Root, "elsewhere"));
+        Directory.CreateSymbolicLink(Path.Join(_tree.Templates, "inner"), Path.Join(_tree.Templates, "app_assets"));
+
+        Assert.Null(FrontendRoutes.Under(_tree.Templates, Path.Join("linked", "secret.txt")));
+        Assert.Equal(Path.Join(_tree.Templates, "inner", "app.js"), FrontendRoutes.Under(_tree.Templates, Path.Join("inner", "app.js")));
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("app_assets")]
