@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import io
+import json
 import urllib.parse
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
 from rig.c4_okf.bundle import load_bundle, resolve_href
-from rig.c4_okf.cli import DEFAULT_BUNDLE
+from rig.c4_okf.cli import DEFAULT_BUNDLE, app
 from rig.c4_okf.graph import EdgeKind, Severity, TreeNode, build_model, check_bundle, collect_links, expand, zoom_tree
 from rig.c4_okf.mermaid_c4 import ElementKind, parse_diagram
 from rig.c4_okf.web import render_markdown, serve_c4
@@ -296,3 +298,50 @@ def test_routes_leave_other_paths_alone() -> None:
     handler = _FakeHandler()
     assert not serve_c4(handler, urllib.parse.urlparse("/api/estate"))
     assert handler.status == 0
+
+
+_CLI = CliRunner()
+
+
+def test_cli_check_prints_a_table_and_fails_only_on_errors_unless_strict(shop: Path) -> None:
+    table = _CLI.invoke(app, ["check", str(shop)])
+    assert table.exit_code == 0, table.output
+    assert "3 concepts" in table.output
+    assert "unverified" in table.output
+    quiet = _CLI.invoke(app, ["check", str(shop), "--quiet", "--json"])
+    assert json.loads(quiet.output) == []
+    _ = (shop / "context.md").write_text(CONTEXT.replace('System_Ext(pay, "Payments")\n', ""), encoding="utf-8")
+    _ = (shop / "shop" / "orphan.md").write_text(API.replace("API components", "Orphan"), encoding="utf-8")
+    assert _CLI.invoke(app, ["check", str(shop)]).exit_code == 0
+    strict = _CLI.invoke(app, ["check", str(shop), "--strict", "--json"])
+    assert strict.exit_code == 1
+    assert "orphan" in {f["code"] for f in json.loads(strict.output)}
+
+
+def test_cli_check_exits_one_on_an_error(shop: Path) -> None:
+    _ = (shop / "lonely.md").write_text("---\ntitle: no type\n---\nhi\n", encoding="utf-8")
+    result = _CLI.invoke(app, ["check", str(shop)])
+    assert result.exit_code == 1
+    assert "okf-type" in result.output
+
+
+def test_cli_tree_prints_the_zoom_hierarchy_as_text_and_json(shop: Path) -> None:
+    text = _CLI.invoke(app, ["tree", str(shop)])
+    assert text.exit_code == 0, text.output
+    assert "API components" in text.output
+    nodes = json.loads(_CLI.invoke(app, ["tree", str(shop), "--json"]).output)
+    assert [n["id"] for n in nodes] == ["context"]
+
+
+def test_cli_model_prints_every_alias(shop: Path) -> None:
+    result = _CLI.invoke(app, ["model", str(shop)])
+    assert result.exit_code == 0, result.output
+    assert "user" in {e["alias"] for e in json.loads(result.output)["elements"]}
+
+
+def test_cli_expand_prints_mermaid_or_fails_on_an_unknown_alias(shop: Path) -> None:
+    composed = _CLI.invoke(app, ["expand", "context", "shop", "--root", str(shop)])
+    assert composed.exit_code == 0, composed.output
+    assert 'System_Boundary(shop, "Shop") {' in composed.output
+    missing = _CLI.invoke(app, ["expand", "context", "nobody", "--root", str(shop)])
+    assert missing.exit_code == 1
