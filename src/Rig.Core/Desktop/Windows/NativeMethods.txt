@@ -16,3 +16,11 @@ SafeArrayDestroy
 SysFreeString
 IsWindow
 CoCreateInstance
+SHGetPropertyStoreForWindow
+IPropertyStore
+PropVariantToStringAlloc
+PropVariantClear
+PKEY_AppUserModel_RelaunchCommand
+PKEY_AppUserModel_RelaunchDisplayNameResource
+GetWindowPlacement
+CoTaskMemFree
