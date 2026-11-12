@@ -59,6 +59,7 @@ public sealed class RigWebHost : IAsyncDisposable
         var host = new RigWebHost(app);
         app.UseRouting();
         HostRoutes.Map(app, settings, () => host.Address.Port);
+        FrontendRoutes.Map(app, settings);
         var forwarder = new Forwarder(forwarding, upstream);
         app.Map("/{**path}", forwarder.ForwardAsync);
         return host;

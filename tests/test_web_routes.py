@@ -47,16 +47,7 @@ def echo(handler: BaseHTTPRequestHandler, request: Request) -> bool:
 
 @pytest.fixture
 def base_url(tmp_path: Path) -> Iterator[str]:
-    templates = tmp_path / "templates"
-    templates.mkdir()
-    (templates / "index.html").write_text("<!doctype html><title>app</title>", encoding="utf-8")
-    server = StudioServer(
-        port=0,
-        templates_dir=templates,
-        db_path=tmp_path / "rig.db",
-        assets_root=tmp_path / "assets",
-        routes=(echo,),
-    )
+    server = StudioServer(port=0, db_path=tmp_path / "rig.db", routes=(echo,))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -116,13 +107,6 @@ def test_a_json_write_from_the_dashboard_is_accepted(base_url: str) -> None:
 )
 def test_writes_from_elsewhere_are_refused(base_url: str, headers: dict[str, str]) -> None:
     assert call(f"{base_url}/api/test/write", body=b"{}", headers=headers).status == 400
-
-
-@pytest.mark.parametrize("path", ["/ops", "/ops/jobs", "/ops/runs/backup"])
-def test_ops_pages_are_app_deep_links(base_url: str, path: str) -> None:
-    reply = call(base_url + path)
-    assert reply.status == 200
-    assert "<title>app</title>" in reply.body
 
 
 def test_request_reads_the_last_non_empty_query_value() -> None:

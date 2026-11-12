@@ -88,15 +88,15 @@ public sealed class ForwarderTests : IAsyncLifetime
         _upstream.Answer = _ =>
         {
             var answer = new HttpResponseMessage(HttpStatusCode.Found) { Content = new ByteArrayContent([]) };
-            answer.Headers.Location = new Uri("/triage/inbox", UriKind.Relative);
+            answer.Headers.Location = new Uri("/c4/", UriKind.Relative);
             answer.Headers.CacheControl = new CacheControlHeaderValue { NoStore = true };
             return answer;
         };
 
-        using var response = await _client.GetAsync(new Uri("/static/triage.html", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var response = await _client.GetAsync(new Uri("/c4", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Found, response.StatusCode);
-        Assert.Equal("/triage/inbox", response.Headers.Location?.OriginalString);
+        Assert.Equal("/c4/", response.Headers.Location?.OriginalString);
         Assert.True(response.Headers.CacheControl?.NoStore);
     }
 

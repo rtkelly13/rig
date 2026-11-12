@@ -89,7 +89,7 @@ def browser_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Bro
     ]
     with closing(store.connect(db)) as conn, conn:
         store.save(conn, items)
-    server = StudioServer(port=0, db_path=db, assets_root=tmp_path / "assets")
+    server = StudioServer(port=0, db_path=db)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     routes = f"http://127.0.0.1:{server.server_address[1]}"

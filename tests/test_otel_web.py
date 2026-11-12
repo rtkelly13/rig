@@ -297,15 +297,7 @@ def call(url: str) -> Reply:
 
 @contextlib.contextmanager
 def serving(tmp_path: Path, route: TelemetryRoute) -> Iterator[str]:
-    templates = tmp_path / "templates"
-    templates.mkdir(exist_ok=True)
-    server = StudioServer(
-        port=0,
-        templates_dir=templates,
-        db_path=tmp_path / "rig.db",
-        assets_root=tmp_path / "assets",
-        routes=(route,),
-    )
+    server = StudioServer(port=0, db_path=tmp_path / "rig.db", routes=(route,))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
