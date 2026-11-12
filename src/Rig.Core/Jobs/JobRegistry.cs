@@ -151,6 +151,8 @@ public static class JobRegistry
             },
             new("otel-collector", "Keep the local OTel collector listening on 127.0.0.1:4317/4318; prune its files past 7 days.",
                 [rig, "otel-stack", "collector", "ensure"], Both, JobCadence.EveryRun, 5),
+            new("workload-sample", "Sample memory use by app (Claude sessions, large processes, bursts); keep 7 days of samples.",
+                [rig, "workload", "sample"], Both, JobCadence.EveryRun, 2),
             new("estate-prune-caches", "Prune the uv, pnpm, NuGet http and Docker build caches, and Claude temp idle 7+ days.",
                 [rig, "estate", "prune-caches", "--apply"], Both, JobCadence.Daily, 60),
         ];
