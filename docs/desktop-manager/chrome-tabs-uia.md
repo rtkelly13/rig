@@ -441,6 +441,32 @@ Call titles: Meet's (`Meet – <meeting>`, `Google Meet`, `Meet`) come from
 history. The patterns for Zoom, Teams, Slack huddles, Webex, Jitsi and Whereby
 use each service's documented web-client titles and have not been seen live.
 
+## macOS smoke check
+
+The C# macOS driver (`src/Rig.Core/Chrome/MacOS/`) reads Chrome through
+scripting and native accessibility. The interop (`NativeAxApi`) has no CI job
+and no test calls it, because reading Chrome's accessibility tree turns on
+Chrome's accessibility mode. Nobody runs the driver live before the s15
+cutover. At the cutover the owner runs this check by hand, on a Mac, with
+Chrome open. It only reads: nothing is selected, moved or closed.
+
+1. Grant Accessibility and Automation (Chrome) access to the terminal, under
+   System Settings › Privacy & Security.
+2. Read with the Python driver:
+   `uv run desktop-manager chrome-tabs list --json > temp/chrome-py.json`
+3. Read with the C# driver, from the cutover branch:
+   `dotnet run --project src/Rig.Cli -- chrome-tabs list --json > temp/chrome-cs.json`
+4. Compare: `git diff --no-index temp/chrome-py.json temp/chrome-cs.json`.
+   Read again with each driver if a tab loads or retitles between the reads.
+   The two should agree on windows, profiles, tab ids, titles, URLs, pinned,
+   audible, memory and groups. Group ids differ by design: C# splits the
+   window id and the header's hash into 32-bit halves.
+
+Expect every tab reported as pinned and audible with `Accessibility metadata
+unavailable` when accessibility is denied. If only the C# read shows that,
+the native interop is at fault. Remove both files from `temp/` afterwards,
+since they hold your tab titles and URLs.
+
 ## Limits
 
 - **Titles only.** A PR tab whose title was never loaded or is stale still
