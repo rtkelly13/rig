@@ -98,14 +98,7 @@ public sealed class UnattendedGroupingTests
     [Fact]
     public void The_wait_is_traced_with_a_check_event_per_look()
     {
-        List<Activity> stopped = [];
-        using var listener = new ActivityListener
-        {
-            ShouldListenTo = source => source.Name == "Rig.Chrome",
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = stopped.Add,
-        };
-        ActivitySource.AddActivityListener(listener);
+        using var spans = new RecordedSpans("Rig.Chrome");
         _presence.Locked = true;
         Grouping().Await(() => [], 0.5, 0);
         _presence.Locked = false;
@@ -113,6 +106,7 @@ public sealed class UnattendedGroupingTests
 
         Grouping().Await(() => [], 0.5, 5);
 
+        var stopped = spans.Stopped;
         Assert.Equal("the session is locked", stopped[0].GetTagItem("wait.last_block"));
         var wait = stopped[1];
         Assert.Equal("clear", wait.GetTagItem("wait.outcome"));

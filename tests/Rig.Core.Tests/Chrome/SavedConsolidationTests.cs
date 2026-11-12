@@ -98,14 +98,7 @@ public sealed class SavedConsolidationTests
     [Fact]
     public void Putting_the_user_back_is_traced_and_best_effort()
     {
-        List<Activity> stopped = [];
-        using var listener = new ActivityListener
-        {
-            ShouldListenTo = source => source.Name == "Rig.Chrome",
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = stopped.Add,
-        };
-        ActivitySource.AddActivityListener(listener);
+        using var spans = new RecordedSpans("Rig.Chrome");
         _desktops.Number = 2;
 
         _desktops.ReturnTo(1);
@@ -113,7 +106,7 @@ public sealed class SavedConsolidationTests
         _desktops.ReturnTo(1);
         _desktops.ReturnTo(null);
 
-        var restore = Assert.Single(stopped, activity => activity.OperationName == "restore_desktop");
+        var restore = Assert.Single(spans.Stopped, activity => activity.OperationName == "restore_desktop");
         Assert.Equal(2, restore.GetTagItem("desktop.from"));
         Assert.Equal(1, restore.GetTagItem("desktop.to"));
         Assert.Equal([1], _desktops.Went);

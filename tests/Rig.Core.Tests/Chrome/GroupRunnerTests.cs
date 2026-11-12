@@ -305,14 +305,7 @@ public sealed class GroupRunnerTests
     [Fact]
     public void The_run_is_traced_window_by_window()
     {
-        List<Activity> stopped = [];
-        using var listener = new ActivityListener
-        {
-            ShouldListenTo = source => source.Name == "Rig.Chrome",
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = stopped.Add,
-        };
-        ActivitySource.AddActivityListener(listener);
+        using var spans = new RecordedSpans("Rig.Chrome");
         var duplicate = new TabGroup(new RuntimeId([9]), "rig");
         var window = new ChromeWindow(W1, "w", "Profile 4", "Ryan", 1, false, 1, [Tab("Dashboard")]);
         GroupRunner.Plan([window], 1, 2, true, (_, _) => new Dictionary<string, string>(StringComparer.Ordinal), UrlOwners.None, "retry");
@@ -323,6 +316,7 @@ public sealed class GroupRunnerTests
         _actions.UngroupFailure = "header gone";
         Runner().Run(Plan([], [new Ungroup(duplicate, [Tab("b", W1, duplicate)], 1, "Ryan")]));
 
+        var stopped = spans.Stopped;
         Assert.Equal("retry", stopped.Single(activity => activity.OperationName == "plan_grouping").GetTagItem("group.phase"));
         Assert.Equal(["plan_grouping", "group_window", "restore_desktop", "group", "ungroup_window", "group"], stopped.Select(activity => activity.OperationName));
         Assert.Equal("header gone", ((string)stopped[4].GetTagItem("group.stopped")!)[^11..]);
