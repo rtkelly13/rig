@@ -8,7 +8,7 @@ projection of it.
 - **Projections**: [`src/Rig.Core/Policy/NativeProjection.cs`](../../src/Rig.Core/Policy/NativeProjection.cs)
 
 Nothing here is hand-authored per harness. A rule added to the JSON reaches Claude
-Code, Antigravity, OpenCode and Codex the next time `workspace policy sync` runs.
+Code, Antigravity, OpenCode and Codex the next time `rig policy sync` runs.
 Hand-adding rules to `~/.config/opencode/opencode.jsonc` is how the policy drifted
 before; those strays were folded back in by #193.
 
@@ -18,9 +18,9 @@ There is no runtime hook in any harness. See
 ## Commands
 
 ```bash
-uv run workspace policy check -- "<command>"   # classify one command
-uv run workspace policy sync                   # project into every harness config
-uv run workspace policy sync --dry-run         # show the diff without writing
+uv run rig policy check -- "<command>"         # classify one command
+uv run rig policy sync                         # project into every harness config
+uv run rig policy sync --dry-run               # show the diff without writing
 ```
 
 ## Risk tiers
@@ -137,8 +137,8 @@ the long tail of `ask`.
    rule out of particular agents, add `"exclude_systems": ["claude"]` (any of
    `claude`, `codex`, `opencode` or `antigravity`). Sync then also removes a copy an
    earlier sync wrote, so un-scoping a rule takes effect without hand-editing.
-2. `uv run workspace policy sync --dry-run` to see the projection diff.
-3. `uv run workspace policy sync`.
+2. `uv run rig policy sync --dry-run` to see the projection diff.
+3. `uv run rig policy sync`.
 4. `dotnet test --project tests/Rig.Core.Tests -- --filter-namespace Rig.Core.Tests.Policy`.
 
 A misshapen rule fails closed: the loader raises rather than dropping it, so a

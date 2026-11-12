@@ -29,8 +29,7 @@ internal sealed record WorkspaceHost(string PersonalDir, string ScopesFile, stri
 internal sealed record GitignoreArgs(string? Root, string? Repo, string? Language, string? Config);
 
 /// <summary>
-/// <c>rig workspace</c>: the subcommands ported from <c>src/rig/workspace/cli.py</c>. The group's other subcommands are
-/// still Python's, so <see cref="Forwarding.Forwarded"/> hands any line naming one of them over.
+/// <c>rig workspace</c>: estate workspace management, ported from the Python <c>workspace</c> CLI.
 /// </summary>
 /// <param name="host">Where it looks.</param>
 /// <param name="proc">Runs git and gh.</param>

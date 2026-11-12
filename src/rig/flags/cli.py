@@ -69,3 +69,9 @@ def reset_cmd(name: str = typer.Argument(..., help="Flag name")) -> None:
         console.print(f"[red]{error}[/red]")
         raise typer.Exit(code=1) from error
     console.print(f"{name}: {'override removed' if removed else 'no override stored'}")
+
+
+if __name__ == "__main__":
+    from rig.python_command import main
+
+    main(app, "flags")

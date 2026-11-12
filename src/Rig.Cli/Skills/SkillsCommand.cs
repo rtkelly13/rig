@@ -16,7 +16,7 @@ internal sealed record SkillsHost(string Checkout, string Home, string WorkingDi
 
 /// <summary>
 /// <c>rig skills</c>: keeps the agent CLIs' global skills folders linked to the curated catalog, overlays extra
-/// skills reversibly, and vendors upstream skills. Ported from <c>rig.skills.cli</c> (<c>workspace skills</c>).
+/// skills reversibly, and vendors upstream skills. Ported from <c>rig.skills.cli</c>.
 /// </summary>
 /// <param name="host">Where it reads and writes.</param>
 /// <param name="git">Runs git for vendor clones.</param>

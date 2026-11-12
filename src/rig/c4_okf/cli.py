@@ -161,3 +161,9 @@ def derive_dotnet_cmd(
     console.print(f"{len(derived.files)} derived concepts · {len(changed)} {'stale' if check else 'changed'}")
     if check and changed:
         raise typer.Exit(1)
+
+
+if __name__ == "__main__":
+    from rig.python_command import main
+
+    main(app, "c4")

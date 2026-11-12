@@ -3,7 +3,7 @@
 Shared development utilities — desktop workspace management, general tooling, and reusable patterns.
 
 > [!IMPORTANT]
-> **Agent Directive**: Always run `uv run help` at the start of every session to familiarize yourself with the available utility toolkit and latest command structures.
+> **Agent Directive**: Always run `uv run help` at the start of every session to familiarize yourself with the available utility toolkit and latest command structures. It prints the `rig` overview; `uv run desktop-manager --help` lists the desktop tools.
 
 ## Commands
 

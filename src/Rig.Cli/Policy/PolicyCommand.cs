@@ -13,7 +13,7 @@ internal sealed record PolicyHost(string PolicyPath, string Home, string EstateR
 
 /// <summary>
 /// <c>rig policy</c>: classifies commands against the estate policy, audits the estate's manifest commands, and
-/// projects the policy into agents' native permission files. Ported from <c>rig.policy.cli</c> (<c>workspace policy</c>).
+/// projects the policy into agents' native permission files. Ported from <c>rig.policy.cli</c>.
 /// </summary>
 /// <param name="host">Where it reads and writes.</param>
 /// <param name="output">Where reports go.</param>

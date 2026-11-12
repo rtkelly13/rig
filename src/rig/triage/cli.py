@@ -40,3 +40,9 @@ def verify(
         typer.echo(f"Invalid triage queue: {error}", err=True)
         raise typer.Exit(1) from error
     typer.echo(f"Valid triage queue: {target}")
+
+
+if __name__ == "__main__":
+    from rig.python_command import main
+
+    main(app, "triage")

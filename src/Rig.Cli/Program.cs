@@ -39,7 +39,6 @@ internal static class Program
         var checkout = PythonRig.ResolveCheckout(Environment.GetEnvironmentVariable(PythonRig.HomeVariable), codeRoot);
         var proc = new SystemProc();
         var git = new Git(proc, codeRoot);
-        var fromPython = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(PythonRig.BridgeVariable));
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var macOs = OperatingSystem.IsMacOS();
         // The package registries (npm, NuGet), read by `workspace packages`. NuGet's registration resource is served gzipped.
@@ -87,7 +86,7 @@ internal static class Program
             Environment.GetEnvironmentVariable("LOCALAPPDATA"),
             Console.In);
         var app = new RigApp(
-            new PythonRig(proc, checkout, fromPython),
+            new PythonRig(proc, checkout),
             new GhApi(proc),
             async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false)),
             Console.Out,

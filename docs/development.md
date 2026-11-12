@@ -32,15 +32,23 @@ added upstream in rtkelly-labs/design-system, not hard-coded here.
 
 ## The C# front door
 
-`rig` is moving to C# (ADR 0022, #85). `src/Rig.Cli` is the front door: it parses help, version and every
-ported command itself, and hands any line the Python CLI still owns to it whole, as
-`uv run --no-sync --project <rig checkout> rig …` attached to the same console. That covers a bare `rig`, the agent
-shortcut flags (`rig -ccc`) and every command in `src/Rig.Cli/Forwarding/Forwarded.cs`. Prompts, colour, Ctrl+C
-and exit codes behave as before.
+`rig` is moving to C# (ADR 0022, #85). `src/Rig.Cli` is the front door. Every script in `[project.scripts]` but
+`desktop-manager` is `rig.csharp_cli:entry`, which runs `dotnet run --project src/Rig.Cli -- …`: `uv run rig gh …`
+as typed, `uv run latex build` as `rig latex build`, and `uv run help` as `rig help`, the overview.
 
-The Python CLI runs from `RIG_HOME` when it is set, else `<code root>/personal/rig`. Porting a command means
-registering it in C# and deleting its row from `Forwarded.Commands`. `ForwardedContractTests` fails if the table and
-`src/rig/rig_cli.py` disagree, so a command can't drop out of `rig` unnoticed.
+C# parses help, version, the agent launcher and every ported command itself. A command still written in Python has
+a row in `src/Rig.Cli/Forwarding/Forwarded.cs` naming the program that runs it, a `desktop-manager` command or a
+module with a `__main__` block (`python -m rig.triage.cli`), and the whole line goes to it as
+`uv run --no-sync --project <rig checkout> <program> …` attached to the same console. A row never launches `rig`,
+which is C# itself. Prompts, colour, Ctrl+C and exit codes behave as before.
+
+Python runs from `RIG_HOME` when it is set, else `<code root>/personal/rig`. Porting a command means registering it in
+C# and deleting its row from `Forwarded.Commands`. `ForwardedContractTests` checks every script names a command C#
+owns and nothing forwards back to `rig`; `tests/test_csharp_cli.py` checks every row's program answers `--help`.
+
+`rig web mcp` is a stdio MCP server behind that hop. `dotnet run` restores and builds without writing to stdout, even
+from a clean `src/Rig.Cli` with no `obj` or `bin`, so the protocol stays clean; a failed build never starts the server.
+`desktop-manager web mcp` skips the hop.
 
 ```bash
 dotnet run --project src/Rig.Cli -- --help              # from a checkout
@@ -48,8 +56,9 @@ dotnet pack src/Rig.Cli -c Release                      # writes artifacts/packa
 dotnet tool update --global --add-source artifacts/packages Rig.Cli   # installs or updates ~/.dotnet/tools/rig
 ```
 
-The generated `rig.sh` shim still calls Python until `devenv` moves to C#. Until then the installed tool is opt-in:
-call it as `~/.dotnet/tools/rig`, since the shell function the shim installs wins over PATH.
+The installed tool is opt-in: `rig` on PATH (`~/.local/bin/rig`) runs the runtime copy's `rig` script, which reaches
+the same C# CLI through `dotnet run`, built in that copy on first use. Call the tool as `~/.dotnet/tools/rig` to skip
+that build.
 
 ## Pytest Markers
 
