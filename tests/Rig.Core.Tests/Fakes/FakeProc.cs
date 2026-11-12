@@ -28,11 +28,14 @@ public sealed class FakeProc : IProc
     }
 
     /// <inheritdoc />
-    public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
+    public Ran Run(ProcRequest request)
     {
         Requests.Add(request);
         var match = _answers.FirstOrDefault(a =>
             (a.WorkingDirectory is null || a.WorkingDirectory == request.WorkingDirectory) && request.Argv.Take(a.Prefix.Count).SequenceEqual(a.Prefix));
-        return Task.FromResult(match.Answer ?? Unanswered);
+        return match.Answer ?? Unanswered;
     }
+
+    /// <inheritdoc />
+    public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Run(request));
 }

@@ -533,6 +533,8 @@ public sealed class ShelveCommandTests : IDisposable
     // Real processes, unless the test answers a request itself.
     private sealed class AnsweringProc(Func<ProcRequest, Ran?> answer) : IProc
     {
+        public Ran Run(ProcRequest request) => answer(request) ?? Repos.Proc.Run(request);
+
         public async Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) =>
             answer(request) ?? await Repos.Proc.RunAsync(request, cancellationToken);
     }

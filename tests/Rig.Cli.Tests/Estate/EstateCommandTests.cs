@@ -228,6 +228,12 @@ public sealed class EstateCommandTests : IDisposable
     {
         public List<ProcRequest> Requests { get; } = [];
 
+        public Ran Run(ProcRequest request)
+        {
+            Requests.Add(request);
+            return inner.Run(request);
+        }
+
         public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
         {
             Requests.Add(request);
@@ -511,6 +517,12 @@ public sealed class EstateCommandTests : IDisposable
     private sealed class LsofProc(IProc inner, Ran lsof) : IProc
     {
         public List<ProcRequest> Requests { get; } = [];
+
+        public Ran Run(ProcRequest request)
+        {
+            Requests.Add(request);
+            return request.Argv[0] == "lsof" ? lsof : inner.Run(request);
+        }
 
         public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
         {

@@ -228,24 +228,26 @@ internal sealed class ScriptedOrca(FakeWrapupClock clock, Dictionary<(string Wor
     public static Func<double, (string, string, string?)?> AnswersAfter(double seconds, string reply) =>
         elapsed => elapsed >= seconds ? ("done", $"{Wrapup.Marker} Done?", reply) : null;
 
-    public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
+    public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Run(request));
+
+    public Ran Run(ProcRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         string[] args = [.. request.Argv.Skip(1)];
         Calls.Add(args);
         if (Override?.Invoke(args) is { } answered)
         {
-            return Task.FromResult(answered);
+            return answered;
         }
 
         if (args[0] == "terminal" && args[1] == "send")
         {
-            return Task.FromResult(new Ran(0, """{"ok": true}""", ""));
+            return new Ran(0, """{"ok": true}""", "");
         }
 
         if (Down)
         {
-            return Task.FromResult(new Ran(1, "", "orca is not running"));
+            return new Ran(1, "", "orca is not running");
         }
 
         var worktrees = new JsonArray();
@@ -273,6 +275,6 @@ internal sealed class ScriptedOrca(FakeWrapupClock clock, Dictionary<(string Wor
             worktrees.Add(new JsonObject { ["worktreeId"] = wid, ["repoId"] = "rig-id", ["path"] = $"/w/{wid}", ["agents"] = new JsonArray(agent) });
         }
 
-        return Task.FromResult(new Ran(0, new JsonObject { ["ok"] = true, ["result"] = new JsonObject { ["worktrees"] = worktrees } }.ToJsonString(), ""));
+        return new Ran(0, new JsonObject { ["ok"] = true, ["result"] = new JsonObject { ["worktrees"] = worktrees } }.ToJsonString(), "");
     }
 }

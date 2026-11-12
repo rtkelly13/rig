@@ -86,6 +86,12 @@ public sealed class LaunchdTests : IDisposable
     {
         public List<(string Command, string Plist)> Seen { get; } = [];
 
+        public Ran Run(ProcRequest request)
+        {
+            Seen.Add((string.Join(' ', request.Argv), File.ReadAllText(path)));
+            return new Ran(0, string.Empty, string.Empty);
+        }
+
         public async Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
         {
             Seen.Add((string.Join(' ', request.Argv), await File.ReadAllTextAsync(path, cancellationToken)));
