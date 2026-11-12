@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Rig.Core.Vault;
 
@@ -119,6 +120,47 @@ public interface IChromeDesktops
 
     /// <summary>Whether <paramref name="handle"/> is still a window.</summary>
     bool WindowExists(long handle);
+}
+
+/// <summary>Putting the user back on the desktop they started on.</summary>
+public static class ChromeDesktopsExtensions
+{
+    private static readonly ActivitySource Source = new("Rig.Chrome");
+
+    /// <summary>
+    /// Switches back to <paramref name="start"/> when the steps since moved the user: bringing a window forward, or
+    /// sending it home while it has the focus, can take Windows to that window's desktop. Best effort, as in Python's
+    /// <c>keep_desktop</c>; traced as <c>restore_desktop</c>.
+    /// </summary>
+    public static void ReturnTo(this IChromeDesktops desktops, int? start)
+    {
+        ArgumentNullException.ThrowIfNull(desktops);
+        try
+        {
+            if (start is { } from && desktops.Current() is { } now && now != from)
+            {
+                using var activity = Source.StartActivity("restore_desktop");
+                activity?.SetTag("desktop.from", now);
+                activity?.SetTag("desktop.to", from);
+                desktops.SwitchTo(from);
+            }
+        }
+#pragma warning disable CA1031 // Putting the user back is best effort, as in Python.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+        }
+    }
+}
+
+/// <summary>The saved tab groups on a window's bookmarks bar, and deleting a closed copy of one.</summary>
+public interface IChromeSavedGroupActions
+{
+    /// <summary>The saved-group chips on the window's bookmarks bar, left to right.</summary>
+    IReadOnlyList<SavedGroup> SavedGroups(long handle, string profile);
+
+    /// <summary>Deletes the rightmost closed saved group titled <paramref name="title"/> from the window's bar.</summary>
+    SavedDeleteOutcome DeleteSavedGroup(long handle, string profile, string title, TimeSpan? timeout = null);
 }
 
 /// <summary>Desktops that cannot be addressed: macOS Spaces.</summary>

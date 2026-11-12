@@ -25,7 +25,7 @@ namespace Rig.Core.Chrome.Windows;
 /// invoked: that reopens the group with its old tabs.
 /// </para>
 /// </remarks>
-public sealed partial class ChromeUiaActions : IChromeTabActions
+public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGroupActions
 {
     /// <summary>The accessible names Chrome gives a tab's close button. English only.</summary>
     public static readonly IReadOnlySet<string> CloseButtonNames = new HashSet<string>(StringComparer.Ordinal) { "Close" };

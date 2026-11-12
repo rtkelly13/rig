@@ -35,7 +35,14 @@ public sealed class FakeVirtualDesktops : IVirtualDesktops
 
     public int Count => Desktops.Count;
 
-    public int CurrentNumber => Current is null ? 0 : Desktops.IndexOf(Current) + 1;
+    public int CurrentNumber
+    {
+        get
+        {
+            Fail(nameof(CurrentNumber));
+            return Current is null ? 0 : Desktops.IndexOf(Current) + 1;
+        }
+    }
 
     public IReadOnlyList<string> Names()
     {
