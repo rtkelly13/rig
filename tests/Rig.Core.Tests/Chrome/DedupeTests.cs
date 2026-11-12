@@ -7,7 +7,7 @@ namespace Rig.Core.Tests.Chrome;
 
 /// <summary>
 /// Per-site title rules and the non-PR duplicate planner, from real titles seen in Chrome history. Replaces
-/// <c>test_chrome_dedupe</c>, except the rendering test, which moves with the renderer.
+/// <c>test_chrome_dedupe</c>; its rendering test is in <see cref="TabPlanTextTests"/>.
 /// </summary>
 public sealed class DedupeTests
 {

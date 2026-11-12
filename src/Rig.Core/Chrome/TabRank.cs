@@ -158,7 +158,7 @@ public static class TabRank
             ? Math.Round(mb / 1024, 2, MidpointRounding.ToEven).ToString("F2", CultureInfo.InvariantCulture) + " GB"
             : Math.Round(mb, 0, MidpointRounding.ToEven).ToString("F0", CultureInfo.InvariantCulture) + " MB";
 
-    private static string Signed(int score) => score.ToString("+0;-0;+0", CultureInfo.InvariantCulture);
+    internal static string Signed(int score) => score.ToString("+0;-0;+0", CultureInfo.InvariantCulture);
 
     private static RankedTab RankOne(ChromeTab tab, ChromeWindow window, int number, IReadOnlyDictionary<PrRef, PrState> states)
     {

@@ -5,8 +5,8 @@ using static Rig.Core.Tests.Chrome.TabBrowser;
 namespace Rig.Core.Tests.Chrome;
 
 /// <summary>
-/// Tab ranking, call protection and the memory budget, without a browser. Replaces <c>test_chrome_rank</c>, except the
-/// rendering test, which moves with the renderer; the memory parsing it checked is in <see cref="ChromeModelTests"/>.
+/// Tab ranking, call protection and the memory budget, without a browser. Replaces <c>test_chrome_rank</c>; its
+/// rendering test is in <see cref="TabPlanTextTests"/> and the memory parsing it checked in <see cref="ChromeModelTests"/>.
 /// </summary>
 public sealed class TabRankTests
 {

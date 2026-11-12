@@ -21,6 +21,7 @@
     <EmbeddedResource Include="Devenv/session-ledger.mjs" LogicalName="Rig.Core.Devenv.session-ledger.mjs" />
     <EmbeddedResource Include="Devenv/gh-scopes.json" LogicalName="Rig.Core.Devenv.gh-scopes.json" />
     <EmbeddedResource Include="Devenv/dev-tools.json" LogicalName="Rig.Core.Devenv.dev-tools.json" />
+    <EmbeddedResource Include="../../config/chrome-site-groups.json" LogicalName="Rig.Core.Chrome.chrome-site-groups.json" />
     <!-- The estate router template `workspace sync` writes as the personal folder's AGENTS.md (Workspace/EstateSync.cs). -->
     <EmbeddedResource Include="Workspace/root-agents-md.md" LogicalName="Rig.Core.Workspace.root-agents-md.md" />
     <!-- The community health files `repo-governance sync-templates` writes (Governance/OssTemplates.cs). -->
