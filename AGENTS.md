@@ -23,6 +23,11 @@ dotnet test --solution rig.slnx  # C# tests (xUnit v3 on Microsoft.Testing.Platf
 
 Every CLI's `--help` documents its flags, findings and defaults: read it before the docs.
 
+**Landing a PR**: run `rig gh pr land <PR>` (queues squash auto-merge, then waits) or `rig gh pr wait <PR>`
+when the merge is already queued. Never loop on `gh pr view` or `gh pr checks --watch`: they hang on a PR
+blocked by anything but a failed check. Exit 0 is merged; exit 1 names what to fix, and for open review
+threads that is `rig gh threads resolve`. [docs/git/waiting-for-a-pr.md](docs/git/waiting-for-a-pr.md).
+
 [docs/development.md](docs/development.md) has the rest: pytest markers and which tests run where,
 the Windows-safe test rules, every quality gate, and the Tailwind gallery build. Read it before
 writing tests. Shared test doubles live in `tests/fakes/` (one per port); reuse them
@@ -65,7 +70,7 @@ basedpyright is strict with `Any` banned, and the ratchet blocks the shapes it l
   `production-cuts.csv`.
 - **Vercel infra**: [infra/vercel/README.md](infra/vercel/README.md). `sites.ts` is the registry,
   and anything already serving traffic is `adopt`, never `manage`.
-- **Git technique**: [docs/git/README.md](docs/git/README.md); stacking, splitting, landing, conflicts.
+- **Git technique**: [docs/git/README.md](docs/git/README.md); stacking, splitting, landing, waiting on a merge, conflicts.
 - **Estate and packages**: [docs/estate/README.md](docs/estate/README.md) and
   [docs/packages/README.md](docs/packages/README.md).
 - **Command policy**: [docs/agents/command-policy.md](docs/agents/command-policy.md); what an agent

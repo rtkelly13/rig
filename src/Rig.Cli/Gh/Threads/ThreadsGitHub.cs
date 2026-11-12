@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
@@ -71,12 +70,6 @@ internal sealed class ThreadsGitHub(IGitHubApi api)
         }
         """;
 
-    private static readonly JsonSerializerOptions Wire = new(JsonSerializerDefaults.Web)
-    {
-        RespectRequiredConstructorParameters = true,
-        RespectNullableAnnotations = true,
-    };
-
     /// <summary>Every review thread on the PR, resolved or not, across all pages.</summary>
     public async Task<IReadOnlyList<ObservedThread>> FetchThreadsAsync(RepoSlug repo, int number, CancellationToken cancellationToken)
     {
@@ -134,37 +127,9 @@ internal sealed class ThreadsGitHub(IGitHubApi api)
         }
     }
 
-    private async Task<WireData> CallAsync(
-        string what, string query, IReadOnlyDictionary<string, object?> variables, CancellationToken cancellationToken)
-    {
-        var ran = await api.CallAsync(ApiRequest.GraphQL(query, variables), cancellationToken).ConfigureAwait(false);
-        var response = string.IsNullOrWhiteSpace(ran.Out) ? null : Decode(ran.Out);
-        var messages = response?.Errors?.Select(error => error.Message).Where(message => !string.IsNullOrEmpty(message)).ToList() ?? [];
-        if (messages.Count > 0)
-        {
-            throw new GitHubException($"{what}: {string.Join("; ", messages)}");
-        }
-
-        if (!ran.Ok)
-        {
-            var err = ran.Err.Trim();
-            throw new GitHubException($"{what}: {(err.Length > 0 ? err : $"gh exited {ran.Code}")}");
-        }
-
-        return response?.Data ?? throw new GitHubException($"{what}: unreadable response from GitHub");
-    }
-
-    private static WireResponse? Decode(string json)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<WireResponse>(json, Wire);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
+    private Task<WireData> CallAsync(
+        string what, string query, IReadOnlyDictionary<string, object?> variables, CancellationToken cancellationToken) =>
+        GraphQLCall.DataAsync<WireData>(api, what, query, variables, cancellationToken);
 
     private static WirePullRequest PullRequestOf(WireData data, RepoSlug repo, int number) =>
         data.Repository?.PullRequest ?? throw new GitHubException($"{repo}#{number}: no such pull request (or no access to it)");
@@ -215,8 +180,6 @@ internal sealed class ThreadsGitHub(IGitHubApi api)
     }
 
     // -- wire shapes: required members fail the decode, as pydantic did, and the call reports an unreadable response.
-
-    private sealed record WireError(string Message = "");
 
     private sealed record WirePageInfo(bool HasNextPage, string? EndCursor = null);
 
@@ -276,6 +239,4 @@ internal sealed class ThreadsGitHub(IGitHubApi api)
         WireRepository? Repository = null,
         [property: JsonPropertyName("addPullRequestReviewThreadReply")] WireReplyPayload? AddReply = null,
         [property: JsonPropertyName("resolveReviewThread")] WireResolvePayload? Resolve = null);
-
-    private sealed record WireResponse(WireData? Data = null, List<WireError>? Errors = null);
 }
