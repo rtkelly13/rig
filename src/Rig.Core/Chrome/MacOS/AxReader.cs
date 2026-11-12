@@ -201,6 +201,9 @@ public class AxReader
     /// <summary>A text attribute; "" when it is absent or not text.</summary>
     protected string Text(nint element, string attribute) => Scalar(element, attribute).Text ?? string.Empty;
 
+    /// <summary>A flag attribute, from a boolean or a number; null when it is absent or neither.</summary>
+    protected bool? Flag(nint element, string attribute) => Scalar(element, attribute).Flag;
+
     // A string, or a flag from a boolean or a number, as Python's scalar read them; neither for anything else.
     private (string? Text, bool? Flag) Scalar(nint element, string attribute)
     {
