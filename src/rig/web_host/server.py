@@ -127,6 +127,10 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
 class StudioServer(ThreadingHTTPServer):
     """Threading HTTP server for the rig web host."""
 
+    # The C# host opens a connection per forwarded request, so a page load arrives as a burst of connects. The
+    # socketserver default of 5 overflows, and Windows refuses a connect it cannot queue where Linux retries it.
+    request_queue_size: int = 128
+
     def __init__(
         self,
         host: str = "127.0.0.1",

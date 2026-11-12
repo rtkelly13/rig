@@ -127,6 +127,14 @@ public sealed class ForwarderTests : IAsyncLifetime
             (string?)JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken))!["error"]);
     }
 
+    [Fact]
+    public void A_failure_names_its_cause()
+    {
+        var error = new HttpRequestException("An error occurred while sending the request.", new IOException("reset"));
+
+        Assert.Equal("An error occurred while sending the request. (reset)", Forwarder.Reason(error));
+    }
+
     [Theory]
     [InlineData("//example.com/x?y=1", "/example.com/x?y=1")]
     [InlineData("http://example.com/x?y=1", "/x?y=1")]

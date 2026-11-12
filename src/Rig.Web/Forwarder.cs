@@ -67,7 +67,7 @@ internal sealed class Forwarder(HttpClient client, Func<Uri?> upstream)
         }
         catch (HttpRequestException e)
         {
-            await Fail(context, StatusCodes.Status502BadGateway, $"The Python web routes did not answer: {e.Message}").ConfigureAwait(false);
+            await Fail(context, StatusCodes.Status502BadGateway, $"The Python web routes did not answer: {Reason(e)}").ConfigureAwait(false);
             return;
         }
 
@@ -103,6 +103,10 @@ internal sealed class Forwarder(HttpClient client, Func<Uri?> upstream)
         new(
             connection.SelectMany(v => (v ?? string.Empty).Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)),
             StringComparer.OrdinalIgnoreCase);
+
+    // HttpClient's own message is often only "An error occurred while sending the request"; the cause is inside it.
+    internal static string Reason(HttpRequestException error) =>
+        error.InnerException is { } inner ? $"{error.Message} ({inner.Message})" : error.Message;
 
     private static Task Fail(HttpContext context, int status, string message)
     {
