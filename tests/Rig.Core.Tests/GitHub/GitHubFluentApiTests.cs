@@ -153,4 +153,29 @@ public sealed class GitHubFluentApiTests
         Assert.Contains("failing test: Field 'fail' not found", ex.Message, StringComparison.Ordinal);
         Assert.Contains("Field 'fail' not found", ex.Errors);
     }
+
+    [Fact]
+    public async Task GitHubFunctions_reads_json_directly()
+    {
+        var fake = new FakeGitHub().On("GET", "repos/owner/repo/widget", "{\"name\":\"direct\",\"count\":7}");
+        var spec = new RestRequestSpec("GET", "repos/owner/repo/widget");
+
+        var widget = await GitHubFunctions.ReadJsonAsync<Widget>(fake, spec, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotNull(widget);
+        Assert.Equal("direct", widget.Name);
+        Assert.Equal(7, widget.Count);
+    }
+
+    [Fact]
+    public async Task GitHubFunctions_executes_graphql_directly()
+    {
+        var fake = new FakeGitHub().On("POST", "graphql", "{\"data\":{\"name\":\"repo-direct\"}}");
+        var spec = new GraphQLRequestSpec("query { test }");
+
+        var result = await GitHubFunctions.ExecuteGraphQLAsync<JsonNode>(fake, spec, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.Equal("repo-direct", result["name"]?.GetValue<string>());
+    }
 }
