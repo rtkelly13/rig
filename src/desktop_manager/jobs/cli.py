@@ -11,14 +11,6 @@ from rich.console import Console
 from rich.markup import escape
 
 from desktop_manager.jobs import install as installer
-from desktop_manager.jobs.registry import Job, Trigger, current_environment, default_jobs
-from desktop_manager.jobs.runner import plan, run
-from desktop_manager.jobs.session_windows import boot_time
-from desktop_manager.jobs.state import (
-    STATE_NAME,
-    jobs_dir,
-    read_state,
-)
 from rig.platforms import Platform, requires
 
 jobs_app = typer.Typer(
@@ -27,42 +19,6 @@ jobs_app = typer.Typer(
     help="Logon, every-15-minute and daily jobs that keep this machine aligned, run from one registry.",
 )
 console = Console()
-
-
-def _jobs() -> tuple[Job, ...]:
-    return default_jobs(current_environment())
-
-
-@jobs_app.command(name="run")
-def run_cmd(
-    trigger: Trigger = typer.Option(Trigger.TICK, "--trigger", help="Run the jobs due on this trigger."),
-    only: list[str] = typer.Option([], "--only", help="Run just this job, due or not. Repeatable."),
-    force: bool = typer.Option(False, "--force", help="Run every job on the trigger, due or not."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Say what would run, and run nothing."),
-) -> None:
-    """Run the due jobs now, in the foreground, as the scheduled tasks do."""
-    jobs = _jobs()
-    unknown = sorted(set(only) - {job.name for job in jobs})
-    if unknown:
-        console.print(f"[red]Unknown job:[/red] {', '.join(unknown)}")
-        raise typer.Exit(code=2)
-    if dry_run:
-        state = read_state(jobs_dir() / STATE_NAME)
-        for item in plan(
-            jobs, trigger, state, now=datetime.now().astimezone(), booted=boot_time(), only=frozenset(only), force=force
-        ):
-            console.print(f"{'run ' if item.run else 'skip'} {item.job.name}: {escape(item.reason)}")
-        return
-    code = run(
-        jobs,
-        trigger,
-        jobs_dir(),
-        booted=boot_time(),
-        only=frozenset(only),
-        force=force,
-        report=lambda line: console.print(escape(line)),
-    )
-    raise typer.Exit(code=code)
 
 
 @dataclass(frozen=True, slots=True)

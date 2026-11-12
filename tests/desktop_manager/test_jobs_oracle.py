@@ -1,9 +1,11 @@
-"""`rig jobs status|last|log` run in C# (Rig.Core.Jobs); the runner, the web page and the MCP still read these files.
+"""`rig jobs status|last|log|run` run in C# (Rig.Core.Jobs); the scheduled tasks' Python runner, the web page and the
+MCP still read and write these files.
 
 `jobs-oracle.json` is what Python makes of a fixed set of inputs: the registry for a synthetic environment, the
 exact bytes `write_state` and `write_run` produce, what `read_state` and `read_run` keep from damaged files, which
-jobs `plan` takes and why, and the result and last-run cells `jobs status` prints. The C# tests replay the same
-file, so the two sides cannot drift while both are live.
+jobs `plan` takes and why, and the result and last-run cells `jobs status` prints. It also holds whole runs:
+what `run` reports and writes for scripted jobs, and which lines `run_output` takes from a log. The C# tests replay
+the same file, so the two sides cannot drift while both are live.
 
 Regenerate after a deliberate change, then rerun both suites::
 
@@ -13,13 +15,15 @@ Regenerate after a deliberate change, then rerun both suites::
 from __future__ import annotations
 
 import json
-from datetime import datetime
+import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
+from desktop_manager.jobs import runner
 from desktop_manager.jobs.registry import Cadence, Environment, Job, Trigger, default_jobs
-from desktop_manager.jobs.runner import plan
+from desktop_manager.jobs.runner import plan, run_output
 from desktop_manager.jobs.state import Decision, Outcome, RunRecord, read_run, read_state, write_run, write_state
 
 pytestmark = pytest.mark.ci
@@ -269,6 +273,171 @@ def _last_run(outcome: Outcome) -> str:
     return f"{outcome.started_at:%a %H:%M} ({outcome.seconds:.0f}s)"
 
 
+# The jobs a recorded run takes. Each one's script says what the fake executor writes and how it ends.
+_RUN_SCRIPTS: dict[str, dict[str, object]] = {
+    "ok": {"lines": ["working", "ok: 3 done"], "code": 0},
+    "quiet": {"lines": [], "code": 0},
+    "fails": {"lines": [f"line {n}" for n in range(1, 15)], "code": 3},
+    "crashes": {"raise": "boom"},
+    "elsewhere": {"lines": [], "code": 1, "detail": ["own narrative", "own failure"]},
+    "slow": {"lines": ["half way"], "timeout": True},
+    "busy": {"lines": ["idle work"], "code": 0, "idle_minutes": 5},
+    "later": {"lines": [], "code": 0, "logon_only": True},
+    "long": {"lines": ["x" * 250], "code": 0},
+}
+
+_RUN_CASES: list[dict[str, object]] = [
+    {"trigger": "tick", "idle": 10.0},
+    {
+        "trigger": "tick",
+        "idle": 600.0,
+        "only": ["busy", "ok"],
+        "seed": {"ok": "--- 2026-11-11 08:00:00 [tick-20261111-080000] x\nold run\n--- exit 0\n"},
+    },
+    {"trigger": "logon", "idle": 0.0, "force": True, "state": True},
+]
+
+_RUN_CLOCK = datetime(2026, 11, 12, 9, 0, 0, tzinfo=UTC)
+_CRASH = "{crash}"
+
+
+def _run_jobs(root: Path) -> list[Job]:
+    tick = frozenset({Trigger.TICK})
+    jobs: list[Job] = []
+    for name, script in _RUN_SCRIPTS.items():
+        jobs.append(
+            Job(
+                name,
+                "",
+                ("x", name),
+                frozenset({Trigger.LOGON}) if script.get("logon_only") else tick,
+                Cadence.EVERY_RUN,
+                5,
+                idle_minutes=int(script.get("idle_minutes", 0)),  # pyright: ignore[reportArgumentType]
+                detail_log=root / f"{name}-own.log" if "detail" in script else None,
+            )
+        )
+    return jobs
+
+
+def _fake_execute(job: Job, logs: Path, run_id: str) -> int:
+    """Write the script's output as the real executor would, header and end marker included."""
+    script = _RUN_SCRIPTS[job.name]
+    if "raise" in script:
+        raise OSError(str(script["raise"]))
+    logs.mkdir(parents=True, exist_ok=True)
+    lines: list[str] = script["lines"]  # pyright: ignore[reportAssignmentType]
+    body = f"--- 2026-11-12 09:00:00 [{run_id}] x {job.name}\n" + "".join(f"{line}\n" for line in lines)
+    if "detail" in script and job.detail_log is not None:
+        detail: list[str] = script["detail"]  # pyright: ignore[reportAssignmentType]
+        with job.detail_log.open("ab") as own:
+            _ = own.write(("--- 2026-11-12 09:00:00 own\n" + "".join(f"{line}\n" for line in detail)).encode())
+    if script.get("timeout"):
+        body += "--- timed out after 5 min\n"
+        code = 124
+    else:
+        code = int(script["code"])  # pyright: ignore[reportArgumentType]
+        body += f"--- exit {code}\n"
+    with (logs / f"{job.name}.log").open("ab") as log:
+        _ = log.write(body.encode())
+    return code
+
+
+def _normal(text: str) -> str:
+    """Seconds, span ids and the crash's exception type vary by machine and language; the rest must not."""
+    text = re.sub(r'"seconds": [0-9.e+-]+', '"seconds": 0.0', text)
+    text = re.sub(r'"seconds":[0-9.e+-]+', '"seconds":0.0', text)
+    text = re.sub(r"after \d+s", "after 0s", text)
+    text = re.sub(r'"(trace_id|span_id)":"[0-9a-f]*"', r'"\1":""', text)
+    return text.replace("OSError", _CRASH)
+
+
+def _record_runs(root: Path) -> list[dict[str, object]]:
+    recorded: list[dict[str, object]] = []
+    for index, case in enumerate(_RUN_CASES):
+        directory = root / f"run-{index}"
+        logs = directory / "logs"
+        logs.mkdir(parents=True)
+        seed: dict[str, str] = case.get("seed", {})  # pyright: ignore[reportAssignmentType]
+        for name, text in seed.items():
+            _ = (logs / f"{name}.log").write_bytes(text.encode())
+        prior: dict[str, str] = {}
+        if case.get("state"):
+            write_state(directory / "state.json", {"ok": _outcome(started="2026-11-12T08:59:00+00:00")})
+            prior["prior"] = (directory / "state.json").read_bytes().decode("utf-8").replace("\r\n", "\n")
+        lines: list[str] = []
+        trigger = Trigger(str(case["trigger"]))
+        idle = float(case["idle"])  # pyright: ignore[reportArgumentType]
+        code = runner.run(
+            _run_jobs(directory),
+            trigger,
+            directory,
+            booted=datetime(2026, 11, 12, 8, 0, 0, tzinfo=UTC),
+            only=frozenset(case.get("only", [])),  # pyright: ignore[reportArgumentType]
+            force=bool(case.get("force", False)),
+            execute=_fake_execute,
+            idle_seconds=lambda idle=idle: idle,
+            clock=lambda: _RUN_CLOCK,
+            report=lines.append,
+        )
+
+        def text(path: Path) -> str | None:
+            return _normal(path.read_bytes().decode("utf-8").replace("\r\n", "\n")) if path.exists() else None
+
+        outputs = {
+            path.relative_to(directory).as_posix(): path.read_bytes().decode("utf-8")
+            for path in sorted((directory / "runs").rglob("*.log"))
+        }
+        recorded.append(
+            case
+            | prior
+            | {
+                "exit": code,
+                "report": [_normal(line) for line in lines],
+                "state": text(directory / "state.json"),
+                "last": text(directory / f"last-{trigger}.json"),
+                "history": text(directory / "runs.ndjson"),
+                "outputs": outputs,
+            }
+        )
+    return recorded
+
+
+_LOG_TEXTS: list[dict[str, object]] = [
+    {"text": "", "run_id": None},
+    {"text": "no header\nat all\n", "run_id": None},
+    {
+        "text": "--- 2026-11-12 09:00:00 [a] x\none\n\n  two  \n--- exit 0\n"
+        "--- 2026-11-12 09:15:00 [b] x\nthree\r\n--- exit 1\n",
+        "run_id": None,
+    },
+    {"text": "--- 2026-11-12 09:00:00 [a] x\none\n--- exit 0\n--- 2026-11-12 09:15:00 [b] x\nthree\n", "run_id": "a"},
+    {"text": "--- 2026-11-12 09:00:00 [a] x\none\n", "run_id": "missing"},
+    {
+        "text": "--- 2026-11-12 09:00:00 [a] x\nfeed\fform\x1cfs\u2028ls\u0085nel\vvt\rcr\n--- not a header\nkept\n",
+        "run_id": "a",
+    },
+    {"text": "--- 2026-11-12 [a] x\n--- 2026-11-12 [a] y\nsecond\n", "run_id": "a"},
+    {"text": "", "run_id": None, "bytes": "2d2d2d2031205b615d0a62616420ff20627974650a"},
+    {"text": "\n--- 2026-11-12 [a] x\ntail\n", "run_id": "a", "pad": 70000},
+]
+
+
+def _record_run_outputs(root: Path) -> list[dict[str, object]]:
+    recorded: list[dict[str, object]] = []
+    for case in _LOG_TEXTS:
+        path = root / "output.log"
+        raw = bytes.fromhex(str(case["bytes"])) if "bytes" in case else str(case["text"]).encode()
+        pad = int(case.get("pad", 0))  # pyright: ignore[reportArgumentType]
+        # A log longer than the tail the reader takes: only its last 64KB are read.
+        _ = path.write_bytes(b"x" * pad + raw)
+        run_id = case["run_id"]
+        lines = run_output(path, None if run_id is None else str(run_id))
+        recorded.append({"bytes": raw.hex(), "pad": pad, "run_id": run_id, "lines": lines})
+    recorded.append({"bytes": None, "pad": 0, "run_id": None, "lines": run_output(root / "missing.log")})
+    return recorded
+
+
 def record(root: Path) -> dict[str, object]:
     """Everything the C# side is held to, computed from Python now. *root* is a scratch folder for `requires`."""
     (root / "present").write_text("", encoding="utf-8")
@@ -328,6 +497,9 @@ def record(root: Path) -> dict[str, object]:
         "run_reads": run_reads,
         "plan_state": _PLAN_STATE,
         "plans": plans,
+        "run_scripts": _RUN_SCRIPTS,
+        "runs": _record_runs(root),
+        "run_outputs": _record_run_outputs(root),
         "cells": [
             {"outcome": _stored(outcome), "result": _result(outcome), "last_run": _last_run(outcome)}
             for outcome in _CELLS

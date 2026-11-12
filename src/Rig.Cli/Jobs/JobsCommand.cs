@@ -12,17 +12,23 @@ namespace Rig.Cli.Jobs;
 /// <param name="Clock">The clock <c>status</c> plans against.</param>
 /// <param name="Booted">When this machine booted, given the time now.</param>
 /// <param name="Tasks">The Task Scheduler to check the coordinator's tasks in; null where there is none (off Windows).</param>
+/// <param name="Executor">Starts each job <c>run</c> takes.</param>
+/// <param name="IdleSeconds">Seconds since the last keyboard or mouse input.</param>
+/// <param name="Hold">Takes the run lock; <see cref="RunLock.Hold"/> outside tests.</param>
 internal sealed record JobsHost(
     string JobsDir,
     Func<IReadOnlyList<Job>> Jobs,
     Func<IReadOnlyDictionary<string, bool>> Flags,
     TimeProvider Clock,
     Func<DateTimeOffset, DateTimeOffset> Booted,
-    IScheduledTasks? Tasks);
+    IScheduledTasks? Tasks,
+    IJobExecutor Executor,
+    Func<double> IdleSeconds,
+    Func<string, TimeSpan, IDisposable?> Hold);
 
 /// <summary>
-/// <c>rig jobs status|last|log</c>: what the coordinator did and will do, read from its files. Ported from
-/// <c>desktop_manager.jobs.cli</c>; <c>run</c>, <c>install</c> and <c>uninstall</c> still go to Python. The text is
+/// <c>rig jobs status|last|log|run</c>: what the coordinator did and will do, read from its files, and a run of it. Ported
+/// from <c>desktop_manager.jobs.cli</c>; <c>install</c> and <c>uninstall</c> still go to Python. The text is
 /// Python's without rich's colours, and the table is padded to its widest cell rather than wrapped at 80 columns.
 /// </summary>
 internal sealed class JobsCommand(JobsHost host, TextWriter output)
@@ -46,11 +52,23 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         var log = new Command("log", "Show the end of a job's log.") { job, lines };
         log.SetAction(parsed => Log(parsed.GetRequiredValue(job), parsed.GetValue(lines)));
 
+        var runTrigger = TriggerOption("tick", "Run the jobs due on this trigger.");
+        var only = new Option<string[]>("--only") { Description = "Run just this job, due or not. Repeatable.", DefaultValueFactory = _ => [] };
+        var force = new Option<bool>("--force") { Description = "Run every job on the trigger, due or not." };
+        var dryRun = new Option<bool>("--dry-run") { Description = "Say what would run, and run nothing." };
+        var run = new Command("run", "Run the due jobs now, in the foreground, as the scheduled tasks do.") { runTrigger, only, force, dryRun };
+        run.SetAction(parsed => Run(
+            JobWords.Trigger(parsed.GetRequiredValue(runTrigger)),
+            parsed.GetValue(only) ?? [],
+            parsed.GetValue(force),
+            parsed.GetValue(dryRun)));
+
         return new Command("jobs", "Logon, every-15-minute and daily jobs that keep this machine aligned, run from one registry.")
         {
             status,
             last,
             log,
+            run,
         };
     }
 
@@ -142,6 +160,33 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         text.Append("Job logs: ").Append(LogsDir).Append(" (sections headed [").Append(run.RunId).Append("])\n");
         output.Write(text.ToString());
         return 0;
+    }
+
+    private int Run(JobTrigger trigger, string[] only, bool force, bool dryRun)
+    {
+        var jobs = host.Jobs();
+        var unknown = only.Except(jobs.Select(job => job.Name), StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        if (unknown.Count > 0)
+        {
+            output.Write($"Unknown job: {string.Join(", ", unknown)}\n");
+            return UnknownExit;
+        }
+
+        var named = new HashSet<string>(only, StringComparer.Ordinal);
+        if (dryRun)
+        {
+            var now = host.Clock.GetLocalNow();
+            var state = JobState.ReadState(Path.Join(host.JobsDir, JobState.StateName));
+            foreach (var item in JobPlan.Plan(jobs, trigger, state, now, host.Booted(now), host.Flags(), only: named, force: force))
+            {
+                output.Write($"{(item.Run ? "run " : "skip")} {item.Job.Name}: {item.Reason}\n");
+            }
+
+            return 0;
+        }
+
+        var runner = new JobRunner(new JobRunnerSeams(host.Executor, host.IdleSeconds, host.Clock, line => output.Write(line + "\n"), host.Hold));
+        return runner.Run(jobs, trigger, host.JobsDir, host.Booted(host.Clock.GetLocalNow()), host.Flags(), named, force);
     }
 
     private int Log(string name, int lines)

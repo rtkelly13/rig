@@ -271,11 +271,16 @@ internal static class Program
         var windows = OperatingSystem.IsWindows();
         var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
         var machineConfig = AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home);
+        var site = JobsSite.Locate(
+            checkout,
+            AppData.Current(),
+            JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows),
+            Path.Join(codeRoot, "personal"));
         var environment = new JobsEnvironment(
             Path.Join(checkout, ".venv", windows ? "Scripts" : "bin"),
-            JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows),
-            MachineConfig.WorkspaceRepo(machineConfig, codeRoot, home),
-            Path.Join(codeRoot, "personal"),
+            site.Plan,
+            MachineConfig.WorkspaceRepo(machineConfig, Path.GetDirectoryName(site.PersonalRoot) ?? codeRoot, home),
+            site.PersonalRoot,
             MachineConfig.WorkDirs(machineConfig, codeRoot, home),
             Decisions.DefaultFeedPath(localAppData, home),
             OrcaLocations.Current.EstateUserData(),
@@ -287,6 +292,9 @@ internal static class Program
             () => new FlagStore(Path.Join(AppData.Current(), "rig.db")).Effective(),
             TimeProvider.System,
             now => BootTime.At(now, TimeSpan.FromMilliseconds(Environment.TickCount64), windows),
-            windows ? new Schtasks(proc) : null);
+            windows ? new Schtasks(proc) : null,
+            new ProcessJobExecutor(TimeProvider.System, site.Environment),
+            () => OperatingSystem.IsWindowsVersionAtLeast(6, 1) ? Rig.Core.Chrome.Presence.IdleSeconds(new Rig.Core.Chrome.Windows.NativePresence()) : double.PositiveInfinity,
+            (path, wait) => RunLock.Hold(path, wait, Thread.Sleep));
     }
 }

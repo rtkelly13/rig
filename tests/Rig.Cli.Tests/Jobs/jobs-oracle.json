@@ -895,6 +895,285 @@
    ]
   }
  ],
+ "run_scripts": {
+  "ok": {
+   "lines": [
+    "working",
+    "ok: 3 done"
+   ],
+   "code": 0
+  },
+  "quiet": {
+   "lines": [],
+   "code": 0
+  },
+  "fails": {
+   "lines": [
+    "line 1",
+    "line 2",
+    "line 3",
+    "line 4",
+    "line 5",
+    "line 6",
+    "line 7",
+    "line 8",
+    "line 9",
+    "line 10",
+    "line 11",
+    "line 12",
+    "line 13",
+    "line 14"
+   ],
+   "code": 3
+  },
+  "crashes": {
+   "raise": "boom"
+  },
+  "elsewhere": {
+   "lines": [],
+   "code": 1,
+   "detail": [
+    "own narrative",
+    "own failure"
+   ]
+  },
+  "slow": {
+   "lines": [
+    "half way"
+   ],
+   "timeout": true
+  },
+  "busy": {
+   "lines": [
+    "idle work"
+   ],
+   "code": 0,
+   "idle_minutes": 5
+  },
+  "later": {
+   "lines": [],
+   "code": 0,
+   "logon_only": true
+  },
+  "long": {
+   "lines": [
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "code": 0
+  }
+ },
+ "runs": [
+  {
+   "trigger": "tick",
+   "idle": 10.0,
+   "exit": 1,
+   "report": [
+    "run  ok (every-run)",
+    "     ok: exit 0 after 0s: ok: 3 done",
+    "run  quiet (every-run)",
+    "     quiet: exit 0 after 0s",
+    "run  fails (every-run)",
+    "     fails: exit 3 after 0s: line 14",
+    "       | line 3",
+    "       | line 4",
+    "       | line 5",
+    "       | line 6",
+    "       | line 7",
+    "       | line 8",
+    "       | line 9",
+    "       | line 10",
+    "       | line 11",
+    "       | line 12",
+    "       | line 13",
+    "       | line 14",
+    "run  crashes (every-run)",
+    "     crashes: error after 0s: {crash}: boom",
+    "run  elsewhere (every-run)",
+    "     elsewhere: exit 1 after 0s: own failure",
+    "       | own narrative",
+    "       | own failure",
+    "run  slow (every-run)",
+    "     slow: exit 124 after 0s: half way",
+    "       | half way",
+    "skip busy: in use (idle 10s, needs 5 min)",
+    "skip later: not on tick",
+    "run  long (every-run)",
+    "     long: exit 0 after 0s: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "state": "{\n  \"crashes\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": null,\n    \"trigger\": \"tick\",\n    \"error\": \"{crash}: boom\",\n    \"run_id\": \"tick-20261112-090000\",\n    \"summary\": null,\n    \"detail\": []\n  },\n  \"elsewhere\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 1,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": \"tick-20261112-090000\",\n    \"summary\": \"own failure\",\n    \"detail\": [\n      \"own narrative\",\n      \"own failure\"\n    ]\n  },\n  \"fails\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 3,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": \"tick-20261112-090000\",\n    \"summary\": \"line 14\",\n    \"detail\": [\n      \"line 3\",\n      \"line 4\",\n      \"line 5\",\n      \"line 6\",\n      \"line 7\",\n      \"line 8\",\n      \"line 9\",\n      \"line 10\",\n      \"line 11\",\n      \"line 12\",\n      \"line 13\",\n      \"line 14\"\n    ]\n  },\n  \"long\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": \"tick-20261112-090000\",\n    \"summary\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n    \"detail\": []\n  },\n  \"ok\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": \"tick-20261112-090000\",\n    \"summary\": \"ok: 3 done\",\n    \"detail\": []\n  },\n  \"quiet\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": \"tick-20261112-090000\",\n    \"summary\": null,\n    \"detail\": []\n  },\n  \"slow\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 124,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": \"tick-20261112-090000\",\n    \"summary\": \"half way\",\n    \"detail\": [\n      \"half way\"\n    ]\n  }\n}\n",
+   "last": "{\n  \"run_id\": \"tick-20261112-090000\",\n  \"trigger\": \"tick\",\n  \"started\": \"2026-11-12T09:00:00+00:00\",\n  \"finished\": \"2026-11-12T09:00:00+00:00\",\n  \"decisions\": [\n    {\n      \"job\": \"ok\",\n      \"ran\": true,\n      \"reason\": \"every-run\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": \"tick-20261112-090000\",\n        \"summary\": \"ok: 3 done\",\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"quiet\",\n      \"ran\": true,\n      \"reason\": \"every-run\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": \"tick-20261112-090000\",\n        \"summary\": null,\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"fails\",\n      \"ran\": true,\n      \"reason\": \"every-run\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 3,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": \"tick-20261112-090000\",\n        \"summary\": \"line 14\",\n        \"detail\": [\n          \"line 3\",\n          \"line 4\",\n          \"line 5\",\n          \"line 6\",\n          \"line 7\",\n          \"line 8\",\n          \"line 9\",\n          \"line 10\",\n          \"line 11\",\n          \"line 12\",\n          \"line 13\",\n          \"line 14\"\n        ]\n      }\n    },\n    {\n      \"job\": \"crashes\",\n      \"ran\": true,\n      \"reason\": \"every-run\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": null,\n        \"trigger\": \"tick\",\n        \"error\": \"{crash}: boom\",\n        \"run_id\": \"tick-20261112-090000\",\n        \"summary\": null,\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"elsewhere\",\n      \"ran\": true,\n      \"reason\": \"every-run\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 1,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": \"tick-20261112-090000\",\n        \"summary\": \"own failure\",\n        \"detail\": [\n          \"own narrative\",\n          \"own failure\"\n        ]\n      }\n    },\n    {\n      \"job\": \"slow\",\n      \"ran\": true,\n      \"reason\": \"every-run\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 124,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": \"tick-20261112-090000\",\n        \"summary\": \"half way\",\n        \"detail\": [\n          \"half way\"\n        ]\n      }\n    },\n    {\n      \"job\": \"busy\",\n      \"ran\": false,\n      \"reason\": \"in use (idle 10s, needs 5 min)\",\n      \"outcome\": null\n    },\n    {\n      \"job\": \"later\",\n      \"ran\": false,\n      \"reason\": \"not on tick\",\n      \"outcome\": null\n    },\n    {\n      \"job\": \"long\",\n      \"ran\": true,\n      \"reason\": \"every-run\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": \"tick-20261112-090000\",\n        \"summary\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n        \"detail\": []\n      }\n    }\n  ]\n}\n",
+   "history": "{\"job\":\"ok\",\"run_id\":\"tick-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"tick\",\"error\":null,\"output\":\"runs/ok/tick-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"quiet\",\"run_id\":\"tick-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"tick\",\"error\":null,\"output\":\"runs/quiet/tick-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"fails\",\"run_id\":\"tick-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":3,\"trigger\":\"tick\",\"error\":null,\"output\":\"runs/fails/tick-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"crashes\",\"run_id\":\"tick-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":null,\"trigger\":\"tick\",\"error\":\"{crash}: boom\",\"output\":\"\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"elsewhere\",\"run_id\":\"tick-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":1,\"trigger\":\"tick\",\"error\":null,\"output\":\"runs/elsewhere/tick-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"slow\",\"run_id\":\"tick-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":124,\"trigger\":\"tick\",\"error\":null,\"output\":\"runs/slow/tick-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"long\",\"run_id\":\"tick-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"tick\",\"error\":null,\"output\":\"runs/long/tick-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n",
+   "outputs": {
+    "runs/elsewhere/tick-20261112-090000.log": "--- 2026-11-12 09:00:00 [tick-20261112-090000] x elsewhere\n--- exit 1\n--- 2026-11-12 09:00:00 own\nown narrative\nown failure\n",
+    "runs/fails/tick-20261112-090000.log": "--- 2026-11-12 09:00:00 [tick-20261112-090000] x fails\nline 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\n--- exit 3\n",
+    "runs/long/tick-20261112-090000.log": "--- 2026-11-12 09:00:00 [tick-20261112-090000] x long\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n--- exit 0\n",
+    "runs/ok/tick-20261112-090000.log": "--- 2026-11-12 09:00:00 [tick-20261112-090000] x ok\nworking\nok: 3 done\n--- exit 0\n",
+    "runs/quiet/tick-20261112-090000.log": "--- 2026-11-12 09:00:00 [tick-20261112-090000] x quiet\n--- exit 0\n",
+    "runs/slow/tick-20261112-090000.log": "--- 2026-11-12 09:00:00 [tick-20261112-090000] x slow\nhalf way\n--- timed out after 5 min\n"
+   }
+  },
+  {
+   "trigger": "tick",
+   "idle": 600.0,
+   "only": [
+    "busy",
+    "ok"
+   ],
+   "seed": {
+    "ok": "--- 2026-11-11 08:00:00 [tick-20261111-080000] x\nold run\n--- exit 0\n"
+   },
+   "exit": 0,
+   "report": [
+    "run  ok (requested)",
+    "     ok: exit 0 after 0s: ok: 3 done",
+    "run  busy (requested)",
+    "     busy: exit 0 after 0s: idle work"
+   ],
+   "state": "{\n  \"busy\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": \"tick-20261112-090000\",\n    \"summary\": \"idle work\",\n    \"detail\": []\n  },\n  \"ok\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": \"tick-20261112-090000\",\n    \"summary\": \"ok: 3 done\",\n    \"detail\": []\n  }\n}\n",
+   "last": "{\n  \"run_id\": \"tick-20261112-090000\",\n  \"trigger\": \"tick\",\n  \"started\": \"2026-11-12T09:00:00+00:00\",\n  \"finished\": \"2026-11-12T09:00:00+00:00\",\n  \"decisions\": [\n    {\n      \"job\": \"ok\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": \"tick-20261112-090000\",\n        \"summary\": \"ok: 3 done\",\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"busy\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"tick\",\n        \"error\": null,\n        \"run_id\": \"tick-20261112-090000\",\n        \"summary\": \"idle work\",\n        \"detail\": []\n      }\n    }\n  ]\n}\n",
+   "history": "{\"job\":\"ok\",\"run_id\":\"tick-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"tick\",\"error\":null,\"output\":\"runs/ok/tick-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"busy\",\"run_id\":\"tick-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"tick\",\"error\":null,\"output\":\"runs/busy/tick-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n",
+   "outputs": {
+    "runs/busy/tick-20261112-090000.log": "--- 2026-11-12 09:00:00 [tick-20261112-090000] x busy\nidle work\n--- exit 0\n",
+    "runs/ok/tick-20261112-090000.log": "--- 2026-11-12 09:00:00 [tick-20261112-090000] x ok\nworking\nok: 3 done\n--- exit 0\n"
+   }
+  },
+  {
+   "trigger": "logon",
+   "idle": 0.0,
+   "force": true,
+   "state": "{\n  \"busy\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"logon\",\n    \"error\": null,\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": \"idle work\",\n    \"detail\": []\n  },\n  \"crashes\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": null,\n    \"trigger\": \"logon\",\n    \"error\": \"{crash}: boom\",\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": null,\n    \"detail\": []\n  },\n  \"elsewhere\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 1,\n    \"trigger\": \"logon\",\n    \"error\": null,\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": \"own failure\",\n    \"detail\": [\n      \"own narrative\",\n      \"own failure\"\n    ]\n  },\n  \"fails\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 3,\n    \"trigger\": \"logon\",\n    \"error\": null,\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": \"line 14\",\n    \"detail\": [\n      \"line 3\",\n      \"line 4\",\n      \"line 5\",\n      \"line 6\",\n      \"line 7\",\n      \"line 8\",\n      \"line 9\",\n      \"line 10\",\n      \"line 11\",\n      \"line 12\",\n      \"line 13\",\n      \"line 14\"\n    ]\n  },\n  \"later\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"logon\",\n    \"error\": null,\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": null,\n    \"detail\": []\n  },\n  \"long\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"logon\",\n    \"error\": null,\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n    \"detail\": []\n  },\n  \"ok\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"logon\",\n    \"error\": null,\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": \"ok: 3 done\",\n    \"detail\": []\n  },\n  \"quiet\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 0,\n    \"trigger\": \"logon\",\n    \"error\": null,\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": null,\n    \"detail\": []\n  },\n  \"slow\": {\n    \"started\": \"2026-11-12T09:00:00+00:00\",\n    \"seconds\": 0.0,\n    \"returncode\": 124,\n    \"trigger\": \"logon\",\n    \"error\": null,\n    \"run_id\": \"logon-20261112-090000\",\n    \"summary\": \"half way\",\n    \"detail\": [\n      \"half way\"\n    ]\n  }\n}\n",
+   "prior": "{\n  \"ok\": {\n    \"started\": \"2026-11-12T08:59:00+00:00\",\n    \"seconds\": 3.0,\n    \"returncode\": 0,\n    \"trigger\": \"tick\",\n    \"error\": null,\n    \"run_id\": null,\n    \"summary\": null,\n    \"detail\": []\n  }\n}\n",
+   "exit": 1,
+   "report": [
+    "run  ok (requested)",
+    "     ok: exit 0 after 0s: ok: 3 done",
+    "run  quiet (requested)",
+    "     quiet: exit 0 after 0s",
+    "run  fails (requested)",
+    "     fails: exit 3 after 0s: line 14",
+    "       | line 3",
+    "       | line 4",
+    "       | line 5",
+    "       | line 6",
+    "       | line 7",
+    "       | line 8",
+    "       | line 9",
+    "       | line 10",
+    "       | line 11",
+    "       | line 12",
+    "       | line 13",
+    "       | line 14",
+    "run  crashes (requested)",
+    "     crashes: error after 0s: {crash}: boom",
+    "run  elsewhere (requested)",
+    "     elsewhere: exit 1 after 0s: own failure",
+    "       | own narrative",
+    "       | own failure",
+    "run  slow (requested)",
+    "     slow: exit 124 after 0s: half way",
+    "       | half way",
+    "run  busy (requested)",
+    "     busy: exit 0 after 0s: idle work",
+    "run  later (requested)",
+    "     later: exit 0 after 0s",
+    "run  long (requested)",
+    "     long: exit 0 after 0s: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "last": "{\n  \"run_id\": \"logon-20261112-090000\",\n  \"trigger\": \"logon\",\n  \"started\": \"2026-11-12T09:00:00+00:00\",\n  \"finished\": \"2026-11-12T09:00:00+00:00\",\n  \"decisions\": [\n    {\n      \"job\": \"ok\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": \"logon-20261112-090000\",\n        \"summary\": \"ok: 3 done\",\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"quiet\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": \"logon-20261112-090000\",\n        \"summary\": null,\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"fails\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 3,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": \"logon-20261112-090000\",\n        \"summary\": \"line 14\",\n        \"detail\": [\n          \"line 3\",\n          \"line 4\",\n          \"line 5\",\n          \"line 6\",\n          \"line 7\",\n          \"line 8\",\n          \"line 9\",\n          \"line 10\",\n          \"line 11\",\n          \"line 12\",\n          \"line 13\",\n          \"line 14\"\n        ]\n      }\n    },\n    {\n      \"job\": \"crashes\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": null,\n        \"trigger\": \"logon\",\n        \"error\": \"{crash}: boom\",\n        \"run_id\": \"logon-20261112-090000\",\n        \"summary\": null,\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"elsewhere\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 1,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": \"logon-20261112-090000\",\n        \"summary\": \"own failure\",\n        \"detail\": [\n          \"own narrative\",\n          \"own failure\"\n        ]\n      }\n    },\n    {\n      \"job\": \"slow\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 124,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": \"logon-20261112-090000\",\n        \"summary\": \"half way\",\n        \"detail\": [\n          \"half way\"\n        ]\n      }\n    },\n    {\n      \"job\": \"busy\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": \"logon-20261112-090000\",\n        \"summary\": \"idle work\",\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"later\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": \"logon-20261112-090000\",\n        \"summary\": null,\n        \"detail\": []\n      }\n    },\n    {\n      \"job\": \"long\",\n      \"ran\": true,\n      \"reason\": \"requested\",\n      \"outcome\": {\n        \"started\": \"2026-11-12T09:00:00+00:00\",\n        \"seconds\": 0.0,\n        \"returncode\": 0,\n        \"trigger\": \"logon\",\n        \"error\": null,\n        \"run_id\": \"logon-20261112-090000\",\n        \"summary\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n        \"detail\": []\n      }\n    }\n  ]\n}\n",
+   "history": "{\"job\":\"ok\",\"run_id\":\"logon-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"logon\",\"error\":null,\"output\":\"runs/ok/logon-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"quiet\",\"run_id\":\"logon-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"logon\",\"error\":null,\"output\":\"runs/quiet/logon-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"fails\",\"run_id\":\"logon-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":3,\"trigger\":\"logon\",\"error\":null,\"output\":\"runs/fails/logon-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"crashes\",\"run_id\":\"logon-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":null,\"trigger\":\"logon\",\"error\":\"{crash}: boom\",\"output\":\"\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"elsewhere\",\"run_id\":\"logon-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":1,\"trigger\":\"logon\",\"error\":null,\"output\":\"runs/elsewhere/logon-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"slow\",\"run_id\":\"logon-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":124,\"trigger\":\"logon\",\"error\":null,\"output\":\"runs/slow/logon-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"busy\",\"run_id\":\"logon-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"logon\",\"error\":null,\"output\":\"runs/busy/logon-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"later\",\"run_id\":\"logon-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"logon\",\"error\":null,\"output\":\"runs/later/logon-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n{\"job\":\"long\",\"run_id\":\"logon-20261112-090000\",\"started\":\"2026-11-12T09:00:00+00:00\",\"seconds\":0.0,\"returncode\":0,\"trigger\":\"logon\",\"error\":null,\"output\":\"runs/long/logon-20261112-090000.log\",\"trace_id\":\"\",\"span_id\":\"\"}\n",
+   "outputs": {
+    "runs/busy/logon-20261112-090000.log": "--- 2026-11-12 09:00:00 [logon-20261112-090000] x busy\nidle work\n--- exit 0\n",
+    "runs/elsewhere/logon-20261112-090000.log": "--- 2026-11-12 09:00:00 [logon-20261112-090000] x elsewhere\n--- exit 1\n--- 2026-11-12 09:00:00 own\nown narrative\nown failure\n",
+    "runs/fails/logon-20261112-090000.log": "--- 2026-11-12 09:00:00 [logon-20261112-090000] x fails\nline 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\n--- exit 3\n",
+    "runs/later/logon-20261112-090000.log": "--- 2026-11-12 09:00:00 [logon-20261112-090000] x later\n--- exit 0\n",
+    "runs/long/logon-20261112-090000.log": "--- 2026-11-12 09:00:00 [logon-20261112-090000] x long\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n--- exit 0\n",
+    "runs/ok/logon-20261112-090000.log": "--- 2026-11-12 09:00:00 [logon-20261112-090000] x ok\nworking\nok: 3 done\n--- exit 0\n",
+    "runs/quiet/logon-20261112-090000.log": "--- 2026-11-12 09:00:00 [logon-20261112-090000] x quiet\n--- exit 0\n",
+    "runs/slow/logon-20261112-090000.log": "--- 2026-11-12 09:00:00 [logon-20261112-090000] x slow\nhalf way\n--- timed out after 5 min\n"
+   }
+  }
+ ],
+ "run_outputs": [
+  {
+   "bytes": "",
+   "pad": 0,
+   "run_id": null,
+   "lines": []
+  },
+  {
+   "bytes": "6e6f206865616465720a617420616c6c0a",
+   "pad": 0,
+   "run_id": null,
+   "lines": []
+  },
+  {
+   "bytes": "2d2d2d20323032362d31312d31322030393a30303a3030205b615d20780a6f6e650a0a202074776f20200a2d2d2d206578697420300a2d2d2d20323032362d31312d31322030393a31353a3030205b625d20780a74687265650d0a2d2d2d206578697420310a",
+   "pad": 0,
+   "run_id": null,
+   "lines": [
+    "three"
+   ]
+  },
+  {
+   "bytes": "2d2d2d20323032362d31312d31322030393a30303a3030205b615d20780a6f6e650a2d2d2d206578697420300a2d2d2d20323032362d31312d31322030393a31353a3030205b625d20780a74687265650a",
+   "pad": 0,
+   "run_id": "a",
+   "lines": [
+    "one"
+   ]
+  },
+  {
+   "bytes": "2d2d2d20323032362d31312d31322030393a30303a3030205b615d20780a6f6e650a",
+   "pad": 0,
+   "run_id": "missing",
+   "lines": []
+  },
+  {
+   "bytes": "2d2d2d20323032362d31312d31322030393a30303a3030205b615d20780a666565640c666f726d1c6673e280a86c73c2856e656c0b76740d63720a2d2d2d206e6f742061206865616465720a6b6570740a",
+   "pad": 0,
+   "run_id": "a",
+   "lines": [
+    "feed",
+    "form",
+    "fs",
+    "ls",
+    "nel",
+    "vt",
+    "cr",
+    "kept"
+   ]
+  },
+  {
+   "bytes": "2d2d2d20323032362d31312d3132205b615d20780a2d2d2d20323032362d31312d3132205b615d20790a7365636f6e640a",
+   "pad": 0,
+   "run_id": "a",
+   "lines": [
+    "second"
+   ]
+  },
+  {
+   "bytes": "2d2d2d2031205b615d0a62616420ff20627974650a",
+   "pad": 0,
+   "run_id": null,
+   "lines": [
+    "bad \ufffd byte"
+   ]
+  },
+  {
+   "bytes": "0a2d2d2d20323032362d31312d3132205b615d20780a7461696c0a",
+   "pad": 70000,
+   "run_id": "a",
+   "lines": [
+    "tail"
+   ]
+  },
+  {
+   "bytes": null,
+   "pad": 0,
+   "run_id": null,
+   "lines": []
+  }
+ ],
  "cells": [
   {
    "outcome": {

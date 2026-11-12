@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 import threading
 import urllib.error
 import urllib.request
@@ -238,7 +237,7 @@ def post(url: str, body: str, *, content_type: str = "application/json", origin:
 def test_run_now_starts_the_tick_for_one_job_or_every_due_one() -> None:
     assert run_command("align")[-6:] == ["jobs", "run", "--trigger", "tick", "--only", "align"]
     assert run_command(None)[-4:] == ["jobs", "run", "--trigger", "tick"]
-    assert run_command(None)[:3] == [sys.executable, "-m", "desktop_manager.cli"]
+    assert Path(run_command(None)[0]).stem == "rig"
 
 
 def test_run_now_answers_at_once_with_the_started_process(base_url: str, started: list[list[str]]) -> None:

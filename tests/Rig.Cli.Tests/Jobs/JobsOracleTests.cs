@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Jobs;
@@ -158,6 +159,132 @@ public sealed class JobsOracleTests : IDisposable
             new("has", string.Empty, ["x"], tick, JobCadence.EveryRun, 5) { Requires = [Path.Join(root, "present")] },
             new("flagged", string.Empty, ["x"], tick, JobCadence.EveryRun, 5) { Feature = JobRegistry.ClaudeSessionRestoreFlag },
         ];
+    }
+
+    [Fact]
+    public void A_whole_run_writes_what_python_writes_and_reports_what_it_reports()
+    {
+        var index = 0;
+        foreach (var recorded in Oracle.GetProperty("runs").EnumerateArray())
+        {
+            var directory = Path.Join(_temp.Path, $"run-{index++}");
+            var logs = JobState.LogsDir(directory);
+            Directory.CreateDirectory(logs);
+            if (recorded.TryGetProperty("seed", out var seed))
+            {
+                foreach (var log in seed.EnumerateObject())
+                {
+                    File.WriteAllBytes(JobState.LogPath(logs, log.Name), Encoding.UTF8.GetBytes(log.Value.GetString()!));
+                }
+            }
+
+            if (recorded.TryGetProperty("prior", out var prior))
+            {
+                File.WriteAllText(Path.Join(directory, JobState.StateName), prior.GetString());
+            }
+
+            var report = new List<string>();
+            var idle = recorded.GetProperty("idle").GetDouble();
+            var runner = new JobRunner(new JobRunnerSeams(new ScriptedExecutor(), () => idle, new RunClock(), report.Add, (_, _) => new MemoryStream()));
+            var only = recorded.TryGetProperty("only", out var named) ? named.EnumerateArray().Select(name => name.GetString()!).ToHashSet() : null;
+
+            var exit = runner.Run(
+                RunJobs(directory),
+                JobWords.Trigger(recorded.GetProperty("trigger").GetString()!),
+                directory,
+                new DateTimeOffset(2026, 11, 12, 8, 0, 0, TimeSpan.Zero),
+                new Dictionary<string, bool>(),
+                only,
+                recorded.TryGetProperty("force", out var force) && force.GetBoolean());
+
+            var trigger = recorded.GetProperty("trigger").GetString()!;
+            Assert.Equal(recorded.GetProperty("exit").GetInt32(), exit);
+            Assert.Equal(recorded.GetProperty("report").EnumerateArray().Select(line => line.GetString()), report.Select(Crash));
+            Assert.Equal(recorded.GetProperty("state").GetString(), RunText(Path.Join(directory, JobState.StateName)));
+            Assert.Equal(recorded.GetProperty("last").GetString(), RunText(JobState.LastRunPath(directory, trigger)));
+            Assert.Equal(recorded.GetProperty("history").GetString(), RunText(Path.Join(directory, RunHistory.HistoryName)));
+            Assert.Equal(
+                recorded.GetProperty("outputs").EnumerateObject().Select(output => (output.Name, output.Value.GetString())),
+                Directory.GetFiles(Path.Join(directory, "runs"), "*.log", SearchOption.AllDirectories)
+                    .Select(path => (Path.GetRelativePath(directory, path).Replace('\\', '/'), (string?)File.ReadAllText(path)))
+                    .OrderBy(output => output.Item1, StringComparer.Ordinal));
+        }
+    }
+
+    [Fact]
+    public void A_run_section_reads_as_python_reads_it()
+    {
+        var path = Path.Join(_temp.Path, "output.log");
+        foreach (var recorded in Oracle.GetProperty("run_outputs").EnumerateArray())
+        {
+            var bytes = recorded.GetProperty("bytes");
+            var target = bytes.ValueKind == JsonValueKind.Null ? Path.Join(_temp.Path, "missing.log") : path;
+            if (bytes.ValueKind != JsonValueKind.Null)
+            {
+                File.WriteAllBytes(target, [.. Enumerable.Repeat((byte)'x', recorded.GetProperty("pad").GetInt32()), .. Convert.FromHexString(bytes.GetString()!)]);
+            }
+
+            Assert.Equal(
+                recorded.GetProperty("lines").EnumerateArray().Select(line => line.GetString()),
+                JobLog.RunOutput(target, recorded.GetProperty("run_id").GetString()));
+        }
+    }
+
+    // The recorded run's jobs: each script's name, triggers, idle need and own log, in the recorded order.
+    private static List<Job> RunJobs(string directory) =>
+    [
+        .. Oracle.GetProperty("run_scripts").EnumerateObject().Select(script => new Job(
+            script.Name,
+            string.Empty,
+            ["x", script.Name],
+            new HashSet<JobTrigger> { script.Value.TryGetProperty("logon_only", out _) ? JobTrigger.Logon : JobTrigger.Tick },
+            JobCadence.EveryRun,
+            5)
+        {
+            IdleMinutes = script.Value.TryGetProperty("idle_minutes", out var idle) ? idle.GetInt32() : 0,
+            DetailLog = script.Value.TryGetProperty("detail", out _) ? Path.Join(directory, $"{script.Name}-own.log") : null,
+        }),
+    ];
+
+    // The recorder writes "{crash}" where the crash's exception type, which differs by language, appeared.
+    private static string Crash(string text) => text.Replace(nameof(IOException), "{crash}", StringComparison.Ordinal);
+
+    private static string? RunText(string path) =>
+        File.Exists(path) ? Crash(File.ReadAllText(path).Replace("\r\n", "\n", StringComparison.Ordinal)) : null;
+
+    // Python's recorded _fake_execute: the script's lines under a header, its own log's narrative, then the end marker.
+    private sealed class ScriptedExecutor : IJobExecutor
+    {
+        public long Execute(Job job, string logsDir, string runId)
+        {
+            var script = Oracle.GetProperty("run_scripts").GetProperty(job.Name);
+            if (script.TryGetProperty("raise", out var message))
+            {
+                throw new IOException(message.GetString());
+            }
+
+            string Lines(string name) => string.Concat(script.GetProperty(name).EnumerateArray().Select(line => line.GetString() + "\n"));
+            var body = $"--- 2026-11-12 09:00:00 [{runId}] x {job.Name}\n" + Lines("lines");
+            if (job.DetailLog is { } own)
+            {
+                File.AppendAllText(own, "--- 2026-11-12 09:00:00 own\n" + Lines("detail"));
+            }
+
+            long code = script.TryGetProperty("timeout", out _) ? JobRunner.TimedOut : script.GetProperty("code").GetInt64();
+            body += code == JobRunner.TimedOut ? "--- timed out after 5 min\n" : $"--- exit {code}\n";
+            File.AppendAllText(JobState.LogPath(logsDir, job.Name), body);
+            return code;
+        }
+    }
+
+    // The recorder's clock: 09:00 UTC, and no time passing.
+    private sealed class RunClock : TimeProvider
+    {
+        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+
+        public override DateTimeOffset GetUtcNow() => new(2026, 11, 12, 9, 0, 0, TimeSpan.Zero);
+
+        public override long GetTimestamp() => 0;
     }
 
     // POSIX separators and no .exe, as the Python records them, so the comparison holds on Windows.
