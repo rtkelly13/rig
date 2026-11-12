@@ -138,14 +138,14 @@ internal sealed class ThreadsGitHub(IGitHubApi api)
     {
         string? cursor = null;
         HashSet<string> seen = new(StringComparer.Ordinal);
-        List<T> items = [];
+        IReadOnlyList<T> items = [];
         for (var page = 0; page < MaxPages; page++)
         {
             var (pageItems, info) = await fetchPage(cursor).ConfigureAwait(false);
-            items.AddRange(pageItems);
+            items = [.. items, .. pageItems];
             if (!info.HasNextPage)
             {
-                return items;
+                return [.. items];
             }
 
             cursor = info.EndCursor;

@@ -175,7 +175,7 @@ public sealed class DecisionsTests : IDisposable
     [Fact]
     public void Ordering_is_by_kind_then_size_then_path()
     {
-        Decision Make(string kind, long size, string path) => new(kind, "r", path, string.Empty, size, string.Empty, string.Empty);
+        static Decision Make(string kind, long size, string path) => new(kind, "r", path, string.Empty, size, string.Empty, string.Empty);
 
         var ordered = Decisions.Ordered([Make("locked-path", 9, "/a"), Make("no-pr-worktree", 1, "/b"), Make("no-pr-worktree", 5, "/c"), Make("no-pr-worktree", 5, "/B")]);
 

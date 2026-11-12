@@ -1,0 +1,10 @@
+# Banned APIs in Rig
+# Format: <DocumentationId>;<Description>
+# See https://github.com/dotnet/roslyn-analyzers/blob/main/src/Microsoft.CodeAnalysis.BannedApiAnalyzers/BannedApiAnalyzers.Help.md
+
+# Non-generic legacy collections
+T:System.Collections.ArrayList;Use generic collections or functional collection expressions [.. items] instead of non-generic ArrayList.
+T:System.Collections.Hashtable;Use generic Dictionary or FrozenDictionary instead of non-generic Hashtable.
+
+# Mutable list batch modification - prefer functional collection expressions [.. a, .. b], SelectMany, or Concat
+M:System.Collections.Generic.List`1.AddRange(System.Collections.Generic.IEnumerable{`0});Prefer functional collection expressions [.. a, .. b], SelectMany, or Concat instead of mutating List.AddRange.

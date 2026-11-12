@@ -292,7 +292,7 @@ public sealed class OrcaCommandsTests : IDisposable
     [Fact]
     public void The_applied_headline_counts_each_outcome()
     {
-        WorktreeRow Row(string verdict, string outcome) => new("personal", "app", "/a", "b", verdict, "r", outcome);
+        static WorktreeRow Row(string verdict, string outcome) => new("personal", "app", "/a", "b", verdict, "r", outcome);
 
         var headline = OrcaWorktreesCommand.Headline(
             [Row(OrcaWorktrees.Missing, "removed"), Row(OrcaWorktrees.Merged, "failed: no"), Row(OrcaWorktrees.Landed, "skipped: back"), Row(OrcaWorktrees.Current, string.Empty)],

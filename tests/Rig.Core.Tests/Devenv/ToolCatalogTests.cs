@@ -140,7 +140,7 @@ public sealed class ToolCatalogTests : IDisposable
     {
         var proc = new FakeProc().Answer(new Ran(0, "jq\n", string.Empty), "brew", "list").Answer(new Ran(0, string.Empty, string.Empty), "brew", "install");
         var tools = new DevTools(new Homebrew(proc), p => p == "rg" ? "/bin/rg" : null);
-        DevTool Tool(string? brew, string? check) => new("t", "T", "d", "c", new ToolInstall(null, brew, check), false);
+        static DevTool Tool(string? brew, string? check) => new("t", "T", "d", "c", new ToolInstall(null, brew, check), false);
 
         Assert.True(await tools.IsInstalledAsync(Tool("ripgrep", "rg"), Token));
         Assert.True(await tools.IsInstalledAsync(Tool("jq", "nojq"), Token));

@@ -36,6 +36,21 @@ dotnet_diagnostic.IDE0009.severity = warning
 # rig lowercases on purpose: keys and stems match what the Python wrote, never compared culture-sensitively.
 dotnet_diagnostic.CA1308.severity = none
 
+# Functional and performance enforcement
+csharp_prefer_static_anonymous_function = true:warning
+csharp_prefer_static_local_function = true:warning
+dotnet_diagnostic.RS0030.severity = suggestion
+dotnet_diagnostic.IDE0028.severity = suggestion
+dotnet_diagnostic.IDE0300.severity = suggestion
+dotnet_diagnostic.IDE0301.severity = suggestion
+dotnet_diagnostic.IDE0305.severity = suggestion
+
+# Strict guardrails for gh pr and devenv tooling
+[src/Rig.Cli/Gh/**/*.cs]
+dotnet_diagnostic.RS0030.severity = warning
+csharp_prefer_static_anonymous_function = true:warning
+csharp_prefer_static_local_function = true:warning
+
 # Tests: sentence-style names with underscores, and no ConfigureAwait in test bodies.
 [tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
