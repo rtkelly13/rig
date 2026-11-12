@@ -9,8 +9,9 @@ namespace Rig.Core.Jobs;
 /// Ported from <c>desktop_manager.jobs.runner.execute_subprocess</c>: the same header, end markers and environment.
 /// </summary>
 /// <param name="clock">Stamps the header in local time.</param>
+/// <param name="environment">Variables each job gets unless this process already has them (<see cref="JobsSite.Environment"/>).</param>
 /// <param name="timeout">Overrides each job's <see cref="Job.TimeoutMinutes"/>; for tests.</param>
-public sealed class ProcessJobExecutor(TimeProvider clock, TimeSpan? timeout = null) : IJobExecutor
+public sealed class ProcessJobExecutor(TimeProvider clock, IReadOnlyDictionary<string, string>? environment = null, TimeSpan? timeout = null) : IJobExecutor
 {
     /// <summary>The variable that tells a job which coordinator run started it.</summary>
     public const string RunIdVariable = "SHARED_UTILITIES_JOB_RUN";
@@ -44,6 +45,11 @@ public sealed class ProcessJobExecutor(TimeProvider clock, TimeSpan? timeout = n
         foreach (var arg in job.Argv.Skip(1))
         {
             start.ArgumentList.Add(arg);
+        }
+
+        foreach (var (name, value) in environment ?? new Dictionary<string, string>())
+        {
+            _ = start.Environment.TryAdd(name, value);
         }
 
         start.Environment["PYTHONIOENCODING"] = "utf-8";

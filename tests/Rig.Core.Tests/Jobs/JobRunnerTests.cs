@@ -14,16 +14,17 @@ public sealed class JobRunnerTests : IDisposable
     public void The_executor_appends_the_output_under_a_header_and_an_exit_marker_with_the_run_id_in_the_environment()
     {
         var logs = Path.Join(_temp.Path, "logs");
-        var job = Git("echo", "-c", "alias.runid=!echo \"id=$SHARED_UTILITIES_JOB_RUN enc=$PYTHONIOENCODING\"", "runid");
+        var job = Git("echo", "-c", "alias.runid=!echo \"id=$SHARED_UTILITIES_JOB_RUN enc=$PYTHONIOENCODING trace=$SHARED_UTILITIES_TRACE_HOME\"", "runid");
 
-        var code = new ProcessJobExecutor(new FixedClock()).Execute(job, logs, "tick-20261112-090000");
+        var code = new ProcessJobExecutor(new FixedClock(), new Dictionary<string, string> { [JobsSite.TraceHomeVariable] = "traces", ["PATH"] = "kept" })
+            .Execute(job, logs, "tick-20261112-090000");
 
         Assert.Equal(0, code);
         var log = File.ReadAllText(JobState.LogPath(logs, "echo"));
         Assert.StartsWith("--- 2026-11-12 09:00:00 [tick-20261112-090000] git -c alias.runid=", log, StringComparison.Ordinal);
-        Assert.Contains("id=tick-20261112-090000 enc=utf-8", log, StringComparison.Ordinal);
+        Assert.Contains("id=tick-20261112-090000 enc=utf-8 trace=traces", log, StringComparison.Ordinal);
         Assert.EndsWith($"--- exit 0{Environment.NewLine}", log, StringComparison.Ordinal);
-        Assert.Equal(["id=tick-20261112-090000 enc=utf-8"], JobLog.RunOutput(JobState.LogPath(logs, "echo"), "tick-20261112-090000"));
+        Assert.Equal(["id=tick-20261112-090000 enc=utf-8 trace=traces"], JobLog.RunOutput(JobState.LogPath(logs, "echo"), "tick-20261112-090000"));
     }
 
     [Fact]
@@ -44,7 +45,7 @@ public sealed class JobRunnerTests : IDisposable
     {
         var logs = Path.Join(_temp.Path, "logs");
 
-        var code = new ProcessJobExecutor(new FixedClock(), TimeSpan.Zero).Execute(Git("slow", "--version"), logs, "tick-20261112-090000");
+        var code = new ProcessJobExecutor(new FixedClock(), timeout: TimeSpan.Zero).Execute(Git("slow", "--version"), logs, "tick-20261112-090000");
 
         Assert.Equal(JobRunner.TimedOut, code);
         Assert.EndsWith($"--- timed out after 5 min{Environment.NewLine}", File.ReadAllText(JobState.LogPath(logs, "slow")), StringComparison.Ordinal);
@@ -64,8 +65,12 @@ public sealed class JobRunnerTests : IDisposable
             Assert.Equal(OperatingSystem.IsWindows() ? TimeSpan.FromMilliseconds(100) : TimeSpan.Zero, slept);
         }
 
-        using var again = RunLock.Hold(path, TimeSpan.Zero, _ => { });
-        Assert.NotNull(again);
+        using (var again = RunLock.Hold(path, TimeSpan.Zero, _ => { }))
+        {
+            Assert.NotNull(again);
+        }
+
+        // Read once no run holds it: Windows refuses a read of a locked byte.
         Assert.Equal("0"u8.ToArray(), ReadShared(path));
     }
 
