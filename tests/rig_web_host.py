@@ -14,6 +14,7 @@ locally the first worker to get here builds it into ``temp/rig-web-tests`` while
 
 from __future__ import annotations
 
+import functools
 import os
 import queue
 import re
@@ -38,9 +39,17 @@ _START = 60.0
 _LOCK_WAIT = 600.0
 
 
+@functools.cache
 def _build_cli() -> Path:
-    """Build the C# CLI into ``temp/rig-web-tests/cli``, one worker at a time; return ``rig.dll``."""
+    """Build the C# CLI into ``temp/rig-web-tests/cli`` once per run; return ``rig.dll``.
+
+    The cache keeps a worker to one build; under xdist, a marker named for the run keeps the other workers from
+    building again once one has, checked after taking the lock that makes them wait for it.
+    """
     _BUILD.mkdir(parents=True, exist_ok=True)
+    output = _BUILD / "cli"
+    run = os.environ.get("PYTEST_XDIST_TESTRUNUID")
+    marker = _BUILD / f"built-{run}" if run else None
     lock = _BUILD / "build.lock"
     deadline = time.monotonic() + _LOCK_WAIT
     while True:
@@ -52,7 +61,10 @@ def _build_cli() -> Path:
                 pytest.fail(f"another worker held {lock} too long; remove it if no test run is building")
             time.sleep(0.5)
     try:
-        output = _BUILD / "cli"
+        if marker is not None and marker.exists():
+            return output / "rig.dll"
+        for stale in _BUILD.glob("built-*"):
+            stale.unlink()
         try:
             built = tracing.run(
                 ["dotnet", "build", str(REPO / "src" / "Rig.Cli"), "-m:2", "-v", "q", "-o", str(output)],
@@ -64,6 +76,8 @@ def _build_cli() -> Path:
             pytest.fail("the browser tests run against the C# rig web host, which needs dotnet on PATH")
         if built.returncode != 0:
             pytest.fail(f"building the C# rig CLI failed:\n{built.stdout}\n{built.stderr}")
+        if marker is not None:
+            marker.touch()
         return output / "rig.dll"
     finally:
         lock.rmdir()
