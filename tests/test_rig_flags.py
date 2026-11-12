@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
-from typer.testing import CliRunner
 
 from rig.flags import FLAGS, UnknownFlagError, clear_override, effective_flags, flag_states, is_enabled, set_override
-from rig.flags import cli as flags_cli
 
 pytestmark = pytest.mark.ci
 
@@ -43,20 +42,9 @@ def test_unknown_flag_is_refused(tmp_path: Path):
         is_enabled("no-such-flag", tmp_path / "rig.db")
 
 
-def test_cli_enable_list_reset(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    db = tmp_path / "rig.db"
-    monkeypatch.setattr("rig.flags.store.get_db_connection", lambda _path=None: _connect(db))
-    runner = CliRunner()
+def test_the_csharp_oracle_records_this_registry():
+    """rig flags runs in C#; Rig.Core.Flags keeps the same list while desktop_manager still reads this one."""
+    oracle = Path(__file__).parent / "Rig.Cli.Tests" / "Flags" / "flags-oracle.json"
+    recorded = json.loads(oracle.read_text(encoding="utf-8"))["flags"]
 
-    assert runner.invoke(flags_cli.app, ["enable", "work-fork"]).exit_code == 0
-    listed = runner.invoke(flags_cli.app, ["list"])
-    assert listed.exit_code == 0
-    assert "work-fork" in listed.output
-    assert runner.invoke(flags_cli.app, ["reset", "work-fork"]).exit_code == 0
-    assert runner.invoke(flags_cli.app, ["enable", "nope"]).exit_code == 1
-
-
-def _connect(db: Path):
-    from rig.db.connection import get_db_connection
-
-    return get_db_connection(db)
+    assert recorded == [{"name": f.name, "default": f.default, "description": f.description} for f in FLAGS]
