@@ -52,6 +52,10 @@ between the last check passing and merging or enqueuing:
 | `auto_merge_off` | Auto-merge is off and the PR is not in the merge queue, so nothing will merge it |
 | `removed_from_merge_queue` | It was in the queue on an earlier poll and is now neither queued nor merged |
 
+`auto_merge_off` applies whether or not checks have finished: `wait` is for a PR that something will
+merge, so on a PR with no auto-merge queued it gives up after the settle time even while checks run.
+To watch checks alone, use `gh pr checks --watch`; to queue the merge and wait, use `rig gh pr land`.
+
 A required check that has not reported yet is missing from the check rollup, so it is counted as
 pending from the ruleset's `required_status_checks`. A failed check that is not required is ignored.
 

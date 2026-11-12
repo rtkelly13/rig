@@ -325,6 +325,19 @@ public sealed class PrCommandTests
     }
 
     [Fact]
+    public async Task Auto_merge_off_blocks_even_while_checks_still_run()
+    {
+        var github = GitHub(0, new FakeLandingState { AutoMerge = false, MergeState = "BEHIND", Checks = [new("build", "PENDING"), new("pr-title")] });
+
+        var result = await Wait(github, "--json");
+
+        Assert.Equal(
+            (1, "auto_merge_off", "auto-merge is off, so nothing will merge it", 30),
+            (result.Code, result.Json["reason"]!.GetValue<string>(), result.Json["message"]!.GetValue<string>(), result.Json["waited_seconds"]!.GetValue<int>()));
+        Assert.Equal(["build"], result.Json["pending_checks"]!.AsArray().Select(check => check!.GetValue<string>()));
+    }
+
+    [Fact]
     public async Task Leaving_the_merge_queue_without_merging_blocks()
     {
         var github = GitHub(
@@ -454,7 +467,7 @@ public sealed class PrCommandTests
     }
 
     [Fact]
-    public async Task Gh_help_lists_pr_beside_threads()
+    public async Task Wait_help_documents_the_exit_codes_and_the_settle_time()
     {
         var result = await Run(GitHub(0, Merged), null, "wait", "--help");
 
