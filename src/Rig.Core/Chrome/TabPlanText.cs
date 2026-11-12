@@ -6,7 +6,7 @@ namespace Rig.Core.Chrome;
 /// <summary>
 /// The <c>chrome-tabs</c> plans as plain lines. Pure, so what each command prints is testable. A line that starts with
 /// a space is detail; any other line is a heading. Ported from <c>desktop_manager.chrome.render</c> and the plan-line
-/// helpers in <c>cli_common</c>; the grouping plan's lines move with the grouping planner.
+/// helpers in <c>cli_common</c>.
 /// </summary>
 public static class TabPlanText
 {
@@ -107,6 +107,45 @@ public static class TabPlanText
             }),
         ];
     }
+
+    /// <summary>The grouping plan, one block per window in the order they run, then a summary.</summary>
+    public static IReadOnlyList<string> Groups(GroupPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        List<string> lines = [];
+        if (plan.Ungroups.Count > 0)
+        {
+            lines.Add(Invariant($"Ungroup first ({plan.Ungroups.Count})"));
+            lines.AddRange(plan.Ungroups.Select(ungroup =>
+                Invariant($"  {"ungroup",-9} {ungroup.Group.Title,-24} {ungroup.Tabs.Count} tabs in window {ungroup.WindowNumber}")));
+        }
+
+        foreach (var number in plan.WindowNumbers())
+        {
+            var moves = plan.Moves.Where(move => move.WindowNumber == number).ToList();
+            lines.Add(Invariant($"Window {number} [{moves[0].Profile}] ({moves.Count})"));
+            lines.AddRange(moves.Select(move =>
+                Invariant($"  {Verb(move),-9} {move.Title,-24} tab {move.Tab.Index + 1,3}  | {Clip(move.Tab.Title)}")));
+        }
+
+        lines.AddRange(plan.Skipped.Select(skip => Invariant($"  Skipped window {skip.WindowNumber} [{skip.Profile}]: {skip.Reason}")));
+        lines.AddRange(plan.Blocked.Select(block => $"  Left {block.Title} [{block.Profile}]: {block.Reason}"));
+        var created = plan.Moves.Count(move => move.New);
+        var crossing = plan.Moves.Count(move => move.Crosses);
+        lines.Add(Invariant(
+            $"{plan.Moves.Count} tabs to move ({crossing} across windows), {created} new groups, {plan.Ungroups.Count} duplicates merged, {plan.AlreadyGrouped} already grouped, {plan.Elsewhere} left in other groups"));
+        return lines;
+    }
+
+    private static string Verb(GroupMove move) => move switch
+    {
+        { New: true, Crosses: true } => Invariant($"new in w{move.HomeNumber}"),
+        { New: true } => "new group",
+        { Crosses: true } => Invariant($"to w{move.HomeNumber}"),
+        _ => "join",
+    };
+
+    private static string Invariant(FormattableString text) => FormattableString.Invariant(text);
 
     /// <summary>Each profile's saved groups as its bookmarks bar shows them, then what consolidating deletes.</summary>
     public static IReadOnlyList<string> SavedGroups(ConsolidationPlan plan)
