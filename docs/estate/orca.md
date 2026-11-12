@@ -65,9 +65,7 @@ while every other machine still gets them from `managed-projects.json`:
 `estate orca` never reports a skipped repo as `unregistered` or `no-clone`, and
 `--apply` neither registers it nor creates its group. If it is already in Orca,
 `--apply` leaves it alone (no move, no removal) and the run reports it as
-`skipped`. `desktop-manager workspace sync-projects` and `clone-project` never clone
-or link it and print `skipped <name>: listed in tools.estate.skip_repos on this
-machine`. The workspace audit never reports it as a missing clone. To keep a
+`skipped`. The workspace audit never reports it as a missing clone. To keep a
 repo off every machine, set `"enabled": false` in `managed-projects.json`
 instead.
 

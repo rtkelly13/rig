@@ -5,9 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
 from rig.c4_okf.bundle import load_bundle
-from rig.c4_okf.cli import DEFAULT_BUNDLE
+from rig.c4_okf.cli import DEFAULT_BUNDLE, app
 from rig.c4_okf.derive import Parent, PathwayScore, derive, stale, write
 from rig.c4_okf.dotnet_scan import discover, read_source, sources
 from rig.c4_okf.graph import Severity, check_bundle
@@ -193,3 +194,28 @@ def test_derived_views_under_a_parent_pass_the_bundle_checks(repo: Path, tmp_pat
 def test_parquet_sample_bundle_has_no_errors_or_warnings() -> None:
     findings = check_bundle(load_bundle(DEFAULT_BUNDLE.parent / "parquet-sourcegenerator"))
     assert [f for f in findings if f.severity is not Severity.INFO] == []
+
+
+def test_cli_derive_dotnet_writes_then_check_passes_until_a_file_goes_stale(repo: Path, tmp_path: Path) -> None:
+    runner = CliRunner()
+    out = tmp_path / "bundle"
+    _ = _write_context(out)
+    args = ["derive", "dotnet", str(repo), str(out), "--parent", "system-context:acme"]
+    wrote = runner.invoke(app, [*args, "--callgraph", str(tmp_path / "callgraph")])
+    assert wrote.exit_code == 0, wrote.output
+    assert "wrote containers.md" in wrote.output
+    assert "relationships on both pathways" in wrote.output
+    clean = runner.invoke(app, [*args, "--callgraph", str(tmp_path / "callgraph"), "--check"])
+    assert clean.exit_code == 0, clean.output
+    assert "0 stale" in clean.output
+    _ = (out / "containers.md").write_text("edited\n", encoding="utf-8")
+    stale_run = runner.invoke(app, [*args, "--callgraph", str(tmp_path / "callgraph"), "--check"])
+    assert stale_run.exit_code == 1
+    assert "stale containers.md" in stale_run.output
+
+
+def _write_context(out: Path) -> Path:
+    out.mkdir(parents=True)
+    path = out / "system-context.md"
+    _ = path.write_text(_CONTEXT, encoding="utf-8")
+    return path

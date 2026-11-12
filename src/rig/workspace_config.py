@@ -3,10 +3,6 @@
 `WORKSPACE_HOME` overrides the folder. A missing or malformed file reads as empty, so
 every setting here falls back to its default.
 
-`tools.estate.skip_repos` lists managed-project names (as in
-`config/managed-projects.json`) that must never be cloned or registered in Orca on this
-machine, while other machines still get them:
-
 `tools.estate.work_dirs` lists the folders holding this machine's work repos: a name is a
 folder under the code root, an absolute path is used as it is. None listed means no work scope:
 `estate wrapup --work` selects nothing and `estate decisions` scans only the personal estate.
@@ -21,7 +17,7 @@ jobs are not registered.
 ```json
 {
   "tools": {
-    "estate": { "skip_repos": ["hearth"], "work_dirs": ["acme", "~/work/acme"], "workspace_repo": "workspace" },
+    "estate": { "work_dirs": ["acme", "~/work/acme"], "workspace_repo": "workspace" },
     "desktop": { "aliases": { "chrome-profile-work": "Profile 4" } }
   }
 }
@@ -38,9 +34,6 @@ from pydantic import StrictStr
 
 from rig.typed_json import Lenient, try_decode_json
 
-#: Where the skip list lives, as shown in messages.
-SKIP_REPOS_KEY = "tools.estate.skip_repos"
-
 
 def workspace_config_path() -> Path:
     """`~/.workspace/config.json`, or `config.json` in `WORKSPACE_HOME` when that is set."""
@@ -50,7 +43,6 @@ def workspace_config_path() -> Path:
 
 @dataclass(frozen=True, slots=True)
 class _EstateConfig:
-    skip_repos: Lenient[tuple[StrictStr, ...]] = None
     work_dirs: Lenient[tuple[StrictStr, ...]] = None
     workspace_repo: Lenient[StrictStr] = None
 
@@ -84,11 +76,6 @@ def _estate(config_path: Path | None) -> _EstateConfig:
     return _tools(config_path).estate or _EstateConfig()
 
 
-def load_skip_repos(config_path: Path | None = None) -> frozenset[str]:
-    """The managed-project names this machine never clones or registers; empty when none are listed."""
-    return frozenset(name.strip() for name in _estate(config_path).skip_repos or () if name.strip())
-
-
 def load_work_dirs(config_path: Path | None = None) -> tuple[str, ...]:
     """This machine's work folders as written (names or paths); empty when none are listed."""
     return tuple(name.strip() for name in _estate(config_path).work_dirs or () if name.strip())
@@ -105,8 +92,3 @@ def load_desktop_aliases(config_path: Path | None = None) -> dict[str, str]:
     desktop = _tools(config_path).desktop
     aliases = (desktop.aliases if desktop else None) or {}
     return {name.strip(): value for name, value in aliases.items() if name.strip()}
-
-
-def skip_reason() -> str:
-    """Why a skipped repo is left alone, for action lines and findings."""
-    return f"listed in {SKIP_REPOS_KEY} on this machine"

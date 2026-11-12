@@ -118,7 +118,6 @@ def test_desktop_manager_marks_windows_commands():
     """The desktop-manager Windows commands declare it; portable ones do not."""
     from desktop_manager.claude_sessions.cli import claude_sessions_app
     from desktop_manager.cli import workspace_app
-    from desktop_manager.cli_projects import projects_app
 
     def declared(app: typer.Typer) -> dict[str, tuple[Platform, ...] | None]:
         out: dict[str, tuple[Platform, ...] | None] = {}
@@ -145,7 +144,6 @@ def test_desktop_manager_marks_windows_commands():
     ]:
         assert workspace[name] == (Platform.WINDOWS,), name
     assert workspace["validate-plan"] is None
-    assert all(value is None for value in declared(projects_app).values())
 
     sessions = declared(claude_sessions_app)
     assert sessions["list"] is None
