@@ -248,9 +248,6 @@ def test_dashboard_uses_its_database_and_records_actions(running: Running) -> No
         urllib.request.urlopen(request)
     assert error.value.code == 400
     assert len(store.read_entries(running.db)[0].events) == 2
-    with urllib.request.urlopen(running.url + "/static/triage.html") as response:
-        assert response.geturl().endswith("/triage/inbox")
-        assert b'id="rig-app"' in response.read()
 
 
 def test_review_decision_rechecks_live_head(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -357,17 +354,6 @@ def test_archive_returns_on_new_head_or_human_activity(tmp_path: Path) -> None:
             )
         assert not store.entries(conn)[0].archived
         assert len(store.queue(conn)) == 1
-
-
-@pytest.mark.parametrize("path", ["/triage/inbox/owner/repo/1", "/triage/references", "/estate", "/studio", "/optical"])
-def test_spa_routes_serve_the_same_document(running: Running, path: str) -> None:
-    with urllib.request.urlopen(running.url + "/") as response:
-        document = response.read()
-    with urllib.request.urlopen(running.url + path) as response:
-        assert response.read() == document
-    with pytest.raises(urllib.error.HTTPError) as error:
-        urllib.request.urlopen(running.url + "/static/missing.js")
-    assert error.value.code == 404
 
 
 def test_description_survives_observation_and_old_snapshots(monkeypatch: pytest.MonkeyPatch) -> None:

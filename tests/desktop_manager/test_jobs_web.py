@@ -145,14 +145,9 @@ def started() -> list[list[str]]:
 def base_url(tmp_path: Path, started: list[list[str]]) -> Iterator[str]:
     directory = tmp_path / "jobs"
     _seed(directory)
-    templates = tmp_path / "templates"
-    templates.mkdir()
-    (templates / "index.html").write_text("<!doctype html>", encoding="utf-8")
     server = StudioServer(
         port=0,
-        templates_dir=templates,
         db_path=tmp_path / "rig.db",
-        assets_root=tmp_path / "assets",
         routes=(
             JobsRoute(jobs=lambda: JOBS, directory=lambda: directory, start=lambda command: _record(started, command)),
         ),

@@ -173,7 +173,6 @@ def ops_app(tmp_path: Path) -> Iterator[OpsApp]:
     server = StudioServer(
         port=0,
         db_path=tmp_path / "rig.db",
-        assets_root=tmp_path / "assets",
         routes=(ops,),
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)

@@ -1,4 +1,4 @@
-"""SPA document routes, mounted API routes and the bounded frontend live-reload inventory.
+"""Mounted API routes: the JSON envelope and write guard every feature route shares.
 
 Features that serve JSON from the rig web server do not import the server. They expose a `Route`, and the composition
 root (`desktop_manager.web_cli`) hands the routes to `StudioServer`, which asks each one in turn before its own
@@ -12,11 +12,8 @@ import urllib.parse
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler
-from pathlib import Path
 from typing import Protocol
 
-_APP_PATHS = frozenset({"", "/", "/index.html", "/estate", "/studio", "/optical", "/triage", "/ops"})
-_APP_PREFIXES = ("/triage/", "/repos/", "/estate/", "/ops/")
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 MAX_BODY_BYTES = 65536
 
@@ -132,27 +129,3 @@ def json_body(handler: BaseHTTPRequestHandler) -> str:
     if handler.headers.get("Content-Type") != "application/json":
         raise ValueError("Expected application/json")
     return body.decode("utf-8")
-
-
-def serve_app(handler: BaseHTTPRequestHandler, path: str, templates: Path) -> bool:
-    """Serve the same document for app deep links; leave API/static misses as 404s."""
-    if path == "/static/triage.html":
-        handler.send_response(302)
-        handler.send_header("Location", "/triage/inbox")
-        handler.send_header("Content-Length", "0")
-        handler.end_headers()
-        return True
-    if path not in _APP_PATHS and not path.startswith(_APP_PREFIXES):
-        return False
-    document = templates / "index.html"
-    if not document.is_file():
-        handler.send_error(404, "Application document not found")
-        return True
-    content = document.read_bytes()
-    handler.send_response(200)
-    handler.send_header("Content-Type", "text/html; charset=utf-8")
-    handler.send_header("Content-Length", str(len(content)))
-    handler.send_header("Cache-Control", "no-store")
-    handler.end_headers()
-    handler.wfile.write(content)
-    return True

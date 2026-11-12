@@ -276,18 +276,13 @@ def test_recheck_refuses_a_worktree_locked_since_the_scan(idle_worktree: Path) -
 
 @pytest.fixture
 def served(tmp_path: Path) -> Iterator[str]:
-    templates = tmp_path / "templates"
-    templates.mkdir()
-    (templates / "index.html").write_text("<!doctype html><title>app</title>", encoding="utf-8")
     feed = tmp_path / "feed" / "decisions.json"
     write_feed(feed, [_decision("C:/code/a")])
     wt = tmp_path / "wt"
     cache = _cache(tmp_path, [_item(wt, "node_modules"), _item(wt, ".venv", refused="not gitignored")])
     server = StudioServer(
         port=0,
-        templates_dir=templates,
         db_path=tmp_path / "rig.db",
-        assets_root=tmp_path / "assets",
         routes=(make_route(cache, feed_path=lambda: feed, root=lambda: tmp_path),),
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)

@@ -2,8 +2,8 @@
 
 `rig web` is moving to one ASP.NET host (`src/Rig.Web`, #85 s25). Until every route group has moved,
 the host owns the port and forwards each path it does not serve to the Python server
-(`rig.web_host.server.StudioServer`), which still serves the SPA in `web/`, the legacy studio, and
-JSON for the features below. In the Python server, features never import the server, and the server
+(`rig.web_host.server.StudioServer`), which still serves the triage queue, the C4 viewer and the JSON
+for the features below. The C# host serves the SPA in `web/` itself. In the Python server, features never import the server, and the server
 never imports a feature. A feature exposes a **route**, and one composition root mounts it.
 
 ## The C# host and the forwarder
@@ -22,6 +22,12 @@ never imports a feature. A feature exposes a **route**, and one composition root
   answer otherwise comes back unchanged.
 - Failures use the `{"error": ...}` envelope: 404 when no child is running (it failed to start or has
   exited), 502 when a running child does not answer.
+- The app's document, `/static/` and `/media/assets/` are `Rig.Web.FrontendRoutes`, sent with the
+  headers and content types Python sent. Two answers differ from Python's: a missing file or document
+  is a 404 with the `{"error": ...}` envelope rather than an HTML error page, and a bare `/repos` is
+  the app's document (Python had only `/repos/` deep links). Kestrel removes `.` and `..` segments
+  before routing, so `/static/../x` is not a static path at all and goes to Python, which has no
+  handler for it; an encoded `%2F` or `..` inside a file name is refused when it leaves the folder.
 - Each s25 slice moves a group into the host and `git rm`s its Python; the last one deletes the
   forwarder, `desktop-manager web upstream` and `StudioServer`.
 
@@ -32,10 +38,10 @@ never imports a feature. A feature exposes a **route**, and one composition root
 | GET | `/api/status` | `{environment, port, is_preview, db_path}` | C# `Rig.Web.HostRoutes` |
 | GET | `/api/dev/mtime` | `{mtime, css_mtime, is_preview}` over the SPA and studio files | C# `Rig.Web.HostRoutes` |
 | GET | `/api/estate` | `{projects: [...]}` from the managed-projects registry, brand assets and Orca badges | C# `Rig.Web.HostRoutes` |
-| GET | `/`, `/index.html`, `/estate`, `/studio`, `/optical`, `/triage`, `/ops`, and `/triage/`, `/repos/`, `/estate/`, `/ops/` deep links | the SPA document | Python `rig.web_routes.serve_app` |
-| GET | `/static/triage.html` | 302 to `/triage/inbox` | Python `rig.web_routes.serve_app` |
-| GET | `/static/...` | files under `src/rig/web_host/templates` | Python `rig.web_host.server` |
-| GET | `/media/assets/...` | read-only brand assets | Python `rig.web_host.server` |
+| GET | `/`, `/index.html`, `/estate`, `/studio`, `/optical`, `/triage`, `/ops`, and `/triage/`, `/repos/`, `/estate/`, `/ops/` deep links | the SPA document | C# `Rig.Web.FrontendRoutes` |
+| GET | `/static/triage.html` | 302 to `/triage/inbox` | C# `Rig.Web.FrontendRoutes` |
+| GET | `/static/...` | files under `src/rig/web_host/templates` | C# `Rig.Web.FrontendRoutes` |
+| GET | `/media/assets/...` | read-only brand assets | C# `Rig.Web.FrontendRoutes` |
 | POST | `/api/db/backup` | `{status, backup_file}` | Python `rig.web_host.server` |
 | GET | `/api/triage` | `{entries, queue_path}` | Python `rig.triage.web` |
 | POST | `/api/triage/refresh`, `/api/triage/watch`, `/api/triage/interact` | the queue again | Python `rig.triage.web` |
@@ -77,7 +83,7 @@ never imports a feature. A feature exposes a **route**, and one composition root
 1. Add the route to the tuple in `mounted_routes()`. Import inside the function, so `rig web --help`
    stays fast and the import-linter contracts hold: `desktop_manager` may import `rig`, and features
    in `rig` stay independent of one another.
-1. If the feature has a page, add it under `/ops/<page>` in `web/router.ts`. `serve_app` already
+1. If the feature has a page, add it under `/ops/<page>` in `web/router.ts`. The C# host already
    serves the SPA document for every `/ops/` path.
 
 ## Testing
