@@ -139,7 +139,7 @@ public static class ChromeDesktopsExtensions
         {
             if (start is { } from && desktops.Current() is { } now && now != from)
             {
-                using var activity = Source.StartActivity("restore_desktop");
+                using var activity = Source.StartActivity("chrome_tabs.restore_desktop");
                 activity?.SetTag("desktop.from", now);
                 activity?.SetTag("desktop.to", from);
                 desktops.SwitchTo(from);

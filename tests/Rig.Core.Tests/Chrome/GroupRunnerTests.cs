@@ -317,8 +317,8 @@ public sealed class GroupRunnerTests
         Runner().Run(Plan([], [new Ungroup(duplicate, [Tab("b", W1, duplicate)], 1, "Ryan")]));
 
         var stopped = spans.Stopped;
-        Assert.Equal("retry", stopped.Single(activity => activity.OperationName == "plan_grouping").GetTagItem("group.phase"));
-        Assert.Equal(["plan_grouping", "group_window", "restore_desktop", "group", "ungroup_window", "group"], stopped.Select(activity => activity.OperationName));
+        Assert.Equal("retry", stopped.Single(activity => activity.OperationName == "chrome_tabs.plan_grouping").GetTagItem("group.phase"));
+        Assert.Equal(["chrome_tabs.plan_grouping", "chrome_tabs.group_window", "chrome_tabs.restore_desktop", "chrome_tabs.group", "chrome_tabs.ungroup_window", "chrome_tabs.group"], stopped.Select(activity => activity.OperationName));
         Assert.Equal("header gone", ((string)stopped[4].GetTagItem("group.stopped")!)[^11..]);
         Assert.EndsWith("menu never opened", (string)stopped[3].GetTagItem("group.stopped")!, StringComparison.Ordinal);
         Assert.Equal(3, stopped[2].GetTagItem("desktop.from"));

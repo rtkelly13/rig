@@ -57,7 +57,7 @@ public sealed class GroupRunner(
     {
         ArgumentNullException.ThrowIfNull(windows);
         ArgumentNullException.ThrowIfNull(hostsByTitle);
-        using var activity = Source.StartActivity("plan_grouping");
+        using var activity = Source.StartActivity("chrome_tabs.plan_grouping");
         activity?.SetTag("group.phase", phase);
         Dictionary<string, HashSet<string>> unkeyed = new(StringComparer.Ordinal);
         foreach (var window in windows)
@@ -90,7 +90,7 @@ public sealed class GroupRunner(
     public GroupRun Run(GroupPlan plan, Func<string?>? interrupted = null)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        using var activity = Source.StartActivity("group");
+        using var activity = Source.StartActivity("chrome_tabs.group");
         activity?.SetTag("group.moves", plan.Moves.Count);
         activity?.SetTag("group.ungroups", plan.Ungroups.Count);
         var start = desktops.Current();
@@ -248,7 +248,7 @@ public sealed class GroupRunner(
 
     private string? UngroupWindow(IReadOnlyList<Ungroup> ungroups, Func<string?> interrupted)
     {
-        using var activity = Source.StartActivity("ungroup_window");
+        using var activity = Source.StartActivity("chrome_tabs.ungroup_window");
         activity?.SetTag("window.number", ungroups[0].WindowNumber);
         activity?.SetTag("group.ungroups", ungroups.Count);
         var error = UngroupSteps(ungroups, interrupted);
@@ -295,7 +295,7 @@ public sealed class GroupRunner(
     // Stops at the first surprise, because the mouse is then no longer doing what the plan assumed.
     private GroupRun GroupWindow(IReadOnlyList<GroupMove> moves, Func<string?> interrupted)
     {
-        using var activity = Source.StartActivity("group_window");
+        using var activity = Source.StartActivity("chrome_tabs.group_window");
         activity?.SetTag("window.number", moves[0].WindowNumber);
         activity?.SetTag("window.profile", moves[0].Profile);
         activity?.SetTag("group.moves", moves.Count);
