@@ -64,12 +64,8 @@ public sealed class SavedConsolidation(IChromeSavedGroupActions actions, IChrome
     /// </summary>
     /// <param name="environment">Reads an environment variable.</param>
     /// <param name="home">The user's home, for when <c>LOCALAPPDATA</c> is unset.</param>
-    public static string MarkerPath(Func<string, string?> environment, string home)
-    {
-        ArgumentNullException.ThrowIfNull(environment);
-        var local = environment("LOCALAPPDATA") is { Length: > 0 } set ? set : Path.Join(home, "AppData", "Local");
-        return Path.Join(local, "shared-utilities", "chrome-tabs", MarkerName);
-    }
+    public static string MarkerPath(Func<string, string?> environment, string home) =>
+        Path.Join(ChromeInstall.Root(environment, home), MarkerName);
 
     /// <summary>The profiles the marker at <paramref name="marker"/> lists; none when it is missing.</summary>
     public static IReadOnlySet<string> PendingProfiles(string marker)
