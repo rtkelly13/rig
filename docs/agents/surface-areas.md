@@ -16,10 +16,11 @@ flowchart TD
         RepoAgents["<repo>/AGENTS.md (Project Standard)"]
     end
 
-    subgraph PreferredRules ["Preferred: Rules Engines (~/*/rules/)"]
+    subgraph PreferredRules ["Preferred: Rules Engines (~/*/rules/, AGENTS.md)"]
         ClaudeRules["Claude Code: ~/.claude/rules/rig.md"]
         AgyRules["Antigravity: ~/.gemini/GEMINI.md"]
-        CodexRules["Codex: ~/.codex/rules/default.rules"]
+        CodexRules["Codex: ~/.codex/AGENTS.md"]
+        OpencodeRules["OpenCode: ~/.config/opencode/AGENTS.md"]
     end
 
     subgraph HarnessConfig ["Configuration & Lifecycle"]
@@ -60,7 +61,8 @@ Modern AI assistants support dedicated rule directories rather than relying sole
 | **Claude Code** | `~/.claude/rules/rig.md` | Global User | `rig devenv claude` |
 | **Claude Code (Project)** | `.claude/rules/*.md` | Local Repository | Local repository conventions |
 | **Google Antigravity (AGY)** | `~/.gemini/GEMINI.md` | Global User (`RULE[user_global]`) | `rig devenv agy` |
-| **OpenAI Codex** | `~/.codex/rules/default.rules` | Global User | `rig policy sync --system codex` |
+| **OpenAI Codex** | `~/.codex/AGENTS.md` | Global User | `rig devenv codex` |
+| **OpenCode** | `~/.config/opencode/AGENTS.md` | Global User | `rig devenv opencode` |
 | **Cursor** | `.cursor/rules/*.mdc` | Workspace / Project | Project configuration |
 
 ______________________________________________________________________
@@ -104,6 +106,7 @@ Rather than forcing developers to repeatedly approve read-only or safe diagnosti
   - Claude Code: `permissions.allow` and `permissions.deny` in `~/.claude/settings.json`.
   - OpenCode: `permission` blocks in `~/.config/opencode/opencode.json`.
   - Antigravity: sandbox tool policies.
+  - Codex: `prefix_rule(...)` entries in `~/.codex/rules/default.rules`.
 
 ______________________________________________________________________
 
