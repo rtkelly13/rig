@@ -145,3 +145,22 @@ Named remaining acceptance procedures, all run from a reviewed/published artifac
 
 Windows CI can be triggered from this Mac by the `ci:windows` label. It supplies compilation/noninteractive
 evidence only. These procedures remain pending until a native run is recorded. Do not close #85 on this PR.
+
+## Sunset the migration gate at final cutover
+
+This cross-language inventory is temporary migration machinery. Close it down in the final #85 cutover PR
+once all core commands, web/MCP children and job callers have C# owners, the overlap baseline is empty,
+core Python implementations and forwarding fallbacks are deleted, and the named native acceptance and estate
+rollout evidence above is recorded. ADR 0022's isolated `tools/image-drift` exception remains separate.
+An empty discovery result alone is never sufficient: failed or unsupported discovery must continue to fail closed.
+
+That final PR should delete the Python inspection adapter and its tests, the migration ledger and baseline,
+temporary legacy capability mappings, unused discovery tooling/dependencies, and the `command-ownership` CI job
+and aggregate dependency. Preserve the migration evidence in #85 and Git history rather than maintaining a
+per-command migration roster forever. Source deletion and deployed runtime rollout remain separate checklist items.
+
+In the same PR, replace this machinery with small permanent C# architecture and command-tree checks for unique
+canonical registrations, thin aliases, one CLI front door, and rejection of core Python or legacy forwarding
+returning. These keep retirement enforced after the per-entry tombstones are removed. Keep the existing coverage,
+nullable, analyzer and architecture gates. Do not add an automatic disable flag while the port is incomplete;
+review the final removal against recorded source, native acceptance and rollout evidence before closing #85.

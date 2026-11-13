@@ -78,11 +78,22 @@ def thin_alias(callback):
 
 def imported_names(tree):
     imports = {}
+    bindings = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
-            imports.update((a.asname or a.name, a.name) for a in node.names)
-        if isinstance(node, ast.ImportFrom):
-            imports.update((a.asname or a.name, f"{node.module}.{a.name}") for a in node.names)
+            entries = [(a.asname or a.name, a.name) for a in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            entries = [(a.asname or a.name, f"{node.module}.{a.name}") for a in node.names]
+        else:
+            continue
+        for name, target in entries:
+            bindings.setdefault(name, set()).add(target)
+            imports[name] = target
+    # This adapter does not resolve lexical scopes. Never let a nested import
+    # mask a framework binding (or vice versa) and silently omit a CLI factory.
+    for name, targets in bindings.items():
+        if len(targets) > 1 and any(target.split(".")[0] in {"click", "typer"} for target in targets):
+            raise RuntimeError(f"Unsupported conflicting CLI import binding: {name}: {sorted(targets)}")
     return imports
 
 

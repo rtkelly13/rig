@@ -116,3 +116,24 @@ def test_an_unknown_console_script_needs_an_adapter_even_if_its_target_is_callab
     )
     assert result.returncode != 0
     assert "Unsupported GUI/plugin entry points" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "import click\ndef helper():\n    import json as click\n@click.command()\ndef run():\n    pass\n",
+        "import json as CLI\ndef helper():\n    from typer import Typer as CLI\n    return CLI()\n",
+    ],
+)
+@pytest.mark.parametrize("development_file", [False, True])
+def test_conflicting_scoped_imports_cannot_hide_factories(tmp_path: Path, source: str, development_file: bool) -> None:
+    root = _fixture(tmp_path, "def main():\n    pass\n" if development_file else source)
+    if development_file:
+        (root / "scripts").mkdir()
+        (root / "scripts" / "existing.py").write_text(source, encoding="utf-8")
+    result = tracing.run(
+        [sys.executable, str(PROBE), str(root)], scope="ownership-test", timeout=30, capture_output=True
+    )
+    assert result.returncode != 0
+    assert "Unsupported conflicting CLI import binding" in result.stderr
+    assert not result.stdout
