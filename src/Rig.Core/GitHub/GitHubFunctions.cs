@@ -242,8 +242,8 @@ public static class GitHubFunctions
         ArgumentNullException.ThrowIfNull(spec);
         var ran = await ExecuteGraphQLRawAsync(api, spec, cancellationToken).ConfigureAwait(false);
         var what = spec.Description ?? "GraphQL query";
-        var response = string.IsNullOrWhiteSpace(ran.Out) ? null : Decode<TData>(ran.Out, options ?? GitHubSerializerDefaults.Options);
-        var messages = response?.Errors?.Select(static error => error.Message).Where(static message => !string.IsNullOrEmpty(message)).ToList() ?? [];
+        var envelope = string.IsNullOrWhiteSpace(ran.Out) ? null : DecodeGraphQLEnvelope(ran.Out);
+        var messages = envelope?.Errors?.Select(static error => error.Message).Where(static message => !string.IsNullOrEmpty(message)).ToList() ?? [];
         if (messages.Count > 0)
         {
             throw new GitHubApiException($"{what}: {string.Join("; ", messages)}")
@@ -264,7 +264,27 @@ public static class GitHubFunctions
             };
         }
 
-        return response?.Data ?? throw new GitHubApiException($"{what}: unreadable response from GitHub")
+        if (envelope?.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined } dataElement)
+        {
+            try
+            {
+                var decoded = JsonSerializer.Deserialize<TData>(dataElement.GetRawText(), options ?? GitHubSerializerDefaults.Options);
+                if (decoded is not null)
+                {
+                    return decoded;
+                }
+            }
+            catch (JsonException ex)
+            {
+                throw new GitHubApiException($"{what}: unreadable data in response from GitHub", ex)
+                {
+                    ExitCode = ran.Code,
+                    ErrorOutput = ran.Err,
+                };
+            }
+        }
+
+        throw new GitHubApiException($"{what}: unreadable response from GitHub")
         {
             ExitCode = ran.Code,
             ErrorOutput = ran.Err,
@@ -282,6 +302,88 @@ public static class GitHubFunctions
         CancellationToken cancellationToken = default)
         where TData : class =>
         ExecuteGraphQLAsync<TData>(
+            api,
+            new GraphQLRequestSpec(query, variables, operationName, description),
+            options,
+            cancellationToken);
+
+    /// <summary>
+    /// Executes a GraphQL query or mutation, returning null if the resource was not found (HTTP 404 or GraphQL NOT_FOUND error),
+    /// or decoding its <c>data</c> payload.
+    /// </summary>
+    public static async Task<TData?> ExecuteGraphQLOptionalAsync<TData>(
+        IGitHubApi api,
+        GraphQLRequestSpec spec,
+        JsonSerializerOptions? options = null,
+        CancellationToken cancellationToken = default)
+        where TData : class
+    {
+        ArgumentNullException.ThrowIfNull(spec);
+        var ran = await ExecuteGraphQLRawAsync(api, spec, cancellationToken).ConfigureAwait(false);
+        if (IsNotFound(ran))
+        {
+            return null;
+        }
+
+        var what = spec.Description ?? "GraphQL query";
+        var envelope = string.IsNullOrWhiteSpace(ran.Out) ? null : DecodeGraphQLEnvelope(ran.Out);
+
+        if (IsGraphQLNotFound(envelope?.Errors))
+        {
+            return null;
+        }
+
+        var messages = envelope?.Errors?.Select(static error => error.Message).Where(static message => !string.IsNullOrEmpty(message)).ToList() ?? [];
+        if (messages.Count > 0)
+        {
+            throw new GitHubApiException($"{what}: {string.Join("; ", messages)}")
+            {
+                ExitCode = ran.Code,
+                Errors = messages,
+                ErrorOutput = ran.Err,
+            };
+        }
+
+        if (!ran.Ok)
+        {
+            var err = ran.Err.Trim();
+            throw new GitHubApiException($"{what}: {(err.Length > 0 ? err : $"gh exited {ran.Code}")}")
+            {
+                ExitCode = ran.Code,
+                ErrorOutput = err,
+            };
+        }
+
+        if (envelope?.Data is null or { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined })
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<TData>(envelope.Data.Value.GetRawText(), options ?? GitHubSerializerDefaults.Options);
+        }
+        catch (JsonException ex)
+        {
+            throw new GitHubApiException($"{what}: unreadable data in response from GitHub", ex)
+            {
+                ExitCode = ran.Code,
+                ErrorOutput = ran.Err,
+            };
+        }
+    }
+
+    /// <summary>Convenience overload to execute a GraphQL document with variables, returning null if not found.</summary>
+    public static Task<TData?> ExecuteGraphQLOptionalAsync<TData>(
+        IGitHubApi api,
+        string query,
+        IReadOnlyDictionary<string, object?>? variables = null,
+        string? operationName = null,
+        string? description = null,
+        JsonSerializerOptions? options = null,
+        CancellationToken cancellationToken = default)
+        where TData : class =>
+        ExecuteGraphQLOptionalAsync<TData>(
             api,
             new GraphQLRequestSpec(query, variables, operationName, description),
             options,
@@ -330,12 +432,11 @@ public static class GitHubFunctions
         };
     }
 
-    private static Response<TData>? Decode<TData>(string json, JsonSerializerOptions options)
-        where TData : class
+    private static WireGraphQLEnvelope? DecodeGraphQLEnvelope(string json)
     {
         try
         {
-            return JsonSerializer.Deserialize<Response<TData>>(json, options);
+            return JsonSerializer.Deserialize<WireGraphQLEnvelope>(json, GitHubSerializerDefaults.Options);
         }
         catch (JsonException)
         {
@@ -343,10 +444,21 @@ public static class GitHubFunctions
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by System.Text.Json.")]
-    private sealed record WireError(string Message = "");
+    private static bool IsGraphQLNotFound(IReadOnlyList<WireError>? errors)
+    {
+        if (errors is null || errors.Count == 0)
+        {
+            return false;
+        }
+
+        return errors.All(static e =>
+            string.Equals(e.Type, "NOT_FOUND", StringComparison.OrdinalIgnoreCase) ||
+            e.Message.Contains("Could not resolve to a", StringComparison.OrdinalIgnoreCase));
+    }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by System.Text.Json.")]
-    private sealed record Response<TData>(TData? Data = null, List<WireError>? Errors = null)
-        where TData : class;
+    private sealed record WireError(string Message = "", string? Type = null);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by System.Text.Json.")]
+    private sealed record WireGraphQLEnvelope(JsonElement? Data = null, List<WireError>? Errors = null);
 }

@@ -72,4 +72,11 @@ public sealed record GitHubGraphQLRequest(IGitHubApi Api, GraphQLRequestSpec Spe
     public Task<TData> ExecuteAsync<TData>(JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         where TData : class =>
         GitHubFunctions.ExecuteGraphQLAsync<TData>(Api, Spec, options, cancellationToken);
+
+    /// <summary>
+    /// Executes the GraphQL query or mutation, returning null if the entity was not found (HTTP 404 or GraphQL NOT_FOUND).
+    /// </summary>
+    public Task<TData?> ExecuteOptionalAsync<TData>(JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        where TData : class =>
+        GitHubFunctions.ExecuteGraphQLOptionalAsync<TData>(Api, Spec, options, cancellationToken);
 }

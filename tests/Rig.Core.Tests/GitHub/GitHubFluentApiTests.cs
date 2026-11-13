@@ -155,6 +155,71 @@ public sealed class GitHubFluentApiTests
     }
 
     [Fact]
+    public async Task GraphQLRequest_throws_original_errors_even_when_model_cannot_deserialize_null_data()
+    {
+        var query = "query Test { repository { widget } }";
+        var fake = new FakeGitHub().On("POST", "graphql", "{\"data\":null,\"errors\":[{\"message\":\"Could not resolve to a Repository\"}]}");
+
+        var ex = await Assert.ThrowsAsync<GitHubApiException>(() =>
+            fake.GraphQL(query)
+                .Describing("widget query")
+                .ExecuteAsync<Widget>(cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.Contains("widget query: Could not resolve to a Repository", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Could not resolve to a Repository", ex.Errors);
+    }
+
+    [Fact]
+    public async Task GraphQLRequest_ExecuteOptionalAsync_returns_null_on_not_found_error()
+    {
+        var query = "query Test { repository { widget } }";
+        var fake = new FakeGitHub().On("POST", "graphql", "{\"data\":null,\"errors\":[{\"message\":\"Could not resolve to a Repository\",\"type\":\"NOT_FOUND\"}]}");
+
+        var result = await fake.GraphQL(query)
+            .ExecuteOptionalAsync<Widget>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GraphQLRequest_ExecuteOptionalAsync_returns_null_on_null_data()
+    {
+        var query = "query Test { repository { widget } }";
+        var fake = new FakeGitHub().On("POST", "graphql", "{\"data\":null}");
+
+        var result = await fake.GraphQL(query)
+            .ExecuteOptionalAsync<Widget>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GraphQLRequest_ExecuteOptionalAsync_returns_data_on_success()
+    {
+        var query = "query Test { widget }";
+        var fake = new FakeGitHub().On("POST", "graphql", "{\"data\":{\"name\":\"gadget\",\"count\":3}}");
+
+        var result = await fake.GraphQL(query)
+            .ExecuteOptionalAsync<Widget>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.Equal("gadget", result.Name);
+        Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
+    public async Task GraphQLRequest_ExecuteOptionalAsync_returns_null_on_404_process_failure()
+    {
+        var query = "query Test { widget }";
+        var fake = new FakeGitHub().Fail("POST", "graphql", 404);
+
+        var result = await fake.GraphQL(query)
+            .ExecuteOptionalAsync<Widget>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
     public async Task GitHubFunctions_reads_json_directly()
     {
         var fake = new FakeGitHub().On("GET", "repos/owner/repo/widget", "{\"name\":\"direct\",\"count\":7}");
