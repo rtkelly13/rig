@@ -55,7 +55,7 @@ internal static class Discovery
         File.WriteAllText(temporary, JsonSerializer.Serialize(probes));
         portable = Decode<CsTree>(Capture(proc, root, "dotnet", dll, "--export-command-tree", "--probes", temporary));
         trees.Add("linux", portable);
-        trees.Add("macos", portable);
+        trees.Add("macos", Decode<CsTree>(Capture(proc, root, "dotnet", dll, "--export-command-tree", "macos", "--probes", temporary)));
         trees.Add("windows", Decode<CsTree>(Capture(proc, root, "dotnet", dll, "--export-command-tree", "windows", "--probes", temporary)));
         var rows = Commands(python, trees).ToList();
         rows.AddRange(python.Surfaces.Select(id => EntrySurface(id)));
@@ -183,6 +183,8 @@ internal static class Discovery
         ? path["desktop-manager ".Length..] switch
         {
             "help" => "desktop help",
+            "workspace align" => "align",
+            "workspace ensure-desktops" or "workspace sync-desktops" => "desktop workspace name-desktops",
             var desktop when desktop.StartsWith("workspace ", StringComparison.Ordinal) => "desktop " + desktop,
             var other => other,
         }

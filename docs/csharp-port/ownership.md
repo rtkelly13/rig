@@ -22,7 +22,8 @@ The inspector combines:
 
 - The **production composition root**, traversing System.CommandLine objects after construction, including
   commands registered in loops, actions on groups, and aliases. The Windows Chrome registration branch is expanded
-  with a driver that refuses native execution on this Mac. Inspection invokes no command actions.
+  with a driver that refuses native execution on this Mac. macOS gets its own composition export rather than
+  inheriting the Linux tree; new native wiring must honor the inspection platform. Inspection invokes no actions.
   Pre-parser agent shortcuts, the bare launch, model shortcuts and actual external agent targets are exported too.
 - Python AST discovery of Typer/Click factories, followed by **runtime traversal** of their composed command trees,
   including hidden commands and dynamically listed Click children. Unmounted apps are inspected too. Unsupported
@@ -72,6 +73,8 @@ cannot conceal an independent implementation.
 There are 14 current console scripts, rather than the issue's original 15. The ledger follows actual registrations.
 `desktop-manager help` describes the desktop CLI, so it is a separate capability from `rig help`.
 `desktop-manager workspace` controls desktop plans; `rig workspace` manages development configuration.
+The legacy `workspace align` spelling maps to the `align` capability, and `ensure-desktops`/`sync-desktops`
+map to `name-desktops`, so those alternate spellings cannot conceal an independent ported implementation.
 
 ## Refusal rules
 
@@ -105,7 +108,7 @@ and external repositories are a separate rollout inventory, not inferred from CI
 
 The initial ledger contains **460 inspected surfaces**. Local validation on macOS at the PR's source state:
 the full C# solution run passed 4,625 tests with 25 explicit skips; the final CLI rerun passed 918/918 and the
-final discovery rerun passed 8/8. Combined line/branch coverage holds the unchanged **95%** floor with
+final discovery rerun passed 9/9. Combined line/branch coverage holds the unchanged **95%** floor with
 only CI's existing generated-interop filters (exact final measurement on the PR). The focused Python suite passed
 112/112, including all organise trace-consumer assertions after removing their dependency on the retired reader.
 The published trace artifact

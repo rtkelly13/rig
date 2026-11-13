@@ -45,12 +45,13 @@ internal static class Program
     {
         var exportTree = args.Length > 0 && args[0] == "--export-command-tree";
         var exportWindowsTree = exportTree && args.Contains("windows", StringComparer.Ordinal);
+        var exportMacTree = exportTree && args.Contains("macos", StringComparer.Ordinal);
         var codeRoot = CodeRoot.Current();
         var checkout = PythonRig.ResolveCheckout(Environment.GetEnvironmentVariable(PythonRig.HomeVariable), codeRoot);
         var proc = new SystemProc();
         var git = new Git(proc, codeRoot);
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var macOs = OperatingSystem.IsMacOS();
+        var macOs = exportTree ? exportMacTree : OperatingSystem.IsMacOS();
         // The package registries (npm, NuGet), read by `workspace packages`. NuGet's registration resource is served gzipped.
         using var registryHandler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All, CheckCertificateRevocationList = true };
         using var registries = new HttpClient(registryHandler) { Timeout = TimeSpan.FromSeconds(30) };
@@ -91,7 +92,7 @@ internal static class Program
             Environment.GetEnvironmentVariable("SHELL"),
             ProgramPath.Find,
             Environment.GetEnvironmentVariable("XDG_CONFIG_HOME"),
-            OperatingSystem.IsMacOS(),
+            macOs,
             Environment.CurrentDirectory,
             Environment.GetEnvironmentVariable("LOCALAPPDATA"),
             Console.In);
