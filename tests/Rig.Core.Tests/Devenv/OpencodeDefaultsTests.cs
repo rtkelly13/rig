@@ -11,32 +11,60 @@ public sealed class OpencodeDefaultsTests
     {
         var existing = new JsonObject
         {
-            ["agent"] = new JsonObject { ["explore"] = new JsonObject { ["model"] = "my-custom-model" } },
+            ["agents"] = new JsonObject { ["explore"] = new JsonObject { ["model"] = "my-custom-model" } },
             ["custom_key"] = 123,
         };
 
         var merged = OpencodeDefaults.Merge(existing)!;
 
-        Assert.Equal("my-custom-model", (string)merged["agent"]!["explore"]!["model"]!);
-        Assert.Equal("github-copilot/claude-sonnet-4.6", (string)merged["agent"]!["general"]!["model"]!);
+        Assert.Equal("my-custom-model", (string)merged["agents"]!["explore"]!["model"]!);
+        Assert.Equal("github-copilot/claude-sonnet-4.6", (string)merged["agents"]!["general"]!["model"]!);
         Assert.Equal(123, (int)merged["custom_key"]!);
         Assert.Equal("https://opencode.ai/config.json", (string)merged["$schema"]!);
-        Assert.False(existing["agent"]!.AsObject().ContainsKey("general"));
+        Assert.False(existing["agents"]!.AsObject().ContainsKey("general"));
     }
 
     [Fact]
     public void A_value_of_another_type_is_kept()
     {
-        var merged = OpencodeDefaults.Merge(new JsonObject { ["agent"] = "mine" })!;
+        var merged = OpencodeDefaults.Merge(new JsonObject { ["agents"] = "mine" })!;
 
-        Assert.Equal("mine", (string)merged["agent"]!);
+        Assert.Equal("mine", (string)merged["agents"]!);
+    }
+
+    [Fact]
+    public void A_legacy_agent_entry_wins_over_the_default()
+    {
+        var existing = new JsonObject
+        {
+            ["agent"] = new JsonObject { ["explore"] = new JsonObject { ["model"] = "my-custom-model" } },
+        };
+
+        var merged = OpencodeDefaults.Merge(existing)!;
+
+        Assert.False(merged["agents"]!.AsObject().ContainsKey("explore"));
+        Assert.Equal("github-copilot/claude-sonnet-4.6", (string)merged["agents"]!["general"]!["model"]!);
     }
 
     [Fact]
     public void A_complete_config_needs_no_merge() =>
         Assert.Null(OpencodeDefaults.Merge(OpencodeDefaults.Config));
 
-    [Fact]
-    public void The_config_lives_under_dot_config() =>
-        Assert.Equal(Path.Join("/h", ".config", "opencode", "config.json"), OpencodeDefaults.ConfigPath("/h"));
+    [Theory]
+    [InlineData(new string[0], "opencode.json")]
+    [InlineData(new[] { "config.json" }, "config.json")]
+    [InlineData(new[] { "config.json", "opencode.jsonc" }, "opencode.jsonc")]
+    [InlineData(new[] { "config.json", "opencode.jsonc", "opencode.json" }, "opencode.json")]
+    public void The_config_path_prefers_the_file_opencode_reads(string[] present, string chosen)
+    {
+        using var dir = new TempDir();
+        foreach (var name in present)
+        {
+            var path = Path.Join(dir.Path, ".config", "opencode", name);
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "{}");
+        }
+
+        Assert.Equal(Path.Join(dir.Path, ".config", "opencode", chosen), OpencodeDefaults.ConfigPath(dir.Path));
+    }
 }

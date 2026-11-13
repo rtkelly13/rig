@@ -199,6 +199,34 @@ public sealed class DevenvCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Opencode_merges_defaults_into_the_config_file_opencode_reads()
+    {
+        var path = _home.File(".config/opencode/opencode.jsonc");
+        await File.WriteAllTextAsync(path, "{\"permission\":{\"bash\":{\"*\":\"ask\"}}}", TestContext.Current.CancellationToken);
+
+        var (code, output, error) = await InvokeAsync(null, ["opencode"]);
+
+        Assert.Equal((0, string.Empty), (code, error));
+        Assert.StartsWith($"✓ Configured OpenCode default settings at {path}\nopencode: ", output, StringComparison.Ordinal);
+        Assert.True(SettingsFile.Load(path)!.ContainsKey("agents"));
+        Assert.False(File.Exists(Path.Join(_home.Path, ".config", "opencode", "opencode.json")));
+    }
+
+    [Fact]
+    public async Task A_commented_opencode_jsonc_is_left_to_its_author()
+    {
+        var path = _home.File(".config/opencode/opencode.jsonc");
+        var original = "{\n  // hand edits stay\n  \"permission\": {\"bash\": {\"*\": \"ask\"}}\n}\n";
+        await File.WriteAllTextAsync(path, original, TestContext.Current.CancellationToken);
+
+        var (code, output, error) = await InvokeAsync(null, ["opencode"]);
+
+        Assert.Equal((0, string.Empty), (code, error));
+        Assert.Contains("apply by hand", output, StringComparison.Ordinal);
+        Assert.Equal(original, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task An_opencode_dry_run_writes_nothing()
     {
         var (code, output, _) = await InvokeAsync(null, ["opencode", "--dry-run"]);
@@ -222,7 +250,7 @@ public sealed class DevenvCommandTests : IDisposable
     [Fact]
     public async Task An_opencode_config_that_cannot_be_written_fails_before_the_projection()
     {
-        _ = _home.Folder($".config/opencode/config.json.{Environment.ProcessId}.tmp");
+        _ = _home.Folder($".config/opencode/opencode.json.{Environment.ProcessId}.tmp");
 
         var (code, output, error) = await InvokeAsync(null, ["opencode"]);
 

@@ -256,6 +256,36 @@ public sealed class NativeProjectionTests : IDisposable
     }
 
     [Fact]
+    public void Opencode_mirrors_rules_across_the_shell_and_bash_maps()
+    {
+        // OpenCode v2 concatenates both maps and applies the last match, so a bash-only deny would lose to the shell
+        // map's "*" ask and become a prompt.
+        Seed(Opencode, """{"permission":{"bash":{"*":"ask","~/.local/bin/uv *":"deny"},"shell":{"*":"ask"}}}""" + "\n");
+
+        _ = Sync("opencode");
+
+        var permission = JsonNode.Parse(File.ReadAllText(Opencode))!["permission"]!;
+        Assert.Equal("deny", (string)permission["bash"]!["~/.local/bin/uv *"]!);
+        Assert.Equal("deny", (string)permission["shell"]!["~/.local/bin/uv *"]!);
+        Assert.All(Sync("opencode"), r => Assert.Equal(ProjectionStatus.Unchanged, r.Status));
+    }
+
+    [Fact]
+    public void Opencode_conflicting_shell_maps_resolve_to_the_restrictive_effect()
+    {
+        // A broader allow in one map must not win over a narrower deny in the other when v2 combines them.
+        Seed(Opencode, """{"permission":{"shell":{"*":"ask","acme *":"allow"},"bash":{"*":"ask","acme destroy *":"deny"}}}""" + "\n");
+
+        _ = Sync("opencode");
+
+        var permission = JsonNode.Parse(File.ReadAllText(Opencode))!["permission"]!;
+        var bash = permission["bash"]!.AsObject().Select(pair => pair.Key).ToList();
+        var shell = permission["shell"]!.AsObject().Select(pair => pair.Key).ToList();
+        Assert.Equal(bash, shell);
+        Assert.True(shell.IndexOf("acme destroy *") > shell.IndexOf("acme *"));
+    }
+
+    [Fact]
     public void An_unknown_system_is_rejected()
     {
         _ = Assert.Throws<ArgumentException>(() => NativeProjection.For("vim", Home, windows: false));
