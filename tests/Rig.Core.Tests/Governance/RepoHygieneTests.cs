@@ -284,4 +284,51 @@ public sealed class RepoHygieneTests : IDisposable
 
         Assert.Equal(expected, RepoHygiene.HasDependabotVersionUpdates(Repo));
     }
+
+    [Fact]
+    public void Editorconfig_missing_or_invalid_is_reported()
+    {
+        Assert.Equal("MISSING", RepoHygiene.InspectEditorconfig(Repo).Status);
+
+        Put(".editorconfig", "[*]\nindent_size = 4\n");
+        var invalid = RepoHygiene.InspectEditorconfig(Repo);
+        Assert.Equal("INVALID", invalid.Status);
+        Assert.Equal("Missing 'root = true'", invalid.Reason);
+
+        Put(".editorconfig", "root = true\n\n[*]\nindent_size = 4\n");
+        Assert.Equal("CONFIGURED", RepoHygiene.InspectEditorconfig(Repo).Status);
+    }
+
+    [Fact]
+    public void Editorconfig_in_dotnet_repo_checks_for_csharp_rules()
+    {
+        Put("global.json", "{}\n");
+        Put(".editorconfig", "root = true\n\n[*]\nindent_size = 4\n");
+
+        var partial = RepoHygiene.InspectEditorconfig(Repo);
+        Assert.Equal("PARTIAL", partial.Status);
+        Assert.Equal(".NET repository missing [*.cs] rules", partial.Reason);
+
+        Put(".editorconfig", "root = true\n\n[*.cs]\nindent_size = 4\n");
+        Assert.Equal("CONFIGURED", RepoHygiene.InspectEditorconfig(Repo).Status);
+    }
+
+    [Fact]
+    public void Missing_editorconfig_is_created_from_canonical_template()
+    {
+        Assert.Equal("MISSING", RepoHygiene.InspectEditorconfig(Repo).Status);
+
+        var dry = RepoHygiene.AlignEditorconfig(Repo, dryRun: true);
+        Assert.Equal("aligned", dry.Status);
+        Assert.Equal("MISSING", RepoHygiene.InspectEditorconfig(Repo).Status);
+
+        var run = RepoHygiene.AlignEditorconfig(Repo, dryRun: false);
+        Assert.Equal("aligned", run.Status);
+        Assert.Equal("CONFIGURED", RepoHygiene.InspectEditorconfig(Repo).Status);
+        Assert.Contains("root = true", Read(".editorconfig"), StringComparison.Ordinal);
+        Assert.Contains("[*.cs]", Read(".editorconfig"), StringComparison.Ordinal);
+
+        var already = RepoHygiene.AlignEditorconfig(Repo, dryRun: false);
+        Assert.Equal("already_configured", already.Status);
+    }
 }

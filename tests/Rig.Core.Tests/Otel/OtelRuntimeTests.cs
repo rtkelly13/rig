@@ -5,7 +5,6 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
-using System.Text;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
