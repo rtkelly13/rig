@@ -52,8 +52,8 @@ from desktop_manager.chrome.saved_consolidation import (
 )
 from desktop_manager.chrome.site_rules import identify
 from desktop_manager.chrome.tabs import ChromeTab, ChromeWindow, screen_order
+from desktop_manager.chrome.trace_forward import forward as forward_traces
 from desktop_manager.chrome.traces import RUN_SPAN, SCOPE
-from desktop_manager.chrome.traces_cli import traces_app
 from desktop_manager.chrome.unattended import (
     GroupingResult,
     await_unattended_grouping,
@@ -76,7 +76,12 @@ chrome_tabs_app = typer.Typer(
     "or organise (both, window by window). "
     "No extension needed.",
 )
-chrome_tabs_app.add_typer(traces_app)
+chrome_tabs_app.command(
+    name="traces",
+    help="Reports over organise traces. Runs on rig chrome-tabs traces.",
+    add_help_option=False,
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(forward_traces)
 
 _GH_REPO = re.compile(r'repository\(owner: "([^"]+)", name: "([^"]+)"\)')
 

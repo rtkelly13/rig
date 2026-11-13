@@ -565,10 +565,48 @@ jobs:
               ;;
           esac
 
+  # Always inspect GitHub's merged result, even for a docs-only PR: a concurrent
+  # port must not leave two owners after each branch's individual tests passed.
+  command-ownership:
+    name: command-ownership
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Install legacy inspection dependencies
+        run: uv sync --locked
+      - name: Build inspected CLI and ownership gate
+        run: dotnet build rig.slnx -c Release
+      - name: Inspect registrations and enforce one owner
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
+        run: >-
+          dotnet run --project tools/command-ownership --no-build -c Release --
+          . src/Rig.Cli/bin/Release/net10.0/rig.dll --base "$BASE_SHA"
+      - name: Require current main in the tested merge result
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current_main="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq .object.sha)"
+          git merge-base --is-ancestor "$current_main" HEAD
+
   ci:
     name: ci
     if: always()
-    needs: [changes, lint, docs-audit, test, test-windows, image-drift, image-drift-windows, dotnet, dotnet-windows]
+    needs: [changes, lint, docs-audit, test, test-windows, image-drift, image-drift-windows, dotnet, dotnet-windows, command-ownership]
     runs-on: ubuntu-latest
     permissions:
       contents: read
