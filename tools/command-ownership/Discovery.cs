@@ -52,7 +52,7 @@ internal static class Discovery
         trees.Add("macos", portable);
         trees.Add("windows", Decode<CsTree>(Capture(proc, root, "dotnet", dll, "--export-command-tree", "windows", "--probes", temporary)));
         var rows = Commands(python, trees).ToList();
-        rows.AddRange(python.Surfaces.Select(id => Surface(id)));
+        rows.AddRange(python.Surfaces.Select(id => EntrySurface(id)));
         var files = Capture(proc, root, "git", "ls-files", "--cached", "--others", "--exclude-standard", "-z").Split('\0', StringSplitOptions.RemoveEmptyEntries);
         rows.AddRange(Sources(root, files));
         var index = Capture(proc, root, "git", "ls-files", "--stage", "-z");
@@ -67,6 +67,11 @@ internal static class Discovery
             var outputType = Capture(proc, root, "dotnet", "msbuild", project, "-nologo", "-getProperty:OutputType").Trim();
             if (outputType is "Exe" or "WinExe")
             {
+                if (project is not ("src/Rig.Cli/Rig.Cli.csproj" or "tools/command-ownership/CommandOwnership.csproj"))
+                {
+                    throw new InvalidOperationException($"Unsupported executable project: {project}; add its runtime discovery adapter");
+                }
+
                 rows.Add(Surface($"executable-project:{project}:{outputType}"));
             }
             else if (outputType != "Library")
@@ -178,6 +183,21 @@ internal static class Discovery
         : path;
 
     internal static CommandOwner Surface(string id) => new(id, $"surface:{id}", id, AllPlatforms);
+
+    internal static CommandOwner EntrySurface(string id)
+    {
+        const string target = "=rig.csharp_cli:entry";
+        if (id.StartsWith("script:", StringComparison.Ordinal) && id.EndsWith(target, StringComparison.Ordinal))
+        {
+            var command = id["script:".Length..^target.Length];
+            if (command != "rig")
+            {
+                return new CommandOwner(id, command, $"cs:{command}", AllPlatforms, $"cs:{command}");
+            }
+        }
+
+        return Surface(id);
+    }
 
     // Parse C# syntax instead of grep: catches new mains and top-level apps, including alternate executable projects.
     internal static IEnumerable<CommandOwner> Sources(string root, IEnumerable<string> files)

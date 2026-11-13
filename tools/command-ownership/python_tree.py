@@ -164,7 +164,11 @@ def discover(root):
         commands.extend(walk(command, path))
 
     project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    if project["project"].get("gui-scripts") or project["project"].get("entry-points"):
+        raise RuntimeError("Unsupported GUI/plugin entry points; add a runtime discovery adapter")
     for name, target in project["project"]["scripts"].items():
+        if target not in {"rig.csharp_cli:entry", "desktop_manager.cli:main"}:
+            raise RuntimeError(f"Unsupported console entry point: {name}={target}; add a runtime discovery adapter")
         surfaces.append(f"script:{name}={target}")
         module_name, _, function = target.partition(":")
         entry = vars(importlib.import_module(module_name))[function]

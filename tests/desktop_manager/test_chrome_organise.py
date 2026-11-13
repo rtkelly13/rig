@@ -18,23 +18,19 @@ import typer
 from click.testing import Result
 from typer.testing import CliRunner
 
-from desktop_manager.chrome import traces
 from desktop_manager.chrome.backend import ChromeSession
 from desktop_manager.chrome.driver import ChromeReadError, CloseOutcome, GroupOutcome, SavedDeleteOutcome
 from desktop_manager.chrome.saved_groups import SavedGroup
 from desktop_manager.chrome.tabs import ChromeTab, ChromeWindow
 from rig import tracing
 from tests.desktop_manager.fake_chrome import FakeChrome
+from tests.trace_observations import ObservedRun, observe_runs
 
 pytestmark = pytest.mark.ci
 
 SEP = "·"
 SCHEDULED = ("--unattended", "--trigger", "scheduled")
 _ids = count(500)
-
-
-def _spans(directory: Path) -> list[traces.SpanRecord]:
-    return traces.parse_lines(line for path in directory.rglob("*.ndjson") for line in path.read_text().splitlines())
 
 
 def _pr_window(hwnd: int, *numbers: int) -> ChromeWindow:
@@ -119,10 +115,20 @@ def _organise(chrome: FakeChrome, *args: str, scheduled: bool = True) -> Result:
     return result
 
 
-def _run(isolate_trace_output: Path) -> traces.Run:
+def _run(isolate_trace_output: Path) -> ObservedRun:
     tracing.shutdown_tracing()
-    [run] = traces.runs(_spans(isolate_trace_output))
+    [run] = observe_runs(isolate_trace_output, "chrome_tabs.organise")
     return run
+
+
+def _blocked_reasons(run: ObservedRun) -> list[str]:
+    return [
+        event.attributes["reason"]
+        for span in run.spans
+        if span.name == "chrome_tabs.wait_for_idle"
+        for event in span.events
+        if event.name == "check" and event.attributes.get("blocked")
+    ]
 
 
 class TestOrganiseFlow:
@@ -173,7 +179,7 @@ class TestOrganiseFlow:
         assert (root.attributes.get("group.planned"), root.attributes.get("group.moved")) == (3, 3)
         assert root.attributes.get("wait.outcome") == "clear"
         assert root.attributes.get("wait.checks") == 3
-        assert len(run.blocks) == 2
+        assert len(_blocked_reasons(run)) == 2
 
         [wait] = [span for span in run.spans if span.name == "chrome_tabs.wait_for_idle"]
         assert [event.attributes["blocked"] for event in wait.events] == [True, True, False]
@@ -394,7 +400,7 @@ class TestOrganiseFlow:
         _organise(chrome, "--consolidate-saved", "--wait-minutes", "0")
 
         tracing.shutdown_tracing()
-        runs = sorted(traces.runs(_spans(isolate_trace_output)), key=lambda run: run.root.start_ns)
+        runs = sorted(observe_runs(isolate_trace_output, "chrome_tabs.organise"), key=lambda run: run.root.start_ns)
         assert [run.root.attributes.get("saved.consolidate") for run in runs] == [
             "ran",
             "pending",
@@ -444,16 +450,16 @@ class TestOrganiseFlow:
         _organise(chrome, "--wait-minutes", "0")
 
         run = _run(isolate_trace_output)
-        assert run.grouping == "deferred"
+        assert run.root.attributes["group.outcome"] == "deferred"
         assert run.root.attributes.get("wait.outcome") == "no_wait"
-        assert run.blocks == ["the session is locked"]
+        assert _blocked_reasons(run) == ["the session is locked"]
         assert "chrome_tabs.group" not in {span.name for span in run.spans}
 
     def test_a_dry_run_is_traced_too(self, chrome: FakeChrome, isolate_trace_output: Path) -> None:
         _organise(chrome, "--dry-run", scheduled=False)
 
         run = _run(isolate_trace_output)
-        assert run.outcome == "dry_run"
+        assert run.root.attributes["run.outcome"] == "dry_run"
         assert run.root.attributes.get("group.planned") == 3
         assert {span.name for span in run.spans} == {
             "chrome_tabs.read_windows",
@@ -491,7 +497,7 @@ class TestOrganiseFlow:
             _organise(chrome)
 
         run = _run(isolate_trace_output)
-        assert run.outcome == "error"
+        assert run.root.status_code == 2
         [read] = run.spans
         assert read.name == "chrome_tabs.read_windows"
         assert read.events[0].attributes["exception.type"] == "OSError"

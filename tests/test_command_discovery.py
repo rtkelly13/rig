@@ -64,3 +64,19 @@ def test_a_thin_alias_is_discovered_but_added_business_logic_is_an_owner(tmp_pat
     rows = json.loads(result.stdout)["Commands"]
     assert rows[0]["Alias"] == "chrome-tabs traces"
     assert rows[1]["Alias"] is None
+
+
+def test_an_unknown_console_script_needs_an_adapter_even_if_its_target_is_callable(tmp_path: Path) -> None:
+    root = _fixture(tmp_path, "def main():\n    pass\n")
+    (root / "pyproject.toml").write_text('[project.scripts]\nextra = "ownership_fixture:main"\n', encoding="utf-8")
+    result = tracing.run(
+        [sys.executable, str(PROBE), str(root)], scope="ownership-test", timeout=30, capture_output=True
+    )
+    assert result.returncode != 0
+    assert "Unsupported console entry point" in result.stderr
+    (root / "pyproject.toml").write_text('[project.gui-scripts]\nextra = "ownership_fixture:main"\n', encoding="utf-8")
+    result = tracing.run(
+        [sys.executable, str(PROBE), str(root)], scope="ownership-test", timeout=30, capture_output=True
+    )
+    assert result.returncode != 0
+    assert "Unsupported GUI/plugin entry points" in result.stderr

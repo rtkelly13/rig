@@ -129,5 +129,19 @@ public sealed class DiscoveryTests
         proc.Answer(new Ran(0, "Exe", ""), "dotnet", "msbuild")
             .Answer(new Ran(0, JsonSerializer.Serialize(new Discovery.PythonTree([], ["same", "same"])), ""), "uv");
         Assert.Throws<InvalidOperationException>(() => Discovery.Read(temp.Path, "rig.dll", proc));
+        const string unknown = "src/New/New.csproj";
+        File.WriteAllText(temp.File(unknown), "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+        proc.Answer(new Ran(0, unknown + '\0', ""), "git", "ls-files");
+        Assert.Contains("Unsupported executable project", Assert.Throws<InvalidOperationException>(() => Discovery.Read(temp.Path, "rig.dll", proc)).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Named_console_shims_are_aliases_and_cannot_claim_nonexistent_csharp_commands()
+    {
+        var alias = Discovery.EntrySurface("script:missing=rig.csharp_cli:entry");
+        Assert.Equal("cs:missing", alias.AliasTo);
+        Assert.Contains(OwnershipRules.Check([alias.Id], new OwnershipLedger([alias], [], [], [])), e => e.StartsWith("Alias must dispatch", StringComparison.Ordinal));
+        Assert.Null(Discovery.EntrySurface("script:rig=rig.csharp_cli:entry").AliasTo);
+        Assert.Null(Discovery.EntrySurface("script:desktop-manager=desktop_manager.cli:main").AliasTo);
     }
 }

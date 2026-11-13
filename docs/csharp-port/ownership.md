@@ -3,7 +3,8 @@
 Tracking: [#85](https://github.com/rtkelly13/rig/issues/85), ADR 0022, and
 [#30 G5](../superpowers/plans/2026-10-29-rig-simplification-stack.md#pr-g5-one-cli-root).
 This is the enforcement part of the port, alongside the platform acceptance proposal on #85.
-One agent owns progression and retirement together; deleting superseded source is expected.
+The parent session owns forward progression; this worktree owns alignment/deprecation and the ownership gate.
+The already completed trace-report retirement below is preserved in this PR so the parent can avoid overlap.
 
 ## The inventory is inspected, then reviewed
 
@@ -26,6 +27,8 @@ The inspector combines:
 - Python AST discovery of Typer/Click factories, followed by **runtime traversal** of their composed command trees,
   including hidden commands and dynamically listed Click children. Unmounted apps are inspected too. Unsupported
   local factories, stateful callback closures, failed imports and unresolved children fail discovery.
+  New console targets, GUI/plugin entry points and executable projects need explicit runtime adapters; a new ledger
+  row cannot silently approve an unsupported framework. Named Python shims must resolve to their C# command.
 - Every Python `__main__`/guard under core `src/`, console script target, development Python file, C# `Main`,
   top-level C# file app, C# command root and project (Roslyn syntax, project XML and evaluated MSBuild output types),
   Node `bin`/package scripts and standalone Node scripts, tracked executable modes, and checked-in
@@ -100,8 +103,10 @@ and external repositories are a separate rollout inventory, not inferred from CI
 
 The initial ledger contains **460 inspected surfaces**. Local validation on macOS at the PR's source state:
 the full C# solution run passed 4,625 tests with 25 explicit skips; the final CLI rerun passed 918/918 and the
-final discovery rerun passed 7/7. Combined line/branch coverage is **95.73%**, with the unchanged 95% floor and
-only CI's existing generated-interop filters. The focused Python suite passed 86/86. The published trace artifact
+final discovery rerun passed 8/8. Combined line/branch coverage holds the unchanged **95%** floor with
+only CI's existing generated-interop filters (exact final measurement on the PR). The focused Python suite passed
+106/106, including all organise trace-consumer assertions after removing their dependency on the retired reader.
+The published trace artifact
 passed eight smoke cases with an empty PATH and an unavailable Python checkout, including destructive pruning
 only inside `temp/acceptance`. Strict types, import contracts, the ratchet, lint/format, security, workflow audit
 and documentation audit passed. Windows CI and interactive procedures remain separately recorded on #85.
