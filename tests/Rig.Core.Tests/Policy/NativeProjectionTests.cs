@@ -256,6 +256,21 @@ public sealed class NativeProjectionTests : IDisposable
     }
 
     [Fact]
+    public void Opencode_mirrors_rules_across_the_shell_and_bash_maps()
+    {
+        // OpenCode v2 concatenates both maps and applies the last match, so a bash-only deny would lose to the shell
+        // map's "*" ask and become a prompt.
+        Seed(Opencode, """{"permission":{"bash":{"*":"ask","~/.local/bin/uv *":"deny"},"shell":{"*":"ask"}}}""" + "\n");
+
+        _ = Sync("opencode");
+
+        var permission = JsonNode.Parse(File.ReadAllText(Opencode))!["permission"]!;
+        Assert.Equal("deny", (string)permission["bash"]!["~/.local/bin/uv *"]!);
+        Assert.Equal("deny", (string)permission["shell"]!["~/.local/bin/uv *"]!);
+        Assert.All(Sync("opencode"), r => Assert.Equal(ProjectionStatus.Unchanged, r.Status));
+    }
+
+    [Fact]
     public void An_unknown_system_is_rejected()
     {
         _ = Assert.Throws<ArgumentException>(() => NativeProjection.For("vim", Home, windows: false));

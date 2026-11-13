@@ -363,6 +363,13 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var path = OpencodeDefaults.ConfigPath(home);
         if (SettingsFile.Load(path) is not { } existing)
         {
+            if (path.EndsWith(".jsonc", StringComparison.Ordinal))
+            {
+                // JSONC carries comments a plain JSON merge would drop, so leave the file to its author.
+                output.WriteLine($"! Skipping {path}: JSONC configs are edited by hand");
+                return Project("opencode", dryRun, home);
+            }
+
             error.WriteLine($"! {path} is not a readable JSON object; fix it by hand, then re-run.");
             return 1;
         }

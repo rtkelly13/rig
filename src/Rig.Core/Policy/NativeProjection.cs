@@ -315,9 +315,34 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
             }
         }
 
+        MirrorShellRules(shells);
+
         // Sibling repos across the estate root stay reachable without tripping OpenCode's external_directory guard.
         _ = ObjectAt(permission, "external_directory", "permission.external_directory").TryAdd("~/code/**", "allow");
         return rendered;
+    }
+
+    // OpenCode v2 merges the two maps into one ordered rule list and applies the last match, so a rule present in only
+    // one map loses to the other map's "*" fallback. Copy each missing key into the other map; the copies follow the
+    // fallback that would otherwise hide them.
+    private static void MirrorShellRules(IReadOnlyList<JsonObject> shells)
+    {
+        var union = new Dictionary<string, JsonNode?>(StringComparer.Ordinal);
+        foreach (var shell in shells)
+        {
+            foreach (var (rule, effect) in shell)
+            {
+                _ = union.TryAdd(rule, effect?.DeepClone());
+            }
+        }
+
+        foreach (var shell in shells)
+        {
+            foreach (var (rule, effect) in union)
+            {
+                _ = shell.TryAdd(rule, effect?.DeepClone());
+            }
+        }
     }
 
     private List<CommandPrefix> RulesFor(CommandPolicy policy, CommandRisk risk)
