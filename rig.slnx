@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Rig.Cli/Rig.Cli.csproj" />
     <Project Path="src/Rig.Core/Rig.Core.csproj" />
+    <Project Path="src/Rig.Launcher/Rig.Launcher.csproj" />
     <Project Path="src/Rig.Web/Rig.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">

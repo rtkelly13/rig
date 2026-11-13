@@ -16,6 +16,14 @@ public sealed class JobsCommandTests : IDisposable
     private readonly FakeExecutor _executor = new();
     private double _idle = double.PositiveInfinity;
     private bool _held;
+    private bool _shellReady = true;
+    private Func<IReadOnlyDictionary<string, bool>> _flags = () => new Dictionary<string, bool>();
+    private readonly List<string> _tracing = [];
+    private readonly List<TimeSpan> _shellWaits = [];
+
+    private string TracesDir => Path.Join(_temp.Path, "traces");
+
+    private string CoordinatorLog => Path.Join(_temp.Path, ScheduledRun.LogName);
 
     public void Dispose()
     {
@@ -199,6 +207,92 @@ public sealed class JobsCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task A_plain_run_traces_its_jobs_and_never_rotates_the_coordinator_log_or_prunes_traces()
+    {
+        BigCoordinatorLog();
+        OldAndNewTraces();
+
+        var exit = await Run(null, "run", "--trigger", "logon");
+
+        Assert.Equal(0, exit);
+        Assert.Equal(["daily", "never"], _executor.Ran);
+        Assert.Equal(["start", "written"], _tracing);
+        Assert.Contains("run  daily (", _out.ToString(), StringComparison.Ordinal);
+        Assert.Equal(ScheduledRun.LogLimitBytes + 1, new FileInfo(CoordinatorLog).Length);
+        Assert.False(File.Exists(CoordinatorLog + ".1"));
+        Assert.True(File.Exists(Path.Join(TracesDir, "tool", "old.ndjson")));
+        Assert.Empty(_shellWaits);
+    }
+
+    [Fact]
+    public async Task A_dry_run_starts_no_tracing()
+    {
+        Assert.Equal(0, await Run(null, "run", "--dry-run", "--scheduled"));
+
+        Assert.Empty(_tracing);
+        Assert.False(File.Exists(CoordinatorLog));
+    }
+
+    [Fact]
+    public async Task A_scheduled_logon_run_waits_for_the_shell_prunes_old_traces_and_narrates_to_a_rotated_coordinator_log()
+    {
+        BigCoordinatorLog();
+        OldAndNewTraces();
+        _shellReady = false;
+
+        var exit = await Run(null, "run", "--trigger", "logon", "--scheduled");
+
+        Assert.Equal(0, exit);
+        Assert.Empty(_out.ToString());
+        Assert.Equal([ScheduledRun.ShellTimeout], _shellWaits);
+        Assert.Equal(["start", "written"], _tracing);
+        Assert.Equal(ScheduledRun.LogLimitBytes + 1, new FileInfo(CoordinatorLog + ".1").Length);
+        var lines = Lines(CoordinatorLog);
+        Assert.Equal("2026-11-12 09:00:00 [logon-20261112-090000] shell probe timed out; continuing", lines[0]);
+        Assert.Equal("2026-11-12 09:00:00 [logon-20261112-090000] pruned 1 trace file(s) older than 14 days", lines[1]);
+        Assert.Contains(lines, line => line.StartsWith("2026-11-12 09:00:00 [logon-20261112-090000] run  daily (", StringComparison.Ordinal));
+        Assert.False(File.Exists(Path.Join(TracesDir, "tool", "old.ndjson")));
+        Assert.True(File.Exists(Path.Join(TracesDir, "tool", "new.ndjson")));
+        Assert.True(File.Exists(Path.Join(TracesDir, "old.txt")));
+        Assert.Contains("[logon-20261112-090000]", string.Join("\n", Lines(JobState.LogPath(JobState.LogsDir(_temp.Path), "daily"))), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_scheduled_tick_run_neither_waits_nor_prunes_and_a_crash_is_logged_and_exits_one()
+    {
+        OldAndNewTraces();
+        _flags = () => throw new InvalidOperationException("no flags");
+
+        var exit = await Run(null, "run", "--scheduled");
+
+        Assert.Equal(1, exit);
+        Assert.Empty(_shellWaits);
+        Assert.True(File.Exists(Path.Join(TracesDir, "tool", "old.ndjson")));
+        Assert.StartsWith(
+            "2026-11-12 09:00:00 [tick-20261112-090000] Jobs coordinator run crashed (trigger tick): System.InvalidOperationException: no flags",
+            Lines(CoordinatorLog)[0],
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_scheduled_logon_run_reports_a_ready_shell_and_no_prune_when_there_are_no_traces()
+    {
+        Assert.Equal(0, await Run(null, "run", "--trigger", "logon", "--scheduled", "--only", "never"));
+
+        var lines = Lines(CoordinatorLog);
+        Assert.Equal("2026-11-12 09:00:00 [logon-20261112-090000] Explorer shell ready", lines[0]);
+        Assert.Contains("2026-11-12 09:00:00 [logon-20261112-090000] run  never (requested)", lines);
+    }
+
+    [Fact]
+    public void The_scheduled_flag_is_hidden_from_help()
+    {
+        var run = new JobsCommand(Host(null), _out).Build().Subcommands.Single(command => command.Name == "run");
+
+        Assert.True(run.Options.Single(option => option.Name == "--scheduled").Hidden);
+    }
+
+    [Fact]
     public async Task Run_refuses_jobs_the_registry_does_not_have()
     {
         Assert.Equal(JobsCommand.UnknownExit, await Run(null, "run", "--only", "zed", "--only", "every", "--only", "abc"));
@@ -231,17 +325,48 @@ public sealed class JobsCommandTests : IDisposable
     private JobsHost Host(IScheduledTasks? tasks) => new(
         _temp.Path,
         Registry,
-        () => new Dictionary<string, bool>(),
+        () => _flags(),
         new FixedTime(Now),
         now => now - TimeSpan.FromHours(1),
         tasks,
         _executor,
         () => _idle,
-        (_, _) => _held ? null : new MemoryStream());
+        (_, _) => _held ? null : new MemoryStream(),
+        () =>
+        {
+            _tracing.Add("start");
+            return new Disposer(() => _tracing.Add("written"));
+        },
+        timeout =>
+        {
+            _shellWaits.Add(timeout);
+            return _shellReady;
+        },
+        TracesDir);
 
     private Task<int> Run(IScheduledTasks? tasks, params string[] args) =>
         new JobsCommand(Host(tasks), _out).Build().Parse(args)
             .InvokeAsync(new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken);
+
+    private void BigCoordinatorLog() => File.WriteAllBytes(CoordinatorLog, new byte[ScheduledRun.LogLimitBytes + 1]);
+
+    private static string[] Lines(string path) => File.ReadAllLines(path);
+
+    private void OldAndNewTraces()
+    {
+        Directory.CreateDirectory(Path.Join(TracesDir, "tool"));
+        File.WriteAllText(Path.Join(TracesDir, "tool", "old.ndjson"), "{}");
+        File.SetLastWriteTimeUtc(Path.Join(TracesDir, "tool", "old.ndjson"), Now.UtcDateTime - TimeSpan.FromDays(15));
+        File.WriteAllText(Path.Join(TracesDir, "tool", "new.ndjson"), "{}");
+        File.SetLastWriteTimeUtc(Path.Join(TracesDir, "tool", "new.ndjson"), Now.UtcDateTime - TimeSpan.FromDays(13));
+        File.WriteAllText(Path.Join(TracesDir, "old.txt"), "kept");
+        File.SetLastWriteTimeUtc(Path.Join(TracesDir, "old.txt"), Now.UtcDateTime - TimeSpan.FromDays(30));
+    }
+
+    private sealed class Disposer(Action disposed) : IDisposable
+    {
+        public void Dispose() => disposed();
+    }
 
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider
     {

@@ -14,7 +14,19 @@ namespace Rig.Core.Jobs;
 /// <param name="Trigger">The run's trigger.</param>
 /// <param name="Error">Why it did not run to an exit code.</param>
 /// <param name="Output">Its saved output, relative to the jobs folder; empty when nothing was captured.</param>
-public sealed record JobRun(string Job, string RunId, string Started, double Seconds, long? ReturnCode, string Trigger, string? Error, string Output);
+/// <param name="TraceId">The trace its <c>job &lt;name&gt;</c> span belongs to; empty when nothing traced it.</param>
+/// <param name="SpanId">That span; empty when nothing traced it.</param>
+public sealed record JobRun(
+    string Job,
+    string RunId,
+    string Started,
+    double Seconds,
+    long? ReturnCode,
+    string Trigger,
+    string? Error,
+    string Output,
+    string TraceId = "",
+    string SpanId = "");
 
 /// <summary>
 /// Every job run the coordinator made: one <see cref="JobRun"/> line in <c>runs.ndjson</c> and the run's slice of the
@@ -93,8 +105,7 @@ public static partial class RunHistory
     }
 
     /// <summary>
-    /// <paramref name="run"/> as pydantic writes a <c>JobRun</c>: compact, fields in order, non-ASCII kept, and empty
-    /// trace and span ids, since the C# runner does not trace yet.
+    /// <paramref name="run"/> as pydantic writes a <c>JobRun</c>: compact, fields in order, non-ASCII kept.
     /// </summary>
     public static string Line(JobRun run)
     {
@@ -108,7 +119,9 @@ public static partial class RunHistory
             .Append(",\"trigger\":").Append(Quote(run.Trigger))
             .Append(",\"error\":").Append(run.Error is null ? "null" : Quote(run.Error))
             .Append(",\"output\":").Append(Quote(run.Output))
-            .Append(",\"trace_id\":\"\",\"span_id\":\"\"}");
+            .Append(",\"trace_id\":").Append(Quote(run.TraceId))
+            .Append(",\"span_id\":").Append(Quote(run.SpanId))
+            .Append('}');
         return text.ToString();
     }
 

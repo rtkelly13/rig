@@ -6,6 +6,7 @@ would change them mid-day. Instead each task runs from a copy of one commit:
 
     %LOCALAPPDATA%\\shared-utilities\\runtime\\
         <sha12>\\          the commit's files (`git archive`) plus its own `.venv`
+            rig\\          `rig` and `rigw` published from the commit (`dotnet publish`)
             installed.json
         current            directory junction to the copy in use
         state.json         current and previous copy, and the repo they came from
@@ -42,6 +43,8 @@ LINK_NAME = "current"
 STATE_NAME = "state.json"
 INSTALLED_NAME = "installed.json"
 PLAN_RELATIVE = Path("desktop-manager") / "workspace-plan.bundle.json"
+PUBLISH_NAME = "rig"
+LAUNCHER_PROJECT = Path("src") / "Rig.Launcher"
 COMMAND_TIMEOUT_SECONDS = 300
 SYNC_TIMEOUT_SECONDS = 1800
 TIMED_OUT = 124
@@ -102,6 +105,11 @@ def executable(copy: Path, name: str) -> Path:
     return scripts_dir(copy) / (f"{name}.exe" if sys.platform == "win32" else name)
 
 
+def published(copy: Path, name: str) -> Path:
+    """`rig` or `rigw` as the copy's publish wrote it; the scheduled tasks run `rigw` through `current`."""
+    return copy / PUBLISH_NAME / (f"{name}.exe" if sys.platform == "win32" else name)
+
+
 @dataclass(frozen=True, slots=True)
 class State:
     current: StrictStr | None = None
@@ -144,7 +152,7 @@ def run(command: Sequence[str], cwd: Path | None = None) -> Ran:
     """Run without a terminal prompt and within a time limit, so a stalled fetch or sync fails the install."""
     env = {key: value for key, value in os.environ.items() if key not in {"VIRTUAL_ENV", "UV_PROJECT_ENVIRONMENT"}}
     env["GIT_TERMINAL_PROMPT"] = "0"
-    timeout = SYNC_TIMEOUT_SECONDS if command[0] == "uv" else COMMAND_TIMEOUT_SECONDS
+    timeout = SYNC_TIMEOUT_SECONDS if command[0] in {"uv", "dotnet"} else COMMAND_TIMEOUT_SECONDS
     try:
         result = subprocess.run(
             list(command),
@@ -202,6 +210,12 @@ def build_environment(copy: Path, runner: Runner = run) -> None:
     _must(runner, ["uv", "sync", "--project", str(copy), "--frozen", "--no-dev", "--link-mode", "copy"], copy)
 
 
+def publish(copy: Path, runner: Runner = run) -> None:
+    """The copy's own `rig` and `rigw`, published into `<copy>/rig` (`rigw` brings `rig` with it)."""
+    command = ["dotnet", "publish", str(copy / LAUNCHER_PROJECT), "-c", "Release", "-o", str(copy / PUBLISH_NAME)]
+    _must(runner, [*command, "-m:2", "-v", "q"], copy)
+
+
 def check(copy: Path, runner: Runner = run) -> list[str]:
     """Problems that should stop `copy` becoming current; empty when it is fit to run."""
     desktop_manager = str(executable(copy, "desktop-manager"))
@@ -209,6 +223,7 @@ def check(copy: Path, runner: Runner = run) -> list[str]:
     commands: list[list[str]] = [
         [desktop_manager, "--help"],
         [desktop_manager, "chrome-tabs", "--help"],
+        [str(published(copy, "rig")), "jobs", "run", "--help"],
     ]
     if sys.platform == "win32":
         commands.append([python, "-c", "import desktop_manager.chrome.scheduled, desktop_manager.windows_workspace"])
@@ -327,9 +342,10 @@ def install(
         progress(f"Extracting {name} from {repo}")
         extract(repo, sha, staging)
         staging.rename(copy)
-        progress("Building its environment from uv.lock")
+        progress("Building its environment from uv.lock and publishing rig")
         try:
             build_environment(copy, runner)
+            publish(copy, runner)
         except InstallError:
             shutil.rmtree(copy, ignore_errors=True)
             raise

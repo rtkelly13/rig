@@ -18,9 +18,16 @@ desktop-manager jobs install           # register the tasks (run from the runtim
 
 `status`, `last`, `log` and `run` run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`); `install` and
 `uninstall` are still Python, and `rig jobs <those>` hands them to `desktop-manager jobs`. The scheduled tasks
-still start the Python runner (`desktop_manager.jobs.scheduled`) until the installers move, because only it
-records spans; the C# runner writes the same `state.json`, `last-<trigger>.json` and `runs.ndjson`, with empty
-`trace_id` and `span_id`, and takes the same `run.lock` byte, so the two never overlap.
+still start the Python runner (`desktop_manager.jobs.scheduled`) until the installers move; the C# runner writes
+the same `state.json`, `last-<trigger>.json` and `runs.ndjson`, and takes the same `run.lock` byte, so the two never
+overlap. Each job runs in a `job <name>` span written to the `desktop-manager-jobs` trace files, whose ids its
+`runs.ndjson` line keeps.
+
+The tasks will run `<runtime>\current\rig\rigw.exe jobs run --trigger <t> --scheduled`. `rigw` is `rig` built as a
+Windows app (`src/Rig.Launcher`), so a task opens no console. `--scheduled`, hidden from `--help`, does what
+`desktop_manager.jobs.scheduled` does around the run: the narrative goes to `coordinator.log` (moved to `.log.1` past
+512 KB), every line naming the run, and a crash is logged and exits 1. A logon run first waits up to two minutes for
+Explorer's shell window and deletes trace files older than 14 days. A plain `rig jobs run` does none of this.
 Both sides read and write the same `state.json` and `last-<trigger>.json`, held byte for byte to
 `tests/Rig.Cli.Tests/Jobs/jobs-oracle.json`, which Python records.
 
