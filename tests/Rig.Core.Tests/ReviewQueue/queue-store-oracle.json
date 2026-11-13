@@ -1,0 +1,107 @@
+{
+  "sql": "BEGIN TRANSACTION;\nCREATE TABLE feature_flags (\n            name TEXT PRIMARY KEY,\n            enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),\n            updated_at TEXT NOT NULL\n        );\nINSERT INTO \"feature_flags\" VALUES('legacy-flag',1,'2026-01-01T00:00:00Z');\nCREATE TABLE job_runs (\n            id INTEGER PRIMARY KEY AUTOINCREMENT,\n            job_name TEXT NOT NULL,\n            trigger TEXT NOT NULL,\n            environment TEXT NOT NULL,\n            started_at TEXT NOT NULL,\n            finished_at TEXT,\n            status TEXT NOT NULL,\n            exit_code INTEGER,\n            output TEXT\n        );\nINSERT INTO \"job_runs\" VALUES(1,'legacy-job','tick','prod','2026-01-01T00:00:00Z',NULL,'ok',NULL,NULL);\nCREATE TABLE schema_migrations (\n            version INTEGER PRIMARY KEY,\n            name TEXT NOT NULL,\n            applied_at TEXT NOT NULL\n        );\nINSERT INTO \"schema_migrations\" VALUES(1,'001_initial_schema','2026-11-13T16:53:04.243482+00:00');\nINSERT INTO \"schema_migrations\" VALUES(2,'002_triage','2026-11-13T16:53:04.244281+00:00');\nINSERT INTO \"schema_migrations\" VALUES(3,'003_feature_flags','2026-11-13T16:53:04.244476+00:00');\nINSERT INTO \"schema_migrations\" VALUES(4,'004_drop_optical_presets','2026-11-13T16:53:04.244621+00:00');\nCREATE TABLE triage_events (\n            id INTEGER PRIMARY KEY AUTOINCREMENT,\n            repo TEXT NOT NULL,\n            number INTEGER NOT NULL,\n            at TEXT NOT NULL,\n            action TEXT NOT NULL,\n            head TEXT NOT NULL,\n            note TEXT NOT NULL,\n            actor TEXT NOT NULL DEFAULT 'local',\n            source_key TEXT UNIQUE,\n            FOREIGN KEY (repo, number) REFERENCES triage_items(repo, number)\n        );\nINSERT INTO \"triage_events\" VALUES(1,'owner/repo',1,'2026-11-13T16:53:04.244976+00:00','observed','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','{\"body\": \"Keep ''quotes'' & descriptions\", \"created\": \"2026-01-01T00:00:00Z\", \"facts\": {\"assignees\": [\"bob\"], \"author\": \"alice\", \"base\": \"main\", \"checks\": [{\"name\": \"build\", \"state\": \"SUCCESS\", \"url\": \"https://example.com/check\"}], \"checks_state\": \"SUCCESS\", \"checks_total\": 1, \"comments\": 2, \"cross_repository\": true, \"draft\": false, \"head\": \"feature\", \"labels\": [\"P1\"], \"mergeable\": \"MERGEABLE\", \"milestone\": \"v1\", \"partial\": [\"labels\"], \"related\": [{\"kind\": \"issue\", \"number\": 9, \"repo\": \"owner/repo\", \"state\": \"OPEN\", \"title\": \"Related issue\"}], \"review_decision\": \"APPROVED\", \"review_requested\": true, \"reviewers\": [\"team\"], \"stack\": {\"base\": \"main\", \"members\": [{\"number\": 1, \"position\": 1, \"state\": \"OPEN\", \"title\": \"Change\"}], \"number\": 12, \"position\": 1, \"size\": 2}, \"state_reason\": \"\", \"threads_total\": 1, \"unresolved_threads\": 0, \"viewer_authored\": true}, \"head\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"in_scope\": true, \"kind\": \"pr\", \"lines\": 10, \"number\": 1, \"priority\": 1, \"readiness\": 0, \"repo\": \"owner/repo\", \"state\": \"OPEN\", \"title\": \"Change | caf\\u00e9 \\ud83d\\ude00\", \"updated\": \"2026-01-02T00:00:00Z\"}','rig',NULL);\nINSERT INTO \"triage_events\" VALUES(2,'owner/repo',1,'2026-11-13T16:53:04.274602+00:00','note','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','Keep this history','local',NULL);\nINSERT INTO \"triage_events\" VALUES(3,'owner/repo',1,'2026-01-02T00:00:00Z','github:commented','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','Comment','alice','comment/1');\nCREATE TABLE triage_items (\n            repo TEXT NOT NULL,\n            number INTEGER NOT NULL,\n            payload TEXT NOT NULL,\n            PRIMARY KEY (repo, number)\n        );\nINSERT INTO \"triage_items\" VALUES('owner/repo',1,'{\"body\": \"Keep ''quotes'' & descriptions\", \"created\": \"2026-01-01T00:00:00Z\", \"facts\": {\"assignees\": [\"bob\"], \"author\": \"alice\", \"base\": \"main\", \"checks\": [{\"name\": \"build\", \"state\": \"SUCCESS\", \"url\": \"https://example.com/check\"}], \"checks_state\": \"SUCCESS\", \"checks_total\": 1, \"comments\": 2, \"cross_repository\": true, \"draft\": false, \"head\": \"feature\", \"labels\": [\"P1\"], \"mergeable\": \"MERGEABLE\", \"milestone\": \"v1\", \"partial\": [\"labels\"], \"related\": [{\"kind\": \"issue\", \"number\": 9, \"repo\": \"owner/repo\", \"state\": \"OPEN\", \"title\": \"Related issue\"}], \"review_decision\": \"APPROVED\", \"review_requested\": true, \"reviewers\": [\"team\"], \"stack\": {\"base\": \"main\", \"members\": [{\"number\": 1, \"position\": 1, \"state\": \"OPEN\", \"title\": \"Change\"}], \"number\": 12, \"position\": 1, \"size\": 2}, \"state_reason\": \"\", \"threads_total\": 1, \"unresolved_threads\": 0, \"viewer_authored\": true}, \"head\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"in_scope\": true, \"kind\": \"pr\", \"lines\": 10, \"number\": 1, \"priority\": 1, \"readiness\": 0, \"repo\": \"owner/repo\", \"state\": \"OPEN\", \"title\": \"Change | caf\\u00e9 \\ud83d\\ude00\", \"updated\": \"2026-01-02T00:00:00Z\"}');\nINSERT INTO \"triage_items\" VALUES('owner/repo',2,'{\"created\": \"2026-01-01T00:00:00Z\", \"head\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"in_scope\": true, \"kind\": \"pr\", \"lines\": 10, \"number\": 2, \"priority\": 1, \"readiness\": 0, \"repo\": \"owner/repo\", \"state\": \"OPEN\", \"title\": \"Change | caf\\u00e9 \\ud83d\\ude00\", \"updated\": \"2026-01-02T00:00:00Z\"}');\nCREATE INDEX idx_job_runs_started_at ON job_runs(started_at DESC);\nCREATE INDEX triage_event_item ON triage_events(repo, number, id);\nDELETE FROM \"sqlite_sequence\";\nINSERT INTO \"sqlite_sequence\" VALUES('triage_events',3);\nINSERT INTO \"sqlite_sequence\" VALUES('job_runs',1);\nCOMMIT;",
+  "payload": "{\"body\": \"Keep 'quotes' & descriptions\", \"created\": \"2026-01-01T00:00:00Z\", \"facts\": {\"assignees\": [\"bob\"], \"author\": \"alice\", \"base\": \"main\", \"checks\": [{\"name\": \"build\", \"state\": \"SUCCESS\", \"url\": \"https://example.com/check\"}], \"checks_state\": \"SUCCESS\", \"checks_total\": 1, \"comments\": 2, \"cross_repository\": true, \"draft\": false, \"head\": \"feature\", \"labels\": [\"P1\"], \"mergeable\": \"MERGEABLE\", \"milestone\": \"v1\", \"partial\": [\"labels\"], \"related\": [{\"kind\": \"issue\", \"number\": 9, \"repo\": \"owner/repo\", \"state\": \"OPEN\", \"title\": \"Related issue\"}], \"review_decision\": \"APPROVED\", \"review_requested\": true, \"reviewers\": [\"team\"], \"stack\": {\"base\": \"main\", \"members\": [{\"number\": 1, \"position\": 1, \"state\": \"OPEN\", \"title\": \"Change\"}], \"number\": 12, \"position\": 1, \"size\": 2}, \"state_reason\": \"\", \"threads_total\": 1, \"unresolved_threads\": 0, \"viewer_authored\": true}, \"head\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"in_scope\": true, \"kind\": \"pr\", \"lines\": 10, \"number\": 1, \"priority\": 1, \"readiness\": 0, \"repo\": \"owner/repo\", \"state\": \"OPEN\", \"title\": \"Change | caf\\u00e9 \\ud83d\\ude00\", \"updated\": \"2026-01-02T00:00:00Z\"}",
+  "entry": {
+    "item": {
+      "repo": "owner/repo",
+      "number": 1,
+      "kind": "pr",
+      "title": "Change | café 😀",
+      "state": "OPEN",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-02T00:00:00Z",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "priority": 1,
+      "readiness": 0,
+      "lines": 10,
+      "in_scope": true,
+      "body": "Keep 'quotes' & descriptions",
+      "facts": {
+        "author": "alice",
+        "viewer_authored": true,
+        "assignees": [
+          "bob"
+        ],
+        "labels": [
+          "P1"
+        ],
+        "milestone": "v1",
+        "comments": 2,
+        "review_decision": "APPROVED",
+        "review_requested": true,
+        "reviewers": [
+          "team"
+        ],
+        "draft": false,
+        "mergeable": "MERGEABLE",
+        "base": "main",
+        "head": "feature",
+        "cross_repository": true,
+        "checks_state": "SUCCESS",
+        "checks": [
+          {
+            "name": "build",
+            "state": "SUCCESS",
+            "url": "https://example.com/check"
+          }
+        ],
+        "checks_total": 1,
+        "unresolved_threads": 0,
+        "threads_total": 1,
+        "state_reason": "",
+        "related": [
+          {
+            "repo": "owner/repo",
+            "number": 9,
+            "title": "Related issue",
+            "state": "OPEN",
+            "kind": "issue"
+          }
+        ],
+        "stack": {
+          "number": 12,
+          "size": 2,
+          "position": 1,
+          "base": "main",
+          "members": [
+            {
+              "number": 1,
+              "title": "Change",
+              "state": "OPEN",
+              "position": 1
+            }
+          ]
+        },
+        "partial": [
+          "labels"
+        ]
+      }
+    },
+    "events": [
+      {
+        "id": 1,
+        "at": "2026-11-13T16:53:04.244976+00:00",
+        "action": "observed",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "note": "{\"body\": \"Keep 'quotes' & descriptions\", \"created\": \"2026-01-01T00:00:00Z\", \"facts\": {\"assignees\": [\"bob\"], \"author\": \"alice\", \"base\": \"main\", \"checks\": [{\"name\": \"build\", \"state\": \"SUCCESS\", \"url\": \"https://example.com/check\"}], \"checks_state\": \"SUCCESS\", \"checks_total\": 1, \"comments\": 2, \"cross_repository\": true, \"draft\": false, \"head\": \"feature\", \"labels\": [\"P1\"], \"mergeable\": \"MERGEABLE\", \"milestone\": \"v1\", \"partial\": [\"labels\"], \"related\": [{\"kind\": \"issue\", \"number\": 9, \"repo\": \"owner/repo\", \"state\": \"OPEN\", \"title\": \"Related issue\"}], \"review_decision\": \"APPROVED\", \"review_requested\": true, \"reviewers\": [\"team\"], \"stack\": {\"base\": \"main\", \"members\": [{\"number\": 1, \"position\": 1, \"state\": \"OPEN\", \"title\": \"Change\"}], \"number\": 12, \"position\": 1, \"size\": 2}, \"state_reason\": \"\", \"threads_total\": 1, \"unresolved_threads\": 0, \"viewer_authored\": true}, \"head\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"in_scope\": true, \"kind\": \"pr\", \"lines\": 10, \"number\": 1, \"priority\": 1, \"readiness\": 0, \"repo\": \"owner/repo\", \"state\": \"OPEN\", \"title\": \"Change | caf\\u00e9 \\ud83d\\ude00\", \"updated\": \"2026-01-02T00:00:00Z\"}",
+        "actor": "rig"
+      },
+      {
+        "id": 2,
+        "at": "2026-11-13T16:53:04.274602+00:00",
+        "action": "note",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "note": "Keep this history",
+        "actor": "local"
+      },
+      {
+        "id": 3,
+        "at": "2026-01-02T00:00:00Z",
+        "action": "github:commented",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "note": "Comment",
+        "actor": "alice"
+      }
+    ]
+  }
+}
