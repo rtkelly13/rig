@@ -28,5 +28,6 @@
     <EmbeddedResource Include="Governance/Templates/oss/*.jinja" LogicalName="Rig.Core.Governance.Templates.oss.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Governance/Templates/policy/*.jinja" LogicalName="Rig.Core.Governance.Templates.policy.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Governance/Templates/review/*" LogicalName="Rig.Core.Governance.Templates.review.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Governance/Templates/dotnet/.editorconfig" LogicalName="Rig.Core.Governance.Templates.dotnet..editorconfig" />
   </ItemGroup>
 </Project>

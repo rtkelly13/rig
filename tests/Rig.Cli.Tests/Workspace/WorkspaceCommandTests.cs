@@ -1,7 +1,6 @@
 using System.CommandLine;
 using System.Text.Json.Nodes;
 using Rig.Cli.Workspace;
-using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;

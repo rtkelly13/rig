@@ -19,6 +19,7 @@ uv run lint-imports              # import contracts (layers, cycles, independenc
 pnpm dlx @ls-lint/ls-lint        # filename and script-language lint (bans .sh and .ps1)
 dotnet build rig.slnx -m:2       # C# side (ADR 0022); keep -m:2 locally
 dotnet test --solution rig.slnx  # C# tests (xUnit v3 on Microsoft.Testing.Platform)
+dotnet format rig.slnx           # C# formatting and whitespace enforcement
 ```
 
 Every CLI's `--help` documents its flags, findings and defaults: read it before the docs.

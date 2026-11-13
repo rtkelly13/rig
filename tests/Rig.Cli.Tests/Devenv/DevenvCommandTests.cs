@@ -1,6 +1,5 @@
 using System.CommandLine;
 using Rig.Cli.Devenv;
-using Rig.Cli.Forwarding;
 using Rig.Core.Devenv;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Devenv;

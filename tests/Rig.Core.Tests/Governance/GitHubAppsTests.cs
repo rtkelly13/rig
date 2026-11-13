@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Governance;
-using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
 
 namespace Rig.Core.Tests.Governance;

@@ -1,7 +1,6 @@
 using System.CommandLine;
 using Rig.Cli.Governance;
 using Rig.Core.Governance;
-using Rig.Core.Processes;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
 

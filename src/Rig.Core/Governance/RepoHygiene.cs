@@ -174,6 +174,51 @@ public static partial class RepoHygiene
         return new("aligned", File: npmrc);
     }
 
+    /// <summary>Whether a valid root <c>.editorconfig</c> is configured.</summary>
+    public static HygieneResult InspectEditorconfig(string repoPath)
+    {
+        var file = Path.Join(repoPath, ".editorconfig");
+        if (!Path.Exists(file))
+        {
+            return new("MISSING", false);
+        }
+
+        var content = DocsTree.ReadText(file);
+        if (!Regex.IsMatch(content, @"(?m)^\s*root\s*=\s*true", RegexOptions.IgnoreCase))
+        {
+            return new("INVALID", false, File: file, Reason: "Missing 'root = true'");
+        }
+
+        if (ReviewToolConfigs.IsDotnetRepo(repoPath) && !content.Contains("*.cs", StringComparison.Ordinal))
+        {
+            return new("PARTIAL", false, File: file, Reason: ".NET repository missing [*.cs] rules");
+        }
+
+        return new("CONFIGURED", true, File: file);
+    }
+
+    /// <summary>Writes the canonical <c>.editorconfig</c> when missing or partial.</summary>
+    public static HygieneResult AlignEditorconfig(string repoPath, bool dryRun)
+    {
+        var inspection = InspectEditorconfig(repoPath);
+        if (inspection.IsAligned)
+        {
+            return new("already_configured");
+        }
+
+        var file = Path.Join(repoPath, ".editorconfig");
+        using var stream = typeof(RepoHygiene).Assembly.GetManifestResourceStream("Rig.Core.Governance.Templates.dotnet..editorconfig");
+        if (stream is null)
+        {
+            return new("error", false, Reason: "Embedded .editorconfig template not found");
+        }
+
+        using var reader = new StreamReader(stream);
+        var content = reader.ReadToEnd().ReplaceLineEndings("\n");
+        Write(file, content, dryRun);
+        return new("aligned", File: file);
+    }
+
     /// <summary>
     /// Counts the <c>uses:</c> refs in <c>.github/workflows</c> not pinned to a 40-character commit SHA. Read-only:
     /// pinning is pinact's and Dependabot's job; see docs/repo-governance/action-pinning.md.

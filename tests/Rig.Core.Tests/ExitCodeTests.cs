@@ -1,5 +1,3 @@
-using Rig.Core;
-
 namespace Rig.Core.Tests;
 
 public sealed class ExitCodeTests

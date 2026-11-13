@@ -1,6 +1,5 @@
 using System.CommandLine;
 using Rig.Cli.Policy;
-using Rig.Core.Policy;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Policy;
 
