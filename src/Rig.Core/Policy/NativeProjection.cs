@@ -315,35 +315,72 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
             }
         }
 
-        MirrorShellRules(shells);
+        UnifyShellRules(shells);
 
         // Sibling repos across the estate root stay reachable without tripping OpenCode's external_directory guard.
         _ = ObjectAt(permission, "external_directory", "permission.external_directory").TryAdd("~/code/**", "allow");
         return rendered;
     }
 
-    // OpenCode v2 merges the two maps into one ordered rule list and applies the last match, so a rule present in only
-    // one map loses to the other map's "*" fallback. Copy each missing key into the other map; the copies follow the
-    // fallback that would otherwise hide them.
-    private static void MirrorShellRules(IReadOnlyList<JsonObject> shells)
+    // OpenCode v2 concatenates the two maps into one rule list and applies the last match, so a rule present in only
+    // one map can be shadowed by the other map's "*" fallback. Write the same authoritative list into both maps: the
+    // "*" fallback first, then allow, ask and deny, so a conflict across the maps resolves to the restrictive effect
+    // and concatenating the duplicated list reaches the same decision.
+    private static void UnifyShellRules(IReadOnlyList<JsonObject> shells)
     {
-        var union = new Dictionary<string, JsonNode?>(StringComparer.Ordinal);
+        var fallback = "ask";
+        var effects = new Dictionary<string, string>(StringComparer.Ordinal);
+        var others = new List<KeyValuePair<string, JsonNode?>>();
         foreach (var shell in shells)
         {
             foreach (var (rule, effect) in shell)
             {
-                _ = union.TryAdd(rule, effect?.DeepClone());
+                if (AsText(effect) is not { } text)
+                {
+                    others.Add(new(rule, effect?.DeepClone()));
+                    continue;
+                }
+
+                if (rule == "*")
+                {
+                    fallback = Stronger(fallback, text);
+                    continue;
+                }
+
+                effects[rule] = effects.TryGetValue(rule, out var known) ? Stronger(known, text) : text;
             }
+        }
+
+        var ordered = new List<KeyValuePair<string, string>>();
+        foreach (var effect in new[] { "allow", "ask", "deny" })
+        {
+            ordered.AddRange(effects.Where(entry => entry.Value == effect).Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value)));
         }
 
         foreach (var shell in shells)
         {
-            foreach (var (rule, effect) in union)
+            shell.Clear();
+            _ = shell.TryAdd("*", fallback);
+            foreach (var (rule, effect) in ordered)
+            {
+                _ = shell.TryAdd(rule, effect);
+            }
+
+            foreach (var (rule, effect) in others)
             {
                 _ = shell.TryAdd(rule, effect?.DeepClone());
             }
         }
     }
+
+    private static string Stronger(string left, string right) => Rank(right) > Rank(left) ? right : left;
+
+    private static int Rank(string effect) => effect switch
+    {
+        "deny" => 2,
+        "ask" => 1,
+        _ => 0,
+    };
 
     private List<CommandPrefix> RulesFor(CommandPolicy policy, CommandRisk risk)
     {

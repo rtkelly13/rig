@@ -365,9 +365,10 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         {
             if (path.EndsWith(".jsonc", StringComparison.Ordinal))
             {
-                // JSONC carries comments a plain JSON merge would drop, so leave the file to its author.
-                output.WriteLine($"! Skipping {path}: JSONC configs are edited by hand");
-                return Project("opencode", dryRun, home);
+                // JSONC carries comments a plain JSON merge would drop, and the projection would fail on them.
+                // Leave the file to its author and point at the manual step instead of reporting a failure.
+                output.WriteLine($"! Skipping {path}: it has comments, so its defaults and estate policy are left for you to apply by hand");
+                return 0;
             }
 
             error.WriteLine($"! {path} is not a readable JSON object; fix it by hand, then re-run.");

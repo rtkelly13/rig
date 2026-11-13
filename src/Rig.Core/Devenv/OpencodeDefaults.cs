@@ -46,7 +46,33 @@ public static class OpencodeDefaults
     {
         ArgumentNullException.ThrowIfNull(existing);
         var merged = (JsonObject)existing.DeepClone();
-        return AddMissing(merged, Config) ? merged : null;
+        return AddMissing(merged, DefaultsFor(existing)) ? merged : null;
+    }
+
+    // OpenCode migrates legacy `agent` and `mode` entries into native agents, then lets the native entry win.
+    // Adding a default for a name a legacy section already defines would replace the user's entry, so leave it out.
+    private static JsonObject DefaultsFor(JsonObject existing)
+    {
+        var defaults = Config;
+        if (defaults["agents"] is not JsonObject agents)
+        {
+            return defaults;
+        }
+
+        foreach (var legacyKey in new[] { "agent", "mode" })
+        {
+            if (existing[legacyKey] is not JsonObject legacy)
+            {
+                continue;
+            }
+
+            foreach (var (name, _) in legacy)
+            {
+                _ = agents.Remove(name);
+            }
+        }
+
+        return defaults;
     }
 
     // Adds each default key target lacks, recursing where both sides hold an object; true when anything was added.

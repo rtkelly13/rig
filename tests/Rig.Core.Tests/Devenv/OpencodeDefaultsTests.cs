@@ -33,6 +33,20 @@ public sealed class OpencodeDefaultsTests
     }
 
     [Fact]
+    public void A_legacy_agent_entry_wins_over_the_default()
+    {
+        var existing = new JsonObject
+        {
+            ["agent"] = new JsonObject { ["explore"] = new JsonObject { ["model"] = "my-custom-model" } },
+        };
+
+        var merged = OpencodeDefaults.Merge(existing)!;
+
+        Assert.False(merged["agents"]!.AsObject().ContainsKey("explore"));
+        Assert.Equal("github-copilot/claude-sonnet-4.6", (string)merged["agents"]!["general"]!["model"]!);
+    }
+
+    [Fact]
     public void A_complete_config_needs_no_merge() =>
         Assert.Null(OpencodeDefaults.Merge(OpencodeDefaults.Config));
 

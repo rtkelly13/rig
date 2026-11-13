@@ -213,6 +213,20 @@ public sealed class DevenvCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task A_commented_opencode_jsonc_is_left_to_its_author()
+    {
+        var path = _home.File(".config/opencode/opencode.jsonc");
+        var original = "{\n  // hand edits stay\n  \"permission\": {\"bash\": {\"*\": \"ask\"}}\n}\n";
+        await File.WriteAllTextAsync(path, original, TestContext.Current.CancellationToken);
+
+        var (code, output, error) = await InvokeAsync(null, ["opencode"]);
+
+        Assert.Equal((0, string.Empty), (code, error));
+        Assert.Contains("apply by hand", output, StringComparison.Ordinal);
+        Assert.Equal(original, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task An_opencode_dry_run_writes_nothing()
     {
         var (code, output, _) = await InvokeAsync(null, ["opencode", "--dry-run"]);
