@@ -1,4 +1,3 @@
-using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 

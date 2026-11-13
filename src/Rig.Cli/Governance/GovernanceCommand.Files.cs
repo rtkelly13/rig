@@ -224,6 +224,71 @@ internal sealed partial class GovernanceCommand
         return 1;
     }
 
+    private Command Editorconfig()
+    {
+        var path = PathArgument();
+        var audit = new Option<bool>("--audit") { Description = "Audit .editorconfig without mutating" };
+        var enforce = new Option<bool>("--enforce") { Description = "Write/update canonical .editorconfig file" };
+        var dryRun = new Option<bool>("--dry-run") { Description = "Preview .editorconfig writes without saving" };
+        var org = OrgOption();
+        var all = AllOption();
+        var command = new Command("editorconfig", "Audits and enforces canonical .editorconfig formatting and style rules across repositories.")
+        {
+            path, audit, enforce, dryRun, org, all,
+        };
+        command.SetAction((parsed, cancellationToken) => EditorconfigAsync(
+            parsed.GetValue(path), parsed.GetValue(audit), parsed.GetValue(enforce), parsed.GetValue(dryRun), parsed.GetValue(org), parsed.GetValue(all), cancellationToken));
+        return command;
+    }
+
+    private async Task<int> EditorconfigAsync(string? path, bool audit, bool enforce, bool dryRun, string? org, bool all, CancellationToken cancellationToken)
+    {
+        audit = audit || !enforce;
+        var (_, repos) = Governed();
+        var targets = await repos.ResolveTargetsAsync(path, all, host.PersonalDir, host.Cwd, org, cancellationToken).ConfigureAwait(false);
+        await output.WriteAsync(Panel("EditorConfig Governance")).ConfigureAwait(false);
+        var table = new TextTable("Repository .editorconfig Status", [("Repository", false), ("Kind", false), ("Status", false), ("Details", false)]);
+        var failures = 0;
+        foreach (var target in targets)
+        {
+            var name = FolderName(target);
+            var isDotnet = ReviewToolConfigs.IsDotnetRepo(target);
+            var kind = isDotnet ? ".NET" : "General";
+            if (enforce)
+            {
+                var aligned = RepoHygiene.AlignEditorconfig(target, dryRun);
+                var detail = aligned.Status switch
+                {
+                    "already_configured" => "Already configured",
+                    "aligned" => dryRun ? "Would create canonical .editorconfig" : "Created canonical .editorconfig",
+                    _ => aligned.Reason ?? aligned.Status,
+                };
+                _ = table.Add(name, kind, aligned.Status, detail);
+                continue;
+            }
+
+            var inspected = RepoHygiene.InspectEditorconfig(target);
+            if (!inspected.IsAligned)
+            {
+                failures++;
+            }
+
+            var status = inspected.IsAligned ? "✓ COMPLIANT" : "✗ DRIFT";
+            var message = inspected.IsAligned ? "Valid .editorconfig" : inspected.Reason ?? inspected.Status;
+            _ = table.Add(name, kind, status, message);
+        }
+
+        await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        if (audit && failures > 0)
+        {
+            await output.WriteLineAsync($"\nFAILED: {failures} repo(s) failed .editorconfig compliance. Run with --enforce to fix.").ConfigureAwait(false);
+            return 1;
+        }
+
+        await output.WriteLineAsync("\nSUCCESS: All inspected repositories are compliant with .editorconfig rules.").ConfigureAwait(false);
+        return 0;
+    }
+
     private sealed record GitignoreOptions(string? Path, bool All, string? Org, string? Language, bool Apply, bool DryRun, bool Json);
 
     private sealed record LicenseOptions(string? Path, bool Audit, bool Enforce, bool Spdx, string? Type, string? Holder, string? Org, bool All);
