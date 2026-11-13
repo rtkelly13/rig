@@ -253,6 +253,19 @@ public sealed class DevenvCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task A_failed_opencode_rules_write_still_merges_the_config()
+    {
+        _ = _home.Folder(".config/opencode/AGENTS.md");
+
+        var (code, output, error) = await InvokeAsync(null, ["opencode"]);
+
+        Assert.Equal(1, code);
+        Assert.Contains("Failed to write OpenCode global rules", error, StringComparison.Ordinal);
+        Assert.Contains("Configured OpenCode default settings", output, StringComparison.Ordinal);
+        Assert.True(File.Exists(Opencode));
+    }
+
+    [Fact]
     public async Task An_unreadable_opencode_config_is_left_alone()
     {
         await File.WriteAllTextAsync(_home.File(".config/opencode/config.json"), "{\"a\": 1, \"a\": 2}", TestContext.Current.CancellationToken);

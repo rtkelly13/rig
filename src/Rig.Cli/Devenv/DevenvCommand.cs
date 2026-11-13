@@ -362,6 +362,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
     // Merge the OpenCode global rules and defaults without clobbering, then project the policy; 1 when a write fails.
     private int Opencode(bool dryRun, string home)
     {
+        var rulesFailed = false;
         var rulesPath = OpencodeRules.FilePath(home);
         var rules = OpencodeRules.Merge(File.Exists(rulesPath) ? File.ReadAllText(rulesPath).ReplaceLineEndings("\n") : null);
         if (rules.Action == ManagedRulesAction.Unchanged)
@@ -377,14 +378,13 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
             try
             {
                 OpencodeRules.Write(rulesPath, rules.Content, host.Windows);
+                output.WriteLine($"{rules.Action} OpenCode global rules at {rulesPath}");
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
                 error.WriteLine($"! Failed to write OpenCode global rules: {e.Message}");
-                return 1;
+                rulesFailed = true;
             }
-
-            output.WriteLine($"{rules.Action} OpenCode global rules at {rulesPath}");
         }
 
         var path = OpencodeDefaults.ConfigPath(home);
@@ -395,7 +395,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
                 // JSONC carries comments a plain JSON merge would drop, and the projection would fail on them.
                 // Leave the file to its author and point at the manual step instead of reporting a failure.
                 output.WriteLine($"! Skipping {path}: it has comments, so its defaults and estate policy are left for you to apply by hand");
-                return 0;
+                return rulesFailed ? 1 : 0;
             }
 
             error.WriteLine($"! {path} is not a readable JSON object; fix it by hand, then re-run.");
@@ -425,7 +425,8 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
             output.WriteLine($"✓ Configured OpenCode default settings at {path}");
         }
 
-        return Project("opencode", dryRun, home);
+        var code = Project("opencode", dryRun, home);
+        return rulesFailed || code != 0 ? 1 : 0;
     }
 
     // The Codex global context in ~/.codex/AGENTS.md: only the marked block is managed.
