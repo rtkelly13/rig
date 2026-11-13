@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Xml.Linq;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Rig.Core.CommandSurface;
@@ -11,6 +12,11 @@ internal static class Discovery
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true, WriteIndented = true };
     private static readonly string[] AllPlatforms = ["linux", "macos", "windows"];
+    private static readonly MetadataReference[] CommandReferences =
+    [
+        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(System.CommandLine.RootCommand).Assembly.Location),
+    ];
 
     internal readonly record struct PythonCommand(string Id, string Path, string Owner, string[] Platforms, string? Alias);
     internal readonly record struct PythonTree(PythonCommand[] Commands, string[] Surfaces);
@@ -220,7 +226,9 @@ internal static class Discovery
                     yield return Surface($"main:{file}:{method.Identifier.ValueText}");
                 }
 
-                foreach (var creation in parsed.GetRoot().DescendantNodes().OfType<ObjectCreationExpressionSyntax>().Where(c => c.Type.ToString().EndsWith("RootCommand", StringComparison.Ordinal)))
+                var semantic = CSharpCompilation.Create("CommandInspection", [parsed], CommandReferences).GetSemanticModel(parsed);
+                foreach (var creation in parsed.GetRoot().DescendantNodes().OfType<BaseObjectCreationExpressionSyntax>()
+                    .Where(c => semantic.GetTypeInfo(c).Type?.Name == "RootCommand"))
                 {
                     var method = creation.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault()?.Identifier.ValueText ?? "top-level";
                     yield return Surface($"command-root:{file}:{method}");

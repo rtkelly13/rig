@@ -28,12 +28,14 @@ public sealed class DiscoveryTests
     public void Unmounted_csharp_roots_and_node_executables_are_not_silently_ignored()
     {
         using var temp = new TempDir();
-        File.WriteAllText(temp.File("src/Extra.cs"), "class Extra { object Build() => new System.CommandLine.RootCommand(); }");
+        File.WriteAllText(temp.File("src/Extra.cs"), "using Root = System.CommandLine.RootCommand; class Extra { object Build() => new System.CommandLine.RootCommand(); Root Implicit() => new(); Root Field = new(); }");
         File.WriteAllText(temp.File("package.json"), """{"bin":{"extra":"cli.js"},"scripts":{"run":"node cli.js"}}""");
         File.WriteAllText(temp.File("tools/package.json"), """{"bin":"extra.js"}""");
         File.WriteAllText(temp.File("run.cmd"), "@echo hello");
         var rows = Discovery.Sources(temp.Path, ["src/Extra.cs", "package.json", "tools/package.json", "run.cmd", "tests/ignored.cs"]).ToArray();
         Assert.Contains(rows, r => r.Id == "command-root:src/Extra.cs:Build");
+        Assert.Contains(rows, r => r.Id == "command-root:src/Extra.cs:Implicit");
+        Assert.Contains(rows, r => r.Id == "command-root:src/Extra.cs:top-level");
         Assert.Contains(rows, r => r.Id == "node:package.json:bin:extra=cli.js");
         Assert.Contains(rows, r => r.Id == "node:package.json:scripts:run=node cli.js");
         Assert.Contains(rows, r => r.Id == "node:tools/package.json:bin=extra.js");

@@ -31,6 +31,7 @@ The inspector combines:
   row cannot silently approve an unsupported framework. Named Python shims must resolve to their C# command.
 - Every Python `__main__`/guard under core `src/`, console script target, development Python file, C# `Main`,
   top-level C# file app, C# command root and project (Roslyn syntax, project XML and evaluated MSBuild output types),
+  C# root discovery includes target-typed `new()` and type aliases through Roslyn's semantic model.
   Node `bin`/package scripts and standalone Node scripts, tracked executable modes, and checked-in
   command/shell/PowerShell/LaunchAgent launchers. Launcher contents are fingerprinted.
 - Each actual `Forwarded.Commands` route expanded into the inspected Python leaves. Probe arguments go back
@@ -45,7 +46,8 @@ The ownership rules, source inspection and gate runner are C#. Remove the probe 
 
 `Id` identifies the observed registration. `Capability` is its normalized command path; `Owner` is the canonical
 implementation. A Python wrapper counts as an alias only when its inspected AST is exactly a whole-line dispatch
-to the real `csharp_cli.run`, without branches, fallback or independent behavior. Reusing one callback under
+to the real `csharp_cli.run`, without branches, fallback or independent behavior. Only Typer's exact built-in
+callback adapter is stripped; user decorators are independent behavior. Reusing one callback under
 several names also shares one implementation. C# aliases come from the actual command object's alias collection.
 New registrations need reviewed ledger rows. Metadata must match discovery, so changing a ledger owner or platform
 cannot conceal an independent implementation.
@@ -105,7 +107,7 @@ The initial ledger contains **460 inspected surfaces**. Local validation on macO
 the full C# solution run passed 4,625 tests with 25 explicit skips; the final CLI rerun passed 918/918 and the
 final discovery rerun passed 8/8. Combined line/branch coverage holds the unchanged **95%** floor with
 only CI's existing generated-interop filters (exact final measurement on the PR). The focused Python suite passed
-106/106, including all organise trace-consumer assertions after removing their dependency on the retired reader.
+112/112, including all organise trace-consumer assertions after removing their dependency on the retired reader.
 The published trace artifact
 passed eight smoke cases with an empty PATH and an unavailable Python checkout, including destructive pruning
 only inside `temp/acceptance`. Strict types, import contracts, the ratchet, lint/format, security, workflow audit

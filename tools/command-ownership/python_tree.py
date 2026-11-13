@@ -30,7 +30,17 @@ def callback_id(callback):
 
 def thin_alias(callback):
     """Accept exactly a whole-line delegation, with no policy, branching or fallback."""
-    original = inspect.unwrap(callback)
+    # Typer adapts even a plain callback through this exact framework code object.
+    # Strip that one adapter, not arbitrary decorators that happen to use wraps().
+    framework_codes = {
+        code
+        for code in typer.main.get_callback.__code__.co_consts
+        if inspect.iscode(code) and code.co_name == "wrapper"
+    }
+    registered = callback.__wrapped__ if callback.__code__ in framework_codes else callback
+    original = inspect.unwrap(registered)
+    if original is not registered:
+        return None
     from rig import csharp_cli
 
     if original.__globals__.get("csharp_cli") is not csharp_cli or original.__globals__.get("typer") is not typer:
@@ -66,6 +76,35 @@ def thin_alias(callback):
     return " ".join(item.value for item in prefix)
 
 
+def imported_names(tree):
+    imports = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imports.update((a.asname or a.name, a.name) for a in node.names)
+        if isinstance(node, ast.ImportFrom):
+            imports.update((a.asname or a.name, f"{node.module}.{a.name}") for a in node.names)
+    return imports
+
+
+def cli_factories(tree, imports):
+    candidates = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]
+    candidates.extend(
+        decorator
+        for function in ast.walk(tree)
+        if isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef))
+        for decorator in function.decorator_list
+        if not isinstance(decorator, ast.Call)
+    )
+    found = []
+    for node in candidates:
+        expression = node.func if isinstance(node, ast.Call) else node
+        first, dot, rest = ast.unparse(expression).partition(".")
+        resolved = imports.get(first, "") + (dot + rest if dot else "")
+        if resolved in {"typer.Typer", "click.Command", "click.Group", "click.group", "click.command"}:
+            found.append(node)
+    return found
+
+
 def walk(command, path):
     if command.callback is not None:
         callback = command.callback
@@ -97,13 +136,8 @@ def discover(root):
         relative = file.relative_to(source)
         module_name = ".".join(relative.with_suffix("").parts)
         tree = ast.parse(file.read_text(encoding="utf-8"), filename=str(file))
-        imports = {}
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                imports.update((a.asname or a.name, a.name) for a in node.names)
-            if isinstance(node, ast.ImportFrom):
-                imports.update((a.asname or a.name, f"{node.module}.{a.name}") for a in node.names)
-        factories = []
+        imports = imported_names(tree)
+        factories = cli_factories(tree, imports)
         for node in ast.walk(tree):
             if isinstance(node, ast.If) and ast.unparse(node.test) in {
                 "__name__ == '__main__'",
@@ -112,14 +146,10 @@ def discover(root):
                 surfaces.append(f"module:{module_name}")
             if isinstance(node, ast.Call):
                 function = ast.unparse(node.func)
-                first, dot, rest = function.partition(".")
-                resolved = imports.get(first, "") + (dot + rest if dot else "")
                 if function.endswith((".add_subparsers", ".add_parser")):
                     raise RuntimeError(f"Unsupported argparse command tree in {file}; add runtime discovery")
-                if resolved in {"typer.Typer", "click.Command", "click.Group", "click.group", "click.command"}:
-                    factories.append(node)
         for function in (n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))):
-            if any(factory in ast.walk(function) for factory in factories):
+            if any(factory in ast.walk(statement) for statement in function.body for factory in factories):
                 raise RuntimeError(
                     f"Unsupported local command factory in {file}:{function.name}; expose an inspectable tree"
                 )
@@ -181,7 +211,7 @@ def discover(root):
         for file in sorted(directory.rglob("*.py")):
             tree = ast.parse(file.read_text(encoding="utf-8"))
             surfaces.append(f"python-file:{file.relative_to(root).as_posix()}")
-            if any(isinstance(n, ast.Call) and ast.unparse(n.func).endswith(".Typer") for n in ast.walk(tree)):
+            if cli_factories(tree, imported_names(tree)):
                 raise RuntimeError(f"Unsupported development CLI factory: {file}; expose its runtime tree")
 
     # Inspect the actual MCP registration loop (including dynamically registered tools).

@@ -137,7 +137,7 @@ internal static class Program
                     TimeProvider.System,
                     TimeZoneInfo.Local,
                     Console.Out,
-                    OperatingSystem.IsWindowsVersionAtLeast(8, 1) || exportWindowsTree ? new ChromeTabsDriver(
+                    (exportTree ? exportWindowsTree : OperatingSystem.IsWindowsVersionAtLeast(8, 1)) ? new ChromeTabsDriver(
                             () => OperatingSystem.IsWindowsVersionAtLeast(8, 1) ? WindowsChrome.Open() : throw new PlatformNotSupportedException("Inspection never opens a native driver."),
                             new GhApi(proc),
                             () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
