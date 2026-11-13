@@ -276,7 +276,7 @@ public static class GitHubFunctions
             }
             catch (JsonException ex)
             {
-                throw new GitHubApiException($"{what}: unreadable data in response from GitHub", ex)
+                throw new GitHubApiException($"{what}: unreadable response from GitHub", ex)
                 {
                     ExitCode = ran.Code,
                     ErrorOutput = ran.Err,
@@ -354,7 +354,16 @@ public static class GitHubFunctions
             };
         }
 
-        if (envelope?.Data is null or { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined })
+        if (envelope is null)
+        {
+            throw new GitHubApiException($"{what}: unreadable response from GitHub")
+            {
+                ExitCode = ran.Code,
+                ErrorOutput = ran.Err,
+            };
+        }
+
+        if (envelope.Data is null or { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined })
         {
             return null;
         }
@@ -365,7 +374,7 @@ public static class GitHubFunctions
         }
         catch (JsonException ex)
         {
-            throw new GitHubApiException($"{what}: unreadable data in response from GitHub", ex)
+            throw new GitHubApiException($"{what}: unreadable response from GitHub", ex)
             {
                 ExitCode = ran.Code,
                 ErrorOutput = ran.Err,

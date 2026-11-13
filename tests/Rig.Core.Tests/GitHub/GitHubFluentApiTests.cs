@@ -220,6 +220,16 @@ public sealed class GitHubFluentApiTests
     }
 
     [Fact]
+    public async Task GraphQLRequest_ExecuteOptionalAsync_throws_on_malformed_json()
+    {
+        var query = "query Test { widget }";
+        var fake = new FakeGitHub().On("POST", "graphql", "not json");
+
+        await Assert.ThrowsAsync<GitHubApiException>(() =>
+            fake.GraphQL(query).ExecuteOptionalAsync<Widget>(cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task GitHubFunctions_reads_json_directly()
     {
         var fake = new FakeGitHub().On("GET", "repos/owner/repo/widget", "{\"name\":\"direct\",\"count\":7}");
