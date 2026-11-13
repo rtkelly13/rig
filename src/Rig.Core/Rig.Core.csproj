@@ -7,6 +7,8 @@
   <ItemGroup>
     <!-- Its parser only: rig applies PyYAML's tag resolution itself (Vault/Frontmatter.cs). -->
     <PackageReference Include="YamlDotNet" />
+    <!-- Reads pyproject.toml manifests for the estate graph (Connectivity/Manifests.cs). -->
+    <PackageReference Include="Tomlyn" />
     <!-- Reads Orca's profile-state database, read-only (Orca/OrcaProfile.cs). -->
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <!-- Build time only: generates the UI Automation COM interop from Windows' metadata (Desktop/Windows/NativeMethods.txt). -->

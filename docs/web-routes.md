@@ -39,6 +39,7 @@ never imports a feature. A feature exposes a **route**, and one composition root
 | GET | `/api/dev/mtime` | `{mtime, css_mtime, is_preview}` over the SPA and studio files | C# `Rig.Web.HostRoutes` |
 | GET | `/api/estate` | `{projects: [...]}` from the managed-projects registry, brand assets and Orca badges | C# `Rig.Web.HostRoutes` |
 | GET | `/`, `/index.html`, `/estate`, `/studio`, `/optical`, `/triage`, `/ops`, and `/triage/`, `/repos/`, `/estate/`, `/ops/` deep links | the SPA document | C# `Rig.Web.FrontendRoutes` |
+| GET | `/api/estate/graph`, `/api/estate/graph/refresh` | the connectivity graph, a snapshot under a minute old or rebuilt (`no-store`; 503 `{error}`) | C# `Rig.Web.ConnectivityRoutes` |
 | GET | `/static/triage.html` | 302 to `/triage/inbox` | C# `Rig.Web.FrontendRoutes` |
 | GET | `/static/...` | files under `src/rig/web_host/templates` | C# `Rig.Web.FrontendRoutes` |
 | GET | `/media/assets/...` | read-only brand assets | C# `Rig.Web.FrontendRoutes` |
@@ -47,7 +48,6 @@ never imports a feature. A feature exposes a **route**, and one composition root
 | POST | `/api/triage/refresh`, `/api/triage/watch`, `/api/triage/interact` | the queue again | Python `rig.triage.web` |
 | GET | `/c4`, `/c4/`, `/c4/static/...` | the C4 viewer | Python `rig.c4_okf.web` |
 | GET | `/api/c4/bundle`, `/api/c4/concept`, `/api/c4/expand` | C4 bundle JSON | Python `rig.c4_okf.web` |
-| GET | `/api/estate/graph`, `/api/estate/graph/refresh` | the connectivity graph, cached or rebuilt | Python `rig.connectivity.web` |
 | GET | `/api/ops/decisions`, `/api/ops/estate/disk`, `/api/ops/estate/trim` | decisions feed, disk usage, trim scan | Python `rig.estate.web` |
 | POST | `/api/ops/estate/trim/apply` | the paths trimmed | Python `rig.estate.web` |
 | GET | `/api/ops/telemetry/status`, `/api/ops/telemetry/traces` | trace store status and recent traces | Python `rig.otel_stack.web` |
@@ -95,12 +95,13 @@ fake route that serves canned JSON, so they need no real data on the machine.
 The browser talks to the C# host, as it does in production. `tests/rig_web_host.py` starts the
 built C# `rig web` on port 0 in front of the in-process `StudioServer`
 (`RIG_WEB_PYTHON_ROUTES` names it, so the host starts no Python child), from a temp checkout that
-holds a copy of the frontend and no registry. CI builds the CLI before pytest and passes it in
+holds a copy of the frontend; a test that draws the estate graph lays out a registry there and
+git checkouts under the temp `CODE_ROOT` beside it (`rig_web_host.estate`). CI builds the CLI before pytest and passes it in
 `RIG_CLI_DLL`; locally the first test to need it builds it into `temp/rig-web-tests/`.
 
 ## Why not import the feature into the server
 
-`server.py` still calls a few older handlers directly (`rig.connectivity.web`, `rig.triage.web`).
+`server.py` still calls a few older handlers directly (`rig.c4_okf.web`, `rig.triage.web`).
 Each one makes the server depend on that feature, so the server cannot be tested without it and
 `rig` features stop being independent. With the composition root, a feature depends only on
 `rig.web_routes`, and adding a page costs one route object plus one line in `mounted_routes()`.

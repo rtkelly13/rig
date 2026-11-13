@@ -18,7 +18,6 @@ from typing import override
 from pydantic import JsonValue
 
 from rig.c4_okf.web import serve_c4
-from rig.connectivity.web import handle as handle_connectivity
 from rig.triage.web import handle as handle_triage
 from rig.web_host.models import BackupResponse
 from rig.web_routes import Route, dispatch
@@ -57,7 +56,7 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
         path = parsed_url.path
 
         # serve_c4 owns /c4/ and /api/c4/*, the experimental C4 viewer.
-        if serve_c4(self, parsed_url) or handle_connectivity(self, path):
+        if serve_c4(self, parsed_url):
             return
 
         self.send_error(404, f"Endpoint not found: {path}")

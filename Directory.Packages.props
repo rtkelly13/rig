@@ -6,6 +6,9 @@
   <ItemGroup Label="Vault">
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
+  <ItemGroup Label="Connectivity: pyproject.toml manifests">
+    <PackageVersion Include="Tomlyn" Version="2.10.0" />
+  </ItemGroup>
   <ItemGroup Label="Orca">
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.13" />
   </ItemGroup>

@@ -101,7 +101,7 @@ public sealed partial class ForwardedContractTests
                 new EstateCommand(new EstateHost("/", "/", "/"), NoOrca.Host, new FakeProc(), new FakeGitHub(), TimeProvider.System, _ => null, TextWriter.Null, TextWriter.Null).Build,
                 new GovernanceCommand(new GovernanceHost("/", "/", "/"), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
                 new WebCommand(
-                    new WebPlaces("/rig", "/none.json", "/", "/rig.db"),
+                    new WebPlaces("/rig", "/none.json", "/", "/rig.db", "/code"),
                     _ => throw new InvalidOperationException("nothing may start"),
                     new FakeProbe(),
                     _ => throw new InvalidOperationException("nothing may open"),

@@ -226,6 +226,7 @@ internal static class Program
                         ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory),
                         Environment.CurrentDirectory,
                         Path.Join(AppData.Current(), "rig.db"),
+                        codeRoot,
                         WebPlaces.PythonRoutesFrom(Environment.GetEnvironmentVariable(WebPlaces.PythonRoutesVariable))),
                     args => ProcessChildServer.Start(python.Argv(args)),
                     probe,

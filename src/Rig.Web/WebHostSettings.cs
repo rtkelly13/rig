@@ -9,6 +9,7 @@ namespace Rig.Web;
 /// <param name="DbPath">The shared SQLite database.</param>
 /// <param name="RegistryFile">The managed-project registry (<c>config/managed-projects.json</c>).</param>
 /// <param name="WorkingDirectory">The directory relative config fallbacks are read from.</param>
+/// <param name="CodeRoot">The code root: the estate graph inventories the checkouts under its <c>personal/</c>.</param>
 public sealed record WebHostSettings(
     string Host,
     int Port,
@@ -17,7 +18,8 @@ public sealed record WebHostSettings(
     string AssetsRoot,
     string DbPath,
     string RegistryFile,
-    string WorkingDirectory)
+    string WorkingDirectory,
+    string CodeRoot)
 {
     /// <summary>The production dashboard's port.</summary>
     public const int ProductionPort = 8090;

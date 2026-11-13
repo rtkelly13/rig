@@ -77,7 +77,7 @@ Connectivity joins existing publisher bindings in `config/managed-projects.json`
 
 For a relationship without a package manifest, a project can declare `"depends_on": ["provider-project-name"]` (or an owner/repository identity) in the same registry. Unknown, self and ambiguous publisher relationships are reported instead of guessed. Current-checkout manifests are used for Rig itself, including worktree changes; other repositories use Rig's existing estate path resolution. Graph requests do not fetch remote manifests or mutate source repositories.
 
-The transient ledger lives in `temp/estate/connectivity.duckdb`, with a typed response cache alongside it. Reads reuse that cache for one minute; explicit rescans rebuild it. `/api/estate/graph` and `/api/estate/graph/refresh` expose the graph. The existing `/api/estate` catalogue remains available. Strongly connected repositories are condensed into cycle nodes to produce a true DAG; original edges remain available in the inspector. The layout uses the design system's deterministic graph geometry and semantic role tokens, with no fabricated runtime metrics.
+The C# web host builds the graph in memory (`Rig.Core.Connectivity.EstateGraph`) and keeps the last one in `temp/estate/connectivity.json`. Reads reuse it for one minute; explicit rescans rebuild it. `/api/estate/graph` and `/api/estate/graph/refresh` expose the graph. The existing `/api/estate` catalogue remains available. Strongly connected repositories are condensed into cycle nodes to produce a true DAG; original edges remain available in the inspector. The layout uses the design system's deterministic graph geometry and semantic role tokens, with no fabricated runtime metrics.
 
 ## Action signals and groups
 

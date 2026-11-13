@@ -11,11 +11,12 @@ namespace Rig.Cli.Web;
 /// <param name="RegistryFile">The managed-projects registry the estate cards are read from.</param>
 /// <param name="WorkingDirectory">The folder rig was run from.</param>
 /// <param name="DbPath">The shared SQLite database.</param>
+/// <param name="CodeRoot">The code root whose <c>personal/</c> checkouts the estate graph reads.</param>
 /// <param name="PythonRoutes">
 /// Python web routes already listening, fronted instead of starting a child: the browser tests serve them in-process
 /// with faked state (<c>tests/rig_web_host.py</c>). Null starts the child, as a normal launch does.
 /// </param>
-internal sealed record WebPlaces(string Checkout, string RegistryFile, string WorkingDirectory, string DbPath, Uri? PythonRoutes = null)
+internal sealed record WebPlaces(string Checkout, string RegistryFile, string WorkingDirectory, string DbPath, string CodeRoot, Uri? PythonRoutes = null)
 {
     /// <summary>The variable naming Python web routes already listening (<see cref="PythonRoutes"/>).</summary>
     public const string PythonRoutesVariable = "RIG_WEB_PYTHON_ROUTES";
@@ -84,7 +85,8 @@ internal sealed class WebCommand(
             places.AssetsRoot,
             places.DbPath,
             places.RegistryFile,
-            places.WorkingDirectory);
+            places.WorkingDirectory,
+            places.CodeRoot);
         if (places.PythonRoutes is { } running)
         {
             using var fronting = RigWebHost.ForwardingClient();

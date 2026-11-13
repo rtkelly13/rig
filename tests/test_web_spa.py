@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import threading
 from collections.abc import Iterator
@@ -13,8 +14,6 @@ from typing import TypedDict, cast
 import pytest
 from playwright.sync_api import Page, expect, sync_playwright
 
-from rig.connectivity import web as connectivity_web
-from rig.connectivity.models import Component, ComponentEdge, Dependency, Graph, Project
 from rig.triage import github, service, store
 from rig.triage.facts import Check, Facts, Related, Stack, StackMember
 from rig.triage.models import Activity, Interaction, Item
@@ -31,25 +30,27 @@ class BrowserApp:
     page: Page
 
 
+def _package(name: str | None = None, **dependencies: str) -> dict[str, str]:
+    manifest: dict[str, object] = {"dependencies": dependencies}
+    if name:
+        manifest["name"] = name
+    return {"package.json": json.dumps(manifest)}
+
+
+# owner/repo publishes managed-library, which owner/other uses: one explained connection.
+_SHARED_LIBRARY = {"repo": _package("managed-library"), "other": _package(**{"managed-library": "^1.0"})}
+
+
 @pytest.fixture
-def browser_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[BrowserApp]:
-    graph = Graph(
-        [
-            Project("owner/repo", "repo", "Shared library", "Libraries", "Python", True, True, 1, ["managed-library"]),
-            Project("owner/other", "other", "Application", "Apps", "TypeScript", True, True, 1, []),
-        ],
-        [Dependency("owner/repo", "owner/other", "npm", "managed-library", "^1.0", "runtime", "package.json")],
-        [Component("owner/repo", ["owner/repo"], False), Component("owner/other", ["owner/other"], False)],
-        [ComponentEdge("owner/repo", "owner/other")],
-        "2026-01-01T00:00:00Z",
-        [],
-    )
+def estate(request: pytest.FixtureRequest) -> dict[str, dict[str, str]]:
+    """The estate the host's graph is read from; a test parametrizes it indirectly to draw another."""
+    return cast(dict[str, dict[str, str]], getattr(request, "param", _SHARED_LIBRARY))
 
-    def load_graph(*, refresh: bool = False) -> Graph:
-        del refresh
-        return graph
 
-    monkeypatch.setattr(connectivity_web, "load_graph", load_graph)
+@pytest.fixture
+def browser_app(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, estate: dict[str, dict[str, str]]
+) -> Iterator[BrowserApp]:
     db = tmp_path / "rig.db"
     monkeypatch.setattr(service, "queue_path", lambda: tmp_path / "queue.md")
     monkeypatch.setattr(github, "observe", lambda item: item)
@@ -94,7 +95,9 @@ def browser_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Bro
     thread.start()
     routes = f"http://127.0.0.1:{server.server_address[1]}"
     try:
-        with rig_web_host.fronting(routes, rig_web_host.checkout(tmp_path)) as url, sync_playwright() as playwright:
+        home = rig_web_host.checkout(tmp_path)
+        rig_web_host.estate(home, estate)
+        with rig_web_host.fronting(routes, home) as url, sync_playwright() as playwright:
             browser = playwright.chromium.launch()
             page = browser.new_page(viewport={"width": 1440, "height": 1000})
             try:
@@ -767,25 +770,22 @@ _ESTATE_LINES = """() => {
 }"""
 
 
-def test_estate_lines_turn_in_gutters_and_never_cross_a_box(
-    browser_app: BrowserApp, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # a feeds three consumers, one of them two layers on: b and d stand in the layer
-    # between, so the direct line from a to c has to find the gap between them.
-    ids = ["owner/a", "owner/b", "owner/c", "owner/d", "owner/e"]
-    pairs = [("a", "b"), ("a", "d"), ("a", "c"), ("b", "c"), ("d", "c"), ("d", "e")]
-    graph = Graph(
-        [Project(id, id.split("/")[1], "", "Libraries", "Python", True, True, 1, []) for id in ids],
-        [
-            Dependency(f"owner/{s}", f"owner/{t}", "npm", f"pkg-{s}", "^1.0", "runtime", "package.json")
-            for s, t in pairs
-        ],
-        [Component(id, [id], False) for id in ids],
-        [ComponentEdge(f"owner/{s}", f"owner/{t}") for s, t in pairs],
-        "2026-01-01T00:00:00Z",
-        [],
+# a feeds three consumers, one of them two layers on: b and d stand in the layer
+# between, so the direct line from a to c has to find the gap between them.
+_LINE_PAIRS = [("a", "b"), ("a", "d"), ("a", "c"), ("b", "c"), ("d", "c"), ("d", "e")]
+_LINES_ESTATE = {
+    node: _package(
+        f"pkg-{node}" if any(s == node for s, _ in _LINE_PAIRS) else None,
+        **{f"pkg-{s}": "^1.0" for s, t in _LINE_PAIRS if t == node},
     )
-    monkeypatch.setattr(connectivity_web, "load_graph", lambda *, refresh=False: graph)
+    for node in "abcde"
+}
+
+
+@pytest.mark.parametrize("estate", [_LINES_ESTATE], indirect=True)
+def test_estate_lines_turn_in_gutters_and_never_cross_a_box(browser_app: BrowserApp) -> None:
+    ids = [f"owner/{node}" for node in "abcde"]
+    pairs = _LINE_PAIRS
     page, url = browser_app.page, browser_app.url
     page.goto(url + "/estate")
     expect(page.locator(".estate-edges path[data-from]")).to_have_count(len(pairs))
