@@ -51,6 +51,11 @@ Python runs from `RIG_HOME` when it is set, else `<code root>/personal/rig`. Por
 C# and deleting its row from `Forwarded.Commands`. `ForwardedContractTests` checks every script names a command C#
 owns and nothing forwards back to `rig`; `tests/test_csharp_cli.py` checks every row's program answers `--help`.
 
+The [command ownership gate](csharp-port/ownership.md) inspects actual C#/Python registrations and forwarding,
+then checks `config/command-ownership.json`. Update the ledger and retire the superseded implementation in the
+same PR as each cutover. CI rejects new independent overlaps and unregistered executables; its exact initial
+overlap baseline only shrinks. This gate runs on the PR's merged result and participates in the required `ci` check.
+
 `rig web mcp` is a stdio MCP server behind that hop. `dotnet run` restores and builds without writing to stdout, even
 from a clean `src/Rig.Cli` with no `obj` or `bin`, so the protocol stays clean; a failed build never starts the server.
 `desktop-manager web mcp` skips the hop.
@@ -75,6 +80,7 @@ Mark tests so the CI-safe subset can be run without external dependencies:
 - `property` — applied automatically to Hypothesis tests; see [testing.md](testing.md)
 
 CI runs the suite on Ubuntu (`test`, with coverage and Windows portability lint gates). To conserve runner minutes on private repos, `test-windows` on `windows-latest` runs conditionally:
+
 - Nightly on `main` (03:43 UTC), not on every merge — a break that lands on `main` surfaces the next morning. Linux jobs skip the nightly run.
 - On pull requests whose branch or title contains `windows` or `win32` (or with label `ci:windows`; adding the label to an open PR starts a run)
 - On manual `workflow_dispatch`

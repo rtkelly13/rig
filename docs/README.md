@@ -14,6 +14,7 @@ and findings are in each CLI's `--help`; these guides hold what `--help` can't.
 | [estate/](estate/README.md) | The clones on this machine: disk, worktrees, shelving, caches, Orca's sidebar |
 | [git/](git/README.md) | Stacking, splitting, landing, waiting for a merge (`rig gh pr wait`) and conflict techniques |
 | [desktop-manager/](desktop-manager/README.md) | Windows workspace restore, runtime copies, work items, Chrome tabs |
+| [csharp-port/](csharp-port/README.md) | C# migration ownership, deprecation gate, rollout inventory and platform acceptance |
 | [agent-browser/](agent-browser/README.md) | Browser automation profiles, connection approaches, ChatGPT Work schedules |
 | [project-reviews/](project-reviews/README.md) | Live scheduled-review policies and their evaluation |
 | [brand-assets/](brand-assets/README.md) | **Authoritative** for brand asset layout, thresholds and the promotion gate |

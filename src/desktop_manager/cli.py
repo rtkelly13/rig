@@ -15,7 +15,6 @@ import typer
 from typer.core import TyperGroup, TyperOption
 
 from desktop_manager.chrome.cli import chrome_tabs_app
-from desktop_manager.chrome.traces_cli import traces_app
 from desktop_manager.claude_sessions.cli import claude_sessions_app
 from desktop_manager.cli_align import align
 from desktop_manager.cli_apps import detect_app, launch_file, restart_app, test_item, update_orca
@@ -91,7 +90,7 @@ def help_cmd() -> None:
     console.rule("[bold]Chrome tab commands[/bold]", style="dim")
     console.print()
     _render_group(chrome_tabs_app, "chrome-tabs")
-    _render_group(traces_app, "chrome-tabs traces")
+    console.print("  Trace reports: rig chrome-tabs traces --help\n")
 
     # --- work item commands ---
     console.rule("[bold]Work item commands[/bold]", style="dim")
