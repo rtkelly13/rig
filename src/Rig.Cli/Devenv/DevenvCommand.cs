@@ -48,8 +48,10 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         agy.SetAction(parsed => Agy(parsed.GetValue(dryRun), parsed.GetValue(home)!));
         var claude = new Command("claude", "Merge the Claude Code settings baseline and install the session-ledger SessionEnd hook.") { dryRun, home, check };
         claude.SetAction(parsed => parsed.GetValue(check) ? Check(parsed.GetValue(home)!) : Claude(parsed.GetValue(dryRun), parsed.GetValue(home)!));
-        var opencode = new Command("opencode", "Merge OpenCode's default config and project the estate command policy into it.") { dryRun, home };
+        var opencode = new Command("opencode", "Merge OpenCode's default config and global rules, then project the estate command policy.") { dryRun, home };
         opencode.SetAction(parsed => Opencode(parsed.GetValue(dryRun), parsed.GetValue(home)!));
+        var codex = new Command("codex", "Install or refresh the global rig context block in ~/.codex/AGENTS.md.") { dryRun, home };
+        codex.SetAction(parsed => Codex(parsed.GetValue(dryRun), parsed.GetValue(home)!));
         var rules = new Command("estate-rules", "Install or refresh the estate-wide AGENTS.md under ~/code/personal.") { dryRun, home };
         rules.SetAction(parsed => Rules(parsed.GetValue(dryRun), parsed.GetValue(home)!));
         var vault = new Option<string?>("--vault") { Description = "Vault to set up (default: ~/code/personal/obsidian-vault under --home)." };
@@ -69,7 +71,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var fontsCommand = new Command("fonts", "Download and install the developer Nerd Fonts (JetBrainsMono, CascadiaCode, FiraCode).") { dryRun, home, fontsCheck };
         fontsCommand.SetAction((parsed, cancellationToken) =>
             FontsAsync(parsed.GetValue(dryRun), parsed.GetValue(fontsCheck), NerdFonts.Folder(parsed.GetValue(home)!, host.Windows, host.MacOS), cancellationToken));
-        var group = new Command("devenv", Description) { new DoctorCommand(host, proc, TimeProvider.System, output).Build(), launcher, agents, agy, claude, rules, fontsCommand, gh, obsidian, opencode };
+        var group = new Command("devenv", Description) { new DoctorCommand(host, proc, TimeProvider.System, output).Build(), launcher, agents, agy, claude, codex, rules, fontsCommand, gh, obsidian, opencode };
         foreach (var command in new SetupCommand(host, output, error).Build(dryRun, home).Concat(new ToolsCommands(host, proc, output, error).Build(dryRun, home)).Concat(new GitTerminalCommands(host, proc, output, error).Build(dryRun, home)))
         {
             group.Subcommands.Add(command);
@@ -357,9 +359,34 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         return true;
     }
 
-    // Merge the OpenCode defaults without clobbering, then project the policy; 1 when the config is unreadable or a write fails.
+    // Merge the OpenCode global rules and defaults without clobbering, then project the policy; 1 when a write fails.
     private int Opencode(bool dryRun, string home)
     {
+        var rulesFailed = false;
+        var rulesPath = OpencodeRules.FilePath(home);
+        var rules = OpencodeRules.Merge(File.Exists(rulesPath) ? File.ReadAllText(rulesPath).ReplaceLineEndings("\n") : null);
+        if (rules.Action == ManagedRulesAction.Unchanged)
+        {
+            output.WriteLine($"✓ OpenCode global rules up to date: {rulesPath}");
+        }
+        else if (dryRun)
+        {
+            output.WriteLine($"Dry run: would write OpenCode global rules at {rulesPath}");
+        }
+        else
+        {
+            try
+            {
+                OpencodeRules.Write(rulesPath, rules.Content, host.Windows);
+                output.WriteLine($"{rules.Action} OpenCode global rules at {rulesPath}");
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                error.WriteLine($"! Failed to write OpenCode global rules: {e.Message}");
+                rulesFailed = true;
+            }
+        }
+
         var path = OpencodeDefaults.ConfigPath(home);
         if (SettingsFile.Load(path) is not { } existing)
         {
@@ -368,7 +395,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
                 // JSONC carries comments a plain JSON merge would drop, and the projection would fail on them.
                 // Leave the file to its author and point at the manual step instead of reporting a failure.
                 output.WriteLine($"! Skipping {path}: it has comments, so its defaults and estate policy are left for you to apply by hand");
-                return 0;
+                return rulesFailed ? 1 : 0;
             }
 
             error.WriteLine($"! {path} is not a readable JSON object; fix it by hand, then re-run.");
@@ -398,7 +425,45 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
             output.WriteLine($"✓ Configured OpenCode default settings at {path}");
         }
 
-        return Project("opencode", dryRun, home);
+        var code = Project("opencode", dryRun, home);
+        return rulesFailed || code != 0 ? 1 : 0;
+    }
+
+    // The Codex global context in ~/.codex/AGENTS.md: only the marked block is managed.
+    private int Codex(bool dryRun, string home)
+    {
+        var target = CodexRules.FilePath(home);
+        var merge = CodexRules.Merge(File.Exists(target) ? File.ReadAllText(target).ReplaceLineEndings("\n") : null);
+        if (merge.Action == ManagedRulesAction.Unchanged)
+        {
+            output.WriteLine($"✓ Codex global context up to date: {target}");
+            return 0;
+        }
+
+        output.WriteLine($"{merge.Action} Codex global context at {target}");
+        if (dryRun)
+        {
+            output.WriteLine("Dry run: no changes written.");
+            return 0;
+        }
+
+        try
+        {
+            CodexRules.Write(target, merge.Content, host.Windows);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            error.WriteLine($"Failed to write Codex global context: {e.Message}");
+            return 1;
+        }
+
+        var overridePath = CodexRules.OverridePath(home);
+        if (File.Exists(overridePath) && new FileInfo(overridePath).Length > 0)
+        {
+            output.WriteLine($"! {overridePath} overrides it; Codex will not load the rig context while that file exists.");
+        }
+
+        return 0;
     }
 
     // The AGY global context in ~/.gemini/GEMINI.md: only the marked block is managed.

@@ -56,7 +56,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     [Fact]
     public void Devenv_offers_the_ported_subcommands() =>
-        Assert.Equal(["doctor", "agent-launcher", "agents", "agy", "claude", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "setup", "ai", "tools", "runtimes", "update", "git", "terminal"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
+        Assert.Equal(["doctor", "agent-launcher", "agents", "agy", "claude", "codex", "estate-rules", "fonts", "gh", "obsidian-plugins", "opencode", "setup", "ai", "tools", "runtimes", "update", "git", "terminal"], Build(TextWriter.Null, TextWriter.Null).Subcommands.Select(c => c.Name));
 
     [Fact]
     public async Task Claude_applies_the_baseline_and_hook_then_reports_up_to_date()
@@ -179,6 +179,8 @@ public sealed class DevenvCommandTests : IDisposable
 
     private string Opencode => OpencodeDefaults.ConfigPath(_home.Path);
 
+    private string OpencodeRulesPath => OpencodeRules.FilePath(_home.Path);
+
     private string Rules => Path.Join(_home.Path, "code", "personal", "AGENTS.md");
 
     [Fact]
@@ -187,7 +189,10 @@ public sealed class DevenvCommandTests : IDisposable
         var (code, output, error) = await InvokeAsync(null, ["opencode"]);
 
         Assert.Equal((0, string.Empty), (code, error));
-        Assert.StartsWith($"✓ Configured OpenCode default settings at {Opencode}\nopencode: ", output, StringComparison.Ordinal);
+        Assert.StartsWith(
+            $"Created OpenCode global rules at {OpencodeRulesPath}\n✓ Configured OpenCode default settings at {Opencode}\nopencode: ",
+            output,
+            StringComparison.Ordinal);
         var written = SettingsFile.Load(Opencode)!;
         Assert.Null(OpencodeDefaults.Merge(written)); // the defaults, plus the policy the projection added
         Assert.True(written.ContainsKey("permission"));
@@ -195,7 +200,10 @@ public sealed class DevenvCommandTests : IDisposable
         var (again, second, _) = await InvokeAsync(null, ["opencode"]);
 
         Assert.Equal(0, again);
-        Assert.StartsWith($"✓ OpenCode config already configured: {Opencode}\nopencode: ", second, StringComparison.Ordinal);
+        Assert.StartsWith(
+            $"✓ OpenCode global rules up to date: {OpencodeRulesPath}\n✓ OpenCode config already configured: {Opencode}\nopencode: ",
+            second,
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -207,7 +215,10 @@ public sealed class DevenvCommandTests : IDisposable
         var (code, output, error) = await InvokeAsync(null, ["opencode"]);
 
         Assert.Equal((0, string.Empty), (code, error));
-        Assert.StartsWith($"✓ Configured OpenCode default settings at {path}\nopencode: ", output, StringComparison.Ordinal);
+        Assert.StartsWith(
+            $"Created OpenCode global rules at {OpencodeRulesPath}\n✓ Configured OpenCode default settings at {path}\nopencode: ",
+            output,
+            StringComparison.Ordinal);
         Assert.True(SettingsFile.Load(path)!.ContainsKey("agents"));
         Assert.False(File.Exists(Path.Join(_home.Path, ".config", "opencode", "opencode.json")));
     }
@@ -224,6 +235,7 @@ public sealed class DevenvCommandTests : IDisposable
         Assert.Equal((0, string.Empty), (code, error));
         Assert.Contains("apply by hand", output, StringComparison.Ordinal);
         Assert.Equal(original, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        Assert.True(File.Exists(OpencodeRulesPath));
     }
 
     [Fact]
@@ -232,8 +244,25 @@ public sealed class DevenvCommandTests : IDisposable
         var (code, output, _) = await InvokeAsync(null, ["opencode", "--dry-run"]);
 
         Assert.Equal(0, code);
-        Assert.StartsWith($"Dry run: would merge defaults into {Opencode}\n", output, StringComparison.Ordinal);
+        Assert.StartsWith(
+            $"Dry run: would write OpenCode global rules at {OpencodeRulesPath}\nDry run: would merge defaults into {Opencode}\n",
+            output,
+            StringComparison.Ordinal);
         Assert.False(File.Exists(Opencode));
+        Assert.False(File.Exists(OpencodeRulesPath));
+    }
+
+    [Fact]
+    public async Task A_failed_opencode_rules_write_still_merges_the_config()
+    {
+        _ = _home.Folder(".config/opencode/AGENTS.md");
+
+        var (code, output, error) = await InvokeAsync(null, ["opencode"]);
+
+        Assert.Equal(1, code);
+        Assert.Contains("Failed to write OpenCode global rules", error, StringComparison.Ordinal);
+        Assert.Contains("Configured OpenCode default settings", output, StringComparison.Ordinal);
+        Assert.True(File.Exists(Opencode));
     }
 
     [Fact]
@@ -243,8 +272,45 @@ public sealed class DevenvCommandTests : IDisposable
 
         var (code, output, error) = await InvokeAsync(null, ["opencode"]);
 
-        Assert.Equal((1, string.Empty), (code, output));
+        Assert.Equal(1, code);
+        Assert.StartsWith($"Created OpenCode global rules at {OpencodeRulesPath}\n", output, StringComparison.Ordinal);
         Assert.Equal($"! {Opencode} is not a readable JSON object; fix it by hand, then re-run.\n", error);
+    }
+
+    [Fact]
+    public async Task Codex_global_context_is_created_then_up_to_date()
+    {
+        var target = CodexRules.FilePath(_home.Path);
+        var (code, output, _) = await InvokeAsync(null, ["codex"]);
+
+        Assert.Equal(0, code);
+        Assert.Equal($"Created Codex global context at {target}\n", output);
+        Assert.Contains(CodexRules.Begin, await File.ReadAllTextAsync(target, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+
+        Assert.Equal((0, $"✓ Codex global context up to date: {target}\n", string.Empty), await InvokeAsync(null, ["codex"]));
+    }
+
+    [Fact]
+    public async Task A_codex_dry_run_writes_nothing()
+    {
+        var target = CodexRules.FilePath(_home.Path);
+        var (code, output, _) = await InvokeAsync(null, ["codex", "--dry-run"]);
+
+        Assert.Equal(0, code);
+        Assert.Equal($"Created Codex global context at {target}\nDry run: no changes written.\n", output);
+        Assert.False(File.Exists(target));
+    }
+
+    [Fact]
+    public async Task A_non_empty_codex_override_is_reported()
+    {
+        var overridePath = _home.File(".codex/AGENTS.override.md");
+        await File.WriteAllTextAsync(overridePath, "# temporary\n", TestContext.Current.CancellationToken);
+
+        var (code, output, _) = await InvokeAsync(null, ["codex"]);
+
+        Assert.Equal(0, code);
+        Assert.Contains("overrides it", output, StringComparison.Ordinal);
     }
 
     [Fact]

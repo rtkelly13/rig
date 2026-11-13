@@ -45,7 +45,9 @@ public sealed class JobRunnerTests : IDisposable
     {
         var logs = Path.Join(_temp.Path, "logs");
 
-        var code = new ProcessJobExecutor(new FixedClock(), timeout: TimeSpan.Zero).Execute(Git("slow", "--version"), logs, "tick-20261112-090000");
+        // `git --version` can exit before a zero-length wait is checked, so the job has to block until it is killed.
+        var code = new ProcessJobExecutor(new FixedClock(), timeout: TimeSpan.Zero)
+            .Execute(Git("slow", "-c", "alias.wait=!sleep 5", "wait"), logs, "tick-20261112-090000");
 
         Assert.Equal(JobRunner.TimedOut, code);
         Assert.EndsWith($"--- timed out after 5 min{Environment.NewLine}", File.ReadAllText(JobState.LogPath(logs, "slow")), StringComparison.Ordinal);

@@ -89,6 +89,7 @@
     {"Id": "cs:devenv agy","Capability": "devenv agy","Owner": "cs:devenv agy","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:devenv ai","Capability": "devenv ai","Owner": "cs:devenv ai","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:devenv claude","Capability": "devenv claude","Owner": "cs:devenv claude","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:devenv codex","Capability": "devenv codex","Owner": "cs:devenv codex","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:devenv doctor","Capability": "devenv doctor","Owner": "cs:devenv doctor","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:devenv estate-rules","Capability": "devenv estate-rules","Owner": "cs:devenv estate-rules","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:devenv fonts","Capability": "devenv fonts","Owner": "cs:devenv fonts","Platforms": ["linux","macos","windows"],"AliasTo": null},
