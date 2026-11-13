@@ -106,7 +106,11 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
         ArgumentNullException.ThrowIfNull(repo);
         ArgumentNullException.ThrowIfNull(baseBranch);
         var branch = string.Join('/', baseBranch.Split('/').Select(Uri.EscapeDataString));
-        var ran = await api.CallAsync(ApiRequest.Get($"repos/{repo}/rules/branches/{branch}?per_page=100"), cancellationToken).ConfigureAwait(false);
+        var ran = await api.ForRepo(repo)
+            .Get($"rules/branches/{branch}")
+            .WithQuery("per_page", 100)
+            .SendAsync(cancellationToken)
+            .ConfigureAwait(false);
         var rules = ran.Ok ? DecodeRules(ran.Out) : null;
         if (rules is null)
         {
