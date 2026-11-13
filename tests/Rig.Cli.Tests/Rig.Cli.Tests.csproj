@@ -9,6 +9,7 @@
   <ItemGroup Label="Shared doubles">
     <Compile Include="../Rig.Core.Tests/Fakes/FakeProc.cs" Link="Fakes/FakeProc.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakeGitHub.cs" Link="Fakes/FakeGitHub.cs" />
+    <Compile Include="../Rig.Core.Tests/Fakes/FakeQueueSource.cs" Link="Fakes/FakeQueueSource.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakeChromeTabActions.cs" Link="Fakes/FakeChromeTabActions.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakePresence.cs" Link="Fakes/FakePresence.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakeChromeGroupActions.cs" Link="Fakes/FakeChromeGroupActions.cs" />

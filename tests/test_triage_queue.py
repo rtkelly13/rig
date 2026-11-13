@@ -13,11 +13,9 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
-from typer.testing import CliRunner
 
 from rig.db.migrations import run_migrations
 from rig.triage import agents, github, markdown, service, store
-from rig.triage.cli import app
 from rig.triage.models import Activity, Entry, Interaction, Item, rank
 from rig.typed_json import decode_json
 from rig.web_host.server import StudioServer
@@ -63,8 +61,7 @@ def test_markdown_roundtrip_preserves_prose_and_is_noop(tmp_path: Path) -> None:
     path.write_text("My process\n\n" + path.read_text(encoding="utf-8") + "\nMy notes\n", encoding="utf-8")
     markdown.export(path, rows)
     before, stat = path.read_bytes(), path.stat()
-    runner = CliRunner()
-    assert runner.invoke(app, ["verify", str(path)]).exit_code == 0
+    markdown.verify(path.read_text(encoding="utf-8"))
     markdown.export(path, rows)
     assert path.read_bytes() == before
     assert path.stat().st_mtime_ns == stat.st_mtime_ns
@@ -87,8 +84,8 @@ def test_verify_rejects_damage_without_repair(tmp_path: Path, damage) -> None:
     path = tmp_path / "Queue.md"
     broken = damage(markdown.render([item(priority=0)]))
     path.write_text(broken, encoding="utf-8")
-    result = CliRunner().invoke(app, ["verify", str(path)])
-    assert result.exit_code == 1
+    with pytest.raises(ValueError):
+        markdown.verify(path.read_text(encoding="utf-8"))
     assert path.read_text(encoding="utf-8") == broken
 
 

@@ -9,6 +9,7 @@ namespace Rig.Core.Tests.Fakes;
 public sealed class FakeGitHub : IGitHubApi
 {
     private readonly Dictionary<(string Method, string Route), Ran> _routes = [];
+    private readonly Dictionary<(string Method, string Route), Queue<Ran>> _sequences = [];
 
     /// <summary>Every call, in the order it was made.</summary>
     public List<ApiRequest> Calls { get; } = [];
@@ -17,6 +18,13 @@ public sealed class FakeGitHub : IGitHubApi
     public FakeGitHub On(string method, string route, string json)
     {
         _routes[(method, route)] = new Ran(0, json, string.Empty);
+        return this;
+    }
+
+    /// <summary>Successive replies for a paged route; after these, fall back to its configured reply or 404.</summary>
+    public FakeGitHub OnSequence(string method, string route, params string[] pages)
+    {
+        _sequences[(method, route)] = new Queue<Ran>(pages.Select(page => new Ran(0, page, string.Empty)));
         return this;
     }
 
@@ -39,6 +47,11 @@ public sealed class FakeGitHub : IGitHubApi
     {
         ArgumentNullException.ThrowIfNull(request);
         Calls.Add(request);
+        if (_sequences.TryGetValue((request.Method, request.Route), out var pages) && pages.TryDequeue(out var page))
+        {
+            return Task.FromResult(page);
+        }
+
         return Task.FromResult(
             _routes.TryGetValue((request.Method, request.Route), out var answer)
                 ? answer
