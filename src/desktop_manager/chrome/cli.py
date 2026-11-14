@@ -1,4 +1,9 @@
-"""`desktop-manager chrome-tabs`: read and prune Chrome tabs through UI Automation."""
+"""`desktop-manager chrome-tabs`: read and prune Chrome tabs through UI Automation.
+
+C# owns the Windows commands (`rig chrome-tabs`): `list`, `rank`, `prune`, `group`, `saved-groups`,
+`install` and `uninstall`. The Python tree keeps the macOS driver's commands and the C#-owned spellings
+only where C# has no macOS registration yet, so one implementation owns each leaf on each platform.
+"""
 
 from __future__ import annotations
 
@@ -41,7 +46,6 @@ from desktop_manager.chrome.render import (
     render_memory_plan,
     render_plan,
     render_rank,
-    render_saved_groups,
     render_site_plan,
 )
 from desktop_manager.chrome.saved_consolidation import (
@@ -123,7 +127,7 @@ def window_json(window: ChromeWindow, tabs: Sequence[ChromeTab]) -> dict[str, ob
 
 
 @chrome_tabs_app.command(name="list")
-@requires(Platform.WINDOWS, Platform.MACOS)
+@requires(Platform.MACOS)
 def list_tabs(
     ctx: typer.Context,
     profile: _ProfileOpt = None,
@@ -220,7 +224,7 @@ def _gh_query(query: str) -> GhResult:
 
 
 @chrome_tabs_app.command(name="rank")
-@requires(Platform.WINDOWS, Platform.MACOS)
+@requires(Platform.MACOS)
 def rank(
     ctx: typer.Context,
     profile: _ProfileOpt = None,
@@ -261,7 +265,7 @@ def rank(
 
 
 @chrome_tabs_app.command(name="prune")
-@requires(Platform.WINDOWS, Platform.MACOS)
+@requires(Platform.MACOS)
 def prune(
     ctx: typer.Context,
     dry_run: bool = typer.Option(False, "--dry-run", help="Print the plan grouped by reason; close nothing."),
@@ -389,7 +393,7 @@ def _report_failed_closes(applied: Sequence[AppliedClose]) -> list[AppliedClose]
 
 
 @chrome_tabs_app.command(name="group")
-@requires(Platform.WINDOWS, Platform.MACOS)
+@requires(Platform.MACOS)
 def group(
     ctx: typer.Context,
     dry_run: bool = typer.Option(False, "--dry-run", help="Print the plan; move nothing."),
@@ -425,44 +429,6 @@ def group(
         console.print(f"[red]Stopped[/red] {escape(error)}. {moved}/{len(plan.moves)} moved.")
         raise typer.Exit(code=1)
     console.print(f"[green]Moved {moved}/{len(plan.moves)}[/green] [dim]in {time.perf_counter() - started:.2f}s[/dim]")
-
-
-@chrome_tabs_app.command(name="saved-groups")
-@requires(Platform.WINDOWS)
-def saved_groups(
-    ctx: typer.Context,
-    consolidate: bool = typer.Option(
-        False, "--consolidate", help="Delete the closed duplicates the plan lists; otherwise only look."
-    ),
-    profile: _ProfileOpt = None,
-) -> None:
-    """List Chrome's saved tab groups, and plan (or with --consolidate, make) one per title.
-
-    Chrome saves every group, and a group created with an old group's title saves a new
-    copy beside the closed one, so the bookmarks bar fills with closed duplicates. This
-    deletes a closed copy only when the same title is open, or another closed copy of
-    it stays: never an open group, never the last copy of a title. Deleting a saved
-    group forgets the tabs it held; they are printed as each one goes.
-
-    Reads the bookmarks bar, so a profile with the bar hidden shows nothing, and chips
-    that only fit in the bar's overflow are not seen until deletes make room.
-    Needs no focus and leaves the mouse alone.
-    """
-    started = time.perf_counter()
-    driver = command_driver(ctx)
-    planned = plan_saved_groups(driver, filter_profile(driver.list_windows(), profile))
-    plan = planned.plan
-    print_lines(render_saved_groups(plan))
-    if not consolidate or not plan.deletes:
-        prefix = "" if consolidate else "Looked only: pass --consolidate to delete. "
-        console.print(f"[dim]{prefix}read in {time.perf_counter() - started:.2f}s[/dim]")
-        return
-    done = consolidate_saved_groups(driver, planned)
-    deleted, error = done.deleted, done.stopped
-    if error is not None:
-        console.print(f"[red]Stopped[/red] {escape(error)}. {deleted}/{plan.total} deleted.")
-        raise typer.Exit(code=1)
-    console.print(f"[green]Deleted {deleted}/{plan.total}[/green] [dim]in {time.perf_counter() - started:.2f}s[/dim]")
 
 
 @chrome_tabs_app.command(name="organise")
@@ -733,34 +699,3 @@ def _without(windows: Sequence[ChromeWindow], closing: set[tuple[int, ...]]) -> 
         )
         for window in windows
     ]
-
-
-@chrome_tabs_app.command(name="install")
-@requires(Platform.WINDOWS)
-def install() -> None:
-    """Put a `chrome-tabs` command on PATH that runs the installed runtime copy.
-
-    Install the copy with `desktop-manager runtime install`; scheduled organise runs come from `jobs install`.
-    """
-    from desktop_manager.chrome import install as installer
-
-    target = installer.runtime_desktop_manager()
-    shim = installer.shim_path()
-    installer.write_shim(target, shim)
-    console.print(f"Command: {escape(str(shim))} -> {escape(str(target))}")
-    if not target.exists():
-        console.print("[yellow]No runtime copy yet[/yellow]: run `desktop-manager runtime install`.")
-
-
-@chrome_tabs_app.command(name="uninstall")
-@requires(Platform.WINDOWS)
-def uninstall() -> None:
-    """Remove the `chrome-tabs` command, and the snapshot environment older installs built."""
-    import shutil
-
-    from desktop_manager.chrome import install as installer
-    from desktop_manager.chrome.install_location import install_root
-
-    installer.shim_path().unlink(missing_ok=True)
-    shutil.rmtree(install_root() / "venv", ignore_errors=True)
-    console.print(f"Removed the command; kept logs in {escape(str(install_root()))}")

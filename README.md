@@ -91,14 +91,11 @@ regenerate it with `uv run python -m rig.platform_table --write`.
 
 | Command | Platforms |
 | --- | --- |
-| `desktop-manager chrome-tabs group` | Windows/macOS |
-| `desktop-manager chrome-tabs install` | Windows |
-| `desktop-manager chrome-tabs list` | Windows/macOS |
+| `desktop-manager chrome-tabs group` | macOS |
+| `desktop-manager chrome-tabs list` | macOS |
 | `desktop-manager chrome-tabs organise` | Windows/macOS |
-| `desktop-manager chrome-tabs prune` | Windows/macOS |
-| `desktop-manager chrome-tabs rank` | Windows/macOS |
-| `desktop-manager chrome-tabs saved-groups` | Windows |
-| `desktop-manager chrome-tabs uninstall` | Windows |
+| `desktop-manager chrome-tabs prune` | macOS |
+| `desktop-manager chrome-tabs rank` | macOS |
 | `desktop-manager claude-sessions place` | Windows |
 | `desktop-manager claude-sessions terminals` | Windows |
 | `desktop-manager jobs install` | Windows |

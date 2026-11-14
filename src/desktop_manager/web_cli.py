@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, final, override
 
+import click
 import typer
 from rich.console import Console
 from rich.table import Table
+from typer.core import TyperGroup
+
+from rig import csharp_cli
 
 if TYPE_CHECKING:
     from rig.web_routes import Route
@@ -27,30 +31,71 @@ def mounted_routes() -> tuple[Route, ...]:
     return (telemetry_route, estate_route(), JobsRoute())
 
 
+# Options that take a value: skipping their value keeps `--port 8095` from looking like a command word.
+_VALUE_OPTIONS = frozenset({"--port", "-p", "--host"})
+_HELP_OPTIONS = frozenset({"--help", "-h", "-?", "/?"})
+
+
+def _bare(args: list[str]) -> bool:
+    """Whether a `web` line names no subcommand and asks for no help: the line the C# host owns."""
+    index = 0
+    while index < len(args):
+        argument = args[index]
+        if argument in _HELP_OPTIONS or not argument.startswith("-"):
+            return False
+        if argument in _VALUE_OPTIONS:
+            index += 1
+        index += 1
+    return True
+
+
+@final
+class _BareForwardingGroup(TyperGroup):
+    """Run the group callback only for the bare line, so a subcommand still runs its own implementation.
+
+    Click runs a group's callback before its subcommand. The bare `web` line is a thin C# dispatcher, so it must
+    not run when a child command was named: :meth:`parse_args` records whether the line was bare and hands a bare
+    line to the callback, while :meth:`invoke` leaves the callback out for a child.
+    """
+
+    _bare: bool = False
+
+    @override
+    def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
+        self._bare = _bare(args)
+        if self._bare:
+            ctx.args = list(args)
+            return ctx.args
+        return super().parse_args(ctx, args)
+
+    @override
+    def invoke(self, ctx: click.Context) -> int:
+        if not self._bare:
+            callback = self.callback
+            self.callback = None
+            try:
+                super().invoke(ctx)
+            finally:
+                self.callback = callback
+            return 0
+        super().invoke(ctx)
+        return 0
+
+
 web_app = typer.Typer(
     name="web",
+    cls=_BareForwardingGroup,
     help="Rig web dashboard & visual studio (static site + Python API).",
     invoke_without_command=True,
+    no_args_is_help=False,
     add_completion=False,
 )
 
 
 @web_app.callback()
-def web_main(
-    ctx: typer.Context,
-    port: int = typer.Option(8090, "--port", "-p", help="Port to bind the web server to."),
-    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Host address to bind to."),
-    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open in browser on launch."),
-    preview: bool = typer.Option(False, "--preview", help="Run as preview environment (defaults to port 8091)."),
-) -> None:
-    """Launch the persistent rig web dashboard & visual studio. Runs on the C# rig CLI."""
-    if ctx.invoked_subcommand is not None:
-        return
-
-    from rig import csharp_cli
-
-    args = ["web", "--port", str(port), "--host", host, "--open" if open_browser else "--no-open"]
-    raise typer.Exit(code=csharp_cli.run([*args, "--preview"] if preview else args))
+def web_main(ctx: typer.Context) -> None:
+    """Launch the persistent dashboard. The bare line runs on the C# `rig web`; the children stay here."""
+    raise typer.Exit(code=csharp_cli.run(["web", *ctx.args]))
 
 
 @web_app.command(name="upstream", hidden=True)
