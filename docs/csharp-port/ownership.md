@@ -59,7 +59,7 @@ cannot conceal an independent implementation.
 | --- | --- | --- |
 | C# registrations (`cs:` rows) | `rig`, plus 13 Python console-script compatibility spellings | Switched in source; shared tests/CI evidence does not establish native acceptance or deployment |
 | `align` | Python `desktop-manager workspace align` | Not ported; Windows desktop acceptance required |
-| `triage` | Python `rig.triage.cli` | Not ported; two runtime-discovered leaves |
+| `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand` over `Rig.Core.ReviewQueue` | CLI switched; Python CLI and six platform fallback routes retired. The `src/rig/triage` web inbox and agent-signal consumers stay explicitly owned until switched; shared service modules are not retired by the CLI cutover |
 | `c4` | Python `rig.c4_okf.cli` | Not ported; five leaves; open #78 touches this area, do not duplicate it |
 | `jobs` | C# status/last/log/run; Python install/uninstall | Disjoint subcommands; #209 owns installer/runtime progression |
 | `web` | C# public host, Python service/database/MCP/upstream children | Mixed ownership; #207 owns connectivity cutover; opaque child-route registrations remain explicit |
