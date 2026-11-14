@@ -192,8 +192,12 @@ public sealed class SystemProc : IProc
                 throw new ArgumentException("A process reading this console's input cannot be given text.", nameof(request));
             }
 
+            var workingDirectory = string.IsNullOrEmpty(request.WorkingDirectory)
+                ? Environment.CurrentDirectory
+                : request.WorkingDirectory;
             var activity = Source.StartActivity(request.Argv[0]);
             activity?.SetTag("process.command_args", string.Join(' ', request.Argv));
+            activity?.SetTag("process.cwd", workingDirectory);
 
             var captured = !request.Attached;
             var piped = captured && !request.ConsoleInput;

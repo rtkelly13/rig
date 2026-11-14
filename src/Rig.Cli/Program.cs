@@ -48,6 +48,13 @@ internal static class Program
         var exportMacTree = exportTree && args.Contains("macos", StringComparer.Ordinal);
         var codeRoot = CodeRoot.Current();
         var checkout = PythonRig.ResolveCheckout(Environment.GetEnvironmentVariable(PythonRig.HomeVariable), codeRoot);
+        // The root command and every process it runs are traced, so a failure says which folder and line caused it.
+        var scopes = new Dictionary<string, string>
+        {
+            [RigApp.Source.Name] = "rig.cli",
+            [SystemProc.Source.Name] = "rig.proc",
+        };
+        using var traces = new TraceFileWriter("rig", scopes, Environment.GetEnvironmentVariable, Path.Join(checkout, "temp", "traces", "sdk"), TimeProvider.System);
         var proc = new SystemProc();
         var git = new Git(proc, codeRoot);
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -265,7 +272,15 @@ internal static class Program
             Console.CancelKeyPress += (_, e) => e.Cancel = true;
         }
 
-        return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            return await app.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
+        }
+        finally
+        {
+            // An exception leaves spans open: write them as they stand, then Dispose writes the finished ones.
+            traces.Flush(includeOpen: true);
+        }
     }
 
     // The rig the asked agent runs `report` with: the checkout's own, since the agent's shell is another repo's worktree.
