@@ -34,7 +34,7 @@ public sealed class RigAppTests : IDisposable
 
     [Theory]
     [InlineData(new[] { "web", "mcp", "--help" }, new[] { "desktop-manager", "web", "mcp", "--help" })]
-    [InlineData(new[] { "triage", "--help" }, new[] { "python", "-m", "rig.triage.cli", "--help" })]
+    [InlineData(new[] { "c4", "--help" }, new[] { "python", "-m", "rig.c4_okf.cli", "--help" })]
     [InlineData(new[] { "align" }, new[] { "desktop-manager", "workspace", "align" })]
     public async Task A_python_command_goes_over_whole_and_attached_to_its_program(string[] args, string[] launched)
     {
@@ -55,7 +55,7 @@ public sealed class RigAppTests : IDisposable
         Assert.Empty(_proc.Requests);
         var help = _out.ToString();
         Assert.Contains(RigApp.Description, help, StringComparison.Ordinal);
-        Assert.Contains("  triage ", help, StringComparison.Ordinal);
+        Assert.Contains("  c4 ", help, StringComparison.Ordinal);
         Assert.EndsWith(RigApp.DesktopPointer, help.TrimEnd(), StringComparison.Ordinal);
     }
 
@@ -98,7 +98,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(1, string.Empty, string.Empty), "uv");
 
-        Assert.Equal(1, await Run("triage"));
+        Assert.Equal(1, await Run("c4"));
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(Ran.NotFound, string.Empty, "uv is not on PATH"), "uv");
 
-        Assert.Equal(2, await Run("triage"));
+        Assert.Equal(2, await Run("c4"));
         Assert.StartsWith("rig: uv is not on PATH.", _err.ToString(), StringComparison.Ordinal);
     }
 
@@ -115,7 +115,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(Ran.NotFound, string.Empty, string.Empty), "uv");
 
-        Assert.Equal(Ran.NotFound, await Run("triage"));
+        Assert.Equal(Ran.NotFound, await Run("c4"));
         Assert.Empty(_err.ToString());
     }
 

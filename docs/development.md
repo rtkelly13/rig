@@ -43,7 +43,7 @@ runs this checkout's code, so it is the form for developing rig and for CI. The 
 
 C# parses help, version, the agent launcher and every ported command itself. A command still written in Python has
 a row in `src/Rig.Cli/Forwarding/Forwarded.cs` naming the program that runs it, a `desktop-manager` command or a
-module with a `__main__` block (`python -m rig.triage.cli`), and the whole line goes to it as
+module with a `__main__` block (`python -m rig.c4_okf.cli`), and the whole line goes to it as
 `uv run --no-sync --project <rig checkout> <program> …` attached to the same console. A row never launches `rig`,
 which is C# itself. Prompts, colour, Ctrl+C and exit codes behave as before.
 

@@ -1,0 +1,751 @@
+[
+  {
+    "name": "test_pr_facts_keep_failures_reviews_and_native_stack_separate",
+    "kind": "pr",
+    "input": {
+      "number": 4,
+      "title": "PR",
+      "state": "OPEN",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "mergeStateStatus": "CLEAN",
+      "author": {
+        "login": "author"
+      },
+      "viewerDidAuthor": true,
+      "labels": {
+        "totalCount": 1,
+        "nodes": [
+          {
+            "name": "bug"
+          }
+        ]
+      },
+      "assignees": {
+        "totalCount": 1,
+        "nodes": [
+          {
+            "login": "owner"
+          }
+        ]
+      },
+      "comments": {
+        "totalCount": 7
+      },
+      "reviewDecision": "CHANGES_REQUESTED",
+      "reviewRequests": {
+        "totalCount": 1,
+        "nodes": [
+          {
+            "requestedReviewer": {
+              "name": "me",
+              "isViewer": true
+            }
+          }
+        ]
+      },
+      "reviewThreads": {
+        "totalCount": 2,
+        "nodes": [
+          {
+            "isResolved": false
+          },
+          {
+            "isResolved": true
+          }
+        ]
+      },
+      "commits": {
+        "nodes": [
+          {
+            "commit": {
+              "statusCheckRollup": {
+                "state": "FAILURE",
+                "contexts": {
+                  "totalCount": 2,
+                  "nodes": [
+                    {
+                      "name": "lint",
+                      "status": "COMPLETED",
+                      "conclusion": "FAILURE",
+                      "detailsUrl": "https://github.com/check/1"
+                    },
+                    {
+                      "context": "deploy",
+                      "state": "PENDING",
+                      "targetUrl": "https://example.com/job"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "stack": {
+        "number": 20,
+        "size": 2,
+        "baseRefName": "main",
+        "entries": {
+          "totalCount": 2,
+          "nodes": [
+            {
+              "position": 1,
+              "pullRequest": {
+                "number": 3,
+                "title": "Base",
+                "state": "OPEN"
+              }
+            },
+            {
+              "position": 2,
+              "pullRequest": {
+                "number": 4,
+                "title": "PR",
+                "state": "OPEN"
+              }
+            }
+          ]
+        }
+      },
+      "stackEntry": {
+        "position": 2
+      }
+    },
+    "expected": {
+      "repo": "owner/repo",
+      "number": 4,
+      "kind": "pr",
+      "title": "PR",
+      "state": "OPEN",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-01T00:00:00Z",
+      "head": "",
+      "priority": 4,
+      "readiness": 0,
+      "lines": 0,
+      "in_scope": true,
+      "body": null,
+      "facts": {
+        "author": "author",
+        "viewer_authored": true,
+        "assignees": [
+          "owner"
+        ],
+        "labels": [
+          "bug"
+        ],
+        "milestone": "",
+        "comments": 7,
+        "review_decision": "CHANGES_REQUESTED",
+        "review_requested": true,
+        "reviewers": [
+          "me"
+        ],
+        "draft": false,
+        "mergeable": "UNKNOWN",
+        "base": "",
+        "head": "",
+        "cross_repository": false,
+        "checks_state": "FAILURE",
+        "checks": [
+          {
+            "name": "lint",
+            "state": "FAILURE",
+            "url": "https://github.com/check/1"
+          },
+          {
+            "name": "deploy",
+            "state": "PENDING",
+            "url": "https://example.com/job"
+          }
+        ],
+        "checks_total": 2,
+        "unresolved_threads": 1,
+        "threads_total": 2,
+        "state_reason": "",
+        "related": [],
+        "stack": {
+          "number": 20,
+          "size": 2,
+          "position": 2,
+          "base": "main",
+          "members": [
+            {
+              "number": 3,
+              "title": "Base",
+              "state": "OPEN",
+              "position": 1
+            },
+            {
+              "number": 4,
+              "title": "PR",
+              "state": "OPEN",
+              "position": 2
+            }
+          ]
+        },
+        "partial": []
+      }
+    }
+  },
+  {
+    "name": "test_partial_metadata_never_claims_complete_lists_or_passing_checks",
+    "kind": "pr",
+    "input": {
+      "number": 1,
+      "title": "PR",
+      "state": "OPEN",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "reviewThreads": {
+        "totalCount": 101,
+        "nodes": [
+          {
+            "isResolved": false
+          }
+        ]
+      },
+      "stack": {
+        "number": 20,
+        "size": 2,
+        "baseRefName": "main"
+      }
+    },
+    "expected": {
+      "repo": "owner/repo",
+      "number": 1,
+      "kind": "pr",
+      "title": "PR",
+      "state": "OPEN",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-01T00:00:00Z",
+      "head": "",
+      "priority": 4,
+      "readiness": 3,
+      "lines": 0,
+      "in_scope": true,
+      "body": null,
+      "facts": {
+        "author": "",
+        "viewer_authored": false,
+        "assignees": [],
+        "labels": [],
+        "milestone": "",
+        "comments": 0,
+        "review_decision": "",
+        "review_requested": false,
+        "reviewers": [],
+        "draft": false,
+        "mergeable": "UNKNOWN",
+        "base": "",
+        "head": "",
+        "cross_repository": false,
+        "checks_state": "UNKNOWN",
+        "checks": [],
+        "checks_total": null,
+        "unresolved_threads": 1,
+        "threads_total": 101,
+        "state_reason": "",
+        "related": [],
+        "stack": {
+          "number": 20,
+          "size": 2,
+          "position": 0,
+          "base": "main",
+          "members": []
+        },
+        "partial": [
+          "Review threads",
+          "Stack members"
+        ]
+      }
+    }
+  },
+  {
+    "name": "test_issue_facts_include_ownership_labels_and_linked_prs",
+    "kind": "issue",
+    "input": {
+      "number": 1,
+      "title": "Bug",
+      "state": "CLOSED",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "stateReason": "COMPLETED",
+      "milestone": {
+        "title": "v1"
+      },
+      "closedByPullRequestsReferences": {
+        "totalCount": 1,
+        "nodes": [
+          {
+            "__typename": "PullRequest",
+            "number": 2,
+            "title": "Fix",
+            "state": "MERGED",
+            "repository": {
+              "nameWithOwner": "owner/repo"
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "repo": "owner/repo",
+      "number": 1,
+      "kind": "issue",
+      "title": "Bug",
+      "state": "CLOSED",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-01T00:00:00Z",
+      "head": "",
+      "priority": 4,
+      "readiness": 0,
+      "lines": 0,
+      "in_scope": true,
+      "body": null,
+      "facts": {
+        "author": "",
+        "viewer_authored": false,
+        "assignees": [],
+        "labels": [],
+        "milestone": "v1",
+        "comments": 0,
+        "review_decision": "",
+        "review_requested": false,
+        "reviewers": [],
+        "draft": false,
+        "mergeable": "UNKNOWN",
+        "base": "",
+        "head": "",
+        "cross_repository": false,
+        "checks_state": "UNKNOWN",
+        "checks": [],
+        "checks_total": null,
+        "unresolved_threads": 0,
+        "threads_total": 0,
+        "state_reason": "COMPLETED",
+        "related": [
+          {
+            "repo": "owner/repo",
+            "number": 2,
+            "title": "Fix",
+            "state": "MERGED",
+            "kind": "pr"
+          }
+        ],
+        "stack": null,
+        "partial": []
+      }
+    }
+  },
+  {
+    "name": "CLEAN-False-['P3', 'Priority: P1']",
+    "kind": "pr",
+    "input": {
+      "number": 1,
+      "title": "PR",
+      "state": "OPEN",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-02T00:00:00Z",
+      "mergeStateStatus": "CLEAN",
+      "isDraft": false,
+      "labels": {
+        "nodes": [
+          {
+            "name": "P3"
+          },
+          {
+            "name": "Priority: P1"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "repo": "owner/repo",
+      "number": 1,
+      "kind": "pr",
+      "title": "PR",
+      "state": "OPEN",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-02T00:00:00Z",
+      "head": "",
+      "priority": 1,
+      "readiness": 0,
+      "lines": 0,
+      "in_scope": true,
+      "body": null,
+      "facts": {
+        "author": "",
+        "viewer_authored": false,
+        "assignees": [],
+        "labels": [
+          "P3",
+          "Priority: P1"
+        ],
+        "milestone": "",
+        "comments": 0,
+        "review_decision": "",
+        "review_requested": false,
+        "reviewers": [],
+        "draft": false,
+        "mergeable": "UNKNOWN",
+        "base": "",
+        "head": "",
+        "cross_repository": false,
+        "checks_state": "UNKNOWN",
+        "checks": [],
+        "checks_total": null,
+        "unresolved_threads": 0,
+        "threads_total": 0,
+        "state_reason": "",
+        "related": [],
+        "stack": null,
+        "partial": []
+      }
+    }
+  },
+  {
+    "name": "BEHIND-False-['p2']",
+    "kind": "pr",
+    "input": {
+      "number": 1,
+      "title": "PR",
+      "state": "OPEN",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-02T00:00:00Z",
+      "mergeStateStatus": "BEHIND",
+      "isDraft": false,
+      "labels": {
+        "nodes": [
+          {
+            "name": "p2"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "repo": "owner/repo",
+      "number": 1,
+      "kind": "pr",
+      "title": "PR",
+      "state": "OPEN",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-02T00:00:00Z",
+      "head": "",
+      "priority": 2,
+      "readiness": 1,
+      "lines": 0,
+      "in_scope": true,
+      "body": null,
+      "facts": {
+        "author": "",
+        "viewer_authored": false,
+        "assignees": [],
+        "labels": [
+          "p2"
+        ],
+        "milestone": "",
+        "comments": 0,
+        "review_decision": "",
+        "review_requested": false,
+        "reviewers": [],
+        "draft": false,
+        "mergeable": "UNKNOWN",
+        "base": "",
+        "head": "",
+        "cross_repository": false,
+        "checks_state": "UNKNOWN",
+        "checks": [],
+        "checks_total": null,
+        "unresolved_threads": 0,
+        "threads_total": 0,
+        "state_reason": "",
+        "related": [],
+        "stack": null,
+        "partial": []
+      }
+    }
+  },
+  {
+    "name": "BLOCKED-False-[]",
+    "kind": "pr",
+    "input": {
+      "number": 1,
+      "title": "PR",
+      "state": "OPEN",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-02T00:00:00Z",
+      "mergeStateStatus": "BLOCKED",
+      "isDraft": false,
+      "labels": {
+        "nodes": []
+      }
+    },
+    "expected": {
+      "repo": "owner/repo",
+      "number": 1,
+      "kind": "pr",
+      "title": "PR",
+      "state": "OPEN",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-02T00:00:00Z",
+      "head": "",
+      "priority": 4,
+      "readiness": 2,
+      "lines": 0,
+      "in_scope": true,
+      "body": null,
+      "facts": {
+        "author": "",
+        "viewer_authored": false,
+        "assignees": [],
+        "labels": [],
+        "milestone": "",
+        "comments": 0,
+        "review_decision": "",
+        "review_requested": false,
+        "reviewers": [],
+        "draft": false,
+        "mergeable": "UNKNOWN",
+        "base": "",
+        "head": "",
+        "cross_repository": false,
+        "checks_state": "UNKNOWN",
+        "checks": [],
+        "checks_total": null,
+        "unresolved_threads": 0,
+        "threads_total": 0,
+        "state_reason": "",
+        "related": [],
+        "stack": null,
+        "partial": []
+      }
+    }
+  },
+  {
+    "name": "UNKNOWN-False-[]",
+    "kind": "pr",
+    "input": {
+      "number": 1,
+      "title": "PR",
+      "state": "OPEN",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-02T00:00:00Z",
+      "mergeStateStatus": "UNKNOWN",
+      "isDraft": false,
+      "labels": {
+        "nodes": []
+      }
+    },
+    "expected": {
+      "repo": "owner/repo",
+      "number": 1,
+      "kind": "pr",
+      "title": "PR",
+      "state": "OPEN",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-02T00:00:00Z",
+      "head": "",
+      "priority": 4,
+      "readiness": 3,
+      "lines": 0,
+      "in_scope": true,
+      "body": null,
+      "facts": {
+        "author": "",
+        "viewer_authored": false,
+        "assignees": [],
+        "labels": [],
+        "milestone": "",
+        "comments": 0,
+        "review_decision": "",
+        "review_requested": false,
+        "reviewers": [],
+        "draft": false,
+        "mergeable": "UNKNOWN",
+        "base": "",
+        "head": "",
+        "cross_repository": false,
+        "checks_state": "UNKNOWN",
+        "checks": [],
+        "checks_total": null,
+        "unresolved_threads": 0,
+        "threads_total": 0,
+        "state_reason": "",
+        "related": [],
+        "stack": null,
+        "partial": []
+      }
+    }
+  },
+  {
+    "name": "CLEAN-True-['p0']",
+    "kind": "pr",
+    "input": {
+      "number": 1,
+      "title": "PR",
+      "state": "OPEN",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-02T00:00:00Z",
+      "mergeStateStatus": "CLEAN",
+      "isDraft": true,
+      "labels": {
+        "nodes": [
+          {
+            "name": "p0"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "repo": "owner/repo",
+      "number": 1,
+      "kind": "pr",
+      "title": "PR",
+      "state": "OPEN",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-02T00:00:00Z",
+      "head": "",
+      "priority": 0,
+      "readiness": 3,
+      "lines": 0,
+      "in_scope": true,
+      "body": null,
+      "facts": {
+        "author": "",
+        "viewer_authored": false,
+        "assignees": [],
+        "labels": [
+          "p0"
+        ],
+        "milestone": "",
+        "comments": 0,
+        "review_decision": "",
+        "review_requested": false,
+        "reviewers": [],
+        "draft": true,
+        "mergeable": "UNKNOWN",
+        "base": "",
+        "head": "",
+        "cross_repository": false,
+        "checks_state": "UNKNOWN",
+        "checks": [],
+        "checks_total": null,
+        "unresolved_threads": 0,
+        "threads_total": 0,
+        "state_reason": "",
+        "related": [],
+        "stack": null,
+        "partial": []
+      }
+    }
+  },
+  {
+    "name": "all partial connections",
+    "kind": "pr",
+    "input": {
+      "number": 1,
+      "title": "PR",
+      "state": "OPEN",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-02T00:00:00Z",
+      "assignees": {
+        "totalCount": 21
+      },
+      "labels": {
+        "totalCount": 101
+      },
+      "reviewRequests": {
+        "totalCount": 22
+      },
+      "reviewThreads": {
+        "totalCount": 101
+      },
+      "closingIssuesReferences": {
+        "totalCount": 26
+      },
+      "commits": {
+        "nodes": [
+          {
+            "commit": {
+              "statusCheckRollup": {
+                "state": "PENDING",
+                "contexts": {
+                  "totalCount": 101
+                }
+              }
+            }
+          }
+        ]
+      },
+      "stack": {
+        "number": 2,
+        "size": 2,
+        "baseRefName": "main",
+        "entries": {
+          "nodes": [
+            {
+              "position": 1,
+              "pullRequest": null
+            }
+          ]
+        }
+      }
+    },
+    "expected": {
+      "repo": "owner/repo",
+      "number": 1,
+      "kind": "pr",
+      "title": "PR",
+      "state": "OPEN",
+      "created": "2026-01-01T00:00:00Z",
+      "updated": "2026-01-02T00:00:00Z",
+      "head": "",
+      "priority": 4,
+      "readiness": 3,
+      "lines": 0,
+      "in_scope": true,
+      "body": null,
+      "facts": {
+        "author": "",
+        "viewer_authored": false,
+        "assignees": [],
+        "labels": [],
+        "milestone": "",
+        "comments": 0,
+        "review_decision": "",
+        "review_requested": false,
+        "reviewers": [],
+        "draft": false,
+        "mergeable": "UNKNOWN",
+        "base": "",
+        "head": "",
+        "cross_repository": false,
+        "checks_state": "PENDING",
+        "checks": [],
+        "checks_total": 101,
+        "unresolved_threads": 0,
+        "threads_total": 101,
+        "state_reason": "",
+        "related": [],
+        "stack": {
+          "number": 2,
+          "size": 2,
+          "position": 0,
+          "base": "main",
+          "members": []
+        },
+        "partial": [
+          "Assignees",
+          "Labels",
+          "Review requests",
+          "Review threads",
+          "Linked items",
+          "Checks",
+          "Stack members"
+        ]
+      }
+    }
+  }
+]

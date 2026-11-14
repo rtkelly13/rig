@@ -1,0 +1,303 @@
+[
+  {
+    "items": [],
+    "markdown": "<!-- rig-triage:begin v1 -->\n| Rank | Kind | Reference | Title | Priority | Readiness | Lines | Created | Head |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n<!-- rig-triage:end -->"
+  },
+  {
+    "items": [
+      {
+        "repo": "owner/repo",
+        "number": 1,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 4,
+        "readiness": 0,
+        "lines": 10,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      }
+    ],
+    "markdown": "<!-- rig-triage:begin v1 -->\n| Rank | Kind | Reference | Title | Priority | Readiness | Lines | Created | Head |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | pr | [owner/repo#1](https://github.com/owner/repo/pull/1) | Change &#124; &lt;script&gt; &amp; links | unlabelled | clean | 10 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n<!-- rig-triage:end -->"
+  },
+  {
+    "items": [
+      {
+        "repo": "owner/repo",
+        "number": 1,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 4,
+        "readiness": 0,
+        "lines": 10,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 2,
+        "kind": "issue",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "",
+        "priority": 0,
+        "readiness": 0,
+        "lines": 10,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      }
+    ],
+    "markdown": "<!-- rig-triage:begin v1 -->\n| Rank | Kind | Reference | Title | Priority | Readiness | Lines | Created | Head |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | pr | [owner/repo#1](https://github.com/owner/repo/pull/1) | Change &#124; &lt;script&gt; &amp; links | unlabelled | clean | 10 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 1 | issue | [owner/repo#2](https://github.com/owner/repo/issues/2) | Change &#124; &lt;script&gt; &amp; links | P0 | n/a | 10 | 2026-01-01T00:00:00Z | - |\n<!-- rig-triage:end -->"
+  },
+  {
+    "items": [
+      {
+        "repo": "owner/repo",
+        "number": 1,
+        "kind": "pr",
+        "title": " quotes: ' \" & | < >\n\t\u001c café 😀 ",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 4,
+        "readiness": 0,
+        "lines": 10,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      }
+    ],
+    "markdown": "<!-- rig-triage:begin v1 -->\n| Rank | Kind | Reference | Title | Priority | Readiness | Lines | Created | Head |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | pr | [owner/repo#1](https://github.com/owner/repo/pull/1) | quotes: &#x27; &quot; &amp; &#124; &lt; &gt; café 😀 | unlabelled | clean | 10 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n<!-- rig-triage:end -->"
+  },
+  {
+    "items": [
+      {
+        "repo": "owner/repo",
+        "number": 2,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2025-12-31T23:00:00-01:00",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 4,
+        "readiness": 0,
+        "lines": 10,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 1,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 4,
+        "readiness": 0,
+        "lines": 10,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      }
+    ],
+    "markdown": "<!-- rig-triage:begin v1 -->\n| Rank | Kind | Reference | Title | Priority | Readiness | Lines | Created | Head |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | pr | [owner/repo#1](https://github.com/owner/repo/pull/1) | Change &#124; &lt;script&gt; &amp; links | unlabelled | clean | 10 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 2 | pr | [owner/repo#2](https://github.com/owner/repo/pull/2) | Change &#124; &lt;script&gt; &amp; links | unlabelled | clean | 10 | 2025-12-31T23:00:00-01:00 | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n<!-- rig-triage:end -->"
+  },
+  {
+    "items": [
+      {
+        "repo": "owner/repo",
+        "number": 1,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 1,
+        "readiness": 1,
+        "lines": 1,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 2,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 2,
+        "readiness": 2,
+        "lines": 2,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 3,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 3,
+        "readiness": 3,
+        "lines": 0,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 4,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 4,
+        "readiness": 0,
+        "lines": 1,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 5,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 0,
+        "readiness": 1,
+        "lines": 2,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 6,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 1,
+        "readiness": 2,
+        "lines": 0,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 7,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 2,
+        "readiness": 3,
+        "lines": 1,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 8,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 3,
+        "readiness": 0,
+        "lines": 2,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 9,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 4,
+        "readiness": 1,
+        "lines": 0,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 10,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 0,
+        "readiness": 2,
+        "lines": 1,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      },
+      {
+        "repo": "owner/repo",
+        "number": 11,
+        "kind": "pr",
+        "title": "Change | <script> & links",
+        "state": "OPEN",
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-02T00:00:00Z",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "priority": 1,
+        "readiness": 3,
+        "lines": 2,
+        "in_scope": true,
+        "body": null,
+        "facts": null
+      }
+    ],
+    "markdown": "<!-- rig-triage:begin v1 -->\n| Rank | Kind | Reference | Title | Priority | Readiness | Lines | Created | Head |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | pr | [owner/repo#5](https://github.com/owner/repo/pull/5) | Change &#124; &lt;script&gt; &amp; links | P0 | behind | 2 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 2 | pr | [owner/repo#10](https://github.com/owner/repo/pull/10) | Change &#124; &lt;script&gt; &amp; links | P0 | blocked | 1 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 3 | pr | [owner/repo#1](https://github.com/owner/repo/pull/1) | Change &#124; &lt;script&gt; &amp; links | P1 | behind | 1 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 4 | pr | [owner/repo#6](https://github.com/owner/repo/pull/6) | Change &#124; &lt;script&gt; &amp; links | P1 | blocked | 0 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 5 | pr | [owner/repo#11](https://github.com/owner/repo/pull/11) | Change &#124; &lt;script&gt; &amp; links | P1 | draft-or-unknown | 2 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 6 | pr | [owner/repo#2](https://github.com/owner/repo/pull/2) | Change &#124; &lt;script&gt; &amp; links | P2 | blocked | 2 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 7 | pr | [owner/repo#7](https://github.com/owner/repo/pull/7) | Change &#124; &lt;script&gt; &amp; links | P2 | draft-or-unknown | 1 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 8 | pr | [owner/repo#8](https://github.com/owner/repo/pull/8) | Change &#124; &lt;script&gt; &amp; links | P3 | clean | 2 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 9 | pr | [owner/repo#3](https://github.com/owner/repo/pull/3) | Change &#124; &lt;script&gt; &amp; links | P3 | draft-or-unknown | 0 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 10 | pr | [owner/repo#4](https://github.com/owner/repo/pull/4) | Change &#124; &lt;script&gt; &amp; links | unlabelled | clean | 1 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n| 11 | pr | [owner/repo#9](https://github.com/owner/repo/pull/9) | Change &#124; &lt;script&gt; &amp; links | unlabelled | behind | 0 | 2026-01-01T00:00:00Z | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |\n<!-- rig-triage:end -->"
+  }
+]

@@ -14,6 +14,7 @@ using Rig.Cli.Mail;
 using Rig.Cli.Models;
 using Rig.Cli.Otel;
 using Rig.Cli.Policy;
+using Rig.Cli.ReviewQueue;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Vault;
@@ -28,6 +29,7 @@ using Rig.Core.Jobs;
 using Rig.Core.Orca;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
+using Rig.Core.ReviewQueue;
 using Rig.Core.Roots;
 using Rig.Core.Services;
 using Rig.Core.Skills;
@@ -151,6 +153,11 @@ internal static class Program
                             () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
                         : null).Build,
                 new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out).Build,
+                new TriageCommand(
+                    new TriageHost(Path.Join(AppData.Current(), "rig.db"),
+                        Path.Join(Path.GetDirectoryName(Path.GetDirectoryName(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))!, "temp", "triage", "queue.md"),
+                        ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)),
+                    new QueueGitHub(github), Console.Out, Console.Error).Build,
                 new JobsCommand(JobsHostFor(codeRoot, checkout, home, proc), Console.Out).Build,
                 new MailCommand(
                     new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),
