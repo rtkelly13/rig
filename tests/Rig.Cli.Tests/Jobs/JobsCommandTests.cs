@@ -12,7 +12,7 @@ public sealed class JobsCommandTests : IDisposable
     private static readonly DateTimeOffset Now = new(2026, 11, 12, 9, 0, 0, TimeSpan.Zero);
 
     private readonly TempDir _temp = new();
-    private readonly StringWriter _out = new();
+    private readonly StringWriter _out = new() { NewLine = "\n" };
     private readonly FakeExecutor _executor = new();
     private double _idle = double.PositiveInfinity;
     private bool _held;
