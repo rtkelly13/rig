@@ -224,6 +224,38 @@ public sealed class JobsCommandTests : IDisposable
         Assert.Empty(_shellWaits);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_scheduled_run_logs_while_another_run_holds_the_coordinator_log_open(bool rotate)
+    {
+        if (rotate)
+        {
+            BigCoordinatorLog();
+        }
+
+        using (HoldCoordinatorLog())
+        {
+            Assert.Equal(0, await Run(null, "run", "--trigger", "logon", "--scheduled"));
+        }
+
+        var logged = Directory.GetFiles(_temp.Path, ScheduledRun.LogName + "*").SelectMany(Lines);
+        Assert.Contains(logged, line => line.Contains("[logon-20261112-090000] run  daily (", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_scheduled_run_still_reaches_the_lock_when_log_rotation_fails()
+    {
+        BigCoordinatorLog();
+        Directory.CreateDirectory(CoordinatorLog + ".1");
+        _held = true;
+
+        Assert.Equal(0, await Run(null, "run", "--scheduled"));
+
+        Assert.Empty(_executor.Ran);
+        Assert.Contains(Lines(CoordinatorLog), line => line.Contains("skipping this tick run", StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task A_dry_run_starts_no_tracing()
     {
@@ -351,6 +383,9 @@ public sealed class JobsCommandTests : IDisposable
     private void BigCoordinatorLog() => File.WriteAllBytes(CoordinatorLog, new byte[ScheduledRun.LogLimitBytes + 1]);
 
     private static string[] Lines(string path) => File.ReadAllLines(path);
+
+    // As a concurrent scheduled run holds it.
+    private FileStream HoldCoordinatorLog() => new(CoordinatorLog, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
 
     private void OldAndNewTraces()
     {

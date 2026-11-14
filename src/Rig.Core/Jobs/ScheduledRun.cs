@@ -46,12 +46,11 @@ public static class ScheduledRun
         var runId = JobRunner.RunId(trigger, seams.Clock.GetLocalNow());
         Directory.CreateDirectory(jobsDir);
         var logPath = Path.Join(jobsDir, LogName);
-        if (File.Exists(logPath) && new FileInfo(logPath).Length > LogLimitBytes)
-        {
-            File.Move(logPath, logPath + ".1", overwrite: true);
-        }
+        Rotate(logPath);
 
-        using var log = new StreamWriter(logPath, append: true, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)) { AutoFlush = true };
+        // Shared, so a run that overlaps another (a logon run during a tick) can still log and reach the run lock.
+        using var stream = new FileStream(logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+        using var log = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)) { AutoFlush = true };
         void Report(string line) =>
             log.Write(string.Create(CultureInfo.InvariantCulture, $"{seams.Clock.GetLocalNow():yyyy-MM-dd HH:mm:ss} [{runId}] {line}\n"));
 
@@ -73,6 +72,22 @@ public static class ScheduledRun
         {
             Report($"Jobs coordinator run crashed (trigger {JobWords.Wire(trigger)}): {error}");
             return 1;
+        }
+    }
+
+    // Past the limit the log moves to .log.1. Best effort: a run still writing the log can refuse the move, and then
+    // this run appends and the next one rotates.
+    private static void Rotate(string logPath)
+    {
+        try
+        {
+            if (File.Exists(logPath) && new FileInfo(logPath).Length > LogLimitBytes)
+            {
+                File.Move(logPath, logPath + ".1", overwrite: true);
+            }
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
         }
     }
 
