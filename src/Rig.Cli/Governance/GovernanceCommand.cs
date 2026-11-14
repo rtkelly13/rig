@@ -62,6 +62,7 @@ internal sealed partial class GovernanceCommand(
         governance.Subcommands.Add(License());
         governance.Subcommands.Add(SyncTemplates());
         governance.Subcommands.Add(Gitignore());
+        governance.Subcommands.Add(Editorconfig());
         governance.Subcommands.Add(Apps());
         governance.Subcommands.Add(Status());
         governance.Subcommands.Add(Audit());

@@ -54,3 +54,9 @@ Rig enables all performance rules from the .NET SDK (`CA18xx`):
 - `dotnet_diagnostic.IDE0028.severity = suggestion` (Collection initialization can be simplified)
 - `dotnet_diagnostic.IDE0300.severity = suggestion` (Collection expression can be used)
 - `dotnet_diagnostic.IDE0305.severity = suggestion` (Collection expression for fluent calls)
+
+### 4. Code Formatting & CI Enforcement
+
+- **EditorConfig**: `.editorconfig` enforces file-scoped namespaces (`IDE0161`), usings outside namespace with sorted system directives, strict brace placement (`IDE0011`), unused directive elimination (`IDE0005`), dead code elimination (`IDE0051`, `IDE0052`, `IDE0059`), and standardized naming conventions across all C# projects.
+- **Local Enforcement**: Run `dotnet format rig.slnx` to automatically format whitespace, code style, and imports.
+- **CI Enforcement**: The `dotnet` job in `.github/workflows/ci.yml` runs `dotnet format rig.slnx --no-restore --verify-no-changes` ensuring unformatted code cannot merge. In addition, `Directory.Build.props` enables `<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>` and `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`, treating code style warnings as build errors.

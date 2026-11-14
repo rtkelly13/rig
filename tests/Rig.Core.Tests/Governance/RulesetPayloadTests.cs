@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Governance;
-using Rig.Core.Policy;
 
 namespace Rig.Core.Tests.Governance;
 

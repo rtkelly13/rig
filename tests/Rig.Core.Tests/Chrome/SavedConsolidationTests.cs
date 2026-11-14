@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Rig.Core.Chrome;
 using Rig.Core.Chrome.Windows;
 using Rig.Core.Desktop;

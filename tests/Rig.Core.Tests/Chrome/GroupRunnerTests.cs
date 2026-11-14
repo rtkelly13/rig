@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Rig.Core.Chrome;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Workspace;

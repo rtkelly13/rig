@@ -1,7 +1,6 @@
 using System.CommandLine;
 using System.Globalization;
 using Rig.Core.Otel;
-using Rig.Core.Processes;
 using Rig.Core.Services;
 
 namespace Rig.Cli.Otel;
