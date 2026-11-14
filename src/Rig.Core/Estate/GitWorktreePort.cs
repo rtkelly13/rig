@@ -72,7 +72,7 @@ public sealed class GitWorktreePort(Git git) : IGitWorktreePort
     private async Task<(int Count, bool Unreadable)> ReflogOnlyAsync(Worktree tree, CancellationToken cancellationToken)
     {
         var refs = await git.RunAsync(tree.Path, ["rev-list", "--all"], cancellationToken: cancellationToken).ConfigureAwait(false);
-        var head = await git.RunAsync(tree.Path, ["log", "-g", ReflogFormat, "HEAD"], cancellationToken: cancellationToken).ConfigureAwait(false);
+        var head = await git.RunAsync(tree.Path, ["log", "-g", ReflogFormat, "HEAD", "--"], cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!refs.Ok || !head.Ok)
         {
             return (0, true);
@@ -83,7 +83,9 @@ public sealed class GitWorktreePort(Git git) : IGitWorktreePort
         if (!tree.Unborn && tree.Branch.Length > 0)
         {
             // A branch whose ref is gone is unborn: its tip is named by HEAD's reflog, so the branch is not queried.
-            var ran = await git.RunAsync(tree.Path, ["log", "-g", ReflogFormat, tree.Branch], cancellationToken: cancellationToken).ConfigureAwait(false);
+            // Disambiguate against files/directories with the same name as the branch by querying refs/heads and passing '--'.
+            var branchRef = tree.Branch.StartsWith("refs/", StringComparison.Ordinal) ? tree.Branch : $"refs/heads/{tree.Branch}";
+            var ran = await git.RunAsync(tree.Path, ["log", "-g", ReflogFormat, branchRef, "--"], cancellationToken: cancellationToken).ConfigureAwait(false);
             if (!ran.Ok)
             {
                 return (0, true);
