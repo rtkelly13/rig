@@ -21,7 +21,17 @@ def test_preview_is_handed_over_too(csharp_calls: list[list[str]]) -> None:
     result = CliRunner().invoke(web_app, ["--preview"])
 
     assert result.exit_code == 0
-    assert csharp_calls[0][-7:] == ["web", "--port", "8090", "--host", "127.0.0.1", "--open", "--preview"]
+    # The bare line goes over whole; C# applies its own defaults (port 8090 becomes 8091 in preview mode).
+    assert csharp_calls[0][-2:] == ["web", "--preview"]
+
+
+def test_a_child_command_does_not_run_the_bare_forwarder(csharp_calls: list[list[str]]) -> None:
+    # The group callback is a thin C# dispatcher; it must not run in front of a Python child.
+    result = CliRunner().invoke(web_app, ["install", "--help"])
+
+    assert result.exit_code == 0
+    assert "Install preview background service" in result.output
+    assert csharp_calls == []
 
 
 def test_upstream_stops_when_its_standard_input_closes(csharp_calls: list[list[str]]) -> None:

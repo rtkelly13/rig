@@ -62,8 +62,8 @@ cannot conceal an independent implementation.
 | `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand` over `Rig.Core.ReviewQueue` | CLI switched; Python CLI and six platform fallback routes retired. The `src/rig/triage` web inbox and agent-signal consumers stay explicitly owned until switched; shared service modules are not retired by the CLI cutover |
 | `c4` | Python `rig.c4_okf.cli` | Not ported; five leaves; open #78 touches this area, do not duplicate it |
 | `jobs` | C# status/last/log/run; Python install/uninstall | Disjoint subcommands; #209 owns installer/runtime progression |
-| `web` | C# public host, Python service/database/MCP/upstream children | Mixed ownership; #207 owns connectivity cutover; opaque child-route registrations remain explicit |
-| `chrome-tabs` | C# traces everywhere, C# native actions on Windows, Python native actions on macOS and organise | Windows duplicate registrations are the exact baseline below; #206 owns macOS native actions |
+| `web` | C# public host, verified thin dispatcher for the bare launch, Python service/database/MCP/upstream children | Bare `desktop-manager web` is a thin C# dispatcher in #217; #207 owns connectivity cutover; opaque child-route registrations remain explicit |
+| `chrome-tabs` | C# traces everywhere, C# native actions on Windows, Python native actions on macOS and organise | Windows duplicate registrations retired in #217; #206 owns macOS native actions |
 | `chrome-tabs traces runs/show/summary/prune` | C# only; legacy spelling dispatches the whole line | Legacy report CLI and 462 lines of reader/report code deleted; writer/daily retention still have scheduled Python callers |
 | `desktop-manager workspace`, `claude-sessions`, `runtime`, `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
 | Core Python modules, development file apps, Node scripts and launchers | `module:`, `python-file:`, `main:`, `file-app:`, `node:`, `launcher:` rows | Development tooling is inventoried separately from product CLI behavior |
@@ -82,13 +82,15 @@ One independent implementation owns each leaf capability on each supported platf
 disjoint; a spelling alias delegates to the same implementation. New unregistered executables, duplicate owners,
 unresolvable aliases, stale forwarding and retired source/entries fail the gate. Tombstones are permanent.
 
-The initial baseline has exactly **ten** capability/platform overlaps: seven Windows Chrome commands
+The initial baseline held exactly **ten** capability/platform overlaps: seven Windows Chrome commands
 (`group`, `install`, `list`, `prune`, `rank`, `saved-groups`, `uninstall`) and the web-launch callback on Linux,
-macOS and Windows. Each entry names both implementations. C# is the desired canonical owner for these rows.
-The legacy registrations must disappear or become verified thin dispatchers; a Mac Chrome cutover must remove
-its obsolete Python registrations in the same PR rather than add macOS baseline allowances.
+macOS and Windows. C# was the desired canonical owner for these rows. #217 retired the losing Python
+registrations — the Windows-only `install`, `saved-groups` and `uninstall` commands, the Windows platform
+declaration on the macOS `group`/`list`/`prune`/`rank` commands, and made the bare `desktop-manager web`
+a verified thin dispatcher to `cs:web` — so the baseline is now empty. A Mac Chrome cutover must remove its
+obsolete Python registrations in the same PR rather than add macOS baseline allowances.
 
-This narrow temporary baseline is explicitly authorized for #85; it does not relax other architecture gates.
+This narrow temporary baseline was explicitly authorized for #85; it does not relax other architecture gates.
 CI compares it with the PR base: entries can only disappear, never gain an owner, capability or platform. Resolved
 baseline entries must be deleted, so an allowance cannot linger and permit a later resurrection. New retired entries
 and deleted source paths are added as slices land. There is no refresh/accept-baseline command in CI.
@@ -138,7 +140,7 @@ Named remaining acceptance procedures, all run from a reviewed/published artifac
 | --- | --- | --- |
 | `WIN-DESKTOP` | Interactive Windows, disposable plan/windows: `desktop-manager workspace validate-plan --config <plan>` then `desktop-manager workspace restore --config <plan> --dry-run`, then an explicitly scoped restore/audit/align | Record Windows build, permissions, before/after layout, exact command, logs and restored state. Real Win32/UIA placement is pending, not a hosted-runner pass |
 | `WIN-JOBS` | #209's reviewed runtime in a disposable Windows account: `rig jobs install --help`, `rig jobs status`, its named task-install/logon acceptance | Record task XML, target artifact, due/skip behavior, background console behavior and uninstall/cleanup; no production task changes merely to test source |
-| `WIN-CHROME` | Interactive Windows, dedicated dev Chrome profile: `rig chrome-tabs list --profile <dev> --json`; `rig chrome-tabs prune --profile <dev> --dry-run`; controlled prune/group/saved-groups on disposable tabs | Record actual UI effects, focus restoration and cleanup; delete the seven losing Python registrations after callers/acceptance permit |
+| `WIN-CHROME` | Interactive Windows, dedicated dev Chrome profile: `rig chrome-tabs list --profile <dev> --json`; `rig chrome-tabs prune --profile <dev> --dry-run`; controlled prune/group/saved-groups on disposable tabs | Record actual UI effects, focus restoration and cleanup. #217 removed the seven losing Python registrations while this acceptance is still pending; see the acceptance/caller gap note below |
 | `MAC-CHROME` | #206 artifact, repository dev browser profile: `rig chrome-tabs list --profile <dev> --json`, controlled prune/group with disposable windows/tabs | Record Accessibility/Automation grants, native calls, actual changes, cleanup and restored focus. No daily Chrome profile |
 | `WEB-MCP` | Disposable DB/ports, no production service: `rig web --port <free> --no-open`; `rig web mcp` over stdio | Browser → route → data → response and real initialize/tools exchange; identify each remaining Python child, preserve protocol stdout |
 | `ROLLOUT` | After platform acceptance: inspect runtime/PATH/task/LaunchAgent/agent-config/estate-repo callers; use the documented installer for that slice | Record machine and artifact SHA. Keep the last working deployed runtime until replacement acceptance. Source deletion alone never establishes rollout |
@@ -146,7 +148,20 @@ Named remaining acceptance procedures, all run from a reviewed/published artifac
 Windows CI can be triggered from this Mac by the `ci:windows` label. It supplies compilation/noninteractive
 evidence only. These procedures remain pending until a native run is recorded. Do not close #85 on this PR.
 
+**#217 acceptance/caller gaps.** Removing the seven losing Windows Chrome registrations is a source-ownership
+change only. No native `WIN-CHROME` run is recorded from this Mac, so `rig chrome-tabs
+group|list|prune|rank|saved-groups|install|uninstall` is now the sole Windows path while the real UI
+effects, focus restoration and cleanup remain to be accepted. Any caller still spelling
+`desktop-manager chrome-tabs ...` on Windows must migrate to the `rig` spelling; this PR updates the
+repository's own callers and the ledger, not installed runtimes, tasks or other machines. The `WIN-CHROME`
+and `ROLLOUT` rows above stay open until that evidence is recorded.
+
 ## Sunset the migration gate at final cutover
+
+_State after #217:_ the overlap baseline is empty, but this is an overlap-only slice, not port completion:
+main still has core Python files and dozens of Python-owned registrations, and routes still have callers
+(`triage`, `c4`, `desktop workspace align`, `jobs install`, and the web children/MCP). The ledger and this
+gate stay in place until the source migration, native acceptance and rollout criteria above are met.
 
 This cross-language inventory is temporary migration machinery. Close it down in the final #85 cutover PR
 once all core commands, web/MCP children and job callers have C# owners, the overlap baseline is empty,
