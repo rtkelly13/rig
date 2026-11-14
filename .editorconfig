@@ -152,3 +152,7 @@ dotnet_diagnostic.CA1515.severity = none
 dotnet_diagnostic.IDE1006.severity = none
 # Tests set GenerateDocumentationFile=false, so Roslyn requires IDE0005 to not be warning/error in build.
 dotnet_diagnostic.IDE0005.severity = suggestion
+
+# The ownership tool also sets GenerateDocumentationFile=false; IDE0005 cannot run without docs.
+[tools/command-ownership/**/*.cs]
+dotnet_diagnostic.IDE0005.severity = suggestion
