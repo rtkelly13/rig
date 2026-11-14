@@ -236,6 +236,14 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
             timeout_minutes=5,
         ),
         Job(
+            name="workload-sample",
+            description="Sample memory use by app (Claude sessions, large processes, bursts); keep 7 days of samples.",
+            argv=(rig, "workload", "sample"),
+            triggers=both,
+            cadence=Cadence.EVERY_RUN,
+            timeout_minutes=2,
+        ),
+        Job(
             name="estate-prune-caches",
             description="Prune the uv, pnpm, NuGet http and Docker build caches, and Claude temp idle 7+ days.",
             argv=(rig, "estate", "prune-caches", "--apply"),

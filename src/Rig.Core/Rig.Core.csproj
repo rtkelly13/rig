@@ -28,5 +28,7 @@
     <EmbeddedResource Include="Governance/Templates/oss/*.jinja" LogicalName="Rig.Core.Governance.Templates.oss.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Governance/Templates/policy/*.jinja" LogicalName="Rig.Core.Governance.Templates.policy.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Governance/Templates/review/*" LogicalName="Rig.Core.Governance.Templates.review.%(Filename)%(Extension)" />
+    <!-- The app list the workload sampler attributes memory by (Workload/AppRules.cs). -->
+    <EmbeddedResource Include="Workload/workload-apps.json" LogicalName="Rig.Core.Workload.workload-apps.json" />
   </ItemGroup>
 </Project>

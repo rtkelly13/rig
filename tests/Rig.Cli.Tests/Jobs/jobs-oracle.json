@@ -253,6 +253,26 @@
    "feature": null
   },
   {
+   "name": "workload-sample",
+   "description": "Sample memory use by app (Claude sessions, large processes, bursts); keep 7 days of samples.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "workload",
+    "sample"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "every-run",
+   "timeout_minutes": 2,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [],
+   "detail_log": null,
+   "feature": null
+  },
+  {
    "name": "estate-prune-caches",
    "description": "Prune the uv, pnpm, NuGet http and Docker build caches, and Claude temp idle 7+ days.",
    "argv": [
@@ -363,6 +383,7 @@
   "estate-orca",
   "orca-sync",
   "otel-collector",
+  "workload-sample",
   "estate-prune-caches",
   "estate-decisions"
  ],
