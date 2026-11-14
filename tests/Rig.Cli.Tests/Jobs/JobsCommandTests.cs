@@ -71,6 +71,30 @@ public sealed class JobsCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Uninstall_attempts_each_coordinator_task_and_reports_missing_tasks()
+    {
+        var tasks = new FakeTasks(CoordinatorTasks.Tick);
+
+        Assert.Equal(0, await Run(tasks, "uninstall"));
+
+        Assert.Equal(CoordinatorTasks.All, tasks.Deleted);
+        Assert.Equal($"Removed {CoordinatorTasks.Logon}\nNot registered {CoordinatorTasks.Tick}\nRemoved {CoordinatorTasks.Guard}\n", _out.ToString());
+        Assert.Empty(_executor.Ran);
+    }
+
+    [Fact]
+    public async Task Uninstall_requires_windows_but_its_help_is_portable()
+    {
+        var root = new RootCommand { new JobsCommand(Host(null), _out).Build() };
+        Assert.Equal(0, await root.Parse(["jobs", "uninstall", "--help"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken));
+        _out.GetStringBuilder().Clear();
+
+        Assert.Equal(1, await Run(null, "uninstall"));
+        Assert.Equal("jobs uninstall requires Windows.\n", _out.ToString());
+    }
+
+    [Fact]
     public async Task Last_says_so_when_no_run_is_recorded()
     {
         Assert.Equal(0, await Run(null, "last", "--trigger", "tick"));
@@ -338,9 +362,9 @@ public sealed class JobsCommandTests : IDisposable
     [InlineData(new[] { "jobs", "log", "align" }, false)]
     [InlineData(new[] { "jobs", "run", "--trigger", "tick" }, false)]
     [InlineData(new[] { "jobs", "install" }, true)]
-    [InlineData(new[] { "jobs", "uninstall" }, true)]
+    [InlineData(new[] { "jobs", "uninstall" }, false)]
     [InlineData(new[] { "jobs" }, true)]
-    public void Only_the_installers_still_go_to_python(string[] args, bool python)
+    public void Only_install_and_the_group_help_still_go_to_python(string[] args, bool python)
     {
         var root = new RootCommand { new JobsCommand(Host(null), _out).Build() };
 
@@ -431,6 +455,14 @@ public sealed class JobsCommandTests : IDisposable
 
     private sealed class FakeTasks(params string[] missing) : IScheduledTasks
     {
+        public List<string> Deleted { get; } = [];
+
         public Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default) => Task.FromResult(!missing.Contains(name));
+
+        public Task<bool> DeleteAsync(string name, CancellationToken cancellationToken = default)
+        {
+            Deleted.Add(name);
+            return Task.FromResult(!missing.Contains(name));
+        }
     }
 }

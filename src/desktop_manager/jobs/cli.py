@@ -11,6 +11,7 @@ from rich.console import Console
 from rich.markup import escape
 
 from desktop_manager.jobs import install as installer
+from desktop_manager.jobs.forward import uninstall
 from rig.platforms import Platform, requires
 
 jobs_app = typer.Typer(
@@ -84,9 +85,8 @@ def install(
     console.print(f"[dim]Plan:[/dim] {plan_path}")
 
 
-@jobs_app.command(name="uninstall")
-@requires(Platform.WINDOWS)
-def uninstall() -> None:
-    """Remove the coordinator's scheduled tasks."""
-    for name in (installer.LOGON_TASK, installer.TICK_TASK, installer.GUARD_TASK):
-        console.print(f"{'[green]Removed[/green]' if installer.delete(name) else '[dim]Not registered[/dim]'} {name}")
+jobs_app.command(
+    name="uninstall",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    add_help_option=False,
+)(uninstall)

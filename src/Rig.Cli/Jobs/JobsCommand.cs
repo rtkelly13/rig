@@ -33,8 +33,8 @@ internal sealed record JobsHost(
     string TracesDir);
 
 /// <summary>
-/// <c>rig jobs status|last|log|run</c>: what the coordinator did and will do, read from its files, and a run of it. Ported
-/// from <c>desktop_manager.jobs.cli</c>; <c>install</c> and <c>uninstall</c> still go to Python. The text is
+/// <c>rig jobs status|last|log|run|uninstall</c>: the coordinator's runs and task removal. Ported
+/// from <c>desktop_manager.jobs.cli</c>; <c>install</c> still goes to Python. The text is
 /// Python's without rich's colours, and the table is padded to its widest cell rather than wrapped at 80 columns.
 /// </summary>
 internal sealed class JobsCommand(JobsHost host, TextWriter output)
@@ -75,12 +75,16 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             parsed.GetValue(dryRun),
             parsed.GetValue(scheduled)));
 
+        var uninstall = new Command("uninstall", "Remove the coordinator's scheduled tasks.");
+        uninstall.SetAction((_, cancellationToken) => Uninstall(cancellationToken));
+
         return new Command("jobs", "Logon, every-15-minute and daily jobs that keep this machine aligned, run from one registry.")
         {
             status,
             last,
             log,
             run,
+            uninstall,
         };
     }
 
@@ -92,6 +96,23 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     }
 
     private string LogsDir => JobState.LogsDir(host.JobsDir);
+
+    private async Task<int> Uninstall(CancellationToken cancellationToken)
+    {
+        if (host.Tasks is not { } tasks)
+        {
+            await output.WriteLineAsync("jobs uninstall requires Windows.").ConfigureAwait(false);
+            return 1;
+        }
+
+        foreach (var name in CoordinatorTasks.All)
+        {
+            var removed = await tasks.DeleteAsync(name, cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync($"{(removed ? "Removed" : "Not registered")} {name}").ConfigureAwait(false);
+        }
+
+        return 0;
+    }
 
     private async Task<int> Status(JobTrigger trigger, CancellationToken cancellationToken)
     {

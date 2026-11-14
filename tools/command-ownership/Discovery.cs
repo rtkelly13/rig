@@ -73,7 +73,13 @@ internal static class Discovery
             var outputType = Capture(proc, root, "dotnet", "msbuild", project, "-nologo", "-getProperty:OutputType").Trim();
             if (outputType is "Exe" or "WinExe")
             {
-                if (project is not ("src/Rig.Cli/Rig.Cli.csproj" or "tools/command-ownership/CommandOwnership.csproj"))
+                if (project == "src/Rig.Launcher/Rig.Launcher.csproj")
+                {
+                    // rigw has no command tree of its own: verify its sole action is the whole-line handoff
+                    // to the production CLI entry point whose tree we inspected above.
+                    CheckLauncher(File.ReadAllText(Path.Join(root, "src/Rig.Launcher/Launcher.cs")));
+                }
+                else if (project is not ("src/Rig.Cli/Rig.Cli.csproj" or "tools/command-ownership/CommandOwnership.csproj"))
                 {
                     throw new InvalidOperationException($"Unsupported executable project: {project}; add its runtime discovery adapter");
                 }
@@ -92,6 +98,21 @@ internal static class Discovery
         }
 
         return rows.OrderBy(r => r.Id, StringComparer.Ordinal).ToArray();
+    }
+
+    internal static void CheckLauncher(string source)
+    {
+        var syntax = CSharpSyntaxTree.ParseText(source).GetRoot();
+        var members = syntax.DescendantNodes().OfType<MemberDeclarationSyntax>()
+            .Where(member => member is not BaseNamespaceDeclarationSyntax).ToArray();
+        if (members is not [ClassDeclarationSyntax type, MethodDeclarationSyntax method]
+            || type.Identifier.ValueText != "Launcher"
+            || syntax.DescendantNodes().OfType<BaseNamespaceDeclarationSyntax>().SingleOrDefault()?.Name.ToString() != "Rig.Launcher"
+            || syntax.DescendantNodes().OfType<UsingDirectiveSyntax>().Any(usingDirective => usingDirective.Name?.ToString() != "System.Diagnostics.CodeAnalysis" || usingDirective.Alias is not null)
+            || method.NormalizeWhitespace().ToFullString() != "private static Task<int> Main(string[] args) => Cli.Program.Main(args);")
+        {
+            throw new InvalidOperationException("Unsupported rigw launcher: expected only the unchanged-argument handoff to Cli.Program.Main");
+        }
     }
 
     internal static IEnumerable<CommandOwner> Commands(PythonTree python, IReadOnlyDictionary<string, CsTree> trees)

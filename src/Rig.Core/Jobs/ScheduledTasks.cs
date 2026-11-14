@@ -2,11 +2,14 @@ using Rig.Core.Processes;
 
 namespace Rig.Core.Jobs;
 
-/// <summary>The Windows Task Scheduler, as far as <c>jobs status</c> asks it: whether a task is registered.</summary>
+/// <summary>The Windows Task Scheduler operations used by the jobs commands.</summary>
 public interface IScheduledTasks
 {
     /// <summary>Whether the task <paramref name="name"/> (folder included) is registered.</summary>
     Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes the named task; false when it is absent or Task Scheduler refuses the deletion.</summary>
+    Task<bool> DeleteAsync(string name, CancellationToken cancellationToken = default);
 }
 
 /// <summary>The tasks <c>desktop-manager jobs install</c> registers. Names match <c>desktop_manager.jobs.install</c>.</summary>
@@ -28,12 +31,16 @@ public static class CoordinatorTasks
     public static IReadOnlyList<string> All { get; } = [Logon, Tick, Guard];
 }
 
-/// <summary>Asks <c>schtasks /Query</c>, which exits 0 only for a registered task. It reads and never changes anything.</summary>
+/// <summary>Queries and deletes named tasks through <c>schtasks</c>.</summary>
 public sealed class Schtasks(IProc proc) : IScheduledTasks
 {
     /// <inheritdoc />
     public async Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default) =>
         (await proc.RunAsync(new ProcRequest(["schtasks", "/Query", "/TN", name]), cancellationToken).ConfigureAwait(false)).Ok;
+
+    /// <inheritdoc />
+    public async Task<bool> DeleteAsync(string name, CancellationToken cancellationToken = default) =>
+        (await proc.RunAsync(new ProcRequest(["schtasks", "/Delete", "/TN", name, "/F"]), cancellationToken).ConfigureAwait(false)).Ok;
 }
 
 /// <summary>When this machine booted, as <c>desktop_manager.jobs.session_windows.boot_time</c> answers it.</summary>

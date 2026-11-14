@@ -16,8 +16,9 @@ rig jobs run --only estate-risk        # one job, due or not
 desktop-manager jobs install           # register the tasks (run from the runtime copy)
 ```
 
-`status`, `last`, `log` and `run` run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`); `install` and
-`uninstall` are still Python, and `rig jobs <those>` hands them to `desktop-manager jobs`. The scheduled tasks
+`status`, `last`, `log`, `run` and `uninstall` run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`);
+`desktop-manager jobs uninstall` is a whole-line compatibility dispatcher to `rig jobs uninstall`, including help
+and unknown arguments. Only `install` remains Python, and `rig jobs install` hands it to `desktop-manager jobs`. The scheduled tasks
 still start the Python runner (`desktop_manager.jobs.scheduled`) until the installers move; the C# runner writes
 the same `state.json`, `last-<trigger>.json` and `runs.ndjson`, and takes the same `run.lock` byte, so the two never
 overlap. Each job runs in a `job <name>` span written to the `desktop-manager-jobs` trace files, whose ids its
@@ -34,8 +35,7 @@ Both sides read and write the same `state.json` and `last-<trigger>.json`, held 
 ## Scheduled tasks
 
 `jobs install` registers three tasks in the Task Scheduler folder
-`\Shared Utilities\`, and removes the separate tasks they replace (`Workspace
-Restore`, `Chrome Tabs Organise`, `Workspace Display Guard`):
+`\Shared Utilities\`, and removes the separate tasks they replace (`Workspace Restore`, `Chrome Tabs Organise`, `Workspace Display Guard`):
 
 | Task | When | Runs |
 |:-----|:-----|:-----|
@@ -150,11 +150,15 @@ Every `coordinator.log` line names it, it heads that run's section of each job l
 Everything is under `%LOCALAPPDATA%\shared-utilities\jobs\`:
 
 - `coordinator.log`: each scheduled run's decisions, which jobs ran or were skipped and why, and why a job failed.
+
 - `logs\<job>.log`: each job's own output, one section per run. One previous generation is kept as `.log.1`.
+
 - `state.json`: each job's last start, duration, exit code, error, summary and failure detail.
+
 - `last-logon.json`, `last-tick.json`: each trigger's latest run.
 
 - `runs.ndjson`: one line per job run, newest last (see **Run history**).
+
 - `runs\<job>\<run_id>.log`: each recorded run's own output.
 
 Restore still logs to `workspace-restore\logs`. Chrome organise still logs to

@@ -69,6 +69,19 @@ public sealed class JobsTests : IDisposable
     }
 
     [Fact]
+    public async Task Deleting_a_task_reports_schtasks_success_and_preserves_the_whole_name()
+    {
+        var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
+        var tasks = new Schtasks(proc);
+
+        Assert.True(await tasks.DeleteAsync(CoordinatorTasks.Guard, TestContext.Current.CancellationToken));
+        Assert.Equal(["schtasks", "/Delete", "/TN", CoordinatorTasks.Guard, "/F"], Assert.Single(proc.Requests).Argv);
+
+        proc.Answer(new Ran(1, string.Empty, "not found"), "schtasks");
+        Assert.False(await tasks.DeleteAsync(CoordinatorTasks.Guard, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public void The_plan_lives_under_appdata_on_windows_and_the_config_folder_elsewhere()
     {
         Assert.Equal(Path.Join("/appdata", "workspace-manager", "windows-workspace.json"), JobRegistry.DefaultPlanPath("/appdata", "/home", windows: true));
