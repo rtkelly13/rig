@@ -476,8 +476,12 @@ public static partial class TraceAnalytics
         var start = LaxLong(raw["startTimeUnixNano"]) ?? 0;
         var end = LaxLong(raw["endTimeUnixNano"]) ?? start;
         var (statusCode, statusMessage) = Status(raw["status"]);
-        var tool = TextValue(Attributes(file.Resource?["attributes"]).GetValueOrDefault("service.name"));
-        var scope = TextValue(file.Scope?["name"]);
+        var tool = file.Resource is JsonObject resObj
+            ? TextValue(Attributes(resObj["attributes"]).GetValueOrDefault("service.name"))
+            : string.Empty;
+        var scope = file.Scope is JsonObject scObj
+            ? TextValue(scObj["name"])
+            : string.Empty;
         return new TraceSpanInfo(
             file.TraceId,
             file.SpanId,
