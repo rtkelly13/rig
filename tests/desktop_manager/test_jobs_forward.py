@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -60,41 +61,35 @@ def test_the_legacy_scheduled_entry_returns_127_when_the_publish_is_missing() ->
 
 
 @pytest.mark.parametrize("installed", [False, True])
-def test_scheduled_entry_resolves_the_launcher_beside_its_own_copy(
-    monkeypatch, tmp_path: Path, installed: bool
-) -> None:
+def test_scheduled_entry_resolves_the_launcher_beside_its_own_copy(tmp_path: Path, installed: bool) -> None:
     from desktop_manager.jobs import scheduled
 
     root = tmp_path / "runtime" / "current" if installed else tmp_path / "checkout"
-    monkeypatch.setattr(scheduled, "__file__", str(root / "src" / "desktop_manager" / "jobs" / "scheduled.py"))
-    monkeypatch.setattr(scheduled.runtime, "running_copy", lambda _file: installed)
-    monkeypatch.setattr(scheduled.sys, "argv", ["scheduled.py", "logon"])
+    file = root / "src" / "desktop_manager" / "jobs" / "scheduled.py"
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.touch()
     calls: list[list[str]] = []
 
     def send(argv: list[str]) -> int:
         calls.append(argv)
         return 0
 
-    assert scheduled.main(runner=send) == 0
+    assert scheduled.main(["logon"], runner=send, file=file, running_copy=lambda _f: installed) == 0
     publish = root / "rig" if installed else root / "temp" / "jobs-runtime"
     assert calls == [[str(publish / "rigw.exe"), "jobs", "run", "--scheduled", "--trigger", "logon"]]
 
 
 @pytest.mark.parametrize("platform", ["win32", "linux"])
-def test_scheduled_child_has_no_console_or_stdin(monkeypatch, platform: str) -> None:
+def test_scheduled_child_has_no_console_or_stdin(platform: str) -> None:
     from desktop_manager.jobs import scheduled
 
-    monkeypatch.setattr(scheduled.sys, "platform", platform)
-    monkeypatch.setattr(subprocess, "CREATE_NO_WINDOW", 0x08000000, raising=False)
-
-    def run(command, **kwargs):
+    def run(command: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         assert command == ["rigw.exe", "jobs", "run"]
         assert kwargs == {
             "capture_output": True,
             "stdin": subprocess.DEVNULL,
             "creationflags": 0x08000000 if platform == "win32" else 0,
         }
-        return subprocess.CompletedProcess(command, 7)
+        return subprocess.CompletedProcess(list(command), 7)
 
-    monkeypatch.setattr(scheduled.tracing, "run", run)
-    assert scheduled._native(["rigw.exe", "jobs", "run"]) == 7
+    assert scheduled._native(["rigw.exe", "jobs", "run"], runner=run, platform=platform) == 7

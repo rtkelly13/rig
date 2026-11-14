@@ -17,20 +17,33 @@ from rig import tracing
 type Runner = Callable[[list[str]], int]
 
 
-def _native(command: list[str]) -> int:
-    return tracing.run(
+def _native(
+    command: list[str],
+    *,
+    runner: Callable[..., subprocess.CompletedProcess[str]] = tracing.run,
+    platform: str = sys.platform,
+) -> int:
+    return runner(
         command,
         capture_output=True,
         stdin=subprocess.DEVNULL,
-        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+        creationflags=0x08000000 if platform == "win32" else 0,
     ).returncode
 
 
-def main(argv: Sequence[str] | None = None, *, runner: Runner = _native) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    runner: Runner = _native,
+    file: Path | str | None = None,
+    running_copy: Callable[[str], bool] | None = None,
+) -> int:
     """Keep the original trigger and extra arguments, returning rigw's exit code."""
     arguments = list(sys.argv[1:] if argv is None else argv)
-    root = Path(__file__).resolve().parents[3]
-    publish = root / "rig" if runtime.running_copy(__file__) else root / "temp" / "jobs-runtime"
+    target_file = __file__ if file is None else str(file)
+    is_installed = (running_copy or runtime.running_copy)(target_file)
+    root = Path(target_file).resolve().parents[3]
+    publish = root / "rig" if is_installed else root / "temp" / "jobs-runtime"
     command = [str(publish / "rigw.exe"), "jobs", "run", "--scheduled"]
     if arguments:
         command.extend(["--trigger", *arguments])
