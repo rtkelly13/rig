@@ -189,7 +189,7 @@ public static partial class RepoHygiene
             return new("INVALID", false, File: file, Reason: "Missing 'root = true'");
         }
 
-        if (ReviewToolConfigs.IsDotnetRepo(repoPath) && !content.Contains("*.cs", StringComparison.Ordinal))
+        if (ReviewToolConfigs.IsDotnetRepo(repoPath) && !HasCSharpSection(content))
         {
             return new("PARTIAL", false, File: file, Reason: ".NET repository missing [*.cs] rules");
         }
@@ -586,6 +586,36 @@ public static partial class RepoHygiene
 
     private static bool HookIsCurrent(string content) => Runs(content, MainBlockMarker) && Runs(content, LfsHandoffMarker);
 
+    // A `.editorconfig` section names a glob; only one whose final path segment targets `.cs` applies C# rules.
+    // Searching the text for "*.cs" would also accept "[*.csproj]" and comments that merely mention C# files.
+    private static bool HasCSharpSection(string content) =>
+        EditorconfigSectionHeader().Matches(content).Any(match => TargetsCSharp(match.Groups["glob"].Value));
+
+    private static bool TargetsCSharp(string glob) =>
+        ExpandBraces(glob).Any(pattern =>
+            pattern[(pattern.LastIndexOf('/') + 1)..].EndsWith(".cs", StringComparison.OrdinalIgnoreCase));
+
+    // `{cs,vb}` alternatives in an EditorConfig glob, innermost group first.
+    private static IEnumerable<string> ExpandBraces(string glob)
+    {
+        var group = EditorconfigBraceGroup().Match(glob);
+        if (!group.Success)
+        {
+            yield return glob;
+            yield break;
+        }
+
+        var prefix = glob[..group.Index];
+        var suffix = glob[(group.Index + group.Length)..];
+        foreach (var alternative in group.Value[1..^1].Split(','))
+        {
+            foreach (var expanded in ExpandBraces(prefix + alternative + suffix))
+            {
+                yield return expanded;
+            }
+        }
+    }
+
     // Whether marker is on a line that runs: a hook that only mentions it in a comment guards nothing.
     private static bool Runs(string content, string marker) =>
         content.Split('\n').Select(line => line.TrimStart()).Any(line => !line.StartsWith('#') && line.Contains(marker, StringComparison.Ordinal));
@@ -619,6 +649,12 @@ public static partial class RepoHygiene
 
     [GeneratedRegex(@"(uses:\s+[""']?)([A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+)@([A-Za-z0-9_.-]+)(.*)", RegexOptions.CultureInvariant)]
     private static partial Regex UsesPattern();
+
+    [GeneratedRegex(@"(?m)^[ \t]*\[(?<glob>[^\]\r\n]+)\][ \t]*$", RegexOptions.CultureInvariant)]
+    private static partial Regex EditorconfigSectionHeader();
+
+    [GeneratedRegex(@"\{[^{}]*\}", RegexOptions.CultureInvariant)]
+    private static partial Regex EditorconfigBraceGroup();
 
     [GeneratedRegex("^[0-9a-fA-F]{40}$", RegexOptions.CultureInvariant)]
     private static partial Regex HexSha();

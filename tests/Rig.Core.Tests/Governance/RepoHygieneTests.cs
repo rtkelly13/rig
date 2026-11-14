@@ -314,6 +314,34 @@ public sealed class RepoHygieneTests : IDisposable
     }
 
     [Fact]
+    public void Editorconfig_csharp_rules_come_from_section_headers_not_substrings()
+    {
+        Put("global.json", "{}\n");
+
+        // A csproj section contains "*.cs" as a substring but does not apply to C# source files.
+        Put(".editorconfig", "root = true\n\n[*.csproj]\nindent_size = 2\n");
+        Assert.Equal("PARTIAL", RepoHygiene.InspectEditorconfig(Repo).Status);
+
+        Put(".editorconfig", "root = true\n\n[*.{csproj,props}]\nindent_size = 2\n");
+        Assert.Equal("PARTIAL", RepoHygiene.InspectEditorconfig(Repo).Status);
+
+        // Neither does a comment or property that merely mentions "*.cs".
+        Put(".editorconfig", "root = true\n\n[*]\n# C# files follow *.cs conventions\nindent_size = 4\n");
+        Assert.Equal("PARTIAL", RepoHygiene.InspectEditorconfig(Repo).Status);
+
+        Put(".editorconfig", "root = true\n\n[*.{cs,vb}]\nindent_size = 4\n");
+        Assert.Equal("CONFIGURED", RepoHygiene.InspectEditorconfig(Repo).Status);
+
+        Put(".editorconfig", "root = true\n\n[src/**/*.cs]\nindent_size = 4\n");
+        Assert.Equal("CONFIGURED", RepoHygiene.InspectEditorconfig(Repo).Status);
+
+        // Alignment replaces a .NET config that has no C# section rather than reporting it configured.
+        Put(".editorconfig", "root = true\n\n[*.csproj]\nindent_size = 2\n");
+        Assert.Equal("aligned", RepoHygiene.AlignEditorconfig(Repo, dryRun: false).Status);
+        Assert.Equal("CONFIGURED", RepoHygiene.InspectEditorconfig(Repo).Status);
+    }
+
+    [Fact]
     public void Missing_editorconfig_is_created_from_canonical_template()
     {
         Assert.Equal("MISSING", RepoHygiene.InspectEditorconfig(Repo).Status);
