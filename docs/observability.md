@@ -9,6 +9,7 @@ collector, or external service.
 | ----------------------------- | ---------------------------------------- |
 | Output file                   | `temp/traces/sdk/<tool>/<YYYY-MM-DD>.ndjson` (repo root) |
 | `SHARED_UTILITIES_TRACE_DIR`  | overrides `temp/traces/sdk`              |
+| `SHARED_UTILITIES_TRACE_HOME` | replaces only the default root           |
 | `SHARED_UTILITIES_TRACING=0`  | turns tracing off                        |
 
 Each line is one `resourceSpans` envelope (`service.name` = the tool). Each process
@@ -82,6 +83,51 @@ becomes `code: 2` with the status description as the message.
 
 Chrome spans keep the Python names (`chrome_tabs.<step>` under scope
 `desktop_manager.chrome`), so `chrome-tabs traces` reads either language's runs.
+
+## Inspecting traces (`rig traces`)
+
+`rig traces` reads the same day files and answers the questions a failed background session raises. It parses the
+JSON stream directly, so no embedded DuckDB is needed; the DuckDB recipe below remains for ad-hoc SQL.
+
+```bash
+rig traces runs [--limit 20] [--tool <service.name>] [--since 24h] [--errors-only]
+rig traces summary [--since 24h] [--json]
+```
+
+- `runs` lists the newest runs first: tool, root command, start, run duration, span count and failed-span count.
+  `--tool` keeps one `service.name`; `--since` keeps runs with a span that ended inside the window.
+- `--errors-only` keeps only runs with a failed span and, after the table, prints each failure's exact `traceId`,
+  `spanId`, `service.name`, span name, `process.command`, `process.cwd`, `process.exit_code` (or the C# root
+  span's `process.exit.code`), `process.stderr_snippet` and the most specific error message. A failure is a span
+  whose `status.code` is not 1 or whose traced process has a non-zero exit code.
+- `summary` counts runs, spans and failed spans, reports span and run duration `p50`/`p90`/`p99`, and breaks the
+  window down by tool and command, with the most recent errors.
+
+The folder is `temp/traces/sdk` in this checkout. `SHARED_UTILITIES_TRACE_DIR` replaces it, and
+`SHARED_UTILITIES_TRACE_HOME` replaces only the default, the same resolution `TraceFileWriter` uses. A missing
+folder, an empty file, a torn last line and a corrupt JSON line are skipped rather than failing the report; the
+same span written twice (an incomplete flush and its complete copy) is counted once, preferring the complete copy.
+
+### `rig traces summary --json`
+
+```json
+{
+  "root": "/code/personal/rig/temp/traces/sdk",
+  "since": "2026-03-03T10:30:00Z",
+  "window": "24h",
+  "runs": 2, "spans": 4, "failures": 2, "failure_rate": 0.5,
+  "durations_ms": { "p50": 1500.0, "p90": 3000.0, "p99": 3000.0 },
+  "run_durations_ms": { "p50": 2000.0, "p90": 3000.0, "p99": 3000.0 },
+  "tools": [ { "name": "estate", "runs": 1, "spans": 3, "failures": 0 } ],
+  "commands": [ { "name": "git status", "runs": 1, "spans": 2, "failures": 0 } ],
+  "errors": [ { "trace_id": "…", "span_id": "…", "tool": "desktop-manager", "span": "rig gh pr wait" } ]
+}
+```
+
+`since` is UTC, `failure_rate` is failed spans over all spans, and percentiles are nearest-rank milliseconds.
+`tools` and `commands` are ordered by spans, then failures, then name; `errors` is newest first. Every error
+also carries `command`, `cwd`, `exit_code`, `status_code`, `stderr`, `exception`, `exception_message` and
+`message`. An absent process fact is `null` (or an empty string for the snippets), never omitted.
 
 ## Querying traces (DuckDB)
 

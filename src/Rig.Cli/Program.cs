@@ -17,6 +17,7 @@ using Rig.Cli.Policy;
 using Rig.Cli.ReviewQueue;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
+using Rig.Cli.Traces;
 using Rig.Cli.Vault;
 using Rig.Cli.Web;
 using Rig.Cli.Workspace;
@@ -184,6 +185,13 @@ internal static class Program
                     Console.Out,
                     Console.Error).Build,
                 new StatusCommand(proc, git, Environment.CurrentDirectory, Console.Out).Build,
+                new TracesCommand(
+                    Path.Join(checkout, "temp", "traces", "sdk"),
+                    Environment.GetEnvironmentVariable,
+                    TimeProvider.System,
+                    TimeZoneInfo.Local,
+                    Console.Out,
+                    Console.Error).Build,
                 () => new ModelsCommand(new ModelDiscovery(proc, home, ProgramPath.Find), Console.Out).Build(),
                 new PolicyCommand(
                     new PolicyHost(Path.Join(checkout, "config", "cli-allowlists.json"), home, Path.Join(codeRoot, "personal"), OperatingSystem.IsWindows()),

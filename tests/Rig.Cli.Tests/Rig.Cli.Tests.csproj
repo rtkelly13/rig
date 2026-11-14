@@ -17,6 +17,7 @@
     <Compile Include="../Rig.Core.Tests/Fakes/FakeHttp.cs" Link="Fakes/FakeHttp.cs" />
     <Compile Include="../Rig.Core.Tests/Fakes/FakeVercel.cs" Link="Fakes/FakeVercel.cs" />
     <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="Fakes/TempDir.cs" />
+    <Compile Include="../Rig.Core.Tests/Observability/TraceFixtures.cs" Link="Fakes/TraceFixtures.cs" />
     <Compile Include="../Rig.Core.Tests/Otel/OtelFakes.cs" Link="Fakes/OtelFakes.cs" />
     <Compile Include="../Rig.Core.Tests/RepoTemp.cs" Link="Fakes/RepoTemp.cs" />
     <Compile Include="../Rig.Core.Tests/Policy/PolicyFiles.cs" Link="Fakes/PolicyFiles.cs" />
