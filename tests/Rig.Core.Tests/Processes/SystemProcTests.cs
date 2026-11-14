@@ -221,6 +221,29 @@ public sealed class SystemProcTests
     }
 
     [Fact]
+    public async Task Records_the_working_directory_it_runs_in()
+    {
+        using var dir = new TempDir();
+        using var spans = new RecordedSpans(SystemProc.Source.Name);
+
+        await _proc.RunAsync(new ProcRequest(["git", "--version"]) { WorkingDirectory = dir.Path }, TestContext.Current.CancellationToken);
+
+        var span = Assert.Single(spans.Stopped);
+        Assert.Equal(dir.Path, span.GetTagItem("process.cwd"));
+        Assert.Equal("git --version", span.GetTagItem("process.command_args"));
+    }
+
+    [Fact]
+    public void Records_this_process_s_working_directory_when_none_is_given()
+    {
+        using var spans = new RecordedSpans(SystemProc.Source.Name);
+
+        _ = _proc.Run(new ProcRequest(["git", "--version"]));
+
+        Assert.Equal(Environment.CurrentDirectory, Assert.Single(spans.Stopped).GetTagItem("process.cwd"));
+    }
+
+    [Fact]
     public void Run_captures_standard_output()
     {
         var ran = _proc.Run(new ProcRequest(["git", "--version"]));

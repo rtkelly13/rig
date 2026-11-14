@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics;
 using Rig.Cli.Agent;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Gh;
@@ -23,6 +24,9 @@ internal sealed class RigApp(
     AgentLauncher? agent = null,
     IReadOnlyList<Func<Command>>? gh = null)
 {
+    /// <summary>The trace source the root command span is recorded under.</summary>
+    public static readonly ActivitySource Source = new("Rig.Cli");
+
     /// <summary>What <c>rig --help</c> says rig is.</summary>
     public const string Description =
         "Developer rig: workspace management, AI agents and estate tooling. Commands marked (Python) still run in Python.";
@@ -80,15 +84,38 @@ internal sealed class RigApp(
     public bool HandsOver(IReadOnlyList<string> args) =>
         Forwarded.Owns(args, BuildRoot()) || (agent is not null && AgentLauncher.LauncherArgs(args) is not null);
 
-    /// <summary>Runs one command line and returns its exit code.</summary>
+    /// <summary>Runs one command line and returns its exit code, under a root span naming the command.</summary>
     public async Task<int> RunAsync(IReadOnlyList<string> args, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(args);
+        using var activity = Source.StartActivity($"rig {CommandName(args)}".Trim());
+        activity?.SetTag("cli.argv", args.ToArray());
+        activity?.SetTag("cli.cwd", Environment.CurrentDirectory);
+        activity?.SetTag("process.cwd", Environment.CurrentDirectory);
+
+        var code = await RunCommandAsync(args, cancellationToken).ConfigureAwait(false);
+        if (code != 0)
+        {
+            activity?.SetTag("process.exit.code", code);
+            activity?.SetStatus(ActivityStatusCode.Error);
+        }
+
+        return code;
+    }
+
+    // A bare rig, an agent shortcut flag or `rig agent` names the launcher's span; every other line names its command.
+    private static string CommandName(IReadOnlyList<string> args) =>
+        args.Count == 0 || args[0] == AgentLauncher.CommandName || AgentLauncher.ShortcutFlags.Contains(args[0])
+            ? AgentLauncher.CommandName
+            : args[0];
+
+    private async Task<int> RunCommandAsync(IReadOnlyList<string> args, CancellationToken cancellationToken)
+    {
         if (agent is not null && AgentLauncher.LauncherArgs(args) is { } launch)
         {
             // agent models lists the models the agents run: the ported models command.
             return launch.Count > 0 && launch[0] is "models" or "--models"
-                ? await RunAsync(["models", .. launch.Skip(1)], cancellationToken).ConfigureAwait(false)
+                ? await RunCommandAsync(["models", .. launch.Skip(1)], cancellationToken).ConfigureAwait(false)
                 : await agent.RunAsync(launch).ConfigureAwait(false);
         }
 
