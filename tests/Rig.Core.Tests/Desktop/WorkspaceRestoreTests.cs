@@ -445,6 +445,9 @@ public sealed class WorkspaceRestoreTests
     public void Restore_traces_its_run()
     {
         var seen = new List<Activity>();
+        // Initialise the source before the listener reads it: building StepTimer's ActivitySource otherwise re-enters
+        // this listener while the static field is still null, and a parallel class's first source throws here.
+        _ = StepTimer.Source;
         using var listener = new ActivityListener
         {
             ShouldListenTo = source => source.Name == StepTimer.Source.Name,
