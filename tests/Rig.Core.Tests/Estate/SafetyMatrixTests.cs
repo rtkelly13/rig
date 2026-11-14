@@ -17,7 +17,9 @@ namespace Rig.Core.Tests.Estate;
 /// </para>
 /// <para>
 /// Known gaps are listed in <see cref="Gaps"/>. A gap cell confirms the gap still happens and is then skipped, so it
-/// shows in every run; once it stops happening the cell fails until its row comes out. Part of #30 F7.
+/// shows in every run; once it stops happening the cell fails until its row comes out. #216 closed every row #99 found:
+/// the cells are now ordinary assertions through <see cref="WorktreeRemovalJudge"/>, the production decision each
+/// command uses. Part of #30 F7.
 /// </para>
 /// </remarks>
 public sealed class SafetyMatrixTests : IDisposable
@@ -86,13 +88,6 @@ public sealed class SafetyMatrixTests : IDisposable
         Safe = 2, // on disk as planted, or reachable from a ref in some repo
     }
 
-    private const string GapIgnored = "#99 1: ignored, non-regenerable files go with `git worktree remove`; only shelve checks them";
-    private const string GapReclaim = "#99 3: reclaim has no unborn or foreign-owner guard of its own; only git's validation stops it";
-    private const string GapShelve = "#99 3: shelve has no foreign-owner guard; it crashes on the null SHA, by luck";
-    private const string GapBusy = "#99 2: no process-based in-use check outside tidy (shelve reads mtimes, and an idle of 0 drops even that)";
-    private const string GapReflog = "#99 5: a commit only the reflog names is not counted as local work, and deleting the branch drops it";
-    private const string GapLocked = "#99 4: a lock is left to git's refusal, reported as failed; only shelve treats it as a decision";
-
     private static readonly string[] Scenarios =
         ["finished", "dirty", "ignored_build", "ignored_notes", "unborn", "foreign", "busy", "locked", "reflog_only", "reflog_only_pushed", "relative"];
 
@@ -103,21 +98,11 @@ public sealed class SafetyMatrixTests : IDisposable
     /// <summary>What each cell must do; cells absent here are <see cref="Expect.Safe"/>.</summary>
     private static readonly Dictionary<(string Scenario, string Entry), Expect> Expected = Build();
 
-    /// <summary>Known gaps: the failure each still produces, and why. Fixing one fails its cell until the row goes.</summary>
-    private static readonly Dictionary<(string Scenario, string Entry), (Failure Failure, string Why)> Gaps = new()
-    {
-        [("ignored_notes", "tidy")] = (Failure.CanaryLost, GapIgnored),
-        [("ignored_notes", "reclaim")] = (Failure.CanaryLost, GapIgnored),
-        [("unborn", "reclaim")] = (Failure.NotGuarded, GapReclaim),
-        [("foreign", "shelve")] = (Failure.NotGuarded, GapShelve),
-        [("foreign", "reclaim")] = (Failure.NotGuarded, GapReclaim),
-        [("busy", "shelve")] = (Failure.CanaryLost, GapBusy),
-        [("busy", "reclaim")] = (Failure.CanaryLost, GapBusy),
-        [("reflog_only", "tidy")] = (Failure.CanaryLost, GapReflog),
-        [("reflog_only_pushed", "shelve")] = (Failure.CanaryLost, GapReflog),
-        [("locked", "tidy")] = (Failure.NotGuarded, GapLocked),
-        [("locked", "reclaim")] = (Failure.NotGuarded, GapLocked),
-    };
+    /// <summary>
+    /// Known gaps: the failure each still produces, and why. Fixing one fails its cell until the row goes. Every cell
+    /// #99 found is now guarded by <see cref="WorktreeRemovalJudge"/>, so no row remains.
+    /// </summary>
+    private static readonly Dictionary<(string Scenario, string Entry), (Failure Failure, string Why)> Gaps = [];
 
     /// <summary>Every scenario × entry point.</summary>
     public static TheoryData<string, string> Cells()
@@ -176,14 +161,12 @@ public sealed class SafetyMatrixTests : IDisposable
                 expected[(scenario, entry)] = Expect.Removes;
             }
 
-            foreach (var scenario in new[] { "unborn", "foreign", "locked" })
+            foreach (var scenario in new[] { "unborn", "foreign", "locked", "busy", "ignored_notes", "reflog_only", "reflog_only_pushed" })
             {
                 expected[(scenario, entry)] = Expect.Guarded;
             }
         }
 
-        expected[("busy", "tidy")] = Expect.Guarded;
-        expected[("ignored_notes", "shelve")] = Expect.Guarded;
         expected[("ignored_build", "trim")] = Expect.Trims;
         return expected;
     }
@@ -485,7 +468,8 @@ public sealed class SafetyMatrixTests : IDisposable
                 await shelver.ShelfUserAsync(world.Clone),
                 await new ShelfStore(git).RemoteShelvesAsync(world.Clone),
                 MergedPr(world),
-                new ShelveOptions(TimeSpan.Zero));
+                new ShelveOptions(TimeSpan.Zero),
+                new Busy([.. world.Busy]));
             result = await shelver.ApplyAsync(plan);
         }
         catch (InvalidOperationException)
@@ -510,7 +494,7 @@ public sealed class SafetyMatrixTests : IDisposable
             return Layer.Untouched;
         }
 
-        var status = await reclaim.ApplyAsync(world.Clone, entry, apply: true, force: true, new TreeRemoval(Repos.Proc), Token);
+        var status = await reclaim.ApplyAsync(world.Clone, entry, apply: true, force: true, new TreeRemoval(Repos.Proc), new Busy([.. world.Busy]), Token);
         return status switch
         {
             "removed" => Layer.Kept,

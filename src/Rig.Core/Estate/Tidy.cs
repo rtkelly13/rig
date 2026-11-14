@@ -80,6 +80,8 @@ public sealed class Tidy(Git git, TreeRemoval removal)
     // A worktree holding a large node_modules takes a while to delete.
     private static readonly TimeSpan RemoveTimeout = TimeSpan.FromMinutes(10);
 
+    private readonly GitWorktreePort _worktrees = new(git);
+
     /// <summary>Acts on the actionable findings in <paramref name="report"/>.</summary>
     /// <param name="report">From <see cref="RepoChecks.InspectAsync"/>.</param>
     /// <param name="apply">Delete; otherwise say what would go.</param>
@@ -192,9 +194,28 @@ public sealed class Tidy(Git git, TreeRemoval removal)
         var resolved = PathResolution.Resolve(path);
         var trees = await Worktree.ListAsync(git, repo).ConfigureAwait(false);
         var tree = trees.FirstOrDefault(t => !t.IsMain && PathResolution.Same(PathResolution.Resolve(t.Path), resolved));
-        if (await RefusalAsync(repo, path, tree, force, busy).ConfigureAwait(false) is { Length: > 0 } refusal)
+        if (tree is null && Guard(repo, path) is { Length: > 0 } outside)
         {
-            return new TidyAction(finding.Check, path, TidyOutcome.Refused, refusal);
+            return new TidyAction(finding.Check, path, TidyOutcome.Refused, outside);
+        }
+
+        var facts = tree is null ? null : await ReadFactsAsync(repo, tree, busy, cancellationToken).ConfigureAwait(false);
+        if (Refusal(facts, force) is { Length: > 0 } refused)
+        {
+            return new TidyAction(finding.Check, path, TidyOutcome.Refused, refused);
+        }
+
+        if (busy?.Refusal(path, force) is { Length: > 0 } inUse)
+        {
+            return new TidyAction(finding.Check, path, TidyOutcome.Refused, inUse);
+        }
+
+        var dirty = facts is not null
+            ? facts.HasUncommittedChanges
+            : (await git.LinesAsync(path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 };
+        if (!force && dirty)
+        {
+            return new TidyAction(finding.Check, path, TidyOutcome.Refused, "uncommitted changes");
         }
 
         var orphaned = force ? 0 : await OrphanedAsync(path, "HEAD").ConfigureAwait(false);
@@ -209,6 +230,11 @@ public sealed class Tidy(Git git, TreeRemoval removal)
             return new TidyAction(finding.Check, path, TidyOutcome.Refused, holds);
         }
 
+        if (Unrecorded(facts) is { Length: > 0 } unrecorded)
+        {
+            return new TidyAction(finding.Check, path, TidyOutcome.Refused, unrecorded);
+        }
+
         if (!apply)
         {
             return new TidyAction(finding.Check, path, TidyOutcome.WouldClean, $"git worktree remove {path}");
@@ -218,44 +244,49 @@ public sealed class Tidy(Git git, TreeRemoval removal)
         return new TidyAction(finding.Check, path, ran.Ok ? TidyOutcome.Cleaned : TidyOutcome.Failed, Said(ran, "removed"));
     }
 
-    // Why a worktree may not go, before its commits and contents are judged; empty when nothing here refuses it.
-    private async Task<string> RefusalAsync(string repo, string path, Worktree? tree, bool force, Busy? busy)
+    // The shared decision plus this command's policy: a worktree goes only when it holds nothing a flag did not agree
+    // to lose. --force covers commits a coverage proof already placed on a remote; it never clears a hard reason.
+    private static string Refusal(WorktreeFacts? facts, bool force)
     {
-        if (tree is null)
+        if (facts is null)
         {
-            if (Guard(repo, path) is { Length: > 0 } outside)
-            {
-                return outside;
-            }
-        }
-        else
-        {
-            // Ownership first: a copied registry entry usually reads as unborn too, and "another clone's" is what matters.
-            var common = await git.OutAsync(repo, "rev-parse", "--path-format=absolute", "--git-common-dir").ConfigureAwait(false);
-            if (common.Length == 0)
-            {
-                return "cannot read this clone's git dir";
-            }
-
-            if (RepoChecks.ForeignAdminDir(tree.Path, Path.Join(common, "worktrees")) is not null)
-            {
-                return "belongs to another clone — see worktree-foreign-owner";
-            }
-
-            if (tree.Unborn)
-            {
-                return "unborn HEAD — see worktree-unborn-head";
-            }
+            return string.Empty;
         }
 
-        if (busy?.Refusal(path, force) is { Length: > 0 } inUse)
-        {
-            return inUse;
-        }
-
-        return !force && (await git.LinesAsync(path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 }
-            ? "uncommitted changes"
+        var reasons = WorktreeRemovalJudge.Judge(facts, new RemovalPolicy(DiscardUnpushedCommits: force)).Reasons;
+        return facts.OwnershipUnreadable ? "cannot read this clone's git dir"
+            : reasons.Contains(RemovalRefusalReason.ForeignClone) ? "belongs to another clone — see worktree-foreign-owner"
+            : reasons.Contains(RemovalRefusalReason.UnbornHead) ? "unborn HEAD — see worktree-unborn-head"
+            : reasons.Contains(RemovalRefusalReason.Locked) ? (facts.LockReason.Length > 0 ? $"locked: {facts.LockReason}" : "locked")
+            : reasons.Contains(RemovalRefusalReason.InUse) ? "a process is working in it (a shell, agent or Orca terminal)"
             : string.Empty;
+    }
+
+    // What only this worktree holds: ignored notes, then commits only a reflog names. Checked after a nested worktree or
+    // checkout, so a clone inside its ignored temp/ is reported as what it is.
+    private static string Unrecorded(WorktreeFacts? facts)
+    {
+        if (facts is null)
+        {
+            return string.Empty;
+        }
+
+        if (facts.HasIgnoredNotes)
+        {
+            var shown = string.Join(", ", facts.IgnoredNotes.Take(3));
+            var more = facts.IgnoredNotes.Count > 3 ? " …" : string.Empty;
+            return $"holds ignored files that do not regenerate: {shown}{more} — keep them or remove them yourself";
+        }
+
+        return facts.ReflogUnreadable ? "cannot read its reflog, so commits only it knows about may be lost"
+            : facts.ReflogOnlyCommitCount > 0 ? $"{facts.ReflogOnlyCommitCount} commit(s) only a reflog names — push or keep the worktree"
+            : string.Empty;
+    }
+
+    private async Task<WorktreeFacts> ReadFactsAsync(string repo, Worktree tree, Busy? busy, CancellationToken cancellationToken)
+    {
+        var facts = await _worktrees.ReadAsync(repo, tree, cancellationToken).ConfigureAwait(false);
+        return facts with { InUse = busy?.WorkingIn(facts.Path) ?? false };
     }
 
     // git deletes a worktree's ignored files with it: a worktree, a clone or another repository's worktree in its temp/

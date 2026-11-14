@@ -48,21 +48,21 @@ public sealed class OrcaWorktreesTests : IDisposable
     {
         var facts = rule switch
         {
-            "current" => new WorktreeFacts(true, true, IsCurrent: true, Pr: MergedPr),
-            "busy" => new WorktreeFacts(true, true, BusyAgents: 1, Pr: MergedPr),
-            "missing" => new WorktreeFacts(false, false),
-            "leftover" => new WorktreeFacts(true, false, LeftoverMatches: true),
-            "leftover-differs" => new WorktreeFacts(true, false, LeftoverMatches: false),
-            "foreign" => new WorktreeFacts(true, true, Foreign: true, Pr: MergedPr),
-            "dirty" => new WorktreeFacts(true, true, Dirty: true, Pr: MergedPr),
-            "pr-unknown" => new WorktreeFacts(true, true, PrKnown: false, InDefault: true, IdleDays: 30),
-            "merged" => new WorktreeFacts(true, true, Pr: MergedPr),
-            "after-merge" => new WorktreeFacts(true, true, Pr: MergedPr, BeyondMerge: 2),
-            "open-pr" => new WorktreeFacts(true, true, Pr: MergedPr with { State = "OPEN" }),
-            "closed-pr" => new WorktreeFacts(true, true, Pr: MergedPr with { State = "CLOSED" }),
-            "unmerged" => new WorktreeFacts(true, true, InDefault: false, IdleDays: 30),
-            "recent" => new WorktreeFacts(true, true, InDefault: true, IdleDays: 0.5),
-            _ => new WorktreeFacts(true, true, InDefault: true, IdleDays: 3),
+            "current" => new OrcaWorktreeFacts(true, true, IsCurrent: true, Pr: MergedPr),
+            "busy" => new OrcaWorktreeFacts(true, true, BusyAgents: 1, Pr: MergedPr),
+            "missing" => new OrcaWorktreeFacts(false, false),
+            "leftover" => new OrcaWorktreeFacts(true, false, LeftoverMatches: true),
+            "leftover-differs" => new OrcaWorktreeFacts(true, false, LeftoverMatches: false),
+            "foreign" => new OrcaWorktreeFacts(true, true, Foreign: true, Pr: MergedPr),
+            "dirty" => new OrcaWorktreeFacts(true, true, Dirty: true, Pr: MergedPr),
+            "pr-unknown" => new OrcaWorktreeFacts(true, true, PrKnown: false, InDefault: true, IdleDays: 30),
+            "merged" => new OrcaWorktreeFacts(true, true, Pr: MergedPr),
+            "after-merge" => new OrcaWorktreeFacts(true, true, Pr: MergedPr, BeyondMerge: 2),
+            "open-pr" => new OrcaWorktreeFacts(true, true, Pr: MergedPr with { State = "OPEN" }),
+            "closed-pr" => new OrcaWorktreeFacts(true, true, Pr: MergedPr with { State = "CLOSED" }),
+            "unmerged" => new OrcaWorktreeFacts(true, true, InDefault: false, IdleDays: 30),
+            "recent" => new OrcaWorktreeFacts(true, true, InDefault: true, IdleDays: 0.5),
+            _ => new OrcaWorktreeFacts(true, true, InDefault: true, IdleDays: 3),
         };
 
         Assert.Equal(verdict, OrcaWorktrees.Decide(facts, idleDays: 2).Verdict);

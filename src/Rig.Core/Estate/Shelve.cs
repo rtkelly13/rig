@@ -194,6 +194,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     private static readonly string[] AddAll = ["add", "-A", "--", "."];
 
     private readonly ShelfStore _store = new(git);
+    private readonly GitWorktreePort _worktrees = new(git);
 
     // ------------------------------------------------------------------ naming and the commit message
 
@@ -463,13 +464,15 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// <param name="shelves">The shelves already on origin, <c>{ref: sha}</c>.</param>
     /// <param name="prs">Each branch's PR.</param>
     /// <param name="options">The flags.</param>
+    /// <param name="busy">The run's process snapshot; null skips the in-use check.</param>
     public async Task<ShelvePlan> PlanAsync(
         string clone,
         Worktree tree,
         string user,
         IReadOnlyDictionary<string, string> shelves,
         IReadOnlyDictionary<string, PullRequest> prs,
-        ShelveOptions options)
+        ShelveOptions options,
+        Busy? busy = null)
     {
         ArgumentNullException.ThrowIfNull(tree);
         ArgumentNullException.ThrowIfNull(shelves);
@@ -502,6 +505,39 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         {
             plan.Pr = pr.Number;
             plan.PrState = pr.State;
+        }
+
+        // The same hard reasons every removal command refuses. The soft ones are not mapped: a shelf writes the working
+        // tree to a ref instead of dropping it, and --include-ignored/--discard-ignored decides the ignored paths below.
+        var facts = await _worktrees.ReadAsync(clone, tree).ConfigureAwait(false);
+        var decision = WorktreeRemovalJudge.Judge(
+            facts with { InUse = busy?.WorkingIn(path) ?? false },
+            RemovalPolicy.Strict);
+        if (facts.OwnershipUnreadable)
+        {
+            plan.DecisionNeeded.Add("cannot read this clone's git dir");
+        }
+
+        if (decision.Reasons.Contains(RemovalRefusalReason.InUse))
+        {
+            plan.DecisionNeeded.Add("a process is working in it (a shell, agent or Orca terminal)");
+        }
+
+        if (decision.Reasons.Contains(RemovalRefusalReason.ForeignClone))
+        {
+            plan.DecisionNeeded.Add("belongs to another clone — see worktree-foreign-owner");
+        }
+
+        if (decision.Reasons.Contains(RemovalRefusalReason.UnbornHead))
+        {
+            plan.DecisionNeeded.Add("unborn HEAD — see worktree-unborn-head");
+        }
+
+        if (decision.Reasons.Contains(RemovalRefusalReason.ReflogOnlyCommit))
+        {
+            plan.DecisionNeeded.Add(facts.ReflogUnreadable
+                ? "cannot read its reflog, so commits only it knows about may be lost"
+                : $"{facts.ReflogOnlyCommitCount} commit(s) only a reflog names — push or keep the worktree");
         }
 
         if (status.Error.Length > 0)
