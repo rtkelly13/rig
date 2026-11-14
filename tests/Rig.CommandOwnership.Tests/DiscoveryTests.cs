@@ -11,6 +11,18 @@ namespace Rig.CommandOwnership.Tests;
 public sealed class DiscoveryTests
 {
     [Fact]
+    public void The_windowless_launcher_must_only_pass_the_whole_line_to_the_inspected_cli()
+    {
+        const string launcher = "namespace Rig.Launcher; internal static class Launcher { private static Task<int> Main(string[] args) => Cli.Program.Main(args); }";
+        Discovery.CheckLauncher(launcher);
+
+        Assert.Throws<InvalidOperationException>(() => Discovery.CheckLauncher(launcher.Replace("Main(args)", "Main([])", StringComparison.Ordinal)));
+        Assert.Throws<InvalidOperationException>(() => Discovery.CheckLauncher(launcher.Replace("private static Task", "static int Extra = StartSomething(); private static Task", StringComparison.Ordinal)));
+        Assert.Throws<InvalidOperationException>(() => Discovery.CheckLauncher("using Cli = Other.Cli; " + launcher));
+        Assert.Throws<InvalidOperationException>(() => Discovery.CheckLauncher(launcher.Replace("Rig.Launcher", "Other.Launcher", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void New_executable_projects_mains_and_file_apps_are_discovered_and_refused()
     {
         using var temp = new TempDir();

@@ -10,6 +10,9 @@ public sealed class FakeProc : IProc
     /// <summary>Every request, in the order it was made.</summary>
     public List<ProcRequest> Requests { get; } = [];
 
+    /// <summary>Observes transient inputs, such as task XML, while the fake process is running.</summary>
+    public Action<ProcRequest>? BeforeRun { get; init; }
+
     /// <summary>What an unanswered command gets.</summary>
     public Ran Unanswered { get; set; } = new(Ran.NotFound, string.Empty, "no fake answer");
 
@@ -31,6 +34,7 @@ public sealed class FakeProc : IProc
     public Ran Run(ProcRequest request)
     {
         Requests.Add(request);
+        BeforeRun?.Invoke(request);
         var match = _answers.FirstOrDefault(a =>
             (a.WorkingDirectory is null || a.WorkingDirectory == request.WorkingDirectory) && request.Argv.Take(a.Prefix.Count).SequenceEqual(a.Prefix));
         return match.Answer ?? Unanswered;

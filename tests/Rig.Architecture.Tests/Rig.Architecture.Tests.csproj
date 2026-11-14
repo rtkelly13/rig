@@ -4,5 +4,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Core/Rig.Core.csproj" />
+    <ProjectReference Include="../../src/Rig.Launcher/Rig.Launcher.csproj" />
   </ItemGroup>
 </Project>

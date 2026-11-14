@@ -216,7 +216,6 @@ ignore = [
 # Removed by G4 (migrate onto rig.tracing.run):
 "src/desktop_manager/app_updates.py" = ["TID251"]
 "src/desktop_manager/cli_machine.py" = ["TID251"]  # raw git rev-parse: move onto rig.proc.git
-"src/desktop_manager/jobs/install.py" = ["TID251"]
 "src/desktop_manager/jobs/runner.py" = ["TID251"]
 "src/desktop_manager/launching.py" = ["TID251"]
 "src/desktop_manager/restore_fallbacks.py" = ["TID251"]

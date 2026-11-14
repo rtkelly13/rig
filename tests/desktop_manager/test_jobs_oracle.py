@@ -1,5 +1,5 @@
-"""`rig jobs status|last|log|run` run in C# (Rig.Core.Jobs); the scheduled tasks' Python runner, the web page and the
-MCP still read and write these files.
+"""`rig jobs status|last|log|run` run in C# (Rig.Core.Jobs); the Python web page and MCP
+still read and write these files.
 
 `jobs-oracle.json` is what Python makes of a fixed set of inputs: the registry for a synthetic environment, the
 exact bytes `write_state` and `write_run` produce, what `read_state` and `read_run` keep from damaged files, which

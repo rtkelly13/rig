@@ -12,10 +12,18 @@ public sealed class JobsCommandTests : IDisposable
     private static readonly DateTimeOffset Now = new(2026, 11, 12, 9, 0, 0, TimeSpan.Zero);
 
     private readonly TempDir _temp = new();
-    private readonly StringWriter _out = new();
+    private readonly StringWriter _out = new() { NewLine = "\n" };
     private readonly FakeExecutor _executor = new();
     private double _idle = double.PositiveInfinity;
     private bool _held;
+    private bool _shellReady = true;
+    private Func<IReadOnlyDictionary<string, bool>> _flags = () => new Dictionary<string, bool>();
+    private readonly List<string> _tracing = [];
+    private readonly List<TimeSpan> _shellWaits = [];
+
+    private string TracesDir => Path.Join(_temp.Path, "traces");
+
+    private string CoordinatorLog => Path.Join(_temp.Path, ScheduledRun.LogName);
 
     public void Dispose()
     {
@@ -41,7 +49,7 @@ public sealed class JobsCommandTests : IDisposable
             + "daily  logon, tick (daily)  Thu 08:00 (12s)  ok: 3 moved  not due (daily)\n"
             + "never  logon (every-run)    -                -            not on tick\n"
             + "\nevery failed; the end of its output:\n  | boom\n  | bang\n"
-            + $"Not registered: {CoordinatorTasks.Guard}. Run `desktop-manager jobs install`.\n"
+            + $"Not registered: {CoordinatorTasks.Guard}. Run `rig jobs install`.\n"
             + $"Logs: {Path.Join(_temp.Path, "logs")}\n",
             _out.ToString());
     }
@@ -60,6 +68,84 @@ public sealed class JobsCommandTests : IDisposable
     public async Task Status_rejects_a_trigger_that_is_not_one()
     {
         Assert.NotEqual(0, await Run(null, "status", "--trigger", "hourly"));
+    }
+
+    [Fact]
+    public async Task Uninstall_attempts_each_coordinator_task_and_reports_missing_tasks()
+    {
+        var tasks = new FakeTasks(CoordinatorTasks.Tick);
+
+        Assert.Equal(0, await Run(tasks, "uninstall"));
+
+        Assert.Equal(CoordinatorTasks.All, tasks.Deleted);
+        Assert.Equal($"Removed {CoordinatorTasks.Logon}\nNot registered {CoordinatorTasks.Tick}\nRemoved {CoordinatorTasks.Guard}\n", _out.ToString());
+        Assert.Empty(_executor.Ran);
+    }
+
+    [Fact]
+    public async Task Uninstall_requires_windows_but_its_help_is_portable()
+    {
+        var root = new RootCommand { new JobsCommand(Host(null), _out).Build() };
+        Assert.Equal(0, await root.Parse(["jobs", "uninstall", "--help"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken));
+        _out.GetStringBuilder().Clear();
+
+        Assert.Equal(1, await Run(null, "uninstall"));
+        Assert.Equal("jobs uninstall requires Windows.\n", _out.ToString());
+    }
+
+    [Theory]
+    [InlineData(new string[0], true)]
+    [InlineData(new[] { "--start" }, true)]
+    [InlineData(new[] { "--no-start" }, false)]
+    public async Task Install_registers_all_tasks_before_retiring_old_tasks_and_optionally_starting_the_guard(string[] options, bool start)
+    {
+        var tasks = new FakeTasks("Chrome Tabs Prune");
+
+        Assert.Equal(0, await Run(tasks, ["install", .. options]));
+
+        Assert.Equal(CoordinatorTasks.All, tasks.Registered);
+        Assert.Equal(CoordinatorTasks.Retired, tasks.Deleted);
+        Assert.Equal(start ? [CoordinatorTasks.Guard] : Array.Empty<string>(), tasks.Started);
+        Assert.Contains($"Registered {CoordinatorTasks.Guard}\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Retired Workspace Restore\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Retired Chrome Tabs Prune", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Runs from: rigw.exe\nPlan: plan.json\n", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_registration_failure_keeps_the_standalone_tasks_and_does_not_start_the_guard()
+    {
+        var tasks = new FakeTasks { FailAt = CoordinatorTasks.Tick };
+
+        Assert.Equal(1, await Run(tasks, "install"));
+
+        Assert.Equal([CoordinatorTasks.Logon], tasks.Registered);
+        Assert.Empty(tasks.Deleted);
+        Assert.Empty(tasks.Started);
+        Assert.Contains("registration refused", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_target_validation_failure_changes_no_tasks()
+    {
+        var tasks = new FakeTasks();
+        var host = Host(tasks) with { InstallTarget = _ => throw new InvalidOperationException("missing rigw") };
+
+        Assert.Equal(1, await new JobsCommand(host, _out).Build().Parse(["install"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken));
+
+        Assert.Empty(tasks.Registered);
+        Assert.Empty(tasks.Deleted);
+        Assert.Empty(tasks.Started);
+        Assert.Equal("missing rigw\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_requires_windows()
+    {
+        Assert.Equal(1, await Run(null, "install"));
+        Assert.Equal("jobs install requires Windows.\n", _out.ToString());
     }
 
     [Fact]
@@ -199,6 +285,124 @@ public sealed class JobsCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task A_plain_run_traces_its_jobs_and_never_rotates_the_coordinator_log_or_prunes_traces()
+    {
+        BigCoordinatorLog();
+        OldAndNewTraces();
+
+        var exit = await Run(null, "run", "--trigger", "logon");
+
+        Assert.Equal(0, exit);
+        Assert.Equal(["daily", "never"], _executor.Ran);
+        Assert.Equal(["start", "written"], _tracing);
+        Assert.Contains("run  daily (", _out.ToString(), StringComparison.Ordinal);
+        Assert.Equal(ScheduledRun.LogLimitBytes + 1, new FileInfo(CoordinatorLog).Length);
+        Assert.False(File.Exists(CoordinatorLog + ".1"));
+        Assert.True(File.Exists(Path.Join(TracesDir, "tool", "old.ndjson")));
+        Assert.Empty(_shellWaits);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_scheduled_run_logs_while_another_run_holds_the_coordinator_log_open(bool rotate)
+    {
+        if (rotate)
+        {
+            BigCoordinatorLog();
+        }
+
+        using (HoldCoordinatorLog())
+        {
+            Assert.Equal(0, await Run(null, "run", "--trigger", "logon", "--scheduled"));
+        }
+
+        var logged = Directory.GetFiles(_temp.Path, ScheduledRun.LogName + "*").SelectMany(Lines);
+        Assert.Contains(logged, line => line.Contains("[logon-20261112-090000] run  daily (", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_scheduled_run_still_reaches_the_lock_when_log_rotation_fails()
+    {
+        BigCoordinatorLog();
+        Directory.CreateDirectory(CoordinatorLog + ".1");
+        _held = true;
+
+        Assert.Equal(0, await Run(null, "run", "--scheduled"));
+
+        Assert.Empty(_executor.Ran);
+        Assert.Contains(Lines(CoordinatorLog), line => line.Contains("skipping this tick run", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_dry_run_starts_no_tracing()
+    {
+        Assert.Equal(0, await Run(null, "run", "--dry-run", "--scheduled"));
+
+        Assert.Empty(_tracing);
+        Assert.False(File.Exists(CoordinatorLog));
+    }
+
+    [Fact]
+    public async Task A_scheduled_logon_run_waits_for_the_shell_prunes_old_traces_and_narrates_to_a_rotated_coordinator_log()
+    {
+        BigCoordinatorLog();
+        OldAndNewTraces();
+        _shellReady = false;
+
+        var exit = await Run(null, "run", "--trigger", "logon", "--scheduled");
+
+        Assert.Equal(0, exit);
+        Assert.Empty(_out.ToString());
+        Assert.Equal([ScheduledRun.ShellTimeout], _shellWaits);
+        Assert.Equal(["start", "written"], _tracing);
+        Assert.Equal(ScheduledRun.LogLimitBytes + 1, new FileInfo(CoordinatorLog + ".1").Length);
+        var lines = Lines(CoordinatorLog);
+        Assert.Equal("2026-11-12 09:00:00 [logon-20261112-090000] shell probe timed out; continuing", lines[0]);
+        Assert.Equal("2026-11-12 09:00:00 [logon-20261112-090000] pruned 1 trace file(s) older than 14 days", lines[1]);
+        Assert.Contains(lines, line => line.StartsWith("2026-11-12 09:00:00 [logon-20261112-090000] run  daily (", StringComparison.Ordinal));
+        Assert.False(File.Exists(Path.Join(TracesDir, "tool", "old.ndjson")));
+        Assert.True(File.Exists(Path.Join(TracesDir, "tool", "new.ndjson")));
+        Assert.True(File.Exists(Path.Join(TracesDir, "old.txt")));
+        Assert.Contains("[logon-20261112-090000]", string.Join("\n", Lines(JobState.LogPath(JobState.LogsDir(_temp.Path), "daily"))), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_scheduled_tick_run_neither_waits_nor_prunes_and_a_crash_is_logged_and_exits_one()
+    {
+        OldAndNewTraces();
+        _flags = () => throw new InvalidOperationException("no flags");
+
+        var exit = await Run(null, "run", "--scheduled");
+
+        Assert.Equal(1, exit);
+        Assert.Empty(_shellWaits);
+        Assert.True(File.Exists(Path.Join(TracesDir, "tool", "old.ndjson")));
+        Assert.StartsWith(
+            "2026-11-12 09:00:00 [tick-20261112-090000] Jobs coordinator run crashed (trigger tick): System.InvalidOperationException: no flags",
+            Lines(CoordinatorLog)[0],
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_scheduled_logon_run_reports_a_ready_shell_and_no_prune_when_there_are_no_traces()
+    {
+        Assert.Equal(0, await Run(null, "run", "--trigger", "logon", "--scheduled", "--only", "never"));
+
+        var lines = Lines(CoordinatorLog);
+        Assert.Equal("2026-11-12 09:00:00 [logon-20261112-090000] Explorer shell ready", lines[0]);
+        Assert.Contains("2026-11-12 09:00:00 [logon-20261112-090000] run  never (requested)", lines);
+    }
+
+    [Fact]
+    public void The_scheduled_flag_is_hidden_from_help()
+    {
+        var run = new JobsCommand(Host(null), _out).Build().Subcommands.Single(command => command.Name == "run");
+
+        Assert.True(run.Options.Single(option => option.Name == "--scheduled").Hidden);
+    }
+
+    [Fact]
     public async Task Run_refuses_jobs_the_registry_does_not_have()
     {
         Assert.Equal(JobsCommand.UnknownExit, await Run(null, "run", "--only", "zed", "--only", "every", "--only", "abc"));
@@ -211,10 +415,10 @@ public sealed class JobsCommandTests : IDisposable
     [InlineData(new[] { "jobs", "last", "--trigger", "tick" }, false)]
     [InlineData(new[] { "jobs", "log", "align" }, false)]
     [InlineData(new[] { "jobs", "run", "--trigger", "tick" }, false)]
-    [InlineData(new[] { "jobs", "install" }, true)]
-    [InlineData(new[] { "jobs", "uninstall" }, true)]
-    [InlineData(new[] { "jobs" }, true)]
-    public void Only_the_installers_still_go_to_python(string[] args, bool python)
+    [InlineData(new[] { "jobs", "install" }, false)]
+    [InlineData(new[] { "jobs", "uninstall" }, false)]
+    [InlineData(new[] { "jobs" }, false)]
+    public void Jobs_never_goes_to_python(string[] args, bool python)
     {
         var root = new RootCommand { new JobsCommand(Host(null), _out).Build() };
 
@@ -231,17 +435,53 @@ public sealed class JobsCommandTests : IDisposable
     private JobsHost Host(IScheduledTasks? tasks) => new(
         _temp.Path,
         Registry,
-        () => new Dictionary<string, bool>(),
+        () => _flags(),
         new FixedTime(Now),
         now => now - TimeSpan.FromHours(1),
         tasks,
         _executor,
         () => _idle,
-        (_, _) => _held ? null : new MemoryStream());
+        (_, _) => _held ? null : new MemoryStream(),
+        () =>
+        {
+            _tracing.Add("start");
+            return new Disposer(() => _tracing.Add("written"));
+        },
+        timeout =>
+        {
+            _shellWaits.Add(timeout);
+            return _shellReady;
+        },
+        TracesDir,
+        _ => Task.FromResult(new JobsInstallTarget(_temp.Path, "plan.json", "rigw.exe")),
+        () => "CORP\\me & you");
 
     private Task<int> Run(IScheduledTasks? tasks, params string[] args) =>
         new JobsCommand(Host(tasks), _out).Build().Parse(args)
             .InvokeAsync(new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken);
+
+    private void BigCoordinatorLog() => File.WriteAllBytes(CoordinatorLog, new byte[ScheduledRun.LogLimitBytes + 1]);
+
+    private static string[] Lines(string path) => File.ReadAllLines(path);
+
+    // As a concurrent scheduled run holds it.
+    private FileStream HoldCoordinatorLog() => new(CoordinatorLog, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+
+    private void OldAndNewTraces()
+    {
+        Directory.CreateDirectory(Path.Join(TracesDir, "tool"));
+        File.WriteAllText(Path.Join(TracesDir, "tool", "old.ndjson"), "{}");
+        File.SetLastWriteTimeUtc(Path.Join(TracesDir, "tool", "old.ndjson"), Now.UtcDateTime - TimeSpan.FromDays(15));
+        File.WriteAllText(Path.Join(TracesDir, "tool", "new.ndjson"), "{}");
+        File.SetLastWriteTimeUtc(Path.Join(TracesDir, "tool", "new.ndjson"), Now.UtcDateTime - TimeSpan.FromDays(13));
+        File.WriteAllText(Path.Join(TracesDir, "old.txt"), "kept");
+        File.SetLastWriteTimeUtc(Path.Join(TracesDir, "old.txt"), Now.UtcDateTime - TimeSpan.FromDays(30));
+    }
+
+    private sealed class Disposer(Action disposed) : IDisposable
+    {
+        public void Dispose() => disposed();
+    }
 
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider
     {
@@ -271,6 +511,36 @@ public sealed class JobsCommandTests : IDisposable
 
     private sealed class FakeTasks(params string[] missing) : IScheduledTasks
     {
+        public List<string> Deleted { get; } = [];
+        public List<string> Registered { get; } = [];
+        public List<string> Started { get; } = [];
+        public string? FailAt { get; init; }
+
+        public Task RegisterAsync(string name, string xml, CancellationToken cancellationToken = default)
+        {
+            if (name == FailAt)
+            {
+                throw new InvalidOperationException("registration refused");
+            }
+
+            Assert.Contains("InteractiveToken", xml, StringComparison.Ordinal);
+            Registered.Add(name);
+            return Task.CompletedTask;
+        }
+
+        public Task StartAsync(string name, CancellationToken cancellationToken = default)
+        {
+            Started.Add(name);
+            return Task.CompletedTask;
+        }
+
         public Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default) => Task.FromResult(!missing.Contains(name));
+
+        public Task<bool> DeleteAsync(string name, CancellationToken cancellationToken = default)
+        {
+            Assert.True(Registered.Count is 0 or 3);
+            Deleted.Add(name);
+            return Task.FromResult(!missing.Contains(name));
+        }
     }
 }

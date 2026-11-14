@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import xml.etree.ElementTree as ET
 from dataclasses import replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -11,7 +10,6 @@ from pathlib import Path
 import pytest
 
 from desktop_manager.claude_sessions.startup_run import EXIT_DEFERRED
-from desktop_manager.jobs import install
 from desktop_manager.jobs.registry import (
     CLAUDE_SESSIONS_DEFERRED,
     RESTORE_DEFERRED,
@@ -22,7 +20,6 @@ from desktop_manager.jobs.registry import (
     default_jobs,
 )
 from desktop_manager.jobs.runner import log_path, plan, run, run_output
-from desktop_manager.jobs.scheduled import prune_traces
 from desktop_manager.jobs.state import (
     STATE_NAME,
     Decision,
@@ -39,7 +36,6 @@ pytestmark = pytest.mark.ci
 
 NOW = datetime(2026, 10, 10, 9, 0).astimezone()
 BOOTED = NOW - timedelta(hours=1)
-_NS = {"t": "http://schemas.microsoft.com/windows/2004/02/mit/task"}
 
 
 def _job(
@@ -393,20 +389,6 @@ def test_run_output_reads_only_the_named_runs_section(tmp_path: Path):
     assert (run_output(path, "tick-3"), run_output(tmp_path / "missing.log")) == ([], [])
 
 
-def test_logon_prunes_only_old_trace_files(tmp_path: Path):
-    old, recent, other = tmp_path / "a" / "old.ndjson", tmp_path / "b" / "new.ndjson", tmp_path / "a" / "old.txt"
-    for path in (old, recent, other):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("{}", encoding="utf-8")
-    now = NOW.timestamp()
-    for path in (old, other):
-        os.utime(path, (now - 15 * 86400, now - 15 * 86400))
-
-    assert prune_traces(tmp_path, keep_days=14, now=now) == 1
-    assert (old.exists(), recent.exists(), other.exists()) == (False, True, True)
-    assert prune_traces(tmp_path / "absent", keep_days=14, now=now) == 0
-
-
 def test_logon_restores_with_deferred_commands_then_resumes_sessions(tmp_path: Path):
     env = Environment(
         scripts=tmp_path / "Scripts",
@@ -470,44 +452,6 @@ def test_without_a_workspace_repo_its_jobs_are_not_registered(tmp_path: Path):
     assert "workspace-maintain" not in names
     assert "estate-decisions" in names
     assert env.estate_roots == (tmp_path,)
-
-
-@pytest.mark.parametrize(
-    ("spec", "trigger_path", "argument"),
-    [
-        (install.LOGON, "t:Triggers/t:LogonTrigger/t:Delay", "logon"),
-        (install.TICK, "t:Triggers/t:TimeTrigger/t:Repetition/t:Interval", "tick"),
-    ],
-)
-def test_tasks_run_the_coordinator_under_pythonw_as_the_interactive_user(spec, trigger_path, argument):
-    xml = install.render_task_xml(
-        spec,
-        Path(r"C:\rt\current\.venv\Scripts\pythonw.exe"),
-        user_id=r"CORP\me & you",
-        start=datetime(2026, 10, 10, 9, 0),
-    )
-    root = ET.fromstring(xml.split("\n", 1)[1])
-
-    def text(path: str) -> str | None:
-        return root.findtext(path, namespaces=_NS)
-
-    assert {
-        "uri": text("t:RegistrationInfo/t:URI"),
-        "trigger": text(trigger_path),
-        "user": text("t:Principals/t:Principal/t:UserId"),
-        "logon": text("t:Principals/t:Principal/t:LogonType"),
-        "instances": text("t:Settings/t:MultipleInstancesPolicy"),
-        "command": text("t:Actions/t:Exec/t:Command"),
-        "arguments": text("t:Actions/t:Exec/t:Arguments"),
-    } == {
-        "uri": f"\\{spec.name}",
-        "trigger": "PT5S" if spec is install.LOGON else "PT15M",
-        "user": r"CORP\me & you",
-        "logon": "InteractiveToken",
-        "instances": "IgnoreNew",
-        "command": r"C:\rt\current\.venv\Scripts\pythonw.exe",
-        "arguments": f"-m desktop_manager.jobs.scheduled {argument}",
-    }
 
 
 def test_a_job_behind_a_rig_flag_runs_only_while_the_flag_is_on():

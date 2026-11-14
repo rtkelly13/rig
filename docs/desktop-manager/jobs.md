@@ -1,7 +1,7 @@
 # Machine jobs (`desktop-manager jobs`)
 
 Everything that keeps this machine aligned runs from one registry
-(`src/desktop_manager/jobs/registry.py`). Two scheduled tasks drive it, so there
+(`src/Rig.Core/Jobs/JobRegistry.cs`). Two scheduled tasks drive it, so there
 is one place to see what runs at logon, what runs every 15 minutes, and what runs
 daily.
 
@@ -13,22 +13,29 @@ rig jobs last --trigger tick
 rig jobs log chrome-organise
 rig jobs run --dry-run                 # what a tick would run now
 rig jobs run --only estate-risk        # one job, due or not
-desktop-manager jobs install           # register the tasks (run from the runtime copy)
+rig jobs install                       # register the tasks (run from the runtime copy)
 ```
 
-`status`, `last`, `log` and `run` run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`); `install` and
-`uninstall` are still Python, and `rig jobs <those>` hands them to `desktop-manager jobs`. The scheduled tasks
-still start the Python runner (`desktop_manager.jobs.scheduled`) until the installers move, because only it
-records spans; the C# runner writes the same `state.json`, `last-<trigger>.json` and `runs.ndjson`, with empty
-`trace_id` and `span_id`, and takes the same `run.lock` byte, so the two never overlap.
+All `rig jobs` subcommands run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`).
+Every `desktop-manager jobs` spelling dispatches the whole line to its C# owner, including help and
+unknown arguments. New Logon and Tick tasks start `rigw` directly. The old
+`desktop_manager.jobs.scheduled` module delegates to the published `rigw` for task registrations
+that have not been refreshed; it no longer runs the Python coordinator.
+The C# runner preserves `state.json`, `last-<trigger>.json`, `runs.ndjson` and the `run.lock` byte.
+Each job runs in a `job <name>` span written to the `desktop-manager-jobs` trace files, whose ids its
+`runs.ndjson` line keeps.
+
+The tasks run `<runtime>\current\rig\rigw.exe jobs run --trigger <t> --scheduled`. `rigw` is `rig` built as a
+Windows app (`src/Rig.Launcher`), so a task opens no console. `--scheduled`, hidden from `--help`, wraps the run in scheduled logging and maintenance: the narrative goes to `coordinator.log` (moved to `.log.1` past
+512 KB), every line naming the run, and a crash is logged and exits 1. A logon run first waits up to two minutes for
+Explorer's shell window and deletes trace files older than 14 days. A plain `rig jobs run` does none of this.
 Both sides read and write the same `state.json` and `last-<trigger>.json`, held byte for byte to
 `tests/Rig.Cli.Tests/Jobs/jobs-oracle.json`, which Python records.
 
 ## Scheduled tasks
 
 `jobs install` registers three tasks in the Task Scheduler folder
-`\Shared Utilities\`, and removes the separate tasks they replace (`Workspace
-Restore`, `Chrome Tabs Organise`, `Workspace Display Guard`):
+`\Shared Utilities\`, and removes the separate tasks they replace (`Workspace Restore`, `Chrome Tabs Organise`, `Chrome Tabs Prune`, `Workspace Display Guard`):
 
 | Task | When | Runs |
 |:-----|:-----|:-----|
@@ -40,11 +47,19 @@ Install from the [runtime copy](runtime.md), so the tasks follow `current`
 through later `runtime install` and `runtime rollback`:
 
 ```bash
-"%LOCALAPPDATA%\shared-utilities\runtime\current\.venv\Scripts\desktop-manager.exe" jobs install
+"%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe" jobs install
 ```
 
-Run from a checkout, `jobs install` uses the main checkout's `.venv` and refuses a
-linked worktree, because the tasks are machine-wide.
+Run from a checkout, `jobs install` refuses a linked worktree because the tasks are machine-wide.
+Publish `src/Rig.Launcher` into `temp/jobs-runtime` in the main checkout first. Logon and Tick use
+that `rigw.exe`; Display Guard still uses the checkout's `.venv/Scripts/pythonw.exe` and the user plan.
+The installer validates the launcher, guard interpreter and plan before registering any tasks, then
+registers all three before retiring the old tasks. `--no-start` skips starting the guard immediately.
+Runtime installations always register paths through `current` and use its bundled plan.
+
+Source tests pin task policy against `tests/Rig.Core.Tests/Jobs/task-xml-oracle.json`. Native
+`WIN-JOBS` acceptance and estate rollout remain pending separate Windows evidence; these source
+changes do not modify the machine's installed tasks.
 
 ## Jobs
 
@@ -143,11 +158,15 @@ Every `coordinator.log` line names it, it heads that run's section of each job l
 Everything is under `%LOCALAPPDATA%\shared-utilities\jobs\`:
 
 - `coordinator.log`: each scheduled run's decisions, which jobs ran or were skipped and why, and why a job failed.
+
 - `logs\<job>.log`: each job's own output, one section per run. One previous generation is kept as `.log.1`.
+
 - `state.json`: each job's last start, duration, exit code, error, summary and failure detail.
+
 - `last-logon.json`, `last-tick.json`: each trigger's latest run.
 
 - `runs.ndjson`: one line per job run, newest last (see **Run history**).
+
 - `runs\<job>\<run_id>.log`: each recorded run's own output.
 
 Restore still logs to `workspace-restore\logs`. Chrome organise still logs to

@@ -44,13 +44,17 @@ namespace Rig.Cli;
 [ExcludeFromCodeCoverage(Justification = "Wiring only; RigApp and PythonRig carry the behaviour and are tested.")]
 internal static class Program
 {
-    private static async Task<int> Main(string[] args)
+    internal static async Task<int> Main(string[] args)
     {
         var exportTree = args.Length > 0 && args[0] == "--export-command-tree";
         var exportWindowsTree = exportTree && args.Contains("windows", StringComparer.Ordinal);
         var exportMacTree = exportTree && args.Contains("macos", StringComparer.Ordinal);
         var codeRoot = CodeRoot.Current();
-        var checkout = PythonRig.ResolveCheckout(Environment.GetEnvironmentVariable(PythonRig.HomeVariable), codeRoot);
+        // RIG_HOME first; then the runtime copy a published rigw or rig runs from, so its jobs use that copy; then the checkout.
+        var rigHome = Environment.GetEnvironmentVariable(PythonRig.HomeVariable);
+        var checkout = PythonRig.ResolveCheckout(
+            string.IsNullOrEmpty(rigHome) ? JobsSite.CopyOf(AppContext.BaseDirectory, AppData.Current()) ?? JobsSite.PublishedCheckout(AppContext.BaseDirectory) : rigHome,
+            codeRoot);
         // The root command and every process it runs are traced, so a failure says which folder and line caused it.
         var scopes = new Dictionary<string, string>
         {
@@ -344,9 +348,19 @@ internal static class Program
             () => new FlagStore(Path.Join(AppData.Current(), "rig.db")).Effective(),
             TimeProvider.System,
             now => BootTime.At(now, TimeSpan.FromMilliseconds(Environment.TickCount64), windows),
-            windows ? new Schtasks(proc) : null,
+            windows ? new Schtasks(proc, Path.Join(JobState.JobsDir(AppData.Current()), "temp")) : null,
             new ProcessJobExecutor(TimeProvider.System, site.Environment),
             () => OperatingSystem.IsWindowsVersionAtLeast(6, 1) ? Rig.Core.Chrome.Presence.IdleSeconds(new Rig.Core.Chrome.Windows.NativePresence()) : double.PositiveInfinity,
-            (path, wait) => RunLock.Hold(path, wait, Thread.Sleep));
+            (path, wait) => RunLock.Hold(path, wait, Thread.Sleep),
+            () => new TraceFileWriter(
+                "desktop-manager-jobs",
+                new Dictionary<string, string> { [JobRunner.Source.Name] = JobRunner.Scope },
+                name => Environment.GetEnvironmentVariable(name) ?? site.Environment.GetValueOrDefault(name),
+                Path.Join(checkout, "temp", "traces", "sdk"),
+                TimeProvider.System),
+            ShellWindow.WaitFor,
+            Path.Join(AppData.Current(), "traces"),
+            ct => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, ct),
+            () => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USERDOMAIN")) ? Environment.UserName : $"{Environment.GetEnvironmentVariable("USERDOMAIN")}\\{Environment.UserName}");
     }
 }

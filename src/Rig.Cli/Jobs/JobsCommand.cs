@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Text;
 using Rig.Cli.Vault;
 using Rig.Core.Jobs;
+using Rig.Core.Processes;
 
 namespace Rig.Cli.Jobs;
 
@@ -15,6 +16,11 @@ namespace Rig.Cli.Jobs;
 /// <param name="Executor">Starts each job <c>run</c> takes.</param>
 /// <param name="IdleSeconds">Seconds since the last keyboard or mouse input.</param>
 /// <param name="Hold">Takes the run lock; <see cref="RunLock.Hold"/> outside tests.</param>
+/// <param name="Trace">Starts writing a real run's job spans; disposing it writes them out.</param>
+/// <param name="WaitForShell">Waits up to a time for Explorer's shell window, before a <c>--scheduled</c> logon run.</param>
+/// <param name="TracesDir">The shared traces folder a <c>--scheduled</c> logon run prunes.</param>
+/// <param name="InstallTarget">Resolves and validates the stable task targets before registration.</param>
+/// <param name="UserId">The interactive identity used by the tasks.</param>
 internal sealed record JobsHost(
     string JobsDir,
     Func<IReadOnlyList<Job>> Jobs,
@@ -24,11 +30,16 @@ internal sealed record JobsHost(
     IScheduledTasks? Tasks,
     IJobExecutor Executor,
     Func<double> IdleSeconds,
-    Func<string, TimeSpan, IDisposable?> Hold);
+    Func<string, TimeSpan, IDisposable?> Hold,
+    Func<IDisposable> Trace,
+    Func<TimeSpan, bool> WaitForShell,
+    string TracesDir,
+    Func<CancellationToken, Task<JobsInstallTarget>> InstallTarget,
+    Func<string> UserId);
 
 /// <summary>
-/// <c>rig jobs status|last|log|run</c>: what the coordinator did and will do, read from its files, and a run of it. Ported
-/// from <c>desktop_manager.jobs.cli</c>; <c>install</c> and <c>uninstall</c> still go to Python. The text is
+/// <c>rig jobs</c>: the coordinator's runs and task installation. Ported
+/// from <c>desktop_manager.jobs.cli</c>. The text is
 /// Python's without rich's colours, and the table is padded to its widest cell rather than wrapped at 80 columns.
 /// </summary>
 internal sealed class JobsCommand(JobsHost host, TextWriter output)
@@ -56,12 +67,26 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         var only = new Option<string[]>("--only") { Description = "Run just this job, due or not. Repeatable.", DefaultValueFactory = _ => [] };
         var force = new Option<bool>("--force") { Description = "Run every job on the trigger, due or not." };
         var dryRun = new Option<bool>("--dry-run") { Description = "Say what would run, and run nothing." };
-        var run = new Command("run", "Run the due jobs now, in the foreground, as the scheduled tasks do.") { runTrigger, only, force, dryRun };
+        var scheduled = new Option<bool>("--scheduled")
+        {
+            Description = "For the scheduled tasks: narrate to coordinator.log, and on logon wait for the shell and prune old traces.",
+            Hidden = true,
+        };
+        var run = new Command("run", "Run the due jobs now, in the foreground, as the scheduled tasks do.") { runTrigger, only, force, dryRun, scheduled };
         run.SetAction(parsed => Run(
             JobWords.Trigger(parsed.GetRequiredValue(runTrigger)),
             parsed.GetValue(only) ?? [],
             parsed.GetValue(force),
-            parsed.GetValue(dryRun)));
+            parsed.GetValue(dryRun),
+            parsed.GetValue(scheduled)));
+
+        var uninstall = new Command("uninstall", "Remove the coordinator's scheduled tasks.");
+        uninstall.SetAction((_, cancellationToken) => Uninstall(cancellationToken));
+
+        var noStart = new Option<bool>("--no-start") { Description = "Do not start the display guard now." };
+        var start = new Option<bool>("--start") { Description = "Start the display guard now as well as at logon (the default)." };
+        var install = new Command("install", "Register the Logon, Tick and Display Guard tasks, and retire the separate tasks they replace.") { noStart, start };
+        install.SetAction((parsed, cancellationToken) => Install(!parsed.GetValue(noStart), cancellationToken));
 
         return new Command("jobs", "Logon, every-15-minute and daily jobs that keep this machine aligned, run from one registry.")
         {
@@ -69,6 +94,8 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             last,
             log,
             run,
+            uninstall,
+            install,
         };
     }
 
@@ -80,6 +107,71 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     }
 
     private string LogsDir => JobState.LogsDir(host.JobsDir);
+
+    private async Task<int> Install(bool start, CancellationToken cancellationToken)
+    {
+        if (host.Tasks is not { } tasks)
+        {
+            await output.WriteLineAsync("jobs install requires Windows.").ConfigureAwait(false);
+            return 1;
+        }
+
+        try
+        {
+            var target = await host.InstallTarget(cancellationToken).ConfigureAwait(false);
+            var user = host.UserId();
+            var now = host.Clock.GetLocalNow();
+            foreach (var name in CoordinatorTasks.All)
+            {
+                await tasks.RegisterAsync(name, JobsTaskXml.Render(name, target, user, now), cancellationToken).ConfigureAwait(false);
+                await output.WriteLineAsync($"Registered {name}").ConfigureAwait(false);
+            }
+
+            var retired = new List<string>();
+            foreach (var name in CoordinatorTasks.Retired)
+            {
+                if (await tasks.DeleteAsync(name, cancellationToken).ConfigureAwait(false))
+                {
+                    retired.Add(name);
+                }
+            }
+
+            if (start)
+            {
+                await tasks.StartAsync(CoordinatorTasks.Guard, cancellationToken).ConfigureAwait(false);
+            }
+
+            foreach (var name in retired)
+            {
+                await output.WriteLineAsync($"Retired {name}").ConfigureAwait(false);
+            }
+
+            await output.WriteLineAsync($"Runs from: {target.Rigw}\nPlan: {target.Plan}").ConfigureAwait(false);
+            return 0;
+        }
+        catch (Exception error) when (error is ProcException or InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            await output.WriteLineAsync(error.Message).ConfigureAwait(false);
+            return 1;
+        }
+    }
+
+    private async Task<int> Uninstall(CancellationToken cancellationToken)
+    {
+        if (host.Tasks is not { } tasks)
+        {
+            await output.WriteLineAsync("jobs uninstall requires Windows.").ConfigureAwait(false);
+            return 1;
+        }
+
+        foreach (var name in CoordinatorTasks.All)
+        {
+            var removed = await tasks.DeleteAsync(name, cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync($"{(removed ? "Removed" : "Not registered")} {name}").ConfigureAwait(false);
+        }
+
+        return 0;
+    }
 
     private async Task<int> Status(JobTrigger trigger, CancellationToken cancellationToken)
     {
@@ -124,7 +216,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
 
             if (missing.Count > 0)
             {
-                text.Append("Not registered: ").AppendJoin(", ", missing).Append(". Run `desktop-manager jobs install`.\n");
+                text.Append("Not registered: ").AppendJoin(", ", missing).Append(". Run `rig jobs install`.\n");
             }
         }
 
@@ -162,7 +254,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         return 0;
     }
 
-    private int Run(JobTrigger trigger, string[] only, bool force, bool dryRun)
+    private int Run(JobTrigger trigger, string[] only, bool force, bool dryRun, bool scheduled)
     {
         var jobs = host.Jobs();
         var unknown = only.Except(jobs.Select(job => job.Name), StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
@@ -185,8 +277,14 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             return 0;
         }
 
-        var runner = new JobRunner(new JobRunnerSeams(host.Executor, host.IdleSeconds, host.Clock, line => output.Write(line + "\n"), host.Hold));
-        return runner.Run(jobs, trigger, host.JobsDir, host.Booted(host.Clock.GetLocalNow()), host.Flags(), named, force);
+        using var tracing = host.Trace();
+        int RunJobs(string? runId, Action<string> report) =>
+            new JobRunner(new JobRunnerSeams(host.Executor, host.IdleSeconds, host.Clock, report, host.Hold))
+                .Run(jobs, trigger, host.JobsDir, host.Booted(host.Clock.GetLocalNow()), host.Flags(), named, force, runId);
+
+        return scheduled
+            ? ScheduledRun.Run(trigger, host.JobsDir, new ScheduledSeams(host.Clock, host.WaitForShell, host.TracesDir), RunJobs)
+            : RunJobs(null, line => output.Write(line + "\n"));
     }
 
     private int Log(string name, int lines)
