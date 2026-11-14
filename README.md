@@ -98,8 +98,6 @@ regenerate it with `uv run python -m rig.platform_table --write`.
 | `desktop-manager chrome-tabs rank` | macOS |
 | `desktop-manager claude-sessions place` | Windows |
 | `desktop-manager claude-sessions terminals` | Windows |
-| `desktop-manager jobs install` | Windows |
-| `desktop-manager jobs uninstall` | Windows |
 | `desktop-manager workspace align` | Windows |
 | `desktop-manager workspace audit` | Windows |
 | `desktop-manager workspace detect-app` | Windows |

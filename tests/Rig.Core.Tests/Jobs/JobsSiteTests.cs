@@ -15,6 +15,18 @@ public sealed class JobsSiteTests : IDisposable
 
     private string Personal => Path.Join(_temp.Path, "code", "personal");
 
+    [Fact]
+    public void A_development_task_publish_runs_as_its_own_checkout_only_when_the_project_exists()
+    {
+        var publish = Path.Join(_temp.Path, "temp", "jobs-runtime");
+        Assert.Null(JobsSite.PublishedCheckout(publish));
+        var project = _temp.File("src/Rig.Cli/Rig.Cli.csproj");
+        File.WriteAllText(project, "<Project />");
+        Assert.Equal(_temp.Path, JobsSite.PublishedCheckout(publish));
+        Assert.Null(JobsSite.PublishedCheckout(Path.Join(_temp.Path, "elsewhere", "jobs-runtime")));
+        Assert.Null(JobsSite.PublishedCheckout(_temp.Path));
+    }
+
     [Theory]
     [InlineData("abc123def456")]
     [InlineData("current")]

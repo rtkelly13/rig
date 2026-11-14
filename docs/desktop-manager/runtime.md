@@ -40,12 +40,12 @@ Copies are plain directories, not git worktrees, so they never hold a branch and
 
 1. Fetch `origin` (for an `origin/*` ref) and resolve the ref to a commit. Installing
    the commit already current does nothing.
-2. Extract the commit to `<sha12>.partial`, rename it to `<sha12>`, build its `.venv`
+1. Extract the commit to `<sha12>.partial`, rename it to `<sha12>`, build its `.venv`
    and publish its `rig`.
-3. Check it runs: `desktop-manager --help`, `chrome-tabs --help`, `rig jobs run --help`, importing the
+1. Check it runs: `desktop-manager --help`, `chrome-tabs --help`, `rig jobs run --help`, `rig jobs install --help`, importing the
    scheduled entry points, and `workspace validate-plan` on the copy's plan.
    A failure leaves `current` where it was and removes the new copy.
-4. Write `installed.json`, repoint `current`, record the old copy as previous and
+1. Write `installed.json`, repoint `current`, record the old copy as previous and
    remove anything older. A copy still in use is left and removed by a later install.
 
 Repointing `current` doesn't stop a run in progress. The repo's own code resolves
@@ -60,7 +60,7 @@ from a copy and registers paths through `current`, so later installs and rollbac
 move the tasks without registering them again:
 
 ```bash
-"%LOCALAPPDATA%\shared-utilities\runtime\current\.venv\Scripts\desktop-manager.exe" jobs install
+"%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe" jobs install
 "%LOCALAPPDATA%\shared-utilities\runtime\current\.venv\Scripts\desktop-manager.exe" chrome-tabs install
 ```
 

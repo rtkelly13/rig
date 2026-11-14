@@ -25,6 +25,16 @@ public sealed record JobsSite(string Plan, string PersonalRoot, IReadOnlyDiction
     /// <summary>The folder inside a runtime copy that holds the published <c>rig</c> and <c>rigw</c>.</summary>
     public const string PublishFolder = "rig";
 
+    /// <summary>The main checkout containing a development task publish under temp/jobs-runtime, else null.</summary>
+    public static string? PublishedCheckout(string baseDirectory)
+    {
+        var publish = Path.TrimEndingDirectorySeparator(Path.GetFullPath(baseDirectory));
+        var temp = Path.GetDirectoryName(publish);
+        var root = temp is null ? null : Path.GetDirectoryName(temp);
+        return Path.GetFileName(publish) == "jobs-runtime" && Path.GetFileName(temp) == "temp" && root is not null
+            && File.Exists(Path.Join(root, "src", "Rig.Cli", "Rig.Cli.csproj")) ? root : null;
+    }
+
     /// <summary>
     /// The runtime copy a rig published at <paramref name="baseDirectory"/> belongs to: the copy folder when it is
     /// <c>&lt;<paramref name="appData"/>&gt;/runtime/&lt;copy&gt;/rig</c>, reached by its own name or the <c>current</c>

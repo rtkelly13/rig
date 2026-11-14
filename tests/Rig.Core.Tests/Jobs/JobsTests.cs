@@ -61,7 +61,8 @@ public sealed class JobsTests : IDisposable
         var proc = new FakeProc()
             .Answer(new Ran(0, string.Empty, string.Empty), "schtasks", "/Query", "/TN", CoordinatorTasks.Logon)
             .Answer(new Ran(1, string.Empty, "ERROR: not found"), "schtasks", "/Query", "/TN", CoordinatorTasks.Tick);
-        var tasks = new Schtasks(proc);
+        using var scratch = new TempDir();
+        var tasks = new Schtasks(proc, scratch.Path);
 
         Assert.True(await tasks.ExistsAsync(CoordinatorTasks.Logon, TestContext.Current.CancellationToken));
         Assert.False(await tasks.ExistsAsync(CoordinatorTasks.Tick, TestContext.Current.CancellationToken));
@@ -72,7 +73,8 @@ public sealed class JobsTests : IDisposable
     public async Task Deleting_a_task_reports_schtasks_success_and_preserves_the_whole_name()
     {
         var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
-        var tasks = new Schtasks(proc);
+        using var scratch = new TempDir();
+        var tasks = new Schtasks(proc, scratch.Path);
 
         Assert.True(await tasks.DeleteAsync(CoordinatorTasks.Guard, TestContext.Current.CancellationToken));
         Assert.Equal(["schtasks", "/Delete", "/TN", CoordinatorTasks.Guard, "/F"], Assert.Single(proc.Requests).Argv);

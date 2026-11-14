@@ -49,7 +49,7 @@ public sealed class JobsCommandTests : IDisposable
             + "daily  logon, tick (daily)  Thu 08:00 (12s)  ok: 3 moved  not due (daily)\n"
             + "never  logon (every-run)    -                -            not on tick\n"
             + "\nevery failed; the end of its output:\n  | boom\n  | bang\n"
-            + $"Not registered: {CoordinatorTasks.Guard}. Run `desktop-manager jobs install`.\n"
+            + $"Not registered: {CoordinatorTasks.Guard}. Run `rig jobs install`.\n"
             + $"Logs: {Path.Join(_temp.Path, "logs")}\n",
             _out.ToString());
     }
@@ -92,6 +92,60 @@ public sealed class JobsCommandTests : IDisposable
 
         Assert.Equal(1, await Run(null, "uninstall"));
         Assert.Equal("jobs uninstall requires Windows.\n", _out.ToString());
+    }
+
+    [Theory]
+    [InlineData(new string[0], true)]
+    [InlineData(new[] { "--start" }, true)]
+    [InlineData(new[] { "--no-start" }, false)]
+    public async Task Install_registers_all_tasks_before_retiring_old_tasks_and_optionally_starting_the_guard(string[] options, bool start)
+    {
+        var tasks = new FakeTasks("Chrome Tabs Prune");
+
+        Assert.Equal(0, await Run(tasks, ["install", .. options]));
+
+        Assert.Equal(CoordinatorTasks.All, tasks.Registered);
+        Assert.Equal(CoordinatorTasks.Retired, tasks.Deleted);
+        Assert.Equal(start ? [CoordinatorTasks.Guard] : Array.Empty<string>(), tasks.Started);
+        Assert.Contains($"Registered {CoordinatorTasks.Guard}\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Retired Workspace Restore\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Retired Chrome Tabs Prune", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Runs from: rigw.exe\nPlan: plan.json\n", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_registration_failure_keeps_the_standalone_tasks_and_does_not_start_the_guard()
+    {
+        var tasks = new FakeTasks { FailAt = CoordinatorTasks.Tick };
+
+        Assert.Equal(1, await Run(tasks, "install"));
+
+        Assert.Equal([CoordinatorTasks.Logon], tasks.Registered);
+        Assert.Empty(tasks.Deleted);
+        Assert.Empty(tasks.Started);
+        Assert.Contains("registration refused", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_target_validation_failure_changes_no_tasks()
+    {
+        var tasks = new FakeTasks();
+        var host = Host(tasks) with { InstallTarget = _ => throw new InvalidOperationException("missing rigw") };
+
+        Assert.Equal(1, await new JobsCommand(host, _out).Build().Parse(["install"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken));
+
+        Assert.Empty(tasks.Registered);
+        Assert.Empty(tasks.Deleted);
+        Assert.Empty(tasks.Started);
+        Assert.Equal("missing rigw\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_requires_windows()
+    {
+        Assert.Equal(1, await Run(null, "install"));
+        Assert.Equal("jobs install requires Windows.\n", _out.ToString());
     }
 
     [Fact]
@@ -361,10 +415,10 @@ public sealed class JobsCommandTests : IDisposable
     [InlineData(new[] { "jobs", "last", "--trigger", "tick" }, false)]
     [InlineData(new[] { "jobs", "log", "align" }, false)]
     [InlineData(new[] { "jobs", "run", "--trigger", "tick" }, false)]
-    [InlineData(new[] { "jobs", "install" }, true)]
+    [InlineData(new[] { "jobs", "install" }, false)]
     [InlineData(new[] { "jobs", "uninstall" }, false)]
-    [InlineData(new[] { "jobs" }, true)]
-    public void Only_install_and_the_group_help_still_go_to_python(string[] args, bool python)
+    [InlineData(new[] { "jobs" }, false)]
+    public void Jobs_never_goes_to_python(string[] args, bool python)
     {
         var root = new RootCommand { new JobsCommand(Host(null), _out).Build() };
 
@@ -398,7 +452,9 @@ public sealed class JobsCommandTests : IDisposable
             _shellWaits.Add(timeout);
             return _shellReady;
         },
-        TracesDir);
+        TracesDir,
+        _ => Task.FromResult(new JobsInstallTarget(_temp.Path, "plan.json", "rigw.exe")),
+        () => "CORP\\me & you");
 
     private Task<int> Run(IScheduledTasks? tasks, params string[] args) =>
         new JobsCommand(Host(tasks), _out).Build().Parse(args)
@@ -456,11 +512,33 @@ public sealed class JobsCommandTests : IDisposable
     private sealed class FakeTasks(params string[] missing) : IScheduledTasks
     {
         public List<string> Deleted { get; } = [];
+        public List<string> Registered { get; } = [];
+        public List<string> Started { get; } = [];
+        public string? FailAt { get; init; }
+
+        public Task RegisterAsync(string name, string xml, CancellationToken cancellationToken = default)
+        {
+            if (name == FailAt)
+            {
+                throw new InvalidOperationException("registration refused");
+            }
+
+            Assert.Contains("InteractiveToken", xml, StringComparison.Ordinal);
+            Registered.Add(name);
+            return Task.CompletedTask;
+        }
+
+        public Task StartAsync(string name, CancellationToken cancellationToken = default)
+        {
+            Started.Add(name);
+            return Task.CompletedTask;
+        }
 
         public Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default) => Task.FromResult(!missing.Contains(name));
 
         public Task<bool> DeleteAsync(string name, CancellationToken cancellationToken = default)
         {
+            Assert.True(Registered.Count is 0 or 3);
             Deleted.Add(name);
             return Task.FromResult(!missing.Contains(name));
         }

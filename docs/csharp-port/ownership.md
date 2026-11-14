@@ -61,7 +61,7 @@ cannot conceal an independent implementation.
 | `align` | Python `desktop-manager workspace align` | Not ported; Windows desktop acceptance required |
 | `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand` over `Rig.Core.ReviewQueue` | CLI switched; Python CLI and six platform fallback routes retired. The `src/rig/triage` web inbox and agent-signal consumers stay explicitly owned until switched; shared service modules are not retired by the CLI cutover |
 | `c4` | Python `rig.c4_okf.cli` | Not ported; five leaves; open #78 touches this area, do not duplicate it |
-| `jobs` | C# status/last/log/run/uninstall; Python install | Disjoint subcommands; legacy uninstall dispatches whole-line to C#; #209 owns installer/runtime progression |
+| `jobs` | C# status/last/log/run/install/uninstall | All legacy spellings dispatch whole-line to C#; #209 owns runtime progression and Windows acceptance |
 | `web` | C# public host, verified thin dispatcher for the bare launch, Python service/database/MCP/upstream children | Bare `desktop-manager web` is a thin C# dispatcher in #217; #207 owns connectivity cutover; opaque child-route registrations remain explicit |
 | `chrome-tabs` | C# traces everywhere, C# native actions on Windows, Python native actions on macOS and organise | Windows duplicate registrations retired in #217; #206 owns macOS native actions |
 | `chrome-tabs traces runs/show/summary/prune` | C# only; legacy spelling dispatches the whole line | Legacy report CLI and 462 lines of reader/report code deleted; writer/daily retention still have scheduled Python callers |
@@ -95,8 +95,9 @@ Its discovery adapter verifies that the launcher's only member passes the origin
 `Cli.Program.Main`; extra behavior or rewritten arguments fail discovery. Its executable project and entry point
 are registered separately without introducing another command owner. `jobs uninstall` now has one C# owner;
 the Python spelling delegates help and unknown options unchanged through `desktop_manager.jobs.forward`.
-The old Python callback and its three fallback routes are tombstoned. Installer/task XML migration, the Python
-scheduled entry point and its runner remain pending the installer cutover and `WIN-JOBS` evidence.
+The old Python callback and its three fallback routes are tombstoned. Installer/task XML now run in C#; Logon and Tick target `rigw` directly. The legacy scheduled
+module delegates to that published launcher, while Display Guard and Python web consumers retain
+their existing implementations. `WIN-JOBS` acceptance and rollout remain pending separate evidence.
 
 Each C# invocation records a root Activity with `cli.argv` (the original argument array) and `cli.cwd` at start,
 including help, parsing errors, agents and forwarded commands. Process spans record `process.command_args` and
@@ -155,6 +156,18 @@ passed with 461 inspected surfaces, ten unchanged overlaps and zero violations. 
 Ruff, both type checkers, import contracts and the ratchet passed. Built `rig` and `rigw` uninstall help produced
 root traces; `rigw` also passed with an empty PATH and an unavailable Python checkout. These checks did not
 install or remove any real tasks and do not supply `WIN-JOBS` native acceptance.
+
+Installer and scheduled-entry cutover validation on macOS, 2026-11-14: the full C# build passed with
+zero warnings and errors. The full solution coverage run passed 4,712 tests with 25 existing skips and
+zero failures. Five fresh reports in `temp/jobs-coverage` measured **95.50% combined line/branch
+coverage**, passing `scripts/coverage-floor.cs` against the unchanged 95% floor and `origin/main`'s
+props. The ownership gate against `origin/main` passed with 464 inspected surfaces, ten unchanged
+overlaps and zero violations. Focused Python checks passed 73 tests plus 24 web tests; the forwarding
+and scheduled-entry adapters measured 100% line/branch coverage. Ruff, strict types, import contracts,
+the ratchet and C# whitespace checks passed. Built `rigw jobs install --help` also passed with an empty
+PATH and an unavailable Python checkout. The task XML oracle covers all three tasks, preserving
+interactive identity, timing and restart policy while changing Logon/Tick to the native launcher.
+No real tasks were installed or removed; `WIN-JOBS` and rollout remain pending.
 
 Named remaining acceptance procedures, all run from a reviewed/published artifact in a disposable environment:
 

@@ -71,6 +71,7 @@ def test_install_copies_the_commit_not_the_working_tree(repo: Path, tmp_path: Pa
     publish = ["dotnet", "publish", str(copy / "src" / "Rig.Launcher"), "-c", "Release", "-o", str(copy / "rig")]
     assert [call[:7] for call in tools.calls if call[0] == "dotnet"] == [publish]
     assert [str(runtime.published(copy, "rig")), "jobs", "run", "--help"] in tools.calls
+    assert [str(runtime.published(copy, "rig")), "jobs", "install", "--help"] in tools.calls
 
 
 def test_a_copy_whose_rig_does_not_publish_is_removed_and_never_current(repo: Path, tmp_path: Path):

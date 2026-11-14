@@ -53,7 +53,7 @@ internal static class Program
         // RIG_HOME first; then the runtime copy a published rigw or rig runs from, so its jobs use that copy; then the checkout.
         var rigHome = Environment.GetEnvironmentVariable(PythonRig.HomeVariable);
         var checkout = PythonRig.ResolveCheckout(
-            string.IsNullOrEmpty(rigHome) ? JobsSite.CopyOf(AppContext.BaseDirectory, AppData.Current()) : rigHome,
+            string.IsNullOrEmpty(rigHome) ? JobsSite.CopyOf(AppContext.BaseDirectory, AppData.Current()) ?? JobsSite.PublishedCheckout(AppContext.BaseDirectory) : rigHome,
             codeRoot);
         // The root command and every process it runs are traced, so a failure says which folder and line caused it.
         var scopes = new Dictionary<string, string>
@@ -348,7 +348,7 @@ internal static class Program
             () => new FlagStore(Path.Join(AppData.Current(), "rig.db")).Effective(),
             TimeProvider.System,
             now => BootTime.At(now, TimeSpan.FromMilliseconds(Environment.TickCount64), windows),
-            windows ? new Schtasks(proc) : null,
+            windows ? new Schtasks(proc, Path.Join(JobState.JobsDir(AppData.Current()), "temp")) : null,
             new ProcessJobExecutor(TimeProvider.System, site.Environment),
             () => OperatingSystem.IsWindowsVersionAtLeast(6, 1) ? Rig.Core.Chrome.Presence.IdleSeconds(new Rig.Core.Chrome.Windows.NativePresence()) : double.PositiveInfinity,
             (path, wait) => RunLock.Hold(path, wait, Thread.Sleep),
@@ -359,6 +359,8 @@ internal static class Program
                 Path.Join(checkout, "temp", "traces", "sdk"),
                 TimeProvider.System),
             ShellWindow.WaitFor,
-            Path.Join(AppData.Current(), "traces"));
+            Path.Join(AppData.Current(), "traces"),
+            ct => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, ct),
+            () => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USERDOMAIN")) ? Environment.UserName : $"{Environment.GetEnvironmentVariable("USERDOMAIN")}\\{Environment.UserName}");
     }
 }
