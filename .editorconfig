@@ -154,5 +154,5 @@ dotnet_diagnostic.IDE1006.severity = none
 dotnet_diagnostic.IDE0005.severity = suggestion
 
 # The ownership tool also sets GenerateDocumentationFile=false; IDE0005 cannot run without docs.
-[tools/command-ownership/**/*.cs]
+[tools/command-ownership/*.cs]
 dotnet_diagnostic.IDE0005.severity = suggestion
