@@ -185,6 +185,7 @@
     {"Id": "cs:repo-governance apps","Capability": "repo-governance apps","Owner": "cs:repo-governance apps","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:repo-governance audit","Capability": "repo-governance audit","Owner": "cs:repo-governance audit","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:repo-governance check-names","Capability": "repo-governance check-names","Owner": "cs:repo-governance check-names","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:repo-governance editorconfig","Capability": "repo-governance editorconfig","Owner": "cs:repo-governance editorconfig","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:repo-governance enforce","Capability": "repo-governance enforce","Owner": "cs:repo-governance enforce","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:repo-governance environments","Capability": "repo-governance environments","Owner": "cs:repo-governance environments","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:repo-governance gitignore","Capability": "repo-governance gitignore","Owner": "cs:repo-governance gitignore","Platforms": ["linux","macos","windows"],"AliasTo": null},
