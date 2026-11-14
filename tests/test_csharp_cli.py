@@ -113,7 +113,10 @@ def _launches() -> list[tuple[str, list[str]]]:
 
 
 def test_the_forwarded_table_is_read() -> None:
-    assert {name for name, _ in _launches()} >= {"triage", "web"}
+    names = {name for name, _ in _launches()}
+    assert "web" in names
+    # Triage's CLI runs in C#; only its web inbox stays inside the Python package.
+    assert "triage" not in names
 
 
 @pytest.mark.parametrize(("name", "launch"), _launches(), ids=[name for name, _ in _launches()])
