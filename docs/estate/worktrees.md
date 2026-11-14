@@ -157,15 +157,21 @@ Two independent layers, and `--force` only relaxes the first:
 2. **git itself** declines `worktree remove` on a tree with *modified or
    untracked files* unless given its own `--force`, which `estate` never passes.
 
-So `--force` on a dirty worktree produces a loud `failed`, not a deletion. The
-only thing neither layer counts is **ignored** files — a worktree holding
-nothing but `node_modules` is removable, which is the intent.
+So `--force` on a dirty worktree produces a loud `failed`, not a deletion.
 
-### Three worktrees no flag removes
+Ignored files are counted as well. A worktree holding only regenerable output
+(`node_modules`, `.venv`, `obj`) is still removable, but one holding an ignored,
+non-regenerable note — the estate's own `TODO.md`, an investigation report, agent
+progress notes — is refused. `shelve` already made that distinction;
+`tidy` and `reclaim` now share it through `WorktreeRemovalJudge`
+(`src/Rig.Core/Estate/WorktreeRemovalJudge.cs`), the one decision every removal
+command uses.
+
+### Worktrees no flag removes
 
 Each of these is a case where the usual signals read wrong rather than merely
-cautious, so `--force` does not relax them. All three come from the 2026-11-06
-estate triage.
+cautious, so `--force` does not relax them. The first three come from the
+2026-11-06 estate triage; the last two from #99's safety matrix.
 
 - **Unborn HEAD (`worktree-unborn-head`).** The worktree's branch ref is gone, as
   happens when its clone was replaced and the refs went with the old one. Git
@@ -189,7 +195,15 @@ estate triage.
   terminal is working in, or below. Where that cannot be read (no `lsof`,
   Windows), removals are refused unless `--force`. Without this,
   `tidy --merged` would have removed 62 worktrees, 8 of them with live
-  terminals.
+  terminals. `shelve` and `reclaim` take the same snapshot and refuse the same
+  way; `--force` does not clear a live process.
+- **Locked.** A `git worktree lock` is a decision, not something to discover from
+  git's refusal. `tidy` and `reclaim` now refuse it with the lock reason, as
+  `shelve` already did, instead of reporting a `failed` removal.
+- **Commits only a reflog names.** A reset or amend can leave a commit named only
+  by the worktree's or its branch's reflog. `rev-list HEAD --not --remotes` cannot
+  see it, yet removing the worktree, or deleting its branch, drops the last name
+  it has. All three removers count those commits and keep the worktree.
 
 `tidy --check <check>` narrows a run to one kind of finding, for example
 `--check worktree-merged`, alongside `--repo` for one clone.

@@ -145,6 +145,7 @@ internal sealed class ShelveCommand(
         }
 
         var shelver = new Shelver(git, new TreeRemoval(proc), time, Path.Join(host.Home, LedgerName));
+        var busy = await Busy.SnapshotAsync(proc, cancellationToken).ConfigureAwait(false);
         var plans = new List<ShelvePlan>();
         foreach (var target in targets.Found)
         {
@@ -157,7 +158,7 @@ internal sealed class ShelveCommand(
                 : new Dictionary<string, PullRequest>(StringComparer.Ordinal);
             foreach (var tree in target.Trees)
             {
-                plans.Add(await shelver.PlanAsync(clone, tree, user, shelves, prs, options).ConfigureAwait(false));
+                plans.Add(await shelver.PlanAsync(clone, tree, user, shelves, prs, options, busy).ConfigureAwait(false));
             }
         }
 

@@ -23,7 +23,7 @@ namespace Rig.Core.Estate;
 /// <param name="IdleDays">Days since Orca last saw activity in it.</param>
 /// <param name="LeftoverMatches">For a leftover folder: null when it could not be checked, else whether it matches its branch.</param>
 /// <param name="LeftoverDetail">Why a leftover folder does not match.</param>
-public sealed record WorktreeFacts(
+public sealed record OrcaWorktreeFacts(
     bool Exists,
     bool IsWorktree,
     bool IsCurrent = false,
@@ -86,7 +86,7 @@ public delegate Task<PrAnswer> PrLookup(string repo, string branch, Cancellation
 /// <remarks>
 /// <para>
 /// Orca lists every worktree of every registered project, and nothing removes one when its work lands, so the sidebar
-/// fills with finished branches. <see cref="Decide"/> is pure: it reads <see cref="WorktreeFacts"/>, which
+/// fills with finished branches. <see cref="Decide"/> is pure: it reads <see cref="OrcaWorktreeFacts"/>, which
 /// <see cref="GatherAsync"/> collects from git, Orca's <c>worktree.ps</c> and GitHub, so every verdict is reproducible
 /// from what the report prints.
 /// </para>
@@ -165,7 +165,7 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     private readonly PrLookup _prs = prs ?? ((repo, branch, cancellationToken) => BranchPrAsync(git, proc, repo, branch, cancellationToken));
 
     /// <summary>The verdict for one worktree and the reason, in the order the safety rules need.</summary>
-    public static Judgement Decide(WorktreeFacts facts, double idleDays = DefaultIdleDays)
+    public static Judgement Decide(OrcaWorktreeFacts facts, double idleDays = DefaultIdleDays)
     {
         ArgumentNullException.ThrowIfNull(facts);
         if (facts.IsCurrent)
@@ -361,20 +361,20 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         return new(true, new PullRequest(newest.Number, newest.State, branch, newest.HeadOid));
     }
 
-    /// <summary>Collects <see cref="WorktreeFacts"/> for one linked worktree; reads only, changes nothing.</summary>
+    /// <summary>Collects <see cref="OrcaWorktreeFacts"/> for one linked worktree; reads only, changes nothing.</summary>
     /// <param name="worktree">The worktree.</param>
     /// <param name="repo">Its registered project's checkout, or null when the project is not registered.</param>
     /// <param name="activity">What Orca reports running in it, or null.</param>
     /// <param name="nowMs">Now, in milliseconds since the epoch.</param>
     /// <param name="cwd">Where this command runs.</param>
     /// <param name="cancellationToken">Cancels the probes.</param>
-    public async Task<WorktreeFacts> GatherAsync(OrcaWorktree worktree, string? repo, OrcaActivity? activity, double nowMs, string cwd, CancellationToken cancellationToken = default)
+    public async Task<OrcaWorktreeFacts> GatherAsync(OrcaWorktree worktree, string? repo, OrcaActivity? activity, double nowMs, string cwd, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(worktree);
         var path = worktree.Path;
         var busy = activity?.AgentStates.Count(state => state is not null && BusyStates.Contains(state)) ?? 0;
         var idle = worktree.LastActivityMs is { } last && last != 0 ? (nowMs - last) / MsPerDay : 0.0;
-        var facts = new WorktreeFacts(Directory.Exists(path), false, IsCurrent(cwd, path), busy, IdleDays: Math.Max(idle, 0.0));
+        var facts = new OrcaWorktreeFacts(Directory.Exists(path), false, IsCurrent(cwd, path), busy, IdleDays: Math.Max(idle, 0.0));
         if (!facts.Exists || facts.IsCurrent || busy > 0)
         {
             return facts;

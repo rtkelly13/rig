@@ -415,6 +415,7 @@ internal sealed class EstateCommand(
             [("clone", false), ("path", false), ("size", true), ("comes back from", false), (string.Empty, true)]);
         var scanner = new Reclaim(git, new DiskUsage(proc));
         var removal = new TreeRemoval(proc);
+        var busy = await Busy.SnapshotAsync(proc, cancellationToken).ConfigureAwait(false);
         long freed = 0, pending = 0;
         var noted = new List<string>();
         foreach (var clone in clones)
@@ -433,7 +434,7 @@ internal sealed class EstateCommand(
 
             foreach (var entry in entries)
             {
-                var status = await scanner.ApplyAsync(clone, entry, apply, force, removal, cancellationToken).ConfigureAwait(false);
+                var status = await scanner.ApplyAsync(clone, entry, apply, force, removal, busy, cancellationToken).ConfigureAwait(false);
                 freed += status == "removed" ? entry.Bytes : 0;
                 pending += status == "would remove" ? entry.Bytes : 0;
                 _ = table.Add(Path.GetFileName(clone), Short(entry.Path, clone), Bytes.Human(entry.Bytes), entry.Regenerate, status);

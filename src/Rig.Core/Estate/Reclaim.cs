@@ -65,6 +65,8 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
     // A worktree holding a large node_modules takes a while to delete.
     private static readonly TimeSpan WorktreeRemoveTimeout = TimeSpan.FromMinutes(10);
 
+    private readonly GitWorktreePort _worktrees = new(git);
+
     /// <summary>Every kind of regenerable folder, in report order.</summary>
     public static readonly IReadOnlyList<ReclaimCategory> Categories =
     [
@@ -132,15 +134,25 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
     /// </summary>
     /// <remarks>
     /// Safety is per entry, not per clone: a commit is not endangered by deleting node_modules, so only a worktree
-    /// entry, the one kind that can hold live state, is refused for being dirty or the only copy of its commits.
+    /// entry, the one kind that can hold live state, is judged. Its facts go through <see cref="WorktreeRemovalJudge"/>,
+    /// the same decision every other removal command uses: in use, unborn, foreign, locked and reflog-only refuse
+    /// whatever <c>force</c> says, and ignored notes need an explicit discard that this command does not have.
     /// A status or history git cannot read counts against removal: an unjudged worktree is never removed unforced.
     /// </remarks>
+    /// <param name="clone">The clone the entry is being reclaimed in.</param>
+    /// <param name="entry">The folder.</param>
+    /// <param name="apply">Delete; otherwise say what would go.</param>
+    /// <param name="force">Relax the dirty and unpushed checks, never a hard reason.</param>
+    /// <param name="removal">Deletes a plain folder.</param>
+    /// <param name="busy">The run's process snapshot; null skips the in-use check.</param>
+    /// <param name="cancellationToken">Stops a removal.</param>
     public async Task<string> ApplyAsync(
         string clone,
         Reclaimable entry,
         bool apply,
         bool force,
         TreeRemoval removal,
+        Busy? busy = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entry);
@@ -149,8 +161,8 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
         {
             // git deletes a worktree's ignored files with it, and a worktree nested in its temp/ is one of them.
             var resolved = PathResolution.Resolve(entry.Path);
-            if ((await Worktree.ListAsync(git, clone).ConfigureAwait(false))
-                .Any(tree => Trim.IsStrictlyBelow(PathResolution.Resolve(tree.Path), resolved)))
+            var trees = await Worktree.ListAsync(git, clone).ConfigureAwait(false);
+            if (trees.Any(tree => Trim.IsStrictlyBelow(PathResolution.Resolve(tree.Path), resolved)))
             {
                 return "holds a worktree";
             }
@@ -161,14 +173,69 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
                 return "holds a git checkout";
             }
 
-            if (!force && (await git.LinesAsync(entry.Path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 })
+            var tree = trees.FirstOrDefault(candidate => !candidate.IsMain && PathResolution.Same(PathResolution.Resolve(candidate.Path), resolved));
+            if (tree is { } registered)
             {
-                return "dirty worktree";
-            }
+                var facts = await _worktrees.ReadAsync(clone, registered, cancellationToken).ConfigureAwait(false);
+                facts = facts with { InUse = busy?.WorkingIn(facts.Path) ?? false };
+                var decision = WorktreeRemovalJudge.Judge(facts, new RemovalPolicy(DiscardUnpushedCommits: force));
+                if (facts.OwnershipUnreadable)
+                {
+                    return "cannot read its git dir";
+                }
 
-            if (!force && await OrphanedAsync(entry.Path).ConfigureAwait(false))
+                if (decision.Reasons.Contains(RemovalRefusalReason.ForeignClone))
+                {
+                    return "belongs to another clone";
+                }
+
+                if (decision.Reasons.Contains(RemovalRefusalReason.UnbornHead))
+                {
+                    return "unborn HEAD";
+                }
+
+                if (decision.Reasons.Contains(RemovalRefusalReason.Locked))
+                {
+                    return facts.LockReason.Length > 0 ? $"locked: {facts.LockReason}" : "locked";
+                }
+
+                if (decision.Reasons.Contains(RemovalRefusalReason.InUse))
+                {
+                    return "in use";
+                }
+
+                if (!force && facts.HasUncommittedChanges)
+                {
+                    return "dirty worktree";
+                }
+
+                if (!force && decision.Reasons.Contains(RemovalRefusalReason.UnpushedCommits))
+                {
+                    return "only copy";
+                }
+
+                if (decision.Reasons.Contains(RemovalRefusalReason.IgnoredNotes))
+                {
+                    return "ignored notes";
+                }
+
+                if (decision.Reasons.Contains(RemovalRefusalReason.ReflogOnlyCommit))
+                {
+                    return "reflog-only commits";
+                }
+            }
+            else
             {
-                return "only copy";
+                // An entry git no longer lists cannot have its facts read; keep the old, unforced-only checks.
+                if (!force && (await git.LinesAsync(entry.Path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 })
+                {
+                    return "dirty worktree";
+                }
+
+                if (!force && await OrphanedAsync(entry.Path).ConfigureAwait(false))
+                {
+                    return "only copy";
+                }
             }
 
             if (!apply)

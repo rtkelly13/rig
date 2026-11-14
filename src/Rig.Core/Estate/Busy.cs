@@ -15,7 +15,7 @@ namespace Rig.Core.Estate;
 /// <c>lsof</c> call answers for every path: it takes seconds, so it is never repeated per worktree.
 /// </remarks>
 /// <param name="Dirs">Every process's working folder; null when that could not be read, which is not "nothing is busy".</param>
-public sealed record Busy(IReadOnlyList<string>? Dirs)
+public sealed record Busy(IReadOnlyList<string>? Dirs) : ILivenessPort
 {
     /// <summary>A snapshot that could not be read: every removal is refused unless forced.</summary>
     public static readonly Busy Unknown = new((IReadOnlyList<string>?)null);
@@ -67,6 +67,16 @@ public sealed record Busy(IReadOnlyList<string>? Dirs)
         // No flag overrides this: removing it pulls the folder out from under a live process.
         return InUse(path, Dirs) ? "a process is working in it (a shell, agent or Orca terminal)" : string.Empty;
     }
+
+    /// <summary>
+    /// Whether a process is working in <paramref name="path"/> or below it; null when the snapshot could not be read,
+    /// which is never idle.
+    /// </summary>
+    /// <param name="path">The folder about to go.</param>
+    public bool? WorkingIn(string path) => Dirs is null ? null : InUse(path, Dirs);
+
+    /// <inheritdoc />
+    bool? ILivenessPort.InUse(string path) => WorkingIn(path);
 
     /// <summary>Whether any of <paramref name="dirs"/> is <paramref name="path"/>, links resolved, or lies below it.</summary>
     public static bool InUse(string path, IEnumerable<string> dirs)

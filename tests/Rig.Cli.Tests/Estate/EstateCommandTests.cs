@@ -436,7 +436,7 @@ public sealed class EstateCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task Reclaim_reports_a_worktree_git_will_not_remove_as_failed()
+    public async Task Reclaim_refuses_a_locked_worktree_as_a_decision_not_a_failure()
     {
         await BuildEstateAsync();
         var worktree = await TempWorktreeAsync();
@@ -444,7 +444,7 @@ public sealed class EstateCommandTests : IDisposable
 
         var (_, output, _) = await RunAsync("reclaim", "--min", "0", "--apply", "--root", Code);
 
-        Assert.Contains("failed", output, StringComparison.Ordinal);
+        Assert.Contains("locked", output, StringComparison.Ordinal);
         Assert.True(Directory.Exists(worktree));
     }
 
