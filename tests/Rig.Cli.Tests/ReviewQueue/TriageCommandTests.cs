@@ -13,8 +13,8 @@ public sealed class TriageCommandTests : IDisposable
     private readonly TempDir _temp = new();
     private readonly FakeQueueSource _source = new();
     private readonly FakeProc _proc = new();
-    private readonly StringWriter _output = new();
-    private readonly StringWriter _error = new();
+    private readonly StringWriter _output = new() { NewLine = "\n" };
+    private readonly StringWriter _error = new() { NewLine = "\n" };
     private TriageHost Host => new(Path.Join(_temp.Path, "rig.db"), Path.Join(_temp.Path, "temp", "triage", "queue.md"), Path.Join(_temp.Path, "managed.json"));
 
     public void Dispose()
