@@ -78,6 +78,14 @@ public sealed partial class FlagsOracleTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task A_group_named_alone_is_still_the_parsers_missing_subcommand_error()
+    {
+        Assert.Equal(2, await Run("flags"));
+
+        Assert.Equal("rig: Required command was not provided.\nRun 'rig --help' for the commands.\n", _out.ToString().ReplaceLineEndings("\n"));
+    }
+
     [GeneratedRegex(@"\s+")]
     private static partial Regex Spaces();
 
@@ -113,6 +121,6 @@ public sealed partial class FlagsOracleTests : IDisposable
     }
 
     private Task<int> Run(params string[] args) =>
-        new FlagsCommand(new FlagStore(Db), _out).Build().Parse(args)
+        new FlagsCommand(new FlagStore(Db), _out, _out).Build().Parse(args)
             .InvokeAsync(new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken);
 }

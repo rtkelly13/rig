@@ -166,7 +166,7 @@ internal static class Program
                             () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
                         : null,
                     exportTree ? exportWindowsTree : OperatingSystem.IsWindowsVersionAtLeast(8, 1)).Build,
-                new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out).Build,
+                new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out, Console.Error).Build,
                 new TriageCommand(
                     new TriageHost(Path.Join(AppData.Current(), "rig.db"),
                         Path.Join(Path.GetDirectoryName(Path.GetDirectoryName(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))!, "temp", "triage", "queue.md"),

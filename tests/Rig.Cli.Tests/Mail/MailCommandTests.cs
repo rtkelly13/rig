@@ -209,6 +209,15 @@ public sealed class MailCommandTests : IDisposable
         Assert.Contains("3 rules", Output, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task A_group_named_alone_is_still_the_parsers_missing_subcommand_error()
+    {
+        Assert.Equal(2, await Run("mail"));
+
+        Assert.Empty(Output);
+        Assert.Equal("rig: Required command was not provided.\nRun 'rig --help' for the commands.\n", Error);
+    }
+
     private string PageFile()
     {
         var page = _temp.File("page.json");

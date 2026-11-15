@@ -1,5 +1,5 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core;
 using Rig.Core.Processes;
@@ -22,8 +22,15 @@ internal sealed record StatusResult(string Name, bool Passed, string Detail = ""
 /// <param name="git">Runs git, hardened under untrusted folders.</param>
 /// <param name="workingDirectory">The folder the command was run from; the repo is the one around it.</param>
 /// <param name="console">Where the verdict and check table go.</param>
+[CliCommand(Name = "status", Description = "Check the repo is well-managed: git state, lint, types, and security.")]
 internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory, IAnsiConsole console)
 {
+    /// <summary>The instance DotMake binds the options onto; rig always builds the wired one above instead.</summary>
+    internal StatusCommand()
+        : this(null!, null!, string.Empty, TextWriter.Null)
+    {
+    }
+
     /// <summary>The same command over a plain writer, wrapped in the machine-safe console.</summary>
     /// <param name="proc">Runs the gates.</param>
     /// <param name="git">Runs git, hardened under untrusted folders.</param>
@@ -49,15 +56,16 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
 
     private const int DetailLength = 100;
 
+    /// <summary>Also run the test suite.</summary>
+    [CliOption(Name = "--tests", Aliases = ["-t"], Description = "Also run the test suite.")]
+    public bool Tests { get; set; }
+
+    /// <summary>Run only the tests the CI marker selects.</summary>
+    [CliOption(Name = "--ci", Description = "Run only tests marked @pytest.mark.ci.")]
+    public bool CiOnly { get; set; }
+
     /// <summary>The <c>rig status</c> command.</summary>
-    public Command Build()
-    {
-        var tests = new Option<bool>("--tests", "-t") { Description = "Also run the test suite." };
-        var ciOnly = new Option<bool>("--ci") { Description = "Run only tests marked @pytest.mark.ci." };
-        var status = new Command("status", "Check the repo is well-managed: git state, lint, types, and security.") { tests, ciOnly };
-        status.SetAction((parsed, ct) => RunAsync(parsed.GetValue(tests), parsed.GetValue(ciOnly), ct));
-        return status;
-    }
+    public Command Build() => DeclarativeCommand.Build(this);
 
     /// <summary>The last non-blank line of <paramref name="text"/>, cut to 100 characters.</summary>
     public static string LastLine(string text)
@@ -73,19 +81,10 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
         return $"{(results.All(r => r.Passed) ? "Healthy" : "Issues Found")}\n{Table(results).Render()}";
     }
 
-    private static TextTable Table(IReadOnlyList<StatusResult> results)
+    /// <summary>The handler: the repo report.</summary>
+    public async Task<int> RunAsync(CliContext context)
     {
-        var table = new TextTable(null, [("", false), ("check", false), ("detail", false)]);
-        foreach (var result in results)
-        {
-            _ = table.Add(result.Passed ? "OK" : "!!", result.Name, result.Detail);
-        }
-
-        return table;
-    }
-
-    private async Task<int> RunAsync(bool tests, bool ciOnly, CancellationToken cancellationToken)
-    {
+        var cancellationToken = context.CancellationToken;
         var top = (await git.RunAsync(workingDirectory, ["rev-parse", "--show-toplevel"], cancellationToken: cancellationToken).ConfigureAwait(false)).OutOrEmpty;
         var root = top.Length > 0 ? top : workingDirectory;
 
@@ -96,9 +95,9 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
             results.Add(new StatusResult(name, ok, ok ? string.Empty : LastLine(text)));
         }
 
-        if (tests || ciOnly)
+        if (Tests || CiOnly)
         {
-            string[] argv = ciOnly ? ["uv", "run", "pytest", "-q", "--tb=no", "-m", "ci"] : ["uv", "run", "pytest", "-q", "--tb=no"];
+            string[] argv = CiOnly ? ["uv", "run", "pytest", "-q", "--tb=no", "-m", "ci"] : ["uv", "run", "pytest", "-q", "--tb=no"];
             var (ok, text) = await RunInAsync(root, argv, cancellationToken).ConfigureAwait(false);
             results.Add(new StatusResult("Tests", ok, LastLine(text)));
         }
@@ -110,6 +109,17 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
             healthy ? $"{results.Count} checks passed" : $"{results.Count(r => !r.Passed)} of {results.Count} checks need attention");
         Table(results).RenderTo(console);
         return (int)(healthy ? ExitCode.Clean : ExitCode.Drift);
+    }
+
+    private static TextTable Table(IReadOnlyList<StatusResult> results)
+    {
+        var table = new TextTable(null, [("", false), ("check", false), ("detail", false)]);
+        foreach (var result in results)
+        {
+            _ = table.Add(result.Passed ? "OK" : "!!", result.Name, result.Detail);
+        }
+
+        return table;
     }
 
     private async Task<IReadOnlyList<StatusResult>> GitResultsAsync(string root, CancellationToken cancellationToken)
