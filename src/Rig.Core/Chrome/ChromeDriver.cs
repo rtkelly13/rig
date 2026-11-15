@@ -80,6 +80,16 @@ public sealed class ForegroundLease : IDisposable
     }
 }
 
+/// <summary>Reading Chrome's browser windows and naming the one with the focus.</summary>
+public interface IChromeWindowReader
+{
+    /// <summary>Every Chrome browser window with its tabs, oldest first.</summary>
+    IReadOnlyList<ChromeWindow> ListWindows();
+
+    /// <summary>The window the user is in, or 0 when that is not a Chrome window this driver can name.</summary>
+    long ForegroundWindow();
+}
+
 /// <summary>
 /// The steps grouping takes, each with the window in front: what the grouping executor needs from a platform's driver.
 /// Every step re-finds its target and checks it before acting, and reports what happened rather than throwing on a

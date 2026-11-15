@@ -156,7 +156,14 @@ internal static class Program
                             () => OperatingSystem.IsWindowsVersionAtLeast(8, 1) ? WindowsChrome.Open() : throw new PlatformNotSupportedException("Inspection never opens a native driver."),
                             new GhApi(proc),
                             () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
-                        : null).Build,
+                        : (exportTree ? exportMacTree : OperatingSystem.IsMacOS()) ? new ChromeTabsDriver(
+#pragma warning disable CA1416 // The macOS composition is exported for inspection on any host; inspection never opens it.
+                            () => OperatingSystem.IsMacOS() || exportMacTree ? MacOSChrome.Open(home) : throw new PlatformNotSupportedException("Inspection never opens a native driver."),
+#pragma warning restore CA1416
+                            new GhApi(proc),
+                            () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
+                        : null,
+                    exportTree ? exportWindowsTree : OperatingSystem.IsWindowsVersionAtLeast(8, 1)).Build,
                 new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out).Build,
                 new TriageCommand(
                     new TriageHost(Path.Join(AppData.Current(), "rig.db"),

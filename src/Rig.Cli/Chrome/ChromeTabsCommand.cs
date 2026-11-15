@@ -19,9 +19,10 @@ namespace Rig.Cli.Chrome;
 /// <param name="time">The clock that picks today's day file.</param>
 /// <param name="zone">The zone run start times are shown in.</param>
 /// <param name="output">Where every line goes.</param>
-/// <param name="driver">Opens Chrome for the commands that read it; null where only the Python has a driver (macOS).</param>
+/// <param name="driver">Opens Chrome for the commands that read it; null on Linux, where no native driver exists.</param>
+/// <param name="windows">Whether this is the Windows composition, which alone has the PATH shim to install.</param>
 internal sealed class ChromeTabsCommand(
-    Func<string, string?> environment, string home, TimeProvider time, TimeZoneInfo zone, TextWriter output, ChromeTabsDriver? driver = null)
+    Func<string, string?> environment, string home, TimeProvider time, TimeZoneInfo zone, TextWriter output, ChromeTabsDriver? driver = null, bool windows = true)
 {
     /// <summary>The group's name, shared with the forwarding row.</summary>
     public const string Name = "chrome-tabs";
@@ -35,8 +36,8 @@ internal sealed class ChromeTabsCommand(
 
     /// <summary>
     /// The <c>chrome-tabs</c> command. <c>list</c>, <c>rank</c>, <c>prune</c>, <c>group</c>, <c>saved-groups</c>, <c>install</c> and <c>uninstall</c> are only registered
-    /// with a driver (Windows): without one, the forwarding table hands them to the Python, which has the macOS driver
-    /// and refuses the Windows-only installs itself.
+    /// with a driver (Windows or macOS): without one, the forwarding table hands them to the Python, which refuses the
+    /// platform-specific commands itself.
     /// </summary>
     public Command Build()
     {
@@ -47,9 +48,12 @@ internal sealed class ChromeTabsCommand(
             command.Subcommands.Add(Rank(driver));
             command.Subcommands.Add(Prune(driver));
             command.Subcommands.Add(Group(driver));
-            command.Subcommands.Add(SavedGroupsCommand(driver));
-            command.Subcommands.Add(Install());
-            command.Subcommands.Add(Uninstall());
+            if (windows)
+            {
+                command.Subcommands.Add(SavedGroupsCommand(driver));
+                command.Subcommands.Add(Install());
+                command.Subcommands.Add(Uninstall());
+            }
         }
 
         return command;
@@ -723,3 +727,4 @@ internal sealed class ChromeTabsCommand(
 /// <param name="MaxMemoryGb">The memory budget, if any.</param>
 /// <param name="Unattended">A scheduled run: leave calls, active tabs and the foreground window alone.</param>
 internal sealed record PruneOptions(bool DryRun, string? Profile, bool GitHub, bool Sites, double? MaxMemoryGb, bool Unattended);
+
