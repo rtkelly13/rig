@@ -26,19 +26,29 @@ Standardize on **`DotMake.CommandLine`** (v3.7.0+) powered by Roslyn incremental
 3. **Parse-then-Run Pipeline with Structured Telemetry**:
    - Applications must implement a two-phase invocation pattern:
      ```csharp
-     var result = Cli.Parse<RootOptions>(args);
+     var settings = new CliSettings
+     {
+         // Prevent internal swallowing of exceptions; bubble up to structured logging
+         EnableDefaultExceptionHandler = false
+     };
+
+     var result = Cli.Parse<RootOptions>(args, settings);
      if (result.ParseResult.Errors.Count > 0)
      {
+         foreach (var err in result.ParseResult.Errors)
+         {
+             Console.Error.WriteLine(err.Message);
+         }
          // Log structured validation errors before exiting
          return 1;
      }
-     return await result.RunAsync(settings);
+     return await result.RunAsync(cancellationToken);
      ```
-   - CLI parsing and syntax errors are intercepted from `result.ParseResult.Errors` and forwarded to structured logging (JSON / `ILogger` / Serilog).
-   - Set `CliSettings.EnableDefaultExceptionHandler = false` so runtime execution exceptions bubble up to top-level `try / catch` structured telemetry rather than dumping raw console traces.
+   - CLI parsing and syntax errors are written to stderr, intercepted from `result.ParseResult.Errors`, and forwarded to structured logging (JSON / `ILogger` / Serilog).
+   - Setting `CliSettings.EnableDefaultExceptionHandler = false` ensures runtime execution exceptions bubble up to top-level `try / catch` structured telemetry rather than dumping raw console traces.
 
-4. **Package Pinning**:
-   - Project files must pin exact package versions of `DotMake.CommandLine` to insulate the estate against transitive preview breaking changes from upstream `System.CommandLine`.
+4. **Package Pinning & Central Package Management**:
+   - Projects must pin exact package versions of both `DotMake.CommandLine` and its underlying transitive `System.CommandLine` dependency in `Directory.Packages.props` under Central Package Management (CPM) to insulate estate tooling from unexpected transitive upgrades or upstream preview breaking changes.
 
 ## Consequences
 
