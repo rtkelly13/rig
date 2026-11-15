@@ -70,6 +70,25 @@ The installed tool is opt-in: `rig` on PATH (`~/.local/bin/rig`) runs the runtim
 the same C# CLI through `dotnet run`, built in that copy on first use. Call the tool as `~/.dotnet/tools/rig` to skip
 that build.
 
+## BDD specs (`tests/Rig.Specs`)
+
+`tests/Rig.Specs` holds Gherkin specifications for the estate's highest-risk worktree operations and the
+reconciliation pipeline. Reqnroll (on xUnit v3 and Microsoft.Testing.Platform) generates one test per scenario.
+
+```bash
+dotnet test tests/Rig.Specs/Rig.Specs.csproj                    # fast: in memory, @regression skipped
+RIG_REGRESSION=1 dotnet test tests/Rig.Specs/Rig.Specs.csproj   # include the on-disk scenarios
+RIG_SPEC_MODE=real dotnet test tests/Rig.Specs/Rig.Specs.csproj # run every scenario on disk
+CI=true dotnet test tests/Rig.Specs/Rig.Specs.csproj            # what CI does
+```
+
+Each scenario has two executors. The default one drives the pure domain (`WorktreeRemovalJudge`, the shelving
+carry rules, the reconciliation plan and runner) with no disk and no git; the on-disk one builds a bare origin,
+real worktrees and real files. A scenario tagged `@real` always uses the on-disk executor, and
+`RIG_SPEC_MODE=real` switches every scenario. `@regression` marks the slow scenarios; they are skipped outside CI
+unless `RIG_REGRESSION=1` is set. Reqnroll writes `*.feature.cs` beside each feature: they are generated,
+gitignored, and rebuilt on every build.
+
 ## Pytest Markers
 
 Mark tests so the CI-safe subset can be run without external dependencies:
