@@ -136,7 +136,7 @@ public sealed class ReconciliationRunnerTests
     }
 
     [Fact]
-    public void Reconciliation_run_and_names_and_json_helpers()
+    public async Task Reconciliation_run_and_names_and_json_helpers()
     {
         var plan = new TestPlan([new Row("/temp/a", ChangeKind.Aligned), new Row("/temp/b", ChangeKind.Changed)]);
         var run = new ReconciliationRun<TestPlan, Row>(plan, [], Applied: true, ExitCode: 0);
@@ -157,6 +157,14 @@ public sealed class ReconciliationRunnerTests
         var errorPlan = new TestPlan([], errors: ["err"]);
         Assert.False(errorPlan.HasDrift());
         Assert.Equal(2, errorPlan.ExitCode(applied: false));
+
+        var emptyChangeRow = new Row("/temp/c", ChangeKind.WouldChange, "");
+        var renderPlan = new TestPlan([emptyChangeRow], errors: ["render-err"]);
+        var renderRun = new ReconciliationRun<TestPlan, Row>(renderPlan, ["render-err"], Applied: false, ExitCode: 2);
+        using var renderWriter = Writer();
+        await ReconciliationRunner.RenderAsync(renderRun, ReconciliationOptions.For(apply: false), renderWriter, TestContext.Current.CancellationToken);
+        Assert.Contains("would-change  /temp/c\n", renderWriter.ToString(), StringComparison.Ordinal);
+        Assert.Contains("error  render-err\n", renderWriter.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

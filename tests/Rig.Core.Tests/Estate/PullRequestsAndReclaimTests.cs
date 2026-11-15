@@ -178,11 +178,29 @@ public sealed class PullRequestsAndReclaimTests
     [Fact]
     public void RepoReclaim_Errors_and_ByCategory()
     {
+        var target = new ReclaimTarget("/r", 1000, true, null, null);
+        Assert.Equal("/r", target.Repo);
+        Assert.Equal(1000, target.Floor);
+        Assert.True(target.Force);
+
         var e1 = new Reclaimable("/r/node_modules", "node_modules", 100, "pnpm install");
         var e2 = new Reclaimable("/r/packages/a/node_modules", "node_modules", 50, "pnpm install");
         var e3 = new Reclaimable("/r/dist", "js build output", 200, "pnpm build") { Kind = ChangeKind.Error, Detail = "failed" };
-        var plan = new RepoReclaim("/r", [e1, e2, e3]);
+        var plan = new RepoReclaim("/r", [e1, e2, e3]) { Force = true };
 
+        Assert.Equal("/r/node_modules", e1.Subject);
+        Assert.Equal(ChangeKind.WouldChange, e1.Kind);
+        Assert.Equal("pnpm install", e1.Detail);
+
+        e1.Kind = ChangeKind.Changed;
+        e1.Detail = "deleted";
+        Assert.Equal(ChangeKind.Changed, e1.Kind);
+        Assert.Equal("deleted", e1.Detail);
+
+        Assert.True(plan.Force);
+        Assert.Null(plan.Removal);
+        Assert.Null(plan.Busy);
+        Assert.Equal(3, plan.Changes.Count);
         Assert.Equal(350, plan.Total);
         Assert.Equal(["/r/dist: failed"], plan.Errors);
         var byCategory = plan.ByCategory();

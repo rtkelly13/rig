@@ -33,6 +33,53 @@ public sealed class ShelveTests : IDisposable
     }
 
     [Fact]
+    public void ShelvePlan_and_ShelveResult_Reconciliation_properties_and_ToJson()
+    {
+        var plan = new ShelvePlan
+        {
+            Clone = "/repo",
+            Path = "/repo/.worktrees/wt",
+            Name = "wt",
+            Ref = "refs/shelves/wt",
+            Branch = "wt",
+            Head = "sha1",
+            Action = "snapshot",
+            Orphaned = 1,
+            Changed = 2,
+            Untracked = 3,
+        };
+        plan.Reasons.Add("worktree has changes");
+
+        Assert.Equal("/repo/.worktrees/wt", plan.Changes[0].Subject);
+        Assert.Equal(ChangeKind.WouldChange, plan.Changes[0].Kind);
+        Assert.Empty(plan.Errors);
+
+        var json = plan.ToJson();
+        Assert.Equal("/repo", json["clone"]?.ToString());
+        Assert.Equal("snapshot", json["action"]?.ToString());
+
+        var resShelved = new ShelveResult(plan, "shelved", "ok", "sha2");
+        Assert.Equal(ChangeKind.Changed, resShelved.Kind);
+        Assert.Equal("ok", resShelved.Detail);
+        Assert.Equal("sha2", resShelved.Sha);
+        var resJson = resShelved.ToJson();
+        Assert.Equal("shelved", resJson["outcome"]?.ToString());
+
+        var resRemoved = new ShelveResult(plan, "removed");
+        Assert.Equal(ChangeKind.Changed, resRemoved.Kind);
+
+        var resDecision = new ShelveResult(plan, "needs-decision", "user input required");
+        Assert.Equal(ChangeKind.Refused, resDecision.Kind);
+
+        var resFailed = new ShelveResult(plan, "failed", "fatal error");
+        Assert.Equal(ChangeKind.Error, resFailed.Kind);
+
+        plan.Result = resFailed;
+        Assert.Equal(["fatal error"], plan.Errors);
+        Assert.Equal(ChangeKind.Error, plan.Changes[0].Kind);
+    }
+
+    [Fact]
     public void Message_trailers_round_trip()
     {
         var text = Shelver.Message("data-platform", "feat", "feat", "abc123", ".worktrees/feat", 42, ShelveFixture.Now);

@@ -357,6 +357,30 @@ public sealed class TrimTests : IDisposable
         Assert.Null(Trim.CategoryOf(Path.Join(dir, "src")));
     }
 
+    [Fact]
+    public void TrimPlan_Errors_and_Trimmable_properties()
+    {
+        var target = new TrimTarget("/repo");
+        var item1 = new Trimmable("/wt", "/wt/node_modules", "node_modules", new TreeMeasure(100, 100));
+        var item2 = new Trimmable("/wt", "/wt/dist", "js build output", new TreeMeasure(200, 200), Refused: "in use");
+        var item3 = new Trimmable("/wt", "/wt/bin", "dotnet build output", new TreeMeasure(300, 300))
+        {
+            Kind = ChangeKind.Error,
+            Detail = "failed to delete",
+        };
+
+        var plan = new TrimPlan { Target = target, Items = [item1, item2, item3] };
+
+        Assert.Equal(ChangeKind.WouldChange, item1.Kind);
+        Assert.Equal(string.Empty, item1.Detail);
+        Assert.Equal(ChangeKind.Refused, item2.Kind);
+        Assert.Equal("in use", item2.Detail);
+        Assert.Equal(ChangeKind.Error, item3.Kind);
+        Assert.Equal("failed to delete", item3.Detail);
+        Assert.Equal(["/wt/bin: failed to delete"], plan.Errors);
+        Assert.Equal(3, plan.Changes.Count);
+    }
+
     // ---- helpers --------------------------------------------------------------------------------------------------
 
     private static TreeRemoval Removal() => new(Repos.Proc);
