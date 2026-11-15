@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 
 namespace Rig.Core.Tests.Estate;
 
@@ -29,6 +30,74 @@ public sealed class ShelveTests : IDisposable
 
         Assert.Equal(["new.py", "a.txt"], parsed.Changed);
         Assert.Equal(["b.txt"], parsed.Untracked);
+    }
+
+    [Fact]
+    public void ShelvePlan_and_ShelveResult_Reconciliation_properties_and_ToJson()
+    {
+        var plan = new ShelvePlan
+        {
+            Clone = "/repo",
+            Path = "/repo/.worktrees/wt",
+            Name = "wt",
+            Ref = "refs/shelves/wt",
+            Branch = "wt",
+            Head = "sha1",
+            Action = "snapshot",
+            Orphaned = 1,
+            Changed = 2,
+            Untracked = 3,
+        };
+        plan.Reasons.Add("worktree has changes");
+
+        Assert.Equal("/repo/.worktrees/wt", plan.Changes[0].Subject);
+        Assert.Equal(ChangeKind.WouldChange, plan.Changes[0].Kind);
+        Assert.Empty(plan.Errors);
+
+        var json = plan.ToJson();
+        Assert.Equal("/repo", json["clone"]?.ToString());
+        Assert.Equal("snapshot", json["action"]?.ToString());
+
+        var resShelved = new ShelveResult(plan, "shelved", "ok", "sha2");
+        Assert.Equal(ChangeKind.Changed, resShelved.Kind);
+        Assert.Equal("ok", resShelved.Detail);
+        Assert.Equal("sha2", resShelved.Sha);
+        var resJson = resShelved.ToJson();
+        Assert.Equal("shelved", resJson["outcome"]?.ToString());
+
+        var resRemoved = new ShelveResult(plan, "removed");
+        Assert.Equal(ChangeKind.Changed, resRemoved.Kind);
+
+        var resDecision = new ShelveResult(plan, "needs-decision", "user input required");
+        Assert.Equal(ChangeKind.Refused, resDecision.Kind);
+
+        var resFailed = new ShelveResult(plan, "failed", "fatal error");
+        Assert.Equal(ChangeKind.Error, resFailed.Kind);
+
+        plan.Result = resFailed;
+        Assert.Equal(["fatal error"], plan.Errors);
+        Assert.Equal(ChangeKind.Error, plan.Changes[0].Kind);
+    }
+
+    [Fact]
+    public void ShelvePlan_unreadable_decision_is_reported_as_plan_error()
+    {
+        var plan = new ShelvePlan
+        {
+            Clone = "/repo",
+            Path = "/repo/wt",
+            Name = "wt",
+            Ref = "refs/shelves/wt",
+            Branch = "wt",
+            Head = "sha",
+            Action = "remove",
+        };
+        plan.DecisionNeeded.Add("could not read the worktree: corrupt index");
+        Assert.Equal(["could not read the worktree: corrupt index"], plan.Errors);
+        Assert.Equal(ChangeKind.Error, plan.Changes[0].Kind);
+
+        var readResult = new ShelveResult(plan, "needs-decision", "cannot read this clone's git dir");
+        Assert.Equal(ChangeKind.Error, readResult.Kind);
     }
 
     [Fact]
@@ -1020,6 +1089,20 @@ public sealed class ShelveTests : IDisposable
 
         Assert.False(restored.Ok);
         Assert.StartsWith("restoring snapshot into ", restored.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Shelver_implements_IReconciler_pipeline()
+    {
+        await InitAsync();
+        var path = await _fx.AddWorktreeAsync("feat-reconcile");
+        var tree = await _fx.TreeAsync(path);
+        var shelver = _fx.Shelver();
+        var target = new ShelveTarget(Clone, tree, "ryan", new Dictionary<string, string>(), new Dictionary<string, PullRequest>(), ShelveFixture.NoIdle);
+        var plan = await shelver.PlanAsync(target, Token);
+        Assert.NotNull(plan);
+        var result = await shelver.ApplyAsync(plan);
+        Assert.NotNull(result);
     }
 
     // ------------------------------------------------------------------ helpers

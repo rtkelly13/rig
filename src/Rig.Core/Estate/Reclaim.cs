@@ -1,5 +1,6 @@
 using System.Globalization;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 
 namespace Rig.Core.Estate;
@@ -17,13 +18,63 @@ public sealed record ReclaimCategory(string Name, IReadOnlyList<string> Names, s
 /// <param name="Bytes">What it occupies on disk.</param>
 /// <param name="Regenerate">How it comes back.</param>
 /// <param name="IsWorktree">A registered worktree: git removes it, never a recursive delete.</param>
-public sealed record Reclaimable(string Path, string Category, long Bytes, string Regenerate, bool IsWorktree = false);
+public sealed record Reclaimable(string Path, string Category, long Bytes, string Regenerate, bool IsWorktree = false) : IChange
+{
+    private ChangeKind? _kind;
+    private string? _detail;
+
+    /// <summary>The folder, as the reconciliation row's subject.</summary>
+    public string Subject => Path;
+
+    /// <summary>What reconciliation decided for this folder.</summary>
+    public ChangeKind Kind
+    {
+        get => _kind ?? ChangeKind.WouldChange;
+        set => _kind = value;
+    }
+
+    /// <summary>The command that brings it back, or the reason applying it failed.</summary>
+    public string Detail
+    {
+        get => _detail ?? Regenerate;
+        set => _detail = value;
+    }
+}
+
+/// <summary>What <see cref="Reclaim"/> reconciles: one clone and the removal policy.</summary>
+/// <param name="Repo">The clone to scan.</param>
+/// <param name="Floor">Entries below this many bytes are ignored.</param>
+/// <param name="Force">Relax the soft worktree refusals; never a hard one.</param>
+/// <param name="Removal">Deletes a plain folder; required to apply a plan.</param>
+/// <param name="Busy">The run's process snapshot; null skips the in-use check.</param>
+public sealed record ReclaimTarget(
+    string Repo,
+    long Floor = Reclaim.ReportFloor,
+    bool Force = false,
+    TreeRemoval? Removal = null,
+    Busy? Busy = null);
 
 /// <summary>What one clone holds that regenerates.</summary>
 /// <param name="Repo">The clone.</param>
 /// <param name="Entries">Its regenerable folders, largest first.</param>
-public sealed record RepoReclaim(string Repo, IReadOnlyList<Reclaimable> Entries)
+public sealed record RepoReclaim(string Repo, IReadOnlyList<Reclaimable> Entries) : IPlan<Reclaimable>
 {
+    /// <summary>Relax the soft worktree refusals; never a hard one.</summary>
+    public bool Force { get; init; }
+
+    /// <summary>Deletes a plain folder; required to apply the plan.</summary>
+    public TreeRemoval? Removal { get; init; }
+
+    /// <summary>The run's process snapshot; null skips the in-use check.</summary>
+    public Busy? Busy { get; init; }
+
+    /// <summary>The plan's typed change rows, largest first.</summary>
+    public IReadOnlyList<Reclaimable> Changes => Entries;
+
+    /// <summary>Removals that failed or could not be attempted.</summary>
+    public IReadOnlyList<string> Errors =>
+        [.. Entries.Where(entry => entry.Kind == ChangeKind.Error).Select(entry => $"{entry.Path}: {entry.Detail}")];
+
     /// <summary>Every entry's bytes.</summary>
     public long Total => Entries.Sum(entry => entry.Bytes);
 
@@ -57,7 +108,7 @@ public sealed record RepoReclaim(string Repo, IReadOnlyList<Reclaimable> Entries
 /// </remarks>
 /// <param name="git">Lists the clone's worktrees.</param>
 /// <param name="disk">Sizes each folder.</param>
-public sealed class Reclaim(Git git, IDiskUsage disk)
+public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarget, RepoReclaim, Reclaimable>
 {
     /// <summary>Below this, an entry is noise in a report about gigabytes.</summary>
     public const long ReportFloor = 20L * 1024 * 1024;
@@ -127,6 +178,49 @@ public sealed class Reclaim(Git git, IDiskUsage disk)
         }
 
         return new RepoReclaim(repo, [.. entries.OrderByDescending(entry => entry.Bytes)]);
+    }
+
+    /// <summary>Scans the clone into a typed plan, carrying the removal policy the apply step needs.</summary>
+    /// <param name="target">The clone and removal policy.</param>
+    /// <param name="ct">Stops the scan.</param>
+    public async Task<RepoReclaim> PlanAsync(ReclaimTarget target, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        var scan = await ScanRepoAsync(target.Repo, target.Floor, ct).ConfigureAwait(false);
+        return scan with { Force = target.Force, Removal = target.Removal, Busy = target.Busy };
+    }
+
+    /// <summary>Walks the plan's regenerable entries, recording each removal's outcome on its row.</summary>
+    /// <param name="plan">The plan <see cref="PlanAsync"/> produced.</param>
+    /// <param name="ct">Stops between removals.</param>
+    public async Task<IReadOnlyList<string>> ApplyAsync(RepoReclaim plan, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        if (plan.Removal is not { } removal)
+        {
+            return ["reclaim requires a removal port to apply"];
+        }
+
+        foreach (var entry in plan.Changes)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (entry.Kind != ChangeKind.WouldChange)
+            {
+                continue;
+            }
+
+            var status = await ApplyAsync(plan.Repo, entry, apply: true, plan.Force, removal, plan.Busy, ct).ConfigureAwait(false);
+            entry.Kind = status switch
+            {
+                "removed" => ChangeKind.Changed,
+                "would remove" => ChangeKind.WouldChange,
+                "failed" => ChangeKind.Error,
+                _ => ChangeKind.Refused,
+            };
+            entry.Detail = status;
+        }
+
+        return plan.Errors;
     }
 
     /// <summary>

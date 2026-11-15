@@ -9,7 +9,7 @@ namespace Rig.Cli.Rendering;
 /// </summary>
 internal static class SpectreOutputExtensions
 {
-    /// <summary>Renders a reconciliation plan as a rounded table of change badges, targets and descriptions.</summary>
+    /// <summary>Renders a reconciliation plan as a rounded table of change badges, subjects and details.</summary>
     /// <typeparam name="TChange">The plan's change type.</typeparam>
     /// <param name="console">The output console.</param>
     /// <param name="plan">The typed plan to render.</param>
@@ -19,26 +19,39 @@ internal static class SpectreOutputExtensions
         ArgumentNullException.ThrowIfNull(console);
         ArgumentNullException.ThrowIfNull(plan);
 
-        var summary = plan.IsClean
+        var wouldChange = plan.Changes.Count(change => change.Kind == ChangeKind.WouldChange);
+        var changed = plan.Changes.Count(change => change.Kind == ChangeKind.Changed);
+        var drift = wouldChange + changed;
+        var summary = drift == 0
             ? "no drift — nothing to apply"
-            : $"{Count(plan.DriftCount)} of {Count(plan.Changes.Count)} change(s) to apply";
+            : wouldChange > 0
+                ? $"{Count(wouldChange)} of {Count(plan.Changes.Count)} change(s) to apply"
+                : $"{Count(changed)} change(s) applied";
         var table = new Table()
             .RoundedBorder()
             .Title(TextSanitizer.Markup($"Plan — {summary}"));
         table.AddColumn(TextSanitizer.Markup("Change"));
-        table.AddColumn(TextSanitizer.Markup("Target"));
-        table.AddColumn(TextSanitizer.Markup("Description"));
+        table.AddColumn(TextSanitizer.Markup("Subject"));
+        table.AddColumn(TextSanitizer.Markup("Detail"));
 
         foreach (var change in plan.Changes)
         {
             table.AddRow(
                 new Markup(Badge(change.Kind)),
-                new Markup(TextSanitizer.Markup(change.Target)),
-                new Markup(TextSanitizer.Markup(change.Description)));
+                new Markup(TextSanitizer.Markup(change.Subject)),
+                new Markup(TextSanitizer.Markup(change.Detail)));
         }
 
         console.Write(table);
-        console.MarkupLine(plan.IsClean ? "[green]Clean.[/]" : "[yellow]Review before applying.[/]");
+        var hasErrors = plan.Errors.Count > 0 || plan.Changes.Any(change => change.Kind == ChangeKind.Error);
+        if (hasErrors)
+        {
+            console.MarkupLine("[red]Errors in plan.[/]");
+        }
+        else
+        {
+            console.MarkupLine(wouldChange > 0 ? "[yellow]Review before applying.[/]" : "[green]Clean.[/]");
+        }
     }
 
     /// <summary>Renders a pass/fail verdict panel with an optional detail line.</summary>
@@ -93,11 +106,11 @@ internal static class SpectreOutputExtensions
     /// <param name="kind">The planned mutation.</param>
     public static string Badge(ChangeKind kind) => kind switch
     {
-        ChangeKind.NoOp => "[grey]no-op[/]",
-        ChangeKind.Create => "[green]create[/]",
-        ChangeKind.Update => "[yellow]update[/]",
-        ChangeKind.Delete => "[red]delete[/]",
-        ChangeKind.Refusal => "[darkorange]refuse[/]",
+        ChangeKind.Aligned => "[grey]aligned[/]",
+        ChangeKind.WouldChange => "[yellow]would-change[/]",
+        ChangeKind.Changed => "[green]changed[/]",
+        ChangeKind.Refused => "[darkorange]refused[/]",
+        ChangeKind.Error => "[red]error[/]",
         _ => $"[grey]{TextSanitizer.Markup(kind.ToString())}[/]",
     };
 

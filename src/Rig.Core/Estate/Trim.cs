@@ -1,4 +1,5 @@
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 
 namespace Rig.Core.Estate;
@@ -9,7 +10,56 @@ namespace Rig.Core.Estate;
 /// <param name="Category">What kind of regenerable output it is.</param>
 /// <param name="Size">What deleting it frees.</param>
 /// <param name="Refused">Why it may not be removed; empty when it may.</param>
-public sealed record Trimmable(string Worktree, string Path, string Category, TreeMeasure Size, string Refused = "");
+public sealed record Trimmable(string Worktree, string Path, string Category, TreeMeasure Size, string Refused = "") : IChange
+{
+    private ChangeKind? _kind;
+    private string? _detail;
+
+    /// <summary>The folder, as the reconciliation row's subject.</summary>
+    public string Subject => Path;
+
+    /// <summary>What reconciliation decided for this folder.</summary>
+    public ChangeKind Kind
+    {
+        get => _kind ?? (Refused.Length > 0 ? ChangeKind.Refused : ChangeKind.WouldChange);
+        set => _kind = value;
+    }
+
+    /// <summary>The refusal, or what applying the removal reported.</summary>
+    public string Detail
+    {
+        get => _detail ?? Refused;
+        set => _detail = value;
+    }
+}
+
+/// <summary>What <see cref="Trim"/> reconciles: one clone and its idleness policy.</summary>
+/// <param name="Repo">The clone whose linked worktrees are scanned.</param>
+/// <param name="IdleDays">Days without git activity before a worktree is idle.</param>
+/// <param name="Floor">Candidates below this many freeable bytes are dropped.</param>
+/// <param name="Removal">Deletes a folder; required to apply a plan.</param>
+public sealed record TrimTarget(
+    string Repo,
+    int IdleDays = Trim.DefaultIdleDays,
+    long Floor = Trim.DefaultFloor,
+    TreeRemoval? Removal = null);
+
+/// <summary>The typed plan <see cref="Trim.PlanAsync"/> produces and <see cref="Trim.ApplyAsync"/> walks.</summary>
+public sealed class TrimPlan : IPlan<Trimmable>
+{
+    /// <summary>The clone and policy the plan was built from.</summary>
+    public required TrimTarget Target { get; init; }
+
+    /// <summary>Regenerable folders inside idle worktrees, the most freeable first.</summary>
+    public required IReadOnlyList<Trimmable> Items { get; init; }
+
+    /// <summary>Every candidate, the most freeable first.</summary>
+    public IReadOnlyList<Trimmable> Changes => Items;
+
+    /// <summary>Removals that failed or could not be attempted.</summary>
+    public IReadOnlyList<string> Errors =>
+        [.. Items.Where(item => item.Kind == ChangeKind.Error).Select(item => $"{item.Path}: {item.Detail}")];
+}
 
 /// <summary>
 /// Regenerable output inside worktrees nobody has used for a week. Ported from <c>src/rig/estate/trim.py</c>.
@@ -30,7 +80,7 @@ public sealed record Trimmable(string Worktree, string Path, string Category, Tr
 /// </remarks>
 /// <param name="git">Lists worktrees and asks what git tracks and ignores.</param>
 /// <param name="time">The clock idleness is measured against.</param>
-public sealed class Trim(Git git, TimeProvider time)
+public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, TrimPlan, Trimmable>
 {
     /// <summary>Days without git activity before a worktree is idle.</summary>
     public const int DefaultIdleDays = 7;
@@ -176,6 +226,62 @@ public sealed class Trim(Git git, TimeProvider time)
         }
 
         return [.. found.OrderByDescending(item => item.Size.Freeable)];
+    }
+
+    /// <summary>Scans idle worktrees into a typed plan, carrying the removal port the apply step needs.</summary>
+    /// <param name="target">The clone and idleness policy.</param>
+    /// <param name="ct">Stops the scan.</param>
+    public async Task<TrimPlan> PlanAsync(TrimTarget target, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ct.ThrowIfCancellationRequested();
+        return new TrimPlan
+        {
+            Target = target,
+            Items = await ScanAsync(target.Repo, target.IdleDays, target.Floor).ConfigureAwait(false),
+        };
+    }
+
+    /// <summary>Rechecks and removes each planned folder, recording the outcome on its row.</summary>
+    /// <param name="plan">The plan <see cref="PlanAsync"/> produced.</param>
+    /// <param name="ct">Stops between removals.</param>
+    public async Task<IReadOnlyList<string>> ApplyAsync(TrimPlan plan, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        if (plan.Target.Removal is not { } removal)
+        {
+            return ["trim requires a removal port to apply"];
+        }
+
+        foreach (var item in plan.Changes)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (item.Kind != ChangeKind.WouldChange)
+            {
+                continue;
+            }
+
+            var refused = item.Refused.Length > 0
+                ? item.Refused
+                : await RecheckAsync(item, plan.Target.IdleDays).ConfigureAwait(false);
+            if (refused.Length > 0)
+            {
+                item.Kind = ChangeKind.Refused;
+                item.Detail = refused;
+                continue;
+            }
+
+            var status = await RemoveAsync(item, removal, ct).ConfigureAwait(false);
+            item.Kind = status switch
+            {
+                "removed" => ChangeKind.Changed,
+                _ when status.StartsWith("failed", StringComparison.Ordinal) => ChangeKind.Error,
+                _ => ChangeKind.Refused,
+            };
+            item.Detail = status;
+        }
+
+        return plan.Errors;
     }
 
     /// <summary>Measures and rules on each candidate folder under <paramref name="root"/>; one below <paramref name="floor"/> is dropped.</summary>

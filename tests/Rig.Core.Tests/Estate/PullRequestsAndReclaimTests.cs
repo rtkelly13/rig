@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Tests.Fakes;
 
 namespace Rig.Core.Tests.Estate;
@@ -131,6 +132,24 @@ public sealed class PullRequestsAndReclaimTests
     }
 
     [Fact]
+    public async Task Reclaim_implements_IReconciler_pipeline()
+    {
+        using var root = new TempDir();
+        var repo = root.Folder("my-repo");
+        _ = await Repos.InitAsync(repo);
+        var proc = new FakeProc().Answer(new Ran(0, $"worktree {repo}\nHEAD a\nbranch refs/heads/main\n", string.Empty), "git", "worktree", "list");
+        var disk = new Sizes(new()
+        {
+            ["node_modules"] = 100,
+        });
+        var reclaim = new Reclaim(new Git(proc, root.Path), disk);
+        var plan = await reclaim.PlanAsync(new ReclaimTarget(repo, Floor: 0, Removal: new TreeRemoval(proc)), Token);
+        Assert.NotNull(plan);
+        var errors = await reclaim.ApplyAsync(plan, Token);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
     public async Task Disk_usage_reads_du_kilobytes_and_zero_on_failure()
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "du is the POSIX path");
@@ -154,6 +173,41 @@ public sealed class PullRequestsAndReclaimTests
         Assert.Equal(4096 + 8192, DiskUsage.Walk(Path.Join(root.Path, "a")));
         Assert.Equal(4096, DiskUsage.Walk(Path.Join(root.Path, "a", "one.txt")));
         Assert.Equal(0, DiskUsage.Walk(Path.Join(root.Path, "missing")));
+    }
+
+    [Fact]
+    public void RepoReclaim_Errors_and_ByCategory()
+    {
+        var target = new ReclaimTarget("/r", 1000, true, null, null);
+        Assert.Equal("/r", target.Repo);
+        Assert.Equal(1000, target.Floor);
+        Assert.True(target.Force);
+
+        var e1 = new Reclaimable("/r/node_modules", "node_modules", 100, "pnpm install");
+        var e2 = new Reclaimable("/r/packages/a/node_modules", "node_modules", 50, "pnpm install");
+        var e3 = new Reclaimable("/r/dist", "js build output", 200, "pnpm build") { Kind = ChangeKind.Error, Detail = "failed" };
+        var plan = new RepoReclaim("/r", [e1, e2, e3]) { Force = true };
+
+        Assert.Equal("/r/node_modules", e1.Subject);
+        Assert.Equal(ChangeKind.WouldChange, e1.Kind);
+        Assert.Equal("pnpm install", e1.Detail);
+
+        e1.Kind = ChangeKind.Changed;
+        e1.Detail = "deleted";
+        Assert.Equal(ChangeKind.Changed, e1.Kind);
+        Assert.Equal("deleted", e1.Detail);
+
+        Assert.True(plan.Force);
+        Assert.Null(plan.Removal);
+        Assert.Null(plan.Busy);
+        Assert.Equal(3, plan.Changes.Count);
+        Assert.Equal(350, plan.Total);
+        Assert.Equal(["/r/dist: failed"], plan.Errors);
+        var byCategory = plan.ByCategory();
+        Assert.Equal("js build output", byCategory[0].Key);
+        Assert.Equal(200, byCategory[0].Value);
+        Assert.Equal("node_modules", byCategory[1].Key);
+        Assert.Equal(150, byCategory[1].Value);
     }
 
     private static Git Origin(string url) =>
@@ -182,6 +236,42 @@ public sealed class PullRequestsAndReclaimTests
             Calls.Add(request);
             return Task.FromResult(Calls.Count <= bodies.Length ? new Ran(0, bodies[Calls.Count - 1], string.Empty) : new Ran(1, string.Empty, "HTTP 500"));
         }
+    }
+
+    [Fact]
+    public void Reclaim_contracts_and_properties()
+    {
+        var item = new Reclaimable("/repo/node_modules", "node_modules", 1024, "pnpm i");
+        Assert.Equal("/repo/node_modules", item.Subject);
+        Assert.Equal(ChangeKind.WouldChange, item.Kind);
+        Assert.Equal("pnpm i", item.Detail);
+
+        item.Kind = ChangeKind.Changed;
+        item.Detail = "deleted";
+        Assert.Equal(ChangeKind.Changed, item.Kind);
+        Assert.Equal("deleted", item.Detail);
+
+        var errItem = new Reclaimable("/repo/err", "err", 512, "cmd") { Kind = ChangeKind.Error, Detail = "failed" };
+        var plan = new RepoReclaim("/repo", [item, errItem])
+        {
+            Force = true,
+            Removal = null,
+            Busy = null,
+        };
+
+        Assert.True(plan.Force);
+        Assert.Null(plan.Removal);
+        Assert.Null(plan.Busy);
+        Assert.Equal(1536, plan.Total);
+        Assert.Single(plan.Errors);
+        Assert.Equal("/repo/err: failed", plan.Errors[0]);
+
+        var target = new ReclaimTarget("/repo", 100, true);
+        Assert.Equal("/repo", target.Repo);
+        Assert.Equal(100, target.Floor);
+        Assert.True(target.Force);
+        Assert.Null(target.Removal);
+        Assert.Null(target.Busy);
     }
 
     // Sizes keyed by the path's tail, so the test reads as the folder layout.

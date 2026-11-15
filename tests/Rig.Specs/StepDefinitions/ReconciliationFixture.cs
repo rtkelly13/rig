@@ -10,14 +10,18 @@ namespace Rig.Specs.StepDefinitions;
 public sealed class ReconciliationFixture : IDisposable
 {
     private readonly SpecScratch _scratch = new();
-    private readonly ResourceReconciler _reconciler = new();
+    private readonly ResourceReconciler _reconciler;
     private readonly Dictionary<string, string> _desired = new(StringComparer.Ordinal);
     private Dictionary<string, string> _observed = new(StringComparer.Ordinal);
     private Dictionary<string, string> _before = new(StringComparer.Ordinal);
     private readonly bool _real;
 
     /// <summary>Creates a fixture that writes real files when <paramref name="real"/> is set.</summary>
-    public ReconciliationFixture(bool real) => _real = real;
+    public ReconciliationFixture(bool real)
+    {
+        _real = real;
+        _reconciler = new ResourceReconciler(Apply);
+    }
 
     /// <summary>The plan the last evaluation produced.</summary>
     public IPlan<ResourceChange> Plan { get; private set; } = new ResourcePlan([]);
@@ -55,10 +59,10 @@ public sealed class ReconciliationFixture : IDisposable
     }
 
     /// <summary>Builds the plan and remembers the observed state a dry run must not change.</summary>
-    public void Evaluate()
+    public async Task EvaluateAsync()
     {
         _before = new Dictionary<string, string>(_observed, StringComparer.Ordinal);
-        Plan = _reconciler.Plan(_desired, _observed);
+        Plan = await _reconciler.PlanAsync(new ResourceTarget(_desired, _observed), CancellationToken.None);
     }
 
     /// <summary>Runs the plan: report only for a dry run, otherwise mutate through the sink.</summary>
@@ -84,22 +88,21 @@ public sealed class ReconciliationFixture : IDisposable
     private void Apply(IChange change)
     {
         Mutations++;
-        if (change.Kind == ChangeKind.Delete)
+        if (!_desired.TryGetValue(change.Subject, out var content))
         {
-            _ = _observed.Remove(change.Target);
+            _ = _observed.Remove(change.Subject);
             if (_real)
             {
-                File.Delete(Path.Join(_scratch.Path, change.Target));
+                File.Delete(Path.Join(_scratch.Path, change.Subject));
             }
 
             return;
         }
 
-        var content = _desired[change.Target];
-        _observed[change.Target] = content;
+        _observed[change.Subject] = content;
         if (_real)
         {
-            _ = _scratch.Write(change.Target, content);
+            _ = _scratch.Write(change.Subject, content);
         }
     }
 

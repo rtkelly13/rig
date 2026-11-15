@@ -1,5 +1,6 @@
 using System.Globalization;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 
 namespace Rig.Core.Estate;
@@ -25,10 +26,19 @@ public enum TidyOutcome
 /// <param name="Subject">The path or branch it is about.</param>
 /// <param name="Outcome">What happened.</param>
 /// <param name="Detail">Why, or what git said.</param>
-public sealed record TidyAction(string Check, string Subject, TidyOutcome Outcome, string Detail = "")
+public sealed record TidyAction(string Check, string Subject, TidyOutcome Outcome, string Detail = "") : IChange
 {
     /// <summary>The outcome as reports spell it: <c>cleaned</c>, <c>would-clean</c>, <c>refused</c> or <c>failed</c>.</summary>
     public string OutcomeName => Name(Outcome);
+
+    /// <summary>The standard reconciliation kind for <see cref="Outcome"/>.</summary>
+    public ChangeKind Kind => Outcome switch
+    {
+        TidyOutcome.Cleaned => ChangeKind.Changed,
+        TidyOutcome.WouldClean => ChangeKind.WouldChange,
+        TidyOutcome.Refused => ChangeKind.Refused,
+        _ => ChangeKind.Error,
+    };
 
     /// <summary>How reports spell <paramref name="outcome"/>.</summary>
     public static string Name(TidyOutcome outcome) => outcome switch
@@ -53,6 +63,39 @@ public static class TidyChecks
     public static readonly IReadOnlyList<string> All = ["worktree-prunable", .. Branch, .. Worktree, "temp-stale"];
 }
 
+/// <summary>What <see cref="Tidy"/> reconciles, and the policy that decides each row.</summary>
+/// <param name="Report">From <see cref="RepoChecks.InspectAsync"/>.</param>
+/// <param name="Force">Relax the soft refusals; never a hard one.</param>
+/// <param name="MergedHeads">From <see cref="PullRequests.MergedHeadsAsync"/>; null when GitHub was not asked.</param>
+/// <param name="Busy">The run's process snapshot; null skips the in-use check.</param>
+/// <param name="Checks">Only these finding checks; null for all.</param>
+public sealed record TidyTarget(
+    RepoReport Report,
+    bool Force = false,
+    IReadOnlyDictionary<string, PullRequest>? MergedHeads = null,
+    Busy? Busy = null,
+    IReadOnlyCollection<string>? Checks = null);
+
+/// <summary>The typed plan <see cref="Tidy.PlanAsync"/> produces and <see cref="Tidy.ApplyAsync"/> walks.</summary>
+public sealed class TidyPlan : IPlan<TidyAction>
+{
+    private readonly List<TidyAction> _changes = [];
+
+    /// <summary>The clone's findings the plan was built from.</summary>
+    public required TidyTarget Target { get; init; }
+
+    /// <summary>Every planned or completed action, in evaluation order.</summary>
+    public IReadOnlyList<TidyAction> Changes => _changes;
+
+    /// <summary>Failures the plan or its application reported.</summary>
+    public IReadOnlyList<string> Errors =>
+        [.. _changes.Where(change => change.Kind == ChangeKind.Error).Select(change => $"{change.Subject}: {change.Detail}")];
+
+    internal void Add(TidyAction action) => _changes.Add(action);
+
+    internal void Replace(int index, TidyAction action) => _changes[index] = action;
+}
+
 /// <summary>
 /// The only estate code that deletes a branch or a worktree. Ported from <c>src/rig/estate/cleanup.py</c>.
 /// </summary>
@@ -75,7 +118,7 @@ public static class TidyChecks
 /// </remarks>
 /// <param name="git">Runs git.</param>
 /// <param name="removal">Deletes stale scratch.</param>
-public sealed class Tidy(Git git, TreeRemoval removal)
+public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget, TidyPlan, TidyAction>
 {
     // A worktree holding a large node_modules takes a while to delete.
     private static readonly TimeSpan RemoveTimeout = TimeSpan.FromMinutes(10);
@@ -101,32 +144,77 @@ public sealed class Tidy(Git git, TreeRemoval removal)
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(report);
-        var actionable = report.Findings.Where(f => f.Actionable && (checks is null || checks.Contains(f.Check))).ToList();
-        var actions = new List<TidyAction>();
-        if (actionable.Any(f => f.Check == "worktree-prunable"))
+        var plan = await PlanAsync(new TidyTarget(report, force, mergedHeads, busy, checks), cancellationToken).ConfigureAwait(false);
+        if (apply)
         {
-            actions.Add(await PruneAsync(report.Repo, apply, cancellationToken).ConfigureAwait(false));
+            _ = await ApplyAsync(plan, cancellationToken).ConfigureAwait(false);
         }
 
-        foreach (var finding in actionable)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (TidyChecks.Branch.Contains(finding.Check))
-            {
-                actions.Add(await BranchAsync(report.Repo, finding, apply, mergedHeads, cancellationToken).ConfigureAwait(false));
-            }
-            else if (TidyChecks.Worktree.Contains(finding.Check))
-            {
-                actions.Add(await WorktreeAsync(report.Repo, finding, apply, force, mergedHeads, busy, cancellationToken).ConfigureAwait(false));
-            }
-            else if (finding.Check == "temp-stale")
-            {
-                actions.Add(await TempAsync(report.Repo, finding, apply, force, busy, cancellationToken).ConfigureAwait(false));
-            }
-        }
-
-        return actions;
+        return plan.Changes;
     }
+
+    /// <summary>Reads the report's actionable findings and decides each one. Never writes.</summary>
+    /// <param name="target">The report and the policy that decides each row.</param>
+    /// <param name="ct">Stops between findings.</param>
+    public async Task<TidyPlan> PlanAsync(TidyTarget target, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        var report = target.Report;
+        var plan = new TidyPlan { Target = target };
+        var actionable = report.Findings
+            .Where(finding => finding.Actionable && (target.Checks is null || target.Checks.Contains(finding.Check)))
+            .ToList();
+        if (actionable.Any(finding => finding.Check == "worktree-prunable"))
+        {
+            plan.Add(await PruneAsync(report.Repo, apply: false, ct).ConfigureAwait(false));
+        }
+
+        foreach (var finding in actionable.Where(finding => finding.Check != "worktree-prunable" && TidyChecks.All.Contains(finding.Check)))
+        {
+            ct.ThrowIfCancellationRequested();
+            plan.Add(await DecideAsync(report.Repo, finding, target, apply: false, ct).ConfigureAwait(false));
+        }
+
+        return plan;
+    }
+
+    /// <summary>Walks the plan's would-change rows through the same handlers, recording each outcome.</summary>
+    /// <param name="plan">The plan <see cref="PlanAsync"/> produced.</param>
+    /// <param name="ct">Stops between findings.</param>
+    public async Task<IReadOnlyList<string>> ApplyAsync(TidyPlan plan, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        for (var index = 0; index < plan.Changes.Count; index++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var change = plan.Changes[index];
+            if (change.Kind != ChangeKind.WouldChange)
+            {
+                continue;
+            }
+
+            var updated = change.Check == "worktree-prunable"
+                ? await PruneAsync(plan.Target.Report.Repo, apply: true, ct).ConfigureAwait(false)
+                : await DecideAsync(
+                    plan.Target.Report.Repo,
+                    new Finding(change.Check, Severity.Info, change.Subject, string.Empty, Actionable: true),
+                    plan.Target,
+                    apply: true,
+                    ct).ConfigureAwait(false);
+            plan.Replace(index, updated);
+        }
+
+        return plan.Errors;
+    }
+
+    private Task<TidyAction> DecideAsync(string repo, Finding finding, TidyTarget target, bool apply, CancellationToken cancellationToken) =>
+        TidyChecks.Branch.Contains(finding.Check)
+            ? BranchAsync(repo, finding, apply, target.MergedHeads, cancellationToken)
+            : TidyChecks.Worktree.Contains(finding.Check)
+                ? WorktreeAsync(repo, finding, apply, target.Force, target.MergedHeads, target.Busy, cancellationToken)
+                : finding.Check == "temp-stale"
+                    ? TempAsync(repo, finding, apply, target.Force, target.Busy, cancellationToken)
+                    : Task.FromResult(new TidyAction(finding.Check, finding.Subject, TidyOutcome.Refused, "not a check tidy acts on"));
 
     private async Task<TidyAction> PruneAsync(string repo, bool apply, CancellationToken cancellationToken)
     {

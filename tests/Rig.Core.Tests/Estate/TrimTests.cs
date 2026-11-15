@@ -1,5 +1,6 @@
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 using Rig.Core.Tests.Otel;
 
@@ -306,6 +307,197 @@ public sealed class TrimTests : IDisposable
         Assert.Equal("contains tracked files", await trim.RefusalAsync(_temp.Folder("plain"), _temp.Folder("plain/node_modules"), ignored: true));
     }
 
+    [Fact]
+    public async Task PlanAsync_and_ApplyAsync_execute_reconciler_pipeline()
+    {
+        var (clone, worktree) = await CloneWithWorktreeAsync();
+        var candidate = Path.Join(worktree, "node_modules");
+        Directory.CreateDirectory(candidate);
+        File.WriteAllBytes(Path.Join(candidate, "dep.js"), [1, 2, 3]);
+
+        var trim = Idle();
+        var target = new TrimTarget(clone, IdleDays: 0, Floor: 0, Removal: Removal());
+        var plan = await trim.PlanAsync(target, Token);
+
+        Assert.NotNull(plan);
+        Assert.Single(plan.Changes);
+        Assert.Equal(ChangeKind.WouldChange, plan.Changes[0].Kind);
+
+        var errors = await trim.ApplyAsync(plan, Token);
+        Assert.Empty(errors);
+        Assert.Equal(ChangeKind.Changed, plan.Changes[0].Kind);
+        Assert.False(Directory.Exists(candidate));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_returns_error_when_removal_is_missing()
+    {
+        var trim = Idle();
+        var target = new TrimTarget("nonexistent", Removal: null);
+        var plan = new TrimPlan { Target = target, Items = [] };
+        var errors = await trim.ApplyAsync(plan, Token);
+        Assert.Contains("trim requires a removal port to apply", errors);
+    }
+
+    [Fact]
+    public void CategoryOf_detects_all_build_outputs()
+    {
+        var dir = _temp.Folder("build-test");
+        File.WriteAllText(Path.Join(dir, "test.csproj"), "<Project/>");
+        File.WriteAllText(Path.Join(dir, "test.sln"), "");
+        File.WriteAllText(Path.Join(dir, "Cargo.toml"), "");
+
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "bin")));
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "obj")));
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "packages")));
+        Assert.Equal("rust build output", Trim.CategoryOf(Path.Join(dir, "target")));
+        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, "dist")));
+        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, ".next")));
+        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, ".turbo")));
+        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, "storybook-static")));
+        Assert.Equal("python venv", Trim.CategoryOf(Path.Join(dir, ".venv")));
+        Assert.Equal("python venv", Trim.CategoryOf(Path.Join(dir, "venv")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".ruff_cache")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".pytest_cache")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".mypy_cache")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".tox")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".nox")));
+        Assert.Null(Trim.CategoryOf(Path.Join(dir, "src")));
+
+        var fsharpDir = _temp.Folder("fsharp-build");
+        File.WriteAllText(Path.Join(fsharpDir, "test.fsproj"), "<Project/>");
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(fsharpDir, "bin")));
+
+        var vbDir = _temp.Folder("vb-build");
+        File.WriteAllText(Path.Join(vbDir, "test.vbproj"), "<Project/>");
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(vbDir, "obj")));
+
+        var noProjectDir = _temp.Folder("no-project-build");
+        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "bin")));
+        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "obj")));
+        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "packages")));
+        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "target")));
+    }
+
+    [Fact]
+    public void IsStrictlyBelow_verifies_hierarchy()
+    {
+        var root = _temp.Folder("root");
+        var child = _temp.Folder("root/child");
+        var grandChild = _temp.Folder("root/child/sub");
+        var outside = _temp.Folder("outside");
+
+        Assert.True(Trim.IsStrictlyBelow(child, root));
+        Assert.True(Trim.IsStrictlyBelow(grandChild, root));
+        Assert.False(Trim.IsStrictlyBelow(root, root));
+        Assert.False(Trim.IsStrictlyBelow(outside, root));
+        Assert.False(Trim.IsStrictlyBelow(root, child));
+    }
+
+    [Fact]
+    public async Task RemoveAsync_handles_refused_success_and_failure()
+    {
+        var refused = new Trimmable("/wt", "/wt/ref", "cat", new TreeMeasure(1, 1), Refused: "locked");
+        var removal = Removal();
+        Assert.Equal("refused", await Trim.RemoveAsync(refused, removal, Token));
+
+        var targetDir = _temp.Folder("target-to-remove");
+        await File.WriteAllTextAsync(Path.Join(targetDir, "file.txt"), "hello", Token);
+        var trimmable = new Trimmable(_temp.Path, targetDir, "cat", new TreeMeasure(1, 1));
+        Assert.Equal("removed", await Trim.RemoveAsync(trimmable, removal, Token));
+        Assert.False(Directory.Exists(targetDir));
+
+        var nonExistentItem = new Trimmable(_temp.Path, Path.Join(_temp.Path, "does-not-exist"), "cat", new TreeMeasure(1, 1));
+        var failure = await Trim.RemoveAsync(nonExistentItem, removal, Token);
+        Assert.StartsWith("failed:", failure, StringComparison.Ordinal);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Trim.RemoveAsync(null!, removal, Token));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Trim.RemoveAsync(trimmable, null!, Token));
+    }
+
+    [Fact]
+    public async Task RecheckAsync_validates_existence_and_category()
+    {
+        var trim = Idle();
+        await Assert.ThrowsAsync<ArgumentNullException>(() => trim.RecheckAsync(null!));
+
+        var missing = new Trimmable(_temp.Path, Path.Join(_temp.Path, "nonexistent-dir"), "node_modules", new TreeMeasure(1, 1));
+        Assert.Equal("no longer exists", await trim.RecheckAsync(missing));
+
+        var (clone, worktree) = await CloneWithWorktreeAsync();
+        var candidateDir = Directory.CreateDirectory(Path.Join(worktree, "real-dir")).FullName;
+        var mismatch = new Trimmable(worktree, candidateDir, "different-category", new TreeMeasure(1, 1));
+        Assert.Equal("no longer regenerable output", await trim.RecheckAsync(mismatch));
+
+        var outsideDir = Directory.CreateDirectory(Path.Join(_temp.Path, "outside-wt", "node_modules")).FullName;
+        var outsideItem = new Trimmable(worktree, outsideDir, "node_modules", new TreeMeasure(1, 1));
+        Assert.Equal("resolves outside the worktree", await trim.RecheckAsync(outsideItem));
+
+        var checkoutDir = Directory.CreateDirectory(Path.Join(worktree, "sub-checkout", "node_modules")).FullName;
+        Directory.CreateDirectory(Path.Join(checkoutDir, ".git"));
+        var checkoutItem = new Trimmable(worktree, checkoutDir, "node_modules", new TreeMeasure(1, 1));
+        Assert.Equal("holds a git checkout", await trim.RecheckAsync(checkoutItem));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_handles_recheck_refusal_and_removal_failure()
+    {
+        var (clone, worktree) = await CloneWithWorktreeAsync();
+        var dir = Path.Join(worktree, "node_modules");
+        Directory.CreateDirectory(dir);
+        await File.WriteAllTextAsync(Path.Join(dir, "temp.js"), "content", Token);
+
+        var trim = Idle();
+        var target = new TrimTarget(clone, IdleDays: 0, Floor: 0, Removal: Removal());
+        var plan = await trim.PlanAsync(target, Token);
+
+        // Delete directory before apply so recheck fails with "no longer exists"
+        Directory.Delete(dir, recursive: true);
+        _ = await trim.ApplyAsync(plan, Token);
+        Assert.Single(plan.Changes);
+        Assert.Equal(ChangeKind.Refused, plan.Changes[0].Kind);
+        Assert.Equal("no longer exists", plan.Changes[0].Detail);
+    }
+
+    [Fact]
+    public void TrimPlan_Errors_and_Trimmable_properties()
+    {
+        var target = new TrimTarget("/repo", 14, 5000, null);
+        Assert.Equal("/repo", target.Repo);
+        Assert.Equal(14, target.IdleDays);
+        Assert.Equal(5000, target.Floor);
+        Assert.Null(target.Removal);
+
+        var measure = new TreeMeasure(100, 200);
+        Assert.Equal(100, measure.Apparent);
+        Assert.Equal(200, measure.Freeable);
+
+        var item1 = new Trimmable("/wt", "/wt/node_modules", "node_modules", measure);
+        Assert.Equal("/wt", item1.Worktree);
+        Assert.Equal("/wt/node_modules", item1.Path);
+        Assert.Equal("node_modules", item1.Category);
+        Assert.Equal(measure, item1.Size);
+        Assert.Equal(ChangeKind.WouldChange, item1.Kind);
+        Assert.Equal(string.Empty, item1.Detail);
+        Assert.Equal("/wt/node_modules", item1.Subject);
+
+        var item2 = new Trimmable("/wt", "/wt/dist", "js build output", new TreeMeasure(200, 200), Refused: "in use");
+        var item3 = new Trimmable("/wt", "/wt/bin", "dotnet build output", new TreeMeasure(300, 300))
+        {
+            Kind = ChangeKind.Error,
+            Detail = "failed to delete",
+        };
+
+        var plan = new TrimPlan { Target = target, Items = [item1, item2, item3] };
+
+        Assert.Equal(ChangeKind.Refused, item2.Kind);
+        Assert.Equal("in use", item2.Detail);
+        Assert.Equal(ChangeKind.Error, item3.Kind);
+        Assert.Equal("failed to delete", item3.Detail);
+        Assert.Equal(["/wt/bin: failed to delete"], plan.Errors);
+        Assert.Equal(3, plan.Changes.Count);
+    }
+
     // ---- helpers --------------------------------------------------------------------------------------------------
 
     private static TreeRemoval Removal() => new(Repos.Proc);
@@ -318,6 +510,35 @@ public sealed class TrimTests : IDisposable
         var worktree = Path.Join(_temp.Path, "wt");
         _ = await Repos.GitAsync(clone, "worktree", "add", "-q", "-b", "feat", worktree);
         return (clone, worktree);
+    }
+
+    [Fact]
+    public void Trim_contracts_and_properties()
+    {
+        var item = new Trimmable("/wt", "/wt/bin", "bin", new TreeMeasure(10, 10));
+        Assert.Equal("/wt/bin", item.Subject);
+        Assert.Equal(ChangeKind.WouldChange, item.Kind);
+        Assert.Equal(string.Empty, item.Detail);
+
+        item.Kind = ChangeKind.Changed;
+        item.Detail = "trimmed";
+        Assert.Equal(ChangeKind.Changed, item.Kind);
+        Assert.Equal("trimmed", item.Detail);
+
+        var refusedItem = new Trimmable("/wt", "/wt/obj", "obj", new TreeMeasure(5, 5), Refused: "tracked file inside");
+        Assert.Equal(ChangeKind.Refused, refusedItem.Kind);
+        Assert.Equal("tracked file inside", refusedItem.Detail);
+
+        var errItem = new Trimmable("/wt", "/wt/err", "err", new TreeMeasure(2, 2)) { Kind = ChangeKind.Error, Detail = "failed" };
+        var target = new TrimTarget("/repo", 14, 50);
+        var plan = new TrimPlan { Target = target, Items = [item, refusedItem, errItem] };
+
+        Assert.Equal("/repo", plan.Target.Repo);
+        Assert.Equal(14, plan.Target.IdleDays);
+        Assert.Equal(50, plan.Target.Floor);
+        Assert.Equal(3, plan.Changes.Count);
+        Assert.Single(plan.Errors);
+        Assert.Equal("/wt/err: failed", plan.Errors[0]);
     }
 
     private string Write(string relative, int bytes)
