@@ -248,6 +248,7 @@
     {"Id": "cs:vault knowledge-server uninstall","Capability": "vault knowledge-server uninstall","Owner": "cs:vault knowledge-server uninstall","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:vault paths","Capability": "vault paths","Owner": "cs:vault paths","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:web","Capability": "web","Owner": "cs:web","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:web mcp","Capability": "web mcp","Owner": "cs:web mcp","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:workspace","Capability": "workspace","Owner": "cs:workspace","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:workspace audit","Capability": "workspace audit","Owner": "cs:workspace audit","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:workspace ci","Capability": "workspace ci","Owner": "cs:workspace ci","Platforms": ["linux","macos","windows"],"AliasTo": null},
@@ -283,7 +284,6 @@
     {"Id": "fallback:linux:web db-status=py:desktop_manager.web_cli:web_db_status_cmd","Capability": "surface:fallback:linux:web db-status=py:desktop_manager.web_cli:web_db_status_cmd","Owner": "fallback:linux:web db-status=py:desktop_manager.web_cli:web_db_status_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:linux:web ensure=py:desktop_manager.web_cli:web_ensure_cmd","Capability": "surface:fallback:linux:web ensure=py:desktop_manager.web_cli:web_ensure_cmd","Owner": "fallback:linux:web ensure=py:desktop_manager.web_cli:web_ensure_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:linux:web install=py:desktop_manager.web_cli:web_install_cmd","Capability": "surface:fallback:linux:web install=py:desktop_manager.web_cli:web_install_cmd","Owner": "fallback:linux:web install=py:desktop_manager.web_cli:web_install_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "fallback:linux:web mcp=py:desktop_manager.web_cli:web_mcp_cmd","Capability": "surface:fallback:linux:web mcp=py:desktop_manager.web_cli:web_mcp_cmd","Owner": "fallback:linux:web mcp=py:desktop_manager.web_cli:web_mcp_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:linux:web migrate=py:desktop_manager.web_cli:web_migrate_cmd","Capability": "surface:fallback:linux:web migrate=py:desktop_manager.web_cli:web_migrate_cmd","Owner": "fallback:linux:web migrate=py:desktop_manager.web_cli:web_migrate_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:linux:web uninstall=py:desktop_manager.web_cli:web_uninstall_cmd","Capability": "surface:fallback:linux:web uninstall=py:desktop_manager.web_cli:web_uninstall_cmd","Owner": "fallback:linux:web uninstall=py:desktop_manager.web_cli:web_uninstall_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:linux:web upstream=py:desktop_manager.web_cli:web_upstream_cmd","Capability": "surface:fallback:linux:web upstream=py:desktop_manager.web_cli:web_upstream_cmd","Owner": "fallback:linux:web upstream=py:desktop_manager.web_cli:web_upstream_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
@@ -298,7 +298,6 @@
     {"Id": "fallback:macos:web db-status=py:desktop_manager.web_cli:web_db_status_cmd","Capability": "surface:fallback:macos:web db-status=py:desktop_manager.web_cli:web_db_status_cmd","Owner": "fallback:macos:web db-status=py:desktop_manager.web_cli:web_db_status_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:macos:web ensure=py:desktop_manager.web_cli:web_ensure_cmd","Capability": "surface:fallback:macos:web ensure=py:desktop_manager.web_cli:web_ensure_cmd","Owner": "fallback:macos:web ensure=py:desktop_manager.web_cli:web_ensure_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:macos:web install=py:desktop_manager.web_cli:web_install_cmd","Capability": "surface:fallback:macos:web install=py:desktop_manager.web_cli:web_install_cmd","Owner": "fallback:macos:web install=py:desktop_manager.web_cli:web_install_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "fallback:macos:web mcp=py:desktop_manager.web_cli:web_mcp_cmd","Capability": "surface:fallback:macos:web mcp=py:desktop_manager.web_cli:web_mcp_cmd","Owner": "fallback:macos:web mcp=py:desktop_manager.web_cli:web_mcp_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:macos:web migrate=py:desktop_manager.web_cli:web_migrate_cmd","Capability": "surface:fallback:macos:web migrate=py:desktop_manager.web_cli:web_migrate_cmd","Owner": "fallback:macos:web migrate=py:desktop_manager.web_cli:web_migrate_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:macos:web uninstall=py:desktop_manager.web_cli:web_uninstall_cmd","Capability": "surface:fallback:macos:web uninstall=py:desktop_manager.web_cli:web_uninstall_cmd","Owner": "fallback:macos:web uninstall=py:desktop_manager.web_cli:web_uninstall_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:macos:web upstream=py:desktop_manager.web_cli:web_upstream_cmd","Capability": "surface:fallback:macos:web upstream=py:desktop_manager.web_cli:web_upstream_cmd","Owner": "fallback:macos:web upstream=py:desktop_manager.web_cli:web_upstream_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
@@ -313,7 +312,6 @@
     {"Id": "fallback:windows:web db-status=py:desktop_manager.web_cli:web_db_status_cmd","Capability": "surface:fallback:windows:web db-status=py:desktop_manager.web_cli:web_db_status_cmd","Owner": "fallback:windows:web db-status=py:desktop_manager.web_cli:web_db_status_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:windows:web ensure=py:desktop_manager.web_cli:web_ensure_cmd","Capability": "surface:fallback:windows:web ensure=py:desktop_manager.web_cli:web_ensure_cmd","Owner": "fallback:windows:web ensure=py:desktop_manager.web_cli:web_ensure_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:windows:web install=py:desktop_manager.web_cli:web_install_cmd","Capability": "surface:fallback:windows:web install=py:desktop_manager.web_cli:web_install_cmd","Owner": "fallback:windows:web install=py:desktop_manager.web_cli:web_install_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "fallback:windows:web mcp=py:desktop_manager.web_cli:web_mcp_cmd","Capability": "surface:fallback:windows:web mcp=py:desktop_manager.web_cli:web_mcp_cmd","Owner": "fallback:windows:web mcp=py:desktop_manager.web_cli:web_mcp_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:windows:web migrate=py:desktop_manager.web_cli:web_migrate_cmd","Capability": "surface:fallback:windows:web migrate=py:desktop_manager.web_cli:web_migrate_cmd","Owner": "fallback:windows:web migrate=py:desktop_manager.web_cli:web_migrate_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:windows:web uninstall=py:desktop_manager.web_cli:web_uninstall_cmd","Capability": "surface:fallback:windows:web uninstall=py:desktop_manager.web_cli:web_uninstall_cmd","Owner": "fallback:windows:web uninstall=py:desktop_manager.web_cli:web_uninstall_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "fallback:windows:web upstream=py:desktop_manager.web_cli:web_upstream_cmd","Capability": "surface:fallback:windows:web upstream=py:desktop_manager.web_cli:web_upstream_cmd","Owner": "fallback:windows:web upstream=py:desktop_manager.web_cli:web_upstream_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
@@ -384,7 +382,6 @@
     {"Id": "py:desktop-manager web db-status|desktop_manager.web_cli:web_db_status_cmd","Capability": "web db-status","Owner": "py:desktop_manager.web_cli:web_db_status_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "py:desktop-manager web ensure|desktop_manager.web_cli:web_ensure_cmd","Capability": "web ensure","Owner": "py:desktop_manager.web_cli:web_ensure_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "py:desktop-manager web install|desktop_manager.web_cli:web_install_cmd","Capability": "web install","Owner": "py:desktop_manager.web_cli:web_install_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "py:desktop-manager web mcp|desktop_manager.web_cli:web_mcp_cmd","Capability": "web mcp","Owner": "py:desktop_manager.web_cli:web_mcp_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "py:desktop-manager web migrate|desktop_manager.web_cli:web_migrate_cmd","Capability": "web migrate","Owner": "py:desktop_manager.web_cli:web_migrate_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "py:desktop-manager web uninstall|desktop_manager.web_cli:web_uninstall_cmd","Capability": "web uninstall","Owner": "py:desktop_manager.web_cli:web_uninstall_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "py:desktop-manager web upstream|desktop_manager.web_cli:web_upstream_cmd","Capability": "web upstream","Owner": "py:desktop_manager.web_cli:web_upstream_cmd","Platforms": ["linux","macos","windows"],"AliasTo": null},
@@ -471,11 +468,13 @@
     "fallback:windows:triage verify=py:rig.triage.cli:verify",
     "module:rig.triage.cli",
     "py:triage refresh|rig.triage.cli:refresh",
-    "py:triage verify|rig.triage.cli:verify"
+    "py:triage verify|rig.triage.cli:verify",
+    "py:desktop-manager web mcp|desktop_manager.web_cli:web_mcp_cmd"
   ],
   "RetiredFiles": [
     "src/desktop_manager/chrome/traces_cli.py",
     "src/desktop_manager/jobs/install.py",
-    "src/rig/triage/cli.py"
+    "src/rig/triage/cli.py",
+    "src/desktop_manager/web_mcp.py"
   ]
 }

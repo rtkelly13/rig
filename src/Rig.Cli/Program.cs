@@ -37,6 +37,7 @@ using Rig.Core.Skills;
 using Rig.Core.Vault;
 using Rig.Core.Workspace;
 using Rig.Web;
+using Rig.Web.Mcp;
 
 namespace Rig.Cli;
 
@@ -268,7 +269,8 @@ internal static class Program
                     OpenBrowser,
                     Task.Delay,
                     Console.Out,
-                    Console.Error).Build,
+                    Console.Error,
+                    RigOps.ForCheckout(checkout)).Build,
             ],
             new AgentLauncher(
                 proc,

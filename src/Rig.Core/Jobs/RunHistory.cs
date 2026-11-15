@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Rig.Core.Policy;
+using Rig.Core.Roots;
 
 namespace Rig.Core.Jobs;
 
@@ -50,6 +52,79 @@ public static partial class RunHistory
     /// <summary>An output is cut to its last this many bytes.</summary>
     public const int OutputLimitBytes = 256 * 1024;
 
+    /// <summary>Whether <paramref name="value"/> has a coordinator run's shape, such as <c>logon-20261011-080201</c>.</summary>
+    public static bool IsRunId(string value) => RunIdPattern().IsMatch(value);
+
+    /// <summary>The file one job run's output is saved to, relative to the jobs directory.</summary>
+    public static string OutputPath(string directory, string job, string runId) => Path.Join(directory, "runs", job, $"{runId}.log");
+
+    /// <summary>
+    /// The newest <paramref name="limit"/> runs recorded under <paramref name="directory"/>, newest first, optionally of
+    /// one job. A line that is not a complete record is skipped.
+    /// </summary>
+    public static IReadOnlyList<JobRun> ReadRuns(string directory, string? job = null, int limit = 200)
+    {
+        string text;
+        try
+        {
+            text = File.ReadAllText(Path.Join(directory, HistoryName), Encoding.UTF8);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+
+        var found = new List<JobRun>();
+        foreach (var line in JobLog.SplitLines(text).Reverse())
+        {
+            if (line.Trim().Length == 0 || ReadRun(line) is not { } run || (job is not null && run.Job != job))
+            {
+                continue;
+            }
+
+            found.Add(run);
+            if (found.Count >= limit)
+            {
+                break;
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>The newest recorded run of <paramref name="job"/> with <paramref name="runId"/>; null when the history has none.</summary>
+    public static JobRun? FindRun(string directory, string job, string runId) =>
+        ReadRuns(directory, job, KeepRuns + TrimSlack).FirstOrDefault(run => run.RunId == runId);
+
+    /// <summary>
+    /// The output <paramref name="record"/> captured; null when it saved none, the file has been pruned, or the path
+    /// would leave the runs folder.
+    /// </summary>
+    public static string? ReadOutput(string directory, JobRun record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        if (record.Output.Length == 0)
+        {
+            return null;
+        }
+
+        var runs = PathResolution.Resolve(Path.Join(directory, "runs"));
+        var path = PathResolution.Resolve(Path.Join(directory, record.Output));
+        if (!PathResolution.IsUnder(path, runs))
+        {
+            return null;
+        }
+
+        try
+        {
+            return File.ReadAllText(path, Encoding.UTF8);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>
     /// Saves one run's output under <paramref name="directory"/>, keeping its end, and deletes the job's oldest past
     /// <see cref="KeepOutputsPerJob"/>. The path relative to <paramref name="directory"/>, or empty when nothing was saved.
@@ -62,11 +137,12 @@ public static partial class RunHistory
             return string.Empty;
         }
 
-        var folder = Path.Join(directory, "runs", job);
+        var path = OutputPath(directory, job, runId);
+        var folder = Path.GetDirectoryName(path)!;
         try
         {
             Directory.CreateDirectory(folder);
-            File.WriteAllBytes(Path.Join(folder, $"{runId}.log"), data.Length > OutputLimitBytes ? data[^OutputLimitBytes..] : data);
+            File.WriteAllBytes(path, data.Length > OutputLimitBytes ? data[^OutputLimitBytes..] : data);
             var outputs = Directory.GetFiles(folder, "*.log").OrderBy(TimeOf, StringComparer.Ordinal).ToList();
             foreach (var stale in outputs.Take(outputs.Count - KeepOutputsPerJob))
             {
@@ -124,6 +200,49 @@ public static partial class RunHistory
             .Append('}');
         return text.ToString();
     }
+
+    // pydantic's _StoredRun: job, run_id, started, seconds and trigger must be there and typed; the rest are Lenient.
+    private static JobRun? ReadRun(string line)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(line);
+            var stored = document.RootElement;
+            if (stored.ValueKind != JsonValueKind.Object
+                || Text(stored, "job") is not { } job
+                || Text(stored, "run_id") is not { } runId
+                || Text(stored, "started") is not { } started
+                || !stored.TryGetProperty("seconds", out var seconds)
+                || seconds.ValueKind != JsonValueKind.Number
+                || !seconds.TryGetDouble(out var value)
+                || Text(stored, "trigger") is not { } trigger)
+            {
+                return null;
+            }
+
+            return new JobRun(job, runId, started, value, Integer(stored, "returncode"), trigger, Text(stored, "error"), Text(stored, "output") ?? string.Empty)
+            {
+                TraceId = Text(stored, "trace_id") ?? string.Empty,
+                SpanId = Text(stored, "span_id") ?? string.Empty,
+            };
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string? Text(JsonElement parent, string name) =>
+        parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+
+    // StrictInt: a number written without a point or exponent; 3.0 and true are not.
+    private static long? Integer(JsonElement parent, string name) =>
+        parent.TryGetProperty(name, out var value)
+        && value.ValueKind == JsonValueKind.Number
+        && value.GetRawText().IndexOfAny(['.', 'e', 'E']) < 0
+        && value.TryGetInt64(out var number)
+            ? number
+            : null;
 
     // serde_json's escaping: the quote, the backslash and control characters; everything else as itself.
     private static string Quote(string value)

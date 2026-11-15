@@ -56,9 +56,9 @@ then checks `config/command-ownership.json`. Update the ledger and retire the su
 same PR as each cutover. CI rejects new independent overlaps and unregistered executables; its exact initial
 overlap baseline only shrinks. This gate runs on the PR's merged result and participates in the required `ci` check.
 
-`rig web mcp` is a stdio MCP server behind that hop. `dotnet run` restores and builds without writing to stdout, even
-from a clean `src/Rig.Cli` with no `obj` or `bin`, so the protocol stays clean; a failed build never starts the server.
-`desktop-manager web mcp` skips the hop.
+`rig web mcp` is a stdio MCP server served by the C# CLI. `dotnet run` restores and builds without writing to stdout,
+even from a clean `src/Rig.Cli` with no `obj` or `bin`, so the protocol stays clean; a failed build never starts the
+server.
 
 ```bash
 dotnet run --project src/Rig.Cli -- --help              # from a checkout

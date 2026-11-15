@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Rig.Web.Mcp;
 
 namespace Rig.Web;
 
@@ -35,9 +36,11 @@ public sealed class RigWebHost : IAsyncDisposable
 
     /// <summary>
     /// Builds the host. <paramref name="upstream"/> answers where the Python routes listen, or null while they are not
-    /// running; <paramref name="forwarding"/> is the client that reaches them.
+    /// running; <paramref name="forwarding"/> is the client that reaches them. <paramref name="ops"/> backs the MCP
+    /// tools; null builds the real ones for this machine.
     /// </summary>
-    public static RigWebHost Create(WebHostSettings settings, HttpClient forwarding, Func<Uri?> upstream)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000", Justification = "The default RigOps is registered in the service collection, which owns and disposes it.")]
+    public static RigWebHost Create(WebHostSettings settings, HttpClient forwarding, Func<Uri?> upstream, RigOps? ops = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(forwarding);
@@ -55,11 +58,14 @@ public sealed class RigWebHost : IAsyncDisposable
             }
         });
         builder.Services.AddRoutingCore();
+        builder.Services.AddLogging();
+        _ = builder.Services.AddRigMcp(ops ?? RigOps.Default()).WithHttpTransport();
         var app = builder.Build();
         var host = new RigWebHost(app);
         app.UseRouting();
         HostRoutes.Map(app, settings, () => host.Address.Port);
         FrontendRoutes.Map(app, settings);
+        _ = app.MapMcp("/api/mcp");
         var forwarder = new Forwarder(forwarding, upstream);
         app.Map("/{**path}", forwarder.ForwardAsync);
         return host;

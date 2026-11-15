@@ -28,6 +28,7 @@ internal static class Discovery
     {
         public RawAlias[] RawAliases { get; init; } = [];
         public string[] AgentTargets { get; init; } = [];
+        public string[] McpTools { get; init; } = [];
     }
 
     internal static string Capture(IProc proc, string root, params string[] argv)
@@ -125,6 +126,12 @@ internal static class Discovery
         foreach (var target in trees.Values.SelectMany(t => t.AgentTargets).Distinct(StringComparer.Ordinal))
         {
             yield return Surface($"agent-target:{target}");
+        }
+
+        // The MCP server's actual tool attributes, as the Python probe used to read its registration loop.
+        foreach (var tool in trees.Values.SelectMany(t => t.McpTools).Distinct(StringComparer.Ordinal))
+        {
+            yield return Surface($"mcp:{tool}");
         }
 
         var commands = trees.SelectMany(t => t.Value.Commands.Where(c => !c.Forwarded).Select(c => (Platform: t.Key, Command: c)))
