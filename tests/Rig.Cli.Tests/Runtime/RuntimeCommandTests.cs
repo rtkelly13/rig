@@ -92,6 +92,60 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("rev-parse", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Status_fails_when_state_is_damaged()
+    {
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(Path.Join(Root, RuntimeManager.StateName), "not valid json {", TestContext.Current.CancellationToken);
+
+        var exit = await Run(new FakeProc(), "status");
+
+        Assert.Equal(1, exit);
+        Assert.Contains("Status failed:", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Rollback_succeeds_and_reports_swapped_copies()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "curr"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "prev"));
+        await File.WriteAllTextAsync(Path.Join(Root, "curr", RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Join(Root, "prev", RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "curr", "previous": "prev", "repo": "/repo"}""",
+            TestContext.Current.CancellationToken);
+        Directory.CreateSymbolicLink(RuntimeManager.CurrentLink(Root), Path.Join(Root, "curr"));
+
+        var exit = await Run(new FakeProc(), "rollback");
+
+        Assert.Equal(0, exit);
+        Assert.Equal("Current: prev (previous: curr)\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_already_current_reports_already_current()
+    {
+        var sha = "1111222233334444555566667777888899990000";
+        var shortSha = sha[..RuntimeManager.ShortShaLength];
+        var copy = Path.Join(Root, shortSha);
+        _ = Directory.CreateDirectory(copy);
+        await File.WriteAllTextAsync(Path.Join(copy, RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "{{shortSha}}", "previous": null, "repo": "/repo"}""",
+            TestContext.Current.CancellationToken);
+        Directory.CreateSymbolicLink(RuntimeManager.CurrentLink(Root), copy);
+
+        var repo = _temp.Folder("repo");
+        var proc = new FakeProc().Answer(new(0, sha + "\n", ""), "git");
+
+        var exit = await Run(proc, "install", "--repo", repo, "--ref", "HEAD", "--no-fetch");
+
+        Assert.Equal(0, exit);
+        Assert.Contains($"Already current: {shortSha}", _out.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand
