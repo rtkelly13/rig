@@ -606,6 +606,93 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Contains("chrome-tabs", error.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void PointCurrent_throws_when_link_is_regular_file_or_directory_without_installed_json()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        var link = RuntimeManager.CurrentLink(Root);
+
+        File.WriteAllText(link, "not a directory or link");
+        var ex1 = Assert.Throws<RuntimeInstallException>(() => manager.PointCurrent(_temp.Folder("target1")));
+        Assert.Contains("exists and is not a link", ex1.Message, StringComparison.Ordinal);
+
+        File.Delete(link);
+        _ = Directory.CreateDirectory(link);
+        var ex2 = Assert.Throws<RuntimeInstallException>(() => manager.PointCurrent(_temp.Folder("target2")));
+        Assert.Contains("exists and is not a link", ex2.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Install_and_WriteState_validate_arguments()
+    {
+        var manager = Manager(new Tools(_system));
+        Assert.Throws<ArgumentNullException>(() => manager.Install(null!, "HEAD"));
+        Assert.Throws<ArgumentNullException>(() => manager.Install("repo", null!));
+        Assert.Throws<ArgumentNullException>(() => manager.WriteState(null!));
+        var missingEx = Assert.Throws<RuntimeInstallException>(() => manager.Install(Path.Join(_temp.Path, "no-such-repo"), "HEAD"));
+        Assert.Contains("is not a checkout", missingEx.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CommitsBehind_returns_null_on_git_failure()
+    {
+        var manager = Manager(new Tools(_system) { Fails = req => req.Argv.Contains("rev-list", StringComparer.Ordinal) });
+        var repo = NewRepo();
+        Assert.Null(manager.CommitsBehind(repo, "sha", "origin/main"));
+    }
+
+    [Fact]
+    public void ReadState_validates_json_structure()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        var statePath = Path.Join(Root, RuntimeManager.StateName);
+
+        File.WriteAllText(statePath, "null");
+        Assert.Throws<InvalidDataException>(() => manager.ReadState());
+
+        File.WriteAllText(statePath, "[\"not an object\"]");
+        Assert.Throws<InvalidDataException>(() => manager.ReadState());
+    }
+
+    [Fact]
+    public void Rollback_throws_when_previous_is_missing_or_uninstalled()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        manager.WriteState(new RuntimeState("current1", null, "repo"));
+        var ex1 = Assert.Throws<RuntimeInstallException>(() => manager.Rollback());
+        Assert.Contains("no previous copy", ex1.Message, StringComparison.Ordinal);
+
+        manager.WriteState(new RuntimeState("current1", "previous-dir", "repo"));
+        var ex2 = Assert.Throws<RuntimeInstallException>(() => manager.Rollback());
+        Assert.Contains("no previous copy", ex2.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Prune_ignores_regular_files_and_preserves_kept_items()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["a.txt"] = "1\n" });
+        var tools = new Tools(_system);
+        var manager = Manager(tools);
+
+        _ = manager.Install(repo, "HEAD", fetch: false);
+
+        File.WriteAllText(Path.Join(Root, "stray-file.txt"), "hello");
+        var res = manager.Install(repo, "HEAD", fetch: false);
+        Assert.True(File.Exists(Path.Join(Root, "stray-file.txt")));
+        Assert.DoesNotContain("stray-file.txt", res.Removed);
+    }
+
+    [Fact]
+    public void Executable_renders_platform_paths()
+    {
+        Assert.Equal(Path.Join("/c", ".venv", "bin", "rig"), RuntimeManager.Executable("/c", "rig", windows: false));
+        Assert.Equal(Path.Join(@"C:\c", ".venv", "Scripts", "rig.exe"), RuntimeManager.Executable(@"C:\c", "rig", windows: true));
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {
