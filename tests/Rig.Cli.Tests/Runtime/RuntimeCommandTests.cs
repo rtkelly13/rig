@@ -218,6 +218,128 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("rig on PATH:", output, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void FindCheckout_matches_shared_utilities_name()
+    {
+        var repo = _temp.Folder("shared-utils-repo");
+        File.WriteAllText(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"shared-utilities\"\n");
+        var found = RuntimeCommand.FindCheckout(repo);
+        Assert.Equal(repo, found);
+    }
+
+    [Fact]
+    public async Task Status_shows_current_without_previous_or_behind()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "c111c111c111"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "c111c111c111", "previous": null, "repo": null}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "c111c111c111", RuntimeManager.InstalledName),
+            """{"sha": "c111c111c111", "ref": null, "repo": null, "installed_at": null}""",
+            TestContext.Current.CancellationToken);
+
+        var exit = await Run(new FakeProc(), "status");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current:  c111c111c111  ?  ?", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Previous:", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Behind", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_running_copy_falls_back_to_recorded_repo()
+    {
+        var repo = _temp.Folder("recorded-repo");
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": null, "previous": null, "repo": {{System.Text.Json.JsonSerializer.Serialize(repo)}}}""",
+            TestContext.Current.CancellationToken);
+
+        var sha = "9999999999999999999999999999999999999999";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source-2");
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var runningCopyFolder = Path.Join(Root, "running-copy");
+        _ = Directory.CreateDirectory(runningCopyFolder);
+        var host = new RuntimeHost(Root, runningCopyFolder, _temp.Folder("home"), false, proc, TimeProvider.System);
+        var root = new RootCommand
+        {
+            new RuntimeCommand(host, _out).Build(),
+        };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current: 999999999999", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_leaves_foreign_shim_alone()
+    {
+        var repo = _temp.Folder("repo-for-shim-test");
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        var home = _temp.Folder("home-foreign");
+        var shimDir = Path.Join(home, ".local", "bin");
+        _ = Directory.CreateDirectory(shimDir);
+        await File.WriteAllTextAsync(Path.Join(shimDir, "rig"), "#!/bin/sh\necho foreign\n", TestContext.Current.CancellationToken);
+
+        var sha = "8888888888888888888888888888888888888888";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source-3");
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, home, false, proc, TimeProvider.System);
+        var root = new RootCommand
+        {
+            new RuntimeCommand(host, _out).Build(),
+        };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Left ", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("alone: rig did not write it", _out.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand
