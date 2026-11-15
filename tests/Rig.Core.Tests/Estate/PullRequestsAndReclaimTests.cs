@@ -238,6 +238,42 @@ public sealed class PullRequestsAndReclaimTests
         }
     }
 
+    [Fact]
+    public void Reclaim_contracts_and_properties()
+    {
+        var item = new Reclaimable("/repo/node_modules", "node_modules", 1024, "pnpm i");
+        Assert.Equal("/repo/node_modules", item.Subject);
+        Assert.Equal(ChangeKind.WouldChange, item.Kind);
+        Assert.Equal("pnpm i", item.Detail);
+
+        item.Kind = ChangeKind.Changed;
+        item.Detail = "deleted";
+        Assert.Equal(ChangeKind.Changed, item.Kind);
+        Assert.Equal("deleted", item.Detail);
+
+        var errItem = new Reclaimable("/repo/err", "err", 512, "cmd") { Kind = ChangeKind.Error, Detail = "failed" };
+        var plan = new RepoReclaim("/repo", [item, errItem])
+        {
+            Force = true,
+            Removal = null,
+            Busy = null,
+        };
+
+        Assert.True(plan.Force);
+        Assert.Null(plan.Removal);
+        Assert.Null(plan.Busy);
+        Assert.Equal(1536, plan.Total);
+        Assert.Single(plan.Errors);
+        Assert.Equal("/repo/err: failed", plan.Errors[0]);
+
+        var target = new ReclaimTarget("/repo", 100, true);
+        Assert.Equal("/repo", target.Repo);
+        Assert.Equal(100, target.Floor);
+        Assert.True(target.Force);
+        Assert.Null(target.Removal);
+        Assert.Null(target.Busy);
+    }
+
     // Sizes keyed by the path's tail, so the test reads as the folder layout.
     private sealed class Sizes(Dictionary<string, long> byTail) : IDiskUsage
     {

@@ -80,6 +80,27 @@ public sealed class ShelveTests : IDisposable
     }
 
     [Fact]
+    public void ShelvePlan_unreadable_decision_is_reported_as_plan_error()
+    {
+        var plan = new ShelvePlan
+        {
+            Clone = "/repo",
+            Path = "/repo/wt",
+            Name = "wt",
+            Ref = "refs/shelves/wt",
+            Branch = "wt",
+            Head = "sha",
+            Action = "remove",
+        };
+        plan.DecisionNeeded.Add("could not read the worktree: corrupt index");
+        Assert.Equal(["could not read the worktree: corrupt index"], plan.Errors);
+        Assert.Equal(ChangeKind.Error, plan.Changes[0].Kind);
+
+        var readResult = new ShelveResult(plan, "needs-decision", "cannot read this clone's git dir");
+        Assert.Equal(ChangeKind.Error, readResult.Kind);
+    }
+
+    [Fact]
     public void Message_trailers_round_trip()
     {
         var text = Shelver.Message("data-platform", "feat", "feat", "abc123", ".worktrees/feat", 42, ShelveFixture.Now);

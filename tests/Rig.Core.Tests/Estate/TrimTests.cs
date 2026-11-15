@@ -410,6 +410,35 @@ public sealed class TrimTests : IDisposable
         return (clone, worktree);
     }
 
+    [Fact]
+    public void Trim_contracts_and_properties()
+    {
+        var item = new Trimmable("/wt", "/wt/bin", "bin", new TreeMeasure(10, 10));
+        Assert.Equal("/wt/bin", item.Subject);
+        Assert.Equal(ChangeKind.WouldChange, item.Kind);
+        Assert.Equal(string.Empty, item.Detail);
+
+        item.Kind = ChangeKind.Changed;
+        item.Detail = "trimmed";
+        Assert.Equal(ChangeKind.Changed, item.Kind);
+        Assert.Equal("trimmed", item.Detail);
+
+        var refusedItem = new Trimmable("/wt", "/wt/obj", "obj", new TreeMeasure(5, 5), Refused: "tracked file inside");
+        Assert.Equal(ChangeKind.Refused, refusedItem.Kind);
+        Assert.Equal("tracked file inside", refusedItem.Detail);
+
+        var errItem = new Trimmable("/wt", "/wt/err", "err", new TreeMeasure(2, 2)) { Kind = ChangeKind.Error, Detail = "failed" };
+        var target = new TrimTarget("/repo", 14, 50);
+        var plan = new TrimPlan { Target = target, Items = [item, refusedItem, errItem] };
+
+        Assert.Equal("/repo", plan.Target.Repo);
+        Assert.Equal(14, plan.Target.IdleDays);
+        Assert.Equal(50, plan.Target.Floor);
+        Assert.Equal(3, plan.Changes.Count);
+        Assert.Single(plan.Errors);
+        Assert.Equal("/wt/err: failed", plan.Errors[0]);
+    }
+
     private string Write(string relative, int bytes)
     {
         var path = _temp.File(relative);
