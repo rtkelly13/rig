@@ -176,18 +176,12 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
         }
     }
 
-    // The repo to install from: the explicit one, the executing checkout, this checkout when it is not a runtime copy, or the one last installed from.
+    // The repo to install from: the explicit one, this checkout when it is not a runtime copy, or the one last installed from.
     private string? ResolveRepo(string? explicitRepo)
     {
         if (explicitRepo is not null)
         {
             return explicitRepo;
-        }
-
-        var executing = FindCheckout(AppContext.BaseDirectory) ?? FindCheckout(Environment.CurrentDirectory);
-        if (executing is not null && !RuntimeManager.RunningCopy(executing, host.Root))
-        {
-            return executing;
         }
 
         var manager = Manager;
@@ -200,7 +194,7 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
     }
 
     // The rig checkout containing `start`: its pyproject.toml names the project, as find_checkout did in Python.
-    private static string? FindCheckout(string start)
+    internal static string? FindCheckout(string start)
     {
         for (var directory = Path.GetFullPath(start); directory is not null; directory = Path.GetDirectoryName(directory))
         {

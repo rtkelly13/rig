@@ -116,6 +116,9 @@ internal static class Program
         var python = new PythonRig(proc, checkout);
         var github = new GhApi(proc);
         Gh.OriginReader origin = async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false));
+        var runtimeCheckout = Rig.Cli.Runtime.RuntimeCommand.FindCheckout(AppContext.BaseDirectory)
+            ?? Rig.Cli.Runtime.RuntimeCommand.FindCheckout(Environment.CurrentDirectory)
+            ?? checkout;
         var app = new RigApp(
             python,
             github,
@@ -177,7 +180,7 @@ internal static class Program
                 new RuntimeCommand(
                     new RuntimeHost(
                         Path.Join(AppData.Current(), Rig.Core.Jobs.JobsSite.RuntimeFolder),
-                        checkout,
+                        runtimeCheckout,
                         home,
                         OperatingSystem.IsWindows(),
                         proc,
