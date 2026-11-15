@@ -165,7 +165,7 @@ public sealed class RuntimeCommandTests : IDisposable
     public async Task Install_discovers_checkout_and_reports_previous_and_removed_copies()
     {
         var repo = _temp.Folder("auto-repo");
-        File.WriteAllText(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n");
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
         var sha = "abcdef1234567890abcdef1234567890abcdef12";
         var shortSha = sha[..RuntimeManager.ShortShaLength];
 
