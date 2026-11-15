@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Runtime;
+using Rig.Core.Tests.Fakes;
 
 namespace Rig.Core.Tests.Runtime;
 
