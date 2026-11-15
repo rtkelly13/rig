@@ -103,4 +103,54 @@ public sealed class ConfigLoaderTests : IDisposable
         Assert.Equal(once, again);
         Assert.Contains("\"pattern\":", once, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ConfigLoadException_constructors()
+    {
+        var ex1 = new ConfigLoadException();
+        Assert.Equal(ConfigLoadError.InvalidJson, ex1.Kind);
+        var ex2 = new ConfigLoadException("msg");
+        Assert.Equal("msg", ex2.Message);
+        var inner = new InvalidOperationException("inner");
+        var ex3 = new ConfigLoadException("msg", inner);
+        Assert.Same(inner, ex3.InnerException);
+        var ex4 = new ConfigLoadException(ConfigLoadError.Schema, "schema err", "/path", 10, 20, inner);
+        Assert.Equal(ConfigLoadError.Schema, ex4.Kind);
+        Assert.Equal("/path", ex4.FilePath);
+        Assert.Equal(10, ex4.Line);
+        Assert.Equal(20, ex4.Column);
+    }
+
+    [Fact]
+    public void ConfigLoader_validates_null_or_empty_arguments()
+    {
+        Assert.Throws<ArgumentException>(() => ConfigLoader.Load<ManagedProjectsConfig>("", EstateConfigJsonContext.Default.ManagedProjectsConfig));
+        Assert.Throws<ArgumentNullException>(() => ConfigLoader.Load<ManagedProjectsConfig>("/path", null!));
+    }
+
+    [Fact]
+    public void License_converter_validates_shapes()
+    {
+        var invalidType = Write("invalid_license.json", """{"defaults": {"license": {"type": 123}}}""");
+        Assert.Throws<ConfigLoadException>(() => ConfigLoader.Load(invalidType, EstateConfigJsonContext.Default.RepoPoliciesConfig));
+
+        var invalidShape = Write("invalid_license_shape.json", """{"defaults": {"license": 123}}""");
+        Assert.Throws<ConfigLoadException>(() => ConfigLoader.Load(invalidShape, EstateConfigJsonContext.Default.RepoPoliciesConfig));
+    }
+
+    [Fact]
+    public void Cli_rule_converter_validates_shapes()
+    {
+        var missingPattern = Write("no_pattern.json", """{"commands": {"test": [{}]}}""");
+        Assert.Throws<ConfigLoadException>(() => ConfigLoader.Load(missingPattern, EstateConfigJsonContext.Default.CliAllowlistsConfig));
+
+        var badRationale = Write("bad_rationale.json", """{"commands": {"test": [{"pattern": "x", "rationale": 123}]}}""");
+        Assert.Throws<ConfigLoadException>(() => ConfigLoader.Load(badRationale, EstateConfigJsonContext.Default.CliAllowlistsConfig));
+
+        var badExcludes = Write("bad_excludes.json", """{"commands": {"test": [{"pattern": "x", "exclude_systems": "not a list"}]}}""");
+        Assert.Throws<ConfigLoadException>(() => ConfigLoader.Load(badExcludes, EstateConfigJsonContext.Default.CliAllowlistsConfig));
+
+        var notObjectOrString = Write("not_obj.json", """{"commands": {"test": [123]}}""");
+        Assert.Throws<ConfigLoadException>(() => ConfigLoader.Load(notObjectOrString, EstateConfigJsonContext.Default.CliAllowlistsConfig));
+    }
 }
