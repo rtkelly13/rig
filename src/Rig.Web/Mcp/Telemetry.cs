@@ -258,7 +258,7 @@ public sealed class Telemetry : IDisposable
             start,
             Math.Max(end - start, 0) / 1_000_000.0,
             spans.Count,
-            spans.Count(span => span.Failed));
+            spans.Count(span => span.StatusCode == 2 || (span.ExitCode is { } ec && ec != 0)));
     }
 
     private const string Sql = """

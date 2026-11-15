@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json.Serialization;
 
 namespace Rig.Core.Jobs;
 
@@ -9,7 +10,7 @@ namespace Rig.Core.Jobs;
 /// <param name="Trigger">The run's trigger.</param>
 /// <param name="Error">Why it did not run to an exit code.</param>
 /// <param name="Ok">Exit 0 with no error.</param>
-public sealed record LastRunView(string Started, double Seconds, long? ReturnCode, string Trigger, string? Error, bool Ok);
+public sealed record LastRunView(string Started, double Seconds, [property: JsonPropertyName("returncode")] long? ReturnCode, string Trigger, string? Error, bool Ok);
 
 /// <summary>One registered job, as <c>list_jobs</c> shows it.</summary>
 /// <param name="Name">The job's name.</param>
@@ -36,7 +37,7 @@ public sealed record RunView(
     string RunId,
     string Started,
     double Seconds,
-    long? ReturnCode,
+    [property: JsonPropertyName("returncode")] long? ReturnCode,
     string Trigger,
     string? Error,
     bool Ok,
