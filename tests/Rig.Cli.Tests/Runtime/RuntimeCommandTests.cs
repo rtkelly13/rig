@@ -460,6 +460,59 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("Install failed: ", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Install_reports_shim_write_failure_when_unauthorized()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-shim-fail"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        // Point home to a path that cannot be written or has a directory where file should be
+        var home = _temp.Folder("home-fail");
+        var shimPath = RigShim.PathFor(home, false);
+        Directory.CreateDirectory(shimPath); // Directory exists at the shim file path, File.WriteAllText fails
+
+        var sha = "7777777777777777777777777777777777777777";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source-fail");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, home, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("rig on PATH: could not write ", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FindCheckout_matches_shared_utilities()
+    {
+        var dir = _temp.Folder("shared-util-repo");
+        File.WriteAllText(Path.Join(dir, "pyproject.toml"), "[project]\nname = \"shared-utilities\"\n");
+        var subDir = Path.Join(dir, "sub", "child");
+        Directory.CreateDirectory(subDir);
+
+        Assert.Equal(dir, RuntimeCommand.FindCheckout(subDir));
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand

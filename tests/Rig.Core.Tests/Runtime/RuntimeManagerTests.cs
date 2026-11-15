@@ -480,6 +480,76 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Equal("link", status.Link);
     }
 
+    [Fact]
+    public void ReadState_and_ReadInstalled_throw_on_empty_or_non_object_json()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        var statePath = Path.Join(Root, RuntimeManager.StateName);
+
+        File.WriteAllText(statePath, "null");
+        Assert.Throws<InvalidDataException>(() => manager.ReadState());
+
+        File.WriteAllText(statePath, "[]");
+        Assert.Throws<InvalidDataException>(() => manager.ReadState());
+
+        var copyDir = Path.Join(Root, "copy1");
+        _ = Directory.CreateDirectory(copyDir);
+        var installedPath = Path.Join(copyDir, RuntimeManager.InstalledName);
+
+        File.WriteAllText(installedPath, "null");
+        Assert.Throws<InvalidDataException>(() => RuntimeManager.ReadInstalled(copyDir));
+
+        File.WriteAllText(installedPath, "[\"not an object\"]");
+        Assert.Throws<InvalidDataException>(() => RuntimeManager.ReadInstalled(copyDir));
+    }
+
+    [Fact]
+    public void Check_validates_workspace_plan_when_bundle_exists()
+    {
+        var repo = NewRepo();
+        var sha = Commit(repo, new Dictionary<string, string>
+        {
+            ["desktop-manager/workspace-plan.bundle.json"] = "{}",
+        });
+        var tools = new Tools(_system);
+        var manager = Manager(tools);
+
+        var result = manager.Install(repo, "HEAD", fetch: false);
+
+        var copy = Path.Join(Root, sha[..RuntimeManager.ShortShaLength]);
+        Assert.True(result.Changed);
+        Assert.Contains(tools.Calls, call => call.Argv.Contains("validate-plan"));
+    }
+
+    [Fact]
+    public void Prune_cleans_partial_folders_and_untracked_copies()
+    {
+        var repo = NewRepo();
+        var sha = Commit(repo, new Dictionary<string, string> { ["a.txt"] = "1\n" });
+        var tools = new Tools(_system);
+        var manager = Manager(tools);
+
+        _ = manager.Install(repo, "HEAD", fetch: false);
+
+        // Add a partial folder and another untracked installed copy
+        var partial = Path.Join(Root, "deadbeef.partial");
+        Directory.CreateDirectory(partial);
+        File.WriteAllText(Path.Join(partial, "stale.tmp"), "stale");
+
+        var untracked = Path.Join(Root, "oldcopy12345");
+        Directory.CreateDirectory(untracked);
+        File.WriteAllText(Path.Join(untracked, RuntimeManager.InstalledName), "{}");
+
+        var sha2 = Commit(repo, new Dictionary<string, string> { ["a.txt"] = "2\n" });
+        var res2 = manager.Install(repo, "HEAD", fetch: false);
+
+        Assert.Contains("deadbeef.partial", res2.Removed);
+        Assert.Contains("oldcopy12345", res2.Removed);
+        Assert.False(Directory.Exists(partial));
+        Assert.False(Directory.Exists(untracked));
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {
