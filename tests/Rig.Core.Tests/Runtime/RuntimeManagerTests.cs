@@ -258,6 +258,78 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.False(RuntimeManager.RunningCopy(Path.Join(_temp.Path, "repo", "src", "rig", "cli.py"), Root));
     }
 
+    [Fact]
+    public void RuntimeInstallException_constructors_are_covered()
+    {
+        var e1 = new RuntimeInstallException();
+        Assert.NotNull(e1);
+        var inner = new InvalidOperationException("boom");
+        var e2 = new RuntimeInstallException("msg", inner);
+        Assert.Equal("msg", e2.Message);
+        Assert.Same(inner, e2.InnerException);
+    }
+
+    [Fact]
+    public void ReadState_and_ReadInstalled_throw_on_invalid_shapes()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        File.WriteAllText(Path.Join(Root, RuntimeManager.StateName), "[1, 2, 3]");
+        Assert.Throws<InvalidDataException>(() => manager.ReadState());
+
+        var copy = Path.Join(Root, "bad-copy");
+        _ = Directory.CreateDirectory(copy);
+        File.WriteAllText(Path.Join(copy, RuntimeManager.InstalledName), "[]");
+        Assert.Throws<InvalidDataException>(() => RuntimeManager.ReadInstalled(copy));
+    }
+
+    [Fact]
+    public void Install_fails_when_repo_does_not_exist()
+    {
+        var manager = Manager(new Tools(_system));
+        var error = Assert.Throws<RuntimeInstallException>(() => manager.Install(Path.Join(_temp.Path, "no-such-repo"), "HEAD", fetch: false));
+        Assert.Contains("not a checkout: no such folder", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Rollback_fails_when_previous_folder_has_no_installed_json()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        var emptyPrev = Path.Join(Root, "emptyprev");
+        _ = Directory.CreateDirectory(emptyPrev);
+        manager.WriteState(new RuntimeState(Current: "curr", Previous: "emptyprev", Repo: "/repo"));
+
+        var error = Assert.Throws<RuntimeInstallException>(() => manager.Rollback());
+        Assert.Contains("no previous copy", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PointCurrent_replaces_fallback_directory_when_installed_marker_exists()
+    {
+        var first = _temp.Folder("first");
+        var second = _temp.Folder("second");
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+
+        var currentDir = RuntimeManager.CurrentLink(Root);
+        _ = Directory.CreateDirectory(currentDir);
+        File.WriteAllText(Path.Join(currentDir, RuntimeManager.InstalledName), "{}");
+
+        manager.PointCurrent(first);
+        var target = new DirectoryInfo(currentDir).LinkTarget;
+        Assert.Equal(PathResolution.Resolve(first), PathResolution.Resolve(target!));
+    }
+
+    [Fact]
+    public void Executable_and_Published_return_correct_names_per_os()
+    {
+        Assert.EndsWith(Path.Join("bin", "rig"), RuntimeManager.Executable("/rt/curr", "rig", windows: false), StringComparison.Ordinal);
+        Assert.EndsWith(Path.Join("Scripts", "rig.exe"), RuntimeManager.Executable(@"C:\rt\curr", "rig", windows: true), StringComparison.Ordinal);
+        Assert.EndsWith(Path.Join("rig", "rig"), RuntimeManager.Published("/rt/curr", "rig", windows: false), StringComparison.Ordinal);
+        Assert.EndsWith(Path.Join("rig", "rig.exe"), RuntimeManager.Published(@"C:\rt\curr", "rig", windows: true), StringComparison.Ordinal);
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {
