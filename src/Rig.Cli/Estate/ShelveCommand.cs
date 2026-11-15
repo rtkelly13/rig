@@ -4,9 +4,9 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
-using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Estate;
 
@@ -177,7 +177,7 @@ internal sealed class ShelveCommand(
         if (json)
         {
             JsonArray payload = apply ? [.. results.Select(result => (JsonNode)result.ToJson())] : [.. plans.Select(plan => (JsonNode)plan.ToJson())];
-            await output.WriteLineAsync(PyJson.Dumps(payload).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(payload).AsMemory(), cancellationToken).ConfigureAwait(false);
         }
         else
         {
@@ -398,7 +398,7 @@ internal sealed class ShelveCommand(
         var code = rows.Any(row => row.Pruned == false) ? 1 : 0; // a drop that was asked for and failed
         if (json)
         {
-            await output.WriteLineAsync(PyJson.Dumps(new JsonArray([.. rows.Select(row => (JsonNode)row.ToJson())])).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(new JsonArray([.. rows.Select(row => (JsonNode)row.ToJson())])).AsMemory(), cancellationToken).ConfigureAwait(false);
             return code;
         }
 

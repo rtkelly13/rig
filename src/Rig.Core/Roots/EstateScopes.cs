@@ -1,5 +1,4 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using Rig.Core.Config;
 using Rig.Core.GitHub;
 
 namespace Rig.Core.Roots;
@@ -22,18 +21,13 @@ public sealed record EstateScopes(IReadOnlyList<string> Owners, IReadOnlyList<st
     /// </summary>
     public static EstateScopes Load(string path)
     {
-        string text;
-        try
-        {
-            text = File.ReadAllText(path);
-        }
-        catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
+        if (!File.Exists(path))
         {
             return new([], []);
         }
 
-        var personal = (JsonNode.Parse(text) ?? throw new JsonException($"{path} is empty."))["personal"];
-        return new(Names(personal?["owners"]), Names(personal?["orgs"]));
+        var config = ConfigLoader.Load(path, EstateConfigJsonContext.Default.EstateScopesConfig);
+        return new(Names(config.Personal?.Owners, path), Names(config.Personal?.Orgs, path));
     }
 
     /// <summary>The org folders beside <paramref name="personalDir"/>, whether or not they exist yet.</summary>
@@ -65,6 +59,9 @@ public sealed record EstateScopes(IReadOnlyList<string> Owners, IReadOnlyList<st
     /// <param name="repo">A declared remote; anything not on GitHub belongs in the estate root.</param>
     public string? OrgFolderOf(string repo) => RepoSlug.FromRemote(repo) is { } slug ? OrgFolder(slug.Owner) : null;
 
-    private static string[] Names(JsonNode? node) =>
-        node is null ? [] : [.. node.AsArray().Select(item => item?.GetValue<string>() ?? throw new JsonException("A scope name is null."))];
+    // The source generator leaves an absent list at null; a null element is a mistake to report, not to drop.
+    private static string[] Names(IReadOnlyList<string>? names, string path) =>
+        names is null
+            ? []
+            : [.. names.Select(name => name ?? throw new ConfigLoadException(ConfigLoadError.Schema, $"{path}: a scope name is null.", path))];
 }

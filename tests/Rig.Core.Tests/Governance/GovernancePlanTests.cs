@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Rig.Core.Governance;
 using Rig.Core.Policy;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Governance;
 
@@ -67,7 +68,7 @@ public sealed class GovernancePlanTests : IDisposable
     private static FakeGitHub Aligned(RepoPolicies policies) => new FakeGitHub()
         .On("GET", $"repos/{Slug}", Settings().ToJsonString())
         .On("GET", $"repos/{Slug}/rulesets", """[{"id": 7, "name": "Main Branch Governance Ruleset", "enforcement": "active"}]""")
-        .On("GET", $"repos/{Slug}/rulesets/7", PyJson.DumpsLine(RulesetResource.Payload(policies, Slug)))
+        .On("GET", $"repos/{Slug}/rulesets/7", JsonOutput.Line(RulesetResource.Payload(policies, Slug)))
         .On("GET", $"repos/{Slug}/labels?per_page=100", Labels(Taxonomy).ToJsonString());
 
     private string Checkout()

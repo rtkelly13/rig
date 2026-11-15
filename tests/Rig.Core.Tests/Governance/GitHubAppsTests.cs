@@ -61,7 +61,8 @@ public sealed class GitHubAppsTests
 
         var error = Assert.Throws<InvalidDataException>(() => RepoPolicies.Parse(bad, "policy.json"));
 
-        Assert.Equal("policy.json: github_apps.x: accounts is not an object", error.Message);
+        Assert.StartsWith("policy.json:", error.Message, StringComparison.Ordinal);
+        Assert.Contains("$.github_apps.x.accounts", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

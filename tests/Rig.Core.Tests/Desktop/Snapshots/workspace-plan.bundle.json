@@ -30,7 +30,7 @@
           "name": "Rig Web",
           "type": "command",
           "delay_ms": 2200,
-          "command": "uv run --no-sync desktop-manager web ensure && \"{chrome-path}\" --user-data-dir=\"{chrome-user-data}\" --profile-directory=\"{chrome-profile-personal}\" --app=http://127.0.0.1:8090",
+          "command": "uv run --no-sync desktop-manager web ensure \u0026\u0026 \u0022{chrome-path}\u0022 --user-data-dir=\u0022{chrome-user-data}\u0022 --profile-directory=\u0022{chrome-profile-personal}\u0022 --app=http://127.0.0.1:8090",
           "cwd": "{rig-root}",
           "summary": "Starts the rig web dashboard service if it is not already answering, then opens it as a Chrome app window full-screen on screen 3. Replaces the prs-to-review checklist.",
           "placement": {
@@ -87,7 +87,7 @@
           "delay_ms": 1600,
           "feature": "orca-sessions",
           "path": "{orca-path}",
-          "summary": "Orca on the default profile (%APPDATA%\\orca), full screen 1, holding the work repos that `devenv orca apply` registers. Replaces the Workspace Terminal columns. Listed before Personal Orca so a fresh logon launches it first: each launch waits for a window that was not open before it, so the two Orca windows cannot swap. On a re-run `window_pid_file` picks the window owned by the pid this profile records in orca-runtime.json.",
+          "summary": "Orca on the default profile (%APPDATA%\\orca), full screen 1, holding the work repos that \u0060devenv orca apply\u0060 registers. Replaces the Workspace Terminal columns. Listed before Personal Orca so a fresh logon launches it first: each launch waits for a window that was not open before it, so the two Orca windows cannot swap. On a re-run \u0060window_pid_file\u0060 picks the window owned by the pid this profile records in orca-runtime.json.",
           "placement": {
             "screen": 1,
             "layout": {
@@ -108,7 +108,7 @@
           "args": [
             "--user-data-dir={orca-personal-data}"
           ],
-          "summary": "Orca on a second profile (`--user-data-dir`), full screen 3, holding the personal repos that `rig estate orca --apply` registers. Orca is one window per profile, so a second window needs a second profile. Orca's in-app update relaunches only the profile that ran it, so rig applies updates instead: restore installs a staged update while no Orca is running, and `desktop-manager workspace update-orca` closes both profiles, installs and relaunches both. If an in-app update closes this one anyway, the next restore finds no orca-runtime.json pid for it and launches it.",
+          "summary": "Orca on a second profile (\u0060--user-data-dir\u0060), full screen 3, holding the personal repos that \u0060rig estate orca --apply\u0060 registers. Orca is one window per profile, so a second window needs a second profile. Orca\u0027s in-app update relaunches only the profile that ran it, so rig applies updates instead: restore installs a staged update while no Orca is running, and \u0060desktop-manager workspace update-orca\u0060 closes both profiles, installs and relaunches both. If an in-app update closes this one anyway, the next restore finds no orca-runtime.json pid for it and launches it.",
           "placement": {
             "screen": 3,
             "layout": {
@@ -129,7 +129,7 @@
           "command": "claude",
           "command_at_logon": "deferred",
           "cwd": "{workspace-root}",
-          "summary": "First of the side-by-side Windows Terminal sessions on screen 1, in columns at least 800px wide: three on the 2560px main screen, two on a 1920px one. Replaces the paired Warp sessions after Warp kept killing long-running Claude sessions mid-run. Unlike Warp on Windows, `wt-pwsh` can auto-run the terminal command, so `claude` starts in the workspace root without a manual step. At logon the command is deferred: the shell opens bare and `claude-sessions startup` resumes a session that died into it, or starts `claude` fresh. `--title` gives each window a distinct anchor; wt-pwsh terminals are force-relaunched rather than reused, so title drift once Claude renames the window does not accumulate duplicates.",
+          "summary": "First of the side-by-side Windows Terminal sessions on screen 1, in columns at least 800px wide: three on the 2560px main screen, two on a 1920px one. Replaces the paired Warp sessions after Warp kept killing long-running Claude sessions mid-run. Unlike Warp on Windows, \u0060wt-pwsh\u0060 can auto-run the terminal command, so \u0060claude\u0060 starts in the workspace root without a manual step. At logon the command is deferred: the shell opens bare and \u0060claude-sessions startup\u0060 resumes a session that died into it, or starts \u0060claude\u0060 fresh. \u0060--title\u0060 gives each window a distinct anchor; wt-pwsh terminals are force-relaunched rather than reused, so title drift once Claude renames the window does not accumulate duplicates.",
           "placement": {
             "screen": 1,
             "layout": {
@@ -195,7 +195,7 @@
             "--new-window",
             "https://github.com/"
           ],
-          "summary": "Full-screen Chrome (work profile) on screen 2, between the terminal pairs, replacing Fork now that the Review desktop owns Fork. `--new-window` forces a fresh window instead of focusing an existing work-profile one on the Admin desktop; reuse only considers chrome.exe windows already on this desktop, so the Admin desktop's Chrome windows are never claimed. Roll back with `--enable work-fork --disable work-chrome`.",
+          "summary": "Full-screen Chrome (work profile) on screen 2, between the terminal pairs, replacing Fork now that the Review desktop owns Fork. \u0060--new-window\u0060 forces a fresh window instead of focusing an existing work-profile one on the Admin desktop; reuse only considers chrome.exe windows already on this desktop, so the Admin desktop\u0027s Chrome windows are never claimed. Roll back with \u0060--enable work-fork --disable work-chrome\u0060.",
           "placement": {
             "screen": 2,
             "layout": {
@@ -211,7 +211,7 @@
           "delay_ms": 1200,
           "feature": "work-fork",
           "path": "{fork-path}",
-          "summary": "PAUSED (feature `work-fork` is off) - Fork now lives on the Review desktop and Chrome takes this slot. Kept so the old layout can be restored with `--enable work-fork --disable work-chrome`.",
+          "summary": "PAUSED (feature \u0060work-fork\u0060 is off) - Fork now lives on the Review desktop and Chrome takes this slot. Kept so the old layout can be restored with \u0060--enable work-fork --disable work-chrome\u0060.",
           "placement": {
             "screen": 2,
             "layout": {
@@ -270,7 +270,7 @@
           "feature": "warp-terminals",
           "path": "{warp-path}",
           "cwd": "{workspace-root}",
-          "summary": "PAUSED (feature `warp-terminals` is off) \u2014 kept so the Warp layout can be restored with `--enable warp-terminals --disable wt-terminals`. First of two side-by-side Warp sessions on screen 1. Each plain warp.exe launch opens a NEW window (verified 2026-07-03), and Warp honors the launch working directory on Windows even though it ignores warp:// launch configs \u2014 so `cwd` opens this window in the workspace root (its title becomes 'pwsh in workspace'). Warp still can't auto-run a command on Windows, so run `claude` yourself. Slot 1/slot 2 placement disambiguates the two warp.exe windows on restore.",
+          "summary": "PAUSED (feature \u0060warp-terminals\u0060 is off) \u2014 kept so the Warp layout can be restored with \u0060--enable warp-terminals --disable wt-terminals\u0060. First of two side-by-side Warp sessions on screen 1. Each plain warp.exe launch opens a NEW window (verified 2026-07-03), and Warp honors the launch working directory on Windows even though it ignores warp:// launch configs \u2014 so \u0060cwd\u0060 opens this window in the workspace root (its title becomes \u0027pwsh in workspace\u0027). Warp still can\u0027t auto-run a command on Windows, so run \u0060claude\u0060 yourself. Slot 1/slot 2 placement disambiguates the two warp.exe windows on restore.",
           "placement": {
             "screen": 1,
             "layout": {
@@ -289,7 +289,7 @@
           "feature": "warp-terminals",
           "path": "{warp-path}",
           "cwd": "{workspace-root}",
-          "summary": "PAUSED (feature `warp-terminals` is off). Second side-by-side Warp session on screen 1. Plain warp.exe relaunch opens a distinct new window (Warp on Windows is not single-window on launch), placed in slot 2. `cwd` opens it in the workspace root; run `claude` yourself.",
+          "summary": "PAUSED (feature \u0060warp-terminals\u0060 is off). Second side-by-side Warp session on screen 1. Plain warp.exe relaunch opens a distinct new window (Warp on Windows is not single-window on launch), placed in slot 2. \u0060cwd\u0060 opens it in the workspace root; run \u0060claude\u0060 yourself.",
           "placement": {
             "screen": 1,
             "layout": {
@@ -308,7 +308,7 @@
           "feature": "warp-terminals",
           "path": "{warp-path}",
           "cwd": "{workspace-root}",
-          "summary": "PAUSED (feature `warp-terminals` is off). Full-screen Warp on screen 3, to experiment with managing several Claude sessions as Warp tabs. Launched plain (no new-window URI) so exactly one window opens and placement can resize it; passing a warp:// URI makes Warp spawn extra unplaced windows. `cwd` opens this window in the workspace root \u2014 without it Warp inherits the launcher's cwd (e.g. System32 when the logon scheduled task starts it). Warp on Windows still can't auto-run a command on launch, so run `claude` yourself. Shares window_title 'workspace' with the two side-by-side Warp entries: all three windows are titled 'pwsh in workspace', so without a title this entry was disqualified from reuse (its window title contains a sibling's 'workspace' title) and relaunched a duplicate every restore attempt; the shared title anchor plus its distinct screen-3 placement lets reuse claim the right window.",
+          "summary": "PAUSED (feature \u0060warp-terminals\u0060 is off). Full-screen Warp on screen 3, to experiment with managing several Claude sessions as Warp tabs. Launched plain (no new-window URI) so exactly one window opens and placement can resize it; passing a warp:// URI makes Warp spawn extra unplaced windows. \u0060cwd\u0060 opens this window in the workspace root \u2014 without it Warp inherits the launcher\u0027s cwd (e.g. System32 when the logon scheduled task starts it). Warp on Windows still can\u0027t auto-run a command on launch, so run \u0060claude\u0060 yourself. Shares window_title \u0027workspace\u0027 with the two side-by-side Warp entries: all three windows are titled \u0027pwsh in workspace\u0027, so without a title this entry was disqualified from reuse (its window title contains a sibling\u0027s \u0027workspace\u0027 title) and relaunched a duplicate every restore attempt; the shared title anchor plus its distinct screen-3 placement lets reuse claim the right window.",
           "placement": {
             "screen": 3,
             "layout": {
@@ -346,7 +346,7 @@
           "window_process_name": "chrome.exe"
         },
         {
-          "name": "Google Meet + Calendar - Work Profile",
+          "name": "Google Meet \u002B Calendar - Work Profile",
           "type": "app",
           "delay_ms": 1400,
           "path": "{chrome-path}",
@@ -426,7 +426,7 @@
           "delay_ms": 1200,
           "path": "{warp-path}",
           "cwd": "{rig-root}",
-          "summary": "Single Warp session for personal-side work on screen 2, replacing the two Claude terminals. Each plain warp.exe launch opens a new window; `cwd` opens it in the personal workspace root (title 'pwsh in rig'). Warp can't auto-run a command on Windows, so run `claude` yourself.",
+          "summary": "Single Warp session for personal-side work on screen 2, replacing the two Claude terminals. Each plain warp.exe launch opens a new window; \u0060cwd\u0060 opens it in the personal workspace root (title \u0027pwsh in rig\u0027). Warp can\u0027t auto-run a command on Windows, so run \u0060claude\u0060 yourself.",
           "placement": {
             "screen": 2,
             "layout": {
@@ -448,7 +448,7 @@
             "--new-window",
             "https://mail.google.com/"
           ],
-          "summary": "Opens Chrome with the Profile 1 personal profile. Shares {chrome-user-data} with the Admin desktop's Profile 4 windows, so the launched PID hands off to the existing browser process and every Chrome window looks identical to `window_process_name` alone. `--new-window` forces a window to actually appear instead of focusing an existing Profile 1 one, and `window_title` pins the match to the personal Gmail window - without both, restore binds to whatever chrome.exe window shows up next and has previously grabbed work-profile windows.",
+          "summary": "Opens Chrome with the Profile 1 personal profile. Shares {chrome-user-data} with the Admin desktop\u0027s Profile 4 windows, so the launched PID hands off to the existing browser process and every Chrome window looks identical to \u0060window_process_name\u0060 alone. \u0060--new-window\u0060 forces a window to actually appear instead of focusing an existing Profile 1 one, and \u0060window_title\u0060 pins the match to the personal Gmail window - without both, restore binds to whatever chrome.exe window shows up next and has previously grabbed work-profile windows.",
           "placement": {
             "screen": 1,
             "layout": {
@@ -505,7 +505,7 @@
           "type": "app",
           "delay_ms": 1600,
           "path": "{t3code-path}",
-          "summary": "T3 Code under evaluation, full screen 1. Orca moved to the Work desktop, which owns both Orca profiles; a Lab entry would grab one of their windows. Install or upgrade it with `devenv tools` (winget `T3Tools.T3Code`).",
+          "summary": "T3 Code under evaluation, full screen 1. Orca moved to the Work desktop, which owns both Orca profiles; a Lab entry would grab one of their windows. Install or upgrade it with \u0060devenv tools\u0060 (winget \u0060T3Tools.T3Code\u0060).",
           "placement": {
             "screen": 1,
             "layout": {
@@ -562,14 +562,14 @@
     "Bundle-style workspace plan that loads one file per desktop.",
     "Bundle aliases are available anywhere placeholders are supported.",
     "Desktop paths are resolved relative to this file.",
-    "Feature flags and their defaults live in the rig flags registry (`rig flags list`); `rig flags enable|disable NAME` stores a machine override in rig.db. Entries carry a `feature` name; a feature that is off disables its entries exactly as `disabled: true` would, so a variant can be paused without deleting its configuration.",
-    "A desktop ref can carry a `feature` too. A desktop behind a switched-off feature is not created at all and the desktops after it move up, so `personal-desktop: false` means three desktops, not four with an empty one.",
-    "Switching a desktop's feature off also retires it: restore removes a leftover virtual desktop past the planned count that carries that desktop's name, moving its windows to the last kept desktop. Other extra desktops are left alone. `--enable personal-desktop` brings it back.",
-    "`experimental-desktop` adds a trailing Lab desktop for evaluating new tooling (currently T3 Code) without disturbing the daily desktops. Switch it off for one run with `workspace restore --disable experimental-desktop`.",
-    "`orca-sessions` puts two Orca windows on the Work desktop in place of the Workspace Terminal columns: the default profile (work repos) on screen 1 and a second `--user-data-dir` profile (personal repos) on screen 3. Roll back with `rig flags disable orca-sessions` and `rig flags enable wt-terminals`.",
-    "Desktop names (Review, Work, Admin, Personal, Lab) are re-applied on every restore; `workspace name-desktops` re-applies them (and retires switched-off desktops) on demand.",
-    "Aliases here are defaults. `{localappdata}`, `{appdata}`, `{userprofile}` and `{programfiles}` come from the environment, and `tools.desktop.aliases` in `~/.workspace/config.json` overrides or adds any alias on one machine (`chrome-profile-work`, `workspace-root`, an app path).",
-    "Override a default for one run with `workspace restore --enable NAME` / `--disable NAME`. Inspect with `workspace features`."
+    "Feature flags and their defaults live in the rig flags registry (\u0060rig flags list\u0060); \u0060rig flags enable|disable NAME\u0060 stores a machine override in rig.db. Entries carry a \u0060feature\u0060 name; a feature that is off disables its entries exactly as \u0060disabled: true\u0060 would, so a variant can be paused without deleting its configuration.",
+    "A desktop ref can carry a \u0060feature\u0060 too. A desktop behind a switched-off feature is not created at all and the desktops after it move up, so \u0060personal-desktop: false\u0060 means three desktops, not four with an empty one.",
+    "Switching a desktop\u0027s feature off also retires it: restore removes a leftover virtual desktop past the planned count that carries that desktop\u0027s name, moving its windows to the last kept desktop. Other extra desktops are left alone. \u0060--enable personal-desktop\u0060 brings it back.",
+    "\u0060experimental-desktop\u0060 adds a trailing Lab desktop for evaluating new tooling (currently T3 Code) without disturbing the daily desktops. Switch it off for one run with \u0060workspace restore --disable experimental-desktop\u0060.",
+    "\u0060orca-sessions\u0060 puts two Orca windows on the Work desktop in place of the Workspace Terminal columns: the default profile (work repos) on screen 1 and a second \u0060--user-data-dir\u0060 profile (personal repos) on screen 3. Roll back with \u0060rig flags disable orca-sessions\u0060 and \u0060rig flags enable wt-terminals\u0060.",
+    "Desktop names (Review, Work, Admin, Personal, Lab) are re-applied on every restore; \u0060workspace name-desktops\u0060 re-applies them (and retires switched-off desktops) on demand.",
+    "Aliases here are defaults. \u0060{localappdata}\u0060, \u0060{appdata}\u0060, \u0060{userprofile}\u0060 and \u0060{programfiles}\u0060 come from the environment, and \u0060tools.desktop.aliases\u0060 in \u0060~/.workspace/config.json\u0060 overrides or adds any alias on one machine (\u0060chrome-profile-work\u0060, \u0060workspace-root\u0060, an app path).",
+    "Override a default for one run with \u0060workspace restore --enable NAME\u0060 / \u0060--disable NAME\u0060. Inspect with \u0060workspace features\u0060."
   ],
   "aliases": {
     "code-root": "C:\\code",

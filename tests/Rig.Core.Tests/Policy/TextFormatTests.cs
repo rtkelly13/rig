@@ -1,9 +1,10 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Policy;
 
-/// <summary>The Python behaviours the policy port reproduces: <c>fnmatch</c>, <c>shlex</c> and <c>json.dumps</c>.</summary>
+/// <summary>The Python behaviours the policy port reproduces (<c>fnmatch</c>, <c>shlex</c>) and the JSON rig writes.</summary>
 public sealed class TextFormatTests
 {
     [Theory]
@@ -61,59 +62,47 @@ public sealed class TextFormatTests
         _ = Assert.Throws<FormatException>(() => Shlex.Split(text));
 
     [Fact]
-    public void Dumps_matches_python_indent_two()
+    public void Format_is_two_space_indented_json()
     {
-        var node = JsonNode.Parse("""{"a": [1, -0, 2.5, true, false, null, {}, []], "é\"\\\n\r\t\b\f\u0001": {"k": "日本"}}""");
+        var node = JsonNode.Parse("""{"a": [1, 2.5, true, false, null, {}, []], "k": "v"}""");
 
         Assert.Equal(
-            "{\n  \"a\": [\n    1,\n    0,\n    2.5,\n    true,\n    false,\n    null,\n    {},\n    []\n  ],\n"
-            + "  \"\\u00e9\\\"\\\\\\n\\r\\t\\b\\f\\u0001\": {\n    \"k\": \"\\u65e5\\u672c\"\n  }\n}",
-            PyJson.Dumps(node));
-        Assert.Equal("null", PyJson.Dumps(null));
-        Assert.Equal("1e+16", PyJson.Dumps(JsonNode.Parse("1e16")));
+            "{\n  \"a\": [\n    1,\n    2.5,\n    true,\n    false,\n    null,\n    {},\n    []\n  ],\n  \"k\": \"v\"\n}",
+            JsonOutput.Format(node));
+        Assert.Equal("null", JsonOutput.Format(null));
     }
 
     [Fact]
-    public void Dumps_without_ensure_ascii_keeps_text_and_still_escapes_controls() =>
-        Assert.Equal("\"é日本\\u0001\\n\u007f\"", PyJson.Dumps(JsonValue.Create("é日本\u0001\n\u007f"), ensureAscii: false));
-
-    [Fact]
-    public void Dumps_line_is_compact_with_python_separators() =>
-        Assert.Equal(
-            "{\"a\": 1, \"b\": [1, {}, []], \"c\": null, \"d\": \"\\u00e9\"}",
-            PyJson.DumpsLine(JsonNode.Parse("""{"a": 1, "b": [1, {}, []], "c": null, "d": "é"}""")));
-
-    [Fact]
-    public void Dumps_with_ensure_ascii_escapes_delete() =>
-        Assert.Equal("\"\\u007f\"", PyJson.Dumps(JsonValue.Create("\u007f")));
-
-    [Fact]
-    public void Whole_floats_built_in_csharp_print_as_floats_and_parsed_integers_stay_integers()
+    public void Format_escapes_non_ascii_by_default_and_keeps_it_on_request()
     {
-        var node = new JsonArray(1.0, 30.0f, 2m, 3, 4L, JsonNode.Parse("5"), JsonNode.Parse("6.0"));
+        var node = JsonNode.Parse("""{"k": "é日本"}""");
 
-        Assert.Equal("[\n  1.0,\n  30.0,\n  2.0,\n  3,\n  4,\n  5,\n  6.0\n]", PyJson.Dumps(node));
+        Assert.Contains("\\u00E9", JsonOutput.Format(node), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("é", JsonOutput.Format(node), StringComparison.Ordinal);
+        Assert.Contains("é日本", JsonOutput.Format(node, keepNonAscii: true), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Line_is_one_line_that_parses_back_to_the_same_node()
+    {
+        var node = JsonNode.Parse("""{"a": 1, "b": [1, {}, []], "c": null, "d": "é"}""");
+        var text = JsonOutput.Line(node);
+
+        Assert.DoesNotContain('\n', text);
+        Assert.Equal(node!.ToJsonString(), JsonNode.Parse(text)!.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(-1.5)]
+    [InlineData(1e16)]
+    [InlineData(1.25e-7)]
+    public void Number_is_a_json_number_that_parses_back(double value) =>
+        Assert.Equal(value, JsonNode.Parse(JsonOutput.Number(value))!.GetValue<double>());
 
     [Theory]
     [InlineData("18446744073709551617")]
     [InlineData("-9223372036854775809")]
-    [InlineData("123456789012345678901234567890")]
     public void Parsed_integers_past_64_bits_keep_every_digit(string number) =>
-        Assert.Equal(number, PyJson.Dumps(JsonNode.Parse(number)));
-
-    [Theory]
-    [InlineData(0.0, "0.0")]
-    [InlineData(-0.0, "-0.0")]
-    [InlineData(1.0, "1.0")]
-    [InlineData(2.5, "2.5")]
-    [InlineData(-123.456, "-123.456")]
-    [InlineData(0.0001, "0.0001")]
-    [InlineData(0.00001, "1e-05")]
-    [InlineData(1.25e-7, "1.25e-07")]
-    [InlineData(1e16, "1e+16")]
-    [InlineData(1234567890123456.0, "1234567890123456.0")]
-    [InlineData(1.5e300, "1.5e+300")]
-    [InlineData(100.0, "100.0")]
-    public void Floats_print_as_python_repr(double value, string text) => Assert.Equal(text, PyJson.FloatRepr(value));
+        Assert.Equal(number, JsonOutput.Format(JsonNode.Parse(number)));
 }

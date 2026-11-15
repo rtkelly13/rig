@@ -182,7 +182,8 @@ public sealed class GovernancePolicyCommandTests : IDisposable
         var (code, output) = await RunAsync("sync-policies");
 
         Assert.Equal(1, code);
-        Assert.Equal($"❌ Invalid policy config {policy}: {policy}: profiles is not an object\n", output);
+        Assert.StartsWith($"❌ Invalid policy config {policy}: {policy}:", output, StringComparison.Ordinal);
+        Assert.Contains("$.profiles", output, StringComparison.Ordinal);
     }
 
     private string Clone(string name, string? readme = null)

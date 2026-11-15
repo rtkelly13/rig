@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Estate;
 
@@ -49,7 +49,7 @@ internal sealed class AppsCommand(InstalledApps apps, IReadOnlyList<string> appD
                 ["accessed"] = PythonTime.IsoFormat(app.Accessed),
                 ["is_dormant"] = app.IsDormant(now),
             })]);
-            await output.WriteLineAsync(PyJson.Dumps(payload).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(payload).AsMemory(), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 

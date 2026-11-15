@@ -133,7 +133,7 @@ public sealed class PlanBundleTests : IDisposable
         var bytes = File.ReadAllBytes(path);
         Assert.Equal((byte)'{', bytes[0]);
         Assert.EndsWith("\n", File.ReadAllText(path), StringComparison.Ordinal);
-        Assert.Contains("caf\\u00e9", File.ReadAllText(path), StringComparison.Ordinal);
+        Assert.Contains("caf\\u00E9", File.ReadAllText(path), StringComparison.Ordinal);
         Assert.Equal("C:\\code", PlanFiles.Load(path).Workspace);
     }
 

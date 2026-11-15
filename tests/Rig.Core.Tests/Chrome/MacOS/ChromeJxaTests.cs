@@ -339,7 +339,7 @@ public sealed class ChromeJxaTests
     {
         var action = JxaScripts.CloseAction(Title, "https://example.com/雪?x=\"c\"\u2028");
         Assert.StartsWith(
-            "const expected = {\"title\": \"Notes, \\\"\\u96ea\\\"\\nline\", \"url\": \"https://example.com/\\u96ea?x=\\\"c\\\"\\u2028\"};\n\n",
+            "const expected = {\"title\":\"Notes, \\u0022\\u96EA\\u0022\\nline\",\"url\":\"https://example.com/\\u96EA?x=\\u0022c\\u0022\\u2028\"};\n\n",
             action,
             StringComparison.Ordinal);
         Assert.Contains("target.close();", action, StringComparison.Ordinal);
@@ -350,7 +350,7 @@ public sealed class ChromeJxaTests
     public void A_close_action_with_placeholder_tokens_in_the_page_stays_data()
     {
         var script = JxaScripts.TabAction(Tab(42, 701), JxaScripts.CloseAction("__TAB_ID__ __ACTION__", "about:blank"));
-        Assert.Contains("{\"title\": \"__TAB_ID__ __ACTION__\", \"url\": \"about:blank\"}", script, StringComparison.Ordinal);
+        Assert.Contains("{\"title\":\"__TAB_ID__ __ACTION__\",\"url\":\"about:blank\"}", script, StringComparison.Ordinal);
         Assert.Contains("tabID = 701;", script, StringComparison.Ordinal);
     }
 
@@ -375,8 +375,8 @@ public sealed class ChromeJxaTests
     [Fact]
     public void Restore_carries_its_state_as_json()
     {
-        Assert.Contains("const state = {\"target\": 42, \"front\": 43, \"minimized\": true};", JxaScripts.Restore(42, 43, minimized: true), StringComparison.Ordinal);
-        Assert.Contains("\"minimized\": false}", JxaScripts.Restore(42, 43, minimized: false), StringComparison.Ordinal);
+        Assert.Contains("const state = {\"target\":42,\"front\":43,\"minimized\":true};", JxaScripts.Restore(42, 43, minimized: true), StringComparison.Ordinal);
+        Assert.Contains("\"minimized\":false}", JxaScripts.Restore(42, 43, minimized: false), StringComparison.Ordinal);
     }
 
     [Fact]

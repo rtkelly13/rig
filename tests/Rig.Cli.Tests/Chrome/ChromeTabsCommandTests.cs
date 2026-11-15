@@ -209,7 +209,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
         Assert.Equal("""{"grouped":1,"deferred":1}""", summary["grouping"]!.ToJsonString());
         Assert.Equal("[]", summary["blocks"]!.ToJsonString());
         Assert.Equal(1.0, summary["success_rate"]!.GetValue<double>());
-        Assert.Contains("\"success_rate\": 1.0", text, StringComparison.Ordinal);
+        Assert.Contains("\"success_rate\": 1", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -456,7 +456,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
 
         var text = _out.ToString();
         Assert.Contains("café", text, StringComparison.Ordinal);
-        Assert.Contains("\"memory_mb\": 120.0", text, StringComparison.Ordinal);
+        Assert.Contains("\"memory_mb\": 120", text, StringComparison.Ordinal);
         var windows = JsonNode.Parse(text)!.AsArray();
         var first = windows[0]!.AsObject();
         Assert.Equal(

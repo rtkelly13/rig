@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Rig.Core.Governance;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Governance;
 
@@ -53,7 +54,7 @@ public sealed class RemoteAgentFilesTests
         Assert.Equal(
             ["gh", "api", "repos/rtkelly13/the-vault-system/git/trees/main?recursive=1"],
             _gh.Requests[1].Argv);
-        Assert.Equal("""{"repo": "rtkelly13/docs", "path": "CLAUDE.md", "archived": false}""", Rig.Core.Policy.PyJson.DumpsLine(sweep.Findings[0].ToJson()));
+        Assert.Equal("""{"repo":"rtkelly13/docs","path":"CLAUDE.md","archived":false}""", JsonOutput.Line(sweep.Findings[0].ToJson()));
     }
 
     [Fact]

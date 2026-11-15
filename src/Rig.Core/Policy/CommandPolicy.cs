@@ -1,6 +1,5 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Rig.Core.Config;
 
 namespace Rig.Core.Policy;
 
@@ -38,18 +37,26 @@ public sealed class CommandPolicy
     public static CommandPolicy Load(string path, bool windows)
     {
         ArgumentNullException.ThrowIfNull(path);
-        var root = JsonNode.Parse(File.ReadAllText(path)) as JsonObject ?? throw Misshapen("the policy must be an object");
-        var commands = root["commands"] as JsonObject ?? throw Misshapen("commands must be an object of tiers");
+        CliAllowlistsConfig file;
+        try
+        {
+            file = ConfigLoader.Load(path, EstateConfigJsonContext.Default.CliAllowlistsConfig);
+        }
+        catch (ConfigLoadException e)
+        {
+            throw Misshapen(e.Message);
+        }
+
+        var commands = file.Commands ?? throw Misshapen("commands must be an object of tiers");
         var byTier = new Dictionary<CommandRisk, List<CommandRule>>();
         foreach (var (tier, entries) in commands)
         {
             var risk = PolicyNames.ParseRisk(tier) ?? throw Misshapen($"commands.{tier} is not a tier");
-            var list = entries as JsonArray ?? throw Misshapen($"commands.{tier} must be a list");
-            byTier[risk] = [.. list.Select(entry => Rule(entry, risk, tier))];
+            byTier[risk] = [.. entries.Select(rule => new CommandRule(rule.Pattern, risk, rule.Rationale, rule.ExcludeSystems))];
         }
 
         var rules = Enum.GetValues<CommandRisk>().SelectMany(r => byTier.GetValueOrDefault(r) ?? []).ToList();
-        return new CommandPolicy(Skills(root["skills"], path), rules, windows);
+        return new CommandPolicy(Skills(file.Skills, path), rules, windows);
     }
 
     /// <summary>
@@ -106,57 +113,25 @@ public sealed class CommandPolicy
 
     private static InvalidDataException Misshapen(string what) => new($"Malformed command policy: {what}.");
 
-    private static CommandRule Rule(JsonNode? entry, CommandRisk risk, string tier)
-    {
-        if (entry is JsonValue value && value.GetValueKind() == JsonValueKind.String)
-        {
-            return new CommandRule(value.GetValue<string>(), risk);
-        }
-
-        if (entry is not JsonObject rule)
-        {
-            throw Misshapen($"a commands.{tier} rule must be a pattern or an object");
-        }
-
-        var pattern = Text(rule["pattern"]) ?? throw Misshapen($"a commands.{tier} rule has no pattern");
-        var rationale = rule["rationale"] is null ? string.Empty : Text(rule["rationale"]) ?? throw Misshapen($"{pattern}: rationale must be text");
-        var excluded = rule["exclude_systems"] is null ? [] : Texts(rule["exclude_systems"]) ?? throw Misshapen($"{pattern}: exclude_systems must be a list of names");
-        return new CommandRule(pattern, risk, rationale, excluded);
-    }
-
-    private static List<string> Skills(JsonNode? skills, string path)
+    private static List<string> Skills(CliSkillsConfig? skills, string path)
     {
         if (skills is null)
         {
             return [];
         }
 
-        if (skills is not JsonObject section)
+        if (skills.AllowlistFile is { } name)
         {
-            throw Misshapen("skills must be an object");
+            try
+            {
+                return [.. ConfigLoader.Load(Path.Join(Path.GetDirectoryName(path), name), EstateConfigJsonContext.Default.ListString)];
+            }
+            catch (ConfigLoadException e)
+            {
+                throw Misshapen($"{name} must be a list of skill names ({e.Message})");
+            }
         }
 
-        if (section["allowlist_file"] is { } file)
-        {
-            var name = Text(file) ?? throw Misshapen("skills.allowlist_file must be a path");
-            var listed = JsonNode.Parse(File.ReadAllText(Path.Join(Path.GetDirectoryName(path), name)));
-            return Texts(listed) ?? throw Misshapen($"{name} must be a list of skill names");
-        }
-
-        return section["allow"] is null ? [] : Texts(section["allow"]) ?? throw Misshapen("skills.allow must be a list of skill names");
-    }
-
-    private static string? Text(JsonNode? node) =>
-        node is JsonValue value && value.GetValueKind() == JsonValueKind.String ? value.GetValue<string>() : null;
-
-    private static List<string>? Texts(JsonNode? node)
-    {
-        if (node is not JsonArray array)
-        {
-            return null;
-        }
-
-        var texts = array.Select(Text).ToList();
-        return texts.Contains(null) ? null : [.. texts.OfType<string>()];
+        return skills.Allow is { } allow ? [.. allow] : [];
     }
 }

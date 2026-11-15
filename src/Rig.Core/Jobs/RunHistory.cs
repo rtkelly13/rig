@@ -2,8 +2,8 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Rig.Core.Policy;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Core.Jobs;
 
@@ -190,7 +190,7 @@ public static partial class RunHistory
         text.Append("\"job\":").Append(Quote(run.Job))
             .Append(",\"run_id\":").Append(Quote(run.RunId))
             .Append(",\"started\":").Append(Quote(run.Started))
-            .Append(",\"seconds\":").Append(PyJson.FloatRepr(run.Seconds))
+            .Append(",\"seconds\":").Append(JsonOutput.Number(run.Seconds))
             .Append(",\"returncode\":").Append(run.ReturnCode?.ToString(CultureInfo.InvariantCulture) ?? "null")
             .Append(",\"trigger\":").Append(Quote(run.Trigger))
             .Append(",\"error\":").Append(run.Error is null ? "null" : Quote(run.Error))

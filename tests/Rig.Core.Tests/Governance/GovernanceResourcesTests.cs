@@ -426,12 +426,12 @@ public sealed class GovernanceResourcesTests : IDisposable
     }
 
     [Theory]
-    [InlineData("""{"labels": {}}""", "labels is not a list")]
-    [InlineData("""{"labels": [1]}""", "a label is not an object")]
+    [InlineData("""{"labels": {}}""", "Path: $.defaults.labels")]
+    [InlineData("""{"labels": [1]}""", "Path: $.defaults.labels")]
     [InlineData("""{"labels": [{"color": "f", "description": ""}]}""", "a label has no name")]
     [InlineData("""{"labels": [{"name": "x", "description": ""}]}""", "a label has no color")]
     [InlineData("""{"labels": [{"name": "x", "color": "f"}]}""", "a label has no description")]
-    [InlineData("""{"environments": {"release": 1}}""", "environments.release is not an object")]
+    [InlineData("""{"environments": {"release": 1}}""", "Path: $.defaults.environments.release")]
     [InlineData("""{"environments": {"release": {"reviewers": null}}}""", "environments.release.reviewers is null")]
     [InlineData("""{"pages": {"build_type": "jekyll"}}""", "pages.build_type 'jekyll' is neither 'workflow' nor 'legacy'")]
     [InlineData("""{"fork": {}}""", "fork has no upstream")]

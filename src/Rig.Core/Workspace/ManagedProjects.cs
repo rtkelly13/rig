@@ -1,5 +1,5 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
+using Rig.Core.Config;
 
 namespace Rig.Core.Workspace;
 
@@ -57,100 +57,96 @@ public static class ManagedProjects
         return [.. Decode(path, retired: false), .. Decode(Path.Join(Path.GetDirectoryName(path), ArchivedFileName), retired: true)];
     }
 
+    // Entries are decoded one at a time: a misshapen entry is skipped rather than losing the whole registry, which is
+    // what the Python reader did. The typed entry still comes from the source-generated context, so unknown keys such
+    // as vercel or ports are ignored without reflection.
     private static List<ManagedRepoSpec> Decode(string path, bool retired)
     {
-        JsonNode? root;
-        try
-        {
-            root = JsonNode.Parse(File.ReadAllText(path));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        if (!File.Exists(path))
         {
             return [];
         }
 
-        return root is JsonObject file && file["projects"] is JsonArray projects
-            ? projects.Select(entry => Entry(entry, retired)).OfType<ManagedRepoSpec>().ToList()
-            : [];
+        string text;
+        try
+        {
+            text = File.ReadAllText(path);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(text);
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+
+        using (document)
+        {
+            if (document.RootElement.ValueKind != JsonValueKind.Object
+                || !document.RootElement.TryGetProperty("projects", out var projects)
+                || projects.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var specs = new List<ManagedRepoSpec>();
+            foreach (var element in projects.EnumerateArray())
+            {
+                if (Entry(element, retired) is { } spec)
+                {
+                    specs.Add(spec);
+                }
+            }
+
+            return specs;
+        }
     }
 
-    private static ManagedRepoSpec? Entry(JsonNode? node, bool retired)
+    private static ManagedRepoSpec? Entry(JsonElement element, bool retired)
     {
-        if (node is not JsonObject entry
-            || !Text(entry, "name", out var name)
-            || !Text(entry, "repo", out var repo)
-            || !Text(entry, "description", out var description)
-            || !Text(entry, "domain", out var domain)
-            || !Text(entry, "stack", out var stack)
-            || !OptionalText(entry, "branch", out var branch)
-            || !Flag(entry, "enabled", out var enabled)
-            || !Orca(entry, out var group))
+        ManagedProjectEntry? entry;
+        try
+        {
+            entry = element.Deserialize(EstateConfigJsonContext.Default.ManagedProjectEntry);
+        }
+        catch (JsonException)
         {
             return null;
         }
 
-        return new(name, repo, description, domain, stack, branch, enabled && !retired, group);
-    }
-
-    // A string field, empty when absent; null or another type is not a string.
-    private static bool Text(JsonObject entry, string key, out string value)
-    {
-        value = string.Empty;
-        return !entry.TryGetPropertyValue(key, out var node) || IsString(node, out value);
-    }
-
-    private static bool OptionalText(JsonObject entry, string key, out string? value)
-    {
-        value = null;
-        if (!entry.TryGetPropertyValue(key, out var node) || node is null)
+        if (entry is null)
         {
-            return true;
+            return null;
         }
 
-        var ok = IsString(node, out var text);
-        value = text;
-        return ok;
+        // The source generator leaves an absent property at its type's default, so an absent flag is not true and an
+        // absent string is not "", and a flag of any other kind (including null) is the misshapen entry it always was.
+        var enabled = entry.Enabled.ValueKind switch
+        {
+            JsonValueKind.Undefined => true,
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            _ => (bool?)null,
+        };
+        return enabled is { } on
+            ? new(
+                Text(entry.Name),
+                Text(entry.Repo),
+                Text(entry.Description),
+                Text(entry.Domain),
+                Text(entry.Stack),
+                entry.Branch,
+                on && !retired,
+                entry.Orca is { } orca ? Text(orca.Group) : null)
+            : null;
     }
 
-    private static bool Flag(JsonObject entry, string key, out bool value)
-    {
-        value = true;
-        if (!entry.TryGetPropertyValue(key, out var node))
-        {
-            return true;
-        }
-
-        var kind = node?.GetValueKind();
-        value = kind == JsonValueKind.True;
-        return kind is JsonValueKind.True or JsonValueKind.False;
-    }
-
-    private static bool Orca(JsonObject entry, out string? group)
-    {
-        group = null;
-        if (!entry.TryGetPropertyValue("orca", out var node) || node is null)
-        {
-            return true;
-        }
-
-        if (node is not JsonObject orca || !Text(orca, "group", out var name))
-        {
-            return false;
-        }
-
-        group = name;
-        return true;
-    }
-
-    private static bool IsString(JsonNode? node, out string value)
-    {
-        value = string.Empty;
-        if (node?.GetValueKind() != JsonValueKind.String)
-        {
-            return false;
-        }
-
-        value = node.GetValue<string>();
-        return true;
-    }
+    private static string Text(string? value) => value ?? string.Empty;
 }

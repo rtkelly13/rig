@@ -23,7 +23,7 @@
       "window_process_name": "chrome.exe"
     },
     {
-      "name": "Google Meet + Calendar - Work Profile",
+      "name": "Google Meet \u002B Calendar - Work Profile",
       "type": "app",
       "delay_ms": 1400,
       "path": "{chrome-path}",

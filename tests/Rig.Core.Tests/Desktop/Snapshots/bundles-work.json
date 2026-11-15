@@ -7,7 +7,7 @@
       "delay_ms": 1600,
       "feature": "orca-sessions",
       "path": "{orca-path}",
-      "summary": "Orca on the default profile (%APPDATA%\\orca), full screen 1, holding the work repos that `devenv orca apply` registers. Replaces the Workspace Terminal columns. Listed before Personal Orca so a fresh logon launches it first: each launch waits for a window that was not open before it, so the two Orca windows cannot swap. On a re-run `window_pid_file` picks the window owned by the pid this profile records in orca-runtime.json.",
+      "summary": "Orca on the default profile (%APPDATA%\\orca), full screen 1, holding the work repos that \u0060devenv orca apply\u0060 registers. Replaces the Workspace Terminal columns. Listed before Personal Orca so a fresh logon launches it first: each launch waits for a window that was not open before it, so the two Orca windows cannot swap. On a re-run \u0060window_pid_file\u0060 picks the window owned by the pid this profile records in orca-runtime.json.",
       "placement": {
         "screen": 1,
         "layout": {
@@ -28,7 +28,7 @@
       "args": [
         "--user-data-dir={orca-personal-data}"
       ],
-      "summary": "Orca on a second profile (`--user-data-dir`), full screen 3, holding the personal repos that `rig estate orca --apply` registers. Orca is one window per profile, so a second window needs a second profile. Orca's in-app update relaunches only the profile that ran it, so rig applies updates instead: restore installs a staged update while no Orca is running, and `desktop-manager workspace update-orca` closes both profiles, installs and relaunches both. If an in-app update closes this one anyway, the next restore finds no orca-runtime.json pid for it and launches it.",
+      "summary": "Orca on a second profile (\u0060--user-data-dir\u0060), full screen 3, holding the personal repos that \u0060rig estate orca --apply\u0060 registers. Orca is one window per profile, so a second window needs a second profile. Orca\u0027s in-app update relaunches only the profile that ran it, so rig applies updates instead: restore installs a staged update while no Orca is running, and \u0060desktop-manager workspace update-orca\u0060 closes both profiles, installs and relaunches both. If an in-app update closes this one anyway, the next restore finds no orca-runtime.json pid for it and launches it.",
       "placement": {
         "screen": 3,
         "layout": {
@@ -49,7 +49,7 @@
       "command": "claude",
       "command_at_logon": "deferred",
       "cwd": "{workspace-root}",
-      "summary": "First of the side-by-side Windows Terminal sessions on screen 1, in columns at least 800px wide: three on the 2560px main screen, two on a 1920px one. Replaces the paired Warp sessions after Warp kept killing long-running Claude sessions mid-run. Unlike Warp on Windows, `wt-pwsh` can auto-run the terminal command, so `claude` starts in the workspace root without a manual step. At logon the command is deferred: the shell opens bare and `claude-sessions startup` resumes a session that died into it, or starts `claude` fresh. `--title` gives each window a distinct anchor; wt-pwsh terminals are force-relaunched rather than reused, so title drift once Claude renames the window does not accumulate duplicates.",
+      "summary": "First of the side-by-side Windows Terminal sessions on screen 1, in columns at least 800px wide: three on the 2560px main screen, two on a 1920px one. Replaces the paired Warp sessions after Warp kept killing long-running Claude sessions mid-run. Unlike Warp on Windows, \u0060wt-pwsh\u0060 can auto-run the terminal command, so \u0060claude\u0060 starts in the workspace root without a manual step. At logon the command is deferred: the shell opens bare and \u0060claude-sessions startup\u0060 resumes a session that died into it, or starts \u0060claude\u0060 fresh. \u0060--title\u0060 gives each window a distinct anchor; wt-pwsh terminals are force-relaunched rather than reused, so title drift once Claude renames the window does not accumulate duplicates.",
       "placement": {
         "screen": 1,
         "layout": {
@@ -115,7 +115,7 @@
         "--new-window",
         "https://github.com/"
       ],
-      "summary": "Full-screen Chrome (work profile) on screen 2, between the terminal pairs, replacing Fork now that the Review desktop owns Fork. `--new-window` forces a fresh window instead of focusing an existing work-profile one on the Admin desktop; reuse only considers chrome.exe windows already on this desktop, so the Admin desktop's Chrome windows are never claimed. Roll back with `--enable work-fork --disable work-chrome`.",
+      "summary": "Full-screen Chrome (work profile) on screen 2, between the terminal pairs, replacing Fork now that the Review desktop owns Fork. \u0060--new-window\u0060 forces a fresh window instead of focusing an existing work-profile one on the Admin desktop; reuse only considers chrome.exe windows already on this desktop, so the Admin desktop\u0027s Chrome windows are never claimed. Roll back with \u0060--enable work-fork --disable work-chrome\u0060.",
       "placement": {
         "screen": 2,
         "layout": {
@@ -131,7 +131,7 @@
       "delay_ms": 1200,
       "feature": "work-fork",
       "path": "{fork-path}",
-      "summary": "PAUSED (feature `work-fork` is off) - Fork now lives on the Review desktop and Chrome takes this slot. Kept so the old layout can be restored with `--enable work-fork --disable work-chrome`.",
+      "summary": "PAUSED (feature \u0060work-fork\u0060 is off) - Fork now lives on the Review desktop and Chrome takes this slot. Kept so the old layout can be restored with \u0060--enable work-fork --disable work-chrome\u0060.",
       "placement": {
         "screen": 2,
         "layout": {
@@ -190,7 +190,7 @@
       "feature": "warp-terminals",
       "path": "{warp-path}",
       "cwd": "{workspace-root}",
-      "summary": "PAUSED (feature `warp-terminals` is off) \u2014 kept so the Warp layout can be restored with `--enable warp-terminals --disable wt-terminals`. First of two side-by-side Warp sessions on screen 1. Each plain warp.exe launch opens a NEW window (verified 2026-07-03), and Warp honors the launch working directory on Windows even though it ignores warp:// launch configs \u2014 so `cwd` opens this window in the workspace root (its title becomes 'pwsh in workspace'). Warp still can't auto-run a command on Windows, so run `claude` yourself. Slot 1/slot 2 placement disambiguates the two warp.exe windows on restore.",
+      "summary": "PAUSED (feature \u0060warp-terminals\u0060 is off) \u2014 kept so the Warp layout can be restored with \u0060--enable warp-terminals --disable wt-terminals\u0060. First of two side-by-side Warp sessions on screen 1. Each plain warp.exe launch opens a NEW window (verified 2026-07-03), and Warp honors the launch working directory on Windows even though it ignores warp:// launch configs \u2014 so \u0060cwd\u0060 opens this window in the workspace root (its title becomes \u0027pwsh in workspace\u0027). Warp still can\u0027t auto-run a command on Windows, so run \u0060claude\u0060 yourself. Slot 1/slot 2 placement disambiguates the two warp.exe windows on restore.",
       "placement": {
         "screen": 1,
         "layout": {
@@ -209,7 +209,7 @@
       "feature": "warp-terminals",
       "path": "{warp-path}",
       "cwd": "{workspace-root}",
-      "summary": "PAUSED (feature `warp-terminals` is off). Second side-by-side Warp session on screen 1. Plain warp.exe relaunch opens a distinct new window (Warp on Windows is not single-window on launch), placed in slot 2. `cwd` opens it in the workspace root; run `claude` yourself.",
+      "summary": "PAUSED (feature \u0060warp-terminals\u0060 is off). Second side-by-side Warp session on screen 1. Plain warp.exe relaunch opens a distinct new window (Warp on Windows is not single-window on launch), placed in slot 2. \u0060cwd\u0060 opens it in the workspace root; run \u0060claude\u0060 yourself.",
       "placement": {
         "screen": 1,
         "layout": {
@@ -228,7 +228,7 @@
       "feature": "warp-terminals",
       "path": "{warp-path}",
       "cwd": "{workspace-root}",
-      "summary": "PAUSED (feature `warp-terminals` is off). Full-screen Warp on screen 3, to experiment with managing several Claude sessions as Warp tabs. Launched plain (no new-window URI) so exactly one window opens and placement can resize it; passing a warp:// URI makes Warp spawn extra unplaced windows. `cwd` opens this window in the workspace root \u2014 without it Warp inherits the launcher's cwd (e.g. System32 when the logon scheduled task starts it). Warp on Windows still can't auto-run a command on launch, so run `claude` yourself. Shares window_title 'workspace' with the two side-by-side Warp entries: all three windows are titled 'pwsh in workspace', so without a title this entry was disqualified from reuse (its window title contains a sibling's 'workspace' title) and relaunched a duplicate every restore attempt; the shared title anchor plus its distinct screen-3 placement lets reuse claim the right window.",
+      "summary": "PAUSED (feature \u0060warp-terminals\u0060 is off). Full-screen Warp on screen 3, to experiment with managing several Claude sessions as Warp tabs. Launched plain (no new-window URI) so exactly one window opens and placement can resize it; passing a warp:// URI makes Warp spawn extra unplaced windows. \u0060cwd\u0060 opens this window in the workspace root \u2014 without it Warp inherits the launcher\u0027s cwd (e.g. System32 when the logon scheduled task starts it). Warp on Windows still can\u0027t auto-run a command on launch, so run \u0060claude\u0060 yourself. Shares window_title \u0027workspace\u0027 with the two side-by-side Warp entries: all three windows are titled \u0027pwsh in workspace\u0027, so without a title this entry was disqualified from reuse (its window title contains a sibling\u0027s \u0027workspace\u0027 title) and relaunched a duplicate every restore attempt; the shared title anchor plus its distinct screen-3 placement lets reuse claim the right window.",
       "placement": {
         "screen": 3,
         "layout": {

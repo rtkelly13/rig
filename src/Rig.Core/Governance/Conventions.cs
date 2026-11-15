@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
-using Rig.Core.Policy;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Governance;
 
@@ -313,5 +313,5 @@ public sealed class Conventions(IProc proc, IGitHubApi api, GovernedRepos repos,
     }
 
     // The declared ruleset as Python's json.dumps writes it; read back from the text, as the live one is.
-    private string Payload(string slug) => PyJson.DumpsLine(RulesetResource.Payload(policies, slug));
+    private string Payload(string slug) => JsonOutput.Line(RulesetResource.Payload(policies, slug));
 }

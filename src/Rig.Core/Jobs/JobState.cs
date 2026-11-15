@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Core.Jobs;
 
@@ -211,7 +211,7 @@ public static class JobState
     {
         ["started"] = outcome.Started,
         // A float node, so 3.0 prints as 3.0 and not 3.
-        ["seconds"] = JsonNode.Parse(PyJson.FloatRepr(outcome.Seconds)),
+        ["seconds"] = JsonValue.Create(outcome.Seconds),
         ["returncode"] = outcome.ReturnCode,
         ["trigger"] = outcome.Trigger,
         ["error"] = outcome.Error,
@@ -225,7 +225,7 @@ public static class JobState
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var temporary = Path.ChangeExtension(path, ".tmp");
-        var text = (PyJson.Dumps(payload) + "\n").Replace("\n", Environment.NewLine, StringComparison.Ordinal);
+        var text = (JsonOutput.Format(payload) + "\n").Replace("\n", Environment.NewLine, StringComparison.Ordinal);
         File.WriteAllText(temporary, text, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         File.Move(temporary, path, overwrite: true);
     }

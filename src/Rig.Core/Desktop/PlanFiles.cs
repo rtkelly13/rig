@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 
@@ -75,7 +75,7 @@ public static partial class PlanFiles
     }
 
     /// <summary>The text <see cref="Save"/> writes for <paramref name="json"/>: two-space indented, ASCII-escaped, with a closing newline.</summary>
-    public static string Format(JsonNode json) => PyJson.Dumps(json) + "\n";
+    public static string Format(JsonNode json) => JsonOutput.Format(json) + "\n";
 
     /// <summary>A desktop name as a file name: runs of anything but letters and digits become one hyphen, lowercased.</summary>
     public static string Slugify(string value) => NotAlphanumeric().Replace(value, "-").Trim('-').ToLowerInvariant();

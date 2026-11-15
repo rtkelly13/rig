@@ -3,11 +3,10 @@ using Rig.Core.Desktop;
 namespace Rig.Core.Tests.Desktop;
 
 /// <summary>
-/// Every plan file in <c>desktop-manager/</c> reads and writes back exactly as Python writes it. Each snapshot in
-/// <c>Snapshots/</c> is Python's own output, <c>json.dumps(parse_plan_json(...).to_dict(), indent=2)</c> for a plan
-/// and <c>DesktopPlan.from_dict(...).to_dict()</c> for a desktop file, so a diff here is a divergence from the Python
-/// reader. Python's round trip is not the identity (it drops defaults and normalises spellings), which is why the
-/// snapshots are its output rather than the files themselves.
+/// Every plan file in <c>desktop-manager/</c> reads and writes back canonically. Each snapshot in <c>Snapshots/</c> is
+/// the output of the current <see cref="PlanFiles.Format"/> reader, so a diff here is a divergence in what rig writes
+/// (the round trip is not the identity: it drops defaults and normalises spellings, which is why the snapshots are its
+/// output rather than the files themselves). Regenerate them deliberately when the writer changes.
 /// </summary>
 public sealed class PlanFileSnapshotTests
 {

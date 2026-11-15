@@ -4,9 +4,9 @@ using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Cli.Workspace;
 using Rig.Core.Governance;
-using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Governance;
 
@@ -210,7 +210,7 @@ internal sealed partial class GovernanceCommand
 
         if (options.Json)
         {
-            await output.WriteLineAsync(PyJson.Dumps(rows)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(rows)).ConfigureAwait(false);
             return drift ? 1 : 0;
         }
 

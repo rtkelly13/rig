@@ -25,7 +25,7 @@ public sealed class QueueStoreTests : IDisposable
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(recorded.GetRawText()), JsonSerializer.SerializeToNode(entries[0], QueueJson.Options)));
         Assert.Null(entries[1].Item.Body);
         Assert.Null(entries[1].Item.Facts);
-        Assert.Equal(oracle.RootElement.GetProperty("payload").GetString(), QueueJson.EncodeItem(entries[0].Item));
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(oracle.RootElement.GetProperty("payload").GetString()!), JsonNode.Parse(QueueJson.EncodeItem(entries[0].Item))));
         Store.Update(writer => writer.Save([entries[0].Item]));
         Assert.Equal(3, Store.Read()[0].Events.Count);
         Assert.Equal(4L, Scalar("SELECT COUNT(*) FROM schema_migrations"));
@@ -159,8 +159,8 @@ public sealed class QueueStoreTests : IDisposable
         Assert.Throws<JsonException>(() => QueueJson.DecodeItem("{}"));
         Assert.Throws<JsonException>(() => QueueJson.DecodeItem("null"));
         var payload = QueueJson.EncodeItem(Item(1));
-        Assert.Throws<JsonException>(() => QueueJson.DecodeItem(payload.Replace("\"kind\": \"pr\"", "\"kind\": \"other\"", StringComparison.Ordinal)));
-        Assert.Throws<JsonException>(() => QueueJson.DecodeItem(payload.Replace("\"repo\": \"owner/repo\"", "\"repo\": null", StringComparison.Ordinal)));
+        Assert.Throws<JsonException>(() => QueueJson.DecodeItem(payload.Replace("\"kind\":\"pr\"", "\"kind\":\"other\"", StringComparison.Ordinal)));
+        Assert.Throws<JsonException>(() => QueueJson.DecodeItem(payload.Replace("\"repo\":\"owner/repo\"", "\"repo\":null", StringComparison.Ordinal)));
     }
 
     [Fact]

@@ -489,7 +489,7 @@ public sealed class ShelveTests : IDisposable
         Assert.Equal("removed", result.Outcome);
         Assert.False(Directory.Exists(path));
         var line = Assert.Single(await File.ReadAllLinesAsync(ledger, Token));
-        Assert.StartsWith("{\"at\": \"2026-10-09T12:00:00+00:00\", ", line, StringComparison.Ordinal);
+        Assert.StartsWith("{\"at\":\"2026-10-09T12:00:00\\u002B00:00\",", line, StringComparison.Ordinal);
         var entry = JsonNode.Parse(line)!;
         Assert.Equal("removed", entry["outcome"]!.GetValue<string>());
         Assert.Equal(result.ToJson().Select(pair => pair.Key), entry.AsObject().Skip(1).Select(pair => pair.Key));

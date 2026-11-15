@@ -8,7 +8,7 @@ namespace Rig.Cli.Tests.Jobs;
 
 /// <summary>
 /// <c>Rig.Core.Jobs</c> replayed against <c>jobs-oracle.json</c>, recorded from Python's <c>desktop_manager.jobs</c>: the
-/// same registry, the same bytes in <c>state.json</c> and <c>last-&lt;trigger&gt;.json</c>, the same reading of damaged
+/// same registry, the same data in <c>state.json</c> and <c>last-&lt;trigger&gt;.json</c>, the same reading of damaged
 /// files, the same plan and the same cells. The Python test <c>test_the_csharp_oracle_is_what_python_records</c> holds
 /// Python to the same file while its runner still writes these files.
 /// </summary>
@@ -42,14 +42,14 @@ public sealed class JobsOracleTests : IDisposable
     }
 
     [Fact]
-    public void A_written_state_is_byte_for_byte_what_python_writes()
+    public void A_written_state_is_canonically_what_python_records()
     {
         foreach (var write in Oracle.GetProperty("state_writes").EnumerateArray())
         {
             var path = Path.Join(_temp.Path, "state", JobState.StateName);
             JobState.WriteState(path, Outcomes(write.GetProperty("state")));
 
-            Assert.Equal(write.GetProperty("text").GetString()!.Replace("\n", System.Environment.NewLine, StringComparison.Ordinal), File.ReadAllText(path));
+            AssertSameJson(write.GetProperty("text").GetString()!, File.ReadAllText(path));
             Assert.False(File.Exists(Path.ChangeExtension(path, ".tmp")));
         }
     }
@@ -68,7 +68,7 @@ public sealed class JobsOracleTests : IDisposable
     }
 
     [Fact]
-    public void A_run_record_writes_back_byte_for_byte()
+    public void A_run_record_writes_back_the_same_data()
     {
         foreach (var write in Oracle.GetProperty("run_writes").EnumerateArray())
         {
@@ -76,7 +76,7 @@ public sealed class JobsOracleTests : IDisposable
             var path = Path.Join(_temp.Path, "last-logon.json");
             JobState.WriteRun(path, JobState.ReadRun(Written(text))!);
 
-            Assert.Equal(text.Replace("\n", System.Environment.NewLine, StringComparison.Ordinal), File.ReadAllText(path));
+            AssertSameJson(text, File.ReadAllText(path));
         }
     }
 
@@ -200,9 +200,9 @@ public sealed class JobsOracleTests : IDisposable
             var trigger = recorded.GetProperty("trigger").GetString()!;
             Assert.Equal(recorded.GetProperty("exit").GetInt32(), exit);
             Assert.Equal(recorded.GetProperty("report").EnumerateArray().Select(line => line.GetString()), report.Select(Crash));
-            Assert.Equal(recorded.GetProperty("state").GetString(), RunText(Path.Join(directory, JobState.StateName)));
-            Assert.Equal(recorded.GetProperty("last").GetString(), RunText(JobState.LastRunPath(directory, trigger)));
-            Assert.Equal(recorded.GetProperty("history").GetString(), RunText(Path.Join(directory, RunHistory.HistoryName)));
+            AssertSameJson(recorded.GetProperty("state").GetString()!, RunText(Path.Join(directory, JobState.StateName))!);
+            AssertSameJson(recorded.GetProperty("last").GetString()!, RunText(JobState.LastRunPath(directory, trigger))!);
+            AssertSameJsonLines(recorded.GetProperty("history").GetString()!, RunText(Path.Join(directory, RunHistory.HistoryName))!);
             Assert.Equal(
                 recorded.GetProperty("outputs").EnumerateObject().Select(output => (output.Name, output.Value.GetString())),
                 Directory.GetFiles(Path.Join(directory, "runs"), "*.log", SearchOption.AllDirectories)
@@ -347,5 +347,23 @@ public sealed class JobsOracleTests : IDisposable
         var path = Path.Join(_temp.Path, "read.json");
         File.WriteAllText(path, text);
         return path;
+    }
+
+    // The oracle records Python's bytes; after the writer moved to System.Text.Json, the same data is all that is
+    // claimed, not the same spelling.
+    private static void AssertSameJson(string expected, string actual) =>
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), JsonNode.Parse(actual)), $"Expected {expected}{System.Environment.NewLine}Actual {actual}");
+
+    // A history file is JSON Lines: one object per line.
+    private static void AssertSameJsonLines(string expected, string actual)
+    {
+        var left = expected.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var right = actual.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        Assert.Equal(left.Length, right.Length);
+        for (var i = 0; i < left.Length; i++)
+        {
+            AssertSameJson(left[i], right[i]);
+        }
     }
 }

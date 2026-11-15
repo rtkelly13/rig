@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 using IOPath = System.IO.Path;
 
 namespace Rig.Core.Policy;
@@ -78,7 +79,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
                 return new ProjectionResult(System, Path, ProjectionStatus.DryRun, "Would update native rules.");
             }
 
-            WriteText(Path, PyJson.Dumps(rendered) + "\n");
+            WriteText(Path, JsonOutput.Format(rendered) + "\n");
             return new ProjectionResult(System, Path, ProjectionStatus.Applied, "Updated native rules.");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or InvalidDataException or ArgumentException)
@@ -244,7 +245,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     private static IEnumerable<string> AntigravityRules(IEnumerable<CommandPrefix> prefixes) => prefixes.Select(p => $"command({p.Command})");
 
     private static string CodexRule(CommandPrefix prefix, string decision, string rationale) =>
-        $"prefix_rule(\n    pattern=[{string.Join(", ", prefix.Tokens.Select(t => PyJson.Dumps(t)))}],\n    decision='{decision}',\n    justification='{rationale}',\n)";
+        $"prefix_rule(\n    pattern=[{string.Join(", ", prefix.Tokens.Select(t => JsonOutput.Format(t)))}],\n    decision='{decision}',\n    justification='{rationale}',\n)";
 
     private void WriteText(string path, string text)
     {

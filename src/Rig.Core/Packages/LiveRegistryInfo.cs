@@ -91,7 +91,7 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
             return unread;
         }
 
-        var versions = (flat.At("versions") as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
+        var versions = (flat.Field("versions") as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
         if (versions.Count == 0)
         {
             return RegistryInfo.NotPublished;
@@ -104,17 +104,17 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
         JsonObject? target = null;
         var (indexStatus, index) = await GetAsync($"{NuGetRegistrations}{id}/index.json", cancellationToken).ConfigureAwait(false);
         var failed = Unread(indexStatus, index) == RegistryInfo.LookupFailed;
-        foreach (var page in ((index.At("items") as JsonArray) ?? []).Reverse())
+        foreach (var page in ((index.Field("items") as JsonArray) ?? []).Reverse())
         {
-            var leaves = page.At("items") as JsonArray;
-            if (leaves is null && Str(page.At("@id")) is { } pageUrl)
+            var leaves = page.Field("items") as JsonArray;
+            if (leaves is null && Str(page.Field("@id")) is { } pageUrl)
             {
                 var (pageStatus, pageBody) = await GetAsync(pageUrl, cancellationToken).ConfigureAwait(false);
                 failed |= Unread(pageStatus, pageBody) == RegistryInfo.LookupFailed;
-                leaves = pageBody.At("items") as JsonArray;
+                leaves = pageBody.Field("items") as JsonArray;
             }
 
-            target = (leaves ?? []).Select(leaf => leaf.At("catalogEntry") as JsonObject).OfType<JsonObject>().LastOrDefault(IsLatest);
+            target = (leaves ?? []).Select(leaf => leaf.Field("catalogEntry") as JsonObject).OfType<JsonObject>().LastOrDefault(IsLatest);
             if (target is not null)
             {
                 failed = false;
@@ -125,12 +125,12 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
         return new(latest)
         {
             AllVersions = versions,
-            Unlisted = target is not null && target.At("listed")?.GetValueKind() == JsonValueKind.False,
-            Deprecated = target.At("deprecation") is JsonObject,
+            Unlisted = target is not null && target.Field("listed")?.GetValueKind() == JsonValueKind.False,
+            Deprecated = target.Field("deprecation") is JsonObject,
             Failed = failed,
         };
 
-        bool IsLatest(JsonObject entry) => string.Equals(Str(entry.At("version")), latest, StringComparison.OrdinalIgnoreCase);
+        bool IsLatest(JsonObject entry) => string.Equals(Str(entry.Field("version")), latest, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<RegistryInfo> NpmAsync(string name, CancellationToken cancellationToken)
@@ -141,16 +141,16 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
             return unread;
         }
 
-        if (packument.At("versions") is not JsonObject { Count: > 0 } versions)
+        if (packument.Field("versions") is not JsonObject { Count: > 0 } versions)
         {
             return RegistryInfo.NotPublished;
         }
 
         var all = versions.Select(pair => pair.Key).ToList();
-        var latest = Str(packument.At("dist-tags").At("latest")) is { } tagged && all.Contains(tagged)
+        var latest = Str(packument.Field("dist-tags").Field("latest")) is { } tagged && all.Contains(tagged)
             ? tagged
             : all.Aggregate((a, b) => PackageVersions.Compare(b, a) > 0 ? b : a);
-        var deprecated = Str(versions[latest].At("deprecated"));
+        var deprecated = Str(versions[latest].Field("deprecated"));
         return new(latest) { AllVersions = all, Deprecated = !string.IsNullOrEmpty(deprecated) };
     }
 

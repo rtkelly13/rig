@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Core.Chrome.MacOS;
 
@@ -122,7 +122,7 @@ public static class JxaScripts
     /// </summary>
     public static string CloseAction(string title, string address)
     {
-        var expected = PyJson.DumpsLine(new JsonObject { ["title"] = title, ["url"] = address });
+        var expected = JsonOutput.Line(new JsonObject { ["title"] = title, ["url"] = address });
         return $"const expected = {expected};\n{CloseActionBody}";
     }
 
@@ -143,7 +143,7 @@ public static class JxaScripts
     /// </summary>
     public static string Restore(long target, long front, bool minimized)
     {
-        var state = PyJson.DumpsLine(new JsonObject { ["target"] = target, ["front"] = front, ["minimized"] = minimized });
+        var state = JsonOutput.Line(new JsonObject { ["target"] = target, ["front"] = front, ["minimized"] = minimized });
         return RestoreTemplate.Replace("__STATE__", state, StringComparison.Ordinal);
     }
 }

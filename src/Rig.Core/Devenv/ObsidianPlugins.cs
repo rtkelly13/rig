@@ -1,7 +1,7 @@
 using System.Collections.Frozen;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Core.Devenv;
 
@@ -255,5 +255,5 @@ public sealed class ObsidianPlugins(HttpClient http)
         }
     }
 
-    private static void Write(string path, JsonNode payload) => File.WriteAllText(path, PyJson.Dumps(payload) + "\n");
+    private static void Write(string path, JsonNode payload) => File.WriteAllText(path, JsonOutput.Format(payload) + "\n");
 }

@@ -4,9 +4,9 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Core.Governance;
-using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Governance;
 
@@ -137,7 +137,7 @@ internal sealed partial class GovernanceCommand(
                 ["report_only_checks"] = new JsonArray([.. AgentsMdAudit.ReportOnlyChecks.Select(name => (JsonNode?)name)]),
                 ["rubric"] = Rubric,
             };
-            await output.WriteLineAsync(PyJson.Dumps(payload)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(payload)).ConfigureAwait(false);
         }
         else
         {
