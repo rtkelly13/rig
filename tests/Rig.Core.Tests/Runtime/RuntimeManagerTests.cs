@@ -808,6 +808,49 @@ public sealed class RuntimeManagerTests : IDisposable
     }
 
     [Fact]
+    public void PointCurrent_throws_when_link_exists_and_is_not_link_and_missing_installed_json()
+    {
+        var manager = Manager(new Tools(_system));
+        var link = RuntimeManager.CurrentLink(Root);
+        _ = Directory.CreateDirectory(link);
+        var ex = Assert.Throws<RuntimeInstallException>(() => manager.PointCurrent(_temp.Path));
+        Assert.Contains("exists and is not a link; move it aside", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PointCurrent_backs_up_and_replaces_directory_link_when_it_has_installed_json()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Symlinks need privileges on Windows");
+        var manager = Manager(new Tools(_system));
+        var link = RuntimeManager.CurrentLink(Root);
+        _ = Directory.CreateDirectory(link);
+        File.WriteAllText(Path.Join(link, RuntimeManager.InstalledName), "{}");
+
+        var target = Path.Join(Root, "target");
+        _ = Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Join(target, RuntimeManager.InstalledName), "{}");
+
+        manager.PointCurrent(target);
+        Assert.True(File.GetAttributes(link).HasFlag(FileAttributes.ReparsePoint));
+    }
+
+    [Fact]
+    public void Install_origin_ref_with_fetch_calls_git_fetch()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["a.txt"] = "1\n" });
+        var tools = new Tools(_system);
+        var manager = Manager(tools);
+
+        // Point origin to local repo
+        _ = _system.Run(new ProcRequest(["git", "-C", repo, "remote", "add", "origin", repo]));
+        _ = _system.Run(new ProcRequest(["git", "-C", repo, "update-ref", "refs/remotes/origin/main", "HEAD"]));
+
+        var res = manager.Install(repo, "origin/main", fetch: true);
+        Assert.True(res.Changed);
+    }
+
+    [Fact]
     public void First_install_has_null_previous()
     {
         var repo = NewRepo();
