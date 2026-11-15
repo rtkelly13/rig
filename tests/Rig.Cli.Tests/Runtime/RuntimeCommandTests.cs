@@ -178,12 +178,11 @@ public sealed class RuntimeCommandTests : IDisposable
             """{"current": "prev-copy", "previous": "old-copy", "repo": "/repo"}""",
             TestContext.Current.CancellationToken);
 
-        var proc = new FakeProc()
-            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse")
-            .Answer(new(0, "", ""), "git", "-C", repo, "archive")
-            .Answer(new(0, "", ""), "uv")
-            .Answer(new(0, "", ""), "dotnet")
-            .Answer(new(0, "", ""));
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
 
         var host = new RuntimeHost(Root, repo, _temp.Folder("home"), false, proc, TimeProvider.System);
         var root = new RootCommand
@@ -195,7 +194,7 @@ public sealed class RuntimeCommandTests : IDisposable
             new InvocationConfiguration { Output = _out, Error = _error },
             TestContext.Current.CancellationToken);
 
-        Assert.Equal(0, exit);
+        Assert.True(exit == 0, $"Exit was {exit}. Output:\n{_out}\nError:\n{_error}");
         var output = _out.ToString();
         Assert.Contains($"Current: {shortSha}", output, StringComparison.Ordinal);
         Assert.Contains("Previous kept for rollback: prev-copy", output, StringComparison.Ordinal);
