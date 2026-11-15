@@ -127,17 +127,6 @@ def web_upstream_cmd(
         server.server_close()
 
 
-@web_app.command(name="mcp")
-def web_mcp_cmd() -> None:
-    """Serve the ops pages' data to agents as an MCP server on stdio.
-
-    Register it with: claude mcp add rig-ops -- uv run --directory <rig checkout> rig web mcp
-    """
-    from desktop_manager.web_mcp import create_server
-
-    create_server().run("stdio")
-
-
 @web_app.command(name="install")
 def web_install_cmd(
     preview: bool = typer.Option(False, "--preview", help="Install preview background service on port 8091."),

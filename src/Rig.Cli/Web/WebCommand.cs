@@ -4,6 +4,7 @@ using System.Globalization;
 using Rig.Core;
 using Rig.Core.Otel;
 using Rig.Web;
+using Rig.Web.Mcp;
 
 namespace Rig.Cli.Web;
 
@@ -35,8 +36,9 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
 /// <summary>
 /// <c>rig web</c>: runs the dashboard. The ASP.NET host owns the port and answers the routes ported to C#; the rest go to
 /// the Python routes, which it starts as a child on a free loopback port and stops when it stops (<see cref="PythonRoutes"/>).
-/// The subcommands (<c>mcp</c>, <c>install</c>, <c>ensure</c>, <c>uninstall</c>, <c>backup</c>, <c>migrate</c>,
-/// <c>db-status</c>) and <c>rig web --help</c> still run on the Python CLI. Exit codes: 0 stopped, 2 could not listen.
+/// The remaining subcommands (<c>install</c>, <c>ensure</c>, <c>uninstall</c>, <c>backup</c>, <c>migrate</c>,
+/// <c>db-status</c>) and <c>rig web --help</c> still run on the Python CLI; <c>mcp</c> serves the ops tools over stdio.
+/// Exit codes: 0 stopped, 2 could not listen.
 /// </summary>
 /// <param name="places">What it serves.</param>
 /// <param name="startPython">Starts the Python CLI with these arguments as a child the host owns.</param>
@@ -45,6 +47,7 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
 /// <param name="delay">Waits between probes.</param>
 /// <param name="output">Where the banner goes.</param>
 /// <param name="error">Where problems go.</param>
+/// <param name="ops">The data behind the MCP tools; null builds this machine's real sources.</param>
 internal sealed class WebCommand(
     WebPlaces places,
     Func<IReadOnlyList<string>, IChildServer> startPython,
@@ -52,8 +55,11 @@ internal sealed class WebCommand(
     Action<Uri> openBrowser,
     Func<TimeSpan, CancellationToken, Task> delay,
     TextWriter output,
-    TextWriter error)
+    TextWriter error,
+    RigOps? ops = null)
 {
+    private readonly Lazy<RigOps> _ops = new(() => ops ?? RigOps.Default());
+
     /// <summary>How long the Python routes get to start listening.</summary>
     public static readonly TimeSpan PythonStart = TimeSpan.FromSeconds(60);
 
@@ -65,7 +71,12 @@ internal sealed class WebCommand(
         var open = new Option<bool>("--open") { Description = "Open in browser on launch (the default).", DefaultValueFactory = _ => true };
         var noOpen = new Option<bool>("--no-open") { Description = "Do not open the browser." };
         var preview = new Option<bool>("--preview") { Description = "Run as preview environment (defaults to port 8091)." };
-        var web = new Command("web", "Rig web dashboard & visual studio. Its subcommands still run on the Python CLI.") { port, host, open, noOpen, preview };
+        var mcp = new Command("mcp", "Serve the ops tools over stdio for an MCP client (Claude Desktop, Cursor, Orca).");
+        mcp.SetAction((_, ct) => RigMcp.RunStdioAsync(_ops.Value, error, ct));
+        var web = new Command("web", "Rig web dashboard & visual studio. Its remaining subcommands still run on the Python CLI.")
+        {
+            port, host, open, noOpen, preview, mcp,
+        };
         web.SetAction((parsed, ct) => RunAsync(
             parsed.GetValue(host)!,
             parsed.GetValue(port),
@@ -89,7 +100,7 @@ internal sealed class WebCommand(
         if (places.PythonRoutes is { } running)
         {
             using var fronting = RigWebHost.ForwardingClient();
-            var fronted = RigWebHost.Create(settings, fronting, () => running);
+            var fronted = RigWebHost.Create(settings, fronting, () => running, _ops.Value);
             await using (fronted.ConfigureAwait(false))
             {
                 return await ServeAsync(fronted, settings, open, cancellationToken).ConfigureAwait(false);
@@ -108,7 +119,7 @@ internal sealed class WebCommand(
             }
 
             using var forwarding = RigWebHost.ForwardingClient();
-            var server = RigWebHost.Create(settings, forwarding, () => python.Address);
+            var server = RigWebHost.Create(settings, forwarding, () => python.Address, _ops.Value);
             await using (server.ConfigureAwait(false))
             {
                 return await ServeAsync(server, settings, open, cancellationToken).ConfigureAwait(false);

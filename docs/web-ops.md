@@ -42,12 +42,13 @@ drives them against a fake route that answers the same JSON contract.
 
 ## For agents: `rig web mcp`
 
-`rig web mcp` serves the same data as an MCP server on stdio (`desktop_manager.web_mcp`).
-Each tool calls the view builder its `/api/ops` route calls, so an agent and the pages never
-disagree. It does not need `rig web` to be running.
+`rig web mcp` serves the same data as an MCP server on stdio (`Rig.Web.Mcp.RigOpsTools` over
+`Rig.Core`). `rig web` also maps the same tools at `POST /api/mcp` for an HTTP client. Each tool calls
+the view builder its `/api/ops` route calls, so an agent and the pages never disagree. The stdio server
+does not need `rig web` to be running.
 
 ```bash
-claude mcp add rig-ops -- uv run --directory <rig checkout> rig web mcp
+claude mcp add rig-ops -- rig web mcp
 ```
 
 | Tool | Same as | Changes anything |

@@ -585,9 +585,19 @@ public static partial class TraceAnalytics
             return (null, string.Empty);
         }
 
-        return LaxLong(status["code"]) is { } code && code is >= int.MinValue and <= int.MaxValue
-            ? ((int)code, TextValue(status["message"]))
-            : (null, TextValue(status["message"]));
+        var message = TextValue(status["message"]);
+        if (LaxLong(status["code"]) is { } code && code is >= int.MinValue and <= int.MaxValue)
+        {
+            return ((int)code, message);
+        }
+
+        var textCode = TextValue(status["code"]);
+        if (textCode is "Error" or "STATUS_CODE_ERROR" or "2")
+        {
+            return (2, message);
+        }
+
+        return (null, message);
     }
 
     private static string TextValue(JsonNode? node) =>

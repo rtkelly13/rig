@@ -7,6 +7,9 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Rig.Core/Rig.Core.csproj" />
   </ItemGroup>
   <ItemGroup>

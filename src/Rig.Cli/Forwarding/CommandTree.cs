@@ -1,8 +1,11 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using System.Reflection;
 using System.Text.Json;
+using ModelContextProtocol.Server;
 using Rig.Cli.Agent;
 using Rig.Core.Jobs;
+using Rig.Web.Mcp;
 
 namespace Rig.Cli.Forwarding;
 
@@ -28,6 +31,10 @@ internal static class CommandTree
         agentTargets = AgentLauncher.Agents.Select(agent => $"{agent.Id}={agent.Executable}"),
         jobs = JobRegistry.Default(new JobsEnvironment("/scripts", "/plan", "/workspace", "/code/personal", [], "/feed", "/orca", "/chrome.log", windows))
             .Select(j => $"{j.Name}={string.Join(' ', j.Argv)}"),
+        mcpTools = typeof(RigOpsTools).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Select(method => method.GetCustomAttribute<McpServerToolAttribute>()?.Name)
+            .OfType<string>()
+            .Order(StringComparer.Ordinal),
     });
 
     private static IEnumerable<Registration> Walk(Command command, string[] parents)

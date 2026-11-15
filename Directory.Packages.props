@@ -1,4 +1,8 @@
 <Project>
+  <ItemGroup Label="MCP">
+    <PackageVersion Include="ModelContextProtocol" Version="2.4.0" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.4.0" />
+  </ItemGroup>
   <ItemGroup Label="Command line">
     <PackageVersion Include="DotMake.CommandLine" Version="3.7.0" />
     <PackageVersion Include="Spectre.Console" Version="0.57.2" />

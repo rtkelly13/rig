@@ -225,13 +225,7 @@ def discover(root):
             if cli_factories(tree, imported_names(tree)):
                 raise RuntimeError(f"Unsupported development CLI factory: {file}; expose its runtime tree")
 
-    # Inspect the actual MCP registration loop (including dynamically registered tools).
-    import asyncio
-
-    from desktop_manager.web_mcp import create_server
-
-    tools = asyncio.run(create_server().list_tools())
-    surfaces.extend(f"mcp:{tool.name}" for tool in tools)
+    # The C# MCP tool attributes are inspected by the C# command-tree export.
     # Mount the real child-route factories without serving requests or executing handlers.
     # Their implementation digests make changes to opaque legacy dispatch explicit in review.
     import hashlib

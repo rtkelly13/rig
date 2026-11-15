@@ -38,7 +38,7 @@ The inspector combines:
 - Each actual `Forwarded.Commands` route expanded into the inspected Python leaves. Probe arguments go back
   through **`Forwarded.Owns` itself**. A migrated action that still dispatches to Python fails discovery.
 - Both composed job registries, including the optional workspace jobs, using inert fixture paths. They are
-  callers, not independent implementations. No job is run. The MCP server's actual tool list and the Python web
+  callers, not independent implementations. No job is run. The MCP server's actual C# tool attributes and the Python web
   child's mounted route callables are inspected without serving requests. Legacy web callables are fingerprinted
   as opaque dispatch units; this is not proof of individual HTTP endpoint parity.
 
@@ -62,12 +62,13 @@ cannot conceal an independent implementation.
 | `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand` over `Rig.Core.ReviewQueue` | CLI switched; Python CLI and six platform fallback routes retired. The `src/rig/triage` web inbox and agent-signal consumers stay explicitly owned until switched; shared service modules are not retired by the CLI cutover |
 | `c4` | Python `rig.c4_okf.cli` | Not ported; five leaves; open #78 touches this area, do not duplicate it |
 | `jobs` | C# status/last/log/run/install/uninstall | All legacy spellings dispatch whole-line to C#; #209 owns runtime progression and Windows acceptance |
-| `web` | C# public host, verified thin dispatcher for the bare launch, Python service/database/MCP/upstream children | Bare `desktop-manager web` is a thin C# dispatcher in #217; #207 owns connectivity cutover; opaque child-route registrations remain explicit |
+| `web` | C# public host and C# MCP server (`/api/mcp` and stdio), verified thin dispatcher for the bare launch, Python service/database/upstream children | Bare `desktop-manager web` is a thin C# dispatcher in #217; #207 owns connectivity cutover; opaque child-route registrations remain explicit |
+| `web mcp` | C# `Rig.Web.Mcp.RigOpsTools` over `Rig.Core`, served by `rig web mcp` (stdio) and `app.MapMcp("/api/mcp")` | `desktop_manager.web_mcp` and its Python CLI command are retired; the eleven tools are inspected from their `[McpServerTool]` attributes |
 | `chrome-tabs` | C# traces everywhere; C# native `list`, `rank`, `prune` and `group` on Windows and macOS; `saved-groups`, `install` and `uninstall` on Windows; Python `organise` | macOS `group`, `list`, `prune` and `rank` registrations retired in #226 with the native `ChromeMac` driver; `organise` stays Python until its scheduled/wait slice moves |
 | `chrome-tabs traces runs/show/summary/prune` | C# only; legacy spelling dispatches the whole line | Legacy report CLI and 462 lines of reader/report code deleted; writer/daily retention still have scheduled Python callers |
 | `desktop-manager workspace`, `claude-sessions`, `runtime`, `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
 | Core Python modules, development file apps, Node scripts and launchers | `module:`, `python-file:`, `main:`, `file-app:`, `node:`, `launcher:` rows | Development tooling is inventoried separately from product CLI behavior |
-| Web/MCP and jobs | `web-child:`, `mcp:`, `python-job:`, `cs-job:` rows | Children/callers remain Python where named; source deletion requires switching them too |
+| Web/MCP and jobs | `web-child:`, `mcp:`, `python-job:`, `cs-job:` rows | The `mcp:` tool set is now C#; `desktop_manager.web_mcp` is retired. The web child routes and job callers remain Python where named, and source deletion requires switching them too |
 | Brand pipeline | `tools/image-drift` | Intentional Python exception, its own project/gates (ADR 0022) |
 
 There are 14 current console scripts, rather than the issue's original 15. The ledger follows actual registrations.
@@ -177,7 +178,7 @@ Named remaining acceptance procedures, all run from a reviewed/published artifac
 | `WIN-JOBS` | #209's reviewed runtime in a disposable Windows account: `rig jobs install --help`, `rig jobs status`, its named task-install/logon acceptance | Record task XML, target artifact, due/skip behavior, background console behavior and uninstall/cleanup; no production task changes merely to test source |
 | `WIN-CHROME` | Interactive Windows, dedicated dev Chrome profile: `rig chrome-tabs list --profile <dev> --json`; `rig chrome-tabs prune --profile <dev> --dry-run`; controlled prune/group/saved-groups on disposable tabs | Record actual UI effects, focus restoration and cleanup. #217 removed the seven losing Python registrations while this acceptance is still pending; see the acceptance/caller gap note below |
 | `MAC-CHROME` | #226 artifact (`ChromeMac`), repository dev browser profile: `rig chrome-tabs list --profile <dev> --json`, controlled prune/group with disposable windows/tabs | Record Accessibility/Automation grants, native calls, actual changes, cleanup and restored focus. No daily Chrome profile |
-| `WEB-MCP` | Disposable DB/ports, no production service: `rig web --port <free> --no-open`; `rig web mcp` over stdio | Browser → route → data → response and real initialize/tools exchange; identify each remaining Python child, preserve protocol stdout |
+| `WEB-MCP` | Disposable DB/ports, no production service: `rig web --port <free> --no-open`; `rig web mcp` over stdio | Browser → route → data → response and real initialize/tools exchange; the MCP server is C# on both transports, so the check is that each remaining Python child is still identified and protocol stdout stays clean |
 | `ROLLOUT` | After platform acceptance: inspect runtime/PATH/task/LaunchAgent/agent-config/estate-repo callers; use the documented installer for that slice | Record machine and artifact SHA. Keep the last working deployed runtime until replacement acceptance. Source deletion alone never establishes rollout |
 
 Windows CI can be triggered from this Mac by the `ci:windows` label. It supplies compilation/noninteractive
@@ -195,7 +196,7 @@ and `ROLLOUT` rows above stay open until that evidence is recorded.
 
 _State after #217:_ the overlap baseline is empty, but this is an overlap-only slice, not port completion:
 main still has core Python files and dozens of Python-owned registrations, and routes still have callers
-(`triage`, `c4`, `desktop workspace align`, `jobs install`, and the web children/MCP). The ledger and this
+(`triage`, `c4`, `desktop workspace align`, `jobs install`, and the remaining web children). The ledger and this
 gate stay in place until the source migration, native acceptance and rollout criteria above are met.
 
 This cross-language inventory is temporary migration machinery. Close it down in the final #85 cutover PR
