@@ -763,6 +763,51 @@ public sealed class RuntimeManagerTests : IDisposable
     }
 
     [Fact]
+    public void CommitsBehind_returns_null_when_sha_or_ref_is_invalid()
+    {
+        var manager = Manager(new Tools(_system));
+        Assert.Null(manager.CommitsBehind(_temp.Path, "", "HEAD"));
+        Assert.Null(manager.CommitsBehind(_temp.Path, "invalid-sha", "HEAD"));
+        Assert.Null(manager.CommitsBehind("/nonexistent-path-for-git-repo", "head", "HEAD"));
+    }
+
+    [Fact]
+    public void ReadInstalled_throws_on_invalid_or_non_object_json()
+    {
+        var folder = Path.Join(_temp.Path, "invalid-installed");
+        Directory.CreateDirectory(folder);
+        var file = Path.Join(folder, RuntimeManager.InstalledName);
+
+        File.WriteAllText(file, "[]");
+        Assert.Throws<InvalidDataException>(() => RuntimeManager.ReadInstalled(folder));
+
+        File.WriteAllText(file, "");
+        Assert.ThrowsAny<Exception>(() => RuntimeManager.ReadInstalled(folder));
+    }
+
+    [Fact]
+    public void RuntimeInstallException_constructors_are_exercised()
+    {
+        var ex1 = new RuntimeInstallException();
+        Assert.NotNull(ex1.Message);
+
+        var ex2 = new RuntimeInstallException("custom message");
+        Assert.Equal("custom message", ex2.Message);
+
+        var inner = new InvalidOperationException("inner");
+        var ex3 = new RuntimeInstallException("wrapped", inner);
+        Assert.Equal("wrapped", ex3.Message);
+        Assert.Same(inner, ex3.InnerException);
+    }
+
+    [Fact]
+    public void Published_renders_platform_paths()
+    {
+        Assert.Equal(Path.Join("/c", "rig", "rig"), RuntimeManager.Published("/c", "rig", windows: false));
+        Assert.Equal(Path.Join(@"C:\c", "rig", "rig.exe"), RuntimeManager.Published(@"C:\c", "rig", windows: true));
+    }
+
+    [Fact]
     public void First_install_has_null_previous()
     {
         var repo = NewRepo();
