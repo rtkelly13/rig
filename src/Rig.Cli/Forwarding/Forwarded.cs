@@ -16,7 +16,6 @@ internal static class Forwarded
     /// <summary>Each Python command, the one-line help it shows in <c>rig --help</c>, and the program that runs it.</summary>
     public static readonly IReadOnlyList<(string Name, string Description, string[] Launch)> Commands =
     [
-        ("align", "Move open plan windows back to their planned desktop and slot.", ["desktop-manager", "workspace", "align"]),
         ("web", "Rig web dashboard & visual studio (static site + Python API).", ["desktop-manager", "web"]),
         ("chrome-tabs", "Chrome tabs via UI Automation: list them, prune GitHub PR tabs and duplicate pages, group by repo, or organise (both, window by window).", ["desktop-manager", "chrome-tabs"]),
     ];

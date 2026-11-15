@@ -91,16 +91,3 @@ public sealed record MonitorInfo(Rect Bounds, Rect WorkArea, bool IsPrimary, str
 /// <param name="Name">The image name, such as <c>chrome.exe</c>.</param>
 /// <param name="ExePath">The executable's full path.</param>
 public sealed record ProcessDetails(string? Name = null, string? ExePath = null);
-
-/// <summary>How a window is shown. Ported from <c>desktop_manager.display_guard.ShowState</c>.</summary>
-public enum ShowState
-{
-    /// <summary>Neither minimized nor maximized.</summary>
-    Normal,
-
-    /// <summary>Minimized.</summary>
-    Minimized,
-
-    /// <summary>Maximized.</summary>
-    Maximized,
-}

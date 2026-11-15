@@ -3,12 +3,12 @@
 ## Restore modes
 
 ```bash
-uv run desktop-manager workspace restore                  # reuse matching windows, launch missing ones
-uv run desktop-manager workspace restore --dry-run        # show what would happen
-uv run desktop-manager workspace restore --close          # ask visible windows to close first
-uv run desktop-manager workspace restore --strict         # refuse a plan that leaves screen space uncovered
-uv run desktop-manager workspace restore --relaunch       # no reuse; relaunch everything
-uv run desktop-manager workspace restore --desktop Work   # restore one desktop in place
+rig desktop workspace restore                  # reuse matching windows, launch missing ones
+rig desktop workspace restore --dry-run        # show what would happen
+rig desktop workspace restore --close          # ask visible windows to close first
+rig desktop workspace restore --strict         # refuse a plan that leaves screen space uncovered
+rig desktop workspace restore --relaunch       # no reuse; relaunch everything
+rig desktop workspace restore --desktop Work   # restore one desktop in place
 ```
 
 - By default, restore reuses matching open windows. It moves them to the planned
@@ -46,8 +46,8 @@ uv run desktop-manager workspace restore --desktop Work   # restore one desktop 
 ## One app or one window
 
 ```bash
-uv run desktop-manager workspace restart-app --name Fork
-uv run desktop-manager workspace test-item --name "Chrome - Default Profile"
+rig desktop workspace restart-app --name Fork
+rig desktop workspace test-item --name "Chrome - Default Profile"
 ```
 
 - `restart-app` force-closes every window of an app type, across all desktops, and
@@ -59,9 +59,9 @@ uv run desktop-manager workspace test-item --name "Chrome - Default Profile"
 ## Aligning open windows
 
 ```bash
-uv run desktop-manager workspace align                    # move strays back
-uv run desktop-manager workspace align --dry-run -v       # list every entry's outcome, move nothing
-uv run desktop-manager workspace align --desktop Work     # only that desktop's entries
+rig desktop workspace align                    # move strays back
+rig desktop workspace align --dry-run -v       # list every entry's outcome, move nothing
+rig desktop workspace align --desktop Work     # only that desktop's entries
 ```
 
 `align` moves windows that are already open back to their planned virtual desktop
@@ -92,8 +92,8 @@ run on a schedule while you work.
 ## Inspecting live state
 
 ```bash
-uv run desktop-manager workspace status
-uv run desktop-manager workspace status --verbose
+rig desktop workspace status
+rig desktop workspace status --verbose
 ```
 
 `status` reports what is visible on each virtual desktop without writing a plan.
@@ -105,6 +105,6 @@ sometimes drops the names. To re-apply names, and retire desktops switched off b
 [feature flag](feature-flags.md#desktop-features), without a full restore:
 
 ```bash
-uv run desktop-manager workspace name-desktops --dry-run
-uv run desktop-manager workspace name-desktops
+rig desktop workspace name-desktops --dry-run
+rig desktop workspace name-desktops
 ```

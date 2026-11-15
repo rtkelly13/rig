@@ -114,32 +114,3 @@ def test_docstring_less_command_still_gets_a_tag():
     assert bare.__doc__ == "[Windows only]"
 
 
-def test_desktop_manager_marks_windows_commands():
-    """The desktop-manager Windows commands declare it; portable ones do not."""
-    from desktop_manager.cli import workspace_app
-
-    def declared(app: typer.Typer) -> dict[str, tuple[Platform, ...] | None]:
-        out: dict[str, tuple[Platform, ...] | None] = {}
-        for info in app.registered_commands:
-            assert info.callback is not None
-            name = info.name or info.callback.__name__.replace("_", "-")
-            out[name] = supported_platforms(info.callback)
-        return out
-
-    workspace = declared(workspace_app)
-    for name in [
-        "restore",
-        "audit",
-        "status",
-        "wire-machine",
-        "export-plan",
-        "name-desktops",
-        "ensure-desktops",
-        "sync-desktops",
-        "test-item",
-        "restart-app",
-        "launch-file",
-        "detect-app",
-    ]:
-        assert workspace[name] == (Platform.WINDOWS,), name
-    assert workspace["validate-plan"] is None

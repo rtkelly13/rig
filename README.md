@@ -44,19 +44,19 @@ uv sync
 
 ## Available Tools
 
-### Desktop Manager (`desktop-manager`)
+### Desktop Workspaces (`rig desktop workspace`)
 
-Manage and restore desktop workspace layouts from JSON plans.
+Manage and restore Windows desktop workspace layouts from JSON plans.
 
 ```bash
 # Show current workspace status
-uv run desktop-manager workspace status
+rig desktop workspace status
 
 # Validate a workspace plan
-uv run desktop-manager workspace validate-plan --config desktop-manager/workspace-plan.bundle.json
+rig desktop workspace validate-plan --config desktop-manager/workspace-plan.bundle.json
 
 # Preview a restore without launching anything
-uv run desktop-manager workspace restore --config desktop-manager/workspace-plan.bundle.json --dry-run
+rig desktop workspace restore --config desktop-manager/workspace-plan.bundle.json --dry-run
 ```
 
 ### Image Reconcile (`image-reconcile`)
@@ -92,21 +92,6 @@ regenerate it with `uv run python -m rig.platform_table --write`.
 | Command | Platforms |
 | --- | --- |
 | `desktop-manager chrome-tabs organise` | Windows/macOS |
-| `desktop-manager workspace align` | Windows |
-| `desktop-manager workspace audit` | Windows |
-| `desktop-manager workspace detect-app` | Windows |
-| `desktop-manager workspace ensure-desktops` | Windows |
-| `desktop-manager workspace export-plan` | Windows |
-| `desktop-manager workspace guard` | Windows |
-| `desktop-manager workspace launch-file` | Windows |
-| `desktop-manager workspace name-desktops` | Windows |
-| `desktop-manager workspace restart-app` | Windows |
-| `desktop-manager workspace restore` | Windows |
-| `desktop-manager workspace status` | Windows |
-| `desktop-manager workspace sync-desktops` | Windows |
-| `desktop-manager workspace test-item` | Windows |
-| `desktop-manager workspace update-orca` | Windows |
-| `desktop-manager workspace wire-machine` | Windows |
 
 <!-- platform-table:end -->
 

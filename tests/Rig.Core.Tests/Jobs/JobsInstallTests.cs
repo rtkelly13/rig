@@ -24,9 +24,9 @@ public sealed class JobsInstallTests : IDisposable
         using var oracle = JsonDocument.Parse(File.ReadAllText(Path.Join(AppContext.BaseDirectory, "Jobs", "task-xml-oracle.json")));
         var expected = XElement.Parse(oracle.RootElement.GetProperty(key).GetString()!);
         var action = expected.Element(Ns + "Actions")!.Element(Ns + "Exec")!;
-        action.Element(Ns + "Command")!.Value = trigger is null ? target.Pythonw : target.Rigw;
+        action.Element(Ns + "Command")!.Value = target.Rigw;
         action.Element(Ns + "Arguments")!.Value = trigger is null
-            ? action.Element(Ns + "Arguments")!.Value.Replace("{config}", target.Plan, StringComparison.Ordinal)
+            ? $"desktop workspace guard --config \"{target.Plan}\""
             : $"jobs run --trigger {trigger} --scheduled";
         action.SetElementValue(Ns + "WorkingDirectory", target.Root);
 
@@ -89,12 +89,11 @@ public sealed class JobsInstallTests : IDisposable
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
-    [InlineData(2)]
-    public async Task A_missing_launcher_guard_or_plan_refuses_installation(int missing)
+    public async Task A_missing_launcher_or_plan_refuses_installation(int missing)
     {
         var target = new JobsInstallTarget(_temp.Path, Path.Join(_temp.Path, "plan"), Path.Join(_temp.Path, "temp", "jobs-runtime", "rigw.exe"));
         Targets(target);
-        var path = new[] { target.Rigw, target.Pythonw, target.Plan }[missing];
+        var path = new[] { target.Rigw, target.Plan }[missing];
         File.Delete(path);
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, new FakeProc(), TestContext.Current.CancellationToken));
@@ -144,7 +143,7 @@ public sealed class JobsInstallTests : IDisposable
 
     private static void Targets(JobsInstallTarget target)
     {
-        foreach (var path in new[] { target.Rigw, target.Pythonw, target.Plan })
+        foreach (var path in new[] { target.Rigw, target.Plan })
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, "fixture");

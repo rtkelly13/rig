@@ -4,6 +4,7 @@ using Rig.Cli.Agent;
 using Rig.Cli.Browser;
 using Rig.Cli.C4;
 using Rig.Cli.Chrome;
+using Rig.Cli.Desktop;
 using Rig.Cli.Devenv;
 using Rig.Cli.Estate;
 using Rig.Cli.Flags;
@@ -176,6 +177,31 @@ internal static class Program
                     new C4Host(Path.Join(checkout, "experiments", "c4-okf", "rig"), (directory, arguments) => git.OutAsync(directory, [.. arguments])),
                     Console.Out,
                     Console.Error).Build,
+                new DesktopCommand(new DesktopHost(
+                    Environment.GetEnvironmentVariable,
+                    home,
+                    checkout,
+                    AppData.Current(),
+                    TimeProvider.System,
+                    Console.Out,
+                    Console.Error,
+                    () => DesktopCommand.PlanFlagsFrom(new FlagStore(Path.Join(AppData.Current(), "rig.db")).States()),
+                    () =>
+                    {
+                        if (!OperatingSystem.IsWindows())
+                        {
+                            return null;
+                        }
+
+                        try
+                        {
+                            return DesktopNative.Open();
+                        }
+                        catch (Rig.Core.Desktop.DesktopException)
+                        {
+                            return null;
+                        }
+                    })).Build,
                 new TriageCommand(
                     new TriageHost(Path.Join(AppData.Current(), "rig.db"),
                         Path.Join(Path.GetDirectoryName(Path.GetDirectoryName(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))!, "temp", "triage", "queue.md"),

@@ -9,7 +9,7 @@ plan tuned for this machine rather than a generic capture of whatever is open.
 
 The curated layout is the source of truth in `desktop-manager/workspace-plan.bundle.json`
 and `desktop-manager/bundles/`: desktop names, entries, placements and launch delays.
-Run `uv run desktop-manager workspace features` or `status` to see it resolved.
+Run `rig desktop workspace features` or `status` to see it resolved.
 
 ## Design principles
 

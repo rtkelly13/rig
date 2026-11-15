@@ -58,7 +58,7 @@ cannot conceal an independent implementation.
 | Capability/surface | Canonical implementation and callers | Source state / remaining condition |
 | --- | --- | --- |
 | C# registrations (`cs:` rows) | `rig`, plus 13 Python console-script compatibility spellings | Switched in source; shared tests/CI evidence does not establish native acceptance or deployment |
-| `align` | Python `desktop-manager workspace align` | Not ported; Windows desktop acceptance required |
+| `desktop workspace` | C# `rig desktop workspace` (restore, audit, status, validation, features, export, wire, align, name-desktops, guard and the per-entry commands) | CLI and native adapters switched in #243; the Python Typer workspace group and its `cli_align`/`cli_apps`/`cli_machine`/`align`/`display_guard_windows` modules retired. `align` is C#. Windows desktop acceptance remains the `WIN-DESKTOP` procedure |
 | `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand`, `Rig.Web.TriageRoutes` and `Rig.Core.ReviewQueue.AgentSignals` | CLI, web inbox and agent-signal consumers switched; Python CLI, six platform fallback routes, `rig.triage.web` and `rig.triage.agents` retired. `src/rig/triage` keeps only the models and store the browser tests seed, with no production caller |
 | `c4` | C# `Rig.Cli.C4.C4Command` over `Rig.Core.C4` | CLI, checks, composition, derivation and the Roslyn call-graph reader switched; the Python CLI, derive scanner and 21 registrations retired. The `rig.c4_okf` web viewer and the bundle reader it mounts stay explicitly owned until that route is switched |
 | `jobs` | C# status/last/log/run/install/uninstall | All legacy spellings dispatch whole-line to C#; #209 owns runtime progression and Windows acceptance |
@@ -75,7 +75,7 @@ cannot conceal an independent implementation.
 
 There are 14 current console scripts, rather than the issue's original 15. The ledger follows actual registrations.
 `desktop-manager help` describes the desktop CLI, so it is a separate capability from `rig help`.
-`desktop-manager workspace` controls desktop plans; `rig workspace` manages development configuration.
+`rig desktop workspace` controls desktop plans; `rig workspace` manages development configuration.
 The legacy `workspace align` spelling maps to the `align` capability, and `ensure-desktops`/`sync-desktops`
 map to `name-desktops`, so those alternate spellings cannot conceal an independent ported implementation.
 
@@ -194,7 +194,7 @@ Named remaining acceptance procedures, all run from a reviewed/published artifac
 
 | Procedure | Runnable entry and required environment | Evidence/expected result |
 | --- | --- | --- |
-| `WIN-DESKTOP` | Interactive Windows, disposable plan/windows: `desktop-manager workspace validate-plan --config <plan>` then `desktop-manager workspace restore --config <plan> --dry-run`, then an explicitly scoped restore/audit/align | Record Windows build, permissions, before/after layout, exact command, logs and restored state. Real Win32/UIA placement is pending, not a hosted-runner pass |
+| `WIN-DESKTOP` | Interactive Windows, disposable plan/windows: `rig desktop workspace validate-plan --config <plan>` then `rig desktop workspace restore --config <plan> --dry-run`, then an explicitly scoped restore/audit/align | Record Windows build, permissions, before/after layout, exact command, logs and restored state. Real Win32/UIA placement is pending, not a hosted-runner pass |
 | `WIN-JOBS` | #209's reviewed runtime in a disposable Windows account: `rig jobs install --help`, `rig jobs status`, its named task-install/logon acceptance | Record task XML, target artifact, due/skip behavior, background console behavior and uninstall/cleanup; no production task changes merely to test source |
 | `WIN-CHROME` | Interactive Windows, dedicated dev Chrome profile: `rig chrome-tabs list --profile <dev> --json`; `rig chrome-tabs prune --profile <dev> --dry-run`; controlled prune/group/saved-groups on disposable tabs | Record actual UI effects, focus restoration and cleanup. #217 removed the seven losing Python registrations while this acceptance is still pending; see the acceptance/caller gap note below |
 | `MAC-CHROME` | #226 artifact (`ChromeMac`), repository dev browser profile: `rig chrome-tabs list --profile <dev> --json`, controlled prune/group with disposable windows/tabs | Record Accessibility/Automation grants, native calls, actual changes, cleanup and restored focus. No daily Chrome profile |

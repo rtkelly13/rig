@@ -51,9 +51,9 @@ through later `runtime install` and `runtime rollback`:
 ```
 
 Run from a checkout, `jobs install` refuses a linked worktree because the tasks are machine-wide.
-Publish `src/Rig.Launcher` into `temp/jobs-runtime` in the main checkout first. Logon and Tick use
-that `rigw.exe`; Display Guard still uses the checkout's `.venv/Scripts/pythonw.exe` and the user plan.
-The installer validates the launcher, guard interpreter and plan before registering any tasks, then
+Publish `src/Rig.Launcher` into `temp/jobs-runtime` in the main checkout first. All three tasks use
+that `rigw.exe`; Display Guard runs `rig desktop workspace guard` with the user plan.
+The installer validates the launcher and plan before registering any tasks, then
 registers all three before retiring the old tasks. `--no-start` skips starting the guard immediately.
 Runtime installations always register paths through `current` and use its bundled plan.
 
