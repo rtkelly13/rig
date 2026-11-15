@@ -1,5 +1,6 @@
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 using Rig.Core.Tests.Otel;
 
@@ -447,6 +448,29 @@ public sealed class TidyTests : IDisposable
         Assert.Equal(TidyOutcome.Cleaned, applied.Single().Outcome);
         Assert.DoesNotContain("spike", await Repos.GitAsync(repo, "worktree", "list"), StringComparison.Ordinal);
         Assert.True(await HasBranchAsync(repo, "done"), "branch-merged was not in scope");
+    }
+
+    [Fact]
+    public async Task Tidy_PlanAsync_and_ApplyAsync_execute_reconciliation()
+    {
+        var repo = await RepoAsync();
+        var tree = await WorktreeAsync(repo);
+        Directory.Delete(tree, recursive: true);
+        var report = await InspectAsync(repo);
+
+        var git = new Git(Repos.Proc, repo);
+        var removal = new TreeRemoval(Repos.Proc);
+        var tidy = new Tidy(git, removal);
+        var target = new TidyTarget(report, Checks: ["worktree-prunable"]);
+        var plan = await tidy.PlanAsync(target, Token);
+
+        Assert.NotNull(plan);
+        Assert.Single(plan.Changes);
+        Assert.Equal(ChangeKind.WouldChange, plan.Changes[0].Kind);
+
+        var errors = await tidy.ApplyAsync(plan, Token);
+        Assert.Empty(errors);
+        Assert.Equal(ChangeKind.Changed, plan.Changes[0].Kind);
     }
 
     [Fact]

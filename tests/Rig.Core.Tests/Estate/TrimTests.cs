@@ -1,5 +1,6 @@
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 using Rig.Core.Tests.Otel;
 
@@ -304,6 +305,38 @@ public sealed class TrimTests : IDisposable
         Assert.Equal("resolves outside the worktree", await trim.RefusalAsync(worktree, _temp.Folder("other"), ignored: true));
         Assert.Equal("resolves outside the worktree", await trim.RefusalAsync(worktree, worktree, ignored: true));
         Assert.Equal("contains tracked files", await trim.RefusalAsync(_temp.Folder("plain"), _temp.Folder("plain/node_modules"), ignored: true));
+    }
+
+    [Fact]
+    public async Task PlanAsync_and_ApplyAsync_execute_reconciler_pipeline()
+    {
+        var (clone, worktree) = await CloneWithWorktreeAsync();
+        var candidate = Path.Join(worktree, "node_modules");
+        Directory.CreateDirectory(candidate);
+        File.WriteAllBytes(Path.Join(candidate, "dep.js"), [1, 2, 3]);
+
+        var trim = Idle();
+        var target = new TrimTarget(clone, IdleDays: 0, Floor: 0, Removal: Removal());
+        var plan = await trim.PlanAsync(target, Token);
+
+        Assert.NotNull(plan);
+        Assert.Single(plan.Changes);
+        Assert.Equal(ChangeKind.WouldChange, plan.Changes[0].Kind);
+
+        var errors = await trim.ApplyAsync(plan, Token);
+        Assert.Empty(errors);
+        Assert.Equal(ChangeKind.Changed, plan.Changes[0].Kind);
+        Assert.False(Directory.Exists(candidate));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_returns_error_when_removal_is_missing()
+    {
+        var trim = Idle();
+        var target = new TrimTarget("nonexistent", Removal: null);
+        var plan = new TrimPlan { Target = target, Items = [] };
+        var errors = await trim.ApplyAsync(plan, Token);
+        Assert.Contains("trim requires a removal port to apply", errors);
     }
 
     // ---- helpers --------------------------------------------------------------------------------------------------
