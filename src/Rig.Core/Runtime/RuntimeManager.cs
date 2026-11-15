@@ -354,7 +354,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             if (Path.Exists(tempLink)) { TryRemoveTree(tempLink); }
             if (old is not null && !Path.Exists(link))
             {
-                try { MakeLink(link, old); } catch { /* ignore */ }
+                try { MakeLink(link, old); } catch (RuntimeInstallException) { } catch (IOException) { } catch (UnauthorizedAccessException) { }
             }
             throw;
         }
