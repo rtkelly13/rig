@@ -306,6 +306,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         if (IsLink(link))
         {
             old = LinkTarget(link);
+            RemoveLink(link);
         }
         else if (Path.Exists(link) || Directory.Exists(link) || File.Exists(link))
         {
@@ -313,29 +314,16 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             {
                 throw new RuntimeInstallException($"{link} exists and is not a link; move it aside");
             }
+
+            RemoveTree(link);
         }
 
-        var tempLink = link + ".tmp." + Guid.NewGuid().ToString("N");
         try
         {
-            MakeLink(tempLink, copy);
-            if (IsLink(link) || File.Exists(link))
-            {
-                File.Move(tempLink, link, overwrite: true);
-            }
-            else if (Directory.Exists(link))
-            {
-                RemoveTree(link);
-                Directory.Move(tempLink, link);
-            }
-            else
-            {
-                Directory.Move(tempLink, link);
-            }
+            MakeLink(link, copy);
         }
         catch (RuntimeInstallException) when (OperatingSystem.IsWindows() && old is null && Directory.Exists(copy))
         {
-            if (Path.Exists(tempLink)) { TryRemoveTree(tempLink); }
             var tempDir = link + ".tmpdir." + Guid.NewGuid().ToString("N");
             try
             {
@@ -351,7 +339,6 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
         catch
         {
-            if (Path.Exists(tempLink)) { TryRemoveTree(tempLink); }
             if (old is not null && !Path.Exists(link))
             {
                 try { MakeLink(link, old); } catch (RuntimeInstallException) { } catch (IOException) { } catch (UnauthorizedAccessException) { }
@@ -531,11 +518,19 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     {
         try
         {
-            File.Delete(link);
+            if (Directory.Exists(link))
+            {
+                Directory.Delete(link);
+            }
+            else
+            {
+                File.Delete(link);
+            }
         }
-        catch (UnauthorizedAccessException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            Directory.Delete(link);
+            try { File.Delete(link); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            try { Directory.Delete(link); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }
     }
 
