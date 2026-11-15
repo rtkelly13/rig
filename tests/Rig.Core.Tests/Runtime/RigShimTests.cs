@@ -59,4 +59,11 @@ public sealed class RigShimTests : IDisposable
         Assert.Equal(ShimOutcome.Foreign, RigShim.Install(shim, Path.Join(_temp.Path, "runtime"), windows: false));
         Assert.Equal("#!/bin/sh\necho mine\n", File.ReadAllText(shim));
     }
+
+    [Fact]
+    public void PathFor_returns_platform_appropriate_path()
+    {
+        Assert.EndsWith(Path.Join(".local", "bin", "rig"), RigShim.PathFor("/users/me", windows: false), StringComparison.Ordinal);
+        Assert.EndsWith(Path.Join(".local", "bin", "rig.cmd"), RigShim.PathFor(@"C:\Users\me", windows: true), StringComparison.Ordinal);
+    }
 }

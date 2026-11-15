@@ -329,6 +329,63 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.EndsWith(Path.Join("rig", "rig.exe"), RuntimeManager.Published(@"C:\rt\curr", "rig", windows: true), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void CommitsBehind_reports_distance_or_null_when_git_fails()
+    {
+        var repo = NewRepo();
+        var sha = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "1\n" });
+        var manager = Manager(new Tools(_system));
+
+        Assert.Equal(0, manager.CommitsBehind(repo, sha, "HEAD"));
+        Assert.Null(manager.CommitsBehind(repo, "non-existent-sha", "HEAD"));
+    }
+
+    [Fact]
+    public void RunningCopy_detects_whether_path_is_under_runtime_root()
+    {
+        var root = _temp.Folder("runtime");
+        var copy = Path.Join(root, "current", "bin", "rig");
+        var external = _temp.Folder("other");
+
+        Assert.True(RuntimeManager.RunningCopy(copy, root));
+        Assert.False(RuntimeManager.RunningCopy(external, root));
+    }
+
+    [Fact]
+    public void ReadInstalled_returns_empty_when_missing()
+    {
+        var empty = _temp.Folder("empty-copy");
+        var info = RuntimeManager.ReadInstalled(empty);
+
+        Assert.Null(info.Sha);
+        Assert.Null(info.Ref);
+        Assert.Null(info.Repo);
+        Assert.Null(info.InstalledAt);
+    }
+
+    [Fact]
+    public void Rollback_fails_when_state_has_no_previous()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        manager.WriteState(new RuntimeState(Current: "curr", Previous: null, Repo: "/repo"));
+
+        var error = Assert.Throws<RuntimeInstallException>(() => manager.Rollback());
+        Assert.Contains("no previous copy", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PointCurrent_fails_when_target_is_file_or_directory_without_marker()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        var link = RuntimeManager.CurrentLink(Root);
+        File.WriteAllText(link, "not a directory or link");
+
+        var error = Assert.Throws<RuntimeInstallException>(() => manager.PointCurrent(_temp.Folder("target")));
+        Assert.Contains("exists and is not a link", error.Message, StringComparison.Ordinal);
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {
