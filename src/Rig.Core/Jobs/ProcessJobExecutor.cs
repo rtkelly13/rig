@@ -60,7 +60,7 @@ public sealed class ProcessJobExecutor(TimeProvider clock, IReadOnlyDictionary<s
             .Select(stream => Task.Run(() => Copy(stream, log, gate)))
             .ToArray();
         var limit = timeout ?? TimeSpan.FromMinutes(job.TimeoutMinutes);
-        if (!process.WaitForExit(limit))
+        if (limit <= TimeSpan.Zero || !process.WaitForExit(limit))
         {
             try
             {
