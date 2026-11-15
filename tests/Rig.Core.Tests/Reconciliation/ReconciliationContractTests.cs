@@ -99,8 +99,8 @@ public sealed class ReconciliationContractTests
 
         var tidy = new TidyAction("temp", "target", (TidyOutcome)99);
         Assert.Equal(ChangeKind.Error, tidy.Kind);
-        Assert.Equal("temp", tidy.Subject);
-        Assert.Equal("target", tidy.Detail);
+        Assert.Equal("temp", tidy.Check);
+        Assert.Equal("target", tidy.Subject);
     }
 
     [Fact]
