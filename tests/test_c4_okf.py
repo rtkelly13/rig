@@ -330,3 +330,49 @@ def test_concept_element_notes_without_diagram():
         body_links=(),
     )
     assert c.element_notes() == {}
+
+
+def test_graph_findings_edge_cases():
+    from rig.c4_okf.bundle import Bundle, Concept
+    from rig.c4_okf.graph import (
+        Finding,
+        Severity,
+        _diagram_findings,
+        _okf_findings,
+        check_bundle,
+    )
+    from rig.c4_okf.mermaid_c4 import Diagram
+
+    # okf frontmatter error
+    c_bad_fm = Concept("bad", Path("b.md"), None, "Bad", None, None, (), None, None, None, "", (), frontmatter_error="YAML invalid")
+    assert _okf_findings(c_bad_fm) == [Finding("okf-frontmatter", Severity.ERROR, "bad", "YAML invalid")]
+
+    # diagram missing
+    c_diag_missing = Concept("d", Path("d.md"), "C4 Context", "D", None, None, (), None, None, None, "", ())
+    assert _diagram_findings(c_diag_missing) == [Finding("diagram-missing", Severity.WARNING, "d", "`C4 Context` has no mermaid block")]
+
+    # diagram kind mismatch
+    diag_container = Diagram("C4Container", "C4Container\n", (), ())
+    c_mismatch = Concept("m", Path("m.md"), "C4 Context", "M", None, None, (), None, None, diag_container, "", ())
+    findings = _diagram_findings(c_mismatch)
+    assert len(findings) == 1
+    assert findings[0].code == "diagram-kind"
+
+    # code level diagram with C4 macro
+    c_code = Concept("c", Path("c.md"), "C4 Code", "C", None, None, (), None, None, diag_container, "", ())
+    code_findings = _diagram_findings(c_code)
+    assert any(f.severity is Severity.INFO for f in code_findings)
+
+
+def test_expand_error_paths(shop: Path):
+    from rig.c4_okf.graph import ExpandError, expand
+
+    bundle = load_bundle(shop)
+    with pytest.raises(ExpandError, match="not a diagram in this bundle"):
+        expand(bundle, "nonexistent", "api")
+
+    with pytest.raises(ExpandError, match="not a zoomable element"):
+        expand(bundle, "context", "user")  # 'user' person has no $link
+
+    with pytest.raises(ExpandError, match="not a zoomable element"):
+        expand(bundle, "context", "missing_alias")
