@@ -267,6 +267,40 @@ public sealed class C4BundleTests : IDisposable
         Assert.DoesNotContain(findings, finding => finding.Severity != Severity.Info);
     }
 
+    [Fact]
+    public void Expand_exception_constructors_populate_message_and_inner()
+    {
+        Assert.NotNull(new ExpandException().Message);
+        var msgEx = new ExpandException("custom");
+        Assert.Equal("custom", msgEx.Message);
+        var innerEx = new ExpandException("wrapped", new InvalidOperationException("inner"));
+        Assert.Equal("wrapped", innerEx.Message);
+        Assert.IsType<InvalidOperationException>(innerEx.InnerException);
+    }
+
+    [Fact]
+    public void Roots_identifies_top_level_concepts()
+    {
+        var bundle = OkfBundle.Load(Shop());
+        var roots = C4Composer.Roots(bundle);
+        Assert.Equal(["context"], roots);
+    }
+
+    [Fact]
+    public void DotnetScan_helpers_index_types_and_resolve_member_types()
+    {
+        Assert.Equal("Acme.Gen.Gen", DotnetScan.TypeOf("Acme.Gen.Gen.Run/()"));
+        Assert.Equal("System.String", DotnetScan.TypeOf("System.String.Length"));
+
+        var owners = new Dictionary<string, IReadOnlyList<string>>
+        {
+            ["owner1"] = ["Acme.TypeA", "Acme.TypeB"],
+        };
+        var index = DotnetScan.TypeIndex(owners);
+        Assert.Equal("owner1", index["Acme.TypeA"]);
+        Assert.Equal("owner1", index["Acme.TypeB"]);
+    }
+
     private static string Between(string text)
     {
         var start = text.IndexOf("```mermaid\n", StringComparison.Ordinal) + "```mermaid\n".Length;
