@@ -257,6 +257,17 @@ public sealed class OrcaRuntimeTests : IDisposable
     private static string Answer(string result) => $$"""{"id": "r1", "ok": true, "result": {{result}}}""";
 
     /// <summary>Answers every request with the same lines, or fails with <see cref="Failure"/>.</summary>
+    [Fact]
+    public void OrcaUnavailableException_constructors()
+    {
+        var ex1 = new OrcaUnavailableException();
+        Assert.Null(ex1.InnerException);
+        var inner = new InvalidOperationException("inner");
+        var ex2 = new OrcaUnavailableException("err", inner);
+        Assert.Equal("err", ex2.Message);
+        Assert.Same(inner, ex2.InnerException);
+    }
+
     private sealed class ScriptedExchange(params string[] lines) : IOrcaExchange
     {
         private int _calls;

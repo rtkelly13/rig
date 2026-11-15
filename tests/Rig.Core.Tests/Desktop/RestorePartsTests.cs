@@ -193,6 +193,17 @@ public sealed class RestorePartsTests
         Assert.Equal("[2026-11-12T10:00:00+00:00] later\n", File.ReadAllText(later.LatestPath));
     }
 
+    [Fact]
+    public void DesktopException_constructors()
+    {
+        var ex1 = new DesktopException();
+        Assert.Null(ex1.InnerException);
+        var inner = new InvalidOperationException("inner");
+        var ex2 = new DesktopException("err", inner);
+        Assert.Equal("err", ex2.Message);
+        Assert.Same(inner, ex2.InnerException);
+    }
+
     private sealed class FixedClock(DateTimeOffset now) : TimeProvider
     {
         public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;

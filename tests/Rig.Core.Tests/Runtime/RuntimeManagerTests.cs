@@ -690,6 +690,21 @@ public sealed class RuntimeManagerTests : IDisposable
     }
 
     [Fact]
+    public void Prune_ignores_links_in_root()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["a.txt"] = "1\n" });
+        var manager = Manager(new Tools(_system));
+        _ = manager.Install(repo, "HEAD", fetch: false);
+
+        var extraLink = Path.Join(Root, "extra-link");
+        Directory.CreateSymbolicLink(extraLink, _temp.Folder("link-target"));
+        var res = manager.Install(repo, "HEAD", fetch: false);
+        Assert.True(Directory.Exists(extraLink));
+        Assert.DoesNotContain("extra-link", res.Removed);
+    }
+
+    [Fact]
     public void Executable_renders_platform_paths()
     {
         Assert.Equal(Path.Join("/c", ".venv", "bin", "rig"), RuntimeManager.Executable("/c", "rig", windows: false));

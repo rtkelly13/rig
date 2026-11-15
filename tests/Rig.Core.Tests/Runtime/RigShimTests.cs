@@ -100,6 +100,18 @@ public sealed class RigShimTests : IDisposable
     }
 
     [Fact]
+    public void Render_throws_for_null_target()
+    {
+        Assert.Throws<ArgumentNullException>(() => RigShim.Render(null!, windows: false));
+    }
+
+    [Fact]
+    public void Install_throws_for_null_shim()
+    {
+        Assert.Throws<ArgumentNullException>(() => RigShim.Install(null!, "/root", windows: false));
+    }
+
+    [Fact]
     public void Install_with_single_file_name_handles_null_parent_directory()
     {
         var root = Path.Join(_temp.Path, "runtime");
