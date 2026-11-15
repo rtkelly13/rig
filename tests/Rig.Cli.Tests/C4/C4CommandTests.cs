@@ -228,6 +228,26 @@ public sealed class C4CommandTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task Commands_handle_missing_directories_gracefully()
+    {
+        var missing = Path.Join(_temp.Path, "does-not-exist");
+        Assert.Equal(1, await Run("c4", "check", missing));
+        Assert.NotEmpty(_error.ToString());
+
+        Reset();
+        Assert.Equal(1, await Run("c4", "model", missing));
+        Assert.NotEmpty(_error.ToString());
+
+        Reset();
+        Assert.Equal(1, await Run("c4", "tree", missing));
+        Assert.NotEmpty(_error.ToString());
+
+        Reset();
+        Assert.Equal(1, await Run("c4", "expand", "context", "alias", "--root", missing));
+        Assert.NotEmpty(_error.ToString());
+    }
+
     private void Reset()
     {
         _output.GetStringBuilder().Clear();
