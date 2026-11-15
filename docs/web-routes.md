@@ -2,20 +2,21 @@
 
 `rig web` is moving to one ASP.NET host (`src/Rig.Web`, #85 s25). Until every route group has moved,
 the host owns the port and forwards each path it does not serve to the Python server
-(`rig.web_host.server.StudioServer`), which still serves the triage queue, the C4 viewer and the JSON
-for the features below. The C# host serves the SPA in `web/` itself. In the Python server, features never import the server, and the server
+(`rig.web_host.server.StudioServer`), which still serves the jobs coordinator, the C4 viewer, the estate
+graph and the database backup. The C# host serves the SPA in `web/` itself. In the Python server, features never import the server, and the server
 never imports a feature. A feature exposes a **route**, and one composition root mounts it.
 
 ## The C# host and the forwarder
 
 - A bare `rig web` (`--port`, `--host`, `--open/--no-open`, `--preview`) runs on the C# CLI
   (`src/Rig.Cli/Web/WebCommand.cs`); `Forwarded.RunsBare` lets the `web` group stay with Python for its
-  subcommands (`install`, `ensure`, `backup`, `migrate`, `db-status`, `uninstall`, `mcp`) and `--help`.
-  A bare `desktop-manager web` hands itself to C# too.
+  subcommands (`install`, `ensure`, `backup`, `migrate`, `db-status`, `uninstall`) and `--help`; `mcp` runs
+  the C# ops tools over stdio. A bare `desktop-manager web` hands itself to C# too.
 - The host starts `desktop-manager web upstream --port <free loopback port>` as a child, waits up to 60 s for it
   to listen, and closes the child's standard input to stop it; it signals only that child. If the
   child does not start, the host still serves its own routes and says so.
-- The host answers its own routes first. Everything else goes over as it came: method, body and
+- The host answers its own routes first, including triage, the estate's ops answers and telemetry. Everything
+  else goes over as it came: method, body and
   headers, `Host` and `Origin` included, so the Python write guard sees the browser's values. Only the
   target's path and query travel, always to the child's loopback address, and hop-by-hop headers
   (including any a `Connection` header names) are dropped both ways. Redirects are not followed and the
@@ -43,14 +44,14 @@ never imports a feature. A feature exposes a **route**, and one composition root
 | GET | `/static/...` | files under `src/rig/web_host/templates` | C# `Rig.Web.FrontendRoutes` |
 | GET | `/media/assets/...` | read-only brand assets | C# `Rig.Web.FrontendRoutes` |
 | POST | `/api/db/backup` | `{status, backup_file}` | Python `rig.web_host.server` |
-| GET | `/api/triage` | `{entries, queue_path}` | Python `rig.triage.web` |
-| POST | `/api/triage/refresh`, `/api/triage/watch`, `/api/triage/interact` | the queue again | Python `rig.triage.web` |
+| GET | `/api/triage` | `{entries, queue_path}` | C# `Rig.Web.TriageRoutes` |
+| POST | `/api/triage/refresh`, `/api/triage/watch`, `/api/triage/interact` | the queue again | C# `Rig.Web.TriageRoutes` |
 | GET | `/c4`, `/c4/`, `/c4/static/...` | the C4 viewer | Python `rig.c4_okf.web` |
 | GET | `/api/c4/bundle`, `/api/c4/concept`, `/api/c4/expand` | C4 bundle JSON | Python `rig.c4_okf.web` |
 | GET | `/api/estate/graph`, `/api/estate/graph/refresh` | the connectivity graph, cached or rebuilt | Python `rig.connectivity.web` |
-| GET | `/api/ops/decisions`, `/api/ops/estate/disk`, `/api/ops/estate/trim` | decisions feed, disk usage, trim scan | Python `rig.estate.web` |
-| POST | `/api/ops/estate/trim/apply` | the paths trimmed | Python `rig.estate.web` |
-| GET | `/api/ops/telemetry/status`, `/api/ops/telemetry/traces` | trace store status and recent traces | Python `rig.otel_stack.web` |
+| GET | `/api/ops/decisions`, `/api/ops/estate/disk`, `/api/ops/estate/trim` | decisions feed, disk usage, trim scan | C# `Rig.Web.EstateOpsRoutes` |
+| POST | `/api/ops/estate/trim/apply` | the paths trimmed | C# `Rig.Web.EstateOpsRoutes` |
+| GET | `/api/ops/telemetry/status`, `/api/ops/telemetry/traces` | trace store status and recent traces | C# `Rig.Web.TelemetryRoutes` |
 | GET | `/api/ops/jobs`, `/api/ops/runs`, `/api/ops/runs/<job>/<run>/output` | scheduled jobs, their runs and run output | Python `desktop_manager.jobs.web` |
 | POST | `/api/ops/jobs/run` | starts a job | Python `desktop_manager.jobs.web` |
 
@@ -62,7 +63,7 @@ never imports a feature. A feature exposes a **route**, and one composition root
 | `Request` | `src/rig/web_routes.py` | method, path and query, parsed once; `param`, `int_param`, `flag` |
 | `respond` | `src/rig/web_routes.py` | runs a producer and maps failures to the `{"error": ...}` envelope |
 | `json_body` | `src/rig/web_routes.py` | the write guard: loopback Host, matching Origin, JSON content type, size cap |
-| `mounted_routes()` | `src/desktop_manager/web_cli.py` | the composition root: the one place that imports several features |
+| `mounted_routes()` | `src/desktop_manager/web_cli.py` | the composition root; only the jobs coordinator is still mounted |
 | `StudioServer(routes=...)` | `src/rig/web_host/server.py` | offers each request to the mounted routes before its own handlers |
 
 ## Adding a route
@@ -88,19 +89,23 @@ never imports a feature. A feature exposes a **route**, and one composition root
 
 ## Testing
 
-Test the view builders directly. To test the HTTP surface, start a `StudioServer` on port 0 with
-just your route and call it, as `tests/test_web_routes.py` does. Browser tests of a page mount a
-fake route that serves canned JSON, so they need no real data on the machine.
+The C# routes are tested in `tests/Rig.Web.Tests` (`OpsRoutesTests` drives the HTTP surface over fakes,
+and `OpsCoreTests` the view builders). For a Python route still in the child, test the view builders
+directly, and to test the HTTP surface start a `StudioServer` on port 0 with just your route and call
+it, as `tests/test_web_routes.py` does. Browser tests of a page mount a fake route that serves canned
+JSON, so they need no real data on the machine.
 
 The browser talks to the C# host, as it does in production. `tests/rig_web_host.py` starts the
 built C# `rig web` on port 0 in front of the in-process `StudioServer`
 (`RIG_WEB_PYTHON_ROUTES` names it, so the host starts no Python child), from a temp checkout that
-holds a copy of the frontend and no registry. CI builds the CLI before pytest and passes it in
+holds a copy of the frontend and no registry. The triage tests seed the shared database the C# route
+reads; `tests/test_web_ops_spa.py` supplies the C# ops answers with Playwright routes and fakes only the
+jobs coordinator, which is still Python. CI builds the CLI before pytest and passes it in
 `RIG_CLI_DLL`; locally the first test to need it builds it into `temp/rig-web-tests/`.
 
 ## Why not import the feature into the server
 
-`server.py` still calls a few older handlers directly (`rig.connectivity.web`, `rig.triage.web`).
+`server.py` still calls the older connectivity handler directly (`rig.connectivity.web`).
 Each one makes the server depend on that feature, so the server cannot be tested without it and
 `rig` features stop being independent. With the composition root, a feature depends only on
 `rig.web_routes`, and adding a page costs one route object plus one line in `mounted_routes()`.

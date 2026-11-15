@@ -7,6 +7,7 @@ using Rig.Core.Jobs;
 using Rig.Core.Otel;
 using Rig.Core.Tests;
 using Rig.Web.Mcp;
+using Rig.Web.Ops;
 
 namespace Rig.Web.Tests;
 
@@ -562,7 +563,19 @@ public sealed class McpTests
                     () => new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, ""),
                     () => 0));
             _host = RigWebHost.Create(
-                new WebHostSettings("127.0.0.1", 0, false, _dir.Folder("templates"), _dir.Folder("assets"), Path.Join(Root, "rig.db"), Path.Join(Root, "managed-projects.json"), Root),
+                new WebHostSettings(
+                    "127.0.0.1",
+                    0,
+                    false,
+                    _dir.Folder("templates"),
+                    _dir.Folder("assets"),
+                    Path.Join(Root, "rig.db"),
+                    Path.Join(Root, "managed-projects.json"),
+                    Root,
+                    Root,
+                    Path.Join(Root, "decisions.json"),
+                    Path.Join(Root, "temp", "triage", "queue.md"),
+                    Path.Join(Root, "temp", "traces", "sdk")),
                 _forwarding,
                 () => null,
                 Ops);

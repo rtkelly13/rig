@@ -3,6 +3,7 @@ using System.CommandLine;
 using System.Globalization;
 using Rig.Core;
 using Rig.Core.Otel;
+using Rig.Core.Roots;
 using Rig.Web;
 using Rig.Web.Mcp;
 
@@ -31,6 +32,13 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
 
     /// <summary>The brand images served under <c>/media/assets/</c>.</summary>
     public string AssetsRoot => Path.Join(Checkout, "assets");
+
+    /// <summary>This checkout's own trace files, one of the roots telemetry reads.</summary>
+    public string TracesDir => Path.Join(Checkout, "temp", "traces", "sdk");
+
+    /// <summary>The triage queue's Markdown projection, beside the registry's checkout rather than in it.</summary>
+    public string QueuePath =>
+        Path.Join(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(RegistryFile))) ?? WorkingDirectory, "temp", "triage", "queue.md");
 }
 
 /// <summary>
@@ -88,6 +96,7 @@ internal sealed class WebCommand(
 
     private async Task<int> RunAsync(string host, int port, bool preview, bool open, CancellationToken cancellationToken)
     {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var settings = new WebHostSettings(
             host,
             WebHostSettings.EffectivePort(port, preview),
@@ -96,7 +105,11 @@ internal sealed class WebCommand(
             places.AssetsRoot,
             places.DbPath,
             places.RegistryFile,
-            places.WorkingDirectory);
+            places.WorkingDirectory,
+            Path.Join(CodeRoot.Current(), CodeRoot.PersonalFolder),
+            Rig.Core.Estate.Decisions.DefaultFeedPath(Environment.GetEnvironmentVariable("LOCALAPPDATA"), home),
+            places.QueuePath,
+            places.TracesDir);
         if (places.PythonRoutes is { } running)
         {
             using var fronting = RigWebHost.ForwardingClient();

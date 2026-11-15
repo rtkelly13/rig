@@ -5,10 +5,10 @@ using Rig.Core.Observability;
 using Rig.Core.Otel;
 using Rig.Core.Roots;
 
-[assembly: SuppressMessage("Design", "CA1054", Justification = "URLs are kept as written for the SPA and the MCP answer; System.Uri normalizes them.", Scope = "namespaceanddescendants", Target = "~N:Rig.Web.Mcp")]
-[assembly: SuppressMessage("Design", "CA1056", Justification = "URLs are kept as written for the SPA and the MCP answer; System.Uri normalizes them.", Scope = "namespaceanddescendants", Target = "~N:Rig.Web.Mcp")]
+[assembly: SuppressMessage("Design", "CA1054", Justification = "URLs are kept as written for the SPA and the MCP answer; System.Uri normalizes them.", Scope = "namespaceanddescendants", Target = "~N:Rig.Web.Ops")]
+[assembly: SuppressMessage("Design", "CA1056", Justification = "URLs are kept as written for the SPA and the MCP answer; System.Uri normalizes them.", Scope = "namespaceanddescendants", Target = "~N:Rig.Web.Ops")]
 
-namespace Rig.Web.Mcp;
+namespace Rig.Web.Ops;
 
 /// <summary>What one trace list row needs.</summary>
 /// <param name="Days">How far back, 1 to 30.</param>
@@ -107,14 +107,22 @@ public sealed class Telemetry : IDisposable
     /// <paramref name="checkout"/>.
     /// </summary>
     [SuppressMessage("Reliability", "CA2000", Justification = "The HttpClients this source creates own their handlers and this source disposes both.")]
-    public static Telemetry ForCheckout(string checkout)
+    public static Telemetry ForCheckout(string checkout) => ForTraces(Path.Join(checkout, "temp", "traces", "sdk"));
+
+    /// <summary>
+    /// The real source with this checkout's traced folder given directly: ClickHouse at
+    /// <see cref="ClickHouseClient.LocalUrl"/> and rig's day files, including <paramref name="checkoutTraces"/>.
+    /// </summary>
+    [SuppressMessage("Reliability", "CA2000", Justification = "The HttpClients this source creates own their handlers and this source disposes both.")]
+    public static Telemetry ForTraces(string checkoutTraces)
     {
+        ArgumentException.ThrowIfNullOrEmpty(checkoutTraces);
         var clickhouseHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
         var probeHttp = new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(0.5) };
         var clickhouse = new ClickHouseClient(clickhouseHttp);
         var roots = Backfill.DefaultRoots(
             AppData.Current(),
-            Path.Join(checkout, "temp", "traces", "sdk"),
+            checkoutTraces,
             Environment.GetEnvironmentVariable(Backfill.TraceDirEnv));
         return new Telemetry(
             async () => await clickhouse.PingAsync().ConfigureAwait(false),

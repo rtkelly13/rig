@@ -20,8 +20,13 @@ namespace Rig.Web;
 public sealed class RigWebHost : IAsyncDisposable
 {
     private readonly WebApplication _app;
+    private readonly OpsRoutes? _ownedOps;
 
-    private RigWebHost(WebApplication app) => _app = app;
+    private RigWebHost(WebApplication app, OpsRoutes? ownedOps = null)
+    {
+        _app = app;
+        _ownedOps = ownedOps;
+    }
 
     /// <summary>The address the host is bound to; valid once <see cref="StartAsync"/> has returned.</summary>
     public Uri Address
@@ -36,11 +41,17 @@ public sealed class RigWebHost : IAsyncDisposable
 
     /// <summary>
     /// Builds the host. <paramref name="upstream"/> answers where the Python routes listen, or null while they are not
-    /// running; <paramref name="forwarding"/> is the client that reaches them. <paramref name="ops"/> backs the MCP
-    /// tools; null builds the real ones for this machine.
+    /// running; <paramref name="forwarding"/> is the client that reaches them. <paramref name="mcp"/> backs the MCP
+    /// tools, and <paramref name="routes"/> supplies the triage, estate and telemetry routes; null builds the real
+    /// ones for this machine.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000", Justification = "The default RigOps is registered in the service collection, which owns and disposes it.")]
-    public static RigWebHost Create(WebHostSettings settings, HttpClient forwarding, Func<Uri?> upstream, RigOps? ops = null)
+    public static RigWebHost Create(
+        WebHostSettings settings,
+        HttpClient forwarding,
+        Func<Uri?> upstream,
+        RigOps? mcp = null,
+        OpsRoutes? routes = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(forwarding);
@@ -59,13 +70,15 @@ public sealed class RigWebHost : IAsyncDisposable
         });
         builder.Services.AddRoutingCore();
         builder.Services.AddLogging();
-        _ = builder.Services.AddRigMcp(ops ?? RigOps.Default()).WithHttpTransport();
+        _ = builder.Services.AddRigMcp(mcp ?? RigOps.Default()).WithHttpTransport();
         var app = builder.Build();
-        var host = new RigWebHost(app);
+        var owned = routes is null ? OpsRoutes.ForSettings(settings) : null;
+        var host = new RigWebHost(app, owned);
         app.UseRouting();
         HostRoutes.Map(app, settings, () => host.Address.Port);
         FrontendRoutes.Map(app, settings);
         _ = app.MapMcp("/api/mcp");
+        (routes ?? owned!).Map(app, settings.RegistryFile);
         var forwarder = new Forwarder(forwarding, upstream);
         app.Map("/{**path}", forwarder.ForwardAsync);
         return host;
@@ -99,5 +112,9 @@ public sealed class RigWebHost : IAsyncDisposable
     public Task WaitForShutdownAsync(CancellationToken cancellationToken = default) => _app.WaitForShutdownAsync(cancellationToken);
 
     /// <inheritdoc/>
-    public ValueTask DisposeAsync() => _app.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        _ownedOps?.Dispose();
+        await _app.DisposeAsync().ConfigureAwait(false);
+    }
 }

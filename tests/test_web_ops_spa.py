@@ -1,7 +1,8 @@
 """The /ops pages of the rig SPA, driven against canned API answers.
 
-The real routes come from the otel, estate and jobs features; here one fake route
-answers the same JSON contract, so the pages are tested without live state.
+Triage, estate and telemetry are C# routes now, so Playwright supplies their answers. The jobs
+coordinator is still the Python route, served in-process and faked here. The pages are tested
+without live state on either side.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import Page, expect, sync_playwright
+from playwright.sync_api import Page, Route, expect, sync_playwright
 
 from rig.web_host.server import StudioServer
 from rig.web_routes import Request, json_body, send_json
@@ -182,6 +183,7 @@ def ops_app(tmp_path: Path) -> Iterator[OpsApp]:
         with rig_web_host.fronting(routes, rig_web_host.checkout(tmp_path)) as url, sync_playwright() as playwright:
             browser = playwright.chromium.launch()
             page = browser.new_page(viewport={"width": 1440, "height": 1000})
+            _canned(page, ops)
             try:
                 yield OpsApp(url, page, ops)
             finally:
@@ -190,6 +192,50 @@ def ops_app(tmp_path: Path) -> Iterator[OpsApp]:
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def _canned(page: Page, ops: FakeOps) -> None:
+    """Answer the routes C# owns, so the pages see the same contract production does."""
+    answers = {
+        "**/api/ops/telemetry/status": {
+            "store": {"source": "clickhouse", "clickhouse_reachable": True, "detail": "ClickHouse answered."},
+            "explorers": EXPLORERS,
+        },
+        "**/api/ops/telemetry/traces*": {
+            "source": "clickhouse",
+            "note": "",
+            "traces": [
+                {
+                    "trace_id": TRACE,
+                    "service": "rig",
+                    "root": "job.sync",
+                    "start_ns": 1_793_000_000_000_000_000,
+                    "duration_ms": 4200,
+                    "spans": 7,
+                    "errors": 1,
+                }
+            ],
+        },
+        "**/api/ops/decisions": DECISIONS,
+        "**/api/ops/estate/disk": {"path": "C:\\", "total": 1000, "used": 950, "free": 50},
+        "**/api/ops/estate/trim*": TRIM,
+    }
+
+    def serve(payload: object) -> object:
+        def answer(route: Route) -> None:
+            route.fulfill(json=payload)
+
+        return answer
+
+    for pattern, payload in answers.items():
+        page.route(pattern, serve(payload))
+
+    def applied(route: Route) -> None:
+        body = json.loads(route.request.post_data or "{}")
+        ops.applied.append(body)
+        route.fulfill(json=[{"path": path, "status": "removed", "freeable": 300_000_000} for path in body["paths"]])
+
+    page.route("**/api/ops/estate/trim/apply", applied)
 
 
 def test_attention_lists_failed_jobs_and_decisions_and_opens_the_run(ops_app: OpsApp) -> None:

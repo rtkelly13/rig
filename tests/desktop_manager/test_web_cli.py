@@ -1,4 +1,4 @@
-"""``rig web``: the bare command runs the C# host, which serves the Python routes through ``rig web upstream``."""
+"""``rig web``: the bare command runs the C# host, which serves its own routes and forwards the rest upstream."""
 
 from __future__ import annotations
 

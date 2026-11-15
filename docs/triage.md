@@ -8,10 +8,11 @@ rig triage verify
 rig web
 ```
 
-The triage CLI runs in C# (`Rig.Cli/ReviewQueue`, over `Rig.Core/ReviewQueue`); its Python CLI and forwarding
-entry are deleted. The remaining `src/rig/triage` package serves the Python web inbox only. Its retirement is
-the next part of #85 s24: move the web routes and agent signals onto the C# services, then remove that package
-and its obsolete tests. CLI changes belong in the C# implementation and tests.
+The triage CLI and its web inbox run in C# (`Rig.Cli/ReviewQueue` and `Rig.Web/TriageRoutes.cs`, over
+`Rig.Core/ReviewQueue`), including the agent wrap-up verdicts. The Python CLI, forwarding entry and web routes are
+deleted. `src/rig/triage` keeps its Python models, store and service for the tests that still seed a queue; it has no
+production caller and is removed with the remaining browser-test seeding. CLI and inbox changes belong in the C#
+implementation and tests.
 
 The default Markdown projection is `temp/triage/queue.md` under the rig root resolved from its managed-project registry. It is regenerable, gitignored runtime output. The vault contains the durable `Areas/Development/PR and Issue Triage.md` process and `Resources/Engineering/Frontend/PR Triage and Inbox UI References.md` source index; queue contents and interaction history stay in rig.
 

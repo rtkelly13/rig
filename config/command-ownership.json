@@ -423,9 +423,7 @@
     {"Id": "script:status=rig.csharp_cli:entry","Capability": "status","Owner": "cs:status","Platforms": ["linux","macos","windows"],"AliasTo": "cs:status"},
     {"Id": "script:vault=rig.csharp_cli:entry","Capability": "vault","Owner": "cs:vault","Platforms": ["linux","macos","windows"],"AliasTo": "cs:vault"},
     {"Id": "script:workspace=rig.csharp_cli:entry","Capability": "workspace","Owner": "cs:workspace","Platforms": ["linux","macos","windows"],"AliasTo": "cs:workspace"},
-    {"Id": "web-child:desktop_manager.jobs.web:JobsRoute:761732c4985766bf10b6590d9bb2b34c642325b0690b627ea8fe08108773c496","Capability": "surface:web-child:desktop_manager.jobs.web:JobsRoute:761732c4985766bf10b6590d9bb2b34c642325b0690b627ea8fe08108773c496","Owner": "web-child:desktop_manager.jobs.web:JobsRoute:761732c4985766bf10b6590d9bb2b34c642325b0690b627ea8fe08108773c496","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "web-child:rig.estate.web:make_route.<locals>.route:eb03ebe877633d264eba9524df9cad9de58a90212eeb8c4dda109a8f962662a0","Capability": "surface:web-child:rig.estate.web:make_route.<locals>.route:eb03ebe877633d264eba9524df9cad9de58a90212eeb8c4dda109a8f962662a0","Owner": "web-child:rig.estate.web:make_route.<locals>.route:eb03ebe877633d264eba9524df9cad9de58a90212eeb8c4dda109a8f962662a0","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "web-child:rig.otel_stack.web:TelemetryRoute:a3a2ebe93c107098aa69652e536a1d9f3cacad5e4b06f7d7710d859e5c0ce6d9","Capability": "surface:web-child:rig.otel_stack.web:TelemetryRoute:a3a2ebe93c107098aa69652e536a1d9f3cacad5e4b06f7d7710d859e5c0ce6d9","Owner": "web-child:rig.otel_stack.web:TelemetryRoute:a3a2ebe93c107098aa69652e536a1d9f3cacad5e4b06f7d7710d859e5c0ce6d9","Platforms": ["linux","macos","windows"],"AliasTo": null}
+    {"Id": "web-child:desktop_manager.jobs.web:JobsRoute:761732c4985766bf10b6590d9bb2b34c642325b0690b627ea8fe08108773c496","Capability": "surface:web-child:desktop_manager.jobs.web:JobsRoute:761732c4985766bf10b6590d9bb2b34c642325b0690b627ea8fe08108773c496","Owner": "web-child:desktop_manager.jobs.web:JobsRoute:761732c4985766bf10b6590d9bb2b34c642325b0690b627ea8fe08108773c496","Platforms": ["linux","macos","windows"],"AliasTo": null}
   ],
   "Baseline": [],
   "Retired": [
@@ -484,7 +482,11 @@
     "src/desktop_manager/claude_sessions/terminal.py",
     "src/desktop_manager/claude_sessions/wt_uia.py",
     "src/desktop_manager/jobs/install.py",
+    "src/desktop_manager/web_mcp.py",
+    "src/rig/estate/web.py",
+    "src/rig/otel_stack/web.py",
+    "src/rig/triage/agents.py",
     "src/rig/triage/cli.py",
-    "src/desktop_manager/web_mcp.py"
+    "src/rig/triage/web.py"
   ]
 }

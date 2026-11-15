@@ -47,7 +47,19 @@ internal sealed class EstateTree : IDisposable
     public string Templates => Path.Join(_dir.Path, "templates");
 
     public WebHostSettings Settings(bool preview = true) =>
-        new("127.0.0.1", 0, preview, Templates, Assets, Path.Join(_dir.Path, "rig.db"), Registry, _dir.Path);
+        new(
+            "127.0.0.1",
+            0,
+            preview,
+            Templates,
+            Assets,
+            Path.Join(_dir.Path, "rig.db"),
+            Registry,
+            _dir.Path,
+            _dir.Path,
+            Path.Join(_dir.Path, "decisions.json"),
+            Path.Join(_dir.Path, "temp", "triage", "queue.md"),
+            Path.Join(_dir.Path, "temp", "traces", "sdk"));
 
     public void Write(string relative, string text) => File.WriteAllText(_dir.File(relative), text);
 

@@ -22,10 +22,11 @@ runs it before opening the dashboard as a Chrome app window on screen 3, where t
 
 ## How the pieces fit
 
-- Each feature owns its API: `rig.otel_stack.web`, `rig.estate.web` and
-  `desktop_manager.jobs.web` each expose a `rig.web_routes.Route`. The composition root,
-  `desktop_manager.web_cli.mounted_routes()`, hands them to `StudioServer(routes=...)`; the
-  server imports none of them, so the `rig-features` independence contract holds.
+- Telemetry, the decisions feed, disk usage and trimming are C# routes (`Rig.Web.TelemetryRoutes` and
+  `Rig.Web.EstateOpsRoutes`); the jobs coordinator is still the Python `desktop_manager.jobs.web` route.
+  The composition root, `desktop_manager.web_cli.mounted_routes()`, hands the remaining route to
+  `StudioServer(routes=...)`; the server imports no feature, so the `rig-features` independence contract
+  holds.
 - Every error is a JSON `{"error": ...}` with 400, 404 or 503. The writes
   (`jobs/run`, `trim/apply`) require a loopback `Host`, a matching `Origin` and `application/json`.
 - Run now answers at once: the run is a detached `rig jobs run --trigger tick` (`rig.tracing.spawn_detached`)
@@ -38,7 +39,8 @@ runs it before opening the dashboard as a Chrome app window on screen 3, where t
 - Attention is computed client-side from the jobs, runs and decisions answers.
 
 The pages live in `web/Ops*.tsx` with the client in `web/opsApi.ts`; `tests/test_web_ops_spa.py`
-drives them against a fake route that answers the same JSON contract.
+drives them against the same JSON contract, supplying the C# answers with Playwright routes and the
+jobs answers from a fake Python route.
 
 ## For agents: `rig web mcp`
 
