@@ -360,8 +360,25 @@ public sealed class TrimTests : IDisposable
     [Fact]
     public void TrimPlan_Errors_and_Trimmable_properties()
     {
-        var target = new TrimTarget("/repo");
-        var item1 = new Trimmable("/wt", "/wt/node_modules", "node_modules", new TreeMeasure(100, 100));
+        var target = new TrimTarget("/repo", 14, 5000, null);
+        Assert.Equal("/repo", target.Repo);
+        Assert.Equal(14, target.IdleDays);
+        Assert.Equal(5000, target.Floor);
+        Assert.Null(target.Removal);
+
+        var measure = new TreeMeasure(100, 200);
+        Assert.Equal(100, measure.Apparent);
+        Assert.Equal(200, measure.Freeable);
+
+        var item1 = new Trimmable("/wt", "/wt/node_modules", "node_modules", measure);
+        Assert.Equal("/wt", item1.Worktree);
+        Assert.Equal("/wt/node_modules", item1.Path);
+        Assert.Equal("node_modules", item1.Category);
+        Assert.Equal(measure, item1.Size);
+        Assert.Equal(ChangeKind.WouldChange, item1.Kind);
+        Assert.Equal(string.Empty, item1.Detail);
+        Assert.Equal("/wt/node_modules", item1.Subject);
+
         var item2 = new Trimmable("/wt", "/wt/dist", "js build output", new TreeMeasure(200, 200), Refused: "in use");
         var item3 = new Trimmable("/wt", "/wt/bin", "dotnet build output", new TreeMeasure(300, 300))
         {
@@ -371,8 +388,6 @@ public sealed class TrimTests : IDisposable
 
         var plan = new TrimPlan { Target = target, Items = [item1, item2, item3] };
 
-        Assert.Equal(ChangeKind.WouldChange, item1.Kind);
-        Assert.Equal(string.Empty, item1.Detail);
         Assert.Equal(ChangeKind.Refused, item2.Kind);
         Assert.Equal("in use", item2.Detail);
         Assert.Equal(ChangeKind.Error, item3.Kind);

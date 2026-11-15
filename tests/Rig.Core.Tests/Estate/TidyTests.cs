@@ -476,9 +476,34 @@ public sealed class TidyTests : IDisposable
     [Fact]
     public void TidyPlan_Errors_returns_failures()
     {
-        var plan = new TidyPlan { Target = new TidyTarget(new RepoReport("/repo", [], 0, 0, 0)) };
-        plan.Add(new TidyAction("temp-stale", "/repo/temp/a", TidyOutcome.Failed, "permission denied"));
-        plan.Add(new TidyAction("temp-stale", "/repo/temp/b", TidyOutcome.Cleaned));
+        var target = new TidyTarget(new RepoReport("/repo", [], 0, 0, 0), Force: true, MergedHeads: null, Busy: null, Checks: ["temp-stale"]);
+        Assert.True(target.Force);
+        Assert.Null(target.MergedHeads);
+        Assert.Null(target.Busy);
+        Assert.Equal(["temp-stale"], target.Checks);
+
+        var a1 = new TidyAction("temp-stale", "/repo/temp/a", TidyOutcome.Failed, "permission denied");
+        var a2 = new TidyAction("temp-stale", "/repo/temp/b", TidyOutcome.Cleaned);
+        var a3 = new TidyAction("temp-stale", "/repo/temp/c", TidyOutcome.WouldClean);
+        var a4 = new TidyAction("temp-stale", "/repo/temp/d", TidyOutcome.Refused, "in use");
+
+        Assert.Equal("/repo/temp/a", a1.Subject);
+        Assert.Equal("failed", a1.OutcomeName);
+        Assert.Equal(ChangeKind.Error, a1.Kind);
+
+        Assert.Equal("cleaned", a2.OutcomeName);
+        Assert.Equal(ChangeKind.Changed, a2.Kind);
+
+        Assert.Equal("would-clean", a3.OutcomeName);
+        Assert.Equal(ChangeKind.WouldChange, a3.Kind);
+
+        Assert.Equal("refused", a4.OutcomeName);
+        Assert.Equal(ChangeKind.Refused, a4.Kind);
+
+        var plan = new TidyPlan { Target = target };
+        plan.Add(a1);
+        plan.Add(a2);
+        Assert.Equal(2, plan.Changes.Count);
         Assert.Equal(["/repo/temp/a: permission denied"], plan.Errors);
     }
 
