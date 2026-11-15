@@ -68,7 +68,7 @@ field a `None` default so a missing key is absent too.
 
 A raw `ValidationError` is fine in a log but not as an answer to someone who hand-edited a file. Decode
 `error.errors()` into a small dataclass, take the first error's `loc[0]` as the field name, and map known fields
-to a sentence that says what is expected. `desktop_manager.claude_sessions.plan._decode` does this:
+to a sentence that says what is expected. A plan or config decoder turns pydantic's error list into a sentence this way:
 
 ```python
 except ValidationError as error:
@@ -138,6 +138,6 @@ narrowed type is still `Any`.
 
 Catch what the guarded code can raise, not `Exception`. Windows calls have shared tuples: `WIN32_ERRORS`
 and `PYVDA_ERRORS` in `desktop_manager.win32.errors` (wrap pyvda calls in `pyvda_errors()`, which turns
-pyvda's bare `Exception` into a catchable one) and `UIA_ERRORS` in `claude_sessions.wt_uia`. A crash barrier
+pyvda's bare `Exception` into a catchable one). A crash barrier
 that must keep a long-running process alive (a restore entry, a scheduled job) may still catch `Exception`, but
 only if it logs the traceback (`logger.exception(...)` or `logger.error(..., exc_info=True)`) or re-raises.

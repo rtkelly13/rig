@@ -92,8 +92,6 @@ regenerate it with `uv run python -m rig.platform_table --write`.
 | Command | Platforms |
 | --- | --- |
 | `desktop-manager chrome-tabs organise` | Windows/macOS |
-| `desktop-manager claude-sessions place` | Windows |
-| `desktop-manager claude-sessions terminals` | Windows |
 | `desktop-manager workspace align` | Windows |
 | `desktop-manager workspace audit` | Windows |
 | `desktop-manager workspace detect-app` | Windows |

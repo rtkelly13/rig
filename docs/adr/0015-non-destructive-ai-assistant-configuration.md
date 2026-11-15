@@ -38,7 +38,7 @@ the hook as installed, not wired, script missing, or script out of date. Setting
 
 The hook writes one file per session to `~/.claude/session-ends/<session_id>.json` (or
 `$CLAUDE_SESSION_LEDGER_DIR/<session_id>.json`). This is the contract
-`desktop_manager.claude_sessions.discovery` reads:
+`desktop_manager.work.session_store` reads:
 
 ```json
 {

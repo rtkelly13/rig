@@ -131,7 +131,7 @@ in the same pull request:
 | 2 (done) | `rig/repo_governance` CLIs: moved to C# | 1,660 | 81 |
 | 3 | moved out: `image_drift` is its own project (`tools/image-drift`) with its own floor | — | — |
 | 4 | `rig/estate` remainder, `rig/devenv/steps`, `rig/workspace` | 2,230 | 88 |
-| 5 | `rig/otel_stack`, `rig/skills` (`rig/obsidian` moved to C#); `desktop_manager` `work`, `jobs`, `handlers`, `claude_sessions` | 2,000 | 92 |
+| 5 | `rig/otel_stack`, `rig/skills` (`rig/obsidian` moved to C#); `desktop_manager` `work`, `jobs`, `handlers` | 2,000 | 92 |
 | 6 | `desktop_manager/chrome` and `win32` | 1,310 | 95 |
 
 Wave 6 is the hard one. Much of it is macOS Accessibility and UI-scripting drivers

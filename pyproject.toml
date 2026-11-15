@@ -126,11 +126,7 @@ id = "acyclic-siblings"
 name = "rig and desktop_manager subpackages are acyclic"
 type = "acyclic_siblings"
 ancestors = ["rig", "desktop_manager"]
-# A minimal cut set: every entry is needed for the contract to pass. Each names the item that removes it.
-ignore_imports = [
-    "desktop_manager.work.sessions -> desktop_manager.claude_sessions.discovery",  # G2
-    "desktop_manager.work.sessions -> desktop_manager.claude_sessions.folders",  # G2
-]
+ignore_imports = []
 
 [[tool.importlinter.contracts]]
 id = "win32-adapters"
@@ -139,7 +135,6 @@ type = "forbidden"
 source_modules = ["desktop_manager.win32"]
 forbidden_modules = [
     "desktop_manager.chrome",
-    "desktop_manager.claude_sessions",
     "desktop_manager.commands",
     "desktop_manager.handlers",
     "desktop_manager.jobs",
@@ -192,11 +187,9 @@ ignore = [
 "typings/**" = ["N801", "N802", "N803", "N815", "N816", "F403", "TID251"]
 "**/*_windows.py" = ["TID251"]
 "**/windows/**" = ["TID251"]
+"src/desktop_manager/work/session_store.py" = ["TID251"]  # ctypes.windll for the live-session pid start time
 "src/desktop_manager/win32/*.py" = ["TID251"]
 "src/desktop_manager/display_guard.py" = ["TID251"]
-"src/desktop_manager/claude_sessions/wt_uia.py" = ["TID251"]
-"src/desktop_manager/claude_sessions/desktop_facts.py" = ["TID251"]
-"src/desktop_manager/claude_sessions/discovery.py" = ["TID251"]
 "src/desktop_manager/chrome/desktops.py" = ["TID251"]
 "src/desktop_manager/chrome/presence.py" = ["TID251"]
 "src/desktop_manager/chrome/uia.py" = ["TID251"]
@@ -228,7 +221,6 @@ ignore = [
 "src/rig/triage/github.py" = ["TID251"]
 # Temporary: tests that build real temp repos with raw git. F2 moves them onto the
 # shared real-git fixture in tests/fakes/; G4 deletes whatever is left.
-"tests/desktop_manager/test_claude_sessions.py" = ["TID251"]
 "tests/desktop_manager/test_projects.py" = ["TID251"]
 "tests/desktop_manager/test_runtime.py" = ["TID251"]
 "tests/desktop_manager/test_cli_machine_checkout.py" = ["TID251"]
@@ -325,7 +317,6 @@ omit = [
     "src/desktop_manager/chrome/input_windows.py",
     "src/desktop_manager/chrome/uia.py",
     "src/desktop_manager/chrome/uia_core.py",
-    "src/desktop_manager/claude_sessions/wt_uia.py",
     "src/desktop_manager/display_guard_windows.py",
     "src/desktop_manager/jobs/session_windows.py",
     "src/desktop_manager/service_installer.py",
@@ -382,9 +373,6 @@ fake-location-allow = [
     "tests/desktop_manager/fake_chrome.py",
     "tests/desktop_manager/integration/test_workspace_restore.py",
     "tests/desktop_manager/test_chrome_macos_grouping.py",
-    "tests/desktop_manager/test_claude_sessions_backends.py",
-    "tests/desktop_manager/test_claude_sessions_plan_apply.py",
-    "tests/desktop_manager/test_claude_sessions_startup.py",
     "tests/desktop_manager/test_display_guard.py",
     "tests/desktop_manager/test_projects.py",
     "tests/desktop_manager/test_runtime.py",
@@ -415,9 +403,6 @@ patching-allow = [
     "tests/desktop_manager/test_chrome_organise.py",
     "tests/desktop_manager/test_chrome_presence.py",
     "tests/desktop_manager/test_chrome_site_hosts.py",
-    "tests/desktop_manager/test_claude_sessions_backends.py",
-    "tests/desktop_manager/test_claude_sessions_plan_apply.py",
-    "tests/desktop_manager/test_claude_sessions_startup.py",
     "tests/desktop_manager/test_clean_launch_environment.py",
     "tests/desktop_manager/test_jobs_history.py",
     "tests/desktop_manager/test_monitor_shortfall.py",
@@ -467,7 +452,6 @@ loose-dict-aliases = ["JsonObject"]
 loose-dict-allow = [
     "src/desktop_manager/chrome/cli.py",
     "src/desktop_manager/chrome/traces.py",
-    "src/desktop_manager/claude_sessions/plan.py",
     "src/desktop_manager/models.py",
     "src/desktop_manager/work/serialize.py",
     "src/rig/estate/discovery.py",

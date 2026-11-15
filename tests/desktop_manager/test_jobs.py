@@ -9,9 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from desktop_manager.claude_sessions.startup_run import EXIT_DEFERRED
 from desktop_manager.jobs.registry import (
-    CLAUDE_SESSIONS_DEFERRED,
     RESTORE_DEFERRED,
     Cadence,
     Environment,
@@ -130,21 +128,6 @@ def test_a_tick_retries_a_logon_job_that_could_not_run_yet_this_boot():
         "never": "not on tick",
     }
     assert _decisions(jobs, state=state, trigger=Trigger.LOGON)["done"] == "run"
-
-
-def test_claude_sessions_is_retried_when_startup_defers():
-    assert CLAUDE_SESSIONS_DEFERRED == EXIT_DEFERRED
-    env = Environment(
-        scripts=Path("scripts"),
-        plan=Path("plan.json"),
-        workspace_root=Path("ws"),
-        personal_root=Path("personal"),
-        work_roots=(Path("acme"),),
-        decisions_feed=Path("jobs") / "decisions.json",
-        orca_user_data=Path("orca-personal"),
-    )
-    (job,) = [job for job in default_jobs(env) if job.name == "claude-sessions"]
-    assert job.retry_exit_codes == frozenset({EXIT_DEFERRED})
 
 
 def test_restore_is_retried_when_screens_are_missing():
@@ -389,7 +372,7 @@ def test_run_output_reads_only_the_named_runs_section(tmp_path: Path):
     assert (run_output(path, "tick-3"), run_output(tmp_path / "missing.log")) == ([], [])
 
 
-def test_logon_restores_with_deferred_commands_then_resumes_sessions(tmp_path: Path):
+def test_logon_restores_with_deferred_commands(tmp_path: Path):
     env = Environment(
         scripts=tmp_path / "Scripts",
         plan=tmp_path / "plan.json",
@@ -403,7 +386,7 @@ def test_logon_restores_with_deferred_commands_then_resumes_sessions(tmp_path: P
     jobs = {job.name: job for job in default_jobs(env)}
 
     on = _decisions(jobs.values(), Trigger.LOGON, flags={"claude-session-restore": True})
-    assert [name for name, decision in on.items() if decision == "run"][:2] == ["restore", "claude-sessions"]
+    assert next(name for name, decision in on.items() if decision == "run") == "restore"
     assert "--defer-logon-commands" in jobs["restore"].argv
     assert (jobs["align"].triggers, jobs["align"].idle_minutes > 0) == (frozenset({Trigger.TICK}), True)
 
@@ -461,22 +444,3 @@ def test_a_job_behind_a_rig_flag_runs_only_while_the_flag_is_on():
     assert _decisions(jobs, flags={"claude-session-restore": False}) == {"gated": "flag claude-session-restore off"}
     assert _decisions(jobs, flags={"claude-session-restore": True}) == {"gated": "run"}
     assert _decisions(jobs, flags={}, only=frozenset({"gated"})) == {"gated": "run"}
-
-
-def test_claude_sessions_follows_the_stored_flag_which_is_off_by_default():
-    from rig.flags import set_override
-
-    env = Environment(
-        scripts=Path("scripts"),
-        plan=Path(__file__),
-        workspace_root=Path("ws"),
-        personal_root=Path("personal"),
-        work_roots=(Path("acme"),),
-        decisions_feed=Path("jobs") / "decisions.json",
-        orca_user_data=Path("orca-personal"),
-    )
-    (job,) = [job for job in default_jobs(env) if job.name == "claude-sessions"]
-
-    assert _decisions([job], Trigger.LOGON) == {"claude-sessions": "flag claude-session-restore off"}
-    set_override("claude-session-restore", True)
-    assert _decisions([job], Trigger.LOGON) == {"claude-sessions": "run"}

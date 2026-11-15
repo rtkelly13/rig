@@ -15,7 +15,6 @@ import typer
 from typer.core import TyperGroup, TyperOption
 
 from desktop_manager.chrome.cli import chrome_tabs_app
-from desktop_manager.claude_sessions.cli import claude_sessions_app
 from desktop_manager.cli_align import align
 from desktop_manager.cli_apps import detect_app, launch_file, restart_app, test_item, update_orca
 from desktop_manager.cli_common import (
@@ -37,7 +36,6 @@ app = typer.Typer(name="desktop-manager", no_args_is_help=True, add_completion=F
 workspace_app = typer.Typer(name="workspace", no_args_is_help=True, help="Windows workspace management commands.")
 
 app.add_typer(workspace_app)
-app.add_typer(claude_sessions_app)
 app.add_typer(chrome_tabs_app)
 app.add_typer(runtime_app)
 app.add_typer(work_app)
@@ -80,11 +78,6 @@ def help_cmd() -> None:
     console.rule("[bold]Workspace commands[/bold]", style="dim")
     console.print()
     _render_group(workspace_app, "workspace")
-
-    # --- claude session commands ---
-    console.rule("[bold]Claude session commands[/bold]", style="dim")
-    console.print()
-    _render_group(claude_sessions_app, "claude-sessions")
 
     # --- chrome tab commands ---
     console.rule("[bold]Chrome tab commands[/bold]", style="dim")
