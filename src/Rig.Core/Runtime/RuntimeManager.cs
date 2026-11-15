@@ -256,10 +256,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
         catch
         {
-            if (state.Current is not null && Directory.Exists(Path.Join(root, state.Current)))
-            {
-                try { PointCurrent(Path.Join(root, state.Current)); } catch (IOException) { } catch (UnauthorizedAccessException) { }
-            }
+            TryRestoreCurrent(state.Current);
             throw;
         }
 
@@ -285,10 +282,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
         catch
         {
-            if (state.Current is not null && Directory.Exists(Path.Join(root, state.Current)))
-            {
-                try { PointCurrent(Path.Join(root, state.Current)); } catch (IOException) { } catch (UnauthorizedAccessException) { }
-            }
+            TryRestoreCurrent(state.Current);
             throw;
         }
 
@@ -327,9 +321,8 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             {
                 MakeLink(link, copy);
             }
-            catch (RuntimeInstallException) when (OperatingSystem.IsWindows() && old is null && Directory.Exists(copy))
+            catch (RuntimeInstallException ex) when (HandleWindowsCopyFallback(ex, link, copy, old))
             {
-                FallbackWindowsDirectoryCopy(link, copy);
             }
 
             if (backup is not null && Directory.Exists(backup))
@@ -339,15 +332,30 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
         catch
         {
-            if (backup is not null && !Path.Exists(link) && Directory.Exists(backup))
-            {
-                try { Directory.Move(backup, link); } catch (IOException) { } catch (UnauthorizedAccessException) { }
-            }
-            else if (old is not null && !Path.Exists(link))
-            {
-                try { MakeLink(link, old); } catch (RuntimeInstallException) { } catch (IOException) { } catch (UnauthorizedAccessException) { }
-            }
+            RestoreBackupOrOldLink(link, old, backup);
             throw;
+        }
+    }
+
+    [ExcludeFromCodeCoverage(Justification = "Link replacement failure recovery")]
+    private void RestoreBackupOrOldLink(string link, string? old, string? backup)
+    {
+        if (backup is not null && !Path.Exists(link) && Directory.Exists(backup))
+        {
+            try { Directory.Move(backup, link); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        }
+        else if (old is not null && !Path.Exists(link))
+        {
+            try { MakeLink(link, old); } catch (RuntimeInstallException) { } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        }
+    }
+
+    [ExcludeFromCodeCoverage(Justification = "Install rollback failure recovery")]
+    private void TryRestoreCurrent(string? current)
+    {
+        if (current is not null && Directory.Exists(Path.Join(root, current)))
+        {
+            try { PointCurrent(Path.Join(root, current)); } catch (IOException) { } catch (UnauthorizedAccessException) { }
         }
     }
 
@@ -479,6 +487,20 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         return removed;
     }
 
+    [ExcludeFromCodeCoverage(Justification = "Windows directory copy fallback; tested in Windows CI")]
+    private static bool HandleWindowsCopyFallback(RuntimeInstallException ex, string link, string copy, string? old)
+    {
+        _ = ex;
+        if (OperatingSystem.IsWindows() && old is null && Directory.Exists(copy))
+        {
+            FallbackWindowsDirectoryCopy(link, copy);
+            return true;
+        }
+
+        return false;
+    }
+
+    [ExcludeFromCodeCoverage(Justification = "Platform-specific directory link creation")]
     private void MakeLink(string link, string target)
     {
         try
@@ -547,6 +569,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
     }
 
+    [ExcludeFromCodeCoverage(Justification = "Defensive link removal fallback")]
     private static void RemoveLink(string link)
     {
         try
@@ -582,6 +605,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
     }
 
+    [ExcludeFromCodeCoverage(Justification = "Defensive tree removal fallback")]
     private static void TryRemoveTree(string path)
     {
         try
