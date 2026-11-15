@@ -64,9 +64,6 @@ public sealed record JobsEnvironment(
 /// <summary>The jobs the coordinator runs, in the order a run takes them. Ported from <c>desktop_manager.jobs.registry</c>.</summary>
 public static class JobRegistry
 {
-    /// <summary><c>claude-sessions startup</c> typed nothing: the workstation was locked or the plan's screens were missing.</summary>
-    public const int ClaudeSessionsDeferred = 4;
-
     /// <summary><c>workspace restore</c> found fewer screens than the plan places windows on and opened nothing.</summary>
     public const int RestoreDeferred = 4;
 
@@ -108,17 +105,10 @@ public static class JobRegistry
         List<Job> jobs =
         [
             new("restore", "Open and place every window in the workspace plan.",
-                [desktopManager, "workspace", "restore", "--config", plan, "--defer-logon-commands"], Logon, JobCadence.EveryRun, 45)
+                [desktopManager, "workspace", "restore", "--config", plan], Logon, JobCadence.EveryRun, 45)
             {
                 Requires = [plan],
                 RetryExitCodes = new HashSet<int> { RestoreDeferred },
-            },
-            new("claude-sessions", "Resume Claude sessions the last shutdown cut off; start `claude` in empty terminals.",
-                [desktopManager, "claude-sessions", "startup", "--config", plan], Logon, JobCadence.EveryRun, 20)
-            {
-                Requires = [plan],
-                RetryExitCodes = new HashSet<int> { ClaudeSessionsDeferred },
-                Feature = ClaudeSessionRestoreFlag,
             },
             new("chrome-organise", "Close merged, duplicate and superseded Chrome tabs, and group the rest, once idle.",
                 [python, "-m", "desktop_manager.chrome.scheduled", "--wait-minutes", $"{Job.TickMinutes - 5}"], Tick, JobCadence.EveryRun,

@@ -387,7 +387,8 @@ def test_logon_restores_with_deferred_commands(tmp_path: Path):
 
     on = _decisions(jobs.values(), Trigger.LOGON, flags={"claude-session-restore": True})
     assert next(name for name, decision in on.items() if decision == "run") == "restore"
-    assert "--defer-logon-commands" in jobs["restore"].argv
+    assert "--defer-logon-commands" not in jobs["restore"].argv
+    assert "claude-sessions" not in jobs
     assert (jobs["align"].triggers, jobs["align"].idle_minutes > 0) == (frozenset({Trigger.TICK}), True)
 
 
