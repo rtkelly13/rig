@@ -87,15 +87,19 @@ internal sealed partial class DesktopWorkspaceCommand(DesktopHost host)
     }
 
     /// <summary>The plan a command runs against: flags applied and columns fitted, but not yet verified.</summary>
-    private WorkspacePlan LoadContext(string path, IReadOnlyList<string> enable, IReadOnlyList<string> disable) =>
-        PlanLoading.Load(path, host.Flags, enable, disable, screenWidths: null, verify: false);
+    private WorkspacePlan LoadContext(string path, IReadOnlyList<string> enable, IReadOnlyList<string> disable)
+    {
+        var screenWidths = host.Windows() is { } native
+            ? native.Win32.Monitors().Select((m, i) => (Screen: i + 1, Width: m.Bounds.Width)).ToDictionary(x => x.Screen, x => x.Width)
+            : null;
+        return PlanLoading.Load(path, host.Flags, enable, disable, screenWidths: screenWidths, verify: false);
+    }
 
     /// <summary>The plan a command runs against, verified as <c>load_plan</c> verifies it.</summary>
     private WorkspacePlan Load(string path, IReadOnlyList<string> enable, IReadOnlyList<string> disable)
     {
         var plan = LoadContext(path, enable, disable);
-        var monitorCount = host.Windows() is { } native ? native.Win32.Monitors().Count : 0;
-        return PlanLoading.Verify(plan, path, host.Substitutions(plan), new LocalPathProbe(), monitorCount: monitorCount);
+        return PlanLoading.Verify(plan, path, host.Substitutions(plan), new LocalPathProbe());
     }
 
     private async Task<int> WindowsOnly(DesktopNative? native, string command)

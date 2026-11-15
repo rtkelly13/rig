@@ -146,7 +146,28 @@ public sealed class NativeDesktopPort : IDesktopPort
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(log);
-        return false;
+        if (!OperatingSystem.IsWindows())
+        {
+            return false;
+        }
+
+        if (OrcaUpdate.Entries(plan).Count == 0)
+        {
+            log.Log("Orca update check skipped: the plan launches no Orca window");
+            return false;
+        }
+
+        try
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var result = OrcaUpdate.Apply(plan, _inventory, _windowActions, localAppData, dryRun: false, log);
+            return result.Ok && result.Actions.Count > 0;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
+        {
+            log.Log($"Orca update check failed: {ex.Message}; continuing with the restore");
+            return false;
+        }
     }
 
     /// <inheritdoc/>

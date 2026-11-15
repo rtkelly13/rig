@@ -217,6 +217,15 @@ public sealed class Launching(Func<string, string?>? getVariable = null, string?
             ? _home + path[1..]
             : Environment.ExpandEnvironmentVariables(path);
 
+    private static void ApplyCleanEnvironment(ProcessStartInfo start)
+    {
+        start.Environment.Clear();
+        foreach (var (name, value) in CleanEnvironment())
+        {
+            start.Environment[name] = value;
+        }
+    }
+
     private static int? Start(IReadOnlyList<string> command, string? workingDirectory, bool detached)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -226,6 +235,7 @@ public sealed class Launching(Func<string, string?>? getVariable = null, string?
             CreateNoWindow = detached,
             WorkingDirectory = workingDirectory ?? string.Empty,
         };
+        ApplyCleanEnvironment(start);
         foreach (var argument in command.Skip(1))
         {
             start.ArgumentList.Add(argument);
@@ -247,6 +257,7 @@ public sealed class Launching(Func<string, string?>? getVariable = null, string?
             WorkingDirectory = workingDirectory ?? string.Empty,
             Arguments = "/c " + command,
         };
+        ApplyCleanEnvironment(start);
         var process = Process.Start(start) ?? throw new DesktopException("The command did not start");
         using (process)
         {
