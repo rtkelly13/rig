@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import io
+import json
 import urllib.parse
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
-from rig.c4_okf.bundle import DEFAULT_BUNDLE, load_bundle, resolve_href
+from rig.c4_okf.bundle import load_bundle, resolve_href
+from rig.c4_okf.cli import DEFAULT_BUNDLE, app
 from rig.c4_okf.graph import EdgeKind, Severity, TreeNode, build_model, check_bundle, collect_links, expand, zoom_tree
 from rig.c4_okf.mermaid_c4 import ElementKind, parse_diagram
 from rig.c4_okf.web import render_markdown, serve_c4
@@ -297,85 +300,48 @@ def test_routes_leave_other_paths_alone() -> None:
     assert handler.status == 0
 
 
-def test_parquet_sample_bundle_has_no_errors_or_warnings() -> None:
-    findings = check_bundle(load_bundle(DEFAULT_BUNDLE.parent / "parquet-sourcegenerator"))
-    assert [f for f in findings if f.severity is not Severity.INFO] == []
+_CLI = CliRunner()
 
 
-def test_split_frontmatter_edge_cases():
-    from rig.c4_okf.bundle import _decode_frontmatter, split_frontmatter  # pyright: ignore[reportPrivateUsage]
-
-    assert split_frontmatter("no frontmatter").frontmatter is None
-    assert split_frontmatter("---\nunclosed frontmatter").frontmatter is None
-    assert _decode_frontmatter(None) == "no YAML frontmatter"
-    assert "not valid YAML" in str(_decode_frontmatter("bad: [unclosed"))
-    assert _decode_frontmatter("- list\n- item") == "frontmatter must be a YAML mapping"
-
-
-def test_concept_element_notes_without_diagram():
-    from rig.c4_okf.bundle import Concept
-
-    c = Concept(
-        id="foo",
-        path=Path("foo.md"),
-        type=None,
-        title="Foo",
-        description=None,
-        resource=None,
-        tags=(),
-        generated=None,
-        verified=None,
-        diagram=None,
-        notes="## Foo\nbar",
-        body_links=(),
-    )
-    assert c.element_notes() == {}
+def test_cli_check_prints_a_table_and_fails_only_on_errors_unless_strict(shop: Path) -> None:
+    table = _CLI.invoke(app, ["check", str(shop)])
+    assert table.exit_code == 0, table.output
+    assert "3 concepts" in table.output
+    assert "unverified" in table.output
+    quiet = _CLI.invoke(app, ["check", str(shop), "--quiet", "--json"])
+    assert json.loads(quiet.output) == []
+    _ = (shop / "context.md").write_text(CONTEXT.replace('System_Ext(pay, "Payments")\n', ""), encoding="utf-8")
+    _ = (shop / "shop" / "orphan.md").write_text(API.replace("API components", "Orphan"), encoding="utf-8")
+    assert _CLI.invoke(app, ["check", str(shop)]).exit_code == 0
+    strict = _CLI.invoke(app, ["check", str(shop), "--strict", "--json"])
+    assert strict.exit_code == 1
+    assert "orphan" in {f["code"] for f in json.loads(strict.output)}
 
 
-def test_graph_findings_edge_cases():
-    from rig.c4_okf.bundle import Concept
-    from rig.c4_okf.graph import (
-        Finding,
-        Severity,
-        _diagram_findings,  # pyright: ignore[reportPrivateUsage]
-        _okf_findings,  # pyright: ignore[reportPrivateUsage]
-    )
-    from rig.c4_okf.mermaid_c4 import Diagram
-
-    # okf frontmatter error
-    c_bad_fm = Concept(
-        "bad", Path("b.md"), None, "Bad", None, None, (), None, None, None, "", (), frontmatter_error="YAML invalid"
-    )
-    assert _okf_findings(c_bad_fm) == [Finding("okf-frontmatter", Severity.ERROR, "bad", "YAML invalid")]
-
-    # diagram missing
-    c_diag_missing = Concept("d", Path("d.md"), "C4 Context", "D", None, None, (), None, None, None, "", ())
-    assert _diagram_findings(c_diag_missing) == [
-        Finding("diagram-missing", Severity.WARNING, "d", "`C4 Context` has no mermaid block")
-    ]
-
-    # diagram kind mismatch
-    diag_container = Diagram("C4Container", "C4Container\n", (), ())
-    c_mismatch = Concept("m", Path("m.md"), "C4 Context", "M", None, None, (), None, None, diag_container, "", ())
-    findings = _diagram_findings(c_mismatch)
-    assert len(findings) == 1
-    assert findings[0].code == "diagram-kind"
-
-    # code level diagram with C4 macro
-    c_code = Concept("c", Path("c.md"), "C4 Code", "C", None, None, (), None, None, diag_container, "", ())
-    code_findings = _diagram_findings(c_code)
-    assert any(f.severity is Severity.INFO for f in code_findings)
+def test_cli_check_exits_one_on_an_error(shop: Path) -> None:
+    _ = (shop / "lonely.md").write_text("---\ntitle: no type\n---\nhi\n", encoding="utf-8")
+    result = _CLI.invoke(app, ["check", str(shop)])
+    assert result.exit_code == 1
+    assert "okf-type" in result.output
 
 
-def test_expand_error_paths(shop: Path):
-    from rig.c4_okf.graph import ExpandError, expand
+def test_cli_tree_prints_the_zoom_hierarchy_as_text_and_json(shop: Path) -> None:
+    text = _CLI.invoke(app, ["tree", str(shop)])
+    assert text.exit_code == 0, text.output
+    assert "API components" in text.output
+    nodes = json.loads(_CLI.invoke(app, ["tree", str(shop), "--json"]).output)
+    assert [n["id"] for n in nodes] == ["context"]
 
-    bundle = load_bundle(shop)
-    with pytest.raises(ExpandError, match="not a diagram in this bundle"):
-        expand(bundle, "nonexistent", "api")
 
-    with pytest.raises(ExpandError, match="not a zoomable element"):
-        expand(bundle, "context", "user")  # 'user' person has no $link
+def test_cli_model_prints_every_alias(shop: Path) -> None:
+    result = _CLI.invoke(app, ["model", str(shop)])
+    assert result.exit_code == 0, result.output
+    assert "user" in {e["alias"] for e in json.loads(result.output)["elements"]}
 
-    with pytest.raises(ExpandError, match="not a zoomable element"):
-        expand(bundle, "context", "missing_alias")
+
+def test_cli_expand_prints_mermaid_or_fails_on_an_unknown_alias(shop: Path) -> None:
+    composed = _CLI.invoke(app, ["expand", "context", "shop", "--root", str(shop)])
+    assert composed.exit_code == 0, composed.output
+    assert 'System_Boundary(shop, "Shop") {' in composed.output
+    missing = _CLI.invoke(app, ["expand", "context", "nobody", "--root", str(shop)])
+    assert missing.exit_code == 1

@@ -322,8 +322,6 @@ omit = [
     "src/desktop_manager/service_installer.py",
     "src/desktop_manager/win32/align_ports.py",
     "src/desktop_manager/win32/inventory.py",
-    # Superseded by C# rig c4 architecture diagrams (#228, ADR 0022):
-    "src/rig/c4_okf/*",
 ]
 
 [tool.coverage.report]

@@ -26,9 +26,6 @@ from rig.typed_yaml import decode_yaml
 
 RESERVED = frozenset({"index.md", "log.md"})
 
-#: The sample bundle that documents rig itself.
-DEFAULT_BUNDLE = Path(__file__).resolve().parents[3] / "experiments" / "c4-okf" / "rig"
-
 #: C4 levels by OKF ``type``. Dynamic and deployment views sit beside the hierarchy, not in it.
 LEVELS: dict[str, int] = {"C4 Context": 1, "C4 Container": 2, "C4 Component": 3, "C4 Code": 4}
 SUPPLEMENTARY = frozenset({"C4 Landscape", "C4 Dynamic", "C4 Deployment"})
