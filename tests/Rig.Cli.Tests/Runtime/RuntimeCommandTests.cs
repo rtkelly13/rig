@@ -851,6 +851,24 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("No repo to install from", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void FindCheckout_returns_null_when_no_pyproject_matches()
+    {
+        var isolated = _temp.Folder("empty-sub/deep");
+        Assert.Null(RuntimeCommand.FindCheckout(isolated));
+    }
+
+    [Fact]
+    public async Task Rollback_handles_exception_and_returns_exit_code_1()
+    {
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(Path.Join(Root, RuntimeManager.StateName), "corrupt-json", TestContext.Current.CancellationToken);
+
+        var exit = await Run(new FakeProc(), "rollback");
+        Assert.Equal(1, exit);
+        Assert.Contains("Rollback failed:", _out.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand
