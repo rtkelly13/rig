@@ -14,6 +14,7 @@ using Rig.Cli.Mail;
 using Rig.Cli.Models;
 using Rig.Cli.Otel;
 using Rig.Cli.Policy;
+using Rig.Cli.Rendering;
 using Rig.Cli.ReviewQueue;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
@@ -196,7 +197,7 @@ internal static class Program
                         Task.Delay),
                     Console.Out,
                     Console.Error).Build,
-                new StatusCommand(proc, git, Environment.CurrentDirectory, Console.Out).Build,
+                new StatusCommand(proc, git, Environment.CurrentDirectory, RigConsole.Create(Console.Out)).Build,
                 new TracesCommand(
                     Path.Join(checkout, "temp", "traces", "sdk"),
                     Environment.GetEnvironmentVariable,

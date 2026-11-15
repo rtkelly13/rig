@@ -1,6 +1,7 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Text.Json;
+using Rig.Cli.Rendering;
 using Rig.Core.Policy;
 
 namespace Rig.Cli.Policy;
@@ -101,13 +102,15 @@ internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWrit
     private int Audit(string root)
     {
         var commands = ProjectAudit.Commands(root);
-        output.WriteLine($"Estate Commands ({commands.Count})");
-        string[][] rows = [["Project", "Command", "Risk"], .. commands.Select(c => new[] { c.Project, c.Invocation, c.Risk.Name() })];
-        var widths = Enumerable.Range(0, 3).Select(c => rows.Max(r => r[c].Length)).ToArray();
-        foreach (var row in rows)
+        var table = new TextTable(
+            $"Estate Commands ({commands.Count})",
+            [("Project", false), ("Command", false), ("Risk", false)]);
+        foreach (var command in commands)
         {
-            output.WriteLine(string.Join("  ", row.Select((cell, c) => cell.PadRight(widths[c]))).TrimEnd());
+            _ = table.Add(command.Project, command.Invocation, command.Risk.Name());
         }
+
+        output.Write(table.Render());
 
         output.WriteLine();
         output.WriteLine("Normalized shell-history families:");

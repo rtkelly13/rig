@@ -1,7 +1,9 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using Rig.Cli.Rendering;
 using Rig.Core;
 using Rig.Core.Processes;
+using Spectre.Console;
 
 namespace Rig.Cli.Status;
 
@@ -19,9 +21,19 @@ internal sealed record StatusResult(string Name, bool Passed, string Detail = ""
 /// <param name="proc">Runs the gates.</param>
 /// <param name="git">Runs git, hardened under untrusted folders.</param>
 /// <param name="workingDirectory">The folder the command was run from; the repo is the one around it.</param>
-/// <param name="output">Where the report goes.</param>
-internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory, TextWriter output)
+/// <param name="console">Where the verdict and check table go.</param>
+internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory, IAnsiConsole console)
 {
+    /// <summary>The same command over a plain writer, wrapped in the machine-safe console.</summary>
+    /// <param name="proc">Runs the gates.</param>
+    /// <param name="git">Runs git, hardened under untrusted folders.</param>
+    /// <param name="workingDirectory">The folder the command was run from.</param>
+    /// <param name="output">Where the report goes.</param>
+    public StatusCommand(IProc proc, Git git, string workingDirectory, TextWriter output)
+        : this(proc, git, workingDirectory, RigConsole.Create(output))
+    {
+    }
+
     /// <summary>The quality gates, in report order.</summary>
     public static readonly IReadOnlyList<(string Name, string[] Argv)> Gates =
     [
@@ -54,13 +66,22 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
         return last[..Math.Min(last.Length, DetailLength)];
     }
 
-    /// <summary>The report: a verdict, then one line per check.</summary>
+    /// <summary>The report as machine-safe text: a verdict line, then one row per check.</summary>
     public static string Render(IReadOnlyList<StatusResult> results)
     {
         ArgumentNullException.ThrowIfNull(results);
-        var width = results.Max(r => r.Name.Length);
-        var lines = results.Select(r => $"  {(r.Passed ? "OK" : "!!")}  {r.Name.PadRight(width)}  {r.Detail}".TrimEnd());
-        return $"{(results.All(r => r.Passed) ? "Healthy" : "Issues Found")}\n{string.Join('\n', lines)}\n";
+        return $"{(results.All(r => r.Passed) ? "Healthy" : "Issues Found")}\n{Table(results).Render()}";
+    }
+
+    private static TextTable Table(IReadOnlyList<StatusResult> results)
+    {
+        var table = new TextTable(null, [("", false), ("check", false), ("detail", false)]);
+        foreach (var result in results)
+        {
+            _ = table.Add(result.Passed ? "OK" : "!!", result.Name, result.Detail);
+        }
+
+        return table;
     }
 
     private async Task<int> RunAsync(bool tests, bool ciOnly, CancellationToken cancellationToken)
@@ -82,8 +103,13 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
             results.Add(new StatusResult("Tests", ok, LastLine(text)));
         }
 
-        await output.WriteAsync(Render(results)).ConfigureAwait(false);
-        return (int)(results.All(r => r.Passed) ? ExitCode.Clean : ExitCode.Drift);
+        var healthy = results.All(r => r.Passed);
+        console.RenderVerdict(
+            healthy ? "Healthy" : "Issues Found",
+            healthy,
+            healthy ? $"{results.Count} checks passed" : $"{results.Count(r => !r.Passed)} of {results.Count} checks need attention");
+        Table(results).RenderTo(console);
+        return (int)(healthy ? ExitCode.Clean : ExitCode.Drift);
     }
 
     private async Task<IReadOnlyList<StatusResult>> GitResultsAsync(string root, CancellationToken cancellationToken)

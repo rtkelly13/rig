@@ -2,7 +2,7 @@
 using System.CommandLine;
 using System.Globalization;
 using System.Text.Json.Nodes;
-using Rig.Cli.Vault;
+using Rig.Cli.Rendering;
 using Rig.Core.Estate;
 using Rig.Core.Policy;
 using Rig.Core.Processes;

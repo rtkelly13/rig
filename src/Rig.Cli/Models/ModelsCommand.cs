@@ -2,6 +2,7 @@
 using System.CommandLine;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using Rig.Cli.Rendering;
 
 namespace Rig.Cli.Models;
 
@@ -21,8 +22,6 @@ internal sealed class ModelsCommand(ModelDiscovery discovery, TextWriter output)
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    private static readonly string[] Headers = ["Agent / CLI", "Model ID", "Display Name", "Provider", "Effort / Levels"];
-
     /// <summary>The <c>models</c> command, named <paramref name="name"/>.</summary>
     public Command Build(string name = "models")
     {
@@ -39,20 +38,20 @@ internal sealed class ModelsCommand(ModelDiscovery discovery, TextWriter output)
     public static string Render(IReadOnlyList<DiscoveredModel> models, bool all)
     {
         ArgumentNullException.ThrowIfNull(models);
-        var title = all
-            ? $"All Discovered AI Coding Models ({models.Count} models)"
-            : $"AI Coding Models Evaluated in Rig ({models.Count} models)";
-        string[][] rows =
-        [
-            Headers,
-            .. models.Select(m => new[]
-            {
-                m.Agent, m.ModelId, m.DisplayName, m.Provider ?? "-", m.ReasoningLevels.Count > 0 ? string.Join(", ", m.ReasoningLevels) : "-",
-            }),
-        ];
-        var widths = Enumerable.Range(0, Headers.Length).Select(c => rows.Max(r => r[c].Length)).ToArray();
-        var lines = rows.Select(r => string.Join("  ", r.Select((cell, c) => cell.PadRight(widths[c]))).TrimEnd());
-        return $"{title}\n{string.Join('\n', lines)}\n";
+        var table = new TextTable(
+            all ? $"All Discovered AI Coding Models ({models.Count} models)" : $"AI Coding Models Evaluated in Rig ({models.Count} models)",
+            [("Agent / CLI", false), ("Model ID", false), ("Display Name", false), ("Provider", false), ("Effort / Levels", false)]);
+        foreach (var model in models)
+        {
+            _ = table.Add(
+                model.Agent,
+                model.ModelId,
+                model.DisplayName,
+                model.Provider ?? "-",
+                model.ReasoningLevels.Count > 0 ? string.Join(", ", model.ReasoningLevels) : "-");
+        }
+
+        return table.Render();
     }
 
     private async Task<int> RunAsync(string? agent, string? provider, bool all, bool json, CancellationToken cancellationToken)

@@ -2,7 +2,7 @@
 using System.CommandLine;
 using System.Globalization;
 using System.Text;
-using Rig.Cli.Vault;
+using Rig.Cli.Rendering;
 using Rig.Core.Mail;
 
 namespace Rig.Cli.Mail;

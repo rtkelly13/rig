@@ -41,23 +41,12 @@ public sealed class StatusCommandTests : IDisposable
     {
         Assert.Equal(0, await Run("status"));
 
-        Assert.Equal(
-            """
-            Healthy
-              OK  Branch          main
-              OK  Clean worktree
-              OK  Remote sync     in sync
-              OK  Lockfile
-              OK  Lint
-              OK  Format
-              OK  Types
-              OK  ty
-              OK  Ratchet
-              OK  Imports
-              OK  Security
-
-            """.ReplaceLineEndings("\n"),
-            _out.ToString());
+        var text = _out.ToString();
+        Assert.Contains("PASS  Healthy", text, StringComparison.Ordinal);
+        Assert.Contains("11 checks passed", text, StringComparison.Ordinal);
+        Assert.Contains("│ OK │ Branch", text, StringComparison.Ordinal);
+        Assert.Contains("│ OK │ Security", text, StringComparison.Ordinal);
+        Assert.DoesNotContain('\u001b', text);
     }
 
     [Fact]
@@ -92,11 +81,14 @@ public sealed class StatusCommandTests : IDisposable
         Assert.Equal(1, await Run("status"));
 
         var text = _out.ToString();
-        Assert.StartsWith("Issues Found\n", text, StringComparison.Ordinal);
-        Assert.Contains("  !!  Clean worktree  M src/a.py\n", text, StringComparison.Ordinal);
-        Assert.Contains("  !!  Remote sync     +2/-1\n", text, StringComparison.Ordinal);
-        Assert.Contains("  !!  Lint            Found 3 errors.\n", text, StringComparison.Ordinal);
-        Assert.Contains("  OK  Format\n", text, StringComparison.Ordinal);
+        Assert.Contains("FAIL  Issues Found", text, StringComparison.Ordinal);
+        Assert.Contains("│ !! │ Clean worktree", text, StringComparison.Ordinal);
+        Assert.Contains("M src/a.py", text, StringComparison.Ordinal);
+        Assert.Contains("│ !! │ Remote sync", text, StringComparison.Ordinal);
+        Assert.Contains("+2/-1", text, StringComparison.Ordinal);
+        Assert.Contains("│ !! │ Lint", text, StringComparison.Ordinal);
+        Assert.Contains("Found 3 errors.", text, StringComparison.Ordinal);
+        Assert.Contains("│ OK │ Format", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -116,7 +108,8 @@ public sealed class StatusCommandTests : IDisposable
 
         Assert.Equal(1, await Run("status"));
 
-        Assert.Contains("  !!  Lockfile        uv: not found\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("uv: not found", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("FAIL  Issues Found", _out.ToString(), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -135,7 +128,8 @@ public sealed class StatusCommandTests : IDisposable
         Assert.Equal(pytest, ran);
         if (pytest is not null)
         {
-            Assert.EndsWith("  OK  Tests           412 passed in 3.1s\n", _out.ToString(), StringComparison.Ordinal);
+            Assert.Contains("│ OK │ Tests", _out.ToString(), StringComparison.Ordinal);
+            Assert.Contains("412 passed in 3.1s", _out.ToString(), StringComparison.Ordinal);
         }
     }
 
@@ -146,7 +140,23 @@ public sealed class StatusCommandTests : IDisposable
 
         Assert.Equal(1, await Run("status", "--tests"));
 
-        Assert.Contains("  !!  Tests           1 failed, 1 passed\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("│ !! │ Tests", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("1 failed, 1 passed", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_plain_render_form_is_machine_safe_and_names_every_check()
+    {
+        var text = StatusCommand.Render(
+        [
+            new StatusResult("Branch", true, "main"),
+            new StatusResult("Lint", false, "src/a.py:1: E501"),
+        ]);
+
+        Assert.StartsWith("Issues Found\n", text, StringComparison.Ordinal);
+        Assert.Contains("Branch", text, StringComparison.Ordinal);
+        Assert.Contains("E501", text, StringComparison.Ordinal);
+        Assert.DoesNotContain('\u001b', text);
     }
 
     [Fact]

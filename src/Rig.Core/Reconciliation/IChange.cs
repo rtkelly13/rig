@@ -16,6 +16,9 @@ public enum ChangeKind
 
     /// <summary>Resource exists unexpectedly and must be removed.</summary>
     Delete = 3,
+
+    /// <summary>The plan would change the resource, but a guard refused it; shown for a human, never applied.</summary>
+    Refusal = 4,
 }
 
 /// <summary>

@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Cli.Vault;
+using Rig.Cli.Rendering;
 using Rig.Core.Packages;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
