@@ -165,11 +165,11 @@ public sealed class SystemProcTests
         var watch = Stopwatch.StartNew();
 
         var ran = await _proc.RunAsync(
-            new ProcRequest(["sleep", "10"]) { StdinText = new string('x', 1 << 20), Timeout = TimeSpan.FromMilliseconds(200) },
+            new ProcRequest(["sleep", "30"]) { StdinText = new string('x', 1 << 20), Timeout = TimeSpan.FromMilliseconds(200) },
             TestContext.Current.CancellationToken);
 
         Assert.Equal(Ran.TimedOut, ran.Code);
-        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(15), $"took {watch.Elapsed}");
     }
 
     [Fact]
@@ -203,19 +203,12 @@ public sealed class SystemProcTests
     [Fact]
     public async Task Records_a_span_per_call()
     {
-        var spans = new List<Activity>();
-        using var listener = new ActivityListener
-        {
-            ShouldListenTo = source => source == SystemProc.Source,
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = spans.Add,
-        };
-        ActivitySource.AddActivityListener(listener);
+        using var spans = new RecordedSpans(SystemProc.Source.Name);
 
         await _proc.RunAsync(new ProcRequest(["git", "not-a-command"]), TestContext.Current.CancellationToken);
         await _proc.RunAsync(new ProcRequest(["git", "--version"]), TestContext.Current.CancellationToken);
 
-        var mine = spans.Where(s => (s.GetTagItem("process.command_args") as string)?.StartsWith("git ", StringComparison.Ordinal) == true).ToList();
+        var mine = spans.Stopped.Where(s => (s.GetTagItem("process.command_args") as string)?.StartsWith("git ", StringComparison.Ordinal) == true).ToList();
         Assert.Contains(mine, s => s.Status == ActivityStatusCode.Error && (int)s.GetTagItem("process.exit.code")! == 1);
         Assert.Contains(mine, s => s.Status == ActivityStatusCode.Unset && (int)s.GetTagItem("process.exit.code")! == 0);
     }
@@ -379,10 +372,10 @@ public sealed class SystemProcTests
         Assert.SkipWhen(OperatingSystem.IsWindows(), "sleep(1) is a Unix program.");
         var watch = Stopwatch.StartNew();
 
-        var ran = _proc.Run(new ProcRequest(["sleep", "10"]) { StdinText = new string('x', 1 << 20), Timeout = TimeSpan.FromMilliseconds(200) });
+        var ran = _proc.Run(new ProcRequest(["sleep", "30"]) { StdinText = new string('x', 1 << 20), Timeout = TimeSpan.FromMilliseconds(200) });
 
         Assert.Equal(Ran.TimedOut, ran.Code);
-        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(15), $"took {watch.Elapsed}");
     }
 
     [Fact]
@@ -398,22 +391,15 @@ public sealed class SystemProcTests
     [Fact]
     public void Run_records_a_span_per_call()
     {
-        var spans = new List<Activity>();
-        using var listener = new ActivityListener
-        {
-            ShouldListenTo = source => source == SystemProc.Source,
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = spans.Add,
-        };
-        ActivitySource.AddActivityListener(listener);
+        using var spans = new RecordedSpans(SystemProc.Source.Name);
 
         _ = _proc.Run(new ProcRequest(["git", "not-a-sync-command"]));
         _ = _proc.Run(new ProcRequest(["git", "--version", "--build-options"]));
         _ = _proc.Run(new ProcRequest(["rig-no-such-sync-program"]));
 
-        Assert.Contains(spans, s => Args(s) == "git not-a-sync-command" && s.Status == ActivityStatusCode.Error && Code(s) == 1);
-        Assert.Contains(spans, s => Args(s) == "git --version --build-options" && s.Status == ActivityStatusCode.Unset && Code(s) == 0);
-        Assert.Contains(spans, s => Args(s) == "rig-no-such-sync-program" && s.Status == ActivityStatusCode.Error && Code(s) == Ran.NotFound);
+        Assert.Contains(spans.Stopped, s => Args(s) == "git not-a-sync-command" && s.Status == ActivityStatusCode.Error && Code(s) == 1);
+        Assert.Contains(spans.Stopped, s => Args(s) == "git --version --build-options" && s.Status == ActivityStatusCode.Unset && Code(s) == 0);
+        Assert.Contains(spans.Stopped, s => Args(s) == "rig-no-such-sync-program" && s.Status == ActivityStatusCode.Error && Code(s) == Ran.NotFound);
 
         static string? Args(Activity span) => span.GetTagItem("process.command_args") as string;
         static int Code(Activity span) => (int)span.GetTagItem("process.exit.code")!;

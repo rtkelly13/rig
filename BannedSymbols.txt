@@ -8,3 +8,16 @@ T:System.Collections.Hashtable;Use generic Dictionary or FrozenDictionary instea
 
 # Mutable list batch modification - prefer functional collection expressions [.. a, .. b], SelectMany, or Concat
 M:System.Collections.Generic.List`1.AddRange(System.Collections.Generic.IEnumerable{`0});Prefer functional collection expressions [.. a, .. b], SelectMany, or Concat instead of mutating List.AddRange.
+
+# Ban raw console writes in favour of Spectre.Console (IAnsiConsole) or structured telemetry
+M:System.Console.WriteLine(System.String);Use Spectre.Console (IAnsiConsole) or structured logging instead of Console.WriteLine.
+M:System.Console.Write(System.String);Use Spectre.Console (IAnsiConsole) instead of Console.Write.
+
+# Ban imperative System.CommandLine instantiation in favour of DotMake declarative POCOs
+M:System.CommandLine.Command.#ctor(System.String,System.String);Use DotMake.CommandLine [CliCommand] declarative classes instead of new Command().
+M:System.CommandLine.Command.#ctor(System.String);Use DotMake.CommandLine [CliCommand] declarative classes instead of new Command().
+M:System.CommandLine.Option`1.#ctor(System.String);Use DotMake.CommandLine [CliOption] properties instead of new Option<T>().
+M:System.CommandLine.Option`1.#ctor(System.String,System.String);Use DotMake.CommandLine [CliOption] properties instead of new Option<T>().
+M:System.CommandLine.Option`1.#ctor(System.String[]);Use DotMake.CommandLine [CliOption] properties instead of new Option<T>().
+M:System.CommandLine.Argument`1.#ctor(System.String);Use DotMake.CommandLine [CliArgument] properties instead of new Argument<T>().
+M:System.CommandLine.Argument`1.#ctor(System.String,System.String);Use DotMake.CommandLine [CliArgument] properties instead of new Argument<T>().
