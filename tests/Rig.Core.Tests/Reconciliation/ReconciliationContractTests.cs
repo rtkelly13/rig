@@ -146,6 +146,31 @@ public sealed class ReconciliationContractTests
         Assert.Throws<ArgumentNullException>(() => ReconciliationRunner.Run<Row>(plan, dryRun: true, null!));
     }
 
+    [Fact]
+    public void Explicit_IPlan_interface_methods_work()
+    {
+        IPlan<Row> planWithDrift = new TestPlan([new Row("item", ChangeKind.WouldChange, "drift")]);
+        IPlan untypedDrift = planWithDrift;
+        Assert.True(untypedDrift.HasDrift);
+        Assert.Equal(1, planWithDrift.ExitCode(applied: false));
+        Assert.Equal(0, planWithDrift.ExitCode(applied: true));
+
+        IPlan<Row> planWithError = new TestPlan([], errors: ["something failed"]);
+        IPlan untypedError = planWithError;
+        Assert.False(untypedError.HasDrift);
+        Assert.Equal(2, planWithError.ExitCode(applied: false));
+        Assert.Equal(2, planWithError.ExitCode(applied: true));
+
+        IPlan<Row> emptyPlan = new TestPlan([]);
+        IPlan untypedEmpty = emptyPlan;
+        Assert.False(untypedEmpty.HasDrift);
+        Assert.Equal(0, emptyPlan.ExitCode(applied: false));
+        Assert.Equal(0, emptyPlan.ExitCode(applied: true));
+
+        Assert.Throws<ArgumentNullException>(() => PlanExtensions.HasDrift<Row>(null!));
+        Assert.Throws<ArgumentNullException>(() => PlanExtensions.ExitCode<Row>(null!, applied: false));
+    }
+
     private sealed record Row(string Subject, ChangeKind Kind, string Detail = "") : IChange;
 
     private sealed class TestPlan(IReadOnlyList<Row> changes, IReadOnlyList<string>? errors = null) : IPlan<Row>

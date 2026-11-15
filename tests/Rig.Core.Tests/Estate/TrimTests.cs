@@ -407,6 +407,10 @@ public sealed class TrimTests : IDisposable
         Assert.Equal("removed", await Trim.RemoveAsync(trimmable, removal, Token));
         Assert.False(Directory.Exists(targetDir));
 
+        var nonExistentItem = new Trimmable(_temp.Path, Path.Join(_temp.Path, "does-not-exist"), "cat", new TreeMeasure(1, 1));
+        var failure = await Trim.RemoveAsync(nonExistentItem, removal, Token);
+        Assert.StartsWith("failed:", failure, StringComparison.Ordinal);
+
         await Assert.ThrowsAsync<ArgumentNullException>(() => Trim.RemoveAsync(null!, removal, Token));
         await Assert.ThrowsAsync<ArgumentNullException>(() => Trim.RemoveAsync(trimmable, null!, Token));
     }
@@ -424,6 +428,35 @@ public sealed class TrimTests : IDisposable
         var candidateDir = Directory.CreateDirectory(Path.Join(worktree, "real-dir")).FullName;
         var mismatch = new Trimmable(worktree, candidateDir, "different-category", new TreeMeasure(1, 1));
         Assert.Equal("no longer regenerable output", await trim.RecheckAsync(mismatch));
+
+        var outsideDir = Directory.CreateDirectory(Path.Join(_temp.Path, "outside-wt", "node_modules")).FullName;
+        var outsideItem = new Trimmable(worktree, outsideDir, "node_modules", new TreeMeasure(1, 1));
+        Assert.Equal("resolves outside the worktree", await trim.RecheckAsync(outsideItem));
+
+        var checkoutDir = Directory.CreateDirectory(Path.Join(worktree, "sub-checkout", "node_modules")).FullName;
+        Directory.CreateDirectory(Path.Join(checkoutDir, ".git"));
+        var checkoutItem = new Trimmable(worktree, checkoutDir, "node_modules", new TreeMeasure(1, 1));
+        Assert.Equal("holds a git checkout", await trim.RecheckAsync(checkoutItem));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_handles_recheck_refusal_and_removal_failure()
+    {
+        var (clone, worktree) = await CloneWithWorktreeAsync();
+        var dir = Path.Join(worktree, "node_modules");
+        Directory.CreateDirectory(dir);
+        await File.WriteAllTextAsync(Path.Join(dir, "temp.js"), "content", Token);
+
+        var trim = Idle();
+        var target = new TrimTarget(clone, IdleDays: 0, Floor: 0, Removal: Removal());
+        var plan = await trim.PlanAsync(target, Token);
+
+        // Delete directory before apply so recheck fails with "no longer exists"
+        Directory.Delete(dir, recursive: true);
+        _ = await trim.ApplyAsync(plan, Token);
+        Assert.Single(plan.Changes);
+        Assert.Equal(ChangeKind.Refused, plan.Changes[0].Kind);
+        Assert.Equal("no longer exists", plan.Changes[0].Detail);
     }
 
     [Fact]
