@@ -16,6 +16,7 @@ using Rig.Cli.Otel;
 using Rig.Cli.Policy;
 using Rig.Cli.Rendering;
 using Rig.Cli.ReviewQueue;
+using Rig.Cli.Runtime;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Traces;
@@ -115,6 +116,9 @@ internal static class Program
         var python = new PythonRig(proc, checkout);
         var github = new GhApi(proc);
         Gh.OriginReader origin = async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false));
+        var runtimeCheckout = Rig.Cli.Runtime.RuntimeCommand.FindCheckout(AppContext.BaseDirectory)
+            ?? Rig.Cli.Runtime.RuntimeCommand.FindCheckout(Environment.CurrentDirectory)
+            ?? checkout;
         var app = new RigApp(
             python,
             github,
@@ -173,6 +177,15 @@ internal static class Program
                         ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)),
                     new QueueGitHub(github), Console.Out, Console.Error).Build,
                 new JobsCommand(JobsHostFor(codeRoot, checkout, home, proc), Console.Out).Build,
+                new RuntimeCommand(
+                    new RuntimeHost(
+                        Path.Join(AppData.Current(), Rig.Core.Jobs.JobsSite.RuntimeFolder),
+                        runtimeCheckout,
+                        home,
+                        OperatingSystem.IsWindows(),
+                        proc,
+                        TimeProvider.System),
+                    Console.Out).Build,
                 new MailCommand(
                     new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),
                     Console.Out,

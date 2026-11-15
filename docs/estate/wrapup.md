@@ -102,7 +102,7 @@ when there is no ask to answer or the state file can't be written; the agent the
 reply line below.
 
 The prompt names rig by the absolute path of the `rig` that sent it, because an agent's shell in
-another repo has neither this repo's virtualenv nor your shell functions. `desktop-manager runtime
+another repo has neither this repo's virtualenv nor your shell functions. `rig runtime
 install` also puts `rig` on `PATH` ([runtime](../desktop-manager/runtime.md#rig-on-path)), so `rig
 estate wrapup report` works anywhere once the runtime is installed.
 

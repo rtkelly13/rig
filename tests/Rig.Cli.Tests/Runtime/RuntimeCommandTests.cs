@@ -1,0 +1,903 @@
+using System.CommandLine;
+using System.Formats.Tar;
+using Rig.Cli.Runtime;
+using Rig.Core.Processes;
+using Rig.Core.Roots;
+using Rig.Core.Runtime;
+using Rig.Core.Tests;
+using Rig.Core.Tests.Fakes;
+
+namespace Rig.Cli.Tests.Runtime;
+
+/// <summary><c>rig runtime status|install|rollback</c> over a scratch runtime folder and a fake process runner.</summary>
+public sealed class RuntimeCommandTests : IDisposable
+{
+    private readonly TempDir _temp = new();
+    private readonly StringWriter _out = new() { NewLine = "\n" };
+    private readonly StringWriter _error = new() { NewLine = "\n" };
+
+    public void Dispose()
+    {
+        _temp.Dispose();
+        _out.Dispose();
+        _error.Dispose();
+    }
+
+    private string Root => Path.Join(_temp.Path, "runtime");
+
+    [Fact]
+    public async Task Status_without_an_install_names_the_command_that_installs_one()
+    {
+        var exit = await Run(new FakeProc(), "status");
+
+        Assert.Equal(1, exit);
+        Assert.Equal($"Nothing installed in {Root}: run `rig runtime install`.\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Status_shows_both_copies_the_link_and_the_distance_to_the_ref()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "aaaaaaaaaaaa"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "bbbbbbbbbbbb"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "aaaaaaaaaaaa", "previous": "bbbbbbbbbbbb", "repo": {{System.Text.Json.JsonSerializer.Serialize(_temp.Path)}}}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "aaaaaaaaaaaa", RuntimeManager.InstalledName),
+            """{"sha": "aaaaaaaaaaaa", "ref": "origin/main", "repo": "r", "installed_at": "2026-11-14T10:00:00+00:00"}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "bbbbbbbbbbbb", RuntimeManager.InstalledName),
+            """{"sha": "bbbbbbbbbbbb", "ref": "origin/main", "repo": "r", "installed_at": "2026-11-13T10:00:00+00:00"}""",
+            TestContext.Current.CancellationToken);
+        var proc = new FakeProc().Answer(new(0, "2", ""), "git");
+
+        var exit = await Run(proc, "status");
+
+        Assert.Equal(0, exit);
+        Assert.Equal(
+            "Current:  aaaaaaaaaaaa  origin/main  2026-11-14T10:00:00+00:00\n"
+            + "Previous: bbbbbbbbbbbb  origin/main  2026-11-13T10:00:00+00:00\n"
+            + $"Path:     {Path.Join(Root, RuntimeManager.LinkName)}\n"
+            + "Behind origin/main: 2 commit(s)\n",
+            _out.ToString());
+        Assert.Equal(["git", "-C", _temp.Path, "rev-list", "--count", "aaaaaaaaaaaa..origin/main"], Assert.Single(proc.Requests).Argv);
+    }
+
+    [Fact]
+    public async Task Rollback_without_a_previous_copy_reports_why()
+    {
+        var exit = await Run(new FakeProc(), "rollback");
+
+        Assert.Equal(1, exit);
+        Assert.Equal("Rollback failed: no previous copy to roll back to\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_without_a_checkout_names_the_option_to_pass()
+    {
+        var exit = await Run(new FakeProc(), "install");
+
+        Assert.Equal(2, exit);
+        Assert.Equal("No repo to install from: pass --repo <rig checkout>.\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_reports_the_step_that_failed()
+    {
+        var repo = _temp.Folder("repo");
+
+        var exit = await Run(new FakeProc(), "install", "--repo", repo, "--ref", "HEAD", "--no-fetch");
+
+        Assert.Equal(1, exit);
+        Assert.StartsWith("Install failed: git -C ", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("rev-parse", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Status_fails_when_state_is_damaged()
+    {
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(Path.Join(Root, RuntimeManager.StateName), "not valid json {", TestContext.Current.CancellationToken);
+
+        var exit = await Run(new FakeProc(), "status");
+
+        Assert.Equal(1, exit);
+        Assert.Contains("Status failed:", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Rollback_succeeds_and_reports_swapped_copies()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Creating symlinks needs developer mode on Windows.");
+        _ = Directory.CreateDirectory(Path.Join(Root, "curr"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "prev"));
+        await File.WriteAllTextAsync(Path.Join(Root, "curr", RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Join(Root, "prev", RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "curr", "previous": "prev", "repo": "/repo"}""",
+            TestContext.Current.CancellationToken);
+        Directory.CreateSymbolicLink(RuntimeManager.CurrentLink(Root), Path.Join(Root, "curr"));
+
+        var exit = await Run(new FakeProc(), "rollback");
+
+        Assert.Equal(0, exit);
+        Assert.Equal("Current: prev (previous: curr)\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_already_current_reports_already_current()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Creating symlinks needs developer mode on Windows.");
+        var sha = "1111222233334444555566667777888899990000";
+        var shortSha = sha[..RuntimeManager.ShortShaLength];
+        var copy = Path.Join(Root, shortSha);
+        _ = Directory.CreateDirectory(copy);
+        await File.WriteAllTextAsync(Path.Join(copy, RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "{{shortSha}}", "previous": null, "repo": "/repo"}""",
+            TestContext.Current.CancellationToken);
+        Directory.CreateSymbolicLink(RuntimeManager.CurrentLink(Root), copy);
+
+        var repo = _temp.Folder("repo");
+        var proc = new FakeProc().Answer(new(0, sha + "\n", ""), "git");
+
+        var exit = await Run(proc, "install", "--repo", repo, "--ref", "HEAD", "--no-fetch");
+
+        Assert.Equal(0, exit);
+        Assert.Contains($"Already current: {shortSha}", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FindCheckout_locates_repo_root_or_returns_null()
+    {
+        var repo = _temp.Folder("sample-rig-repo");
+        var nested = Path.Join(repo, "src", "sub", "deep");
+        _ = Directory.CreateDirectory(nested);
+        File.WriteAllText(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n");
+
+        var found = RuntimeCommand.FindCheckout(nested);
+        Assert.Equal(repo, found);
+
+        var empty = _temp.Folder("not-a-repo");
+        Assert.Null(RuntimeCommand.FindCheckout(empty));
+    }
+
+    [Fact]
+    public async Task Install_discovers_checkout_and_reports_previous_and_removed_copies()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("auto-repo"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        var sha = "abcdef1234567890abcdef1234567890abcdef12";
+        var shortSha = sha[..RuntimeManager.ShortShaLength];
+
+        _ = Directory.CreateDirectory(Path.Join(Root, "prev-copy"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "old-copy"));
+        await File.WriteAllTextAsync(Path.Join(Root, "prev-copy", RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Join(Root, "old-copy", RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "prev-copy", "previous": "old-copy", "repo": "/repo"}""",
+            TestContext.Current.CancellationToken);
+
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, _temp.Folder("home"), false, proc, TimeProvider.System);
+        var root = new RootCommand
+        {
+            new RuntimeCommand(host, _out).Build(),
+        };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.True(exit == 0, $"Exit was {exit}. Output:\n{_out}\nError:\n{_error}");
+        var output = _out.ToString();
+        Assert.Contains($"Current: {shortSha}", output, StringComparison.Ordinal);
+        Assert.Contains("Previous kept for rollback: prev-copy", output, StringComparison.Ordinal);
+        Assert.Contains("Removed old copy: old-copy", output, StringComparison.Ordinal);
+        Assert.Contains("rig on PATH:", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FindCheckout_matches_shared_utilities_name()
+    {
+        var repo = _temp.Folder("shared-utils-repo");
+        File.WriteAllText(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"shared-utilities\"\n");
+        var found = RuntimeCommand.FindCheckout(repo);
+        Assert.Equal(repo, found);
+    }
+
+    [Fact]
+    public async Task Status_shows_current_without_previous_or_behind()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "c111c111c111"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "c111c111c111", "previous": null, "repo": null}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "c111c111c111", RuntimeManager.InstalledName),
+            """{"sha": "c111c111c111", "ref": null, "repo": null, "installed_at": null}""",
+            TestContext.Current.CancellationToken);
+
+        var exit = await Run(new FakeProc(), "status");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current:  c111c111c111  ?  ?", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Previous:", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Behind", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_running_copy_falls_back_to_recorded_repo()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("recorded-repo"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": null, "previous": null, "repo": {{System.Text.Json.JsonSerializer.Serialize(repo)}}}""",
+            TestContext.Current.CancellationToken);
+
+        var sha = "9999999999999999999999999999999999999999";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source-2");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var runningCopyFolder = Path.Join(Root, "running-copy");
+        _ = Directory.CreateDirectory(runningCopyFolder);
+        var host = new RuntimeHost(Root, runningCopyFolder, _temp.Folder("home"), false, proc, TimeProvider.System);
+        var root = new RootCommand
+        {
+            new RuntimeCommand(host, _out).Build(),
+        };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current: 999999999999", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_leaves_foreign_shim_alone()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-for-shim-test"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        var home = _temp.Folder("home-foreign");
+        var shimDir = Path.Join(home, ".local", "bin");
+        _ = Directory.CreateDirectory(shimDir);
+        await File.WriteAllTextAsync(Path.Join(shimDir, "rig"), "#!/bin/sh\necho foreign\n", TestContext.Current.CancellationToken);
+
+        var sha = "8888888888888888888888888888888888888888";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source-3");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, home, false, proc, TimeProvider.System);
+        var root = new RootCommand
+        {
+            new RuntimeCommand(host, _out).Build(),
+        };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Left ", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("alone: rig did not write it", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_reports_unchanged_shim_when_already_written()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-unchanged-shim"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        var home = _temp.Folder("home-unchanged");
+        var shimPath = RigShim.PathFor(home, false);
+        RigShim.Install(shimPath, Root, false);
+
+        var sha = "9999999999999999999999999999999999999999";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source-unchanged");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, home, false, proc, TimeProvider.System);
+        var root = new RootCommand
+        {
+            new RuntimeCommand(host, _out).Build(),
+        };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("rig on PATH: ", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_and_Rollback_handle_runtime_exceptions()
+    {
+        var repo = _temp.Folder("invalid-repo");
+        // Nonexistent repo directory to trigger RuntimeInstallException
+        var host = new RuntimeHost(Root, repo, _temp.Path, false, new FakeProc(), TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--repo", Path.Join(repo, "does-not-exist")]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(1, exit);
+        Assert.Contains("Install failed: ", _out.ToString(), StringComparison.Ordinal);
+
+        _out.GetStringBuilder().Clear();
+        exit = await root.Parse(["runtime", "rollback"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(1, exit);
+        Assert.Contains("Rollback failed: ", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FindCheckout_returns_null_when_no_rig_pyproject_exists()
+    {
+        var empty = _temp.Folder("empty-root");
+        Assert.Null(RuntimeCommand.FindCheckout(empty));
+    }
+
+    [Fact]
+    public async Task Status_handles_null_behind_and_missing_installed_metadata()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "aaaaaaaaaaaa"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "bbbbbbbbbbbb"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "aaaaaaaaaaaa", "previous": "bbbbbbbbbbbb", "repo": {{System.Text.Json.JsonSerializer.Serialize(_temp.Path)}}}""",
+            TestContext.Current.CancellationToken);
+        // Do not write installed.json for a or b
+        var proc = new FakeProc().Answer(new(1, "", "git error"), "git");
+
+        var exit = await Run(proc, "status");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current:  aaaaaaaaaaaa  ?  ?", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Previous: bbbbbbbbbbbb  ?  ?", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Behind", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_resolves_repo_from_state_when_unspecified()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-from-state"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "", "repo": {{System.Text.Json.JsonSerializer.Serialize(repo)}}}""",
+            TestContext.Current.CancellationToken);
+
+        // Outside checkout folder
+        var outside = _temp.Folder("outside-workspace");
+        var host = new RuntimeHost(Root, outside, _temp.Path, false, new FakeProc().Answer(new(1, "", "fail"), "git"), TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(1, exit);
+        Assert.Contains("Install failed: ", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_reports_shim_write_failure_when_unauthorized()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-shim-fail"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        // Point home to a path that cannot be written or has a directory where file should be
+        var home = _temp.Folder("home-fail");
+        var shimPath = RigShim.PathFor(home, false);
+        Directory.CreateDirectory(shimPath); // Directory exists at the shim file path, File.WriteAllText fails
+
+        var sha = "7777777777777777777777777777777777777777";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source-fail");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, home, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("rig on PATH: could not write ", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FindCheckout_matches_shared_utilities()
+    {
+        var dir = _temp.Folder("shared-util-repo");
+        File.WriteAllText(Path.Join(dir, "pyproject.toml"), "[project]\nname = \"shared-utilities\"\n");
+        var subDir = Path.Join(dir, "sub", "child");
+        Directory.CreateDirectory(subDir);
+
+        Assert.Equal(dir, RuntimeCommand.FindCheckout(subDir));
+    }
+
+    [Fact]
+    public async Task Rollback_succeeds_and_swaps_current_and_previous()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "current123456"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "previous12345"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "current123456", RuntimeManager.InstalledName),
+            "{\"sha\":\"current123456\"}",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "previous12345", RuntimeManager.InstalledName),
+            "{\"sha\":\"previous12345\"}",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            "{\"current\":\"current123456\",\"previous\":\"previous12345\",\"repo\":\"/repo\"}",
+            TestContext.Current.CancellationToken);
+
+        var exit = await Run(new FakeProc(), "rollback");
+
+        Assert.Equal(0, exit);
+        Assert.Equal("Current: previous12345 (previous: current123456)\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_twice_reports_already_current()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-twice"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        var sha = "1111111111111111111111111111111111111111";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-twice");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }.Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit1 = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit1);
+
+        _out.GetStringBuilder().Clear();
+        var exit2 = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit2);
+        Assert.StartsWith("Already current: 111111111111 (HEAD)", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_reports_previous_kept_and_removed_copies()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-prev-removed"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+        // Pre-create an old untracked folder to be pruned
+        var oldFolder = Path.Join(Root, "stale12345678");
+        Directory.CreateDirectory(oldFolder);
+        await File.WriteAllTextAsync(Path.Join(oldFolder, RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+
+        var sha1 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        var sha2 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        var currentSha = sha1;
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-prev");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        };
+        proc.Answer(new Ran(0, sha1 + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        // Install commit 1
+        var exit1 = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit1);
+        Assert.Contains("Removed old copy: stale12345678", _out.ToString(), StringComparison.Ordinal);
+
+        // Install commit 2
+        proc.Answer(new Ran(0, sha2 + "\n", ""), "git", "-C", repo, "rev-parse");
+        _out.GetStringBuilder().Clear();
+        var exit2 = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit2);
+        Assert.Contains("Previous kept for rollback: aaaaaaaaaaaa", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ReportShim_handles_foreign_outcome()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-shim-foreign"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+
+        var sha = "9999999999999999999999999999999999999999";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-foreign");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }.Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var home = _temp.Folder("home-foreign");
+        var shimPath = RigShim.PathFor(home, false);
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(shimPath)!);
+        await File.WriteAllTextAsync(shimPath, "#!/bin/sh\necho foreign\n", TestContext.Current.CancellationToken);
+
+        var host = new RuntimeHost(Root, repo, home, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit);
+        Assert.Contains("Left", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("alone: rig did not write it", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Rollback_handles_failure_reporting()
+    {
+        var proc = new FakeProc();
+        var host = new RuntimeHost(Root, _temp.Path, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "rollback"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(1, exit);
+        Assert.Contains("Rollback failed:", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Rollback_reports_current_and_previous_on_success()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "aaaaaaaaaaaa"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "bbbbbbbbbbbb"));
+        Directory.CreateSymbolicLink(RuntimeManager.CurrentLink(Root), Path.Join(Root, "aaaaaaaaaaaa"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "bbbbbbbbbbbb", RuntimeManager.InstalledName),
+            "{}",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "aaaaaaaaaaaa", "previous": "bbbbbbbbbbbb", "repo": "r"}""",
+            TestContext.Current.CancellationToken);
+
+        var proc = new FakeProc();
+        var host = new RuntimeHost(Root, _temp.Path, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "rollback"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current: bbbbbbbbbbbb (previous: aaaaaaaaaaaa)", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FindCheckout_detects_rig_and_shared_utilities_projects()
+    {
+        var outside = _temp.Folder("outside");
+        Assert.Null(RuntimeCommand.FindCheckout(outside));
+
+        var otherProject = _temp.Folder("other-project");
+        File.WriteAllText(Path.Join(otherProject, "pyproject.toml"), "[project]\nname = \"other\"\n");
+        Assert.Null(RuntimeCommand.FindCheckout(otherProject));
+
+        var sharedUtil = _temp.Folder("shared-util");
+        File.WriteAllText(Path.Join(sharedUtil, "pyproject.toml"), "[project]\nname = \"shared-utilities\"\n");
+        var subDir = Directory.CreateDirectory(Path.Join(sharedUtil, "sub", "dir")).FullName;
+        Assert.Equal(sharedUtil, RuntimeCommand.FindCheckout(subDir));
+    }
+
+    [Fact]
+    public async Task Install_running_from_runtime_copy_uses_state_repo()
+    {
+        var copy = PathResolution.Resolve(_temp.Folder("runtime/abc123456789"));
+        var repo = PathResolution.Resolve(_temp.Folder("real-repo"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "abc123456789", "repo": {{System.Text.Json.JsonSerializer.Serialize(repo)}}}""",
+            TestContext.Current.CancellationToken);
+
+        var sha = "1111222233334444555566667777888899990000";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-running");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }.Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, copy, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current: 111122223333", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_reports_already_current_when_sha_matches()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-current"));
+        var sha = "aaaaaaaaaaaabbbbbbbbbbbbccccccccccccdddd";
+        var shortSha = sha[..RuntimeManager.ShortShaLength];
+        _ = Directory.CreateDirectory(Path.Join(Root, shortSha));
+        Directory.CreateSymbolicLink(RuntimeManager.CurrentLink(Root), Path.Join(Root, shortSha));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "{{shortSha}}", "repo": {{System.Text.Json.JsonSerializer.Serialize(repo)}}}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, shortSha, RuntimeManager.InstalledName),
+            $$"""{"sha": "{{sha}}", "ref": "origin/main"}""",
+            TestContext.Current.CancellationToken);
+
+        var proc = new FakeProc().Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+        var host = new RuntimeHost(Root, repo, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Already current:", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Status_renders_question_marks_when_installed_info_fields_are_missing()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "c1"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "p1"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "c1", "previous": "p1"}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "c1", RuntimeManager.InstalledName),
+            "{}",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "p1", RuntimeManager.InstalledName),
+            "{}",
+            TestContext.Current.CancellationToken);
+
+        var proc = new FakeProc();
+        var exit = await Run(proc, "status");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current:  c1  ?  ?", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Previous: p1  ?  ?", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_running_from_copy_with_no_state_repo_fails_with_exit_code_2()
+    {
+        var copy = _temp.Folder("runtime/dummy");
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "dummy"}""",
+            TestContext.Current.CancellationToken);
+
+        var host = new RuntimeHost(Root, copy, _temp.Path, false, new FakeProc(), TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, exit);
+        Assert.Contains("No repo to install from", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FindCheckout_returns_null_when_no_pyproject_matches()
+    {
+        var isolated = _temp.Folder("empty-sub/deep");
+        Assert.Null(RuntimeCommand.FindCheckout(isolated));
+    }
+
+    [Fact]
+    public async Task Rollback_handles_exception_and_returns_exit_code_1()
+    {
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(Path.Join(Root, RuntimeManager.StateName), "corrupt-json", TestContext.Current.CancellationToken);
+
+        var exit = await Run(new FakeProc(), "rollback");
+        Assert.Equal(1, exit);
+        Assert.Contains("Rollback failed:", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReportShim_branches_exercise_all_outcomes()
+    {
+        var bin = Path.Join(_temp.Path, ".local", "bin");
+        _ = Directory.CreateDirectory(bin);
+        var shimPath = Path.Join(bin, "rig");
+
+        // 1. Unchanged: install first time, then second time
+        _ = RigShim.Install(shimPath, Root, false);
+        var host = new RuntimeHost(Root, _temp.Path, _temp.Path, false, new FakeProc(), TimeProvider.System);
+        var cmd = new RuntimeCommand(host, _out);
+        cmd.ReportShim();
+        Assert.Contains("rig on PATH: ", _out.ToString(), StringComparison.Ordinal);
+
+        // 2. LeftAlone: foreign content
+        File.WriteAllText(shimPath, "custom alien script");
+        _out.GetStringBuilder().Clear();
+        cmd.ReportShim();
+        Assert.Contains("Left ", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    private async Task<int> Run(FakeProc proc, params string[] args)
+    {
+        var root = new RootCommand
+        {
+            new RuntimeCommand(new RuntimeHost(Root, _temp.Path, _temp.Path, false, proc, TimeProvider.System), _out).Build(),
+        };
+        return await root.Parse(["runtime", .. args]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+    }
+}

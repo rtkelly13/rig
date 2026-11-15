@@ -191,7 +191,7 @@ internal sealed class ChromeTabsCommand(
         var install = new Command(
             "install",
             "Put a `chrome-tabs` command on PATH that runs the installed runtime copy. [Windows only]\n\n"
-            + "Install the copy with `desktop-manager runtime install`; scheduled organise runs come from `jobs install`.");
+            + "Install the copy with `rig runtime install`; scheduled organise runs come from `jobs install`.");
         install.SetAction(_ => WriteShim());
         return install;
     }
@@ -375,7 +375,7 @@ internal sealed class ChromeTabsCommand(
         Say($"Command: {shim} -> {target}");
         if (!File.Exists(target))
         {
-            Say("No runtime copy yet: run `desktop-manager runtime install`.");
+            Say("No runtime copy yet: run `rig runtime install`.");
         }
 
         return 0;

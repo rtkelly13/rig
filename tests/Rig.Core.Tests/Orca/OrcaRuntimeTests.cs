@@ -257,6 +257,41 @@ public sealed class OrcaRuntimeTests : IDisposable
     private static string Answer(string result) => $$"""{"id": "r1", "ok": true, "result": {{result}}}""";
 
     /// <summary>Answers every request with the same lines, or fails with <see cref="Failure"/>.</summary>
+    [Fact]
+    public void OrcaUnavailableException_constructors()
+    {
+        var ex1 = new OrcaUnavailableException();
+        Assert.Null(ex1.InnerException);
+        var inner = new InvalidOperationException("inner");
+        var ex2 = new OrcaUnavailableException("err", inner);
+        Assert.Equal("err", ex2.Message);
+        Assert.Same(inner, ex2.InnerException);
+    }
+
+    [Fact]
+    public async Task CallAsync_throws_when_runtime_closed_connection()
+    {
+        var runtime = OrcaRuntime.Parse(Metadata, new ScriptedExchange())!;
+        var ex = await Assert.ThrowsAsync<OrcaUnavailableException>(() => runtime.AgentDefaultArgsAsync(Token));
+        Assert.Contains("closed the connection", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AgentDefaultArgsAsync_throws_when_response_is_malformed()
+    {
+        var runtime = Runtime(new ScriptedExchange(Answer("""{"settings": {"agentDefaultArgs": {"a": 123}}}""")));
+        var ex = await Assert.ThrowsAsync<OrcaUnavailableException>(() => runtime.AgentDefaultArgsAsync(Token));
+        Assert.Contains("answered settings.get in a shape", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SetAgentDefaultArgsAsync_and_UpdateRepoAsync_validate_null_arguments()
+    {
+        var runtime = OrcaRuntime.Parse(Metadata, new ScriptedExchange())!;
+        await Assert.ThrowsAsync<ArgumentNullException>(() => runtime.SetAgentDefaultArgsAsync(null!, Token));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => runtime.UpdateRepoAsync("path", null!, Token));
+    }
+
     private sealed class ScriptedExchange(params string[] lines) : IOrcaExchange
     {
         private int _calls;

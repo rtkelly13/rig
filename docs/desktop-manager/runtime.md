@@ -5,11 +5,14 @@ switching branches, a half-finished edit or a merge from another machine changes
 nothing until you install a new copy.
 
 ```bash
-uv run desktop-manager runtime install            # fetch, build origin/main, check it, switch to it
-uv run desktop-manager runtime install --ref HEAD --no-fetch   # this checkout's commit instead
-uv run desktop-manager runtime status             # current, previous, commits behind origin/main
-uv run desktop-manager runtime rollback           # back to the previous copy
+uv run rig runtime install            # fetch, build origin/main, check it, switch to it
+uv run rig runtime install --ref HEAD --no-fetch   # this checkout's commit instead
+uv run rig runtime status             # current, previous, commits behind origin/main
+uv run rig runtime rollback           # back to the previous copy
 ```
+
+`desktop-manager runtime install|status|rollback` remains as a compatibility spelling that forwards
+the whole line to `rig runtime`.
 
 ## Layout
 
