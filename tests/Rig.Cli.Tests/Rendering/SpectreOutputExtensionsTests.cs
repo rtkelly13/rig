@@ -181,6 +181,41 @@ public sealed class SpectreOutputExtensionsTests
     }
 
     [Fact]
+    public void Verdict_renders_without_detail()
+    {
+        using var writer = new StringWriter();
+        RigConsole.Create(writer).RenderVerdict("Clean", ok: true);
+        var text = writer.ToString();
+        Assert.Contains("PASS  Clean", text, StringComparison.Ordinal);
+        Assert.DoesNotContain('\u001b', text);
+    }
+
+    [Fact]
+    public void RenderVerdict_validates_console()
+    {
+        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderVerdict(null!, "Clean", true));
+    }
+
+    [Fact]
+    public void RenderProperties_validates_arguments()
+    {
+        using var writer = new StringWriter();
+        var console = RigConsole.Create(writer);
+        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderProperties(null!, "Title", new Dictionary<string, string>()));
+        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderProperties(console, "Title", null!));
+    }
+
+    [Fact]
+    public void Plan_with_errors_collection_renders_error_verdict()
+    {
+        using var writer = new StringWriter();
+        var console = RigConsole.Create(writer);
+        var plan = new FakePlan([new FakeChange("a", "b", ChangeKind.Aligned)], ["Explicit plan error"]);
+        console.RenderPlan(plan);
+        Assert.Contains("Errors in plan.", writer.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void RenderPlan_throws_on_null_arguments()
     {
         using var writer = new StringWriter();
@@ -193,8 +228,8 @@ public sealed class SpectreOutputExtensionsTests
 
     private sealed record FakeChange(string Subject, string Detail, ChangeKind Kind) : IChange;
 
-    private sealed record FakePlan(IReadOnlyList<FakeChange> Changes) : IPlan<FakeChange>
+    private sealed record FakePlan(IReadOnlyList<FakeChange> Changes, IReadOnlyList<string>? ErrorsList = null) : IPlan<FakeChange>
     {
-        public IReadOnlyList<string> Errors => [.. Changes.Where(c => c.Kind == ChangeKind.Error).Select(c => $"{c.Subject}: {c.Detail}")];
+        public IReadOnlyList<string> Errors => ErrorsList ?? [.. Changes.Where(c => c.Kind == ChangeKind.Error).Select(c => $"{c.Subject}: {c.Detail}")];
     }
 }

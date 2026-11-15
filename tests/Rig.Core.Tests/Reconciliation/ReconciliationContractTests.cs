@@ -82,6 +82,67 @@ public sealed class ReconciliationContractTests
         Assert.Equal("/clone/.worktrees/one", new ShelveResult(plan, "shelved").Subject);
     }
 
+    [Fact]
+    public void PlanExtensions_validates_null_plan()
+    {
+        Assert.Throws<ArgumentNullException>(() => PlanExtensions.HasDrift<Row>(null!));
+        Assert.Throws<ArgumentNullException>(() => PlanExtensions.ExitCode<Row>(null!, false));
+    }
+
+    [Fact]
+    public void ShelveResult_and_TidyAction_fallback_and_details()
+    {
+        var plan = new ShelvePlan { Clone = "/c", Path = "/c/p", Name = "n", Ref = "r", Branch = "b", Head = "h", Action = Shelver.Remove };
+        var result = new ShelveResult(plan, "other-outcome");
+        Assert.Equal(ChangeKind.Error, result.Kind);
+        Assert.Equal("other-outcome", result.Detail);
+
+        var tidy = new TidyAction("temp", "target", (TidyOutcome)99);
+        Assert.Equal(ChangeKind.Error, tidy.Kind);
+        Assert.Equal("temp", tidy.Subject);
+        Assert.Equal("target", tidy.Detail);
+    }
+
+    [Fact]
+    public void ReconciliationOptions_properties_and_factory()
+    {
+        var opts = ReconciliationOptions.For(apply: true, json: true);
+        Assert.True(opts.Apply);
+        Assert.True(opts.Json);
+        Assert.False(opts.DryRun);
+
+        var dry = ReconciliationOptions.FromFlags(dryRun: true, apply: false, json: false);
+        Assert.False(dry.Apply);
+        Assert.True(dry.DryRun);
+
+        Assert.Throws<ArgumentException>(() => ReconciliationOptions.FromFlags(dryRun: true, apply: true, json: false));
+    }
+
+    [Fact]
+    public void ReconciliationRun_and_Report_properties()
+    {
+        var plan = new TestPlan([new Row("a", ChangeKind.WouldChange)]);
+        var run = new ReconciliationRun<TestPlan, Row>(plan, ["err"], Applied: false, ExitCode: 2);
+        Assert.False(run.Succeeded);
+        Assert.True(run.HasErrors);
+
+        var cleanRun = new ReconciliationRun<TestPlan, Row>(plan, [], Applied: true, ExitCode: 0);
+        Assert.True(cleanRun.Succeeded);
+        Assert.False(cleanRun.HasErrors);
+
+        var report = new ReconciliationReport([new Row("a", ChangeKind.WouldChange)], Applied: 0, DryRun: true);
+        Assert.Equal(1, report.Drift);
+        Assert.True(report.MutatedNothing);
+    }
+
+    [Fact]
+    public void ReconciliationRunner_validates_null_arguments()
+    {
+        var plan = new TestPlan([]);
+        Assert.Throws<ArgumentNullException>(() => ReconciliationRunner.Run<Row>(null!, dryRun: true, _ => { }));
+        Assert.Throws<ArgumentNullException>(() => ReconciliationRunner.Run<Row>(plan, dryRun: true, null!));
+    }
+
     private sealed record Row(string Subject, ChangeKind Kind, string Detail = "") : IChange;
 
     private sealed class TestPlan(IReadOnlyList<Row> changes, IReadOnlyList<string>? errors = null) : IPlan<Row>
