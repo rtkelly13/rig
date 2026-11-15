@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Policy;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 
 namespace Rig.Core.Estate;
@@ -40,7 +41,7 @@ public sealed record ShelveOptions(TimeSpan Idle, bool IncludeIgnored = false, b
 }
 
 /// <summary>What shelving one worktree would do, and why — or why it needs a person.</summary>
-public sealed class ShelvePlan
+public sealed class ShelvePlan : IPlan<ShelveResult>
 {
     /// <summary>The clone the worktree belongs to.</summary>
     public required string Clone { get; init; }
@@ -99,6 +100,21 @@ public sealed class ShelvePlan
     /// <summary>The live upstream <c>--to-upstream</c> pushes to.</summary>
     public string Upstream { get; set; } = string.Empty;
 
+    /// <summary>What applying the plan reported, once it has been applied.</summary>
+    public ShelveResult? Result { get; set; }
+
+    /// <summary>The result when applied, otherwise the plan as one typed row.</summary>
+    public IReadOnlyList<ShelveResult> Changes => [Result ?? Planned];
+
+    /// <summary>Why a person must decide, or why applying failed.</summary>
+    public IReadOnlyList<string> Errors =>
+        Result is { Kind: ChangeKind.Error } ? [Result.Detail] : [.. DecisionNeeded];
+
+    private ShelveResult Planned => new(
+        this,
+        DecisionNeeded.Count > 0 ? "needs-decision" : Action,
+        DecisionNeeded.Count > 0 ? string.Join("; ", DecisionNeeded) : string.Join("; ", Reasons));
+
     /// <summary>The plan as <c>estate shelve --json</c> prints it, in the Python field order.</summary>
     public JsonObject ToJson() => new()
     {
@@ -131,8 +147,20 @@ public sealed class ShelvePlan
 /// <param name="Outcome"><c>shelved</c>, <c>removed</c>, <c>failed</c> or <c>needs-decision</c>.</param>
 /// <param name="Detail">What happened.</param>
 /// <param name="Sha">The shelf commit, once there is one.</param>
-public sealed record ShelveResult(ShelvePlan Plan, string Outcome, string Detail = "", string Sha = "")
+public sealed record ShelveResult(ShelvePlan Plan, string Outcome, string Detail = "", string Sha = "") : IChange
 {
+    /// <summary>The worktree, as the reconciliation row's subject.</summary>
+    public string Subject => Plan.Path;
+
+    /// <summary>The standard reconciliation kind for <see cref="Outcome"/>.</summary>
+    public ChangeKind Kind => Outcome switch
+    {
+        "shelved" or "removed" => ChangeKind.Changed,
+        "needs-decision" => ChangeKind.Refused,
+        "failed" => ChangeKind.Error,
+        _ => ChangeKind.WouldChange,
+    };
+
     /// <summary>The plan's JSON with the outcome after it.</summary>
     public JsonObject ToJson()
     {
@@ -143,6 +171,23 @@ public sealed record ShelveResult(ShelvePlan Plan, string Outcome, string Detail
         return data;
     }
 }
+
+/// <summary>What <see cref="Shelver"/> reconciles: one worktree and the policy that decides it.</summary>
+/// <param name="Repo">The clone the worktree belongs to.</param>
+/// <param name="Tree">The worktree, as <c>git worktree list</c> reported it.</param>
+/// <param name="User">The shelf namespace.</param>
+/// <param name="Shelves">The shelves already on origin, <c>{ref: sha}</c>.</param>
+/// <param name="Prs">Each branch's PR.</param>
+/// <param name="Options">The flags.</param>
+/// <param name="Busy">The run's process snapshot; null skips the in-use check.</param>
+public sealed record ShelveTarget(
+    string Repo,
+    Worktree Tree,
+    string User,
+    IReadOnlyDictionary<string, string> Shelves,
+    IReadOnlyDictionary<string, PullRequest> Prs,
+    ShelveOptions Options,
+    Busy? Busy = null);
 
 /// <summary>
 /// Resolves a worktree <c>tidy</c> refuses: pushes what only exists there to a <c>TEMP-SHELVED:</c> marker commit on a
@@ -157,6 +202,7 @@ public sealed record ShelveResult(ShelvePlan Plan, string Outcome, string Detail
 /// <param name="clock">Stamps the marker and the ledger.</param>
 /// <param name="ledger">The JSONL file each removal is appended to; null keeps none.</param>
 public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider clock, string? ledger)
+    : IReconciler<ShelveTarget, ShelvePlan, ShelveResult>
 {
     /// <summary>Remove only: nothing here is missing from a remote.</summary>
     public const string Remove = "remove";
@@ -455,6 +501,16 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         }
 
         return newest is { } at ? new DateTimeOffset(at, TimeSpan.Zero) : null;
+    }
+
+    /// <summary>Decides one worktree from a typed target. Reads only; never writes.</summary>
+    /// <param name="target">The worktree and the policy that decides it.</param>
+    /// <param name="ct">Stops before reading.</param>
+    public Task<ShelvePlan> PlanAsync(ShelveTarget target, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ct.ThrowIfCancellationRequested();
+        return PlanAsync(target.Repo, target.Tree, target.User, target.Shelves, target.Prs, target.Options, target.Busy);
     }
 
     /// <summary>Decides how one worktree would be resolved. Reads only; never writes.</summary>
@@ -910,6 +966,22 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     public async Task<ShelveResult> ApplyAsync(ShelvePlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
+        var result = await ApplyCoreAsync(plan).ConfigureAwait(false);
+        plan.Result = result;
+        return result;
+    }
+
+    async Task<IReadOnlyList<string>> IReconciler<ShelveTarget, ShelvePlan, ShelveResult>.ApplyAsync(
+        ShelvePlan plan,
+        CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        var result = await ApplyAsync(plan).ConfigureAwait(false);
+        return result.Kind == ChangeKind.Error ? [result.Detail] : [];
+    }
+
+    private async Task<ShelveResult> ApplyCoreAsync(ShelvePlan plan)
+    {
         if (plan.DecisionNeeded.Count > 0)
         {
             return new ShelveResult(plan, "needs-decision", string.Join("; ", plan.DecisionNeeded));

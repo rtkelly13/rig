@@ -1,37 +1,39 @@
 namespace Rig.Core.Reconciliation;
 
-/// <summary>
-/// The kind of atomic change planned during reconciliation.
-/// </summary>
+/// <summary>What happened to one subject during reconciliation.</summary>
 public enum ChangeKind
 {
-    /// <summary>Resource is already in desired state; no mutation needed.</summary>
-    NoOp = 0,
+    /// <summary>Observed state already matches desired state; nothing to do.</summary>
+    Aligned,
 
-    /// <summary>Resource does not exist and must be created.</summary>
-    Create = 1,
+    /// <summary>Observed state differs and the plan would change it; nothing has been touched.</summary>
+    WouldChange,
 
-    /// <summary>Resource exists but has drifted from desired state and must be updated.</summary>
-    Update = 2,
+    /// <summary>Observed state differed and the change was applied.</summary>
+    Changed,
 
-    /// <summary>Resource exists unexpectedly and must be removed.</summary>
-    Delete = 3,
+    /// <summary>The plan deliberately left the subject alone, because changing it was not provably safe.</summary>
+    Refused,
 
-    /// <summary>The plan would change the resource, but a guard refused it; shown for a human, never applied.</summary>
-    Refusal = 4,
+    /// <summary>The change was attempted and failed, or state could not be read.</summary>
+    Error,
 }
 
 /// <summary>
-/// A planned atomic mutation or check against an external state resource.
+/// One typed row in a reconciliation plan: what the reconciler looked at, what it decided, and why.
 /// </summary>
+/// <remarks>
+/// Rows are data, not rendered text. Callers branch on <see cref="Kind"/> and <see cref="Subject"/>; reports render
+/// them without parsing them back.
+/// </remarks>
 public interface IChange
 {
-    /// <summary>Target resource identifier, name, or path.</summary>
-    string Target { get; }
+    /// <summary>The resource, path, branch or other subject the change is about.</summary>
+    string Subject { get; }
 
-    /// <summary>Human-readable explanation of what will change and why.</summary>
-    string Description { get; }
-
-    /// <summary>The mutation kind (NoOp, Create, Update, Delete).</summary>
+    /// <summary>What reconciliation decided for <see cref="Subject"/>.</summary>
     ChangeKind Kind { get; }
+
+    /// <summary>The command, reason or failure that explains the kind.</summary>
+    string Detail { get; }
 }

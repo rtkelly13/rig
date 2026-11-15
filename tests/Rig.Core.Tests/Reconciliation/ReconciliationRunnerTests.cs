@@ -1,0 +1,127 @@
+using System.Text.Json.Nodes;
+using Rig.Core.Reconciliation;
+
+namespace Rig.Core.Tests.Reconciliation;
+
+/// <summary>The runner's two guarantees: dry runs never apply, and exit codes are deterministic.</summary>
+public sealed class ReconciliationRunnerTests
+{
+    [Fact]
+    public async Task A_dry_run_plans_and_renders_but_never_calls_apply()
+    {
+        var reconciler = new FakeReconciler(
+            new TestPlan([new Row("/temp/old", ChangeKind.WouldChange, "rm -rf /temp/old")]));
+        using var output = Writer();
+
+        var run = await ReconciliationRunner.RunAsync(reconciler, "target", apply: false, json: false, output, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, reconciler.Plans);
+        Assert.Equal(0, reconciler.Applies);
+        Assert.Equal(1, run.ExitCode);
+        Assert.Equal(
+            "Reconciliation (dry run)\nwould-change  /temp/old — rm -rf /temp/old\n",
+            output.ToString());
+    }
+
+    [Fact]
+    public async Task Applying_calls_apply_once_and_returns_a_clean_exit_code()
+    {
+        var reconciler = new FakeReconciler(
+            new TestPlan([new Row("/temp/old", ChangeKind.WouldChange, "rm -rf /temp/old")]));
+        using var output = Writer();
+
+        var run = await ReconciliationRunner.RunAsync(reconciler, "target", apply: true, json: false, output, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, reconciler.Plans);
+        Assert.Equal(1, reconciler.Applies);
+        Assert.True(run.Applied);
+        Assert.Equal(0, run.ExitCode);
+        Assert.StartsWith("Reconciliation (applied)\n", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Apply_errors_force_exit_two_and_are_rendered()
+    {
+        var reconciler = new FakeReconciler(
+            new TestPlan([new Row("/temp/old", ChangeKind.WouldChange, "rm -rf /temp/old")]),
+            applyErrors: ["/temp/old: permission denied"]);
+        using var output = Writer();
+
+        var run = await ReconciliationRunner.RunAsync(reconciler, "target", apply: true, json: false, output, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.True(run.HasErrors);
+        Assert.Contains("error  /temp/old: permission denied\n", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_clean_plan_renders_no_changes_and_exits_zero()
+    {
+        var reconciler = new FakeReconciler(new TestPlan([]));
+        using var output = Writer();
+
+        var run = await ReconciliationRunner.RunAsync(reconciler, "target", apply: false, json: false, output, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, run.ExitCode);
+        Assert.Equal("Reconciliation (dry run)\nNo changes.\n", output.ToString());
+    }
+
+    [Fact]
+    public async Task Json_reports_the_typed_plan_without_rendering_text()
+    {
+        var reconciler = new FakeReconciler(
+            new TestPlan([
+                new Row("/temp/old", ChangeKind.WouldChange, "rm -rf /temp/old"),
+                new Row("/temp/keep", ChangeKind.Refused, "in use"),
+            ]));
+        using var output = Writer();
+
+        var run = await ReconciliationRunner.RunAsync(reconciler, "target", apply: false, json: true, output, TestContext.Current.CancellationToken);
+        var payload = JsonNode.Parse(output.ToString())!;
+
+        Assert.Equal(1, run.ExitCode);
+        Assert.False(payload["applied"]!.GetValue<bool>());
+        Assert.Equal(1, payload["exitCode"]!.GetValue<int>());
+        Assert.Equal(["would-change", "refused"], payload["changes"]!.AsArray().Select(change => change!["kind"]!.GetValue<string>()));
+        Assert.Equal("/temp/old", payload["changes"]![0]!["subject"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Dry_run_and_apply_are_opposites()
+    {
+        _ = Assert.Throws<ArgumentException>(() => ReconciliationOptions.FromFlags(dryRun: true, apply: true, json: false));
+        Assert.True(ReconciliationOptions.FromFlags(dryRun: true, apply: false, json: false).DryRun);
+        Assert.False(ReconciliationOptions.For(apply: true).DryRun);
+    }
+
+    private static StringWriter Writer() => new() { NewLine = "\n" };
+
+    private sealed record Row(string Subject, ChangeKind Kind, string Detail = "") : IChange;
+
+    private sealed class TestPlan(IReadOnlyList<Row> changes) : IPlan<Row>
+    {
+        public IReadOnlyList<Row> Changes { get; } = changes;
+
+        public IReadOnlyList<string> Errors => [];
+    }
+
+    private sealed class FakeReconciler(TestPlan plan, IReadOnlyList<string>? applyErrors = null)
+        : IReconciler<string, TestPlan, Row>
+    {
+        public int Plans { get; private set; }
+
+        public int Applies { get; private set; }
+
+        public Task<TestPlan> PlanAsync(string target, CancellationToken ct)
+        {
+            Plans++;
+            return Task.FromResult(plan);
+        }
+
+        public Task<IReadOnlyList<string>> ApplyAsync(TestPlan plan, CancellationToken ct)
+        {
+            Applies++;
+            return Task.FromResult(applyErrors ?? []);
+        }
+    }
+}

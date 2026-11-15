@@ -1,48 +1,38 @@
 namespace Rig.Core.Reconciliation;
 
-/// <summary>
-/// Root contract for all reconciliation plans in Rig.
-/// </summary>
+/// <summary>Root marker for every reconciliation plan, whatever change type it carries.</summary>
 public interface IPlan
 {
-    /// <summary>True when there is zero drift between desired and observed state.</summary>
-    bool IsClean { get; }
-
-    /// <summary>Count of mutating changes in the plan.</summary>
-    int DriftCount { get; }
+    /// <summary>True when at least one row would change or did change observed state.</summary>
+    bool HasDrift { get; }
 }
 
 /// <summary>
-/// A typed reconciliation plan containing planned atomic changes.
+/// The result of comparing desired state with observed state: typed changes plus any errors raised while planning.
 /// </summary>
-/// <typeparam name="TChange">The specific change type implementing <see cref="IChange"/>.</typeparam>
+/// <remarks>
+/// A plan is pure data. Applying it goes through the same reconciler that produced it, so a dry run can never write
+/// anything by constructing a plan.
+/// </remarks>
+/// <typeparam name="TChange">The reconciler's change row type.</typeparam>
 public interface IPlan<out TChange> : IPlan
     where TChange : IChange
 {
-    /// <summary>All planned changes in evaluation order.</summary>
+    /// <summary>Every typed change in evaluation order.</summary>
     IReadOnlyList<TChange> Changes { get; }
 
-    /// <summary>True when there is zero drift between desired and observed state.</summary>
-    new bool IsClean => Changes.All(c => c.Kind == ChangeKind.NoOp);
+    /// <summary>Errors raised while reading observed state or building the plan.</summary>
+    IReadOnlyList<string> Errors { get; }
 
-    /// <summary>Count of mutating changes in the plan.</summary>
-    new int DriftCount => Changes.Count(c => c.Kind != ChangeKind.NoOp);
+    /// <summary>True when at least one row would change or did change observed state.</summary>
+    bool IPlan.HasDrift => Changes.Any(change => change.Kind is ChangeKind.WouldChange or ChangeKind.Changed);
 
-    bool IPlan.IsClean => IsClean;
+    /// <summary>True when at least one row would change or did change observed state.</summary>
+    new bool HasDrift => Changes.Any(change => change.Kind is ChangeKind.WouldChange or ChangeKind.Changed);
 
-    int IPlan.DriftCount => DriftCount;
-}
-
-/// <summary>
-/// Reconciler producing a typed plan by comparing desired state with observed state.
-/// Pure and free of side effects.
-/// </summary>
-/// <typeparam name="TDesired">Desired state model.</typeparam>
-/// <typeparam name="TObserved">Observed state model.</typeparam>
-/// <typeparam name="TChange">Change item type.</typeparam>
-public interface IReconciler<in TDesired, in TObserved, out TChange>
-    where TChange : IChange
-{
-    /// <summary>Compare desired state with observed state and produce a plan.</summary>
-    IPlan<TChange> Plan(TDesired desired, TObserved observed);
+    /// <summary>
+    /// The process exit code the run should use: 2 on error, 1 on drift that was not applied, 0 otherwise.
+    /// </summary>
+    /// <param name="applied">Whether the plan was applied, rather than reported by a dry run.</param>
+    int ExitCode(bool applied) => Errors.Count > 0 ? 2 : (HasDrift && !applied ? 1 : 0);
 }

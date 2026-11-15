@@ -61,28 +61,27 @@ public sealed class SpectreOutputExtensionsTests
     }
 
     [Fact]
-    public void Plan_renders_change_badges_targets_and_descriptions_without_markup_mangling()
+    public void Plan_renders_change_badges_subjects_and_details_without_markup_mangling()
     {
         using var writer = new StringWriter();
         var console = RigConsole.Create(writer);
         var plan = new FakePlan(
         [
-            new FakeChange("[core.hooksPath]", "Create the missing hook path", ChangeKind.Create),
-            new FakeChange("[P1] review thread", "Delete the stale thread", ChangeKind.Delete),
-            new FakeChange("protected/branch", "Refused by a guard", ChangeKind.Refusal),
-            new FakeChange("src/a.cs", "Already aligned", ChangeKind.NoOp),
+            new FakeChange("[core.hooksPath]", "Create the missing hook path", ChangeKind.WouldChange),
+            new FakeChange("[P1] review thread", "Delete the stale thread", ChangeKind.WouldChange),
+            new FakeChange("protected/branch", "Refused by a guard", ChangeKind.Refused),
+            new FakeChange("src/a.cs", "Already aligned", ChangeKind.Aligned),
         ]);
 
         console.RenderPlan(plan);
 
         var text = writer.ToString();
-        Assert.Contains("create", text, StringComparison.Ordinal);
-        Assert.Contains("delete", text, StringComparison.Ordinal);
-        Assert.Contains("refuse", text, StringComparison.Ordinal);
-        Assert.Contains("no-op", text, StringComparison.Ordinal);
+        Assert.Contains("would-change", text, StringComparison.Ordinal);
+        Assert.Contains("refused", text, StringComparison.Ordinal);
+        Assert.Contains("aligned", text, StringComparison.Ordinal);
         Assert.Contains("[core.hooksPath]", text, StringComparison.Ordinal);
         Assert.Contains("[P1] review thread", text, StringComparison.Ordinal);
-        Assert.Contains("3 of 4 change(s) to apply", text, StringComparison.Ordinal);
+        Assert.Contains("2 of 4 change(s) to apply", text, StringComparison.Ordinal);
         Assert.DoesNotContain('\u001b', text);
     }
 
@@ -92,7 +91,7 @@ public sealed class SpectreOutputExtensionsTests
         using var writer = new StringWriter();
         var console = RigConsole.Create(writer);
 
-        console.RenderPlan(new FakePlan([new FakeChange("src/a.cs", "Already aligned", ChangeKind.NoOp)]));
+        console.RenderPlan(new FakePlan([new FakeChange("src/a.cs", "Already aligned", ChangeKind.Aligned)]));
 
         Assert.Contains("no drift", writer.ToString(), StringComparison.Ordinal);
         Assert.Contains("Clean.", writer.ToString(), StringComparison.Ordinal);
@@ -158,7 +157,10 @@ public sealed class SpectreOutputExtensionsTests
         Assert.Throws<ArgumentException>(() => table.Add("1", "2"));
     }
 
-    private sealed record FakeChange(string Target, string Description, ChangeKind Kind) : IChange;
+    private sealed record FakeChange(string Subject, string Detail, ChangeKind Kind) : IChange;
 
-    private sealed record FakePlan(IReadOnlyList<FakeChange> Changes) : IPlan<FakeChange>;
+    private sealed record FakePlan(IReadOnlyList<FakeChange> Changes) : IPlan<FakeChange>
+    {
+        public IReadOnlyList<string> Errors => [];
+    }
 }
