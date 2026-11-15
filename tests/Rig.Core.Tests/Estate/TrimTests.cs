@@ -352,9 +352,78 @@ public sealed class TrimTests : IDisposable
         Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "packages")));
         Assert.Equal("rust build output", Trim.CategoryOf(Path.Join(dir, "target")));
         Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, "dist")));
+        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, ".next")));
+        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, ".turbo")));
+        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, "storybook-static")));
         Assert.Equal("python venv", Trim.CategoryOf(Path.Join(dir, ".venv")));
+        Assert.Equal("python venv", Trim.CategoryOf(Path.Join(dir, "venv")));
         Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".ruff_cache")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".pytest_cache")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".mypy_cache")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".tox")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".nox")));
         Assert.Null(Trim.CategoryOf(Path.Join(dir, "src")));
+
+        var fsharpDir = _temp.Folder("fsharp-build");
+        File.WriteAllText(Path.Join(fsharpDir, "test.fsproj"), "<Project/>");
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(fsharpDir, "bin")));
+
+        var vbDir = _temp.Folder("vb-build");
+        File.WriteAllText(Path.Join(vbDir, "test.vbproj"), "<Project/>");
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(vbDir, "obj")));
+
+        var noProjectDir = _temp.Folder("no-project-build");
+        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "bin")));
+        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "obj")));
+        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "packages")));
+        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "target")));
+    }
+
+    [Fact]
+    public void IsStrictlyBelow_verifies_hierarchy()
+    {
+        var root = _temp.Folder("root");
+        var child = _temp.Folder("root/child");
+        var grandChild = _temp.Folder("root/child/sub");
+        var outside = _temp.Folder("outside");
+
+        Assert.True(Trim.IsStrictlyBelow(child, root));
+        Assert.True(Trim.IsStrictlyBelow(grandChild, root));
+        Assert.False(Trim.IsStrictlyBelow(root, root));
+        Assert.False(Trim.IsStrictlyBelow(outside, root));
+        Assert.False(Trim.IsStrictlyBelow(root, child));
+    }
+
+    [Fact]
+    public async Task RemoveAsync_handles_refused_success_and_failure()
+    {
+        var refused = new Trimmable("/wt", "/wt/ref", "cat", new TreeMeasure(1, 1), Refused: "locked");
+        var removal = Removal();
+        Assert.Equal("refused", await Trim.RemoveAsync(refused, removal, Token));
+
+        var targetDir = _temp.Folder("target-to-remove");
+        await File.WriteAllTextAsync(Path.Join(targetDir, "file.txt"), "hello", Token);
+        var trimmable = new Trimmable(_temp.Path, targetDir, "cat", new TreeMeasure(1, 1));
+        Assert.Equal("removed", await Trim.RemoveAsync(trimmable, removal, Token));
+        Assert.False(Directory.Exists(targetDir));
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Trim.RemoveAsync(null!, removal, Token));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Trim.RemoveAsync(trimmable, null!, Token));
+    }
+
+    [Fact]
+    public async Task RecheckAsync_validates_existence_and_category()
+    {
+        var trim = Idle();
+        await Assert.ThrowsAsync<ArgumentNullException>(() => trim.RecheckAsync(null!));
+
+        var missing = new Trimmable(_temp.Path, Path.Join(_temp.Path, "nonexistent-dir"), "node_modules", new TreeMeasure(1, 1));
+        Assert.Equal("no longer exists", await trim.RecheckAsync(missing));
+
+        var (clone, worktree) = await CloneWithWorktreeAsync();
+        var candidateDir = Directory.CreateDirectory(Path.Join(worktree, "real-dir")).FullName;
+        var mismatch = new Trimmable(worktree, candidateDir, "different-category", new TreeMeasure(1, 1));
+        Assert.Equal("no longer regenerable output", await trim.RecheckAsync(mismatch));
     }
 
     [Fact]
