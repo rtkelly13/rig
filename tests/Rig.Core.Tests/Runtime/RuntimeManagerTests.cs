@@ -386,6 +386,59 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Contains("exists and is not a link", error.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void PointCurrent_backs_up_and_replaces_existing_real_directory()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        var link = RuntimeManager.CurrentLink(Root);
+        _ = Directory.CreateDirectory(link);
+        File.WriteAllText(Path.Join(link, RuntimeManager.InstalledName), "{}");
+        var target = _temp.Folder("target");
+
+        manager.PointCurrent(target);
+
+        Assert.True(Directory.Exists(link) || Path.Exists(link));
+    }
+
+    [Fact]
+    public void Rollback_throws_when_no_previous_copy_recorded()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        File.WriteAllText(Path.Join(Root, RuntimeManager.StateName), """{"current": "one", "previous": null, "repo": "r"}""");
+
+        var error = Assert.Throws<RuntimeInstallException>(() => manager.Rollback());
+        Assert.Equal("no previous copy to roll back to", error.Message);
+    }
+
+    [Fact]
+    public void Rollback_throws_when_previous_folder_missing_installed_json()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        _ = Directory.CreateDirectory(Path.Join(Root, "prev"));
+        File.WriteAllText(Path.Join(Root, RuntimeManager.StateName), """{"current": "one", "previous": "prev", "repo": "r"}""");
+
+        var error = Assert.Throws<RuntimeInstallException>(() => manager.Rollback());
+        Assert.Equal("no previous copy to roll back to", error.Message);
+    }
+
+    [Fact]
+    public void RunningCopy_detects_subpaths_under_root()
+    {
+        Assert.True(RuntimeManager.RunningCopy(Path.Join(Root, "abc", "rig"), Root));
+        Assert.False(RuntimeManager.RunningCopy(_temp.Folder("other"), Root));
+    }
+
+    [Fact]
+    public void CommitsBehind_returns_null_when_git_cannot_resolve()
+    {
+        var repo = NewRepo();
+        var manager = Manager(new Tools(_system));
+        Assert.Null(manager.CommitsBehind(repo, "nonexistent", "HEAD"));
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {

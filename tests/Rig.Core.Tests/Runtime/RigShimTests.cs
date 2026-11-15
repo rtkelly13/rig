@@ -75,6 +75,24 @@ public sealed class RigShimTests : IDisposable
     }
 
     [Fact]
+    public void Install_windows_writes_and_rewrites_cmd_shim()
+    {
+        var shim = Path.Join(_temp.Path, "bin", "rig.cmd");
+        var root = Path.Join(_temp.Path, "runtime");
+
+        Assert.Equal(ShimOutcome.Written, RigShim.Install(shim, root, windows: true));
+        Assert.Contains("@echo off", File.ReadAllText(shim), StringComparison.Ordinal);
+        Assert.Equal(ShimOutcome.Unchanged, RigShim.Install(shim, root, windows: true));
+
+        File.WriteAllText(shim, $"rem {RigShim.Marker}\r\nstale\r\n");
+        Assert.Equal(ShimOutcome.Written, RigShim.Install(shim, root, windows: true));
+        Assert.DoesNotContain("stale", File.ReadAllText(shim), StringComparison.Ordinal);
+
+        File.WriteAllText(shim, "@echo off\r\necho foreign\r\n");
+        Assert.Equal(ShimOutcome.Foreign, RigShim.Install(shim, root, windows: true));
+    }
+
+    [Fact]
     public void PathFor_returns_platform_appropriate_path()
     {
         Assert.EndsWith(Path.Join(".local", "bin", "rig"), RigShim.PathFor("/users/me", windows: false), StringComparison.Ordinal);
