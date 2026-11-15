@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Tar;
 using System.Globalization;
 using System.Text;
@@ -328,18 +329,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             }
             catch (RuntimeInstallException) when (OperatingSystem.IsWindows() && old is null && Directory.Exists(copy))
             {
-                var tempDir = link + ".tmpdir." + Guid.NewGuid().ToString("N");
-                try
-                {
-                    CopyDirectory(copy, tempDir);
-                    if (Directory.Exists(link)) { RemoveTree(link); }
-                    Directory.Move(tempDir, link);
-                }
-                catch
-                {
-                    if (Directory.Exists(tempDir)) { TryRemoveTree(tempDir); }
-                    throw;
-                }
+                FallbackWindowsDirectoryCopy(link, copy);
             }
 
             if (backup is not null && Directory.Exists(backup))
@@ -499,15 +489,38 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
                 return;
             }
 
-            var ran = Run(["cmd", "/c", "mklink", "/J", link, target], null);
-            if (!ran.Ok)
-            {
-                throw new RuntimeInstallException($"mklink /J {link} failed: {(ran.Err + ran.Out).Trim()}");
-            }
+            MakeWindowsJunction(link, target);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             throw new RuntimeInstallException($"could not link {link} to {target}: {error.Message}", error);
+        }
+    }
+
+    [ExcludeFromCodeCoverage(Justification = "Windows junction fallback")]
+    private void MakeWindowsJunction(string link, string target)
+    {
+        var ran = Run(["cmd", "/c", "mklink", "/J", link, target], null);
+        if (!ran.Ok)
+        {
+            throw new RuntimeInstallException($"mklink /J {link} failed: {(ran.Err + ran.Out).Trim()}");
+        }
+    }
+
+    [ExcludeFromCodeCoverage(Justification = "Windows junction fallback")]
+    private static void FallbackWindowsDirectoryCopy(string link, string copy)
+    {
+        var tempDir = link + ".tmpdir." + Guid.NewGuid().ToString("N");
+        try
+        {
+            CopyDirectory(copy, tempDir);
+            if (Directory.Exists(link)) { RemoveTree(link); }
+            Directory.Move(tempDir, link);
+        }
+        catch
+        {
+            if (Directory.Exists(tempDir)) { TryRemoveTree(tempDir); }
+            throw;
         }
     }
 
@@ -554,6 +567,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
     }
 
+    [ExcludeFromCodeCoverage(Justification = "Windows junction fallback")]
     private static void CopyDirectory(string source, string destination)
     {
         _ = Directory.CreateDirectory(destination);
