@@ -87,6 +87,23 @@ public sealed class ReconciliationRunnerTests
     }
 
     [Fact]
+    public async Task Planning_errors_force_exit_two_and_are_included_in_run_and_json()
+    {
+        var plan = new TestPlan([], errors: ["decision needed: prompt user"]);
+        var reconciler = new FakeReconciler(plan);
+        using var output = Writer();
+
+        var run = await ReconciliationRunner.RunAsync(reconciler, "target", apply: false, json: true, output, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.True(run.HasErrors);
+        Assert.Equal(["decision needed: prompt user"], run.Errors);
+        var payload = JsonNode.Parse(output.ToString())!;
+        Assert.Equal(2, payload["exitCode"]!.GetValue<int>());
+        Assert.Equal(["decision needed: prompt user"], payload["errors"]!.AsArray().Select(e => e!.GetValue<string>()));
+    }
+
+    [Fact]
     public void Dry_run_and_apply_are_opposites()
     {
         _ = Assert.Throws<ArgumentException>(() => ReconciliationOptions.FromFlags(dryRun: true, apply: true, json: false));
@@ -98,11 +115,11 @@ public sealed class ReconciliationRunnerTests
 
     private sealed record Row(string Subject, ChangeKind Kind, string Detail = "") : IChange;
 
-    private sealed class TestPlan(IReadOnlyList<Row> changes) : IPlan<Row>
+    private sealed class TestPlan(IReadOnlyList<Row> changes, IReadOnlyList<string>? errors = null) : IPlan<Row>
     {
         public IReadOnlyList<Row> Changes { get; } = changes;
 
-        public IReadOnlyList<string> Errors => [];
+        public IReadOnlyList<string> Errors { get; } = errors ?? [];
     }
 
     private sealed class FakeReconciler(TestPlan plan, IReadOnlyList<string>? applyErrors = null)

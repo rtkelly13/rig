@@ -131,15 +131,16 @@ public static class ReconciliationRunner
         ArgumentNullException.ThrowIfNull(output);
 
         var plan = await reconciler.PlanAsync(target, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<string> errors = [];
+        IReadOnlyList<string> applyErrors = [];
         var applied = options.Apply;
         if (applied)
         {
-            errors = await reconciler.ApplyAsync(plan, cancellationToken).ConfigureAwait(false);
+            applyErrors = await reconciler.ApplyAsync(plan, cancellationToken).ConfigureAwait(false);
         }
 
-        var exitCode = errors.Count > 0 ? 2 : plan.ExitCode(applied);
-        var run = new ReconciliationRun<TPlan, TChange>(plan, errors, applied, exitCode);
+        var combinedErrors = plan.Errors.Concat(applyErrors).Distinct(StringComparer.Ordinal).ToList();
+        var exitCode = combinedErrors.Count > 0 ? 2 : plan.ExitCode(applied);
+        var run = new ReconciliationRun<TPlan, TChange>(plan, combinedErrors, applied, exitCode);
         await RenderAsync(run, options, output, cancellationToken).ConfigureAwait(false);
         return run;
     }
