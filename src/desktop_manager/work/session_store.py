@@ -1,47 +1,44 @@
-"""Read Claude Code's on-disk state to find sessions worth resuming.
+"""Read Claude Code's on-disk state for the work list.
 
-Two sources, both under the Claude config directory:
+Three sources, all under the Claude config directory:
 
 - **Transcripts** (`projects/<project>/<session-id>.jsonl`). Subagent transcripts live one
-  level deeper and are never candidates. A clean exit appends a `cost-state` entry after
-  the last message; a crash, an OOM kill or a killed terminal leaves none. That trailing
-  entry is the crash signal. How the last turn ended says whether the work finished:
-  a reply in plain text means the session was waiting on the user; a tool call or a
-  tool result with nothing after it means it died mid-task.
+  level deeper and are never read. A clean exit appends a `cost-state` entry after the last
+  message; a crash, an OOM kill or a killed terminal leaves none. That trailing entry is the
+  crash signal. How the last turn ended says whether the work finished: a reply in plain
+  text means the session was waiting on the user; a tool call or a tool result with nothing
+  after it means it died mid-task.
 
-  Every entry records the working directory. The first is where the session started,
-  which is where Claude files its transcript and where it must be resumed. Later
-  entries can differ: a session often moves into a repo or a worktree to work. The
-  last one says where the work was when it stopped.
+  Every entry records the working directory. The first is where the session started. Later
+  entries can differ: a session often moves into a repo or a worktree to work. The last one
+  says where the work was when it stopped.
 - **The live-session registry** (`sessions/<pid>.json`). Each running interactive session
-  writes one, with its pid and the process start time. A session is live only while that
-  pid still exists *with the same start time*, so a recycled pid does not keep a dead
-  session looking alive. Resuming a live session would put two writers on one transcript,
-  so live sessions are never candidates.
+  writes one, with its pid and the process start time. A session is live only while that pid
+  still exists *with the same start time*, so a recycled pid does not keep a dead session
+  looking alive.
+- **The session-end ledger** (`session-ends/<session-id>.json`, or
+  `$CLAUDE_SESSION_LEDGER_DIR`). A `SessionEnd` hook records why each session ended.
+  `reason: "clear"` means the user ran `/clear`: they were done with it. A crash fires no
+  hook, so a missing record means nothing. A record older than the transcript's last activity
+  is stale (the session was resumed and used after it ended) and is ignored.
 
-A third source is the user's own, not Claude's:
-
-- **The session-end ledger** (`session-ends/<session-id>.json`, or `$CLAUDE_SESSION_LEDGER_DIR`).
-  A `SessionEnd` hook installed by `devenv claude` (or the workspace repo's devenv) records
-  why each session ended. `reason: "clear"` means the user ran `/clear`: they were done with it,
-  so it is not offered again. A crash fires no hook, so a missing record means nothing.
-  A record older than the transcript's last activity is stale (the session was resumed
-  and used after it ended) and is ignored.
+This is the reading half the work list needs. The retired `claude_sessions` package owned the
+resume/placement orchestration; only these facts feed `desktop-manager work list` now.
 """
 
 from __future__ import annotations
 
 import os
 import sys
-from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, replace
-from datetime import UTC, datetime
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import Field, StrictInt, StrictStr
 
-from desktop_manager.claude_sessions.orca import OrcaFolders
+from rig import proc
 from rig.typed_json import Lenient, try_decode_json
 
 ExitKind = Literal["crashed", "exited"]
@@ -81,12 +78,6 @@ class SessionRecord:
     turn_state: TurnState = "answered"
     last_prompt: str | None = None
     last_reply: str | None = None
-    #: Why the session ended, from the session-end ledger; None when nothing was recorded.
-    end_reason: str | None = None
-
-    @property
-    def cleared(self) -> bool:
-        return self.end_reason == "clear"
 
     @property
     def label(self) -> str:
@@ -308,15 +299,6 @@ def read_session_ends(directory: Path) -> dict[str, SessionEnd]:
     return ends
 
 
-def _end_reason(record: SessionRecord, end: SessionEnd | None) -> str | None:
-    """The ledger's reason, unless the session was used again after that ending."""
-    if end is None:
-        return None
-    if end.ended_at is not None and record.last_activity is not None and record.last_activity > end.ended_at:
-        return None
-    return end.reason
-
-
 def iter_transcripts(projects_dir: Path, *, modified_since: datetime) -> Iterable[Path]:
     """Top-level transcripts touched since the cutoff. Subagent transcripts sit deeper and are skipped."""
     cutoff = modified_since.timestamp()
@@ -326,92 +308,6 @@ def iter_transcripts(projects_dir: Path, *, modified_since: datetime) -> Iterabl
                 yield path
         except OSError:
             continue
-
-
-@dataclass(frozen=True, slots=True)
-class Skipped:
-    record: SessionRecord
-    reason: str
-
-
-@dataclass(frozen=True)
-class Discovery:
-    candidates: list[SessionRecord]
-    live: dict[str, LiveSession]
-    skipped: list[Skipped]
-
-
-def discover(
-    *,
-    since: datetime,
-    is_alive: LivenessCheck,
-    home: Path | None = None,
-    include_exited: bool = True,
-    include_cleared: bool = False,
-    exclude_ids: Iterable[str] = (),
-    orca: OrcaFolders = OrcaFolders(),
-) -> Discovery:
-    """Sessions active since `since` that are not running now, newest first.
-
-    A clean exit is usually a closed tab, not a decision to stop, so exited sessions are
-    kept unless `include_exited` is False. Sessions the user ended with `/clear` are
-    skipped unless `include_cleared`. Print-mode sessions, sessions nobody typed into,
-    and sessions whose directory has gone are always skipped, as are sessions in folders
-    Orca owns (`orca`): Orca resumes those itself.
-    """
-    root = home or claude_home()
-    live = read_live_sessions(root / "sessions", is_alive)
-    ends = read_session_ends(ledger_dir(root))
-    excluded = set(exclude_ids)
-    candidates: list[SessionRecord] = []
-    skipped: list[Skipped] = []
-    for path in iter_transcripts(root / "projects", modified_since=since):
-        record = read_transcript(path)
-        record = replace(record, end_reason=_end_reason(record, ends.get(record.session_id)))
-        reason = _skip_reason(
-            record,
-            live=live,
-            excluded=excluded,
-            include_exited=include_exited,
-            include_cleared=include_cleared,
-            orca=orca,
-        )
-        if reason is None:
-            candidates.append(record)
-        else:
-            skipped.append(Skipped(record, reason))
-    epoch = datetime.min.replace(tzinfo=UTC)
-    candidates.sort(key=lambda r: r.last_activity or epoch, reverse=True)
-    return Discovery(candidates=candidates, live=live, skipped=skipped)
-
-
-def _skip_reason(
-    record: SessionRecord,
-    *,
-    live: Mapping[str, LiveSession],
-    excluded: set[str],
-    include_exited: bool,
-    include_cleared: bool,
-    orca: OrcaFolders,
-) -> str | None:
-    if record.session_id in live:
-        return f"running (pid {live[record.session_id].pid})"
-    if record.session_id in excluded:
-        return "excluded"
-    owner = orca.owner(record.start_cwd) or orca.owner(record.last_cwd)
-    if owner is not None:
-        return f"left to Orca ({owner})"
-    if not record.interactive:
-        return "not an interactive session"
-    if record.prompt_count == 0:
-        return "no typed prompts"
-    if record.cleared and not include_cleared:
-        return "cleared with /clear"
-    if record.exit_kind == "exited" and not include_exited:
-        return "exited cleanly"
-    if record.start_cwd is None or not Path(record.start_cwd).is_dir():
-        return f"start directory missing: {record.start_cwd}"
-    return None
 
 
 def process_is_alive(pid: int, proc_start: str | None) -> bool:
@@ -460,3 +356,49 @@ def _windows_process_start(pid: int) -> int | None:
         return (creation.dwHighDateTime << 32) | creation.dwLowDateTime
     finally:
         kernel32.CloseHandle(handle)
+
+
+@dataclass(frozen=True)
+class FolderFacts:
+    path: str
+    exists: bool
+    #: Top of the git checkout containing `path`, or None outside git (or if it's gone).
+    git_root: str | None = None
+    branch: str | None = None
+    #: True for a linked worktree (`git worktree add`), False for a main checkout.
+    is_worktree: bool = False
+
+
+def _git(path: str, *args: str) -> str | None:
+    ran = proc.git(*args, cwd=Path(path), timeout=10)
+    return ran.out.strip() if ran.ok else None
+
+
+def folder_facts(path: str) -> FolderFacts:
+    """Facts about a session's working directory: does it exist, and which repo and branch is it."""
+    if not Path(path).is_dir():
+        return FolderFacts(path=path, exists=False)
+    lines = (_git(path, "rev-parse", "--show-toplevel", "--git-dir", "--git-common-dir") or "").splitlines()
+    if len(lines) != 3:
+        return FolderFacts(path=path, exists=True)
+    root, git_dir, common_dir = lines
+    branch = _git(path, "branch", "--show-current") or None
+    is_worktree = Path(path, git_dir).resolve() != Path(path, common_dir).resolve()
+    return FolderFacts(path=path, exists=True, git_root=root, branch=branch, is_worktree=is_worktree)
+
+
+__all__ = [
+    "LivenessCheck",
+    "FolderFacts",
+    "LiveSession",
+    "SessionEnd",
+    "SessionRecord",
+    "claude_home",
+    "folder_facts",
+    "iter_transcripts",
+    "ledger_dir",
+    "process_is_alive",
+    "read_live_sessions",
+    "read_session_ends",
+    "read_transcript",
+]

@@ -40,8 +40,6 @@ class Cadence(enum.StrEnum):
     DAILY = "daily"
 
 
-#: `claude-sessions startup` typed nothing: the workstation was locked or the plan's screens were missing.
-CLAUDE_SESSIONS_DEFERRED = 4
 #: `workspace restore` found fewer screens than the plan places windows on and opened nothing.
 RESTORE_DEFERRED = 4
 
@@ -129,23 +127,12 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
         Job(
             name="restore",
             description="Open and place every window in the workspace plan.",
-            argv=(desktop_manager, "workspace", "restore", "--config", str(env.plan), "--defer-logon-commands"),
+            argv=(desktop_manager, "workspace", "restore", "--config", str(env.plan)),
             triggers=frozenset({Trigger.LOGON}),
             cadence=Cadence.EVERY_RUN,
             timeout_minutes=45,
             requires=(env.plan,),
             retry_exit_codes=frozenset({RESTORE_DEFERRED}),
-        ),
-        Job(
-            name="claude-sessions",
-            description="Resume Claude sessions the last shutdown cut off; start `claude` in empty terminals.",
-            argv=(desktop_manager, "claude-sessions", "startup", "--config", str(env.plan)),
-            triggers=frozenset({Trigger.LOGON}),
-            cadence=Cadence.EVERY_RUN,
-            timeout_minutes=20,
-            requires=(env.plan,),
-            retry_exit_codes=frozenset({CLAUDE_SESSIONS_DEFERRED}),
-            feature="claude-session-restore",
         ),
         Job(
             name="chrome-organise",

@@ -116,7 +116,6 @@ def test_docstring_less_command_still_gets_a_tag():
 
 def test_desktop_manager_marks_windows_commands():
     """The desktop-manager Windows commands declare it; portable ones do not."""
-    from desktop_manager.claude_sessions.cli import claude_sessions_app
     from desktop_manager.cli import workspace_app
 
     def declared(app: typer.Typer) -> dict[str, tuple[Platform, ...] | None]:
@@ -144,11 +143,3 @@ def test_desktop_manager_marks_windows_commands():
     ]:
         assert workspace[name] == (Platform.WINDOWS,), name
     assert workspace["validate-plan"] is None
-
-    sessions = declared(claude_sessions_app)
-    assert sessions["list"] is None
-    assert sessions["show"] is None
-    for name in ["recover", "plan", "apply"]:
-        assert sessions[name] is None, name
-    for name in ["terminals", "place"]:
-        assert sessions[name] == (Platform.WINDOWS,), name

@@ -58,7 +58,7 @@ Answers are cached per repo in `~/.work-items-prs.json` for 10 minutes. A failed
 
 ### Claude Code sessions
 
-Sessions are read through `desktop_manager.claude_sessions.discovery`, from three places:
+Sessions are read through `desktop_manager.work.session_store`, from three places:
 
 - the transcripts in `~/.claude/projects` changed within `--session-days`
 - the live registry in `~/.claude/sessions`
@@ -92,7 +92,7 @@ The rules, applied in this order:
 
 1. **Longest matching checkout path wins.** A worktree at `<clone>/temp/<name>` beats the clone that contains it.
 2. **Directory no longer exists → unattached.** This covers removed worktrees. Such a session is never credited to the clone that used to contain the directory.
-3. **Directory outside every known checkout, but inside a git repo → that repo.** The repo comes from `claude_sessions.folders`. It gets an item with no checkouts listed.
+3. **Directory outside every known checkout, but inside a git repo → that repo.** The repo comes from `work.session_store.folder_facts`. It gets an item with no checkouts listed.
 4. **Anything else → unattached.** The usual case is the code root itself, for example `C:\code`.
 
 All unattached sessions go into one `unattached` item. They are not given to a per-repo trunk item, because guessing the repo would credit the session to work it may never have touched.

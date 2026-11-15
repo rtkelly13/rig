@@ -22,8 +22,7 @@
     "workspace",
     "restore",
     "--config",
-    "/plans/windows-workspace.json",
-    "--defer-logon-commands"
+    "/plans/windows-workspace.json"
    ],
    "triggers": [
     "logon"
@@ -39,31 +38,6 @@
    ],
    "detail_log": null,
    "feature": null
-  },
-  {
-   "name": "claude-sessions",
-   "description": "Resume Claude sessions the last shutdown cut off; start `claude` in empty terminals.",
-   "argv": [
-    "/rig/.venv/bin/desktop-manager",
-    "claude-sessions",
-    "startup",
-    "--config",
-    "/plans/windows-workspace.json"
-   ],
-   "triggers": [
-    "logon"
-   ],
-   "cadence": "every-run",
-   "timeout_minutes": 20,
-   "requires": [
-    "/plans/windows-workspace.json"
-   ],
-   "idle_minutes": 0,
-   "retry_exit_codes": [
-    4
-   ],
-   "detail_log": null,
-   "feature": "claude-session-restore"
   },
   {
    "name": "chrome-organise",
@@ -354,7 +328,6 @@
  ],
  "registry_without_workspace": [
   "restore",
-  "claude-sessions",
   "chrome-organise",
   "align",
   "estate-sync",
