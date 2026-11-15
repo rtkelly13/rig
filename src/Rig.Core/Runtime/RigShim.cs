@@ -76,12 +76,23 @@ public static class RigShim
             _ = Directory.CreateDirectory(parent);
         }
 
-        File.WriteAllBytes(shim, bytes);
-        if (!OperatingSystem.IsWindows())
+        var temp = shim + ".tmp." + Guid.NewGuid().ToString("N");
+        try
         {
-            File.SetUnixFileMode(shim, (UnixFileMode)0b111_101_101);
+            File.WriteAllBytes(temp, bytes);
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(temp, (UnixFileMode)0b111_101_101);
+            }
+            File.Move(temp, shim, overwrite: true);
+            return ShimOutcome.Written;
         }
-
-        return ShimOutcome.Written;
+        finally
+        {
+            if (File.Exists(temp))
+            {
+                try { File.Delete(temp); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+        }
     }
 }

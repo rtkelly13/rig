@@ -338,7 +338,7 @@ public sealed class RuntimeManagerTests : IDisposable
 
         public Ran Run(ProcRequest request)
         {
-            if (request.Argv[0] == "git")
+            if (request.Argv[0] == "git" || (OperatingSystem.IsWindows() && request.Argv[0] == "cmd"))
             {
                 return system.Run(request);
             }

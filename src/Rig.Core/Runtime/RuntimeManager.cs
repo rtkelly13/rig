@@ -249,7 +249,19 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             new InstalledInfo(sha, refName, repo, clock.GetUtcNow().ToString("yyyy-MM-dd'T'HH:mm:ss'+00:00'", CultureInfo.InvariantCulture)));
         PointCurrent(copy);
         var previous = state.Current != name ? state.Current : state.Previous;
-        WriteState(new RuntimeState(name, previous, repo));
+        try
+        {
+            WriteState(new RuntimeState(name, previous, repo));
+        }
+        catch
+        {
+            if (state.Current is not null && Directory.Exists(Path.Join(root, state.Current)))
+            {
+                try { PointCurrent(Path.Join(root, state.Current)); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+            throw;
+        }
+
         var removed = Prune(previous is null ? [name] : [name, previous]);
         return new RuntimeInstallResult(sha, copy, Changed: true, previous, removed);
     }
@@ -266,7 +278,19 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
 
         PointCurrent(Path.Join(root, previous));
         var swapped = new RuntimeState(previous, state.Current, state.Repo);
-        WriteState(swapped);
+        try
+        {
+            WriteState(swapped);
+        }
+        catch
+        {
+            if (state.Current is not null && Directory.Exists(Path.Join(root, state.Current)))
+            {
+                try { PointCurrent(Path.Join(root, state.Current)); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+            throw;
+        }
+
         return swapped;
     }
 
