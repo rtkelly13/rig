@@ -1,13 +1,16 @@
 namespace Rig.Specs.StepDefinitions;
 
-/// <summary>A fresh folder under the system temp directory, deleted when the scenario ends.</summary>
+/// <summary>
+/// A fresh scratch folder for one scenario, deleted when the scenario ends. It lives under the checkout's
+/// <c>temp/rig-specs</c> as the repository conventions require, not in the system temp directory.
+/// </summary>
 public sealed class SpecScratch : IDisposable
 {
     /// <summary>Creates the folder.</summary>
     public SpecScratch() => _ = Directory.CreateDirectory(Path);
 
     /// <summary>The folder's absolute path.</summary>
-    public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rig-specs", Guid.NewGuid().ToString("N"));
+    public string Path { get; } = System.IO.Path.Combine(RepositoryRoot(), "temp", "rig-specs", Guid.NewGuid().ToString("N"));
 
     /// <summary>Creates <paramref name="relative"/> as a folder and returns its full path.</summary>
     public string Folder(string relative) => Directory.CreateDirectory(System.IO.Path.Combine(Path, relative)).FullName;
@@ -42,8 +45,23 @@ public sealed class SpecScratch : IDisposable
         }
         catch (IOException)
         {
-            // A process under test may still hold a file open; the OS temp cleaner will get it.
+            // A process under test may still hold a file open; the next run or the OS cleans up.
         }
+    }
+
+    // The checkout root: the nearest ancestor of the test assembly carrying rig.slnx. A test assembly copied outside
+    // the checkout has no repository temp, so the system temp is the only honest place left.
+    private static string RepositoryRoot()
+    {
+        for (var candidate = new DirectoryInfo(AppContext.BaseDirectory); candidate is not null; candidate = candidate.Parent)
+        {
+            if (File.Exists(System.IO.Path.Combine(candidate.FullName, "rig.slnx")))
+            {
+                return candidate.FullName;
+            }
+        }
+
+        return System.IO.Path.GetTempPath();
     }
 
     private void MakeWritable()
@@ -65,7 +83,7 @@ public sealed class SpecScratch : IDisposable
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            // Left for the OS temp cleaner.
+            // Left for the next run or the OS cleaner.
         }
     }
 }
