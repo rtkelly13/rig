@@ -3,7 +3,7 @@ using System.CommandLine;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Cli.Vault;
+using Rig.Cli.Rendering;
 using Rig.Cli.Workspace;
 using Rig.Core.Estate;
 using Rig.Core.Processes;

@@ -26,6 +26,29 @@ This document defines the C# static analysis, banned API enforcement, and perfor
 
 ______________________________________________________________________
 
+## Output Rendering
+
+`Rig.Cli` renders through `IAnsiConsole` (Spectre.Console), created by `RigConsole.Create` in
+`src/Rig.Cli/Rendering/`. The seam keeps one output contract for two audiences:
+
+- **Interactive terminal**: ANSI colour, semantic badges (`create` green, `update` yellow, `delete`
+  red, refusal orange) and rounded borders.
+- **Redirected, captured or headless output**: the same layout with ANSI disabled. `RIG_HEADLESS`,
+  `NO_COLOR`, `CI` and `TERM=dumb` force that mode; a writer that is not the real standard stream is
+  treated as machine output.
+
+Rules:
+
+- Put dynamic text through `TextSanitizer.Markup` before it enters a Spectre markup string. It strips
+  ANSI sequences and escapes brackets, so `[P1]` and `[core.hooksPath]` print as written.
+- Use `SpectreOutputExtensions.RenderPlan`, `RenderVerdict` and `RenderProperties` for the shared
+  plan, verdict and metadata shapes. Do not reimplement column widths or padding by hand.
+- `TextTable` lives in `Rig.Cli.Rendering`. Use `Render` for the plain machine contract and
+  `RenderTo` when a command owns an `IAnsiConsole`.
+- `--json` writes the typed model directly; never wrap it in presentation text.
+
+______________________________________________________________________
+
 ## Tooling & Enforcement
 
 ### 1. Banned API Analyzers (`Microsoft.CodeAnalysis.BannedApiAnalyzers`)

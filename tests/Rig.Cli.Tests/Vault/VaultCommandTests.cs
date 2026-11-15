@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.Text.Json;
+using Rig.Cli.Rendering;
 using Rig.Cli.Vault;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;

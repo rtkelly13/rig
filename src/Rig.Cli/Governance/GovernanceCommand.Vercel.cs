@@ -1,7 +1,7 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Globalization;
-using Rig.Cli.Vault;
+using Rig.Cli.Rendering;
 using Rig.Core.Governance;
 using Rig.Core.Processes;
 using Rig.Core.Workspace;

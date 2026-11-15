@@ -5,7 +5,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Rig.Cli.Vault;
+using Rig.Cli.Rendering;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
