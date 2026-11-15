@@ -98,6 +98,18 @@ public sealed class SpectreOutputExtensionsTests
     }
 
     [Fact]
+    public void Plan_with_errors_renders_error_verdict()
+    {
+        using var writer = new StringWriter();
+        var console = RigConsole.Create(writer);
+
+        console.RenderPlan(new FakePlan([new FakeChange("src/a.cs", "Failed", ChangeKind.Error)]));
+
+        Assert.Contains("Errors in plan.", writer.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Clean.", writer.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Verdict_renders_pass_and_fail_panels_with_escaped_detail()
     {
         using var passWriter = new StringWriter();
@@ -183,6 +195,6 @@ public sealed class SpectreOutputExtensionsTests
 
     private sealed record FakePlan(IReadOnlyList<FakeChange> Changes) : IPlan<FakeChange>
     {
-        public IReadOnlyList<string> Errors => [];
+        public IReadOnlyList<string> Errors => [.. Changes.Where(c => c.Kind == ChangeKind.Error).Select(c => $"{c.Subject}: {c.Detail}")];
     }
 }

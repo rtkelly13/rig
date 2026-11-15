@@ -106,9 +106,9 @@ public sealed class ShelvePlan : IPlan<ShelveResult>
     /// <summary>The result when applied, otherwise the plan as one typed row.</summary>
     public IReadOnlyList<ShelveResult> Changes => [Result ?? Planned];
 
-    /// <summary>Why a person must decide, or why applying failed.</summary>
+    /// <summary>Why applying failed.</summary>
     public IReadOnlyList<string> Errors =>
-        Result is { Kind: ChangeKind.Error } ? [Result.Detail] : [.. DecisionNeeded];
+        Result is { Kind: ChangeKind.Error } ? [Result.Detail] : [];
 
     private ShelveResult Planned => new(
         this,

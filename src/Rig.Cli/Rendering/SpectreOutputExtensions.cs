@@ -39,7 +39,15 @@ internal static class SpectreOutputExtensions
         }
 
         console.Write(table);
-        console.MarkupLine(drift == 0 ? "[green]Clean.[/]" : "[yellow]Review before applying.[/]");
+        var hasErrors = plan.Errors.Count > 0 || plan.Changes.Any(change => change.Kind == ChangeKind.Error);
+        if (hasErrors)
+        {
+            console.MarkupLine("[red]Errors in plan.[/]");
+        }
+        else
+        {
+            console.MarkupLine(drift == 0 ? "[green]Clean.[/]" : "[yellow]Review before applying.[/]");
+        }
     }
 
     /// <summary>Renders a pass/fail verdict panel with an optional detail line.</summary>

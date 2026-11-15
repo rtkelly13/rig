@@ -89,7 +89,7 @@ public sealed class TidyPlan : IPlan<TidyAction>
 
     /// <summary>Failures the plan or its application reported.</summary>
     public IReadOnlyList<string> Errors =>
-        [.. _changes.Where(change => change.Kind == ChangeKind.Error).Select(change => change.Detail)];
+        [.. _changes.Where(change => change.Kind == ChangeKind.Error).Select(change => $"{change.Subject}: {change.Detail}")];
 
     internal void Add(TidyAction action) => _changes.Add(action);
 

@@ -479,7 +479,7 @@ public sealed class TidyTests : IDisposable
         var plan = new TidyPlan { Target = new TidyTarget(new RepoReport("/repo", [], 0, 0, 0)) };
         plan.Add(new TidyAction("temp-stale", "/repo/temp/a", TidyOutcome.Failed, "permission denied"));
         plan.Add(new TidyAction("temp-stale", "/repo/temp/b", TidyOutcome.Cleaned));
-        Assert.Equal(["permission denied"], plan.Errors);
+        Assert.Equal(["/repo/temp/a: permission denied"], plan.Errors);
     }
 
     [Fact]
