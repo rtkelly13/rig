@@ -40,7 +40,7 @@ public sealed class RuntimeManagerTests : IDisposable
     private string Git(string workingDirectory, params string[] args)
     {
         var ran = _system.Run(new ProcRequest(
-            ["git", "-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "core.autocrlf=false", "-C", workingDirectory, .. args])
+            ["git", "-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", "-C", workingDirectory, .. args])
         {
             Timeout = TimeSpan.FromMinutes(2),
         });
@@ -653,6 +653,9 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Throws<InvalidDataException>(() => manager.ReadState());
 
         File.WriteAllText(statePath, "[\"not an object\"]");
+        Assert.Throws<InvalidDataException>(() => manager.ReadState());
+
+        File.WriteAllText(statePath, """{"current": 42}""");
         Assert.Throws<InvalidDataException>(() => manager.ReadState());
     }
 

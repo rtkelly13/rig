@@ -653,10 +653,17 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         File.Move(temporary, path, overwrite: true);
     }
 
-    private static string? Text(JsonObject parent, string name) =>
-        parent.TryGetPropertyValue(name, out var node) && node is JsonValue value && value.GetValueKind() == JsonValueKind.String
+    private static string? Text(JsonObject parent, string name)
+    {
+        if (!parent.TryGetPropertyValue(name, out var node) || node is null)
+        {
+            return null;
+        }
+
+        return node is JsonValue value && value.GetValueKind() == JsonValueKind.String
             ? value.GetValue<string>()
-            : null;
+            : throw new InvalidDataException($"Field '{name}' must be a string or null.");
+    }
 
     private string Must(IReadOnlyList<string> command, string? workingDirectory)
     {
