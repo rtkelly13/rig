@@ -13,6 +13,7 @@
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/packages</PackageOutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="DotMake.CommandLine" />
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
   <ItemGroup>
