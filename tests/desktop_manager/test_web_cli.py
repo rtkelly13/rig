@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from typer.testing import CliRunner
 
@@ -40,3 +42,64 @@ def test_upstream_stops_when_its_standard_input_closes(csharp_calls: list[list[s
 
     assert result.exit_code == 0, result.output
     assert csharp_calls == []
+
+
+def test_web_service_commands_delegate_to_installer(monkeypatch: pytest.MonkeyPatch) -> None:
+    from desktop_manager import service_installer
+
+    monkeypatch.setattr(service_installer, "install_web_service", lambda preview, port: f"installed {preview} {port}")
+    monkeypatch.setattr(service_installer, "uninstall_web_service", lambda preview: f"uninstalled {preview}")
+
+    runner = CliRunner()
+    result = runner.invoke(web_app, ["install", "--preview", "--port", "9090"])
+    assert result.exit_code == 0
+    assert "installed True 9090" in result.output
+
+    result = runner.invoke(web_app, ["uninstall", "--preview"])
+    assert result.exit_code == 0
+    assert "uninstalled True" in result.output
+
+
+def test_web_ensure_checks_service_and_exits_accordingly(monkeypatch: pytest.MonkeyPatch) -> None:
+    from desktop_manager import service_installer
+
+    runner = CliRunner()
+    monkeypatch.setattr(service_installer, "ensure_web_service", lambda port, timeout_s: True)
+    result = runner.invoke(web_app, ["ensure", "--port", "8090", "--timeout", "5"])
+    assert result.exit_code == 0
+    assert "Dashboard answering on http://127.0.0.1:8090" in result.output
+
+    monkeypatch.setattr(service_installer, "ensure_web_service", lambda port, timeout_s: False)
+    result = runner.invoke(web_app, ["ensure", "--port", "8090", "--timeout", "5"])
+    assert result.exit_code == 1
+    assert "Nothing answered on port 8090" in result.output
+
+
+def test_web_db_commands(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    import sqlite3
+
+    from rig import db
+    from rig.db import backup
+
+    fake_db = tmp_path / "test.db"
+    monkeypatch.setattr(backup, "backup_database", lambda: tmp_path / "test_backup.db")
+    monkeypatch.setattr(db, "get_db_connection", lambda: sqlite3.connect(fake_db))
+    monkeypatch.setattr(db, "default_db_path", lambda: fake_db)
+    monkeypatch.setattr(db, "run_migrations", lambda c: 3)
+    monkeypatch.setattr(db, "current_schema_version", lambda c: 3)
+    monkeypatch.setattr(db, "get_applied_migrations", lambda c: [])
+
+    runner = CliRunner()
+    result = runner.invoke(web_app, ["backup"])
+    assert result.exit_code == 0
+    assert "Database backup created:" in result.output
+
+    result = runner.invoke(web_app, ["migrate"])
+    assert result.exit_code == 0
+    assert "Migrations applied: 3" in result.output
+
+    result = runner.invoke(web_app, ["db-status"])
+    assert result.exit_code == 0
+    assert "Current Schema Version: 3" in result.output
+    assert "No migrations have been recorded yet." in result.output
+
