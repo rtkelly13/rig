@@ -308,7 +308,6 @@ public sealed class RuntimeManagerTests : IDisposable
     public void PointCurrent_replaces_fallback_directory_when_installed_marker_exists()
     {
         var first = _temp.Folder("first");
-        var second = _temp.Folder("second");
         var manager = Manager(new Tools(_system));
         _ = Directory.CreateDirectory(Root);
 
