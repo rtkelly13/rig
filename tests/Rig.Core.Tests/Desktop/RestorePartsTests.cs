@@ -204,6 +204,35 @@ public sealed class RestorePartsTests
         Assert.Same(inner, ex2.InnerException);
     }
 
+    [Fact]
+    public void RunLog_Discard_does_not_throw()
+    {
+        RunLog.Discard.Log("hello");
+        RunLog.Discard.LogFailure("msg", new InvalidOperationException());
+        Assert.NotNull(RunLog.Discard);
+    }
+
+    [Fact]
+    public void Desktop_runtime_records_roundtrip()
+    {
+        var move = new WindowMove(true, false);
+        Assert.True(move.MovedToDesktop);
+        Assert.False(move.MovedToPlacement);
+        Assert.Equal(move, new WindowMove(true, false));
+
+        var outcome = new PlacementOutcome(true, true);
+        Assert.True(outcome.Placed);
+        Assert.True(outcome.MovedToTargetDesktop);
+        Assert.Equal(outcome, new PlacementOutcome(true, true));
+
+        var wait = new WindowWait(TimeSpan.FromSeconds(5), 1, new HashSet<long> { 123 }, true);
+        Assert.Equal(TimeSpan.FromSeconds(5), wait.Timeout);
+        Assert.Equal(1, wait.TargetDesktop);
+        Assert.True(wait.AllowProcessFallbackForTerminals);
+        Assert.NotNull(wait.Excluded);
+        Assert.Contains(123, wait.Excluded);
+    }
+
     private sealed class FixedClock(DateTimeOffset now) : TimeProvider
     {
         public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;

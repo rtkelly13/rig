@@ -690,6 +690,39 @@ public sealed class RuntimeManagerTests : IDisposable
     }
 
     [Fact]
+    public void RuntimeInstallException_constructors()
+    {
+        var ex1 = new RuntimeInstallException();
+        Assert.Null(ex1.InnerException);
+        var ex2 = new RuntimeInstallException("msg");
+        Assert.Equal("msg", ex2.Message);
+        var inner = new InvalidOperationException("inner");
+        var ex3 = new RuntimeInstallException("msg", inner);
+        Assert.Same(inner, ex3.InnerException);
+    }
+
+    [Fact]
+    public void WriteState_throws_on_null_state()
+    {
+        var manager = Manager(new Tools(_system));
+        Assert.Throws<ArgumentNullException>(() => manager.WriteState(null!));
+    }
+
+    [Fact]
+    public void SwitchLink_backs_up_unlinked_installed_folder_before_linking()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["a.txt"] = "1\n" });
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Path.Join(Root, "current"));
+        File.WriteAllText(Path.Join(Root, "current", RuntimeManager.InstalledName), "{}");
+
+        var res = manager.Install(repo, "HEAD", fetch: false);
+        Assert.True(res.Changed);
+        Assert.True(Directory.Exists(RuntimeManager.CurrentLink(Root)));
+    }
+
+    [Fact]
     public void Prune_ignores_links_in_root()
     {
         var repo = NewRepo();
@@ -709,6 +742,13 @@ public sealed class RuntimeManagerTests : IDisposable
     {
         Assert.Equal(Path.Join("/c", ".venv", "bin", "rig"), RuntimeManager.Executable("/c", "rig", windows: false));
         Assert.Equal(Path.Join(@"C:\c", ".venv", "Scripts", "rig.exe"), RuntimeManager.Executable(@"C:\c", "rig", windows: true));
+    }
+
+    [Fact]
+    public void RunningCopy_detects_whether_path_is_inside_root()
+    {
+        Assert.True(RuntimeManager.RunningCopy(Path.Join(Root, "copy1"), Root));
+        Assert.False(RuntimeManager.RunningCopy(_temp.Path, Root));
     }
 
     [Fact]
