@@ -869,6 +869,27 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("Rollback failed:", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void ReportShim_branches_exercise_all_outcomes()
+    {
+        var bin = Path.Join(_temp.Path, ".local", "bin");
+        _ = Directory.CreateDirectory(bin);
+        var shimPath = Path.Join(bin, "rig");
+
+        // 1. Unchanged: install first time, then second time
+        _ = RigShim.Install(shimPath, Root, false);
+        var host = new RuntimeHost(Root, _temp.Path, _temp.Path, false, new FakeProc(), TimeProvider.System);
+        var cmd = new RuntimeCommand(host, _out);
+        cmd.ReportShim();
+        Assert.Contains("rig on PATH: ", _out.ToString(), StringComparison.Ordinal);
+
+        // 2. LeftAlone: foreign content
+        File.WriteAllText(shimPath, "custom alien script");
+        _out.GetStringBuilder().Clear();
+        cmd.ReportShim();
+        Assert.Contains("Left ", _out.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand

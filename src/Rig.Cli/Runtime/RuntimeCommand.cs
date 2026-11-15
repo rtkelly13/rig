@@ -151,7 +151,7 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
         }
     }
 
-    private void ReportShim()
+    internal void ReportShim()
     {
         var path = RigShim.PathFor(host.Home, host.Windows);
         var shown = path.Replace('\\', '/');

@@ -861,12 +861,142 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.True(res.Changed);
     }
 
+    [Fact]
+    public void RuntimeInstallException_constructors_are_usable()
+    {
+        var ex1 = new RuntimeInstallException();
+        Assert.NotNull(ex1);
+        var ex2 = new RuntimeInstallException("test message");
+        Assert.Equal("test message", ex2.Message);
+        var inner = new InvalidOperationException("inner");
+        var ex3 = new RuntimeInstallException("msg", inner);
+        Assert.Equal("msg", ex3.Message);
+        Assert.Same(inner, ex3.InnerException);
+    }
+
+    [Fact]
+    public void Static_path_and_identity_helpers()
+    {
+        Assert.Equal(Path.Join(_temp.Path, "runtime"), RuntimeManager.RuntimeRoot(_temp.Path));
+        Assert.Equal(Path.Join(Root, RuntimeManager.LinkName), RuntimeManager.CurrentLink(Root));
+        Assert.True(RuntimeManager.RunningCopy(Path.Join(Root, "sub", "file"), Root));
+        Assert.False(RuntimeManager.RunningCopy(_temp.Path, Root));
+
+        var unixExe = RuntimeManager.Executable("/copy", "python", windows: false);
+        Assert.Equal(Path.Join("/copy", ".venv", "bin", "python"), unixExe);
+        var winExe = RuntimeManager.Executable(@"C:\copy", "python", windows: true);
+        Assert.Equal(Path.Join(@"C:\copy", ".venv", "Scripts", "python.exe"), winExe);
+
+        var unixPub = RuntimeManager.Published("/copy", "rig", windows: false);
+        Assert.Equal(Path.Join("/copy", "rig", "rig"), unixPub);
+        var winPub = RuntimeManager.Published(@"C:\copy", "rig", windows: true);
+        Assert.Equal(Path.Join(@"C:\copy", "rig", "rig.exe"), winPub);
+
+        var manager = Manager(new Tools(_system));
+        Assert.Equal(Root, manager.Root);
+    }
+
+    [Fact]
+    public void LinkTarget_and_IsLink_behaviors()
+    {
+        var notLink = _temp.Folder("not_a_link");
+        Assert.False(RuntimeManager.IsLink(notLink));
+        Assert.False(RuntimeManager.IsLink(Path.Join(_temp.Path, "does_not_exist")));
+
+        var ex = Assert.Throws<RuntimeInstallException>(() => RuntimeManager.LinkTarget(notLink));
+        Assert.Contains("is not a link", ex.Message, StringComparison.Ordinal);
+
+        var target = _temp.Folder("target_dir");
+        var link = Path.Join(_temp.Path, "test_symlink");
+        Directory.CreateSymbolicLink(link, target);
+
+        Assert.True(RuntimeManager.IsLink(link));
+        Assert.Equal(target, RuntimeManager.LinkTarget(link));
+
+        RuntimeManager.RemoveLink(link);
+        Assert.False(Directory.Exists(link));
+    }
+
+    [Fact]
+    public void CopyDirectory_and_TreeRemoval()
+    {
+        var src = _temp.Folder("copy_src");
+        var sub = Directory.CreateDirectory(Path.Join(src, "nested")).FullName;
+        File.WriteAllText(Path.Join(src, "file1.txt"), "hello");
+        File.WriteAllText(Path.Join(sub, "file2.txt"), "world");
+
+        var dst = Path.Join(_temp.Path, "copy_dst");
+        RuntimeManager.CopyDirectory(src, dst);
+
+        Assert.True(File.Exists(Path.Join(dst, "file1.txt")));
+        Assert.True(File.Exists(Path.Join(dst, "nested", "file2.txt")));
+
+        RuntimeManager.TryRemoveTree(dst);
+        Assert.False(Directory.Exists(dst));
+
+        // Removing non-existent path should not throw
+        RuntimeManager.TryRemoveTree(dst);
+    }
+
+    [Fact]
+    public void HandleWindowsCopyFallback_returns_false_when_not_applicable()
+    {
+        var res = RuntimeManager.HandleWindowsCopyFallback(
+            new RuntimeInstallException("err"),
+            link: Path.Join(_temp.Path, "l"),
+            copy: Path.Join(_temp.Path, "c"),
+            old: "old-copy");
+        Assert.False(res);
+    }
+
+    [Fact]
+    public void Install_prunes_partial_and_unkept_directories()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["a.txt"] = "1\n" });
+        var manager = Manager(new Tools(_system));
+
+        _ = Directory.CreateDirectory(Root);
+        var partial = Directory.CreateDirectory(Path.Join(Root, "stale.partial")).FullName;
+        File.WriteAllText(Path.Join(partial, "dummy.txt"), "junk");
+
+        var oldUnkept = Directory.CreateDirectory(Path.Join(Root, "111122223333")).FullName;
+        File.WriteAllText(Path.Join(oldUnkept, RuntimeManager.InstalledName), "{}");
+
+        var res = manager.Install(repo, "HEAD", fetch: false);
+        Assert.True(res.Changed);
+        Assert.Contains("stale.partial", res.Removed);
+        Assert.Contains("111122223333", res.Removed);
+        Assert.False(Directory.Exists(partial));
+        Assert.False(Directory.Exists(oldUnkept));
+    }
+
+    [Fact]
+    public void Install_fails_during_Check_with_large_output_triggers_Tail()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["a.txt"] = "1\n" });
+        var hugeOutput = new string('x', 3000);
+        var tools = new Tools(_system)
+        {
+            Fails = req => req.Argv.Contains("--help"),
+            FailureOutput = hugeOutput,
+        };
+        var manager = Manager(tools);
+
+        var ex = Assert.Throws<RuntimeInstallException>(() => manager.Install(repo, "HEAD", fetch: false));
+        Assert.Contains("exited 1", ex.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(hugeOutput, ex.Message, StringComparison.Ordinal);
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {
         public List<ProcRequest> Calls { get; } = [];
 
         public Func<ProcRequest, bool>? Fails { get; init; }
+
+        public string FailureOutput { get; init; } = "Traceback: boom";
 
         public Ran Run(ProcRequest request)
         {
@@ -876,7 +1006,7 @@ public sealed class RuntimeManagerTests : IDisposable
             }
 
             Calls.Add(request);
-            return Fails?.Invoke(request) == true ? new Ran(1, "Traceback: boom", "") : new Ran(0, "", "");
+            return Fails?.Invoke(request) == true ? new Ran(1, FailureOutput, "") : new Ran(0, "", "");
         }
 
         public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Run(request));

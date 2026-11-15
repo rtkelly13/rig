@@ -488,7 +488,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     }
 
     [ExcludeFromCodeCoverage(Justification = "Windows directory copy fallback; tested in Windows CI")]
-    private static bool HandleWindowsCopyFallback(RuntimeInstallException ex, string link, string copy, string? old)
+    internal static bool HandleWindowsCopyFallback(RuntimeInstallException ex, string link, string copy, string? old)
     {
         _ = ex;
         if (OperatingSystem.IsWindows() && old is null && Directory.Exists(copy))
@@ -546,7 +546,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
     }
 
-    private static string LinkTarget(string link)
+    internal static string LinkTarget(string link)
     {
         var target = new DirectoryInfo(link).LinkTarget;
         if (string.IsNullOrEmpty(target))
@@ -557,7 +557,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         return Path.IsPathRooted(target) ? target : Path.GetFullPath(Path.Join(Path.GetDirectoryName(link), target));
     }
 
-    private static bool IsLink(string path)
+    internal static bool IsLink(string path)
     {
         try
         {
@@ -570,7 +570,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     }
 
     [ExcludeFromCodeCoverage(Justification = "Defensive link removal fallback")]
-    private static void RemoveLink(string link)
+    internal static void RemoveLink(string link)
     {
         try
         {
@@ -591,7 +591,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     }
 
     [ExcludeFromCodeCoverage(Justification = "Windows junction fallback")]
-    private static void CopyDirectory(string source, string destination)
+    internal static void CopyDirectory(string source, string destination)
     {
         _ = Directory.CreateDirectory(destination);
         foreach (var folder in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories))
@@ -606,7 +606,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     }
 
     [ExcludeFromCodeCoverage(Justification = "Defensive tree removal fallback")]
-    private static void TryRemoveTree(string path)
+    internal static void TryRemoveTree(string path)
     {
         try
         {
@@ -618,7 +618,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
     }
 
-    private static void RemoveTree(string path)
+    internal static void RemoveTree(string path)
     {
         if (!Path.Exists(path) && !IsLink(path))
         {
