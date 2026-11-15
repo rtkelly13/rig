@@ -379,7 +379,13 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             _ = Must(["git", "-C", repo, "fetch", "--quiet", "origin"], null);
         }
 
-        return Must(["git", "-C", repo, "rev-parse", "--verify", $"{refName}^{{commit}}"], null).Trim();
+        var resolved = Must(["git", "-C", repo, "rev-parse", "--verify", $"{refName}^{{commit}}"], null).Trim();
+        if (resolved.Length == 0)
+        {
+            throw new RuntimeInstallException($"Could not resolve {refName} in {repo}.");
+        }
+
+        return resolved;
     }
 
     private void Extract(string repo, string sha, string destination)

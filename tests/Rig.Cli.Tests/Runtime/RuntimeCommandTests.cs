@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Formats.Tar;
 using Rig.Cli.Runtime;
+using Rig.Core.Roots;
 using Rig.Core.Runtime;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
@@ -167,7 +168,7 @@ public sealed class RuntimeCommandTests : IDisposable
     [Fact]
     public async Task Install_discovers_checkout_and_reports_previous_and_removed_copies()
     {
-        var repo = _temp.Folder("auto-repo");
+        var repo = PathResolution.Resolve(_temp.Folder("auto-repo"));
         await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
         var sha = "abcdef1234567890abcdef1234567890abcdef12";
         var shortSha = sha[..RuntimeManager.ShortShaLength];
@@ -193,6 +194,7 @@ public sealed class RuntimeCommandTests : IDisposable
                     {
                         var tarPath = outputArg["--output=".Length..];
                         var emptyDir = _temp.Folder("empty-tar-source");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
                         TarFile.CreateFromDirectory(emptyDir, tarPath, false);
                     }
                 }
@@ -251,7 +253,7 @@ public sealed class RuntimeCommandTests : IDisposable
     [Fact]
     public async Task Install_running_copy_falls_back_to_recorded_repo()
     {
-        var repo = _temp.Folder("recorded-repo");
+        var repo = PathResolution.Resolve(_temp.Folder("recorded-repo"));
         await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
         _ = Directory.CreateDirectory(Root);
         await File.WriteAllTextAsync(
@@ -272,6 +274,7 @@ public sealed class RuntimeCommandTests : IDisposable
                     {
                         var tarPath = outputArg["--output=".Length..];
                         var emptyDir = _temp.Folder("empty-tar-source-2");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
                         TarFile.CreateFromDirectory(emptyDir, tarPath, false);
                     }
                 }
@@ -298,7 +301,7 @@ public sealed class RuntimeCommandTests : IDisposable
     [Fact]
     public async Task Install_leaves_foreign_shim_alone()
     {
-        var repo = _temp.Folder("repo-for-shim-test");
+        var repo = PathResolution.Resolve(_temp.Folder("repo-for-shim-test"));
         await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
         var home = _temp.Folder("home-foreign");
         var shimDir = Path.Join(home, ".local", "bin");
@@ -318,6 +321,7 @@ public sealed class RuntimeCommandTests : IDisposable
                     {
                         var tarPath = outputArg["--output=".Length..];
                         var emptyDir = _temp.Folder("empty-tar-source-3");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
                         TarFile.CreateFromDirectory(emptyDir, tarPath, false);
                     }
                 }
