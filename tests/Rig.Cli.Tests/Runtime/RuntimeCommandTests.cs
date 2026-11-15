@@ -633,6 +633,63 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("Previous kept for rollback: aaaaaaaaaaaa", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ReportShim_handles_foreign_outcome()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-shim-foreign"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+
+        var sha = "9999999999999999999999999999999999999999";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-foreign");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }.Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var home = _temp.Folder("home-foreign");
+        var shimPath = RigShim.PathFor(home, false);
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(shimPath)!);
+        await File.WriteAllTextAsync(shimPath, "#!/bin/sh\necho foreign\n", TestContext.Current.CancellationToken);
+
+        var host = new RuntimeHost(Root, repo, home, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit);
+        Assert.Contains("Left", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("alone: rig did not write it", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Rollback_handles_failure_reporting()
+    {
+        var proc = new FakeProc();
+        var host = new RuntimeHost(Root, _temp.Path, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "rollback"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(1, exit);
+        Assert.Contains("Rollback failed:", _out.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand

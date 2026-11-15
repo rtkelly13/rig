@@ -568,6 +568,44 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.True(Path.Exists(link));
     }
 
+    [Fact]
+    public void RuntimeInstallException_constructors_and_Manager_properties()
+    {
+        var ex1 = new RuntimeInstallException();
+        Assert.Null(ex1.InnerException);
+        var inner = new InvalidOperationException("inner");
+        var ex2 = new RuntimeInstallException("msg", inner);
+        Assert.Equal("msg", ex2.Message);
+        Assert.Same(inner, ex2.InnerException);
+
+        Assert.Equal(Path.Join("/custom", "runtime"), RuntimeManager.RuntimeRoot("/custom"));
+        Assert.EndsWith("rig", RuntimeManager.Published("/copy", "rig", windows: false), StringComparison.Ordinal);
+        Assert.EndsWith("rig.exe", RuntimeManager.Published("/copy", "rig", windows: true), StringComparison.Ordinal);
+
+        var manager = Manager(new Tools(_system));
+        Assert.Equal(Root, manager.Root);
+    }
+
+    [Fact]
+    public void Check_reports_truncated_tail_and_workspace_plan()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string>
+        {
+            ["app.txt"] = "bad\n",
+            ["desktop-manager/workspace-plan.bundle.json"] = "{}",
+        });
+        var tools = new Tools(_system)
+        {
+            Fails = request => request.Argv.Contains("chrome-tabs", StringComparer.Ordinal)
+                || request.Argv.Contains("validate-plan", StringComparer.Ordinal),
+        };
+
+        var error = Assert.Throws<RuntimeInstallException>(() => Manager(tools).Install(repo, "HEAD", fetch: false));
+        Assert.Contains("current is unchanged", error.Message, StringComparison.Ordinal);
+        Assert.Contains("chrome-tabs", error.Message, StringComparison.Ordinal);
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {
