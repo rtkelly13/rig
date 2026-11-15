@@ -1,8 +1,8 @@
 """`desktop-manager chrome-tabs`: read and prune Chrome tabs through UI Automation.
 
-C# owns the Windows commands (`rig chrome-tabs`): `list`, `rank`, `prune`, `group`, `saved-groups`,
-`install` and `uninstall`. The Python tree keeps the macOS driver's commands and the C#-owned spellings
-only where C# has no macOS registration yet, so one implementation owns each leaf on each platform.
+C# owns `list`, `rank`, `prune`, `group` and `saved-groups` on Windows and macOS through
+`rig chrome-tabs`, plus the Windows-only `install` and `uninstall`. The Python tree keeps `organise`
+until its scheduled/wait slice moves, and the `traces` spelling forwards the whole line to C#.
 """
 
 from __future__ import annotations
@@ -126,7 +126,6 @@ def window_json(window: ChromeWindow, tabs: Sequence[ChromeTab]) -> dict[str, ob
     }
 
 
-@chrome_tabs_app.command(name="list")
 @requires(Platform.MACOS)
 def list_tabs(
     ctx: typer.Context,
@@ -223,7 +222,6 @@ def _gh_query(query: str) -> GhResult:
         return result
 
 
-@chrome_tabs_app.command(name="rank")
 @requires(Platform.MACOS)
 def rank(
     ctx: typer.Context,
@@ -264,7 +262,6 @@ def rank(
     console.print(f"[dim]{len(ranked)} tabs, {protected} protected, {format_size(memory)} reported by tabs[/dim]")
 
 
-@chrome_tabs_app.command(name="prune")
 @requires(Platform.MACOS)
 def prune(
     ctx: typer.Context,
@@ -392,7 +389,6 @@ def _report_failed_closes(applied: Sequence[AppliedClose]) -> list[AppliedClose]
     return failures
 
 
-@chrome_tabs_app.command(name="group")
 @requires(Platform.MACOS)
 def group(
     ctx: typer.Context,

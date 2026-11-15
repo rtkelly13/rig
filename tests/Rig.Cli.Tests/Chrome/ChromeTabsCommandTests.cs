@@ -22,7 +22,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     private static readonly DateTimeOffset Now = new(2026, 3, 4, 23, 30, 0, TimeSpan.Zero);
     private static readonly long Base = new DateTimeOffset(2026, 3, 4, 10, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds() * 1_000_000;
     private readonly TempDir _temp = new();
-    private readonly StringWriter _out = new();
+    private readonly StringWriter _out = new() { NewLine = "\n" };
 
     public void Dispose()
     {
