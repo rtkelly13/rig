@@ -33,6 +33,11 @@ public sealed record SpecRepo(SpecScratch Scratch, IProc Proc, string Origin, st
         _ = await repo.GitAsync(seed, "remote", "add", "origin", repo.Origin);
         _ = await repo.GitAsync(seed, "push", "-q", "-u", "origin", "main");
         _ = await repo.GitAsync(scratch.Path, "clone", "-q", repo.Origin, repo.ClonePath);
+        // The clone commits on its own (a shelve marker), so it needs an identity: CI runners have no global one.
+        _ = await repo.GitAsync(repo.ClonePath, "config", "user.name", "rig-specs");
+        _ = await repo.GitAsync(repo.ClonePath, "config", "user.email", "specs@example.invalid");
+        _ = await repo.GitAsync(repo.ClonePath, "config", "commit.gpgsign", "false");
+        _ = await repo.GitAsync(repo.ClonePath, "config", "core.autocrlf", "false");
         _ = await repo.GitAsync(repo.ClonePath, "worktree", "add", "-q", "-b", branch, repo.Tree);
         await File.WriteAllTextAsync(Path.Join(repo.Tree, file), content);
         _ = await repo.GitAsync(repo.Tree, "add", ".");
