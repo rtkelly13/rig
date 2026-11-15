@@ -690,6 +690,121 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("Rollback failed:", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Rollback_reports_current_and_previous_on_success()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "aaaaaaaaaaaa"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "bbbbbbbbbbbb"));
+        Directory.CreateSymbolicLink(RuntimeManager.CurrentLink(Root), Path.Join(Root, "aaaaaaaaaaaa"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "bbbbbbbbbbbb", RuntimeManager.InstalledName),
+            "{}",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "aaaaaaaaaaaa", "previous": "bbbbbbbbbbbb", "repo": "r"}""",
+            TestContext.Current.CancellationToken);
+
+        var proc = new FakeProc();
+        var host = new RuntimeHost(Root, _temp.Path, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "rollback"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current: bbbbbbbbbbbb (previous: aaaaaaaaaaaa)", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FindCheckout_detects_rig_and_shared_utilities_projects()
+    {
+        var outside = _temp.Folder("outside");
+        Assert.Null(RuntimeCommand.FindCheckout(outside));
+
+        var otherProject = _temp.Folder("other-project");
+        File.WriteAllText(Path.Join(otherProject, "pyproject.toml"), "[project]\nname = \"other\"\n");
+        Assert.Null(RuntimeCommand.FindCheckout(otherProject));
+
+        var sharedUtil = _temp.Folder("shared-util");
+        File.WriteAllText(Path.Join(sharedUtil, "pyproject.toml"), "[project]\nname = \"shared-utilities\"\n");
+        var subDir = Directory.CreateDirectory(Path.Join(sharedUtil, "sub", "dir")).FullName;
+        Assert.Equal(sharedUtil, RuntimeCommand.FindCheckout(subDir));
+    }
+
+    [Fact]
+    public async Task Install_running_from_runtime_copy_uses_state_repo()
+    {
+        var copy = PathResolution.Resolve(_temp.Folder("runtime/abc123456789"));
+        var repo = PathResolution.Resolve(_temp.Folder("real-repo"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "abc123456789", "repo": {{System.Text.Json.JsonSerializer.Serialize(repo)}}}""",
+            TestContext.Current.CancellationToken);
+
+        var sha = "1111222233334444555566667777888899990000";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-running");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }.Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, copy, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current: 111122223333", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_reports_already_current_when_sha_matches()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-current"));
+        var sha = "aaaaaaaaaaaabbbbbbbbbbbbccccccccccccdddd";
+        var shortSha = sha[..RuntimeManager.ShortShaLength];
+        _ = Directory.CreateDirectory(Path.Join(Root, shortSha));
+        Directory.CreateSymbolicLink(RuntimeManager.CurrentLink(Root), Path.Join(Root, shortSha));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "{{shortSha}}", "repo": {{System.Text.Json.JsonSerializer.Serialize(repo)}}}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, shortSha, RuntimeManager.InstalledName),
+            $$"""{"sha": "{{sha}}", "ref": "origin/main"}""",
+            TestContext.Current.CancellationToken);
+
+        var proc = new FakeProc().Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+        var host = new RuntimeHost(Root, repo, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Already current:", _out.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand
