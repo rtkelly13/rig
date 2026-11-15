@@ -38,7 +38,8 @@ public static class RigShim
         ArgumentNullException.ThrowIfNull(target);
         if (windows)
         {
-            return $"@echo off\r\nrem {Marker}. Runs rig from the runtime copy.\r\n\"{target}\" %*\r\n";
+            var escaped = target.Replace("%", "%%", StringComparison.Ordinal);
+            return $"@echo off\r\nrem {Marker}. Runs rig from the runtime copy.\r\n\"{escaped}\" %*\r\n";
         }
 
         var quoted = target.Replace("'", "'\\''", StringComparison.Ordinal);

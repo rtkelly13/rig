@@ -303,6 +303,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     {
         var link = CurrentLink(root);
         string? old = null;
+        string? backup = null;
         if (IsLink(link))
         {
             old = LinkTarget(link);
@@ -315,31 +316,44 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
                 throw new RuntimeInstallException($"{link} exists and is not a link; move it aside");
             }
 
-            RemoveTree(link);
+            backup = link + ".backup." + Guid.NewGuid().ToString("N");
+            Directory.Move(link, backup);
         }
 
         try
         {
-            MakeLink(link, copy);
-        }
-        catch (RuntimeInstallException) when (OperatingSystem.IsWindows() && old is null && Directory.Exists(copy))
-        {
-            var tempDir = link + ".tmpdir." + Guid.NewGuid().ToString("N");
             try
             {
-                CopyDirectory(copy, tempDir);
-                if (Directory.Exists(link)) { RemoveTree(link); }
-                Directory.Move(tempDir, link);
+                MakeLink(link, copy);
             }
-            catch
+            catch (RuntimeInstallException) when (OperatingSystem.IsWindows() && old is null && Directory.Exists(copy))
             {
-                if (Directory.Exists(tempDir)) { TryRemoveTree(tempDir); }
-                throw;
+                var tempDir = link + ".tmpdir." + Guid.NewGuid().ToString("N");
+                try
+                {
+                    CopyDirectory(copy, tempDir);
+                    if (Directory.Exists(link)) { RemoveTree(link); }
+                    Directory.Move(tempDir, link);
+                }
+                catch
+                {
+                    if (Directory.Exists(tempDir)) { TryRemoveTree(tempDir); }
+                    throw;
+                }
+            }
+
+            if (backup is not null && Directory.Exists(backup))
+            {
+                TryRemoveTree(backup);
             }
         }
         catch
         {
-            if (old is not null && !Path.Exists(link))
+            if (backup is not null && !Path.Exists(link) && Directory.Exists(backup))
+            {
+                try { Directory.Move(backup, link); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+            else if (old is not null && !Path.Exists(link))
             {
                 try { MakeLink(link, old); } catch (RuntimeInstallException) { } catch (IOException) { } catch (UnauthorizedAccessException) { }
             }

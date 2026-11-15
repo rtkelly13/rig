@@ -37,6 +37,13 @@ public sealed class RigShimTests : IDisposable
     }
 
     [Fact]
+    public void The_windows_shim_escapes_literal_percent_signs_in_target()
+    {
+        var text = RigShim.Render(@"C:\rt\%TEMP%\current\rig.exe", windows: true);
+        Assert.EndsWith("\"C:\\rt\\%%TEMP%%\\current\\rig.exe\" %*\r\n", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Install_writes_then_leaves_an_identical_shim()
     {
         var shim = Path.Join(_temp.Path, "bin", "rig");

@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Formats.Tar;
 using Rig.Cli.Runtime;
 using Rig.Core.Runtime;
 using Rig.Core.Tests;
@@ -107,6 +108,7 @@ public sealed class RuntimeCommandTests : IDisposable
     [Fact]
     public async Task Rollback_succeeds_and_reports_swapped_copies()
     {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Creating symlinks needs developer mode on Windows.");
         _ = Directory.CreateDirectory(Path.Join(Root, "curr"));
         _ = Directory.CreateDirectory(Path.Join(Root, "prev"));
         await File.WriteAllTextAsync(Path.Join(Root, "curr", RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
@@ -126,6 +128,7 @@ public sealed class RuntimeCommandTests : IDisposable
     [Fact]
     public async Task Install_already_current_reports_already_current()
     {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Creating symlinks needs developer mode on Windows.");
         var sha = "1111222233334444555566667777888899990000";
         var shortSha = sha[..RuntimeManager.ShortShaLength];
         var copy = Path.Join(Root, shortSha);
@@ -181,6 +184,19 @@ public sealed class RuntimeCommandTests : IDisposable
         var proc = new FakeProc
         {
             Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source");
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
         }
             .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
 
