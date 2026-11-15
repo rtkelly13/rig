@@ -16,7 +16,14 @@ public sealed class RigShimTests : IDisposable
 
         Assert.StartsWith("#!/bin/sh\n", text, StringComparison.Ordinal);
         Assert.Contains(RigShim.Marker, text, StringComparison.Ordinal);
-        Assert.EndsWith("exec \"/a b/current/.venv/bin/rig\" \"$@\"\n", text, StringComparison.Ordinal);
+        Assert.EndsWith("exec '/a b/current/.venv/bin/rig' \"$@\"\n", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_posix_shim_escapes_shell_expansion_characters_in_target()
+    {
+        var text = RigShim.Render("/tmp/$VAR`whoami`'dir/rig", windows: false);
+        Assert.Contains("exec '/tmp/$VAR`whoami`'\\''dir/rig' \"$@\"\n", text, StringComparison.Ordinal);
     }
 
     [Fact]

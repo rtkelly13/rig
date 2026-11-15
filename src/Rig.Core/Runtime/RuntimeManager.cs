@@ -306,42 +306,56 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         if (IsLink(link))
         {
             old = LinkTarget(link);
-            RemoveLink(link);
         }
         else if (Path.Exists(link) || Directory.Exists(link) || File.Exists(link))
         {
-            if (Directory.Exists(link) && File.Exists(Path.Join(link, InstalledName)))
-            {
-                RemoveTree(link);
-            }
-            else
+            if (!Directory.Exists(link) || !File.Exists(Path.Join(link, InstalledName)))
             {
                 throw new RuntimeInstallException($"{link} exists and is not a link; move it aside");
             }
         }
 
+        var tempLink = link + ".tmp." + Guid.NewGuid().ToString("N");
         try
         {
-            MakeLink(link, copy);
+            MakeLink(tempLink, copy);
+            if (IsLink(link) || File.Exists(link))
+            {
+                File.Move(tempLink, link, overwrite: true);
+            }
+            else if (Directory.Exists(link))
+            {
+                RemoveTree(link);
+                Directory.Move(tempLink, link);
+            }
+            else
+            {
+                Directory.Move(tempLink, link);
+            }
         }
         catch (RuntimeInstallException) when (OperatingSystem.IsWindows() && old is null && Directory.Exists(copy))
         {
-            CopyDirectory(copy, link);
-        }
-        catch (RuntimeInstallException)
-        {
-            if (old is not null)
+            if (Path.Exists(tempLink)) { TryRemoveTree(tempLink); }
+            var tempDir = link + ".tmpdir." + Guid.NewGuid().ToString("N");
+            try
             {
-                try
-                {
-                    MakeLink(link, old);
-                }
-                catch (RuntimeInstallException)
-                {
-                    // The old link cannot be restored either; the caller still gets the failure that caused this.
-                }
+                CopyDirectory(copy, tempDir);
+                if (Directory.Exists(link)) { RemoveTree(link); }
+                Directory.Move(tempDir, link);
             }
-
+            catch
+            {
+                if (Directory.Exists(tempDir)) { TryRemoveTree(tempDir); }
+                throw;
+            }
+        }
+        catch
+        {
+            if (Path.Exists(tempLink)) { TryRemoveTree(tempLink); }
+            if (old is not null && !Path.Exists(link))
+            {
+                try { MakeLink(link, old); } catch { /* ignore */ }
+            }
             throw;
         }
     }

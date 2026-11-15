@@ -41,8 +41,8 @@ public static class RigShim
             return $"@echo off\r\nrem {Marker}. Runs rig from the runtime copy.\r\n\"{target}\" %*\r\n";
         }
 
-        var quoted = target.Replace("\"", "\\\"", StringComparison.Ordinal);
-        return $"#!/bin/sh\n# {Marker}. Runs rig from the runtime copy.\nexec \"{quoted}\" \"$@\"\n";
+        var quoted = target.Replace("'", "'\\''", StringComparison.Ordinal);
+        return $"#!/bin/sh\n# {Marker}. Runs rig from the runtime copy.\nexec '{quoted}' \"$@\"\n";
     }
 
     /// <summary>
