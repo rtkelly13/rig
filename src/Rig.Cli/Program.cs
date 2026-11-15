@@ -16,6 +16,7 @@ using Rig.Cli.Otel;
 using Rig.Cli.Policy;
 using Rig.Cli.Rendering;
 using Rig.Cli.ReviewQueue;
+using Rig.Cli.Runtime;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
 using Rig.Cli.Traces;
@@ -173,6 +174,15 @@ internal static class Program
                         ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)),
                     new QueueGitHub(github), Console.Out, Console.Error).Build,
                 new JobsCommand(JobsHostFor(codeRoot, checkout, home, proc), Console.Out).Build,
+                new RuntimeCommand(
+                    new RuntimeHost(
+                        Path.Join(AppData.Current(), Rig.Core.Jobs.JobsSite.RuntimeFolder),
+                        checkout,
+                        home,
+                        OperatingSystem.IsWindows(),
+                        proc,
+                        TimeProvider.System),
+                    Console.Out).Build,
                 new MailCommand(
                     new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),
                     Console.Out,

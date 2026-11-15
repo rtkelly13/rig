@@ -31,7 +31,7 @@ public static class ChromeInstall
     public static string ShimPath(string home) => Path.Join(home, ".local", "bin", ShimName);
 
     /// <summary>
-    /// <c>desktop-manager.exe</c> inside the runtime's <c>current</c> copy, which <c>desktop-manager runtime install</c>
+    /// <c>desktop-manager.exe</c> inside the runtime's <c>current</c> copy, which <c>rig runtime install</c>
     /// maintains: <c>%LOCALAPPDATA%\shared-utilities\runtime\current\.venv\Scripts\desktop-manager.exe</c>.
     /// </summary>
     /// <param name="environment">Reads an environment variable.</param>

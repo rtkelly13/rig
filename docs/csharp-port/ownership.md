@@ -62,11 +62,12 @@ cannot conceal an independent implementation.
 | `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand`, `Rig.Web.TriageRoutes` and `Rig.Core.ReviewQueue.AgentSignals` | CLI, web inbox and agent-signal consumers switched; Python CLI, six platform fallback routes, `rig.triage.web` and `rig.triage.agents` retired. `src/rig/triage` keeps only the models and store the browser tests seed, with no production caller |
 | `c4` | Python `rig.c4_okf.cli` | Not ported; five leaves; open #78 touches this area, do not duplicate it |
 | `jobs` | C# status/last/log/run/install/uninstall | All legacy spellings dispatch whole-line to C#; #209 owns runtime progression and Windows acceptance |
+| `runtime` | C# status/install/rollback; Python `runtime.py` still serves paths and state to scheduled Python callers | Legacy spellings dispatch whole-line to C#; `runtime_cli` execution and `rig_shim` retired. `runtime.py` stays for jobs/chrome path and state consumers; #227 owns native acceptance |
 | `web` | C# public host and C# MCP server (`/api/mcp` and stdio), verified thin dispatcher for the bare launch, Python service/database/upstream children | Triage, estate and telemetry routes are C# (`Rig.Web.TriageRoutes`, `EstateOpsRoutes`, `TelemetryRoutes`); bare `desktop-manager web` is a thin C# dispatcher in #217; #207 owns connectivity cutover; the jobs coordinator, C4, the estate graph and database backup stay in the Python child |
 | `web mcp` | C# `Rig.Web.Mcp.RigOpsTools` over `Rig.Core`, served by `rig web mcp` (stdio) and `app.MapMcp("/api/mcp")` | `desktop_manager.web_mcp` and its Python CLI command are retired; the eleven tools are inspected from their `[McpServerTool]` attributes |
 | `chrome-tabs` | C# traces everywhere; C# native `list`, `rank`, `prune` and `group` on Windows and macOS; `saved-groups`, `install` and `uninstall` on Windows; Python `organise` | macOS `group`, `list`, `prune` and `rank` registrations retired in #226 with the native `ChromeMac` driver; `organise` stays Python until its scheduled/wait slice moves |
 | `chrome-tabs traces runs/show/summary/prune` | C# only; legacy spelling dispatches the whole line | Legacy report CLI and 462 lines of reader/report code deleted; writer/daily retention still have scheduled Python callers |
-| `desktop-manager workspace`, `runtime`, `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
+| `desktop-manager workspace`, `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
 | `claude-sessions` | Retired without a C# port (#224) | Eight Python leaves and fourteen modules deleted; the `work` list keeps its own transcript, live-session and ledger reader in `work/session_store.py`. Orca and direct CLI/IDE workflows replaced the window-focused orchestration |
 | Core Python modules, development file apps, Node scripts and launchers | `module:`, `python-file:`, `main:`, `file-app:`, `node:`, `launcher:` rows | Development tooling is inventoried separately from product CLI behavior |
 | Web/MCP and jobs | `web-child:`, `mcp:`, `python-job:`, `cs-job:` rows | The `mcp:` tool set is now C#; `desktop_manager.web_mcp` and the triage, estate and telemetry web children are retired. The jobs coordinator is the remaining `web-child:` row, and job callers remain Python where named until their slices switch them |
@@ -170,6 +171,16 @@ the ratchet and C# whitespace checks passed. Built `rigw jobs install --help` al
 PATH and an unavailable Python checkout. The task XML oracle covers all three tasks, preserving
 interactive identity, timing and restart policy while changing Logon/Tick to the native launcher.
 No real tasks were installed or removed; `WIN-JOBS` and rollout remain pending.
+
+Runtime cutover validation on macOS, 2026-11-14: `dotnet build rig.slnx -m:2` passed with zero
+warnings and errors, and `dotnet test rig.slnx -c Release` ran 4,946 tests: 4,932 passed with 14 existing
+skips and zero failures. The ownership gate against `origin/main` passed with 457 inspected surfaces, zero
+pre-existing overlaps and zero violations. Focused Python runtime and forwarding tests passed 25 cases;
+Ruff passed on the new forwarders. The Python `rig_shim` module and its test were retired in favour of
+`RigShim`, and the three legacy runtime spellings dispatch whole-line to C#. `runtime.py` remains for the
+scheduled Python callers that still use its path and state helpers. No real runtime copy, shim or
+scheduled task was installed or removed for this source cutover, so native runtime installation remains
+a rollout check rather than evidence recorded here.
 
 Named remaining acceptance procedures, all run from a reviewed/published artifact in a disposable environment:
 

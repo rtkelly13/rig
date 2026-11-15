@@ -1,0 +1,281 @@
+using System.Text.Json.Nodes;
+using Rig.Core.Processes;
+using Rig.Core.Roots;
+using Rig.Core.Runtime;
+
+namespace Rig.Core.Tests.Runtime;
+
+/// <summary><c>RuntimeManager</c> over a throwaway git checkout, with uv, dotnet and the copy's checks answered by a fake.</summary>
+public sealed class RuntimeManagerTests : IDisposable
+{
+    private readonly TempDir _temp = new();
+    private readonly SystemProc _system = new();
+
+    public void Dispose() => _temp.Dispose();
+
+    private string Root => Path.Join(_temp.Path, "runtime");
+
+    private string NewRepo()
+    {
+        var repo = _temp.Folder("repo");
+        Git(repo, "init", "-q");
+        return repo;
+    }
+
+    private string Commit(string repo, IReadOnlyDictionary<string, string> files)
+    {
+        foreach (var (name, text) in files)
+        {
+            var path = Path.Join(repo, name);
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, text);
+        }
+
+        Git(repo, "add", "-A");
+        Git(repo, "commit", "-q", "-m", "c");
+        return Git(repo, "rev-parse", "HEAD").Trim();
+    }
+
+    private string Git(string workingDirectory, params string[] args)
+    {
+        var ran = _system.Run(new ProcRequest(
+            ["git", "-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "core.autocrlf=false", "-C", workingDirectory, .. args])
+        {
+            Timeout = TimeSpan.FromMinutes(2),
+        });
+        Assert.True(ran.Ok, ran.Err);
+        return ran.Out;
+    }
+
+    private RuntimeManager Manager(Tools tools) => new(tools, Root, TimeProvider.System);
+
+    [Fact]
+    public void Install_copies_the_commit_not_the_working_tree()
+    {
+        var repo = NewRepo();
+        var sha = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "committed\n" });
+        File.WriteAllText(Path.Join(repo, "app.txt"), "uncommitted edit\n");
+        var tools = new Tools(_system);
+        var manager = Manager(tools);
+
+        var result = manager.Install(repo, "HEAD", fetch: false);
+
+        var copy = Path.Join(Root, sha[..RuntimeManager.ShortShaLength]);
+        Assert.True(result.Changed);
+        Assert.Equal(copy, result.Copy);
+        Assert.Equal("committed\n", File.ReadAllText(Path.Join(RuntimeManager.CurrentLink(Root), "app.txt")));
+        Assert.Equal(sha, JsonNode.Parse(File.ReadAllText(Path.Join(copy, RuntimeManager.InstalledName)))!["sha"]!.GetValue<string>());
+        var state = manager.ReadState();
+        Assert.Equal(Path.GetFileName(copy), state.Current);
+        Assert.Null(state.Previous);
+        Assert.Equal(PathResolution.Resolve(repo), state.Repo);
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
+            ["uv", "sync", "--project", copy, "--frozen", "--no-dev", "--link-mode", "copy"]));
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
+            ["dotnet", "publish", Path.Join(copy, "src", "Rig.Launcher"), "-c", "Release", "-o", Path.Join(copy, "rig"), "-m:2", "-v", "q"]));
+        var windows = OperatingSystem.IsWindows();
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "run", "--help"]));
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "install", "--help"]));
+    }
+
+    [Fact]
+    public void A_copy_whose_rig_does_not_publish_is_removed_and_never_current()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "1\n" });
+        var tools = new Tools(_system) { Fails = request => request.Argv[0] == "dotnet" };
+
+        var error = Assert.Throws<RuntimeInstallException>(() => Manager(tools).Install(repo, "HEAD", fetch: false));
+
+        Assert.Contains("dotnet publish", error.Message, StringComparison.Ordinal);
+        Assert.Null(Manager(tools).ReadState().Current);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(Root));
+    }
+
+    [Fact]
+    public void A_new_install_keeps_one_previous_copy_and_removes_older_ones()
+    {
+        var repo = NewRepo();
+        var first = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "1\n" })[..RuntimeManager.ShortShaLength];
+        _ = Manager(new Tools(_system)).Install(repo, "HEAD", fetch: false);
+        var second = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "2\n" })[..RuntimeManager.ShortShaLength];
+        _ = Manager(new Tools(_system)).Install(repo, "HEAD", fetch: false);
+        var third = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "3\n" })[..RuntimeManager.ShortShaLength];
+
+        var result = Manager(new Tools(_system)).Install(repo, "HEAD", fetch: false);
+
+        Assert.Equal(second, result.Previous);
+        Assert.Equal([first], result.Removed);
+        Assert.Equal(
+            new[] { second, third }.Order(StringComparer.Ordinal),
+            Directory.EnumerateDirectories(Root).Select(Path.GetFileName).Where(name => name != RuntimeManager.LinkName).Order(StringComparer.Ordinal)!);
+        Assert.Equal("3\n", File.ReadAllText(Path.Join(RuntimeManager.CurrentLink(Root), "app.txt")));
+    }
+
+    [Fact]
+    public void A_copy_that_fails_its_checks_never_becomes_current()
+    {
+        var repo = NewRepo();
+        var good = Commit(repo, new Dictionary<string, string>
+        {
+            ["app.txt"] = "good\n",
+            ["desktop-manager/workspace-plan.bundle.json"] = "{}",
+        });
+        _ = Manager(new Tools(_system)).Install(repo, "HEAD", fetch: false);
+        var bad = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "bad\n" });
+        var tools = new Tools(_system)
+        {
+            Fails = request => request.Argv.Contains("chrome-tabs", StringComparer.Ordinal) && request.Argv.Contains("--help", StringComparer.Ordinal),
+        };
+
+        var error = Assert.Throws<RuntimeInstallException>(() => Manager(tools).Install(repo, "HEAD", fetch: false));
+
+        Assert.Contains("current is unchanged", error.Message, StringComparison.Ordinal);
+        Assert.Equal(good[..RuntimeManager.ShortShaLength], Manager(tools).ReadState().Current);
+        Assert.Equal("good\n", File.ReadAllText(Path.Join(RuntimeManager.CurrentLink(Root), "app.txt")));
+        Assert.False(Directory.Exists(Path.Join(Root, bad[..RuntimeManager.ShortShaLength])));
+    }
+
+    [Fact]
+    public void The_check_validates_the_copys_workspace_plan()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["desktop-manager/workspace-plan.bundle.json"] = "{}" });
+        var tools = new Tools(_system);
+
+        _ = Manager(tools).Install(repo, "HEAD", fetch: false);
+
+        Assert.Contains(tools.Calls, call => call.Argv.Skip(1).Take(2).SequenceEqual(["workspace", "validate-plan"]));
+    }
+
+    [Fact]
+    public void Installing_the_current_commit_again_changes_nothing()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "1\n" });
+        _ = Manager(new Tools(_system)).Install(repo, "HEAD", fetch: false);
+        var tools = new Tools(_system);
+
+        var result = Manager(tools).Install(repo, "HEAD", fetch: false);
+
+        Assert.False(result.Changed);
+        Assert.Empty(tools.Calls);
+    }
+
+    [Fact]
+    public void Rollback_swaps_current_and_previous()
+    {
+        var repo = NewRepo();
+        var first = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "1\n" })[..RuntimeManager.ShortShaLength];
+        _ = Manager(new Tools(_system)).Install(repo, "HEAD", fetch: false);
+        var second = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "2\n" })[..RuntimeManager.ShortShaLength];
+        var manager = Manager(new Tools(_system));
+        _ = manager.Install(repo, "HEAD", fetch: false);
+
+        var state = manager.Rollback();
+
+        Assert.Equal((first, second), (state.Current, state.Previous));
+        Assert.Equal("1\n", File.ReadAllText(Path.Join(RuntimeManager.CurrentLink(Root), "app.txt")));
+    }
+
+    [Fact]
+    public void Rollback_without_a_previous_copy_fails()
+    {
+        var error = Assert.Throws<RuntimeInstallException>(() => Manager(new Tools(_system)).Rollback());
+        Assert.Contains("no previous copy", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Status_reports_the_copies_and_the_distance_to_the_compared_ref()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "1\n" });
+        var manager = Manager(new Tools(_system));
+        var installed = manager.Install(repo, "HEAD", fetch: false);
+        _ = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "2\n" });
+
+        var status = manager.Status("HEAD");
+
+        Assert.Equal(installed.Sha, status.Current?.Sha);
+        Assert.Equal("HEAD", status.Current?.Ref);
+        Assert.NotNull(status.Current?.InstalledAt);
+        Assert.Equal(1, status.Behind);
+        Assert.Equal(RuntimeManager.CurrentLink(Root), status.Link);
+    }
+
+    [Fact]
+    public void Status_without_an_install_has_no_current_copy()
+    {
+        var status = Manager(new Tools(_system)).Status("origin/main");
+
+        Assert.Null(status.State.Current);
+        Assert.Null(status.Current);
+        Assert.Null(status.Previous);
+        Assert.Null(status.Behind);
+    }
+
+    [Fact]
+    public void Point_current_replaces_the_link_and_refuses_a_real_folder_it_did_not_write()
+    {
+        var first = _temp.Folder("first");
+        var second = _temp.Folder("second");
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        manager.PointCurrent(first);
+        var target = new DirectoryInfo(RuntimeManager.CurrentLink(Root)).LinkTarget;
+        Assert.Equal(PathResolution.Resolve(first), PathResolution.Resolve(target!));
+
+        manager.PointCurrent(second);
+        target = new DirectoryInfo(RuntimeManager.CurrentLink(Root)).LinkTarget;
+        Assert.Equal(PathResolution.Resolve(second), PathResolution.Resolve(target!));
+
+        var occupied = _temp.Folder("occupied");
+        var occupiedRoot = Path.Join(occupied, "runtime");
+        _ = Directory.CreateDirectory(Path.Join(occupiedRoot, RuntimeManager.LinkName));
+        var error = Assert.Throws<RuntimeInstallException>(() =>
+            new RuntimeManager(new Tools(_system), occupiedRoot, TimeProvider.System).PointCurrent(first));
+        Assert.Contains("is not a link", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void State_is_written_in_the_python_shape_and_read_back()
+    {
+        var manager = Manager(new Tools(_system));
+
+        manager.WriteState(new RuntimeState("abc", null, "/repo"));
+
+        Assert.Equal(
+            "{\n  \"current\": \"abc\",\n  \"previous\": null,\n  \"repo\": \"/repo\"\n}\n",
+            File.ReadAllText(Path.Join(Root, RuntimeManager.StateName)));
+        Assert.Equal(new RuntimeState("abc", null, "/repo"), manager.ReadState());
+        Assert.Equal(new InstalledInfo(), RuntimeManager.ReadInstalled(Path.Join(Root, "missing")));
+    }
+
+    [Fact]
+    public void Running_copy_is_true_only_under_the_runtime_root()
+    {
+        Assert.True(RuntimeManager.RunningCopy(Path.Join(Root, "abc", "src", "rig", "cli.py"), Root));
+        Assert.False(RuntimeManager.RunningCopy(Path.Join(_temp.Path, "repo", "src", "rig", "cli.py"), Root));
+    }
+
+    /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
+    private sealed class Tools(IProc system) : IProc
+    {
+        public List<ProcRequest> Calls { get; } = [];
+
+        public Func<ProcRequest, bool>? Fails { get; init; }
+
+        public Ran Run(ProcRequest request)
+        {
+            if (request.Argv[0] == "git")
+            {
+                return system.Run(request);
+            }
+
+            Calls.Add(request);
+            return Fails?.Invoke(request) == true ? new Ran(1, "Traceback: boom", "") : new Ran(0, "", "");
+        }
+
+        public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Run(request));
+    }
+}

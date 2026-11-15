@@ -1,0 +1,105 @@
+using System.CommandLine;
+using Rig.Cli.Runtime;
+using Rig.Core.Runtime;
+using Rig.Core.Tests;
+using Rig.Core.Tests.Fakes;
+
+namespace Rig.Cli.Tests.Runtime;
+
+/// <summary><c>rig runtime status|install|rollback</c> over a scratch runtime folder and a fake process runner.</summary>
+public sealed class RuntimeCommandTests : IDisposable
+{
+    private readonly TempDir _temp = new();
+    private readonly StringWriter _out = new() { NewLine = "\n" };
+    private readonly StringWriter _error = new() { NewLine = "\n" };
+
+    public void Dispose()
+    {
+        _temp.Dispose();
+        _out.Dispose();
+        _error.Dispose();
+    }
+
+    private string Root => Path.Join(_temp.Path, "runtime");
+
+    [Fact]
+    public async Task Status_without_an_install_names_the_command_that_installs_one()
+    {
+        var exit = await Run(new FakeProc(), "status");
+
+        Assert.Equal(1, exit);
+        Assert.Equal($"Nothing installed in {Root}: run `rig runtime install`.\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Status_shows_both_copies_the_link_and_the_distance_to_the_ref()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "aaaaaaaaaaaa"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "bbbbbbbbbbbb"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "aaaaaaaaaaaa", "previous": "bbbbbbbbbbbb", "repo": {{System.Text.Json.JsonSerializer.Serialize(_temp.Path)}}}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "aaaaaaaaaaaa", RuntimeManager.InstalledName),
+            """{"sha": "aaaaaaaaaaaa", "ref": "origin/main", "repo": "r", "installed_at": "2026-11-14T10:00:00+00:00"}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "bbbbbbbbbbbb", RuntimeManager.InstalledName),
+            """{"sha": "bbbbbbbbbbbb", "ref": "origin/main", "repo": "r", "installed_at": "2026-11-13T10:00:00+00:00"}""",
+            TestContext.Current.CancellationToken);
+        var proc = new FakeProc().Answer(new(0, "2", ""), "git");
+
+        var exit = await Run(proc, "status");
+
+        Assert.Equal(0, exit);
+        Assert.Equal(
+            "Current:  aaaaaaaaaaaa  origin/main  2026-11-14T10:00:00+00:00\n"
+            + "Previous: bbbbbbbbbbbb  origin/main  2026-11-13T10:00:00+00:00\n"
+            + $"Path:     {Path.Join(Root, RuntimeManager.LinkName)}\n"
+            + "Behind origin/main: 2 commit(s)\n",
+            _out.ToString());
+        Assert.Equal(["git", "-C", _temp.Path, "rev-list", "--count", "aaaaaaaaaaaa..origin/main"], Assert.Single(proc.Requests).Argv);
+    }
+
+    [Fact]
+    public async Task Rollback_without_a_previous_copy_reports_why()
+    {
+        var exit = await Run(new FakeProc(), "rollback");
+
+        Assert.Equal(1, exit);
+        Assert.Equal("Rollback failed: no previous copy to roll back to\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_without_a_checkout_names_the_option_to_pass()
+    {
+        var exit = await Run(new FakeProc(), "install");
+
+        Assert.Equal(2, exit);
+        Assert.Equal("No repo to install from: pass --repo <rig checkout>.\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_reports_the_step_that_failed()
+    {
+        var repo = _temp.Folder("repo");
+
+        var exit = await Run(new FakeProc(), "install", "--repo", repo, "--ref", "HEAD", "--no-fetch");
+
+        Assert.Equal(1, exit);
+        Assert.StartsWith("Install failed: git -C ", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("rev-parse", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    private async Task<int> Run(FakeProc proc, params string[] args)
+    {
+        var root = new RootCommand
+        {
+            new RuntimeCommand(new RuntimeHost(Root, _temp.Path, _temp.Path, false, proc, TimeProvider.System), _out).Build(),
+        };
+        return await root.Parse(["runtime", .. args]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+    }
+}

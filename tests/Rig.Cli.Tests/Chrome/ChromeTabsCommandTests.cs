@@ -653,7 +653,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
         Assert.Equal(0, await Installs("install"));
 
         Assert.Equal($"@echo off\r\n\"{Target}\" chrome-tabs %*\r\n", await File.ReadAllTextAsync(Shim, TestContext.Current.CancellationToken));
-        Assert.Equal([$"Command: {Shim} -> {Target}", "No runtime copy yet: run `desktop-manager runtime install`."], Lines);
+        Assert.Equal([$"Command: {Shim} -> {Target}", "No runtime copy yet: run `rig runtime install`."], Lines);
     }
 
     [Fact]
