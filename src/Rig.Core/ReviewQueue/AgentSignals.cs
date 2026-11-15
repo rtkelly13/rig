@@ -73,8 +73,26 @@ public sealed class AgentSignals : IDisposable
         ArgumentNullException.ThrowIfNull(estateRoot);
         ArgumentNullException.ThrowIfNull(git);
         var scopes = EstateScopes.Load(Path.Join(Path.GetDirectoryName(registryFile), EstateScopes.FileName));
+        var currentCheckout = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(registryFile)));
+        string? currentSlug = null;
+        if (currentCheckout is not null && Directory.Exists(currentCheckout))
+        {
+            try
+            {
+                var origin = git.OutAsync(currentCheckout, "config", "--get", "remote.origin.url").GetAwaiter().GetResult();
+                if (origin.Length > 0)
+                {
+                    currentSlug = (RepoSlug.FromRemote(origin) ?? RepoSlug.FromPath(origin))?.Key;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
+            {
+                // Fall back to canonical paths if git origin cannot be resolved
+            }
+        }
+
         return new AgentSignals(
-            () => EstateRoots(registryFile, estateRoot, scopes),
+            () => EstateRoots(registryFile, estateRoot, scopes, currentCheckout, currentSlug),
             async root => await Worktree.ListAsync(git, root).ConfigureAwait(false),
             worktree => new FileWrapupStore(git).Read(worktree),
             () => Environment.TickCount64 / 1000.0);
@@ -84,11 +102,19 @@ public sealed class AgentSignals : IDisposable
     /// <param name="registryFile">The managed-projects registry.</param>
     /// <param name="estateRoot">The personal estate folder.</param>
     /// <param name="scopes">Where repositories an estate org owns are cloned.</param>
-    public static IReadOnlyList<AgentRoot> EstateRoots(string registryFile, string estateRoot, EstateScopes scopes)
+    /// <param name="currentCheckout">The running checkout containing the registry, when running outside the estate.</param>
+    /// <param name="currentSlug">The lowercased slug of <paramref name="currentCheckout"/>'s origin.</param>
+    public static IReadOnlyList<AgentRoot> EstateRoots(
+        string registryFile,
+        string estateRoot,
+        EstateScopes scopes,
+        string? currentCheckout = null,
+        string? currentSlug = null)
     {
         ArgumentNullException.ThrowIfNull(registryFile);
         ArgumentNullException.ThrowIfNull(estateRoot);
         ArgumentNullException.ThrowIfNull(scopes);
+        currentCheckout ??= Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(registryFile)));
         var roots = new List<AgentRoot>();
         foreach (var spec in ManagedProjects.Load(registryFile).Where(spec => spec.Enabled))
         {
@@ -97,7 +123,11 @@ public sealed class AgentSignals : IDisposable
                 continue;
             }
 
-            roots.Add(new AgentRoot(slug.Key, scopes.ProjectDir(estateRoot, spec.Name, spec.Repo)));
+            var root = currentSlug is not null && slug.Key.Equals(currentSlug, StringComparison.OrdinalIgnoreCase) && currentCheckout is not null
+                ? currentCheckout
+                : scopes.ProjectDir(estateRoot, spec.Name, spec.Repo);
+
+            roots.Add(new AgentRoot(slug.Key, root));
         }
 
         return roots;

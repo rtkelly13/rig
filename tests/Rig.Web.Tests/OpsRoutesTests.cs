@@ -143,6 +143,19 @@ public sealed class OpsRoutesTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Triage_read_failure_returns_503_json_envelope()
+    {
+        var db = Path.Join(_harness.Root, "..", "rig.db");
+        if (File.Exists(db)) { File.Delete(db); }
+        Directory.CreateDirectory(db);
+
+        using var response = await _client.GetAsync(new Uri("/api/triage", UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        var body = JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken))!;
+        Assert.NotNull(body["error"]);
+    }
+
+    [Fact]
     public async Task Estate_decisions_read_the_feed_or_say_why_there_is_nothing_to_show()
     {
         using var missing = await _client.GetAsync(new Uri("/api/ops/decisions", UriKind.Relative), TestContext.Current.CancellationToken);

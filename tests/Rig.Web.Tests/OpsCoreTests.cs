@@ -355,6 +355,9 @@ public sealed class OpsCoreTests
         Assert.Contains(roots, root => root.Repo == "owner/rig" && root.Root == Path.Join(personal, "rig"));
         Assert.Contains(roots, root => root.Repo == "labs/lake" && root.Root == Path.Join(dir.Path, "labs", "lake"));
         Assert.Contains(roots, root => root.Repo == "local/thing" && root.Root == Path.Join(personal, "local"));
+
+        var overrideRoots = AgentSignals.EstateRoots(registry, personal, scopes, currentCheckout: "/custom/rig", currentSlug: "owner/rig");
+        Assert.Contains(overrideRoots, root => root.Repo == "owner/rig" && root.Root == "/custom/rig");
     }
 
     [Fact]

@@ -29,8 +29,8 @@ internal static class TriageRoutes
     /// <param name="registry">The managed-projects registry a refresh reads.</param>
     public static void Map(IEndpointRouteBuilder routes, TriageInbox inbox, string registry)
     {
-        routes.MapGet(Prefix, Handler(async context =>
-            OpsJson.Ok(context, Answer(await inbox.EntriesAsync(context.RequestAborted).ConfigureAwait(false), inbox))));
+        routes.MapGet(Prefix, Handler(context => OpsJson.Run(async () =>
+            OpsJson.Ok(context, Answer(await inbox.EntriesAsync(context.RequestAborted).ConfigureAwait(false), inbox)))));
         routes.MapPost($"{Prefix}/refresh", Handler(context => OpsJson.Run(async () =>
         {
             _ = await OpsJson.BodyAsync(context).ConfigureAwait(false);
