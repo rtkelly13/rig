@@ -805,6 +805,52 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("Already current:", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Status_renders_question_marks_when_installed_info_fields_are_missing()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "c1"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "p1"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "c1", "previous": "p1"}""",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "c1", RuntimeManager.InstalledName),
+            "{}",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "p1", RuntimeManager.InstalledName),
+            "{}",
+            TestContext.Current.CancellationToken);
+
+        var proc = new FakeProc();
+        var exit = await Run(proc, "status");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current:  c1  ?  ?", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Previous: p1  ?  ?", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_running_from_copy_with_no_state_repo_fails_with_exit_code_2()
+    {
+        var copy = _temp.Folder("runtime/dummy");
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "dummy"}""",
+            TestContext.Current.CancellationToken);
+
+        var host = new RuntimeHost(Root, copy, _temp.Path, false, new FakeProc(), TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, exit);
+        Assert.Contains("No repo to install from", _out.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand

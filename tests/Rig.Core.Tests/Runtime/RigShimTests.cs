@@ -98,4 +98,21 @@ public sealed class RigShimTests : IDisposable
         Assert.EndsWith(Path.Join(".local", "bin", "rig"), RigShim.PathFor("/users/me", windows: false), StringComparison.Ordinal);
         Assert.EndsWith(Path.Join(".local", "bin", "rig.cmd"), RigShim.PathFor(@"C:\Users\me", windows: true), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Install_with_single_file_name_handles_null_parent_directory()
+    {
+        var root = Path.Join(_temp.Path, "runtime");
+        var cwd = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(_temp.Path);
+            Assert.Equal(ShimOutcome.Written, RigShim.Install("local-rig", root, windows: false));
+            Assert.True(File.Exists(Path.Join(_temp.Path, "local-rig")));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(cwd);
+        }
+    }
 }

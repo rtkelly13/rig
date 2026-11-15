@@ -696,6 +696,28 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Equal(Path.Join(@"C:\c", ".venv", "Scripts", "rig.exe"), RuntimeManager.Executable(@"C:\c", "rig", windows: true));
     }
 
+    [Fact]
+    public void Status_with_empty_state_has_null_current_previous_and_behind()
+    {
+        var manager = Manager(new Tools(_system));
+        var status = manager.Status("origin/main");
+        Assert.Null(status.State.Current);
+        Assert.Null(status.Current);
+        Assert.Null(status.Previous);
+        Assert.Null(status.Behind);
+    }
+
+    [Fact]
+    public void First_install_has_null_previous()
+    {
+        var repo = NewRepo();
+        _ = Commit(repo, new Dictionary<string, string> { ["a.txt"] = "1\n" });
+        var manager = Manager(new Tools(_system));
+        var res = manager.Install(repo, "HEAD", fetch: false);
+        Assert.Null(res.Previous);
+        Assert.True(res.Changed);
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {
