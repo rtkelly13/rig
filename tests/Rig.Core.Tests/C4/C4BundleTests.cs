@@ -291,14 +291,102 @@ public sealed class C4BundleTests : IDisposable
     {
         Assert.Equal("Acme.Gen.Gen", DotnetScan.TypeOf("Acme.Gen.Gen.Run/()"));
         Assert.Equal("System.String", DotnetScan.TypeOf("System.String.Length"));
+        Assert.Equal("NoNamespace", DotnetScan.TypeOf("NoNamespace/()"));
 
         var owners = new Dictionary<string, IReadOnlyList<string>>
         {
-            ["owner1"] = ["Acme.TypeA", "Acme.TypeB"],
+            ["owner1"] = ["Acme.TypeA", "Acme.TypeB", "Shared"],
+            ["owner2"] = ["Acme.TypeC", "Shared"],
         };
         var index = DotnetScan.TypeIndex(owners);
         Assert.Equal("owner1", index["Acme.TypeA"]);
         Assert.Equal("owner1", index["Acme.TypeB"]);
+        Assert.Equal("owner2", index["Acme.TypeC"]);
+        Assert.False(index.ContainsKey("Shared")); // Ambiguous type declared in two owners is dropped
+
+        Assert.Equal(0, DotnetScan.PythonLines(""));
+        Assert.Equal(1, DotnetScan.PythonLines("one"));
+        Assert.Equal(1, DotnetScan.PythonLines("one\n"));
+        Assert.Equal(2, DotnetScan.PythonLines("one\ntwo"));
+
+        var proj = new Project("TestProj", "/path/TestProj.csproj", "TestProj", ["net10.0"], false, [], []);
+        Assert.Equal(string.Empty, DotnetScan.ComponentKey(proj, "TestProj"));
+        Assert.Equal("Sub", DotnetScan.ComponentKey(proj, "TestProj.Sub"));
+        Assert.Equal("Other.Namespace", DotnetScan.ComponentKey(proj, "Other.Namespace"));
+    }
+
+    [Fact]
+    public void DotnetScan_ReferenceEdges_and_Components_coverage()
+    {
+        var proj = new Project("Acme", "/path/Acme.csproj", "Acme", ["net10.0"], false, [], []);
+        var fileA = new SourceFile("/path/A.cs", "Acme.A", ["Acme.A.ClassA"], new HashSet<string> { "ClassB", "Self" }, false, 10, []);
+        var fileB = new SourceFile("/path/B.cs", "Acme.B", ["Acme.B.ClassB"], new HashSet<string>(), false, 20, []);
+
+        var components = DotnetScan.Components(proj, [fileA, fileB]);
+        Assert.Equal(2, components.Count);
+        Assert.Equal(["Acme.A.ClassA"], components[0].Types);
+
+        var owned = new Dictionary<string, IReadOnlyList<SourceFile>>
+        {
+            ["ownerA"] = [fileA],
+            ["ownerB"] = [fileB],
+        };
+        var index = new Dictionary<string, string>
+        {
+            ["ClassB"] = "ownerB",
+            ["Self"] = "ownerA",
+        };
+        var edges = DotnetScan.ReferenceEdges(owned, index);
+        Assert.Single(edges);
+        Assert.Equal(1, edges[new CodeEdge("ownerA", "ownerB")]);
+    }
+
+    [Fact]
+    public void DotnetScan_ReadSource_parses_doc_summary_cref_and_members()
+    {
+        var srcPath = Path.Join(_temp.Path, "Sample.cs");
+        var longSummary = new string('A', 200);
+        var content = $$"""
+            namespace Acme.Sample;
+
+            /// <summary>
+            /// {{longSummary}}
+            /// Second sentence that should be split out.
+            /// </summary>
+            public sealed class SampleClass
+            {
+                /// <summary>Does something with <see cref="Acme.OtherClass"/>.</summary>
+                public void DoWork() { }
+                public Task<string> FetchAsync<T>() => Task.FromResult("");
+                public int Property { get; set; }
+                public static int Field = 1;
+                public event EventHandler? Changed;
+                public void M1() {}
+                public void M2() {}
+                public void M3() {}
+                public void M4() {}
+                public void M5() {}
+                public void M6() {}
+                public void M7() {}
+                public void M8() {}
+                public void M9() {}
+                public void M10() {}
+                public void M11() {}
+                public void M12() {}
+                public void M13() {}
+            }
+            """;
+        File.WriteAllText(srcPath, content);
+        var source = DotnetScan.ReadSource(srcPath);
+
+        Assert.Equal("Acme.Sample", source.Namespace);
+        Assert.Contains("SampleClass", source.Declares);
+        Assert.Single(source.Types);
+        var typeInfo = source.Types[0];
+        Assert.EndsWith("…", typeInfo.Summary, StringComparison.Ordinal);
+        Assert.True(typeInfo.Members.Count <= 12);
+        Assert.Contains("DoWork()", typeInfo.Members);
+        Assert.Contains("FetchAsync()", typeInfo.Members);
     }
 
     private static string Between(string text)
