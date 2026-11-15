@@ -111,6 +111,54 @@ public sealed class ReconciliationRunnerTests
         Assert.False(ReconciliationOptions.For(apply: true).DryRun);
     }
 
+    [Fact]
+    public void Synchronous_run_executes_sink_only_when_not_dry_run()
+    {
+        var wouldChange = new Row("/temp/a", ChangeKind.WouldChange);
+        var aligned = new Row("/temp/b", ChangeKind.Aligned);
+        var plan = new TestPlan([wouldChange, aligned]);
+
+        var appliedList = new List<Row>();
+        var dryReport = ReconciliationRunner.Run(plan, dryRun: true, row => appliedList.Add(row));
+        Assert.True(dryReport.DryRun);
+        Assert.Equal(0, dryReport.Applied);
+        Assert.Equal(1, dryReport.Drift);
+        Assert.True(dryReport.MutatedNothing);
+        Assert.Empty(appliedList);
+
+        var applyReport = ReconciliationRunner.Run(plan, dryRun: false, row => appliedList.Add(row));
+        Assert.False(applyReport.DryRun);
+        Assert.Equal(1, applyReport.Applied);
+        Assert.Equal(1, applyReport.Drift);
+        Assert.False(applyReport.MutatedNothing);
+        Assert.Single(appliedList);
+        Assert.Same(wouldChange, appliedList[0]);
+    }
+
+    [Fact]
+    public void Reconciliation_run_and_names_and_json_helpers()
+    {
+        var plan = new TestPlan([new Row("/temp/a", ChangeKind.Aligned), new Row("/temp/b", ChangeKind.Changed)]);
+        var run = new ReconciliationRun<TestPlan, Row>(plan, [], Applied: true, ExitCode: 0);
+        Assert.True(run.Succeeded);
+        Assert.False(run.HasErrors);
+        Assert.Contains("\"applied\": true", ReconciliationRunner.Json(run), StringComparison.Ordinal);
+
+        Assert.Equal("aligned", ReconciliationRunner.Name(ChangeKind.Aligned));
+        Assert.Equal("would-change", ReconciliationRunner.Name(ChangeKind.WouldChange));
+        Assert.Equal("changed", ReconciliationRunner.Name(ChangeKind.Changed));
+        Assert.Equal("refused", ReconciliationRunner.Name(ChangeKind.Refused));
+        Assert.Equal("error", ReconciliationRunner.Name((ChangeKind)99));
+
+        Assert.True(plan.HasDrift());
+        Assert.Equal(0, plan.ExitCode(applied: true));
+        Assert.Equal(1, plan.ExitCode(applied: false));
+
+        var errorPlan = new TestPlan([], errors: ["err"]);
+        Assert.False(errorPlan.HasDrift());
+        Assert.Equal(2, errorPlan.ExitCode(applied: false));
+    }
+
     private static StringWriter Writer() => new() { NewLine = "\n" };
 
     private sealed record Row(string Subject, ChangeKind Kind, string Detail = "") : IChange;
