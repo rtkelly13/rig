@@ -439,6 +439,25 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Null(manager.CommitsBehind(repo, "nonexistent", "HEAD"));
     }
 
+    [Fact]
+    public void PointCurrent_when_link_is_not_a_link_throws()
+    {
+        var manager = Manager(new Tools(_system));
+        var link = RuntimeManager.CurrentLink(Root);
+        Directory.CreateDirectory(Root);
+        File.WriteAllText(link, "not a directory or link");
+        Assert.Throws<RuntimeInstallException>(() => manager.PointCurrent("any"));
+    }
+
+    [Fact]
+    public void ResolveRef_throws_when_git_fails()
+    {
+        var proc = new FakeProc().Answer(new(1, "", "fatal: not a valid ref"), "git");
+        var manager = new RuntimeManager(proc, Root, TimeProvider.System);
+        var repo = _temp.Folder("repo-git-fail");
+        Assert.Throws<RuntimeInstallException>(() => manager.Install(repo, "invalid-ref", fetch: false));
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {

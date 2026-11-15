@@ -344,6 +344,72 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("alone: rig did not write it", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Install_reports_unchanged_shim_when_already_written()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-unchanged-shim"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        var home = _temp.Folder("home-unchanged");
+        var shimPath = RigShim.PathFor(home, false);
+        RigShim.Install(shimPath, Root, false);
+
+        var sha = "9999999999999999999999999999999999999999";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-source-unchanged");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, home, false, proc, TimeProvider.System);
+        var root = new RootCommand
+        {
+            new RuntimeCommand(host, _out).Build(),
+        };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("rig on PATH: ", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_and_Rollback_handle_runtime_exceptions()
+    {
+        var repo = _temp.Folder("invalid-repo");
+        // Nonexistent repo directory to trigger RuntimeInstallException
+        var host = new RuntimeHost(Root, repo, _temp.Path, false, new FakeProc(), TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--repo", Path.Join(repo, "does-not-exist")]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(1, exit);
+        Assert.Contains("Install failed: ", _out.ToString(), StringComparison.Ordinal);
+
+        _out.GetStringBuilder().Clear();
+        exit = await root.Parse(["runtime", "rollback"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(1, exit);
+        Assert.Contains("Rollback failed: ", _out.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand
