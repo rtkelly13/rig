@@ -97,6 +97,9 @@ public sealed class ReconciliationContractTests
         Assert.Equal(ChangeKind.WouldChange, result.Kind);
         Assert.Equal("other-outcome", result.Outcome);
 
+        var readError = new ShelveResult(plan, "needs-decision", "could not read the worktree: corrupt pack");
+        Assert.Equal(ChangeKind.Error, readError.Kind);
+
         var tidy = new TidyAction("temp", "target", (TidyOutcome)99);
         Assert.Equal(ChangeKind.Error, tidy.Kind);
         Assert.Equal("temp", tidy.Check);

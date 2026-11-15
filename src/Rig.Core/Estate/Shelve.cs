@@ -108,7 +108,7 @@ public sealed class ShelvePlan : IPlan<ShelveResult>
 
     /// <summary>Why applying failed.</summary>
     public IReadOnlyList<string> Errors =>
-        Result is { Kind: ChangeKind.Error } ? [Result.Detail] : [];
+        Result is { Kind: ChangeKind.Error } ? [Result.Detail] : (Planned.Kind == ChangeKind.Error ? [Planned.Detail] : []);
 
     private ShelveResult Planned => new(
         this,
@@ -156,10 +156,14 @@ public sealed record ShelveResult(ShelvePlan Plan, string Outcome, string Detail
     public ChangeKind Kind => Outcome switch
     {
         "shelved" or "removed" => ChangeKind.Changed,
-        "needs-decision" => ChangeKind.Refused,
+        "needs-decision" => IsReadError ? ChangeKind.Error : ChangeKind.Refused,
         "failed" => ChangeKind.Error,
         _ => ChangeKind.WouldChange,
     };
+
+    private bool IsReadError =>
+        Detail.Contains("could not read", StringComparison.OrdinalIgnoreCase) ||
+        Detail.Contains("cannot read", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The plan's JSON with the outcome after it.</summary>
     public JsonObject ToJson()

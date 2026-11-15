@@ -98,6 +98,18 @@ public sealed class SpectreOutputExtensionsTests
     }
 
     [Fact]
+    public void Applied_plan_renders_changed_summary_and_clean_verdict()
+    {
+        using var writer = new StringWriter();
+        var console = RigConsole.Create(writer);
+        var plan = new FakePlan([new FakeChange("a", "done", ChangeKind.Changed)]);
+        console.RenderPlan(plan);
+        var text = writer.ToString();
+        Assert.Contains("1 change(s) applied", text, StringComparison.Ordinal);
+        Assert.Contains("Clean.", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Plan_with_errors_renders_error_verdict()
     {
         using var writer = new StringWriter();

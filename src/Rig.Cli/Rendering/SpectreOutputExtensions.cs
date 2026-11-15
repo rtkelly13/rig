@@ -19,10 +19,14 @@ internal static class SpectreOutputExtensions
         ArgumentNullException.ThrowIfNull(console);
         ArgumentNullException.ThrowIfNull(plan);
 
-        var drift = plan.Changes.Count(change => change.Kind is ChangeKind.WouldChange or ChangeKind.Changed);
+        var wouldChange = plan.Changes.Count(change => change.Kind == ChangeKind.WouldChange);
+        var changed = plan.Changes.Count(change => change.Kind == ChangeKind.Changed);
+        var drift = wouldChange + changed;
         var summary = drift == 0
             ? "no drift — nothing to apply"
-            : $"{Count(drift)} of {Count(plan.Changes.Count)} change(s) to apply";
+            : wouldChange > 0
+                ? $"{Count(wouldChange)} of {Count(plan.Changes.Count)} change(s) to apply"
+                : $"{Count(changed)} change(s) applied";
         var table = new Table()
             .RoundedBorder()
             .Title(TextSanitizer.Markup($"Plan — {summary}"));
@@ -46,7 +50,7 @@ internal static class SpectreOutputExtensions
         }
         else
         {
-            console.MarkupLine(drift == 0 ? "[green]Clean.[/]" : "[yellow]Review before applying.[/]");
+            console.MarkupLine(wouldChange > 0 ? "[yellow]Review before applying.[/]" : "[green]Clean.[/]");
         }
     }
 
