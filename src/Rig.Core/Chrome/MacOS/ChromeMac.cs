@@ -212,9 +212,8 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
 
             var cursor = ui.Cursor();
             var focus = ui.CaptureFocus(() => _jxa.FrontmostPid());
-            var arrived = Activate(handle, timeout ?? ForegroundTimeout);
-            kept = true;
-            return new ForegroundLease(arrived, () =>
+
+            void Restore()
             {
                 try
                 {
@@ -238,7 +237,22 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
                         }
                     }
                 }
-            });
+            }
+
+            bool arrived;
+            try
+            {
+                arrived = Activate(handle, timeout ?? ForegroundTimeout);
+            }
+            catch
+            {
+                Restore();
+                kept = true;
+                throw;
+            }
+
+            kept = true;
+            return new ForegroundLease(arrived, Restore);
         }
         catch (Exception error) when (error is ChromeMacException or AccessibilityUnavailableException)
         {
