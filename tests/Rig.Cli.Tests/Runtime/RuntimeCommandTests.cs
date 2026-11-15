@@ -410,6 +410,56 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("Rollback failed: ", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void FindCheckout_returns_null_when_no_rig_pyproject_exists()
+    {
+        var empty = _temp.Folder("empty-root");
+        Assert.Null(RuntimeCommand.FindCheckout(empty));
+    }
+
+    [Fact]
+    public async Task Status_handles_null_behind_and_missing_installed_metadata()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "aaaaaaaaaaaa"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "bbbbbbbbbbbb"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "aaaaaaaaaaaa", "previous": "bbbbbbbbbbbb", "repo": {{System.Text.Json.JsonSerializer.Serialize(_temp.Path)}}}""",
+            TestContext.Current.CancellationToken);
+        // Do not write installed.json for a or b
+        var proc = new FakeProc().Answer(new(1, "", "git error"), "git");
+
+        var exit = await Run(proc, "status");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Current:  aaaaaaaaaaaa  ?  ?", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Previous: bbbbbbbbbbbb  ?  ?", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Behind", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_resolves_repo_from_state_when_unspecified()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-from-state"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            $$"""{"current": "", "repo": {{System.Text.Json.JsonSerializer.Serialize(repo)}}}""",
+            TestContext.Current.CancellationToken);
+
+        // Outside checkout folder
+        var outside = _temp.Folder("outside-workspace");
+        var host = new RuntimeHost(Root, outside, _temp.Path, false, new FakeProc().Answer(new(1, "", "fail"), "git"), TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit = await root.Parse(["runtime", "install", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(1, exit);
+        Assert.Contains("Install failed: ", _out.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand

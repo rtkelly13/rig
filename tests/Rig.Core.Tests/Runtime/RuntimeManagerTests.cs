@@ -459,6 +459,27 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Throws<RuntimeInstallException>(() => manager.Install(repo, "invalid-ref", fetch: false));
     }
 
+    [Fact]
+    public void RuntimeInstallException_and_models_constructors()
+    {
+        var ex1 = new RuntimeInstallException();
+        Assert.NotNull(ex1);
+        var inner = new InvalidOperationException("inner");
+        var ex2 = new RuntimeInstallException("msg", inner);
+        Assert.Equal("msg", ex2.Message);
+        Assert.Same(inner, ex2.InnerException);
+
+        var info = new InstalledInfo();
+        Assert.Null(info.Sha);
+        Assert.Null(info.Ref);
+        Assert.Null(info.Repo);
+        Assert.Null(info.InstalledAt);
+
+        var status = new RuntimeStatus("root", "link", new RuntimeState(), null, null, null);
+        Assert.Equal("root", status.Root);
+        Assert.Equal("link", status.Link);
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {
