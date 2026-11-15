@@ -94,7 +94,7 @@ public sealed class ReconciliationContractTests
     {
         var plan = new ShelvePlan { Clone = "/c", Path = "/c/p", Name = "n", Ref = "r", Branch = "b", Head = "h", Action = Shelver.Remove };
         var result = new ShelveResult(plan, "other-outcome");
-        Assert.Equal(ChangeKind.Error, result.Kind);
+        Assert.Equal(ChangeKind.WouldChange, result.Kind);
         Assert.Equal("other-outcome", result.Detail);
 
         var tidy = new TidyAction("temp", "target", (TidyOutcome)99);
