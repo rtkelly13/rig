@@ -112,5 +112,3 @@ def test_docstring_less_command_still_gets_a_tag():
         pass
 
     assert bare.__doc__ == "[Windows only]"
-
-

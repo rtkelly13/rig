@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using Rig.Core.Vault;
 using System.Runtime.Versioning;
+using Rig.Core.Vault;
 
 namespace Rig.Core.Desktop.Windows;
 
@@ -167,20 +167,18 @@ public sealed class NativeDisplayGuardPorts : IDisplayGuardPorts
                 continue;
             }
 
-            if (SetPlacement(record, record.ShowState switch
+            if (record.ShowState is ShowState.Maximized)
+            {
+                // Restore onto the snapshot rectangle first, then maximize, so it maximizes on that monitor.
+                _ = SetPlacement(record, SwShowNoActivate);
+                if (SetPlacement(record, SwShowMaximized))
                 {
-                    ShowState.Maximized => SwShowMaximized,
-                    ShowState.Minimized => SwShowMinNoActive,
-                    _ => SwShowNoActivate,
-                }))
+                    placed.Add(record.Hwnd);
+                }
+            }
+            else if (SetPlacement(record, record.ShowState is ShowState.Minimized ? SwShowMinNoActive : SwShowNoActivate))
             {
                 placed.Add(record.Hwnd);
-                if (record.ShowState is ShowState.Maximized)
-                {
-                    // Restore onto the snapshot rectangle first, then maximize, so it maximizes on that monitor.
-                    _ = SetPlacement(record, SwShowNoActivate);
-                    _ = SetPlacement(record, SwShowMaximized);
-                }
             }
             else
             {

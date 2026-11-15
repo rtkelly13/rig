@@ -198,6 +198,8 @@ def test_rig_jobs_start_the_csharp_front_door_with_their_command_group():
     jobs = {job.name: job for job in default_jobs(env)}
     groups = {name: job.argv[1] for name, job in jobs.items() if job.argv[0] == env.script("rig")}
     assert groups == {
+        "restore": "desktop",
+        "align": "desktop",
         "estate-sync": "estate",
         "estate-risk": "estate",
         "estate-trim": "estate",

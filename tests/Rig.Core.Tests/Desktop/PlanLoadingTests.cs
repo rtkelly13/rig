@@ -63,6 +63,31 @@ public sealed class PlanLoadingTests : IDisposable
     }
 
     [Fact]
+    public void A_launch_entry_can_be_read_from_a_standalone_file()
+    {
+        var entry = PlanFiles.ParseLaunchEntry("""{"name": "Notes", "type": "terminal", "cwd": "/code", "command": "opencode"}""");
+
+        Assert.Equal("Notes", entry.Name);
+        Assert.Equal(LaunchEntry.Terminal, entry.Type);
+        Assert.Equal(LaunchEntry.DefaultTerminalShell, entry.Shell);
+    }
+
+    [Fact]
+    public void A_machine_plan_loads_from_the_repository_template()
+    {
+        var path = Path.Join(_temp.Path, "plan.bundle.json");
+        PlanFiles.SaveBundle(
+            new WorkspacePlan { Desktops = [new("Work") { Launch = [new("Notes") { Path = "/notes", Placement = new(1, new("full")) }] }] },
+            path);
+
+        var plan = PlanLoading.BuildMachinePlan(path, "/code/workspace", "/code/personal");
+
+        Assert.Equal("/code/workspace", plan.Workspace);
+        Assert.Equal("/code/personal", plan.PersonalWorkspace);
+        Assert.Equal("Work", Assert.Single(plan.Desktops).Name);
+    }
+
+    [Fact]
     public void A_plan_with_no_desktops_is_refused()
     {
         var error = Assert.Throws<InvalidPlanException>(() =>

@@ -207,6 +207,25 @@ public sealed class DisplayGuardTests
         Assert.Contains("minimized 2560,700 1280x1152 ->", described, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Run_steps_until_stop_is_asked_for()
+    {
+        var machine = new FakeMachine { Windows = { [1] = Record(1, LeftHalf) } };
+        var guard = new DisplayGuard(machine, new DisplayGuardSettings { RecoveryPasses = 0 });
+        var steps = 0;
+
+        DisplayGuard.Run(guard, 1.0, seconds => machine.Clock += seconds, () => steps++ >= 8);
+
+        Assert.Equal(GuardPhase.Watching, guard.Phase);
+        Assert.NotEmpty(guard.Snapshots);
+    }
+
+    [Fact]
+    public void A_missing_lock_file_is_not_held()
+    {
+        Assert.False(DisplayGuardLocks.IsHeld(Path.Join(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.lock")));
+    }
+
     private sealed class FakeMachine : IDisplayGuardPorts
     {
         public MonitorSignature Signature { get; set; } = AllThree;

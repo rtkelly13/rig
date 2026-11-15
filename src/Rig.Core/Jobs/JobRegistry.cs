@@ -105,7 +105,7 @@ public static class JobRegistry
         List<Job> jobs =
         [
             new("restore", "Open and place every window in the workspace plan.",
-                [rig, "desktop", "workspace", "restore", "--config", plan, "--defer-logon-commands"], Logon, JobCadence.EveryRun, 45)
+                [rig, "desktop", "workspace", "restore", "--config", plan], Logon, JobCadence.EveryRun, 45)
             {
                 Requires = [plan],
                 RetryExitCodes = new HashSet<int> { RestoreDeferred },

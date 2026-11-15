@@ -35,7 +35,6 @@ public sealed class RigAppTests : IDisposable
     [Theory]
     [InlineData(new[] { "web", "mcp", "--help" }, new[] { "desktop-manager", "web", "mcp", "--help" })]
     [InlineData(new[] { "chrome-tabs", "--help" }, new[] { "desktop-manager", "chrome-tabs", "--help" })]
-    [InlineData(new[] { "align" }, new[] { "desktop-manager", "workspace", "align" })]
     public async Task A_python_command_goes_over_whole_and_attached_to_its_program(string[] args, string[] launched)
     {
         _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");

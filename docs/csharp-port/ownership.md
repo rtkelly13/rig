@@ -59,6 +59,7 @@ cannot conceal an independent implementation.
 | --- | --- | --- |
 | C# registrations (`cs:` rows) | `rig`, plus 13 Python console-script compatibility spellings | Switched in source; shared tests/CI evidence does not establish native acceptance or deployment |
 | `desktop workspace` | C# `rig desktop workspace` (restore, audit, status, validation, features, export, wire, align, name-desktops, guard and the per-entry commands) | CLI and native adapters switched in #243; the Python Typer workspace group and its `cli_align`/`cli_apps`/`cli_machine`/`align`/`display_guard_windows` modules retired. `align` is C#. Windows desktop acceptance remains the `WIN-DESKTOP` procedure |
+| `runtime`, `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
 | `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand`, `Rig.Web.TriageRoutes` and `Rig.Core.ReviewQueue.AgentSignals` | CLI, web inbox and agent-signal consumers switched; Python CLI, six platform fallback routes, `rig.triage.web` and `rig.triage.agents` retired. `src/rig/triage` keeps only the models and store the browser tests seed, with no production caller |
 | `c4` | C# `Rig.Cli.C4.C4Command` over `Rig.Core.C4` | CLI, checks, composition, derivation and the Roslyn call-graph reader switched; the Python CLI, derive scanner and 21 registrations retired. The `rig.c4_okf` web viewer and the bundle reader it mounts stay explicitly owned until that route is switched |
 | `jobs` | C# status/last/log/run/install/uninstall | All legacy spellings dispatch whole-line to C#; #209 owns runtime progression and Windows acceptance |
@@ -67,7 +68,7 @@ cannot conceal an independent implementation.
 | `web mcp` | C# `Rig.Web.Mcp.RigOpsTools` over `Rig.Core`, served by `rig web mcp` (stdio) and `app.MapMcp("/api/mcp")` | `desktop_manager.web_mcp` and its Python CLI command are retired; the eleven tools are inspected from their `[McpServerTool]` attributes |
 | `chrome-tabs` | C# traces everywhere; C# native `list`, `rank`, `prune` and `group` on Windows and macOS; `saved-groups`, `install` and `uninstall` on Windows; Python `organise` | macOS `group`, `list`, `prune` and `rank` registrations retired in #226 with the native `ChromeMac` driver; `organise` stays Python until its scheduled/wait slice moves |
 | `chrome-tabs traces runs/show/summary/prune` | C# only; legacy spelling dispatches the whole line | Legacy report CLI and 462 lines of reader/report code deleted; writer/daily retention still have scheduled Python callers |
-| `desktop-manager workspace`, `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
+| `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
 | `claude-sessions` | Retired without a C# port (#224) | Eight Python leaves and fourteen modules deleted; the `work` list keeps its own transcript, live-session and ledger reader in `work/session_store.py`. Orca and direct CLI/IDE workflows replaced the window-focused orchestration |
 | Core Python modules, development file apps, Node scripts and launchers | `module:`, `python-file:`, `main:`, `file-app:`, `node:`, `launcher:` rows | Development tooling is inventoried separately from product CLI behavior |
 | Web/MCP and jobs | `web-child:`, `mcp:`, `python-job:`, `cs-job:` rows | The `mcp:` tool set is now C#; `desktop_manager.web_mcp` and the triage, estate and telemetry web children are retired. The jobs coordinator is the remaining `web-child:` row, and job callers remain Python where named until their slices switch them |
@@ -190,6 +191,14 @@ scheduled Python callers that still use its path and state helpers. No real runt
 scheduled task was installed or removed for this source cutover, so native runtime installation remains
 a rollout check rather than evidence recorded here.
 
+Desktop workspace cutover validation on macOS, 2026-11-15: the full C# Release build and solution test run
+passed, and the ownership gate against `origin/main` passed with **423 inspected surfaces**, zero overlaps and
+zero violations. The Python Typer `workspace` group, its five command modules and the align-port adapter were
+deleted; `rig desktop workspace` owns restore, audit, status, validation, features, export, machine wiring,
+align, desktop naming, the display guard and the per-entry commands. Core tests cover the reconciler, the
+guard's state machine, align decisions and plan loading; the native Win32/COM/registry adapters are compile-
+and smoke-tested only on Windows. `WIN-DESKTOP` remains the interactive acceptance procedure.
+
 Named remaining acceptance procedures, all run from a reviewed/published artifact in a disposable environment:
 
 | Procedure | Runnable entry and required environment | Evidence/expected result |
@@ -216,7 +225,7 @@ and `ROLLOUT` rows above stay open until that evidence is recorded.
 
 _State after #217:_ the overlap baseline is empty, but this is an overlap-only slice, not port completion:
 main still has core Python files and dozens of Python-owned registrations, and routes still have callers
-(`triage`, `desktop workspace align`, `jobs install`, and the remaining web children). The ledger and this
+(`triage`, `jobs install`, and the remaining web children). The ledger and this
 gate stay in place until the source migration, native acceptance and rollout criteria above are met.
 
 This cross-language inventory is temporary migration machinery. Close it down in the final #85 cutover PR
