@@ -550,6 +550,24 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.False(Directory.Exists(untracked));
     }
 
+    [Fact]
+    public void PointCurrent_with_existing_installed_directory_backs_up_and_replaces()
+    {
+        var manager = Manager(new Tools(_system));
+        _ = Directory.CreateDirectory(Root);
+        var link = RuntimeManager.CurrentLink(Root);
+        // Create link as regular directory containing installed.json
+        _ = Directory.CreateDirectory(link);
+        File.WriteAllText(Path.Join(link, RuntimeManager.InstalledName), "{}");
+
+        var target = Path.Join(Root, "newcopy123456");
+        _ = Directory.CreateDirectory(target);
+
+        manager.PointCurrent(target);
+
+        Assert.True(Path.Exists(link));
+    }
+
     /// <summary>Real git; uv, dotnet and the copy's commands are recorded and answered here.</summary>
     private sealed class Tools(IProc system) : IProc
     {

@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Formats.Tar;
 using Rig.Cli.Runtime;
+using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Runtime;
 using Rig.Core.Tests;
@@ -511,6 +512,125 @@ public sealed class RuntimeCommandTests : IDisposable
         Directory.CreateDirectory(subDir);
 
         Assert.Equal(dir, RuntimeCommand.FindCheckout(subDir));
+    }
+
+    [Fact]
+    public async Task Rollback_succeeds_and_swaps_current_and_previous()
+    {
+        _ = Directory.CreateDirectory(Path.Join(Root, "current123456"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "previous12345"));
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "current123456", RuntimeManager.InstalledName),
+            "{\"sha\":\"current123456\"}",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, "previous12345", RuntimeManager.InstalledName),
+            "{\"sha\":\"previous12345\"}",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            "{\"current\":\"current123456\",\"previous\":\"previous12345\",\"repo\":\"/repo\"}",
+            TestContext.Current.CancellationToken);
+
+        var exit = await Run(new FakeProc(), "rollback");
+
+        Assert.Equal(0, exit);
+        Assert.Equal("Current: previous12345 (previous: current123456)\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Install_twice_reports_already_current()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-twice"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        var sha = "1111111111111111111111111111111111111111";
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-twice");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        }.Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        var exit1 = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit1);
+
+        _out.GetStringBuilder().Clear();
+        var exit2 = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit2);
+        Assert.StartsWith("Already current: 111111111111 (HEAD)", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Install_reports_previous_kept_and_removed_copies()
+    {
+        var repo = PathResolution.Resolve(_temp.Folder("repo-prev-removed"));
+        await File.WriteAllTextAsync(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Root);
+        // Pre-create an old untracked folder to be pruned
+        var oldFolder = Path.Join(Root, "stale12345678");
+        Directory.CreateDirectory(oldFolder);
+        await File.WriteAllTextAsync(Path.Join(oldFolder, RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+
+        var sha1 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        var sha2 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        var currentSha = sha1;
+        var proc = new FakeProc
+        {
+            Unanswered = new(0, "", ""),
+            BeforeRun = req =>
+            {
+                if (req.Argv.Contains("archive"))
+                {
+                    var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
+                    if (outputArg is not null)
+                    {
+                        var tarPath = outputArg["--output=".Length..];
+                        var emptyDir = _temp.Folder("empty-tar-prev");
+                        _ = Directory.CreateDirectory(Path.GetDirectoryName(tarPath)!);
+                        TarFile.CreateFromDirectory(emptyDir, tarPath, false);
+                    }
+                }
+            },
+        };
+        proc.Answer(new Ran(0, sha1 + "\n", ""), "git", "-C", repo, "rev-parse");
+
+        var host = new RuntimeHost(Root, repo, _temp.Path, false, proc, TimeProvider.System);
+        var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
+
+        // Install commit 1
+        var exit1 = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit1);
+        Assert.Contains("Removed old copy: stale12345678", _out.ToString(), StringComparison.Ordinal);
+
+        // Install commit 2
+        proc.Answer(new Ran(0, sha2 + "\n", ""), "git", "-C", repo, "rev-parse");
+        _out.GetStringBuilder().Clear();
+        var exit2 = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(0, exit2);
+        Assert.Contains("Previous kept for rollback: aaaaaaaaaaaa", _out.ToString(), StringComparison.Ordinal);
     }
 
     private async Task<int> Run(FakeProc proc, params string[] args)
