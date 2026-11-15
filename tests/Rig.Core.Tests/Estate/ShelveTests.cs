@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 
 namespace Rig.Core.Tests.Estate;
 
@@ -1020,6 +1021,20 @@ public sealed class ShelveTests : IDisposable
 
         Assert.False(restored.Ok);
         Assert.StartsWith("restoring snapshot into ", restored.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Shelver_implements_IReconciler_pipeline()
+    {
+        await InitAsync();
+        var path = await _fx.AddWorktreeAsync("feat-reconcile");
+        var tree = await _fx.TreeAsync(path);
+        var shelver = _fx.Shelver();
+        var target = new ShelveTarget(Clone, tree, "ryan", new Dictionary<string, string>(), new Dictionary<string, PullRequest>(), ShelveFixture.NoIdle);
+        var plan = await shelver.PlanAsync(target, Token);
+        Assert.NotNull(plan);
+        var result = await shelver.ApplyAsync(plan);
+        Assert.NotNull(result);
     }
 
     // ------------------------------------------------------------------ helpers

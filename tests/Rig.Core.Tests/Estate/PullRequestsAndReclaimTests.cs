@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Tests.Fakes;
 
 namespace Rig.Core.Tests.Estate;
@@ -128,6 +129,24 @@ public sealed class PullRequestsAndReclaimTests
         Assert.Equal(
             [new("node_modules", 600), new("temp", 500), new("external worktree", 400), new KeyValuePair<string, long>("python venv", 50)],
             scan.ByCategory());
+    }
+
+    [Fact]
+    public async Task Reclaim_implements_IReconciler_pipeline()
+    {
+        using var root = new TempDir();
+        var repo = root.Folder("my-repo");
+        _ = await Repos.InitAsync(repo);
+        var proc = new FakeProc().Answer(new Ran(0, $"worktree {repo}\nHEAD a\nbranch refs/heads/main\n", string.Empty), "git", "worktree", "list");
+        var disk = new Sizes(new()
+        {
+            ["node_modules"] = 100,
+        });
+        var reclaim = new Reclaim(new Git(proc, root.Path), disk);
+        var plan = await reclaim.PlanAsync(new ReclaimTarget(repo, Floor: 0, Removal: new TreeRemoval(proc)), Token);
+        Assert.NotNull(plan);
+        var errors = await reclaim.ApplyAsync(plan, Token);
+        Assert.Empty(errors);
     }
 
     [Fact]
