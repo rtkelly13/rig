@@ -19,16 +19,15 @@ console = Console()
 
 
 def mounted_routes() -> tuple[Route, ...]:
-    """The JSON routes features contribute to `rig web`.
+    """The JSON routes features still contribute to `rig web`.
 
-    This is the composition root, so it is the one place that may import several features at once; the server
-    itself imports none of them.
+    The triage, estate and telemetry routes are C# now (`src/Rig.Web/OpsRoutes.cs`); only the jobs coordinator stays
+    here until it is ported. This is the composition root, so it is the one place that may import a feature; the
+    server itself imports none of them.
     """
     from desktop_manager.jobs.web import JobsRoute
-    from rig.estate.web import make_route as estate_route
-    from rig.otel_stack.web import telemetry_route
 
-    return (telemetry_route, estate_route(), JobsRoute())
+    return (JobsRoute(),)
 
 
 # Options that take a value: skipping their value keeps `--port 8095` from looking like a command word.
@@ -105,7 +104,8 @@ def web_upstream_cmd(
     """Serve the routes the C# web host has not taken over yet, on loopback, until standard input closes.
 
     Started by ``rig web`` only, which forwards to it and closes its standard input to stop it; the C# host owns the
-    port the browser uses. Deleted with the forwarder when the last route group is ported (#85 s25).
+    port the browser uses. Only the jobs coordinator is still mounted here; deleted with the forwarder when that
+    route group is ported (#85 s25).
     """
     import sys
     import threading

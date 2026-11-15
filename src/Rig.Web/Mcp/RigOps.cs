@@ -7,6 +7,8 @@ using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Workspace;
 
+using Rig.Web.Ops;
+
 namespace Rig.Web.Mcp;
 
 /// <summary>What needs a person: jobs whose last run failed, and estate decisions waiting on someone.</summary>

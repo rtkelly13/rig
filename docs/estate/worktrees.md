@@ -38,7 +38,7 @@ code root beside the checkout its own code runs from. For the installed runtime
 copy that directory is `%LOCALAPPDATA%\shared-utilities\runtime`, which holds
 no clones.
 
-`rig web` offers the same trim (`rig.estate.web`). `GET /api/ops/estate/trim`
+`rig web` offers the same trim (`Rig.Web.EstateOpsRoutes`). `GET /api/ops/estate/trim`
 returns the last finished scan at once, with `scanning: true` while a new one
 runs on a background thread (the first call, `?refresh=true`, or the first
 call after an apply starts one). `POST /api/ops/estate/trim/apply` with

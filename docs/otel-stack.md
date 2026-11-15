@@ -170,7 +170,7 @@ is scheduled on any platform.
 
 ## Recent traces in `rig web`
 
-`rig web` serves two read-only endpoints for its ops pages (`rig.otel_stack.web`):
+`rig web` serves two read-only endpoints for its ops pages (`Rig.Web.TelemetryRoutes`):
 
 - `GET /api/ops/telemetry/status`: whether ClickHouse answers, and the explorer UIs with trace-link templates.
 - `GET /api/ops/telemetry/traces?days=1..30&limit=1..500&service=`: recent traces, newest first.

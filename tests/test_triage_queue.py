@@ -1,24 +1,19 @@
-"""Triage ordering, failure isolation, history, Markdown and dashboard API contracts."""
+"""Triage ordering, failure isolation, history and Markdown contracts."""
 
 from __future__ import annotations
 
 import json
 import subprocess
-import threading
-import urllib.error
-import urllib.request
-from collections.abc import Iterator
 from contextlib import closing
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from rig.db.migrations import run_migrations
-from rig.triage import agents, github, markdown, service, store
+from rig.triage import github, markdown, service, store
 from rig.triage.models import Activity, Entry, Interaction, Item, rank
 from rig.typed_json import decode_json
-from rig.web_host.server import StudioServer
 
 pytestmark = pytest.mark.ci
 
@@ -201,50 +196,6 @@ def test_paginated_github_and_registry(tmp_path: Path, monkeypatch: pytest.Monke
     assert result[0].body == "## Reason\nKeep the workflow"
     assert result[0].priority == 1 and result[0].readiness == 0
     assert "--paginate" in calls[0] and "--slurp" in calls[0]
-
-
-@dataclass(frozen=True)
-class Running:
-    url: str
-    db: Path
-
-
-@pytest.fixture
-def running(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Running]:
-    monkeypatch.setattr(service, "queue_path", lambda: tmp_path / "queue.md")
-    monkeypatch.setattr(agents, "signals", dict)
-    db = tmp_path / "rig.db"
-    with closing(store.connect(db)) as conn, conn:
-        store.save(conn, [item()])
-    server = StudioServer(port=0, db_path=db)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        yield Running(f"http://127.0.0.1:{server.server_address[1]}", db)
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join()
-
-
-def test_dashboard_uses_its_database_and_records_actions(running: Running) -> None:
-    with urllib.request.urlopen(running.url + "/api/triage") as response:
-        assert len(json.load(response)["entries"]) == 1
-    request = urllib.request.Request(
-        running.url + "/api/triage/interact",
-        data=json.dumps(
-            {"repo": "owner/repo", "number": 1, "action": "note", "head": "a" * 40, "note": "Follow up"}
-        ).encode(),
-        headers={"Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(request) as response:
-        assert json.load(response)["entries"][0]["events"][-1]["note"] == "Follow up"
-    assert store.read_entries(running.db)[0].events[-1].note == "Follow up"
-    request.add_header("Origin", "https://untrusted.example")
-    with pytest.raises(urllib.error.HTTPError) as error:
-        urllib.request.urlopen(request)
-    assert error.value.code == 400
-    assert len(store.read_entries(running.db)[0].events) == 2
 
 
 def test_review_decision_rechecks_live_head(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

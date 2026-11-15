@@ -1,8 +1,9 @@
 """The Python half of the rig web host: the mounted feature routes and the handlers not yet in C#.
 
 The C# host (``src/Rig.Web``) owns the port and serves status, live reload, the estate, the SPA document, its
-static files and the brand images; it forwards every other path here, to this server on a loopback port
-(``desktop-manager web upstream``). Each #85 s25 slice moves a route group across.
+static files, the brand images, triage, the estate's ops answers and telemetry; it forwards every other path here,
+to this server on a loopback port (``desktop-manager web upstream``). The jobs coordinator, the C4 viewer, the estate
+graph and the database backup are still here until their slices land.
 """
 
 from __future__ import annotations
@@ -19,7 +20,6 @@ from pydantic import JsonValue
 
 from rig.c4_okf.web import serve_c4
 from rig.connectivity.web import handle as handle_connectivity
-from rig.triage.web import handle as handle_triage
 from rig.web_host.models import BackupResponse
 from rig.web_routes import Route, dispatch
 
@@ -49,10 +49,6 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if isinstance(self.server, StudioServer) and dispatch(self.server.routes, self, "GET"):
             return
-        if isinstance(self.server, StudioServer) and handle_triage(
-            self, "GET", urllib.parse.urlparse(self.path).path, self.server.db_path
-        ):
-            return
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
 
@@ -64,10 +60,6 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         if isinstance(self.server, StudioServer) and dispatch(self.server.routes, self, "POST"):
-            return
-        if isinstance(self.server, StudioServer) and handle_triage(
-            self, "POST", urllib.parse.urlparse(self.path).path, self.server.db_path
-        ):
             return
         path = urllib.parse.urlparse(self.path).path
 

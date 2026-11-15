@@ -49,8 +49,8 @@ feed to **`%LOCALAPPDATA%\shared-utilities\jobs\decisions.json`**, beside the
 coordinator's own state. The file is a JSON array of `Decision` objects,
 replaced in one step; its modified time is when it was collected.
 The command runs on the C# CLI (`src/Rig.Core/Estate/Decisions.cs`), and
-`rig.estate.decisions.read_feed` reads the feed back for the Python web console.
+`Rig.Core.Estate.DecisionFeed` reads the feed back for the C# web console.
 
-`rig web` serves it as `GET /api/ops/decisions` (`rig.estate.web`): the
+`rig web` serves it as `GET /api/ops/decisions` (`Rig.Web.EstateOpsRoutes`): the
 decisions, the file's modified time as `written` (UTC), and a `note` when the
 feed is missing, malformed or empty. A missing feed is not an error.

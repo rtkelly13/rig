@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import threading
 from collections.abc import Iterator
@@ -15,7 +16,8 @@ from playwright.sync_api import Page, expect, sync_playwright
 
 from rig.connectivity import web as connectivity_web
 from rig.connectivity.models import Component, ComponentEdge, Dependency, Graph, Project
-from rig.triage import github, service, store
+from rig.db.connection import default_db_path
+from rig.triage import store
 from rig.triage.facts import Check, Facts, Related, Stack, StackMember
 from rig.triage.models import Activity, Interaction, Item
 from rig.web_host.server import StudioServer
@@ -50,10 +52,10 @@ def browser_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Bro
         return graph
 
     monkeypatch.setattr(connectivity_web, "load_graph", load_graph)
-    db = tmp_path / "rig.db"
-    monkeypatch.setattr(service, "queue_path", lambda: tmp_path / "queue.md")
-    monkeypatch.setattr(github, "observe", lambda item: item)
-    monkeypatch.setattr(github, "activity", lambda _item: [])
+    # The inbox is a C# route now: it reads the shared rig database, beside the temp app state the suite isolates.
+    db = default_db_path()
+    for suffix in ("", "-wal", "-shm"):
+        Path(f"{db}{suffix}").unlink(missing_ok=True)
     items = [
         Item(
             "owner/repo",
@@ -97,6 +99,7 @@ def browser_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Bro
         with rig_web_host.fronting(routes, rig_web_host.checkout(tmp_path)) as url, sync_playwright() as playwright:
             browser = playwright.chromium.launch()
             page = browser.new_page(viewport={"width": 1440, "height": 1000})
+            _canned_github(page, url, db)
             try:
                 yield BrowserApp(url, db, page)
             finally:
@@ -105,6 +108,34 @@ def browser_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Bro
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def _canned_github(page: Page, url: str, db: Path) -> None:
+    """Keep the inbox's GitHub reads local, as the Python fixture's monkeypatched github did.
+
+    Watching an item observes nothing new, so it answers with the queue as it stands. A review is recorded in the
+    shared database, which the next read shows, instead of asking GitHub for a live head.
+    """
+    from playwright.sync_api import Route
+
+    def queue() -> object:
+        return page.request.get(url + "/api/triage").body()
+
+    page.route("**/api/triage/watch", lambda route: route.fulfill(body=queue(), content_type="application/json"))
+
+    def interact(route: Route) -> None:
+        body = json.loads(route.request.post_data or "{}")
+        if body.get("action") in {"reviewed", "changes_requested"}:
+            with closing(store.connect(db)) as conn, conn:
+                store.interact(
+                    conn,
+                    Interaction(body["repo"], body["number"], body["action"], body["head"], body.get("note", "")),
+                )
+            route.fulfill(body=queue(), content_type="application/json")
+            return
+        route.continue_()
+
+    page.route("**/api/triage/interact", interact)
 
 
 def test_the_browser_talks_to_the_csharp_host(browser_app: BrowserApp) -> None:

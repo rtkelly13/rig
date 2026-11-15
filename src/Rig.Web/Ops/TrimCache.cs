@@ -1,7 +1,7 @@
 using System.Globalization;
 using Rig.Core.Estate;
 
-namespace Rig.Web.Mcp;
+namespace Rig.Web.Ops;
 
 /// <summary>One folder a trim scan offers to delete, as an ops answer shows it.</summary>
 /// <param name="Worktree">The worktree holding it.</param>
