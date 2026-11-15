@@ -146,6 +146,63 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains($"Already current: {shortSha}", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void FindCheckout_locates_repo_root_or_returns_null()
+    {
+        var repo = _temp.Folder("sample-rig-repo");
+        var nested = Path.Join(repo, "src", "sub", "deep");
+        _ = Directory.CreateDirectory(nested);
+        File.WriteAllText(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n");
+
+        var found = RuntimeCommand.FindCheckout(nested);
+        Assert.Equal(repo, found);
+
+        var empty = _temp.Folder("not-a-repo");
+        Assert.Null(RuntimeCommand.FindCheckout(empty));
+    }
+
+    [Fact]
+    public async Task Install_discovers_checkout_and_reports_previous_and_removed_copies()
+    {
+        var repo = _temp.Folder("auto-repo");
+        File.WriteAllText(Path.Join(repo, "pyproject.toml"), "[project]\nname = \"rig\"\n");
+        var sha = "abcdef1234567890abcdef1234567890abcdef12";
+        var shortSha = sha[..RuntimeManager.ShortShaLength];
+
+        _ = Directory.CreateDirectory(Path.Join(Root, "prev-copy"));
+        _ = Directory.CreateDirectory(Path.Join(Root, "old-copy"));
+        await File.WriteAllTextAsync(Path.Join(Root, "prev-copy", RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Join(Root, "old-copy", RuntimeManager.InstalledName), "{}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Join(Root, RuntimeManager.StateName),
+            """{"current": "prev-copy", "previous": "old-copy", "repo": "/repo"}""",
+            TestContext.Current.CancellationToken);
+
+        var proc = new FakeProc()
+            .Answer(new(0, sha + "\n", ""), "git", "-C", repo, "rev-parse")
+            .Answer(new(0, "", ""), "git", "-C", repo, "archive")
+            .Answer(new(0, "", ""), "uv")
+            .Answer(new(0, "", ""), "dotnet")
+            .Answer(new(0, "", ""));
+
+        var host = new RuntimeHost(Root, repo, _temp.Folder("home"), false, proc, TimeProvider.System);
+        var root = new RootCommand
+        {
+            new RuntimeCommand(host, _out).Build(),
+        };
+
+        var exit = await root.Parse(["runtime", "install", "--ref", "HEAD", "--no-fetch"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _error },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        var output = _out.ToString();
+        Assert.Contains($"Current: {shortSha}", output, StringComparison.Ordinal);
+        Assert.Contains("Previous kept for rollback: prev-copy", output, StringComparison.Ordinal);
+        Assert.Contains("Removed old copy: old-copy", output, StringComparison.Ordinal);
+        Assert.Contains("rig on PATH:", output, StringComparison.Ordinal);
+    }
+
     private async Task<int> Run(FakeProc proc, params string[] args)
     {
         var root = new RootCommand
