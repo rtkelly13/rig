@@ -159,6 +159,29 @@ public sealed class ReconciliationRunnerTests
         Assert.Equal(2, errorPlan.ExitCode(applied: false));
     }
 
+    [Fact]
+    public async Task Guard_clauses_throw_argument_null_exceptions()
+    {
+        var plan = new TestPlan([]);
+        var reconciler = new FakeReconciler(plan);
+        var options = ReconciliationOptions.For();
+        using var output = Writer();
+        var run = new ReconciliationRun<TestPlan, Row>(plan, [], Applied: false, ExitCode: 0);
+
+        var ct = TestContext.Current.CancellationToken;
+        Assert.Throws<ArgumentNullException>(() => ReconciliationRunner.Run<Row>(null!, false, _ => { }));
+        Assert.Throws<ArgumentNullException>(() => ReconciliationRunner.Run<Row>(plan, false, null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => ReconciliationRunner.RunAsync<string, TestPlan, Row>(null!, "t", options, output, ct));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => ReconciliationRunner.RunAsync(reconciler, "t", null!, output, ct));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => ReconciliationRunner.RunAsync(reconciler, "t", options, null!, ct));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => ReconciliationRunner.RenderAsync<TestPlan, Row>(null!, options, output, ct));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => ReconciliationRunner.RenderAsync<TestPlan, Row>(run, null!, output, ct));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => ReconciliationRunner.RenderAsync<TestPlan, Row>(run, options, null!, ct));
+        Assert.Throws<ArgumentNullException>(() => ReconciliationRunner.ToJson<TestPlan, Row>(null!));
+        Assert.Throws<ArgumentNullException>(() => PlanExtensions.HasDrift<Row>(null!));
+        Assert.Throws<ArgumentNullException>(() => PlanExtensions.ExitCode<Row>(null!, false));
+    }
+
     private static StringWriter Writer() => new() { NewLine = "\n" };
 
     private sealed record Row(string Subject, ChangeKind Kind, string Detail = "") : IChange;

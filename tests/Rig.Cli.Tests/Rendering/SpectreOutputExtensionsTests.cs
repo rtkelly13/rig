@@ -157,6 +157,28 @@ public sealed class SpectreOutputExtensionsTests
         Assert.Throws<ArgumentException>(() => table.Add("1", "2"));
     }
 
+    [Fact]
+    public void Badge_maps_all_change_kinds_and_fallback()
+    {
+        Assert.Equal("[grey]aligned[/]", SpectreOutputExtensions.Badge(ChangeKind.Aligned));
+        Assert.Equal("[yellow]would-change[/]", SpectreOutputExtensions.Badge(ChangeKind.WouldChange));
+        Assert.Equal("[green]changed[/]", SpectreOutputExtensions.Badge(ChangeKind.Changed));
+        Assert.Equal("[darkorange]refused[/]", SpectreOutputExtensions.Badge(ChangeKind.Refused));
+        Assert.Equal("[red]error[/]", SpectreOutputExtensions.Badge(ChangeKind.Error));
+        Assert.Equal("[grey]99[/]", SpectreOutputExtensions.Badge((ChangeKind)99));
+    }
+
+    [Fact]
+    public void RenderPlan_throws_on_null_arguments()
+    {
+        using var writer = new StringWriter();
+        var console = RigConsole.Create(writer);
+        var plan = new FakePlan([]);
+
+        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderPlan<FakeChange>(null!, plan));
+        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderPlan<FakeChange>(console, null!));
+    }
+
     private sealed record FakeChange(string Subject, string Detail, ChangeKind Kind) : IChange;
 
     private sealed record FakePlan(IReadOnlyList<FakeChange> Changes) : IPlan<FakeChange>
