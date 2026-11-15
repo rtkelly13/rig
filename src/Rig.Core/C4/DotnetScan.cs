@@ -384,6 +384,10 @@ public static partial class DotnetScan
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(ownerOf);
+        if (!File.Exists(path))
+        {
+            return [];
+        }
         var graph = new CallGraphFile();
         graph.Read(OkfBundle.SplitLines(OkfBundle.NormaliseNewlines(File.ReadAllText(path))));
         var edges = new Dictionary<CodeEdge, int>();

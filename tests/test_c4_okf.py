@@ -303,7 +303,7 @@ def test_parquet_sample_bundle_has_no_errors_or_warnings() -> None:
 
 
 def test_split_frontmatter_edge_cases():
-    from rig.c4_okf.bundle import split_frontmatter, _decode_frontmatter
+    from rig.c4_okf.bundle import _decode_frontmatter, split_frontmatter
 
     assert split_frontmatter("no frontmatter").frontmatter is None
     assert split_frontmatter("---\nunclosed frontmatter").frontmatter is None
@@ -314,5 +314,19 @@ def test_split_frontmatter_edge_cases():
 
 def test_concept_element_notes_without_diagram():
     from rig.c4_okf.bundle import Concept
-    c = Concept(id="foo", path=Path("foo.md"), type=None, title="Foo", description=None, resource=None, tags=(), generated=None, verified=None, diagram=None, notes="## Foo\nbar", body_links=())
+
+    c = Concept(
+        id="foo",
+        path=Path("foo.md"),
+        type=None,
+        title="Foo",
+        description=None,
+        resource=None,
+        tags=(),
+        generated=None,
+        verified=None,
+        diagram=None,
+        notes="## Foo\nbar",
+        body_links=(),
+    )
     assert c.element_notes() == {}
