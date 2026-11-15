@@ -339,6 +339,24 @@ public sealed class TrimTests : IDisposable
         Assert.Contains("trim requires a removal port to apply", errors);
     }
 
+    [Fact]
+    public void CategoryOf_detects_all_build_outputs()
+    {
+        var dir = _temp.Folder("build-test");
+        File.WriteAllText(Path.Join(dir, "test.csproj"), "<Project/>");
+        File.WriteAllText(Path.Join(dir, "test.sln"), "");
+        File.WriteAllText(Path.Join(dir, "Cargo.toml"), "");
+
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "bin")));
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "obj")));
+        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "packages")));
+        Assert.Equal("rust build output", Trim.CategoryOf(Path.Join(dir, "target")));
+        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, "dist")));
+        Assert.Equal("python venv", Trim.CategoryOf(Path.Join(dir, ".venv")));
+        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".ruff_cache")));
+        Assert.Null(Trim.CategoryOf(Path.Join(dir, "src")));
+    }
+
     // ---- helpers --------------------------------------------------------------------------------------------------
 
     private static TreeRemoval Removal() => new(Repos.Proc);

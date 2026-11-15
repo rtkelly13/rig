@@ -175,6 +175,23 @@ public sealed class PullRequestsAndReclaimTests
         Assert.Equal(0, DiskUsage.Walk(Path.Join(root.Path, "missing")));
     }
 
+    [Fact]
+    public void RepoReclaim_Errors_and_ByCategory()
+    {
+        var e1 = new Reclaimable("/r/node_modules", "node_modules", 100, "pnpm install");
+        var e2 = new Reclaimable("/r/packages/a/node_modules", "node_modules", 50, "pnpm install");
+        var e3 = new Reclaimable("/r/dist", "js build output", 200, "pnpm build") { Kind = ChangeKind.Error, Detail = "failed" };
+        var plan = new RepoReclaim("/r", [e1, e2, e3]);
+
+        Assert.Equal(350, plan.Total);
+        Assert.Equal(["/r/dist: failed"], plan.Errors);
+        var byCategory = plan.ByCategory();
+        Assert.Equal("js build output", byCategory[0].Key);
+        Assert.Equal(200, byCategory[0].Value);
+        Assert.Equal("node_modules", byCategory[1].Key);
+        Assert.Equal(150, byCategory[1].Value);
+    }
+
     private static Git Origin(string url) =>
         new(new FakeProc().Answer(new Ran(0, url + "\n", string.Empty), "git", "remote", "get-url", "origin"), "/");
 
