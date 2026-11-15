@@ -95,7 +95,13 @@ public static partial class DotnetScan
     public static IReadOnlyList<Project> DiscoverProject(string csproj)
     {
         ArgumentNullException.ThrowIfNull(csproj);
-        return ReadClosure([System.IO.Path.GetFullPath(csproj)]);
+        var fullPath = System.IO.Path.GetFullPath(csproj);
+        if (!File.Exists(fullPath))
+        {
+            throw new FileNotFoundException($"Project file not found: '{fullPath}'", fullPath);
+        }
+
+        return ReadClosure([fullPath]);
     }
 
     private static IReadOnlyList<Project> ReadClosure(List<string> pending)

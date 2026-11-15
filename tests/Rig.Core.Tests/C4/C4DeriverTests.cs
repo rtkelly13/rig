@@ -226,4 +226,12 @@ public sealed class C4DeriverTests : IDisposable
         var projects = DotnetScan.DiscoverProject(Path.Join(repo, "src/Acme.Legacy/Acme.Legacy.csproj"));
         Assert.Equal(["Acme.Gen", "Acme.Legacy", "Acme.Runtime"], projects.Select(project => project.Name));
     }
+
+    [Fact]
+    public void DiscoverProject_throws_when_project_file_does_not_exist()
+    {
+        var missing = Path.Join(Path.GetTempPath(), "NonExistent.csproj");
+        var ex = Assert.Throws<FileNotFoundException>(() => DotnetScan.DiscoverProject(missing));
+        Assert.Equal(Path.GetFullPath(missing), ex.FileName);
+    }
 }
