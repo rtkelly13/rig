@@ -234,4 +234,26 @@ public sealed class C4DeriverTests : IDisposable
         var ex = Assert.Throws<FileNotFoundException>(() => DotnetScan.DiscoverProject(missing));
         Assert.Equal(Path.GetFullPath(missing), ex.FileName);
     }
+
+    [Fact]
+    public void DotnetScan_validates_null_arguments_and_empty_project_xml()
+    {
+        Assert.Throws<ArgumentNullException>(() => DotnetScan.Discover(null!));
+        Assert.Throws<ArgumentNullException>(() => DotnetScan.DiscoverProject(null!));
+        Assert.Throws<ArgumentNullException>(() => DotnetScan.ReadProject(null!));
+
+        var empty = _temp.File("empty.csproj");
+        File.WriteAllText(empty, "<Project />");
+        var project = DotnetScan.ReadProject(empty);
+        Assert.Equal("empty", project.Name);
+        Assert.Empty(project.Frameworks);
+        Assert.Empty(project.Refs);
+        Assert.Empty(project.CompileLinks);
+    }
+
+    [Fact]
+    public void CallEdges_returns_empty_when_file_does_not_exist()
+    {
+        Assert.Empty(DotnetScan.CallEdges(_temp.Path + "/missing.txt", new Dictionary<string, string>()));
+    }
 }

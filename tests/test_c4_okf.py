@@ -300,3 +300,19 @@ def test_routes_leave_other_paths_alone() -> None:
 def test_parquet_sample_bundle_has_no_errors_or_warnings() -> None:
     findings = check_bundle(load_bundle(DEFAULT_BUNDLE.parent / "parquet-sourcegenerator"))
     assert [f for f in findings if f.severity is not Severity.INFO] == []
+
+
+def test_split_frontmatter_edge_cases():
+    from rig.c4_okf.bundle import split_frontmatter, _decode_frontmatter
+
+    assert split_frontmatter("no frontmatter").frontmatter is None
+    assert split_frontmatter("---\nunclosed frontmatter").frontmatter is None
+    assert _decode_frontmatter(None) == "no YAML frontmatter"
+    assert "not valid YAML" in str(_decode_frontmatter("bad: [unclosed"))
+    assert _decode_frontmatter("- list\n- item") == "frontmatter must be a YAML mapping"
+
+
+def test_concept_element_notes_without_diagram():
+    from rig.c4_okf.bundle import Concept
+    c = Concept(id="foo", path=Path("foo.md"), type=None, title="Foo", description=None, resource=None, tags=(), generated=None, verified=None, diagram=None, notes="## Foo\nbar", body_links=())
+    assert c.element_notes() == {}
