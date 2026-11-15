@@ -102,6 +102,8 @@ public sealed class TriageCommandTests : IDisposable
     [Fact]
     public async Task Help_and_parse_errors_are_owned_by_csharp()
     {
+        Assert.Equal(2, await Run("triage"));
+        Assert.Equal("rig: Required command was not provided.\nRun 'rig --help' for the commands.\n", _error.ToString());
         Assert.Equal(0, await Run("triage", "--help"));
         Assert.Contains("refresh", _output.ToString(), StringComparison.Ordinal);
         Assert.Contains("verify", _output.ToString(), StringComparison.Ordinal);

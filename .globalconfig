@@ -1,0 +1,5 @@
+is_global = true
+
+# DotMake's source generator writes the System.CommandLine construction the banned-API rule keeps out of hand-written
+# code (ADR 0023). Only what people type is governed.
+dotnet_banned_api_analyzer.exclude_generated_code = true

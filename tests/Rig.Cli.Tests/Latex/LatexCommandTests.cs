@@ -250,4 +250,15 @@ public sealed class LatexCommandTests : IDisposable
         Assert.Empty(_proc.Requests);
         Assert.Contains("ready", _out.ToString(), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_group_named_alone_is_still_the_parsers_missing_subcommand_error()
+    {
+        Assert.Equal(2, await Run("latex"));
+
+        Assert.Empty(_out.ToString());
+        Assert.Equal(
+            "rig: Required command was not provided.\nRun 'rig --help' for the commands.\n",
+            _err.ToString().ReplaceLineEndings("\n"));
+    }
 }
