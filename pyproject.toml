@@ -414,6 +414,7 @@ patching-allow = [
     "tests/desktop_manager/test_restore_duplicate_launch_guards.py",
     "tests/desktop_manager/test_reusable_window_matching.py",
     "tests/desktop_manager/test_runtime.py",
+    "tests/desktop_manager/test_web_cli.py",
     "tests/desktop_manager/test_web_ensure.py",
     "tests/desktop_manager/test_windows_workspace_unit.py",
     "tests/desktop_manager/test_workspace_align.py",
