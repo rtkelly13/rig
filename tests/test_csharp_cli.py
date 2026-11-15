@@ -117,6 +117,8 @@ def test_the_forwarded_table_is_read() -> None:
     assert "web" in names
     # Triage's CLI runs in C#; only its web inbox stays inside the Python package.
     assert "triage" not in names
+    # C4's CLI runs in C#; its web viewer stays inside the Python package.
+    assert "c4" not in names
 
 
 @pytest.mark.parametrize(("name", "launch"), _launches(), ids=[name for name, _ in _launches()])

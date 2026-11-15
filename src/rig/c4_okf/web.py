@@ -19,8 +19,7 @@ from markdown_it import MarkdownIt
 from markdown_it.renderer import RendererHTML
 from pydantic import StrictStr, TypeAdapter
 
-from rig.c4_okf.bundle import Actor, Bundle, Concept, load_bundle
-from rig.c4_okf.cli import DEFAULT_BUNDLE
+from rig.c4_okf.bundle import DEFAULT_BUNDLE, Actor, Bundle, Concept, load_bundle
 from rig.c4_okf.graph import (
     EdgeKind,
     ExpandError,

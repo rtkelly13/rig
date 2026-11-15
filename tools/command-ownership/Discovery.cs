@@ -196,7 +196,6 @@ internal static class Discovery
     {
         ["desktop-manager", .. var rest] => string.Join(' ', rest.Prepend("desktop-manager")),
         ["python", "-m", "rig.triage.cli"] => "triage",
-        ["python", "-m", "rig.c4_okf.cli"] => "c4",
         _ => throw new InvalidOperationException($"Unsupported forwarding discovery: {string.Join(' ', route.Launch)}"),
     };
 

@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using Rig.Cli.Agent;
 using Rig.Cli.Browser;
+using Rig.Cli.C4;
 using Rig.Cli.Chrome;
 using Rig.Cli.Devenv;
 using Rig.Cli.Estate;
@@ -171,6 +172,10 @@ internal static class Program
                         : null,
                     exportTree ? exportWindowsTree : OperatingSystem.IsWindowsVersionAtLeast(8, 1)).Build,
                 new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out, Console.Error).Build,
+                new C4Command(
+                    new C4Host(Path.Join(checkout, "experiments", "c4-okf", "rig"), (directory, arguments) => git.OutAsync(directory, [.. arguments])),
+                    Console.Out,
+                    Console.Error).Build,
                 new TriageCommand(
                     new TriageHost(Path.Join(AppData.Current(), "rig.db"),
                         Path.Join(Path.GetDirectoryName(Path.GetDirectoryName(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))!, "temp", "triage", "queue.md"),

@@ -9,12 +9,12 @@ checkable rather than just browsable.
 
 | Piece | Where |
 |---|---|
-| Model, checks, composition | [`src/rig/c4_okf/`](../../src/rig/c4_okf/) (`bundle.py`, `mermaid_c4.py`, `graph.py`) |
-| CLI | `rig c4 check \| tree \| model \| expand CONCEPT ALIAS` |
+| Model, checks, composition | [`src/Rig.Core/C4/`](../../src/Rig.Core/C4/) (C#); the viewer's read-only server stays in `src/rig/c4_okf/web.py` |
+| CLI | `rig c4 check \| tree \| model \| expand CONCEPT ALIAS` (C#) |
 | Viewer | `rig web`, then **C4 architecture** in the sidebar, or `/c4/`. Set `RIG_C4_BUNDLE=<dir>` for another bundle |
-| Derive from code | `rig c4 derive dotnet REPO OUT [--parent CONCEPT:ALIAS] [--callgraph DIR] [--check]` (`derive.py`, `dotnet_scan.py`) |
+| Derive from code | `rig c4 derive dotnet REPO OUT [--parent CONCEPT:ALIAS] [--callgraph DIR] [--check] [--project CSPROJ]` (`Rig.Core.C4.C4Deriver`) |
 | Sample bundles | [`rig/`](rig/): rig documenting itself, 8 hand-written concepts across all four levels. [`parquet-sourcegenerator/`](parquet-sourcegenerator/): one hand-written context view plus 17 views derived from the code. Switch between them with the viewer's bundle picker |
-| Tests | [`tests/test_c4_okf.py`](../../tests/test_c4_okf.py), [`tests/test_c4_derive.py`](../../tests/test_c4_derive.py) |
+| Tests | [`tests/Rig.Core.Tests/C4/`](../../tests/Rig.Core.Tests/C4/), [`tests/Rig.Cli.Tests/C4/`](../../tests/Rig.Cli.Tests/C4/), and the viewer routes in [`tests/test_c4_okf.py`](../../tests/test_c4_okf.py) |
 
 ## The shape
 
@@ -191,9 +191,10 @@ Split it in three, and only when a second consumer turns up:
    `/x.md` from `cwd` and anything else from the linking file. On this bundle it agrees with `rig c4 check`:
    both pass clean, and both catch one deliberately broken `$link` at the same line.
 3. **Bundle model and checks → a small package** (or a vault `okf-sync` step), once the vault or the docs
-   portal wants `rig c4 check`. `src/rig/c4_okf/` has no imports from the rest of rig apart from
-   `typed_json` and `typed_yaml`, and the web routes take a four-method `Responder` protocol, not rig's
-   handler.
+   portal wants `rig c4 check`. The viewer in `src/rig/c4_okf/` has no imports from the rest of rig apart
+   from `typed_json` and `typed_yaml`, and its web routes take a four-method `Responder` protocol, not
+   rig's handler. The model, checks and derivation now live in `Rig.Core.C4`; only the viewer and its
+   read-only bundle API remain Python.
 
-Until then it stays here: about 2,100 lines of Python (including about 750 for deriving from .NET), a 400-line viewer
-script, and one hook in `server.py`.
+Until then the viewer stays here: a 400-line script and its static assets, one hook in `server.py`, and the
+bundle reader it mounts.
