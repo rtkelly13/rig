@@ -78,3 +78,6 @@ bin/
 obj/
 TestResults/
 /artifacts/
+
+# Reqnroll's generated code-behind files (issue #237); the .feature files are the source.
+*.feature.cs

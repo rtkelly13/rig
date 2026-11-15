@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The Gherkin specs (issue #237): the estate's highest-risk operations and the reconciliation pipeline written as
+    behaviour anybody can read. Step definitions run each scenario in one of two modes (StepDefinitions/SpecMode.cs):
+    in-memory against the pure domain by default, on disk when the scenario is tagged @real or RIG_SPEC_MODE=real.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Reqnroll.xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Rig.Core/Rig.Core.csproj" />
+    <ProjectReference Include="../../src/Rig.Cli/Rig.Cli.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Features/**/*.feature" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="reqnroll.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Reqnroll writes generated code next to each feature; a deleted feature must not leave one behind. -->
+    <ReqnrollDeleteObsoleteCodeBehindFilesOnClean>true</ReqnrollDeleteObsoleteCodeBehindFilesOnClean>
+  </PropertyGroup>
+</Project>
