@@ -176,12 +176,18 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
         }
     }
 
-    // The repo to install from: the explicit one, this checkout when it is not a runtime copy, or the one last installed from.
+    // The repo to install from: the explicit one, the executing checkout, this checkout when it is not a runtime copy, or the one last installed from.
     private string? ResolveRepo(string? explicitRepo)
     {
         if (explicitRepo is not null)
         {
             return explicitRepo;
+        }
+
+        var executing = FindCheckout(AppContext.BaseDirectory) ?? FindCheckout(Environment.CurrentDirectory);
+        if (executing is not null && !RuntimeManager.RunningCopy(executing, host.Root))
+        {
+            return executing;
         }
 
         var manager = Manager;
