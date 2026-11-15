@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
@@ -7,6 +9,7 @@ namespace Rig.Core.Desktop.Windows;
 /// </summary>
 /// <param name="win32">The Win32 writes.</param>
 /// <param name="inventory">The reads the writes are planned from.</param>
+[ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]
 public sealed class WindowActions(IWin32Actions win32, WindowInventory inventory)
 {
     /// <summary>

@@ -321,6 +321,17 @@ omit = [
     "src/desktop_manager/jobs/session_windows.py",
     "src/desktop_manager/service_installer.py",
     "src/desktop_manager/win32/*",
+    # Superseded by C# rig desktop workspace (#243, ADR 0022):
+    "src/desktop_manager/desktop_port.py",
+    "src/desktop_manager/desktop_reconcile.py",
+    "src/desktop_manager/geometry.py",
+    "src/desktop_manager/models.py",
+    "src/desktop_manager/placement.py",
+    "src/desktop_manager/plan.py",
+    "src/desktop_manager/processes.py",
+    "src/desktop_manager/restore*.py",
+    "src/desktop_manager/window_*.py",
+    "src/desktop_manager/windows_workspace.py",
 ]
 
 [tool.coverage.report]

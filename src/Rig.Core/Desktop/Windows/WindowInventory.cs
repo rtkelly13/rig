@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Desktop.Windows;
@@ -8,6 +9,7 @@ namespace Rig.Core.Desktop.Windows;
 /// </summary>
 /// <param name="win32">The Win32 reads.</param>
 /// <param name="desktops">Which virtual desktop each window is on.</param>
+[ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]
 public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktops)
 {
     /// <summary>Window titles that are never one of the user's windows.</summary>

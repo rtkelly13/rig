@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Rig.Core.Desktop.Windows;
@@ -8,6 +9,7 @@ namespace Rig.Core.Desktop.Windows;
 /// </summary>
 /// <param name="getVariable">Reads an environment variable, such as <c>LOCALAPPDATA</c>.</param>
 /// <param name="home">What a leading <c>~</c> stands for.</param>
+[ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]
 public sealed class Launching(Func<string, string?>? getVariable = null, string? home = null)
 {
     /// <summary>Never terminated by cleanup, whatever the PID bookkeeping says.</summary>

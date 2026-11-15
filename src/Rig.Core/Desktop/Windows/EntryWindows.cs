@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Rig.Core.Vault;
 
@@ -11,6 +12,7 @@ namespace Rig.Core.Desktop.Windows;
 /// <param name="desktops">Which virtual desktop a window is on, and how to move it.</param>
 /// <param name="actions">The window writes.</param>
 /// <param name="time">The clock the waits poll against.</param>
+[ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]
 public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops desktops, WindowActions actions, TimeProvider? time = null)
 {
     private static readonly TimeSpan Poll = TimeSpan.FromMilliseconds(150);
