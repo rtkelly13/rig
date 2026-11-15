@@ -69,4 +69,41 @@ public sealed class CallGraphFileTests : IDisposable
     [Fact]
     public void Type_of_drops_the_member_and_signature() =>
         Assert.Equal("Acme.Runner", CallGraphFile.TypeOf("Acme.Runner.Run/(int)"));
+
+    [Fact]
+    public void CallGraphFile_tolerates_malformed_and_unknown_lines()
+    {
+        var graph = new CallGraphFile();
+        graph.Read([
+            "NO_COLON_HERE",
+            "Z:UnknownTag|value",
+            "T:MalformedType|class|public", // not 4 fields
+            "T:BadLine|class|public|file.cs:notanumber",
+            "M:MalformedMember|method|public", // not 4 fields
+            "M:BadMemberLine|method|public|notanumber",
+            "E:InvalidEdgeWithoutSeparator",
+            "T:GlobalType|class|public|src/Global.cs:1",
+        ]);
+
+        Assert.True(graph.Types.ContainsKey("GlobalType"));
+        Assert.Equal(string.Empty, graph.Types["GlobalType"].Namespace);
+        Assert.Equal("GlobalType", graph.Types["GlobalType"].Name);
+    }
+
+    [Fact]
+    public void CallGraphFile_validates_arguments_and_handles_missing_members()
+    {
+        var graph = new CallGraphFile();
+        Assert.Throws<ArgumentNullException>(() => graph.Read(null!));
+        Assert.Throws<ArgumentNullException>(() => graph.IsCallable(null!));
+        Assert.Throws<ArgumentNullException>(() => graph.OfType(null!));
+        Assert.Throws<ArgumentNullException>(() => graph.Label(null!));
+        Assert.Throws<ArgumentNullException>(() => CallGraphFile.Key(null!));
+        Assert.Throws<ArgumentNullException>(() => CallGraphFile.Load(null!, ["proj"]));
+        Assert.Throws<ArgumentNullException>(() => CallGraphFile.Load("dir", null!));
+
+        var missing = new MemberKey("Acme.Missing", "DoSomething");
+        Assert.False(graph.IsCallable(missing));
+        Assert.Equal("DoSomething()", graph.Label(missing));
+    }
 }
