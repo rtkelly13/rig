@@ -49,7 +49,7 @@ public sealed class ToolsCommandTests : IDisposable
     private RootCommand WebRoot(ServiceHost? host = null)
     {
         var tools = new ToolsCommand(host ?? Host(), Database, _out, _error);
-        var places = new WebPlaces(_temp.Path, Path.Join(_temp.Path, "managed.json"), _temp.Path, Db);
+        var places = new WebPlaces(_temp.Path, Path.Join(_temp.Path, "managed.json"), _temp.Path, Db, _temp.Path);
         return new()
         {
             new WebCommand(
@@ -116,7 +116,7 @@ public sealed class ToolsCommandTests : IDisposable
         var exit = await Run(ToolsRoot(Host(probe: probe)), "tools", "ensure", "web");
 
         Assert.Equal(0, exit);
-        Assert.Equal("Web answering on http://127.0.0.1:8090\n", _out.ToString());
+        Assert.Equal("Web Dashboard answering on http://127.0.0.1:8090\n", _out.ToString());
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public sealed class ToolsCommandTests : IDisposable
         var exit = await Run(ToolsRoot(Host(clock: clock, delay: Delay)), "tools", "ensure", "web", "--timeout", "1");
 
         Assert.Equal(ToolsCommand.FailureExit, exit);
-        Assert.Equal("Web did not answer on port 8090 within 1s.\n", _error.ToString());
+        Assert.Equal("Web Dashboard did not answer on port 8090 within 1s.\n", _error.ToString());
     }
 
     [Fact]
@@ -297,7 +297,7 @@ public sealed class ToolsCommandTests : IDisposable
         var root = WebRoot(Host(probe: probe));
 
         Assert.Equal(0, await Run(root, "web", "ensure"));
-        Assert.Equal("Web answering on http://127.0.0.1:8090\n", _out.ToString());
+        Assert.Equal("Web Dashboard answering on http://127.0.0.1:8090\n", _out.ToString());
     }
 
     [Fact]
