@@ -1,3 +1,0 @@
-from win32.win32ts import *
-
-def WTSRegisterSessionNotification(Wnd: int, Flags: int) -> None: ...

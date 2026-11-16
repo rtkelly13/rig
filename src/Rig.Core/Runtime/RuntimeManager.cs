@@ -426,7 +426,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         var plan = Path.Join(copy, "desktop-manager", "workspace-plan.bundle.json");
         if (File.Exists(plan))
         {
-            commands.Add([desktopManager, "workspace", "validate-plan", "--config", plan]);
+            commands.Add([Published(copy, "rig", windows), "desktop", "workspace", "validate-plan", "--config", plan]);
         }
 
         var problems = new List<string>();

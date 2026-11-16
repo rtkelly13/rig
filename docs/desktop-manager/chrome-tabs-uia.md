@@ -44,8 +44,8 @@ rig chrome-tabs uninstall
 `rig` forwards the whole line there, so it behaves and prints as it did under
 the old spelling. `desktop-manager chrome-tabs organise …` still works as the
 legacy spelling of that one command; the Python `list`, `rank`, `prune`,
-`group`, `saved-groups`, `install` and `uninstall` commands are no longer
-registered, so `rig chrome-tabs …` is the only spelling for them.
+`group`, `saved-groups`, `install` and `uninstall` bodies were deleted in
+#265, so `rig chrome-tabs …` is the only spelling for them.
 
 ## Grouping
 
@@ -286,9 +286,9 @@ The commands are C#; `organise` and the scheduled entry point are still Python.
 | Install | `src/Rig.Core/Chrome/ChromeInstall.cs` | The scheduled run's root and the `chrome-tabs` shim |
 | Python, still live | `src/desktop_manager/chrome/cli.py` (`organise`), `cli_common.py`, `scheduled.py`, `traces.py`, `install_location.py` | `organise`, the scheduled `--unattended` entry point, and the trace and log paths it shares with C# |
 
-The Python bodies for the ported commands are still in
-`src/desktop_manager/chrome/` but nothing registers them; `traces_cli.py`, which
-held the Python `traces` group, was deleted when C# took that command over.
+The Python bodies for the ported commands are gone: `list`, `rank`, `prune`
+and `group` were removed in #265 and `traces_cli.py`, which held the Python
+`traces` group, went when C# took that command over.
 
 ## How the adapter reads Chrome
 

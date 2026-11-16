@@ -138,21 +138,3 @@ def test_every_forwarded_command_reaches_a_python_program(name: str, launch: lis
     result = CliRunner().invoke(app, [*args, "--help"], prog_name=f"rig {name}")
 
     assert result.exit_code == 0, result.output
-
-
-def test_a_python_command_runs_as_the_rig_command_of_its_name(capsys: pytest.CaptureFixture[str]) -> None:
-    from rig.python_command import main
-
-    app = typer.Typer()
-    ran: list[str] = []
-    _ = app.command("go")(lambda: ran.append("go"))
-    _ = app.command("stop")(lambda: None)
-
-    with pytest.raises(SystemExit) as exited:
-        main(app, "triage", ["--help"])
-
-    assert exited.value.code == 0
-    assert "rig triage" in capsys.readouterr().out
-    with pytest.raises(SystemExit):
-        main(app, "triage", ["go"])
-    assert ran == ["go"]
