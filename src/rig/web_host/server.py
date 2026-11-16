@@ -1,49 +1,29 @@
 """The Python half of the rig web host: the mounted feature routes and the handlers not yet in C#.
 
 The C# host (``src/Rig.Web``) owns the port and serves status, live reload, the estate, the SPA document, its
-static files, the brand images, triage, the estate's ops answers and telemetry; it forwards every other path here,
-to this server on a loopback port (``desktop-manager web upstream``). The jobs coordinator, the C4 viewer, the estate
-graph and the database backup are still here until their slices land.
+static files, the brand images, triage, the estate's ops answers, telemetry and database backups; it forwards every
+other path here, to this server on a loopback port (``python -m desktop_manager.web_upstream``). The jobs coordinator,
+the C4 viewer and the estate graph are still here until their slices land.
 """
 
 from __future__ import annotations
 
-import json
-import logging
 import urllib.parse
 from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import override
 
-from pydantic import JsonValue
-
 from rig.c4_okf.web import serve_c4
-from rig.web_host.models import BackupResponse
 from rig.web_routes import Route, dispatch
-
-logger = logging.getLogger(__name__)
 
 
 class StudioRequestHandler(BaseHTTPRequestHandler):
     """HTTP request handler routing the forwarded API calls."""
 
-    @property
-    def env_db_path(self) -> Path | None:
-        return self.server.db_path if isinstance(self.server, StudioServer) else None
-
     @override
     def log_message(self, format: str, *args: object) -> None:
         """Suppress standard HTTP server access logging to keep terminal output clean."""
-
-    def _send_json(self, data: JsonValue, status: int = 200) -> None:
-        payload = json.dumps(data, indent=2).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(payload)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(payload)
 
     def do_GET(self) -> None:
         if isinstance(self.server, StudioServer) and dispatch(self.server.routes, self, "GET"):
@@ -61,21 +41,6 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
         if isinstance(self.server, StudioServer) and dispatch(self.server.routes, self, "POST"):
             return
         path = urllib.parse.urlparse(self.path).path
-
-        # On-demand SQLite database backup
-        if path == "/api/db/backup":
-            from rig.db.backup import backup_database
-
-            try:
-                backup_file = backup_database(
-                    db_path=self.env_db_path,
-                    backup_dir=self.env_db_path.parent / "backups" if self.env_db_path else None,
-                )
-                self._send_json(BackupResponse(status="ok", backup_file=str(backup_file)).model_dump(mode="json"))
-            except Exception as exc:
-                logger.error("DB backup failed", exc_info=True)
-                self._send_json({"error": f"Database backup failed: {exc}"}, status=500)
-            return
 
         self.send_error(404, f"Endpoint not found: {path}")
 
@@ -96,12 +61,11 @@ class StudioServer(ThreadingHTTPServer):
     ) -> None:
         self.routes: tuple[Route, ...] = tuple(routes)
 
-        # Initialize and migrate SQLite database
-        from rig.db import default_db_path, get_db_connection, run_migrations
+        from rig.sqlite import connect, default_db_path, ensure_schema
 
         self.db_path: Path = db_path or default_db_path()
-        conn = get_db_connection(db_path)
-        run_migrations(conn)
+        conn = connect(self.db_path)
+        ensure_schema(conn)
         conn.close()
 
         super().__init__((host, port), StudioRequestHandler)

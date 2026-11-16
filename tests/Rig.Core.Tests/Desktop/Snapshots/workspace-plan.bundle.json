@@ -30,7 +30,7 @@
           "name": "Rig Web",
           "type": "command",
           "delay_ms": 2200,
-          "command": "uv run --no-sync desktop-manager web ensure \u0026\u0026 \u0022{chrome-path}\u0022 --user-data-dir=\u0022{chrome-user-data}\u0022 --profile-directory=\u0022{chrome-profile-personal}\u0022 --app=http://127.0.0.1:8090",
+          "command": "uv run --no-sync rig tools ensure web \u0026\u0026 \u0022{chrome-path}\u0022 --user-data-dir=\u0022{chrome-user-data}\u0022 --profile-directory=\u0022{chrome-profile-personal}\u0022 --app=http://127.0.0.1:8090",
           "cwd": "{rig-root}",
           "summary": "Starts the rig web dashboard service if it is not already answering, then opens it as a Chrome app window full-screen on screen 3. Replaces the prs-to-review checklist.",
           "placement": {

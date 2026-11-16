@@ -16,7 +16,6 @@ from desktop_manager.chrome.cli import chrome_tabs_app
 from desktop_manager.cli_common import console
 from desktop_manager.jobs.cli import jobs_app
 from desktop_manager.runtime_cli import runtime_app
-from desktop_manager.web_cli import web_app
 from desktop_manager.work.cli import work_app
 from rig import tracing
 
@@ -26,7 +25,7 @@ app.add_typer(chrome_tabs_app)
 app.add_typer(runtime_app)
 app.add_typer(work_app)
 app.add_typer(jobs_app)
-app.add_typer(web_app)
+app.add_typer(work_app)
 
 
 @app.command(name="help")

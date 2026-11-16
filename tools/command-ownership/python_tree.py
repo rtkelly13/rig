@@ -231,7 +231,7 @@ def discover(root):
     import hashlib
 
     from desktop_manager.jobs.registry import Environment, default_jobs
-    from desktop_manager.web_cli import mounted_routes
+    from desktop_manager.web_upstream import mounted_routes
 
     for route in mounted_routes():
         implementation = route if inspect.isfunction(route) else type(route)

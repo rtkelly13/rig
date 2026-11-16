@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from threading import RLock
 
-from rig.db.connection import default_db_path
+from rig.sqlite import default_db_path
 from rig.triage import github, markdown, store
 from rig.triage.models import Activity, Entry, Interaction, Item
 from rig.workspace.engine import config_file_path

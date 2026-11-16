@@ -95,6 +95,42 @@ public sealed class HostRoutesTests : IAsyncLifetime
         Assert.Equal("Endpoint not found: /api/nothing", (string?)body["error"]);
     }
 
+    [Fact]
+    public async Task Backup_writes_a_copy_beside_the_shared_database()
+    {
+        using (var connection = Rig.Core.Storage.RigDatabase.Open(Path.Join(_tree.Root, "rig.db")))
+        {
+            Assert.NotNull(connection);
+        }
+
+        using var response = await _client.PostAsync(new Uri("/api/db/backup", UriKind.Relative), content: null, TestContext.Current.CancellationToken);
+
+        var body = JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken))!;
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("ok", (string?)body["status"]);
+        var file = (string?)body["backup_file"];
+        Assert.NotNull(file);
+        Assert.StartsWith(Path.Join(_tree.Root, "backups"), file, StringComparison.Ordinal);
+        Assert.True(File.Exists(file));
+        AssertOpenJson(response);
+    }
+
+    [Fact]
+    public async Task Backup_failure_is_a_500_envelope()
+    {
+        using (Rig.Core.Storage.RigDatabase.Open(Path.Join(_tree.Root, "rig.db")))
+        {
+        }
+
+        await File.WriteAllTextAsync(Path.Join(_tree.Root, "backups"), "not a directory", TestContext.Current.CancellationToken);
+
+        using var response = await _client.PostAsync(new Uri("/api/db/backup", UriKind.Relative), content: null, TestContext.Current.CancellationToken);
+
+        var body = JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken))!;
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.Contains("Database backup failed", (string?)body["error"], StringComparison.Ordinal);
+    }
+
     private static void AssertOpenJson(HttpResponseMessage response)
     {
         Assert.Equal("application/json; charset=utf-8", response.Content.Headers.ContentType?.ToString());

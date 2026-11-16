@@ -14,7 +14,7 @@ from typing import TypedDict, cast
 import pytest
 from playwright.sync_api import Page, expect, sync_playwright
 
-from rig.db.connection import default_db_path
+from rig.sqlite import default_db_path
 from rig.triage import store
 from rig.triage.facts import Check, Facts, Related, Stack, StackMember
 from rig.triage.models import Activity, Interaction, Item

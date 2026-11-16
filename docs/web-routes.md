@@ -2,17 +2,16 @@
 
 `rig web` is moving to one ASP.NET host (`src/Rig.Web`, #85 s25). Until every route group has moved,
 the host owns the port and forwards each path it does not serve to the Python server
-(`rig.web_host.server.StudioServer`), which still serves the jobs coordinator, the C4 viewer, the estate
-graph and the database backup. The C# host serves the SPA in `web/` itself. In the Python server, features never import the server, and the server
+(`rig.web_host.server.StudioServer`), which still serves the jobs coordinator, the C4 viewer and the estate
+graph. The C# host serves the SPA in `web/` itself. In the Python server, features never import the server, and the server
 never imports a feature. A feature exposes a **route**, and one composition root mounts it.
 
 ## The C# host and the forwarder
 
 - A bare `rig web` (`--port`, `--host`, `--open/--no-open`, `--preview`) runs on the C# CLI
-  (`src/Rig.Cli/Web/WebCommand.cs`); `Forwarded.RunsBare` lets the `web` group stay with Python for its
-  subcommands (`install`, `ensure`, `backup`, `migrate`, `db-status`, `uninstall`) and `--help`; `mcp` runs
-  the C# ops tools over stdio. A bare `desktop-manager web` hands itself to C# too.
-- The host starts `desktop-manager web upstream --port <free loopback port>` as a child, waits up to 60 s for it
+  (`src/Rig.Cli/Web/WebCommand.cs`); the legacy service and database subcommands (`install`, `ensure`,
+  `backup`, `migrate`, `db-status`, `uninstall`) are aliases for `rig tools`; `mcp` runs the C# ops tools over stdio.
+- The host starts `python -m desktop_manager.web_upstream --port <free loopback port>` as a child, waits up to 60 s for it
   to listen, and closes the child's standard input to stop it; it signals only that child. If the
   child does not start, the host still serves its own routes and says so.
 - The host answers its own routes first, including triage, the estate's ops answers and telemetry. Everything
@@ -30,7 +29,7 @@ never imports a feature. A feature exposes a **route**, and one composition root
   before routing, so `/static/../x` is not a static path at all and goes to Python, which has no
   handler for it; an encoded `%2F` or `..` inside a file name is refused when it leaves the folder.
 - Each s25 slice moves a group into the host and `git rm`s its Python; the last one deletes the
-  forwarder, `desktop-manager web upstream` and `StudioServer`.
+  forwarder, `desktop_manager.web_upstream` and `StudioServer`.
 
 ## Route inventory
 
@@ -44,7 +43,7 @@ never imports a feature. A feature exposes a **route**, and one composition root
 | GET | `/static/triage.html` | 302 to `/triage/inbox` | C# `Rig.Web.FrontendRoutes` |
 | GET | `/static/...` | files under `src/rig/web_host/templates` | C# `Rig.Web.FrontendRoutes` |
 | GET | `/media/assets/...` | read-only brand assets | C# `Rig.Web.FrontendRoutes` |
-| POST | `/api/db/backup` | `{status, backup_file}` | Python `rig.web_host.server` |
+| POST | `/api/db/backup` | `{status, backup_file}` | C# `Rig.Web.HostRoutes` |
 | GET | `/api/triage` | `{entries, queue_path}` | C# `Rig.Web.TriageRoutes` |
 | POST | `/api/triage/refresh`, `/api/triage/watch`, `/api/triage/interact` | the queue again | C# `Rig.Web.TriageRoutes` |
 | GET | `/c4`, `/c4/`, `/c4/static/...` | the C4 viewer | Python `rig.c4_okf.web` |
@@ -63,7 +62,7 @@ never imports a feature. A feature exposes a **route**, and one composition root
 | `Request` | `src/rig/web_routes.py` | method, path and query, parsed once; `param`, `int_param`, `flag` |
 | `respond` | `src/rig/web_routes.py` | runs a producer and maps failures to the `{"error": ...}` envelope |
 | `json_body` | `src/rig/web_routes.py` | the write guard: loopback Host, matching Origin, JSON content type, size cap |
-| `mounted_routes()` | `src/desktop_manager/web_cli.py` | the composition root; only the jobs coordinator is still mounted |
+| `mounted_routes()` | `src/desktop_manager/web_upstream.py` | the composition root; only the jobs coordinator is still mounted |
 | `StudioServer(routes=...)` | `src/rig/web_host/server.py` | offers each request to the mounted routes before its own handlers |
 
 ## Adding a route

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from rig.db.migrations import run_migrations
+from rig.sqlite import ensure_schema
 from rig.triage import github, markdown, service, store
 from rig.triage.models import Activity, Entry, Interaction, Item, rank
 from rig.typed_json import decode_json
@@ -86,7 +86,7 @@ def test_verify_rejects_damage_without_repair(tmp_path: Path, damage) -> None:
 
 def test_history_survives_updates_deferrals_and_merge(tmp_path: Path) -> None:
     with closing(store.connect(tmp_path / "rig.db")) as conn:
-        assert run_migrations(conn) == 0
+        ensure_schema(conn)
         with conn:
             store.save(conn, [item()])
             store.interact(conn, Interaction("owner/repo", 1, "reviewed", "a" * 40, "Looks good"))

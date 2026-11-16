@@ -213,7 +213,6 @@ ignore = [
 "src/desktop_manager/launching.py" = ["TID251"]
 "src/desktop_manager/restore_fallbacks.py" = ["TID251"]
 "src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
-"src/desktop_manager/service_installer.py" = ["TID251"]
 "src/rig/estate/trim.py" = ["TID251"]
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
@@ -317,7 +316,6 @@ omit = [
     "src/desktop_manager/chrome/uia_core.py",
     "src/desktop_manager/display_guard_windows.py",
     "src/desktop_manager/jobs/session_windows.py",
-    "src/desktop_manager/service_installer.py",
     "src/desktop_manager/win32/*",
     # Superseded by C# rig desktop workspace (#243, ADR 0022):
     "src/desktop_manager/desktop_port.py",
@@ -422,8 +420,6 @@ patching-allow = [
     "tests/desktop_manager/test_restore_duplicate_launch_guards.py",
     "tests/desktop_manager/test_reusable_window_matching.py",
     "tests/desktop_manager/test_runtime.py",
-    "tests/desktop_manager/test_web_cli.py",
-    "tests/desktop_manager/test_web_ensure.py",
     "tests/desktop_manager/test_windows_workspace_unit.py",
     "tests/desktop_manager/test_workspace_align.py",
     "tests/desktop_manager/test_workspace_cli_export_plan.py",

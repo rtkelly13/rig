@@ -9,8 +9,8 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
-from rig.db.connection import get_db_connection
-from rig.db.migrations import run_migrations
+from rig.sqlite import connect as connect_sqlite
+from rig.sqlite import ensure_schema
 from rig.triage.models import Activity, Entry, Event, Interaction, Item, rank
 from rig.typed_json import decode_json
 
@@ -94,9 +94,9 @@ def import_activity(conn: sqlite3.Connection, item: Item, activity: list[Activit
 
 
 def connect(path: Path) -> sqlite3.Connection:
-    """Open the existing rig database and ensure its triage migration is present."""
-    conn = get_db_connection(path)
-    run_migrations(conn)
+    """Open the existing rig database and ensure its triage tables are present."""
+    conn = connect_sqlite(path)
+    ensure_schema(conn)
     return conn
 
 

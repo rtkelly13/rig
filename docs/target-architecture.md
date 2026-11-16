@@ -72,7 +72,7 @@ The rules that follow from this:
 Imports point down this stack and never up or sideways:
 
 1. **Composition roots**: `src/Rig.Cli/Program.cs` for `rig`, `desktop_manager/cli.py` for Python. These are the only modules that mount other
-   packages' commands. `desktop_manager/web_cli.py` is the web equivalent: features expose a `rig.web_routes.Route`
+   packages' commands. `desktop_manager/web_upstream.py` is the web equivalent: features expose a `rig.web_routes.Route`
    and it hands them to `StudioServer(routes=...)`, so the server imports no feature to serve its JSON.
 2. **Features**: `rig.estate`, `rig.workspace`, `rig.repo_governance`, `rig.image_drift`,
    and the `desktop_manager` features (restore, align, chrome, work, jobs).

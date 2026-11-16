@@ -143,18 +143,6 @@ public sealed partial class ForwardedContractTests
         return Script().Matches(block).ToDictionary(m => m.Groups["name"].Value, m => m.Groups["target"].Value, StringComparer.Ordinal);
     }
 
-    [Fact]
-    public void Every_group_run_bare_on_csharp_is_forwarded_and_registered()
-    {
-        // A bare `rig web --port 8095` runs on C#, so C# registers `web`; its subcommands still go to Python.
-        var registered = FullApp().BuildRoot().Subcommands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
-        var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
-
-        Assert.NotEmpty(Forwarded.RunsBare);
-        Assert.All(Forwarded.RunsBare, name => Assert.Contains(name, registered));
-        Assert.All(Forwarded.RunsBare, name => Assert.Contains(name, forwarded));
-    }
-
     private static string RepoRoot()
     {
         for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)

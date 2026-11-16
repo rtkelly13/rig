@@ -14,17 +14,19 @@ replaces the standalone hub (port 4593) from PR #274: same panels, one server, o
 
 ## Running it
 
-`rig web install` registers the dashboard as a background service on port 8090 (a LaunchAgent on
-macOS, a logon task on Windows) and restarts it. `rig web ensure` starts it only when nothing
-answers on the port yet, then waits for it, so it is safe to run repeatedly: the Review desktop
-runs it before opening the dashboard as a Chrome app window on screen 3, where the
-`prs-to-review.md` checklist used to be.
+`rig tools install web` registers the dashboard as a background service on port 8090 (a LaunchAgent on
+macOS, a logon task on Windows, a systemd user unit on Linux) and restarts it. `rig tools ensure web`
+starts it only when nothing answers on the port yet, then waits for it, so it is safe to run repeatedly:
+the Review desktop runs it before opening the dashboard as a Chrome app window on screen 3, where the
+`prs-to-review.md` checklist used to be. `rig web install|ensure|uninstall|backup|migrate|db-status`
+remain as aliases. `rig tools install mcp` runs the same host on port 8092 for its HTTP MCP transport,
+while `rig web mcp` keeps serving the tools over stdio for a local client.
 
 ## How the pieces fit
 
 - Telemetry, the decisions feed, disk usage and trimming are C# routes (`Rig.Web.TelemetryRoutes` and
   `Rig.Web.EstateOpsRoutes`); the jobs coordinator is still the Python `desktop_manager.jobs.web` route.
-  The composition root, `desktop_manager.web_cli.mounted_routes()`, hands the remaining route to
+  The composition root, `desktop_manager.web_upstream.mounted_routes()`, hands the remaining route to
   `StudioServer(routes=...)`; the server imports no feature, so the `rig-features` independence contract
   holds.
 - Every error is a JSON `{"error": ...}` with 400, 404 or 503. The writes

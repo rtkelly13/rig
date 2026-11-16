@@ -18,7 +18,7 @@ public interface IChildServer
 
 /// <summary>
 /// The Python <c>StudioServer</c> serving the routes not ported yet, run as a child of the web host on a free loopback
-/// port (<c>desktop-manager web upstream --port N</c>). The host starts it, forwards to it and stops it; nothing else signals it.
+/// port (<c>python -m desktop_manager.web_upstream --port N</c>). The host starts it, forwards to it and stops it; nothing else signals it.
 /// </summary>
 /// <remarks>
 /// The child exits when its standard input closes, so it goes with the host even when the host is killed outright.
@@ -91,7 +91,7 @@ public sealed class PythonRoutes(Func<int, IChildServer> spawn, IPortProbe probe
     }
 }
 
-/// <summary>The real child: <c>desktop-manager web upstream</c>, started through uv with a pipe on its standard input.</summary>
+/// <summary>The real child: <c>python -m desktop_manager.web_upstream</c>, started through uv with a pipe on its standard input.</summary>
 [ExcludeFromCodeCoverage(Justification = "Starts the real Python server; PythonRoutes is tested through IChildServer.")]
 public sealed class ProcessChildServer : IChildServer
 {

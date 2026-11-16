@@ -27,6 +27,12 @@ internal sealed class PythonRig(IProc proc, string checkout)
     public IReadOnlyList<string> Argv(IReadOnlyList<string> args) =>
         ["uv", "run", "--no-sync", "--project", Checkout, .. Forwarded.Launch(args)];
 
+    /// <summary>The program and arguments that run <paramref name="module"/> as a Python module in the rig environment.</summary>
+    /// <param name="module">The dotted module name, such as <c>desktop_manager.web_upstream</c>.</param>
+    /// <param name="args">The arguments the module's entry point reads.</param>
+    public IReadOnlyList<string> Module(string module, IReadOnlyList<string> args) =>
+        ["uv", "run", "--no-sync", "--project", Checkout, "python", "-m", module, .. args];
+
     /// <summary>Runs <paramref name="args"/> on the Python CLI and returns its exit code.</summary>
     public async Task<int> RunAsync(IReadOnlyList<string> args, TextWriter error)
     {
