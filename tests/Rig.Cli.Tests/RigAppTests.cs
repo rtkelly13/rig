@@ -54,7 +54,7 @@ public sealed class RigAppTests : IDisposable
         Assert.Empty(_proc.Requests);
         var help = _out.ToString();
         Assert.Contains(RigApp.Description, help, StringComparison.Ordinal);
-        Assert.Contains("  align ", help, StringComparison.Ordinal);
+        Assert.Contains("  chrome-tabs ", help, StringComparison.Ordinal);
         Assert.EndsWith(RigApp.DesktopPointer, help.TrimEnd(), StringComparison.Ordinal);
     }
 
@@ -97,7 +97,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(1, string.Empty, string.Empty), "uv");
 
-        Assert.Equal(1, await Run("align"));
+        Assert.Equal(1, await Run("chrome-tabs", "--help"));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(Ran.NotFound, string.Empty, "uv is not on PATH"), "uv");
 
-        Assert.Equal(2, await Run("align"));
+        Assert.Equal(2, await Run("chrome-tabs", "--help"));
         Assert.StartsWith("rig: uv is not on PATH.", _err.ToString(), StringComparison.Ordinal);
     }
 
@@ -114,7 +114,7 @@ public sealed class RigAppTests : IDisposable
     {
         _proc.Answer(new Ran(Ran.NotFound, string.Empty, string.Empty), "uv");
 
-        Assert.Equal(Ran.NotFound, await Run("align"));
+        Assert.Equal(Ran.NotFound, await Run("chrome-tabs", "--help"));
         Assert.Empty(_err.ToString());
     }
 
