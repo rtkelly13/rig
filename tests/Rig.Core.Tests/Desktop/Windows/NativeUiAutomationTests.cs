@@ -11,7 +11,8 @@ namespace Rig.Core.Tests.Desktop.Windows;
 [SupportedOSPlatform("windows8.1")]
 public sealed class NativeUiAutomationTests
 {
-    [Fact]
+    // COM and UI Automation are process-global: starting two sessions concurrently can fail one of them.
+    [Fact(DisableParallelization = true)]
     public void Reads_a_live_window()
     {
         Assert.SkipUnless(OperatingSystem.IsWindowsVersionAtLeast(6, 3), "UI Automation exists only on Windows.");
@@ -46,7 +47,7 @@ public sealed class NativeUiAutomationTests
         _ = element.FindFirst(UiaScope.Descendants, new UiaCondition(UiaControlType.Button, Name: "no such button, surely"));
     }
 
-    [Fact]
+    [Fact(DisableParallelization = true)]
     public void A_gone_window_has_no_element()
     {
         Assert.SkipUnless(OperatingSystem.IsWindowsVersionAtLeast(6, 3), "UI Automation exists only on Windows.");
