@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
 
 namespace Rig.Core.Web;
@@ -103,18 +104,8 @@ public sealed record EstateCatalogue(IReadOnlyList<EstateProject> Projects)
 
     private static bool Optional(JsonObject badge, string key, out string? value)
     {
-        value = null;
-        if (!badge.TryGetPropertyValue(key, out var node) || node is null)
-        {
-            return true;
-        }
-
-        if (node.GetValueKind() != JsonValueKind.String)
-        {
-            return false;
-        }
-
-        value = node.GetValue<string>();
-        return true;
+        var node = JsonShape.Field(badge, key);
+        value = node is null ? null : JsonShape.AsText(node);
+        return node is null || value is not null;
     }
 }

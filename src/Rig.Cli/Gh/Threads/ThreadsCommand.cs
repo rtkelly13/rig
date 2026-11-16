@@ -1,9 +1,9 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using Rig.Core;
 using Rig.Core.GitHub;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Gh.Threads;
 
@@ -18,16 +18,6 @@ internal sealed record ResolveOutcome(string ThreadId, string Sha, string? Reply
 internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, TextWriter output, TextWriter error)
 {
     private const string Retire = "TEMPORARY: retire once `gh` can list, reply to and resolve PR review threads itself.";
-
-    /// <summary>The JSON <c>--json</c> prints: snake_case fields, two-space indent, text unescaped where JSON allows.</summary>
-    internal static readonly JsonSerializerOptions Printed = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        WriteIndented = true,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
-    private static readonly JsonSerializerOptions Compact = new(Printed) { WriteIndented = false };
 
     /// <summary>The <c>rig gh threads</c> command group.</summary>
     public Command Build()
@@ -109,7 +99,7 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
         var open = observed.Select(item => item.Thread).Where(thread => !thread.Resolved).ToList();
         if (asJson)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(open.Select(PrintedThread.Of), Printed)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(open.Select(PrintedThread.Of), JsonOutputOptions.SnakeCaseIndented)).ConfigureAwait(false);
         }
         else
         {
@@ -154,7 +144,7 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
 
         if (args.Json)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(outcome, Printed)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(outcome, JsonOutputOptions.SnakeCaseIndented)).ConfigureAwait(false);
         }
         else
         {
@@ -197,7 +187,7 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
             if (asJson)
             {
                 var partial = new ResolveOutcome(threadId, plan.Sha, url, url is not null, Resolved: false, DryRun: false);
-                await output.WriteLineAsync(JsonSerializer.Serialize(partial, Compact)).ConfigureAwait(false);
+                await output.WriteLineAsync(JsonSerializer.Serialize(partial, JsonOutputOptions.SnakeCaseCompact)).ConfigureAwait(false);
             }
 
             await error.WriteLineAsync(problem.Message).ConfigureAwait(false);
@@ -232,7 +222,7 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
         var where = $"{plan.Thread.Id} ({plan.Thread.Location})";
         if (outcome.DryRun)
         {
-            var reply = plan.Reply is not null ? $"reply {PyRepr.Of(plan.Reply)}" : "skip the reply (already posted)";
+            var reply = plan.Reply is not null ? $"reply {PyRepr.Str(plan.Reply)}" : "skip the reply (already posted)";
             var resolve = plan.Resolve ? "resolve" : "skip resolving (already resolved)";
             return $"Dry run, {where}: would {reply} then {resolve}.";
         }

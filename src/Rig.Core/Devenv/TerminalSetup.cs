@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Devenv;
 
@@ -114,5 +115,5 @@ public static class TerminalSetup
         return child;
     }
 
-    private static string? Text(JsonObject parent, string key) => parent[key] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+    private static string? Text(JsonObject parent, string key) => JsonShape.FieldText(parent, key);
 }

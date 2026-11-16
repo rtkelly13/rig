@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Governance;
 
@@ -448,13 +449,13 @@ public sealed class Triage(IProc proc)
     }
 
     private static T Required<T>(JsonNode? node, string key) =>
-        node is JsonObject row && row[key] is { } value
+        JsonShape.Field(node as JsonObject, key) is { } value
             ? value is T same ? same : value.GetValue<T>()
             : throw new FormatException($"missing {key}");
 
-    private static string? Optional(JsonNode? node, string key) => node is JsonObject row && row[key] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+    private static string? Optional(JsonNode? node, string key) => JsonShape.FieldText(node as JsonObject, key);
 
-    private static string Login(JsonNode row) => row["author"] is JsonObject author ? Optional(author, "login") ?? string.Empty : string.Empty;
+    private static string Login(JsonNode row) => JsonShape.FieldText(JsonShape.FieldObject(row as JsonObject, "author"), "login") ?? string.Empty;
 
     // gh's ISO timestamps; an empty or unparseable one is no time, as parse_datetime had it.
     private static DateTimeOffset? Time(JsonNode row, string key) =>

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Gh.Threads;
 
@@ -124,7 +125,7 @@ internal static partial class ThreadModel
         var wanted = sha.Trim().ToLowerInvariant();
         if (wanted.Length < MinShaLength || !Hex().IsMatch(wanted))
         {
-            return new Refusal($"{PyRepr.Of(sha)} is not a commit SHA (need at least {MinShaLength} hex characters)");
+            return new Refusal($"{PyRepr.Str(sha)} is not a commit SHA (need at least {MinShaLength} hex characters)");
         }
 
         var matches = pr.Commits

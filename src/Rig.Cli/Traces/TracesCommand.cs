@@ -2,10 +2,10 @@
 using System.CommandLine;
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Core.Observability;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Traces;
 
@@ -31,8 +31,6 @@ internal sealed class TracesCommand(
 {
     /// <summary>An unreadable option exits with this.</summary>
     public const int UsageExit = 2;
-
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
     private string Root => TraceAnalytics.Root(defaultRoot, environment);
 
@@ -153,7 +151,7 @@ internal sealed class TracesCommand(
         var summary = TraceAnalytics.Summarize(dataset);
         if (json)
         {
-            output.WriteLine(Json(summary, window, from, Root).ToJsonString(Indented));
+            output.WriteLine(Json(summary, window, from, Root).ToJsonString(JsonOutputOptions.Indented));
             return 0;
         }
 

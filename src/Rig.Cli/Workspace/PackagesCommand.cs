@@ -8,6 +8,7 @@ using Rig.Cli.Rendering;
 using Rig.Core.Packages;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
 
 namespace Rig.Cli.Workspace;
@@ -23,8 +24,6 @@ namespace Rig.Cli.Workspace;
 /// <param name="output">Where reports go.</param>
 internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient http, TimeProvider time, TextWriter output)
 {
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
-
     private static readonly Dictionary<string, string> Badges = new(StringComparer.Ordinal)
     {
         [PackageDashboard.UnreleasedChanges] = "unreleased",
@@ -168,7 +167,7 @@ internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient
                 ["registry_url"] = r.RegistryUrl,
                 ["detail"] = r.Detail,
             })]);
-            await output.WriteLineAsync(payload.ToJsonString(Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
             return 0;
         }
 
@@ -205,7 +204,7 @@ internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient
                 ["detail"] = f.Detail,
                 ["fix"] = f.Fix,
             })]);
-            await output.WriteLineAsync(payload.ToJsonString(Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
             return exit;
         }
 
@@ -256,7 +255,7 @@ internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient
 
         if (json)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(rows, Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(rows, JsonOutputOptions.Indented)).ConfigureAwait(false);
             return 0;
         }
 

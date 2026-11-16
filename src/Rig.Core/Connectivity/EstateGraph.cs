@@ -5,6 +5,7 @@ using Rig.Core.GitHub;
 using Rig.Core.Packages;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
 
 namespace Rig.Core.Connectivity;
@@ -35,6 +36,7 @@ public sealed class EstateGraph(Git git, TimeProvider time)
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         RespectNullableAnnotations = true,
         RespectRequiredConstructorParameters = true,
+        NewLine = "\n",
     };
 
     private const string Unscanned = "Local checkout is unavailable; consumption was not scanned.";
@@ -272,21 +274,23 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             throw new InvalidDataException($"{registryFile}: {e.Message}", e);
         }
 
-        var projects = root?["projects"] as JsonArray ?? throw new InvalidDataException($"{registryFile}: projects: expected a list");
+        var projects = (JsonShape.Field(root as JsonObject, "projects") is { } declaredProjects ? JsonShape.AsArray(declaredProjects) : null)
+            ?? throw new InvalidDataException($"{registryFile}: projects: expected a list");
         var declared = new List<(string, IReadOnlyList<string>)>();
         foreach (var (node, index) in projects.Select((node, index) => (node, index)))
         {
             var where = $"{registryFile}: projects[{index}]";
             var project = node as JsonObject ?? throw new InvalidDataException($"{where}: expected an object");
-            var repo = project["repo"] is JsonValue value && value.TryGetValue<string>(out var text) ? text : throw new InvalidDataException($"{where}.repo: expected a string");
-            if (project.TryGetPropertyValue("description", out var descNode) && descNode is not null && !(descNode is JsonValue descVal && descVal.TryGetValue<string>(out _)))
+            var repo = JsonShape.FieldText(project, "repo") ?? throw new InvalidDataException($"{where}.repo: expected a string");
+            if (JsonShape.Field(project, "description") is { } descNode && JsonShape.AsText(descNode) is null)
             {
                 throw new InvalidDataException($"{where}.description: expected a string");
             }
-            IReadOnlyList<string> dependsOn = project["depends_on"] switch
+            IReadOnlyList<string> dependsOn = JsonShape.Field(project, "depends_on") switch
             {
                 null => [],
-                JsonArray list => [.. list.Select(item => item is JsonValue entry && entry.TryGetValue<string>(out var name) ? name : throw new InvalidDataException($"{where}.depends_on: expected strings"))],
+                var declaredNode when JsonShape.AsArray(declaredNode) is { } list =>
+                    [.. list.Select(item => JsonShape.AsText(item) ?? throw new InvalidDataException($"{where}.depends_on: expected strings"))],
                 _ => throw new InvalidDataException($"{where}.depends_on: expected a list"),
             };
             declared.Add((repo, dependsOn));

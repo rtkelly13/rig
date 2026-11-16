@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 using Tomlyn;
 using Tomlyn.Model;
 
@@ -358,12 +359,10 @@ public static partial class Manifests
         return child.Success ? child.Groups[1].Value : string.Empty;
     }
 
-    private static string OptionalString(JsonObject node, string key) => node[key] switch
-    {
-        null when !node.ContainsKey(key) => string.Empty,
-        JsonValue value when value.TryGetValue<string>(out var text) => text,
-        _ => throw new InvalidDataException($"{key}: expected a string"),
-    };
+    private static string OptionalString(JsonObject node, string key) =>
+        !node.ContainsKey(key)
+            ? string.Empty
+            : JsonShape.FieldText(node, key) ?? throw new InvalidDataException($"{key}: expected a string");
 
     private static IEnumerable<(string Name, string Version)> StringMap(JsonObject node, string key)
     {
@@ -372,10 +371,8 @@ public static partial class Manifests
             return [];
         }
 
-        var map = node[key] as JsonObject ?? throw new InvalidDataException($"{key}: expected an object");
-        return [.. map.Select(pair => (pair.Key, pair.Value is JsonValue value && value.TryGetValue<string>(out var text)
-            ? text
-            : throw new InvalidDataException($"{key}.{pair.Key}: expected a string")))];
+        var map = JsonShape.FieldObject(node, key) ?? throw new InvalidDataException($"{key}: expected an object");
+        return [.. map.Select(pair => (pair.Key, JsonShape.AsText(pair.Value) ?? throw new InvalidDataException($"{key}.{pair.Key}: expected a string")))];
     }
 
     private static IEnumerable<string> Strings(TomlTable table, string key, string where)

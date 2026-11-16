@@ -1,5 +1,5 @@
-using Rig.Cli.Gh.Threads;
 using Rig.Core.GitHub;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Gh;
 
@@ -17,7 +17,7 @@ internal static class GhTarget
         {
             await error.WriteLineAsync(
                 repo is not null
-                    ? $"Cannot tell which repo: pass --repo owner/name ({PyRepr.Of(repo)} is not one)"
+                    ? $"Cannot tell which repo: pass --repo owner/name ({PyRepr.Str(repo)} is not one)"
                     : "Cannot tell which repo: no GitHub origin here; pass --repo owner/name").ConfigureAwait(false);
         }
 

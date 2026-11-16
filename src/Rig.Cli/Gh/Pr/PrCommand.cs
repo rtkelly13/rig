@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Rig.Cli.Gh.Threads;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Gh.Pr;
 
@@ -183,7 +184,7 @@ internal sealed partial class PrCommand(
         var report = Report.Of(repo, args.Pr, result);
         if (args.Json)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(report, ThreadsCommand.Printed)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(report, JsonOutputOptions.SnakeCaseIndented)).ConfigureAwait(false);
         }
         else
         {

@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Skills;
@@ -52,14 +52,6 @@ public sealed record SystemCount(string System, int Count);
 /// <param name="linker">Makes the links; when it cannot, the skill folder is copied instead.</param>
 public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
 {
-    private static readonly JsonSerializerOptions LedgerFormat = new()
-    {
-        WriteIndented = true,
-        IndentSize = 2,
-        NewLine = "\n",
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
     private string Folder(string system) => SkillSystems.Directory(system, places.Home);
 
     /// <summary>Each of <paramref name="systems"/>' folders against <paramref name="catalog"/>.</summary>
@@ -297,7 +289,7 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
     {
         _ = Directory.CreateDirectory(Path.GetDirectoryName(places.Ledger)!);
         var sorted = names.Distinct(StringComparer.Ordinal).Order(PyText.CodePointOrder).ToArray();
-        File.WriteAllText(places.Ledger, JsonSerializer.Serialize(sorted, LedgerFormat) + "\n");
+        File.WriteAllText(places.Ledger, JsonSerializer.Serialize(sorted, JsonOutputOptions.IndentedUnicode) + "\n");
     }
 
     private static IEnumerable<string> Entries(string folder) =>

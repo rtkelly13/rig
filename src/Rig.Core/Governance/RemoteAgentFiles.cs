@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Governance;
 
@@ -155,12 +156,12 @@ public sealed class RemoteAgentFiles(IProc proc)
         }
 
         var paths = new HashSet<string>(StringComparer.Ordinal);
-        if (!tree.TryGetPropertyValue("tree", out var entries))
+        if (!tree.ContainsKey("tree"))
         {
             return paths;
         }
 
-        if (entries is not JsonArray array)
+        if (JsonShape.Field(tree, "tree") is not { } entries || JsonShape.AsArray(entries) is not { } array)
         {
             return null;
         }
@@ -172,7 +173,7 @@ public sealed class RemoteAgentFiles(IProc proc)
                 return null;
             }
 
-            if (!item.TryGetPropertyValue("path", out var value))
+            if (JsonShape.Field(item, "path") is not { } value)
             {
                 continue;
             }
@@ -210,18 +211,11 @@ public sealed class RemoteAgentFiles(IProc proc)
         }
     }
 
-    private static string? Str(JsonNode? node) =>
-        node is not null && node.GetValueKind() == JsonValueKind.String ? node.GetValue<string>() : null;
+    private static string? Str(JsonNode? node) => JsonShape.AsText(node);
 
     // A boolean field, false when absent; null when present but not a boolean.
     private static bool? Flag(JsonObject node, string name) =>
-        !node.TryGetPropertyValue(name, out var value) ? false
-        : value?.GetValueKind() switch
-        {
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            _ => null,
-        };
+        !node.ContainsKey(name) ? false : JsonShape.FieldBool(node, name);
 
     private sealed record OwnerRepo(string NameWithOwner, bool IsArchived, bool IsFork, string Branch);
 }

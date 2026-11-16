@@ -1,16 +1,15 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Rig.Core.Governance;
+namespace Rig.Core.Text;
 
-/// <summary>Python's <c>repr</c> and <c>str</c> of the few values governance messages print, and pydantic's compact JSON.</summary>
+/// <summary>
+/// Python's <c>repr</c> and <c>str</c> of the few values rig's messages print, and pydantic's compact JSON. One copy, so
+/// a message that quoted a value with <c>!r</c> reads the same whichever module writes it.
+/// </summary>
 public static class PyRepr
 {
-    private static readonly JsonSerializerOptions Compact = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
     /// <summary><c>repr(text)</c>: single quotes, or double when the text holds a single quote and no double one.</summary>
     public static string Str(string text)
     {
@@ -51,6 +50,6 @@ public static class PyRepr
     public static string Json(JsonNode node)
     {
         ArgumentNullException.ThrowIfNull(node);
-        return node.ToJsonString(Compact);
+        return node.ToJsonString(JsonOutputOptions.CompactUnicode);
     }
 }

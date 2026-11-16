@@ -1,13 +1,13 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Globalization;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Cli.Workspace;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Estate;
 
@@ -61,8 +61,6 @@ internal sealed class EstateCommand(
 {
     /// <summary>What <c>rig estate</c> is.</summary>
     public const string Description = "Manage the code assets cloned on this machine.";
-
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
     private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(120);
 
@@ -522,7 +520,7 @@ internal sealed class EstateCommand(
                     ["exposure"] = new JsonObject(d.LocalOnly.Select(p => new KeyValuePair<string, JsonNode?>(p.Key, p.Value))),
                 })]),
             };
-            await output.WriteLineAsync(payload.ToJsonString(Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -577,7 +575,7 @@ internal sealed class EstateCommand(
         if (json)
         {
             var payload = new JsonArray([.. ranked.Select(e => (JsonNode)ExposureJson(e))]);
-            await output.WriteLineAsync(payload.ToJsonString(Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -665,7 +663,7 @@ internal sealed class EstateCommand(
                 ["reclaimable_bytes"] = disk.Total,
                 ["reclaimable_by_category"] = ByCategory(disk),
             };
-            await output.WriteLineAsync(payload.ToJsonString(Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
