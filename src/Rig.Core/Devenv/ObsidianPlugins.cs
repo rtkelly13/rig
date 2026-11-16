@@ -238,7 +238,7 @@ public sealed class ObsidianPlugins(HttpClient http)
     private static PluginSpec? Spec(JsonObject entry) =>
         Str(entry["id"]) is { } id && Str(entry["repo"]) is { } repo && Str(entry["name"]) is { } name ? new PluginSpec(id, repo, name) : null;
 
-    private static string? Str(JsonNode? node) => node is JsonValue value && value.TryGetValue(out string? text) ? text : null;
+    private static string? Str(JsonNode? node) => JsonShape.AsText(node);
 
     // Python's str() of a list entry: strings as they are, anything else as JSON.
     private static string Text(JsonNode? node) => Str(node) ?? node?.ToJsonString() ?? "None";

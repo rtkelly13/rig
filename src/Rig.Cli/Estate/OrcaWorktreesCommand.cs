@@ -1,7 +1,5 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Cli.Workspace;
@@ -9,6 +7,7 @@ using Rig.Core.Estate;
 using Rig.Core.Orca;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Estate;
 
@@ -25,8 +24,6 @@ namespace Rig.Cli.Estate;
 /// <param name="error">Where refusals and unreachable profiles are reported, so <c>--json</c> stays clean.</param>
 internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git git, IProc proc, TimeProvider time, TextWriter output, TextWriter error)
 {
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
     /// <summary>The <c>orca-worktrees</c> subcommand.</summary>
     public Command Build()
     {
@@ -91,7 +88,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             ["reason"] = r.Reason,
             ["outcome"] = r.Outcome,
             ["worktree_id"] = r.WorktreeId,
-        })]).ToJsonString(Indented);
+        })]).ToJsonString(JsonOutputOptions.IndentedUnicode);
 
     /// <summary>The line above the table: how many are finished or, applied, what happened to them.</summary>
     internal static string Headline(IReadOnlyList<WorktreeRow> rows, bool applied)

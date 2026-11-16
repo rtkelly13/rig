@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -207,7 +208,7 @@ public sealed class PullRequests(Git git, IGitHubApi github)
             ? new PullRequest(value, Text(pull["state"]) ?? string.Empty, head, Text(pull["headRefOid"]) ?? string.Empty)
             : null;
 
-    private static string? Text(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+    private static string? Text(JsonNode? node) => JsonShape.AsText(node);
 
     // The newest PR number wins per head, bringing its own state.
     private static void Keep(Dictionary<string, PullRequest> into, PullRequest pull)

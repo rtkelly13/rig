@@ -767,12 +767,12 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
             return null;
         }
 
-        if (!file.TryGetPropertyValue("waivers", out var listed))
+        if (!file.ContainsKey("waivers"))
         {
             return [];
         }
 
-        if (listed is not JsonArray array)
+        if (JsonShape.Field(file, "waivers") is not { } listed || JsonShape.AsArray(listed) is not { } array)
         {
             return null;
         }
@@ -789,14 +789,14 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
             }
 
             string? expires = null;
-            if (waiver.TryGetPropertyValue("expires", out var value) && value is not null)
+            if (JsonShape.Field(waiver, "expires") is { } value)
             {
-                if (value.GetValueKind() != System.Text.Json.JsonValueKind.String)
+                if (JsonShape.AsText(value) is not { } text)
                 {
                     return null;
                 }
 
-                expires = value.GetValue<string>();
+                expires = text;
             }
 
             waivers.Add(new(check, path, reason, expires));
@@ -808,12 +808,12 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     // A string field: its value, "" when absent and optional, or null when it is required and absent or not a string.
     private static string? Text(JsonObject node, string name, bool required)
     {
-        if (!node.TryGetPropertyValue(name, out var value))
+        if (!node.ContainsKey(name))
         {
             return required ? null : string.Empty;
         }
 
-        return value is not null && value.GetValueKind() == System.Text.Json.JsonValueKind.String ? value.GetValue<string>() : null;
+        return JsonShape.Field(node, name) is { } value ? JsonShape.AsText(value) : null;
     }
 
     private static string Parent(string path) => Path.GetDirectoryName(path) ?? path;

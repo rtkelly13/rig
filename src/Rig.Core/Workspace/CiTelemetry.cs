@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Workspace;
 
@@ -133,7 +134,9 @@ public sealed class CiTelemetry(IGitHubApi github)
 
         try
         {
-            return JsonNode.Parse(ran.Out) is JsonObject root && root[field] is JsonArray items ? [.. items.OfType<JsonObject>()] : [];
+            return JsonNode.Parse(ran.Out) is JsonObject root && JsonShape.Field(root, field) is { } node && JsonShape.AsArray(node) is { } items
+                ? [.. items.OfType<JsonObject>()]
+                : [];
         }
         catch (JsonException)
         {
@@ -144,9 +147,7 @@ public sealed class CiTelemetry(IGitHubApi github)
     private static DateTimeOffset? Instant(string? text) =>
         DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var instant) ? instant : null;
 
-    private static string? Text(JsonObject node, string name) =>
-        node[name] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+    private static string? Text(JsonObject node, string name) => JsonShape.FieldText(node, name);
 
-    private static long Number(JsonObject node, string name) =>
-        node[name] is JsonValue value && value.TryGetValue<long>(out var number) ? number : 0;
+    private static long Number(JsonObject node, string name) => JsonShape.FieldInteger(node, name) ?? 0;
 }

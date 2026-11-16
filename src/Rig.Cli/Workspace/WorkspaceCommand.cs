@@ -2,7 +2,6 @@
 using System.CommandLine;
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Core.GitHub;
@@ -42,8 +41,6 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
 {
     /// <summary>What <c>rig workspace</c> is.</summary>
     public const string Description = "Virtual monorepo estate management for the personal folder.";
-
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
     /// <summary>The <c>workspace</c> group with its ported subcommands.</summary>
     public Command Build()
@@ -122,7 +119,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         var exit = strict && !audit.IsClean ? 1 : 0;
         if (json)
         {
-            await output.WriteLineAsync(AuditReport(audit).ToJsonString(Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(AuditReport(audit).ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
             return exit;
         }
 
@@ -476,7 +473,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
 
         if (json)
         {
-            await output.WriteLineAsync(Report(estate, clean, checks).ToJsonString(Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(Report(estate, clean, checks).ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
         }
         else
         {

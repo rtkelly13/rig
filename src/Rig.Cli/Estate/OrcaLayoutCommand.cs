@@ -1,7 +1,5 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Cli.Workspace;
@@ -9,6 +7,7 @@ using Rig.Core.Estate;
 using Rig.Core.Orca;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
 
 namespace Rig.Cli.Estate;
@@ -25,8 +24,6 @@ namespace Rig.Cli.Estate;
 /// <param name="error">Where each change made, warnings and refusals go, so <c>--json</c> stays clean.</param>
 internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc proc, IGitHubApi github, TextWriter output, TextWriter error)
 {
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
     /// <summary>The <c>orca</c> subcommand.</summary>
     public Command Build()
     {
@@ -77,7 +74,7 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
             ["reason"] = f.Reason,
             ["suggested_action"] = f.SuggestedAction,
             ["command"] = f.Command,
-        })]).ToJsonString(Indented);
+        })]).ToJsonString(JsonOutputOptions.IndentedUnicode);
 
     /// <summary>Whether a GitHub owner is one of the estate's: a personal owner or an org.</summary>
     internal static Func<string, bool> EstateOwners(string scopesFile)

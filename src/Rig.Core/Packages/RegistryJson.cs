@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Packages;
 
@@ -11,5 +12,5 @@ namespace Rig.Core.Packages;
 internal static class RegistryJson
 {
     /// <summary>The <paramref name="key"/> field when <paramref name="node"/> is an object, else null.</summary>
-    public static JsonNode? Field(this JsonNode? node, string key) => node is JsonObject obj ? obj[key] : null;
+    public static JsonNode? Field(this JsonNode? node, string key) => JsonShape.Field(node as JsonObject, key);
 }

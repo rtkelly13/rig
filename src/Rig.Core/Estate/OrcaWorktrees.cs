@@ -6,6 +6,7 @@ using Rig.Core.Governance;
 using Rig.Core.Orca;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -586,7 +587,7 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
             var pulls = new List<BranchPull>();
             foreach (var item in items)
             {
-                if (item is not JsonObject pull || pull["number"] is not JsonValue number || number.GetValueKind() != JsonValueKind.Number || !number.TryGetValue<int>(out var n))
+                if (item is not JsonObject pull || JsonShape.Field(pull, "number") is not { } number || JsonShape.AsInt32(number) is not { } n)
                 {
                     return null;
                 }
@@ -596,13 +597,9 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
                     return null;
                 }
 
-                var cross = pull["isCrossRepository"]?.GetValueKind() switch
-                {
-                    null => false,
-                    JsonValueKind.True => true,
-                    JsonValueKind.False => false,
-                    _ => (bool?)null,
-                };
+                var cross = JsonShape.Field(pull, "isCrossRepository") is { } flag
+                    ? JsonShape.AsBool(flag) ?? (bool?)null
+                    : false;
                 if (cross is null)
                 {
                     return null;
@@ -622,14 +619,14 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     private static bool TryText(JsonObject pull, string key, out string value)
     {
         value = string.Empty;
-        if (!pull.TryGetPropertyValue(key, out var raw))
+        if (JsonShape.Field(pull, key) is not { } raw)
         {
             return true;
         }
 
-        if (raw is JsonValue text && text.GetValueKind() == JsonValueKind.String)
+        if (JsonShape.AsText(raw) is { } text)
         {
-            value = text.GetValue<string>();
+            value = text;
             return true;
         }
 

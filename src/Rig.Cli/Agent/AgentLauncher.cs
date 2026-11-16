@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Rig.Cli.Gh.Threads;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Agent;
 
@@ -246,7 +246,7 @@ internal sealed partial class AgentLauncher(IProc proc, AgentHost host, TextWrit
             id = CanonicalId(parsed.Agent);
             if (!Agents.Any(a => a.Id == id))
             {
-                throw new ArgumentException($"Unknown agent id {PyRepr.Of(parsed.Agent)}. Valid ids: {ValidIds}.");
+                throw new ArgumentException($"Unknown agent id {PyRepr.Str(parsed.Agent)}. Valid ids: {ValidIds}.");
             }
         }
         else

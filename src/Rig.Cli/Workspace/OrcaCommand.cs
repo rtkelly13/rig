@@ -1,12 +1,12 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Core.Orca;
 using Rig.Core.Packages;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
 
 namespace Rig.Cli.Workspace;
@@ -37,8 +37,6 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
 
     private const string OrcaDataHelp =
         "Orca's user-data folder, e.g. %APPDATA%/orca-personal (default: the Orca that launched this terminal, else the platform's)";
-
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
     /// <summary>The <c>orca</c> group.</summary>
     public Command Build()
@@ -109,7 +107,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 ["detail"] = f.Detail,
                 ["fix"] = f.Fix,
             })]);
-            await output.WriteLineAsync(rows.ToJsonString(Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
         }
         else
         {
@@ -166,7 +164,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 ["applied"] = a.Applied,
                 ["detail"] = a.Detail,
             })]);
-            await output.WriteLineAsync(rows.ToJsonString(Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
         }
         else if (actions.Count == 0)
         {

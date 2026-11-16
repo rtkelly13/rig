@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Orca;
 
@@ -24,46 +25,26 @@ internal static class OrcaJson
     }
 
     /// <summary>The <paramref name="key"/> object, or null.</summary>
-    public static JsonObject? Object(JsonObject parent, string key) => Field(parent, key) switch
-    {
-        null => null,
-        JsonObject value => value,
-        _ => throw Wrong(key, "an object"),
-    };
+    public static JsonObject? Object(JsonObject parent, string key) =>
+        JsonShape.Field(parent, key) is { } node ? JsonShape.AsObject(node) ?? throw Wrong(key, "an object") : null;
 
     /// <summary>The <paramref name="key"/> array, or null.</summary>
-    public static JsonArray? Array(JsonObject parent, string key) => Field(parent, key) switch
-    {
-        null => null,
-        JsonArray value => value,
-        _ => throw Wrong(key, "a list"),
-    };
+    public static JsonArray? Array(JsonObject parent, string key) =>
+        JsonShape.Field(parent, key) is { } node ? JsonShape.AsArray(node) ?? throw Wrong(key, "a list") : null;
 
     /// <summary>The <paramref name="key"/> string, or null.</summary>
-    public static string? String(JsonObject parent, string key) => Field(parent, key) switch
-    {
-        null => null,
-        JsonValue value when value.GetValueKind() == JsonValueKind.String => value.GetValue<string>(),
-        _ => throw Wrong(key, "a string"),
-    };
+    public static string? String(JsonObject parent, string key) =>
+        JsonShape.Field(parent, key) is { } node ? JsonShape.AsText(node) ?? throw Wrong(key, "a string") : null;
 
     /// <summary>The <paramref name="key"/> boolean, or null.</summary>
-    public static bool? Bool(JsonObject parent, string key) => Field(parent, key)?.GetValueKind() switch
-    {
-        null => null,
-        JsonValueKind.True => true,
-        JsonValueKind.False => false,
-        _ => throw Wrong(key, "a boolean"),
-    };
+    public static bool? Bool(JsonObject parent, string key) =>
+        JsonShape.Field(parent, key) is { } node ? JsonShape.AsBool(node) ?? throw Wrong(key, "a boolean") : null;
 
     /// <summary>The <paramref name="key"/> whole number, or null.</summary>
-    public static long? Integer(JsonObject parent, string key) => Field(parent, key) switch
-    {
-        null => null,
-        JsonValue value when value.TryGetValue<long>(out var number) => number,
-        JsonValue value when value.TryGetValue<double>(out var real) && real == Math.Floor(real) && Math.Abs(real) < long.MaxValue => (long)real,
-        _ => throw Wrong(key, "a whole number"),
-    };
+    public static long? Integer(JsonObject parent, string key) =>
+        JsonShape.Field(parent, key) is { } node
+            ? JsonShape.AsInteger(node) ?? Whole(node) ?? throw Wrong(key, "a whole number")
+            : null;
 
     /// <summary>The <paramref name="key"/> map of strings, or null.</summary>
     public static Dictionary<string, string>? StringMap(JsonObject parent, string key)
@@ -76,7 +57,7 @@ internal static class OrcaJson
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var (name, _) in map)
         {
-            result[name] = String(map, name) ?? throw Wrong($"{key}.{name}", "a string");
+            result[name] = JsonShape.FieldText(map, name) ?? throw Wrong($"{key}.{name}", "a string");
         }
 
         return result;
@@ -104,7 +85,11 @@ internal static class OrcaJson
         }
     }
 
-    private static JsonNode? Field(JsonObject parent, string key) => parent.TryGetPropertyValue(key, out var node) ? node : null;
+    // A number written with a fraction that is whole (5.0) still reads as that whole number, as pydantic did.
+    private static long? Whole(JsonNode node) =>
+        node is JsonValue value && value.TryGetValue<double>(out var real) && real == Math.Floor(real) && Math.Abs(real) < long.MaxValue
+            ? (long)real
+            : null;
 
     private static InvalidDataException Wrong(string key, string kind) => new($"{key}: expected {kind}");
 }

@@ -1,4 +1,3 @@
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -12,30 +11,13 @@ namespace Rig.Core.Text;
 /// </summary>
 public static class JsonOutput
 {
-    private static readonly JsonSerializerOptions Indented = new()
-    {
-        WriteIndented = true,
-        NewLine = "\n",
-    };
-
-    private static readonly JsonSerializerOptions IndentedUnicode = new()
-    {
-        WriteIndented = true,
-        NewLine = "\n",
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
-    private static readonly JsonSerializerOptions Compact = new();
-
-    private static readonly JsonSerializerOptions CompactUnicode = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
     /// <summary><paramref name="node"/> with two-space indentation; non-ASCII is escaped unless <paramref name="keepNonAscii"/>.</summary>
     public static string Format(JsonNode? node, bool keepNonAscii = false) =>
-        JsonSerializer.Serialize<JsonNode?>(node, keepNonAscii ? IndentedUnicode : Indented);
+        JsonSerializer.Serialize<JsonNode?>(node, keepNonAscii ? JsonOutputOptions.IndentedUnicode : JsonOutputOptions.Indented);
 
     /// <summary><paramref name="node"/> on one line; non-ASCII is escaped unless <paramref name="keepNonAscii"/>.</summary>
     public static string Line(JsonNode? node, bool keepNonAscii = false) =>
-        JsonSerializer.Serialize<JsonNode?>(node, keepNonAscii ? CompactUnicode : Compact);
+        JsonSerializer.Serialize<JsonNode?>(node, keepNonAscii ? JsonOutputOptions.CompactUnicode : JsonOutputOptions.Compact);
 
     /// <summary><paramref name="value"/> as the JSON number <see cref="System.Text.Json"/> writes for a double.</summary>
     public static string Number(double value) => JsonSerializer.Serialize(value);

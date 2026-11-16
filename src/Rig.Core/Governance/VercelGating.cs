@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Policy;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Governance;
 
@@ -329,7 +330,7 @@ public sealed class VercelGating(IVercelApi api, Git git)
         {
             if (node is not JsonObject d
                 || !Required(d, "state", out var state)
-                || d["createdAt"] is not JsonValue created || created.GetValueKind() != JsonValueKind.Number || !created.TryGetValue<long>(out var createdAt)
+                || JsonShape.FieldInteger(d, "createdAt") is not { } createdAt
                 || !Optional(d, "target", out var target)
                 || !Nested(d, "meta", out var meta) || !Optional(meta, "githubCommitRef", out var @ref) || !Optional(meta, "githubCommitSha", out var sha))
             {
@@ -337,7 +338,7 @@ public sealed class VercelGating(IVercelApi api, Git git)
             }
 
             // A CLI deploy from a checkout records the commit but not the repo; a misshapen one is simply absent.
-            var gitSha = meta?["gitCommitSha"] is JsonValue g && g.GetValueKind() == JsonValueKind.String ? g.GetValue<string>() : null;
+            var gitSha = JsonShape.FieldText(meta, "gitCommitSha");
             read.Add(new(state, createdAt, target, @ref, sha, gitSha));
         }
 
@@ -346,29 +347,22 @@ public sealed class VercelGating(IVercelApi api, Git git)
 
     private static bool Required(JsonObject owner, string key, out string value)
     {
-        value = owner[key] is JsonValue v && v.GetValueKind() == JsonValueKind.String ? v.GetValue<string>() : null!;
+        value = JsonShape.FieldText(owner, key)!;
         return value is not null;
     }
 
     // An absent or null field reads as null; one of another type makes its owner misshapen.
     private static bool Optional(JsonObject? owner, string key, out string? value)
     {
-        value = null;
-        switch (owner?[key])
-        {
-            case null:
-                return true;
-            case JsonValue v when v.GetValueKind() == JsonValueKind.String:
-                value = v.GetValue<string>();
-                return true;
-            default:
-                return false;
-        }
+        var node = JsonShape.Field(owner, key);
+        value = node is null ? null : JsonShape.AsText(node);
+        return node is null || value is not null;
     }
 
     private static bool Nested(JsonObject owner, string key, out JsonObject? value)
     {
-        value = owner[key] as JsonObject;
-        return owner[key] is null or JsonObject;
+        var node = JsonShape.Field(owner, key);
+        value = JsonShape.AsObject(node);
+        return node is null || value is not null;
     }
 }

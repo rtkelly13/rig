@@ -1,10 +1,10 @@
 using System.Globalization;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Orca;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -942,12 +942,12 @@ internal static class WrapupWire
             return null;
         }
 
-        if (!result.TryGetPropertyValue(key, out var node))
+        if (!result.ContainsKey(key))
         {
             return [];
         }
 
-        if (node is not JsonArray items)
+        if (JsonShape.Field(result, key) is not { } node || JsonShape.AsArray(node) is not { } items)
         {
             return null;
         }
@@ -973,7 +973,7 @@ internal static class WrapupWire
 
     private static WrapupPr Pr(JsonObject pr)
     {
-        if (!pr.TryGetPropertyValue("number", out var node) || node is not JsonValue value || value.GetValueKind() != JsonValueKind.Number || !value.TryGetValue<long>(out var number))
+        if (JsonShape.Field(pr, "number") is not { } node || JsonShape.AsInteger(node) is not { } number)
         {
             throw new InvalidDataException("number: expected a whole number");
         }
@@ -989,9 +989,7 @@ internal static class WrapupWire
         ConversationName = Text(row, "conversationName"),
         LastMessage = Text(row, "lastAssistantMessage"),
         ToolName = Text(row, "toolName"),
-        StateStartedAt = row.TryGetPropertyValue("stateStartedAt", out var started) && started is JsonValue value && value.GetValueKind() == JsonValueKind.Number
-            ? value.GetValue<double>()
-            : null,
+        StateStartedAt = JsonShape.AsNumber(JsonShape.Field(row, "stateStartedAt")),
         ProgramStatus = OrcaJson.Lenient(() => OrcaJson.Object(row, "programStatus") is { } status
             ? new WrapupProgramStatus(Text(status, "state"), Text(status, "kind"), Text(status, "message"))
             : null),

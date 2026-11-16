@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -50,8 +50,6 @@ public sealed record WrapupState(string Schema, string WorktreeId, string Branch
 
     /// <summary>The schema this reads and writes.</summary>
     public const string CurrentSchema = "rig.wrapup/1";
-
-    private static readonly JsonSerializerOptions Compact = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>A state with nothing recorded.</summary>
     public static WrapupState Empty(string worktreeId = "", string branch = "") => new(CurrentSchema, worktreeId, branch, [], []);
@@ -105,7 +103,7 @@ public sealed record WrapupState(string Schema, string WorktreeId, string Branch
             ["todo"] = new JsonArray([.. a.Todo.Select(t => (JsonNode)t)]),
             ["via"] = a.Via,
         })]),
-    }.ToJsonString(Compact);
+    }.ToJsonString(JsonOutputOptions.CompactUnicode);
 
     /// <summary>The state in <paramref name="text"/>, or null when it is not JSON or does not fit the shape.</summary>
     public static WrapupState? Decode(string text)
@@ -131,8 +129,8 @@ public sealed record WrapupState(string Schema, string WorktreeId, string Branch
                         Text(a, "verdict"),
                         Text(a, "detail"),
                         Text(a, "head"),
-                        a.TryGetPropertyValue("asked_at", out var asked) && asked is not null ? Text(a, "asked_at") : null,
-                        [.. List(a, "todo").Select(t => t is JsonValue v && v.GetValueKind() == JsonValueKind.String ? v.GetValue<string>() : throw new InvalidDataException("todo"))],
+                        JsonShape.Field(a, "asked_at") is null ? null : Text(a, "asked_at"),
+                        [.. List(a, "todo").Select(t => JsonShape.AsText(t) ?? throw new InvalidDataException("todo"))],
                         Text(a, "via", "reply"))
                     : throw new InvalidDataException("answer"))]);
         }
@@ -144,16 +142,18 @@ public sealed record WrapupState(string Schema, string WorktreeId, string Branch
 
     private static string Text(JsonObject parent, string key, string? fallback = null)
     {
-        if (!parent.TryGetPropertyValue(key, out var node))
+        if (!parent.ContainsKey(key))
         {
             return fallback ?? throw new InvalidDataException(key);
         }
 
-        return node is JsonValue value && value.GetValueKind() == JsonValueKind.String ? value.GetValue<string>() : throw new InvalidDataException(key);
+        return JsonShape.FieldText(parent, key) ?? throw new InvalidDataException(key);
     }
 
     private static JsonArray List(JsonObject parent, string key) =>
-        !parent.TryGetPropertyValue(key, out var node) ? [] : node as JsonArray ?? throw new InvalidDataException(key);
+        !parent.ContainsKey(key)
+            ? []
+            : JsonShape.Field(parent, key) is { } node && JsonShape.AsArray(node) is { } list ? list : throw new InvalidDataException(key);
 }
 
 /// <summary>Where <c>estate wrapup</c> keeps its state: one file per worktree.</summary>

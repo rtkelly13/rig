@@ -47,6 +47,24 @@ Rules:
   `RenderTo` when a command owns an `IAnsiConsole`.
 - `--json` writes the typed model directly; never wrap it in presentation text.
 
+### JSON
+
+Write JSON through `Rig.Core.Text`. `JsonOutput.Format` and `JsonOutput.Line` render a node;
+`JsonOutputOptions` carries the settings for a typed payload (`Indented`, `IndentedUnicode`,
+`Compact`, `CompactUnicode`, and the snake_case pair the web app and `rig models` read). Every
+shared option sets `NewLine = "\n"`, so a file rig writes is byte-identical on Windows and Unix
+(#260). Do not declare another `JsonSerializerOptions` for an indented, compact or unicode
+spelling: a site that needs a naming policy or a converter copies a shared one with
+`new(JsonOutputOptions.IndentedUnicode) { … }`.
+
+Read a payload through `Rig.Core.Text.JsonShape`; no module hand-walks `JsonObject` fields. The
+strict accessors (`String`, `Int`, `Bool`, `Items`, …) keep pydantic's `FormatException` for data
+rig owns; the `As*` and `Field*` pair answers null instead, for a payload another tool owns. A
+site keeps its own exception type and wording on top of either.
+
+`Rig.Core.Text.PyRepr` is the one copy of Python's `repr`/`str` and pydantic's compact JSON for a
+value a message quotes.
+
 ______________________________________________________________________
 
 ## Tooling & Enforcement

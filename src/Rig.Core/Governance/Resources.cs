@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Governance;
 
@@ -206,14 +207,11 @@ public static class GitHubCalls
     }
 
     /// <summary>The string at <paramref name="key"/>, or null when it is missing or not a string.</summary>
-    public static string? Str(JsonNode? owner, string key) =>
-        owner is JsonObject map && map[key] is { } value && value.GetValueKind() == JsonValueKind.String ? value.GetValue<string>() : null;
+    public static string? Str(JsonNode? owner, string key) => JsonShape.FieldText(owner as JsonObject, key);
 
     /// <summary>The boolean at <paramref name="key"/>, or null when it is missing or not a boolean.</summary>
-    public static bool? Bool(JsonNode? owner, string key) =>
-        owner is JsonObject map && map[key] is { } value && value.GetValueKind() is JsonValueKind.True or JsonValueKind.False ? value.GetValue<bool>() : null;
+    public static bool? Bool(JsonNode? owner, string key) => JsonShape.FieldBool(owner as JsonObject, key);
 
     /// <summary>The integer at <paramref name="key"/>, or null when it is missing or not an integer.</summary>
-    public static long? Number(JsonNode? owner, string key) =>
-        owner is JsonObject map && map[key] is JsonValue value && value.GetValueKind() == JsonValueKind.Number && value.TryGetValue(out long number) ? number : null;
+    public static long? Number(JsonNode? owner, string key) => JsonShape.FieldInteger(owner as JsonObject, key);
 }

@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.ReviewQueue;
 
@@ -183,7 +184,7 @@ public sealed class QueueGitHub(IGitHubApi github) : IQueueSource
     private async Task<JsonObject> RepositoryAsync(ApiRequest request, string reference, CancellationToken cancellationToken)
     {
         var root = JsonShape.Object(JsonNode.Parse(await CallAsync(request, cancellationToken).ConfigureAwait(false)));
-        if (root.TryGetPropertyValue("errors", out var errors) && errors is not JsonArray { Count: 0 })
+        if (root.ContainsKey("errors") && JsonShape.Field(root, "errors") is not JsonArray { Count: 0 })
         {
             throw new GhException($"Incomplete GitHub response for {reference}");
         }

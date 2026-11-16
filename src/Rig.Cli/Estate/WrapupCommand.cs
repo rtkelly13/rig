@@ -1,14 +1,13 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Globalization;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
 
 namespace Rig.Cli.Estate;
@@ -39,8 +38,6 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
 {
     /// <summary>Exit code when Orca cannot be reached.</summary>
     public const int OrcaUnavailableExit = 3;
-
-    private static readonly JsonSerializerOptions Compact = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     private static readonly Dictionary<string, long> UnitSeconds = new(StringComparer.Ordinal) { ["s"] = 1, ["m"] = 60, [""] = 60, ["h"] = 3600, ["d"] = 86400 };
 
@@ -144,7 +141,7 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
             ["asked_at"] = r.Asked?.At,
             ["recorded_verdict"] = r.Recorded?.Verdict,
             ["recorded_at"] = r.Recorded?.At,
-        })]).ToJsonString(Compact);
+        })]).ToJsonString(JsonOutputOptions.CompactUnicode);
 
     /// <summary>The table and its counts line, as the dry run, the applied run or the hand-off to a follower prints them.</summary>
     internal static string Render(IReadOnlyList<WrapupRow> rows, bool applied, bool background = false)
@@ -278,12 +275,12 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
         var target = new WrapupTarget(args.Personal ? WrapupScope.Personal : WrapupScope.Work, args.Repos, args.All, args.Worktrees, args.Children);
         if (ParseDuration(args.Wait) is not { } waitFor)
         {
-            return await RefuseAsync($"{PyRepr(args.Wait)}: expected a duration such as 30m, 2h or 45s", cancellationToken).ConfigureAwait(false);
+            return await RefuseAsync($"{PyRepr.Str(args.Wait)}: expected a duration such as 30m, 2h or 45s", cancellationToken).ConfigureAwait(false);
         }
 
         if (ParseDuration(args.Idle) is not { } idleFor)
         {
-            return await RefuseAsync($"{PyRepr(args.Idle)}: expected a duration such as 30m, 2h or 45s", cancellationToken).ConfigureAwait(false);
+            return await RefuseAsync($"{PyRepr.Str(args.Idle)}: expected a duration such as 30m, 2h or 45s", cancellationToken).ConfigureAwait(false);
         }
 
         var rolling = waitFor > TimeSpan.Zero;
@@ -450,9 +447,6 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
         argv.AddRange(["--template", Path.GetFullPath(templateFile), "--apply"]);
         return argv;
     }
-
-    // Python's repr of a str, which the duration error quotes.
-    private static string PyRepr(string text) => text.Contains('\'', StringComparison.Ordinal) && !text.Contains('"', StringComparison.Ordinal) ? $"\"{text}\"" : $"'{text.Replace("'", "\\'", StringComparison.Ordinal)}'";
 
     /// <summary>The parsed flags of one run.</summary>
     internal sealed record Args(

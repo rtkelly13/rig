@@ -1,8 +1,8 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using Rig.Cli.Rendering;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Models;
 
@@ -14,14 +14,6 @@ namespace Rig.Cli.Models;
 /// <param name="output">Where the list goes.</param>
 internal sealed class ModelsCommand(ModelDiscovery discovery, TextWriter output)
 {
-    private static readonly JsonSerializerOptions Printed = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        WriteIndented = true,
-        IndentSize = 2,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
     /// <summary>The <c>models</c> command, named <paramref name="name"/>.</summary>
     public Command Build(string name = "models")
     {
@@ -65,7 +57,7 @@ internal sealed class ModelsCommand(ModelDiscovery discovery, TextWriter output)
 
         if (json)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(models, Printed)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(models, JsonOutputOptions.SnakeCaseIndented)).ConfigureAwait(false);
         }
         else if (models.Count == 0)
         {

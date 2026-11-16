@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -96,7 +97,7 @@ public static partial class GitHubArchived
     // A field that is present and of the expected kind (a boolean when expecting True): a repository missing either is unreadable.
     private static bool TryField(JsonObject parent, string key, JsonValueKind kind, out JsonNode? value)
     {
-        value = parent[key];
+        value = JsonShape.Field(parent, key);
         if (!parent.ContainsKey(key))
         {
             return false;

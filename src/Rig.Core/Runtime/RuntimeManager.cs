@@ -2,11 +2,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Formats.Tar;
 using System.Globalization;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Core.Runtime;
 
@@ -92,13 +91,6 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     private static readonly IReadOnlyDictionary<string, string> NoPrompt = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["GIT_TERMINAL_PROMPT"] = "0",
-    };
-
-    private static readonly JsonSerializerOptions Json = new()
-    {
-        WriteIndented = true,
-        NewLine = "\n",
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
     /// <summary>The runtime folder under <paramref name="appData"/>.</summary>
@@ -650,21 +642,14 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     private static void WriteJson(string path, JsonObject json)
     {
         var temporary = path + ".tmp";
-        File.WriteAllText(temporary, json.ToJsonString(Json) + "\n", new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        File.WriteAllText(temporary, json.ToJsonString(JsonOutputOptions.IndentedUnicode) + "\n", new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         File.Move(temporary, path, overwrite: true);
     }
 
-    private static string? Text(JsonObject parent, string name)
-    {
-        if (!parent.TryGetPropertyValue(name, out var node) || node is null)
-        {
-            return null;
-        }
-
-        return node is JsonValue value && value.GetValueKind() == JsonValueKind.String
-            ? value.GetValue<string>()
-            : throw new InvalidDataException($"Field '{name}' must be a string or null.");
-    }
+    private static string? Text(JsonObject parent, string name) =>
+        JsonShape.Field(parent, name) is { } node
+            ? JsonShape.AsText(node) ?? throw new InvalidDataException($"Field '{name}' must be a string or null.")
+            : null;
 
     private string Must(IReadOnlyList<string> command, string? workingDirectory)
     {

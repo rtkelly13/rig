@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Rig.Core.Text;
 
 namespace Rig.Core.Packages;
 
@@ -29,20 +30,17 @@ public sealed partial record ManifestFields(string? RepositoryUrl, string? Versi
                 manifest = null;
             }
 
-            var url = manifest?["repository"] switch
-            {
-                JsonObject repository => Text(repository["url"]),
-                var other => Text(other),
-            };
-            return new(url, Text(manifest?["version"]));
+            var repository = JsonShape.Field(manifest, "repository");
+            var url = JsonShape.AsObject(repository) is { } declaration
+                ? JsonShape.FieldText(declaration, "url")
+                : JsonShape.AsText(repository);
+            return new(url, JsonShape.FieldText(manifest, "version"));
         }
 
         var found = RepositoryUrlPattern().Match(text);
         var version = VersionPattern().Match(text);
         return new(found.Success ? found.Groups[1].Value : null, version.Success ? version.Groups[1].Value : null);
     }
-
-    private static string? Text(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
     [GeneratedRegex(@"<RepositoryUrl>\s*([^<]+?)\s*</RepositoryUrl>", RegexOptions.CultureInvariant)]
     private static partial Regex RepositoryUrlPattern();
@@ -84,12 +82,9 @@ public static class PackageBindings
             var entry = project as JsonObject ?? throw new InvalidDataException($"{where}: expected an object");
             var name = Required(entry, "name", where);
             var repo = Required(entry, "repo", where);
-            var enabled = entry["enabled"] switch
-            {
-                null => true,
-                JsonValue value when value.TryGetValue<bool>(out var flag) => flag,
-                _ => throw new InvalidDataException($"{where}.enabled: expected true or false"),
-            };
+            var enabled = JsonShape.Field(entry, "enabled") is { } flag
+                ? JsonShape.AsBool(flag) ?? throw new InvalidDataException($"{where}.enabled: expected true or false")
+                : true;
             var specs = Items(entry["packages"], $"{where}.packages").Select((spec, i) => Spec(spec, $"{where}.packages[{i}]")).ToList();
             if (enabled)
             {
@@ -124,23 +119,17 @@ public static class PackageBindings
         };
     }
 
-    private static JsonArray Items(JsonNode? node, string where) => node switch
-    {
-        null => [],
-        JsonArray items => items,
-        _ => throw new InvalidDataException($"{where}: expected a list"),
-    };
+    private static JsonArray Items(JsonNode? node, string where) =>
+        node is null ? [] : JsonShape.AsArray(node) ?? throw new InvalidDataException($"{where}: expected a list");
 
     private static string[] Strings(JsonNode? node, string where) =>
-        [.. Items(node, where).Select(item => item is JsonValue value && value.TryGetValue<string>(out var text) ? text : throw new InvalidDataException($"{where}: expected strings"))];
+        [.. Items(node, where).Select(item => JsonShape.AsText(item) ?? throw new InvalidDataException($"{where}: expected strings"))];
 
     private static string Required(JsonObject entry, string field, string where) =>
         Optional(entry, field, where) ?? throw new InvalidDataException($"{where}.{field}: required");
 
-    private static string? Optional(JsonObject entry, string field, string where) => entry[field] switch
-    {
-        null => null,
-        JsonValue value when value.TryGetValue<string>(out var text) => text,
-        _ => throw new InvalidDataException($"{where}.{field}: expected a string"),
-    };
+    private static string? Optional(JsonObject entry, string field, string where) =>
+        JsonShape.Field(entry, field) is { } node
+            ? JsonShape.AsText(node) ?? throw new InvalidDataException($"{where}.{field}: expected a string")
+            : null;
 }

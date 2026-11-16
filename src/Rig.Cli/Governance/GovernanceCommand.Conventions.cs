@@ -4,6 +4,7 @@ using Rig.Cli.Rendering;
 using Rig.Core.Governance;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Governance;
 

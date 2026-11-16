@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -48,8 +49,6 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
         ".git", "node_modules", ".venv", "venv", "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache",
         "dist", "build", ".next", "target", "obj", "bin", "Library", ".Trash",
     };
-
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
     /// <summary>The cache file.</summary>
     public string CacheFile => cacheFile;
@@ -172,7 +171,7 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
         try
         {
             _ = Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(cacheFile))!);
-            File.WriteAllText(cacheFile, document.ToJsonString(Indented) + "\n");
+            File.WriteAllText(cacheFile, document.ToJsonString(JsonOutputOptions.Indented) + "\n");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

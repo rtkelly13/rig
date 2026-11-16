@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.GitHub;
 using Rig.Core.Orca;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -214,18 +215,16 @@ public static class OrcaLayout
         {
             var name = Text(entry, "name", config);
             var repo = Text(entry, "repo", config);
-            var enabled = entry["enabled"] is null || (entry["enabled"]?.GetValueKind() switch
-            {
-                JsonValueKind.True => true,
-                JsonValueKind.False => false,
-                _ => throw new InvalidDataException($"{config}: {name}.enabled: expected a boolean"),
-            });
-            string? group = entry.TryGetPropertyValue("orca", out var orca) && orca is not null
-                ? (orca as JsonObject ?? throw new InvalidDataException($"{config}: {name}.orca: expected an object")) is var placement
-                    && placement.TryGetPropertyValue("group", out var raw)
+            var enabled = JsonShape.Field(entry, "enabled") is { } flag
+                ? JsonShape.AsBool(flag) ?? throw new InvalidDataException($"{config}: {name}.enabled: expected a boolean")
+                : true;
+            var orca = JsonShape.Field(entry, "orca");
+            string? group = orca is null
+                ? null
+                : (JsonShape.AsObject(orca) ?? throw new InvalidDataException($"{config}: {name}.orca: expected an object")) is var placement
+                    && JsonShape.Field(placement, "group") is { } raw
                         ? Text(placement, "group", config, raw).Trim('/')
-                        : string.Empty
-                : null;
+                        : string.Empty;
             if (enabled && RepoSlug.FromRemote(repo) is { } slug)
             {
                 declared.Add(new(name, repo, slug.FullName, group));
@@ -658,23 +657,26 @@ public static class OrcaLayout
             throw new InvalidDataException($"{path}: expected a JSON object");
         }
 
-        if (!top.TryGetPropertyValue("projects", out var projects))
+        if (!top.ContainsKey("projects"))
         {
             return [];
         }
 
-        return projects is JsonArray list && list.All(item => item is JsonObject)
+        return JsonShape.Field(top, "projects") is { } projects
+            && JsonShape.AsArray(projects) is { } list
+            && list.All(item => JsonShape.AsObject(item) is not null)
             ? list.Cast<JsonObject>()
             : throw new InvalidDataException($"{path}: projects: expected a list of objects");
     }
 
     private static string Text(JsonObject entry, string key, string file) =>
-        Text(entry, key, file, entry.TryGetPropertyValue(key, out var raw) ? raw : throw new InvalidDataException($"{file}: {key}: missing"));
+        entry.ContainsKey(key)
+            ? Text(entry, key, file, JsonShape.Field(entry, key))
+            : throw new InvalidDataException($"{file}: {key}: missing");
 
     private static string Text(JsonObject entry, string key, string file, JsonNode? raw) =>
-        raw is JsonValue value && value.GetValueKind() == JsonValueKind.String
-            ? value.GetValue<string>()
-            : throw new InvalidDataException($"{file}: {key}: expected a string{(entry["name"] is JsonValue name && name.GetValueKind() == JsonValueKind.String ? $" in {name}" : string.Empty)}");
+        JsonShape.AsText(raw)
+            ?? throw new InvalidDataException($"{file}: {key}: expected a string{(JsonShape.FieldText(entry, "name") is { } name ? $" in {name}" : string.Empty)}");
 
     // One audit's findings, and the groups already reported missing.
     private sealed class AuditRun(GroupTree groups, string codeRoot, Func<string, bool> exists)

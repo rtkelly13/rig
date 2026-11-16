@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Policy;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Skills;
 
@@ -246,23 +247,18 @@ public sealed class SkillVendors(Git git, string clones, string vendored, bool w
 
     private static string? Text(JsonObject fields, string key, string at, bool required = false)
     {
-        if (!fields.TryGetPropertyValue(key, out var value))
+        if (!fields.ContainsKey(key))
         {
             return required ? throw Invalid(at, $"{key} is required") : null;
         }
 
-        if (value?.GetValueKind() != JsonValueKind.String)
-        {
-            throw Invalid(at, $"{key} must be a string");
-        }
-
-        var text = value.GetValue<string>();
+        var text = JsonShape.FieldText(fields, key) ?? throw Invalid(at, $"{key} must be a string");
         return required && text.Length == 0 ? throw Invalid(at, $"{key} must not be empty") : text;
     }
 
     private static IReadOnlyList<string> Names(JsonObject fields, string key, string at) =>
-        fields[key] is JsonArray items && items.All(i => i?.GetValueKind() == JsonValueKind.String)
-            ? [.. items.Select(i => i!.GetValue<string>())]
+        JsonShape.Field(fields, key) is { } node && JsonShape.AsArray(node) is { } items && items.All(i => JsonShape.AsText(i) is not null)
+            ? [.. items.Select(i => JsonShape.AsText(i)!)]
             : throw Invalid(at, $"{key} must be a list of strings");
 
     private static InvalidDataException Invalid(string at, string problem) => new($"Schema validation error in {at}: {problem}.");

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.GitHub;
 
@@ -32,8 +33,6 @@ public sealed class RepoResolver(IGitHubApi github, string cacheFile, TimeProvid
 {
     /// <summary>How long a cached name is trusted.</summary>
     public static readonly TimeSpan Ttl = TimeSpan.FromHours(24);
-
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
     /// <summary>The cache under <paramref name="home"/>.</summary>
     public static string DefaultCacheFile(string home) => Path.Join(home, ".estate-repo-names.json");
@@ -192,7 +191,7 @@ public sealed class RepoResolver(IGitHubApi github, string cacheFile, TimeProvid
         try
         {
             _ = Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-            await File.WriteAllTextAsync(path, new JsonObject { ["repos"] = repos }.ToJsonString(Indented) + "\n", cancellationToken).ConfigureAwait(false);
+            await File.WriteAllTextAsync(path, new JsonObject { ["repos"] = repos }.ToJsonString(JsonOutputOptions.Indented) + "\n", cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -217,13 +216,11 @@ public sealed class RepoResolver(IGitHubApi github, string cacheFile, TimeProvid
         }
     }
 
-    private static string? Text(JsonObject node, string name) =>
-        node[name] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+    private static string? Text(JsonObject node, string name) => JsonShape.FieldText(node, name);
 
     private static Uri? Address(string? text) => Uri.TryCreate(text, UriKind.Absolute, out var address) ? address : null;
 
-    private static bool Flag(JsonObject node, string name) =>
-        node[name] is JsonValue value && value.TryGetValue<bool>(out var flag) && flag;
+    private static bool Flag(JsonObject node, string name) => JsonShape.FieldBool(node, name) == true;
 
     private sealed record CacheEntry(CanonicalRepo Repo, DateTimeOffset FetchedAt);
 }

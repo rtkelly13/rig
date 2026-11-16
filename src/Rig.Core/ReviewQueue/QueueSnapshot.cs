@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using Rig.Core.GitHub;
+using Rig.Core.Text;
 
 namespace Rig.Core.ReviewQueue;
 

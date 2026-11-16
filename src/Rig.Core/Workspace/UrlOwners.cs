@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.GitHub;
+using Rig.Core.Text;
 
 namespace Rig.Core.Workspace;
 
@@ -214,28 +215,24 @@ public sealed partial class UrlOwners(IReadOnlyList<PortClaim> ports, IReadOnlyL
             throw new InvalidDataException($"{path}: expected a JSON object");
         }
 
-        return top["projects"] switch
+        return JsonShape.Field(top, "projects") switch
         {
             null => [],
-            JsonArray list when list.All(item => item is JsonObject) => list.Cast<JsonObject>(),
+            var node when JsonShape.AsArray(node) is { } list && list.All(item => JsonShape.AsObject(item) is not null) => list.Cast<JsonObject>(),
             _ => throw new InvalidDataException($"{path}: projects: expected a list of objects"),
         };
     }
 
     private static string Text(JsonObject entry, string key) =>
-        entry[key] is JsonValue value && value.GetValueKind() == JsonValueKind.String
-            ? value.GetValue<string>()
-            : throw new InvalidDataException($"{key}: expected a string");
+        JsonShape.FieldText(entry, key) ?? throw new InvalidDataException($"{key}: expected a string");
 
-    private static bool Enabled(JsonObject entry, string name) => entry["enabled"]?.GetValueKind() switch
-    {
-        null or JsonValueKind.True => true,
-        JsonValueKind.False => false,
-        _ => throw new InvalidDataException($"{name}: enabled: expected a boolean"),
-    };
+    private static bool Enabled(JsonObject entry, string name) =>
+        JsonShape.Field(entry, "enabled") is { } flag
+            ? JsonShape.AsBool(flag) ?? throw new InvalidDataException($"{name}: enabled: expected a boolean")
+            : true;
 
     private static int Number(JsonObject range, string key, string name) =>
-        range[key] is JsonValue value && value.GetValueKind() == JsonValueKind.Number && value.TryGetValue<int>(out var number)
+        JsonShape.Field(range, key) is { } node && JsonShape.AsInt32(node) is { } number
             ? number
             : throw new InvalidDataException($"{name}: ports.{key}: expected an integer");
 

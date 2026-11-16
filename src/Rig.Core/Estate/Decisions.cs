@@ -1,8 +1,7 @@
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -82,9 +81,6 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     private const string Shelve =
         "Preview a shelve, then re-run it with --apply: the work goes to a shelved/ branch on origin, verified, before the worktree is removed";
 
-    // As Python's json writes it: a `+` or a non-ASCII path stays as it is, not escaped.
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
     private readonly Trim trim = new(git, time);
 
     /// <summary>The newest PR per branch from GitHub; null for a clone with no GitHub origin.</summary>
@@ -104,7 +100,7 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
 
     /// <summary>The feed as a JSON array of decisions, indented as pydantic writes it.</summary>
     public static string DumpFeed(IEnumerable<Decision> decisions) =>
-        new JsonArray([.. decisions.Select(item => (JsonNode)item.ToJson())]).ToJsonString(Indented);
+        new JsonArray([.. decisions.Select(item => (JsonNode)item.ToJson())]).ToJsonString(JsonOutputOptions.IndentedUnicode);
 
     /// <summary>Replaces the feed at <paramref name="path"/> in one step, so a reader never sees half of it.</summary>
     public static void WriteFeed(string path, IEnumerable<Decision> decisions)

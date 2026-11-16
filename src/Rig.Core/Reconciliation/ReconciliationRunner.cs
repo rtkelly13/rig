@@ -1,5 +1,6 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
+
+using Rig.Core.Text;
 
 namespace Rig.Core.Reconciliation;
 
@@ -81,8 +82,6 @@ public sealed record ReconciliationReport(IReadOnlyList<IChange> Changes, int Ap
 /// </summary>
 public static class ReconciliationRunner
 {
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
-
     /// <summary>
     /// Carries a prebuilt plan through the caller's sink, calling <paramref name="apply"/> once per would-change row
     /// unless <paramref name="dryRun"/> is set.
@@ -187,7 +186,7 @@ public static class ReconciliationRunner
 
         if (options.Json)
         {
-            await output.WriteLineAsync(ToJson(run).ToJsonString(Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(ToJson(run).ToJsonString(JsonOutputOptions.Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -253,5 +252,5 @@ public static class ReconciliationRunner
     /// <typeparam name="TChange">The change row type.</typeparam>
     public static string Json<TPlan, TChange>(ReconciliationRun<TPlan, TChange> run)
         where TPlan : IPlan<TChange>
-        where TChange : IChange => ToJson(run).ToJsonString(Indented);
+        where TChange : IChange => ToJson(run).ToJsonString(JsonOutputOptions.Indented);
 }

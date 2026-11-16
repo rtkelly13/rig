@@ -1,11 +1,10 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Estate;
 
@@ -22,9 +21,6 @@ namespace Rig.Cli.Estate;
 /// <param name="error">Where a refused option goes.</param>
 internal sealed class PruneCachesCommand(EstateHost host, IProc proc, Func<string, string?> findTool, TimeProvider time, TextWriter output, TextWriter error)
 {
-    // As Python's json writes it: a `+` or a non-ASCII path stays as it is, not escaped.
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
     /// <summary>The <c>prune-caches</c> subcommand.</summary>
     public Command Build()
     {
@@ -72,7 +68,7 @@ internal sealed class PruneCachesCommand(EstateHost host, IProc proc, Func<strin
                 ["size_before"] = item.SizeBefore,
                 ["freed"] = item.Freed,
             })]);
-            await output.WriteLineAsync(payload.ToJsonString(Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.IndentedUnicode).AsMemory(), cancellationToken).ConfigureAwait(false);
         }
         else
         {
