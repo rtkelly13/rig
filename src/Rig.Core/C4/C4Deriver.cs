@@ -73,9 +73,18 @@ public sealed partial class C4Deriver
         }
 
         _common = CommonNamespace([.. _scans.Values.Select(scan => scan.Project.RootNamespace)]);
-        foreach (var (path, scan) in _scans)
+        var usedAliases = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (path, scan) in _scans.OrderBy(pair => pair.Key, StringComparer.Ordinal))
         {
-            _aliases[path] = MermaidGenerator.Slug(Short(scan.Project.Name));
+            var baseSlug = MermaidGenerator.Slug(Short(scan.Project.Name));
+            var alias = baseSlug;
+            var counter = 2;
+            while (!usedAliases.Add(alias))
+            {
+                alias = $"{baseSlug}_{counter++}";
+            }
+
+            _aliases[path] = alias;
         }
 
         BuildCodeIds();
@@ -391,7 +400,7 @@ public sealed partial class C4Deriver
             {
                 foreach (var type in part.Types)
                 {
-                    ownerOf[$"{part.Namespace}.{type}"] = _aliases[neighbour.Project.Path];
+                    ownerOf.TryAdd($"{part.Namespace}.{type}", _aliases[neighbour.Project.Path]);
                 }
             }
         }
@@ -408,7 +417,7 @@ public sealed partial class C4Deriver
             .ToList();
         var edges = part.Files
             .SelectMany(file => file.Declares.SelectMany(declaration => file.Names
-                .Where(name => types.Contains(name) && !file.Declares.Contains(name))
+                .Where(name => types.Contains(name) && !string.Equals(declaration, name, StringComparison.Ordinal))
                 .Select(name => (Source: declaration, Target: name))))
             .Distinct()
             .OrderBy(edge => edge.Source, StringComparer.Ordinal)

@@ -180,7 +180,7 @@ public static partial class DotnetScan
         var parts = normalised.Split('/', StringSplitOptions.RemoveEmptyEntries);
         var rooted = normalised.StartsWith('/') || (parts.Length > 0 && parts[0].EndsWith(':'));
         var joined = rooted
-            ? string.Join(System.IO.Path.DirectorySeparatorChar, parts)
+            ? (normalised.StartsWith('/') ? "/" + string.Join('/', parts) : string.Join(System.IO.Path.DirectorySeparatorChar, parts))
             : System.IO.Path.Combine(new[] { basePath }.Concat(parts).ToArray());
         return System.IO.Path.GetFullPath(joined);
     }
@@ -188,13 +188,13 @@ public static partial class DotnetScan
     /// <summary><c>..\Other\Models\*.cs</c> or <c>Shared\**\*.cs</c>: the fixed directory part, then a glob below it.</summary>
     private static IEnumerable<string> MsBuildGlob(string basePath, string raw)
     {
-        if (!raw.Contains('*', StringComparison.Ordinal))
+        if (!raw.Contains('*', StringComparison.Ordinal) && !raw.Contains('?', StringComparison.Ordinal))
         {
             return [MsBuildPath(basePath, raw)];
         }
 
         var parts = raw.Replace('\\', '/').Split('/');
-        var fixedCount = Array.FindIndex(parts, part => part.Contains('*', StringComparison.Ordinal));
+        var fixedCount = Array.FindIndex(parts, part => part.Contains('*', StringComparison.Ordinal) || part.Contains('?', StringComparison.Ordinal));
         var directory = fixedCount <= 0 ? System.IO.Path.GetFullPath(basePath) : MsBuildPath(basePath, string.Join('\\', parts[..fixedCount]));
         var pattern = string.Join('/', parts[fixedCount..]);
         if (!Directory.Exists(directory))

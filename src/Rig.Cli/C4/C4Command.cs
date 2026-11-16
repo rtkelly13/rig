@@ -203,6 +203,12 @@ internal sealed class C4Command(C4Host host, TextWriter output, TextWriter error
     {
         try
         {
+            if (!Directory.Exists(repo))
+            {
+                await error.WriteAsync($"Repository directory does not exist: {repo}\n").ConfigureAwait(false);
+                return 1;
+            }
+
             Parent? link = null;
             if (!string.IsNullOrEmpty(parent))
             {

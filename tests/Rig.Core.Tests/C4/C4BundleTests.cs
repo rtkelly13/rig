@@ -429,6 +429,32 @@ public sealed class C4BundleTests : IDisposable
         Assert.Equal("sample.txt", OkfBundle.StripSuffix("sample.txt", ".md"));
     }
 
+    [Fact]
+    public void IsExternalOrAnchor_handles_schemes_and_anchors()
+    {
+        Assert.True(OkfBundle.IsExternalOrAnchor("mailto:user@example.com"));
+        Assert.True(OkfBundle.IsExternalOrAnchor("https://example.com"));
+        Assert.True(OkfBundle.IsExternalOrAnchor("HTTPS://example.com"));
+        Assert.True(OkfBundle.IsExternalOrAnchor("//cdn.example.com/asset"));
+        Assert.True(OkfBundle.IsExternalOrAnchor("#heading"));
+        Assert.True(OkfBundle.IsExternalOrAnchor(""));
+        Assert.False(OkfBundle.IsExternalOrAnchor("relative/doc.md"));
+        Assert.False(OkfBundle.IsExternalOrAnchor("/root/doc.md"));
+    }
+
+    [Fact]
+    public void RelIndex_skips_leading_index_position()
+    {
+        var text = "C4Dynamic\nRelIndex(1, api, db, \"Queries\")\n";
+        var diagram = MermaidReader.Parse(text);
+        Assert.NotNull(diagram);
+        Assert.Single(diagram.Relationships);
+        var rel = diagram.Relationships[0];
+        Assert.Equal("api", rel.Source);
+        Assert.Equal("db", rel.Target);
+        Assert.Equal("Queries", rel.Label);
+    }
+
     private static string Between(string text)
     {
         var start = text.IndexOf("```mermaid\n", StringComparison.Ordinal) + "```mermaid\n".Length;

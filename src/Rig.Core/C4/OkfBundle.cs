@@ -138,6 +138,9 @@ public static partial class OkfBundle
         ["C4 Landscape"] = "C4Context",
     };
 
+    internal static bool IsExternalOrAnchor(string href) =>
+        href.Length == 0 || href.StartsWith('#') || External().IsMatch(href);
+
     /// <summary>
     /// OKF link to concept id: <c>/x.md</c> is bundle-absolute, anything else is relative to the linking file.
     /// Null for an external URL, an anchor, an escaping path, or an empty href.
@@ -146,7 +149,7 @@ public static partial class OkfBundle
     {
         ArgumentNullException.ThrowIfNull(fromId);
         ArgumentNullException.ThrowIfNull(href);
-        if (href.Length == 0 || External().IsMatch(href) || href.StartsWith('#'))
+        if (IsExternalOrAnchor(href))
         {
             return null;
         }

@@ -139,11 +139,15 @@ public static partial class MermaidReader
 
             var name = match.Groups["name"].Value;
             var args = ParseArgs(match.Groups["args"].Value);
-            if (Relationships.Contains(name) && args.Positional.Count >= 2)
+            if (Relationships.Contains(name))
             {
-                relationships.Add(new Relationship(args.Positional[0], args.Positional[1],
-                    args.Positional.Count > 2 ? args.Positional[2] : string.Empty, index));
-                continue;
+                var offset = string.Equals(name, "RelIndex", StringComparison.Ordinal) ? 1 : 0;
+                if (args.Positional.Count >= 2 + offset)
+                {
+                    relationships.Add(new Relationship(args.Positional[offset], args.Positional[offset + 1],
+                        args.Positional.Count > 2 + offset ? args.Positional[2 + offset] : string.Empty, index));
+                    continue;
+                }
             }
 
             var kind = ShapeKind(name);

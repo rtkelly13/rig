@@ -145,9 +145,7 @@ public static partial class C4Composer
                     }
 
                     var target = OkfBundle.ResolveHref(concept.Id, element.Link);
-                    if (target is null && !element.Link.StartsWith("http:", StringComparison.Ordinal)
-                        && !element.Link.StartsWith("https:", StringComparison.Ordinal)
-                        && !element.Link.StartsWith("//", StringComparison.Ordinal))
+                    if (target is null && !OkfBundle.IsExternalOrAnchor(element.Link))
                     {
                         broken.Add(new BrokenLink(concept.Id, element.Link, element.Alias));
                     }
@@ -394,6 +392,10 @@ public static partial class C4Composer
                     accumulator = new ElementAccumulator { External = element.External };
                     elements[element.Alias] = accumulator;
                 }
+                else
+                {
+                    accumulator.External |= element.External;
+                }
 
                 accumulator.Labels.Add(element.Label);
                 accumulator.Kinds.Add(element.Kind);
@@ -494,8 +496,9 @@ public static partial class C4Composer
                 .Where(candidate => candidate.Parent is null && !parentDiagram.Aliases.Contains(candidate.Alias))
                 .ToList();
             copied = [.. top.SelectMany(candidate => Block(childLines, candidate.Line))];
+            var copiedLines = copied.ToHashSet();
             inside = [.. child.Diagram.Elements
-                .Where(candidate => !parentDiagram.Aliases.Contains(candidate.Alias))
+                .Where(candidate => copiedLines.Contains(candidate.Line))
                 .Select(candidate => candidate.Alias)];
         }
 
@@ -506,6 +509,7 @@ public static partial class C4Composer
         var known = parentDiagram.Aliases.Concat(inside).ToHashSet(StringComparer.Ordinal);
         var lines = OkfBundle.SplitLines(parentDiagram.Source);
         var relAt = parentDiagram.Relationships.ToDictionary(rel => rel.Line);
+        var elementBlock = Block(lines, element.Line).ToHashSet();
         var output = new List<string>();
         for (var index = 0; index < lines.Length; index++)
         {
@@ -516,6 +520,11 @@ public static partial class C4Composer
                 output.Add($"{indent}System_Boundary({alias}, \"{element.Label}\") {{");
                 output.AddRange(body.Select(inner => $"{indent}  {Rebase(inner.Trim(), child.Id)}"));
                 output.Add($"{indent}}}");
+                continue;
+            }
+
+            if (elementBlock.Contains(index))
+            {
                 continue;
             }
 
