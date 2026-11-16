@@ -107,11 +107,11 @@ internal sealed class WebCommand(
             places.DbPath,
             places.RegistryFile,
             places.WorkingDirectory,
-            places.CodeRoot,
             Path.Join(CodeRoot.Current(), CodeRoot.PersonalFolder),
             Rig.Core.Estate.Decisions.DefaultFeedPath(Environment.GetEnvironmentVariable("LOCALAPPDATA"), home),
             places.QueuePath,
-            places.TracesDir);
+            places.TracesDir,
+            places.CodeRoot);
         if (places.PythonRoutes is { } running)
         {
             using var fronting = RigWebHost.ForwardingClient();

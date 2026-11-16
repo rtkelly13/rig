@@ -144,10 +144,40 @@ public static partial class Manifests
         }
 
         var central = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
-        var texts = new List<(string Evidence, string Full, string Text)>();
+        var manifests = new List<(string Evidence, string Full)>();
         foreach (var evidence in inventory.Paths)
         {
             var full = Path.GetFullPath(Path.Join(root, evidence));
+            if (Path.GetFileName(full) == "Directory.Packages.props")
+            {
+                try
+                {
+                    if (new FileInfo(full).Length > MaxBytes)
+                    {
+                        throw new InvalidDataException("Manifest exceeds 2 MB");
+                    }
+
+                    var bytes = await File.ReadAllBytesAsync(full, cancellationToken).ConfigureAwait(false);
+                    var text = XmlComment().Replace(StrictUtf8.GetString(bytes), string.Empty);
+                    var versions = Folder(central, Path.GetDirectoryName(full)!);
+                    foreach (Match tag in PackageVersionTag().Matches(text))
+                    {
+                        versions[Canonical("nuget", Attribute(tag.Value, "Include"))] = Attribute(tag.Value, "Version");
+                    }
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or DecoderFallbackException)
+                {
+                    inventory.WarningsFound.Add($"{evidence}: {e.Message}");
+                }
+            }
+            else
+            {
+                manifests.Add((evidence, full));
+            }
+        }
+
+        foreach (var (evidence, full) in manifests)
+        {
             try
             {
                 if (new FileInfo(full).Length > MaxBytes)
@@ -155,32 +185,13 @@ public static partial class Manifests
                     throw new InvalidDataException("Manifest exceeds 2 MB");
                 }
 
-                var text = await File.ReadAllTextAsync(full, StrictUtf8, cancellationToken).ConfigureAwait(false);
+                var bytes = await File.ReadAllBytesAsync(full, cancellationToken).ConfigureAwait(false);
+                var text = StrictUtf8.GetString(bytes);
                 if (full.EndsWith(".csproj", StringComparison.Ordinal) || full.EndsWith(".props", StringComparison.Ordinal))
                 {
                     text = XmlComment().Replace(text, string.Empty);
                 }
 
-                texts.Add((evidence, full, text));
-                if (Path.GetFileName(full) == "Directory.Packages.props")
-                {
-                    var versions = Folder(central, Path.GetDirectoryName(full)!);
-                    foreach (Match tag in PackageVersionTag().Matches(text))
-                    {
-                        versions[Canonical("nuget", Attribute(tag.Value, "Include"))] = Attribute(tag.Value, "Version");
-                    }
-                }
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or DecoderFallbackException)
-            {
-                inventory.WarningsFound.Add($"{evidence}: {e.Message}");
-            }
-        }
-
-        foreach (var (evidence, full, text) in texts)
-        {
-            try
-            {
                 switch (Path.GetFileName(full))
                 {
                     case "package.json":
@@ -194,7 +205,7 @@ public static partial class Manifests
                         break;
                 }
             }
-            catch (Exception e) when (e is InvalidDataException or JsonException or TomlException)
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or DecoderFallbackException or JsonException or TomlException)
             {
                 inventory.WarningsFound.Add($"{evidence}: {e.Message}");
             }
@@ -217,7 +228,8 @@ public static partial class Manifests
     private static void ReadNpm(Inventory inventory, string text, string repo, string evidence)
     {
         // The whole manifest is validated before any of it counts: a malformed one adds nothing.
-        var package = JsonNode.Parse(text) as JsonObject ?? throw new InvalidDataException("expected a JSON object");
+        var package = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false }) as JsonObject
+            ?? throw new InvalidDataException("expected a JSON object");
         var name = OptionalString(package, "name");
         var consumptions = new List<Consumption>();
         foreach (var (scope, key) in new[] { ("runtime", "dependencies"), ("development", "devDependencies"), ("peer", "peerDependencies"), ("optional", "optionalDependencies") })

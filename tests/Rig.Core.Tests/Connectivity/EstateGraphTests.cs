@@ -273,6 +273,7 @@ public sealed class EstateGraphTests : IDisposable
     [InlineData("""{"projects": [3]}""", "projects[0]: expected an object")]
     [InlineData("""{"projects": [{"name": "a", "repo": "https://github.com/owner/a", "depends_on": "b"}]}""", "projects[0].depends_on: expected a list")]
     [InlineData("""{"projects": [{"name": "a", "repo": "https://github.com/owner/a", "depends_on": [1]}]}""", "projects[0].depends_on: expected strings")]
+    [InlineData("""{"projects": [{"name": "a", "repo": "https://github.com/owner/a", "description": 123}]}""", "projects[0].description: expected a string")]
     public async Task A_malformed_registry_is_invalid_data(string registry, string message)
     {
         _estate.Owned();
@@ -281,6 +282,19 @@ public sealed class EstateGraphTests : IDisposable
         var error = await Assert.ThrowsAnyAsync<Exception>(_estate.BuildAsync);
         Assert.True(error is InvalidDataException, error.ToString());
         Assert.EndsWith(message, error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_snapshot_with_null_elements_is_rebuilt()
+    {
+        _estate.Owned("a");
+        await _estate.BuildAsync();
+        var snapshot = EstateGraph.SnapshotPath(_estate.Registry);
+        await File.WriteAllTextAsync(snapshot, """{"projects":[null],"dependencies":[],"components":[],"edges":[],"scanned_at":"recorded","warnings":[]}""", Token);
+
+        var loaded = await _estate.Graph().LoadAsync(_estate.Registry, _estate.Personal, refresh: false, Token);
+        Assert.Single(loaded.Projects);
+        Assert.NotNull(loaded.Projects[0]);
     }
 
     [Theory]

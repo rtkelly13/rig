@@ -60,6 +60,13 @@ public sealed class EstateGraph(Git git, TimeProvider time)
         return lower.EndsWith(".git", StringComparison.Ordinal) ? lower[..^4] : lower;
     }
 
+    private static async Task<string> ReadSnapshotAsync(string path, CancellationToken cancellationToken)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+        using var reader = new StreamReader(stream);
+        return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// The graph: the snapshot when it is younger than <see cref="Reuse"/> and <paramref name="refresh"/> is false, else
     /// a fresh <see cref="BuildAsync"/>.
@@ -71,7 +78,12 @@ public sealed class EstateGraph(Git git, TimeProvider time)
         {
             try
             {
-                if (JsonSerializer.Deserialize<ConnectivityGraph>(await File.ReadAllTextAsync(snapshot, cancellationToken).ConfigureAwait(false), JsonOptions) is { } kept)
+                var text = await ReadSnapshotAsync(snapshot, cancellationToken).ConfigureAwait(false);
+                if (JsonSerializer.Deserialize<ConnectivityGraph>(text, JsonOptions) is { } kept
+                    && !kept.Projects.Any(p => p is null)
+                    && !kept.Dependencies.Any(d => d is null)
+                    && !kept.Components.Any(c => c is null)
+                    && !kept.Edges.Any(e => e is null))
                 {
                     return kept;
                 }
@@ -79,6 +91,10 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             catch (JsonException)
             {
                 // A torn or outdated snapshot is rebuilt.
+            }
+            catch (IOException)
+            {
+                // An unreadable snapshot is rebuilt.
             }
         }
 
@@ -97,9 +113,26 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             var graph = await ScanAsync(registryFile, estateDir, cancellationToken).ConfigureAwait(false);
             var snapshot = SnapshotPath(registryFile);
             Directory.CreateDirectory(Path.GetDirectoryName(snapshot)!);
-            var temporary = snapshot + ".tmp";
-            await File.WriteAllTextAsync(temporary, JsonSerializer.Serialize(graph, JsonOptions), cancellationToken).ConfigureAwait(false);
-            File.Move(temporary, snapshot, overwrite: true);
+            var temporary = $"{snapshot}.{Guid.NewGuid():N}.tmp";
+            try
+            {
+                await File.WriteAllTextAsync(temporary, JsonSerializer.Serialize(graph, JsonOptions), cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    File.Move(temporary, snapshot, overwrite: true);
+                }
+                catch (IOException)
+                {
+                    // If move fails due to concurrent access, don't fail the built graph
+                }
+            }
+            finally
+            {
+                if (File.Exists(temporary))
+                {
+                    try { File.Delete(temporary); } catch (IOException) { }
+                }
+            }
             return graph;
         }
         finally
@@ -203,7 +236,7 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             foreach (var upstream in dependsOn)
             {
                 var source = names.TryGetValue(upstream, out var named) ? named : Slug(upstream);
-                if (known.Contains(source) && source != target)
+                if (known.Contains(source) && known.Contains(target) && source != target)
                 {
                     dependencies.Add(new Dependency(source, target, "declared", upstream, "declared dependency", "runtime", DeclaredEvidence));
                 }
@@ -246,6 +279,10 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             var where = $"{registryFile}: projects[{index}]";
             var project = node as JsonObject ?? throw new InvalidDataException($"{where}: expected an object");
             var repo = project["repo"] is JsonValue value && value.TryGetValue<string>(out var text) ? text : throw new InvalidDataException($"{where}.repo: expected a string");
+            if (project.TryGetPropertyValue("description", out var descNode) && descNode is not null && !(descNode is JsonValue descVal && descVal.TryGetValue<string>(out _)))
+            {
+                throw new InvalidDataException($"{where}.description: expected a string");
+            }
             IReadOnlyList<string> dependsOn = project["depends_on"] switch
             {
                 null => [],

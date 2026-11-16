@@ -81,8 +81,9 @@ public sealed class RigWebHost : IAsyncDisposable
         FrontendRoutes.Map(app, settings);
         _ = app.MapMcp("/api/mcp");
         (routes ?? owned!).Map(app, settings.RegistryFile);
-        var git = new Git(new SystemProc(), settings.CodeRoot);
-        ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System), Path.Join(settings.CodeRoot, "personal"));
+        var codeRoot = settings.EffectiveCodeRoot;
+        var git = new Git(new SystemProc(), codeRoot);
+        ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System), Path.Join(codeRoot, "personal"));
         var forwarder = new Forwarder(forwarding, upstream);
         app.Map("/{**path}", forwarder.ForwardAsync);
         return host;

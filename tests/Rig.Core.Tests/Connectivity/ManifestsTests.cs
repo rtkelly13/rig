@@ -44,6 +44,39 @@ public sealed class ManifestsTests : IDisposable
     }
 
     [Fact]
+    public async Task A_manifest_encoded_as_utf16_is_rejected_as_a_warning()
+    {
+        var root = await _estate.CheckoutAsync("utf16", new Dictionary<string, string>
+        {
+            ["package.json"] = "{}",
+        });
+        var utf16Bytes = System.Text.Encoding.Unicode.GetPreamble().Concat(System.Text.Encoding.Unicode.GetBytes("""{"name": "utf16"}""")).ToArray();
+        await File.WriteAllBytesAsync(Path.Join(root, "package.json"), utf16Bytes, Token);
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/utf16", Token);
+
+        Assert.True(inventory.Scanned);
+        Assert.Empty(inventory.Publications);
+        Assert.Contains("package.json", Assert.Single(inventory.Warnings), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Duplicate_properties_in_manifest_are_recorded_as_a_warning()
+    {
+        var root = await _estate.CheckoutAsync("dup", new Dictionary<string, string>
+        {
+            ["package.json"] = "{}",
+        });
+        await File.WriteAllTextAsync(Path.Join(root, "package.json"), """{"name":"a","name":"b"}""", Token);
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/dup", Token);
+
+        Assert.True(inventory.Scanned);
+        Assert.Empty(inventory.Publications);
+        Assert.Contains("package.json", Assert.Single(inventory.Warnings), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Generated_names_and_references_are_not_guessed()
     {
         var root = await _estate.CheckoutAsync("gen", new Dictionary<string, string>

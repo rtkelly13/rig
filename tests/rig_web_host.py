@@ -123,8 +123,19 @@ def estate(home: Path, projects: dict[str, dict[str, str]]) -> None:
         folder.mkdir(parents=True)
         for relative, text in files.items():
             _ = (folder / relative).write_text(text, encoding="utf-8")
-        _ = tracing.run(["git", "init", "--quiet"], cwd=folder, check=True)
-        _ = tracing.run(["git", "add", "-f", "."], cwd=folder, check=True)
+        location = {
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+            "GIT_COMMON_DIR",
+            "GIT_DIR",
+            "GIT_INDEX_FILE",
+            "GIT_NAMESPACE",
+            "GIT_OBJECT_DIRECTORY",
+            "GIT_PREFIX",
+            "GIT_WORK_TREE",
+        }
+        env = {key: value for key, value in os.environ.items() if key not in location}
+        _ = tracing.run(["git", "init", "--quiet"], cwd=folder, env=env, check=True)
+        _ = tracing.run(["git", "add", "-f", "."], cwd=folder, env=env, check=True)
 
 
 def _code_root(home: Path) -> Path:

@@ -23,12 +23,14 @@ public sealed record WebHostSettings(
     string DbPath,
     string RegistryFile,
     string WorkingDirectory,
-    string CodeRoot,
     string EstateRoot,
     string DecisionsFeed,
     string QueuePath,
-    string TracesDir)
+    string TracesDir,
+    string CodeRoot = "")
 {
+    /// <summary>The code root, falling back to the parent of EstateRoot if empty.</summary>
+    public string EffectiveCodeRoot => string.IsNullOrEmpty(CodeRoot) ? (Path.GetDirectoryName(EstateRoot) ?? "") : CodeRoot;
     /// <summary>The production dashboard's port.</summary>
     public const int ProductionPort = 8090;
 
