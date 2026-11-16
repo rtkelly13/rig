@@ -481,5 +481,87 @@ public sealed class GovernanceResourcesTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Repo_settings_drift_and_diff()
+    {
+        var merge = new MergeSettings(
+            AllowSquashMerge: true,
+            AllowMergeCommit: false,
+            AllowRebaseMerge: false,
+            DeleteBranchOnMerge: true,
+            AllowAutoMerge: true);
+        var desired = new RepoSettings("main", merge);
+
+        // Matching live settings has no drift
+        var liveMatch = new LiveRepoSettings("main", true, true, false, false, true, false);
+        Assert.Empty(RepoSettingsResource.Drift(desired, liveMatch));
+        var resource = new RepoSettingsResource();
+        Assert.Empty(resource.Diff(desired, liveMatch));
+
+        // Different branch and merge flags
+        var liveDrift = new LiveRepoSettings("master", false, false, true, true, false, false);
+        var drift = RepoSettingsResource.Drift(desired, liveDrift);
+        Assert.Contains("default_branch master -> main", drift);
+        Assert.Contains("delete_branch_on_merge False -> True", drift);
+        Assert.Contains("allow_squash_merge False -> True", drift);
+        Assert.Contains("allow_merge_commit True -> False", drift);
+        Assert.Contains("allow_rebase_merge True -> False", drift);
+        Assert.Contains("allow_auto_merge False -> True", drift);
+
+        var diff = resource.Diff(desired, liveDrift);
+        Assert.Single(diff);
+        Assert.Equal("repo-settings", diff[0].Resource);
+        Assert.Equal("apply", diff[0].Kind);
+
+        // Private repo ignores allow_auto_merge drift
+        var privateLive = new LiveRepoSettings("main", true, true, false, false, false, Private: true);
+        Assert.Empty(RepoSettingsResource.Drift(desired, privateLive));
+
+        // Verify PATCH body format
+        var body = desired.Body();
+        Assert.Contains("\"default_branch\":\"main\"", body, StringComparison.Ordinal);
+        Assert.Contains("\"allow_squash_merge\":true", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Repo_settings_resource_read_and_apply()
+    {
+        var resource = new RepoSettingsResource();
+        var target = new Target(_dir.Folder("repo"), "acme/repo");
+        var merge = new MergeSettings(true, false, false, true, true);
+        var desired = new RepoSettings("main", merge);
+
+        // ReadAsync from API
+        var api = new FakeGitHub().On("GET", "repos/acme/repo", new JsonObject
+        {
+            ["default_branch"] = "main",
+            ["delete_branch_on_merge"] = true,
+            ["allow_squash_merge"] = true,
+            ["allow_merge_commit"] = false,
+            ["allow_rebase_merge"] = false,
+            ["allow_auto_merge"] = true,
+            ["private"] = false,
+        }.ToJsonString());
+
+        var live = await resource.ReadAsync(api, target, Token);
+        Assert.Equal("main", live.DefaultBranch);
+        Assert.True(live.AllowSquashMerge);
+
+        // ApplyAsync with no Apply change returns empty
+        var noChanges = await resource.ApplyAsync(api, target, desired, [new("repo-settings", "inspect", "detail", Kind: Change.Refused)], Token);
+        Assert.Empty(noChanges);
+
+        // ApplyAsync success
+        var successApi = new FakeGitHub().On("PATCH", "repos/acme/repo", "{}");
+        var applySuccess = await resource.ApplyAsync(successApi, target, desired, [new("repo-settings", Change.Apply, "update")], Token);
+        Assert.Empty(applySuccess);
+
+        // ApplyAsync failure
+        var failApi = new FakeGitHub().Fail("PATCH", "repos/acme/repo", "Internal error");
+        var applyFail = await resource.ApplyAsync(failApi, target, desired, [new("repo-settings", Change.Apply, "update")], Token);
+        Assert.Single(applyFail);
+        Assert.Contains("PATCH repos/acme/repo", applyFail[0], StringComparison.Ordinal);
+    }
+
     private void Workflow(string name, string text) => File.WriteAllText(_dir.File($"repo/.github/workflows/{name}"), text);
 }
