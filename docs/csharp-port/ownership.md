@@ -71,7 +71,7 @@ cannot conceal an independent implementation.
 | `work` | C# `Rig.Core.WorkItems` core behind the inspected Python `desktop_manager.work.cli:list_command` surface | `work list` core is `implemented` in the acceptance ledger (#262, open); the CLI, text renderer, session store and dispatch stay Python until the cutover. Keep the exact caller and removal condition visible |
 | `claude-sessions` | Retired without a C# port (#224) | Eight Python leaves and fourteen modules deleted; the `work` list keeps its own transcript, live-session and ledger reader in `work/session_store.py`. Orca and direct CLI/IDE workflows replaced the window-focused orchestration |
 | Core Python modules, development file apps, Node scripts and launchers | `module:`, `python-file:`, `main:`, `file-app:`, `node:`, `launcher:` rows | Development tooling is inventoried separately from product CLI behavior |
-| Web/MCP and jobs | `web-child:`, `mcp:`, `python-job:`, `cs-job:` rows | The `mcp:` tool set is now C#; `desktop_manager.web_mcp` and the triage, estate and telemetry web children are retired. The jobs coordinator is the remaining `web-child:` row, and job callers remain Python where named until their slices switch them |
+| Web/MCP and jobs | `web-child:`, `mcp:`, `python-job:`, `cs-job:` rows | The `mcp:` tool set is now C#; `desktop_manager.web_mcp`, the triage, estate and telemetry web children, and the jobs coordinator are retired. No `web-child:` rows remain, and job callers remain Python where named until their slices switch them |
 | Brand pipeline | `tools/image-drift` | Intentional Python exception, its own project/gates (ADR 0022) |
 
 There are 14 current console scripts, rather than the issue's original 15. The ledger follows actual registrations.

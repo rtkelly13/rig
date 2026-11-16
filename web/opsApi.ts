@@ -1,5 +1,5 @@
-// Response shapes of the /api/ops endpoints, mirroring the dataclasses in rig.otel_stack.web,
-// rig.estate.web and desktop_manager.jobs.web. Field names are the wire format.
+// Response shapes of the /api/ops endpoints, mirroring the C# models in Rig.Web
+// and Rig.Core. Field names are the wire format.
 
 export interface LastRun {
   started: string;

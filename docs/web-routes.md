@@ -51,8 +51,8 @@ never imports a feature. A feature exposes a **route**, and one composition root
 | GET | `/api/ops/decisions`, `/api/ops/estate/disk`, `/api/ops/estate/trim` | decisions feed, disk usage, trim scan | C# `Rig.Web.EstateOpsRoutes` |
 | POST | `/api/ops/estate/trim/apply` | the paths trimmed | C# `Rig.Web.EstateOpsRoutes` |
 | GET | `/api/ops/telemetry/status`, `/api/ops/telemetry/traces` | trace store status and recent traces | C# `Rig.Web.TelemetryRoutes` |
-| GET | `/api/ops/jobs`, `/api/ops/runs`, `/api/ops/runs/<job>/<run>/output` | scheduled jobs, their runs and run output | Python `desktop_manager.jobs.web` |
-| POST | `/api/ops/jobs/run` | starts a job | Python `desktop_manager.jobs.web` |
+| GET | `/api/ops/jobs`, `/api/ops/runs`, `/api/ops/runs/<job>/<run>/output` | scheduled jobs, their runs and run output | C# `Rig.Web.JobsRoutes` |
+| POST | `/api/ops/jobs/run` | starts a job | C# `Rig.Web.JobsRoutes` |
 
 ## The pieces
 
@@ -62,7 +62,7 @@ never imports a feature. A feature exposes a **route**, and one composition root
 | `Request` | `src/rig/web_routes.py` | method, path and query, parsed once; `param`, `int_param`, `flag` |
 | `respond` | `src/rig/web_routes.py` | runs a producer and maps failures to the `{"error": ...}` envelope |
 | `json_body` | `src/rig/web_routes.py` | the write guard: loopback Host, matching Origin, JSON content type, size cap |
-| `mounted_routes()` | `src/desktop_manager/web_upstream.py` | the composition root; only the jobs coordinator is still mounted |
+| `mounted_routes()` | `src/desktop_manager/web_upstream.py` | the composition root; all feature routes are now ported to C# |
 | `StudioServer(routes=...)` | `src/rig/web_host/server.py` | offers each request to the mounted routes before its own handlers |
 
 ## Adding a route

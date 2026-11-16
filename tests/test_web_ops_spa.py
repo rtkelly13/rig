@@ -219,6 +219,10 @@ def _canned(page: Page, ops: FakeOps) -> None:
         "**/api/ops/decisions": DECISIONS,
         "**/api/ops/estate/disk": {"path": "C:\\", "total": 1000, "used": 950, "free": 50},
         "**/api/ops/estate/trim*": TRIM,
+        "**/api/ops/jobs": JOBS,
+        "**/api/ops/runs/*/*/output": {"job": "sync", "run_id": "r2", "output": "fatal: remote hung up"},
+        "**/api/ops/runs?*": RUNS,
+        "**/api/ops/runs": RUNS,
     }
 
     def serve(payload: object) -> object:
@@ -236,6 +240,13 @@ def _canned(page: Page, ops: FakeOps) -> None:
         route.fulfill(json=[{"path": path, "status": "removed", "freeable": 300_000_000} for path in body["paths"]])
 
     page.route("**/api/ops/estate/trim/apply", applied)
+
+    def started(route: Route) -> None:
+        body = json.loads(route.request.post_data or "{}")
+        ops.started.append(body)
+        route.fulfill(json={"job": body.get("job"), "pid": 4242})
+
+    page.route("**/api/ops/jobs/run", started)
 
 
 def test_attention_lists_failed_jobs_and_decisions_and_opens_the_run(ops_app: OpsApp) -> None:

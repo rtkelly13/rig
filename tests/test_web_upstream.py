@@ -8,15 +8,13 @@ from collections.abc import Sequence
 import pytest
 
 from desktop_manager import web_upstream
-from desktop_manager.jobs.web import JobsRoute
 from rig.web_routes import Route
 
 
-def test_the_child_mounts_only_the_jobs_route() -> None:
+def test_the_child_mounts_no_routes() -> None:
     routes = web_upstream.mounted_routes()
 
-    assert len(routes) == 1
-    assert isinstance(routes[0], JobsRoute)
+    assert len(routes) == 0
 
 
 def test_main_reads_the_port() -> None:

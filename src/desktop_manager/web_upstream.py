@@ -24,12 +24,9 @@ class _Server(Protocol):
 def mounted_routes() -> tuple[Route, ...]:
     """The JSON routes features still contribute to `rig web`.
 
-    Only the jobs coordinator stays here until its route group is ported. This is the composition root, so it is the one
-    place that may import a feature; the server itself imports none of them.
+    No routes remain here.
     """
-    from desktop_manager.jobs.web import JobsRoute
-
-    return (JobsRoute(),)
+    return ()
 
 
 def serve(

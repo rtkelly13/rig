@@ -24,11 +24,9 @@ while `rig web mcp` keeps serving the tools over stdio for a local client.
 
 ## How the pieces fit
 
-- Telemetry, the decisions feed, disk usage and trimming are C# routes (`Rig.Web.TelemetryRoutes` and
-  `Rig.Web.EstateOpsRoutes`); the jobs coordinator is still the Python `desktop_manager.jobs.web` route.
-  The composition root, `desktop_manager.web_upstream.mounted_routes()`, hands the remaining route to
-  `StudioServer(routes=...)`; the server imports no feature, so the `rig-features` independence contract
-  holds.
+- Telemetry, the decisions feed, disk usage, trimming and the jobs coordinator are C# routes
+  (`Rig.Web.TelemetryRoutes`, `Rig.Web.EstateOpsRoutes`, and `Rig.Web.JobsRoutes`). All feature routes
+  are served directly by the ASP.NET Core host in `Rig.Web`.
 - Every error is a JSON `{"error": ...}` with 400, 404 or 503. The writes
   (`jobs/run`, `trim/apply`) require a loopback `Host`, a matching `Origin` and `application/json`.
 - Run now answers at once: the run is a detached `rig jobs run --trigger tick` (`rig.tracing.spawn_detached`)

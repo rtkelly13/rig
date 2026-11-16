@@ -79,7 +79,8 @@ public sealed class RigWebHost : IAsyncDisposable
         });
         builder.Services.AddRoutingCore();
         builder.Services.AddLogging();
-        _ = builder.Services.AddRigMcp(mcp ?? RigOps.Default()).WithHttpTransport();
+        var ops = mcp ?? RigOps.Default();
+        _ = builder.Services.AddRigMcp(ops).WithHttpTransport();
         var app = builder.Build();
         var owned = routes is null
             ? await OpsRoutes.ForSettingsAsync(settings, cancellationToken).ConfigureAwait(false)
@@ -93,6 +94,7 @@ public sealed class RigWebHost : IAsyncDisposable
         var codeRoot = settings.EffectiveCodeRoot;
         var git = new Git(new SystemProc(), codeRoot);
         ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System), Path.Join(codeRoot, "personal"));
+        JobsRoutes.Map(app, ops);
         var forwarder = new Forwarder(forwarding, upstream);
         app.Map("/{**path}", forwarder.ForwardAsync);
         return host;
