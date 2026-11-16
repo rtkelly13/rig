@@ -63,8 +63,13 @@ jobs:
       - name: Generate Embeddings
         run: |
           mkdir -p ~/.cache/qmd
-          qmd collection add docs/ --name shared-utilities-docs
-          qmd collection add . --name shared-utilities-root --mask "AGENTS.md"
+          # The restored rolling index still carries the collection names from before the
+          # repo was renamed; rename them once so a search does not see both. Missing
+          # collections fail the rename harmlessly on a fresh index.
+          qmd collection rename shared-utilities-docs rig-docs || true
+          qmd collection rename shared-utilities-root rig-root || true
+          qmd collection add docs/ --name rig-docs
+          qmd collection add . --name rig-root --mask "AGENTS.md"
           qmd embed
           qmd cleanup
           

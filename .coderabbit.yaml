@@ -1,4 +1,4 @@
-# CodeRabbit Configuration (Governed by shared-utilities)
+# CodeRabbit Configuration (Governed by rig)
 # See https://docs.coderabbit.ai/guides/configure-coderabbit for details
 
 language: "en-US"
