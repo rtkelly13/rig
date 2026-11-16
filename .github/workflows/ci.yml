@@ -87,11 +87,17 @@ jobs:
       - name: Restore
         run: dotnet restore rig.slnx
       # Only the two artifacts other jobs consume, not every test project. `dotnet` still
-      # builds the full solution for its tests in parallel.
+      # builds the full solution for its tests in parallel. Analyzers stay off here: this
+      # job only has to produce runnable output, and the two `dotnet` shards run them on
+      # the same projects. Cutting them takes this build from ~1m50 to ~1m.
       - name: Build rig CLI
-        run: dotnet build src/Rig.Cli -c Release -o "${{ runner.temp }}/rig-cli" --no-restore
+        run: >-
+          dotnet build src/Rig.Cli -c Release -o "${{ runner.temp }}/rig-cli" --no-restore
+          -p:RunAnalyzers=false
       - name: Build ownership tool
-        run: dotnet build tools/command-ownership -c Release -o "${{ runner.temp }}/command-ownership" --no-restore
+        run: >-
+          dotnet build tools/command-ownership -c Release -o "${{ runner.temp }}/command-ownership"
+          --no-restore -p:RunAnalyzers=false
       - name: Upload rig CLI
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -487,9 +493,84 @@ jobs:
 
   # The C# side (ADR 0022): build with warnings as errors, tests, the coverage ratchet.
   # Formatting runs in the parallel `format` job.
+  # The C# gate, sharded across runners: one job built every project and then ran every
+  # test (build ~2m17 + tests ~1m05), and the build was the wall clock. Each shard builds
+  # only the projects it tests, so the shards run in parallel. Coverage is unioned by
+  # scripts/coverage-floor.cs across the shards' coverlet reports, which keep each line
+  # and branch identity, so the floor still measures the whole codebase.
   dotnet:
-    name: dotnet
+    name: dotnet (${{ matrix.shard }})
     needs: changes
+    if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+      PROJECTS: ${{ matrix.projects }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Rig.Core is the largest project and Rig.Core.Tests the largest suite.
+          - shard: core
+            projects: tests/Rig.Core.Tests/Rig.Core.Tests.csproj
+          # Everything else pulls in every product project: Rig.Specs and the architecture
+          # tests reference the CLI and the launcher, the ownership tests the tool.
+          - shard: app
+            projects: >-
+              tests/Rig.Architecture.Tests/Rig.Architecture.Tests.csproj
+              tests/Rig.Cli.Tests/Rig.Cli.Tests.csproj
+              tests/Rig.CommandOwnership.Tests/Rig.CommandOwnership.Tests.csproj
+              tests/Rig.Specs/Rig.Specs.csproj
+              tests/Rig.Web.Tests/Rig.Web.Tests.csproj
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+      - name: Restore
+        run: dotnet restore rig.slnx
+      # Warnings are errors, and the analyzers run here, so a shard fails the PR on a
+      # diagnostic in anything it compiles, product projects included.
+      - name: Build
+        run: |
+          set -euo pipefail
+          for project in $PROJECTS; do
+            dotnet build "$project" --no-restore -c Release
+          done
+      # The COM source generator's stubs and CsWin32's interop (Desktop/Windows) are Windows-only and generated, so
+      # they are left out like the [ExcludeFromCodeCoverage] interop they serve; the Windows job exercises them.
+      - name: Test with coverage
+        run: |
+          set -euo pipefail
+          for project in $PROJECTS; do
+            dotnet test --project "$project" --no-build -c Release --coverlet --coverlet-output-format json \
+              --coverlet-exclude-by-file "**/Microsoft.Interop.ComInterfaceGenerator/**" \
+              --coverlet-exclude-by-file "**/Microsoft.Windows.CsWin32/**"
+          done
+      - name: Upload coverage report
+        if: always() && hashFiles('TestResults/coverage.*.json') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dotnet-coverage-${{ matrix.shard }}
+          path: TestResults/coverage.*.json
+          retention-days: 1
+
+  # Same ratchet as the Python floor: never falls, must follow coverage up to 95%. It reads
+  # every shard's report, so the split above cannot lower the measured number.
+  dotnet-coverage:
+    name: dotnet-coverage
+    needs: [changes, dotnet]
     if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -505,23 +586,12 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
-      - name: Cache NuGet packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Download coverage reports
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
-      - name: Restore
-        run: dotnet restore rig.slnx
-      - name: Build
-        run: dotnet build rig.slnx --no-restore -c Release
-      # The COM source generator's stubs and CsWin32's interop (Desktop/Windows) are Windows-only and generated, so
-      # they are left out like the [ExcludeFromCodeCoverage] interop they serve; the Windows job exercises them.
-      - name: Test with coverage
-        run: >-
-          dotnet test --solution rig.slnx --no-build -c Release --coverlet --coverlet-output-format json
-          --coverlet-exclude-by-file "**/Microsoft.Interop.ComInterfaceGenerator/**"
-          --coverlet-exclude-by-file "**/Microsoft.Windows.CsWin32/**"
-      # Same ratchet as the Python floor: never falls, must follow coverage up to 95%.
+          pattern: dotnet-coverage-*
+          path: TestResults
+          merge-multiple: true
       - name: Fetch the base branch's coverage floor
         if: github.event_name == 'pull_request'
         env:
@@ -714,7 +784,7 @@ jobs:
   ci:
     name: ci
     if: always()
-    needs: [changes, build, format, lint, docs-audit, test, test-windows, image-drift, image-drift-windows, dotnet, dotnet-windows, command-ownership]
+    needs: [changes, build, format, lint, docs-audit, test, test-windows, image-drift, image-drift-windows, dotnet, dotnet-coverage, dotnet-windows, command-ownership]
     runs-on: ubuntu-latest
     permissions:
       contents: read
