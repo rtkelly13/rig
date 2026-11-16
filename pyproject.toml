@@ -320,8 +320,7 @@ omit = [
     "src/desktop_manager/display_guard_windows.py",
     "src/desktop_manager/jobs/session_windows.py",
     "src/desktop_manager/service_installer.py",
-    "src/desktop_manager/win32/align_ports.py",
-    "src/desktop_manager/win32/inventory.py",
+    "src/desktop_manager/win32/*",
 ]
 
 [tool.coverage.report]

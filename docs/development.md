@@ -42,8 +42,8 @@ runs this checkout's code, so it is the form for developing rig and for CI. The 
 (`uv run status`, `uv run workspace …`) still work while callers outside rig move over (#85 s29b).
 
 C# parses help, version, the agent launcher and every ported command itself. A command still written in Python has
-a row in `src/Rig.Cli/Forwarding/Forwarded.cs` naming the program that runs it, a `desktop-manager` command or a
-module with a `__main__` block (`python -m rig.c4_okf.cli`), and the whole line goes to it as
+a row in `src/Rig.Cli/Forwarding/Forwarded.cs` naming the Python program that runs it (a `desktop-manager`
+command, or a module with a `__main__` block), and the whole line goes to it as
 `uv run --no-sync --project <rig checkout> <program> …` attached to the same console. A row never launches `rig`,
 which is C# itself. Prompts, colour, Ctrl+C and exit codes behave as before.
 

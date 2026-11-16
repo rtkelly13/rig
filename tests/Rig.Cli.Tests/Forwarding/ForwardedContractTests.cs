@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Rig.Cli.Agent;
 using Rig.Cli.Browser;
+using Rig.Cli.C4;
 using Rig.Cli.Chrome;
 using Rig.Cli.Devenv;
 using Rig.Cli.Estate;
@@ -87,6 +88,7 @@ public sealed partial class ForwardedContractTests
                     TextWriter.Null,
                     TextWriter.Null).Build,
                 new ChromeTabsCommand(_ => null, "/", TimeProvider.System, TimeZoneInfo.Utc, TextWriter.Null).Build,
+                new C4Command(new C4Host("/rig/experiments/c4-okf/rig", (_, _) => Task.FromResult(string.Empty)), TextWriter.Null, TextWriter.Null).Build,
                 new MailCommand(new MailHost(_ => null, "/", "/", TimeProvider.System), TextWriter.Null, TextWriter.Null).Build,
                 InertOtelStack().Build,
                 new StatusCommand(new FakeProc(), new Git(new FakeProc(), "/"), "/", TextWriter.Null).Build,

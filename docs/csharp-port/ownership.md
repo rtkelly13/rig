@@ -60,7 +60,7 @@ cannot conceal an independent implementation.
 | C# registrations (`cs:` rows) | `rig`, plus 13 Python console-script compatibility spellings | Switched in source; shared tests/CI evidence does not establish native acceptance or deployment |
 | `align` | Python `desktop-manager workspace align` | Not ported; Windows desktop acceptance required |
 | `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand`, `Rig.Web.TriageRoutes` and `Rig.Core.ReviewQueue.AgentSignals` | CLI, web inbox and agent-signal consumers switched; Python CLI, six platform fallback routes, `rig.triage.web` and `rig.triage.agents` retired. `src/rig/triage` keeps only the models and store the browser tests seed, with no production caller |
-| `c4` | Python `rig.c4_okf.cli` | Not ported; five leaves; open #78 touches this area, do not duplicate it |
+| `c4` | C# `Rig.Cli.C4.C4Command` over `Rig.Core.C4` | CLI, checks, composition, derivation and the Roslyn call-graph reader switched; the Python CLI, derive scanner and 21 registrations retired. The `rig.c4_okf` web viewer and the bundle reader it mounts stay explicitly owned until that route is switched |
 | `jobs` | C# status/last/log/run/install/uninstall | All legacy spellings dispatch whole-line to C#; #209 owns runtime progression and Windows acceptance |
 | `runtime` | C# status/install/rollback; Python `runtime.py` still serves paths and state to scheduled Python callers | Legacy spellings dispatch whole-line to C#; `runtime_cli` execution and `rig_shim` retired. `runtime.py` stays for jobs/chrome path and state consumers; #227 owns native acceptance |
 | `web` | C# public host and C# MCP server (`/api/mcp` and stdio), verified thin dispatcher for the bare launch, Python service/database/upstream children | Triage, estate and telemetry routes are C# (`Rig.Web.TriageRoutes`, `EstateOpsRoutes`, `TelemetryRoutes`); bare `desktop-manager web` is a thin C# dispatcher in #217; #207 owns connectivity cutover; the jobs coordinator, C4, the estate graph and database backup stay in the Python child |
@@ -160,6 +160,14 @@ Ruff, both type checkers, import contracts and the ratchet passed. Built `rig` a
 root traces; `rigw` also passed with an empty PATH and an unavailable Python checkout. These checks did not
 install or remove any real tasks and do not supply `WIN-JOBS` native acceptance.
 
+C4 cutover validation on macOS, 2026-11-14: the full C# build passed with zero warnings. The full solution
+test run passed 4,970 tests with 14 existing platform skips. `rig c4 check|model|tree|expand` and
+`rig c4 derive dotnet` produced byte-identical JSON, Mermaid and derived bundle files to the Python command
+they replaced, including the sample bundles and the analyzer/call-graph fixture. Ruff, both Python type
+checkers, import contracts, the ratchet and `dotnet format --verify-no-changes` passed. The ownership gate
+against `origin/main` passed with 439 inspected surfaces, no overlaps and zero violations. The Python
+viewer routes remain owned and tested; no installed runtime, task or LaunchAgent was changed.
+
 Installer and scheduled-entry cutover validation on macOS, 2026-11-14: the full C# build passed with
 zero warnings and errors. The full solution coverage run passed 4,712 tests with 25 existing skips and
 zero failures. Five fresh reports in `temp/jobs-coverage` measured **95.50% combined line/branch
@@ -208,7 +216,7 @@ and `ROLLOUT` rows above stay open until that evidence is recorded.
 
 _State after #217:_ the overlap baseline is empty, but this is an overlap-only slice, not port completion:
 main still has core Python files and dozens of Python-owned registrations, and routes still have callers
-(`triage`, `c4`, `desktop workspace align`, `jobs install`, and the remaining web children). The ledger and this
+(`triage`, `desktop workspace align`, `jobs install`, and the remaining web children). The ledger and this
 gate stay in place until the source migration, native acceptance and rollout criteria above are met.
 
 This cross-language inventory is temporary migration machinery. Close it down in the final #85 cutover PR

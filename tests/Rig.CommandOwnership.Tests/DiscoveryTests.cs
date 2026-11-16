@@ -100,7 +100,7 @@ public sealed class DiscoveryTests
         }).ToArray());
         Assert.Throws<InvalidOperationException>(() => Discovery.Commands(python, new Dictionary<string, Discovery.CsTree>
         {
-            ["linux"] = tree with { Forwarding = [new("c4", ["python", "-m", "rig.c4_okf.cli"])] },
+            ["linux"] = tree with { Forwarding = [new("retired", ["python", "-m", "rig.retired.cli"])] },
         }).ToArray());
         Assert.Equal("align", Discovery.Canonical("desktop-manager workspace align"));
         Assert.Equal("desktop workspace name-desktops", Discovery.Canonical("desktop-manager workspace ensure-desktops"));

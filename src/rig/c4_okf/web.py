@@ -20,7 +20,6 @@ from markdown_it.renderer import RendererHTML
 from pydantic import StrictStr, TypeAdapter
 
 from rig.c4_okf.bundle import Actor, Bundle, Concept, load_bundle
-from rig.c4_okf.cli import DEFAULT_BUNDLE
 from rig.c4_okf.graph import (
     EdgeKind,
     ExpandError,
@@ -35,6 +34,7 @@ from rig.c4_okf.graph import (
 )
 from rig.typed_json import decode
 
+DEFAULT_BUNDLE = Path(__file__).resolve().parents[3] / "experiments" / "c4-okf" / "rig"
 STATIC = Path(__file__).parent / "static"
 
 

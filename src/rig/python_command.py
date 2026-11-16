@@ -1,7 +1,8 @@
 """The entry point of a rig command still written in Python, started by the C# rig CLI.
 
 The C# CLI owns ``rig`` and forwards the commands it has not ported (its ``Forwarded`` table) to a Python program in
-this checkout's uv environment: ``python -m rig.c4_okf.cli …`` for these. Each such module ends with
+this checkout's uv environment, either a ``desktop-manager`` command or a module with a ``__main__`` block. Each such
+module ends with
 ``if __name__ == "__main__": main(app, "<name>")``, which traces the run the way the Python ``rig`` CLI did.
 """
 
