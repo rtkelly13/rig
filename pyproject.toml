@@ -216,7 +216,6 @@ ignore = [
 "src/rig/estate/trim.py" = ["TID251"]
 # Landed on main while this stack was open; same G4 migration.
 "src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
-"src/rig/triage/github.py" = ["TID251"]
 # Temporary: tests that build real temp repos with raw git. F2 moves them onto the
 # shared real-git fixture in tests/fakes/; G4 deletes whatever is left.
 "tests/desktop_manager/test_projects.py" = ["TID251"]
@@ -442,8 +441,6 @@ patching-allow = [
     "tests/test_rig_flags.py",
     "tests/test_rig_shim.py",
     "tests/test_scopes.py",
-    "tests/test_triage_agents.py",
-    "tests/test_triage_queue.py",
     "tests/test_web_spa.py",
 ]
 pyright-pragma-allow = []

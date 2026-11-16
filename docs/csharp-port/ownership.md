@@ -60,7 +60,7 @@ cannot conceal an independent implementation.
 | C# registrations (`cs:` rows) | `rig`, plus 13 Python console-script compatibility spellings | Switched in source; shared tests/CI evidence does not establish native acceptance or deployment |
 | `desktop workspace` | C# `rig desktop workspace` (restore, audit, status, validation, features, export, wire, align, name-desktops, guard and the per-entry commands) | CLI and native adapters switched in #243; the Python Typer workspace group and its `cli_align`/`cli_apps`/`cli_machine`/`align`/`display_guard_windows` modules retired. `align` is C#. Windows desktop acceptance remains the `WIN-DESKTOP` procedure |
 | `runtime`, `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
-| `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand`, `Rig.Web.TriageRoutes` and `Rig.Core.ReviewQueue.AgentSignals` | CLI, web inbox and agent-signal consumers switched; Python CLI, six platform fallback routes, `rig.triage.web` and `rig.triage.agents` retired. `src/rig/triage` keeps only the models and store the browser tests seed, with no production caller |
+| `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand`, `Rig.Web.TriageRoutes` and `Rig.Core.ReviewQueue.AgentSignals` | CLI, web inbox and agent-signal consumers switched; Python CLI, six platform fallback routes, `rig.triage.web` and `rig.triage.agents` retired. The remaining `src/rig/triage` models, store, service, GitHub and Markdown modules and their tests are retired too; the browser tests seed the C# inbox through `tests/triage_seed.py`, and no Python triage module has a production caller |
 | `c4` | C# `Rig.Cli.C4.C4Command` over `Rig.Core.C4` | CLI, checks, composition, derivation and the Roslyn call-graph reader switched; the Python CLI, derive scanner and 21 registrations retired. The `rig.c4_okf` web viewer and the bundle reader it mounts stay explicitly owned until that route is switched |
 | `jobs` | C# status/last/log/run/install/uninstall | All legacy spellings dispatch whole-line to C#; #209 owns runtime progression and Windows acceptance |
 | `runtime` | C# status/install/rollback; Python `runtime.py` still serves paths and state to scheduled Python callers | Legacy spellings dispatch whole-line to C#; `runtime_cli` execution and `rig_shim` retired. `runtime.py` stays for jobs/chrome path and state consumers; #227 owns native acceptance |
@@ -191,6 +191,13 @@ scheduled Python callers that still use its path and state helpers. No real runt
 scheduled task was installed or removed for this source cutover, so native runtime installation remains
 a rollout check rather than evidence recorded here.
 
+Triage retirement validation on macOS, 2026-11-16: the full C# Release build passed with zero warnings and
+errors. `Rig.Web.Tests` passed 120/120 and `Rig.CommandOwnership.Tests` 10/10. The ownership gate against
+`origin/main` passed with 398 inspected surfaces, zero overlaps and zero violations. The remaining `src/rig/triage`
+modules and their GitHub/Markdown/queue tests are deleted; the browser suite passed 21/21 against the C# host with
+its seed builders moved to `tests/triage_seed.py`. Ruff, basedpyright, `ty`, import contracts and the ratchet
+passed. No installed runtime, task or LaunchAgent was changed.
+
 Desktop workspace cutover validation on macOS, 2026-11-15: the full C# Release build and solution test run
 passed, and the ownership gate against `origin/main` passed with **423 inspected surfaces**, zero overlaps and
 zero violations. The Python Typer `workspace` group, its five command modules and the align-port adapter were
@@ -230,7 +237,7 @@ and `ROLLOUT` rows above stay open until that evidence is recorded.
 
 _State after #217:_ the overlap baseline is empty, but this is an overlap-only slice, not port completion:
 main still has core Python files and dozens of Python-owned registrations, and routes still have callers
-(`triage`, `jobs install`, and the remaining web children). The ledger and this
+(`jobs install` and the remaining web children). The ledger and this
 gate stay in place until the source migration, native acceptance and rollout criteria above are met.
 
 This cross-language inventory is temporary migration machinery. Close it down in the final #85 cutover PR

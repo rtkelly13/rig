@@ -98,10 +98,11 @@ The browser talks to the C# host, as it does in production. `tests/rig_web_host.
 built C# `rig web` on port 0 in front of the in-process `StudioServer`
 (`RIG_WEB_PYTHON_ROUTES` names it, so the host starts no Python child), from a temp checkout that
 holds a copy of the frontend; a test that draws the estate graph lays out a registry there and
-git checkouts under the temp `CODE_ROOT` beside it (`rig_web_host.estate`). The triage tests seed the shared database the C# route
-reads; `tests/test_web_ops_spa.py` supplies the C# ops answers with Playwright routes and fakes only the
-jobs coordinator, which is still Python. CI builds the CLI before pytest and passes it in
-`RIG_CLI_DLL`; locally the first test to need it builds it into `temp/rig-web-tests/`.
+git checkouts under the temp `CODE_ROOT` beside it (`rig_web_host.estate`). The triage tests seed the
+shared database the C# route reads through `tests/triage_seed.py`; `tests/test_web_ops_spa.py` supplies
+the C# ops answers with Playwright routes and fakes only the jobs coordinator, which is still Python.
+CI builds the CLI before pytest and passes it in `RIG_CLI_DLL`; locally the first test to need it
+builds it into `temp/rig-web-tests/`.
 
 ## Why not import the feature into the server
 

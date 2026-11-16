@@ -15,11 +15,10 @@ import pytest
 from playwright.sync_api import Page, expect, sync_playwright
 
 from rig.sqlite import default_db_path
-from rig.triage import store
-from rig.triage.facts import Check, Facts, Related, Stack, StackMember
-from rig.triage.models import Activity, Interaction, Item
 from rig.web_host.server import StudioServer
 from tests import rig_web_host
+from tests import triage_seed as store
+from tests.triage_seed import Activity, Check, Facts, Interaction, Item, Related, Stack, StackMember
 
 pytestmark = pytest.mark.ci
 

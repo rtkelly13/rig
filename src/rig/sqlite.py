@@ -2,8 +2,8 @@
 
 ``Rig.Core.Storage.RigDatabase`` owns the schema, its numbered migrations and every maintenance command
 (``rig tools db status|migrate|backup``). The Python CLI no longer exposes database commands; this module exists only so
-the triage inbox, feature flags and the web child's ``StudioServer`` can open the same file until their last slices move
-to C#. Do not add new schema or commands here.
+feature flags and the web child's ``StudioServer`` can open the same file until their last slices move to C#. Do not add
+new schema or commands here.
 """
 
 from __future__ import annotations

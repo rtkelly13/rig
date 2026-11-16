@@ -544,8 +544,16 @@
     "src/desktop_manager/web_mcp.py",
     "src/rig/estate/web.py",
     "src/rig/otel_stack/web.py",
+    "src/rig/triage/__init__.py",
     "src/rig/triage/agents.py",
     "src/rig/triage/cli.py",
+    "src/rig/triage/facts.py",
+    "src/rig/triage/github.py",
+    "src/rig/triage/github_facts.py",
+    "src/rig/triage/markdown.py",
+    "src/rig/triage/models.py",
+    "src/rig/triage/service.py",
+    "src/rig/triage/store.py",
     "src/rig/triage/web.py",
     "src/desktop_manager/align.py",
     "src/desktop_manager/cli_align.py",
@@ -563,6 +571,8 @@
     "tests/desktop_manager/test_web_cli.py",
     "tests/desktop_manager/test_web_ensure.py",
     "tests/test_migration_numbering.py",
-    "tests/test_sqlite_database.py"
+    "tests/test_sqlite_database.py",
+    "tests/test_triage_facts.py",
+    "tests/test_triage_queue.py"
   ]
 }
