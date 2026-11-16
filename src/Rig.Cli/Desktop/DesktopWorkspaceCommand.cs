@@ -1,5 +1,6 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using Rig.Core.Desktop;
 
 namespace Rig.Cli.Desktop;
@@ -9,6 +10,7 @@ namespace Rig.Cli.Desktop;
 /// which no longer exists in the Python CLI (issue #243).
 /// </summary>
 /// <param name="host">Where it looks and writes.</param>
+[ExcludeFromCodeCoverage(Justification = "Desktop workspace commands require a live Windows desktop environment.")]
 internal sealed partial class DesktopWorkspaceCommand(DesktopHost host)
 {
     /// <summary>The group's name under <c>desktop</c>.</summary>

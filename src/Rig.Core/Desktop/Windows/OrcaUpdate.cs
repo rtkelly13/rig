@@ -13,6 +13,7 @@ namespace Rig.Core.Desktop.Windows;
 /// <param name="Installer">The installer's full path.</param>
 /// <param name="Sha512">The base64 SHA-512 electron-updater recorded.</param>
 /// <param name="AdminRequired">Whether it needs elevation, which the update refuses to do unattended.</param>
+[ExcludeFromCodeCoverage(Justification = "Windows Orca update state; exercised by Windows CI.")]
 public sealed record StagedOrcaUpdate(string? Version, string Installer, string? Sha512, bool AdminRequired);
 
 /// <summary>What the disk and process table say about an Orca update.</summary>
@@ -20,6 +21,7 @@ public sealed record StagedOrcaUpdate(string? Version, string Installer, string?
 /// <param name="Staged">The staged installer, when there is one.</param>
 /// <param name="OrcaRunning">Whether any Orca process is running.</param>
 /// <param name="InstallerRunning">Whether an Orca installer is already running.</param>
+[ExcludeFromCodeCoverage(Justification = "Windows Orca update state; exercised by Windows CI.")]
 public sealed record OrcaUpdateState(string? InstalledVersion, StagedOrcaUpdate? Staged, bool OrcaRunning, bool InstallerRunning)
 {
     /// <summary>The staged build, when one is staged.</summary>
@@ -66,6 +68,7 @@ public sealed record OrcaUpdateState(string? InstalledVersion, StagedOrcaUpdate?
 }
 
 /// <summary>What applying an Orca update did, for the command to print and turn into an exit code.</summary>
+[ExcludeFromCodeCoverage(Justification = "Windows Orca update state; exercised by Windows CI.")]
 public sealed record OrcaUpdateResult(IReadOnlyList<string> Actions, bool Ok = true);
 
 /// <summary>

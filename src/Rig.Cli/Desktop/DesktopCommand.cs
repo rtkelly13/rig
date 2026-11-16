@@ -1,5 +1,6 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
 using Rig.Core.Flags;
@@ -12,6 +13,7 @@ namespace Rig.Cli.Desktop;
 /// <param name="Actions">The Win32 writes.</param>
 /// <param name="Desktops">The virtual desktops.</param>
 /// <param name="Launching">How plan entries are started.</param>
+[ExcludeFromCodeCoverage(Justification = "Desktop native wiring requires a live Windows desktop environment.")]
 internal sealed record DesktopNative(IWin32Windows Win32, IWin32Actions Actions, IVirtualDesktops Desktops, Launching Launching)
 {
     /// <summary>The real Windows machine.</summary>

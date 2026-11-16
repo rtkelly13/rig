@@ -67,6 +67,17 @@ public sealed class AlignTests
         Assert.Equal(AlignOutcome.InPlace, decision.Outcome);
         Assert.False(decision.MoveDesktop);
         Assert.False(decision.MovePlacement);
+
+        // Window with inferred=null but matching Bounds
+        var matchBounds = new EntryMatch(1, Desktop("Work", entry), entry, Window(2, "Notes", "notes.exe", 1, placement: null, bounds: Left));
+        var decBounds = Align.Decide(matchBounds, Context());
+        Assert.Equal(AlignOutcome.InPlace, decBounds.Outcome);
+
+        // Window with inferred=null and differing Bounds
+        var matchDiffBounds = new EntryMatch(1, Desktop("Work", entry), entry, Window(3, "Notes", "notes.exe", 1, placement: null, bounds: new Rect(5000, 5000, 10, 10)));
+        var decDiffBounds = Align.Decide(matchDiffBounds, Context());
+        Assert.Equal(AlignOutcome.Move, decDiffBounds.Outcome);
+        Assert.True(decDiffBounds.MovePlacement);
     }
 
     [Fact]
@@ -186,6 +197,287 @@ public sealed class AlignTests
             Align.SummaryLine(report, dryRun: false));
     }
 
+    [Fact]
+    public void AlignDecision_Describe_covers_all_outcomes_and_reasons()
+    {
+        var entry = Entry("Notes", "notes.exe", LeftPlacement, "Notes");
+        var win = Window(1, "Notes", "notes.exe", 2, LeftPlacement);
+
+        var d1 = new AlignDecision(1, "Work", entry, win, AlignOutcome.Moved)
+        {
+            MoveDesktop = true,
+            MovePlacement = true,
+            Detail = "ok",
+        };
+        Assert.Contains("moved: Work/Notes", d1.Describe(), StringComparison.Ordinal);
+        Assert.Contains("desktop 2 -> 1", d1.Describe(), StringComparison.Ordinal);
+
+        var d2 = new AlignDecision(1, "Work", entry, win, AlignOutcome.Skipped)
+        {
+            SkipReason = SkipReason.Maximized,
+        };
+        Assert.Contains("maximized", d2.Describe(), StringComparison.Ordinal);
+
+        var d3 = new AlignDecision(1, "Work", entry, null, AlignOutcome.Skipped)
+        {
+            SkipReason = SkipReason.NoDesktop,
+        };
+        Assert.Contains("desktop not present", d3.Describe(), StringComparison.Ordinal);
+
+        var d4 = new AlignDecision(1, "Work", entry, null, AlignOutcome.Skipped)
+        {
+            SkipReason = SkipReason.Closed,
+        };
+        Assert.Contains("closed", d4.Describe(), StringComparison.Ordinal);
+
+        Assert.Equal("to move", AlignDecision.Wire(AlignOutcome.Move));
+        Assert.Equal("in place", AlignDecision.Wire(AlignOutcome.InPlace));
+        Assert.Equal("missing", AlignDecision.Wire(AlignOutcome.Missing));
+        Assert.Equal("failed", AlignDecision.Wire(AlignOutcome.Failed));
+        Assert.Equal("minimized", AlignDecision.Wire(SkipReason.Minimized));
+        Assert.Equal("foreground", AlignDecision.Wire(SkipReason.Foreground));
+    }
+
+    [Fact]
+    public void Run_with_dry_run_and_desktop_reconciliation()
+    {
+        var plan = new WorkspacePlan
+        {
+            Desktops = [new("Work"), new("Personal")],
+            RetiredDesktopNames = ["OldDesktop"],
+        };
+        var ports = new FakePorts(plan, []) { Names = ["Work", "OldDesktop"] };
+
+        var report = Align.Run(plan, ports, NoSubs, dryRun: true, reconcileDesktops: true);
+        Assert.NotNull(report.DesktopReconciliation);
+        Assert.True(report.DesktopReconciliation.DryRun);
+    }
+
+    [Fact]
+    public void Run_filters_by_target_desktop()
+    {
+        var notes = Entry("Notes", "notes.exe", LeftPlacement, "Notes");
+        var plan = Plan(Desktop("Work", notes), Desktop("Personal", Entry("PersonalNotes", "notes.exe", RightPlacement)));
+        var ports = new FakePorts(plan, [Window(1, "Notes", "notes.exe", 1, LeftPlacement)]);
+
+        var report = Align.Run(plan, ports, NoSubs, targetDesktop: "Work");
+        Assert.Single(report.Decisions);
+        Assert.Equal("Work", report.Decisions[0].DesktopName);
+    }
+
+    [Fact]
+    public void Run_applies_desktop_reconciliation_live()
+    {
+        var plan = new WorkspacePlan
+        {
+            Desktops = [new("Work"), new("Personal"), new("Ops")],
+            RetiredDesktopNames = ["OldDesktop"],
+        };
+        var ports = new FakePorts(plan, [])
+        {
+            Names = ["OldDesktop", "OriginalWork"],
+            RenameFunc = (index, name) => index != 2, // fail rename for index 2
+        };
+
+        var logs = new List<string>();
+        var report = Align.Run(plan, ports, NoSubs, dryRun: false, reconcileDesktops: true, log: logs.Add);
+
+        Assert.NotNull(report.DesktopReconciliation);
+        Assert.False(report.DesktopReconciliation.DryRun);
+        Assert.Single(report.DesktopReconciliation.Retired);
+        Assert.Contains("OldDesktop", report.DesktopReconciliation.Retired);
+        Assert.Single(report.DesktopReconciliation.FailedRenames);
+        Assert.NotEmpty(logs);
+    }
+
+    [Fact]
+    public void Run_applies_decisions_live_moving_and_placing_windows()
+    {
+        var notes = Entry("Notes", "notes.exe", LeftPlacement, "Notes");
+        var plan = Plan(Desktop("Work", notes));
+        var ports = new FakePorts(plan, [Window(1, "Notes", "notes.exe", 2, RightPlacement)]);
+
+        var report = Align.Run(plan, ports, NoSubs, dryRun: false);
+
+        Assert.Single(report.Decisions);
+        Assert.Equal(AlignOutcome.Moved, report.Decisions[0].Outcome);
+        Assert.Contains(1L, ports.Moved);
+        Assert.Single(ports.Placed);
+        Assert.True(ports.View);
+    }
+
+    [Fact]
+    public void Apply_decision_skips_when_window_is_closed()
+    {
+        var notes = Entry("Notes", "notes.exe", LeftPlacement, "Notes");
+        var plan = Plan(Desktop("Work", notes));
+        var ports = new FakePorts(plan, [Window(1, "Notes", "notes.exe", 2, RightPlacement)])
+        {
+            IsWindowFunc = _ => false,
+        };
+
+        var report = Align.Run(plan, ports, NoSubs, dryRun: false);
+
+        Assert.Single(report.Decisions);
+        Assert.Equal(AlignOutcome.Skipped, report.Decisions[0].Outcome);
+        Assert.Equal(SkipReason.Closed, report.Decisions[0].SkipReason);
+    }
+
+    [Fact]
+    public void Apply_decision_skips_when_window_is_in_foreground()
+    {
+        var notes = Entry("Notes", "notes.exe", LeftPlacement, "Notes");
+        var plan = Plan(Desktop("Work", notes));
+        var ports = new FakePorts(plan, [Window(1, "Notes", "notes.exe", 2, RightPlacement)])
+        {
+            ForegroundHwndFunc = () => 1L,
+        };
+
+        var report = Align.Run(plan, ports, NoSubs, dryRun: false);
+
+        Assert.Single(report.Decisions);
+        Assert.Equal(AlignOutcome.Skipped, report.Decisions[0].Outcome);
+        Assert.Equal(SkipReason.Foreground, report.Decisions[0].SkipReason);
+    }
+
+    [Theory]
+    [InlineData(ShowState.Minimized, SkipReason.Minimized)]
+    [InlineData(ShowState.Maximized, SkipReason.Maximized)]
+    public void Apply_decision_skips_when_window_is_minimized_or_maximized(ShowState state, SkipReason reason)
+    {
+        var notes = Entry("Notes", "notes.exe", LeftPlacement, "Notes");
+        var plan = Plan(Desktop("Work", notes));
+        var ports = new FakePorts(plan, [Window(1, "Notes", "notes.exe", 2, RightPlacement)])
+        {
+            ShowStateFunc = _ => state,
+        };
+
+        var report = Align.Run(plan, ports, NoSubs, dryRun: false);
+
+        Assert.Single(report.Decisions);
+        Assert.Equal(AlignOutcome.Skipped, report.Decisions[0].Outcome);
+        Assert.Equal(reason, report.Decisions[0].SkipReason);
+    }
+
+    [Fact]
+    public void Apply_decision_reports_failed_when_move_or_place_fails()
+    {
+        var notes = Entry("Notes", "notes.exe", LeftPlacement, "Notes");
+        var plan = Plan(Desktop("Work", notes));
+
+        // Test desktop move failure
+        var moveFailPorts = new FakePorts(plan, [Window(1, "Notes", "notes.exe", 2, RightPlacement)])
+        {
+            MoveToDesktopFunc = (_, _) => "Desktop move rejected",
+        };
+        var r1 = Align.Run(plan, moveFailPorts, NoSubs, dryRun: false);
+        Assert.Equal(AlignOutcome.Failed, r1.Decisions[0].Outcome);
+        Assert.Equal("Desktop move rejected", r1.Decisions[0].Detail);
+
+        // Test placement failure
+        var placeFailPorts = new FakePorts(plan, [Window(2, "Notes", "notes.exe", 1, RightPlacement)])
+        {
+            PlaceFunc = (_, _) => "Placement failed",
+        };
+        var r2 = Align.Run(plan, placeFailPorts, NoSubs, dryRun: false);
+        Assert.Equal(AlignOutcome.Failed, r2.Decisions[0].Outcome);
+        Assert.Equal("Placement failed", r2.Decisions[0].Detail);
+    }
+
+    [Fact]
+    public void Describe_formats_dry_run_and_live_reports_with_full_reconciliation()
+    {
+        var entry = Entry("Notes", "notes.exe", LeftPlacement);
+        var moveDecision = new AlignDecision(1, "Work", entry, Window(1, "Notes", "notes.exe", 2), AlignOutcome.Move);
+        var inPlaceDecision = new AlignDecision(1, "Work", entry, Window(2, "Notes", "notes.exe", 1), AlignOutcome.InPlace);
+
+        var dryReconPlan = new DesktopReconciliationPlan(["Ops", "Dev"], ["OldDev", "StaleDesktop"])
+        {
+            ToCreate = [new(3, "Ops")],
+            ToRename = [new(2, "OldDev", "Dev")],
+            ToRetire = ["StaleDesktop"],
+        };
+        var dryReport = new AlignReport([moveDecision, inPlaceDecision])
+        {
+            DesktopReconciliation = new(dryReconPlan) { DryRun = true },
+        };
+        var dryDesc = Align.SummaryLine(dryReport, dryRun: true);
+        Assert.Contains("align (dry run)", dryDesc, StringComparison.Ordinal);
+        Assert.Contains("1 to retire", dryDesc, StringComparison.Ordinal);
+        Assert.Contains("1 to create", dryDesc, StringComparison.Ordinal);
+        Assert.Contains("1 to rename", dryDesc, StringComparison.Ordinal);
+        Assert.Contains("1 to move", dryDesc, StringComparison.Ordinal);
+        Assert.Contains("1 in place", dryDesc, StringComparison.Ordinal);
+
+        var liveMoved = new AlignDecision(1, "Work", entry, Window(1, "Notes", "notes.exe", 1), AlignOutcome.Moved);
+        var liveRecon = new DesktopReconciliationResult(dryReconPlan)
+        {
+            Retired = ["StaleDesktop"],
+            Created = [new(3, "Ops")],
+            Renamed = [new(2, "OldDev", "Dev", true, null)],
+        };
+        var liveReport = new AlignReport([liveMoved, inPlaceDecision])
+        {
+            DesktopReconciliation = liveRecon,
+        };
+        var liveDesc = Align.SummaryLine(liveReport, dryRun: false);
+        Assert.Contains("align: desktops:", liveDesc, StringComparison.Ordinal);
+        Assert.Contains("1 retired", liveDesc, StringComparison.Ordinal);
+        Assert.Contains("1 created", liveDesc, StringComparison.Ordinal);
+        Assert.Contains("1 renamed", liveDesc, StringComparison.Ordinal);
+        Assert.Contains("1 moved", liveDesc, StringComparison.Ordinal);
+
+        var blockedReport = new AlignReport([]) { Blocked = "Desktop count mismatch" };
+        Assert.Equal("align: skipped (Desktop count mismatch)", Align.SummaryLine(blockedReport, dryRun: false));
+    }
+
+    [Fact]
+    public void Terminal_entry_matches_only_when_window_title_matches()
+    {
+        var termEntry = new LaunchEntry("Shell")
+        {
+            Type = LaunchEntry.Terminal,
+            WindowTitle = "rig-terminal",
+            WindowProcessName = "windowsterminal.exe",
+            Placement = LeftPlacement,
+        };
+        var plan = Plan(Desktop("Work"), Desktop("Admin", termEntry));
+
+        // Matching window title can pull across desktops
+        var matchWin = Window(1, "rig-terminal - session", "windowsterminal.exe", 1, LeftPlacement);
+        var m1 = Align.MatchPlanWindows(plan, [matchWin], NoSubs);
+        Assert.NotNull(m1[0].Window);
+
+        // Non-matching window title cannot pull terminal across desktops
+        var otherWin = Window(2, "other-terminal", "windowsterminal.exe", 1, LeftPlacement);
+        var m2 = Align.MatchPlanWindows(plan, [otherWin], NoSubs);
+        Assert.Null(m2[0].Window);
+
+        // Terminal with empty WindowTitle never matches across desktops
+        var emptyTitleTerm = new LaunchEntry("Shell")
+        {
+            Type = LaunchEntry.Terminal,
+            WindowTitle = "",
+            WindowProcessName = "windowsterminal.exe",
+        };
+        var m3 = Align.MatchPlanWindows(Plan(Desktop("Work"), Desktop("Admin", emptyTitleTerm)), [matchWin], NoSubs);
+        Assert.Null(m3[0].Window);
+    }
+
+    [Fact]
+    public void Desktop_name_mismatch_blocks_live_align_when_reconcile_disabled()
+    {
+        var plan = new WorkspacePlan
+        {
+            Desktops = [new("ExpectedWork"), new("ExpectedAdmin")],
+        };
+        var ports = new FakePorts(plan, []) { Names = ["DifferentName1", "DifferentName2"] };
+
+        var report = Align.Run(plan, ports, NoSubs, dryRun: false, reconcileDesktops: false);
+        Assert.NotNull(report.Blocked);
+        Assert.Contains("run workspace restore", report.Blocked, StringComparison.Ordinal);
+    }
+
     private static AlignContext Context(
         int desktopCount = 2,
         IReadOnlyDictionary<long, ShowState>? states = null,
@@ -214,34 +506,46 @@ public sealed class AlignTests
 
         public bool View { get; private set; }
 
+        public Func<long, bool>? IsWindowFunc { get; set; }
+
+        public Func<long?>? ForegroundHwndFunc { get; set; }
+
+        public Func<long, ShowState>? ShowStateFunc { get; set; }
+
+        public Func<long, int, string?>? MoveToDesktopFunc { get; set; }
+
+        public Func<long, Rect, string?>? PlaceFunc { get; set; }
+
+        public Func<int, string, bool>? RenameFunc { get; set; }
+
         public IReadOnlyList<string> DesktopNames() => Names;
 
         public int DesktopCount() => Names.Count;
 
         public int? CurrentDesktop() => 1;
 
-        public long? ForegroundHwnd() => null;
+        public long? ForegroundHwnd() => ForegroundHwndFunc != null ? ForegroundHwndFunc() : null;
 
         public long? ConsoleHwnd() => null;
 
         public IReadOnlyList<LiveWindow> Inventory(IReadOnlySet<long> excluded) => [.. Windows.Where(window => !excluded.Contains(window.Handle))];
 
-        public ShowState ShowState(long hwnd) => Rig.Core.Desktop.ShowState.Normal;
+        public ShowState ShowState(long hwnd) => ShowStateFunc != null ? ShowStateFunc(hwnd) : Rig.Core.Desktop.ShowState.Normal;
 
         public Rect TargetRect(PlacementSpec placement) => placement.Layout.Slot == 1 ? Left : Right;
 
-        public bool IsWindow(long hwnd) => Windows.Any(window => window.Handle == hwnd);
+        public bool IsWindow(long hwnd) => IsWindowFunc != null ? IsWindowFunc(hwnd) : Windows.Any(window => window.Handle == hwnd);
 
         public string? MoveToDesktop(long hwnd, int desktopIndex)
         {
             Moved.Add(hwnd);
-            return null;
+            return MoveToDesktopFunc != null ? MoveToDesktopFunc(hwnd, desktopIndex) : null;
         }
 
         public string? Place(long hwnd, Rect rect)
         {
             Placed.Add(new PlacementSpec(1, new("halves", rect.Left == Left.Left ? 1 : 2, "vertical")));
-            return null;
+            return PlaceFunc != null ? PlaceFunc(hwnd, rect) : null;
         }
 
         public bool RestoreView(int? desktop, long? foreground, IReadOnlySet<long> movedHwnds)
@@ -260,6 +564,16 @@ public sealed class AlignTests
 
         public bool RenameDesktop(int desktopIndex, string name)
         {
+            if (RenameFunc != null)
+            {
+                var ok = RenameFunc(desktopIndex, name);
+                if (ok)
+                {
+                    Names[desktopIndex - 1] = name;
+                }
+                return ok;
+            }
+
             Names[desktopIndex - 1] = name;
             return true;
         }

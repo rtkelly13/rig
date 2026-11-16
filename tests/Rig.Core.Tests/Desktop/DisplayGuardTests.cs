@@ -226,6 +226,62 @@ public sealed class DisplayGuardTests
         Assert.False(DisplayGuardLocks.IsHeld(Path.Join(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.lock")));
     }
 
+    [Fact]
+    public void Recovery_passes_execute_until_depleted()
+    {
+        var machine = new FakeMachine { Windows = { [1] = Record(1, LeftHalf) } };
+        // Use default settings with RecoveryPasses = 2, RecoveryPassIntervalSeconds = 3.0
+        var guard = new DisplayGuard(machine, new DisplayGuardSettings { SettleSeconds = 2.0, RecoveryPassIntervalSeconds = 3.0 });
+        Run(guard, machine, 5); // initial settle and snapshot
+
+        // Drop out monitor and park window
+        machine.Signature = Dropped;
+        machine.Park(1);
+        Run(guard, machine, 3);
+
+        // Monitor returns
+        machine.Signature = AllThree;
+        Run(guard, machine, 3); // Settles and triggers initial recovery
+
+        // First recovery pass
+        machine.Clock += 3.5;
+        guard.Step();
+
+        // Second recovery pass
+        machine.Clock += 3.5;
+        guard.Step();
+
+        // Passes depleted, returns to watching
+        machine.Clock += 3.5;
+        guard.Step();
+        Assert.Equal(GuardPhase.Watching, guard.Phase);
+    }
+
+    [Fact]
+    public void MonitorBounds_and_GuardMonitor_equality()
+    {
+        var bounds = new MonitorBounds(0, 0, 1920, 1080);
+        Assert.Equal(1920, bounds.Width);
+        Assert.Equal(1080, bounds.Height);
+
+        var m1 = new GuardMonitor("DISPLAY1", bounds, true);
+        var m2 = new GuardMonitor("DISPLAY2", bounds, true);
+        var m3 = new GuardMonitor("DISPLAY1", bounds, false);
+
+        Assert.True(m1.Equals(m2));
+        Assert.False(m1.Equals(m3));
+        Assert.Equal(m1.GetHashCode(), m2.GetHashCode());
+
+        var s1 = new MonitorSignature([m1]);
+        var s2 = new MonitorSignature([m2]);
+        var s3 = new MonitorSignature([m3]);
+
+        Assert.True(s1.Equals(s2));
+        Assert.False(s1.Equals(s3));
+        Assert.False(s1.Equals("not-a-sig"));
+        Assert.Equal(s1.GetHashCode(), s2.GetHashCode());
+    }
+
     private sealed class FakeMachine : IDisplayGuardPorts
     {
         public MonitorSignature Signature { get; set; } = AllThree;

@@ -243,6 +243,92 @@ public sealed class GitHubFluentApiTests
     }
 
     [Fact]
+    public async Task GitHubFunctions_reads_text_directly()
+    {
+        var fake = new FakeGitHub().On("GET", "repos/owner/repo/raw", "plain text content");
+        var spec = new RestRequestSpec("GET", "repos/owner/repo/raw");
+
+        var text = await GitHubFunctions.ReadTextAsync(fake, spec, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal("plain text content", text);
+    }
+
+    [Fact]
+    public async Task GitHubFunctions_reads_optional_json()
+    {
+        var spec = new RestRequestSpec("GET", "repos/owner/repo/widget");
+
+        // Success
+        var fakeSuccess = new FakeGitHub().On("GET", "repos/owner/repo/widget", "{\"name\":\"direct\",\"count\":7}");
+        var widget = await GitHubFunctions.ReadOptionalJsonAsync<Widget>(fakeSuccess, spec, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(widget);
+        Assert.Equal("direct", widget.Name);
+
+        // 404 returns null
+        var fake404 = new FakeGitHub().Fail("GET", "repos/owner/repo/widget", 404);
+        var notFound = await GitHubFunctions.ReadOptionalJsonAsync<Widget>(fake404, spec, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Null(notFound);
+
+        // 500 throws
+        var fake500 = new FakeGitHub().Fail("GET", "repos/owner/repo/widget", 500);
+        await Assert.ThrowsAsync<GitHubApiException>(() =>
+            GitHubFunctions.ReadOptionalJsonAsync<Widget>(fake500, spec, cancellationToken: TestContext.Current.CancellationToken));
+
+        // Malformed JSON throws
+        var fakeBad = new FakeGitHub().On("GET", "repos/owner/repo/widget", "invalid-json");
+        await Assert.ThrowsAsync<GitHubApiException>(() =>
+            GitHubFunctions.ReadOptionalJsonAsync<Widget>(fakeBad, spec, cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task GitHubFunctions_reads_json_node_and_optional_json_node()
+    {
+        var spec = new RestRequestSpec("GET", "repos/owner/repo/data");
+
+        // ReadJsonNodeAsync success and failure
+        var fake = new FakeGitHub().On("GET", "repos/owner/repo/data", "{\"key\":\"value\"}");
+        var node = await GitHubFunctions.ReadJsonNodeAsync(fake, spec, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal("value", node["key"]?.GetValue<string>());
+
+        var fakeBad = new FakeGitHub().On("GET", "repos/owner/repo/data", "not-json");
+        await Assert.ThrowsAsync<GitHubApiException>(() =>
+            GitHubFunctions.ReadJsonNodeAsync(fakeBad, spec, cancellationToken: TestContext.Current.CancellationToken));
+
+        // ReadOptionalJsonNodeAsync success, 404, 500, bad json
+        var optSuccess = await GitHubFunctions.ReadOptionalJsonNodeAsync(fake, spec, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(optSuccess);
+        Assert.Equal("value", optSuccess["key"]?.GetValue<string>());
+
+        var fake404 = new FakeGitHub().Fail("GET", "repos/owner/repo/data", 404);
+        var opt404 = await GitHubFunctions.ReadOptionalJsonNodeAsync(fake404, spec, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Null(opt404);
+
+        var fake500 = new FakeGitHub().Fail("GET", "repos/owner/repo/data", 500);
+        await Assert.ThrowsAsync<GitHubApiException>(() =>
+            GitHubFunctions.ReadOptionalJsonNodeAsync(fake500, spec, cancellationToken: TestContext.Current.CancellationToken));
+
+        await Assert.ThrowsAsync<GitHubApiException>(() =>
+            GitHubFunctions.ReadOptionalJsonNodeAsync(fakeBad, spec, cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task GitHubFunctions_send_async_and_ensure_success_with_api_request()
+    {
+        var fake = new FakeGitHub().On("POST", "repos/owner/repo/action", "{\"ok\":true}");
+        var req = new ApiRequest("POST", "repos/owner/repo/action");
+
+        var ran = await GitHubFunctions.SendAsync(fake, req, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.True(ran.Ok);
+
+        var success = await GitHubFunctions.EnsureSuccessAsync(fake, req, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.True(success.Ok);
+
+        var failFake = new FakeGitHub().Fail("POST", "repos/owner/repo/action", 500);
+        await Assert.ThrowsAsync<GitHubApiException>(() =>
+            GitHubFunctions.EnsureSuccessAsync(failFake, req, cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task GitHubFunctions_executes_graphql_directly()
     {
         var fake = new FakeGitHub().On("POST", "graphql", "{\"data\":{\"name\":\"repo-direct\"}}");
@@ -252,5 +338,16 @@ public sealed class GitHubFluentApiTests
 
         Assert.NotNull(result);
         Assert.Equal("repo-direct", result["name"]?.GetValue<string>());
+
+        // Test overload with query string and variables
+        var result2 = await GitHubFunctions.ExecuteGraphQLAsync<JsonNode>(fake, "query { test }", new Dictionary<string, object?> { ["var"] = 1 }, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(result2);
+
+        // Test optional overload with query string and variables
+        var optResult = await GitHubFunctions.ExecuteGraphQLOptionalAsync<JsonNode>(fake, "query { test }", new Dictionary<string, object?> { ["var"] = 1 }, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(optResult);
+
+        var optSpecResult = await GitHubFunctions.ExecuteGraphQLOptionalAsync<JsonNode>(fake, spec, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(optSpecResult);
     }
 }

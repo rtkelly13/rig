@@ -72,6 +72,14 @@ public sealed class DesktopCommandTests : IDisposable
         Assert.Equal(1, await Run("status"));
         Assert.Equal(1, await Run("audit"));
         Assert.Equal(1, await Run("align"));
+        Assert.Equal(1, await Run("detect-app"));
+        Assert.Equal(1, await Run("name-desktops"));
+        Assert.Equal(1, await Run("guard"));
+        Assert.Equal(1, await Run("wire-machine"));
+        Assert.Equal(1, await Run("export-plan"));
+        Assert.Equal(1, await Run("test-item", "--name", "x"));
+        Assert.Equal(1, await Run("restart-app", "--name", "x"));
+        Assert.Equal(1, await Run("update-orca"));
         Assert.All(
             _out.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries),
             line => Assert.Contains("requires Windows.", line, StringComparison.Ordinal));
