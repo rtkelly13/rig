@@ -214,6 +214,9 @@ public sealed class JobsRoutesTests : IAsyncLifetime
     [Theory]
     [InlineData("{\"job\": \"nope\"}", "application/json", null, HttpStatusCode.NotFound)]
     [InlineData("not json", "application/json", null, HttpStatusCode.BadRequest)]
+    [InlineData(" ", "application/json", null, HttpStatusCode.BadRequest)]
+    [InlineData("null", "application/json", null, HttpStatusCode.BadRequest)]
+    [InlineData("{\"job\": \"\"}", "application/json", null, HttpStatusCode.BadRequest)]
     [InlineData("{\"job\": \"align\"}", "text/plain", null, HttpStatusCode.BadRequest)]
     public async Task Run_now_refuses_invalid_payloads(string body, string contentType, string? origin, HttpStatusCode expectedStatus)
     {

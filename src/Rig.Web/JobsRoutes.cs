@@ -72,9 +72,27 @@ public static class JobsRoutes
         routes.MapPost(RunPath, Handler(context => OpsJson.Run(async () =>
         {
             var body = await OpsJson.BodyAsync(context).ConfigureAwait(false);
-            var request = string.IsNullOrWhiteSpace(body) || body == "{}"
-                ? new JobRunRequest()
-                : JsonSerializer.Deserialize<JobRunRequest>(body, OpsJson.Boundary) ?? new JobRunRequest();
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return OpsJson.Error(StatusCodes.Status400BadRequest, "A JSON request body is required");
+            }
+
+            JobRunRequest request;
+            try
+            {
+                request = JsonSerializer.Deserialize<JobRunRequest>(body, OpsJson.Boundary)
+                    ?? throw new JsonException("The request body must be a JSON object");
+            }
+            catch (JsonException ex)
+            {
+                return OpsJson.Error(StatusCodes.Status400BadRequest, $"Invalid JSON request body: {ex.Message}");
+            }
+
+            if (request.Job is { Length: 0 })
+            {
+                return OpsJson.Error(StatusCodes.Status400BadRequest, "`job` must name a registered job or be null");
+            }
+
             try
             {
                 var json = await ops.StartRunAsync(request.Job).ConfigureAwait(false);
