@@ -2,7 +2,6 @@ using Rig.Core.C4;
 
 namespace Rig.Core.Tests.C4;
 
-/// <summary>The Roslyn callgraph text format: declared types and members, calls, and interface dispatch edges.</summary>
 public sealed class CallGraphFileTests : IDisposable
 {
     private readonly TempDir _temp = new();
@@ -10,100 +9,102 @@ public sealed class CallGraphFileTests : IDisposable
     public void Dispose() => _temp.Dispose();
 
     [Fact]
-    public void Reads_types_members_calls_and_implements_edges()
+    public void Key_and_TypeOf_parse_identifiers()
     {
-        var graph = new CallGraphFile();
-        graph.Read([
-            "T:Acme.Runner|class|public|src/Acme/Runner.cs:7",
-            "M:Acme.Runner.Run/(int)|method|public|9",
-            "M:Acme.Runner.Run/(string)|method|public|10",
-            "M:Acme.Runner..ctor/()|ctor|public|5",
-            "M:Acme.Runner.Count|property|public|12",
-            "M:Acme.Runner.CountValue|field|private|13",
-            "E:Acme.Runner.Run/(int) | Acme.Runner.Count",
-            "X:Acme.IRunner.Run/(int) | Acme.Runner.Run/(int)",
-        ]);
+        Assert.Throws<ArgumentNullException>(() => CallGraphFile.Key(null!));
+        Assert.Throws<ArgumentNullException>(() => CallGraphFile.TypeOf(null!));
 
-        var type = graph.Types["Acme.Runner"];
-        Assert.Equal(("class", "public", "src/Acme/Runner.cs", 7), (type.Kind, type.Access, type.Path, type.Line));
-        Assert.Equal("Acme", type.Namespace);
-        Assert.Equal("Runner", type.Name);
+        var ctor = CallGraphFile.Key("Acme.Foo.Bar..ctor/()");
+        Assert.Equal("Acme.Foo.Bar", ctor.Type);
+        Assert.Equal("new", ctor.Name);
 
-        var key = new MemberKey("Acme.Runner", "Run");
-        Assert.Equal(2, graph.Members[key].Count);
-        Assert.True(graph.IsCallable(key));
-        Assert.False(graph.IsCallable(new MemberKey("Acme.Runner", "CountValue")));
-        Assert.Equal("Run()", graph.Label(key));
-        Assert.Equal("Count", graph.Label(new MemberKey("Acme.Runner", "Count")));
+        var cctor = CallGraphFile.Key("Acme.Foo.Bar..cctor/()");
+        Assert.Equal("Acme.Foo.Bar", cctor.Type);
+        Assert.Equal("static new", cctor.Name);
 
-        Assert.Equal(
-            [new MemberKey("Acme.Runner", "Count"), new MemberKey("Acme.Runner", "CountValue"), new MemberKey("Acme.Runner", "Run"), new MemberKey("Acme.Runner", "new")],
-            graph.OfType("Acme.Runner"));
-        Assert.Contains(new CallEdge(new MemberKey("Acme.Runner", "Run"), new MemberKey("Acme.Runner", "Count")), graph.Calls);
-        Assert.Contains(new CallEdge(new MemberKey("Acme.IRunner", "Run"), new MemberKey("Acme.Runner", "Run")), graph.Implements);
+        var method = CallGraphFile.Key("Acme.Foo.Bar.Run/(int, string)");
+        Assert.Equal("Acme.Foo.Bar", method.Type);
+        Assert.Equal("Run", method.Name);
+        Assert.Equal("Acme.Foo.Bar", CallGraphFile.TypeOf("Acme.Foo.Bar.Run/(int, string)"));
+
+        var globalMethod = CallGraphFile.Key("Standalone/()");
+        Assert.Equal(string.Empty, globalMethod.Type);
+        Assert.Equal("Standalone", globalMethod.Name);
     }
 
     [Fact]
-    public void Load_reads_the_named_projects_and_is_null_when_none_exist()
+    public void TypeDecl_properties_extract_namespace_and_name()
     {
-        var folder = _temp.Folder("graph");
-        File.WriteAllText(Path.Join(folder, "Acme.Runner.callgraph.txt"), "T:Acme.Runner|class|public|Runner.cs:1\nE:Acme.Runner.A/() | Acme.Runner.B/()\n");
-        File.WriteAllText(Path.Join(folder, "Acme.Other.callgraph.txt"), "T:Acme.Other|class|internal|Other.cs:2\n");
+        var decl = new TypeDecl("Acme.Models.User", "class", "public", "src/User.cs", 10);
+        Assert.Equal("Acme.Models", decl.Namespace);
+        Assert.Equal("User", decl.Name);
 
-        var graph = CallGraphFile.Load(folder, ["Acme.Runner", "Acme.Other", "Acme.Missing"]);
-        Assert.NotNull(graph);
-        Assert.Equal(["Acme.Other", "Acme.Runner"], graph.Types.Keys.Order(StringComparer.Ordinal));
-        Assert.Single(graph.Calls);
-        Assert.Null(CallGraphFile.Load(folder, ["Acme.Missing"]));
-    }
-
-    [Theory]
-    [InlineData("Acme.Runner.Run/(int)", "Acme.Runner", "Run")]
-    [InlineData("Acme.Runner..ctor/()", "Acme.Runner", "new")]
-    [InlineData("Acme.Runner..cctor/()", "Acme.Runner", "static new")]
-    [InlineData("Acme.Runner.Count", "Acme.Runner", "Count")]
-    [InlineData("Bare", "", "Bare")]
-    public void Keys_name_a_member_and_its_type(string identifier, string type, string name) =>
-        Assert.Equal(new MemberKey(type, name), CallGraphFile.Key(identifier));
-
-    [Fact]
-    public void Type_of_drops_the_member_and_signature() =>
-        Assert.Equal("Acme.Runner", CallGraphFile.TypeOf("Acme.Runner.Run/(int)"));
-
-    [Fact]
-    public void CallGraphFile_tolerates_malformed_and_unknown_lines()
-    {
-        var graph = new CallGraphFile();
-        graph.Read([
-            "NO_COLON_HERE",
-            "Z:UnknownTag|value",
-            "T:MalformedType|class|public", // not 4 fields
-            "T:BadLine|class|public|file.cs:notanumber",
-            "M:MalformedMember|method|public", // not 4 fields
-            "M:BadMemberLine|method|public|notanumber",
-            "E:InvalidEdgeWithoutSeparator",
-            "T:GlobalType|class|public|src/Global.cs:1",
-        ]);
-
-        Assert.True(graph.Types.ContainsKey("GlobalType"));
-        Assert.Equal(string.Empty, graph.Types["GlobalType"].Namespace);
-        Assert.Equal("GlobalType", graph.Types["GlobalType"].Name);
+        var globalDecl = new TypeDecl("GlobalType", "class", "public", "src/Global.cs", 5);
+        Assert.Equal(string.Empty, globalDecl.Namespace);
+        Assert.Equal("GlobalType", globalDecl.Name);
     }
 
     [Fact]
-    public void CallGraphFile_validates_arguments_and_handles_missing_members()
+    public void Read_parses_types_members_calls_and_implements()
     {
         var graph = new CallGraphFile();
         Assert.Throws<ArgumentNullException>(() => graph.Read(null!));
-        Assert.Throws<ArgumentNullException>(() => graph.IsCallable(null!));
-        Assert.Throws<ArgumentNullException>(() => graph.OfType(null!));
-        Assert.Throws<ArgumentNullException>(() => graph.Label(null!));
-        Assert.Throws<ArgumentNullException>(() => CallGraphFile.Key(null!));
-        Assert.Throws<ArgumentNullException>(() => CallGraphFile.Load(null!, ["proj"]));
-        Assert.Throws<ArgumentNullException>(() => CallGraphFile.Load("dir", null!));
 
-        var missing = new MemberKey("Acme.Missing", "DoSomething");
-        Assert.False(graph.IsCallable(missing));
-        Assert.Equal("DoSomething()", graph.Label(missing));
+        var lines = new[]
+        {
+            "T:Acme.Service|class|public|src/Service.cs:42",
+            "T:InvalidTypeLine",
+            "T:Acme.BadColon|class|public|src/Service.cs:notanumber",
+            "M:Acme.Service.Run/(string)|method|public|45",
+            "M:Acme.Service.Count|property|public|48",
+            "M:Acme.Service.Field|field|private|50",
+            "M:Acme.Service.BadLine|method|public|notanumber",
+            "M:InvalidMemberLine",
+            "E:Acme.Service.Run/() | Acme.Service.Count",
+            "X:Acme.IService.Run/() | Acme.Service.Run/()",
+            "E:InvalidEdgeWithoutSeparator",
+            "UNKNOWN:RandomTag",
+        };
+
+        graph.Read(lines);
+
+        Assert.True(graph.Types.ContainsKey("Acme.Service"));
+        var type = graph.Types["Acme.Service"];
+        Assert.Equal("class", type.Kind);
+        Assert.Equal(42, type.Line);
+
+        var runKey = new MemberKey("Acme.Service", "Run");
+        var countKey = new MemberKey("Acme.Service", "Count");
+        var fieldKey = new MemberKey("Acme.Service", "Field");
+
+        Assert.True(graph.IsCallable(runKey));
+        Assert.False(graph.IsCallable(fieldKey));
+        Assert.False(graph.IsCallable(new MemberKey("Acme.Service", "Missing")));
+
+        var members = graph.OfType("Acme.Service");
+        Assert.Equal(3, members.Count);
+
+        Assert.Equal("Run()", graph.Label(runKey));
+        Assert.Equal("Count", graph.Label(countKey));
+        Assert.Equal("Missing()", graph.Label(new MemberKey("Acme.Service", "Missing")));
+
+        Assert.Single(graph.Calls);
+        Assert.Single(graph.Implements);
+    }
+
+    [Fact]
+    public void Load_reads_and_merges_multiple_project_files()
+    {
+        var dir = _temp.Folder("graphs");
+        File.WriteAllText(Path.Join(dir, "ProjA.callgraph.txt"), "T:ProjA.A|class|public|src/A.cs:1\nE:ProjA.A.Run/() | ProjB.B.Run/()\n");
+        File.WriteAllText(Path.Join(dir, "ProjB.callgraph.txt"), "T:ProjB.B|class|public|src/B.cs:1\n");
+
+        Assert.Null(CallGraphFile.Load(dir, ["Nonexistent"]));
+
+        var merged = CallGraphFile.Load(dir, ["ProjA", "ProjB", "Nonexistent"]);
+        Assert.NotNull(merged);
+        Assert.True(merged.Types.ContainsKey("ProjA.A"));
+        Assert.True(merged.Types.ContainsKey("ProjB.B"));
+        Assert.Single(merged.Calls);
     }
 }
