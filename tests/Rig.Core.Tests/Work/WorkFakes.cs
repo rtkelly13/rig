@@ -140,21 +140,21 @@ internal static class WorkFixtures
 
     public const string Root = "/code";
 
-    public static readonly string AppPath = Path.Join(Root, "acme", "app");
+    public const string AppPath = "/code/acme/app";
 
-    public static readonly string LibPath = Path.Join(Root, "other", "lib");
+    public const string LibPath = "/code/other/lib";
 
-    public static string Feature => Path.Join(AppPath, "temp", "wt-feature");
+    public static string Feature => $"{AppPath}/temp/wt-feature";
 
-    public static string Detached => Path.Join(AppPath, "temp", "wt-detached");
+    public static string Detached => $"{AppPath}/temp/wt-detached";
 
-    public static string Draft => Path.Join(AppPath, "temp", "wt-draft");
+    public static string Draft => $"{AppPath}/temp/wt-draft";
 
-    public static string Stale => Path.Join(AppPath, "temp", "wt-stale");
+    public static string Stale => $"{AppPath}/temp/wt-stale";
 
-    public static string Release => Path.Join(LibPath, "temp", "wt-release");
+    public static string Release => $"{LibPath}/temp/wt-release";
 
-    public static string Open => Path.Join(LibPath, "temp", "wt-open");
+    public static string Open => $"{LibPath}/temp/wt-open";
 
     public static IReadOnlyList<RepoFacts> Repos() =>
     [
@@ -222,7 +222,7 @@ internal static class WorkFixtures
                 "Review the merge",
                 WorkSessionState.EndedClean,
                 Now - TimeSpan.FromHours(2),
-                Path.Join(Feature, "src"),
+                $"{Feature}/src",
                 Feature,
                 3),
             new Attribution(AppPath, "feat/PROJ-1-thing")),
@@ -243,7 +243,7 @@ internal static class WorkFixtures
                 WorkSessionState.WaitingOnUser,
                 Now - TimeSpan.FromMinutes(30),
                 Root,
-                Path.Join(Root, "scratch"),
+                $"{Root}/scratch",
                 2,
                 4242),
             new Attribution(null, Reason: "not in a git checkout: /code")),

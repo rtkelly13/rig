@@ -15,7 +15,7 @@ public sealed class SerializationTests
         Assert.True(
             JsonNode.DeepEquals(WorkFixtures.FixtureJson(), rendered),
             $"C# output differs from the Python fixture:\n{WorkJson.Render(report, report.Items)}");
-        Assert.Equal(File.ReadAllText(FixturePath()).TrimEnd('\n'), WorkJson.Render(report, report.Items));
+        Assert.Equal(NormaliseNewlines(File.ReadAllText(FixturePath()).TrimEnd('\n')), NormaliseNewlines(WorkJson.Render(report, report.Items)));
     }
 
     [Fact]
@@ -99,4 +99,7 @@ public sealed class SerializationTests
     public void SessionState_wire_names_match_the_schema(WorkSessionState state, string wire) => Assert.Equal(wire, state.Wire());
 
     private static string FixturePath() => Path.Join(AppContext.BaseDirectory, "Work", "work-list.fixture.json");
+
+    // A Windows checkout may have CRLF in the fixture; the schema cares about bytes, not the file's line endings.
+    private static string NormaliseNewlines(string text) => text.ReplaceLineEndings("\n");
 }
