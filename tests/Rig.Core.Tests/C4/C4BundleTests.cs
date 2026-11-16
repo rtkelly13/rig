@@ -455,6 +455,41 @@ public sealed class C4BundleTests : IDisposable
         Assert.Equal("Queries", rel.Label);
     }
 
+    [Fact]
+    public void Check_detects_all_finding_variations()
+    {
+        var root = _temp.Folder("findings_bundle");
+        File.WriteAllText(Path.Join(root, "bad_frontmatter.md"), "---\n: invalid : yaml :\n---\nHello\n");
+        File.WriteAllText(Path.Join(root, "missing_diagram.md"), "---\ntype: C4 Context\ntitle: Missing\n---\nNo diagram here\n");
+        File.WriteAllText(Path.Join(root, "mismatched_kind.md"), "---\ntype: C4 Context\ntitle: Mismatch\n---\n```mermaid\nC4Container\nPerson(p, \"P\")\n```\n");
+        File.WriteAllText(Path.Join(root, "code_c4.md"), "---\ntype: C4 Code\ntitle: Code Level\n---\n```mermaid\nC4Component\nComponent(c, \"C\")\n```\n");
+        File.WriteAllText(Path.Join(root, "broken_note_link.md"), "---\ntype: note\ntitle: Note\n---\nLinks to [nonexistent](/not-there.md)\n");
+        File.WriteAllText(Path.Join(root, "direct_jump.md"), "---\ntype: C4 Context\ntitle: Direct Jump\n---\n```mermaid\nC4Context\nSystem(s, \"S\", $link=\"component.md\")\n```\n");
+        File.WriteAllText(Path.Join(root, "component.md"), "---\ntype: C4 Component\ntitle: Comp\n---\n```mermaid\nC4Component\nComponent(c, \"C\")\n```\n");
+        File.WriteAllText(Path.Join(root, "parent2.md"), "---\ntype: C4 Context\ntitle: Parent 2\n---\n```mermaid\nC4Context\nSystem(s2, \"S2\", $link=\"component.md\")\n```\n");
+
+        var bundle = OkfBundle.Load(root);
+        var findings = C4Composer.Check(bundle);
+        Assert.NotEmpty(findings);
+        var codes = findings.Select(f => f.Code).ToHashSet();
+        Assert.Contains("okf-frontmatter", codes);
+        Assert.Contains("diagram-missing", codes);
+        Assert.Contains("diagram-kind", codes);
+        Assert.Contains("zoom-level", codes);
+        Assert.Contains("fan-in", codes);
+    }
+
+    [Fact]
+    public void Expand_throws_on_non_diagram_or_non_c4_target()
+    {
+        var root = _temp.Folder("expand_edges");
+        File.WriteAllText(Path.Join(root, "not_diagram.md"), "---\ntype: note\ntitle: Note\n---\nText only\n");
+        File.WriteAllText(Path.Join(root, "parent.md"), "---\ntype: C4 Context\ntitle: Parent\n---\n```mermaid\nC4Context\nSystem(s, \"S\", $link=\"not_diagram.md\")\n```\n");
+        var bundle = OkfBundle.Load(root);
+        Assert.Throws<ExpandException>(() => C4Composer.Expand(bundle, "not_diagram", "s"));
+        Assert.Throws<ExpandException>(() => C4Composer.Expand(bundle, "parent", "s"));
+    }
+
     private static string Between(string text)
     {
         var start = text.IndexOf("```mermaid\n", StringComparison.Ordinal) + "```mermaid\n".Length;
