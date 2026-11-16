@@ -97,6 +97,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     private static readonly JsonSerializerOptions Json = new()
     {
         WriteIndented = true,
+        NewLine = "\n",
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
