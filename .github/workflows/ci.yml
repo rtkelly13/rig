@@ -59,6 +59,52 @@ jobs:
             echo "code=false" >> "${GITHUB_OUTPUT}"
           fi
 
+  # One C# build for every job that needs the CLI: the Python SPA tests, docs audit and
+  # command-ownership previously compiled the same tree independently.
+  build:
+    name: build
+    needs: changes
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+      - name: Restore
+        run: dotnet restore rig.slnx
+      # Only the two artifacts other jobs consume, not every test project. `dotnet` still
+      # builds the full solution for its tests in parallel.
+      - name: Build rig CLI
+        run: dotnet build src/Rig.Cli -c Release -o "${{ runner.temp }}/rig-cli" --no-restore
+      - name: Build ownership tool
+        run: dotnet build tools/command-ownership -c Release -o "${{ runner.temp }}/command-ownership" --no-restore
+      - name: Upload rig CLI
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rig-cli
+          path: ${{ runner.temp }}/rig-cli
+          retention-days: 1
+      - name: Upload ownership tool
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: command-ownership
+          path: ${{ runner.temp }}/command-ownership
+          retention-days: 1
+
   lint:
     name: lint
     needs: changes
@@ -125,6 +171,7 @@ jobs:
   # is exactly what a docs-only PR introduces.
   docs-audit:
     name: docs-audit
+    needs: build
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -140,21 +187,20 @@ jobs:
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           enable-cache: true
-      # agents-audit runs on the C# rig CLI, which the Python entry point hands over to with `dotnet run`.
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
-      - name: Cache NuGet packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Download rig CLI
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+          name: rig-cli
+          path: ${{ runner.temp }}/rig-cli
       - name: AGENTS.md and docs audit
-        run: dotnet run --project src/Rig.Cli -- repo-governance agents-audit . --strict
+        run: dotnet "${{ runner.temp }}/rig-cli/rig.dll" repo-governance agents-audit . --strict
 
   test:
     name: test
-    needs: changes
+    needs: [changes, build]
     if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     # Hard cap. The serial suite took ~4m on 2026-11-04; xdist roughly halves it.
@@ -184,17 +230,15 @@ jobs:
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: uv run playwright install --with-deps chromium
-      # The SPA tests drive the C# rig web host (tests/rig_web_host.py); build it once for every worker.
+      # The SPA tests drive the C# rig web host (tests/rig_web_host.py); reuse the build job's CLI.
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
-      - name: Cache NuGet packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Download rig CLI
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
-      - name: Build the C# rig CLI
-        run: dotnet build src/Rig.Cli -c Release -o "${{ runner.temp }}/rig-cli"
+          name: rig-cli
+          path: ${{ runner.temp }}/rig-cli
       - name: Run tests with coverage
         env:
           RIG_CLI_DLL: ${{ runner.temp }}/rig-cli/rig.dll
@@ -441,7 +485,8 @@ jobs:
       - name: Run tests
         run: uv run pytest -p no:cacheprovider --basetemp="${{ runner.temp }}/pytest" -ra
 
-  # The C# side (ADR 0022): format, build with warnings as errors, tests, the coverage ratchet.
+  # The C# side (ADR 0022): build with warnings as errors, tests, the coverage ratchet.
+  # Formatting runs in the parallel `format` job.
   dotnet:
     name: dotnet
     needs: changes
@@ -467,8 +512,6 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
       - name: Restore
         run: dotnet restore rig.slnx
-      - name: Format check
-        run: dotnet format rig.slnx --no-restore --verify-no-changes
       - name: Build
         run: dotnet build rig.slnx --no-restore -c Release
       # The COM source generator's stubs and CsWin32's interop (Desktop/Windows) are Windows-only and generated, so
@@ -489,6 +532,62 @@ jobs:
             -H "Accept: application/vnd.github.raw" > base-Directory.Build.props || rm -f base-Directory.Build.props
       - name: Coverage floor ratchet
         run: dotnet run scripts/coverage-floor.cs -- TestResults/coverage.*.json --base-props base-Directory.Build.props
+
+  # Formatting is independent of the build/test critical path. PRs check only changed C#
+  # files; a formatting-config change or a push runs the full solution.
+  format:
+    name: format
+    needs: changes
+    if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+      - name: Restore
+        run: dotnet restore rig.slnx
+      - name: Format changed files
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          full() { dotnet format rig.slnx --no-restore --verify-no-changes; }
+          if [ "${EVENT}" != "pull_request" ]; then
+            full
+            exit 0
+          fi
+          base="${PR_BASE}"
+          if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            full
+            exit 0
+          fi
+          range="${base}...HEAD"
+          if git diff --name-only --no-renames "${range}" | grep -Eq '(^|/)(\.editorconfig|\.globalconfig|Directory\.Build\.props|Directory\.Packages\.props)$'; then
+            full
+            exit 0
+          fi
+          mapfile -d '' -t files < <(git diff --name-only -z --no-renames --diff-filter=ACMRT "${range}" -- '*.cs')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No C# files changed"
+            exit 0
+          fi
+          dotnet format rig.slnx --no-restore --verify-no-changes --include "${files[@]}"
 
   # Windows runs on the same triggers as test-windows: the desktop port's Win32 code lands here.
   dotnet-windows:
@@ -569,6 +668,7 @@ jobs:
   # port must not leave two owners after each branch's individual tests passed.
   command-ownership:
     name: command-ownership
+    needs: build
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -587,14 +687,22 @@ jobs:
           enable-cache: true
       - name: Install legacy inspection dependencies
         run: uv sync --locked
-      - name: Build inspected CLI and ownership gate
-        run: dotnet build rig.slnx -c Release
+      - name: Download rig CLI
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: rig-cli
+          path: ${{ runner.temp }}/rig-cli
+      - name: Download ownership tool
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: command-ownership
+          path: ${{ runner.temp }}/command-ownership
       - name: Inspect registrations and enforce one owner
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
         run: >-
-          dotnet run --project tools/command-ownership --no-build -c Release --
-          . src/Rig.Cli/bin/Release/net10.0/rig.dll --base "$BASE_SHA"
+          dotnet "${{ runner.temp }}/command-ownership/CommandOwnership.dll"
+          . "${{ runner.temp }}/rig-cli/rig.dll" --base "$BASE_SHA"
       - name: Require current main in the tested merge result
         if: github.event_name == 'pull_request'
         env:
@@ -606,7 +714,7 @@ jobs:
   ci:
     name: ci
     if: always()
-    needs: [changes, lint, docs-audit, test, test-windows, image-drift, image-drift-windows, dotnet, dotnet-windows, command-ownership]
+    needs: [changes, build, format, lint, docs-audit, test, test-windows, image-drift, image-drift-windows, dotnet, dotnet-windows, command-ownership]
     runs-on: ubuntu-latest
     permissions:
       contents: read
