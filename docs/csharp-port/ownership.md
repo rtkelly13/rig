@@ -66,7 +66,7 @@ cannot conceal an independent implementation.
 | `runtime` | C# status/install/rollback; Python `runtime.py` still serves paths and state to scheduled Python callers | Legacy spellings dispatch whole-line to C#; `runtime_cli` execution and `rig_shim` retired. `runtime.py` stays for jobs/chrome path and state consumers; #227 owns native acceptance |
 | `web`, `tools` | C# public host, C# MCP server (`/api/mcp` and stdio), and C# service/database lifecycle (`rig tools`); the legacy `rig web` service and database subcommands are aliases | Triage, estate, telemetry and database-backup routes are C# (`Rig.Web.TriageRoutes`, `EstateOpsRoutes`, `TelemetryRoutes`, `HostRoutes`); `Python service_installer` and `rig.db` retired with their tests; the jobs coordinator, C4 and the estate graph stay in the Python child (`desktop_manager.web_upstream`) |
 | `web mcp` | C# `Rig.Web.Mcp.RigOpsTools` over `Rig.Core`, served by `rig web mcp` (stdio) and `app.MapMcp("/api/mcp")` | `desktop_manager.web_mcp` and its Python CLI command are retired; the eleven tools are inspected from their `[McpServerTool]` attributes |
-| `chrome-tabs` | C# traces everywhere; C# native `list`, `rank`, `prune` and `group` on Windows and macOS; `saved-groups`, `install` and `uninstall` on Windows; Python `organise` | macOS `group`, `list`, `prune` and `rank` registrations retired in #226 with the native `ChromeMac` driver; `organise` stays Python until its scheduled/wait slice moves |
+| `chrome-tabs` | C# traces everywhere; C# native `list`, `rank`, `prune` and `group` on Windows and macOS; `saved-groups`, `install` and `uninstall` on Windows; C# `organise` orchestration core; Python `organise` | macOS `group`, `list`, `prune` and `rank` registrations retired in #226 with the native `ChromeMac` driver. `Rig.Core.Chrome.OrganiseRunner` now carries the orchestration and is covered by fakes, but the surface, its CLI registration, its trace writer and the `chrome-organise` entry still dispatch to Python until that scheduled slice moves |
 | `chrome-tabs traces runs/show/summary/prune` | C# only; legacy spelling dispatches the whole line | Legacy report CLI and 462 lines of reader/report code deleted; writer/daily retention still have scheduled Python callers |
 | `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
 | `claude-sessions` | Retired without a C# port (#224) | Eight Python leaves and fourteen modules deleted; the `work` list keeps its own transcript, live-session and ledger reader in `work/session_store.py`. Orca and direct CLI/IDE workflows replaced the window-focused orchestration |
@@ -205,6 +205,15 @@ deleted; `rig desktop workspace` owns restore, audit, status, validation, featur
 align, desktop naming, the display guard and the per-entry commands. Core tests cover the reconciler, the
 guard's state machine, align decisions and plan loading; the native Win32/COM/registry adapters are compile-
 and smoke-tested only on Windows. `WIN-DESKTOP` remains the interactive acceptance procedure.
+
+Organise orchestration core validation on macOS, 2026-11-16: `dotnet build rig.slnx -c Release`
+passed with zero warnings and errors. `OrganiseRunnerTests` passed 23/23 over the shared fakes; the
+Chrome suites passed 792/796 (4 platform skips) in Core and 63/63 in the CLI. The full solution run
+passed 5,626 of 5,656 with 30 skips and zero failures. The ownership gate against `origin/main` passed with
+398 inspected surfaces, zero pre-existing overlaps and zero violations. `dotnet format
+--verify-no-changes` was clean, and `uv run status` passed every check except the expected dirty
+worktree. The Python `test_chrome_organise.py` oracle passed 19/19, so the surface is unchanged; the
+orchestration core is `implemented`, not switched.
 
 Named remaining acceptance procedures, all run from a reviewed/published artifact in a disposable environment:
 
