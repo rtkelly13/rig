@@ -5,7 +5,7 @@ namespace Rig.Core.Services;
 
 /// <summary>
 /// Writes an XML property list byte for byte as Python's <c>plistlib.dumps</c> did: keys sorted, tab indents, and only
-/// the value kinds a LaunchAgent uses (strings, whole numbers, booleans and lists of strings).
+/// the value kinds a LaunchAgent uses (strings, whole numbers, booleans, string lists and nested dictionaries).
 /// </summary>
 public static class Plist
 {
@@ -43,6 +43,16 @@ public static class Plist
                 break;
             case int number:
                 xml.Append(indent).Append("<integer>").Append(number.ToString(CultureInfo.InvariantCulture)).Append("</integer>\n");
+                break;
+            case IReadOnlyDictionary<string, object> dictionary:
+                xml.Append(indent).Append("<dict>\n");
+                foreach (var (key, item) in dictionary.OrderBy(e => e.Key, StringComparer.Ordinal))
+                {
+                    xml.Append(indent).Append('\t').Append("<key>").Append(Escape(key)).Append("</key>\n");
+                    Value(xml, item, depth + 1);
+                }
+
+                xml.Append(indent).Append("</dict>\n");
                 break;
             case IEnumerable<string> items:
                 xml.Append(indent).Append("<array>\n");

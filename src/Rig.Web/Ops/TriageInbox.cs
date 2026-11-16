@@ -16,7 +16,7 @@ public sealed record TriageWatch(string Repo, int Number);
 
 /// <summary>
 /// The persistent triage queue behind <c>/api/triage</c>: local snapshots and history from SQLite, with the agent's
-/// wrap-up verdict attached. Ported from <c>desktop_manager.web_cli</c>'s triage handler and <c>rig.triage.web</c>.
+/// wrap-up verdict attached. Ported from the retired Python triage handler and <c>rig.triage.web</c>.
 /// </summary>
 public sealed class TriageInbox : IDisposable
 {

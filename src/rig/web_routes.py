@@ -1,7 +1,7 @@
 """Mounted API routes: the JSON envelope and write guard every feature route shares.
 
 Features that serve JSON from the rig web server do not import the server. They expose a `Route`, and the composition
-root (`desktop_manager.web_cli`) hands the routes to `StudioServer`, which asks each one in turn before its own
+root (`desktop_manager.web_upstream`) hands the routes to `StudioServer`, which asks each one in turn before its own
 handlers. The helpers here give every mounted route the same JSON envelope and the same write guard.
 """
 

@@ -17,7 +17,7 @@ from desktop_manager.jobs.history import JobRun, append_run, save_output
 from desktop_manager.jobs.registry import Cadence, Job, Trigger
 from desktop_manager.jobs.state import STATE_NAME, Outcome, jobs_dir, write_state
 from desktop_manager.jobs.web import JobsRoute, cadence_text, job_views, run_command, run_output_view, run_views
-from desktop_manager.web_cli import mounted_routes
+from desktop_manager.web_upstream import mounted_routes
 from rig.web_host.server import StudioServer
 from rig.web_routes import RouteNotFoundError
 

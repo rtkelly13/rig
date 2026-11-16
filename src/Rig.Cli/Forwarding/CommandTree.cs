@@ -23,7 +23,7 @@ internal static class CommandTree
     {
         commands = Read(root),
         forwarding = Forwarded.Commands.Select(c => new { c.Name, c.Launch }),
-        bare = Forwarded.RunsBare,
+        bare = Array.Empty<string>(),
         dispatch = probes.Select(args => new { Path = string.Join(' ', args), Forwarded = Forwarded.Owns(args, root) }),
         rawAliases = AgentLauncher.ShortcutFlags.Where(flag => AgentLauncher.LauncherArgs([flag]) is not null)
             .Select(flag => new { Path = flag, Target = "agent" })

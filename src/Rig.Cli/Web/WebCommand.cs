@@ -45,8 +45,8 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
 /// <summary>
 /// <c>rig web</c>: runs the dashboard. The ASP.NET host owns the port and answers the routes ported to C#; the rest go to
 /// the Python routes, which it starts as a child on a free loopback port and stops when it stops (<see cref="PythonRoutes"/>).
-/// The remaining subcommands (<c>install</c>, <c>ensure</c>, <c>uninstall</c>, <c>backup</c>, <c>migrate</c>,
-/// <c>db-status</c>) and <c>rig web --help</c> still run on the Python CLI; <c>mcp</c> serves the ops tools over stdio.
+/// The service and database subcommands (<c>install</c>, <c>ensure</c>, <c>uninstall</c>, <c>backup</c>, <c>migrate</c>,
+/// <c>db-status</c>) are aliases for <c>rig tools</c>; <c>mcp</c> serves the ops tools over stdio.
 /// Exit codes: 0 stopped, 2 could not listen.
 /// </summary>
 /// <param name="places">What it serves.</param>
@@ -57,6 +57,7 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
 /// <param name="output">Where the banner goes.</param>
 /// <param name="error">Where problems go.</param>
 /// <param name="ops">The data behind the MCP tools; null builds this machine's real sources.</param>
+/// <param name="aliases">The legacy subcommands that forward to <c>rig tools</c>.</param>
 internal sealed class WebCommand(
     WebPlaces places,
     Func<IReadOnlyList<string>, IChildServer> startPython,
@@ -65,7 +66,8 @@ internal sealed class WebCommand(
     Func<TimeSpan, CancellationToken, Task> delay,
     TextWriter output,
     TextWriter error,
-    RigOps? ops = null)
+    RigOps? ops = null,
+    IReadOnlyList<Command>? aliases = null)
 {
     private readonly Lazy<RigOps> _ops = new(() => ops ?? RigOps.Default());
 
@@ -82,10 +84,15 @@ internal sealed class WebCommand(
         var preview = new Option<bool>("--preview") { Description = "Run as preview environment (defaults to port 8091)." };
         var mcp = new Command("mcp", "Serve the ops tools over stdio for an MCP client (Claude Desktop, Cursor, Orca).");
         mcp.SetAction((_, ct) => RigMcp.RunStdioAsync(_ops.Value, error, ct));
-        var web = new Command("web", "Rig web dashboard & visual studio. Its remaining subcommands still run on the Python CLI.")
+        var web = new Command("web", "Rig web dashboard & visual studio. Service and database subcommands are aliases for `rig tools`.")
         {
             port, host, open, noOpen, preview, mcp,
         };
+        foreach (var alias in aliases ?? [])
+        {
+            web.Subcommands.Add(alias);
+        }
+
         web.SetAction((parsed, ct) => RunAsync(
             parsed.GetValue(host)!,
             parsed.GetValue(port),

@@ -114,7 +114,8 @@ def _launches() -> list[tuple[str, list[str]]]:
 
 def test_the_forwarded_table_is_read() -> None:
     names = {name for name, _ in _launches()}
-    assert "web" in names
+    # Web moved fully to C#: its service and database subcommands are aliases for `rig tools`.
+    assert "web" not in names
     # Triage's CLI runs in C#; only its web inbox stays inside the Python package.
     assert "triage" not in names
     # C4's CLI runs in C#; its web viewer stays inside the Python package.

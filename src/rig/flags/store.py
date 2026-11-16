@@ -7,9 +7,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from rig.db.connection import get_db_connection
-from rig.db.migrations import run_migrations
 from rig.flags.registry import FLAGS, Flag, flag_named
+from rig.sqlite import connect, ensure_schema
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,8 +22,8 @@ class FlagState:
 
 
 def _connect(db_path: Path | None) -> sqlite3.Connection:
-    conn = get_db_connection(db_path)
-    run_migrations(conn)
+    conn = connect(db_path)
+    ensure_schema(conn)
     return conn
 
 

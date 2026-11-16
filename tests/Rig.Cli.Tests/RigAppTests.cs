@@ -26,14 +26,14 @@ public sealed class RigAppTests : IDisposable
             _err,
             [
                 () => new Rig.Cli.Models.ModelsCommand(new Rig.Cli.Models.ModelDiscovery(_proc, "/home", _ => null), _out).Build(),
-                // web stands in for a group partly ported: doctor runs here, the rest of the group on Python.
-                () => new System.CommandLine.Command("web", "Rig web.") { new System.CommandLine.Command("doctor", "Web doctor here.") },
+                // chrome-tabs stands in for a group partly ported: doctor runs here, the rest of the group on Python.
+                () => new System.CommandLine.Command("chrome-tabs", "Chrome tabs.") { new System.CommandLine.Command("doctor", "Chrome tabs doctor here.") },
             ],
             new AgentLauncher(_proc, new AgentHost("/home/none.json", "/work", p => $"/bin/{p}"), _out, _err))
             .RunAsync(args, TestContext.Current.CancellationToken);
 
     [Theory]
-    [InlineData(new[] { "web", "mcp", "--help" }, new[] { "desktop-manager", "web", "mcp", "--help" })]
+    [InlineData(new[] { "chrome-tabs", "list", "--help" }, new[] { "desktop-manager", "chrome-tabs", "list", "--help" })]
     [InlineData(new[] { "chrome-tabs", "--help" }, new[] { "desktop-manager", "chrome-tabs", "--help" })]
     public async Task A_python_command_goes_over_whole_and_attached_to_its_program(string[] args, string[] launched)
     {
@@ -165,10 +165,10 @@ public sealed class RigAppTests : IDisposable
     [Fact]
     public async Task A_ported_subcommand_of_a_python_group_is_parsed_here()
     {
-        Assert.Equal(0, await Run("web", "doctor", "--help"));
+        Assert.Equal(0, await Run("chrome-tabs", "doctor", "--help"));
 
         Assert.Empty(_proc.Requests);
-        Assert.Contains("Web doctor here.", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Chrome tabs doctor here.", _out.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -233,6 +233,9 @@ public sealed class RigAppTests : IDisposable
     // Only this test's spans: other test classes run RigApp concurrently on the same source.
     private static ActivityListener Listen(List<Activity> spans, Activity parent)
     {
+        // Create the source before the listener compares identity: ActivitySource calls ShouldListenTo while its own
+        // static field is still being assigned, where RigApp.Source would read null.
+        _ = RigApp.Source;
         var listener = new ActivityListener
         {
             ShouldListenTo = source => source == RigApp.Source,

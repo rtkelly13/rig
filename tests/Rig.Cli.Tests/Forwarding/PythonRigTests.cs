@@ -40,27 +40,23 @@ public sealed class PythonRigTests
     }
 
     [Theory]
-    [InlineData(new[] { "web" }, false)]
-    [InlineData(new[] { "web", "--port", "8095", "--no-open" }, false)]
-    [InlineData(new[] { "web", "-p", "8095" }, false)]
-    [InlineData(new[] { "web", "--help" }, true)]
-    [InlineData(new[] { "web", "-p", "8095", "-h" }, true)]
-    [InlineData(new[] { "web", "install" }, true)]
-    [InlineData(new[] { "web", "mcp" }, true)]
-    [InlineData(new[] { "web", "--port", "8095" }, false)]
-    [InlineData(new[] { "web", "--host", "0.0.0.0", "--preview" }, false)]
-    [InlineData(new[] { "web", "--no-open", "backup" }, true)]
-    [InlineData(new[] { "web", "--port", "8095", "install" }, true)]
-    public void A_bare_web_line_runs_on_csharp_and_its_subcommands_and_help_on_python(string[] args, bool python)
+    [InlineData(new[] { "chrome-tabs" }, true)]
+    [InlineData(new[] { "chrome-tabs", "--help" }, true)]
+    [InlineData(new[] { "chrome-tabs", "list" }, true)]
+    [InlineData(new[] { "chrome-tabs", "--port", "8095" }, true)]
+    public void A_python_group_is_owned_whole(string[] args, bool python)
     {
-        var root = new RootCommand { new Command("web") };
+        var root = new RootCommand { new Command("chrome-tabs") };
 
         Assert.Equal(python, Forwarded.Owns(args, root));
     }
 
     [Fact]
-    public void A_bare_line_stays_in_python_until_csharp_registers_the_group()
+    public void A_ported_subcommand_stays_on_csharp()
     {
-        Assert.True(Forwarded.Owns(["web"], Empty));
+        var root = new RootCommand { new Command("chrome-tabs") { new Command("organise") } };
+
+        Assert.False(Forwarded.Owns(["chrome-tabs", "organise"], root));
+        Assert.True(Forwarded.Owns(["chrome-tabs", "traces"], root));
     }
 }

@@ -21,6 +21,7 @@ using Rig.Cli.ReviewQueue;
 using Rig.Cli.Runtime;
 using Rig.Cli.Skills;
 using Rig.Cli.Status;
+using Rig.Cli.Tools;
 using Rig.Cli.Traces;
 using Rig.Cli.Vault;
 using Rig.Cli.Web;
@@ -38,6 +39,7 @@ using Rig.Core.ReviewQueue;
 using Rig.Core.Roots;
 using Rig.Core.Services;
 using Rig.Core.Skills;
+using Rig.Core.Tools;
 using Rig.Core.Vault;
 using Rig.Core.Workspace;
 using Rig.Web;
@@ -118,6 +120,24 @@ internal static class Program
         var python = new PythonRig(proc, checkout);
         var github = new GhApi(proc);
         Gh.OriginReader origin = async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false));
+        var servicePlatform = exportWindowsTree || (!exportTree && OperatingSystem.IsWindows())
+            ? ServicePlatform.Windows
+            : macOs ? ServicePlatform.MacOS : ServicePlatform.Linux;
+        var tools = new ToolsCommand(
+            new ServiceHost(
+                home,
+                Environment.CurrentDirectory,
+                SelfArgv(),
+                servicePlatform,
+                proc,
+                probe,
+                TimeProvider.System,
+                Task.Delay,
+                async ct => Launchd.GuiDomain(await KnowledgeServerCommand.UserIdAsync(proc, ct).ConfigureAwait(false)),
+                Environment.GetEnvironmentVariable("PATH")),
+            new DatabaseToolHost(Path.Join(AppData.Current(), "rig.db"), Path.Join(AppData.Current(), "backups"), TimeProvider.System),
+            Console.Out,
+            Console.Error);
         var runtimeCheckout = Rig.Cli.Runtime.RuntimeCommand.FindCheckout(AppContext.BaseDirectory)
             ?? Rig.Cli.Runtime.RuntimeCommand.FindCheckout(Environment.CurrentDirectory)
             ?? checkout;
@@ -217,6 +237,7 @@ internal static class Program
                         proc,
                         TimeProvider.System),
                     Console.Out).Build,
+                () => tools.Build(),
                 new MailCommand(
                     new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),
                     Console.Out,
@@ -310,13 +331,14 @@ internal static class Program
                         Path.Join(AppData.Current(), "rig.db"),
                         codeRoot,
                         WebPlaces.PythonRoutesFrom(Environment.GetEnvironmentVariable(WebPlaces.PythonRoutesVariable))),
-                    args => ProcessChildServer.Start(python.Argv(args)),
+                    args => ProcessChildServer.Start(python.Module("desktop_manager.web_upstream", args)),
                     probe,
                     OpenBrowser,
                     Task.Delay,
                     Console.Out,
                     Console.Error,
-                    RigOps.ForCheckout(checkout)).Build,
+                    RigOps.ForCheckout(checkout),
+                    tools.BuildWebAliases()).Build,
             ],
             new AgentLauncher(
                 proc,
