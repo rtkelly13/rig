@@ -73,7 +73,7 @@ public sealed class ForwarderTests : IAsyncLifetime
         using var content = new StringContent("""{"paths":[]}""", Encoding.UTF8);
         content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-        using var response = await _client.PostAsync(new Uri("/api/ops/jobs/run", UriKind.Relative), content, TestContext.Current.CancellationToken);
+        using var response = await _client.PostAsync(new Uri("/api/c4/apply", UriKind.Relative), content, TestContext.Current.CancellationToken);
 
         var (sent, body) = Assert.Single(_upstream.Seen);
         Assert.Equal(HttpMethod.Post, sent.Method);
@@ -108,7 +108,7 @@ public sealed class ForwarderTests : IAsyncLifetime
             Content = new StringContent("""{"error": "down"}""", Encoding.UTF8, "application/json"),
         };
 
-        using var response = await _client.GetAsync(new Uri("/api/ops/jobs", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var response = await _client.GetAsync(new Uri("/api/c4/bundle", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Equal("down", (string?)JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken))!["error"]);
@@ -147,7 +147,7 @@ public sealed class ForwarderTests : IAsyncLifetime
         _upstream.Answer = _ => throw new HttpRequestException("aborted");
         using var content = new StringContent("{}", Encoding.UTF8, "application/json");
 
-        using var response = await _client.PostAsync(new Uri("/api/ops/jobs/run", UriKind.Relative), content, TestContext.Current.CancellationToken);
+        using var response = await _client.PostAsync(new Uri("/api/c4/apply", UriKind.Relative), content, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
         _ = Assert.Single(_upstream.Seen);

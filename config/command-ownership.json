@@ -396,8 +396,7 @@
     {"Id": "script:rig=rig.csharp_cli:entry","Capability": "surface:script:rig=rig.csharp_cli:entry","Owner": "script:rig=rig.csharp_cli:entry","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "script:status=rig.csharp_cli:entry","Capability": "status","Owner": "cs:status","Platforms": ["linux","macos","windows"],"AliasTo": "cs:status"},
     {"Id": "script:vault=rig.csharp_cli:entry","Capability": "vault","Owner": "cs:vault","Platforms": ["linux","macos","windows"],"AliasTo": "cs:vault"},
-    {"Id": "script:workspace=rig.csharp_cli:entry","Capability": "workspace","Owner": "cs:workspace","Platforms": ["linux","macos","windows"],"AliasTo": "cs:workspace"},
-    {"Id": "web-child:desktop_manager.jobs.web:JobsRoute:761732c4985766bf10b6590d9bb2b34c642325b0690b627ea8fe08108773c496","Capability": "surface:web-child:desktop_manager.jobs.web:JobsRoute:761732c4985766bf10b6590d9bb2b34c642325b0690b627ea8fe08108773c496","Owner": "web-child:desktop_manager.jobs.web:JobsRoute:761732c4985766bf10b6590d9bb2b34c642325b0690b627ea8fe08108773c496","Platforms": ["linux","macos","windows"],"AliasTo": null}
+    {"Id": "script:workspace=rig.csharp_cli:entry","Capability": "workspace","Owner": "cs:workspace","Platforms": ["linux","macos","windows"],"AliasTo": "cs:workspace"}
   ],
   "Baseline": [],
   "Retired": [
