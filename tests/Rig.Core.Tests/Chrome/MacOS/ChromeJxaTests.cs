@@ -33,7 +33,7 @@ public sealed class ChromeJxaTests
         }),
     };
 
-    private static JsonElement Element(JsonNode node) => JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
+    private static JsonElement Element(JsonNode node) => JsonElement.Parse(node.ToJsonString());
 
     private static JsonObject FirstWindow(JsonObject snapshot) => snapshot["windows"]![0]!.AsObject();
 
@@ -163,14 +163,14 @@ public sealed class ChromeJxaTests
     [Fact]
     public void A_title_with_a_lone_surrogate_reads_as_python_reads_it()
     {
-        var reply = JsonDocument.Parse(Recorded().ToJsonString().Replace("\"title\":\"Chrome work\"", "\"title\":\"a\\ud83db\"", StringComparison.Ordinal)).RootElement;
+        var reply = JsonElement.Parse(Recorded().ToJsonString().Replace("\"title\":\"Chrome work\"", "\"title\":\"a\\ud83db\"", StringComparison.Ordinal));
         Assert.Equal("a\ud83db", JxaDecode.Snapshot(reply).Windows[0].Title);
     }
 
     [Fact]
     public void Every_escape_reads_as_python_reads_it_beside_a_lone_surrogate()
     {
-        var reply = JsonDocument.Parse("""{"status": "\ude00 \"q\" \\ \/ \b\f\n\r\t é 😀 雪"}""").RootElement;
+        var reply = JsonElement.Parse("""{"status": "\ude00 \"q\" \\ \/ \b\f\n\r\t é 😀 雪"}""");
         Assert.Equal("\ude00 \"q\" \\ / \b\f\n\r\t é 😀 雪", JxaDecode.Status(reply));
     }
 
@@ -297,7 +297,7 @@ public sealed class ChromeJxaTests
     [InlineData("\"invoked\"")]
     public void A_status_that_does_not_fit_is_refused(string reply)
     {
-        var error = Assert.Throws<ChromeMacException>(() => JxaDecode.Status(JsonDocument.Parse(reply).RootElement));
+        var error = Assert.Throws<ChromeMacException>(() => JxaDecode.Status(JsonElement.Parse(reply)));
         Assert.Equal("Invalid Chrome action result", error.Message);
     }
 

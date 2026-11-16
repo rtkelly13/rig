@@ -16,8 +16,8 @@ namespace Rig.Cli.Tests.Flags;
 /// </summary>
 public sealed partial class FlagsOracleTests : IDisposable
 {
-    private static readonly JsonElement Oracle = JsonDocument.Parse(
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Flags", "flags-oracle.json"))).RootElement;
+    private static readonly JsonElement Oracle = JsonElement.Parse(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Flags", "flags-oracle.json")));
 
     private readonly TempDir _temp = new();
     private readonly StringWriter _out = new();
