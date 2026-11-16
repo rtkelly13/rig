@@ -1,6 +1,6 @@
-# pnpm workspace for the Node parts of this otherwise Python-first repo.
+# pnpm workspace for the Node parts of this C#-and-Python repo.
 #
-# The root package (`shared-utilities-styles`, the Tailwind build for the
+# The root package (`rig-styles`, the Tailwind build for the
 # image-drift gallery in tools/image-drift/styles) is an implicit member and is deliberately not listed —
 # pnpm always includes the root.
 packages:

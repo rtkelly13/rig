@@ -1,10 +1,10 @@
 # Chrome tabs via UI Automation
 
-`desktop-manager chrome-tabs` reads and closes tabs in the running Chrome
-through Windows UI Automation (UIA). It needs no extension and no debugging
-port. `group` gathers GitHub tabs into one tab group per repo, and Google,
-Asana, YouTrack and Claude tabs into one group per site. `organise` prunes, then
-groups. `prune` does three jobs in one pass:
+`rig chrome-tabs` reads and closes tabs in the running Chrome through Windows UI
+Automation (UIA). It needs no extension and no debugging port. `group` gathers
+GitHub tabs into one tab group per repo, and Google, Asana, YouTrack and Claude
+tabs into one group per site. `organise` prunes, then groups. `prune` does three
+jobs in one pass:
 
 - **PR pruning** closes GitHub pull-request tabs that are merged, duplicated, or
   superseded by a lower PR in a stack or merge queue.
@@ -20,24 +20,32 @@ budget closes tabs in this order, from the bottom of the list up. Video calls
 are always kept, even when muted with the camera off.
 
 ```powershell
-desktop-manager chrome-tabs list [--profile "Profile 4"] [--prs-only] [--json]
-desktop-manager chrome-tabs prune --dry-run      # print the plan, grouped by reason
-desktop-manager chrome-tabs prune                # close the planned tabs
-desktop-manager chrome-tabs prune --no-sites     # PR rules only
-desktop-manager chrome-tabs prune --no-github    # no GitHub calls: site dedupe only
-desktop-manager chrome-tabs prune --dry-run --max-memory 5   # also fit tabs into 5 GB
-desktop-manager chrome-tabs rank [--limit 20] [--no-github] [--json]
-desktop-manager chrome-tabs group --dry-run      # print the grouping plan
-desktop-manager chrome-tabs group [--min-size 2] # group; takes the mouse briefly
-desktop-manager chrome-tabs group --this-desktop # leave windows on other desktops alone
-desktop-manager chrome-tabs organise [--dry-run] # prune, then group, one window at a time
-desktop-manager chrome-tabs organise --unattended [--idle-minutes 5]  # what the schedule runs
-desktop-manager chrome-tabs organise --consolidate-saved  # after a new group, delete closed duplicates
-desktop-manager chrome-tabs saved-groups        # list saved groups and the consolidation plan
-desktop-manager chrome-tabs saved-groups --consolidate  # delete the closed duplicates
-desktop-manager chrome-tabs install             # `chrome-tabs` command on PATH
-desktop-manager chrome-tabs uninstall
+rig chrome-tabs list [--profile "Profile 4"] [--prs-only] [--json]
+rig chrome-tabs prune --dry-run      # print the plan, grouped by reason
+rig chrome-tabs prune                # close the planned tabs
+rig chrome-tabs prune --no-sites     # PR rules only
+rig chrome-tabs prune --no-github    # no GitHub calls: site dedupe only
+rig chrome-tabs prune --dry-run --max-memory 5   # also fit tabs into 5 GB
+rig chrome-tabs rank [--limit 20] [--no-github] [--json]
+rig chrome-tabs group --dry-run      # print the grouping plan
+rig chrome-tabs group [--min-size 2] # group; takes the mouse briefly
+rig chrome-tabs group --this-desktop # leave windows on other desktops alone
+rig chrome-tabs organise [--dry-run] # prune, then group, one window at a time
+rig chrome-tabs organise --unattended [--idle-minutes 5]  # what the schedule runs
+rig chrome-tabs organise --consolidate-saved  # after a new group, delete closed duplicates
+rig chrome-tabs saved-groups        # list saved groups and the consolidation plan
+rig chrome-tabs saved-groups --consolidate  # delete the closed duplicates
+rig chrome-tabs install             # `chrome-tabs` command on PATH
+rig chrome-tabs uninstall
 ```
+
+`list`, `rank`, `prune`, `group`, `saved-groups`, `install`, `uninstall` and
+`traces` are C# (`src/Rig.Cli/Chrome/`). `organise` still runs in Python and
+`rig` forwards the whole line there, so it behaves and prints as it did under
+the old spelling. `desktop-manager chrome-tabs organise …` still works as the
+legacy spelling of that one command; the Python `list`, `rank`, `prune`,
+`group`, `saved-groups`, `install` and `uninstall` commands are no longer
+registered, so `rig chrome-tabs …` is the only spelling for them.
 
 ## Grouping
 
@@ -243,42 +251,44 @@ The first scheduled run of each day deletes day files more than 30 days old.
 There is no separate cleanup task.
 
 ```text
-desktop-manager chrome-tabs traces runs [--days 7] [--limit 20] [--json]   # recent runs, newest first
-desktop-manager chrome-tabs traces show [RUN_ID]                          # one run's span tree (default: latest)
-desktop-manager chrome-tabs traces summary [--days 7] [--json]            # success rate, waits, commonest blocks
-desktop-manager chrome-tabs traces prune [--keep-days 30] [--dry-run]     # retention, by hand
+rig chrome-tabs traces runs [--days 7] [--limit 20] [--json]   # recent runs, newest first
+rig chrome-tabs traces show [RUN_ID]                          # one run's span tree (default: latest)
+rig chrome-tabs traces summary [--days 7] [--json]            # success rate, waits, commonest blocks
+rig chrome-tabs traces prune [--keep-days 30] [--dry-run]     # retention, by hand
 ```
 
 Each command takes `--dir` to read another directory.
 
 ## Modules
 
-| Module | Role | Public API |
+The commands are C#; `organise` and the scheduled entry point are still Python.
+
+| Area | Where | Role |
 |---|---|---|
-| `shared_utilities/github_prs.py` | GitHub resolver and chain building. No desktop or UIA imports. | `PrRef`, `PrState`, `RepoChain`, `Resolution`, `resolve(refs)`, `resolve_pr_states(refs)`, `build_chains(open_prs)` |
-| `desktop_manager/chrome/tabs.py` | Pure tab and window records, plus accessible-name parsing | `ChromeTab`, `ChromeWindow`, `TabName`, `parse_tab_name(name)` |
-| `desktop_manager/chrome/uia.py` | Reusable UIA adapter. Not tied to PRs. | `ChromeUia().list_windows()`, `.find_tab_element(tab)`, `.select_tab(tab)`, `.close_tab(tab)`, `.group_tab(tab, title=, new=, home_hwnd=)`, `.ungroup(tab, title=)`, `.move_to_window(tab, target_hwnd)`, `.saved_groups(hwnd, profile)`, `.delete_saved_group(hwnd, profile, title)`, `.foreground(hwnd)`, `.restore_selection(before, fallbacks=)` |
-| `desktop_manager/chrome/uia_core.py` | The UIA session `ChromeUia` builds on: reading windows and tabs, finding elements, menus and dialogs. | `UiaCore().list_windows()`, `.read_window(hwnd)`, `.find_tab_element(tab)`, `.select_tab(tab)` |
-| `desktop_manager/chrome/window_info.py` | Chrome's top-level windows through Win32. | `chrome_window_handles()`, `window_profile(hwnd)`, `window_rect(hwnd)`, `monitor_origin(hwnd)` |
-| `desktop_manager/chrome/input_windows.py` | Keyboard, foreground and polling helpers. | `press(key)`, `type_text(text)`, `bring_forward(hwnd)`, `poll(probe, timeout_seconds)` |
-| `desktop_manager/chrome/pr_prune.py` | Pure PR planner, plus the protocol-typed executor that both planners share | `pr_ref_from_title`, `plan_prune(windows, resolution)`, `PrunePlan`, `apply_plans(plans, windows, actions)`, `keeper_preference` |
-| `desktop_manager/chrome/site_rules.py` | Per-site title rules. Pure regexes with no Chrome dependency. | `identify(title) -> TabIdentity \| None`, `never_dedupe(title)`, `RULES`, `NEVER` |
-| `desktop_manager/chrome/dedupe.py` | Pure planner for non-PR duplicate pages | `plan_dedupe(windows)`, `DedupePlan`, `site_tabs(windows)` |
-| `desktop_manager/chrome/rank.py` | Pure tab ranking and memory-budget planner | `rank_tabs(windows, resolution)`, `RankedTab`, `plan_memory(ranked, limit_mb, already_closing=, held=)`, `MemoryPlan` |
-| `desktop_manager/chrome/grouping.py` | Pure repo and site grouping planner | `repo_of(title)`, `site_of(title, host=)`, `plan_groups(windows, current_desktop=, min_size=, all_desktops=, hosts=)`, `GroupPlan`, `GroupMove`, `Ungroup` |
-| `desktop_manager/chrome/saved_groups.py` | Pure saved-group chip parsing and consolidation planner | `parse_chip_name(name)`, `union_of_bars(bars)`, `plan_consolidation(groups)`, `ConsolidationPlan`, `SavedGroup` |
-| `desktop_manager/chrome/history.py` | Read-only lookup of the hosts a title was visited on, from the profile's `History` database | `history_path(profile_dir)`, `hosts_by_title(profile_dir, titles)` |
-| `desktop_manager/chrome/presence.py` | Keyboard and mouse idle time, and Chrome's microphone and camera use, for unattended runs | `idle_seconds()`, `InputWatch`, `devices_in_use()` |
-| `desktop_manager/chrome/install.py` | The `chrome-tabs` command shim | `shim_path`, `runtime_desktop_manager`, `write_shim`, `find_checkout` |
-| `desktop_manager/chrome/scheduled.py` | Entry point for the scheduled task (logs to `organise.log`) | `main()` |
-| `desktop_manager/chrome/traces.py` | Organise-run trace files: where they go, retention, and the report | `start()`, `prune(dir)`, `prune_daily(dir)`, `load_spans(dir, days=)`, `runs(spans)`, `render_runs`, `render_tree`, `summarise` |
-| `desktop_manager/chrome/cli.py` | The `chrome-tabs` Typer group | `chrome_tabs_app` |
-| `desktop_manager/chrome/render.py` | The plans as printable lines | `render_plan(plan)`, `render_site_plan(plan)`, `render_rank(ranked)`, `render_memory_plan(plan)`, `render_group_plan(plan)`, `render_saved_groups(plan)` |
-| `desktop_manager/chrome/cli_common.py` | Console, trace spans and window reads shared by the commands | `trace_span(name)`, `list_profile_windows(uia, profile, phase=...)`, `keep_desktop()` |
-| `desktop_manager/chrome/group_run.py` | Carries out a grouping plan | `plan_grouping(uia, windows)`, `run_group_plan(uia, plan)` |
-| `desktop_manager/chrome/saved_consolidation.py` | Deletes closed duplicate saved groups | `plan_saved_groups(uia, windows)`, `consolidate_saved_groups(uia, planned)` |
-| `desktop_manager/chrome/unattended.py` | Unattended-run guards: calls, idle wait, input | `unattended_group_block(read_windows, idle_minutes)`, `live_call(windows)` |
-| `desktop_manager/chrome/traces_cli.py` | The `chrome-tabs traces` Typer group | `traces_app` |
+| Command | `src/Rig.Cli/Chrome/ChromeTabsCommand.cs` | The `rig chrome-tabs` group: every command, its flags and its output |
+| Drivers | `src/Rig.Cli/Chrome/WindowsChrome.cs`, `MacOSChrome.cs` | Open a Chrome session for a command: the Windows UIA tree or the macOS scripting and accessibility API |
+| Tabs and windows | `src/Rig.Core/Chrome/ChromeTabs.cs` | Tab identity (RuntimeId), window records and accessible-name parsing |
+| Windows adapter | `src/Rig.Core/Chrome/Windows/ChromeUiaReader.cs`, `ChromeUiaActions.cs` (and `.Grouping.cs`) | Read windows and tabs, find and invoke elements, close and group tabs, read saved-group chips, foreground a window |
+| Windows shell | `src/Rig.Core/Chrome/Windows/NativeChromeWindowShell.cs` | Chrome's top-level windows through Win32: handles, profile, rect, monitor |
+| Virtual desktops | `src/Rig.Core/Chrome/Windows/ChromeVirtualDesktops.cs` | Move windows between desktops and report the current one |
+| macOS adapter | `src/Rig.Core/Chrome/MacOS/` | JXA scripts and native accessibility reads (`AxReader`, `MacUi`, `NativeAxApi`) |
+| PR planning | `src/Rig.Core/Chrome/PrPrune.cs`, `ClosePlans.cs` | Pure PR chain and queue planning, and the close executor both planners share |
+| Site rules | `src/Rig.Core/Chrome/SiteRules.cs`, `SiteHosts.cs` | Per-site title rules and the `config/chrome-site-groups.json` host map |
+| Dedupe | `src/Rig.Core/Chrome/Dedupe.cs` | Pure planner for non-PR duplicate pages |
+| Ranking | `src/Rig.Core/Chrome/TabRank.cs` | Keep scores, protection, and the memory-budget planner |
+| Grouping | `src/Rig.Core/Chrome/TabGrouping.cs`, `GroupRunner.cs` | Pure repo and site grouping plan, and its executor |
+| Saved groups | `src/Rig.Core/Chrome/SavedGroups.cs`, `SavedConsolidation.cs` | Chip parsing and consolidation planning; deleting the closed duplicates |
+| History | `src/Rig.Core/Chrome/ChromeHistory.cs` | Read-only lookup of the hosts a title was visited on |
+| Presence | `src/Rig.Core/Chrome/Presence.cs`, `Windows/NativePresence.cs`, `MacOS/MacPresence.cs` | Keyboard and mouse idle time, and Chrome's microphone and camera use |
+| Unattended | `src/Rig.Core/Chrome/Unattended.cs`, `UnattendedGrouping.cs` | Call detection, the idle wait and the input interrupts |
+| Output | `src/Rig.Core/Chrome/TabPlanText.cs` | The plans as printable lines |
+| Traces | `src/Rig.Core/Chrome/ChromeTraces.cs` | Where organise traces go, retention, and the reports |
+| Install | `src/Rig.Core/Chrome/ChromeInstall.cs` | The scheduled run's root and the `chrome-tabs` shim |
+| Python, still live | `src/desktop_manager/chrome/cli.py` (`organise`), `cli_common.py`, `scheduled.py`, `traces.py`, `install_location.py` | `organise`, the scheduled `--unattended` entry point, and the trace and log paths it shares with C# |
+
+The Python bodies for the ported commands are still in
+`src/desktop_manager/chrome/` but nothing registers them; `traces_cli.py`, which
+held the Python `traces` group, was deleted when C# took that command over.
 
 ## How the adapter reads Chrome
 
@@ -444,28 +454,26 @@ use each service's documented web-client titles and have not been seen live.
 ## macOS smoke check
 
 The C# macOS driver (`src/Rig.Core/Chrome/MacOS/`) reads Chrome through
-scripting and native accessibility. The interop (`NativeAxApi`) has no CI job
-and no test calls it, because reading Chrome's accessibility tree turns on
-Chrome's accessibility mode. Nobody runs the driver live before the s15
-cutover. At the cutover the owner runs this check by hand, on a Mac, with
-Chrome open. It only reads: nothing is selected, moved or closed.
+scripting and native accessibility. The native interop (`NativeAxApi`) has no
+CI job and no test calls it, because reading Chrome's accessibility tree turns
+on Chrome's accessibility mode. So it is checked by hand, on a Mac, with Chrome
+open. It only reads: nothing is selected, moved or closed.
+
+The check used to compare this read with the Python driver's, tab for tab. The
+Python `chrome-tabs list` command is no longer registered, so that comparison
+cannot be run any more; what follows is the C# read and what it should show.
 
 1. Grant Accessibility and Automation (Chrome) access to the terminal, under
    System Settings › Privacy & Security.
-2. Read with the Python driver:
-   `uv run desktop-manager chrome-tabs list --json > temp/chrome-py.json`
-3. Read with the C# driver, from the cutover branch:
+2. Read with the C# driver:
    `dotnet run --project src/Rig.Cli -- chrome-tabs list --json > temp/chrome-cs.json`
-4. Compare: `git diff --no-index temp/chrome-py.json temp/chrome-cs.json`.
-   Read again with each driver if a tab loads or retitles between the reads.
-   The two should agree on windows, profiles, tab ids, titles, URLs, pinned,
-   audible, memory and groups. Group ids differ by design: C# splits the
-   window id and the header's hash into 32-bit halves.
+3. Check the read against Chrome itself: every window and its tabs, profiles,
+   tab ids, titles, URLs, pinned, audible, memory and groups. Group ids split
+   the window id and the header's hash into 32-bit halves, so they are opaque.
 
 Expect every tab reported as pinned and audible with `Accessibility metadata
-unavailable` when accessibility is denied. If only the C# read shows that,
-the native interop is at fault. Remove both files from `temp/` afterwards,
-since they hold your tab titles and URLs.
+unavailable` when accessibility is denied. Remove the file from `temp/`
+afterwards, since it holds your tab titles and URLs.
 
 ## Limits
 

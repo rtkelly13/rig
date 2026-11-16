@@ -36,7 +36,10 @@ uv run desktop-manager jobs install
 - Logs: a `logs/` directory beside the plan file, for restores and the display guard.
 - Traces: every run writes OTLP-JSON spans for restore phases, desktops, entries,
   virtual-desktop calls and helper subprocesses. See [observability](../observability.md).
-- Code: `src/desktop_manager/`.
+- Code: `src/Rig.Cli/Desktop/` and `src/Rig.Core/Desktop/` for the workspace layout and
+  display guard, `src/Rig.Cli/Chrome/` and `src/Rig.Core/Chrome/` for the Chrome tab
+  commands that have moved to C#, and `src/desktop_manager/` for the Python remainder
+  (`organise`, `jobs`, `work`).
 
 ## Testing
 

@@ -38,6 +38,42 @@ The files that did either when the rules landed are listed in `fake-location-all
 `patching-allow` in `pyproject.toml`. Those lists only shrink: when you touch one of those files,
 move its fake into `tests/fakes/` or pass the fake through a seam, then delete its entry.
 
+### C# tests
+
+The C# side ([ADR 0022](adr/0022-csharp-is-rigs-primary-language.md)) has six test projects under `tests/`, all
+xUnit v3 on Microsoft.Testing.Platform. `tests/Directory.Build.props` sets `xunit.v3.mtp-v2`, `coverlet.MTP`, a
+global `using Xunit` and aggressive parallel collections, so a new project needs only its project reference.
+
+| Project | Pins |
+|:--|:--|
+| `Rig.Core.Tests` | `Rig.Core` behaviour, with CsCheck properties beside the example tests |
+| `Rig.Cli.Tests` | command parsing, output and the Python forwarding rows |
+| `Rig.Web.Tests` | ASP.NET routes, MCP and the SPA assets |
+| `Rig.Architecture.Tests` | the layer rules (NetArchTest) |
+| `Rig.CommandOwnership.Tests` | the ownership gate's discovery |
+| `Rig.Specs` | the Gherkin scenarios, through Reqnroll ([BDD specs](development.md#bdd-specs-testsrigspecs)) |
+
+```bash
+dotnet test tests/Rig.Core.Tests/Rig.Core.Tests.csproj   # one project
+dotnet test --solution rig.slnx                          # every project
+```
+
+Properties use CsCheck the way the Python side uses Hypothesis: declare a `Gen<T>` for the domain, then state
+the rule in a `[Fact]` that samples it (`Tilings.Sample(...)`). `GeometryPropertyTests` and
+`GitignorePropertyTests` are the models. Reqnroll generates one test per scenario, and coverlet writes one JSON
+report per project; `scripts/coverage-floor.cs` merges them against the 95% floor
+([the C# floor](#the-c-floor-starts-at-95)).
+
+Fakes follow the same rule as `tests/fakes/`: `tests/Rig.Core.Tests/Fakes/` holds one per port (`FakeProc`,
+`FakeGitHub`, `FakeChromeTabActions`, …), typed as that port. Extend the shared one rather than writing a double
+inline.
+
+Line endings are LF everywhere: `.editorconfig` sets `end_of_line = lf` and `.gitattributes` pins `*.cs` to
+`eol=lf`, so raw string literals match the `\n` output tests compare against. Every JSON rig writes is LF on
+every platform (`JsonOutput` and the runtime state writer), and CRLF is written only where a Windows consumer
+needs it, such as a `.cmd` shim or Windows Terminal settings. A checked-in file a test hashes gets `-text` in
+`.gitattributes`.
+
 ### Properties: state the rule, then let Hypothesis find the counterexample
 
 Useful shapes, each with an example in `tests/desktop_manager/test_placement_properties.py`:

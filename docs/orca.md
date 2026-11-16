@@ -227,9 +227,10 @@ The command is typed as given, so it bypasses `agentDefaultArgs`.
 | Antigravity | `agy --conversation <uuid> --dangerously-skip-permissions` | No. The conversation still records its old folder, so tell it where it now is. |
 | OpenCode | `opencode --auto -s <id>` | **Yes.** `-s` creates an empty session when the id is not in the current folder's project, so launch from the original folder or start fresh with a recap. |
 
-`desktop-manager claude-sessions list --json` lists recent Claude sessions with where each
-was last working. Warp's history of agent launches and their folders is in the `commands`
-table of `warp.sqlite` under `~/Library/Group Containers/*.dev.warp/`.
+`desktop-manager work list --sessions` shows the sessions it has recorded, per work item;
+Claude's own transcripts under `~/.claude/projects` hold each session's folder. Warp's
+history of agent launches and their folders is in the `commands` table of `warp.sqlite`
+under `~/Library/Group Containers/*.dev.warp/`.
 
 A first launch in a new folder stops at the agent's "trust this folder" prompt; answer it
 in the tab.
@@ -292,10 +293,10 @@ nothing in rig causes or prevents it.
 still records each tab's worktree, title and agent session id (`unifiedTabs[].aiVaultTitle`,
 plus `sleepingAgentSessionsByPaneKey[].providerSession` with the session's own `cwd`).
 
-**Recover** with the `claude-session-recover` skill's Orca script, which is read-only:
+**Recover** with the read-only Orca script in `tools/orca-lost-tabs/`:
 
 ```bash
-uv run python -I skills/claude-session-recover/scripts/orca_lost_tabs.py --orca-data "$APPDATA/orca"
+uv run python -I tools/orca-lost-tabs/orca_lost_tabs.py --orca-data "$APPDATA/orca"
 ```
 
 It compares the newest backup saved before the running Orca started with the live state, skips
@@ -307,12 +308,12 @@ and a session started in a worktree the sidebar hides fails with `selector_not_f
 **Recover the same day.** Orca writes a backup about once an hour and keeps only the newest
 five, so the pre-restart snapshot rotates away roughly five hours after Orca comes back up.
 Once it has, the script stops with `no backup saved before this Orca started`, and the
-fallback is `daemon.log` (`session-exited` at the shutdown time) plus
-`desktop-manager claude-sessions list`.
+fallback is `daemon.log` (`session-exited` at the shutdown time) plus the session's
+transcript under `~/.claude/projects`.
 
 A tab opened after the newest pre-restart backup is not in it. Check `daemon.log` for
-`session-created` events after the backup's time, and `desktop-manager claude-sessions list`
-for their sessions.
+`session-created` events after the backup's time, and `~/.claude/projects` for their
+sessions.
 
 ### Driving the other instance's CLI
 
