@@ -179,8 +179,8 @@ How a later run uses the latest ask for a pane:
 
 `estate wrapup` and `estate wrapup report` run on the C# CLI. The command is in
 `src/Rig.Cli/Estate/WrapupCommand.cs`; the plan and sends in `src/Rig.Core/Estate/Wrapup.cs`; the rolling
-follow and the follower in `WrapupRun.cs`; the state file in `WrapupState.cs`. The only Python left is
-`rig.estate.wrapup_state`, which the triage inbox uses to read the state file.
+follow and the follower in `WrapupRun.cs`; the state file in `WrapupState.cs`. No Python reads the state
+file any more: the former `rig.estate.wrapup_state` reader and the triage inbox that used it are retired.
 
 The follower holds `wrapup/follow.lock` under rig's app data folder exclusively: a share-deny open on
 Windows, an advisory lock on macOS and Linux. Either is released when the process exits.

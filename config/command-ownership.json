@@ -573,6 +573,26 @@
     "tests/test_migration_numbering.py",
     "tests/test_sqlite_database.py",
     "tests/test_triage_facts.py",
-    "tests/test_triage_queue.py"
+    "tests/test_triage_queue.py",
+    "src/rig/otel_stack/__init__.py",
+    "src/rig/otel_stack/backfill.py",
+    "src/rig/otel_stack/explorers.py",
+    "src/rig/otel_stack/query.py",
+    "src/rig/otel_stack/trace_list.py",
+    "src/rig/estate/locate.py",
+    "src/rig/estate/trim.py",
+    "src/rig/estate/wrapup_state.py",
+    "src/rig/workspace/layout.py",
+    "src/rig/gh_origin.py",
+    "src/rig/python_command.py",
+    "src/desktop_manager/chrome/install.py",
+    "src/desktop_manager/jobs/session_windows.py",
+    "tests/test_otel_clickhouse.py",
+    "tests/test_estate_locate.py",
+    "tests/test_estate_trim.py",
+    "tests/test_workspace_layout.py",
+    "tests/test_gh_origin.py",
+    "tests/desktop_manager/test_chrome_install.py",
+    "tests/desktop_manager/test_chrome_list_json.py"
   ]
 }

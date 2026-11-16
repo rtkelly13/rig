@@ -8,11 +8,10 @@ until its scheduled/wait slice moves, and the `traces` spelling forwards the who
 from __future__ import annotations
 
 import contextvars
-import json
 import re
 import time
 from collections.abc import Sequence
-from dataclasses import asdict, replace
+from dataclasses import replace
 from datetime import datetime
 from typing import TYPE_CHECKING, Annotated
 
@@ -22,7 +21,6 @@ from rich.markup import escape
 from desktop_manager.chrome.cli_common import (
     command_driver,
     console,
-    filter_profile,
     keep_desktop,
     list_profile_windows,
     plan_line,
@@ -31,21 +29,18 @@ from desktop_manager.chrome.cli_common import (
 )
 from desktop_manager.chrome.dedupe import DedupePlan
 from desktop_manager.chrome.driver import ChromeReadError
-from desktop_manager.chrome.group_run import plan_grouping, run_group_plan
+from desktop_manager.chrome.group_run import plan_grouping
 from desktop_manager.chrome.grouping import GroupPlan
 from desktop_manager.chrome.install_location import DEFAULT_WAIT_MINUTES
 from desktop_manager.chrome.pr_prune import (
     AppliedClose,
     ClosePlan,
     PrunePlan,
-    pr_ref_from_title,
 )
-from desktop_manager.chrome.rank import format_size
 from desktop_manager.chrome.render import (
     render_group_plan,
     render_memory_plan,
     render_plan,
-    render_rank,
     render_site_plan,
 )
 from desktop_manager.chrome.saved_consolidation import (
@@ -54,8 +49,7 @@ from desktop_manager.chrome.saved_consolidation import (
     plan_saved_groups,
     set_pending_profiles,
 )
-from desktop_manager.chrome.site_rules import identify
-from desktop_manager.chrome.tabs import ChromeTab, ChromeWindow, screen_order
+from desktop_manager.chrome.tabs import ChromeWindow, screen_order
 from desktop_manager.chrome.trace_forward import forward as forward_traces
 from desktop_manager.chrome.traces import RUN_SPAN, SCOPE
 from desktop_manager.chrome.unattended import (
@@ -98,76 +92,6 @@ _ThisDesktopOpt = Annotated[
 _ProfileOpt = Annotated[
     str | None, typer.Option("--profile", help="Only this profile: directory ('Profile 4') or display name.")
 ]
-
-
-def _flags(tab: ChromeTab) -> str:
-    return "".join(
-        flag if on else "."
-        for flag, on in (("S", tab.selected), ("P", tab.pinned), ("L", tab.loaded), ("A", tab.audible))
-    )
-
-
-def _window_heading(number: int, window: ChromeWindow) -> str:
-    where = f"desktop {window.desktop_number}" if window.desktop_number is not None else "desktop ?"
-    state = ", minimised" if window.minimized else ""
-    profile = window.profile_name or window.profile_key
-    return f"Window {number} [{escape(profile)} / {escape(window.profile_key)}] {where}{state}: {len(window.tabs)} tabs"
-
-
-def window_json(window: ChromeWindow, tabs: Sequence[ChromeTab]) -> dict[str, object]:
-    """A window as ``list --json`` prints it, with ``rect`` and ``monitor`` as arrays."""
-    rect = window.rect
-    monitor = window.monitor
-    return {
-        **asdict(window),
-        "tabs": [asdict(tab) for tab in tabs],
-        "rect": None if rect is None else [rect.left, rect.top, rect.right, rect.bottom],
-        "monitor": None if monitor is None else [monitor.x, monitor.y],
-    }
-
-
-@requires(Platform.MACOS)
-def list_tabs(
-    ctx: typer.Context,
-    profile: _ProfileOpt = None,
-    prs_only: bool = typer.Option(False, "--prs-only", help="Only tabs showing a GitHub pull request."),
-    as_json: bool = typer.Option(False, "--json", help="Machine-readable output."),
-) -> None:
-    """List every Chrome window's tabs on every desktop (flags: Selected Pinned Loaded Audible)."""
-    started = time.perf_counter()
-    windows = filter_profile(command_driver(ctx).list_windows(), profile)
-    elapsed = time.perf_counter() - started
-
-    if as_json:
-        payload = [
-            window_json(window, [tab for tab in window.tabs if not prs_only or _is_pr(tab)]) for window in windows
-        ]
-        typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
-        return
-
-    for number, window in enumerate(windows, start=1):
-        console.print(f"[bold]{_window_heading(number, window)}[/bold]")
-        for tab in window.tabs:
-            pr = pr_ref_from_title(tab.title)
-            if prs_only and pr is None:
-                continue
-            identity = None if pr else identify(tab.title)
-            key = f"[cyan]{pr}[/cyan] " if pr else f"[dim]{escape(identity.key)}[/dim] " if identity else ""
-            console.print(f"  {tab.index + 1:>3} {_flags(tab)} {_memory(tab):>7} {key}{escape(tab.title)}")
-    total = sum(len(window.tabs) for window in windows)
-    memory = sum(tab.memory_mb or 0.0 for window in windows for tab in window.tabs)
-    console.print(
-        f"[dim]{len(windows)} windows, {total} tabs, {format_size(memory)} reported by tabs, "
-        f"enumerated in {elapsed:.2f}s[/dim]"
-    )
-
-
-def _memory(tab: ChromeTab) -> str:
-    return format_size(tab.memory_mb) if tab.memory_mb is not None else "-"
-
-
-def _is_pr(tab: ChromeTab) -> bool:
-    return pr_ref_from_title(tab.title) is not None
 
 
 _GithubOpt = Annotated[
@@ -222,125 +146,10 @@ def _gh_query(query: str) -> GhResult:
         return result
 
 
-@requires(Platform.MACOS)
-def rank(
-    ctx: typer.Context,
-    profile: _ProfileOpt = None,
-    github: _GithubOpt = True,
-    limit: int | None = typer.Option(None, "--limit", min=1, help="Only the N lowest-ranked tabs (the first to go)."),
-    as_json: bool = typer.Option(False, "--json", help="Machine-readable output."),
-) -> None:
-    """Rank every tab by keep priority, with the reasons: protected first, the first to close last."""
-    from desktop_manager.chrome.rank import rank_tabs
-
-    windows = filter_profile(command_driver(ctx).list_windows(), profile)
-    ranked = rank_tabs(windows, _resolve(windows, github))
-    shown = ranked[-limit:] if limit else ranked
-    if as_json:
-        payload = [
-            {
-                "label": item.label,
-                "title": item.tab.title,
-                "profile": item.profile,
-                "window": item.window_number,
-                "tab": item.tab.index + 1,
-                "protected": item.protected,
-                "score": item.score,
-                "memory_mb": item.tab.memory_mb,
-                "reasons": list(item.reasons),
-                "flags": list(item.flags),
-                "details": asdict(item.details) if item.details else None,
-            }
-            for item in shown
-        ]
-        typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
-        return
-    console.print("[bold]  #  score   memory  page[/bold]")
-    print_lines(render_rank(shown))
-    protected = sum(1 for item in ranked if item.protected)
-    memory = sum(item.memory_mb for item in ranked)
-    console.print(f"[dim]{len(ranked)} tabs, {protected} protected, {format_size(memory)} reported by tabs[/dim]")
-
-
-@requires(Platform.MACOS)
-def prune(
-    ctx: typer.Context,
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print the plan grouped by reason; close nothing."),
-    profile: _ProfileOpt = None,
-    github: _GithubOpt = True,
-    sites: bool = typer.Option(
-        True, "--sites/--no-sites", help="Close duplicate non-PR pages by per-site title rules."
-    ),
-    max_memory: float | None = typer.Option(
-        None,
-        "--max-memory",
-        min=0.1,
-        help="GB budget for the memory Chrome reports per tab. After the other rules, close the lowest-ranked "
-        "tabs (biggest first) until the rest fit. Calls, audible, pinned and active tabs are never closed.",
-    ),
-    unattended: bool = typer.Option(
-        False,
-        "--unattended",
-        help="For scheduled runs: close nothing while a call is live, and hold back every window's active tab "
-        "and everything in the foreground window.",
-    ),
-) -> None:
-    """Close merged, duplicate and superseded GitHub PR tabs, and duplicate pages, per profile across windows.
-
-    Tabs close one window at a time in screen order, and each window's active tab
-    is put back before the next window starts."""
-    from desktop_manager.chrome.pr_prune import apply_plans
-
-    total_started = time.perf_counter()
-    driver = command_driver(ctx)
-    windows = list_profile_windows(driver, profile, phase="initial")
-    if unattended and not dry_run and skip_if_live(windows):
-        return
-    enumerated = time.perf_counter()
-
-    resolution = _resolve(windows, github)
-    resolved = time.perf_counter()
-
-    plans = _close_plans(windows, resolution, github=github, sites=sites, max_memory=max_memory)
-    planned = time.perf_counter()
-    repos = len({ref.slug for ref in resolution.states})
-    timings = (
-        f"enumerate {enumerated - total_started:.2f}s, resolve {resolved - enumerated:.2f}s "
-        f"({repos} repos), plan {planned - resolved:.3f}s"
-    )
-
-    if unattended:
-        from desktop_manager.chrome.pr_prune import hold_unattended
-
-        runnable = hold_unattended(plans, foreground_hwnd=driver.foreground_window())
-        plans = [runnable]
-        if runnable.held:
-            console.print(f"[bold]Held back: active tab or foreground window ({len(runnable.held)})[/bold]")
-            print_lines([plan_line(close.item, "left for an attended run") for close in runnable.held])
-
-    if dry_run or not any(plan.closes for plan in plans):
-        prefix = "Dry run: nothing closed. " if dry_run else ""
-        console.print(f"[dim]{prefix}{timings}, total {planned - total_started:.2f}s[/dim]")
-        return
-
-    order = [window.hwnd for window in screen_order(windows, current_desktop=driver.desktops.current())]
-    with keep_desktop(driver.desktops):
-        applied = apply_plans(plans, windows, driver, order=order)
-    failures = _report_failed_closes(applied)
-    closed = len(applied) - len(failures)
-    per_close = sum(result.seconds for result in applied) / len(applied)
-    console.print(
-        f"[green]Closed {closed}/{len(applied)}[/green] [dim]{timings}, "
-        f"{per_close:.2f}s per close, total {time.perf_counter() - total_started:.2f}s[/dim]"
-    )
-    if failures:
-        raise typer.Exit(code=1)
-
-
 def _close_plans(
     windows: Sequence[ChromeWindow], resolution: Resolution, *, github: bool, sites: bool, max_memory: float | None
 ) -> list[ClosePlan]:
-    """Every close plan `prune` runs, each printed as it is made."""
+    """Every close plan `organise` runs, each printed as it is made."""
     with trace_span("plan_closes") as span:
         plans = _make_close_plans(windows, resolution, github=github, sites=sites, max_memory=max_memory)
         span.set(**{f"close.{_plan_kind(plan)}": len(plan.closes) for plan in plans})
@@ -387,44 +196,6 @@ def _report_failed_closes(applied: Sequence[AppliedClose]) -> list[AppliedClose]
     for result in failures:
         console.print(f"[red]Not closed[/red] {escape(result.planned.item.label)}: {escape(result.detail)}")
     return failures
-
-
-@requires(Platform.MACOS)
-def group(
-    ctx: typer.Context,
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print the plan; move nothing."),
-    profile: _ProfileOpt = None,
-    min_size: int = typer.Option(
-        2, "--min-size", min=1, help="Fewest tabs of one repo or site that start a new group."
-    ),
-    this_desktop: _ThisDesktopOpt = False,
-) -> None:
-    """Gather GitHub tabs into one group per repo, all in the window holding the most
-    GitHub tabs, and Google, Asana, YouTrack and Claude tabs into one group per site.
-
-    Chrome only groups through the tab's right-click menu, so this brings each
-    window forward in turn and uses the mouse for a moment per tab: leave the
-    mouse and keyboard alone until it finishes. A window on another desktop is
-    brought onto this one while it is worked on, then sent back. Call tabs never move.
-    """
-
-    started = time.perf_counter()
-    driver = command_driver(ctx)
-    windows = list_profile_windows(driver, profile, phase="initial")
-    current = driver.desktops.current()
-    plan = plan_grouping(screen_order(windows, current_desktop=current), current, min_size, this_desktop)
-    print_lines(render_group_plan(plan))
-    if dry_run or not plan.moves:
-        prefix = "Dry run: nothing moved. " if dry_run else ""
-        console.print(f"[dim]{prefix}planned in {time.perf_counter() - started:.2f}s[/dim]")
-        return
-
-    ran = run_group_plan(driver, plan)
-    moved, error = ran.moved, ran.stopped
-    if error is not None:
-        console.print(f"[red]Stopped[/red] {escape(error)}. {moved}/{len(plan.moves)} moved.")
-        raise typer.Exit(code=1)
-    console.print(f"[green]Moved {moved}/{len(plan.moves)}[/green] [dim]in {time.perf_counter() - started:.2f}s[/dim]")
 
 
 @chrome_tabs_app.command(name="organise")

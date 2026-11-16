@@ -1,3 +1,0 @@
-from svgwrite.base import BaseElement
-
-class ClipPath(BaseElement): ...

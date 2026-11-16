@@ -232,7 +232,7 @@ def check(copy: Path, runner: Runner = run) -> list[str]:
         commands.append([python, "-c", "import rig.web_host.server"])
     plan = copy / PLAN_RELATIVE
     if plan.is_file():
-        commands.append([desktop_manager, "workspace", "validate-plan", "--config", str(plan)])
+        commands.append([str(published(copy, "rig")), "desktop", "workspace", "validate-plan", "--config", str(plan)])
     problems: list[str] = []
     for command in commands:
         ran = runner(command, copy)

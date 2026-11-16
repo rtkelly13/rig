@@ -144,12 +144,36 @@ public sealed class RuntimeManagerTests : IDisposable
     public void The_check_validates_the_copys_workspace_plan()
     {
         var repo = NewRepo();
-        _ = Commit(repo, new Dictionary<string, string> { ["desktop-manager/workspace-plan.bundle.json"] = "{}" });
+        var sha = Commit(repo, new Dictionary<string, string> { ["desktop-manager/workspace-plan.bundle.json"] = "{}" });
         var tools = new Tools(_system);
 
         _ = Manager(tools).Install(repo, "HEAD", fetch: false);
 
-        Assert.Contains(tools.Calls, call => call.Argv.Skip(1).Take(2).SequenceEqual(["workspace", "validate-plan"]));
+        var copy = Path.Join(Root, sha[..RuntimeManager.ShortShaLength]);
+        var windows = OperatingSystem.IsWindows();
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
+            [RuntimeManager.Published(copy, "rig", windows), "desktop", "workspace", "validate-plan", "--config",
+                Path.Join(copy, "desktop-manager", "workspace-plan.bundle.json")]));
+    }
+
+    [Fact]
+    public void A_good_copy_with_a_plan_bundle_installs_when_desktop_manager_has_no_workspace_group()
+    {
+        var repo = NewRepo();
+        var sha = Commit(repo, new Dictionary<string, string> { ["desktop-manager/workspace-plan.bundle.json"] = "{}" });
+        var tools = new Tools(_system)
+        {
+            // The real `desktop-manager` keeps only chrome-tabs, runtime, work and jobs; the plan
+            // check must go through the published `rig desktop workspace validate-plan` instead.
+            Fails = request => Path.GetFileName(request.Argv[0]).StartsWith("desktop-manager", StringComparison.Ordinal)
+                && request.Argv.Skip(1).Take(1).SequenceEqual(["workspace"]),
+        };
+        var manager = Manager(tools);
+
+        var result = manager.Install(repo, "HEAD", fetch: false);
+
+        Assert.True(result.Changed);
+        Assert.Equal(sha[..RuntimeManager.ShortShaLength], manager.ReadState().Current);
     }
 
     [Fact]
@@ -522,7 +546,8 @@ public sealed class RuntimeManagerTests : IDisposable
 
         var copy = Path.Join(Root, sha[..RuntimeManager.ShortShaLength]);
         Assert.True(result.Changed);
-        Assert.Contains(tools.Calls, call => call.Argv.Contains("validate-plan"));
+        Assert.Contains(tools.Calls, call => call.Argv[0] == RuntimeManager.Published(copy, "rig", OperatingSystem.IsWindows())
+            && call.Argv.Contains("validate-plan"));
     }
 
     [Fact]

@@ -123,7 +123,7 @@ def test_the_check_validates_the_copys_workspace_plan(repo: Path, tmp_path: Path
 
     runtime.install(repo, "HEAD", root=tmp_path / "runtime", fetch=False, runner=tools)
 
-    assert any(call[1:3] == ["workspace", "validate-plan"] for call in tools.calls)
+    assert any(call[1:4] == ["desktop", "workspace", "validate-plan"] for call in tools.calls)
 
 
 def test_installing_the_current_commit_again_changes_nothing(repo: Path, tmp_path: Path):
