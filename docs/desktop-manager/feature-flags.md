@@ -35,13 +35,13 @@ A plan resolves each flag in this order, the later winning:
 
 ```bash
 # What is on, what is paused, and which entries belong to each
-uv run desktop-manager workspace features
+rig desktop workspace features
 
 # Swap the active terminal variant for one restore
-uv run desktop-manager workspace restore --enable warp-terminals --disable wt-terminals
+rig desktop workspace restore --enable warp-terminals --disable wt-terminals
 
 # Both flags are repeatable and also work on audit and validate-plan
-uv run desktop-manager workspace audit --enable warp-terminals
+rig desktop workspace audit --enable warp-terminals
 ```
 
 The command fails, rather than restoring the wrong layout, when you name an

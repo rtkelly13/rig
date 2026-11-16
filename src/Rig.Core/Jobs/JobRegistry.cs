@@ -105,7 +105,7 @@ public static class JobRegistry
         List<Job> jobs =
         [
             new("restore", "Open and place every window in the workspace plan.",
-                [desktopManager, "workspace", "restore", "--config", plan], Logon, JobCadence.EveryRun, 45)
+                [rig, "desktop", "workspace", "restore", "--config", plan], Logon, JobCadence.EveryRun, 45)
             {
                 Requires = [plan],
                 RetryExitCodes = new HashSet<int> { RestoreDeferred },
@@ -117,7 +117,7 @@ public static class JobRegistry
                 DetailLog = env.ChromeTabsLog,
             },
             new("align", "Put open plan windows back on their desktop and slot, launching nothing.",
-                [desktopManager, "workspace", "align", "--config", plan], Tick, JobCadence.EveryRun, 5)
+                [rig, "desktop", "workspace", "align", "--config", plan], Tick, JobCadence.EveryRun, 5)
             {
                 Requires = [plan],
                 IdleMinutes = AlignIdleMinutes,

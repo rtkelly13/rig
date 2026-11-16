@@ -8,9 +8,6 @@ namespace Rig.Core.Jobs;
 /// <param name="Rigw">The published windowless coordinator.</param>
 public sealed record JobsInstallTarget(string Root, string Plan, string Rigw)
 {
-    /// <summary>The guard still runs in Python until its separate desktop cutover.</summary>
-    public string Pythonw => Path.Join(Root, ".venv", "Scripts", "pythonw.exe");
-
     /// <summary>Resolves the install paths, refuses linked worktrees and validates every target before changing tasks.</summary>
     public static async Task<JobsInstallTarget> ResolveAsync(string checkout, string appData, string userPlan, IProc proc, CancellationToken cancellationToken = default)
     {
@@ -38,7 +35,7 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rigw)
             target = new(checkout, userPlan, Path.Join(checkout, "temp", "jobs-runtime", "rigw.exe"));
         }
 
-        foreach (var path in new[] { target.Rigw, target.Pythonw, target.Plan })
+        foreach (var path in new[] { target.Rigw, target.Plan })
         {
             if (!File.Exists(path))
             {

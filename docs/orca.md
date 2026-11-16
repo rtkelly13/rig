@@ -252,7 +252,7 @@ asked. rig applies updates instead, so dismiss Orca's update prompts.
 - **On demand**:
 
   ```bash
-  uv run desktop-manager workspace update-orca --config <plan> [--dry-run] [--close-timeout 60]
+  rig desktop workspace update-orca --config <plan> [--dry-run] [--close-timeout 60]
   ```
 
   It asks every Orca window to close and waits (Orca saves sessions as it quits) before

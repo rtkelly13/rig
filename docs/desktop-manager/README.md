@@ -1,19 +1,19 @@
 # Windows Workspace (desktop-manager)
 
-`desktop-manager workspace` captures and restores a Windows virtual-desktop setup:
+`rig desktop workspace` captures and restores a Windows virtual-desktop setup:
 it recreates the planned desktops, reuses or launches each planned window, and
 places it on the right monitor.
 
 ## Typical flow
 
 ```bash
-uv run desktop-manager workspace wire-machine --workspace C:/code/workspace --personal-workspace C:/code/personal/rig
-uv run desktop-manager workspace validate-plan
-uv run desktop-manager workspace restore
+rig desktop workspace wire-machine --workspace C:/code/workspace --personal-workspace C:/code/personal/rig
+rig desktop workspace validate-plan
+rig desktop workspace restore
 uv run desktop-manager jobs install
 ```
 
-`uv run desktop-manager workspace --help` lists every command and flag.
+`rig desktop workspace --help` lists every command and flag.
 
 ## Guides
 

@@ -113,8 +113,8 @@ under `desktop-manager/bundles/`.
 ## Exporting the current layout
 
 ```bash
-uv run desktop-manager workspace export-plan --config "%APPDATA%\workspace-manager\windows-workspace.json"
-uv run desktop-manager workspace export-plan --workspace C:/code/workspace --bundle --config desktop-manager/captured.bundle.json
+rig desktop workspace export-plan --config "%APPDATA%\workspace-manager\windows-workspace.json"
+rig desktop workspace export-plan --workspace C:/code/workspace --bundle --config desktop-manager/captured.bundle.json
 ```
 
 - Export walks the current virtual desktops with the same capture logic as `status`.
@@ -127,9 +127,9 @@ uv run desktop-manager workspace export-plan --workspace C:/code/workspace --bun
 ## Validating a plan
 
 ```bash
-uv run desktop-manager workspace validate-plan
-uv run desktop-manager workspace validate-plan --strict
-uv run desktop-manager workspace validate-plan --screens 3
+rig desktop workspace validate-plan
+rig desktop workspace validate-plan --strict
+rig desktop workspace validate-plan --screens 3
 ```
 
 Validation runs two passes:

@@ -118,7 +118,6 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
     """The jobs, in the order a run takes them."""
     from desktop_manager.chrome.install_location import LOG_NAME, install_root
 
-    desktop_manager = env.script("desktop-manager")
     # The C# front door: `rig estate …` and the rest run on it (#85).
     rig = env.script("rig")
     python = str(env.scripts / ("python.exe" if os.name == "nt" else "python"))
@@ -127,7 +126,7 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
         Job(
             name="restore",
             description="Open and place every window in the workspace plan.",
-            argv=(desktop_manager, "workspace", "restore", "--config", str(env.plan)),
+            argv=(rig, "desktop", "workspace", "restore", "--config", str(env.plan)),
             triggers=frozenset({Trigger.LOGON}),
             cadence=Cadence.EVERY_RUN,
             timeout_minutes=45,
@@ -146,7 +145,7 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
         Job(
             name="align",
             description="Put open plan windows back on their desktop and slot, launching nothing.",
-            argv=(desktop_manager, "workspace", "align", "--config", str(env.plan)),
+            argv=(rig, "desktop", "workspace", "align", "--config", str(env.plan)),
             triggers=frozenset({Trigger.TICK}),
             cadence=Cadence.EVERY_RUN,
             timeout_minutes=5,

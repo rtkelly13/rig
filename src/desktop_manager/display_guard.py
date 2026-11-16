@@ -12,8 +12,8 @@ that has moved since. A system sleep counts as a topology change even when the
 monitor set looks the same afterwards, because the guard cannot see what happened
 while it was suspended.
 
-This module is the platform-independent core. ``display_guard_windows`` supplies the
-real ports. The tests drive :class:`DisplayGuard` with fakes.
+This module keeps the cross-process lock the remaining Python jobs use. The guard
+itself now runs in C# as ``rig desktop workspace guard`` (issue #243).
 """
 
 from __future__ import annotations

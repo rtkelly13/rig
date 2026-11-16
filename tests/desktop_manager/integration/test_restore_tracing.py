@@ -124,13 +124,13 @@ def test_cli_main_opens_a_root_span_named_after_the_command(
 ) -> None:
     from desktop_manager import cli
 
-    monkeypatch.setattr(sys, "argv", ["desktop-manager", "workspace", "--help"])
+    monkeypatch.setattr(sys, "argv", ["desktop-manager", "jobs", "--help"])
     with pytest.raises(SystemExit) as exit_info:
         cli.main()
     assert exit_info.value.code == 0
 
     spans = _spans(isolate_trace_output)
-    root = next(span for span in spans if span["name"] == "desktop-manager workspace")
+    root = next(span for span in spans if span["name"] == "desktop-manager jobs")
     assert root["parentSpanId"] == ""
     assert root["status"]["code"] == 1
     assert (isolate_trace_output / "desktop-manager").is_dir()

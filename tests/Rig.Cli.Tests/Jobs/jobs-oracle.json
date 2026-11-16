@@ -18,7 +18,8 @@
    "name": "restore",
    "description": "Open and place every window in the workspace plan.",
    "argv": [
-    "/rig/.venv/bin/desktop-manager",
+    "/rig/.venv/bin/rig",
+    "desktop",
     "workspace",
     "restore",
     "--config",
@@ -64,7 +65,8 @@
    "name": "align",
    "description": "Put open plan windows back on their desktop and slot, launching nothing.",
    "argv": [
-    "/rig/.venv/bin/desktop-manager",
+    "/rig/.venv/bin/rig",
+    "desktop",
     "workspace",
     "align",
     "--config",

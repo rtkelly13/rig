@@ -36,6 +36,11 @@ public static partial class PlanFiles
     public static DesktopPlan ParseDesktop(string text, string source = "<memory>") =>
         PlanJsonReader.DesktopPlan(ParseJson(text, source));
 
+    /// <summary>One launch entry from a standalone JSON file, as <c>workspace launch-file</c> reads it.</summary>
+    /// <exception cref="InvalidPlanException">The text is not a JSON object that holds a launch entry.</exception>
+    public static LaunchEntry ParseLaunchEntry(string text, string source = "<memory>") =>
+        PlanJsonReader.LaunchItem(ParseJson(text, source));
+
     /// <summary>Writes <paramref name="plan"/> to <paramref name="path"/> as one JSON file.</summary>
     public static void Save(WorkspacePlan plan, string path)
     {

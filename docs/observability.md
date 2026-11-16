@@ -21,7 +21,7 @@ run is one trace. Tracing never breaks the tool: write errors are swallowed.
 - Every `git` and `gh` call anywhere in rig: one span each (`scope` `rig.proc.git` /
   `rig.proc.gh`, with the command, cwd, exit code, duration and a stderr snippet on
   failure), because they all go through `rig.proc`, which runs on `tracing.run`.
-- `desktop-manager`: root span per command (`desktop-manager workspace restore`). A
+- `desktop-manager`: root span per command (`rig desktop workspace restore`). A
   restore nests:
   - `workspace.restore` (dry run, flags, desktop count, retired desktops)
   - phases: `restore.settle_app_updates`, `restore.plan`,

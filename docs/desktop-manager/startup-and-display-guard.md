@@ -21,7 +21,7 @@ A reboot kills the Claude sessions running in the workspace terminals. The
 order (the `restore` and `claude-sessions` jobs in [jobs.md](jobs.md)):
 
 ```bash
-desktop-manager workspace restore --defer-logon-commands [--config ...] [--enable ...]
+rig desktop workspace restore --defer-logon-commands [--config ...] [--enable ...]
 desktop-manager claude-sessions startup [--config ...] [--enable ...]
 ```
 
@@ -123,7 +123,7 @@ back, it often leaves the windows where it moved them. So a monitor that drops o
 on each sleep/wake cycle scrambles the workspace, even after a good restore.
 
 `jobs install` registers the guard as the `Display Guard` scheduled task. The task
-runs `workspace guard` under `pythonw.exe` for the whole session, with no console
+runs `rig desktop workspace guard` under the windowless `rigw.exe` for the whole session, with no console
 window. While it runs, the guard:
 
 - Snapshots every managed window's placement every few seconds while the monitor
@@ -144,7 +144,7 @@ It logs every topology change and every window it moves to `display-guard.log` i
 the restore logs directory. To watch it without moving anything:
 
 ```bash
-uv run desktop-manager workspace guard --dry-run
+rig desktop workspace guard --dry-run
 ```
 
 The guard only puts windows back where they were. It does not relaunch anything
