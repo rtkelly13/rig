@@ -14,11 +14,12 @@ namespace Rig.Web.Tests;
 /// <summary>The routes the Python web child used to serve: triage, the estate's ops answers and telemetry.</summary>
 public sealed class OpsRoutesTests : IAsyncLifetime
 {
-    private readonly Harness _harness = new();
+    private Harness _harness = null!;
     private HttpClient _client = null!;
 
     public async ValueTask InitializeAsync()
     {
+        _harness = await Harness.CreateAsync();
         await _harness.StartAsync();
         _client = new HttpClient { BaseAddress = _harness.Host.Address };
     }
@@ -290,10 +291,21 @@ public sealed class OpsRoutesTests : IAsyncLifetime
     {
         private readonly TempDir _dir = new();
         private readonly HttpClient _forwarding = new(new Upstream());
-        private readonly RigWebHost _host;
-        private readonly OpsRoutes _ops;
+        private RigWebHost _host = null!;
+        private OpsRoutes _ops = null!;
 
-        public Harness()
+        private Harness()
+        {
+        }
+
+        public static async Task<Harness> CreateAsync()
+        {
+            var harness = new Harness();
+            await harness.BuildAsync();
+            return harness;
+        }
+
+        private async Task BuildAsync()
         {
             Directory.CreateDirectory(Root);
             Directory.CreateDirectory(Path.Join(Root, "repo", "temp", ".rig"));
@@ -315,7 +327,7 @@ public sealed class OpsRoutesTests : IAsyncLifetime
                     LastQuery = query;
                     return [new TraceView("trace-1", "rig", "run", 5, 1, 1, 0)];
                 },
-                () => new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, ""),
+                _ => Task.FromResult(new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, "")),
                 () => 0);
 #pragma warning disable CA2000 // The queue owns and disposes both.
             var signals = new AgentSignals(
@@ -325,16 +337,16 @@ public sealed class OpsRoutesTests : IAsyncLifetime
                 () => 0);
             Triage = new TriageInbox(DbPath, Source, QueuePath, signals);
             _ops = new OpsRoutes(Triage, new EstateOps(Root, Feed, Trims), Telemetry);
-            _host = RigWebHost.Create(Settings, _forwarding, () => null, routes: _ops);
+            _host = await RigWebHost.CreateAsync(Settings, _forwarding, () => null, routes: _ops);
         }
 
         public RecordingSource Source { get; } = new();
 
-        public TriageInbox Triage { get; }
+        public TriageInbox Triage { get; private set; } = null!;
 
-        public TrimCache Trims { get; }
+        public TrimCache Trims { get; private set; } = null!;
 
-        public Telemetry Telemetry { get; }
+        public Telemetry Telemetry { get; private set; } = null!;
 
         public TraceQuery? LastQuery { get; private set; }
 

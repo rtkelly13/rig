@@ -120,17 +120,17 @@ public sealed class OpsCoreTests
                 files++;
                 return [new TraceView("file-1", "rig", "root", 5, 1, 1, 0)];
             },
-            () => new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, ""),
+            _ => Task.FromResult(new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, "")),
             () => clock);
 
-        var status = await source.StatusAsync();
+        var status = await source.StatusAsync(TestContext.Current.CancellationToken);
         Assert.Equal("clickhouse", status.Store.Source);
         Assert.True(status.Store.ClickhouseReachable);
         Assert.Equal(1, probes);
-        _ = await source.StatusAsync();
+        _ = await source.StatusAsync(TestContext.Current.CancellationToken);
         Assert.Equal(1, probes);
         clock = 31;
-        _ = await source.StatusAsync();
+        _ = await source.StatusAsync(TestContext.Current.CancellationToken);
         Assert.Equal(2, probes);
 
         var recent = await source.RecentAsync(new TraceQuery(2, 5, "rig.proc"));
@@ -146,14 +146,14 @@ public sealed class OpsCoreTests
                 files++;
                 return [new TraceView("file-1", "rig", "root", 5, 1, 1, 0)];
             },
-            () => new ExplorerStatusView("", false, "", "", false, ""),
+            _ => Task.FromResult(new ExplorerStatusView("", false, "", "", false, "")),
             () => 100);
         var fellBack = await failing.RecentAsync(new TraceQuery());
         Assert.Equal("ndjson", fellBack.Source);
         Assert.Contains("ClickHouse query failed", fellBack.Note, StringComparison.Ordinal);
         Assert.True(fellBack.Note.Length < 400);
         Assert.Equal("file-1", Assert.Single(fellBack.Traces).TraceId);
-        _ = await failing.StatusAsync();
+        _ = await failing.StatusAsync(TestContext.Current.CancellationToken);
         Assert.Equal(1, files);
     }
 
@@ -200,34 +200,53 @@ public sealed class OpsCoreTests
     }
 
     [Fact]
-    public void Explorer_probes_count_any_answer_and_cache_for_the_recheck_window()
+    public async Task Explorer_probes_count_any_answer_and_cache_per_instance_for_the_recheck_window()
     {
         using var handler = new JsonHandler("ok");
         using var probe = new HttpClient(handler);
+        var clock = new AdvancingTime();
         var hyperdx = Environment.GetEnvironmentVariable("RIG_HYPERDX_URL");
         var aspire = Environment.GetEnvironmentVariable("RIG_ASPIRE_URL");
         Environment.SetEnvironmentVariable("RIG_HYPERDX_URL", "http://hyperdx.test/");
         Environment.SetEnvironmentVariable("RIG_ASPIRE_URL", "http://aspire.test/");
         try
         {
-            var first = Telemetry.ExplorerStatus(probe, 0);
+            var explorers = new Telemetry.Explorers(probe, clock);
+            var first = await explorers.StatusAsync(TestContext.Current.CancellationToken);
             Assert.True(first.HyperdxReachable);
             Assert.Equal("http://hyperdx.test/search?where=TraceId%3D%27{trace_id}%27&whereLanguage=sql", first.HyperdxTraceUrl);
             Assert.True(first.AspireReachable);
             Assert.Equal("http://aspire.test/traces/detail/{trace_id}", first.AspireTraceUrl);
+            Assert.Equal(2, handler.Requests);
 
-            var cached = Telemetry.ExplorerStatus(probe, 10);
+            clock.Seconds = 10;
+            var cached = await explorers.StatusAsync(TestContext.Current.CancellationToken);
             Assert.True(cached.HyperdxReachable);
-            var after = Telemetry.ExplorerStatus(probe, 100);
+            Assert.True(cached.AspireReachable);
+            Assert.Equal(2, handler.Requests);
+
+            clock.Seconds = 100;
+            var after = await explorers.StatusAsync(TestContext.Current.CancellationToken);
             Assert.True(after.HyperdxReachable);
+            Assert.Equal(4, handler.Requests);
+
+            // Another instance has its own cache: one source's answers never become another's.
+            var other = new Telemetry.Explorers(probe, clock);
+            _ = await other.StatusAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(6, handler.Requests);
+
+            explorers.Reset();
+            _ = await explorers.StatusAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(8, handler.Requests);
 
             Environment.SetEnvironmentVariable("RIG_HYPERDX_URL", "");
             Environment.SetEnvironmentVariable("RIG_ASPIRE_URL", "");
-            var none = Telemetry.ExplorerStatus(probe, 1000);
+            var none = await explorers.StatusAsync(TestContext.Current.CancellationToken);
             Assert.False(none.HyperdxReachable);
             Assert.False(none.AspireReachable);
             Assert.Empty(none.HyperdxTraceUrl);
             Assert.Empty(none.AspireTraceUrl);
+            Assert.Equal(8, handler.Requests);
         }
         finally
         {
@@ -242,7 +261,7 @@ public sealed class OpsCoreTests
         using var dir = new TempDir();
         using var telemetry = Telemetry.ForCheckout(Path.Join(dir.Path, "temp", "traces", "sdk"));
 
-        var status = await telemetry.StatusAsync();
+        var status = await telemetry.StatusAsync(TestContext.Current.CancellationToken);
 
         Assert.True(status.Store.Source is "clickhouse" or "ndjson");
         Assert.False(string.IsNullOrEmpty(status.Store.Detail));
@@ -372,7 +391,7 @@ public sealed class OpsCoreTests
     }
 
     [Fact]
-    public void The_real_estate_and_ops_sources_build_for_a_settings_tree()
+    public async Task The_real_estate_and_ops_sources_build_for_a_settings_tree()
     {
         using var dir = new TempDir().AsCodeRoot();
         var settings = new WebHostSettings(
@@ -389,7 +408,7 @@ public sealed class OpsCoreTests
             Path.Join(dir.Path, "temp", "triage", "queue.md"),
             Path.Join(dir.Path, "temp", "traces", "sdk"));
         using var estate = EstateOps.ForSettings(settings);
-        using var ops = OpsRoutes.ForSettings(settings);
+        using var ops = await OpsRoutes.ForSettingsAsync(settings, TestContext.Current.CancellationToken);
 
         Assert.Contains("No decisions feed yet", estate.Decisions().Note, StringComparison.Ordinal);
         Assert.NotNull(ops.Triage);
@@ -441,12 +460,22 @@ public sealed class OpsCoreTests
         }.ToJsonString();
     }
 
+    private sealed class AdvancingTime : TimeProvider
+    {
+        public double Seconds { get; set; }
+
+        public override DateTimeOffset GetUtcNow() => DateTimeOffset.UnixEpoch.AddSeconds(Seconds);
+    }
+
     private sealed class JsonHandler(string body) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Task.FromResult(Answer());
+        public int Requests { get; private set; }
 
-        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => Answer();
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Requests++;
+            return Task.FromResult(Answer());
+        }
 
         private HttpResponseMessage Answer() =>
             new(System.Net.HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };

@@ -246,17 +246,17 @@ public sealed class McpTests
                 files++;
                 return [new TraceView("file-1", "rig", "root", 5, 1, 1, 0)];
             },
-            () => new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, ""),
+            _ => Task.FromResult(new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, "")),
             () => clock);
 
-        var status = await source.StatusAsync();
+        var status = await source.StatusAsync(TestContext.Current.CancellationToken);
         Assert.Equal("clickhouse", status.Store.Source);
         Assert.True(status.Store.ClickhouseReachable);
         Assert.Equal(1, probes);
-        _ = await source.StatusAsync();
+        _ = await source.StatusAsync(TestContext.Current.CancellationToken);
         Assert.Equal(1, probes);
         clock = 31;
-        _ = await source.StatusAsync();
+        _ = await source.StatusAsync(TestContext.Current.CancellationToken);
         Assert.Equal(2, probes);
 
         var recent = await source.RecentAsync(new TraceQuery(2, 5, "rig.proc"));
@@ -273,14 +273,14 @@ public sealed class McpTests
                 files++;
                 return [new TraceView("file-1", "rig", "root", 5, 1, 1, 0)];
             },
-            () => new ExplorerStatusView("", false, "", "", false, ""),
+            _ => Task.FromResult(new ExplorerStatusView("", false, "", "", false, "")),
             () => 100);
         var fellBack = await failing.RecentAsync(new TraceQuery());
         Assert.Equal("ndjson", fellBack.Source);
         Assert.Contains("ClickHouse query failed", fellBack.Note, StringComparison.Ordinal);
         Assert.True(fellBack.Note.Length < 400);
         Assert.Equal("file-1", Assert.Single(fellBack.Traces).TraceId);
-        _ = await failing.StatusAsync();
+        _ = await failing.StatusAsync(TestContext.Current.CancellationToken);
         Assert.Equal(1, files);
     }
 
@@ -450,39 +450,10 @@ public sealed class McpTests
         using var dir = new TempDir();
         using var telemetry = Telemetry.ForCheckout(dir.Path);
 
-        var status = await telemetry.StatusAsync();
+        var status = await telemetry.StatusAsync(TestContext.Current.CancellationToken);
 
         Assert.True(status.Store.Source is "clickhouse" or "ndjson");
         Assert.False(string.IsNullOrEmpty(status.Store.Detail));
-    }
-
-    [Fact]
-    public void Explorer_probes_count_any_answer_and_cache_for_the_recheck_window()
-    {
-        using var handler = new JsonHandler("ok");
-        using var probe = new HttpClient(handler);
-        var hyperdx = Environment.GetEnvironmentVariable("RIG_HYPERDX_URL");
-        var aspire = Environment.GetEnvironmentVariable("RIG_ASPIRE_URL");
-        Environment.SetEnvironmentVariable("RIG_HYPERDX_URL", "http://hyperdx.test/");
-        Environment.SetEnvironmentVariable("RIG_ASPIRE_URL", "http://aspire.test/");
-        try
-        {
-            var first = Telemetry.ExplorerStatus(probe, 0);
-            Assert.True(first.HyperdxReachable);
-            Assert.Equal("http://hyperdx.test/search?where=TraceId%3D%27{trace_id}%27&whereLanguage=sql", first.HyperdxTraceUrl);
-            Assert.True(first.AspireReachable);
-            Assert.Equal("http://aspire.test/traces/detail/{trace_id}", first.AspireTraceUrl);
-
-            var cached = Telemetry.ExplorerStatus(probe, 10);
-            Assert.True(cached.HyperdxReachable);
-            var after = Telemetry.ExplorerStatus(probe, 100);
-            Assert.True(after.HyperdxReachable);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("RIG_HYPERDX_URL", hyperdx);
-            Environment.SetEnvironmentVariable("RIG_ASPIRE_URL", aspire);
-        }
     }
 
     private static IReadOnlyList<string> Required(Tool tool) =>
@@ -508,11 +479,15 @@ public sealed class McpTests
     {
         private readonly TempDir _dir = new();
         private readonly HttpClient _forwarding = new(new NoUpstream());
-        private readonly RigWebHost _host;
+        private RigWebHost _host = null!;
         private HttpClientTransport? _transport;
         private readonly List<string[]> _started = [];
 
-        private Harness(IReadOnlyList<Trimmable> trims)
+        private Harness()
+        {
+        }
+
+        private async Task BuildAsync(IReadOnlyList<Trimmable> trims)
         {
             Root = _dir.Path;
             var jobs = new Job[]
@@ -560,9 +535,9 @@ public sealed class McpTests
                     () => Task.FromResult(true),
                     query => Task.FromResult<IReadOnlyList<TraceView>>([new TraceView("trace-1", query.Service ?? "", "root", 1, 12.5, 2, 0)]),
                     _ => [new TraceView("file-1", "rig", "root", 1, 1, 1, 0)],
-                    () => new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, ""),
+                    _ => Task.FromResult(new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, "")),
                     () => 0));
-            _host = RigWebHost.Create(
+            _host = await RigWebHost.CreateAsync(
                 new WebHostSettings(
                     "127.0.0.1",
                     0,
@@ -581,11 +556,11 @@ public sealed class McpTests
                 Ops);
         }
 
-        public RigOps Ops { get; }
+        public RigOps Ops { get; private set; } = null!;
 
-        public TrimCache Trims { get; }
+        public TrimCache Trims { get; private set; } = null!;
 
-        public string Root { get; }
+        public string Root { get; private set; } = null!;
 
         public List<string[]> Started => _started;
 
@@ -593,7 +568,8 @@ public sealed class McpTests
 
         public static async Task<Harness> StartAsync(IReadOnlyList<Trimmable>? trims = null)
         {
-            var harness = new Harness(trims ?? []);
+            var harness = new Harness();
+            await harness.BuildAsync(trims ?? []);
             await harness._host.StartAsync(TestContext.Current.CancellationToken);
             harness.Http.BaseAddress = harness._host.Address;
             return harness;

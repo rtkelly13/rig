@@ -47,13 +47,20 @@ public sealed class RigWebHost : IAsyncDisposable
     /// tools, and <paramref name="routes"/> supplies the triage, estate and telemetry routes; null builds the real
     /// ones for this machine.
     /// </summary>
+    /// <param name="settings">The host's address, preview flag and paths.</param>
+    /// <param name="forwarding">The client that reaches the Python routes.</param>
+    /// <param name="upstream">Where the Python routes listen, or null while they are not running.</param>
+    /// <param name="mcp">The MCP tools; null builds the real ones for this checkout.</param>
+    /// <param name="routes">The ops routes; null builds the real ones for this machine.</param>
+    /// <param name="cancellationToken">Cancels building the real ops routes, including their git origin lookup.</param>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000", Justification = "The default RigOps is registered in the service collection, which owns and disposes it.")]
-    public static RigWebHost Create(
+    public static async Task<RigWebHost> CreateAsync(
         WebHostSettings settings,
         HttpClient forwarding,
         Func<Uri?> upstream,
         RigOps? mcp = null,
-        OpsRoutes? routes = null)
+        OpsRoutes? routes = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(forwarding);
@@ -74,7 +81,9 @@ public sealed class RigWebHost : IAsyncDisposable
         builder.Services.AddLogging();
         _ = builder.Services.AddRigMcp(mcp ?? RigOps.Default()).WithHttpTransport();
         var app = builder.Build();
-        var owned = routes is null ? OpsRoutes.ForSettings(settings) : null;
+        var owned = routes is null
+            ? await OpsRoutes.ForSettingsAsync(settings, cancellationToken).ConfigureAwait(false)
+            : null;
         var host = new RigWebHost(app, owned);
         app.UseRouting();
         HostRoutes.Map(app, settings, () => host.Address.Port);

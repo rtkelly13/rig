@@ -14,7 +14,7 @@ public sealed class HostRoutesTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _host = RigWebHost.Create(_tree.Settings(), _forwarding, () => null);
+        _host = await RigWebHost.CreateAsync(_tree.Settings(), _forwarding, () => null);
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client = new HttpClient { BaseAddress = _host.Address };
     }

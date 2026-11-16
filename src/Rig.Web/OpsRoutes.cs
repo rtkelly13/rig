@@ -38,12 +38,16 @@ public sealed class OpsRoutes : IDisposable
     /// The real sources for a host serving <paramref name="settings"/>: SQLite and <c>gh</c> for triage, git and the
     /// decision feed for the estate, ClickHouse and the day files for telemetry.
     /// </summary>
-    public static OpsRoutes ForSettings(WebHostSettings settings)
+    /// <param name="settings">The host's paths, registry and trace folders.</param>
+    /// <param name="cancellationToken">Cancels the git origin lookup the wrap-up scanner makes.</param>
+    public static async Task<OpsRoutes> ForSettingsAsync(WebHostSettings settings, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
         var proc = new SystemProc();
         var git = new Git(proc, settings.EstateRoot);
-        var signals = AgentSignals.ForEstate(settings.RegistryFile, settings.EstateRoot, git);
+        var signals = await AgentSignals
+            .ForEstateAsync(settings.RegistryFile, settings.EstateRoot, git, cancellationToken)
+            .ConfigureAwait(false);
         var triage = new TriageInbox(settings.DbPath, new QueueGitHub(new GhApi(proc)), settings.QueuePath, signals);
         return new(triage, EstateOps.ForSettings(settings), Telemetry.ForTraces(settings.TracesDir));
     }

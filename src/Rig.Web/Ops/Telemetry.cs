@@ -75,7 +75,7 @@ public sealed class Telemetry : IDisposable
     private readonly Func<Task<bool>> _reachable;
     private readonly Func<TraceQuery, Task<IReadOnlyList<TraceView>>> _clickhouse;
     private readonly Func<TraceQuery, IReadOnlyList<TraceView>> _files;
-    private readonly Func<ExplorerStatusView> _explorers;
+    private readonly Func<CancellationToken, Task<ExplorerStatusView>> _explorers;
     private readonly Func<double> _clock;
     private readonly IDisposable? _owned;
     private (double CheckedAt, bool Reachable)? _state;
@@ -85,7 +85,7 @@ public sealed class Telemetry : IDisposable
         Func<Task<bool>> clickhouseReachable,
         Func<TraceQuery, Task<IReadOnlyList<TraceView>>> clickhouseRecent,
         Func<TraceQuery, IReadOnlyList<TraceView>> fileRecent,
-        Func<ExplorerStatusView> explorers,
+        Func<CancellationToken, Task<ExplorerStatusView>> explorers,
         Func<double> clock,
         IDisposable? owned = null)
     {
@@ -124,11 +124,12 @@ public sealed class Telemetry : IDisposable
             AppData.Current(),
             checkoutTraces,
             Environment.GetEnvironmentVariable(Backfill.TraceDirEnv));
+        var explorers = new Explorers(probeHttp, TimeProvider.System);
         return new Telemetry(
             async () => await clickhouse.PingAsync().ConfigureAwait(false),
             query => ClickHouse(clickhouse, query),
             query => Files(roots, query),
-            () => Explorers.Status(probeHttp, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0),
+            explorers.StatusAsync,
             () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0,
             new Combined(clickhouseHttp, probeHttp));
     }
@@ -156,12 +157,14 @@ public sealed class Telemetry : IDisposable
     }
 
     /// <summary>Which store answers and which explorers are up.</summary>
-    public async Task<TelemetryView> StatusAsync() =>
-        await ClickhouseReachableAsync().ConfigureAwait(false)
-            ? new TelemetryView(new TelemetryStore("clickhouse", true, "reading ClickHouse's otel tables"), _explorers())
-            : new TelemetryView(
-                new TelemetryStore("ndjson", false, "ClickHouse unreachable: reading local NDJSON trace files"),
-                _explorers());
+    /// <param name="cancellationToken">Cancels the explorer probes.</param>
+    public async Task<TelemetryView> StatusAsync(CancellationToken cancellationToken = default)
+    {
+        var store = await ClickhouseReachableAsync().ConfigureAwait(false)
+            ? new TelemetryStore("clickhouse", true, "reading ClickHouse's otel tables")
+            : new TelemetryStore("ndjson", false, "ClickHouse unreachable: reading local NDJSON trace files");
+        return new TelemetryView(store, await _explorers(cancellationToken).ConfigureAwait(false));
+    }
 
     /// <summary>Recent traces, newest first, from ClickHouse when it answers and the files otherwise.</summary>
     public async Task<TraceListView> RecentAsync(TraceQuery query)
@@ -189,9 +192,6 @@ public sealed class Telemetry : IDisposable
 
         return new TraceListView("ndjson", note, _files(query));
     }
-
-    /// <summary>The configured explorers and whether each answers; the probe is injected for tests.</summary>
-    internal static ExplorerStatusView ExplorerStatus(HttpClient probe, double now) => Explorers.Status(probe, now);
 
     /// <inheritdoc/>
     public void Dispose() => _owned?.Dispose();
@@ -297,8 +297,10 @@ public sealed class Telemetry : IDisposable
         }
     }
 
-    // The configured trace UIs, each probed sparingly.
-    private static class Explorers
+    /// <summary>The configured explorers and whether each answers; one instance per source, so its cache is its own.</summary>
+    /// <param name="probe">The client that asks each UI.</param>
+    /// <param name="time">The clock the recheck window is measured against.</param>
+    internal sealed class Explorers(HttpClient probe, TimeProvider time)
     {
         public const string HyperdxVariable = "RIG_HYPERDX_URL";
         public const string AspireVariable = "RIG_ASPIRE_URL";
@@ -306,66 +308,84 @@ public sealed class Telemetry : IDisposable
         public const string HyperdxTracePath = "/search?where=TraceId%3D%27{trace_id}%27&whereLanguage=sql";
         public const string AspireTracePath = "/traces/detail/{trace_id}";
 
-        private static readonly Lock Gate = new();
-        private static readonly Dictionary<string, (double CheckedAt, bool Reachable)> Seen = new(StringComparer.Ordinal);
-        private static double _checkedAt;
+        private readonly Lock _gate = new();
+        private readonly Dictionary<string, (double CheckedAt, bool Reachable)> _seen = new(StringComparer.Ordinal);
+        private double _checkedAt;
 
-        public static ExplorerStatusView Status(HttpClient probe, double now)
+        /// <summary>The configured explorers, each probed at most once per <see cref="RecheckSeconds"/>.</summary>
+        /// <param name="cancellationToken">Cancels a probe; a cancelled probe is not remembered.</param>
+        public async Task<ExplorerStatusView> StatusAsync(CancellationToken cancellationToken = default)
         {
             var hyperdx = (Environment.GetEnvironmentVariable(HyperdxVariable) ?? string.Empty).Trim().TrimEnd('/');
             var aspire = (Environment.GetEnvironmentVariable(AspireVariable) ?? DefaultAspire).Trim().TrimEnd('/');
-            lock (Gate)
+            var now = Now();
+            lock (_gate)
             {
                 if (now - _checkedAt >= RecheckSeconds)
                 {
-                    Seen.Clear();
+                    _seen.Clear();
                     _checkedAt = now;
                 }
             }
 
             return new ExplorerStatusView(
                 hyperdx,
-                Reachable(probe, hyperdx, now),
+                await ReachableAsync(hyperdx, now, cancellationToken).ConfigureAwait(false),
                 hyperdx.Length > 0 ? hyperdx + HyperdxTracePath : string.Empty,
                 aspire,
-                Reachable(probe, aspire, now),
+                await ReachableAsync(aspire, now, cancellationToken).ConfigureAwait(false),
                 aspire.Length > 0 ? aspire + AspireTracePath : string.Empty);
         }
 
-        private static bool Reachable(HttpClient probe, string url, double now)
+        /// <summary>Forgets every remembered answer, so the next status probes again.</summary>
+        public void Reset()
+        {
+            lock (_gate)
+            {
+                _seen.Clear();
+                _checkedAt = 0;
+            }
+        }
+
+        private double Now() => time.GetUtcNow().ToUnixTimeMilliseconds() / 1000.0;
+
+        private async Task<bool> ReachableAsync(string url, double now, CancellationToken cancellationToken)
         {
             if (url.Length == 0)
             {
                 return false;
             }
 
-            lock (Gate)
+            lock (_gate)
             {
-                if (Seen.TryGetValue(url, out var cached) && now - cached.CheckedAt < RecheckSeconds)
+                if (_seen.TryGetValue(url, out var cached) && now - cached.CheckedAt < RecheckSeconds)
                 {
                     return cached.Reachable;
                 }
             }
 
-            var reachable = Probe(probe, url);
-            lock (Gate)
+            var reachable = await ProbeAsync(url, cancellationToken).ConfigureAwait(false);
+            lock (_gate)
             {
-                Seen[url] = (now, reachable);
+                _seen[url] = (now, reachable);
             }
 
             return reachable;
         }
 
         // Any status counts: a login redirect is still a live UI.
-        private static bool Probe(HttpClient probe, string url)
+        private async Task<bool> ProbeAsync(string url, CancellationToken cancellationToken)
         {
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                using var response = probe.Send(request);
+                using var response = await probe
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                    .ConfigureAwait(false);
                 return true;
             }
-            catch (Exception e) when (e is HttpRequestException or TaskCanceledException or UriFormatException)
+            catch (Exception e) when (!cancellationToken.IsCancellationRequested
+                && e is (HttpRequestException or TaskCanceledException or UriFormatException))
             {
                 return false;
             }
