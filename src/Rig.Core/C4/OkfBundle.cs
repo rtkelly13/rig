@@ -376,7 +376,7 @@ public static partial class OkfBundle
     private static string PosixJoin(string left, string right) =>
         left.Length == 0 ? right.TrimStart('/') : right.StartsWith('/') ? left + right : left + "/" + right;
 
-    private static string PosixNormalise(string path)
+    internal static string PosixNormalise(string path)
     {
         var parts = new List<string>();
         foreach (var segment in path.Split('/'))

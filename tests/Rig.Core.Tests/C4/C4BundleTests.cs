@@ -389,6 +389,46 @@ public sealed class C4BundleTests : IDisposable
         Assert.Contains("FetchAsync()", typeInfo.Members);
     }
 
+    [Fact]
+    public void ExpandException_constructors_are_usable()
+    {
+        var e1 = new ExpandException();
+        Assert.NotNull(e1);
+        var e2 = new ExpandException("test message");
+        Assert.Equal("test message", e2.Message);
+        var inner = new InvalidOperationException("inner");
+        var e3 = new ExpandException("msg", inner);
+        Assert.Equal("msg", e3.Message);
+        Assert.Same(inner, e3.InnerException);
+    }
+
+    [Fact]
+    public void ElementNotes_and_Links_accessors()
+    {
+        var bundle = OkfBundle.Load(Shop());
+        var concept = bundle.Concepts["context"];
+        var notes = concept.ElementNotes();
+        Assert.True(notes.ContainsKey("shop"));
+        Assert.Contains("The thing we build.", notes["shop"], StringComparison.Ordinal);
+
+        var links = C4Composer.CollectLinks(bundle);
+        Assert.NotEmpty(links.ZoomsFrom("context"));
+        Assert.Empty(links.ZoomsFrom("nonexistent"));
+        Assert.NotEmpty(links.Into("shop/containers"));
+        Assert.Empty(links.Into("nonexistent"));
+    }
+
+    [Fact]
+    public void OkfBundle_path_and_string_helpers()
+    {
+        Assert.Equal(".", OkfBundle.PosixNormalise(""));
+        Assert.Equal("..", OkfBundle.PosixNormalise(".."));
+        Assert.Equal("../../sub", OkfBundle.PosixNormalise("../../sub"));
+        Assert.Equal("a/c", OkfBundle.PosixNormalise("a/b/../c"));
+        Assert.Equal("sample", OkfBundle.StripSuffix("sample.md", ".md"));
+        Assert.Equal("sample.txt", OkfBundle.StripSuffix("sample.txt", ".md"));
+    }
+
     private static string Between(string text)
     {
         var start = text.IndexOf("```mermaid\n", StringComparison.Ordinal) + "```mermaid\n".Length;
