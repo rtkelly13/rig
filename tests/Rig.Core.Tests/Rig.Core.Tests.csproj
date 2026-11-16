@@ -10,5 +10,6 @@
     <None Include="Otel/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="ReviewQueue/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Jobs/*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Connectivity/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -9,6 +9,7 @@ namespace Rig.Web;
 /// <param name="DbPath">The shared SQLite database.</param>
 /// <param name="RegistryFile">The managed-project registry (<c>config/managed-projects.json</c>).</param>
 /// <param name="WorkingDirectory">The directory relative config fallbacks are read from.</param>
+/// <param name="CodeRoot">The code root: the estate graph inventories the checkouts under its <c>personal/</c>.</param>
 /// <param name="EstateRoot">The personal estate folder: disk usage and trim scans measure it, agent verdicts are read under it.</param>
 /// <param name="DecisionsFeed">The decisions feed the <c>estate-decisions</c> job writes (<c>decisions.json</c>).</param>
 /// <param name="QueuePath">The triage queue's regenerable Markdown projection.</param>
@@ -25,8 +26,11 @@ public sealed record WebHostSettings(
     string EstateRoot,
     string DecisionsFeed,
     string QueuePath,
-    string TracesDir)
+    string TracesDir,
+    string CodeRoot = "")
 {
+    /// <summary>The code root, falling back to the parent of EstateRoot if empty.</summary>
+    public string EffectiveCodeRoot => string.IsNullOrEmpty(CodeRoot) ? (Path.GetDirectoryName(EstateRoot) ?? "") : CodeRoot;
     /// <summary>The production dashboard's port.</summary>
     public const int ProductionPort = 8090;
 

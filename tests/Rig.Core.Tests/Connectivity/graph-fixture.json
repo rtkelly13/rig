@@ -1,0 +1,63 @@
+{
+  "projects": [
+    {
+      "name": "ui",
+      "repo": "https://github.com/owner/ui",
+      "description": "Components",
+      "domain": "Frontend",
+      "stack": "TypeScript",
+      "packages": [
+        { "registry": "npm", "name": "@scope/old-ui", "manifest": "package.json", "workflow": "publish.yml" }
+      ]
+    },
+    { "name": "library", "repo": "git@github.com:Owner/Library.git" },
+    { "name": "python", "repo": "https://github.com/owner/python" },
+    { "name": "app", "repo": "https://github.com/owner/app", "depends_on": ["python", "unknown", "app"] },
+    { "name": "a", "repo": "https://github.com/owner/a" },
+    { "name": "b", "repo": "https://github.com/owner/b" },
+    { "name": "c", "repo": "https://github.com/owner/c" },
+    { "name": "same-one", "repo": "https://github.com/owner/same-one" },
+    { "name": "same-two", "repo": "https://github.com/owner/same-two" },
+    { "name": "missing", "repo": "https://github.com/owner/missing", "enabled": false },
+    { "name": "loop", "repo": "https://github.com/owner/loop" },
+    { "name": "consumer", "repo": "https://github.com/owner/consumer", "depends_on": ["owner/provider"] },
+    { "name": "provider", "repo": "https://github.com/owner/provider" }
+  ],
+  "checkouts": {
+    "ui": {
+      "package.json": "{\"name\": \"@scope/new-ui\", \"version\": \"1.0.0\"}",
+      "node_modules/dep/package.json": "{\"name\": \"vendored\"}",
+      "fixtures/package.json": "{\"name\": \"fixture-only\"}"
+    },
+    "library": {
+      "lib.csproj": "<Project><PropertyGroup><PackageId>Managed.Lib</PackageId></PropertyGroup></Project>",
+      "gen.csproj": "<Project><PropertyGroup><PackageId>$(Generated)</PackageId></PropertyGroup></Project>"
+    },
+    "python": {
+      "pyproject.toml": "[project]\nname = \"Managed_Tool\"\nversion = \"1.0\"\ndependencies = [\n  # a comment\n  \"requests>=2\",\n  'same',\n]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8\"]\ndocs = [\"managed.lib\", \"  not-a-name\"]\n"
+    },
+    "app": {
+      "package.json": "{\"name\": \"app\", \"dependencies\": {\"@scope/new-ui\": \"^1.0\", \"same\": \"1\"}, \"devDependencies\": {\"old-ui\": \"npm:@scope/old-ui@^0.5\", \"bare\": \"npm:@scope/new-ui\"}, \"peerDependencies\": {\"b\": \"2\"}, \"optionalDependencies\": {\"a\": \"3\"}}",
+      "app.csproj": "<Project><ItemGroup><PackageReference Include=\"MANAGED.LIB\" Version=\"1.2\"/><ProjectReference Include=\"../library/lib.csproj\"/><ProjectReference Include=\"..\\library\\gen.csproj\"/><ProjectReference Include=\"$(Root)/x.csproj\"/></ItemGroup></Project>",
+      "pyproject.toml": "[project]\nname = \"app-python\"\ndependencies = [\"managed-tool>=1\", \"Managed.Tool[extra]\"]\n",
+      "Directory.Packages.props": "<Project><PackageVersion Include=\"Managed.Lib\" Version=\"1.0\"/></Project>",
+      "central.csproj": "<Project><!-- <PackageReference Include=\"Managed.Lib\" Version=\"99\"/> --><PackageReference Include=\"Managed.Lib\"/></Project>",
+      "nested/Directory.Packages.props": "<Project><PackageVersion Include=\"Managed.Lib\" Version=\"2.0\"/></Project>",
+      "nested/test.csproj": "<Project><PackageReference Include=\"Managed.Lib\"/></Project>",
+      "update.csproj": "<Project><PackageReference Update=\"Managed.Lib\" Version=\"99\"/></Project>",
+      "child.csproj": "<Project><PackageReference Include=\"Managed.Lib\">\n  <Version>2.5</Version>\n</PackageReference></Project>",
+      "override.csproj": "<Project><PackageReference Include=\"Managed.Lib\" VersionOverride=\"3.0\"/></Project>",
+      "child-override.csproj": "<Project><PackageReference Include=\"Managed.Lib\" Version=\"2.0\"><VersionOverride>4.0</VersionOverride></PackageReference></Project>",
+      "included.csproj": "<Project><PackageReference Include=\"Managed.Lib\"/><PackageReference Update=\"Managed.Lib\" Version=\"5.0\"/></Project>",
+      "README.md": "not a manifest"
+    },
+    "a": { "package.json": "{\"name\": \"a\", \"dependencies\": {\"b\": \"1\"}}" },
+    "b": { "package.json": "{\"name\": \"b\", \"dependencies\": {\"a\": \"1\"}}" },
+    "c": { "package.json": "{\"dependencies\": {\"a\": \"1\"}}" },
+    "same-one": { "package.json": "{\"name\": \"same\"}" },
+    "same-two": { "package.json": "{\"name\": \"same\"}" },
+    "loop": { "package.json": "{\"name\": \"loop\", \"dependencies\": {\"loop\": \"1\"}}" },
+    "consumer": {},
+    "provider": { "package.json": "{\"name\": \"managed\"}" }
+  }
+}

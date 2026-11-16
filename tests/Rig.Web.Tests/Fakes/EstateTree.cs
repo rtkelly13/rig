@@ -59,7 +59,8 @@ internal sealed class EstateTree : IDisposable
             _dir.Path,
             Path.Join(_dir.Path, "decisions.json"),
             Path.Join(_dir.Path, "temp", "triage", "queue.md"),
-            Path.Join(_dir.Path, "temp", "traces", "sdk"));
+            Path.Join(_dir.Path, "temp", "traces", "sdk"),
+            _dir.Path);
 
     public void Write(string relative, string text) => File.WriteAllText(_dir.File(relative), text);
 
