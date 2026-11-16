@@ -122,7 +122,7 @@ internal sealed class WebCommand(
         if (places.PythonRoutes is { } running)
         {
             using var fronting = RigWebHost.ForwardingClient();
-            var fronted = RigWebHost.Create(settings, fronting, () => running, _ops.Value);
+            var fronted = await RigWebHost.CreateAsync(settings, fronting, () => running, _ops.Value, cancellationToken: cancellationToken).ConfigureAwait(false);
             await using (fronted.ConfigureAwait(false))
             {
                 return await ServeAsync(fronted, settings, open, cancellationToken).ConfigureAwait(false);
@@ -141,7 +141,7 @@ internal sealed class WebCommand(
             }
 
             using var forwarding = RigWebHost.ForwardingClient();
-            var server = RigWebHost.Create(settings, forwarding, () => python.Address, _ops.Value);
+            var server = await RigWebHost.CreateAsync(settings, forwarding, () => python.Address, _ops.Value, cancellationToken: cancellationToken).ConfigureAwait(false);
             await using (server.ConfigureAwait(false))
             {
                 return await ServeAsync(server, settings, open, cancellationToken).ConfigureAwait(false);

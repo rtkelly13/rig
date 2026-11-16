@@ -1,12 +1,11 @@
 using Rig.Cli.Rendering;
-using Rig.Core.Reconciliation;
 using Spectre.Console;
 
 namespace Rig.Cli.Tests.Rendering;
 
 /// <summary>
-/// The shared output seam: a machine-safe console, escaped dynamic text, and the plan/verdict/property vocabulary
-/// every command renders through.
+/// The shared output seam: a machine-safe console, escaped dynamic text, and the verdict panel every command renders
+/// through.
 /// </summary>
 public sealed class SpectreOutputExtensionsTests
 {
@@ -61,67 +60,6 @@ public sealed class SpectreOutputExtensionsTests
     }
 
     [Fact]
-    public void Plan_renders_change_badges_subjects_and_details_without_markup_mangling()
-    {
-        using var writer = new StringWriter();
-        var console = RigConsole.Create(writer);
-        var plan = new FakePlan(
-        [
-            new FakeChange("[core.hooksPath]", "Create the missing hook path", ChangeKind.WouldChange),
-            new FakeChange("[P1] review thread", "Delete the stale thread", ChangeKind.WouldChange),
-            new FakeChange("protected/branch", "Refused by a guard", ChangeKind.Refused),
-            new FakeChange("src/a.cs", "Already aligned", ChangeKind.Aligned),
-        ]);
-
-        console.RenderPlan(plan);
-
-        var text = writer.ToString();
-        Assert.Contains("would-change", text, StringComparison.Ordinal);
-        Assert.Contains("refused", text, StringComparison.Ordinal);
-        Assert.Contains("aligned", text, StringComparison.Ordinal);
-        Assert.Contains("[core.hooksPath]", text, StringComparison.Ordinal);
-        Assert.Contains("[P1] review thread", text, StringComparison.Ordinal);
-        Assert.Contains("2 of 4 change(s) to apply", text, StringComparison.Ordinal);
-        Assert.DoesNotContain('\u001b', text);
-    }
-
-    [Fact]
-    public void A_clean_plan_says_so()
-    {
-        using var writer = new StringWriter();
-        var console = RigConsole.Create(writer);
-
-        console.RenderPlan(new FakePlan([new FakeChange("src/a.cs", "Already aligned", ChangeKind.Aligned)]));
-
-        Assert.Contains("no drift", writer.ToString(), StringComparison.Ordinal);
-        Assert.Contains("Clean.", writer.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Applied_plan_renders_changed_summary_and_clean_verdict()
-    {
-        using var writer = new StringWriter();
-        var console = RigConsole.Create(writer);
-        var plan = new FakePlan([new FakeChange("a", "done", ChangeKind.Changed)]);
-        console.RenderPlan(plan);
-        var text = writer.ToString();
-        Assert.Contains("1 change(s) applied", text, StringComparison.Ordinal);
-        Assert.Contains("Clean.", text, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Plan_with_errors_renders_error_verdict()
-    {
-        using var writer = new StringWriter();
-        var console = RigConsole.Create(writer);
-
-        console.RenderPlan(new FakePlan([new FakeChange("src/a.cs", "Failed", ChangeKind.Error)]));
-
-        Assert.Contains("Errors in plan.", writer.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain("Clean.", writer.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void Verdict_renders_pass_and_fail_panels_with_escaped_detail()
     {
         using var passWriter = new StringWriter();
@@ -135,27 +73,6 @@ public sealed class SpectreOutputExtensionsTests
         Assert.Contains("FAIL  [P1] Issues Found", failWriter.ToString(), StringComparison.Ordinal);
         Assert.Contains("[core.hooksPath] is unset", failWriter.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain('\u001b', failWriter.ToString());
-    }
-
-    [Fact]
-    public void Properties_render_in_ordinal_key_order_with_escaped_names_and_values()
-    {
-        using var writer = new StringWriter();
-        var console = RigConsole.Create(writer);
-
-        console.RenderProperties(
-            "[P1] Metadata",
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["z"] = "[core.hooksPath]",
-                ["a"] = "first",
-            });
-
-        var text = writer.ToString();
-        Assert.Contains("[P1] Metadata", text, StringComparison.Ordinal);
-        Assert.Contains("[core.hooksPath]", text, StringComparison.Ordinal);
-        Assert.True(text.IndexOf("│ a", StringComparison.Ordinal) < text.IndexOf("│ z", StringComparison.Ordinal));
-        Assert.DoesNotContain('\u001b', text);
     }
 
     [Fact]
@@ -182,17 +99,6 @@ public sealed class SpectreOutputExtensionsTests
     }
 
     [Fact]
-    public void Badge_maps_all_change_kinds_and_fallback()
-    {
-        Assert.Equal("[grey]aligned[/]", SpectreOutputExtensions.Badge(ChangeKind.Aligned));
-        Assert.Equal("[yellow]would-change[/]", SpectreOutputExtensions.Badge(ChangeKind.WouldChange));
-        Assert.Equal("[green]changed[/]", SpectreOutputExtensions.Badge(ChangeKind.Changed));
-        Assert.Equal("[darkorange]refused[/]", SpectreOutputExtensions.Badge(ChangeKind.Refused));
-        Assert.Equal("[red]error[/]", SpectreOutputExtensions.Badge(ChangeKind.Error));
-        Assert.Equal("[grey]99[/]", SpectreOutputExtensions.Badge((ChangeKind)99));
-    }
-
-    [Fact]
     public void Verdict_renders_without_detail()
     {
         using var writer = new StringWriter();
@@ -206,42 +112,5 @@ public sealed class SpectreOutputExtensionsTests
     public void RenderVerdict_validates_console()
     {
         Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderVerdict(null!, "Clean", true));
-    }
-
-    [Fact]
-    public void RenderProperties_validates_arguments()
-    {
-        using var writer = new StringWriter();
-        var console = RigConsole.Create(writer);
-        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderProperties(null!, "Title", new Dictionary<string, string>()));
-        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderProperties(console, "Title", null!));
-    }
-
-    [Fact]
-    public void Plan_with_errors_collection_renders_error_verdict()
-    {
-        using var writer = new StringWriter();
-        var console = RigConsole.Create(writer);
-        var plan = new FakePlan([new FakeChange("a", "b", ChangeKind.Aligned)], ["Explicit plan error"]);
-        console.RenderPlan(plan);
-        Assert.Contains("Errors in plan.", writer.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RenderPlan_throws_on_null_arguments()
-    {
-        using var writer = new StringWriter();
-        var console = RigConsole.Create(writer);
-        var plan = new FakePlan([]);
-
-        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderPlan<FakeChange>(null!, plan));
-        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderPlan<FakeChange>(console, null!));
-    }
-
-    private sealed record FakeChange(string Subject, string Detail, ChangeKind Kind) : IChange;
-
-    private sealed record FakePlan(IReadOnlyList<FakeChange> Changes, IReadOnlyList<string>? ErrorsList = null) : IPlan<FakeChange>
-    {
-        public IReadOnlyList<string> Errors => ErrorsList ?? [.. Changes.Where(c => c.Kind == ChangeKind.Error).Select(c => $"{c.Subject}: {c.Detail}")];
     }
 }

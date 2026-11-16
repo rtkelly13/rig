@@ -27,7 +27,7 @@ public sealed class FrontendRoutesTests : IAsyncLifetime
         _tree.Write("templates/data.bin", "bytes");
         _tree.Write("assets/blog/with space.svg", "<svg viewBox='0 0 1 1'></svg>");
         _tree.Write("outside.txt", "secret");
-        _host = RigWebHost.Create(_tree.Settings(), _forwarding, () => Upstream.Address);
+        _host = await RigWebHost.CreateAsync(_tree.Settings(), _forwarding, () => Upstream.Address);
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client = new HttpClient(_noRedirects, disposeHandler: false) { BaseAddress = _host.Address };
     }

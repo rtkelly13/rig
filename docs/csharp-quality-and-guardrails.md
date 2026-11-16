@@ -41,8 +41,8 @@ Rules:
 
 - Put dynamic text through `TextSanitizer.Markup` before it enters a Spectre markup string. It strips
   ANSI sequences and escapes brackets, so `[P1]` and `[core.hooksPath]` print as written.
-- Use `SpectreOutputExtensions.RenderPlan`, `RenderVerdict` and `RenderProperties` for the shared
-  plan, verdict and metadata shapes. Do not reimplement column widths or padding by hand.
+- Use `SpectreOutputExtensions.RenderVerdict` for the shared verdict panel, and `TextTable` for tables. Do not
+  reimplement column widths or padding by hand.
 - `TextTable` lives in `Rig.Cli.Rendering`. Use `Render` for the plain machine contract and
   `RenderTo` when a command owns an `IAnsiConsole`.
 - `--json` writes the typed model directly; never wrap it in presentation text.

@@ -20,7 +20,7 @@ public sealed class ForwarderTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _host = RigWebHost.Create(_tree.Settings(), _forwarding, () => Upstream.Address);
+        _host = await RigWebHost.CreateAsync(_tree.Settings(), _forwarding, () => Upstream.Address);
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client = new HttpClient(_noRedirects, disposeHandler: false) { BaseAddress = _host.Address };
     }

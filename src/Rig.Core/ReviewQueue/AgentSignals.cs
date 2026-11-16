@@ -66,8 +66,17 @@ public sealed class AgentSignals : IDisposable
     /// <summary>The real scanner for the estate a registry describes.</summary>
     /// <param name="registryFile">The managed-projects registry.</param>
     /// <param name="estateRoot">The personal estate folder, <c>&lt;code root&gt;/personal</c>.</param>
-    /// <param name="git">Lists the worktrees.</param>
-    public static AgentSignals ForEstate(string registryFile, string estateRoot, Git git)
+    /// <param name="git">Lists the worktrees, and names the running checkout's origin.</param>
+    /// <param name="cancellationToken">Cancels the origin lookup.</param>
+    /// <remarks>
+    /// Asynchronous because naming the running checkout is a git call: blocking a startup thread on it holds the
+    /// host's build for the process's 30-second git timeout, and starves the thread pool doing so.
+    /// </remarks>
+    public static async Task<AgentSignals> ForEstateAsync(
+        string registryFile,
+        string estateRoot,
+        Git git,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(registryFile);
         ArgumentNullException.ThrowIfNull(estateRoot);
@@ -79,7 +88,9 @@ public sealed class AgentSignals : IDisposable
         {
             try
             {
-                var origin = git.OutAsync(currentCheckout, "config", "--get", "remote.origin.url").GetAwaiter().GetResult();
+                var origin = (await git
+                    .RunAsync(currentCheckout, ["config", "--get", "remote.origin.url"], cancellationToken: cancellationToken)
+                    .ConfigureAwait(false)).OutOrEmpty;
                 if (origin.Length > 0)
                 {
                     currentSlug = (RepoSlug.FromRemote(origin) ?? RepoSlug.FromPath(origin))?.Key;

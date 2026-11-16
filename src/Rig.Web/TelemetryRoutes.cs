@@ -26,7 +26,7 @@ internal static class TelemetryRoutes
     public static void Map(IEndpointRouteBuilder routes, Telemetry telemetry)
     {
         routes.MapGet($"{Prefix}/status", Handler(context =>
-            OpsJson.Run(async () => OpsJson.Ok(context, await telemetry.StatusAsync().ConfigureAwait(false)))));
+            OpsJson.Run(async () => OpsJson.Ok(context, await telemetry.StatusAsync(context.RequestAborted).ConfigureAwait(false)))));
         routes.MapGet($"{Prefix}/traces", Handler(context => OpsJson.Run(async () =>
         {
             var query = new TraceQuery(
