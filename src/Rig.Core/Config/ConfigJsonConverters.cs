@@ -67,8 +67,16 @@ public sealed class LicenseConfigJsonConverter : JsonConverter<LicenseConfig>
 public sealed class CliRuleConfigJsonConverter : JsonConverter<CliRuleConfig>
 {
     /// <inheritdoc/>
+    public override bool HandleNull => true;
+
+    /// <inheritdoc/>
     public override CliRuleConfig Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            throw new JsonException("a command rule must be a pattern or an object");
+        }
+
         if (reader.TokenType == JsonTokenType.String)
         {
             return new CliRuleConfig { Pattern = reader.GetString() ?? string.Empty, Bare = true };

@@ -52,7 +52,23 @@ public sealed class CommandPolicy
         foreach (var (tier, entries) in commands)
         {
             var risk = PolicyNames.ParseRisk(tier) ?? throw Misshapen($"commands.{tier} is not a tier");
-            byTier[risk] = [.. entries.Select(rule => new CommandRule(rule.Pattern, risk, rule.Rationale, rule.ExcludeSystems))];
+            if (entries is null)
+            {
+                throw Misshapen($"commands.{tier} must be a list");
+            }
+
+            var tierRules = new List<CommandRule>();
+            foreach (var rule in entries)
+            {
+                if (rule is null || string.IsNullOrWhiteSpace(rule.Pattern))
+                {
+                    throw Misshapen($"a commands.{tier} rule must be a pattern or an object");
+                }
+
+                tierRules.Add(new CommandRule(rule.Pattern, risk, rule.Rationale, rule.ExcludeSystems));
+            }
+
+            byTier[risk] = tierRules;
         }
 
         var rules = Enum.GetValues<CommandRisk>().SelectMany(r => byTier.GetValueOrDefault(r) ?? []).ToList();

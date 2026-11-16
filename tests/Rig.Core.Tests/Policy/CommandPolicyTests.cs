@@ -154,6 +154,8 @@ public sealed class CommandPolicyTests : IDisposable
     [InlineData("""{"skills": {"allow": []}}""")]
     [InlineData("""{"commands": {"forbidden": ["git push*"]}}""")]
     [InlineData("""{"commands": {"denied": "git push*"}}""")]
+    [InlineData("""{"commands": {"denied": null}}""")]
+    [InlineData("""{"commands": {"denied": [null]}}""")]
     [InlineData("""{"commands": {"denied": [{"rationale": "No pattern."}]}}""")]
     [InlineData("""{"commands": {"denied": [3]}}""")]
     [InlineData("""{"commands": {"denied": [{"pattern": "x", "rationale": 1}]}}""")]
