@@ -16,8 +16,8 @@ public sealed class JobsOracleTests : IDisposable
 {
     private const string RootToken = "{root}";
 
-    private static readonly JsonElement Oracle = JsonDocument.Parse(
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Jobs", "jobs-oracle.json"))).RootElement;
+    private static readonly JsonElement Oracle = JsonElement.Parse(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Jobs", "jobs-oracle.json")));
 
     private readonly TempDir _temp = new();
 
@@ -137,7 +137,7 @@ public sealed class JobsOracleTests : IDisposable
     {
         foreach (var cell in Oracle.GetProperty("cells").EnumerateArray())
         {
-            var outcome = Outcomes(JsonDocument.Parse($"{{\"x\": {cell.GetProperty("outcome").GetRawText()}}}").RootElement)["x"];
+            var outcome = Outcomes(JsonElement.Parse($"{{\"x\": {cell.GetProperty("outcome").GetRawText()}}}"))["x"];
 
             Assert.Equal(cell.GetProperty("result").GetString(), outcome.Result);
             Assert.Equal(cell.GetProperty("last_run").GetString(), outcome.LastRun);

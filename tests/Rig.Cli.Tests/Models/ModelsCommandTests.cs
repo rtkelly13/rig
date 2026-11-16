@@ -35,7 +35,7 @@ public sealed class ModelsCommandTests : IDisposable
         new ModelsCommand(Discovery, _out).Build().Parse(args)
             .InvokeAsync(new InvocationConfiguration { Output = _out, Error = TextWriter.Null }, Ct);
 
-    private JsonElement[] Json() => [.. JsonDocument.Parse(_out.ToString()).RootElement.EnumerateArray()];
+    private JsonElement[] Json() => [.. JsonElement.Parse(_out.ToString()).EnumerateArray()];
 
     [Fact]
     public void Claude_code_lists_opus()
