@@ -323,4 +323,62 @@ public sealed class WrapupTests
         Assert.Equal("orca worktree ps failed: orca is not running", stopped.Message);
         Assert.Contains("shape", unreadable.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Wrapup_exception_constructors()
+    {
+        var e1 = new WrapupException();
+        Assert.NotNull(e1);
+        var e2 = new WrapupException("test error");
+        Assert.Equal("test error", e2.Message);
+        var inner = new InvalidOperationException("inner");
+        var e3 = new WrapupException("wrapped", inner);
+        Assert.Equal("wrapped", e3.Message);
+        Assert.Same(inner, e3.InnerException);
+    }
+
+    [Fact]
+    public void Wrapup_worktree_properties_and_branch_parsing()
+    {
+        var w1 = new WrapupWorktree("w1", "r1", "/repos/my-worktree")
+        {
+            DisplayName = null,
+            Branch = "refs/heads/feature/awesome",
+        };
+        Assert.Equal("my-worktree", w1.Name);
+        Assert.Equal("feature/awesome", w1.BranchName);
+
+        var w2 = new WrapupWorktree("w2", "r1", "/repos/my-worktree")
+        {
+            DisplayName = "CustomName",
+            Branch = "plain-branch",
+        };
+        Assert.Equal("CustomName", w2.Name);
+        Assert.Equal("plain-branch", w2.BranchName);
+
+        var w3 = new WrapupWorktree("w3", "r1", "/repos/my-worktree") { Branch = null };
+        Assert.Equal("", w3.BranchName);
+    }
+
+    [Fact]
+    public void Wrapup_terminal_pane_key()
+    {
+        var t1 = new WrapupTerminal("h1", "tab1", "leaf1");
+        Assert.Equal("tab1:leaf1", t1.PaneKey);
+
+        var t2 = new WrapupTerminal("h2", null, null);
+        Assert.Equal("None:None", t2.PaneKey);
+    }
+
+    [Fact]
+    public void Wrapup_scope_classify()
+    {
+        var personal = new[] { "/Users/alice/personal", "/Users/alice/code" };
+        var work = new[] { "/Users/alice/work" };
+        var home = "/Users/alice";
+
+        Assert.Equal(WrapupScope.Personal, Wrapup.Classify("~/personal/repo/tree", personal, work, home));
+        Assert.Equal(WrapupScope.Work, Wrapup.Classify("~/work/client/tree", personal, work, home));
+        Assert.Null(Wrapup.Classify("/opt/other/tree", personal, work, home));
+    }
 }
