@@ -246,6 +246,19 @@ public sealed class C4CommandTests : IDisposable
         Reset();
         Assert.Equal(1, await Run("c4", "expand", "context", "alias", "--root", missing));
         Assert.NotEmpty(_error.ToString());
+
+        Reset();
+        Assert.Equal(1, await Run("c4", "derive", "dotnet", missing, _temp.Folder("bundle")));
+        Assert.Contains("Repository directory does not exist", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Derive_with_parent_without_colon_separator()
+    {
+        var repo = Repo();
+        var output = _temp.Folder("bundle-parent");
+        await File.WriteAllTextAsync(Path.Join(output, "context.md"), DeriveContext, TestContext.Current.CancellationToken);
+        Assert.Equal(0, await Run("c4", "derive", "dotnet", repo, output, "--parent", "context"));
     }
 
     private void Reset()

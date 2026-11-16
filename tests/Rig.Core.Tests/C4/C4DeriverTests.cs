@@ -256,4 +256,39 @@ public sealed class C4DeriverTests : IDisposable
     {
         Assert.Empty(DotnetScan.CallEdges(_temp.Path + "/missing.txt", new Dictionary<string, string>()));
     }
+
+    [Fact]
+    public void Derive_resolves_alias_collisions_and_keeps_same_file_type_dependencies()
+    {
+        var root = _temp.Folder("collision_repo");
+        Write(root, new Dictionary<string, string>
+        {
+            ["src/Acme.Foo.Bar/Acme.Foo.Bar.csproj"] = "<Project><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+            ["src/Acme.Foo.Bar/Types.cs"] = "namespace Acme.Foo.Bar;\npublic class Alpha { Beta b; }\npublic class Beta {}\n",
+            ["src/Acme.Foo_Bar/Acme.Foo_Bar.csproj"] = "<Project><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+            ["src/Acme.Foo_Bar/Other.cs"] = "namespace Acme.Foo_Bar;\npublic class Other {}\n",
+        });
+
+        var derived = C4Deriver.Derive(_origin, root, _temp.Folder("collision_out"));
+        Assert.True(derived.Files.ContainsKey("components/foo_bar.md"));
+        Assert.True(derived.Files.ContainsKey("components/foo_bar_2.md"));
+
+        var codeView = derived.Files["code/foo_bar.md"];
+        Assert.Contains("Alpha --> Beta", codeView, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DotnetScan_handles_question_mark_globs()
+    {
+        var root = _temp.Folder("glob_repo");
+        Write(root, new Dictionary<string, string>
+        {
+            ["src/Test/Test.csproj"] = "<Project><ItemGroup><Compile Include=\"Models/Model?.cs\" /></ItemGroup></Project>",
+            ["src/Test/Models/Model1.cs"] = "namespace Test.Models; public class Model1 {}",
+            ["src/Test/Models/Model2.cs"] = "namespace Test.Models; public class Model2 {}",
+        });
+        var project = DotnetScan.ReadProject(Path.Join(root, "src/Test/Test.csproj"));
+        var sources = DotnetScan.Sources(project);
+        Assert.Equal(2, sources.Count);
+    }
 }
