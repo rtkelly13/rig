@@ -484,10 +484,54 @@ public sealed class C4BundleTests : IDisposable
     {
         var root = _temp.Folder("expand_edges");
         File.WriteAllText(Path.Join(root, "not_diagram.md"), "---\ntype: note\ntitle: Note\n---\nText only\n");
-        File.WriteAllText(Path.Join(root, "parent.md"), "---\ntype: C4 Context\ntitle: Parent\n---\n```mermaid\nC4Context\nSystem(s, \"S\", $link=\"not_diagram.md\")\n```\n");
+        File.WriteAllText(Path.Join(root, "unclosed.md"), "---\ntype: C4 Container\ntitle: Unclosed\n---\n```mermaid\nC4Container\nContainer_Boundary(b, \"B\") {\n  Container(c, \"C\")\n```\n");
+        File.WriteAllText(Path.Join(root, "parent.md"), "---\ntype: C4 Context\ntitle: Parent\n---\n```mermaid\nC4Context\nSystem(s, \"S\", $link=\"not_diagram.md\")\nSystem(nolink, \"NoLink\")\nSystem(s2, \"S2\", $link=\"unclosed.md\")\n```\n");
         var bundle = OkfBundle.Load(root);
         Assert.Throws<ExpandException>(() => C4Composer.Expand(bundle, "not_diagram", "s"));
+        Assert.Throws<ExpandException>(() => C4Composer.Expand(bundle, "missing_concept", "s"));
+        Assert.Throws<ExpandException>(() => C4Composer.Expand(bundle, "parent", "unknown_alias"));
+        Assert.Throws<ExpandException>(() => C4Composer.Expand(bundle, "parent", "nolink"));
         Assert.Throws<ExpandException>(() => C4Composer.Expand(bundle, "parent", "s"));
+        var expanded2 = C4Composer.Expand(bundle, "parent", "s2");
+        Assert.Contains("Container(c, \"C\")", expanded2, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Expand_with_top_level_child_elements_and_nested_boundaries()
+    {
+        var root = _temp.Folder("expand_nested");
+        var parentMd = """
+            ---
+            type: C4 Context
+            title: Nested Parent
+            ---
+            ```mermaid
+            C4Context
+            System(sub, "Subsystem", $link="sub.md")
+            ```
+            """;
+        var childMd = """
+            ---
+            type: C4 Container
+            title: Child Containers
+            ---
+            ```mermaid
+            C4Container
+            Container_Boundary(b1, "Outer") {
+              Container_Boundary(b2, "Inner") {
+                Component(innerComp, "InnerComponent")
+              }
+            }
+            Container(topComp, "TopLevelComponent")
+            ```
+            """;
+        File.WriteAllText(Path.Join(root, "parent.md"), parentMd);
+        File.WriteAllText(Path.Join(root, "sub.md"), childMd);
+
+        var bundle = OkfBundle.Load(root);
+        var expanded = C4Composer.Expand(bundle, "parent", "sub");
+        Assert.Contains("TopLevelComponent", expanded, StringComparison.Ordinal);
+        Assert.Contains("InnerComponent", expanded, StringComparison.Ordinal);
     }
 
     private static string Between(string text)

@@ -291,4 +291,23 @@ public sealed class C4DeriverTests : IDisposable
         var sources = DotnetScan.Sources(project);
         Assert.Equal(2, sources.Count);
     }
+
+    [Fact]
+    public void Origin_Blob_and_Tree_respects_null_and_web_remotes()
+    {
+        var localOrigin = new Origin("commit123", "2026-11-16", null);
+        Assert.Null(localOrigin.Blob("/repo", "/repo/src/File.cs"));
+        Assert.Null(localOrigin.Tree());
+
+        var webOrigin = new Origin("commit123", "2026-11-16", "https://github.com/org/repo");
+        Assert.Equal("https://github.com/org/repo/blob/commit123/src/File.cs", webOrigin.Blob("/repo", "/repo/src/File.cs"));
+        Assert.Equal("https://github.com/org/repo/tree/commit123", webOrigin.Tree());
+    }
+
+    [Fact]
+    public void Orphans_returns_empty_when_directory_missing()
+    {
+        var orphans = C4Deriver.Orphans(Path.Join(_temp.Folder("empty_orphans"), "nonexistent"), new Dictionary<string, string>());
+        Assert.Empty(orphans);
+    }
 }

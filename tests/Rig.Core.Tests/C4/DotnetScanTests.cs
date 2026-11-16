@@ -123,4 +123,53 @@ public sealed class DotnetScanTests : IDisposable
         Assert.Single(sources);
         Assert.Equal("Valid.cs", Path.GetFileName(sources[0].Path));
     }
+
+    [Fact]
+    public void Sources_supports_various_globs_and_summary_fallback()
+    {
+        var projDir = _temp.Folder("GlobProject");
+        var projFile = Path.Join(projDir, "GlobProject.csproj");
+        File.WriteAllText(projFile, """
+            <Project>
+              <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
+              <ItemGroup>
+                <Compile Include="sub/**/*.cs" />
+                <Compile Include="char/?/Test.cs" />
+                <Compile Include="tail/**" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var subDir = Path.Join(projDir, "sub", "deep", "nested");
+        Directory.CreateDirectory(subDir);
+        File.WriteAllText(Path.Join(subDir, "Deep.cs"), """
+            namespace GlobProject.Deep;
+            /// <remarks>Not a summary tag</remarks>
+            public class DeepClass {}
+            """);
+
+        var charDir = Path.Join(projDir, "char", "a");
+        Directory.CreateDirectory(charDir);
+        File.WriteAllText(Path.Join(charDir, "Test.cs"), "namespace GlobProject.Char; public class TestClass {}");
+
+        var tailDir = Path.Join(projDir, "tail");
+        Directory.CreateDirectory(tailDir);
+        File.WriteAllText(Path.Join(tailDir, "Tail.cs"), "namespace GlobProject.Tail; public class TailClass {}");
+
+        var project = DotnetScan.ReadProject(projFile);
+        var sources = DotnetScan.Sources(project);
+        Assert.Equal(3, sources.Count);
+
+        var deepParsed = DotnetScan.ReadSource(Path.Join(subDir, "Deep.cs"));
+        Assert.Empty(deepParsed.Types[0].Summary);
+
+        var longSummaryFile = Path.Join(projDir, "Long.cs");
+        File.WriteAllText(longSummaryFile, $$"""
+            namespace GlobProject;
+            /// <summary>{{new string('A', 200)}}</summary>
+            public class LongClass {}
+            """);
+        var longParsed = DotnetScan.ReadSource(longSummaryFile);
+        Assert.EndsWith("…", longParsed.Types[0].Summary, StringComparison.Ordinal);
+    }
 }
