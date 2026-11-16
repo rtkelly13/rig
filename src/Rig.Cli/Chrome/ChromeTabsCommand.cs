@@ -420,7 +420,8 @@ internal sealed class ChromeTabsCommand(
             : Resolution.Empty;
         var resolved = time.GetTimestamp();
 
-        IReadOnlyList<IClosePlan> plans = ClosePlansFor(windows, resolution, options);
+        IReadOnlyList<IClosePlan> plans = ChromeClosePlans.Plan(
+            windows, resolution, new ClosePlanOptions(options.GitHub, options.Sites, options.MaxMemoryGb), Say);
         var planned = time.GetTimestamp();
         var repos = resolution.States.Keys.Select(pr => pr.Slug).Distinct().Count();
         var timings = string.Create(
@@ -523,43 +524,6 @@ internal sealed class ChromeTabsCommand(
         return 0;
     }
 
-    /// <summary>Every close plan <c>prune</c> runs, each printed as it is made. Ported from <c>_make_close_plans</c>.</summary>
-    private List<IClosePlan> ClosePlansFor(IReadOnlyList<ChromeWindow> windows, Resolution resolution, PruneOptions options)
-    {
-        var plans = new List<IClosePlan>();
-        var held = new HashSet<RuntimeId>();
-        if (options.GitHub)
-        {
-            var prPlan = PrPrune.Plan(windows, resolution);
-            plans.Add(prPlan);
-            held.UnionWith(prPlan.Reports.Select(report => report.Item.Tab.RuntimeId));
-            foreach (var (slug, error) in resolution.FailedRepos.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-            {
-                Say($"{slug}: open PRs unreadable, chain rules skipped: {error}");
-            }
-
-            SayAll(TabPlanText.Prune(prPlan));
-        }
-
-        if (options.Sites)
-        {
-            var sitePlan = Dedupe.Plan(windows);
-            plans.Add(sitePlan);
-            held.UnionWith(sitePlan.Reports.Select(report => report.Item.Tab.RuntimeId));
-            SayAll(TabPlanText.Dedupe(sitePlan));
-        }
-
-        if (options.MaxMemoryGb is { } budget)
-        {
-            var closing = plans.SelectMany(plan => plan.Closes).Select(close => close.Item.Tab.RuntimeId).ToHashSet();
-            var memoryPlan = TabRank.PlanMemory(TabRank.Rank(windows, resolution), budget * 1024, closing, held);
-            plans.Add(memoryPlan);
-            SayAll(TabPlanText.Memory(memoryPlan));
-        }
-
-        return plans;
-    }
-
     private void SayAll(IEnumerable<string> lines)
     {
         foreach (var line in lines)
@@ -631,15 +595,8 @@ internal sealed class ChromeTabsCommand(
     }
 
     /// <summary>The windows of <paramref name="profile"/>, by directory or display name ignoring case; all of them for null.</summary>
-    internal static IReadOnlyList<ChromeWindow> FilterProfile(IReadOnlyList<ChromeWindow> windows, string? profile)
-    {
-        if (profile is null)
-        {
-            return windows;
-        }
-
-        return [.. windows.Where(window => string.Equals(window.ProfileDir, profile, StringComparison.OrdinalIgnoreCase) || string.Equals(window.ProfileName, profile, StringComparison.OrdinalIgnoreCase))];
-    }
+    internal static IReadOnlyList<ChromeWindow> FilterProfile(IReadOnlyList<ChromeWindow> windows, string? profile) =>
+        ChromeReads.FilterProfile(windows, profile);
 
     private static string WindowHeading(int number, ChromeWindow window)
     {
