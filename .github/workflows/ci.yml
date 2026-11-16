@@ -570,7 +570,7 @@ jobs:
   # every shard's report, so the split above cannot lower the measured number.
   dotnet-coverage:
     name: dotnet-coverage
-    needs: dotnet
+    needs: [changes, dotnet]
     if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
