@@ -65,24 +65,48 @@ public sealed class DesktopCommandTests : IDisposable
             workspace.Subcommands.Select(sub => sub.Name));
     }
 
-    [Fact]
-    public async Task A_native_command_says_it_needs_windows()
+    [Theory]
+    [InlineData("restore")]
+    [InlineData("status")]
+    [InlineData("audit")]
+    [InlineData("align")]
+    [InlineData("detect-app")]
+    [InlineData("name-desktops")]
+    [InlineData("guard")]
+    [InlineData("export-plan")]
+    [InlineData("update-orca")]
+    public async Task A_native_command_says_it_needs_windows(string command)
     {
-        Assert.Equal(1, await Run("restore"));
-        Assert.Equal(1, await Run("status"));
-        Assert.Equal(1, await Run("audit"));
-        Assert.Equal(1, await Run("align"));
-        Assert.Equal(1, await Run("detect-app"));
-        Assert.Equal(1, await Run("name-desktops"));
-        Assert.Equal(1, await Run("guard"));
-        Assert.Equal(1, await Run("wire-machine"));
-        Assert.Equal(1, await Run("export-plan"));
-        Assert.Equal(1, await Run("test-item", "--name", "x"));
-        Assert.Equal(1, await Run("restart-app", "--name", "x"));
-        Assert.Equal(1, await Run("update-orca"));
-        Assert.All(
-            _out.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries),
-            line => Assert.Contains("requires Windows.", line, StringComparison.Ordinal));
+        Assert.Equal(1, await Run(command));
+        Assert.Contains("requires Windows.", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("test-item")]
+    [InlineData("restart-app")]
+    public async Task A_native_item_command_says_it_needs_windows(string command)
+    {
+        Assert.Equal(1, await Run(command, "--name", "x"));
+        Assert.Contains("requires Windows.", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Wire_machine_generates_plan()
+    {
+        var outPlan = Path.Join(_temp.Path, "wired-plan.json");
+        var templateDir = Path.Join(_temp.Path, "desktop-manager");
+        Directory.CreateDirectory(templateDir);
+        var notes = Path.Join(_temp.Path, "notes.exe");
+        await File.WriteAllTextAsync(notes, "fixture", TestContext.Current.CancellationToken);
+        PlanFiles.SaveBundle(
+            new WorkspacePlan
+            {
+                Desktops = [new("Work") { Launch = [new("Notes") { Path = notes, Placement = new(1, new("full")) }] }],
+            },
+            Path.Join(templateDir, "workspace-plan.bundle.json"));
+
+        Assert.Equal(0, await Run("wire-machine", "--workspace", _temp.Path, "--config", outPlan));
+        Assert.True(File.Exists(outPlan));
     }
 
     [Fact]
