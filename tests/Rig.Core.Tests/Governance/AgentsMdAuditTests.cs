@@ -2,6 +2,7 @@ using Rig.Core.Governance;
 using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Governance;
 
@@ -493,7 +494,7 @@ public sealed class AgentsMdAuditTests : IDisposable
         var result = await Audit(GoodRoot + "\nSee [gone](./docs/missing.md).\n");
 
         Assert.Equal(
-            """{"repo": "R", "findings": [{"check": "pointer-integrity", "severity": "error", "path": "AGENTS.md", "message": "M", "line": null}], "suppressed": [], "metrics": {"instruction-count": 0, "forcing-language": 0, "section-outlier": 6}}""",
+            """{"repo":"R","findings":[{"check":"pointer-integrity","severity":"error","path":"AGENTS.md","message":"M","line":null}],"suppressed":[],"metrics":{"instruction-count":0,"forcing-language":0,"section-outlier":6}}""",
             Normalised(result));
     }
 
@@ -511,7 +512,7 @@ public sealed class AgentsMdAuditTests : IDisposable
             finding!["message"] = "M";
         }
 
-        return PyJson.DumpsLine(json);
+        return JsonOutput.Line(json);
     }
 
     private AgentsMdAudit Subject(Git? git = null) =>

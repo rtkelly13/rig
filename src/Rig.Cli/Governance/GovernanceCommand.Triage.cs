@@ -7,8 +7,8 @@ using System.Text.Json.Nodes;
 using Rig.Cli.Gh.Threads;
 using Rig.Core.GitHub;
 using Rig.Core.Governance;
-using Rig.Core.Policy;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Governance;
 
@@ -119,7 +119,7 @@ internal sealed partial class GovernanceCommand
         var dashboard = Triage.Dashboard(issues, time.GetUtcNow());
         if (scope.Json)
         {
-            await output.WriteLineAsync(PyJson.Dumps(dashboard.ToJson())).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(dashboard.ToJson())).ConfigureAwait(false);
             return 0;
         }
 
@@ -156,7 +156,7 @@ internal sealed partial class GovernanceCommand
         var dashboard = Triage.Dashboard(prs, time.GetUtcNow());
         if (scope.Json)
         {
-            await output.WriteLineAsync(PyJson.Dumps(dashboard.ToJson())).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(dashboard.ToJson())).ConfigureAwait(false);
             return 0;
         }
 

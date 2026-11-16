@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Rig.Core.Chrome;
 using Rig.Core.GitHub;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Chrome;
 
@@ -284,7 +284,7 @@ internal sealed class ChromeTabsCommand(
         if (json)
         {
             var rows = new JsonArray([.. found.AsEnumerable().Reverse().Select(run => (JsonNode)ChromeTraces.RunJson(run, zone))]);
-            Say(PyJson.Dumps(rows, ensureAscii: false));
+            Say(JsonOutput.Format(rows, keepNonAscii: true));
             return 0;
         }
 
@@ -330,7 +330,7 @@ internal sealed class ChromeTabsCommand(
                 grouping[verdict] = count;
             }
 
-            Say(PyJson.Dumps(new JsonObject
+            Say(JsonOutput.Format(new JsonObject
             {
                 ["runs"] = summary.Runs,
                 ["completed"] = summary.Completed,
@@ -575,9 +575,9 @@ internal sealed class ChromeTabsCommand(
         var elapsed = time.GetElapsedTime(started);
         if (json)
         {
-            Say(PyJson.Dumps(
+            Say(JsonOutput.Format(
                 new JsonArray([.. windows.Select(window => (JsonNode)WindowJson(window, [.. window.Tabs.Where(tab => !prsOnly || PrPrune.RefFromTitle(tab.Title) is not null)]))]),
-                ensureAscii: false));
+                keepNonAscii: true));
             return 0;
         }
 
@@ -615,7 +615,7 @@ internal sealed class ChromeTabsCommand(
         var shown = limit is { } last ? ranked.Skip(Math.Max(ranked.Count - last, 0)).ToList() : ranked;
         if (json)
         {
-            Say(PyJson.Dumps(new JsonArray([.. shown.Select(item => (JsonNode)RankedJson(item))]), ensureAscii: false));
+            Say(JsonOutput.Format(new JsonArray([.. shown.Select(item => (JsonNode)RankedJson(item))]), keepNonAscii: true));
             return 0;
         }
 

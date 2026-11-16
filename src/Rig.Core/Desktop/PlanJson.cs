@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 
@@ -220,7 +220,7 @@ internal static class PlanJsonReader
     {
         var raw = value.ToJsonString();
         return raw.IndexOfAny(['.', 'e', 'E']) >= 0
-            ? PyJson.FloatRepr(double.Parse(raw, NumberStyles.Float, CultureInfo.InvariantCulture))
+            ? JsonOutput.Number(double.Parse(raw, NumberStyles.Float, CultureInfo.InvariantCulture))
             : raw;
     }
 

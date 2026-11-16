@@ -62,7 +62,7 @@ public sealed class PlanDecodingTests
     [InlineData("1", "1")]
     [InlineData("1.5", "1.5")]
     [InlineData("true", "True")]
-    [InlineData("1e20", "1e+20")]
+    [InlineData("1e20", "1E+20")]
     [InlineData("100000000000000000000", "100000000000000000000")]
     public void A_number_or_boolean_where_text_belongs_reads_as_python_prints_it(string json, string expected) =>
         Assert.Equal(expected, Entry($$"""{"name": "n", "path": {{json}}}""").Path);

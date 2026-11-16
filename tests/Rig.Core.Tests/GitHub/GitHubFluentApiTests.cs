@@ -350,4 +350,56 @@ public sealed class GitHubFluentApiTests
         var optSpecResult = await GitHubFunctions.ExecuteGraphQLOptionalAsync<JsonNode>(fake, spec, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(optSpecResult);
     }
+
+    [Fact]
+    public async Task GitHubRestRequest_fluent_methods_and_properties_behave_as_expected()
+    {
+        var fake = new FakeGitHub();
+        var req = new GitHubRestRequest(fake, "POST", "repos/owner/repo/test")
+            .WithHeaders(["X-One: 1", "X-Two: 2"])
+            .WithQuery("ignored", null)
+            .WithQuery("flag", true)
+            .WithQueryParameters(new Dictionary<string, object?>
+            {
+                ["skip"] = null,
+                ["limit"] = 10,
+                ["search"] = "test & query",
+            })
+            .WithBody("{\"raw\": true}")
+            .Describing("a test rest call");
+
+        fake.On("POST", req.BuildRoute(), "{\"status\":\"ok\"}");
+
+        Assert.Equal("POST", req.Method);
+        Assert.Equal("repos/owner/repo/test", req.Route);
+        Assert.Equal(["X-One: 1", "X-Two: 2"], req.Headers);
+        Assert.Equal("true", req.QueryParameters["flag"]);
+        Assert.Equal("10", req.QueryParameters["limit"]);
+        Assert.Equal("test & query", req.QueryParameters["search"]);
+        Assert.False(req.QueryParameters.ContainsKey("skip"));
+        Assert.False(req.QueryParameters.ContainsKey("ignored"));
+        Assert.Equal("{\"raw\": true}", req.Body);
+        Assert.Equal("a test rest call", req.Description);
+
+        var ran = await req.SendAsync(TestContext.Current.CancellationToken);
+        Assert.True(ran.Ok);
+
+        var success = await req.EnsureSuccessAsync(TestContext.Current.CancellationToken);
+        Assert.True(success.Ok);
+
+        var text = await req.ReadTextAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("status", text, StringComparison.Ordinal);
+
+        var node = await req.ReadOptionalJsonNodeAsync(TestContext.Current.CancellationToken);
+        Assert.NotNull(node);
+        Assert.Equal("ok", node["status"]?.GetValue<string>());
+
+        var notFoundRan = new Ran(1, "", "HTTP 404: Not Found");
+        Assert.True(GitHubRestRequest.IsNotFound(notFoundRan));
+        Assert.False(GitHubRestRequest.IsNotFound(ran));
+
+        var missingReq = new GitHubRestRequest(fake.Fail("GET", "repos/owner/missing", 404), "GET", "repos/owner/missing");
+        var missingNode = await missingReq.ReadOptionalJsonNodeAsync(TestContext.Current.CancellationToken);
+        Assert.Null(missingNode);
+    }
 }

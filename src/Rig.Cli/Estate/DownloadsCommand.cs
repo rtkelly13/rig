@@ -3,7 +3,7 @@ using System.CommandLine;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Estate;
 
@@ -47,7 +47,7 @@ internal sealed class DownloadsCommand(Downloads downloads, string folder, Func<
                 ["is_dir"] = item.IsDir,
                 ["cloud_duplicate"] = item.CloudDuplicate,
             })]);
-            await output.WriteLineAsync(PyJson.Dumps(payload).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(payload).AsMemory(), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 

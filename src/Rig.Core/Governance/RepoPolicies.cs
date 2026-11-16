@@ -1,5 +1,5 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
+using Rig.Core.Config;
 using Rig.Core.Policy;
 
 namespace Rig.Core.Governance;
@@ -87,30 +87,54 @@ public sealed class RepoPolicies
     public static RepoPolicies Load(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
-        JsonNode? root;
+        RepoPoliciesConfig file;
         try
         {
-            root = JsonNode.Parse(File.ReadAllText(path));
+            file = ConfigLoader.Load(path, EstateConfigJsonContext.Default.RepoPoliciesConfig);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        catch (ConfigLoadException e) when (e.Kind is ConfigLoadError.MissingFile or ConfigLoadError.InvalidJson)
         {
             return Empty;
         }
+        catch (ConfigLoadException e)
+        {
+            throw new InvalidDataException(e.Message, e);
+        }
 
-        return Parse(root, path);
+        return Parse(file, path);
     }
 
-    /// <summary>The policy in a parsed document; <paramref name="source"/> names it in errors.</summary>
-    public static RepoPolicies Parse(JsonNode? root, string source)
+    /// <summary>The policy in <paramref name="json"/>; <paramref name="source"/> names it in errors.</summary>
+    public static RepoPolicies Parse(string json, string source)
     {
-        var file = root as JsonObject ?? throw Bad(source, "the document is not an object");
-        var profiles = Map(file, "profiles", source)
-            .Select(pair => (pair.Key, Layer.From(pair.Value, source), (IReadOnlyList<string>)(Strings(pair.Value, "repos", source) ?? [])))
+        ArgumentNullException.ThrowIfNull(json);
+        RepoPoliciesConfig file;
+        try
+        {
+            file = ConfigLoader.Parse(json, source, EstateConfigJsonContext.Default.RepoPoliciesConfig);
+        }
+        catch (ConfigLoadException e)
+        {
+            throw new InvalidDataException(e.Message, e);
+        }
+
+        return Parse(file, source);
+    }
+
+    /// <summary>The policy in a parsed document, for a caller that already holds one; it is serialized back for the typed reader.</summary>
+    public static RepoPolicies Parse(System.Text.Json.Nodes.JsonNode? root, string source) =>
+        Parse(root?.ToJsonString() ?? "null", source);
+
+    /// <summary>The policy in a decoded document; <paramref name="source"/> names it in errors.</summary>
+    public static RepoPolicies Parse(RepoPoliciesConfig file, string source)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        var profileConfigs = Map(file.Profiles).ToList();
+        var profiles = profileConfigs
+            .Select(pair => (pair.Key, Layer.From(pair.Value, source), (IReadOnlyList<string>)(pair.Value.Repos ?? [])))
             .ToList();
         var declared = profiles.Select(p => p.Key).ToHashSet(StringComparer.Ordinal);
-        var owners = Map(file, "owner_profiles", source)
-            .Select(pair => (Owner: pair.Key, Profile: pair.Value?.GetValueKind() == JsonValueKind.String ? pair.Value.GetValue<string>() : throw Bad(source, $"owner_profiles.{pair.Key} is not a string")))
-            .ToList();
+        var owners = Map(file.OwnerProfiles).Select(pair => (Owner: pair.Key, Profile: pair.Value)).ToList();
         var unknown = owners
             .Where(pair => !declared.Contains(pair.Profile))
             .OrderBy(pair => pair.Owner, StringComparer.Ordinal)
@@ -121,16 +145,20 @@ public sealed class RepoPolicies
         }
 
         return new(
-            file["defaults"] is { } defaults ? Layer.From(defaults, source) : Layer.None,
+            file.Defaults is { } defaults ? Layer.From(defaults, source) : Layer.None,
             profiles,
-            [.. Map(file, "repo_overrides", source).Select(pair => (pair.Key, Layer.From(pair.Value, source)))],
-            [.. Map(file, "language_presets", source).Select(pair => Preset(pair.Key, pair.Value, source))],
+            [.. Map(file.RepoOverrides).Select(pair => (pair.Key, Layer.From(pair.Value, source)))],
+            [.. Map(file.LanguagePresets).Select(pair => Preset(pair.Key, pair.Value, source))],
             owners,
-            [.. Map(file, "github_apps", source).Select(pair => App(pair.Key, pair.Value, source))])
+            [.. Map(file.GithubApps).Select(pair => App(pair.Key, pair.Value, source))])
         {
-            Profiles = [.. profiles.Select(p => new PolicyProfile(p.Key, p.Item3, Strings(file["profiles"]![p.Key], "policies", source) ?? []))],
+            Profiles = [.. profileConfigs.Select(pair => new PolicyProfile(pair.Key, pair.Value.Repos ?? [], pair.Value.Policies ?? []))],
         };
     }
+
+    // A missing section and an empty one both mean no entries.
+    private static IEnumerable<KeyValuePair<TKey, TValue>> Map<TKey, TValue>(IReadOnlyDictionary<TKey, TValue>? section)
+        where TKey : notnull => section ?? new Dictionary<TKey, TValue>();
 
     /// <summary>The apps declared for <paramref name="account"/>, matched ignoring case.</summary>
     public IReadOnlyList<AppPolicy> AppsForAccount(string account) =>
@@ -445,40 +473,29 @@ public sealed class RepoPolicies
         return key[(key.LastIndexOf('/') + 1)..].ToLowerInvariant();
     }
 
-    private static LanguagePreset Preset(string id, JsonNode? node, string source)
+    private static LanguagePreset Preset(string id, LanguagePresetConfig spec, string source)
     {
-        var spec = node as JsonObject ?? throw Bad(source, $"language_presets.{id} is not an object");
-        var name = Text(spec, "name", source) ?? string.Empty;
+        var name = spec.Name ?? string.Empty;
         return new(
             id,
             name.Length > 0 ? name : id,
-            [.. (Strings(spec, "aliases", source) ?? []).Select(alias => alias.ToLowerInvariant())],
-            Strings(spec, "detect_files", source) ?? [],
-            Entries(spec, "gitignore_entries", source) ?? [])
+            [.. (spec.Aliases ?? []).Select(alias => alias.ToLowerInvariant())],
+            spec.DetectFiles ?? [],
+            Entries(spec.GitignoreEntries, source) ?? [])
         {
-            ScriptExtensions = Strings(spec, "script_extensions", source) ?? [],
-            BannedScriptExtensions = Strings(spec, "banned_script_extensions", source) ?? [],
+            ScriptExtensions = spec.ScriptExtensions ?? [],
+            BannedScriptExtensions = spec.BannedScriptExtensions ?? [],
         };
     }
 
-    private static List<GitignoreEntry>? Entries(JsonNode? owner, string key, string source)
-    {
-        if (owner?[key] is not { } node)
-        {
-            return null;
-        }
+    private static List<GitignoreEntry>? Entries(IReadOnlyList<GitignoreEntryConfig>? entries, string source) =>
+        entries is null ? null : [.. entries.Select(entry => Entry(entry, source))];
 
-        return node is JsonArray items
-            ? [.. items.Select(item => Entry(item, source))]
-            : throw Bad(source, $"{key} is not a list");
-    }
-
-    private static GitignoreEntry Entry(JsonNode? node, string source)
+    private static GitignoreEntry Entry(GitignoreEntryConfig spec, string source)
     {
-        var spec = node as JsonObject ?? throw Bad(source, "a gitignore entry is not an object");
-        var write = Strings(spec, "write", source) ?? [];
-        var name = Text(spec, "name", source) ?? string.Empty;
-        var mode = Text(spec, "match_mode", source) ?? "any";
+        var write = spec.Write ?? [];
+        var name = spec.Name ?? string.Empty;
+        var mode = spec.MatchMode ?? "any";
         if (mode is not ("any" or "all"))
         {
             throw Bad(source, $"match_mode '{mode}' is neither 'any' nor 'all'");
@@ -486,90 +503,41 @@ public sealed class RepoPolicies
 
         return new(
             name.Length > 0 ? name : write.Count > 0 ? write[0] : "entry",
-            Text(spec, "comment", source) ?? string.Empty,
+            spec.Comment ?? string.Empty,
             write,
-            Strings(spec, "satisfied_by", source) ?? write,
+            spec.SatisfiedBy ?? write,
             mode == "all");
     }
 
-    private static AppPolicy App(string slug, JsonNode? spec, string source)
+    private static AppPolicy App(string slug, GithubAppConfig spec, string source)
     {
-        var where = $"{source}: github_apps.{slug}";
         var accounts = new Dictionary<string, AppAccountPolicy>(StringComparer.Ordinal);
-        foreach (var (account, value) in spec?["accounts"] is { } node ? node as JsonObject ?? throw Bad(where, "accounts is not an object") : [])
+        foreach (var (account, value) in Map(spec.Accounts))
         {
-            var disallow = Strings(value, "disallow_repos", where) is { Count: > 0 } named ? named : Strings(value, "exclude_repos", where) ?? [];
-            accounts[account] = new(Bool(value, "required", where) ?? false, Strings(value, "repos", where) ?? [], Bool(value, "all_repos", where) ?? false, disallow);
+            var disallow = value.DisallowRepos is { Count: > 0 } named ? named : value.ExcludeRepos ?? [];
+            accounts[account] = new(value.Required ?? false, value.Repos ?? [], value.AllRepos ?? false, disallow);
         }
 
         return new(
             slug,
-            Text(spec, "name", where) is { Length: > 0 } name ? name : slug,
-            Text(spec, "install_url", where) is { Length: > 0 } url ? url : $"https://github.com/apps/{slug}/installations/new",
-            Text(spec, "config_template", where) is { Length: > 0 } template ? template : null,
+            spec.Name is { Length: > 0 } name ? name : slug,
+            spec.InstallPage is { Length: > 0 } url ? url : $"https://github.com/apps/{slug}/installations/new",
+            spec.ConfigTemplate is { Length: > 0 } template ? template : null,
             accounts);
     }
 
-    private static JsonObject Map(JsonObject file, string key, string source) =>
-        file[key] switch
-        {
-            null => [],
-            JsonObject map => map,
-            _ => throw Bad(source, $"{key} is not an object"),
-        };
-
-    private static string? Text(JsonNode? owner, string key, string source) =>
-        owner?[key] switch
-        {
-            null => null,
-            var node when node.GetValueKind() == JsonValueKind.String => node.GetValue<string>(),
-            _ => throw Bad(source, $"{key} is not a string"),
-        };
-
-    private static List<string>? Strings(JsonNode? owner, string key, string source) =>
-        owner?[key] switch
-        {
-            null => null,
-            JsonArray items when items.All(item => item?.GetValueKind() == JsonValueKind.String) => [.. items.Select(item => item!.GetValue<string>())],
-            _ => throw Bad(source, $"{key} is not a list of strings"),
-        };
-
     private static InvalidDataException Bad(string source, string why) => new($"{source}: {why}");
 
-    private static int? Int(JsonNode? owner, string key, string source) =>
-        owner?[key] switch
-        {
-            null => null,
-            var node when node.GetValueKind() == JsonValueKind.Number && node.AsValue().TryGetValue(out int value) => value,
-            _ => throw Bad(source, $"{key} is not an integer"),
-        };
-
-    private static bool? Bool(JsonNode? owner, string key, string source) =>
-        owner?[key] switch
-        {
-            null => null,
-            var node when node.GetValueKind() is JsonValueKind.True or JsonValueKind.False => node.GetValue<bool>(),
-            _ => throw Bad(source, $"{key} is not a boolean"),
-        };
-
-    private static JsonObject? Block(JsonObject layer, string key, string source) =>
-        layer[key] switch
-        {
-            null => null,
-            JsonObject block => block,
-            _ => throw Bad(source, $"{key} is not an object"),
-        };
-
     // agents_md_hygiene, whole: a field it leaves out takes the built-in default, as the Python's dataclass did.
-    private static AgentsMdRules? Hygiene(JsonObject layer, string source)
+    private static AgentsMdRules? Hygiene(AgentsMdHygieneConfig? hygiene, string source)
     {
-        if (Block(layer, "agents_md_hygiene", source) is not { } hygiene)
+        if (hygiene is null)
         {
             return null;
         }
 
         var defaults = AgentsMdRules.Default;
-        var claudeMd = Text(hygiene, "claude_md", source) ?? defaults.ClaudeMd;
+        var claudeMd = hygiene.ClaudeMd ?? defaults.ClaudeMd;
         if (claudeMd is not ("symlink" or "absent" or "any"))
         {
             throw Bad(source, $"claude_md '{claudeMd}' is not one of symlink, absent, any");
@@ -577,143 +545,137 @@ public sealed class RepoPolicies
 
         return new()
         {
-            MaxLines = Int(hygiene, "max_lines", source) ?? defaults.MaxLines,
+            MaxLines = hygiene.MaxLines ?? defaults.MaxLines,
             ClaudeMd = claudeMd,
-            BespokeAgentFiles = Strings(hygiene, "bespoke_agent_files", source) ?? defaults.BespokeAgentFiles,
-            Require = Strings(hygiene, "require", source) ?? defaults.Require,
-            CheckPaths = Bool(hygiene, "check_paths", source) ?? defaults.CheckPaths,
-            ReportOnly = Strings(hygiene, "report_only", source) ?? defaults.ReportOnly,
-            DocsIndexMinFiles = Int(hygiene, "docs_index_min_files", source) ?? defaults.DocsIndexMinFiles,
-            MaxCodeBlockLines = Int(hygiene, "max_code_block_lines", source) ?? defaults.MaxCodeBlockLines,
+            BespokeAgentFiles = hygiene.BespokeAgentFiles ?? defaults.BespokeAgentFiles,
+            Require = hygiene.Require ?? defaults.Require,
+            CheckPaths = hygiene.CheckPaths ?? defaults.CheckPaths,
+            ReportOnly = hygiene.ReportOnly ?? defaults.ReportOnly,
+            DocsIndexMinFiles = hygiene.DocsIndexMinFiles ?? defaults.DocsIndexMinFiles,
+            MaxCodeBlockLines = hygiene.MaxCodeBlockLines ?? defaults.MaxCodeBlockLines,
         };
     }
 
-    private static RepoSelectionRules? Selection(JsonObject layer, string source)
+    private static RepoSelectionRules? Selection(RepoSelectionConfig? selection)
     {
-        if (Block(layer, "repo_selection", source) is not { } selection)
+        if (selection is null)
         {
             return null;
         }
 
         var defaults = RepoSelectionRules.Default;
         return new(
-            Bool(selection, "manage_forks", source) ?? defaults.ManageForks,
-            Bool(selection, "require_push_access", source) ?? defaults.RequirePushAccess,
-            Bool(selection, "exempt", source) ?? defaults.Exempt);
+            selection.ManageForks ?? defaults.ManageForks,
+            selection.RequirePushAccess ?? defaults.RequirePushAccess,
+            selection.Exempt ?? defaults.Exempt);
     }
 
-    private static MergeSettings? Merge(JsonObject layer, string source)
+    private static MergeSettings? Merge(RepoMergeSettingsConfig? block)
     {
-        if (Block(layer, "repo_settings", source) is not { } block)
+        if (block is null)
         {
             return null;
         }
 
         var defaults = MergeSettings.Default;
         return new(
-            Bool(block, "delete_branch_on_merge", source) ?? defaults.DeleteBranchOnMerge,
-            Bool(block, "allow_squash_merge", source) ?? defaults.AllowSquashMerge,
-            Bool(block, "allow_merge_commit", source) ?? defaults.AllowMergeCommit,
-            Bool(block, "allow_rebase_merge", source) ?? defaults.AllowRebaseMerge,
-            Bool(block, "allow_auto_merge", source) ?? defaults.AllowAutoMerge);
+            block.DeleteBranchOnMerge ?? defaults.DeleteBranchOnMerge,
+            block.AllowSquashMerge ?? defaults.AllowSquashMerge,
+            block.AllowMergeCommit ?? defaults.AllowMergeCommit,
+            block.AllowRebaseMerge ?? defaults.AllowRebaseMerge,
+            block.AllowAutoMerge ?? defaults.AllowAutoMerge);
     }
 
-    private static List<LabelSpec>? LabelsOf(JsonObject layer, string source) =>
-        layer["labels"] switch
-        {
-            null => null,
-            JsonArray items => [.. items.Select(item => item is JsonObject label
-                ? new LabelSpec(
-                    Text(label, "name", source) ?? throw Bad(source, "a label has no name"),
-                    Text(label, "color", source) ?? throw Bad(source, "a label has no color"),
-                    Text(label, "description", source) ?? throw Bad(source, "a label has no description"))
-                : throw Bad(source, "a label is not an object"))],
-            _ => throw Bad(source, "labels is not a list"),
-        };
+    private static List<LabelSpec>? LabelsOf(IReadOnlyList<LabelConfig>? labels, string source) =>
+        labels is null
+            ? null
+            : [.. labels.Select(label => new LabelSpec(
+                label.Name ?? throw Bad(source, "a label has no name"),
+                label.Color ?? throw Bad(source, "a label has no color"),
+                label.Description ?? throw Bad(source, "a label has no description")))];
 
     // environments: name -> {wait_timer, reviewers}, in the file's order; a null wait_timer is 0.
-    private static List<EnvironmentPolicy>? EnvironmentsOf(JsonObject layer, string source)
-    {
-        if (Block(layer, "environments", source) is not { } block)
-        {
-            return null;
-        }
-
-        return [.. block.Select(pair => pair.Value is JsonObject spec
-            ? new EnvironmentPolicy(pair.Key, Int(spec, "wait_timer", source) ?? 0, Reviewers(spec, pair.Key, source))
-            : throw Bad(source, $"environments.{pair.Key} is not an object"))];
-    }
+    private static List<EnvironmentPolicy>? EnvironmentsOf(IReadOnlyDictionary<string, EnvironmentConfig>? environments, string source) =>
+        environments is null
+            ? null
+            : [.. environments.Select(pair => new EnvironmentPolicy(pair.Key, pair.Value.WaitTimer ?? 0, Reviewers(pair.Key, pair.Value.Reviewers, source)))];
 
     // An omitted reviewers list is none; an explicit null is a mistake, not a way of saying none.
-    private static List<string> Reviewers(JsonObject spec, string environment, string source) =>
-        spec.TryGetPropertyValue("reviewers", out var value) && value is null
-            ? throw Bad(source, $"environments.{environment}.reviewers is null")
-            : Strings(spec, "reviewers", source) ?? [];
+    private static List<string> Reviewers(string environment, JsonElement reviewers, string source) =>
+        reviewers.ValueKind switch
+        {
+            JsonValueKind.Undefined => [],
+            JsonValueKind.Null => throw Bad(source, $"environments.{environment}.reviewers is null"),
+            JsonValueKind.Array => [.. reviewers.EnumerateArray().Select(item => item.ValueKind == JsonValueKind.String
+                ? item.GetString()!
+                : throw Bad(source, $"environments.{environment}.reviewers is not a list of strings"))],
+            _ => throw Bad(source, $"environments.{environment}.reviewers is not a list of strings"),
+        };
 
-    private static PagesPolicy? PagesOf(JsonObject layer, string source)
+    private static PagesPolicy? PagesOf(PagesConfig? block, string source)
     {
-        if (Block(layer, "pages", source) is not { } block)
+        if (block is null)
         {
             return null;
         }
 
-        var buildType = Text(block, "build_type", source) ?? "workflow";
+        var buildType = block.BuildType ?? "workflow";
         if (buildType is not ("workflow" or "legacy"))
         {
             throw Bad(source, $"pages.build_type '{buildType}' is neither 'workflow' nor 'legacy'");
         }
 
-        return new(Bool(block, "enabled", source) ?? false, buildType, Text(block, "cname", source), Bool(block, "https_enforced", source) ?? true);
+        return new(block.Enabled ?? false, buildType, block.Cname, block.HttpsEnforced ?? true);
     }
 
-    private static ForkSpec? ForkOf(JsonObject layer, string source) =>
-        Block(layer, "fork", source) is { } block
-            ? new(Text(block, "upstream", source) ?? throw Bad(source, "fork has no upstream"), Text(block, "upstream_branch", source) ?? "main")
+    private static ForkSpec? ForkOf(ForkConfig? block, string source) =>
+        block is { } fork
+            ? new(fork.Upstream ?? throw Bad(source, "fork has no upstream"), fork.UpstreamBranch ?? "main")
             : null;
 
-    private static BranchCleanupRules? CleanupOf(JsonObject layer, string source)
+    private static BranchCleanupRules? CleanupOf(BranchCleanupConfig? block)
     {
-        if (Block(layer, "branch_cleanup", source) is not { } block)
+        if (block is null)
         {
             return null;
         }
 
         var defaults = BranchCleanupRules.Default;
         return new(
-            Bool(block, "enabled", source) ?? defaults.Enabled,
-            Strings(block, "protected", source) ?? defaults.Protected,
-            Bool(block, "protect_open_pr_heads", source) ?? defaults.ProtectOpenPrHeads,
-            Strings(block, "protect_prefixes", source) ?? defaults.ProtectPrefixes);
+            block.Enabled ?? defaults.Enabled,
+            block.Protected ?? defaults.Protected,
+            block.ProtectOpenPrHeads ?? defaults.ProtectOpenPrHeads,
+            block.ProtectPrefixes ?? defaults.ProtectPrefixes);
     }
 
-    private static ScriptBanRules? ScriptBanOf(JsonObject layer, string source)
+    private static ScriptBanRules? ScriptBanOf(ScriptBanConfig? block)
     {
-        if (Block(layer, "script_ban", source) is not { } block)
+        if (block is null)
         {
             return null;
         }
 
         var defaults = ScriptBanRules.Default;
         return new(
-            Bool(block, "enabled", source) ?? defaults.Enabled,
-            Strings(block, "banned_extensions", source) ?? defaults.BannedExtensions,
-            Strings(block, "allowed_exceptions", source) ?? defaults.AllowedExceptions,
-            Strings(block, "allowed_script_extensions", source) ?? defaults.AllowedScriptExtensions,
-            Strings(block, "banned_script_extensions", source) ?? defaults.BannedScriptExtensions);
+            block.Enabled ?? defaults.Enabled,
+            block.BannedExtensions ?? defaults.BannedExtensions,
+            block.AllowedExceptions ?? defaults.AllowedExceptions,
+            block.AllowedScriptExtensions ?? defaults.AllowedScriptExtensions,
+            block.BannedScriptExtensions ?? defaults.BannedScriptExtensions);
     }
 
     // license: a bare type, or {"type": …}; an object without a type declares the default.
-    private static string? LicenseOf(JsonObject layer, string source) =>
-        layer["license"] switch
-        {
-            null => null,
-            JsonObject spec => Text(spec, "type", source) ?? string.Empty,
-            _ => Text(layer, "license", source),
-        };
+    private static string? LicenseOf(LicenseConfig? license) => license is null ? null : license.Type ?? string.Empty;
 
     // expected_owner: null declares "no expected owner", which the Python keeps as "" so it still stops the lookup.
-    private static string? ExpectedOwnerOf(JsonObject layer, string source) =>
-        layer.TryGetPropertyValue("expected_owner", out var node) ? node is null ? string.Empty : Text(layer, "expected_owner", source) : null;
+    private static string? ExpectedOwnerOf(JsonElement expectedOwner, string source) =>
+        expectedOwner.ValueKind switch
+        {
+            JsonValueKind.Undefined => null,
+            JsonValueKind.Null => string.Empty,
+            JsonValueKind.String => expectedOwner.GetString(),
+            _ => throw Bad(source, "expected_owner is not a string"),
+        };
 
     // The keys one of defaults, a profile or a repo override declares; null is "not declared here".
     private sealed record Layer(
@@ -752,31 +714,31 @@ public sealed class RepoPolicies
 
         public VercelGatingRules? Vercel { get; init; }
 
-        public static Layer From(JsonNode? node, string source)
+        public static Layer From(PolicyLayerConfig layer, string source)
         {
-            var layer = node as JsonObject ?? throw Bad(source, "a policy layer is not an object");
+            ArgumentNullException.ThrowIfNull(layer);
             return new(
-                Strings(layer, "languages", source),
-                Entries(layer, "gitignore_entries", source),
-                Hygiene(layer, source),
-                Selection(layer, source),
-                Strings(layer, "allowed_owners", source),
-                ExpectedOwnerOf(layer, source))
+                layer.Languages,
+                Entries(layer.GitignoreEntries, source),
+                Hygiene(layer.AgentsMdHygiene, source),
+                Selection(layer.RepoSelection),
+                layer.AllowedOwners,
+                ExpectedOwnerOf(layer.ExpectedOwner, source))
             {
-                ExpectedBaseBranch = Text(layer, "expected_base_branch", source),
-                RepoSettings = Merge(layer, source),
-                Labels = LabelsOf(layer, source),
-                Environments = EnvironmentsOf(layer, source),
-                RequiredChecks = Strings(layer, "required_checks", source),
-                Pages = PagesOf(layer, source),
-                Fork = ForkOf(layer, source),
-                CopyrightHolder = Text(layer, "copyright_holder", source),
-                ContactEmail = Text(layer, "contact_email", source),
-                License = LicenseOf(layer, source),
-                BranchCleanup = CleanupOf(layer, source),
-                ScriptBan = ScriptBanOf(layer, source),
-                Vercel = Block(layer, "vercel", source) is { } vercel
-                    ? new(Text(vercel, "team_id", source) ?? string.Empty, Int(vercel, "window_days", source) ?? VercelGatingRules.Default.WindowDays)
+                ExpectedBaseBranch = layer.ExpectedBaseBranch,
+                RepoSettings = Merge(layer.RepoSettings),
+                Labels = LabelsOf(layer.Labels, source),
+                Environments = EnvironmentsOf(layer.Environments, source),
+                RequiredChecks = layer.RequiredChecks,
+                Pages = PagesOf(layer.Pages, source),
+                Fork = ForkOf(layer.Fork, source),
+                CopyrightHolder = layer.CopyrightHolder,
+                ContactEmail = layer.ContactEmail,
+                License = LicenseOf(layer.License),
+                BranchCleanup = CleanupOf(layer.BranchCleanup),
+                ScriptBan = ScriptBanOf(layer.ScriptBan),
+                Vercel = layer.Vercel is { } vercel
+                    ? new(vercel.TeamId ?? string.Empty, vercel.WindowDays ?? VercelGatingRules.Default.WindowDays)
                     : null,
             };
         }

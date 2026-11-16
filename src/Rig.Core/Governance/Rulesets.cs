@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.Policy;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Governance;
 
@@ -459,7 +459,7 @@ public sealed class RulesetResource : Resource<DeclaredRuleset, LiveRuleset>
     public override DeclaredRuleset? Desired(RepoPolicies policies, Target target)
     {
         ArgumentNullException.ThrowIfNull(target);
-        var payload = PyJson.DumpsLine(Payload(policies, target.Slug));
+        var payload = JsonOutput.Line(Payload(policies, target.Slug));
 
         // Read back from the text, as the live ruleset is: a built node holds its numbers as int, not as JSON.
         return new(payload, RulesetShape.From(JsonNode.Parse(payload))!, CheckNameRefusal(target.Path, target.Slug, policies));

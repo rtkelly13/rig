@@ -3,10 +3,10 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -1212,7 +1212,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
 
         try
         {
-            File.AppendAllText(ledger, PyJson.DumpsLine(line) + "\n");
+            File.AppendAllText(ledger, JsonOutput.Line(line) + "\n");
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {

@@ -2,6 +2,7 @@ using Rig.Core.Governance;
 using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Governance;
 
@@ -70,7 +71,7 @@ public sealed class TriageTests
     {
         var dashboard = Triage.Dashboard([Issue(labels: "bug")], Now);
 
-        var json = PyJson.Dumps(dashboard.ToJson());
+        var json = JsonOutput.Format(dashboard.ToJson());
 
         Assert.Contains("\"total_issues\": 1", json, StringComparison.Ordinal);
         Assert.Contains("\"created_at\": \"2026-05-31T12:00:00Z\"", json, StringComparison.Ordinal);

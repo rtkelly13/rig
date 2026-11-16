@@ -14,6 +14,17 @@ public sealed class PyTextCaseFoldTests
     [InlineData("µ", "μ")]
     [InlineData("ſ", "s")]
     [InlineData("ϐ", "β")]
+    [InlineData("ϑ", "θ")]
+    [InlineData("ϕ", "φ")]
+    [InlineData("ϖ", "π")]
+    [InlineData("ϰ", "κ")]
+    [InlineData("ϱ", "ρ")]
+    [InlineData("ϵ", "ε")]
+    [InlineData("ﬂ", "fl")]
+    [InlineData("ﬄ", "ffl")]
+    [InlineData("ﬅ", "st")]
+    [InlineData("ﬆ", "st")]
+    [InlineData("ﬀ", "ff")]
     [InlineData("Plain ASCII", "plain ascii")]
     public void Text_folds_as_python_does(string text, string folded) => Assert.Equal(folded, PyText.CaseFold(text));
 

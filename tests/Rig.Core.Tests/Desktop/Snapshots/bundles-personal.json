@@ -25,7 +25,7 @@
       "delay_ms": 1200,
       "path": "{warp-path}",
       "cwd": "{rig-root}",
-      "summary": "Single Warp session for personal-side work on screen 2, replacing the two Claude terminals. Each plain warp.exe launch opens a new window; `cwd` opens it in the personal workspace root (title 'pwsh in rig'). Warp can't auto-run a command on Windows, so run `claude` yourself.",
+      "summary": "Single Warp session for personal-side work on screen 2, replacing the two Claude terminals. Each plain warp.exe launch opens a new window; \u0060cwd\u0060 opens it in the personal workspace root (title \u0027pwsh in rig\u0027). Warp can\u0027t auto-run a command on Windows, so run \u0060claude\u0060 yourself.",
       "placement": {
         "screen": 2,
         "layout": {
@@ -47,7 +47,7 @@
         "--new-window",
         "https://mail.google.com/"
       ],
-      "summary": "Opens Chrome with the Profile 1 personal profile. Shares {chrome-user-data} with the Admin desktop's Profile 4 windows, so the launched PID hands off to the existing browser process and every Chrome window looks identical to `window_process_name` alone. `--new-window` forces a window to actually appear instead of focusing an existing Profile 1 one, and `window_title` pins the match to the personal Gmail window - without both, restore binds to whatever chrome.exe window shows up next and has previously grabbed work-profile windows.",
+      "summary": "Opens Chrome with the Profile 1 personal profile. Shares {chrome-user-data} with the Admin desktop\u0027s Profile 4 windows, so the launched PID hands off to the existing browser process and every Chrome window looks identical to \u0060window_process_name\u0060 alone. \u0060--new-window\u0060 forces a window to actually appear instead of focusing an existing Profile 1 one, and \u0060window_title\u0060 pins the match to the personal Gmail window - without both, restore binds to whatever chrome.exe window shows up next and has previously grabbed work-profile windows.",
       "placement": {
         "screen": 1,
         "layout": {

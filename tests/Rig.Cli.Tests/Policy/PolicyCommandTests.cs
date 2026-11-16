@@ -60,7 +60,8 @@ public sealed class PolicyCommandTests : IDisposable
         var path = PolicyFiles.Write(_dir.Path, "[]");
 
         Assert.Equal(1, RunWith(path, "list"));
-        Assert.Equal("rig policy: Malformed command policy: the policy must be an object.\n", _err.ToString().ReplaceLineEndings("\n"));
+        Assert.StartsWith("rig policy: Malformed command policy: ", _err.ToString(), StringComparison.Ordinal);
+        Assert.Contains(path, _err.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

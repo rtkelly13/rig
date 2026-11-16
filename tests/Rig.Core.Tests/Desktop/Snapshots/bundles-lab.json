@@ -6,7 +6,7 @@
       "type": "app",
       "delay_ms": 1600,
       "path": "{t3code-path}",
-      "summary": "T3 Code under evaluation, full screen 1. Orca moved to the Work desktop, which owns both Orca profiles; a Lab entry would grab one of their windows. Install or upgrade it with `devenv tools` (winget `T3Tools.T3Code`).",
+      "summary": "T3 Code under evaluation, full screen 1. Orca moved to the Work desktop, which owns both Orca profiles; a Lab entry would grab one of their windows. Install or upgrade it with \u0060devenv tools\u0060 (winget \u0060T3Tools.T3Code\u0060).",
       "placement": {
         "screen": 1,
         "layout": {

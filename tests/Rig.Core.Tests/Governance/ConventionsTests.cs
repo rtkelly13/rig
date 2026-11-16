@@ -4,6 +4,7 @@ using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Governance;
 
@@ -45,7 +46,7 @@ public sealed class ConventionsTests : IDisposable
         ["private"] = false,
     };
 
-    private static string Declared => PyJson.DumpsLine(RulesetResource.Payload(Policies, Slug));
+    private static string Declared => JsonOutput.Line(RulesetResource.Payload(Policies, Slug));
 
     private static FakeGitHub WithRuleset(string detail) => new FakeGitHub()
         .On("GET", $"repos/{Slug}", Settings().ToJsonString())

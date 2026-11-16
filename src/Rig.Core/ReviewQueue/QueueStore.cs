@@ -79,7 +79,7 @@ public sealed class QueueWriter
         foreach (var item in items)
         {
             var payload = QueueJson.EncodeItem(item);
-            if (Payload(item.Repo, item.Number) == payload)
+            if (Payload(item.Repo, item.Number) is { } stored && QueueJson.SameSnapshot(stored, payload))
             {
                 continue;
             }

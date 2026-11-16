@@ -7,9 +7,9 @@ using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Core.GitHub;
 using Rig.Core.Governance;
-using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
 
 namespace Rig.Cli.Workspace;
@@ -296,7 +296,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         var exit = strict && drift ? 1 : 0;
         if (json)
         {
-            await output.WriteLineAsync(PyJson.Dumps(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))]))).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))]))).ConfigureAwait(false);
             return exit;
         }
 
@@ -320,7 +320,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         var results = await gitignores.SyncEstateAsync(estate, repos, dryRun, languages, cancellationToken).ConfigureAwait(false);
         if (json)
         {
-            await output.WriteLineAsync(PyJson.Dumps(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))]))).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))]))).ConfigureAwait(false);
             return 0;
         }
 

@@ -152,7 +152,7 @@ public sealed class GovernanceTriageCommandTests : IDisposable
 
         var (_, output) = await RunAsync("pr-triage", "--repo", "x/y", "--json");
 
-        Assert.Contains("\"Lint & Typecheck\"", output, StringComparison.Ordinal);
+        Assert.Contains("\"Lint \\u0026 Typecheck\"", output, StringComparison.Ordinal);
         Assert.StartsWith("{\n  \"total_prs\": 5,", output, StringComparison.Ordinal);
     }
 

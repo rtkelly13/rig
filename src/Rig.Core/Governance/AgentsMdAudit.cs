@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Core.Governance;
 
@@ -172,7 +173,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
 
     /// <summary>The waiver file holding <paramref name="waivers"/>, as written back: indented JSON and a newline.</summary>
     public static string RenderWaivers(IEnumerable<AgentsMdWaiver> waivers) =>
-        Policy.PyJson.Dumps(new JsonObject { ["waivers"] = new JsonArray([.. waivers.Select(JsonNode (w) => w.ToJson())]) }) + "\n";
+        JsonOutput.Format(new JsonObject { ["waivers"] = new JsonArray([.. waivers.Select(JsonNode (w) => w.ToJson())]) }) + "\n";
 
     /// <summary>Runs every deterministic check over <paramref name="repoPath"/> under <paramref name="rules"/> and applies its waivers.</summary>
     public async Task<AgentsMdAuditResult> AuditAsync(string repoPath, AgentsMdRules rules, CancellationToken cancellationToken = default)

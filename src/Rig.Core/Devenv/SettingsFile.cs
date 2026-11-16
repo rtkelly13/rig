@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Core.Devenv;
 
@@ -46,7 +46,7 @@ public static class SettingsFile
         try
         {
             _ = Directory.CreateDirectory(Path.GetDirectoryName(full)!);
-            var text = PyJson.Dumps(settings, ensureAscii: false) + "\n";
+            var text = JsonOutput.Format(settings, keepNonAscii: true) + "\n";
             File.WriteAllText(staging, windows ? text.Replace("\n", "\r\n", StringComparison.Ordinal) : text);
             File.Move(staging, full, overwrite: true);
         }

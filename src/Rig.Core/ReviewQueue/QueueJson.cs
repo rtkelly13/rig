@@ -1,10 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.Policy;
+using Rig.Core.Text;
 
 namespace Rig.Core.ReviewQueue;
 
-/// <summary>The existing snake-case snapshots, including Python's sorted JSON spelling for change detection.</summary>
+/// <summary>The existing snake-case snapshots, in a canonical one-line JSON spelling for change detection.</summary>
 public static class QueueJson
 {
     /// <summary>Typed boundary settings, retaining defaults for old snapshots while rejecting missing required fields.</summary>
@@ -27,9 +27,25 @@ public static class QueueJson
         return item;
     }
 
-    /// <summary>The byte spelling used by Python's json.dumps(asdict(item), sort_keys=True).</summary>
+    /// <summary>The canonical one-line snapshot: properties sorted, so a rewrite of the same data is byte-identical.</summary>
     public static string EncodeItem(QueueItem item) =>
-        PyJson.DumpsLine(Sorted(JsonSerializer.SerializeToNode(item, Options)));
+        JsonOutput.Line(Sorted(JsonSerializer.SerializeToNode(item, Options)));
+
+    /// <summary>
+    /// Whether two snapshots hold the same data. Rows written before the writer changed are in an older JSON spelling,
+    /// so a re-encode of unchanged data must not look like an observation.
+    /// </summary>
+    public static bool SameSnapshot(string left, string right)
+    {
+        try
+        {
+            return JsonNode.DeepEquals(JsonNode.Parse(left), JsonNode.Parse(right));
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
 
     private static JsonNode? Sorted(JsonNode? node) => node switch
     {

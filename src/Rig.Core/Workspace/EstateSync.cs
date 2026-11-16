@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.Policy;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 
 namespace Rig.Core.Workspace;
 
@@ -107,7 +107,7 @@ public sealed class EstateSync(EstateScopes scopes)
         }
 
         var payload = new JsonObject { ["folders"] = folders, ["settings"] = await SettingsAsync(file, cancellationToken).ConfigureAwait(false) };
-        await File.WriteAllTextAsync(file, PyJson.Dumps(payload) + "\n", cancellationToken).ConfigureAwait(false);
+        await File.WriteAllTextAsync(file, JsonOutput.Format(payload) + "\n", cancellationToken).ConfigureAwait(false);
         return file;
     }
 

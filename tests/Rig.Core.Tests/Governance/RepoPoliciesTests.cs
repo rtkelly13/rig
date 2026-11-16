@@ -32,7 +32,7 @@ public sealed class RepoPoliciesTests : IDisposable
 
     private readonly TempDir _dir = new();
 
-    private static RepoPolicies Parsed => RepoPolicies.Parse(JsonNode.Parse(Policy), "policy.json");
+    private static RepoPolicies Parsed => RepoPolicies.Parse(Policy, "policy.json");
 
     public void Dispose() => _dir.Dispose();
 
@@ -50,7 +50,7 @@ public sealed class RepoPoliciesTests : IDisposable
     public void Profiles_are_listed_in_the_file_order_with_their_repos_and_policy_files()
     {
         var policies = RepoPolicies.Parse(
-            JsonNode.Parse("""{"profiles": {"oss": {"repos": ["a", "b"], "policies": ["ai_policy"]}, "work": {"repos": ["c"]}}}"""), "policy.json");
+            """{"profiles": {"oss": {"repos": ["a", "b"], "policies": ["ai_policy"]}, "work": {"repos": ["c"]}}}""", "policy.json");
 
         Assert.Equal(
             [("oss", "a,b", "ai_policy"), ("work", "c", "")],
@@ -60,23 +60,23 @@ public sealed class RepoPoliciesTests : IDisposable
     [Fact]
     public void A_profile_policies_entry_must_be_a_list_of_strings() =>
         Assert.Contains(
-            "policies is not a list of strings",
-            Assert.Throws<InvalidDataException>(() => RepoPolicies.Parse(JsonNode.Parse("""{"profiles": {"oss": {"policies": "ai_policy"}}}"""), "p")).Message,
+            "Path: $.profiles.oss.policies",
+            Assert.Throws<InvalidDataException>(() => RepoPolicies.Parse("""{"profiles": {"oss": {"policies": "ai_policy"}}}""", "p")).Message,
             StringComparison.Ordinal);
 
     [Theory]
-    [InlineData("[]", "the document is not an object")]
-    [InlineData("""{"profiles": []}""", "profiles is not an object")]
-    [InlineData("""{"defaults": {"languages": "py"}}""", "languages is not a list of strings")]
-    [InlineData("""{"defaults": {"gitignore_entries": {}}}""", "gitignore_entries is not a list")]
+    [InlineData("[]", "$")]
+    [InlineData("""{"profiles": []}""", "Path: $.profiles")]
+    [InlineData("""{"defaults": {"languages": "py"}}""", "Path: $.defaults.languages")]
+    [InlineData("""{"defaults": {"gitignore_entries": {}}}""", "Path: $.defaults.gitignore_entries")]
     [InlineData("""{"defaults": {"gitignore_entries": [{"write": ["a"], "match_mode": "some"}]}}""", "match_mode 'some' is neither 'any' nor 'all'")]
-    [InlineData("""{"defaults": {"agents_md_hygiene": []}}""", "agents_md_hygiene is not an object")]
+    [InlineData("""{"defaults": {"agents_md_hygiene": []}}""", "Path: $.defaults.agents_md_hygiene")]
     [InlineData("""{"owner_profiles": {"b": "nope", "a": "gone"}}""", "owner_profiles names undeclared profile(s): a -> gone, b -> nope")]
     [InlineData("""{"defaults": {"agents_md_hygiene": {"claude_md": "copy"}}}""", "claude_md 'copy' is not one of symlink, absent, any")]
-    [InlineData("""{"defaults": {"agents_md_hygiene": {"max_lines": "ten"}}}""", "max_lines is not an integer")]
-    [InlineData("""{"defaults": {"agents_md_hygiene": {"check_paths": 1}}}""", "check_paths is not a boolean")]
-    [InlineData("""{"defaults": {"repo_selection": []}}""", "repo_selection is not an object")]
-    [InlineData("""{"defaults": {"repo_selection": {"exempt": "yes"}}}""", "exempt is not a boolean")]
+    [InlineData("""{"defaults": {"agents_md_hygiene": {"max_lines": "ten"}}}""", "Path: $.defaults.agents_md_hygiene.max_lines")]
+    [InlineData("""{"defaults": {"agents_md_hygiene": {"check_paths": 1}}}""", "Path: $.defaults.agents_md_hygiene.check_paths")]
+    [InlineData("""{"defaults": {"repo_selection": []}}""", "Path: $.defaults.repo_selection")]
+    [InlineData("""{"defaults": {"repo_selection": {"exempt": "yes"}}}""", "Path: $.defaults.repo_selection.exempt")]
     [InlineData("""{"defaults": {"expected_owner": 3}}""", "expected_owner is not a string")]
     public void A_file_of_the_wrong_shape_is_refused(string json, string why)
     {
@@ -85,7 +85,8 @@ public sealed class RepoPoliciesTests : IDisposable
 
         var error = Assert.Throws<InvalidDataException>(() => RepoPolicies.Load(file));
 
-        Assert.Equal($"{file}: {why}", error.Message);
+        Assert.StartsWith(file, error.Message, StringComparison.Ordinal);
+        Assert.Contains(why, error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -210,7 +211,7 @@ public sealed class RepoPoliciesTests : IDisposable
         }
         """;
 
-    private static RepoPolicies Owners => RepoPolicies.Parse(JsonNode.Parse(Identity), "policy.json");
+    private static RepoPolicies Owners => RepoPolicies.Parse(Identity, "policy.json");
 
     [Fact]
     public void Owners_default_to_the_personal_accounts_and_none_is_expected()

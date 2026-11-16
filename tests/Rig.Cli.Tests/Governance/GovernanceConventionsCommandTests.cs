@@ -6,6 +6,7 @@ using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Tests.Governance;
 
@@ -43,7 +44,7 @@ public sealed class GovernanceConventionsCommandTests : IDisposable
     private static FakeGitHub Aligned(string slug = Slug, string? ruleset = null) => new FakeGitHub()
         .On("GET", $"repos/{slug}", """{"default_branch": "main", "delete_branch_on_merge": true, "allow_squash_merge": true, "allow_merge_commit": false, "allow_rebase_merge": false, "allow_auto_merge": true, "private": false}""")
         .On("GET", $"repos/{slug}/rulesets", """[{"id": 7, "name": "Main Branch Governance Ruleset", "enforcement": "active"}]""")
-        .On("GET", $"repos/{slug}/rulesets/7", ruleset ?? PyJson.DumpsLine(RulesetResource.Payload(Policies, slug)))
+        .On("GET", $"repos/{slug}/rulesets/7", ruleset ?? JsonOutput.Line(RulesetResource.Payload(Policies, slug)))
         .On("PATCH", $"repos/{slug}", "{}")
         .On("PUT", $"repos/{slug}/rulesets/7", "{}");
 
@@ -158,7 +159,7 @@ public sealed class GovernanceConventionsCommandTests : IDisposable
 
     private static string Drifted()
     {
-        var live = JsonNode.Parse(PyJson.DumpsLine(RulesetResource.Payload(Policies, Slug)))!.AsObject();
+        var live = JsonNode.Parse(JsonOutput.Line(RulesetResource.Payload(Policies, Slug)))!.AsObject();
         live["rules"] = new JsonArray();
         return live.ToJsonString();
     }
