@@ -200,7 +200,7 @@ public static partial class WorkGitParsers
             return Path.GetFileName(trimmed);
         }
 
-        return relative.Replace('\\', '/');
+        return relative.Replace(Path.DirectorySeparatorChar, '/');
     }
 
     private static string[] Lines(string output) =>
@@ -309,9 +309,9 @@ public sealed class WorkGitFacts(Git git, CloneDiscovery discovery, int workers 
         return ran.Ok ? RepoSlug.FromRemote(ran.Out.Trim())?.FullName ?? string.Empty : string.Empty;
     }
 
-    private async Task<IReadOnlyList<Checkout>> CheckoutsAsync(string repo, CancellationToken cancellationToken)
+    internal async Task<IReadOnlyList<Checkout>> CheckoutsAsync(string repo, CancellationToken cancellationToken)
     {
-        var trees = await Worktree.ListAsync(git, repo).ConfigureAwait(false);
+        var trees = await Worktree.ListAsync(git, repo, cancellationToken).ConfigureAwait(false);
         var checkouts = new List<Checkout>();
         foreach (var tree in trees)
         {
@@ -335,6 +335,6 @@ public sealed class WorkGitFacts(Git git, CloneDiscovery discovery, int workers 
         }
 
         var ran = await git.RunAsync(checkout.Path, ["status", "--porcelain"], cancellationToken: cancellationToken).ConfigureAwait(false);
-        return checkout with { Dirty = ran.Ok && ran.Out.Trim().Length > 0 };
+        return checkout with { Dirty = ran.Ok ? ran.Out.Trim().Length > 0 : null };
     }
 }

@@ -15,7 +15,18 @@ public sealed class SerializationTests
         Assert.True(
             JsonNode.DeepEquals(WorkFixtures.FixtureJson(), rendered),
             $"C# output differs from the Python fixture:\n{WorkJson.Render(report, report.Items)}");
-        Assert.Equal(NormaliseNewlines(File.ReadAllText(FixturePath()).TrimEnd('\n')), NormaliseNewlines(WorkJson.Render(report, report.Items)));
+        Assert.Equal(NormaliseFixture(File.ReadAllText(FixturePath())), NormaliseFixture(WorkJson.Render(report, report.Items)));
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void The_report_matches_the_fixture_for_both_checkout_line_endings(string newline)
+    {
+        var report = WorkFixtures.Report();
+        var fixture = string.Join(newline, File.ReadAllLines(FixturePath())) + newline;
+
+        Assert.Equal(NormaliseFixture(fixture), NormaliseFixture(WorkJson.Render(report, report.Items)));
     }
 
     [Fact]
@@ -100,6 +111,6 @@ public sealed class SerializationTests
 
     private static string FixturePath() => Path.Join(AppContext.BaseDirectory, "Work", "work-list.fixture.json");
 
-    // A Windows checkout may have CRLF in the fixture; the schema cares about bytes, not the file's line endings.
-    private static string NormaliseNewlines(string text) => text.ReplaceLineEndings("\n");
+    // Normalise line endings first, then drop the one trailing newline: a CRLF fixture must not leave a '\r'.
+    private static string NormaliseFixture(string text) => text.ReplaceLineEndings("\n").TrimEnd('\n');
 }

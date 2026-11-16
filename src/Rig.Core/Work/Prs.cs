@@ -156,10 +156,10 @@ public sealed class WorkPrSource(
     {
         ArgumentNullException.ThrowIfNull(requests);
         var cache = ReadCache();
-        var answered = new Dictionary<string, CachedRepo>(StringComparer.Ordinal);
-        var toFetch = new List<PrRequest>();
         var warnings = new List<string>();
         var lookups = new Dictionary<string, PrLookup>(WorkPaths.Comparer);
+        var groups = new List<SlugGroupBuilder>();
+        var bySlug = new Dictionary<string, SlugGroupBuilder>(StringComparer.Ordinal);
         foreach (var request in requests)
         {
             if (request.Slug.Length == 0)
@@ -169,13 +169,36 @@ public sealed class WorkPrSource(
                 continue;
             }
 
-            if (!refresh && cache.TryGetValue(request.Slug, out var hit) && hit.Answers(request.Branches, now, _ttl))
+            if (!bySlug.TryGetValue(request.Slug, out var group))
             {
-                answered[request.Slug] = hit;
+                group = new SlugGroupBuilder(request.Slug);
+                bySlug[request.Slug] = group;
+                groups.Add(group);
+            }
+
+            group.Requests.Add(request);
+            foreach (var branch in request.Branches)
+            {
+                if (group.Seen.Add(branch))
+                {
+                    group.Branches.Add(branch);
+                }
+            }
+        }
+
+        var answered = new Dictionary<string, CachedRepo>(StringComparer.Ordinal);
+        var cachedSlugs = new HashSet<string>(StringComparer.Ordinal);
+        var toFetch = new List<SlugGroupBuilder>();
+        foreach (var group in groups)
+        {
+            if (!refresh && cache.TryGetValue(group.Slug, out var hit) && hit.Answers(group.Branches, now, _ttl))
+            {
+                answered[group.Slug] = hit;
+                cachedSlugs.Add(group.Slug);
             }
             else
             {
-                toFetch.Add(request);
+                toFetch.Add(group);
             }
         }
 
@@ -183,22 +206,28 @@ public sealed class WorkPrSource(
         await Parallel.ForEachAsync(
             Enumerable.Range(0, toFetch.Count),
             new ParallelOptions { MaxDegreeOfParallelism = workers, CancellationToken = cancellationToken },
-            async (index, token) => fetched[index] = await FetchOneAsync(toFetch[index], token).ConfigureAwait(false)).ConfigureAwait(false);
+            async (index, token) => fetched[index] = await FetchOneAsync(toFetch[index].Slug, toFetch[index].Branches, token).ConfigureAwait(false)).ConfigureAwait(false);
 
         var prs = new Dictionary<BranchKey, PrInfo>(BranchKeyComparer.Instance);
+        var fetchedSlugs = new HashSet<string>(StringComparer.Ordinal);
         for (var index = 0; index < toFetch.Count; index++)
         {
-            var request = toFetch[index];
+            var group = toFetch[index];
             if (fetched[index] is not { } result)
             {
-                lookups[request.RepoPath] = PrLookup.Unavailable;
-                warnings.Add($"{request.Slug}: gh lookup failed (offline, unauthenticated or no access)");
+                foreach (var request in group.Requests)
+                {
+                    lookups[request.RepoPath] = PrLookup.Unavailable;
+                }
+
+                warnings.Add($"{group.Slug}: gh lookup failed (offline, unauthenticated or no access)");
                 continue;
             }
 
             var entry = new CachedRepo(now, result);
-            answered[request.Slug] = entry;
-            cache[request.Slug] = entry;
+            answered[group.Slug] = entry;
+            cache[group.Slug] = entry;
+            fetchedSlugs.Add(group.Slug);
         }
 
         foreach (var request in requests)
@@ -225,8 +254,8 @@ public sealed class WorkPrSource(
 
         return new PrResults(prs, lookups, warnings)
         {
-            Cached = requests.Count - toFetch.Count - requests.Count(request => request.Slug.Length == 0),
-            Fetched = fetched.Count(result => result is not null),
+            Cached = requests.Count(request => request.Slug.Length > 0 && cachedSlugs.Contains(request.Slug)),
+            Fetched = requests.Count(request => request.Slug.Length > 0 && fetchedSlugs.Contains(request.Slug)),
         };
     }
 
@@ -278,12 +307,12 @@ public sealed class WorkPrSource(
         return builder.Append('"').ToString();
     }
 
-    private async Task<IReadOnlyDictionary<string, PrInfo?>?> FetchOneAsync(PrRequest request, CancellationToken cancellationToken)
+    private async Task<IReadOnlyDictionary<string, PrInfo?>?> FetchOneAsync(string slug, IReadOnlyList<string> branches, CancellationToken cancellationToken)
     {
         var ran = await github.CallAsync(
-            ApiRequest.GraphQL(BuildQuery(request.Slug, request.Branches), new Dictionary<string, object?>()),
+            ApiRequest.GraphQL(BuildQuery(slug, branches), new Dictionary<string, object?>()),
             cancellationToken).ConfigureAwait(false);
-        return ran.Ok ? ParseResponse(ran.Out, request.Branches) : null;
+        return ran.Ok ? ParseResponse(ran.Out, branches) : null;
     }
 
     private static PrInfo? NodeInfo(JsonObject node)
@@ -424,5 +453,18 @@ public sealed class WorkPrSource(
     {
         public bool Answers(IReadOnlyList<string> wanted, DateTimeOffset now, TimeSpan ttl) =>
             now - FetchedAt < ttl && wanted.All(Branches.ContainsKey);
+    }
+
+    // One GitHub slug and every request for it, so clones sharing a slug are queried once with the union of their
+    // branches instead of overwriting each other's answers.
+    private sealed class SlugGroupBuilder(string slug)
+    {
+        public string Slug { get; } = slug;
+
+        public List<string> Branches { get; } = [];
+
+        public HashSet<string> Seen { get; } = new(StringComparer.Ordinal);
+
+        public List<PrRequest> Requests { get; } = [];
     }
 }

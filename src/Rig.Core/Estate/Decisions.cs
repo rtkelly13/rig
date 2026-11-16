@@ -176,7 +176,7 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
         }
 
         var now = time.GetUtcNow();
-        var trees = (await Worktree.ListAsync(git, clone).ConfigureAwait(false))
+        var trees = (await Worktree.ListAsync(git, clone, cancellationToken).ConfigureAwait(false))
             .Where(tree => !(tree.IsMain || tree.Bare || tree.Prunable) && Directory.Exists(tree.Path))
             .ToList();
         var verdicts = await MapAsync(trees, tree => JudgeAsync(repo, tree, idleDays, now), cancellationToken).ConfigureAwait(false);

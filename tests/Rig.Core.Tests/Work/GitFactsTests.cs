@@ -183,7 +183,7 @@ public sealed class GitFactsTests : IDisposable
     }
 
     [Fact]
-    public async Task Probe_marks_dirty_reads_and_treats_failed_status_as_clean()
+    public async Task Probe_marks_dirty_reads_and_leaves_a_failed_status_unknown()
     {
         var clean = _temp.Folder("clean");
         var dirty = _temp.Folder("dirty");
@@ -206,9 +206,29 @@ public sealed class GitFactsTests : IDisposable
 
         Assert.False(probed[0].Checkouts[0].Dirty);
         Assert.True(probed[0].Checkouts[1].Dirty);
-        Assert.False(probed[0].Checkouts[2].Dirty);
+        Assert.Null(probed[0].Checkouts[2].Dirty);
         Assert.Null(probed[0].Checkouts[3].Dirty);
         Assert.Equal(3, proc.Requests.Count);
+    }
+
+    [Fact]
+    public async Task Checkouts_observes_a_pre_cancelled_token()
+    {
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        var facts = new WorkGitFacts(new Git(new CancellationAwareProc(), _temp.Path), new CloneDiscovery(Path.Join(_temp.Path, "cancel.json"), new FixedClock(Now)));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => facts.CheckoutsAsync("/code/acme/app", cancellation.Token));
+    }
+
+    [Fact]
+    public void RepoDisplayName_only_converts_the_platform_separator()
+    {
+        var folder = "acme\\app";
+        var expected = Path.DirectorySeparatorChar == '/' ? "acme\\app" : "acme/app";
+
+        Assert.Equal(expected, WorkGitParsers.RepoDisplayName(Path.Join("/code", folder), "/code"));
     }
 
     [Fact]
@@ -251,6 +271,16 @@ public sealed class GitFactsTests : IDisposable
 
         Assert.Equal(["o/b", "o/a"], slugs.Select(pair => pair.Value));
         Assert.Equal(["/code/b", "/code/a"], slugs.Keys);
+    }
+
+    private sealed class CancellationAwareProc : IProc
+    {
+        public Ran Run(ProcRequest request) => throw new NotSupportedException();
+
+        public Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default) =>
+            cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled<Ran>(cancellationToken)
+                : Task.FromResult(new Ran(0, string.Empty, string.Empty));
     }
 
     private WorkGitFacts Facts(FakeProc proc)

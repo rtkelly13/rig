@@ -73,10 +73,13 @@ public sealed record Worktree(
     }
 
     /// <summary>The worktrees registered against <paramref name="repo"/>; none when git cannot say.</summary>
-    public static async Task<IReadOnlyList<Worktree>> ListAsync(Git git, string repo)
+    /// <param name="git">Runs git.</param>
+    /// <param name="repo">The clone.</param>
+    /// <param name="cancellationToken">Stops the read.</param>
+    public static async Task<IReadOnlyList<Worktree>> ListAsync(Git git, string repo, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(git);
-        var ran = await git.RunAsync(repo, ["worktree", "list", "--porcelain"]).ConfigureAwait(false);
+        var ran = await git.RunAsync(repo, ["worktree", "list", "--porcelain"], cancellationToken: cancellationToken).ConfigureAwait(false);
         return ran.Ok ? Parse(ran.Out) : [];
     }
 }

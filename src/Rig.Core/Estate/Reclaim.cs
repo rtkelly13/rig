@@ -136,7 +136,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
     /// </summary>
     public async Task<RepoReclaim> ScanRepoAsync(string repo, long floor = ReportFloor, CancellationToken cancellationToken = default)
     {
-        var trees = (await Worktree.ListAsync(git, repo).ConfigureAwait(false)).Where(tree => !tree.IsMain).ToList();
+        var trees = (await Worktree.ListAsync(git, repo, cancellationToken).ConfigureAwait(false)).Where(tree => !tree.IsMain).ToList();
         var worktrees = trees.Select(tree => PathResolution.Resolve(tree.Path)).ToHashSet(PathResolution.Comparer);
         var entries = new List<Reclaimable>();
         foreach (var category in Categories)
@@ -255,7 +255,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
         {
             // git deletes a worktree's ignored files with it, and a worktree nested in its temp/ is one of them.
             var resolved = PathResolution.Resolve(entry.Path);
-            var trees = await Worktree.ListAsync(git, clone).ConfigureAwait(false);
+            var trees = await Worktree.ListAsync(git, clone, cancellationToken).ConfigureAwait(false);
             if (trees.Any(tree => Trim.IsStrictlyBelow(PathResolution.Resolve(tree.Path), resolved)))
             {
                 return "holds a worktree";

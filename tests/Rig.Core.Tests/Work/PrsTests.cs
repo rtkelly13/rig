@@ -187,6 +187,36 @@ public sealed class PrsTests : IDisposable
     }
 
     [Fact]
+    public async Task Fetch_queries_a_shared_slug_once_and_keeps_each_clones_branches()
+    {
+        var api = new FakePrApi(_ => new Ran(0, Response(new Dictionary<string, string>
+        {
+            ["b0"] = """[{"number":1,"state":"MERGED","url":"u1"}]""",
+            ["b1"] = """[{"number":2,"state":"OPEN","url":"u2"}]""",
+        }), string.Empty));
+        var source = Source(api);
+
+        var results = await source.FetchAsync(
+            [
+                new PrRequest("/code/acme/app", "o/n", ["feat-a"]),
+                new PrRequest("/code/acme/fork", "o/n", ["feat-b"]),
+            ],
+            refresh: false,
+            Now,
+            Token);
+
+        Assert.Single(api.Calls);
+        Assert.Equal(2, results.Fetched);
+        Assert.Equal(new PrInfo(1, PrStatus.Merged, "u1"), results.Prs[new BranchKey("/code/acme/app", "feat-a")]);
+        Assert.Equal(new PrInfo(2, PrStatus.Open, "u2"), results.Prs[new BranchKey("/code/acme/fork", "feat-b")]);
+        Assert.Equal(PrLookup.Ok, results.Lookups["/code/acme/app"]);
+        Assert.Equal(PrLookup.Ok, results.Lookups["/code/acme/fork"]);
+        var query = api.Bodies[0]["query"]!.GetValue<string>();
+        Assert.Contains("headRefName: \"feat-a\"", query, StringComparison.Ordinal);
+        Assert.Contains("headRefName: \"feat-b\"", query, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Fetch_ignores_a_corrupt_or_expired_cache()
     {
         var cache = Path.Join(_temp.Path, "prs.json");
