@@ -72,6 +72,19 @@ public sealed class TextFormatTests
         Assert.Equal("null", JsonOutput.Format(null));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Format_writes_LF_on_every_platform(bool keepNonAscii)
+    {
+        var node = JsonNode.Parse("""{"a": [1, {"b": 2}]}""");
+
+        var text = JsonOutput.Format(node, keepNonAscii);
+
+        Assert.DoesNotContain('\r', text);
+        Assert.Equal("{\n  \"a\": [\n    1,\n    {\n      \"b\": 2\n    }\n  ]\n}", text);
+    }
+
     [Fact]
     public void Format_escapes_non_ascii_by_default_and_keeps_it_on_request()
     {

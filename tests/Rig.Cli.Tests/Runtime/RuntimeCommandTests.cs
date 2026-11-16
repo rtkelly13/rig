@@ -549,6 +549,7 @@ public sealed class RuntimeCommandTests : IDisposable
             Unanswered = new(0, "", ""),
             BeforeRun = req =>
             {
+                RunMklink(req);
                 if (req.Argv.Contains("archive"))
                 {
                     var outputArg = req.Argv.FirstOrDefault(a => a.StartsWith("--output=", StringComparison.Ordinal));
@@ -705,7 +706,7 @@ public sealed class RuntimeCommandTests : IDisposable
             """{"current": "aaaaaaaaaaaa", "previous": "bbbbbbbbbbbb", "repo": "r"}""",
             TestContext.Current.CancellationToken);
 
-        var proc = new FakeProc();
+        var proc = new FakeProc { Unanswered = new(0, "", ""), BeforeRun = RunMklink };
         var host = new RuntimeHost(Root, _temp.Path, _temp.Path, false, proc, TimeProvider.System);
         var root = new RootCommand { new RuntimeCommand(host, _out).Build() };
 
@@ -888,6 +889,19 @@ public sealed class RuntimeCommandTests : IDisposable
         _out.GetStringBuilder().Clear();
         cmd.ReportShim();
         Assert.Contains("Left ", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Runs the <c>cmd /c mklink /J</c> the runtime uses for its <c>current</c> junction. The fake answers every
+    /// command, so without this one's real filesystem effect a later install or rollback would see no link.
+    /// </summary>
+    private static void RunMklink(ProcRequest request)
+    {
+        if (OperatingSystem.IsWindows() && request.Argv is ["cmd", "/c", "mklink", "/J", _, _])
+        {
+            var ran = new SystemProc().Run(request);
+            Assert.True(ran.Ok, ran.Err);
+        }
     }
 
     private async Task<int> Run(FakeProc proc, params string[] args)

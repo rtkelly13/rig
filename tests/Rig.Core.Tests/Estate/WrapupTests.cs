@@ -373,12 +373,12 @@ public sealed class WrapupTests
     [Fact]
     public void Wrapup_scope_classify()
     {
-        var personal = new[] { "/Users/alice/personal", "/Users/alice/code" };
-        var work = new[] { "/Users/alice/work" };
-        var home = "/Users/alice";
+        var home = Path.Join(Path.GetTempPath(), "alice");
+        var personal = new[] { Path.Join(home, "personal"), Path.Join(home, "code") };
+        var work = new[] { Path.Join(home, "work") };
 
-        Assert.Equal(WrapupScope.Personal, Wrapup.Classify("~/personal/repo/tree", personal, work, home));
-        Assert.Equal(WrapupScope.Work, Wrapup.Classify("~/work/client/tree", personal, work, home));
-        Assert.Null(Wrapup.Classify("/opt/other/tree", personal, work, home));
+        Assert.Equal(WrapupScope.Personal, Wrapup.Classify(Path.Join("~", "personal", "repo", "tree"), personal, work, home));
+        Assert.Equal(WrapupScope.Work, Wrapup.Classify(Path.Join("~", "work", "client", "tree"), personal, work, home));
+        Assert.Null(Wrapup.Classify(Path.Join(Path.GetTempPath(), "other", "tree"), personal, work, home));
     }
 }

@@ -220,20 +220,20 @@ public sealed class OtelRuntimeTests : IDisposable
         var log = Path.Join(temp.Path, "sleep.log");
         var system = new SystemProc();
 
-        var pid = await new UnixDetachedStart(system).StartAsync(["/bin/sleep", "30"], log, temp.Path, cancellationToken: TestContext.Current.CancellationToken);
+        // Long enough to outlive a fully loaded parallel suite; cleanup kills it.
+        var pid = await new UnixDetachedStart(system).StartAsync(["/bin/sleep", "300"], log, temp.Path, cancellationToken: TestContext.Current.CancellationToken);
         try
         {
             var command = await system.RunAsync(new ProcRequest(["ps", "-o", "command=", "-p", $"{pid}"]), TestContext.Current.CancellationToken);
             var group = await system.RunAsync(new ProcRequest(["ps", "-o", "pgid=", "-p", $"{pid}"]), TestContext.Current.CancellationToken);
 
-            Assert.Contains("sleep 30", command.Out, StringComparison.Ordinal);
+            Assert.Contains("sleep 300", command.Out, StringComparison.Ordinal);
             Assert.Equal($"{pid}", group.Out.Trim());
             Assert.True(File.Exists(log));
         }
         finally
         {
-            using var started = Process.GetProcessById(pid);
-            started.Kill();
+            KillIfRunning(pid);
         }
     }
 
@@ -285,7 +285,8 @@ public sealed class OtelRuntimeTests : IDisposable
         var ping = Path.Join(Environment.SystemDirectory, "PING.EXE");
         var start = new WindowsDetachedStart();
 
-        var pid = await start.StartAsync([ping, "-n", "30", "127.0.0.1"], log, temp.Path, cancellationToken: TestContext.Current.CancellationToken);
+        // Long enough to outlive a fully loaded parallel suite; cleanup kills it.
+        var pid = await start.StartAsync([ping, "-n", "300", "127.0.0.1"], log, temp.Path, cancellationToken: TestContext.Current.CancellationToken);
         try
         {
             using var started = Process.GetProcessById(pid);
@@ -294,8 +295,7 @@ public sealed class OtelRuntimeTests : IDisposable
         }
         finally
         {
-            using var started = Process.GetProcessById(pid);
-            started.Kill();
+            KillIfRunning(pid);
         }
 
         _ = await Assert.ThrowsAsync<NotSupportedException>(() => start.StartAsync([ping], log, environment: new Dictionary<string, string> { ["K"] = "v" }, cancellationToken: TestContext.Current.CancellationToken));
@@ -586,6 +586,20 @@ public sealed class OtelRuntimeTests : IDisposable
         {
             using var reader = new StreamReader(stream);
             return await reader.ReadToEndAsync().ConfigureAwait(false);
+        }
+    }
+
+    // The detached child can finish before cleanup on a loaded runner; the test's assertions are the evidence it ran,
+    // so a process that is already gone is not a failure.
+    private static void KillIfRunning(int pid)
+    {
+        try
+        {
+            using var started = Process.GetProcessById(pid);
+            started.Kill();
+        }
+        catch (ArgumentException)
+        {
         }
     }
 

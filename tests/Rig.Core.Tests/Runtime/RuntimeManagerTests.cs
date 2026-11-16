@@ -20,6 +20,9 @@ public sealed class RuntimeManagerTests : IDisposable
     {
         var repo = _temp.Folder("repo");
         Git(repo, "init", "-q");
+        // git archive applies the checkout filters, so a runner's global autocrlf would rewrite the
+        // committed LF bytes as CRLF and make this test compare the host's configuration, not the copy.
+        Git(repo, "config", "core.autocrlf", "false");
         return repo;
     }
 

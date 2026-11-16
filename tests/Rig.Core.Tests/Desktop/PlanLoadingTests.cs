@@ -32,7 +32,8 @@ public sealed class PlanLoadingTests : IDisposable
     [Fact]
     public void Logs_sit_beside_the_plan_unless_the_override_says_otherwise()
     {
-        Assert.Equal(Path.Join("/plans", "logs"), PlanLoading.LogsDirectory("/plans/workspace.json", _ => null));
+        // The product makes the plan path absolute, so on Windows a POSIX fixture is rooted on the current drive.
+        Assert.Equal(Path.Join(Path.GetFullPath("/plans"), "logs"), PlanLoading.LogsDirectory("/plans/workspace.json", _ => null));
         Assert.Equal("/elsewhere", PlanLoading.LogsDirectory("/plans/workspace.json", name => name == PlanLoading.LogDirectoryVariable ? "/elsewhere" : null));
     }
 
