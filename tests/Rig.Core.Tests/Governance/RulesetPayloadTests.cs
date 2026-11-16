@@ -38,4 +38,52 @@ public sealed class RulesetPayloadTests
         Assert.NotNull(Rule(Registered, "required_status_checks"));
         Assert.Null(Rule(Unregistered, "required_status_checks"));
     }
+
+    [Fact]
+    public void RulesetShape_From_parses_valid_and_rejects_malformed_nodes()
+    {
+        Assert.Null(RulesetShape.From(null));
+        Assert.Null(RulesetShape.From(new JsonArray()));
+        Assert.Null(RulesetShape.From(new JsonObject { ["conditions"] = "not an object" }));
+        Assert.Null(RulesetShape.From(new JsonObject { ["conditions"] = new JsonObject { ["ref_name"] = new JsonObject { ["include"] = 123 } } }));
+        Assert.Null(RulesetShape.From(new JsonObject { ["bypass_actors"] = 123 }));
+        Assert.Null(RulesetShape.From(new JsonObject { ["rules"] = "not an array" }));
+        Assert.Null(RulesetShape.From(new JsonObject { ["rules"] = new JsonArray("not an object") }));
+
+        var valid = new JsonObject
+        {
+            ["enforcement"] = "active",
+            ["target"] = "branch",
+            ["conditions"] = new JsonObject
+            {
+                ["ref_name"] = new JsonObject
+                {
+                    ["include"] = new JsonArray("refs/heads/main"),
+                    ["exclude"] = new JsonArray(),
+                },
+            },
+            ["bypass_actors"] = new JsonArray(new JsonObject { ["actor_id"] = 1 }),
+            ["rules"] = new JsonArray(
+                new JsonObject
+                {
+                    ["type"] = "pull_request",
+                    ["parameters"] = new JsonObject { ["required_approving_review_count"] = 1L },
+                },
+                new JsonObject
+                {
+                    ["type"] = "pull_request",
+                    ["parameters"] = new JsonObject { ["required_approving_review_count"] = 2L },
+                }),
+        };
+
+        var shape = RulesetShape.From(valid);
+        Assert.NotNull(shape);
+        Assert.Equal("active", shape.Enforcement);
+        Assert.Equal("branch", shape.Target);
+        Assert.Equal(["refs/heads/main"], shape.Include);
+        Assert.Empty(shape.Exclude!);
+        Assert.Equal(1, shape.BypassActorCount);
+        Assert.Single(shape.Rules);
+        Assert.Contains("2", shape.Rules[0].Value, StringComparison.Ordinal);
+    }
 }
