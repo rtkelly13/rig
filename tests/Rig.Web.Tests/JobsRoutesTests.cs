@@ -69,7 +69,7 @@ public sealed class JobsRoutesTests : IAsyncLifetime
                 () => Task.FromResult(true),
                 query => Task.FromResult<IReadOnlyList<TraceView>>([]),
                 _ => [],
-                () => new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, ""),
+                _ => Task.FromResult(new ExplorerStatusView("http://hyperdx.test", true, "http://hyperdx.test/{trace_id}", "", false, "")),
                 () => 0));
 
         var settings = new WebHostSettings(
@@ -87,7 +87,7 @@ public sealed class JobsRoutesTests : IAsyncLifetime
             Path.Join(root, "temp", "traces", "sdk"),
             CodeRoot: root);
 
-        _host = RigWebHost.Create(settings, _forwarding, () => null, _ops);
+        _host = await RigWebHost.CreateAsync(settings, _forwarding, () => null, _ops);
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client = new HttpClient { BaseAddress = _host.Address };
     }
