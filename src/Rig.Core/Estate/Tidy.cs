@@ -239,7 +239,7 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
         CancellationToken cancellationToken)
     {
         var branch = finding.Subject;
-        var trees = await Worktree.ListAsync(git, repo).ConfigureAwait(false);
+        var trees = await Worktree.ListAsync(git, repo, cancellationToken).ConfigureAwait(false);
         if (trees.Any(tree => !tree.IsMain && tree.Branch == branch))
         {
             return new TidyAction(finding.Check, branch, TidyOutcome.Refused, "checked out in another worktree");
@@ -280,7 +280,7 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
     {
         var path = finding.Subject;
         var resolved = PathResolution.Resolve(path);
-        var trees = await Worktree.ListAsync(git, repo).ConfigureAwait(false);
+        var trees = await Worktree.ListAsync(git, repo, cancellationToken).ConfigureAwait(false);
         var tree = trees.FirstOrDefault(t => !t.IsMain && PathResolution.Same(PathResolution.Resolve(t.Path), resolved));
         if (tree is null && Guard(repo, path) is { Length: > 0 } outside)
         {

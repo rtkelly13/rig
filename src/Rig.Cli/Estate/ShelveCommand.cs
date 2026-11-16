@@ -229,7 +229,7 @@ internal sealed class ShelveCommand(
             var found = new List<Target>();
             foreach (var clone in chosen)
             {
-                var trees = (await Worktree.ListAsync(git, clone).ConfigureAwait(false)).Where(Shelvable).ToList();
+                var trees = (await Worktree.ListAsync(git, clone, cancellationToken).ConfigureAwait(false)).Where(Shelvable).ToList();
                 if (trees.Count > 0)
                 {
                     found.Add(new Target(clone, trees));
@@ -249,7 +249,7 @@ internal sealed class ShelveCommand(
                 return ([], $"{want} is not inside a git worktree");
             }
 
-            var match = (await Worktree.ListAsync(git, clone).ConfigureAwait(false))
+            var match = (await Worktree.ListAsync(git, clone, cancellationToken).ConfigureAwait(false))
                 .Where(tree => PathResolution.IsUnder(want, PathResolution.Resolve(tree.Path)))
                 .OrderByDescending(tree => PathResolution.Resolve(tree.Path).Length) // git prints / on Windows: compare resolved paths
                 .FirstOrDefault();

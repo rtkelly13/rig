@@ -1,0 +1,354 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-10T12:00:00+00:00",
+  "code_root": "/code",
+  "warnings": [
+    "acme/app: gh lookup failed (offline, unauthenticated or no access)"
+  ],
+  "items": [
+    {
+      "key": "acme/app:feat/PROJ-3-open",
+      "repo": "acme/app",
+      "repo_path": "/code/acme/app",
+      "branch": "feat/PROJ-3-open",
+      "ticket": "PROJ-3",
+      "is_trunk": false,
+      "state": "active",
+      "reasons": [
+        "draft PR #900"
+      ],
+      "last_activity": "2026-10-10T11:30:00+00:00",
+      "dirty": false,
+      "unpushed": 0,
+      "checkouts": [
+        {
+          "path": "/code/acme/app/temp/wt-draft",
+          "is_main_checkout": false,
+          "dirty": false
+        }
+      ],
+      "branch_ref": {
+        "upstream": null,
+        "upstream_gone": false,
+        "ahead": null,
+        "behind": null,
+        "unpushed": 0,
+        "last_commit": "2026-10-09T12:00:00+00:00"
+      },
+      "pr": {
+        "number": 900,
+        "state": "draft",
+        "url": "https://github.com/acme/app/pull/900",
+        "updated_at": "2026-10-10T11:30:00+00:00"
+      },
+      "pr_lookup": "ok",
+      "sessions": []
+    },
+    {
+      "key": "acme/app:(detached)",
+      "repo": "acme/app",
+      "repo_path": "/code/acme/app",
+      "branch": "(detached)",
+      "ticket": null,
+      "is_trunk": false,
+      "state": "active",
+      "reasons": [
+        "activity 1h ago"
+      ],
+      "last_activity": "2026-10-10T11:00:00+00:00",
+      "dirty": false,
+      "unpushed": 0,
+      "checkouts": [
+        {
+          "path": "/code/acme/app/temp/wt-detached",
+          "is_main_checkout": false,
+          "dirty": null
+        }
+      ],
+      "branch_ref": null,
+      "pr": null,
+      "pr_lookup": "skipped",
+      "sessions": [
+        {
+          "session_id": "2b3c4d5e-6f70-8192-a3b4-c5d6e7f8091a",
+          "title": "Detached experiment",
+          "state": "died-idle",
+          "last_activity": "2026-10-10T11:00:00+00:00",
+          "last_cwd": "/code/acme/app/temp/wt-detached",
+          "start_cwd": "/code/acme/app/temp/wt-detached",
+          "prompt_count": 1,
+          "pid": null
+        }
+      ]
+    },
+    {
+      "key": "other/lib:feat/PROJ-6-open",
+      "repo": "other/lib",
+      "repo_path": "/code/other/lib",
+      "branch": "feat/PROJ-6-open",
+      "ticket": "PROJ-6",
+      "is_trunk": false,
+      "state": "active",
+      "reasons": [
+        "open PR #901",
+        "2 unpushed commits"
+      ],
+      "last_activity": "2026-10-10T09:00:00+00:00",
+      "dirty": false,
+      "unpushed": 2,
+      "checkouts": [
+        {
+          "path": "/code/other/lib/temp/wt-open",
+          "is_main_checkout": false,
+          "dirty": false
+        }
+      ],
+      "branch_ref": {
+        "upstream": "origin/feat/PROJ-6-open",
+        "upstream_gone": false,
+        "ahead": 1,
+        "behind": 0,
+        "unpushed": 2,
+        "last_commit": "2026-10-09T12:00:00+00:00"
+      },
+      "pr": {
+        "number": 901,
+        "state": "open",
+        "url": "https://github.com/other/lib/pull/901",
+        "updated_at": "2026-10-10T09:00:00+00:00"
+      },
+      "pr_lookup": "ok",
+      "sessions": []
+    },
+    {
+      "key": "acme/app:feat/PROJ-1-thing",
+      "repo": "acme/app",
+      "repo_path": "/code/acme/app",
+      "branch": "feat/PROJ-1-thing",
+      "ticket": "PROJ-1",
+      "is_trunk": false,
+      "state": "merged",
+      "reasons": [
+        "PR #812 merged",
+        "1 running session",
+        "uncommitted changes"
+      ],
+      "last_activity": "2026-10-10T11:58:00+00:00",
+      "dirty": true,
+      "unpushed": 4,
+      "checkouts": [
+        {
+          "path": "/code/acme/app/temp/wt-feature",
+          "is_main_checkout": false,
+          "dirty": true
+        }
+      ],
+      "branch_ref": {
+        "upstream": "origin/feat/PROJ-1-thing",
+        "upstream_gone": false,
+        "ahead": 0,
+        "behind": 2,
+        "unpushed": 4,
+        "last_commit": "2026-09-01T10:00:00+01:00"
+      },
+      "pr": {
+        "number": 812,
+        "state": "merged",
+        "url": "https://github.com/acme/app/pull/812",
+        "updated_at": "2026-10-09T12:00:00+00:00"
+      },
+      "pr_lookup": "ok",
+      "sessions": [
+        {
+          "session_id": "0b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0",
+          "title": "Fix hub partitions",
+          "state": "live",
+          "last_activity": "2026-10-10T11:58:00+00:00",
+          "last_cwd": "/code/acme/app/temp/wt-feature",
+          "start_cwd": "/code/acme/app/temp/wt-feature",
+          "prompt_count": 14,
+          "pid": 12345
+        },
+        {
+          "session_id": "1a2b3c4d-5e6f-7081-92a3-b4c5d6e7f809",
+          "title": "Review the merge",
+          "state": "ended-clean",
+          "last_activity": "2026-10-10T10:00:00+00:00",
+          "last_cwd": "/code/acme/app/temp/wt-feature/src",
+          "start_cwd": "/code/acme/app/temp/wt-feature",
+          "prompt_count": 3,
+          "pid": null
+        }
+      ]
+    },
+    {
+      "key": "other/lib:release/PROJ-2",
+      "repo": "other/lib",
+      "repo_path": "/code/other/lib",
+      "branch": "release/PROJ-2",
+      "ticket": "PROJ-2",
+      "is_trunk": false,
+      "state": "closed",
+      "reasons": [
+        "PR #77 closed unmerged",
+        "upstream gone"
+      ],
+      "last_activity": "2026-09-10T12:00:00+00:00",
+      "dirty": false,
+      "unpushed": 0,
+      "checkouts": [
+        {
+          "path": "/code/other/lib/temp/wt-release",
+          "is_main_checkout": false,
+          "dirty": false
+        }
+      ],
+      "branch_ref": {
+        "upstream": "origin/release/PROJ-2",
+        "upstream_gone": true,
+        "ahead": null,
+        "behind": null,
+        "unpushed": 0,
+        "last_commit": "2026-09-10T12:00:00+00:00"
+      },
+      "pr": {
+        "number": 77,
+        "state": "closed",
+        "url": "https://github.com/other/lib/pull/77",
+        "updated_at": "2026-08-31T12:00:00+00:00"
+      },
+      "pr_lookup": "ok",
+      "sessions": []
+    },
+    {
+      "key": "acme/app:feat/PROJ-5-stale",
+      "repo": "acme/app",
+      "repo_path": "/code/acme/app",
+      "branch": "feat/PROJ-5-stale",
+      "ticket": "PROJ-5",
+      "is_trunk": false,
+      "state": "stale",
+      "reasons": [
+        "no activity for 40d"
+      ],
+      "last_activity": "2026-08-31T12:00:00+00:00",
+      "dirty": false,
+      "unpushed": 0,
+      "checkouts": [
+        {
+          "path": "/code/acme/app/temp/wt-stale",
+          "is_main_checkout": false,
+          "dirty": false
+        }
+      ],
+      "branch_ref": {
+        "upstream": null,
+        "upstream_gone": false,
+        "ahead": null,
+        "behind": null,
+        "unpushed": 0,
+        "last_commit": "2026-08-31T12:00:00+00:00"
+      },
+      "pr": null,
+      "pr_lookup": "ok",
+      "sessions": []
+    },
+    {
+      "key": "acme/app:main",
+      "repo": "acme/app",
+      "repo_path": "/code/acme/app",
+      "branch": "main",
+      "ticket": null,
+      "is_trunk": true,
+      "state": "trunk",
+      "reasons": [
+        "default branch"
+      ],
+      "last_activity": "2026-10-09T12:00:00+00:00",
+      "dirty": false,
+      "unpushed": 0,
+      "checkouts": [
+        {
+          "path": "/code/acme/app",
+          "is_main_checkout": true,
+          "dirty": false
+        }
+      ],
+      "branch_ref": {
+        "upstream": "origin/main",
+        "upstream_gone": false,
+        "ahead": 0,
+        "behind": 0,
+        "unpushed": 0,
+        "last_commit": "2026-10-09T12:00:00+00:00"
+      },
+      "pr": null,
+      "pr_lookup": "skipped",
+      "sessions": []
+    },
+    {
+      "key": "other/lib:master",
+      "repo": "other/lib",
+      "repo_path": "/code/other/lib",
+      "branch": "master",
+      "ticket": null,
+      "is_trunk": true,
+      "state": "trunk",
+      "reasons": [
+        "default branch"
+      ],
+      "last_activity": "2026-10-08T12:00:00+00:00",
+      "dirty": false,
+      "unpushed": 0,
+      "checkouts": [
+        {
+          "path": "/code/other/lib",
+          "is_main_checkout": true,
+          "dirty": false
+        }
+      ],
+      "branch_ref": {
+        "upstream": "origin/master",
+        "upstream_gone": false,
+        "ahead": 0,
+        "behind": 0,
+        "unpushed": 0,
+        "last_commit": "2026-10-08T12:00:00+00:00"
+      },
+      "pr": null,
+      "pr_lookup": "skipped",
+      "sessions": []
+    },
+    {
+      "key": "unattached",
+      "repo": null,
+      "repo_path": null,
+      "branch": null,
+      "ticket": null,
+      "is_trunk": false,
+      "state": "unattached",
+      "reasons": [
+        "sessions outside any known checkout"
+      ],
+      "last_activity": "2026-10-10T11:30:00+00:00",
+      "dirty": false,
+      "unpushed": 0,
+      "checkouts": [],
+      "branch_ref": null,
+      "pr": null,
+      "pr_lookup": "skipped",
+      "sessions": [
+        {
+          "session_id": "3c4d5e6f-7081-92a3-b4c5-d6e7f8091a2b",
+          "title": "Stray session",
+          "state": "waiting-on-user",
+          "last_activity": "2026-10-10T11:30:00+00:00",
+          "last_cwd": "/code",
+          "start_cwd": "/code/scratch",
+          "prompt_count": 2,
+          "pid": 4242
+        }
+      ]
+    }
+  ]
+}
