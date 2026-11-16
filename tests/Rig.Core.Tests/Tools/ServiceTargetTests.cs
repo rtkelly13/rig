@@ -9,7 +9,7 @@ public sealed class ServiceTargetTests
     public void Every_target_has_a_stable_name_and_display_name()
     {
         Assert.Equal(["web", "mcp", "desktop", "collector"], ServiceTarget.All.Select(t => t.Name));
-        Assert.Equal(["Web", "Mcp", "Desktop", "Collector"], ServiceTarget.All.Select(t => t.DisplayName));
+        Assert.Equal(["Web Dashboard", "Mcp", "Desktop", "Collector"], ServiceTarget.All.Select(t => t.DisplayName));
         Assert.True(ServiceTarget.Web.LongLived);
         Assert.True(ServiceTarget.Mcp.LongLived);
         Assert.False(ServiceTarget.Desktop.LongLived);
@@ -40,7 +40,8 @@ public sealed class ServiceTargetTests
         Assert.Equal(8090, ServiceTarget.Web.Port(preview: false));
         Assert.Equal(8091, ServiceTarget.Web.Port(preview: true));
         Assert.Equal(8123, ServiceTarget.Web.Port(preview: true, explicitPort: 8123));
-        Assert.Null(ServiceTarget.Mcp.Port(preview: false));
+        Assert.Equal(8092, ServiceTarget.Mcp.Port(preview: false));
+        Assert.Equal(8092, ServiceTarget.Mcp.Port(preview: true));
         Assert.Null(ServiceTarget.Desktop.Port(preview: true));
     }
 
@@ -55,7 +56,8 @@ public sealed class ServiceTargetTests
     [Fact]
     public void The_other_targets_name_the_command_they_run()
     {
-        Assert.Equal(["web", "mcp"], ServiceTarget.Mcp.Arguments(null, preview: false));
+        Assert.Equal(["web", "--port", "8092", "--no-open"], ServiceTarget.Mcp.Arguments(8092, preview: false));
+        Assert.Equal(["web", "--no-open"], ServiceTarget.Mcp.Arguments(null, preview: false));
         Assert.Equal(["desktop", "workspace", "restore"], ServiceTarget.Desktop.Arguments(null, preview: false));
         Assert.Equal(["otel-stack", "collector", "ensure"], ServiceTarget.Collector.Arguments(null, preview: false));
     }

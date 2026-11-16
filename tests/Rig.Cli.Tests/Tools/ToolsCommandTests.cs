@@ -181,7 +181,7 @@ public sealed class ToolsCommandTests : IDisposable
         Assert.Equal(0, await Run(root, "tools", "status"));
         Assert.Equal(
             "web: not installed, stopped, not listening on 8090\n"
-            + "mcp: not installed, stopped\n"
+            + "mcp: not installed, stopped, not listening on 8092\n"
             + "desktop: not installed, stopped\n"
             + "collector: not installed, stopped\n",
             _out.ToString());

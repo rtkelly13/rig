@@ -28,10 +28,10 @@ public enum ServicePlatform
 public sealed record ServiceTarget(string Name, string DisplayName, int? DefaultPort, int? PreviewPort, bool LongLived)
 {
     /// <summary>The dashboard.</summary>
-    public static readonly ServiceTarget Web = new("web", "Web", 8090, 8091, true);
+    public static readonly ServiceTarget Web = new("web", "Web Dashboard", 8090, 8091, true);
 
-    /// <summary>The ops tools over stdio, started by an MCP client rather than listened to.</summary>
-    public static readonly ServiceTarget Mcp = new("mcp", "Mcp", null, null, true);
+    /// <summary>The web host's HTTP MCP transport, on its own port so a client can connect to it.</summary>
+    public static readonly ServiceTarget Mcp = new("mcp", "Mcp", 8092, 8092, true);
 
     /// <summary>The logon workspace restore.</summary>
     public static readonly ServiceTarget Desktop = new("desktop", "Desktop", null, null, false);
@@ -57,7 +57,9 @@ public sealed record ServiceTarget(string Name, string DisplayName, int? Default
         "web" => port is { } value
             ? ["web", "--port", value.ToString(CultureInfo.InvariantCulture), "--no-open", .. preview ? ["--preview"] : Array.Empty<string>()]
             : ["web", "--no-open", .. preview ? ["--preview"] : Array.Empty<string>()],
-        "mcp" => ["web", "mcp"],
+        "mcp" => port is { } mcpPort
+            ? ["web", "--port", mcpPort.ToString(CultureInfo.InvariantCulture), "--no-open", .. preview ? ["--preview"] : Array.Empty<string>()]
+            : ["web", "--no-open", .. preview ? ["--preview"] : Array.Empty<string>()],
         "desktop" => ["desktop", "workspace", "restore"],
         "collector" => ["otel-stack", "collector", "ensure"],
         _ => throw new InvalidOperationException($"unknown service target: {Name}"),
@@ -297,7 +299,8 @@ public sealed class ServiceManager(ServiceHost host)
         await File.WriteAllTextAsync(path, RenderUnit(host, target, preview, command), new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
         var unit = UnitName(target, preview);
         await RunLinuxAsync(["systemctl", "--user", "daemon-reload"], cancellationToken).ConfigureAwait(false);
-        await RunLinuxAsync(["systemctl", "--user", "enable", "--now", unit], cancellationToken).ConfigureAwait(false);
+        await RunLinuxAsync(["systemctl", "--user", "enable", unit], cancellationToken).ConfigureAwait(false);
+        await RunLinuxAsync(["systemctl", "--user", "reload-or-restart", unit], cancellationToken).ConfigureAwait(false);
         return port is { } listening
             ? $"Loaded systemd user unit [{unit}] running on port {listening.ToString(CultureInfo.InvariantCulture)}."
             : $"Loaded systemd user unit [{unit}].";

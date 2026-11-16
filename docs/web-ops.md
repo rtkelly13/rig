@@ -19,7 +19,8 @@ macOS, a logon task on Windows, a systemd user unit on Linux) and restarts it. `
 starts it only when nothing answers on the port yet, then waits for it, so it is safe to run repeatedly:
 the Review desktop runs it before opening the dashboard as a Chrome app window on screen 3, where the
 `prs-to-review.md` checklist used to be. `rig web install|ensure|uninstall|backup|migrate|db-status`
-remain as aliases.
+remain as aliases. `rig tools install mcp` runs the same host on port 8092 for its HTTP MCP transport,
+while `rig web mcp` keeps serving the tools over stdio for a local client.
 
 ## How the pieces fit
 

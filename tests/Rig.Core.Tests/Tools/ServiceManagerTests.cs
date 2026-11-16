@@ -106,11 +106,11 @@ public sealed class ServiceManagerTests : IDisposable
 
         var result = await new ServiceManager(Host(ServicePlatform.Windows, proc)).InstallAsync(ServiceTarget.Web, preview: true, port: null, Token);
 
-        Assert.Equal("Registered and started Windows scheduled task [Shared Utilities\\Web Preview] on port 8091.", result.Message);
+        Assert.Equal("Registered and started Windows scheduled task [Shared Utilities\\Web Dashboard Preview] on port 8091.", result.Message);
         Assert.Equal(
-            ["schtasks", "/Create", "/TN", "Shared Utilities\\Web Preview", "/TR", "/rig web --port 8091 --no-open --preview", "/SC", "ONLOGON", "/F"],
+            ["schtasks", "/Create", "/TN", "Shared Utilities\\Web Dashboard Preview", "/TR", "/rig web --port 8091 --no-open --preview", "/SC", "ONLOGON", "/F"],
             proc.Requests[0].Argv);
-        Assert.Equal(["schtasks", "/Run", "/TN", "Shared Utilities\\Web Preview"], proc.Requests[1].Argv);
+        Assert.Equal(["schtasks", "/Run", "/TN", "Shared Utilities\\Web Dashboard Preview"], proc.Requests[1].Argv);
     }
 
     [Fact]
@@ -119,10 +119,10 @@ public sealed class ServiceManagerTests : IDisposable
         var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
         var host = Host(ServicePlatform.Windows, proc) with { RigCommand = ["/rig folder/rig"] };
 
-        var result = await new ServiceManager(host).InstallAsync(ServiceTarget.Mcp, preview: false, port: null, Token);
+        var result = await new ServiceManager(host).InstallAsync(ServiceTarget.Desktop, preview: false, port: null, Token);
 
-        Assert.Equal("Registered and started Windows scheduled task [Shared Utilities\\Mcp].", result.Message);
-        Assert.Equal("\"/rig folder/rig\" web mcp", proc.Requests[0].Argv[5]);
+        Assert.Equal("Registered and started Windows scheduled task [Shared Utilities\\Desktop].", result.Message);
+        Assert.Equal("\"/rig folder/rig\" desktop workspace restore", proc.Requests[0].Argv[5]);
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public sealed class ServiceManagerTests : IDisposable
         Assert.DoesNotContain("Restart=always", unit, StringComparison.Ordinal);
         Assert.Contains("ExecStart=/rig otel-stack collector ensure", unit, StringComparison.Ordinal);
         Assert.Equal(
-            [["systemctl", "--user", "daemon-reload"], ["systemctl", "--user", "enable", "--now", "rig-collector.service"]],
+            [["systemctl", "--user", "daemon-reload"], ["systemctl", "--user", "enable", "rig-collector.service"], ["systemctl", "--user", "reload-or-restart", "rig-collector.service"]],
             proc.Requests.Select(r => r.Argv));
     }
 
