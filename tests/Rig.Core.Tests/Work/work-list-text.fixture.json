@@ -1,0 +1,376 @@
+{
+  "now": "2026-10-10T12:00:00+00:00",
+  "rows": [
+    {
+      "key": "acme/app:feat/PROJ-3-open",
+      "cells": [
+        "active",
+        "acme/app",
+        "feat/PROJ-3-open",
+        "PROJ-3",
+        "#900 draft",
+        "-",
+        "-",
+        "30m",
+        "draft PR #900"
+      ],
+      "sessions": []
+    },
+    {
+      "key": "acme/app:(detached)",
+      "cells": [
+        "active",
+        "acme/app",
+        "(detached)",
+        "",
+        "-",
+        "-",
+        "1 died-idle",
+        "1h",
+        "activity 1h ago"
+      ],
+      "sessions": [
+        [
+          "",
+          "",
+          "  2b3c4d5e",
+          "",
+          "",
+          "",
+          "died-idle",
+          "1h",
+          "Detached experiment"
+        ]
+      ]
+    },
+    {
+      "key": "other/lib:feat/PROJ-6-open",
+      "cells": [
+        "active",
+        "other/lib",
+        "feat/PROJ-6-open",
+        "PROJ-6",
+        "#901 open",
+        "2 unpushed +1/-0",
+        "-",
+        "3h",
+        "open PR #901; 2 unpushed commits"
+      ],
+      "sessions": []
+    },
+    {
+      "key": "acme/app:feat/PROJ-1-thing",
+      "cells": [
+        "merged",
+        "acme/app",
+        "feat/PROJ-1-thing",
+        "PROJ-1",
+        "#812 merged",
+        "dirty 4 unpushed +0/-2",
+        "1 live 1 ended",
+        "2m",
+        "PR #812 merged; 1 running session; uncommitted changes"
+      ],
+      "sessions": [
+        [
+          "",
+          "",
+          "  0b1c2d3e",
+          "",
+          "",
+          "",
+          "live",
+          "2m",
+          "Fix hub partitions"
+        ],
+        [
+          "",
+          "",
+          "  1a2b3c4d",
+          "",
+          "",
+          "",
+          "ended",
+          "2h",
+          "Review the merge"
+        ]
+      ]
+    },
+    {
+      "key": "other/lib:release/PROJ-2",
+      "cells": [
+        "closed",
+        "other/lib",
+        "release/PROJ-2",
+        "PROJ-2",
+        "#77 closed",
+        "gone",
+        "-",
+        "30d",
+        "PR #77 closed unmerged; upstream gone"
+      ],
+      "sessions": []
+    },
+    {
+      "key": "acme/app:feat/PROJ-5-stale",
+      "cells": [
+        "stale",
+        "acme/app",
+        "feat/PROJ-5-stale",
+        "PROJ-5",
+        "none",
+        "-",
+        "-",
+        "40d",
+        "no activity for 40d"
+      ],
+      "sessions": []
+    },
+    {
+      "key": "acme/app:main",
+      "cells": [
+        "trunk",
+        "acme/app",
+        "main",
+        "",
+        "-",
+        "-",
+        "-",
+        "24h",
+        "default branch"
+      ],
+      "sessions": []
+    },
+    {
+      "key": "other/lib:master",
+      "cells": [
+        "trunk",
+        "other/lib",
+        "master",
+        "",
+        "-",
+        "-",
+        "-",
+        "2d",
+        "default branch"
+      ],
+      "sessions": []
+    },
+    {
+      "key": "unattached",
+      "cells": [
+        "unattached",
+        "-",
+        "-",
+        "",
+        "-",
+        "-",
+        "1 waiting",
+        "30m",
+        "sessions outside any known checkout"
+      ],
+      "sessions": [
+        [
+          "",
+          "",
+          "  3c4d5e6f",
+          "",
+          "",
+          "",
+          "waiting",
+          "30m",
+          "Stray session"
+        ]
+      ]
+    }
+  ],
+  "views": [
+    {
+      "name": "default",
+      "keys": [
+        "acme/app:feat/PROJ-3-open",
+        "acme/app:(detached)",
+        "other/lib:feat/PROJ-6-open",
+        "acme/app:feat/PROJ-1-thing",
+        "other/lib:release/PROJ-2",
+        "acme/app:feat/PROJ-5-stale",
+        "unattached"
+      ],
+      "summary": "7 items (active=3  merged=1  closed=1  stale=1  unattached=1); 2 hidden by filters"
+    },
+    {
+      "name": "all",
+      "keys": [
+        "acme/app:feat/PROJ-3-open",
+        "acme/app:(detached)",
+        "other/lib:feat/PROJ-6-open",
+        "acme/app:feat/PROJ-1-thing",
+        "other/lib:release/PROJ-2",
+        "acme/app:feat/PROJ-5-stale",
+        "acme/app:main",
+        "other/lib:master",
+        "unattached"
+      ],
+      "summary": "9 items (active=3  merged=1  closed=1  stale=1  trunk=2  unattached=1); 0 hidden by filters"
+    },
+    {
+      "name": "repo",
+      "keys": [
+        "other/lib:feat/PROJ-6-open",
+        "other/lib:release/PROJ-2"
+      ],
+      "summary": "2 items (active=1  closed=1); 7 hidden by filters"
+    },
+    {
+      "name": "states",
+      "keys": [
+        "acme/app:feat/PROJ-1-thing",
+        "acme/app:main",
+        "other/lib:master"
+      ],
+      "summary": "3 items (merged=1  trunk=2); 6 hidden by filters"
+    },
+    {
+      "name": "since",
+      "keys": [
+        "acme/app:feat/PROJ-3-open",
+        "acme/app:(detached)",
+        "acme/app:feat/PROJ-1-thing",
+        "unattached"
+      ],
+      "summary": "4 items (active=2  merged=1  unattached=1); 5 hidden by filters"
+    },
+    {
+      "name": "nothing",
+      "keys": [],
+      "summary": "0 items (); 9 hidden by filters"
+    }
+  ],
+  "ago": [
+    {
+      "seconds": -30,
+      "text": "0m"
+    },
+    {
+      "seconds": 0,
+      "text": "0m"
+    },
+    {
+      "seconds": 59,
+      "text": "0m"
+    },
+    {
+      "seconds": 60,
+      "text": "1m"
+    },
+    {
+      "seconds": 3599,
+      "text": "59m"
+    },
+    {
+      "seconds": 3600,
+      "text": "1h"
+    },
+    {
+      "seconds": 7199,
+      "text": "1h"
+    },
+    {
+      "seconds": 86399,
+      "text": "23h"
+    },
+    {
+      "seconds": 86400,
+      "text": "24h"
+    },
+    {
+      "seconds": 172799,
+      "text": "47h"
+    },
+    {
+      "seconds": 172800,
+      "text": "2d"
+    },
+    {
+      "seconds": 259200,
+      "text": "3d"
+    },
+    {
+      "seconds": 8640000,
+      "text": "100d"
+    },
+    {
+      "seconds": null,
+      "text": "-"
+    }
+  ],
+  "since": [
+    {
+      "text": "7d",
+      "moment": "2026-10-03T12:00:00+00:00"
+    },
+    {
+      "text": "24h",
+      "moment": "2026-10-09T12:00:00+00:00"
+    },
+    {
+      "text": "2w",
+      "moment": "2026-09-26T12:00:00+00:00"
+    },
+    {
+      "text": " 3D ",
+      "moment": "2026-10-07T12:00:00+00:00"
+    },
+    {
+      "text": "0h",
+      "moment": "2026-10-10T12:00:00+00:00"
+    },
+    {
+      "text": "2026-10-01",
+      "moment": "2026-10-01T00:00:00+00:00"
+    },
+    {
+      "text": "2026-10-01T08:30:00",
+      "moment": "2026-10-01T08:30:00+00:00"
+    },
+    {
+      "text": "2026-10-01T08:30:00+02:00",
+      "moment": "2026-10-01T08:30:00+02:00"
+    },
+    {
+      "text": "2026-10-01T08:30:00Z",
+      "moment": "2026-10-01T08:30:00+00:00"
+    },
+    {
+      "text": "yesterday",
+      "error": "expected 7d / 24h / 2w or an ISO date, got 'yesterday'"
+    },
+    {
+      "text": "7",
+      "error": "expected 7d / 24h / 2w or an ISO date, got '7'"
+    },
+    {
+      "text": "d",
+      "error": "expected 7d / 24h / 2w or an ISO date, got 'd'"
+    },
+    {
+      "text": "7m",
+      "error": "expected 7d / 24h / 2w or an ISO date, got '7m'"
+    },
+    {
+      "text": "-1d",
+      "error": "expected 7d / 24h / 2w or an ISO date, got '-1d'"
+    },
+    {
+      "text": "1.5d",
+      "error": "expected 7d / 24h / 2w or an ISO date, got '1.5d'"
+    },
+    {
+      "text": "",
+      "error": "expected 7d / 24h / 2w or an ISO date, got ''"
+    }
+  ],
+  "warnings": [
+    "acme/app: gh lookup failed (offline, unauthenticated or no access)"
+  ]
+}

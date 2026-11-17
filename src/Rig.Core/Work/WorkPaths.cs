@@ -92,4 +92,27 @@ internal static class IsoTime
             ? parsed
             : null;
     }
+
+    private static readonly string[] IsoFormats =
+    [
+        "yyyy-MM-dd'T'HH:mm:ss.FFFFFFFK",
+        "yyyy-MM-dd' 'HH:mm:ss.FFFFFFFK",
+        "yyyy-MM-dd'T'HH:mmK",
+        "yyyy-MM-dd",
+    ];
+
+    /// <summary>
+    /// <paramref name="text"/> read as Python's <c>datetime.fromisoformat</c> reads the forms Claude Code and a person
+    /// write: a date, or a date and time with an optional fraction and an optional <c>Z</c> or offset. A time without
+    /// an offset is UTC. Null when it is none of those.
+    /// </summary>
+    public static DateTimeOffset? ParseIso(string? text) =>
+        DateTimeOffset.TryParseExact(
+            text,
+            IsoFormats,
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AssumeUniversal,
+            out var parsed)
+            ? parsed
+            : null;
 }

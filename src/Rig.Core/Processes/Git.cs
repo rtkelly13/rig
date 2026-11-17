@@ -56,7 +56,22 @@ public sealed class Git(IProc proc, string codeRoot)
         TimeSpan? timeout = null,
         IReadOnlyDictionary<string, string>? environment = null,
         string? stdinText = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        proc.RunAsync(Request(workingDirectory, args, timeout, environment, stdinText), cancellationToken);
+
+    /// <summary>
+    /// Runs <c>git <paramref name="args"/></c> in <paramref name="workingDirectory"/> and waits for it, for a caller
+    /// that is itself synchronous.
+    /// </summary>
+    public Ran Run(string? workingDirectory, IReadOnlyList<string> args, TimeSpan? timeout = null) =>
+        proc.Run(Request(workingDirectory, args, timeout, null, null));
+
+    private ProcRequest Request(
+        string? workingDirectory,
+        IReadOnlyList<string> args,
+        TimeSpan? timeout,
+        IReadOnlyDictionary<string, string>? environment,
+        string? stdinText)
     {
         ArgumentNullException.ThrowIfNull(args);
         var untrusted = IsUntrusted(workingDirectory);
@@ -70,16 +85,14 @@ public sealed class Git(IProc proc, string codeRoot)
         }
 
         IReadOnlyList<string> argv = untrusted ? ["git", .. HardeningArgs, .. args] : ["git", .. args];
-        return proc.RunAsync(
-            new ProcRequest(argv)
-            {
-                WorkingDirectory = workingDirectory,
-                Timeout = timeout ?? DefaultTimeout,
-                Environment = env,
-                Unset = [.. LocationVariables.Where(name => !env.ContainsKey(name))],
-                StdinText = stdinText,
-            },
-            cancellationToken);
+        return new ProcRequest(argv)
+        {
+            WorkingDirectory = workingDirectory,
+            Timeout = timeout ?? DefaultTimeout,
+            Environment = env,
+            Unset = [.. LocationVariables.Where(name => !env.ContainsKey(name))],
+            StdinText = stdinText,
+        };
     }
 
     /// <summary>What <c>git <paramref name="args"/></c> prints, stripped; empty when it fails.</summary>

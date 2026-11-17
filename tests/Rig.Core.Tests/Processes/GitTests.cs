@@ -54,6 +54,20 @@ public sealed class GitTests : IDisposable
     }
 
     [Fact]
+    public void A_synchronous_call_is_hardened_the_same_way()
+    {
+        var cwd = _root.Folder("external/x");
+
+        var ran = new Git(_proc, _root.Path).Run(cwd, ["status"], TimeSpan.FromSeconds(3));
+
+        var request = Assert.Single(_proc.Requests);
+        Assert.Equal(0, ran.Code);
+        Assert.Equal(["git", .. Git.HardeningArgs, "status"], request.Argv);
+        Assert.Equal(TimeSpan.FromSeconds(3), request.Timeout);
+        Assert.Null(request.StdinText);
+    }
+
+    [Fact]
     public void A_symlinked_untrusted_folder_is_still_untrusted()
     {
         using var elsewhere = new TempDir();
