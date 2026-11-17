@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../tools/loc-report/LocReport.csproj" />
+  </ItemGroup>
+  <ItemGroup Label="Shared doubles">
+    <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="Fakes/TempDir.cs" />
+  </ItemGroup>
+</Project>
