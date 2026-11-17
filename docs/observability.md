@@ -81,8 +81,8 @@ marked `span.incomplete`; readers keep the finished copy once it lands. A span's
 trace id is its `Activity`'s, so each root activity is its own trace. Status `Error`
 becomes `code: 2` with the status description as the message.
 
-Chrome spans keep the Python names (`chrome_tabs.<step>` under scope
-`desktop_manager.chrome`), so `chrome-tabs traces` reads either language's runs.
+Chrome spans keep the names the Python organise wrote (`chrome_tabs.<step>` under scope
+`desktop_manager.chrome`), so `chrome-tabs traces` reads runs from before and after the move to C#.
 
 ## Inspecting traces (`rig traces`)
 
