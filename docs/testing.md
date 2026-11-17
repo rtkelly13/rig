@@ -21,14 +21,9 @@ The last pytest-bdd suite, `estate shelve`'s, moved to C# with the command
 Tests share one vocabulary rather than each file building its own doubles
 ([target-architecture.md](target-architecture.md#behaviour-suites-share-one-vocabulary)):
 
-- **`tests/fakes/`** holds one stand-in per port, typed as that port with an `as_port()` so a
-  signature change breaks the fake visibly: `gh_runner.FakeGh` for `rig.proc.GhRunner`.
+- **`tests/fakes/`** is where a Python fake lives, one per port. It is empty now: the Python ports (`rig.proc`,
+  the desktop layer) were deleted with the code behind them. The C# fakes live in `tests/Rig.Core.Tests/Fakes/`.
   Tests never import helpers from another `test_*.py` module.
-- **`tests/contracts/`** holds a fake to the real adapter. `test_gh_runner_contract.py` runs one
-  suite against `FakeGh` and against `RecordedGh`, a replay of real `gh api graphql` answers for
-  the queries `resolve_repo` makes. A changed query fails as unrecorded: re-record with
-  `uv run python -m tests.contracts.record_gh_runner`, then fix the fake to match. Git needs no
-  contract, because its stand-in is real git.
 
 A new test reuses a fake. Extend the shared one rather than writing a second copy inline.
 
@@ -64,7 +59,7 @@ the rule in a `[Fact]` that samples it (`Tilings.Sample(...)`). `GeometryPropert
 report per project; `scripts/coverage-floor.cs` merges them against the 95% floor
 ([the C# floor](#the-c-floor-starts-at-95)).
 
-Fakes follow the same rule as `tests/fakes/`: `tests/Rig.Core.Tests/Fakes/` holds one per port (`FakeProc`,
+`tests/Rig.Core.Tests/Fakes/` holds one fake per port (`FakeProc`,
 `FakeGitHub`, `FakeChromeTabActions`, …), typed as that port. Extend the shared one rather than writing a double
 inline.
 
@@ -76,7 +71,7 @@ needs it, such as a `.cmd` shim or Windows Terminal settings. A checked-in file 
 
 ### Properties: state the rule, then let Hypothesis find the counterexample
 
-Useful shapes, each with an example in `tests/desktop_manager/test_placement_properties.py`:
+Useful shapes, each with an example in `tests/Rig.Core.Tests/Desktop/GeometryPropertyTests.cs`:
 
 - **Partition.** The slots of a layout cover their parent exactly once.
 - **Agreement.** The pixel and unit layouts agree whenever the screen divides evenly.
@@ -163,12 +158,12 @@ in the same pull request:
 
 | Wave | Area | Missed units | Floor after, roughly |
 | --- | --- | ---: | ---: |
-| 1 (done) | `rig/estate` CLIs: `cli.py`, `shelve_cli.py` | 520 | 77 |
+| 1 (done) | `rig/estate` CLIs: `cli.py`, `shelve_cli.py` (deleted with the module, #281) | 520 | 77 |
 | 2 (done) | `rig/repo_governance` CLIs: moved to C# | 1,660 | 81 |
 | 3 | moved out: `image_drift` is its own project (`tools/image-drift`) with its own floor | — | — |
-| 4 | `rig/estate` remainder, `rig/devenv/steps`, `rig/workspace` | 2,230 | 88 |
-| 5 | `rig/skills` (`rig/otel_stack` and `rig/obsidian` moved to C#); `desktop_manager` `work`, `jobs`, `handlers` | 2,000 | 92 |
-| 6 | `win32` (`desktop_manager/chrome` moved to C#, #85) | — | 95 |
+| 4 | moved to C# or deleted (#281): `rig/estate`, `rig/devenv/steps`, `rig/workspace` | — | — |
+| 5 | `rig/skills` (`rig/otel_stack` and `rig/obsidian` moved to C#); `desktop_manager` `work`, `jobs` and `handlers` are gone | — | — |
+| 6 | `win32` and `desktop_manager/chrome`: deleted or moved to C# (#85, #281) | — | 95 |
 
 Wave 6 was the hard one until the Chrome drivers moved to C# with `organise` (#85); what is
 left is the Win32 adapters, which are already on the omit list. Moving the target is not one of

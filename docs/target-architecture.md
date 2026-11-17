@@ -50,8 +50,6 @@ and never builds them inline or imports them lazily inside a function.
 
 | Port | Real adapter | Test fake |
 |---|---|---|
-| `Proc`: `git`, `gh` | `rig/proc.py` over `tracing.run` | `FakeGitHub` (responses keyed by route, write log); real temp git repos for git |
-| `DesktopPort`: desktops, windows, launch, place, clock | Win32 adapters in `desktop_manager/win32/` | `FakeDesktop`, a stateful in-memory model |
 | `ChromeDriver`, `TerminalDriver` | UIA adapters | stateful fakes |
 | Filesystem and roots | `rig/roots.py`, `platformdirs` | `tmp_path`, `HOME=tmp` |
 
@@ -64,8 +62,6 @@ The rules that follow from this:
 - **One code-root resolver.** `CODE_ROOT`, then the code-root marker, then `~/code`. Nothing else derives roots
   from `__file__`.
 - **Shared parsers, once each.** Repo slugs, branch refs, SVG paths and wikilinks each have exactly one parser.
-- **Windows primitives live in `desktop_manager/win32/`**: window enumeration, input, foreground, UIA client
-  and scheduled tasks. Feature modules build on them and never re-declare ctypes structures.
 
 ## Layering
 
@@ -74,10 +70,10 @@ Imports point down this stack and never up or sideways:
 1. **Composition roots**: `src/Rig.Cli/Program.cs` for `rig`; Python has no CLI of its own any more. These are the only modules that mount other
    packages' commands. `desktop_manager/web_upstream.py` is the web equivalent: features expose a `rig.web_routes.Route`
    and it hands them to `StudioServer(routes=...)`, so the server imports no feature to serve its JSON.
-2. **Features**: `rig.estate`, `rig.workspace`, `rig.repo_governance`, `rig.image_drift`,
-   and the `desktop_manager` features (restore, align, chrome, work, jobs).
+2. **Features**: `rig.repo_governance`, `rig.c4_okf`, `rig.image_drift`,
+   and the `desktop_manager` jobs adapter.
    Features are independent of each other. When two features need the same thing, it moves down a layer.
-3. **Adapters**: `desktop_manager/win32/`, UIA, `rig/proc.py`. They translate the outside world into typed
+3. **Adapters**: UIA and the process runner (`tracing.run`). They translate the outside world into typed
    values and contain no planning or policy, so an adapter never imports a feature.
 4. **Pure domain**: geometry, plans and diffs, matching and scoring. No I/O.
 5. **Leaves**: `roots`, `typed_json`, `typed_yaml`, `tracing`, slugs. They import nothing from rig.
@@ -85,7 +81,7 @@ Imports point down this stack and never up or sideways:
 `rig` sits below `desktop_manager` as a whole. `desktop_manager` may import `rig`, never the reverse.
 
 The package graph is acyclic at every depth. That includes the top level (`rig` ↔ `desktop_manager`) and
-sibling packages (`rig.estate` ↔ `rig.workspace`), not just individual modules. A cycle almost always means a
+sibling packages (`rig.c4_okf` ↔ `rig.repo_governance`), not just individual modules. A cycle almost always means a
 shared concept is living inside one feature; the fix is to move it down, not to add a lazy import.
 
 ## Data
@@ -174,7 +170,7 @@ baseline file. Where existing code violates a rule, the cleanup lands first.
 
 | Rule | Check |
 |---|---|
-| Each primitive has one owning module: `subprocess` → `rig/proc.py`; `ctypes`/`comtypes` → `win32/`; env paths and `__file__` roots → `rig/roots.py`; task XML → `win32/tasks.py`; one parser per format | Ruff `banned-api` (TID251) with per-file-ignores for the owner, or a ratchet boundary rule. The ratchet's existing `noqa` ban means neither can be suppressed inline. |
+| Each primitive has one owning module: `subprocess` → `rig/tracing.py`; env paths and `__file__` roots → `rig/roots.py`; one parser per format | Ruff `banned-api` (TID251) with per-file-ignores for the owner, or a ratchet boundary rule. The ratchet's existing `noqa` ban means neither can be suppressed inline. |
 | No package-level import cycles, at any depth from the top level down to modules | import-linter `acyclic_siblings` (grimp counts relative, lazy and `TYPE_CHECKING` imports). basedpyright `reportImportCycles` already covers modules. |
 | Imports follow the layer order; features are independent; adapters never import features | import-linter `layers`, `independence` and `forbidden` contracts in `[tool.importlinter]` |
 | Callers use a module's public API, not its `_private` helpers | basedpyright `reportPrivateUsage` / `reportPrivateLocalImportUsage` |

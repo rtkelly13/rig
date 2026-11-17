@@ -18,10 +18,7 @@ rig flags reset orca-sessions           # back to the default
 - In C#, read flags through `Rig.Core.Flags.FlagStore` (`IsEnabled`, `Effective`,
   `States`). It creates the `feature_flags` table if it is missing, so a new
   machine needs no setup step.
-- Python's `desktop_manager` still reads flags through `rig.flags`, a copy of
-  the registry and store kept until its last caller is ported (#85 s15/s28).
-  `tests/test_rig_flags.py` holds that copy to the list recorded in
-  `tests/Rig.Cli.Tests/Flags/flags-oracle.json`, which the C# tests replay, so
-  a flag added on one side only fails CI. Until then a new flag goes in both
-  registries and in the fixture by hand: its `flags` list and the rows of each
-  `list` step (the Python CLI that recorded it is gone).
+- The Python copy of the registry and store (`rig.flags`) is deleted (#281). The
+  C# tests replay `tests/Rig.Cli.Tests/Flags/flags-oracle.json`, the list the
+  Python registry recorded; a new flag goes in the C# registry and, by hand, in
+  that fixture: its `flags` list and the rows of each `list` step.

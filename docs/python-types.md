@@ -126,18 +126,15 @@ suppressing it.
 
 Where a third-party COM, ctypes or C-extension surface is untyped, type it instead of silencing it: install the
 `types-*` package, or add a minimal stub under `typings/` (basedpyright's `stubPath`) that declares only the members
-the code calls, or route the call through a small typed adapter such as `desktop_manager.win32.dlls.system_dll`.
+the code calls, or route the call through a small typed adapter module.
 File-level `# pyright: reportX=false` pragmas are gated by the ratchet's `pyright-pragma` rule. If one truly cannot
-be avoided, keep it in one tiny adapter module, add that path to `pyright-pragma-allow` and justify it in the PR. For ty, which is not configured to read `typings/`, the modules listed in `[tool.ty.analysis] replace-imports-with-any` are `Any`; add a Windows-only module there when ty cannot resolve it on the Linux runner.
+be avoided, keep it in one tiny adapter module, add that path to `pyright-pragma-allow` and justify it in the PR. For ty, which is not configured to read `typings/`, a module ty cannot resolve on the Linux runner can be listed in `[tool.ty.analysis] replace-imports-with-any` (none is today).
 
 `reportAny` catches `Any` that a library hands back. Decode JSON and other payloads with `typed_json` instead of
 indexing them. For a foreign function that returns `Any` (ctypes, `winreg`, `np.gradient`), pass it through a typed
-`Callable` parameter so the result comes back typed: `desktop_manager.win32.dlls.call_int` and `registry_value`, and
-`image_drift.numeric` (tools/image-drift). Annotating the variable (`x: object = untyped()`) does not help, because the
+`Callable` parameter so the result comes back typed, as `image_drift.numeric` (tools/image-drift) does. Annotating the variable (`x: object = untyped()`) does not help, because the
 narrowed type is still `Any`.
 
-Catch what the guarded code can raise, not `Exception`. Windows calls have shared tuples: `WIN32_ERRORS`
-and `PYVDA_ERRORS` in `desktop_manager.win32.errors` (wrap pyvda calls in `pyvda_errors()`, which turns
-pyvda's bare `Exception` into a catchable one). A crash barrier
+Catch what the guarded code can raise, not `Exception`. A crash barrier
 that must keep a long-running process alive (a restore entry, a scheduled job) may still catch `Exception`, but
 only if it logs the traceback (`logger.exception(...)` or `logger.error(..., exc_info=True)`) or re-raises.
