@@ -22,13 +22,13 @@ public sealed class ChromeProfilesTests : IDisposable
         Write("""
             {"profile": {"info_cache": {
                 "Default": {"name": "Home", "gaia_name": "Ryan K", "gaia_given_name": "Ryan", "user_name": "user@example.test", "avatar": 3},
-                "Profile 4": {"name": "Work"}
+                "Profile 4": {"name": "Work", "enterprise_label": "example-org"}
             }}, "browser": {}}
             """);
         var profiles = ChromeProfiles.Read(_home);
         Assert.Equal(["Default", "Profile 4"], profiles.Keys);
         Assert.Equal(new ProfileInfo("Home", "Ryan K", "Ryan", "user@example.test"), profiles["Default"]);
-        Assert.Equal(new ProfileInfo("Work"), profiles["Profile 4"]);
+        Assert.Equal(new ProfileInfo("Work", EnterpriseLabel: "example-org"), profiles["Profile 4"]);
     }
 
     [Fact]

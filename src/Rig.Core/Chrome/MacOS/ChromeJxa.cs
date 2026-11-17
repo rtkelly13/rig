@@ -122,7 +122,7 @@ public static class ChromeProfiles
         {
             if (entry.Value.ValueKind == JsonValueKind.Object)
             {
-                found[entry.Name] = new ProfileInfo(Name(entry.Value, "name"), Name(entry.Value, "gaia_name"), Name(entry.Value, "gaia_given_name"), Name(entry.Value, "user_name"));
+                found[entry.Name] = new ProfileInfo(Name(entry.Value, "name"), Name(entry.Value, "gaia_name"), Name(entry.Value, "gaia_given_name"), Name(entry.Value, "user_name"), Name(entry.Value, "enterprise_label"));
             }
         }
 
