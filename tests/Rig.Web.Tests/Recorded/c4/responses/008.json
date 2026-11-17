@@ -1,0 +1,2 @@
+{"path": "/api/c4/expand?id=bad&alias=x", "status": 400}
+{"error":"`bad` is not a diagram in this bundle"}

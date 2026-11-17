@@ -20,7 +20,6 @@ public sealed class JobsRoutesTests : IAsyncLifetime
 
     private readonly TempDir _dir = new();
     private readonly List<string[]> _started = [];
-    private readonly HttpClient _forwarding = new();
     private TrimCache _trims = null!;
     private RigOps _ops = null!;
     private RigWebHost _host = null!;
@@ -87,7 +86,7 @@ public sealed class JobsRoutesTests : IAsyncLifetime
             Path.Join(root, "temp", "traces", "sdk"),
             CodeRoot: root);
 
-        _host = await RigWebHost.CreateAsync(settings, _forwarding, () => null, _ops);
+        _host = await RigWebHost.CreateAsync(settings, _ops);
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client = new HttpClient { BaseAddress = _host.Address };
     }
@@ -95,7 +94,6 @@ public sealed class JobsRoutesTests : IAsyncLifetime
     public async ValueTask DisposeAsync()
     {
         _client.Dispose();
-        _forwarding.Dispose();
         await _host.DisposeAsync();
         _ops.Dispose();
         _trims.Dispose();

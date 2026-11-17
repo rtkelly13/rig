@@ -7,13 +7,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Rig.Core.Connectivity;
 using Rig.Core.Processes;
+using Rig.Web.C4;
 using Rig.Web.Mcp;
 
 namespace Rig.Web;
 
 /// <summary>
 /// The rig web host: one ASP.NET minimal-API server on a loopback port, serving the React app in <c>web/</c> and the
-/// JSON routes it calls. Paths it does not own yet go to the Python routes through <see cref="Forwarder"/>.
+/// JSON routes it calls.
 /// </summary>
 /// <remarks>
 /// Built from the empty builder, so nothing but <see cref="WebHostSettings"/> chooses the address: not
@@ -42,29 +43,22 @@ public sealed class RigWebHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// Builds the host. <paramref name="upstream"/> answers where the Python routes listen, or null while they are not
-    /// running; <paramref name="forwarding"/> is the client that reaches them. <paramref name="mcp"/> backs the MCP
+    /// Builds the host. <paramref name="mcp"/> backs the MCP
     /// tools, and <paramref name="routes"/> supplies the triage, estate and telemetry routes; null builds the real
     /// ones for this machine.
     /// </summary>
     /// <param name="settings">The host's address, preview flag and paths.</param>
-    /// <param name="forwarding">The client that reaches the Python routes.</param>
-    /// <param name="upstream">Where the Python routes listen, or null while they are not running.</param>
     /// <param name="mcp">The MCP tools; null builds the real ones for this checkout.</param>
     /// <param name="routes">The ops routes; null builds the real ones for this machine.</param>
     /// <param name="cancellationToken">Cancels building the real ops routes, including their git origin lookup.</param>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000", Justification = "The default RigOps is registered in the service collection, which owns and disposes it.")]
     public static async Task<RigWebHost> CreateAsync(
         WebHostSettings settings,
-        HttpClient forwarding,
-        Func<Uri?> upstream,
         RigOps? mcp = null,
         OpsRoutes? routes = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(forwarding);
-        ArgumentNullException.ThrowIfNull(upstream);
         var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions());
         builder.WebHost.UseKestrelCore().ConfigureKestrel(kestrel =>
         {
@@ -95,28 +89,9 @@ public sealed class RigWebHost : IAsyncDisposable
         var git = new Git(new SystemProc(), codeRoot);
         ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System), Path.Join(codeRoot, "personal"));
         JobsRoutes.Map(app, ops);
-        var forwarder = new Forwarder(forwarding, upstream);
-        app.Map("/{**path}", forwarder.ForwardAsync);
+        C4Routes.Map(app, settings);
         return host;
     }
-
-    /// <summary>
-    /// The client the forwarder reaches the Python routes with: no redirects followed, no cookies kept, no proxy and no
-    /// decompression, so an answer comes back to the browser exactly as Python sent it. No timeout either: a trim scan
-    /// can run for minutes, and the browser's own request bounds it.
-    /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000", Justification = "The client owns its handler and disposes it.")]
-    public static HttpClient ForwardingClient() =>
-        new(new SocketsHttpHandler
-        {
-            AllowAutoRedirect = false,
-            UseCookies = false,
-            UseProxy = false,
-            AutomaticDecompression = System.Net.DecompressionMethods.None,
-        })
-        {
-            Timeout = Timeout.InfiniteTimeSpan,
-        };
 
     /// <summary>Starts listening.</summary>
     public Task StartAsync(CancellationToken cancellationToken = default) => _app.StartAsync(cancellationToken);
