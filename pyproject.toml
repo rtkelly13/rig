@@ -222,7 +222,7 @@ omit = [
 
 [tool.coverage.report]
 # The floor pytest-cov enforces. No longer a ratchet: the port deletes covered Python (#285).
-fail_under = 86
+fail_under = 84
 show_missing = true
 skip_covered = true
 exclude_lines = [
