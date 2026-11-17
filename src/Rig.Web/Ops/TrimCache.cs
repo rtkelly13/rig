@@ -83,7 +83,7 @@ public sealed class TrimCache : IDisposable
             if (!running && (refresh || _stale))
             {
                 _stale = false;
-                _running = Task.Run(() => RunScanAsync(CancellationToken.None), CancellationToken.None);
+                _running = RunScanAsync(CancellationToken.None);
                 running = true;
             }
 
@@ -185,6 +185,8 @@ public sealed class TrimCache : IDisposable
 
     private async Task RunScanAsync(CancellationToken cancellationToken)
     {
+        // Off the caller before any work: Current starts this while holding the gate and must return at once.
+        await Task.Yield();
         IReadOnlyList<Trimmable> items;
         try
         {
