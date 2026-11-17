@@ -143,14 +143,8 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         }
         else
         {
-            try
+            if (!Attempt("Failed to write the gh scope overlay", () => Put(target, GhScopes.Overlay)))
             {
-                _ = Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                File.WriteAllText(target, GhScopes.Overlay);
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                error.WriteLine($"Failed to write the gh scope overlay: {e.Message}");
                 return 1;
             }
 
@@ -178,30 +172,15 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
     private int Launcher(bool dryRun, string root, string profile)
     {
         var cli = LauncherShim.CliProject(LauncherShim.MainCheckout(host.Checkout));
-        var sh = Path.Join(root, "agent.sh");
-        var shim = host.Windows ? Path.Join(root, "agent.ps1") : sh;
+        var shim = Path.Join(root, host.Windows ? "agent.ps1" : "agent.sh");
         if (dryRun)
         {
             output.WriteLine($"[dry-run] Would write agent launcher shim to {root}");
         }
         else
         {
-            try
+            if (!Attempt("Failed to write the agent launcher shim", () => WriteShims(root, cli)))
             {
-                _ = Directory.CreateDirectory(root);
-                File.WriteAllText(sh, LauncherShim.Posix(cli));
-                if (host.Windows)
-                {
-                    File.WriteAllText(shim, LauncherShim.PowerShell(cli));
-                }
-                else if (!OperatingSystem.IsWindows())
-                {
-                    File.SetUnixFileMode(sh, (UnixFileMode)0b111_101_101);
-                }
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                error.WriteLine($"Failed to write the agent launcher shim: {e.Message}");
                 return 1;
             }
 
@@ -211,37 +190,72 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         return Shortcut(dryRun, profile, host.Windows ? LauncherShim.PowerShellBlock(shim) : LauncherShim.PosixBlock(shim));
     }
 
+    private void WriteShims(string root, string cli)
+    {
+        var sh = Path.Join(root, "agent.sh");
+        Put(sh, LauncherShim.Posix(cli));
+        if (host.Windows)
+        {
+            File.WriteAllText(Path.Join(root, "agent.ps1"), LauncherShim.PowerShell(cli));
+        }
+        else if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(sh, (UnixFileMode)0b111_101_101);
+        }
+    }
+
     private int Shortcut(bool dryRun, string profile, string block)
+    {
+        var done = false;
+        var configured = Attempt("Failed to configure agent shortcut", () =>
+        {
+            var existing = ReadLf(profile);
+            var updated = LauncherShim.Upsert(existing ?? string.Empty, block);
+            if (existing is not null && updated == existing)
+            {
+                output.WriteLine($"Agent shortcut block in {Path.GetFileName(profile)} is already up to date.");
+            }
+            else if (dryRun)
+            {
+                output.WriteLine($"[dry-run] Would update agent shortcut in {profile}");
+            }
+            else
+            {
+                Put(profile, Eol(updated));
+                done = true;
+            }
+        });
+        if (done)
+        {
+            output.WriteLine($"OK: Agent shortcut configured in {Path.GetFileName(profile)}");
+        }
+
+        return configured ? 0 : 1;
+    }
+
+    // Compared with \n line ends; written with the platform's.
+    private static string? ReadLf(string path) => File.Exists(path) ? File.ReadAllText(path).ReplaceLineEndings("\n") : null;
+
+    private string Eol(string text) => host.Windows ? text.ReplaceLineEndings("\r\n") : text;
+
+    private static void Put(string path, string text)
+    {
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+        File.WriteAllText(path, text);
+    }
+
+    private bool Attempt(string failure, Action write)
     {
         try
         {
-            var existed = File.Exists(profile);
-            // Compared with \n line ends; written with the platform's.
-            var existing = existed ? File.ReadAllText(profile).ReplaceLineEndings("\n") : string.Empty;
-            var updated = LauncherShim.Upsert(existing, block);
-            if (existed && updated == existing)
-            {
-                output.WriteLine($"Agent shortcut block in {Path.GetFileName(profile)} is already up to date.");
-                return 0;
-            }
-
-            if (dryRun)
-            {
-                output.WriteLine($"[dry-run] Would update agent shortcut in {profile}");
-                return 0;
-            }
-
-            _ = Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(profile))!);
-            File.WriteAllText(profile, host.Windows ? updated.ReplaceLineEndings("\r\n") : updated);
+            write();
+            return true;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            error.WriteLine($"Failed to configure agent shortcut: {e.Message}");
-            return 1;
+            error.WriteLine($"{failure}: {e.Message}");
+            return false;
         }
-
-        output.WriteLine($"OK: Agent shortcut configured in {Path.GetFileName(profile)}");
-        return 0;
     }
 
     private int Check(string home)
@@ -266,8 +280,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
 
         var merge = ClaudeBaseline.Merge(existing, SessionLedger.Command(hook));
         var stale = !SessionLedger.ScriptCurrent(hook);
-        var rulesExisting = File.Exists(rulesPath) ? File.ReadAllText(rulesPath).ReplaceLineEndings("\n") : null;
-        var rulesMerge = ClaudeRules.Merge(rulesExisting);
+        var rulesMerge = ClaudeRules.Merge(ReadLf(rulesPath));
         var rulesStale = rulesMerge.Action != ClaudeRulesAction.Unchanged;
 
         if (merge.Changes.Count == 0 && !stale && !rulesStale)
@@ -310,13 +323,8 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
 
         if (merge.Changes.Count > 0)
         {
-            try
+            if (!Attempt("Failed to write Claude settings", () => SettingsFile.Save(path, merge.Settings, host.Windows)))
             {
-                SettingsFile.Save(path, merge.Settings, host.Windows);
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                error.WriteLine($"Failed to write Claude settings: {e.Message}");
                 return 1;
             }
 
@@ -325,16 +333,12 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
 
         if (rulesStale)
         {
-            try
+            if (!Attempt("Failed to write Claude Code rules", () => ClaudeRules.Write(rulesPath, rulesMerge.Content, host.Windows)))
             {
-                ClaudeRules.Write(rulesPath, rulesMerge.Content, host.Windows);
-                output.WriteLine($"✓ Successfully updated Claude Code rules at {rulesPath}");
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                error.WriteLine($"Failed to write Claude Code rules: {e.Message}");
                 return 1;
             }
+
+            output.WriteLine($"✓ Successfully updated Claude Code rules at {rulesPath}");
         }
 
         return Project("claude", dryRun, home);
@@ -384,13 +388,8 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         }
         else
         {
-            try
+            if (!Attempt("! Failed to write OpenCode config", () => SettingsFile.Save(path, merged, host.Windows)))
             {
-                SettingsFile.Save(path, merged, host.Windows);
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                error.WriteLine($"! Failed to write OpenCode config: {e.Message}");
                 return 1;
             }
 
@@ -404,7 +403,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
     private int Agy(bool dryRun, string home)
     {
         var target = AgyRules.FilePath(home);
-        var merge = AgyRules.Merge(File.Exists(target) ? File.ReadAllText(target).ReplaceLineEndings("\n") : null);
+        var merge = AgyRules.Merge(ReadLf(target));
         if (merge.Action == AgyRulesAction.Unchanged)
         {
             output.WriteLine($"✓ AGY global context up to date: {target}");
@@ -418,18 +417,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
             return 0;
         }
 
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.WriteAllText(target, host.Windows ? merge.Content.ReplaceLineEndings("\r\n") : merge.Content);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            error.WriteLine($"Failed to write AGY global context: {e.Message}");
-            return 1;
-        }
-
-        return 0;
+        return Attempt("Failed to write AGY global context", () => Put(target, Eol(merge.Content))) ? 0 : 1;
     }
 
     // The estate-wide AGENTS.md: only the marked block is managed. 1 when the write fails.
@@ -444,7 +432,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
 
         var target = Path.Join(root, "AGENTS.md");
         // Read and compared with \n line ends; written with the platform's.
-        var merge = EstateRules.Merge(File.Exists(target) ? File.ReadAllText(target).ReplaceLineEndings("\n") : null);
+        var merge = EstateRules.Merge(ReadLf(target));
         var action = merge.Action.ToString().ToLowerInvariant();
         if (merge.Action == EstateRulesAction.Unchanged)
         {
@@ -459,13 +447,8 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
             return 0;
         }
 
-        try
+        if (!Attempt("Failed to write estate rules", () => File.WriteAllText(target, Eol(merge.Content))))
         {
-            File.WriteAllText(target, host.Windows ? merge.Content.ReplaceLineEndings("\r\n") : merge.Content);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            error.WriteLine($"Failed to write estate rules: {e.Message}");
             return 1;
         }
 
