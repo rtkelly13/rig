@@ -59,7 +59,7 @@ public sealed class FrontmatterOracleTests
     [Theory]
     [InlineData("type: !!bool maybe")]
     [InlineData("type: !!int 5")]
-        public void A_tag_other_than_str_is_refused(string line) =>
+    public void A_tag_other_than_str_is_refused(string line) =>
         Assert.NotNull(Frontmatter.Parse($"---\n{line}\n---\nBody\n").Error);
 
     [Fact]
