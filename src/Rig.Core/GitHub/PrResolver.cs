@@ -261,7 +261,7 @@ public static class PrResolver
             "OPEN" => new PrState(PrStatus.Open, Details: details),
             "MERGED" => new PrState(PrStatus.Merged, Details: details),
             "CLOSED" => new PrState(PrStatus.Closed, Details: details),
-            var state => new PrState(PrStatus.Unknown, $"unexpected state {Vault.PyText.Repr(state ?? string.Empty)}"),
+            var state => new PrState(PrStatus.Unknown, $"unexpected state {Text.QuotedText.Str(state ?? string.Empty)}"),
         };
     }
 

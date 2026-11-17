@@ -15,10 +15,10 @@ public static class WorkspaceScope
             return plan;
         }
 
-        var wanted = Vault.PyText.CaseFold(desktop);
+        var wanted = Vault.UnicodeText.CaseFold(desktop);
         return plan with
         {
-            Desktops = [.. plan.Desktops.Where(item => Vault.PyText.CaseFold(item.Name) == wanted)],
+            Desktops = [.. plan.Desktops.Where(item => Vault.UnicodeText.CaseFold(item.Name) == wanted)],
         };
     }
 

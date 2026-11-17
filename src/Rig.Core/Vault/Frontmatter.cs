@@ -5,21 +5,21 @@ using System.Text.RegularExpressions;
 
 namespace Rig.Core.Vault;
 
-/// <summary>A note's frontmatter: its metadata, or why python-frontmatter would have refused the note.</summary>
+/// <summary>A note's frontmatter: its metadata, or why the note could not be read.</summary>
 /// <param name="Metadata">Each top-level key and its value; empty when the note has none or could not be read.</param>
 /// <param name="Error">Why the note could not be read, or <see langword="null"/>.</param>
-public sealed record FrontmatterRead(IReadOnlyDictionary<string, PyValue> Metadata, string? Error)
+public sealed record FrontmatterRead(IReadOnlyDictionary<string, YamlValue> Metadata, string? Error)
 {
     /// <summary>The value under <paramref name="key"/>, or <see langword="null"/> when the key is absent.</summary>
-    public PyValue? Get(string key) => Metadata.GetValueOrDefault(key);
+    public YamlValue? Get(string key) => Metadata.GetValueOrDefault(key);
 
     /// <summary>The string under <paramref name="key"/>, or <see langword="null"/> when it is absent or not a string.</summary>
-    public string? Text(string key) => Get(key) is PyStr text ? text.Text : null;
+    public string? Text(string key) => Get(key) is YamlString text ? text.Text : null;
 }
 
 /// <summary>
-/// <c>frontmatter.load(path).metadata</c> as python-frontmatter 1.x does it: the file read as UTF-8 text with universal
-/// newlines, stripped, split on its first two <c>---</c> rules and loaded with PyYAML's safe loader. Its JSON handler
+/// A note's metadata: the file read as UTF-8 text with universal
+/// newlines, stripped, split on its first two <c>---</c> rules and loaded with <see cref="VaultYaml"/>. Its JSON handler
 /// (a block opened by a lone <c>{</c>) is honoured too; TOML needs a package rig never installed, so <c>+++</c> is body.
 /// </summary>
 public static partial class Frontmatter
@@ -56,7 +56,7 @@ public static partial class Frontmatter
         }
     }
 
-    /// <summary>A note's text as Python's text mode reads it: strict UTF-8, with universal newlines.</summary>
+    /// <summary>A note's text as text: strict UTF-8, with universal newlines.</summary>
     /// <exception cref="DecoderFallbackException"><paramref name="raw"/> is not UTF-8.</exception>
     public static string Decode(ReadOnlySpan<byte> raw) =>
         Strict.GetString(raw).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
@@ -65,12 +65,12 @@ public static partial class Frontmatter
     public static FrontmatterRead Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var stripped = PyText.Strip(text);
+        var stripped = UnicodeText.Strip(text);
         try
         {
             if (YamlBoundary().Match(stripped) is { Success: true, Index: 0 })
             {
-                return Split(stripped, YamlBoundary()) is { } yaml ? Metadata(PyYaml.Load(yaml)) : Empty;
+                return Split(stripped, YamlBoundary()) is { } yaml ? Metadata(VaultYaml.Load(yaml)) : Empty;
             }
 
             if (JsonBoundary().Match(stripped) is { Success: true, Index: 0 })
@@ -78,7 +78,7 @@ public static partial class Frontmatter
                 return Split(stripped, JsonBoundary()) is { } json ? Metadata(LoadJson("{" + json + "}")) : Empty;
             }
         }
-        catch (PyYamlException exception)
+        catch (VaultYamlException exception)
         {
             return Refused(exception.Message);
         }
@@ -93,13 +93,13 @@ public static partial class Frontmatter
     public static string Content(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var stripped = PyText.Strip(text);
+        var stripped = UnicodeText.Strip(text);
         foreach (var boundary in new[] { YamlBoundary(), JsonBoundary() })
         {
             if (boundary.Match(stripped) is { Success: true, Index: 0 } first)
             {
                 var second = first.NextMatch();
-                return second.Success ? PyText.Strip(stripped[(second.Index + second.Length)..]) : stripped;
+                return second.Success ? UnicodeText.Strip(stripped[(second.Index + second.Length)..]) : stripped;
             }
         }
 
@@ -113,7 +113,7 @@ public static partial class Frontmatter
     internal static Range? YamlBlock(string text)
     {
         var start = 0;
-        while (start < text.Length && PyText.IsSpace(text[start]))
+        while (start < text.Length && UnicodeText.IsSpace(text[start]))
         {
             start++;
         }
@@ -129,9 +129,9 @@ public static partial class Frontmatter
         return second.Success ? (start + first.Length)..(start + second.Index) : null;
     }
 
-    private static FrontmatterRead Empty { get; } = new(new Dictionary<string, PyValue>(), null);
+    private static FrontmatterRead Empty { get; } = new(new Dictionary<string, YamlValue>(), null);
 
-    private static FrontmatterRead Refused(string reason) => new(new Dictionary<string, PyValue>(), reason);
+    private static FrontmatterRead Refused(string reason) => new(new Dictionary<string, YamlValue>(), reason);
 
     // `re.split(text, 2)` unpacked into three parts: the text between the first two rules, or null when there are fewer.
     private static string? Split(string text, Regex boundary)
@@ -142,17 +142,17 @@ public static partial class Frontmatter
     }
 
     // frontmatter keeps a mapping and drops anything else, then spreads it into Post(content, handler, **metadata).
-    private static FrontmatterRead Metadata(PyValue? loaded)
+    private static FrontmatterRead Metadata(YamlValue? loaded)
     {
-        if (loaded is not PyDict dict)
+        if (loaded is not YamlMap dict)
         {
             return Empty;
         }
 
-        var metadata = new Dictionary<string, PyValue>(StringComparer.Ordinal);
+        var metadata = new Dictionary<string, YamlValue>(StringComparer.Ordinal);
         foreach (var (key, value) in dict.Entries)
         {
-            if (key is not PyStr { Text: var name })
+            if (key is not YamlString { Text: var name })
             {
                 return Refused("keywords must be strings");
             }
@@ -168,7 +168,7 @@ public static partial class Frontmatter
         return new(metadata, null);
     }
 
-    private static PyValue LoadJson(string text)
+    private static YamlValue LoadJson(string text)
     {
         try
         {
@@ -177,25 +177,25 @@ public static partial class Frontmatter
         }
         catch (JsonException exception)
         {
-            throw new PyYamlException(exception.Message, exception);
+            throw new VaultYamlException(exception.Message, exception);
         }
     }
 
-    private static PyValue FromJson(JsonElement element) => element.ValueKind switch
+    private static YamlValue FromJson(JsonElement element) => element.ValueKind switch
     {
-        JsonValueKind.String => new PyStr(element.GetString() ?? string.Empty),
-        JsonValueKind.Null => PyNone.Value,
-        JsonValueKind.True => new PyScalar("True"),
-        JsonValueKind.False => new PyScalar("False"),
-        JsonValueKind.Number => new PyScalar(JsonNumber(element.GetRawText())),
-        JsonValueKind.Array => new PyList([.. element.EnumerateArray().Select(FromJson)]),
-        _ => new PyDict(JsonEntries(element)),
+        JsonValueKind.String => new YamlString(element.GetString() ?? string.Empty),
+        JsonValueKind.Null => YamlNull.Value,
+        JsonValueKind.True => new YamlScalar("True"),
+        JsonValueKind.False => new YamlScalar("False"),
+        JsonValueKind.Number => new YamlScalar(JsonNumber(element.GetRawText())),
+        JsonValueKind.Array => new YamlList([.. element.EnumerateArray().Select(FromJson)]),
+        _ => new YamlMap(JsonEntries(element)),
     };
 
     // json.loads keeps the last of repeated keys, where it first appeared.
-    private static List<KeyValuePair<PyValue, PyValue>> JsonEntries(JsonElement element)
+    private static List<KeyValuePair<YamlValue, YamlValue>> JsonEntries(JsonElement element)
     {
-        var entries = new List<KeyValuePair<PyValue, PyValue>>();
+        var entries = new List<KeyValuePair<YamlValue, YamlValue>>();
         var index = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var property in element.EnumerateObject())
         {
@@ -207,7 +207,7 @@ public static partial class Frontmatter
             }
 
             index[property.Name] = entries.Count;
-            entries.Add(new(new PyStr(property.Name), value));
+            entries.Add(new(new YamlString(property.Name), value));
         }
 
         return entries;
@@ -215,10 +215,10 @@ public static partial class Frontmatter
 
     private static string JsonNumber(string raw) => raw.IndexOfAny(['.', 'e', 'E']) < 0
         ? System.Numerics.BigInteger.Parse(raw, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)
-        : PyFloat.Repr(double.Parse(raw, CultureInfo.InvariantCulture));
+        : YamlFloat.Repr(double.Parse(raw, CultureInfo.InvariantCulture));
 
-    // YAMLHandler.FM_BOUNDARY, `^-{3,}\s*$` under re.MULTILINE, with Python's `\s`.
-    [GeneratedRegex(@"^-{3,}[" + PyText.Space + @"]*$", RegexOptions.Multiline)]
+    // A frontmatter boundary: `^-{3,}\s*$` per line, with `\s` including U+001C to U+001F.
+    [GeneratedRegex(@"^-{3,}[" + UnicodeText.Space + @"]*$", RegexOptions.Multiline)]
     private static partial Regex YamlBoundary();
 
     // JSONHandler.FM_BOUNDARY, `^(?:{|})$` under re.MULTILINE.

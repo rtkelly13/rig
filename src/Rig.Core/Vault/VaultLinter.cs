@@ -26,10 +26,9 @@ public sealed record FilenameIssue(VaultEntry Note, string Code, string Reason, 
 public sealed record DuplicateGroup(string Key, IReadOnlyList<VaultEntry> Notes);
 
 /// <summary>
-/// The vault lint, ported from <c>rig.obsidian.lint_manager.VaultLinter</c> and <c>lint_duplicates</c>: required metadata
+/// The vault lint: required metadata
 /// per note type, filenames the cleanup would rename, and notes that duplicate one another by source URL or title. Every
-/// note is read once. Findings match the Python's; where the Python visited notes in directory order, this visits them in
-/// code-point order.
+/// note is read once. Notes are visited in code-point order.
 /// </summary>
 public sealed partial class VaultLinter
 {
@@ -67,7 +66,7 @@ public sealed partial class VaultLinter
 
     /// <summary>A linter over the vault at <paramref name="vaultPath"/>.</summary>
     /// <param name="vaultPath">The vault folder.</param>
-    /// <param name="log">Told about each note a check had to pass over, as the Python logged it.</param>
+    /// <param name="log">Told about each note a check had to pass over,.</param>
     public VaultLinter(string vaultPath, Action<string>? log = null)
     {
         ArgumentNullException.ThrowIfNull(vaultPath);
@@ -121,9 +120,9 @@ public sealed partial class VaultLinter
             {
                 var (code, reason) = read.Front.Get(field) switch
                 {
-                    null or PyNone => (LintCodes.MissingRequiredField, $"Type '{type}' missing required field: '{field}'"),
-                    PyStr { Text: var text } when PyText.Strip(text).Length == 0 => (LintCodes.EmptyRequiredField, $"Type '{type}' has empty field: '{field}'"),
-                    PyList { Items.Count: 0 } => (LintCodes.EmptyRequiredList, $"Type '{type}' has empty list: '{field}'"),
+                    null or YamlNull => (LintCodes.MissingRequiredField, $"Type '{type}' missing required field: '{field}'"),
+                    YamlString { Text: var text } when UnicodeText.Strip(text).Length == 0 => (LintCodes.EmptyRequiredField, $"Type '{type}' has empty field: '{field}'"),
+                    YamlList { Items.Count: 0 } => (LintCodes.EmptyRequiredList, $"Type '{type}' has empty list: '{field}'"),
                     _ => (null, null),
                 };
                 if (code is null || reason is null || (field == "source" && SourceOptional.Contains(type)) || IsIgnored(ignored, code))
@@ -164,7 +163,7 @@ public sealed partial class VaultLinter
             }
             catch (FormatException exception)
             {
-                // The Python let this ValueError escape and the whole lint crashed; one malformed URL now costs one note.
+                // One malformed URL costs one note, not the whole lint.
                 log?.Invoke($"Error suggesting a filename for {note.FullPath}: {exception.Message}");
                 continue;
             }
@@ -195,8 +194,8 @@ public sealed partial class VaultLinter
         return [.. issues
             .GroupBy(issue => (issue.Note.FullPath, issue.Code))
             .Select(group => group.Last())
-            .OrderBy(issue => issue.Note.FullPath, PyText.CodePointOrder)
-            .ThenBy(issue => issue.Code, PyText.CodePointOrder)];
+            .OrderBy(issue => issue.Note.FullPath, UnicodeText.CodePointOrder)
+            .ThenBy(issue => issue.Code, UnicodeText.CodePointOrder)];
     }
 
     /// <summary>
@@ -247,7 +246,7 @@ public sealed partial class VaultLinter
             }
 
             var title = Truthy(read.Front.Text("title")) ?? note.Relative.Stem;
-            var normalized = PyText.Lower(PyText.Strip(ShortHash().Replace(CopySuffix().Replace(title, string.Empty, 1), string.Empty, 1)));
+            var normalized = UnicodeText.Lower(UnicodeText.Strip(ShortHash().Replace(CopySuffix().Replace(title, string.Empty, 1), string.Empty, 1)));
             Add(byTitle, titleOrder, $"title:{parent}/{normalized}", note);
         }
 
@@ -293,7 +292,7 @@ public sealed partial class VaultLinter
     private bool LinksToAny(VaultEntry post, List<VaultEntry> resources)
     {
         var read = Read(post);
-        var related = PyText.Strip((read.Front.Text("related_article") ?? string.Empty).Replace('\n', ' '));
+        var related = UnicodeText.Strip((read.Front.Text("related_article") ?? string.Empty).Replace('\n', ' '));
         return resources.Any(resource =>
         {
             var byName = $"[[{resource.Relative.Name}]]";
@@ -342,7 +341,7 @@ public sealed partial class VaultLinter
             For(note).Duplicates++;
         }
 
-        // The Python counted notes past only .git and Archive, so .obsidian's notes count towards their folder.
+        // Only .git and Archive are skipped, so .obsidian's notes count towards their folder.
         foreach (var note in Entries.Where(n => !n.FullPath.Contains(".git", StringComparison.Ordinal) && !n.FullPath.Contains("Archive", StringComparison.Ordinal)))
         {
             For(note).TotalNotes++;
@@ -369,11 +368,11 @@ public sealed partial class VaultLinter
             {
                 var first = group.First();
                 var note = first.Note.Relative;
-                // Every rule the name breaks, ignored or not, as the Python's reason did.
+                // Every rule the name breaks, ignored or not.
                 var reason = string.Join(", ", LintRules.FilenameIssueSpecs(note.Stem, first.SuggestedStem, note).Select(s => s.Reason));
                 return new FilenameReport(group.Key, first.Severity, reason, first.SuggestedPath.ToString(), [.. group.Select(i => i.Code)]);
             })
-            .OrderBy(report => report.Path, PyText.CodePointOrder);
+            .OrderBy(report => report.Path, UnicodeText.CodePointOrder);
 
         var found = FindDuplicates();
         return new LintReport(
@@ -387,7 +386,7 @@ public sealed partial class VaultLinter
 
     /// <summary>
     /// Markdown entries under each top-level folder of the vault (or of its <c>Vault</c> folder, when it has one), skipping
-    /// dot-folders and empty ones, then <c>Total</c>. Ported from <c>rig.obsidian.utils.get_vault_stats</c>.
+    /// dot-folders and empty ones, then <c>Total</c>.
     /// </summary>
     public static IReadOnlyList<KeyValuePair<string, int>> VaultStats(string vaultPath)
     {
@@ -397,7 +396,7 @@ public sealed partial class VaultLinter
         var stats = new List<KeyValuePair<string, int>>();
         if (Directory.Exists(root))
         {
-            foreach (var name in Directory.EnumerateFileSystemEntries(root).Select(Path.GetFileName).OfType<string>().Order(PyText.CodePointOrder))
+            foreach (var name in Directory.EnumerateFileSystemEntries(root).Select(Path.GetFileName).OfType<string>().Order(UnicodeText.CodePointOrder))
             {
                 var folder = Path.Join(root, name);
                 if (name.StartsWith('.') || !Directory.Exists(folder))
@@ -431,13 +430,13 @@ public sealed partial class VaultLinter
         list.Add(note);
     }
 
-    // sorted(set(paths)): Python orders paths by their parts, part by part in code-point order. Parts hold no NUL, and
+    // Paths order by their parts, part by part in code-point order. Parts hold no NUL, and
     // NUL ranks below every other character, so joining on it orders the joined strings as the parts.
     private static List<VaultEntry> SortedSet(IEnumerable<VaultEntry> notes) =>
     [
         .. notes
             .DistinctBy(n => n.FullPath, StringComparer.Ordinal)
-            .OrderBy(n => string.Join('\0', n.Relative.Parts), PyText.CodePointOrder),
+            .OrderBy(n => string.Join('\0', n.Relative.Parts), UnicodeText.CodePointOrder),
     ];
 
     private static string? Truthy(string? text) => string.IsNullOrEmpty(text) ? null : text;
@@ -482,15 +481,15 @@ public sealed partial class VaultLinter
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or DecoderFallbackException)
         {
-            read = new NoteRead(new FrontmatterRead(new Dictionary<string, PyValue>(), exception.Message), string.Empty);
+            read = new NoteRead(new FrontmatterRead(new Dictionary<string, YamlValue>(), exception.Message), string.Empty);
         }
 
         reads[note.FullPath] = read;
         return read;
     }
 
-    // `\s+\(1\)$` and `-[a-f0-9]{4}$`, each `$` also matching before a final newline as Python's does.
-    [GeneratedRegex(@"[" + PyText.Space + @"]+\(1\)$")]
+    // `\s+\(1\)$` and `-[a-f0-9]{4}$`, each `$` also matching before a final newline.
+    [GeneratedRegex(@"[" + UnicodeText.Space + @"]+\(1\)$")]
     private static partial Regex CopySuffix();
 
     [GeneratedRegex("-[a-f0-9]{4}$")]
@@ -500,14 +499,14 @@ public sealed partial class VaultLinter
     {
         public HashSet<string> Ignored { get; } = IgnoredCodes(Front);
 
-        // `meta.lint_ignore or meta.lint_ignore_kebab`: a str or list counts only when non-empty, as Python's `or` does.
+        // `meta.lint_ignore or meta.lint_ignore_kebab`: a str or list counts only when non-empty.
         private static HashSet<string> IgnoredCodes(FrontmatterRead front)
         {
-            var value = new[] { front.Get("lint_ignore"), front.Get("lint-ignore") }.FirstOrDefault(v => v is PyStr { Text.Length: > 0 } or PyList { Items.Count: > 0 });
-            IEnumerable<PyValue> items = value switch
+            var value = new[] { front.Get("lint_ignore"), front.Get("lint-ignore") }.FirstOrDefault(v => v is YamlString { Text.Length: > 0 } or YamlList { Items.Count: > 0 });
+            IEnumerable<YamlValue> items = value switch
             {
-                PyStr text => [text],
-                PyList list => list.Items,
+                YamlString text => [text],
+                YamlList list => list.Items,
                 _ => [],
             };
             var codes = new HashSet<string>(StringComparer.Ordinal);
@@ -515,12 +514,12 @@ public sealed partial class VaultLinter
             {
                 var text = item switch
                 {
-                    PyStr s => s.Text,
-                    PyScalar s => s.Rendered,
-                    PyNone => "None",
+                    YamlString s => s.Text,
+                    YamlScalar s => s.Rendered,
+                    YamlNull => "None",
                     _ => null, // a nested list or mapping renders as a repr, which can never name a code
                 };
-                if (text is not null && PyText.Strip(text) is { Length: > 0 } code)
+                if (text is not null && UnicodeText.Strip(text) is { Length: > 0 } code)
                 {
                     codes.Add(code.ToUpperInvariant());
                 }
@@ -561,10 +560,10 @@ public sealed record LintReport(
     IReadOnlyList<FilenameReport> Filenames,
     IReadOnlyList<KeyValuePair<string, IReadOnlyList<string>>> Duplicates)
 {
-    /// <summary>The report as Python's <c>json.dumps(asdict(report), indent=2, ensure_ascii=False)</c> writes it.</summary>
+    /// <summary>The report as JSON, two-space indented, non-ASCII kept.</summary>
     public string ToJson()
     {
-        var json = new PyJsonWriter();
+        var json = new IndentedJsonWriter();
         json.Object(() =>
         {
             json.Key("ok").Bool(Ok);
@@ -602,7 +601,7 @@ public sealed record LintReport(
     }
 
     /// <summary>
-    /// The report as <c>vault graph lint</c> prints it, ported from <c>VaultLinter.run_lint</c>: each line ends in a newline,
+    /// The report as <c>vault graph lint</c> prints it: each line ends in a newline,
     /// and a section after the first starts with a blank line.
     /// </summary>
     public string ToText()
@@ -661,22 +660,22 @@ public sealed record LintReport(
     }
 }
 
-/// <summary>Writes JSON as Python's <c>json.dumps(..., indent=2, ensure_ascii=False)</c> does.</summary>
-internal sealed class PyJsonWriter
+/// <summary>Writes JSON two-space indented with non-ASCII kept, in the order members are written.</summary>
+internal sealed class IndentedJsonWriter
 {
     private readonly StringBuilder text = new();
     private readonly Stack<int> counts = new();
     private bool afterKey;
 
     /// <summary>Writes an object whose members <paramref name="members"/> writes.</summary>
-    public PyJsonWriter Object(Action members)
+    public IndentedJsonWriter Object(Action members)
     {
         ArgumentNullException.ThrowIfNull(members);
         return Container('{', '}', members);
     }
 
     /// <summary>Writes an array of <paramref name="items"/>, each written by <paramref name="write"/>.</summary>
-    public PyJsonWriter Array<T>(IEnumerable<T> items, Action<T> write)
+    public IndentedJsonWriter Array<T>(IEnumerable<T> items, Action<T> write)
     {
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(write);
@@ -690,7 +689,7 @@ internal sealed class PyJsonWriter
     }
 
     /// <summary>Writes an object member's key; its value comes next.</summary>
-    public PyJsonWriter Key(string key)
+    public IndentedJsonWriter Key(string key)
     {
         ArgumentNullException.ThrowIfNull(key);
         Separate();
@@ -701,7 +700,7 @@ internal sealed class PyJsonWriter
     }
 
     /// <summary>Writes a string.</summary>
-    public PyJsonWriter String(string value)
+    public IndentedJsonWriter String(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
         Separate();
@@ -710,7 +709,7 @@ internal sealed class PyJsonWriter
     }
 
     /// <summary>Writes <c>true</c> or <c>false</c>.</summary>
-    public PyJsonWriter Bool(bool value)
+    public IndentedJsonWriter Bool(bool value)
     {
         Separate();
         text.Append(value ? "true" : "false");
@@ -718,7 +717,7 @@ internal sealed class PyJsonWriter
     }
 
     /// <summary>Writes <c>null</c>.</summary>
-    public PyJsonWriter Null()
+    public IndentedJsonWriter Null()
     {
         Separate();
         text.Append("null");
@@ -726,7 +725,7 @@ internal sealed class PyJsonWriter
     }
 
     /// <summary>Writes an integer.</summary>
-    public PyJsonWriter Number(long value)
+    public IndentedJsonWriter Number(long value)
     {
         Separate();
         text.Append(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
@@ -734,7 +733,7 @@ internal sealed class PyJsonWriter
     }
 
     /// <summary>Writes an unsigned integer (an inode can exceed <see cref="long.MaxValue"/>).</summary>
-    public PyJsonWriter Number(ulong value)
+    public IndentedJsonWriter Number(ulong value)
     {
         Separate();
         text.Append(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
@@ -744,7 +743,7 @@ internal sealed class PyJsonWriter
     /// <inheritdoc/>
     public override string ToString() => text.ToString();
 
-    private PyJsonWriter Container(char open, char close, Action body)
+    private IndentedJsonWriter Container(char open, char close, Action body)
     {
         Separate();
         text.Append(open);

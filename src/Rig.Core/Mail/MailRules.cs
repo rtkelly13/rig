@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Mail;
@@ -111,12 +112,12 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     public static MailRuleSet Parse(string text, string where = "rules")
     {
         ArgumentNullException.ThrowIfNull(text);
-        PyValue? loaded;
+        YamlValue? loaded;
         try
         {
-            loaded = PyYaml.Load(text);
+            loaded = VaultYaml.Load(text);
         }
-        catch (PyYamlException e)
+        catch (VaultYamlException e)
         {
             throw new RulesException($"{where}: not valid YAML ({e.Message})", e);
         }
@@ -124,7 +125,7 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
         MailRuleSet ruleset;
         try
         {
-            ruleset = Decode(loaded ?? PyNone.Value);
+            ruleset = Decode(loaded ?? YamlNull.Value);
         }
         catch (InvalidDataException e)
         {
@@ -205,9 +206,9 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
         ArgumentNullException.ThrowIfNull(name);
         var text = new StringBuilder();
         var inRun = false;
-        foreach (var c in PyText.Strip(name))
+        foreach (var c in UnicodeText.Strip(name))
         {
-            var separator = c == '/' || PyText.IsSpace(c);
+            var separator = c == '/' || UnicodeText.IsSpace(c);
             if (separator && !inRun)
             {
                 text.Append('-');
@@ -220,11 +221,11 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
             inRun = separator;
         }
 
-        return PyText.Lower(text.ToString());
+        return UnicodeText.Lower(text.ToString());
     }
 
     /// <summary>Whether <paramref name="term"/> holds whitespace, so Gmail needs it quoted to read it as a phrase.</summary>
-    internal static bool HasSpace(string term) => term.Any(PyText.IsSpace);
+    internal static bool HasSpace(string term) => term.Any(UnicodeText.IsSpace);
 
     // Gmail terms that each match mail still missing one of the actions; OR them to find work.
     private static List<string> UnmetTerms(MailActions actions)
@@ -284,7 +285,7 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
 
             if (rule.OlderThan is { } age && !Duration().IsMatch(age))
             {
-                throw new RulesException($"{prefix}: older_than must look like 3d, 2m or 1y, not {PyText.Repr(age)}");
+                throw new RulesException($"{prefix}: older_than must look like 3d, 2m or 1y, not {QuotedText.Str(age)}");
             }
         }
     }
@@ -294,13 +295,13 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     private static partial Regex Duration();
 
     // The strict schema: strings must be strings, flags must be bools, and unknown keys are refused.
-    private static MailRuleSet Decode(PyValue value)
+    private static MailRuleSet Decode(YamlValue value)
     {
         var top = Fields(value, "RuleSet", ["rules"]);
         return new MailRuleSet(top.TryGetValue("rules", out var rules) ? Items(rules, "rules").Select((r, i) => DecodeRule(r, $"rules.{i}")).ToList() : []);
     }
 
-    private static MailRule DecodeRule(PyValue value, string at)
+    private static MailRule DecodeRule(YamlValue value, string at)
     {
         var fields = Fields(value, at, ["name", "match", "actions", "older_than", "note"]);
         return new MailRule(
@@ -311,7 +312,7 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
             fields.TryGetValue("note", out var note) ? Str(note, $"{at}.note") : string.Empty);
     }
 
-    private static MailMatch DecodeMatch(PyValue value, string at)
+    private static MailMatch DecodeMatch(YamlValue value, string at)
     {
         var fields = Fields(value, at, ["from", "to", "subject", "query", "exclude"]);
         return new MailMatch(
@@ -322,7 +323,7 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
             fields.TryGetValue("exclude", out var exclude) ? Str(exclude, $"{at}.exclude") : string.Empty);
     }
 
-    private static MailActions DecodeActions(PyValue value, string at)
+    private static MailActions DecodeActions(YamlValue value, string at)
     {
         var fields = Fields(value, at, ["label", "archive", "mark_read", "star", "important", "trash"]);
         bool Flag(string key) => fields.TryGetValue(key, out var v) && (Bool(v, $"{at}.{key}") ?? throw new InvalidDataException($"{at}.{key}: expected a boolean"));
@@ -335,17 +336,17 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
             Flag("trash"));
     }
 
-    private static Dictionary<string, PyValue> Fields(PyValue value, string at, string[] known)
+    private static Dictionary<string, YamlValue> Fields(YamlValue value, string at, string[] known)
     {
-        if (value is not PyDict dict)
+        if (value is not YamlMap dict)
         {
             throw new InvalidDataException($"{at}: expected a mapping");
         }
 
-        var fields = new Dictionary<string, PyValue>(StringComparer.Ordinal);
+        var fields = new Dictionary<string, YamlValue>(StringComparer.Ordinal);
         foreach (var (key, item) in dict.Entries)
         {
-            if (key is not PyStr { Text: var name } || !known.Contains(name, StringComparer.Ordinal))
+            if (key is not YamlString { Text: var name } || !known.Contains(name, StringComparer.Ordinal))
             {
                 throw new InvalidDataException($"{at}: unexpected key {Shown(key)}; expected one of {string.Join(", ", known)}");
             }
@@ -356,34 +357,34 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
         return fields;
     }
 
-    private static string Shown(PyValue key) => key switch
+    private static string Shown(YamlValue key) => key switch
     {
-        PyStr s => s.Text,
-        PyScalar s => s.Rendered,
-        PyNone => "None",
+        YamlString s => s.Text,
+        YamlScalar s => s.Rendered,
+        YamlNull => "None",
         _ => "an unsupported value",
     };
 
-    private static PyValue Required(Dictionary<string, PyValue> fields, string key, string at) =>
+    private static YamlValue Required(Dictionary<string, YamlValue> fields, string key, string at) =>
         fields.TryGetValue(key, out var value) ? value : throw new InvalidDataException($"{at}.{key}: missing");
 
-    private static IReadOnlyList<PyValue> Items(PyValue value, string at) =>
-        value is PyList list ? list.Items : throw new InvalidDataException($"{at}: expected a list");
+    private static IReadOnlyList<YamlValue> Items(YamlValue value, string at) =>
+        value is YamlList list ? list.Items : throw new InvalidDataException($"{at}: expected a list");
 
-    private static List<string> Strs(Dictionary<string, PyValue> fields, string key, string at) =>
+    private static List<string> Strs(Dictionary<string, YamlValue> fields, string key, string at) =>
         fields.TryGetValue(key, out var value) ? [.. Items(value, $"{at}.{key}").Select((v, i) => Str(v, $"{at}.{key}.{i}"))] : [];
 
-    private static string Str(PyValue value, string at) =>
-        value is PyStr s ? s.Text : throw new InvalidDataException($"{at}: expected a string");
+    private static string Str(YamlValue value, string at) =>
+        value is YamlString s ? s.Text : throw new InvalidDataException($"{at}: expected a string");
 
-    private static string? OptionalStr(PyValue value, string at) => value is PyNone ? null : Str(value, at);
+    private static string? OptionalStr(YamlValue value, string at) => value is YamlNull ? null : Str(value, at);
 
     // A YAML bool reads back as Python's True or False; nothing else renders that way.
-    private static bool? Bool(PyValue value, string at) => value switch
+    private static bool? Bool(YamlValue value, string at) => value switch
     {
-        PyNone => null,
-        PyScalar { Rendered: "True" } => true,
-        PyScalar { Rendered: "False" } => false,
+        YamlNull => null,
+        YamlScalar { Rendered: "True" } => true,
+        YamlScalar { Rendered: "False" } => false,
         _ => throw new InvalidDataException($"{at}: expected a boolean"),
     };
 }

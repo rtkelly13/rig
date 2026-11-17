@@ -534,28 +534,28 @@ public static partial class RepoHygiene
     // Each `updates` entry's open-pull-requests-limit (null when unset); null when the file is not Dependabot's shape.
     private static List<long?>? UpdateLimits(string content)
     {
-        PyValue? loaded;
+        YamlValue? loaded;
         try
         {
-            loaded = PyYaml.Load(content);
+            loaded = VaultYaml.Load(content);
         }
-        catch (PyYamlException)
+        catch (VaultYamlException)
         {
             return null;
         }
 
-        if (loaded is not PyDict config)
+        if (loaded is not YamlMap config)
         {
             return null;
         }
 
-        var updates = config.Entries.LastOrDefault(e => e.Key is PyStr { Text: "updates" }).Value;
-        if (updates is null or PyNone)
+        var updates = config.Entries.LastOrDefault(e => e.Key is YamlString { Text: "updates" }).Value;
+        if (updates is null or YamlNull)
         {
             return updates is null ? [] : null;
         }
 
-        if (updates is not PyList entries)
+        if (updates is not YamlList entries)
         {
             return null;
         }
@@ -563,17 +563,17 @@ public static partial class RepoHygiene
         var limits = new List<long?>();
         foreach (var entry in entries.Items)
         {
-            if (entry is not PyDict update)
+            if (entry is not YamlMap update)
             {
                 return null;
             }
 
-            switch (update.Entries.LastOrDefault(e => e.Key is PyStr { Text: "open-pull-requests-limit" }).Value)
+            switch (update.Entries.LastOrDefault(e => e.Key is YamlString { Text: "open-pull-requests-limit" }).Value)
             {
-                case null or PyNone:
+                case null or YamlNull:
                     limits.Add(null);
                     break;
-                case PyScalar { Rendered: var rendered } when long.TryParse(rendered, System.Globalization.CultureInfo.InvariantCulture, out var limit):
+                case YamlScalar { Rendered: var rendered } when long.TryParse(rendered, System.Globalization.CultureInfo.InvariantCulture, out var limit):
                     limits.Add(limit);
                     break;
                 default:

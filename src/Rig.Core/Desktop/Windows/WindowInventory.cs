@@ -38,7 +38,7 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
     public Rect? Bounds(long handle) => win32.WindowRect(handle);
 
     /// <summary>The window's title, stripped, or null when it cannot be read.</summary>
-    public string? Title(long handle) => win32.Title(handle) is { } title ? PyText.Strip(title) : null;
+    public string? Title(long handle) => win32.Title(handle) is { } title ? UnicodeText.Strip(title) : null;
 
     /// <summary>Whether <paramref name="handle"/> is still a window.</summary>
     public bool IsWindow(long handle) => win32.IsWindow(handle);
@@ -174,8 +174,8 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
         }
 
         return [.. snapshots
-            .OrderBy(snapshot => snapshot.ProcessName ?? "", PyText.CodePointOrder)
-            .ThenBy(snapshot => PyText.Lower(snapshot.Title), PyText.CodePointOrder)];
+            .OrderBy(snapshot => snapshot.ProcessName ?? "", UnicodeText.CodePointOrder)
+            .ThenBy(snapshot => UnicodeText.Lower(snapshot.Title), UnicodeText.CodePointOrder)];
     }
 
     /// <summary>The user's windows on the current desktop, apart from <paramref name="preserved"/>, in z-order.</summary>
@@ -211,8 +211,8 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
         }
 
         return [.. windows
-            .OrderBy(window => PyText.Lower(window.ProcessName ?? ""), PyText.CodePointOrder)
-            .ThenBy(window => PyText.Lower(window.Title), PyText.CodePointOrder)
+            .OrderBy(window => UnicodeText.Lower(window.ProcessName ?? ""), UnicodeText.CodePointOrder)
+            .ThenBy(window => UnicodeText.Lower(window.Title), UnicodeText.CodePointOrder)
             .ThenBy(window => window.Handle)];
     }
 
@@ -230,7 +230,7 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
                 return false;
             }
 
-            var normalized = PyText.CaseFold(title);
+            var normalized = UnicodeText.CaseFold(title);
             return exact ? normalized == target : normalized.Contains(target, StringComparison.Ordinal);
         })];
     }
@@ -269,7 +269,7 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
         {
             if (pid != 0 && ProcessDetailsOf(pid).Name is { } name)
             {
-                names.Add(PyText.CaseFold(name));
+                names.Add(UnicodeText.CaseFold(name));
             }
         }
 
@@ -280,9 +280,9 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
     public IReadOnlySet<int> ProcessIdsForImageName(string processName)
     {
         ArgumentNullException.ThrowIfNull(processName);
-        var target = PyText.CaseFold(processName);
+        var target = UnicodeText.CaseFold(processName);
         return win32.ProcessIds()
-            .Where(pid => pid != 0 && ProcessDetailsOf(pid).Name is { } name && PyText.CaseFold(name) == target)
+            .Where(pid => pid != 0 && ProcessDetailsOf(pid).Name is { } name && UnicodeText.CaseFold(name) == target)
             .ToHashSet();
     }
 
@@ -290,7 +290,7 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
     public bool IsProcessRunning(string processName)
     {
         ArgumentNullException.ThrowIfNull(processName);
-        return RunningProcessNames().Contains(PyText.CaseFold(processName));
+        return RunningProcessNames().Contains(UnicodeText.CaseFold(processName));
     }
 
     /// <summary>The image name in a Windows path: what follows the last separator.</summary>
@@ -341,13 +341,13 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
         }
 
         var process = ProcessDetailsOf(pid);
-        return process.Name is { } name && IgnoredProcessNames.Contains(PyText.Lower(name)) ? null : new(title, pid, process);
+        return process.Name is { } name && IgnoredProcessNames.Contains(UnicodeText.Lower(name)) ? null : new(title, pid, process);
     }
 
     private List<ProcessWindow> ProcessWindows(string processName, bool currentDesktopOnly)
     {
         ArgumentNullException.ThrowIfNull(processName);
-        var target = PyText.CaseFold(processName);
+        var target = UnicodeText.CaseFold(processName);
         var names = new Dictionary<int, string?>();
         var matches = new List<ProcessWindow>();
         foreach (var handle in win32.TopLevelWindows())
@@ -369,7 +369,7 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
                 names[pid] = name;
             }
 
-            if (name is not null && PyText.CaseFold(name) == target)
+            if (name is not null && UnicodeText.CaseFold(name) == target)
             {
                 matches.Add(new(handle, pid));
             }

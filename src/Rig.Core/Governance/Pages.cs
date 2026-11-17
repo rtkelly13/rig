@@ -67,12 +67,12 @@ public static class PagesGovernance
         var drift = new List<string>();
         if (pages.BuildType != expected.BuildType)
         {
-            drift.Add($"build_type is '{PyRepr.Value(pages.BuildType)}', expected '{expected.BuildType}'");
+            drift.Add($"build_type is '{QuotedText.Value(pages.BuildType)}', expected '{expected.BuildType}'");
         }
 
         if (!string.IsNullOrEmpty(expected.Cname) && pages.Cname != expected.Cname)
         {
-            drift.Add($"cname is '{PyRepr.Value(pages.Cname)}', expected '{expected.Cname}'");
+            drift.Add($"cname is '{QuotedText.Value(pages.Cname)}', expected '{expected.Cname}'");
         }
 
         if (expected.HttpsEnforced && !pages.HttpsEnforced)
@@ -144,7 +144,7 @@ public static class PagesGovernance
         var writes = new List<ApiRequest>();
         if (!enabled)
         {
-            writes.Add(new("POST", route, PyRepr.Json(new JsonObject { ["build_type"] = policy.BuildType })));
+            writes.Add(new("POST", route, QuotedText.Json(new JsonObject { ["build_type"] = policy.BuildType })));
         }
 
         // An existing site takes its build type on the update; a new one got it from the POST.
@@ -162,7 +162,7 @@ public static class PagesGovernance
 
         if (update.Count > 0)
         {
-            writes.Add(new("PUT", route, PyRepr.Json(update)));
+            writes.Add(new("PUT", route, QuotedText.Json(update)));
         }
 
         return writes;

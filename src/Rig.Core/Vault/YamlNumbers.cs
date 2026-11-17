@@ -4,15 +4,15 @@ using System.Text.RegularExpressions;
 
 namespace Rig.Core.Vault;
 
-/// <summary>Python's <c>int(text, base)</c>, for the bases PyYAML's int constructor uses.</summary>
-public static class PyInt
+/// <summary>Integer parsing for the bases YAML 1.1 uses: 2, 8, 10 and 16.</summary>
+public static class YamlInt
 {
-    /// <summary>The integer <paramref name="text"/> spells in <paramref name="radix"/>, as Python's <c>int()</c> reads it.</summary>
-    /// <exception cref="PyYamlException">Python would raise <c>ValueError</c>.</exception>
+    /// <summary>The integer <paramref name="text"/> spells in <paramref name="radix"/>, with a sign and whitespace allowed.</summary>
+    /// <exception cref="VaultYamlException">The text is not a number in that base.</exception>
     public static BigInteger Parse(string text, int radix)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var value = PyText.Strip(text);
+        var value = UnicodeText.Strip(text);
         var negative = value.StartsWith('-');
         if (value.Length > 0 && value[0] is '+' or '-')
         {
@@ -33,7 +33,7 @@ public static class PyInt
 
         if (value.Length == 0)
         {
-            throw new PyYamlException($"invalid literal for int() with base {radix}: '{text}'");
+            throw new VaultYamlException($"invalid literal for int() with base {radix}: '{text}'");
         }
 
         var total = BigInteger.Zero;
@@ -48,7 +48,7 @@ public static class PyInt
             };
             if (digit >= radix)
             {
-                throw new PyYamlException($"invalid literal for int() with base {radix}: '{text}'");
+                throw new VaultYamlException($"invalid literal for int() with base {radix}: '{text}'");
             }
 
             total = (total * radix) + digit;
@@ -58,15 +58,15 @@ public static class PyInt
     }
 }
 
-/// <summary>Python's <c>float(text)</c> and <c>repr(float)</c>.</summary>
-public static partial class PyFloat
+/// <summary>Float parsing and the shortest round-trip rendering YAML values print as.</summary>
+public static partial class YamlFloat
 {
-    /// <summary>The number <paramref name="text"/> spells, as Python's <c>float()</c> reads it.</summary>
-    /// <exception cref="PyYamlException">Python would raise <c>ValueError</c>.</exception>
+    /// <summary>The number <paramref name="text"/> spells, with a sign, <c>inf</c> and <c>nan</c> allowed.</summary>
+    /// <exception cref="VaultYamlException">The text is not a number in that base.</exception>
     public static double Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var value = PyText.Strip(text);
+        var value = UnicodeText.Strip(text);
         var unsigned = value.Length > 0 && value[0] is '+' or '-' ? value[1..] : value;
         var sign = value.StartsWith('-') ? -1.0 : 1.0;
         switch (unsigned.ToLowerInvariant())
@@ -79,13 +79,13 @@ public static partial class PyFloat
 
         if (!Decimal().IsMatch(value))
         {
-            throw new PyYamlException($"could not convert string to float: '{text}'");
+            throw new VaultYamlException($"could not convert string to float: '{text}'");
         }
 
         return double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
     }
 
-    /// <summary>What Python's <c>repr()</c> (and so <c>str()</c>) prints for <paramref name="value"/>.</summary>
+    /// <summary>The shortest text that round-trips <paramref name="value"/>, always with a point or exponent (<c>1.0</c>, <c>1e+16</c>).</summary>
     public static string Repr(double value)
     {
         if (double.IsNaN(value))
@@ -104,7 +104,7 @@ public static partial class PyFloat
             return sign + "0.0";
         }
 
-        // .NET's "R" is the shortest text that round-trips, as Python's repr is; only the layout differs.
+        // .NET's "R" is the shortest text that round-trips, ; only the layout differs.
         var shortest = Math.Abs(value).ToString("R", CultureInfo.InvariantCulture);
         var parts = shortest.Split('E');
         var exponent = parts.Length > 1 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 0;

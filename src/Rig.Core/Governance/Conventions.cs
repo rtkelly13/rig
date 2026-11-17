@@ -112,8 +112,8 @@ public sealed record ConventionsReport(
             Detail(!LsLint.IsAligned, $".ls-lint.yml status: {LsLint.Status}");
             if (!Names.IsAligned)
             {
-                lines.Add($"   - Required check(s) no pull_request job declares: {PyRepr.List(Names.Missing)}");
-                lines.Add($"     declared: {PyRepr.List(Names.Declared.Keys.Order(StringComparer.Ordinal))} — run 'repo-governance check-names' for detail");
+                lines.Add($"   - Required check(s) no pull_request job declares: {QuotedText.List(Names.Missing)}");
+                lines.Add($"     declared: {QuotedText.List(Names.Declared.Keys.Order(StringComparer.Ordinal))} — run 'repo-governance check-names' for detail");
             }
 
             Detail(!Dependabot.IsAligned, $"Dependabot / Renovate conflict: {Dependabot.Reason}");
@@ -125,7 +125,7 @@ public sealed record ConventionsReport(
         }
 
         // Shape is advisory: a compliant repo can still carry a name that breaks the next time CI is touched.
-        lines.AddRange(Names.Warnings.Select(pair => $"   · check name {PyRepr.Str(pair.Key)}: {string.Join("; ", pair.Value)}"));
+        lines.AddRange(Names.Warnings.Select(pair => $"   · check name {QuotedText.Str(pair.Key)}: {string.Join("; ", pair.Value)}"));
         return lines;
 
         void Detail(bool drifted, string line)

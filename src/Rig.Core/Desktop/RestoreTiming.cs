@@ -67,7 +67,7 @@ public sealed partial class StepTimer(IRunLog log, string scope, Func<TimeSpan> 
     public static string NewTerminalRestoreToken(LaunchEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var slug = NotSlug().Replace(PyText.CaseFold(entry.Name), "-").Trim('-');
+        var slug = NotSlug().Replace(UnicodeText.CaseFold(entry.Name), "-").Trim('-');
         var suffix = Guid.NewGuid().ToString("N")[..8];
         return $"{(slug.Length > 0 ? slug : "terminal")}-{suffix}";
     }

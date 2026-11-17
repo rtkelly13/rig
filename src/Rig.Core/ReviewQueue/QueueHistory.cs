@@ -32,7 +32,7 @@ public sealed record QueueInteraction(string Repo, int Number, string Action, st
     /// <summary>Validate the same public input contract as the Python interaction decoder.</summary>
     public void Validate()
     {
-        if (Number <= 0 || Note is null || Vault.PyText.Length(Note) > 10000
+        if (Number <= 0 || Note is null || Vault.UnicodeText.Length(Note) > 10000
             || Action is not ("opened" or "unread" or "archived" or "unarchived" or "review_requested" or "reviewed"
                 or "changes_requested" or "deferred" or "resumed" or "note"))
         {

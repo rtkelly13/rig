@@ -117,7 +117,7 @@ public sealed class ChromeUiaReader
         var handles = new List<long>();
         foreach (var handle in _win32.TopLevelWindows())
         {
-            if (_win32.ClassName(handle) != WindowClass || PyText.Strip(_win32.Title(handle) ?? string.Empty).Length == 0)
+            if (_win32.ClassName(handle) != WindowClass || UnicodeText.Strip(_win32.Title(handle) ?? string.Empty).Length == 0)
             {
                 continue;
             }

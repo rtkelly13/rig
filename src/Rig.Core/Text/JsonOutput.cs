@@ -6,7 +6,7 @@ namespace Rig.Core.Text;
 /// <summary>
 /// Renders the JSON rig writes to stdout, to files and to other tools. It is plain <see cref="System.Text.Json"/> —
 /// two-space indentation or one line, LF line endings on every platform, unicode escaped unless the caller asks to
-/// keep it — so what rig emits is what Python's <c>json.dumps</c> wrote: deterministic on Windows as well as Unix, and
+/// keep it — so what rig emits is deterministic on Windows as well as Unix, and
 /// nothing hand-walks the node tree to format it.
 /// </summary>
 public static class JsonOutput

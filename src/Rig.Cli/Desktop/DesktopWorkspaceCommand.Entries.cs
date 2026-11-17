@@ -473,19 +473,19 @@ internal sealed partial class DesktopWorkspaceCommand
 
     private static List<EntryLocation> FindEntries(WorkspacePlan plan, string? name, string? desktop)
     {
-        var wantedName = name is null ? null : PyText.CaseFold(name);
-        var wantedDesktop = desktop is null ? null : PyText.CaseFold(desktop);
+        var wantedName = name is null ? null : UnicodeText.CaseFold(name);
+        var wantedDesktop = desktop is null ? null : UnicodeText.CaseFold(desktop);
         var entries = new List<EntryLocation>();
         for (var index = 0; index < plan.Desktops.Count; index++)
         {
             var item = plan.Desktops[index];
-            if (wantedDesktop is not null && PyText.CaseFold(item.Name) != wantedDesktop)
+            if (wantedDesktop is not null && UnicodeText.CaseFold(item.Name) != wantedDesktop)
             {
                 continue;
             }
 
             entries.AddRange(item.Launch
-                .Where(entry => wantedName is null || PyText.CaseFold(entry.Name) == wantedName)
+                .Where(entry => wantedName is null || UnicodeText.CaseFold(entry.Name) == wantedName)
                 .Select(entry => new EntryLocation(index + 1, item, entry)));
         }
 

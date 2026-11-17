@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Chrome.MacOS;
 
@@ -106,7 +106,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
             var current = matches[0];
             if (current.Title != tab.Title)
             {
-                return Outcome(false, $"title changed to {PyText.Repr(current.Title)}");
+                return Outcome(false, $"title changed to {QuotedText.Str(current.Title)}");
             }
 
             if (current.Url?.OriginalString != tab.Url.OriginalString)
@@ -583,7 +583,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
         _ = handle;
         _ = profile;
         _ = timeout;
-        return new SavedDeleteOutcome(false, $"saved group {PyText.Repr(title)}: not supported on macOS", [], TimeSpan.Zero);
+        return new SavedDeleteOutcome(false, $"saved group {QuotedText.Str(title)}: not supported on macOS", [], TimeSpan.Zero);
     }
 
     // A snapshot and the AX windows read while it held. A second snapshot brackets the AX read: stable ids and

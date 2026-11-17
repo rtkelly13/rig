@@ -100,13 +100,13 @@ public static class DesktopReconcile
         ArgumentNullException.ThrowIfNull(currentNames);
 
         var targets = targetDesktops.ToList();
-        var retired = retiredNames.Where(name => name.Length > 0).Select(PyText.CaseFold).ToHashSet(StringComparer.Ordinal);
+        var retired = retiredNames.Where(name => name.Length > 0).Select(UnicodeText.CaseFold).ToHashSet(StringComparer.Ordinal);
         var current = currentNames.ToList();
 
-        var toRetire = current.Where(name => name.Length > 0 && retired.Contains(PyText.CaseFold(name))).ToList();
+        var toRetire = current.Where(name => name.Length > 0 && retired.Contains(UnicodeText.CaseFold(name))).ToList();
 
         // A run that would clear every desktop keeps the first one: Windows cannot remove its last desktop.
-        var postRetire = current.Where(name => name.Length == 0 || !retired.Contains(PyText.CaseFold(name))).ToList();
+        var postRetire = current.Where(name => name.Length == 0 || !retired.Contains(UnicodeText.CaseFold(name))).ToList();
         if (current.Count > 0 && postRetire.Count == 0)
         {
             postRetire = [current[0]];

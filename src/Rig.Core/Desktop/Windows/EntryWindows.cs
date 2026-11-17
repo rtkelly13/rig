@@ -77,7 +77,7 @@ public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops des
     {
         ArgumentNullException.ThrowIfNull(title);
         var deadline = _time.GetUtcNow() + timeout;
-        var target = PyText.CaseFold(title);
+        var target = UnicodeText.CaseFold(title);
         excluded ??= new HashSet<long>();
         diagnostic?.Invoke(
             $"Polling title target={title} exact={exact} current_desktop_only={currentDesktopOnly} "
@@ -118,7 +118,7 @@ public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops des
         Action<string>? diagnostic = null)
     {
         ArgumentNullException.ThrowIfNull(processName);
-        var target = PyText.CaseFold(processName);
+        var target = UnicodeText.CaseFold(processName);
         var deadline = _time.GetUtcNow() + timeout;
         var grace = aliveProcessGrace ?? TimeSpan.Zero;
         diagnostic?.Invoke(
@@ -189,12 +189,12 @@ public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops des
     {
         ArgumentNullException.ThrowIfNull(title);
         var deadline = _time.GetUtcNow() + timeout;
-        var target = PyText.CaseFold(title);
+        var target = UnicodeText.CaseFold(title);
         diagnostic?.Invoke($"Waiting for hwnd={handle} title to change from {title} within {timeout.TotalSeconds:F2}s");
         while (_time.GetUtcNow() < deadline)
         {
             var current = inventory.Title(handle);
-            if (!string.IsNullOrEmpty(current) && PyText.CaseFold(current) != target)
+            if (!string.IsNullOrEmpty(current) && UnicodeText.CaseFold(current) != target)
             {
                 diagnostic?.Invoke($"Window hwnd={handle} changed title to {current}");
                 return current;

@@ -166,14 +166,14 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
             var skills = SkillCatalog.At(places).Curated();
             if (parsed.GetValue(query) is { Length: > 0 } text)
             {
-                var q = PyText.Lower(text);
-                skills = [.. skills.Where(s => PyText.Lower(s.Name).Contains(q, StringComparison.Ordinal) || PyText.Lower(s.Description).Contains(q, StringComparison.Ordinal))];
+                var q = UnicodeText.Lower(text);
+                skills = [.. skills.Where(s => UnicodeText.Lower(s.Name).Contains(q, StringComparison.Ordinal) || UnicodeText.Lower(s.Description).Contains(q, StringComparison.Ordinal))];
             }
 
             var table = new TextTable($"Skills Catalog ({skills.Count} total)", [("Skill Name", false), ("Source", false), ("Description", false)]);
             foreach (var skill in skills)
             {
-                var description = PyText.Length(skill.Description) > 60 ? PyText.Prefix(skill.Description, 60) + "..." : skill.Description;
+                var description = UnicodeText.Length(skill.Description) > 60 ? UnicodeText.Prefix(skill.Description, 60) + "..." : skill.Description;
                 _ = table.Add(skill.Name, skill.Source, description);
             }
 

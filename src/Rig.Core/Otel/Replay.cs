@@ -25,7 +25,7 @@ public sealed class Replay(IOtlpSender sender)
 
     /// <summary>The <paramref name="signal"/> files in <paramref name="folder"/>: the active one and its rotated copies.</summary>
     public static IReadOnlyList<string> FilesFor(string signal, string folder) =>
-        Directory.Exists(folder) ? [.. Directory.EnumerateFiles(folder, $"{signal}*.jsonl").Order(PyText.CodePointOrder)] : [];
+        Directory.Exists(folder) ? [.. Directory.EnumerateFiles(folder, $"{signal}*.jsonl").Order(UnicodeText.CodePointOrder)] : [];
 
     /// <summary>Sends the unsent complete lines of every logs and metrics file in <paramref name="folder"/>; stops at the first rejection.</summary>
     /// <param name="folder">The collector's data folder.</param>

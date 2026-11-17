@@ -146,7 +146,7 @@ public static partial class SiteRules
     public static bool IsCall(string title)
     {
         ArgumentNullException.ThrowIfNull(title);
-        var text = PyText.Strip(title);
+        var text = UnicodeText.Strip(title);
         return Calls.Any(pattern => pattern.IsMatch(text));
     }
 
@@ -157,7 +157,7 @@ public static partial class SiteRules
     public static TabIdentity? Identify(string title)
     {
         ArgumentNullException.ThrowIfNull(title);
-        var text = PyText.Strip(title);
+        var text = UnicodeText.Strip(title);
         if (NeverDedupe(text))
         {
             return null;
@@ -168,7 +168,7 @@ public static partial class SiteRules
             var match = rule.Pattern.Match(text);
             if (match.Success)
             {
-                var key = Placeholder().Replace(rule.Key, slot => PyText.Strip(match.Groups[slot.Groups[1].Value].Value));
+                var key = Placeholder().Replace(rule.Key, slot => UnicodeText.Strip(match.Groups[slot.Groups[1].Value].Value));
                 return new TabIdentity(rule.Site, key, rule.Auto, rule.ExactOnly);
             }
         }

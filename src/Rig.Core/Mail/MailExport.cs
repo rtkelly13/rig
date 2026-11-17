@@ -130,7 +130,7 @@ public static class MailExport
     /// <summary>The plan as indented JSON for the skill to read, field for field as the Python wrote it.</summary>
     public static string SweepJson(IEnumerable<SweepStep> steps)
     {
-        var w = new PyJsonWriter();
+        var w = new IndentedJsonWriter();
         return w.Array(steps, step => w.Object(() =>
         {
             _ = w.Key("rule").String(step.Rule).Key("query").String(step.Query);
@@ -161,7 +161,7 @@ public static class MailExport
     /// <summary>The filters as indented JSON.</summary>
     public static string ApiFiltersJson(IEnumerable<ApiFilter> filters)
     {
-        var w = new PyJsonWriter();
+        var w = new IndentedJsonWriter();
         return w.Array(filters, f => w.Object(() =>
         {
             _ = w.Key("rule").String(f.Rule).Key("sender").String(f.Sender).Key("to").String(f.To).Key("subject").String(f.Subject)
@@ -176,9 +176,9 @@ public static class MailExport
     private static string Joined(IReadOnlyList<string> values) =>
         string.Join(" OR ", values.Select(v => MailRuleSet.HasSpace(v) ? $"\"{v}\"" : v));
 
-    private static void Optional(PyJsonWriter w, string? value) => _ = value is null ? w.Null() : w.String(value);
+    private static void Optional(IndentedJsonWriter w, string? value) => _ = value is null ? w.Null() : w.String(value);
 
-    private static void Optional(PyJsonWriter w, bool? value) => _ = value is { } on ? w.Bool(on) : w.Null();
+    private static void Optional(IndentedJsonWriter w, bool? value) => _ = value is { } on ? w.Bool(on) : w.Null();
 
     private static void Element(StringBuilder xml, int depth, string name, string text)
     {

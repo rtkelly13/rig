@@ -1,7 +1,7 @@
 namespace Rig.Core.Vault;
 
 /// <summary>A file or folder in the vault whose name ends in <c>.md</c>.</summary>
-/// <param name="FullPath">The vault's path as given, joined with the entry's; never resolved, so the lint's substring filters see what Python saw.</param>
+/// <param name="FullPath">The vault's path as given, joined with the entry's; never resolved, so the lint's substring filters see the path as given.</param>
 /// <param name="Relative">The entry's path relative to the vault.</param>
 public sealed record VaultEntry(string FullPath, NotePath Relative)
 {
@@ -10,7 +10,7 @@ public sealed record VaultEntry(string FullPath, NotePath Relative)
 }
 
 /// <summary>
-/// The vault's markdown entries as pathlib's <c>rglob("*.md")</c> finds them on Python 3.13: dot-folders included, a
+/// The vault's markdown entries as a recursive <c>*.md</c> glob finds them: dot-folders included, a
 /// folder named <c>*.md</c> yielded alongside files, symlinked folders listed but never entered, unreadable folders
 /// passed over. The suffix match is case-sensitive on every platform, and entries come in code-point order.
 /// </summary>
@@ -45,7 +45,7 @@ public static class VaultWalk
             return;
         }
 
-        Array.Sort(entries, (a, b) => PyText.CodePointOrder.Compare(a.Name, b.Name));
+        Array.Sort(entries, (a, b) => UnicodeText.CodePointOrder.Compare(a.Name, b.Name));
         foreach (var entry in entries)
         {
             var path = Path.Join(directory, entry.Name);

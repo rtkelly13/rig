@@ -275,12 +275,12 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
         var target = new WrapupTarget(args.Personal ? WrapupScope.Personal : WrapupScope.Work, args.Repos, args.All, args.Worktrees, args.Children);
         if (ParseDuration(args.Wait) is not { } waitFor)
         {
-            return await RefuseAsync($"{PyRepr.Str(args.Wait)}: expected a duration such as 30m, 2h or 45s", cancellationToken).ConfigureAwait(false);
+            return await RefuseAsync($"{QuotedText.Str(args.Wait)}: expected a duration such as 30m, 2h or 45s", cancellationToken).ConfigureAwait(false);
         }
 
         if (ParseDuration(args.Idle) is not { } idleFor)
         {
-            return await RefuseAsync($"{PyRepr.Str(args.Idle)}: expected a duration such as 30m, 2h or 45s", cancellationToken).ConfigureAwait(false);
+            return await RefuseAsync($"{QuotedText.Str(args.Idle)}: expected a duration such as 30m, 2h or 45s", cancellationToken).ConfigureAwait(false);
         }
 
         var rolling = waitFor > TimeSpan.Zero;

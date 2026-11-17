@@ -170,7 +170,7 @@ public static class ReleaseEnvironments
             body["prevent_self_review"] = prevent;
         }
 
-        var ran = await GitHubCalls.SendAsync(api, "PUT", route, PyRepr.Json(body), cancellationToken).ConfigureAwait(false);
+        var ran = await GitHubCalls.SendAsync(api, "PUT", route, QuotedText.Json(body), cancellationToken).ConfigureAwait(false);
         return !ran.Ok ? $"FAILED {what} {policy.Name}: {ran.Err}"
             : kinds.Contains("create") ? $"created {policy.Name}"
             : $"updated {policy.Name}: {what}";

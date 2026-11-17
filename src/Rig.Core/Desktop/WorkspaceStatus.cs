@@ -138,7 +138,7 @@ public static class WorkspaceStatus
         var terminalIndex = 0;
         foreach (var window in windows)
         {
-            var processName = PyText.Lower(window.ProcessName ?? string.Empty);
+            var processName = UnicodeText.Lower(window.ProcessName ?? string.Empty);
             if (desktopNumber == 1 && workspace is not null && WindowsTerminalProcesses.Contains(processName))
             {
                 terminalIndex++;
@@ -185,7 +185,7 @@ public static class WorkspaceStatus
     }
 
     private static string InferredTerminalCommand(string windowTitle) =>
-        PyText.CaseFold(windowTitle).Contains("copilot", StringComparison.Ordinal) ? "copilot" : "opencode";
+        UnicodeText.CaseFold(windowTitle).Contains("copilot", StringComparison.Ordinal) ? "copilot" : "opencode";
 
     private static Dictionary<int, IReadOnlyList<WindowSnapshot>> WindowsByDesktop(WindowInventory inventory)
     {
@@ -219,8 +219,8 @@ public static class WorkspaceStatus
             pair => (IReadOnlyList<WindowSnapshot>)
             [
                 .. pair.Value
-                    .OrderBy(window => PyText.Lower(window.ProcessName ?? string.Empty), StringComparer.Ordinal)
-                    .ThenBy(window => PyText.Lower(window.Title), StringComparer.Ordinal),
+                    .OrderBy(window => UnicodeText.Lower(window.ProcessName ?? string.Empty), StringComparer.Ordinal)
+                    .ThenBy(window => UnicodeText.Lower(window.Title), StringComparer.Ordinal),
             ]);
     }
 }

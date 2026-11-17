@@ -257,7 +257,7 @@ public sealed class VaultGraphTests : IDisposable
     [InlineData("a\u001fb\tc", new[] { "a\u001fb\tc" })]
     public void SplitLines_breaks_where_python_does(string text, string[] expected)
     {
-        Assert.Equal(expected, PyText.SplitLines(text));
+        Assert.Equal(expected, UnicodeText.SplitLines(text));
     }
 
     private static string Vaults(params (string Path, bool Open)[] vaults) =>

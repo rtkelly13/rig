@@ -5,10 +5,9 @@ using System.Text.RegularExpressions;
 namespace Rig.Core.Vault;
 
 /// <summary>
-/// The vault repairs the Python's <c>VaultLinter</c> wrote: filename cleanup with wikilink rewriting, type backfill,
-/// metadata repair, and duplicate consolidation. Each prints what the Python printed, less Rich's markup, and logs what
-/// the Python logged. Frontmatter is edited line by line (<see cref="FrontmatterEditor"/>) where the Python re-dumped
-/// it, and a note the Python would have crashed on is logged and passed over.
+/// The vault repairs: filename cleanup with wikilink rewriting, type backfill,
+/// metadata repair, and duplicate consolidation. Each prints its progress as plain text and logs each error. Frontmatter is edited line by line
+/// (<see cref="FrontmatterEditor"/>) rather than re-dumped, and a note that cannot be repaired is logged and passed over.
 /// </summary>
 public sealed partial class VaultRepair
 {
@@ -24,8 +23,8 @@ public sealed partial class VaultRepair
 
     /// <summary>Repairs over the vault at <paramref name="vaultPath"/>.</summary>
     /// <param name="vaultPath">The vault folder.</param>
-    /// <param name="say">Told each line the Python printed; a leading newline stands for the blank line it printed first.</param>
-    /// <param name="log">Told each error the Python logged.</param>
+    /// <param name="say">Told each line of progress; a leading newline stands for a blank line before it.</param>
+    /// <param name="log">Told each error.</param>
     /// <param name="time">The clock and local time zone; the system's when omitted.</param>
     public VaultRepair(string vaultPath, Action<string> say, Action<string>? log = null, TimeProvider? time = null)
     {
@@ -252,7 +251,7 @@ public sealed partial class VaultRepair
         }
     }
 
-    /// <summary>The words Python's <c>re.findall(r"\w+", text)</c> finds: runs of letters, numbers and underscores.</summary>
+    /// <summary>The words in <paramref name="text"/>: runs of letters, numbers and underscores.</summary>
     public static int Words(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -285,7 +284,7 @@ public sealed partial class VaultRepair
         string[] oldTargets = [from.Name, from.Stem, oldRel, oldRelNoExt];
         return Wikilink().Replace(content, match =>
         {
-            var target = PyText.Strip(match.Groups[2].Value);
+            var target = UnicodeText.Strip(match.Groups[2].Value);
             if (!oldTargets.Contains(target, StringComparer.Ordinal))
             {
                 return match.Value;
@@ -297,22 +296,22 @@ public sealed partial class VaultRepair
         });
     }
 
-    // The keys a repair sets, in the Python's order; null when the note had to be passed over.
+    // The keys a repair sets, in a fixed order; null when the note had to be passed over.
     private List<KeyValuePair<string, string>>? Repairs(VaultEntry note, string text, FrontmatterRead front)
     {
-        var current = new Dictionary<string, PyValue>(front.Metadata, StringComparer.Ordinal);
+        var current = new Dictionary<string, YamlValue>(front.Metadata, StringComparer.Ordinal);
         var changes = new List<KeyValuePair<string, string>>();
         void Set(string key, string value)
         {
-            current[key] = new PyStr(value);
+            current[key] = new YamlString(value);
             changes.Add(new(key, value));
         }
 
         bool IsEmpty(string key) => current.GetValueOrDefault(key) switch
         {
-            null or PyNone => true,
-            PyStr { Text: var s } => PyText.Strip(s).Length == 0,
-            PyList { Items.Count: 0 } => true,
+            null or YamlNull => true,
+            YamlString { Text: var s } => UnicodeText.Strip(s).Length == 0,
+            YamlList { Items.Count: 0 } => true,
             _ => false,
         };
 
@@ -349,7 +348,7 @@ public sealed partial class VaultRepair
 
         if (noteType == "social" && IsEmpty("source") && front.Text("related_article") is { Length: > 0 } article)
         {
-            var name = PyText.Strip(LinkBrackets().Replace(article, "$1").Replace(".md", string.Empty, StringComparison.Ordinal));
+            var name = UnicodeText.Strip(LinkBrackets().Replace(article, "$1").Replace(".md", string.Empty, StringComparison.Ordinal));
             foreach (var resource in VaultWalk.Markdown(Path.Join(vault, "Resources")).Where(r => r.Relative.Stem == name))
             {
                 var read = Frontmatter.Load(resource.FullPath);
@@ -495,10 +494,10 @@ public sealed partial class VaultRepair
     private static partial Regex Wikilink();
 
     // `Source:\s*(https?://[^\s\)]+)` under re.IGNORECASE, whose Unicode folding also matches ſ (U+017F) for s.
-    [GeneratedRegex(@"[Ss\u017F][Oo][Uu][Rr][Cc][Ee]:[" + PyText.Space + @"]*([Hh][Tt][Tt][Pp][Ss\u017F]?://[^" + PyText.Space + @"\)]+)")]
+    [GeneratedRegex(@"[Ss\u017F][Oo][Uu][Rr][Cc][Ee]:[" + UnicodeText.Space + @"]*([Hh][Tt][Tt][Pp][Ss\u017F]?://[^" + UnicodeText.Space + @"\)]+)")]
     private static partial Regex LabelledSource();
 
-    [GeneratedRegex(@"^(?:- )?(https?://[^" + PyText.Space + @"\)]+)", RegexOptions.Multiline)]
+    [GeneratedRegex(@"^(?:- )?(https?://[^" + UnicodeText.Space + @"\)]+)", RegexOptions.Multiline)]
     private static partial Regex BareSource();
 
     [GeneratedRegex(@"\[\[(.*?)\]\]")]

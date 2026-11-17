@@ -159,13 +159,13 @@ public static class LabelTaxonomy
                 api,
                 "POST",
                 $"repos/{repo}/labels",
-                PyRepr.Json(new JsonObject { ["name"] = diff.LabelName, ["color"] = diff.Color, ["description"] = diff.Description }),
+                QuotedText.Json(new JsonObject { ["name"] = diff.LabelName, ["color"] = diff.Color, ["description"] = diff.Description }),
                 cancellationToken).ConfigureAwait(false)
             : await GitHubCalls.SendAsync(
                 api,
                 "PATCH",
                 $"repos/{repo}/labels/{Uri.EscapeDataString(diff.LabelName)}",
-                PyRepr.Json(new JsonObject { ["color"] = diff.Color, ["description"] = diff.Description }),
+                QuotedText.Json(new JsonObject { ["color"] = diff.Color, ["description"] = diff.Description }),
                 cancellationToken).ConfigureAwait(false);
         return ran.Ok ? null : ran.Err.Trim();
     }
