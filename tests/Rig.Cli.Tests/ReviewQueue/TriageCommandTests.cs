@@ -1,5 +1,4 @@
 using System.CommandLine;
-using Rig.Cli.Forwarding;
 using Rig.Cli.ReviewQueue;
 using Rig.Core.GitHub;
 using Rig.Core.ReviewQueue;
@@ -119,7 +118,7 @@ public sealed class TriageCommandTests : IDisposable
         _output.GetStringBuilder().Clear();
         _error.GetStringBuilder().Clear();
         var command = new TriageCommand(Host, _source, _output, _error);
-        return await new RigApp(new PythonRig(_proc, _temp.Path), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null),
+        return await new RigApp(new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null),
             _output, _error, [command.Build]).RunAsync(args, TestContext.Current.CancellationToken);
     }
 

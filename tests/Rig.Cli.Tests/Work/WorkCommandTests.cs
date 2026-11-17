@@ -1,5 +1,4 @@
 using System.Text.Json.Nodes;
-using Rig.Cli.Forwarding;
 using Rig.Cli.Work;
 using Rig.Core.GitHub;
 using Rig.Core.Tests;
@@ -159,7 +158,7 @@ public sealed class WorkCommandTests : IDisposable
         _output.GetStringBuilder().Clear();
         _error.GetStringBuilder().Clear();
         var command = new WorkCommand(new WorkHost(Root, Home), Collect, new FixedClock(WorkFixtures.Now), _output, _error);
-        return await new RigApp(new PythonRig(_proc, _temp.Path), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null),
+        return await new RigApp(new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null),
             _output, _error, [command.Build]).RunAsync(args, TestContext.Current.CancellationToken);
     }
 

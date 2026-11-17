@@ -22,20 +22,16 @@ public sealed class CommandTreeTests
         var root = new RootCommand { group };
         var inspected = CommandTree.Read(root);
         Assert.Equal(["chrome-tabs", "chrome-tabs one", "chrome-tabs two"], inspected.Select(c => c.Path));
-        Assert.True(inspected[0].Forwarded);
+        Assert.False(inspected[0].Action);
         Assert.All(inspected.Skip(1), c =>
         {
             Assert.True(c.Action);
-            Assert.False(c.Forwarded);
             Assert.Single(c.Aliases);
         });
-        using var json = JsonDocument.Parse(CommandTree.Export(root, [["chrome-tabs", "one"], ["chrome-tabs", "organise"]], false));
-        var dispatch = json.RootElement.GetProperty("dispatch").EnumerateArray().ToArray();
-        Assert.False(dispatch[0].GetProperty("Forwarded").GetBoolean());
-        Assert.True(dispatch[1].GetProperty("Forwarded").GetBoolean());
+        using var json = JsonDocument.Parse(CommandTree.Export(root, false));
         Assert.Equal(0, calls);
+        Assert.Equal(3, json.RootElement.GetProperty("commands").GetArrayLength());
         Assert.NotEmpty(json.RootElement.GetProperty("jobs").EnumerateArray());
-        Assert.NotEmpty(json.RootElement.GetProperty("forwarding").EnumerateArray());
         Assert.Contains(json.RootElement.GetProperty("rawAliases").EnumerateArray(), alias => alias.GetProperty("Path").GetString() == "agent models");
         Assert.NotEmpty(json.RootElement.GetProperty("agentTargets").EnumerateArray());
     }

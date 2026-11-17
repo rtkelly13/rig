@@ -617,6 +617,7 @@
     "src/desktop_manager/chrome/scheduled.py",
     "src/desktop_manager/chrome/trace_forward.py",
     "tests/desktop_manager/test_chrome_organise.py",
-    "tests/desktop_manager/test_trace_forward.py"
+    "tests/desktop_manager/test_trace_forward.py",
+    "src/Rig.Cli/Forwarding/Forwarded.cs"
   ]
 }
