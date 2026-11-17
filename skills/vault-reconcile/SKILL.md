@@ -24,12 +24,22 @@ R=(uv run --no-project ~/code/personal/obsidian-vault/scripts/vault-reconcile.py
 
 The order is load-bearing. Each step changes what the next one sees.
 
-**0. Back up Drive first.** It is live data, and steps 1 and 3 write to it.
+**0. Back up Drive first.** It is live data, and steps 1 and 3 write to it. Commit the
+Drive copy of every note that differs from main to a pushed `backup/drive-diff-<date>`
+branch, so anything a conflict overwrites stays recoverable in git. The tarball keeps the
+mtimes the trap below needs.
 
 ```bash
-tar -czf /tmp/drive-vault-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C "$(dirname "$DRIVE_VAULT_PATH")" Vault
+cd ~/code/personal/obsidian-vault && B=backup/drive-diff-$(date +%F)
+GIT_LFS_SKIP_SMUDGE=1 git worktree add -b "$B" temp/drive-backup origin/main && cd temp/drive-backup/Vault
+(cd "$DRIVE_VAULT_PATH" && find . -name '*.md' -not -path './.*/*' | sed 's#^\./##') |
+  while IFS= read -r f; do [ -f "$f" ] && ! cmp -s "$DRIVE_VAULT_PATH/$f" "$f" && cp -p "$DRIVE_VAULT_PATH/$f" "$f" && git add -- "$f"; done
+git commit -m "backup: Drive copies of notes that differ from main" && GIT_LFS_SKIP_SMUDGE=1 git push -u origin "$B"
+tar -czf /tmp/drive-vault-$(date +%Y%m%d-%H%M%S).tar.gz -C "$(dirname "$DRIVE_VAULT_PATH")" Vault
 ```
+
+Never merge the branch: it is a backup to restore from, not a change. Delete it once the
+reconcile is verified and nothing needed restoring.
 
 **1. Unescape wikilinks.** `"${R[@]}" --fix-links --apply`
 
