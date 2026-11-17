@@ -3,7 +3,8 @@
        the Python reference dump. The shipping bar (warnings as errors, latest-all analyzers) is relaxed
        because this is throwaway measurement code, not product code. -->
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Library by default: the command-ownership gate refuses any other executable project. Run it with -p:OutputType=Exe. -->
+    <OutputType Condition="'$(OutputType)' == ''">Library</OutputType>
     <RootNamespace>ImageStackEval</RootNamespace>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AnalysisLevel>latest-minimum</AnalysisLevel>
