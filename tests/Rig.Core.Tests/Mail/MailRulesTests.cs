@@ -130,7 +130,7 @@ public sealed class MailRulesTests : IDisposable
     [InlineData("rules: [{name: a, match: {1: [x]}, actions: {archive: true}}]", "unexpected key 1;")]
     [InlineData("rules: [{name: a, match: {null: [x]}, actions: {archive: true}}]", "unexpected key None;")]
     [InlineData("rules: [{name: a, match: {[x]: y}, actions: {archive: true}}]", "not valid YAML (found unhashable key)")]
-    [InlineData("rules: [{name: a, match: {!!binary aGk=: [x]}, actions: {archive: true}}]", "unexpected key an unsupported value;")]
+    [InlineData("rules: [{name: a, match: {!!binary aGk=: [x]}, actions: {archive: true}}]", "not valid YAML (unsupported tag")]
     [InlineData("rules: [{match: {from: [x]}, actions: {archive: true}}]", "rules: rules.0.name: missing")]
     [InlineData("rules: [{name: 5, match: {from: [x]}, actions: {archive: true}}]", "rules: rules.0.name: expected a string")]
     [InlineData("rules: [{name: a, match: {from: x}, actions: {archive: true}}]", "rules: rules.0.match.from: expected a list")]

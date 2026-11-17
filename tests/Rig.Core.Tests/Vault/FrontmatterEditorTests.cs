@@ -47,6 +47,22 @@ public sealed class FrontmatterEditorTests
     }
 
     [Theory]
+    [InlineData("---\ntype: a\nstatus: x\n---\nBody\n", "status", "y z")]
+    [InlineData("---\ntype: a\n---\nBody\n", "source", "https://example.org/a?b=1")]
+    [InlineData("---\ntype: a\n---\nBody\n", "type", "yes")]
+    [InlineData("Body only\n", "type", "2024-01-01")]
+    public void Setting_a_value_twice_leaves_the_second_edit_byte_identical(string text, string key, string value)
+    {
+        var first = FrontmatterEditor.Set(text, [new(key, value)]);
+        Assert.NotNull(first.Text);
+
+        var second = FrontmatterEditor.Set(first.Text, [new(key, value)]);
+
+        Assert.Equal(first.Text, second.Text);
+        Assert.Equal(value, Frontmatter.Parse(first.Text).Metadata[key] is YamlString s ? s.Text : null);
+    }
+
+    [Theory]
     [InlineData("type", "resource", "resource")]
     [InlineData("type", "yes", "\"yes\"")]
     [InlineData("type", "2024-01-01", "\"2024-01-01\"")]
@@ -58,7 +74,7 @@ public sealed class FrontmatterEditorTests
     [InlineData("type", "\ttab", "\"\\u0009tab\"")]
     [InlineData("type", "x\u2028y\u0085z\ufeff", "\"x\\u2028y\\u0085z\\uFEFF\"")]
     [InlineData("type", "caf\u00e9 \U0001F600", "caf\u00e9 \U0001F600")]
-    public void A_value_is_plain_only_when_pyyaml_reads_it_back_as_the_same_string(string key, string value, string expected)
+    public void A_value_is_plain_only_when_it_reads_back_as_the_same_string(string key, string value, string expected)
     {
         Assert.Equal(expected, FrontmatterEditor.Scalar(key, value));
     }

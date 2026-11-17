@@ -5,9 +5,9 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// A frozen recorded baseline whose generator is gone. <c>vault-text-oracle.json</c> records
-/// each recorded helper's result, or the <c>ValueError</c> it raised, for a corpus of URLs, stems, titles and paths built to
-/// hit the edges: whitespace and casing, <c>urlsplit</c>'s failures, <c>parse_qs</c> grouping, code-point
+/// A recorded baseline. <c>vault-text-oracle.json</c> records
+/// each helper's result, or that it refused the input, for a corpus of URLs, stems, titles and paths built to
+/// hit the edges: whitespace and casing, malformed authorities, query filtering, code-point
 /// truncation and the candidate scoring. Set <c>RIG_VAULT_ORACLE</c> to a second fixture of the same shape, such as one
 /// recorded from a real vault, to check that too.
 /// </summary>
@@ -60,7 +60,7 @@ public sealed class VaultTextOracleTests
         }
         catch (FormatException)
         {
-            return new JsonObject { ["error"] = "ValueError" };
+            return new JsonObject { ["error"] = "refused" };
         }
     }
 

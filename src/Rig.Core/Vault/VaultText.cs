@@ -5,13 +5,13 @@ namespace Rig.Core.Vault;
 
 /// <summary>
 /// The vault's text rules for whitespace, URLs and filename stems; matching goes through
-/// <see cref="UnicodeText"/> and <see cref="VaultUrl"/>.
+/// <see cref="UnicodeText"/> and <see cref="Uri"/>.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054", Justification = "URLs are kept as written; System.Uri normalizes them.")]
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1055", Justification = "URLs are kept as written; System.Uri normalizes them.")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054", Justification = "URLs are kept as text; System.Uri reads them.")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1055", Justification = "URLs are kept as text; System.Uri reads them.")]
 public static partial class VaultText
 {
-    // Query parameters that only track where a click came from; clean_url drops them, ignoring case.
+    // Query parameters that only track where a click came from; CleanUrl drops them, ignoring case.
     private static readonly HashSet<string> TrackingParameters = new(StringComparer.Ordinal)
     {
         "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "ref", "ref_src", "ref_url", "s", "t",
@@ -24,9 +24,9 @@ public static partial class VaultText
     /// <summary>
     /// A stable form of <paramref name="url"/> for spotting duplicates. Tracking parameters, the fragment, a trailing slash,
     /// <c>www.</c>, any user or port are dropped, the scheme and host are lowercased, and X and Twitter status links become
-    /// <c>https://x.com/i/status/ID</c>.
+    /// <c>https://x.com/i/status/ID</c>. Text that is not a URL with a host is returned as written.
     /// </summary>
-    /// <exception cref="FormatException">The URL's netloc is malformed (see <see cref="VaultUrl.Split"/>).</exception>
+    /// <exception cref="FormatException">The text opens like an http or https URL whose host is not one.</exception>
     public static string NormalizeUrl(string? url)
     {
         if (string.IsNullOrEmpty(url))
@@ -34,37 +34,54 @@ public static partial class VaultText
             return string.Empty;
         }
 
-        var parts = VaultUrl.Split(CleanUrl(UnicodeText.Strip(url)));
-        var host = UnicodeText.Lower(parts.Hostname);
-        if (host.StartsWith("www.", StringComparison.Ordinal))
+        var text = CleanUrl(UnicodeText.Strip(url));
+        if (!TryHttp(text, out var uri))
         {
-            host = host[4..];
+            return BrokenAuthority().IsMatch(text) ? throw new FormatException($"not a URL: {url}") : text;
         }
 
-        var normalized = VaultUrl.Unsplit(new UrlParts(UnicodeText.Lower(parts.Scheme), host, parts.Path.TrimEnd('/'), parts.Query, string.Empty));
+        var host = uri.Host.StartsWith("www.", StringComparison.Ordinal) ? uri.Host[4..] : uri.Host;
+        var normalized = $"{uri.Scheme}://{host}{uri.AbsolutePath.TrimEnd('/')}{uri.Query}";
         return TwitterStatus().Replace(normalized, "https://x.com/i/status/$1");
     }
 
     /// <summary>Whether <paramref name="url"/> is an http or https URL; a malformed one is not.</summary>
-    public static bool IsHttpUrl(string url)
-    {
-        try
-        {
-            return VaultUrl.Split(url).Scheme is "http" or "https";
-        }
-        catch (FormatException)
-        {
-            return false;
-        }
-    }
+    public static bool IsHttpUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https";
 
-    /// <summary><paramref name="url"/> without tracking parameters or empty ones; everything else is kept as written.</summary>
-    /// <exception cref="FormatException">The URL's netloc is malformed (see <see cref="VaultUrl.Split"/>).</exception>
+    /// <summary><paramref name="url"/> without its tracking parameters or empty ones; everything else is kept as written.</summary>
     public static string CleanUrl(string url)
     {
-        var parts = VaultUrl.Split(url);
-        var kept = VaultUrl.ParseQuery(parts.Query).Where(field => !TrackingParameters.Contains(UnicodeText.Lower(field.Key)));
-        return VaultUrl.Unsplit(parts with { Query = VaultUrl.Encode(kept) });
+        ArgumentNullException.ThrowIfNull(url);
+        var at = url.IndexOf('?', StringComparison.Ordinal);
+        if (at < 0)
+        {
+            return url;
+        }
+
+        var fragment = url.IndexOf('#', at);
+        var query = url[(at + 1)..(fragment < 0 ? url.Length : fragment)];
+        var kept = query.Split('&').Where(field =>
+            field.IndexOf('=', StringComparison.Ordinal) is > 0 and var equals
+            && equals < field.Length - 1
+            && !TrackingParameters.Contains(UnicodeText.Lower(Uri.UnescapeDataString(field[..equals])))).ToList();
+        return url[..at] + (kept.Count > 0 ? "?" + string.Join('&', kept) : string.Empty) + (fragment < 0 ? string.Empty : url[fragment..]);
+    }
+
+    private static bool TryHttp(string text, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Uri? uri) =>
+        Uri.TryCreate(text, UriKind.Absolute, out uri) && uri.Scheme is "http" or "https" && uri.Host.Length > 0;
+
+    /// <summary>The lowercase host and the unescaped path segments of <paramref name="url"/>; a text with no scheme is all path.</summary>
+    internal static (string Host, IReadOnlyList<string> Segments) HostAndPath(string url)
+    {
+        var absolute = TryHttp(url.StartsWith("//", StringComparison.Ordinal) ? "http:" + url : url, out var uri);
+        if (!absolute && BrokenAuthority().IsMatch(url))
+        {
+            throw new FormatException($"not a URL: {url}");
+        }
+
+        var path = absolute ? uri!.AbsolutePath : SchemePrefix().Replace(url.Split('?', '#')[0], string.Empty);
+        return (absolute ? uri!.Host : string.Empty, [.. path.Split('/').Where(part => part.Length > 0).Select(Uri.UnescapeDataString)]);
     }
 
     /// <summary>
@@ -154,6 +171,12 @@ public static partial class VaultText
 
         return builder.ToString();
     }
+
+    [GeneratedRegex(@"^https?://[^/?#]*[\[\]]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex BrokenAuthority();
+
+    [GeneratedRegex("^[A-Za-z][A-Za-z0-9+.-]*:")]
+    private static partial Regex SchemePrefix();
 
     [GeneratedRegex($"[{UnicodeText.Space}]+")]
     internal static partial Regex Whitespace();

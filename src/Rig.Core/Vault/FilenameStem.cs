@@ -53,7 +53,7 @@ public static partial class FilenameStem
     /// A cleaner stem for <paramref name="currentStem"/>, keeping a <c>-social</c> suffix and a four-hex-digit collision
     /// suffix such as <c>-a1b2</c>.
     /// </summary>
-    /// <exception cref="FormatException"><paramref name="sourceUrl"/> has a malformed netloc (see <see cref="VaultUrl.Split"/>).</exception>
+    /// <exception cref="FormatException"><paramref name="sourceUrl"/> opens like an http URL whose host is not one.</exception>
     public static string Suggest(string? currentStem, string title = "", string sourceUrl = "", string relatedArticle = "", int maxLength = 80)
     {
         ArgumentNullException.ThrowIfNull(title);
@@ -137,7 +137,7 @@ public static partial class FilenameStem
 
     private static string Host(string url)
     {
-        var host = UnicodeText.Lower(VaultUrl.Split(url).Hostname);
+        var host = VaultText.HostAndPath(url).Host;
         return host.StartsWith("www.", StringComparison.Ordinal) ? host[4..] : host;
     }
 
@@ -149,17 +149,13 @@ public static partial class FilenameStem
             return "untitled";
         }
 
-        var split = VaultUrl.Split(cleaned);
-        var host = UnicodeText.Lower(split.Hostname);
+        var (host, parts) = VaultText.HostAndPath(cleaned);
         if (host.StartsWith("www.", StringComparison.Ordinal))
         {
             host = host[4..];
         }
 
-        var parts = split.Path.Split('/')
-            .Where(part => part.Length > 0)
-            .Select(part => FileExtension().Replace(VaultUrl.Unquote(part), string.Empty))
-            .ToList();
+        parts = [.. parts.Select(part => FileExtension().Replace(part, string.Empty))];
         if (host is "x.com" or "twitter.com")
         {
             if (parts.Count >= 3 && string.Equals(UnicodeText.Lower(parts[1]), "status", StringComparison.Ordinal))

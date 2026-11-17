@@ -4,8 +4,8 @@ using Rig.Core.Text;
 namespace Rig.Core.Tests.Text;
 
 /// <summary>
-/// The recorded <c>repr()</c> of a string, so messages that quoted a value with <c>!r</c> read the same from C#. The
-/// expected values are what was recorded for each input.
+/// A string quoted the way messages show a value: single quotes unless the text holds one. The
+/// expected values were recorded for each input.
 /// </summary>
 public sealed class QuotedTextTests
 {

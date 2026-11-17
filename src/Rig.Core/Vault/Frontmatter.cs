@@ -87,7 +87,7 @@ public static partial class Frontmatter
     }
 
     /// <summary>
-    /// <c>frontmatter.loads(text).content</c>: what follows the first two rules, stripped, or the whole text stripped when
+    /// What follows the first two rules, stripped, or the whole text stripped when
     /// there is no frontmatter.
     /// </summary>
     public static string Content(string text)
@@ -133,7 +133,7 @@ public static partial class Frontmatter
 
     private static FrontmatterRead Refused(string reason) => new(new Dictionary<string, YamlValue>(), reason);
 
-    // `re.split(text, 2)` unpacked into three parts: the text between the first two rules, or null when there are fewer.
+    // The text between the first two rules, or null when there are fewer.
     private static string? Split(string text, Regex boundary)
     {
         var first = boundary.Match(text);
@@ -159,7 +159,7 @@ public static partial class Frontmatter
 
             if (name is "content" or "handler")
             {
-                return Refused($"Post.__init__() got multiple values for argument '{name}'");
+                return Refused($"the key '{name}' is reserved");
             }
 
             metadata[name] = value;
@@ -192,7 +192,7 @@ public static partial class Frontmatter
         _ => new YamlMap(JsonEntries(element)),
     };
 
-    // json.loads keeps the last of repeated keys, where it first appeared.
+    // Of repeated keys the last value wins, at the position of the first.
     private static List<KeyValuePair<YamlValue, YamlValue>> JsonEntries(JsonElement element)
     {
         var entries = new List<KeyValuePair<YamlValue, YamlValue>>();

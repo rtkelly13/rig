@@ -355,7 +355,7 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
                     continue;
                 }
 
-                var decoded = VaultUrl.Unquote(target);
+                var decoded = Uri.UnescapeDataString(target);
                 var heading = target.Contains('#', StringComparison.Ordinal) ? UnicodeText.Strip(target.Split('#')[0]) : null;
                 if (new[] { target, decoded, heading }.FirstOrDefault(t => t is not null && known.Contains(t)) is { } hit)
                 {

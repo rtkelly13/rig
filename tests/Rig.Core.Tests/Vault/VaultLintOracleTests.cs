@@ -51,7 +51,7 @@ public sealed class VaultLintOracleTests
     [Fact]
     public void A_note_whose_source_is_malformed_is_passed_over_not_fatal()
     {
-        // The recorded filename check let urlsplit's ValueError escape and the lint crashed; C# logs the note and moves on.
+        // A malformed URL must not crash the lint: it logs the note and moves on.
         using var vault = new TempVault();
         vault.Write("Resources/Topic/bad_source.md", "---\ntype: resource\nsource: http://[::1\nstatus: x\ncreated: y\n---\n");
         vault.Write("Resources/Topic/other_note.md", "---\ntype: resource\nsource: https://example.org/a\nstatus: x\ncreated: y\n---\n");
