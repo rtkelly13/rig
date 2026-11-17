@@ -1,8 +1,8 @@
 namespace Rig.Core.Vault;
 
 /// <summary>
-/// A note's path relative to the vault, always with forward slashes, read as Python's <c>PurePosixPath</c> reads it on
-/// every platform: empty and <c>.</c> segments dropped, and the stem the name before its last dot unless that dot leads
+/// A note's path relative to the vault, always with forward slashes, read the same
+/// on every platform: empty and <c>.</c> segments dropped, and the stem the name before its last dot unless that dot leads
 /// or ends the name.
 /// </summary>
 public sealed class NotePath

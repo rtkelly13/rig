@@ -73,17 +73,17 @@ public static partial class VercelProjects
             }
 
             var slug = RepoSlug.FromRemote(project.Repo)?.FullName
-                ?? throw new VercelClaimException($"{project.Name}: vercel projects need a GitHub repo to belong to, not {PyRepr.Str(project.Repo)}");
+                ?? throw new VercelClaimException($"{project.Name}: vercel projects need a GitHub repo to belong to, not {QuotedText.Str(project.Repo)}");
             foreach (var name in project.Vercel)
             {
                 if (!VercelName().IsMatch(name))
                 {
-                    throw new VercelClaimException($"{project.Name}: {PyRepr.Str(name)} is not a Vercel project name");
+                    throw new VercelClaimException($"{project.Name}: {QuotedText.Str(name)} is not a Vercel project name");
                 }
 
                 if (owners.TryGetValue(name, out var owner))
                 {
-                    throw new VercelClaimException($"{project.Name}: vercel project {PyRepr.Str(name)} is already declared by {owner}");
+                    throw new VercelClaimException($"{project.Name}: vercel project {QuotedText.Str(name)} is already declared by {owner}");
                 }
 
                 owners[name] = project.Name;

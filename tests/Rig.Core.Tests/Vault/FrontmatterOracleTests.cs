@@ -52,7 +52,7 @@ public sealed class FrontmatterOracleTests
 
         Assert.Equal("resource", read.Text("type"));
         Assert.Null(read.Text("created"));
-        Assert.Equal(new PyScalar("2024-01-31"), read.Get("created"));
+        Assert.Equal(new YamlScalar("2024-01-31"), read.Get("created"));
         Assert.Null(read.Get("missing"));
     }
 
@@ -66,16 +66,16 @@ public sealed class FrontmatterOracleTests
         Assert.NotNull(Frontmatter.Parse($"---\n{line}\n---\nBody\n").Error);
 
     [Fact]
-    public void A_stream_of_two_documents_is_refused() => Assert.Throws<PyYamlException>(() => PyYaml.Load("a: 1\n---\nb: 2\n"));
+    public void A_stream_of_two_documents_is_refused() => Assert.Throws<VaultYamlException>(() => VaultYaml.Load("a: 1\n---\nb: 2\n"));
 
     // Known gap: PyYAML reads a block scalar whose first line is only spaces as '', YamlDotNet refuses it, so such a note
     // is logged and passed over where the Python read it. Pinned so a fix shows up here.
     [Fact]
     public void A_block_scalar_opened_by_a_line_of_spaces_is_refused_where_pyyaml_read_it_as_empty() =>
-        Assert.Throws<PyYamlException>(() => PyYaml.Load("status: |\n  \ncreated: x\n"));
+        Assert.Throws<VaultYamlException>(() => VaultYaml.Load("status: |\n  \ncreated: x\n"));
 
     [Fact]
-    public void An_empty_stream_holds_no_document() => Assert.Null(PyYaml.Load(string.Empty));
+    public void An_empty_stream_holds_no_document() => Assert.Null(VaultYaml.Load(string.Empty));
 
     [Fact]
     public void A_missing_file_is_refused_not_thrown() =>
@@ -91,7 +91,7 @@ public sealed class FrontmatterOracleTests
     [InlineData(1.7976931348623157e308, "1.7976931348623157e+308")]
     [InlineData(5e-324, "5e-324")]
     [InlineData(double.NegativeInfinity, "-inf")]
-    public void Floats_print_as_python_repr_does(double value, string expected) => Assert.Equal(expected, PyFloat.Repr(value));
+    public void Floats_print_as_python_repr_does(double value, string expected) => Assert.Equal(expected, YamlFloat.Repr(value));
 
     [Theory]
     [InlineData("12", 10, 12)]
@@ -99,7 +99,7 @@ public sealed class FrontmatterOracleTests
     [InlineData("0o17", 8, 15)]
     [InlineData("+101", 2, 5)]
     public void Ints_parse_as_python_int_does(string text, int radix, long expected) =>
-        Assert.Equal(expected, (long)PyInt.Parse(text, radix));
+        Assert.Equal(expected, (long)YamlInt.Parse(text, radix));
 
     [Theory]
     [InlineData("", 10)]
@@ -107,19 +107,19 @@ public sealed class FrontmatterOracleTests
     [InlineData("0x", 16)]
     [InlineData("8", 8)]
     [InlineData("1-2", 10)]
-    public void A_bad_int_is_refused(string text, int radix) => Assert.Throws<PyYamlException>(() => PyInt.Parse(text, radix));
+    public void A_bad_int_is_refused(string text, int radix) => Assert.Throws<VaultYamlException>(() => YamlInt.Parse(text, radix));
 
     [Theory]
     [InlineData("inf", double.PositiveInfinity)]
     [InlineData("-Infinity", double.NegativeInfinity)]
     [InlineData(" 1.5e3 ", 1500.0)]
-    public void Floats_parse_as_python_float_does(string text, double expected) => Assert.Equal(expected, PyFloat.Parse(text));
+    public void Floats_parse_as_python_float_does(string text, double expected) => Assert.Equal(expected, YamlFloat.Parse(text));
 
     [Fact]
-    public void Nan_parses() => Assert.True(double.IsNaN(PyFloat.Parse("NaN")));
+    public void Nan_parses() => Assert.True(double.IsNaN(YamlFloat.Parse("NaN")));
 
     [Fact]
-    public void A_bad_float_is_refused() => Assert.Throws<PyYamlException>(() => PyFloat.Parse("1e"));
+    public void A_bad_float_is_refused() => Assert.Throws<VaultYamlException>(() => YamlFloat.Parse("1e"));
 
     private static JsonObject Describe(FrontmatterRead read)
     {
@@ -137,19 +137,19 @@ public sealed class FrontmatterOracleTests
         return new JsonObject { ["fields"] = fields };
     }
 
-    private static JsonObject Kind(PyValue value) => value switch
+    private static JsonObject Kind(YamlValue value) => value switch
     {
-        PyNone => new JsonObject { ["k"] = "null" },
-        PyStr text => new JsonObject { ["k"] = "str", ["v"] = text.Text },
-        PyList list => new JsonObject { ["k"] = "list", ["items"] = new JsonArray([.. list.Items.Select(Rendered)]) },
+        YamlNull => new JsonObject { ["k"] = "null" },
+        YamlString text => new JsonObject { ["k"] = "str", ["v"] = text.Text },
+        YamlList list => new JsonObject { ["k"] = "list", ["items"] = new JsonArray([.. list.Items.Select(Rendered)]) },
         _ => new JsonObject { ["k"] = "other" },
     };
 
-    private static JsonNode? Rendered(PyValue item) => item switch
+    private static JsonNode? Rendered(YamlValue item) => item switch
     {
-        PyStr text => text.Text,
-        PyNone => "None",
-        PyScalar scalar => scalar.Rendered,
+        YamlString text => text.Text,
+        YamlNull => "None",
+        YamlScalar scalar => scalar.Rendered,
         _ => null,
     };
 

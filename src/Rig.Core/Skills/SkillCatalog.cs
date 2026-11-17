@@ -140,7 +140,7 @@ public sealed record SkillPlaces(string Checkout, string Home, string WorkingDir
                 .Select(Path.GetFileName)
                 .OfType<string>()
                 .Where(name => !name.StartsWith('.'))
-                .Order(PyText.CodePointOrder)
+                .Order(UnicodeText.CodePointOrder)
                 .Select(name => new SkillSource(name, Path.Join(vendors, name))));
         }
 
@@ -275,23 +275,23 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
             }
 
             var close = text.IndexOf("---", 3, StringComparison.Ordinal);
-            if (close < 0 || PyYaml.Load(text[3..close]) is not PyDict fields)
+            if (close < 0 || VaultYaml.Load(text[3..close]) is not YamlMap fields)
             {
                 return fallback;
             }
 
-            var name = Field(fields, "name") is { } n && PyText.Strip(n).Length > 0 ? n : fallback.Item1;
-            var description = Field(fields, "description") is { } d && PyText.Strip(d).Length > 0 ? d : DefaultDescription;
-            return (PyText.Strip(PyText.Strip(name), "'\""), CollapseWhitespace(description));
+            var name = Field(fields, "name") is { } n && UnicodeText.Strip(n).Length > 0 ? n : fallback.Item1;
+            var description = Field(fields, "description") is { } d && UnicodeText.Strip(d).Length > 0 ? d : DefaultDescription;
+            return (UnicodeText.Strip(UnicodeText.Strip(name), "'\""), CollapseWhitespace(description));
         }
-        catch (Exception e) when (e is PyYamlException or IOException or UnauthorizedAccessException)
+        catch (Exception e) when (e is VaultYamlException or IOException or UnauthorizedAccessException)
         {
             return fallback;
         }
     }
 
-    private static string? Field(PyDict fields, string key) =>
-        fields.Entries.FirstOrDefault(e => e.Key is PyStr { Text: var k } && k == key).Value is PyStr { Text: var text } ? text : null;
+    private static string? Field(YamlMap fields, string key) =>
+        fields.Entries.FirstOrDefault(e => e.Key is YamlString { Text: var k } && k == key).Value is YamlString { Text: var text } ? text : null;
 
     private static string CollapseWhitespace(string text)
     {
@@ -299,7 +299,7 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
         var word = new StringBuilder();
         foreach (var c in text)
         {
-            if (!PyText.IsSpace(c))
+            if (!UnicodeText.IsSpace(c))
             {
                 _ = word.Append(c);
             }
@@ -356,7 +356,7 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
     {
         for (var i = 0; i < Math.Min(a.Length, b.Length); i++)
         {
-            var order = PyText.CodePointOrder.Compare(a[i], b[i]);
+            var order = UnicodeText.CodePointOrder.Compare(a[i], b[i]);
             if (order != 0)
             {
                 return order;

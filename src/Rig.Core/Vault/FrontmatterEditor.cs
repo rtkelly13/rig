@@ -10,9 +10,8 @@ namespace Rig.Core.Vault;
 public sealed record FrontmatterEdit(string? Text, string? Refusal);
 
 /// <summary>
-/// Sets top-level frontmatter keys to strings by rewriting only those keys' lines. The Python re-dumped the whole block
-/// through PyYAML, which sorted the keys, restyled every value and stripped the body; this leaves everything else as it
-/// was. Each edit is proved by reading it back: the edited note must load to the old metadata with exactly the changes
+/// Sets top-level frontmatter keys to strings by rewriting only those keys' lines. Re-dumping the whole block would sort the keys,
+/// restyle every value and strip the body; this leaves everything else as it was. Each edit is proved by reading it back: the edited note must load to the old metadata with exactly the changes
 /// applied and the same content, or the edit is refused.
 /// </summary>
 public static class FrontmatterEditor
@@ -53,10 +52,10 @@ public static class FrontmatterEditor
             edited = $"---\n{yaml}---\n\n{text}";
         }
 
-        var expected = new Dictionary<string, PyValue>(before.Metadata, StringComparer.Ordinal);
+        var expected = new Dictionary<string, YamlValue>(before.Metadata, StringComparer.Ordinal);
         foreach (var (key, value) in changes)
         {
-            expected[key] = new PyStr(value);
+            expected[key] = new YamlString(value);
         }
 
         var after = Frontmatter.Parse(edited);
@@ -66,8 +65,8 @@ public static class FrontmatterEditor
     }
 
     /// <summary>
-    /// <paramref name="value"/> as a YAML scalar: plain when PyYAML reads that back as the same string, otherwise double
-    /// quoted. A <c>source</c> is always quoted, as the Python forced.
+    /// <paramref name="value"/> as a YAML scalar: plain when <see cref="VaultYaml"/> reads that back as the same string, otherwise double
+    /// quoted. A <c>source</c> is always quoted.
     /// </summary>
     public static string Scalar(string key, string value)
     {
@@ -77,7 +76,7 @@ public static class FrontmatterEditor
     }
 
     /// <summary>Whether two loaded metadata mappings hold the same keys and values.</summary>
-    public static bool SameMetadata(IReadOnlyDictionary<string, PyValue> left, IReadOnlyDictionary<string, PyValue> right)
+    public static bool SameMetadata(IReadOnlyDictionary<string, YamlValue> left, IReadOnlyDictionary<string, YamlValue> right)
     {
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
@@ -134,9 +133,9 @@ public static class FrontmatterEditor
     {
         try
         {
-            return PyYaml.Load($"k: {value}\n") is PyDict { Entries: [{ Key: PyStr { Text: "k" }, Value: PyStr { Text: var text } }] } && text == value;
+            return VaultYaml.Load($"k: {value}\n") is YamlMap { Entries: [{ Key: YamlString { Text: "k" }, Value: YamlString { Text: var text } }] } && text == value;
         }
-        catch (PyYamlException)
+        catch (VaultYamlException)
         {
             return false;
         }
@@ -155,7 +154,7 @@ public static class FrontmatterEditor
                 case '\\':
                     quoted.Append("\\\\");
                     break;
-                // Whatever PyYAML's reader refuses or reads as a line break, escaped.
+                // Whatever the YAML reader refuses or reads as a line break, escaped.
                 case < 0x20 or 0x7F or (>= 0x80 and <= 0x9F) or 0x2028 or 0x2029 or 0xFEFF or 0xFFFE or 0xFFFF:
                     quoted.Append("\\u").Append(rune.Value.ToString("X4", CultureInfo.InvariantCulture));
                     break;
@@ -168,13 +167,13 @@ public static class FrontmatterEditor
         return quoted.Append('"').ToString();
     }
 
-    private static bool Same(PyValue left, PyValue right) => (left, right) switch
+    private static bool Same(YamlValue left, YamlValue right) => (left, right) switch
     {
-        (PyStr a, PyStr b) => a.Text == b.Text,
-        (PyScalar a, PyScalar b) => a.Rendered == b.Rendered,
-        (PyNone, PyNone) or (PyOther, PyOther) => true,
-        (PyList a, PyList b) => a.Items.Count == b.Items.Count && a.Items.Zip(b.Items).All(p => Same(p.First, p.Second)),
-        (PyDict a, PyDict b) => a.Entries.Count == b.Entries.Count
+        (YamlString a, YamlString b) => a.Text == b.Text,
+        (YamlScalar a, YamlScalar b) => a.Rendered == b.Rendered,
+        (YamlNull, YamlNull) or (YamlOther, YamlOther) => true,
+        (YamlList a, YamlList b) => a.Items.Count == b.Items.Count && a.Items.Zip(b.Items).All(p => Same(p.First, p.Second)),
+        (YamlMap a, YamlMap b) => a.Entries.Count == b.Entries.Count
             && a.Entries.Zip(b.Entries).All(p => Same(p.First.Key, p.Second.Key) && Same(p.First.Value, p.Second.Value)),
         _ => false,
     };

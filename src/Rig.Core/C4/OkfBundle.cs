@@ -77,10 +77,10 @@ public sealed record Concept
             var heading = headings[index];
             var end = index + 1 < headings.Count ? headings[index + 1].Index : Notes.Length;
             var text = heading.Groups["text"].Value.Trim().Trim('`');
-            var body = PyText.Strip(Notes[(heading.Index + heading.Length)..end]);
+            var body = UnicodeText.Strip(Notes[(heading.Index + heading.Length)..end]);
             foreach (var element in Diagram.Elements)
             {
-                if (PyText.CaseFold(text) == PyText.CaseFold(element.Alias) || PyText.CaseFold(text) == PyText.CaseFold(element.Label))
+                if (UnicodeText.CaseFold(text) == UnicodeText.CaseFold(element.Alias) || UnicodeText.CaseFold(text) == UnicodeText.CaseFold(element.Label))
                 {
                     sections[element.Alias] = body;
                 }
@@ -219,8 +219,8 @@ public static partial class OkfBundle
         var fence = Fence().Match(split.Body);
         var diagram = fence.Success ? MermaidReader.Parse(fence.Groups["code"].Value) : null;
         var notes = fence.Success
-            ? PyText.Strip(split.Body[..fence.Index] + split.Body[(fence.Index + fence.Length)..])
-            : PyText.Strip(split.Body);
+            ? UnicodeText.Strip(split.Body[..fence.Index] + split.Body[(fence.Index + fence.Length)..])
+            : UnicodeText.Strip(split.Body);
         var bodyLinks = MarkdownLink().Matches(notes)
             .Select(match => new BodyLink(match.Groups["text"].Value, match.Groups["href"].Value, ResolveHref(conceptId, match.Groups["href"].Value)))
             .ToList();
@@ -317,17 +317,17 @@ public static partial class OkfBundle
             return (empty, "no YAML frontmatter");
         }
 
-        PyValue? value;
+        YamlValue? value;
         try
         {
-            value = PyYaml.Load(raw);
+            value = VaultYaml.Load(raw);
         }
-        catch (PyYamlException error)
+        catch (VaultYamlException error)
         {
             return (empty, $"frontmatter is not valid YAML: {error.Message}");
         }
 
-        if (value is not PyDict mapping)
+        if (value is not YamlMap mapping)
         {
             return (empty, "frontmatter must be a YAML mapping");
         }
@@ -342,24 +342,24 @@ public static partial class OkfBundle
             ActorValue(mapping, "verified")), null);
     }
 
-    private static PyValue? Field(PyDict mapping, string name) =>
-        mapping.Entries.Where(entry => entry.Key is PyStr key && key.Text == name).Select(entry => entry.Value).FirstOrDefault();
+    private static YamlValue? Field(YamlMap mapping, string name) =>
+        mapping.Entries.Where(entry => entry.Key is YamlString key && key.Text == name).Select(entry => entry.Value).FirstOrDefault();
 
-    private static string? Text(PyDict mapping, string name) => Field(mapping, name) as PyStr is { } value ? value.Text : null;
+    private static string? Text(YamlMap mapping, string name) => Field(mapping, name) as YamlString is { } value ? value.Text : null;
 
-    private static IReadOnlyList<string>? Tags(PyDict mapping)
+    private static IReadOnlyList<string>? Tags(YamlMap mapping)
     {
-        if (Field(mapping, "tags") is not PyList list || list.Items.Any(item => item is not PyStr))
+        if (Field(mapping, "tags") is not YamlList list || list.Items.Any(item => item is not YamlString))
         {
             return null;
         }
 
-        return [.. list.Items.Cast<PyStr>().Select(item => item.Text)];
+        return [.. list.Items.Cast<YamlString>().Select(item => item.Text)];
     }
 
-    private static Actor? ActorValue(PyDict mapping, string name)
+    private static Actor? ActorValue(YamlMap mapping, string name)
     {
-        if (Field(mapping, name) is not PyDict actor)
+        if (Field(mapping, name) is not YamlMap actor)
         {
             return null;
         }
@@ -367,11 +367,11 @@ public static partial class OkfBundle
         return new Actor(Text(actor, "by"), ActorAt(actor));
     }
 
-    private static string? ActorAt(PyDict actor) => Field(actor, "at") switch
+    private static string? ActorAt(YamlMap actor) => Field(actor, "at") switch
     {
-        PyStr text => text.Text,
+        YamlString text => text.Text,
         // A YAML date or timestamp arrives rendered exactly as its ISO text.
-        PyScalar scalar => scalar.Rendered,
+        YamlScalar scalar => scalar.Rendered,
         _ => null,
     };
 

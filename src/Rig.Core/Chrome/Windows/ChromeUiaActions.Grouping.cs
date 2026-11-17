@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Rig.Core.Desktop.Windows;
 using Rig.Core.Desktop.Windows.Uia;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Chrome.Windows;
@@ -160,7 +161,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
             if (!isNew)
             {
                 PressEscape();
-                return Outcome(false, $"group {PyText.Repr(title)} no longer exists");
+                return Outcome(false, $"group {QuotedText.Str(title)} no longer exists");
             }
 
             entry.Invoke();
@@ -170,10 +171,10 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
             if (!entry.Expand())
             {
                 PressEscape();
-                return Outcome(false, $"unexpected menu entry {PyText.Repr(entryName)}");
+                return Outcome(false, $"unexpected menu entry {QuotedText.Str(entryName)}");
             }
 
-            var wanted = isNew ? "new group" : PyText.Lower(title);
+            var wanted = isNew ? "new group" : UnicodeText.Lower(title);
             var chosen = Poll(() => MenuItems(pid, name => name == wanted) is { Count: > 0 } items ? items : null, wait);
             if (chosen is not [var only])
             {
@@ -181,10 +182,10 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
                 PressEscape();
                 if (chosen is not null)
                 {
-                    return Outcome(false, $"{chosen.Count} menu entries named {PyText.Repr(title)}; cannot tell them apart");
+                    return Outcome(false, $"{chosen.Count} menu entries named {QuotedText.Str(title)}; cannot tell them apart");
                 }
 
-                return Outcome(false, isNew ? "new-group entry not offered" : $"group {PyText.Repr(title)} not offered");
+                return Outcome(false, isNew ? "new-group entry not offered" : $"group {QuotedText.Str(title)} not offered");
             }
 
             only.Invoke();
@@ -210,13 +211,13 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         if (home is { } target)
         {
             var arrived = PollUntil(() => TitledInGroup(target, title, tab.Title) > before, wait);
-            return arrived ? Outcome(true, "moved") : Outcome(false, $"tab did not show up in group {PyText.Repr(title)} in its home window");
+            return arrived ? Outcome(true, "moved") : Outcome(false, $"tab did not show up in group {QuotedText.Str(title)} in its home window");
         }
 
         var joined = PollUntil(
             () => _reader.FindTabElement(tab) is { } element && ChromeUiaReader.GroupOf(element)?.Title == title,
             wait);
-        return joined ? Outcome(true, isNew ? "created" : "joined") : Outcome(false, $"tab did not show up in group {PyText.Repr(title)}");
+        return joined ? Outcome(true, isNew ? "created" : "joined") : Outcome(false, $"tab did not show up in group {QuotedText.Str(title)}");
     }
 
     /// <summary>
@@ -312,7 +313,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         var element = _reader.FindTabElement(tab);
         if (element is null || ChromeUiaReader.GroupOf(element)?.Title != title)
         {
-            return Outcome(false, $"tab is no longer in a group called {PyText.Repr(title)}");
+            return Outcome(false, $"tab is no longer in a group called {QuotedText.Str(title)}");
         }
 
         if (!BringForward(tab.WindowHandle))
@@ -380,7 +381,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
                 return false;
             },
             wait + DialogSettle + DialogSettle);
-        return gone ? Outcome(true, "ungrouped") : Outcome(false, $"group {PyText.Repr(title)} is still there");
+        return gone ? Outcome(true, "ungrouped") : Outcome(false, $"group {QuotedText.Str(title)} is still there");
     }
 
     /// <summary>Every open menu item whose stripped, lower-cased name matches.</summary>
@@ -456,7 +457,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         return strip is not null && strip.BoundingRectangle.Contains(x, y) && !element.IsOffscreen;
     }
 
-    private static string Lowered(IUiaElement element) => PyText.Lower(PyText.Strip(element.Name));
+    private static string Lowered(IUiaElement element) => UnicodeText.Lower(UnicodeText.Strip(element.Name));
 
     /// <summary>Whether the tab can be grouped or moved: it is still there, under the same title, in no group.</summary>
     private bool Fits(ChromeTab tab, [NotNullWhen(true)] out IUiaElement? element, [NotNullWhen(false)] out string? refusal)
@@ -469,7 +470,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         }
 
         var currentTitle = TabNames.Parse(element.Name).Title;
-        refusal = currentTitle != tab.Title ? $"title changed to {PyText.Repr(currentTitle)}"
+        refusal = currentTitle != tab.Title ? $"title changed to {QuotedText.Str(currentTitle)}"
             : ChromeUiaReader.GroupOf(element) is not null ? "tab is already in a group"
             : null;
         return refusal is null;

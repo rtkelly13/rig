@@ -85,7 +85,7 @@ public static class MailCoverage
                         group.Key,
                         owned.Count,
                         hits.Count,
-                        [.. hits.Select(rule => rule.Name).Distinct(StringComparer.Ordinal).Order(PyText.CodePointOrder)],
+                        [.. hits.Select(rule => rule.Name).Distinct(StringComparer.Ordinal).Order(UnicodeText.CodePointOrder)],
                         hits.Any(rule => rule.Match.Query.Length > 0 || rule.Match.Exclude.Length > 0),
                         owned.FirstOrDefault(o => o.Rule is null).Message?.Subject);
                 }),
@@ -95,7 +95,7 @@ public static class MailCoverage
     /// <summary>The coverage rows as indented JSON, field for field as the Python wrote it.</summary>
     public static string CoverageJson(IEnumerable<SenderRow> rows)
     {
-        var w = new PyJsonWriter();
+        var w = new IndentedJsonWriter();
         return w.Array(rows, row => w.Object(() =>
         {
             _ = w.Key("sender").String(row.Sender).Key("threads").Number(row.Threads).Key("claimed").Number(row.Claimed)
@@ -164,7 +164,7 @@ public static class MailCoverage
 
     private static bool Contains(string haystack, IReadOnlyList<string> needles)
     {
-        var lowered = PyText.Lower(haystack);
-        return needles.Any(needle => lowered.Contains(PyText.Lower(PyText.Strip(needle, "\"")), StringComparison.Ordinal));
+        var lowered = UnicodeText.Lower(haystack);
+        return needles.Any(needle => lowered.Contains(UnicodeText.Lower(UnicodeText.Strip(needle, "\"")), StringComparison.Ordinal));
     }
 }

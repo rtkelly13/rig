@@ -33,7 +33,7 @@ public sealed class ObsidianOrphans(IProc proc, string home)
         }
 
         var text = ran.Out.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
-        return [.. PyText.SplitLines(text).Select(PyText.Strip).Where(line => line.Length > 0)];
+        return [.. UnicodeText.SplitLines(text).Select(UnicodeText.Strip).Where(line => line.Length > 0)];
     }
 
     // obsidian.json holds {"vaults": {id: {"path": str, "open": bool}}}; a misshapen entry is passed over, a misshapen file ignored.
@@ -74,7 +74,7 @@ public sealed class ObsidianOrphans(IProc proc, string home)
         fields[name] is { } value && kinds.Contains(value.GetValueKind()) ? value : null;
 
     /// <summary>
-    /// The absolute path with every symlink along it followed, as Python's <c>Path.resolve()</c> gives it; a part that does not
+    /// The absolute path with every symlink along it followed, ; a part that does not
     /// exist is kept as written.
     /// </summary>
     internal static string RealPath(string path)

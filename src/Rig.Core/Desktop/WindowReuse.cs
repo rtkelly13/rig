@@ -231,12 +231,12 @@ public static class WindowReuse
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(windowTitle);
         var targetTitle = Fold(entry.WindowTitle);
-        var title = PyText.CaseFold(windowTitle);
+        var title = UnicodeText.CaseFold(windowTitle);
 
         // A declared process is the author saying which process owns the window, so a mismatch rules it out; the
         // fallback from the launch path is only a guess, and a window whose process is unknown stays eligible.
         var declared = Fold(entry.WindowProcessName);
-        if (declared.Length > 0 && !string.IsNullOrEmpty(windowProcessName) && declared != PyText.CaseFold(windowProcessName))
+        if (declared.Length > 0 && !string.IsNullOrEmpty(windowProcessName) && declared != UnicodeText.CaseFold(windowProcessName))
         {
             return 0;
         }
@@ -262,7 +262,7 @@ public static class WindowReuse
         var processTarget = ExpectedProcessName(entry, substitutions);
         var processMatched = !string.IsNullOrEmpty(processTarget)
             && !string.IsNullOrEmpty(windowProcessName)
-            && processTarget == PyText.CaseFold(windowProcessName);
+            && processTarget == UnicodeText.CaseFold(windowProcessName);
         if (processMatched)
         {
             score += 100;
@@ -270,10 +270,10 @@ public static class WindowReuse
 
         score += TerminalCommandHintScore(entry, title);
 
-        var entryName = PyText.CaseFold(entry.Name);
+        var entryName = UnicodeText.CaseFold(entry.Name);
         if (entryName.Length > 0
             && title.Contains(entryName, StringComparison.Ordinal)
-            && !(!string.IsNullOrEmpty(windowProcessName) && PyText.CaseFold(windowProcessName) == Chrome))
+            && !(!string.IsNullOrEmpty(windowProcessName) && UnicodeText.CaseFold(windowProcessName) == Chrome))
         {
             score += 25;
         }
@@ -320,11 +320,11 @@ public static class WindowReuse
         ArgumentNullException.ThrowIfNull(entry);
         if (!string.IsNullOrEmpty(entry.WindowProcessName))
         {
-            return PyText.CaseFold(entry.WindowProcessName);
+            return UnicodeText.CaseFold(entry.WindowProcessName);
         }
 
         var path = Placeholders.Substitute(entry.Path, substitutions);
-        return string.IsNullOrEmpty(path) ? null : PyText.CaseFold(WindowsFileName(path));
+        return string.IsNullOrEmpty(path) ? null : UnicodeText.CaseFold(WindowsFileName(path));
     }
 
     /// <summary>The last component of a Windows path, as <c>PureWindowsPath(path).name</c> gives it.</summary>
@@ -344,7 +344,7 @@ public static class WindowReuse
         return JsonNode.DeepEquals(a.ToJson(), b.ToJson());
     }
 
-    private static string Fold(string? value) => PyText.CaseFold(PyText.Strip(value ?? string.Empty));
+    private static string Fold(string? value) => UnicodeText.CaseFold(UnicodeText.Strip(value ?? string.Empty));
 
     private static int BoundsBonus(Rect? bounds, PlacementSpec placement, Func<PlacementSpec, Rect>? placementBounds, int weight) =>
         bounds is not null && placementBounds is not null
@@ -358,7 +358,7 @@ public static class WindowReuse
             return 0;
         }
 
-        var command = PyText.CaseFold(entry.Command);
+        var command = UnicodeText.CaseFold(entry.Command);
         if (command.Contains("copilot", StringComparison.Ordinal))
         {
             return title.Contains("copilot", StringComparison.Ordinal) ? 180 : 0;
@@ -379,14 +379,14 @@ public static class WindowReuse
 
     private static bool IsChromeEntry(LaunchEntry entry, IReadOnlyDictionary<string, string> substitutions) =>
         ExpectedProcessName(entry, substitutions) == Chrome
-        || (Placeholders.Substitute(entry.Path, substitutions) is { Length: > 0 } path && PyText.CaseFold(path).EndsWith(Chrome, StringComparison.Ordinal));
+        || (Placeholders.Substitute(entry.Path, substitutions) is { Length: > 0 } path && UnicodeText.CaseFold(path).EndsWith(Chrome, StringComparison.Ordinal));
 
     private static int ChromeTitleHintScore(LaunchEntry entry, string title, IReadOnlyDictionary<string, string> substitutions)
     {
         var best = 0;
         foreach (var hint in ChromeTitleHints(entry, substitutions))
         {
-            var folded = PyText.CaseFold(hint);
+            var folded = UnicodeText.CaseFold(hint);
             best = Math.Max(best, title == folded ? 220 : title.Contains(folded, StringComparison.Ordinal) ? 170 : 0);
         }
 
@@ -411,8 +411,8 @@ public static class WindowReuse
     private static List<string> ChromeHintsForUrl(string url)
     {
         var (netloc, path) = SplitUrl(url);
-        var host = PyText.CaseFold(netloc);
-        path = PyText.CaseFold(path);
+        var host = UnicodeText.CaseFold(netloc);
+        path = UnicodeText.CaseFold(path);
         if (host.Contains("meet.google.com", StringComparison.Ordinal))
         {
             return ["google meet", "meet"];
@@ -439,7 +439,7 @@ public static class WindowReuse
         }
 
         var labels = host.Split('.').Where(label => label is not ("www" or "com")).ToList();
-        var hints = labels.Count > 0 ? new List<string> { PyText.Strip(string.Join(' ', labels.Take(2))), labels[0] } : [];
+        var hints = labels.Count > 0 ? new List<string> { UnicodeText.Strip(string.Join(' ', labels.Take(2))), labels[0] } : [];
         if (path.Length > 0 && path != "/")
         {
             hints.Add(path.Trim('/').Split('/')[0]);

@@ -6,7 +6,7 @@ namespace Rig.Core.Vault;
 /// <summary>A wikilink whose target names no note.</summary>
 /// <param name="Source">The note holding the link, relative to the vault.</param>
 /// <param name="Target">The link's target, its alias and heading cut off.</param>
-/// <param name="Line">The 1-based line the link is on, counting lines as Python's <c>splitlines</c> does.</param>
+/// <param name="Line">The 1-based line the link is on, counting every Unicode line boundary (see <see cref="UnicodeText.SplitLines"/>).</param>
 /// <param name="Context">That line, stripped.</param>
 public sealed record BrokenLink(string Source, string Target, int Line, string Context);
 
@@ -29,15 +29,13 @@ public sealed record OrphanLinkResult(int OrphansFound, int Linked);
 public sealed record RootHubResult(int HubsCreated, int LinksAdded);
 
 /// <summary>
-/// The vault's link graph, ported from <c>rig.obsidian.link_manager</c> and <c>orphan_manager</c>: broken wikilinks and
+/// The vault's link graph: broken wikilinks and
 /// unlinked mentions, the notes nothing links to, and the PARA hub notes that gather them. A note is a file whose name ends
-/// in <c>.md</c>, matched case-sensitively, found without entering symlinked folders. Links are compared as the Python
-/// compared them, including its quirks: a note's path loses every <c>.md</c> in it, not just its suffix, and exclusions are
+/// in <c>.md</c>, matched case-sensitively, found without entering symlinked folders. Links are compared with these quirks kept: a note's path loses every <c>.md</c> in it, not just its suffix, and exclusions are
 /// substrings, so <c>Home</c> excludes <c>Homework.md</c>.
 /// </summary>
 /// <param name="root">
-/// The vault. <see cref="ListLinks"/> and <see cref="FixLinks"/> look in its <c>Vault</c> folder instead when it has one, as
-/// the Python did.
+/// The vault. <see cref="ListLinks"/> and <see cref="FixLinks"/> look in its <c>Vault</c> folder instead when it has one.
 /// </param>
 /// <param name="say">Receives each line of output, as plain text: a wikilink is printed as written.</param>
 /// <param name="native">The desktop app's own orphan list, preferred when the app has this vault open.</param>
@@ -60,22 +58,22 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
         var paths = notes.Select(n => n.Bare).ToHashSet(StringComparer.Ordinal);
         var stems = ByStem(notes);
         var broken = new List<BrokenLink>();
-        foreach (var note in notes.OrderBy(n => n.Relative, PyText.CodePointOrder))
+        foreach (var note in notes.OrderBy(n => n.Relative, UnicodeText.CodePointOrder))
         {
             if (Read(note) is not { } text)
             {
                 continue;
             }
 
-            var lines = PyText.SplitLines(text);
+            var lines = UnicodeText.SplitLines(text);
             for (var i = 0; i < lines.Count; i++)
             {
                 foreach (Match match in WikiLink().Matches(lines[i]))
                 {
-                    var target = PyText.Strip(match.Groups[1].Value.Split('|')[0].Split('#')[0]);
+                    var target = UnicodeText.Strip(match.Groups[1].Value.Split('|')[0].Split('#')[0]);
                     if (target.Length > 0 && !Resolves(target, paths, stems))
                     {
-                        broken.Add(new BrokenLink(note.Relative, target, i + 1, PyText.Strip(lines[i])));
+                        broken.Add(new BrokenLink(note.Relative, target, i + 1, UnicodeText.Strip(lines[i])));
                     }
                 }
             }
@@ -90,9 +88,9 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
     /// </summary>
     public static IReadOnlyList<UnlinkedMention> FindUnlinkedMentions(string vault)
     {
-        var notes = Notes(vault).OrderBy(n => n.Relative, PyText.CodePointOrder).ToList();
+        var notes = Notes(vault).OrderBy(n => n.Relative, UnicodeText.CodePointOrder).ToList();
         var titles = new Dictionary<string, Note>(StringComparer.Ordinal);
-        foreach (var note in notes.Where(n => PyText.Length(n.Stem) > 4))
+        foreach (var note in notes.Where(n => UnicodeText.Length(n.Stem) > 4))
         {
             titles[note.Stem] = note;
         }
@@ -165,15 +163,15 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
         var fixedCount = 0;
         foreach (var link in broken)
         {
-            if (stems.TryGetValue(link.Target.Split('/')[^1], out var matches) && matches.Count == 1)
+            if (stems[link.Target.Split('/')[^1]].Take(2).ToList() is [var match])
             {
-                say($"Fixing {link.Source}: [[{link.Target}]] -> [[{matches[0]}]]");
+                say($"Fixing {link.Source}: [[{link.Target}]] -> [[{match}]]");
                 if (!rewrites.TryGetValue(link.Source, out var fixes))
                 {
                     rewrites[link.Source] = fixes = [];
                 }
 
-                fixes.Add(($"[[{link.Target}]]", $"[[{matches[0]}]]"));
+                fixes.Add(($"[[{link.Target}]]", $"[[{match}]]"));
                 fixedCount++;
             }
         }
@@ -211,7 +209,7 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
         var listed = await native.ListAsync(root, cancellationToken).ConfigureAwait(false);
         if (listed.Count > 0)
         {
-            return [.. listed.Where(o => !IsExcluded(o)).Order(PyText.CodePointOrder)];
+            return [.. listed.Where(o => !IsExcluded(o)).Order(UnicodeText.CodePointOrder)];
         }
 
         var notes = Notes(root);
@@ -219,7 +217,7 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
         return [.. notes
             .Where(n => !named.Contains(n.Bare) && !named.Contains(n.Stem) && !IsExcluded(n.Relative))
             .Select(n => n.Relative)
-            .Order(PyText.CodePointOrder)];
+            .Order(UnicodeText.CodePointOrder)];
     }
 
     /// <summary><c>graph orphans list</c>: prints each orphan.</summary>
@@ -236,7 +234,7 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
 
     /// <summary>
     /// <c>graph orphans link --apply</c>: appends a link to each orphan to its nearest ancestor hub, the <c>X.md</c> beside a
-    /// folder <c>X</c> holding it. Like the Python it does not look for the link first, so a second run, which finds the same
+    /// folder <c>X</c> holding it. It does not look for the link first, so a second run, which finds the same
     /// orphans, appends it again.
     /// </summary>
     public async Task<OrphanLinkResult> LinkOrphansAsync(CancellationToken cancellationToken = default)
@@ -350,14 +348,14 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
 
             foreach (Match match in WikiLink().Matches(text))
             {
-                var target = PyText.Strip(match.Groups[1].Value.Split('|')[0]);
+                var target = UnicodeText.Strip(match.Groups[1].Value.Split('|')[0]);
                 if (target.Length == 0)
                 {
                     continue;
                 }
 
-                var decoded = PyUrl.Unquote(target);
-                var heading = target.Contains('#', StringComparison.Ordinal) ? PyText.Strip(target.Split('#')[0]) : null;
+                var decoded = VaultUrl.Unquote(target);
+                var heading = target.Contains('#', StringComparison.Ordinal) ? UnicodeText.Strip(target.Split('#')[0]) : null;
                 if (new[] { target, decoded, heading }.FirstOrDefault(t => t is not null && known.Contains(t)) is { } hit)
                 {
                     named.Add(hit);
@@ -368,25 +366,11 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
         return named;
     }
 
-    // A target resolves to a note path as written or to a title; a title only "resolves" to a non-empty path, as in the Python.
-    private static bool Resolves(string target, HashSet<string> paths, Dictionary<string, List<string>> stems) =>
-        paths.Contains(target) || (stems.TryGetValue(target, out var matches) && matches[0].Length > 0);
+    // A target resolves to a note path as written or to a title; a title only "resolves" to a non-empty path.
+    private static bool Resolves(string target, HashSet<string> paths, ILookup<string, string> stems) =>
+        paths.Contains(target) || (stems.Contains(target) && stems[target].First().Length > 0);
 
-    private static Dictionary<string, List<string>> ByStem(List<Note> notes)
-    {
-        var stems = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        foreach (var note in notes)
-        {
-            if (!stems.TryGetValue(note.Stem, out var paths))
-            {
-                stems[note.Stem] = paths = [];
-            }
-
-            paths.Add(note.Bare);
-        }
-
-        return stems;
-    }
+    private static ILookup<string, string> ByStem(List<Note> notes) => notes.ToLookup(note => note.Stem, note => note.Bare, StringComparer.Ordinal);
 
     // Files named *.md, symlinks to files and dangling symlinks included, as os.walk lists them; never a folder.
     private static List<Note> Notes(string vault) =>
@@ -394,7 +378,7 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
             .Where(e => !Directory.Exists(e.FullPath))
             .Select(e => new Note(e.FullPath, e.Relative.ToString(), e.Relative.Stem))];
 
-    // Text as Python read it with errors="ignore": bytes that are not UTF-8 dropped, newlines made universal.
+    // Text with bytes that are not UTF-8 dropped and newlines made universal.
     private static string? Read(Note note)
     {
         try
@@ -407,7 +391,7 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
         }
     }
 
-    // Whether a path exists as pathlib's exists() saw it, following symlinks: a dangling one does not.
+    // Whether a path exists, following symlinks: a dangling one does not.
     private static bool Exists(string path)
     {
         try
@@ -427,7 +411,7 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
 
     private sealed record Note(string FullPath, string Relative, string Stem)
     {
-        // The path as the Python keyed links: every ".md" removed, not only the suffix.
+        // The key links use: every ".md" removed, not only the suffix.
         public string Bare { get; } = Relative.Replace(".md", string.Empty, StringComparison.Ordinal);
     }
 }

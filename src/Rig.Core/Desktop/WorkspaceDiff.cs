@@ -163,7 +163,7 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
     public static string TruncateText(string value, int limit)
     {
         ArgumentNullException.ThrowIfNull(value);
-        return PyText.Length(value) <= limit ? value : PyText.Prefix(value, limit - 3) + "...";
+        return UnicodeText.Length(value) <= limit ? value : UnicodeText.Prefix(value, limit - 3) + "...";
     }
 
     /// <summary>How a captured window reads in the diff: its title and process stem, with its pid.</summary>

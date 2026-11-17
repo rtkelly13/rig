@@ -1,3 +1,4 @@
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Chrome;
@@ -72,7 +73,7 @@ public sealed class SavedConsolidation(IChromeSavedGroupActions actions, IChrome
     {
         try
         {
-            return PyText.SplitLines(File.ReadAllText(marker)).Where(line => line.Length > 0).ToHashSet(StringComparer.Ordinal);
+            return UnicodeText.SplitLines(File.ReadAllText(marker)).Where(line => line.Length > 0).ToHashSet(StringComparer.Ordinal);
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
         {
@@ -84,7 +85,7 @@ public sealed class SavedConsolidation(IChromeSavedGroupActions actions, IChrome
     public static void SetPendingProfiles(string marker, IEnumerable<string> profiles)
     {
         ArgumentNullException.ThrowIfNull(profiles);
-        var sorted = profiles.Distinct(StringComparer.Ordinal).Order(PyText.CodePointOrder).ToList();
+        var sorted = profiles.Distinct(StringComparer.Ordinal).Order(UnicodeText.CodePointOrder).ToList();
         if (sorted.Count == 0)
         {
             File.Delete(marker);
@@ -106,7 +107,7 @@ public sealed class SavedConsolidation(IChromeSavedGroupActions actions, IChrome
                 var result = actions.DeleteSavedGroup(planned.Fullest[delete.Profile], delete.Profile, delete.Title);
                 if (!result.Deleted)
                 {
-                    failed.Add($"{PyText.Repr(delete.Title)} [{delete.Profile}]: {result.Detail}");
+                    failed.Add($"{QuotedText.Str(delete.Title)} [{delete.Profile}]: {result.Detail}");
                     say($"  kept {delete.Title}: {result.Detail}");
                     break;
                 }

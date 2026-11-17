@@ -122,10 +122,10 @@ public sealed class RestoreExecutionPlan
             return null;
         }
 
-        var wanted = Vault.PyText.CaseFold(targetDesktop);
+        var wanted = Vault.UnicodeText.CaseFold(targetDesktop);
         for (var index = 0; index < plan.Desktops.Count; index++)
         {
-            if (Vault.PyText.CaseFold(plan.Desktops[index].Name) == wanted)
+            if (Vault.UnicodeText.CaseFold(plan.Desktops[index].Name) == wanted)
             {
                 return index + 1;
             }

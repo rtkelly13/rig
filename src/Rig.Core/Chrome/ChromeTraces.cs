@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Otel;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Chrome;
@@ -232,7 +233,7 @@ public static partial class ChromeTraces
         var stamp = today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         try
         {
-            if (File.Exists(marker) && PyText.Strip(File.ReadAllText(marker)) == stamp)
+            if (File.Exists(marker) && UnicodeText.Strip(File.ReadAllText(marker)) == stamp)
             {
                 return null;
             }
@@ -283,7 +284,7 @@ public static partial class ChromeTraces
         {
             try
             {
-                lines.AddRange(PyText.SplitLines(File.ReadAllText(file.Path, Encoding.UTF8)));
+                lines.AddRange(UnicodeText.SplitLines(File.ReadAllText(file.Path, Encoding.UTF8)));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -361,7 +362,7 @@ public static partial class ChromeTraces
         ArgumentNullException.ThrowIfNull(found);
         return wanted is null
             ? found.Count > 0 ? found[^1] : null
-            : found.Reverse().FirstOrDefault(run => run.Root.SpanId.StartsWith(PyText.Lower(wanted), StringComparison.Ordinal));
+            : found.Reverse().FirstOrDefault(run => run.Root.SpanId.StartsWith(UnicodeText.Lower(wanted), StringComparison.Ordinal));
     }
 
     /// <summary>The header over <see cref="RenderRuns"/>.</summary>
@@ -500,11 +501,11 @@ public static partial class ChromeTraces
 
     private static string Grouped(TraceRun run) =>
         run.Grouping is "grouped" or "stopped" && run.GroupPlanned is { } planned
-            ? $"{run.Grouping} {PyStr(run.GroupMoved)}/{planned.ToString(CultureInfo.InvariantCulture)}"
+            ? $"{run.Grouping} {YamlString(run.GroupMoved)}/{planned.ToString(CultureInfo.InvariantCulture)}"
             : run.Grouping;
 
     private static string AttributeText(IReadOnlyDictionary<string, object?> attributes, HashSet<string> hidden, int width) =>
-        string.Join(" ", attributes.Where(pair => !hidden.Contains(pair.Key)).Select(pair => $"{pair.Key}={TabPlanText.Clip(PyStr(pair.Value), width)}"));
+        string.Join(" ", attributes.Where(pair => !hidden.Contains(pair.Key)).Select(pair => $"{pair.Key}={TabPlanText.Clip(YamlString(pair.Value), width)}"));
 
     private static List<KeyValuePair<string, int>> Tally(IEnumerable<string> items)
     {
@@ -541,16 +542,16 @@ public static partial class ChromeTraces
     }
 
     // Python's str() of a decoded attribute value.
-    private static string PyStr(object? value) =>
+    private static string YamlString(object? value) =>
         value switch
         {
             null => "None",
             string text => text,
             bool flag => flag ? "True" : "False",
             long whole => whole.ToString(CultureInfo.InvariantCulture),
-            double real => PyFloat.Repr(real),
+            double real => YamlFloat.Repr(real),
             // The only other decoded value is an arrayValue's list.
-            _ => "[" + string.Join(", ", ((IEnumerable<object?>)value).Select(item => item is string text ? PyText.Repr(text) : PyStr(item))) + "]",
+            _ => "[" + string.Join(", ", ((IEnumerable<object?>)value).Select(item => item is string text ? QuotedText.Str(text) : YamlString(item))) + "]",
         };
 
     private static TraceSpan? Span(FileSpan file)
@@ -680,7 +681,7 @@ public static partial class ChromeTraces
         {
             JsonValueKind.Number when value.TryGetValue<long>(out var whole) => whole,
             JsonValueKind.Number when value.TryGetValue<double>(out var real) && real == Math.Floor(real) && Math.Abs(real) < 9.2e18 => (long)real,
-            JsonValueKind.String when long.TryParse(PyText.Strip(value.GetValue<string>()), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed) => parsed,
+            JsonValueKind.String when long.TryParse(UnicodeText.Strip(value.GetValue<string>()), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed) => parsed,
             JsonValueKind.True => 1,
             JsonValueKind.False => 0,
             _ => null,

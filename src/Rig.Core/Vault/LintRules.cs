@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Rig.Core.Vault;
 
-/// <summary>The vault lint's finding codes, ported from <c>rig.obsidian.lint_rules</c>.</summary>
+/// <summary>The vault lint's finding codes.</summary>
 public static class LintCodes
 {
     /// <summary>The frontmatter does not parse.</summary>
@@ -57,7 +57,7 @@ public static class LintCodes
 /// <param name="Severity">Always <c>warning</c> today.</param>
 public sealed record FilenameIssueSpec(string Code, string Reason, string Severity);
 
-/// <summary>The vault lint's filename and type rules, ported from <c>rig.obsidian.lint_rules</c>.</summary>
+/// <summary>The vault lint's filename and type rules.</summary>
 public static partial class LintRules
 {
     private const string Warning = "warning";
@@ -98,7 +98,7 @@ public static partial class LintRules
     public static string PortableWindowsStem(string stem)
     {
         ArgumentNullException.ThrowIfNull(stem);
-        return VaultText.SanitizeFilename(PyText.Lower(stem));
+        return VaultText.SanitizeFilename(UnicodeText.Lower(stem));
     }
 
     /// <summary>Every filename rule <paramref name="stem"/> breaks; the simplify rule only when it breaks no other.</summary>
@@ -106,7 +106,7 @@ public static partial class LintRules
     {
         ArgumentNullException.ThrowIfNull(stem);
         var found = new List<FilenameIssueSpec>();
-        if (VaultText.LooksLikeUrlishStem(stem) || StatusToken().IsMatch(PyText.Lower(stem)))
+        if (VaultText.LooksLikeUrlishStem(stem) || StatusToken().IsMatch(UnicodeText.Lower(stem)))
         {
             found.Add(new(LintCodes.FilenameUrlish, "filename is URL-shaped", Warning));
         }
@@ -154,7 +154,7 @@ public static partial class LintRules
     public static bool NeedsFilenameCleanup(string stem, NotePath? path = null)
     {
         ArgumentNullException.ThrowIfNull(stem);
-        var lower = PyText.Lower(stem);
+        var lower = UnicodeText.Lower(stem);
         return VaultText.LooksLikeUrlishStem(lower)
             || !stem.All(char.IsAscii)
             || stem.Contains('_', StringComparison.Ordinal)

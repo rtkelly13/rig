@@ -173,7 +173,7 @@ public static partial class TabNames
     private static string RStrip(string text)
     {
         var end = text.Length;
-        while (end > 0 && Vault.PyText.IsSpace(text[end - 1]))
+        while (end > 0 && Vault.UnicodeText.IsSpace(text[end - 1]))
         {
             end--;
         }

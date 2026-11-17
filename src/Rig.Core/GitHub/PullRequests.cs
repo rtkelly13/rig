@@ -30,7 +30,7 @@ public sealed partial record PrRef : IComparable<PrRef>
 
     /// <summary>Like <see cref="TryParse"/>, but throws <see cref="FormatException"/> for anything that is not <c>owner/repo#n</c>.</summary>
     public static PrRef Parse(string text) =>
-        TryParse(text) ?? throw new FormatException($"not an owner/repo#n reference: {Vault.PyText.Repr(text)}");
+        TryParse(text) ?? throw new FormatException($"not an owner/repo#n reference: {Text.QuotedText.Str(text)}");
 
     /// <summary><c>owner/repo#n</c>, lowercased; null for anything else, so nothing unvalidated reaches a query.</summary>
     public static PrRef? TryParse(string text)

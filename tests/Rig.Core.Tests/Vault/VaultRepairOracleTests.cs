@@ -195,13 +195,13 @@ public sealed partial class VaultRepairOracleTests
         return new JsonObject { ["meta"] = meta, ["body"] = Frontmatter.Content(text) };
     }
 
-    private static JsonObject Kind(PyValue value) => value switch
+    private static JsonObject Kind(YamlValue value) => value switch
     {
-        PyNone => new() { ["k"] = "null" },
-        PyStr text => new() { ["k"] = "str", ["v"] = text.Text },
-        PyList list => new() { ["k"] = "list", ["items"] = new JsonArray([.. list.Items.Select(i => i is PyStr s ? JsonValue.Create(s.Text) : null)]) },
-        PyDict => new() { ["k"] = "dict" },
-        PyScalar scalar => new() { ["k"] = "scalar", ["v"] = scalar.Rendered },
+        YamlNull => new() { ["k"] = "null" },
+        YamlString text => new() { ["k"] = "str", ["v"] = text.Text },
+        YamlList list => new() { ["k"] = "list", ["items"] = new JsonArray([.. list.Items.Select(i => i is YamlString s ? JsonValue.Create(s.Text) : null)]) },
+        YamlMap => new() { ["k"] = "dict" },
+        YamlScalar scalar => new() { ["k"] = "scalar", ["v"] = scalar.Rendered },
         _ => new() { ["k"] = "other" },
     };
 

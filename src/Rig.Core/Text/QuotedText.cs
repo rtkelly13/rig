@@ -5,10 +5,10 @@ using System.Text.Json.Nodes;
 namespace Rig.Core.Text;
 
 /// <summary>
-/// Python's <c>repr</c> and <c>str</c> of the few values rig's messages print, and pydantic's compact JSON. One copy, so
-/// a message that quoted a value with <c>!r</c> reads the same whichever module writes it.
+/// Quoting of the few values rig's messages print (single-quoted strings, bracketed lists, <c>True</c>, <c>None</c>), and
+/// compact JSON. One copy, so a message reads the same whichever module writes it.
 /// </summary>
-public static class PyRepr
+public static class QuotedText
 {
     /// <summary><c>repr(text)</c>: single quotes, or double when the text holds a single quote and no double one.</summary>
     public static string Str(string text)
@@ -46,7 +46,7 @@ public static class PyRepr
         _ => value.ToString() ?? "None",
     };
 
-    /// <summary>pydantic's <c>dump_json</c>: no spaces, non-ASCII kept as itself.</summary>
+    /// <summary>Compact JSON: no spaces, non-ASCII kept as itself.</summary>
     public static string Json(JsonNode node)
     {
         ArgumentNullException.ThrowIfNull(node);

@@ -149,7 +149,7 @@ public static partial class PlanFiles
         {
             foreach (var (key, value) in layer ?? [])
             {
-                aliases[key] = PyStr(value);
+                aliases[key] = YamlString(value);
             }
         }
 
@@ -190,7 +190,7 @@ public static partial class PlanFiles
     }
 
     // Python's str() of a bundle alias value: text as itself, null as "None", numbers and booleans as Python prints them.
-    private static string PyStr(JsonNode? node) => node switch
+    private static string YamlString(JsonNode? node) => node switch
     {
         null => "None",
         JsonValue value => PlanJsonReader.Text(value, "aliases"),

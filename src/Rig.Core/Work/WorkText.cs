@@ -108,7 +108,7 @@ public static partial class WorkText
             return now - TimeSpan.FromHours((double)amount * hours);
         }
 
-        return IsoTime.ParseIso(text) ?? throw new FormatException($"expected 7d / 24h / 2w or an ISO date, got {PyRepr.Str(text)}");
+        return IsoTime.ParseIso(text) ?? throw new FormatException($"expected 7d / 24h / 2w or an ISO date, got {QuotedText.Str(text)}");
     }
 
     /// <summary>A session state in the few letters the table has room for.</summary>

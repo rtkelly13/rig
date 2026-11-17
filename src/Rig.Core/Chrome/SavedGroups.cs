@@ -80,7 +80,7 @@ public static partial class SavedGroups
     public static ConsolidationPlan PlanConsolidation(IEnumerable<SavedGroup> groups)
     {
         ArgumentNullException.ThrowIfNull(groups);
-        var ordered = groups.OrderBy(group => group.Profile, PyText.CodePointOrder).ThenBy(group => group.Position).ToList();
+        var ordered = groups.OrderBy(group => group.Profile, UnicodeText.CodePointOrder).ThenBy(group => group.Position).ToList();
         var deletes = new List<SavedGroupDelete>();
         var openDuplicates = new List<OpenDuplicate>();
         foreach (var copies in ordered.GroupBy(group => (group.Profile, group.Title)))

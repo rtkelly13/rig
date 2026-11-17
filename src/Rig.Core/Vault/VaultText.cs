@@ -4,8 +4,8 @@ using System.Text.RegularExpressions;
 namespace Rig.Core.Vault;
 
 /// <summary>
-/// The vault's text rules for whitespace, URLs and filename stems, ported from <c>rig.obsidian.utils</c>. Matching is
-/// Python's, through <see cref="PyText"/> and <see cref="PyUrl"/>.
+/// The vault's text rules for whitespace, URLs and filename stems; matching goes through
+/// <see cref="UnicodeText"/> and <see cref="VaultUrl"/>.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054", Justification = "URLs are kept as written; System.Uri normalizes them.")]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1055", Justification = "URLs are kept as written; System.Uri normalizes them.")]
@@ -19,14 +19,14 @@ public static partial class VaultText
     };
 
     /// <summary>Whitespace runs collapsed to one space, and the ends stripped.</summary>
-    public static string CleanWhitespace(string? text) => PyText.Strip(Whitespace().Replace(text ?? string.Empty, " "));
+    public static string CleanWhitespace(string? text) => UnicodeText.Strip(Whitespace().Replace(text ?? string.Empty, " "));
 
     /// <summary>
     /// A stable form of <paramref name="url"/> for spotting duplicates. Tracking parameters, the fragment, a trailing slash,
     /// <c>www.</c>, any user or port are dropped, the scheme and host are lowercased, and X and Twitter status links become
     /// <c>https://x.com/i/status/ID</c>.
     /// </summary>
-    /// <exception cref="FormatException">The URL's netloc is malformed (see <see cref="PyUrl.Split"/>).</exception>
+    /// <exception cref="FormatException">The URL's netloc is malformed (see <see cref="VaultUrl.Split"/>).</exception>
     public static string NormalizeUrl(string? url)
     {
         if (string.IsNullOrEmpty(url))
@@ -34,14 +34,14 @@ public static partial class VaultText
             return string.Empty;
         }
 
-        var parts = PyUrl.Split(CleanUrl(PyText.Strip(url)));
-        var host = PyText.Lower(parts.Hostname);
+        var parts = VaultUrl.Split(CleanUrl(UnicodeText.Strip(url)));
+        var host = UnicodeText.Lower(parts.Hostname);
         if (host.StartsWith("www.", StringComparison.Ordinal))
         {
             host = host[4..];
         }
 
-        var normalized = PyUrl.Unsplit(new UrlParts(PyText.Lower(parts.Scheme), host, parts.Path.TrimEnd('/'), parts.Query, string.Empty));
+        var normalized = VaultUrl.Unsplit(new UrlParts(UnicodeText.Lower(parts.Scheme), host, parts.Path.TrimEnd('/'), parts.Query, string.Empty));
         return TwitterStatus().Replace(normalized, "https://x.com/i/status/$1");
     }
 
@@ -50,7 +50,7 @@ public static partial class VaultText
     {
         try
         {
-            return PyUrl.Split(url).Scheme is "http" or "https";
+            return VaultUrl.Split(url).Scheme is "http" or "https";
         }
         catch (FormatException)
         {
@@ -59,12 +59,12 @@ public static partial class VaultText
     }
 
     /// <summary><paramref name="url"/> without tracking parameters or empty ones; everything else is kept as written.</summary>
-    /// <exception cref="FormatException">The URL's netloc is malformed (see <see cref="PyUrl.Split"/>).</exception>
+    /// <exception cref="FormatException">The URL's netloc is malformed (see <see cref="VaultUrl.Split"/>).</exception>
     public static string CleanUrl(string url)
     {
-        var parts = PyUrl.Split(url);
-        var kept = PyUrl.ParseQuery(parts.Query).Where(field => !TrackingParameters.Contains(PyText.Lower(field.Key)));
-        return PyUrl.Unsplit(parts with { Query = PyUrl.Encode(kept) });
+        var parts = VaultUrl.Split(url);
+        var kept = VaultUrl.ParseQuery(parts.Query).Where(field => !TrackingParameters.Contains(UnicodeText.Lower(field.Key)));
+        return VaultUrl.Unsplit(parts with { Query = VaultUrl.Encode(kept) });
     }
 
     /// <summary>
@@ -73,21 +73,21 @@ public static partial class VaultText
     /// </summary>
     public static string SanitizeFilename(string? stem, int maxLength = 120)
     {
-        var s = PyText.Strip(stem ?? string.Empty);
+        var s = UnicodeText.Strip(stem ?? string.Empty);
         s = ReservedFilenameChars().Replace(s, "-");
         s = Whitespace().Replace(s, " ");
-        s = PyText.Strip(s, " .");
+        s = UnicodeText.Strip(s, " .");
         s = RepeatedDots().Replace(s, ".");
         s = s.Replace('.', '-');
-        s = PyText.Strip(RepeatedHyphens().Replace(s, "-"), "-");
+        s = UnicodeText.Strip(RepeatedHyphens().Replace(s, "-"), "-");
         if (s.Length == 0)
         {
             s = "Untitled";
         }
 
-        if (PyText.Length(s) > maxLength)
+        if (UnicodeText.Length(s) > maxLength)
         {
-            s = PyText.Prefix(s, maxLength).TrimEnd(' ', '.', '-');
+            s = UnicodeText.Prefix(s, maxLength).TrimEnd(' ', '.', '-');
         }
 
         return s;
@@ -97,13 +97,13 @@ public static partial class VaultText
     public static bool LooksLikeUrl(string? value)
     {
         var s = CleanWhitespace(value);
-        return s.Length > 0 && (IsHttpUrl(s) || DomainLike().IsMatch(PyText.Lower(s)));
+        return s.Length > 0 && (IsHttpUrl(s) || DomainLike().IsMatch(UnicodeText.Lower(s)));
     }
 
     /// <summary>Whether a filename stem still looks like a URL after sanitizing, such as <c>https---example.com-page</c>.</summary>
     public static bool LooksLikeUrlishStem(string? value)
     {
-        var s = PyText.Lower(PyText.Strip(CleanWhitespace(value), "-_. "));
+        var s = UnicodeText.Lower(UnicodeText.Strip(CleanWhitespace(value), "-_. "));
         if (s.Length == 0)
         {
             return false;
@@ -129,7 +129,7 @@ public static partial class VaultText
         s = AsciiOnly(s.Normalize(NormalizationForm.FormKD));
         s = Apostrophes().Replace(s, string.Empty);
         s = NonAlphanumeric().Replace(s, "-");
-        s = PyText.Lower(PyText.Strip(RepeatedHyphens().Replace(s, "-"), "-"));
+        s = UnicodeText.Lower(UnicodeText.Strip(RepeatedHyphens().Replace(s, "-"), "-"));
         if (s.Length == 0)
         {
             return "untitled";
@@ -143,7 +143,7 @@ public static partial class VaultText
         return s.Length == 0 ? "untitled" : s;
     }
 
-    // Python's s.encode("ascii", "ignore").decode("ascii").
+    // Drops every non-ASCII character.
     private static string AsciiOnly(string s)
     {
         var builder = new StringBuilder(s.Length);
@@ -155,7 +155,7 @@ public static partial class VaultText
         return builder.ToString();
     }
 
-    [GeneratedRegex($"[{PyText.Space}]+")]
+    [GeneratedRegex($"[{UnicodeText.Space}]+")]
     internal static partial Regex Whitespace();
 
     [GeneratedRegex(@"https?://(?:x|twitter)\.com/[^/]+/status/(\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

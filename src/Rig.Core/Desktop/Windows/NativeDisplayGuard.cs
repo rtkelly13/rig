@@ -106,7 +106,7 @@ public sealed class NativeDisplayGuardPorts : IDisplayGuardPorts
                     continue;
                 }
 
-                var title = PyText.Strip(_win32.Title(handle) ?? string.Empty);
+                var title = UnicodeText.Strip(_win32.Title(handle) ?? string.Empty);
                 if (title.Length == 0 || WindowInventory.IgnoredWindowTitles.Contains(title) || _win32.IsToolWindow(handle))
                 {
                     continue;
@@ -124,7 +124,7 @@ public sealed class NativeDisplayGuardPorts : IDisplayGuardPorts
                     processNames[pid] = processName;
                 }
 
-                if (processName is { Length: > 0 } && WindowInventory.IgnoredProcessNames.Contains(PyText.Lower(processName)))
+                if (processName is { Length: > 0 } && WindowInventory.IgnoredProcessNames.Contains(UnicodeText.Lower(processName)))
                 {
                     continue;
                 }

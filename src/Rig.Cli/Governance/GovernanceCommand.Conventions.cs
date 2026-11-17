@@ -210,16 +210,16 @@ internal sealed partial class GovernanceCommand
         var names = CheckNames.Inspect(target, slug, policies);
         if (names.Registered && names.Status == "no_pr_workflows")
         {
-            await output.WriteLineAsync($"✗ {slug}: refusing to set required checks {PyRepr.List(names.Required)} — no pull_request workflow exists to report them")
+            await output.WriteLineAsync($"✗ {slug}: refusing to set required checks {QuotedText.List(names.Required)} — no pull_request workflow exists to report them")
                 .ConfigureAwait(false);
             return new("blocked_no_pr_workflows", []);
         }
 
         if (names.Registered && names.Missing.Count > 0)
         {
-            await output.WriteLineAsync($"✗ {slug}: refusing to set required checks {PyRepr.List(names.Missing)} — no pull_request job declares them").ConfigureAwait(false);
+            await output.WriteLineAsync($"✗ {slug}: refusing to set required checks {QuotedText.List(names.Missing)} — no pull_request job declares them").ConfigureAwait(false);
             await output.WriteLineAsync(
-                $"   declared: {PyRepr.List(names.Declared.Keys.Order(StringComparer.Ordinal))} — run 'repo-governance check-names' and fix the map or the job name")
+                $"   declared: {QuotedText.List(names.Declared.Keys.Order(StringComparer.Ordinal))} — run 'repo-governance check-names' and fix the map or the job name")
                 .ConfigureAwait(false);
             return new("blocked_stale_check_names", []);
         }

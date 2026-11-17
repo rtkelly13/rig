@@ -102,10 +102,10 @@ public static class ReplayOffsets
     public static string Render(IReadOnlyDictionary<string, ReplayOffset> offsets)
     {
         ArgumentNullException.ThrowIfNull(offsets);
-        var w = new PyJsonWriter();
+        var w = new IndentedJsonWriter();
         _ = w.Object(() =>
         {
-            foreach (var key in offsets.Keys.Order(PyText.CodePointOrder))
+            foreach (var key in offsets.Keys.Order(UnicodeText.CodePointOrder))
             {
                 var offset = offsets[key];
                 _ = w.Key(key).Object(() => w.Key("inode").Number(offset.Inode).Key("sent").Number(offset.Sent).Key("head").String(offset.Head));

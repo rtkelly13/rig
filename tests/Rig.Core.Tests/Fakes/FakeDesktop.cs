@@ -230,12 +230,12 @@ public sealed class FakeDesktop : IDesktopPort
     /// <inheritdoc/>
     public IReadOnlyList<string> RetireSwitchedOffDesktops(int keepCount, IReadOnlyList<string> retiredNames)
     {
-        var wanted = retiredNames.Select(PyText.CaseFold).ToHashSet(StringComparer.Ordinal);
+        var wanted = retiredNames.Select(UnicodeText.CaseFold).ToHashSet(StringComparer.Ordinal);
         var removed = new List<string>();
         for (var index = DesktopNames.Count; index > 0; index--)
         {
             var name = DesktopNames[index - 1];
-            if (!wanted.Contains(PyText.CaseFold(name)) || DesktopNames.Count == 1)
+            if (!wanted.Contains(UnicodeText.CaseFold(name)) || DesktopNames.Count == 1)
             {
                 continue;
             }
@@ -337,8 +337,8 @@ public sealed class FakeDesktop : IDesktopPort
     /// <inheritdoc/>
     public int BringProcessWindowsToFront(IReadOnlySet<string> processNames)
     {
-        var wanted = processNames.Select(PyText.CaseFold).ToHashSet(StringComparer.Ordinal);
-        return Visible().Count(window => wanted.Contains(PyText.CaseFold(window.ProcessName)));
+        var wanted = processNames.Select(UnicodeText.CaseFold).ToHashSet(StringComparer.Ordinal);
+        return Visible().Count(window => wanted.Contains(UnicodeText.CaseFold(window.ProcessName)));
     }
 
     /// <inheritdoc/>
@@ -381,7 +381,7 @@ public sealed class FakeDesktop : IDesktopPort
     private static string ProcessOf(LaunchEntry entry) =>
         !string.IsNullOrEmpty(entry.WindowProcessName) ? entry.WindowProcessName : WindowReuse.WindowsFileName(string.IsNullOrEmpty(entry.Path) ? entry.Name : entry.Path);
 
-    private static bool SameProcess(FakeWindow window, string processName) => PyText.CaseFold(window.ProcessName) == PyText.CaseFold(processName);
+    private static bool SameProcess(FakeWindow window, string processName) => UnicodeText.CaseFold(window.ProcessName) == UnicodeText.CaseFold(processName);
 
     private long NewHandle() => ++_nextHandle;
 

@@ -243,20 +243,20 @@ public static class ReviewToolConfigs
     // True only when the YAML sets reviews.auto_review.enabled to exactly false.
     private static bool AutoReviewDisabled(string file)
     {
-        PyValue? parsed;
+        YamlValue? parsed;
         try
         {
-            parsed = PyYaml.Load(Licenses.ReadText(file));
+            parsed = VaultYaml.Load(Licenses.ReadText(file));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or PyYamlException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or VaultYamlException)
         {
             return false;
         }
 
-        return Lookup(Lookup(Lookup(parsed, "reviews"), "auto_review"), "enabled") is PyScalar { Rendered: "False" };
+        return Lookup(Lookup(Lookup(parsed, "reviews"), "auto_review"), "enabled") is YamlScalar { Rendered: "False" };
 
-        static PyValue? Lookup(PyValue? value, string key) =>
-            value is PyDict dict ? dict.Entries.FirstOrDefault(entry => entry.Key is PyStr { Text: var text } && text == key).Value : null;
+        static YamlValue? Lookup(YamlValue? value, string key) =>
+            value is YamlMap dict ? dict.Entries.FirstOrDefault(entry => entry.Key is YamlString { Text: var text } && text == key).Value : null;
     }
 
     private static (bool Changed, string Message) Create(string repoPath, string name, string content, bool dryRun)

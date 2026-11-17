@@ -1,5 +1,5 @@
 using System.Globalization;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 
@@ -319,7 +319,7 @@ public static class Placement
         var where = $"{desktopName}/{entry.Name}";
         if (!CommandAtLogonValues.Contains(mode, StringComparer.Ordinal))
         {
-            return [$"{where}: command_at_logon must be one of {string.Join(", ", CommandAtLogonValues)}, not {PyText.Repr(mode)}"];
+            return [$"{where}: command_at_logon must be one of {string.Join(", ", CommandAtLogonValues)}, not {QuotedText.Str(mode)}"];
         }
 
         return entry.DefersCommandAtLogon && (entry.Type != LaunchEntry.Terminal || entry.Shell != LaunchEntry.DefaultTerminalShell)

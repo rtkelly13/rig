@@ -38,7 +38,7 @@ public sealed record KnowledgeServerPlaces(string Home, string AppData)
 }
 
 /// <summary>
-/// One OpenKnowledge server for the vault, shared by every Claude session, ported from <c>rig.obsidian.knowledge_server</c>.
+/// One OpenKnowledge server for the vault, shared by every Claude session.
 /// Registered as a stdio server, OpenKnowledge starts <c>npx … ok mcp</c> in every session, about 120 MB each; one resident
 /// <c>ok start</c> on a fixed port serves the same tools at <c>/mcp</c> to any number of sessions, and its editor at <c>/</c>.
 /// The server is rooted at the vault and answers only for it. It runs as a macOS LaunchAgent; the platform check is the
@@ -91,7 +91,7 @@ public sealed class KnowledgeServer(IProc proc, Launchd launchd, KnowledgeServer
     /// <summary>The LaunchAgent's plist.</summary>
     public string PlistPath => Path.Join(launchd.AgentsDir, $"{Label}.plist");
 
-    // npm's folder for the scoped package, with this platform's separators throughout, as pathlib gives it.
+    // npm's folder for the scoped package, with this platform's separators throughout.
     private static string PackageDir(string prefix) =>
         Path.Join([prefix, "node_modules", .. Package.Split('/')]);
 
@@ -204,7 +204,7 @@ public sealed class KnowledgeServer(IProc proc, Launchd launchd, KnowledgeServer
 
     /// <summary>
     /// The user-scope entry in the text of <c>~/.claude.json</c>. A file that is not a JSON object, or a value of the wrong
-    /// type, reads as absent, as pydantic's lenient decode did; where a key repeats, the last one counts.
+    /// type, reads as absent; where a key repeats, the last one counts.
     /// </summary>
     public static Registration ReadRegistration(byte[] text)
     {
@@ -248,7 +248,7 @@ public sealed class KnowledgeServer(IProc proc, Launchd launchd, KnowledgeServer
         return have.Transport is null ? [add] : [[claude, "mcp", "remove", "--scope", "user", ServerName], add];
     }
 
-    // The JSON document, or null when it is not UTF-8 JSON. pydantic refused a byte-order mark and invalid UTF-8 anywhere.
+    // The JSON document, or null when it is not UTF-8 JSON. a byte-order mark or invalid UTF-8 anywhere is refused.
     private static JsonElement? Parse(byte[] text)
     {
         if (text.AsSpan().StartsWith(Bom) || !Utf8.IsValid(text))
