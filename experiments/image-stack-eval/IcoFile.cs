@@ -1,6 +1,6 @@
 namespace ImageStackEval;
 
-/// <summary>A minimal PNG-in-ICO container: what a port needs because neither ImageSharp nor SkiaSharp writes ICO.</summary>
+/// <summary>A minimal PNG-in-ICO container: what a port needs because SkiaSharp cannot write ICO, and ImageSharp writes only the single-frame form.</summary>
 public static class IcoFile
 {
     public sealed record Entry(int Size, byte[] Png);

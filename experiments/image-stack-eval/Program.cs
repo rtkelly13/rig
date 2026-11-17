@@ -161,7 +161,7 @@ public static class Program
         var doc = ReferenceDocument.Load(Path.Combine(refDir, "reference.json"));
         var md = new StringBuilder();
         var imageSharp = new ImageSharpLibrary(label: "ImageSharp (Bicubic)");
-        var imageSharpCr = new ImageSharpLibrary(KnownResamplers.CatmullRom, "ImageSharp (CatmullRom)");
+        var imageSharpLanczos = new ImageSharpLibrary(KnownResamplers.Lanczos3, "ImageSharp (Lanczos3, as Pillow's ICO writer)");
         var skCubic = new SkiaSharpLibrary(new SKSamplingOptions(SKCubicResampler.CatmullRom), "SkiaSharp (CatmullRom cubic)");
         var skMip = new SkiaSharpLibrary(new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear), "SkiaSharp (linear + mipmaps)");
 
@@ -202,7 +202,6 @@ public static class Program
         var controls = new List<(string Name, IRasterLibrary Lib)>
         {
             ("control: ImageSharp (Bicubic) over Python renders", imageSharp),
-            ("control: ImageSharp (CatmullRom) over Python renders", imageSharpCr),
             ("control: SkiaSharp (CatmullRom cubic) over Python renders", skCubic),
             ("control: SkiaSharp (linear + mipmaps) over Python renders", skMip),
         };
@@ -371,7 +370,7 @@ public static class Program
         {
             var ico = IcoFile.Read(File.ReadAllBytes(Path.Combine(repo, "assets", project, "production-cuts", "favicon.ico")));
             Raster source = Py($"{project}.favicon.48");
-            foreach (var lib in new IRasterLibrary[] { imageSharp, imageSharpCr, skCubic, skMip })
+            foreach (var lib in new IRasterLibrary[] { imageSharp, imageSharpLanczos, skCubic, skMip })
             {
                 foreach (var entry in ico)
                 {

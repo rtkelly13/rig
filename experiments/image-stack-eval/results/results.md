@@ -129,7 +129,6 @@ Absolute difference from the Python value, worst case over the four (project x r
 | Row | rmse_pct | ssim | psnr_db | lum_rmse_pct | chrom_rmse_pct | chrom/lum ratio | edge_corr | boundary_bias | composite_pct | hotspots agree |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | control: ImageSharp (Bicubic) over Python renders | 0.0138 | 0.000177 | 0.0219 | 0.0015 | 0.00901 | 0.00192 | 0.017 | 0.00129 | 0.022 | 4/4 |
-| control: ImageSharp (CatmullRom) over Python renders | 0.0138 | 0.000177 | 0.0219 | 0.0015 | 0.00901 | 0.00192 | 0.017 | 0.00129 | 0.022 | 4/4 |
 | control: SkiaSharp (CatmullRom cubic) over Python renders | 0.288 | 0.00544 | 0.444 | 0.368 | 0.00546 | 0.0549 | 0.705 | 0.0315 | 0.421 | 4/4 |
 | control: SkiaSharp (linear + mipmaps) over Python renders | 0.0623 | 0.000692 | 0.0994 | 0.085 | 0.00512 | 0.0139 | 0.327 | 0.0172 | 0.0738 | 4/4 |
 | 1. ImageSharp + Playwright | 0.0138 | 0.000177 | 0.0219 | 0.0015 | 0.00901 | 0.00192 | 0.017 | 0.00129 | 0.022 | 4/4 |
@@ -178,9 +177,9 @@ Incumbent = the governed master, candidate = each pathway, scored against the pr
 | ImageSharp (Bicubic) | rtkelly-labs 16px | 15 | 1.466 | 63.67% |
 | ImageSharp (Bicubic) | rtkelly-labs 32px | 15 | 0.7637 | 45.7% |
 | ImageSharp (Bicubic) | rtkelly-labs 48px | 0 | 0 | 0% |
-| ImageSharp (CatmullRom) | rtkelly-labs 16px | 15 | 1.466 | 63.67% |
-| ImageSharp (CatmullRom) | rtkelly-labs 32px | 15 | 0.7637 | 45.7% |
-| ImageSharp (CatmullRom) | rtkelly-labs 48px | 0 | 0 | 0% |
+| ImageSharp (Lanczos3, as Pillow's ICO writer) | rtkelly-labs 16px | 1 | 0.05371 | 19.14% |
+| ImageSharp (Lanczos3, as Pillow's ICO writer) | rtkelly-labs 32px | 2 | 0.0564 | 18.85% |
+| ImageSharp (Lanczos3, as Pillow's ICO writer) | rtkelly-labs 48px | 0 | 0 | 0% |
 | SkiaSharp (CatmullRom cubic) | rtkelly-labs 16px | 102 | 6.55 | 62.11% |
 | SkiaSharp (CatmullRom cubic) | rtkelly-labs 32px | 33 | 1.531 | 46.09% |
 | SkiaSharp (CatmullRom cubic) | rtkelly-labs 48px | 0 | 0 | 0% |
@@ -190,9 +189,9 @@ Incumbent = the governed master, candidate = each pathway, scored against the pr
 | ImageSharp (Bicubic) | parquet-source-generator 16px | 16 | 1.923 | 80.47% |
 | ImageSharp (Bicubic) | parquet-source-generator 32px | 53 | 2.123 | 56.15% |
 | ImageSharp (Bicubic) | parquet-source-generator 48px | 59 | 2.186 | 40.54% |
-| ImageSharp (CatmullRom) | parquet-source-generator 16px | 16 | 1.923 | 80.47% |
-| ImageSharp (CatmullRom) | parquet-source-generator 32px | 53 | 2.123 | 56.15% |
-| ImageSharp (CatmullRom) | parquet-source-generator 48px | 59 | 2.186 | 40.54% |
+| ImageSharp (Lanczos3, as Pillow's ICO writer) | parquet-source-generator 16px | 13 | 1.047 | 65.62% |
+| ImageSharp (Lanczos3, as Pillow's ICO writer) | parquet-source-generator 32px | 51 | 1.731 | 50.88% |
+| ImageSharp (Lanczos3, as Pillow's ICO writer) | parquet-source-generator 48px | 59 | 2.186 | 40.54% |
 | SkiaSharp (CatmullRom cubic) | parquet-source-generator 16px | 100 | 7.068 | 81.25% |
 | SkiaSharp (CatmullRom cubic) | parquet-source-generator 32px | 55 | 2.573 | 55.37% |
 | SkiaSharp (CatmullRom cubic) | parquet-source-generator 48px | 59 | 2.186 | 40.54% |
@@ -208,7 +207,7 @@ A hand-written PNG-in-ICO container (`IcoFile.Write`, about 25 lines) round-trip
 
 | Renderer | Cold (construct + first 500 px render) | Warm 500 px render (median of 5) |
 |---|---:|---:|
-| Playwright (.NET), Chromium launched once | 2.63 s | 0.095 s |
-| Svg.Skia | 1.11 s | 0.038 s |
+| Playwright (.NET), Chromium launched once | 1.82 s | 0.096 s |
+| Svg.Skia | 0.33 s | 0.013 s |
 | Python Playwright reference (same Chromium) | launch 0.45 s | 0.202 s (500 px, mean of two) |
 

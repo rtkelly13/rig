@@ -30,7 +30,7 @@ Measured on macOS arm64, .NET 10, the same Chromium (headless shell rev 1248) fo
 | Render max abs diff vs Python (0..255) | 0 | 1 to 76 | 1 to 76 |
 | Render mean abs diff | 0 | 0.02 to 0.60 | 0.02 to 0.60 |
 | Differing pixels | 0% on all 23 | 2.6% to 14.2% on 21 of 23 (0% on the two autotraced SVGs) | same as 2 |
-| Committed production cuts reproduced exactly | 11 of 18 (same as Python on this machine) | 0 of 18 | 0 of 18 |
+| Committed PNG cuts reproduced exactly | 11 of 18 (identical to Python's own result) | 0 of 18 | 0 of 18 |
 | Worst metric error: RMSE % / SSIM / PSNR dB | 0.014 / 0.00018 / 0.022 | 0.307 / 0.0058 / 0.474 (cubic); 0.042 / 0.00041 / 0.076 (mipmap) | 0.021 / 0.00032 / 0.033 |
 | Worst luminance / chrominance RMSE % | 0.0015 / 0.0090 | 0.397 / 0.0047 (cubic) | 0.030 / 0.0083 |
 | Worst edge correlation / composite % | 0.017 / 0.022 | 0.879 / 0.462 (cubic) | 0.182 / 0.042 |
@@ -38,15 +38,16 @@ Measured on macOS arm64, .NET 10, the same Chromium (headless shell rev 1248) fo
 | Narrowest promotion margin shift | under 0.001pp | up to 0.18pp (composite), 0.05pp (feature) | up to 0.04pp |
 | Native deps | Chromium (already required by Python) plus the Playwright driver | SkiaSharp natives per OS | SkiaSharp natives per OS (Svg.Skia needs them) |
 | Package size (nupkgs) | Playwright 211 MB, ImageSharp 1.4 MB, plus Chromium (203 MB headless shell) | SkiaSharp 9 MB plus natives (7 MB macOS, 79 MB win32 nupkg), Svg.Skia 0.8 MB plus Svg.* 3 MB | as 2 plus ImageSharp 1.4 MB |
-| Cold start, whole process (3 runs) | 0.7 to 2.9 s (first run 2.9 s) | 0.4 to 0.7 s | 0.34 s |
+| Cold start, whole process (3 runs, Debug build via `dotnet <dll>`) | 0.7 to 2.9 s (first run 2.9 s) | 0.4 to 0.7 s | 0.34 s |
 | Warm 500 px render | 0.085 s (Python: 0.20 s) | 0.014 s | 0.014 s |
-| Licence | Apache-2.0 + Six Labors Split | MIT, BSD-3 (Skia) | MIT + Six Labors Split |
-| ICO writer | ImageSharp has an `IcoEncoder`; hand-written container also works | none in SkiaSharp (Encode returns null); hand-written container | as 1 |
+| Licence | Playwright MIT, ImageSharp Six Labors Split | SkiaSharp, Svg.Skia, Svg.Model, Svg.Scenegraph MIT; **Svg.Custom MS-PL** (in the Svg.Skia dependency tree) | as 2, plus ImageSharp Six Labors Split |
+| ICO writer | ImageSharp has an `IcoEncoder` (single-frame probe works); Pillow builds the 32 and 16 entries with a Lanczos thumbnail and ImageSharp Lanczos3 matches the rtkelly-labs entries to within 2 levels (not exactly; 19% of pixels differ by 1 to 2); a hand-written PNG-in-ICO container also works | none in SkiaSharp (Encode returns null); hand-written container; resize differs by up to 100 levels | as 1 |
 
 The SkiaSharp row also has a mipmap-resize variant (2b). Metric deltas in the table are the cubic variant unless
 stated. Every row's metrics are compared with Python's own float values: the control rows (C# metrics over Python
-PNGs) show the port itself is faithful, with the residual 0.014 RMSE-percentage-point error coming from the ImageSharp
-bicubic resize versus Pillow's bicubic, not the metric code.
+PNGs) bound the error that is not the renderer: at most 0.014 RMSE percentage points and 0.00018 SSIM. That residual
+is the sum of the metric port, the resize and the JPEG decode of the second reference file; the harness does not
+separate them.
 
 ### vtracer
 
@@ -68,8 +69,10 @@ flag set and a different output, so it is not a drop-in. Windows x64 execution w
 **Stack 1: ImageSharp + Microsoft.Playwright.**
 
 - It is the only stack that is pixel-identical to Python: 0 differing pixels on all 23 renders, because the
-  renderer is the same Chromium. Nothing about [ADR 0009](0009-deterministic-svg-render-pipeline.md)'s
-  determinism changes.
+  renderer is the same Chromium. That covers the render path. The ICO path is not yet bit-exact: ImageSharp's
+  Lanczos3 resize is within 2 levels of Pillow's, so `favicon.ico` entries below 48 px would change by a
+  rounding step unless the resize is matched exactly. [ADR 0009](0009-deterministic-svg-render-pipeline.md)'s
+  byte-identical guarantee is therefore met for renders and not yet for the 32 and 16 px icon entries.
 - Svg.Skia is a different renderer. It differs on 3 to 14% of pixels (up to 76 levels at 180 px) and reproduces
   none of the committed cuts. No promotion verdict flips, so it would pass the current gate, but every production
   cut would change, which is the cost ADR 0022 named.
@@ -89,9 +92,15 @@ If the owner accepts this, ADR 0022 item 7 is superseded for `image_drift`. vtra
 - **`scour` and `shapely`.** `image_drift` also uses them (SVG optimisation, regularising, parametric geometry).
   This evaluation covers render, raster and metrics, not those two; a port needs its own answer for each.
 - **Inline test-fixture SVGs.** Only the committed brand SVGs and pathway outputs were rendered.
-- **A baseline caveat.** On this machine even Python/Chromium reproduces only 11 of 18 committed cuts exactly
-  (parquet avatar, apple-touch-icon and the 16/32/48 favicons differ), so committed cuts were produced with a
-  different Chromium, platform or path. Stack 1 equals Python, not the committed bytes.
+- **A baseline caveat.** Python/Chromium reproduces only 11 of 18 committed PNG cuts, and the same 11 under
+  stack 1. The seven it misses (rtkelly-labs favicon-512, parquet avatar 500 and 180, apple-touch-icon, favicon
+  48/32/16) are not renderer noise: the builder SVGs are byte-identical to the committed ones, and the committed
+  rtkelly-labs favicon-512 shows different artwork (different gradients on the loops), so those files are stale
+  against the current builders. The committed parquet `favicon.ico` is stale the same way, which makes its
+  entries unusable as an ICO oracle; the rtkelly-labs ICO is the usable one. Stack 1 equals Python, not those bytes.
+- **pathways.py thresholds.** It has no score threshold to flip. The only comparison on a score is the strict
+  `loss < best_loss` tie-break in the `fitted` pathway's parameter walk, which is the pathway that was not run.
+  Its sensitivity to metric noise is unmeasured.
 
 ## Consequences
 
