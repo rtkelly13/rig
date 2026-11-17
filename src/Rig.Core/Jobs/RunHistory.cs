@@ -209,21 +209,21 @@ public static partial class RunHistory
             using var document = JsonDocument.Parse(line);
             var stored = document.RootElement;
             if (stored.ValueKind != JsonValueKind.Object
-                || Text(stored, "job") is not { } job
-                || Text(stored, "run_id") is not { } runId
-                || Text(stored, "started") is not { } started
+                || JsonShape.Text(stored, "job") is not { } job
+                || JsonShape.Text(stored, "run_id") is not { } runId
+                || JsonShape.Text(stored, "started") is not { } started
                 || !stored.TryGetProperty("seconds", out var seconds)
                 || seconds.ValueKind != JsonValueKind.Number
                 || !seconds.TryGetDouble(out var value)
-                || Text(stored, "trigger") is not { } trigger)
+                || JsonShape.Text(stored, "trigger") is not { } trigger)
             {
                 return null;
             }
 
-            return new JobRun(job, runId, started, value, Integer(stored, "returncode"), trigger, Text(stored, "error"), Text(stored, "output") ?? string.Empty)
+            return new JobRun(job, runId, started, value, JsonShape.StrictInteger(stored, "returncode"), trigger, JsonShape.Text(stored, "error"), JsonShape.Text(stored, "output") ?? string.Empty)
             {
-                TraceId = Text(stored, "trace_id") ?? string.Empty,
-                SpanId = Text(stored, "span_id") ?? string.Empty,
+                TraceId = JsonShape.Text(stored, "trace_id") ?? string.Empty,
+                SpanId = JsonShape.Text(stored, "span_id") ?? string.Empty,
             };
         }
         catch (JsonException)
@@ -231,18 +231,6 @@ public static partial class RunHistory
             return null;
         }
     }
-
-    private static string? Text(JsonElement parent, string name) =>
-        parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-
-    // StrictInt: a number written without a point or exponent; 3.0 and true are not.
-    private static long? Integer(JsonElement parent, string name) =>
-        parent.TryGetProperty(name, out var value)
-        && value.ValueKind == JsonValueKind.Number
-        && value.GetRawText().IndexOfAny(['.', 'e', 'E']) < 0
-        && value.TryGetInt64(out var number)
-            ? number
-            : null;
 
     // serde_json's escaping: the quote, the backslash and control characters; everything else as itself.
     private static string Quote(string value)

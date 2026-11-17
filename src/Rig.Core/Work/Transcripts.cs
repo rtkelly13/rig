@@ -143,9 +143,6 @@ internal static class Transcripts
             _ => false,
         };
 
-    private static string? Text(JsonElement parent, string name) =>
-        parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-
     private static string? NonEmpty(string? text) => string.IsNullOrEmpty(text) ? null : text;
 
     private static Entry? Parse(string line)
@@ -180,22 +177,22 @@ internal static class Transcripts
                 }
                 else if (content.ValueKind == JsonValueKind.Array)
                 {
-                    blocks = [.. content.EnumerateArray().Where(block => block.ValueKind == JsonValueKind.Object).Select(block => Text(block, "type"))];
+                    blocks = [.. content.EnumerateArray().Where(block => block.ValueKind == JsonValueKind.Object).Select(block => JsonShape.Text(block, "type"))];
                 }
             }
 
             return new Entry(
-                Text(root, "type"),
-                Text(root, "cwd"),
-                Text(root, "entrypoint"),
-                Text(root, "timestamp"),
+                JsonShape.Text(root, "type"),
+                JsonShape.Text(root, "cwd"),
+                JsonShape.Text(root, "entrypoint"),
+                JsonShape.Text(root, "timestamp"),
                 text,
                 blocks,
                 Truthy(root, "isCompactSummary"),
                 Truthy(root, "isMeta"),
-                Text(root, "customTitle"),
-                Text(root, "aiTitle"),
-                Text(root, "summary"));
+                JsonShape.Text(root, "customTitle"),
+                JsonShape.Text(root, "aiTitle"),
+                JsonShape.Text(root, "summary"));
         }
     }
 

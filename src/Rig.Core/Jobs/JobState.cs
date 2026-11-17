@@ -141,9 +141,9 @@ public static class JobState
     public static RunRecord? ReadRun(string path)
     {
         if (Parse(path) is not { ValueKind: JsonValueKind.Object } root
-            || Text(root, "run_id") is not { } runId
-            || Text(root, "trigger") is not { } trigger
-            || Text(root, "started") is not { } started
+            || JsonShape.Text(root, "run_id") is not { } runId
+            || JsonShape.Text(root, "trigger") is not { } trigger
+            || JsonShape.Text(root, "started") is not { } started
             || !root.TryGetProperty("decisions", out var list)
             || list.ValueKind != JsonValueKind.Array)
         {
@@ -154,10 +154,10 @@ public static class JobState
         foreach (var item in list.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object
-                || Text(item, "job") is not { } job
+                || JsonShape.Text(item, "job") is not { } job
                 || !item.TryGetProperty("ran", out var ran)
                 || ran.ValueKind is not (JsonValueKind.True or JsonValueKind.False)
-                || Text(item, "reason") is not { } reason)
+                || JsonShape.Text(item, "reason") is not { } reason)
             {
                 return null;
             }
@@ -165,7 +165,7 @@ public static class JobState
             decisions.Add(new Decision(job, ran.GetBoolean(), reason, item.TryGetProperty("outcome", out var outcome) ? ReadOutcome(outcome) : null));
         }
 
-        return new RunRecord(runId, trigger, started, Text(root, "finished"), decisions);
+        return new RunRecord(runId, trigger, started, JsonShape.Text(root, "finished"), decisions);
     }
 
     /// <summary>Writes <paramref name="run"/> to <paramref name="path"/>.</summary>
@@ -246,37 +246,24 @@ public static class JobState
     private static Outcome? ReadOutcome(JsonElement stored)
     {
         if (stored.ValueKind != JsonValueKind.Object
-            || Text(stored, "started") is not { } started
+            || JsonShape.Text(stored, "started") is not { } started
             || IsoStamp.Parse(started) is null
             || !stored.TryGetProperty("seconds", out var seconds)
             || seconds.ValueKind != JsonValueKind.Number
             || !seconds.TryGetDouble(out var value)
-            || Text(stored, "trigger") is not { } trigger)
+            || JsonShape.Text(stored, "trigger") is not { } trigger)
         {
             return null;
         }
 
-        return new Outcome(started, value, Integer(stored, "returncode"), trigger)
+        return new Outcome(started, value, JsonShape.StrictInteger(stored, "returncode"), trigger)
         {
-            Error = Text(stored, "error"),
-            RunId = Text(stored, "run_id"),
-            Summary = Text(stored, "summary"),
+            Error = JsonShape.Text(stored, "error"),
+            RunId = JsonShape.Text(stored, "run_id"),
+            Summary = JsonShape.Text(stored, "summary"),
             Detail = Lines(stored, "detail"),
         };
     }
-
-    private static string? Text(JsonElement parent, string name) =>
-        parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-
-    // StrictInt: a number written without a point or exponent; 3.0 and true are not. Long, since a Windows NTSTATUS
-    // exit such as 3221225477 (0xC0000005) is past int's range.
-    private static long? Integer(JsonElement parent, string name) =>
-        parent.TryGetProperty(name, out var value)
-        && value.ValueKind == JsonValueKind.Number
-        && value.GetRawText().IndexOfAny(['.', 'e', 'E']) < 0
-        && value.TryGetInt64(out var number)
-            ? number
-            : null;
 
     // A list of strings, or nothing when it is anything else.
     private static IReadOnlyList<string> Lines(JsonElement parent, string name) =>

@@ -121,10 +121,10 @@ internal static class SessionRegistry
             if (root.TryGetProperty("pid", out var pid)
                 && pid.ValueKind == JsonValueKind.Number
                 && pid.TryGetInt32(out var id)
-                && Text(root, "sessionId") is { } session
-                && isAlive(id, Text(root, "procStart")))
+                && JsonShape.Text(root, "sessionId") is { } session
+                && isAlive(id, JsonShape.Text(root, "procStart")))
             {
-                live[session] = new LiveSession(id, session, Text(root, "cwd"), Text(root, "status"));
+                live[session] = new LiveSession(id, session, JsonShape.Text(root, "cwd"), JsonShape.Text(root, "status"));
             }
         }
 
@@ -137,17 +137,14 @@ internal static class SessionRegistry
         var ends = new Dictionary<string, SessionEnd>(StringComparer.Ordinal);
         await foreach (var root in ObjectsAsync(directory, cancellationToken).ConfigureAwait(false))
         {
-            if (Text(root, "session_id") is { } session)
+            if (JsonShape.Text(root, "session_id") is { } session)
             {
-                ends[session] = new SessionEnd(Text(root, "reason"), IsoTime.ParseIso(Text(root, "ended_at")));
+                ends[session] = new SessionEnd(JsonShape.Text(root, "reason"), IsoTime.ParseIso(JsonShape.Text(root, "ended_at")));
             }
         }
 
         return ends;
     }
-
-    private static string? Text(JsonElement parent, string name) =>
-        parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
     // Every *.json under the folder that holds a JSON object, in name order; anything else is skipped.
     private static async IAsyncEnumerable<JsonElement> ObjectsAsync(
