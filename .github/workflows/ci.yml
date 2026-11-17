@@ -664,7 +664,7 @@ jobs:
     name: dotnet-windows
     needs: changes
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     if: |
       needs.changes.outputs.code == 'true' && (
       github.event_name == 'schedule' ||
@@ -688,8 +688,10 @@ jobs:
           global-json-file: global.json
       - name: Build
         run: dotnet build rig.slnx -c Release
+      # One test module at a time: every module starting git at once on the 4-core runner pushed single git calls
+      # past their 10-30s timeouts, failing a different git-backed test on each run.
       - name: Test
-        run: dotnet test --solution rig.slnx --no-build -c Release
+        run: dotnet test --solution rig.slnx --no-build -c Release --max-parallel-test-modules 1
 
   # The nightly run is the only routine Windows check, so its result has to reach someone: a failure opens (or
   # comments on) one tracking issue, and the next green night closes it. Not part of `ci`: it never runs on a PR.
