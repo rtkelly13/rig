@@ -17,7 +17,7 @@ public sealed class ManifestsTests : IDisposable
         var files = Enumerable.Range(0, Manifests.MaxManifests + 1).ToDictionary(i => $"p{i}/package.json", _ => "{}");
         var root = await _estate.CheckoutAsync("huge", files);
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/huge", Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/huge", EstateFixture.ListTimeout, Token);
 
         Assert.False(inventory.Scanned);
         Assert.Contains($"More than {Manifests.MaxManifests}", Assert.Single(inventory.Warnings), StringComparison.Ordinal);
@@ -35,7 +35,7 @@ public sealed class ManifestsTests : IDisposable
         await File.WriteAllTextAsync(Path.Join(root, "big", "package.json"), new string(' ', (int)Manifests.MaxBytes + 1), Token);
         await File.WriteAllBytesAsync(Path.Join(root, "bad", "package.json"), [0x7b, 0xff, 0x7d], Token);
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/odd", Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/odd", EstateFixture.ListTimeout, Token);
 
         Assert.True(inventory.Scanned);
         Assert.Equal(["bad/package.json", "big/package.json"], inventory.Warnings.Select(w => w[..w.IndexOf(':', StringComparison.Ordinal)]));
@@ -53,7 +53,7 @@ public sealed class ManifestsTests : IDisposable
         var utf16Bytes = System.Text.Encoding.Unicode.GetPreamble().Concat(System.Text.Encoding.Unicode.GetBytes("""{"name": "utf16"}""")).ToArray();
         await File.WriteAllBytesAsync(Path.Join(root, "package.json"), utf16Bytes, Token);
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/utf16", Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/utf16", EstateFixture.ListTimeout, Token);
 
         Assert.True(inventory.Scanned);
         Assert.Empty(inventory.Publications);
@@ -69,7 +69,7 @@ public sealed class ManifestsTests : IDisposable
         });
         await File.WriteAllTextAsync(Path.Join(root, "package.json"), """{"name":"a","name":"b"}""", Token);
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/dup", Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/dup", EstateFixture.ListTimeout, Token);
 
         Assert.True(inventory.Scanned);
         Assert.Empty(inventory.Publications);
@@ -92,7 +92,7 @@ public sealed class ManifestsTests : IDisposable
                 """,
         });
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/gen", Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/gen", EstateFixture.ListTimeout, Token);
 
         Assert.Empty(inventory.Publications);
         Assert.Empty(inventory.Consumptions);
@@ -116,7 +116,7 @@ public sealed class ManifestsTests : IDisposable
             ["i/package.json"] = """{"dependencies": {"x": 1}}""",
         });
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/shapes", Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/shapes", EstateFixture.ListTimeout, Token);
 
         Assert.Equal(
             ["a/pyproject.toml", "b/pyproject.toml", "c/pyproject.toml", "d/pyproject.toml", "e/pyproject.toml", "g/package.json", "h/package.json", "i/package.json"],
@@ -133,7 +133,7 @@ public sealed class ManifestsTests : IDisposable
             ["b/pyproject.toml"] = "[project]\nname = \"shared-py\"\ndependencies = [\"left\"]\noptional-dependencies = 3\n",
         });
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/partial", Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/partial", EstateFixture.ListTimeout, Token);
 
         Assert.Equal(2, inventory.Warnings.Count);
         Assert.Empty(inventory.Publications);

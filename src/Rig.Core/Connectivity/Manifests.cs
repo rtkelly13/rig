@@ -62,7 +62,8 @@ public static partial class Manifests
     /// <summary>The largest manifest read, in bytes.</summary>
     public const long MaxBytes = 2_000_000;
 
-    private static readonly TimeSpan ListTimeout = TimeSpan.FromSeconds(10);
+    /// <summary>How long <c>git ls-files</c> may take before a checkout is reported unavailable.</summary>
+    public static readonly TimeSpan ListTimeout = TimeSpan.FromSeconds(10);
 
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
@@ -88,10 +89,10 @@ public static partial class Manifests
     /// The manifests git tracks in <paramref name="root"/>, sorted: git's inventory skips caches and worktrees and never
     /// follows a link out of the repo. Throws when git cannot list them or there are more than <see cref="MaxManifests"/>.
     /// </summary>
-    public static async Task<IReadOnlyList<string>> ListAsync(Git git, string root, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyList<string>> ListAsync(Git git, string root, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(git);
-        var listed = await git.RunAsync(root, ["ls-files", "-z"], ListTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var listed = await git.RunAsync(root, ["ls-files", "-z"], timeout ?? ListTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!listed.Ok)
         {
             var why = (listed.Err.Length > 0 ? listed.Err : listed.Out).Trim();
@@ -130,13 +131,13 @@ public static partial class Manifests
     /// What <paramref name="repo"/>, checked out at <paramref name="root"/>, publishes and consumes, each relationship
     /// keeping the manifest it was read from. A manifest that cannot be read is a warning, not a failure.
     /// </summary>
-    public static async Task<Inventory> ReadAsync(Git git, string root, string repo, CancellationToken cancellationToken = default)
+    public static async Task<Inventory> ReadAsync(Git git, string root, string repo, TimeSpan? listTimeout = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(root);
         var inventory = new Inventory();
         try
         {
-            inventory.PathsFound.AddRange(await ListAsync(git, root, cancellationToken).ConfigureAwait(false));
+            inventory.PathsFound.AddRange(await ListAsync(git, root, listTimeout, cancellationToken).ConfigureAwait(false));
         }
         catch (Exception e) when (e is InvalidOperationException or InvalidDataException or IOException or UnauthorizedAccessException)
         {

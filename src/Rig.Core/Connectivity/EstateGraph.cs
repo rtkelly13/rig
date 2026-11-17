@@ -22,7 +22,8 @@ namespace Rig.Core.Connectivity;
 /// </remarks>
 /// <param name="git">Runs git: <c>ls-files</c> in each checkout, and the rig checkout's origin.</param>
 /// <param name="time">The clock for <c>scanned_at</c> and the snapshot's age.</param>
-public sealed class EstateGraph(Git git, TimeProvider time)
+/// <param name="listTimeout">How long <c>git ls-files</c> may take in one checkout; <see cref="Manifests.ListTimeout"/> by default.</param>
+public sealed class EstateGraph(Git git, TimeProvider time, TimeSpan? listTimeout = null)
 {
     /// <summary>How long a snapshot is reused before reads inventory the checkouts again.</summary>
     public static readonly TimeSpan Reuse = TimeSpan.FromMinutes(1);
@@ -175,7 +176,7 @@ public sealed class EstateGraph(Git git, TimeProvider time)
         {
             var identity = Slug(spec.Repo);
             var local = roots[identity];
-            var inventory = Directory.Exists(local) ? await Manifests.ReadAsync(git, local, identity, cancellationToken).ConfigureAwait(false) : null;
+            var inventory = Directory.Exists(local) ? await Manifests.ReadAsync(git, local, identity, listTimeout, cancellationToken).ConfigureAwait(false) : null;
             if (inventory is not null)
             {
                 publications.AddRange(inventory.Publications);

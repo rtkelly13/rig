@@ -13,6 +13,9 @@ internal sealed class EstateFixture : IDisposable
 {
     private readonly TempDir _dir = new();
 
+    /// <summary>Generous: a loaded Windows runner can take well over the product's 10 seconds to start git.</summary>
+    public static readonly TimeSpan ListTimeout = TimeSpan.FromMinutes(2);
+
     public EstateFixture() => Git = new Git(new SystemProc(), _dir.Path);
 
     public Git Git { get; }
@@ -64,7 +67,7 @@ internal sealed class EstateFixture : IDisposable
         Projects(fixture["projects"]!.DeepClone().AsArray());
     }
 
-    public EstateGraph Graph(TimeProvider? time = null) => new(Git, time ?? TimeProvider.System);
+    public EstateGraph Graph(TimeProvider? time = null) => new(Git, time ?? TimeProvider.System, ListTimeout);
 
     public Task<ConnectivityGraph> BuildAsync() => Graph().BuildAsync(Registry, Personal, Token);
 
