@@ -20,7 +20,7 @@ one-liner. Measured on this estate at first run: **539 commits on no remote** an
 ## Personal and work scope
 
 Which folders count as personal and which as work is configuration, never a folder-name
-convention (`rig.scopes`):
+convention (`Rig.Core.Roots.EstateScopes`):
 
 - **Personal** is tracked in `config/estate-scopes.json`. `owners` are the GitHub accounts
   whose repos clone straight into `personal/`; `orgs` are the GitHub orgs whose repos sit in a
@@ -73,9 +73,7 @@ the ref.
 
 Every subcommand runs on the C# CLI: `rig estate …` and the `estate` entry point
 (`rig estate …`) both reach `src/Rig.Cli/Estate/`, with the logic in
-`src/Rig.Core/Estate/`. What is left in `src/rig/estate/` is only what the Python web
-console and the desktop jobs still import: discovery, the worktree checks, the
-decision feed reader, the trim view behind the web page and the wrap-up state file.
+`src/Rig.Core/Estate/`. `src/rig/estate/` is deleted (#281).
 
 ## Going further
 

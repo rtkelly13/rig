@@ -37,7 +37,7 @@ The tool needs only git, `gh` and the files under `~/.claude`. It does not use t
 
 ### Git
 
-The tool finds clones through `rig.estate.discovery`, which caches the clone list in `~/.estate-repos.json`. It makes three git calls per clone:
+The tool finds clones through `Rig.Core.Estate.CloneDiscovery`, which caches the clone list in `~/.estate-repos.json`. It makes three git calls per clone:
 
 1. `git worktree list --porcelain` gives the checkouts. Prunable entries are skipped.
 2. `git for-each-ref refs/heads refs/remotes/origin/HEAD` gives each branch's tip, last commit date, upstream, and ahead/behind or `[gone]`. It also gives the default branch, from `origin/HEAD`. If the clone has no `origin/HEAD`, the default branch is `main` or `master`, whichever exists.
