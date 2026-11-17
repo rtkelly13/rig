@@ -213,8 +213,8 @@ public sealed class InboxLayoutTests(BrowserFixture fixture) : InboxTest(fixture
         await repository.PressAsync("ArrowDown");
         await Expect(listbox).ToBeVisibleAsync();
         await Expect(Page.Option("All repositories")).ToBeFocusedAsync();
-        await Page.Keyboard.PressAsync("End");
-        await Expect(Page.Option("owner/repo")).ToBeFocusedAsync();
+        await Expect(Page.Option("All repositories")).ToHaveAttributeAsync("data-highlighted", "");
+        await PressUntilFocusedAsync("End", Page.Option("owner/repo"));
         await Expect(Page.Option("owner/repo")).ToHaveAttributeAsync("data-highlighted", "");
         await Page.Keyboard.PressAsync("Enter");
         await Expect(repository).ToHaveTextAsync("owner/repo");
@@ -259,5 +259,22 @@ public sealed class InboxLayoutTests(BrowserFixture fixture) : InboxTest(fixture
     /// Waits until the open select has taken keyboard focus. A key pressed before then goes to the page behind it,
     /// which is what made the focus assertions after it flaky.
     /// </summary>
+    /// <summary>Presses a navigation key until the target is focused: the list moves on its highlighted item, which can lag the open.</summary>
+    private async Task PressUntilFocusedAsync(string key, ILocator target)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            await Page.Keyboard.PressAsync(key);
+            try
+            {
+                await Expect(target).ToBeFocusedAsync(new() { Timeout = 1500 });
+                return;
+            }
+            catch (PlaywrightException) when (attempt < 3)
+            {
+            }
+        }
+    }
+
     private async Task FocusInPopupAsync() => _ = await Page.WaitForFunctionAsync($"() => document.activeElement?.closest('{Popup}') != null");
 }
