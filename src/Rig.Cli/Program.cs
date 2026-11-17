@@ -10,6 +10,7 @@ using Rig.Cli.Estate;
 using Rig.Cli.Flags;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Governance;
+using Rig.Cli.Image;
 using Rig.Cli.Jobs;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
@@ -27,6 +28,7 @@ using Rig.Cli.Vault;
 using Rig.Cli.Web;
 using Rig.Cli.Work;
 using Rig.Cli.Workspace;
+using Rig.Image;
 using Rig.Core.Browser;
 using Rig.Core.Devenv;
 using Rig.Core.Estate;
@@ -147,6 +149,14 @@ internal static class Program
             Console.Out,
             Console.Error,
             [
+                new ImageCommand(
+                    new ImageHost(
+                        checkout,
+                        Path.Join(checkout, "temp", "image"),
+                        async executable => await ChromiumRenderer.LaunchAsync(executable, Path.Join(checkout, "temp", "image")).ConfigureAwait(false),
+                        () => new SvgSkiaRenderer()),
+                    Console.Out,
+                    Console.Error).Build,
                 new LatexCommand(
                     proc,
                     new LatexHost(ProgramPath.Find, Environment.GetEnvironmentVariable("PATH") ?? string.Empty, codeRoot, Environment.CurrentDirectory),

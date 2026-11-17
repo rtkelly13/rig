@@ -1,0 +1,1721 @@
+{
+  "provenance": {
+    "browser": "156.0.8078.4",
+    "os": "Darwin",
+    "arch": "arm64",
+    "python": "3.13.5",
+    "pillow": "12.3.0",
+    "numpy": "2.5.1",
+    "playwright": "1.62.0",
+    "image_drift": "0.1.0"
+  },
+  "regions": {
+    "rtkelly-labs": [
+      {
+        "key": "crossover_core",
+        "x0": 190,
+        "y0": 190,
+        "x1": 310,
+        "y1": 310
+      },
+      {
+        "key": "top_left_loop",
+        "x0": 95,
+        "y0": 100,
+        "x1": 255,
+        "y1": 260
+      },
+      {
+        "key": "top_right_loop",
+        "x0": 245,
+        "y0": 100,
+        "x1": 405,
+        "y1": 260
+      },
+      {
+        "key": "bottom_left_loop",
+        "x0": 95,
+        "y0": 240,
+        "x1": 255,
+        "y1": 400
+      },
+      {
+        "key": "bottom_right_loop",
+        "x0": 245,
+        "y0": 240,
+        "x1": 405,
+        "y1": 400
+      }
+    ],
+    "parquet-source-generator": [
+      {
+        "key": "diamond_tile",
+        "x0": 65,
+        "y0": 65,
+        "x1": 445,
+        "y1": 445
+      },
+      {
+        "key": "root_node",
+        "x0": 225,
+        "y0": 325,
+        "x1": 285,
+        "y1": 385
+      },
+      {
+        "key": "center_trunk",
+        "x0": 225,
+        "y0": 150,
+        "x1": 285,
+        "y1": 325
+      },
+      {
+        "key": "left_branch",
+        "x0": 140,
+        "y0": 175,
+        "x1": 225,
+        "y1": 275
+      },
+      {
+        "key": "right_branch",
+        "x0": 285,
+        "y0": 175,
+        "x1": 370,
+        "y1": 275
+      }
+    ]
+  },
+  "renders": [
+    {
+      "id": "rtkelly-labs.master.500",
+      "svg": "assets/rtkelly-labs/production-cuts/rtkelly-labs.svg",
+      "size": 500,
+      "file": "renders/rtkelly-labs.master.500.png",
+      "rgba_sha256": "7426304dbd022a55960b16fcc8b365c5d2b2d8a4b8a444d81f54c13db84eda79"
+    },
+    {
+      "id": "rtkelly-labs.master.180",
+      "svg": "assets/rtkelly-labs/production-cuts/rtkelly-labs.svg",
+      "size": 180,
+      "file": "renders/rtkelly-labs.master.180.png",
+      "rgba_sha256": "eb2fc187b3c96dad798f805ebb3b175799c5c851a1d3a7fc7eadcda4237f8bad"
+    },
+    {
+      "id": "rtkelly-labs.master.1000",
+      "svg": "assets/rtkelly-labs/production-cuts/rtkelly-labs.svg",
+      "size": 1000,
+      "file": null,
+      "rgba_sha256": "9fdfbefffa49619e04be064a2f493bedbee11eefc7541dd1145cd7d337ada0f5"
+    },
+    {
+      "id": "rtkelly-labs.master.2000",
+      "svg": "assets/rtkelly-labs/production-cuts/rtkelly-labs.svg",
+      "size": 2000,
+      "file": null,
+      "rgba_sha256": "3f80638d1082519ff301fe04ecdc6ab28cb2e87c6d13a7e88c72f7240e0207f0"
+    },
+    {
+      "id": "rtkelly-labs.favicon.500",
+      "svg": "assets/rtkelly-labs/production-cuts/favicon.svg",
+      "size": 500,
+      "file": "renders/rtkelly-labs.favicon.500.png",
+      "rgba_sha256": "c376c56d69efe02b1aa15620cf6d5f6da5b5e9f5a8332e4ef0dabe3b171e4a6a"
+    },
+    {
+      "id": "rtkelly-labs.favicon.512",
+      "svg": "assets/rtkelly-labs/production-cuts/favicon.svg",
+      "size": 512,
+      "file": null,
+      "rgba_sha256": "94f125175a1b3e99e42289628b37981c3a617f48fbe0493575e82195eef5e6f2"
+    },
+    {
+      "id": "rtkelly-labs.favicon.48",
+      "svg": "assets/rtkelly-labs/production-cuts/favicon.svg",
+      "size": 48,
+      "file": "renders/rtkelly-labs.favicon.48.png",
+      "rgba_sha256": "19867b9e80389b77cb50a1845a7af9ae92e69b6f2846b96a0a25409adf5b6b44"
+    },
+    {
+      "id": "rtkelly-labs.favicon.32",
+      "svg": "assets/rtkelly-labs/production-cuts/favicon.svg",
+      "size": 32,
+      "file": "renders/rtkelly-labs.favicon.32.png",
+      "rgba_sha256": "006b3a4c5b66bb62d27a6325694e6f549204ae59406bcfa4144dffdd7919ab52"
+    },
+    {
+      "id": "rtkelly-labs.favicon.16",
+      "svg": "assets/rtkelly-labs/production-cuts/favicon.svg",
+      "size": 16,
+      "file": "renders/rtkelly-labs.favicon.16.png",
+      "rgba_sha256": "dce098387003f2f250c8c1b0f2789d2b7226f849962dd0073e64a79c2381d788"
+    },
+    {
+      "id": "rtkelly-labs.autotraced.500",
+      "svg": "candidates/rtkelly-labs.autotraced.svg",
+      "size": 500,
+      "file": "renders/rtkelly-labs.autotraced.500.png",
+      "rgba_sha256": "5f6a2787896b86e9a2a343734dfb33a7f17556cd7b5dca084e8f86669d1ce54b"
+    },
+    {
+      "id": "rtkelly-labs.regularized.500",
+      "svg": "candidates/rtkelly-labs.regularized.svg",
+      "size": 500,
+      "file": "renders/rtkelly-labs.regularized.500.png",
+      "rgba_sha256": "6fa9a083ccbfebc78a7fa2d5e05008c208639a6398c1703c995ea7c6fc366018"
+    },
+    {
+      "id": "rtkelly-labs.parametric.500",
+      "svg": "candidates/rtkelly-labs.parametric.svg",
+      "size": 500,
+      "file": "renders/rtkelly-labs.parametric.500.png",
+      "rgba_sha256": "29c99c7392296f706ddd08c83f7cf8739f9061b5390a125eaa6be957d7fda7b1"
+    },
+    {
+      "id": "parquet-source-generator.master.500",
+      "svg": "assets/parquet-source-generator/production-cuts/parquet-diamond.svg",
+      "size": 500,
+      "file": "renders/parquet-source-generator.master.500.png",
+      "rgba_sha256": "1a4412c824ef322e9eded266f441cef68562bf349fb878c3c3a1cc537b1f4fd8"
+    },
+    {
+      "id": "parquet-source-generator.master.180",
+      "svg": "assets/parquet-source-generator/production-cuts/parquet-diamond.svg",
+      "size": 180,
+      "file": "renders/parquet-source-generator.master.180.png",
+      "rgba_sha256": "6854daaf3beb661ca8d4a54aae8a2b74a2b0d3728e4b8a6a4b4f921804de5341"
+    },
+    {
+      "id": "parquet-source-generator.master.1000",
+      "svg": "assets/parquet-source-generator/production-cuts/parquet-diamond.svg",
+      "size": 1000,
+      "file": null,
+      "rgba_sha256": "58fb148ffd316209213b1bcfb5de35382f2c43b4e54f81cbf8eddb1fb0c1d86c"
+    },
+    {
+      "id": "parquet-source-generator.master.2000",
+      "svg": "assets/parquet-source-generator/production-cuts/parquet-diamond.svg",
+      "size": 2000,
+      "file": null,
+      "rgba_sha256": "c052d269ce945781ea8de7d9e4f8cfd46df282a02f1d608bb8dc1f3601a00a69"
+    },
+    {
+      "id": "parquet-source-generator.favicon.500",
+      "svg": "assets/parquet-source-generator/production-cuts/favicon.svg",
+      "size": 500,
+      "file": "renders/parquet-source-generator.favicon.500.png",
+      "rgba_sha256": "fa5fee44ad2e2213168e1fa4bcae7f385b07608c83ee60aa5869e5542a34471b"
+    },
+    {
+      "id": "parquet-source-generator.favicon.512",
+      "svg": "assets/parquet-source-generator/production-cuts/favicon.svg",
+      "size": 512,
+      "file": null,
+      "rgba_sha256": "ee697ab5dea713c0f12a082f82ed912a8ec662a221eb942ff3c7f17f374685e6"
+    },
+    {
+      "id": "parquet-source-generator.favicon.48",
+      "svg": "assets/parquet-source-generator/production-cuts/favicon.svg",
+      "size": 48,
+      "file": "renders/parquet-source-generator.favicon.48.png",
+      "rgba_sha256": "9993487ef11c78eac2791cb01111cb5073394119be6f1b116e6c095d53b3dc81"
+    },
+    {
+      "id": "parquet-source-generator.favicon.32",
+      "svg": "assets/parquet-source-generator/production-cuts/favicon.svg",
+      "size": 32,
+      "file": "renders/parquet-source-generator.favicon.32.png",
+      "rgba_sha256": "cb26b47e9209aca2699e92a0fb876e7384d2d6c5d60bd297bd9999edc245ee6b"
+    },
+    {
+      "id": "parquet-source-generator.favicon.16",
+      "svg": "assets/parquet-source-generator/production-cuts/favicon.svg",
+      "size": 16,
+      "file": "renders/parquet-source-generator.favicon.16.png",
+      "rgba_sha256": "d5ef51c77e2b1d4b1daaa0d274d3745d7fbabc52622194287dd7a4790b3d6f53"
+    },
+    {
+      "id": "parquet-source-generator.autotraced.500",
+      "svg": "candidates/parquet-source-generator.autotraced.svg",
+      "size": 500,
+      "file": "renders/parquet-source-generator.autotraced.500.png",
+      "rgba_sha256": "e26939af13e5004cf6076fb939ba00c6a252d2e4a58d678d2af62df2acd69f63"
+    },
+    {
+      "id": "parquet-source-generator.regularized.500",
+      "svg": "candidates/parquet-source-generator.regularized.svg",
+      "size": 500,
+      "file": "renders/parquet-source-generator.regularized.500.png",
+      "rgba_sha256": "e95d86db7371ede59be2b9cd1b2ec42f5f4e7f378d47555509f5e160d5d42f7c"
+    }
+  ],
+  "normalised_references": [
+    {
+      "project": "rtkelly-labs",
+      "reference": "assets/rtkelly-labs/reference/rtkelly-labs.png",
+      "rgb_sha256": "3df6ed8fef4eb713eeb49d58f6d2011a16fd859edbf027471293c440b414a1dc"
+    },
+    {
+      "project": "rtkelly-labs",
+      "reference": "assets/rtkelly-labs/reference/02-smooth-crossover-baseline.jpg",
+      "rgb_sha256": "3df6ed8fef4eb713eeb49d58f6d2011a16fd859edbf027471293c440b414a1dc"
+    },
+    {
+      "project": "parquet-source-generator",
+      "reference": "assets/parquet-source-generator/reference/parquet-diamond.png",
+      "rgb_sha256": "4c5e5399adbbb06c246b4104ce0156cf5af599347329fd942f43d834886f7fa7"
+    },
+    {
+      "project": "parquet-source-generator",
+      "reference": "assets/parquet-source-generator/reference/02-simplified-cad-baseline.jpg",
+      "rgb_sha256": "4c5e5399adbbb06c246b4104ce0156cf5af599347329fd942f43d834886f7fa7"
+    }
+  ],
+  "icons": [
+    {
+      "file": "ico/rtkelly-labs.favicon.ico",
+      "source": "rtkelly-labs.favicon.48.png",
+      "entries": [
+        {
+          "size": 16,
+          "rgba_sha256": "9baafd1fac2de6a80d37b0630d73c972c2b043361bfe6a8f37285184c31cd7a0",
+          "height": 16
+        },
+        {
+          "size": 32,
+          "rgba_sha256": "0f8705bee9e0122f8b2fd57778317beda775e0a1b3531a0a2267f6035065297a",
+          "height": 32
+        },
+        {
+          "size": 48,
+          "rgba_sha256": "19867b9e80389b77cb50a1845a7af9ae92e69b6f2846b96a0a25409adf5b6b44",
+          "height": 48
+        }
+      ]
+    },
+    {
+      "file": "ico/parquet-source-generator.favicon.ico",
+      "source": "parquet-source-generator.favicon.48.png",
+      "entries": [
+        {
+          "size": 16,
+          "rgba_sha256": "1cda8a83b03cf09e1f866c70e5de89c07ce7623491cd21682de9cb467d0c5087",
+          "height": 16
+        },
+        {
+          "size": 32,
+          "rgba_sha256": "f70478be0b2c9d9afd90a835c9cfba48dffc418fb4163cfb972894632c759ee1",
+          "height": 32
+        },
+        {
+          "size": 48,
+          "rgba_sha256": "9993487ef11c78eac2791cb01111cb5073394119be6f1b116e6c095d53b3dc81",
+          "height": 48
+        }
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "id": "rtkelly-labs.master.500.vs.rtkelly-labs.png",
+      "project": "rtkelly-labs",
+      "reference": "assets/rtkelly-labs/reference/rtkelly-labs.png",
+      "render_id": "rtkelly-labs.master.500",
+      "drift": {
+        "rmse_pct": 3.6763209094326657,
+        "ssim": 0.9699098184191495,
+        "psnr_db": 28.691731713331215,
+        "grid": [
+          {
+            "row": 0,
+            "column": 0,
+            "error": 0.45793333649635315,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "error": 0.44226670265197754,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 0,
+            "column": 2,
+            "error": 0.399066686630249,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 0,
+            "column": 3,
+            "error": 0.42946669459342957,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 0,
+            "column": 4,
+            "error": 0.3859666883945465,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "error": 0.5816333293914795,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "error": 9.493032455444336,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 1,
+            "column": 2,
+            "error": 9.161600112915039,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 1,
+            "column": 3,
+            "error": 7.644266605377197,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 1,
+            "column": 4,
+            "error": 0.5493000149726868,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 2,
+            "column": 0,
+            "error": 0.6442667245864868,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "error": 11.307666778564453,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 2,
+            "column": 2,
+            "error": 13.427932739257812,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 2,
+            "column": 3,
+            "error": 10.510167121887207,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 2,
+            "column": 4,
+            "error": 0.6187999844551086,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 3,
+            "column": 0,
+            "error": 0.6056333780288696,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "error": 7.415633678436279,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 3,
+            "column": 2,
+            "error": 8.386966705322266,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 3,
+            "column": 3,
+            "error": 7.017099857330322,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 3,
+            "column": 4,
+            "error": 0.5770666599273682,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 4,
+            "column": 0,
+            "error": 0.516366720199585,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 4,
+            "column": 1,
+            "error": 0.5220000147819519,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 4,
+            "column": 2,
+            "error": 0.5291000008583069,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 4,
+            "column": 3,
+            "error": 0.5115333199501038,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 4,
+            "column": 4,
+            "error": 0.504966676235199,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 400,
+            "col_end": 500
+          }
+        ],
+        "luminance_rmse_pct": 3.3391013393755538,
+        "chrominance_rmse_pct": 1.8633566089823819,
+        "color_to_geometry_ratio": 0.5580413469364331,
+        "edge_correlation": 90.65790747218576,
+        "boundary_dilation_bias": -0.08966897614300251,
+        "hotspots": [
+          {
+            "rank": 1,
+            "x0": 248,
+            "y0": 248,
+            "x1": 310,
+            "y1": 310,
+            "error_pct": 7.44,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 2,
+            "x0": 186,
+            "y0": 124,
+            "x1": 248,
+            "y1": 186,
+            "error_pct": 7.31,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 3,
+            "x0": 186,
+            "y0": 186,
+            "x1": 248,
+            "y1": 248,
+            "error_pct": 6.02,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 4,
+            "x0": 124,
+            "y0": 124,
+            "x1": 186,
+            "y1": 186,
+            "error_pct": 5.31,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          }
+        ],
+        "recommendations": [
+          "Primary Hotspot #1 at [X:248..310, Y:248..310] (7.44% error, GEOMETRY_EDGE): Edge / contour misalignment dominates error in this block. Cross-reference this coordinate box with your generator's path definitions."
+        ]
+      },
+      "score": {
+        "composite_pct": 4.973554150980608,
+        "full_frame_pct": 3.6763209094326657,
+        "per_feature_pct": {
+          "crossover_core": 7.089193332186318,
+          "top_left_loop": 6.460770192213583,
+          "top_right_loop": 5.159442667788733,
+          "bottom_left_loop": 6.535669378200898,
+          "bottom_right_loop": 6.108861392253213
+        }
+      }
+    },
+    {
+      "id": "rtkelly-labs.master.500.vs.02-smooth-crossover-baseline.jpg",
+      "project": "rtkelly-labs",
+      "reference": "assets/rtkelly-labs/reference/02-smooth-crossover-baseline.jpg",
+      "render_id": "rtkelly-labs.master.500",
+      "drift": {
+        "rmse_pct": 3.6763209094326657,
+        "ssim": 0.9699098184191495,
+        "psnr_db": 28.691731713331215,
+        "grid": [
+          {
+            "row": 0,
+            "column": 0,
+            "error": 0.45793333649635315,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "error": 0.44226670265197754,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 0,
+            "column": 2,
+            "error": 0.399066686630249,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 0,
+            "column": 3,
+            "error": 0.42946669459342957,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 0,
+            "column": 4,
+            "error": 0.3859666883945465,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "error": 0.5816333293914795,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "error": 9.493032455444336,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 1,
+            "column": 2,
+            "error": 9.161600112915039,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 1,
+            "column": 3,
+            "error": 7.644266605377197,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 1,
+            "column": 4,
+            "error": 0.5493000149726868,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 2,
+            "column": 0,
+            "error": 0.6442667245864868,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "error": 11.307666778564453,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 2,
+            "column": 2,
+            "error": 13.427932739257812,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 2,
+            "column": 3,
+            "error": 10.510167121887207,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 2,
+            "column": 4,
+            "error": 0.6187999844551086,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 3,
+            "column": 0,
+            "error": 0.6056333780288696,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "error": 7.415633678436279,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 3,
+            "column": 2,
+            "error": 8.386966705322266,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 3,
+            "column": 3,
+            "error": 7.017099857330322,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 3,
+            "column": 4,
+            "error": 0.5770666599273682,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 4,
+            "column": 0,
+            "error": 0.516366720199585,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 4,
+            "column": 1,
+            "error": 0.5220000147819519,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 4,
+            "column": 2,
+            "error": 0.5291000008583069,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 4,
+            "column": 3,
+            "error": 0.5115333199501038,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 4,
+            "column": 4,
+            "error": 0.504966676235199,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 400,
+            "col_end": 500
+          }
+        ],
+        "luminance_rmse_pct": 3.3391013393755538,
+        "chrominance_rmse_pct": 1.8633566089823819,
+        "color_to_geometry_ratio": 0.5580413469364331,
+        "edge_correlation": 90.65790747218576,
+        "boundary_dilation_bias": -0.08966897614300251,
+        "hotspots": [
+          {
+            "rank": 1,
+            "x0": 248,
+            "y0": 248,
+            "x1": 310,
+            "y1": 310,
+            "error_pct": 7.44,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 2,
+            "x0": 186,
+            "y0": 124,
+            "x1": 248,
+            "y1": 186,
+            "error_pct": 7.31,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 3,
+            "x0": 186,
+            "y0": 186,
+            "x1": 248,
+            "y1": 248,
+            "error_pct": 6.02,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 4,
+            "x0": 124,
+            "y0": 124,
+            "x1": 186,
+            "y1": 186,
+            "error_pct": 5.31,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          }
+        ],
+        "recommendations": [
+          "Primary Hotspot #1 at [X:248..310, Y:248..310] (7.44% error, GEOMETRY_EDGE): Edge / contour misalignment dominates error in this block. Cross-reference this coordinate box with your generator's path definitions."
+        ]
+      },
+      "score": {
+        "composite_pct": 4.973554150980608,
+        "full_frame_pct": 3.6763209094326657,
+        "per_feature_pct": {
+          "crossover_core": 7.089193332186318,
+          "top_left_loop": 6.460770192213583,
+          "top_right_loop": 5.159442667788733,
+          "bottom_left_loop": 6.535669378200898,
+          "bottom_right_loop": 6.108861392253213
+        }
+      }
+    },
+    {
+      "id": "parquet-source-generator.master.500.vs.parquet-diamond.png",
+      "project": "parquet-source-generator",
+      "reference": "assets/parquet-source-generator/reference/parquet-diamond.png",
+      "render_id": "parquet-source-generator.master.500",
+      "drift": {
+        "rmse_pct": 5.479823553488897,
+        "ssim": 0.9739872013644998,
+        "psnr_db": 25.224668505421455,
+        "grid": [
+          {
+            "row": 0,
+            "column": 0,
+            "error": 0.6621333360671997,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "error": 0.660099983215332,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 0,
+            "column": 2,
+            "error": 1.7615666389465332,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 0,
+            "column": 3,
+            "error": 0.6715999841690063,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 0,
+            "column": 4,
+            "error": 0.7655333876609802,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "error": 0.6571000218391418,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "error": 4.063533782958984,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 1,
+            "column": 2,
+            "error": 10.933300018310547,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 1,
+            "column": 3,
+            "error": 4.1436662673950195,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 1,
+            "column": 4,
+            "error": 0.7597333192825317,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 2,
+            "column": 0,
+            "error": 2.256033420562744,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "error": 12.654199600219727,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 2,
+            "column": 2,
+            "error": 19.807266235351562,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 2,
+            "column": 3,
+            "error": 19.06643295288086,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 2,
+            "column": 4,
+            "error": 1.8477332592010498,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 3,
+            "column": 0,
+            "error": 0.6833666563034058,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "error": 3.5750997066497803,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 3,
+            "column": 2,
+            "error": 12.802300453186035,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 3,
+            "column": 3,
+            "error": 3.5615994930267334,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 3,
+            "column": 4,
+            "error": 0.8063001036643982,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 4,
+            "column": 0,
+            "error": 0.776366651058197,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 4,
+            "column": 1,
+            "error": 0.7674667239189148,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 4,
+            "column": 2,
+            "error": 2.0691332817077637,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 4,
+            "column": 3,
+            "error": 0.7764999866485596,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 4,
+            "column": 4,
+            "error": 0.913633406162262,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 400,
+            "col_end": 500
+          }
+        ],
+        "luminance_rmse_pct": 4.187079282597143,
+        "chrominance_rmse_pct": 2.780216201282296,
+        "color_to_geometry_ratio": 0.663998939030788,
+        "edge_correlation": 85.90681712216107,
+        "boundary_dilation_bias": 0.11202926747500896,
+        "hotspots": [
+          {
+            "rank": 1,
+            "x0": 248,
+            "y0": 248,
+            "x1": 310,
+            "y1": 310,
+            "error_pct": 12.02,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 2,
+            "x0": 310,
+            "y0": 186,
+            "x1": 372,
+            "y1": 248,
+            "error_pct": 11.89,
+            "dominant_mode": "MIXED",
+            "summary": "Combined geometric boundary and shading mismatch"
+          },
+          {
+            "rank": 3,
+            "x0": 186,
+            "y0": 248,
+            "x1": 248,
+            "y1": 310,
+            "error_pct": 10.38,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 4,
+            "x0": 248,
+            "y0": 186,
+            "x1": 310,
+            "y1": 248,
+            "error_pct": 7.82,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          }
+        ],
+        "recommendations": [
+          "Edge Correlation Warning (85.9%): Gradient contours deviate from source raster. Verify B\u00e9zier tangent smoothness and facet intersections.",
+          "Primary Hotspot #1 at [X:248..310, Y:248..310] (12.02% error, GEOMETRY_EDGE): Edge / contour misalignment dominates error in this block. Cross-reference this coordinate box with your generator's path definitions."
+        ]
+      },
+      "score": {
+        "composite_pct": 8.962576446874253,
+        "full_frame_pct": 5.479823553488897,
+        "per_feature_pct": {
+          "diamond_tile": 7.199507192234355,
+          "root_node": 11.837190615949414,
+          "center_trunk": 13.93361537236519,
+          "left_branch": 11.000143713590795,
+          "right_branch": 18.256189807158293
+        }
+      }
+    },
+    {
+      "id": "parquet-source-generator.master.500.vs.02-simplified-cad-baseline.jpg",
+      "project": "parquet-source-generator",
+      "reference": "assets/parquet-source-generator/reference/02-simplified-cad-baseline.jpg",
+      "render_id": "parquet-source-generator.master.500",
+      "drift": {
+        "rmse_pct": 5.479823553488897,
+        "ssim": 0.9739872013644998,
+        "psnr_db": 25.224668505421455,
+        "grid": [
+          {
+            "row": 0,
+            "column": 0,
+            "error": 0.6621333360671997,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "error": 0.660099983215332,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 0,
+            "column": 2,
+            "error": 1.7615666389465332,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 0,
+            "column": 3,
+            "error": 0.6715999841690063,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 0,
+            "column": 4,
+            "error": 0.7655333876609802,
+            "row_start": 0,
+            "row_end": 100,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "error": 0.6571000218391418,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "error": 4.063533782958984,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 1,
+            "column": 2,
+            "error": 10.933300018310547,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 1,
+            "column": 3,
+            "error": 4.1436662673950195,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 1,
+            "column": 4,
+            "error": 0.7597333192825317,
+            "row_start": 100,
+            "row_end": 200,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 2,
+            "column": 0,
+            "error": 2.256033420562744,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "error": 12.654199600219727,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 2,
+            "column": 2,
+            "error": 19.807266235351562,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 2,
+            "column": 3,
+            "error": 19.06643295288086,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 2,
+            "column": 4,
+            "error": 1.8477332592010498,
+            "row_start": 200,
+            "row_end": 300,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 3,
+            "column": 0,
+            "error": 0.6833666563034058,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "error": 3.5750997066497803,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 3,
+            "column": 2,
+            "error": 12.802300453186035,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 3,
+            "column": 3,
+            "error": 3.5615994930267334,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 3,
+            "column": 4,
+            "error": 0.8063001036643982,
+            "row_start": 300,
+            "row_end": 400,
+            "col_start": 400,
+            "col_end": 500
+          },
+          {
+            "row": 4,
+            "column": 0,
+            "error": 0.776366651058197,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 0,
+            "col_end": 100
+          },
+          {
+            "row": 4,
+            "column": 1,
+            "error": 0.7674667239189148,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 100,
+            "col_end": 200
+          },
+          {
+            "row": 4,
+            "column": 2,
+            "error": 2.0691332817077637,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 200,
+            "col_end": 300
+          },
+          {
+            "row": 4,
+            "column": 3,
+            "error": 0.7764999866485596,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 300,
+            "col_end": 400
+          },
+          {
+            "row": 4,
+            "column": 4,
+            "error": 0.913633406162262,
+            "row_start": 400,
+            "row_end": 500,
+            "col_start": 400,
+            "col_end": 500
+          }
+        ],
+        "luminance_rmse_pct": 4.187079282597143,
+        "chrominance_rmse_pct": 2.780216201282296,
+        "color_to_geometry_ratio": 0.663998939030788,
+        "edge_correlation": 85.90681712216107,
+        "boundary_dilation_bias": 0.11202926747500896,
+        "hotspots": [
+          {
+            "rank": 1,
+            "x0": 248,
+            "y0": 248,
+            "x1": 310,
+            "y1": 310,
+            "error_pct": 12.02,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 2,
+            "x0": 310,
+            "y0": 186,
+            "x1": 372,
+            "y1": 248,
+            "error_pct": 11.89,
+            "dominant_mode": "MIXED",
+            "summary": "Combined geometric boundary and shading mismatch"
+          },
+          {
+            "rank": 3,
+            "x0": 186,
+            "y0": 248,
+            "x1": 248,
+            "y1": 310,
+            "error_pct": 10.38,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          },
+          {
+            "rank": 4,
+            "x0": 248,
+            "y0": 186,
+            "x1": 310,
+            "y1": 248,
+            "error_pct": 7.82,
+            "dominant_mode": "GEOMETRY_EDGE",
+            "summary": "Edge / contour misalignment dominates error in this block"
+          }
+        ],
+        "recommendations": [
+          "Edge Correlation Warning (85.9%): Gradient contours deviate from source raster. Verify B\u00e9zier tangent smoothness and facet intersections.",
+          "Primary Hotspot #1 at [X:248..310, Y:248..310] (12.02% error, GEOMETRY_EDGE): Edge / contour misalignment dominates error in this block. Cross-reference this coordinate box with your generator's path definitions."
+        ]
+      },
+      "score": {
+        "composite_pct": 8.962576446874253,
+        "full_frame_pct": 5.479823553488897,
+        "per_feature_pct": {
+          "diamond_tile": 7.199507192234355,
+          "root_node": 11.837190615949414,
+          "center_trunk": 13.93361537236519,
+          "left_branch": 11.000143713590795,
+          "right_branch": 18.256189807158293
+        }
+      }
+    }
+  ],
+  "promotion": [
+    {
+      "project": "rtkelly-labs",
+      "reference": "assets/rtkelly-labs/reference/rtkelly-labs.png",
+      "incumbent_render_id": "rtkelly-labs.master.500",
+      "candidate": "autotraced",
+      "candidate_svg": "candidates/rtkelly-labs.autotraced.svg",
+      "candidate_render_id": "rtkelly-labs.autotraced.500",
+      "incumbent_score": {
+        "composite_pct": 4.973554150980608,
+        "full_frame_pct": 3.6763209094326657,
+        "per_feature_pct": {
+          "crossover_core": 7.089193332186318,
+          "top_left_loop": 6.460770192213583,
+          "top_right_loop": 5.159442667788733,
+          "bottom_left_loop": 6.535669378200898,
+          "bottom_right_loop": 6.108861392253213
+        }
+      },
+      "incumbent_ssim": 0.9699098184191495,
+      "candidate_score": {
+        "composite_pct": 2.2820283960507295,
+        "full_frame_pct": 1.6723006959931033,
+        "per_feature_pct": {
+          "crossover_core": 3.4370412297405695,
+          "top_left_loop": 2.829672167233247,
+          "top_right_loop": 2.675693852152649,
+          "bottom_left_loop": 2.7683191645770924,
+          "bottom_right_loop": 2.7480540668382214
+        }
+      },
+      "candidate_ssim": 0.9930630521364522,
+      "promotable": true,
+      "composite_delta": 2.691525754929878,
+      "ssim_delta": 0.023153233717302713,
+      "worst_feature_delta": 0.0,
+      "worst_feature_key": null,
+      "reasons": []
+    },
+    {
+      "project": "rtkelly-labs",
+      "reference": "assets/rtkelly-labs/reference/rtkelly-labs.png",
+      "incumbent_render_id": "rtkelly-labs.master.500",
+      "candidate": "regularized",
+      "candidate_svg": "candidates/rtkelly-labs.regularized.svg",
+      "candidate_render_id": "rtkelly-labs.regularized.500",
+      "incumbent_score": {
+        "composite_pct": 4.973554150980608,
+        "full_frame_pct": 3.6763209094326657,
+        "per_feature_pct": {
+          "crossover_core": 7.089193332186318,
+          "top_left_loop": 6.460770192213583,
+          "top_right_loop": 5.159442667788733,
+          "bottom_left_loop": 6.535669378200898,
+          "bottom_right_loop": 6.108861392253213
+        }
+      },
+      "incumbent_ssim": 0.9699098184191495,
+      "candidate_score": {
+        "composite_pct": 5.634227481522566,
+        "full_frame_pct": 4.061374051928071,
+        "per_feature_pct": {
+          "crossover_core": 9.154671685517851,
+          "top_left_loop": 7.386000728996091,
+          "top_right_loop": 5.849085865474315,
+          "bottom_left_loop": 6.716660739667743,
+          "bottom_right_loop": 6.928985535929301
+        }
+      },
+      "candidate_ssim": 0.9659727221583339,
+      "promotable": false,
+      "composite_delta": -0.6606733305419583,
+      "ssim_delta": -0.00393709626081562,
+      "worst_feature_delta": 2.0654783533315326,
+      "worst_feature_key": "crossover_core",
+      "reasons": [
+        "composite 5.634% vs incumbent 4.974% (needs to beat it by >0.5pp, got -0.661pp)",
+        "SSIM regressed: 0.9660 vs incumbent 0.9699 (-0.0039)",
+        "feature 'crossover_core' regressed by +2.065pp (limit 0.25pp)"
+      ]
+    },
+    {
+      "project": "rtkelly-labs",
+      "reference": "assets/rtkelly-labs/reference/rtkelly-labs.png",
+      "incumbent_render_id": "rtkelly-labs.master.500",
+      "candidate": "parametric",
+      "candidate_svg": "candidates/rtkelly-labs.parametric.svg",
+      "candidate_render_id": "rtkelly-labs.parametric.500",
+      "incumbent_score": {
+        "composite_pct": 4.973554150980608,
+        "full_frame_pct": 3.6763209094326657,
+        "per_feature_pct": {
+          "crossover_core": 7.089193332186318,
+          "top_left_loop": 6.460770192213583,
+          "top_right_loop": 5.159442667788733,
+          "bottom_left_loop": 6.535669378200898,
+          "bottom_right_loop": 6.108861392253213
+        }
+      },
+      "incumbent_ssim": 0.9699098184191495,
+      "candidate_score": {
+        "composite_pct": 27.77843689692981,
+        "full_frame_pct": 21.625463877024284,
+        "per_feature_pct": {
+          "crossover_core": 30.906538391807697,
+          "top_left_loop": 37.49215564180537,
+          "top_right_loop": 36.8424423256212,
+          "bottom_left_loop": 34.08991589600669,
+          "bottom_right_loop": 30.32599732893574
+        }
+      },
+      "candidate_ssim": 0.6338476758029391,
+      "promotable": false,
+      "composite_delta": -22.804882745949204,
+      "ssim_delta": -0.33606214261621037,
+      "worst_feature_delta": 31.682999657832468,
+      "worst_feature_key": "top_right_loop",
+      "reasons": [
+        "composite 27.778% vs incumbent 4.974% (needs to beat it by >0.5pp, got -22.805pp)",
+        "SSIM regressed: 0.6338 vs incumbent 0.9699 (-0.3361)",
+        "feature 'top_right_loop' regressed by +31.683pp (limit 0.25pp)"
+      ]
+    },
+    {
+      "project": "parquet-source-generator",
+      "reference": "assets/parquet-source-generator/reference/parquet-diamond.png",
+      "incumbent_render_id": "parquet-source-generator.master.500",
+      "candidate": "autotraced",
+      "candidate_svg": "candidates/parquet-source-generator.autotraced.svg",
+      "candidate_render_id": "parquet-source-generator.autotraced.500",
+      "incumbent_score": {
+        "composite_pct": 8.962576446874253,
+        "full_frame_pct": 5.479823553488897,
+        "per_feature_pct": {
+          "diamond_tile": 7.199507192234355,
+          "root_node": 11.837190615949414,
+          "center_trunk": 13.93361537236519,
+          "left_branch": 11.000143713590795,
+          "right_branch": 18.256189807158293
+        }
+      },
+      "incumbent_ssim": 0.9739872013644998,
+      "candidate_score": {
+        "composite_pct": 3.3868953157470196,
+        "full_frame_pct": 2.454965978613487,
+        "per_feature_pct": {
+          "diamond_tile": 3.2037558880323203,
+          "root_node": 4.5003262286333845,
+          "center_trunk": 4.604941462257573,
+          "left_branch": 4.420833135236648,
+          "right_branch": 4.864266550242833
+        }
+      },
+      "candidate_ssim": 0.987449157779221,
+      "promotable": true,
+      "composite_delta": 5.575681131127234,
+      "ssim_delta": 0.013461956414721254,
+      "worst_feature_delta": 0.0,
+      "worst_feature_key": null,
+      "reasons": []
+    },
+    {
+      "project": "parquet-source-generator",
+      "reference": "assets/parquet-source-generator/reference/parquet-diamond.png",
+      "incumbent_render_id": "parquet-source-generator.master.500",
+      "candidate": "regularized",
+      "candidate_svg": "candidates/parquet-source-generator.regularized.svg",
+      "candidate_render_id": "parquet-source-generator.regularized.500",
+      "incumbent_score": {
+        "composite_pct": 8.962576446874253,
+        "full_frame_pct": 5.479823553488897,
+        "per_feature_pct": {
+          "diamond_tile": 7.199507192234355,
+          "root_node": 11.837190615949414,
+          "center_trunk": 13.93361537236519,
+          "left_branch": 11.000143713590795,
+          "right_branch": 18.256189807158293
+        }
+      },
+      "incumbent_ssim": 0.9739872013644998,
+      "candidate_score": {
+        "composite_pct": 9.278390770133026,
+        "full_frame_pct": 5.700222033436615,
+        "per_feature_pct": {
+          "diamond_tile": 7.48992348611484,
+          "root_node": 12.15302669219738,
+          "center_trunk": 14.404872932201052,
+          "left_branch": 11.477807076363638,
+          "right_branch": 18.757167347270283
+        }
+      },
+      "candidate_ssim": 0.9696397675827295,
+      "promotable": false,
+      "composite_delta": -0.31581432325877223,
+      "ssim_delta": -0.004347433781770271,
+      "worst_feature_delta": 0.5009775401119896,
+      "worst_feature_key": "right_branch",
+      "reasons": [
+        "composite 9.278% vs incumbent 8.963% (needs to beat it by >0.5pp, got -0.316pp)",
+        "SSIM regressed: 0.9696 vs incumbent 0.9740 (-0.0043)",
+        "feature 'right_branch' regressed by +0.501pp (limit 0.25pp)"
+      ]
+    }
+  ]
+}
