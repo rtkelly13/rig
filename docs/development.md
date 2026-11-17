@@ -43,15 +43,9 @@ copy's shim) and is the form for operating the estate. `dotnet run --project src
 runs this checkout's code, so it is the form for developing rig and for CI. The per-tool scripts
 (`uv run status`, `uv run workspace …`) still work while callers outside rig move over (#85 s29b).
 
-C# parses help, version, the agent launcher and every ported command itself. A command still written in Python has
-a row in `src/Rig.Cli/Forwarding/Forwarded.cs` naming the Python program that runs it (a `desktop-manager`
-command, or a module with a `__main__` block), and the whole line goes to it as
-`uv run --no-sync --project <rig checkout> <program> …` attached to the same console. A row never launches `rig`,
-which is C# itself. Prompts, colour, Ctrl+C and exit codes behave as before.
-
-Python runs from `RIG_HOME` when it is set, else `<code root>/personal/rig`. Porting a command means registering it in
-C# and deleting its row from `Forwarded.Commands`. `ForwardedContractTests` checks every script names a command C#
-owns and nothing forwards back to `rig`; `tests/test_csharp_cli.py` checks every row's program answers `--help`.
+C# parses every command itself; nothing is forwarded to Python. The Python modules C# still starts (the
+web upstream, the job runner's helpers, mdformat) run from `RIG_HOME` when it is set, else
+`<code root>/personal/rig`.
 
 The [command ownership gate](csharp-port/ownership.md) inspects actual C#/Python registrations and forwarding,
 then checks `config/command-ownership.json`. Update the ledger and retire the superseded implementation in the
