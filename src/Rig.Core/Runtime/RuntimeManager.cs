@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Storage;
 using Rig.Core.Text;
 
 namespace Rig.Core.Runtime;
@@ -539,14 +540,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
 
     internal static bool IsLink(string path)
     {
-        try
-        {
-            return new FileInfo(path).LinkTarget is not null || new DirectoryInfo(path).LinkTarget is not null;
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
+        return FileGuard.Try(() => new FileInfo(path).LinkTarget is not null || new DirectoryInfo(path).LinkTarget is not null, false);
     }
 
     [ExcludeFromCodeCoverage(Justification = "Defensive link removal fallback")]

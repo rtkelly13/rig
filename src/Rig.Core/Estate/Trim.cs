@@ -1,6 +1,7 @@
 using Rig.Core.Processes;
 using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
+using Rig.Core.Storage;
 
 namespace Rig.Core.Estate;
 
@@ -140,14 +141,7 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
 
     private static bool Has(string folder, string pattern)
     {
-        try
-        {
-            return Directory.EnumerateFiles(folder, pattern).Any();
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
+        return FileGuard.Try(() => Directory.EnumerateFiles(folder, pattern).Any(), false);
     }
 
     /// <summary>Every candidate folder within <see cref="MaxDepth"/> of <paramref name="root"/>, without entering one.</summary>

@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Rig.Core.Storage;
 
 namespace Rig.Core.Vault;
 
@@ -381,14 +382,7 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
     // Text with bytes that are not UTF-8 dropped and newlines made universal.
     private static string? Read(Note note)
     {
-        try
-        {
-            return Lenient.GetString(File.ReadAllBytes(note.FullPath)).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        return FileGuard.Try(() => Lenient.GetString(File.ReadAllBytes(note.FullPath)).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n'), null);
     }
 
     // Whether a path exists, following symlinks: a dangling one does not.

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Rig.Core.Roots;
+using Rig.Core.Storage;
 using Rig.Core.Text;
 using Rig.Core.Vault;
 
@@ -115,14 +116,7 @@ public static partial class RunHistory
             return null;
         }
 
-        try
-        {
-            return File.ReadAllText(path, Encoding.UTF8);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        return FileGuard.Try(() => File.ReadAllText(path, Encoding.UTF8), null);
     }
 
     /// <summary>

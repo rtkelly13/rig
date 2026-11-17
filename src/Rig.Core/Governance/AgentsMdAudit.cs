@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Storage;
 using Rig.Core.Text;
 using Rig.Core.Vault;
 
@@ -322,14 +323,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
 
     private static string? TryRead(string path)
     {
-        try
-        {
-            return DocsTree.ReadText(path);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        return FileGuard.Try(() => DocsTree.ReadText(path), null);
     }
 
     private static IEnumerable<AgentsMdFinding> CheckPointers(string repo, IReadOnlyList<string> docs)
@@ -427,14 +421,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
             return false;
         }
 
-        try
-        {
-            return Strip(DocsTree.ReadText(path)) == AgentsFileName;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
+        return FileGuard.Try(() => Strip(DocsTree.ReadText(path)) == AgentsFileName, false);
     }
 
     private static IEnumerable<AgentsMdFinding> CheckBespokeAgentFiles(string repo, AgentsMdRules rules)
