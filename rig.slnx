@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Rig.Cli/Rig.Cli.csproj" />
     <Project Path="src/Rig.Core/Rig.Core.csproj" />
+    <Project Path="src/Rig.Image/Rig.Image.csproj" />
     <Project Path="src/Rig.Launcher/Rig.Launcher.csproj" />
     <Project Path="src/Rig.Web/Rig.Web.csproj" />
   </Folder>
@@ -10,6 +11,8 @@
     <Project Path="tests/Rig.Cli.Tests/Rig.Cli.Tests.csproj" />
     <Project Path="tests/Rig.CommandOwnership.Tests/Rig.CommandOwnership.Tests.csproj" />
     <Project Path="tests/Rig.Core.Tests/Rig.Core.Tests.csproj" />
+    <Project Path="tests/Rig.Image.BrowserTests/Rig.Image.BrowserTests.csproj" />
+    <Project Path="tests/Rig.Image.Tests/Rig.Image.Tests.csproj" />
     <Project Path="tests/Rig.LocReport.Tests/Rig.LocReport.Tests.csproj" />
     <Project Path="tests/Rig.Specs/Rig.Specs.csproj" />
     <Project Path="tests/Rig.Web.BrowserTests/Rig.Web.BrowserTests.csproj" />
