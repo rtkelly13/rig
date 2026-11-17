@@ -12,14 +12,6 @@ namespace Rig.Core.Desktop.Windows;
 [ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]
 public sealed class Launching(Func<string, string?>? getVariable = null, string? home = null)
 {
-    /// <summary>Never terminated by cleanup, whatever the PID bookkeeping says.</summary>
-    public static IReadOnlySet<string> ProtectedImageNames { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        "warp.exe",
-        "windowsterminal.exe",
-        "wt.exe",
-    };
-
     /// <summary>The <c>wt-pwsh</c> terminal shell.</summary>
     public const string WindowsTerminalShell = "wt-pwsh";
 

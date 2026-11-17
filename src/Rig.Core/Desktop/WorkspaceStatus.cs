@@ -113,18 +113,6 @@ public static class WorkspaceStatus
         };
     }
 
-    /// <summary>A current desktop captured with its draft launch entries.</summary>
-    public static DesktopPlan CaptureDesktop(WindowInventory inventory, int desktopNumber, string? workspace, string? desktopName = null)
-    {
-        ArgumentNullException.ThrowIfNull(inventory);
-        var windows = inventory.CurrentDesktopWindows();
-        return new(desktopName ?? $"Desktop {desktopNumber}")
-        {
-            Launch = LaunchEntriesFor(windows, desktopNumber, workspace),
-            CapturedWindows = windows,
-        };
-    }
-
     /// <summary>
     /// The draft entries for one desktop's captured windows. Desktop 1's terminals become numbered workspace terminals
     /// when a workspace is supplied; every other window with an executable becomes an app entry.

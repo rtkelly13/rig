@@ -171,9 +171,6 @@ public sealed record RepoFacts(string Path, string Name, string DefaultBranch, I
 {
     /// <summary>The local branches, in <c>for-each-ref</c> order.</summary>
     public IReadOnlyList<BranchRef> Branches { get; init; } = [];
-
-    /// <summary><c>owner/name</c> parsed from the origin URL; empty when it is not a GitHub remote.</summary>
-    public string GithubSlug { get; init; } = "";
 }
 
 /// <summary>A (repo, branch) pair: the identity of a work item.</summary>
