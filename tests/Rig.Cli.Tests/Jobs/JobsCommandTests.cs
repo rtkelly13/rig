@@ -1,5 +1,4 @@
 using System.CommandLine;
-using Rig.Cli.Forwarding;
 using Rig.Cli.Jobs;
 using Rig.Core.Jobs;
 using Rig.Core.Tests;
@@ -408,21 +407,6 @@ public sealed class JobsCommandTests : IDisposable
         Assert.Equal(JobsCommand.UnknownExit, await Run(null, "run", "--only", "zed", "--only", "every", "--only", "abc"));
         Assert.Equal("Unknown job: abc, zed\n", _out.ToString());
         Assert.Empty(_executor.Ran);
-    }
-
-    [Theory]
-    [InlineData(new[] { "jobs", "status" }, false)]
-    [InlineData(new[] { "jobs", "last", "--trigger", "tick" }, false)]
-    [InlineData(new[] { "jobs", "log", "align" }, false)]
-    [InlineData(new[] { "jobs", "run", "--trigger", "tick" }, false)]
-    [InlineData(new[] { "jobs", "install" }, false)]
-    [InlineData(new[] { "jobs", "uninstall" }, false)]
-    [InlineData(new[] { "jobs" }, false)]
-    public void Jobs_never_goes_to_python(string[] args, bool python)
-    {
-        var root = new RootCommand { new JobsCommand(Host(null), _out).Build() };
-
-        Assert.Equal(python, Forwarded.Owns(args, root));
     }
 
     private static IReadOnlyList<Job> Registry() =>

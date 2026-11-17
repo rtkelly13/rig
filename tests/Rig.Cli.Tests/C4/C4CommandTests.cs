@@ -1,5 +1,4 @@
 using Rig.Cli.C4;
-using Rig.Cli.Forwarding;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Tests;
@@ -278,7 +277,6 @@ public sealed class C4CommandTests : IDisposable
             _ => "2026-11-14",
         }));
         var app = new RigApp(
-            new PythonRig(_proc, _temp.Path),
             new FakeGitHub(),
             _ => Task.FromResult<RepoSlug?>(null),
             _output,

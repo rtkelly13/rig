@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Rig.Cli.Agent;
-using Rig.Cli.Forwarding;
 using Rig.Core;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
@@ -10,41 +9,22 @@ namespace Rig.Cli.Tests;
 
 public sealed class RigAppTests : IDisposable
 {
-    private const string Checkout = "/code/personal/rig";
-    private static readonly string[] Uv = ["uv", "run", "--no-sync", "--project", Checkout];
-
     private readonly FakeProc _proc = new();
     private readonly StringWriter _out = new();
     private readonly StringWriter _err = new();
 
     private Task<int> Run(params string[] args) =>
         new RigApp(
-            new PythonRig(_proc, Checkout),
             new FakeGitHub(),
             _ => Task.FromResult<RepoSlug?>(null),
             _out,
             _err,
             [
                 () => new Rig.Cli.Models.ModelsCommand(new Rig.Cli.Models.ModelDiscovery(_proc, "/home", _ => null), _out).Build(),
-                // chrome-tabs stands in for a group partly ported: doctor runs here, the rest of the group on Python.
                 () => new System.CommandLine.Command("chrome-tabs", "Chrome tabs.") { new System.CommandLine.Command("doctor", "Chrome tabs doctor here.") },
             ],
             new AgentLauncher(_proc, new AgentHost("/home/none.json", "/work", p => $"/bin/{p}"), _out, _err))
             .RunAsync(args, TestContext.Current.CancellationToken);
-
-    [Theory]
-    [InlineData(new[] { "chrome-tabs", "list", "--help" }, new[] { "desktop-manager", "chrome-tabs", "list", "--help" })]
-    [InlineData(new[] { "chrome-tabs", "--help" }, new[] { "desktop-manager", "chrome-tabs", "--help" })]
-    public async Task A_python_command_goes_over_whole_and_attached_to_its_program(string[] args, string[] launched)
-    {
-        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
-
-        Assert.Equal(0, await Run(args));
-
-        var request = Assert.Single(_proc.Requests);
-        Assert.Equal([.. Uv, .. launched], request.Argv);
-        Assert.True(request.Attached);
-    }
 
     [Fact]
     public async Task Help_prints_the_overview_and_points_at_the_desktop_tools()
@@ -70,7 +50,6 @@ public sealed class RigAppTests : IDisposable
         Assert.Equal(launched is null ? 0 : 3, await Run(args));
 
         Assert.Equal(launched, _proc.Requests.SingleOrDefault()?.Argv);
-        Assert.DoesNotContain(_proc.Requests, r => r.Argv[0] == "uv");
     }
 
     [Theory]
@@ -90,48 +69,6 @@ public sealed class RigAppTests : IDisposable
         Assert.Equal(0, await Run("--help"));
 
         Assert.Contains(AgentLauncher.Description, _out.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task The_python_exit_code_comes_back_unchanged()
-    {
-        _proc.Answer(new Ran(1, string.Empty, string.Empty), "uv");
-
-        Assert.Equal(1, await Run("chrome-tabs", "--help"));
-    }
-
-    [Fact]
-    public async Task Missing_uv_is_an_error_that_says_why()
-    {
-        _proc.Answer(new Ran(Ran.NotFound, string.Empty, "uv is not on PATH"), "uv");
-
-        Assert.Equal(2, await Run("chrome-tabs", "--help"));
-        Assert.StartsWith("rig: uv is not on PATH.", _err.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task A_127_from_python_itself_is_passed_through()
-    {
-        _proc.Answer(new Ran(Ran.NotFound, string.Empty, string.Empty), "uv");
-
-        Assert.Equal(Ran.NotFound, await Run("chrome-tabs", "--help"));
-        Assert.Empty(_err.ToString());
-    }
-
-    [Fact]
-    public async Task Help_comes_from_csharp_and_lists_the_python_commands()
-    {
-        Assert.Equal(0, await Run("--help"));
-
-        Assert.Empty(_proc.Requests);
-        var help = _out.ToString();
-        Assert.Contains(RigApp.Description, help, StringComparison.Ordinal);
-        foreach (var (name, _, _) in Forwarded.Commands)
-        {
-            Assert.Contains($"  {name} ", help, StringComparison.Ordinal);
-        }
-
-        Assert.Contains("(Python)", help, StringComparison.Ordinal);
     }
 
     [Fact]

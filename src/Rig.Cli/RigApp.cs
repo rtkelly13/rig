@@ -2,7 +2,6 @@
 using System.CommandLine;
 using System.Diagnostics;
 using Rig.Cli.Agent;
-using Rig.Cli.Forwarding;
 using Rig.Cli.Gh;
 using Rig.Cli.Gh.Threads;
 using Rig.Core;
@@ -12,11 +11,10 @@ namespace Rig.Cli;
 
 /// <summary>
 /// The rig command line. An agent launch (a bare <c>rig</c>, a shortcut flag such as <c>-ccc</c>, or <c>rig agent</c>)
-/// goes to the launcher unparsed, so the agent gets its arguments untouched. A line the Python CLI still owns is handed
-/// to it whole; everything else (help, version and every ported command) is parsed here. Exit codes follow <see cref="ExitCode"/>: a line that does not parse is 2.
+/// goes to the launcher unparsed, so the agent gets its arguments untouched; everything else (help, version and every
+/// command) is parsed here. Exit codes follow <see cref="ExitCode"/>: a line that does not parse is 2.
 /// </summary>
 internal sealed class RigApp(
-    PythonRig python,
     IGitHubApi github,
     OriginReader origin,
     TextWriter output,
@@ -30,7 +28,7 @@ internal sealed class RigApp(
 
     /// <summary>What <c>rig --help</c> says rig is.</summary>
     public const string Description =
-        "Developer rig: workspace management, AI agents and estate tooling. Commands marked (Python) still run in Python.";
+        "Developer rig: workspace management, AI agents and estate tooling.";
 
     /// <summary>The command, and the <c>help</c> entry point, that print the overview.</summary>
     public const string HelpCommand = "help";
@@ -38,7 +36,7 @@ internal sealed class RigApp(
     /// <summary>The overview's last line: the desktop tools are a separate CLI with their own help.</summary>
     public const string DesktopPointer = "Desktop windows, sessions and tabs: run 'rig desktop workspace --help' or 'desktop-manager --help'.";
 
-    /// <summary>The root command: the ported commands, plus the forwarded ones so help lists them all.</summary>
+    /// <summary>The root command: every command, plus the agent launcher so help lists it.</summary>
     public RootCommand BuildRoot()
     {
         var root = new RootCommand(Description);
@@ -71,19 +69,11 @@ internal sealed class RigApp(
             return code;
         });
         root.Subcommands.Add(help);
-
-        // A group partly ported is already registered: the rest of its lines are handed over by Forwarded.Owns.
-        foreach (var (name, description, _) in Forwarded.Commands.Where(c => !root.Subcommands.Any(s => s.Name == c.Name)))
-        {
-            root.Subcommands.Add(new Command(name, $"{description} (Python)"));
-        }
-
         return root;
     }
 
-    /// <summary>Whether <paramref name="args"/> go to another process sharing this console: the Python CLI or an agent.</summary>
-    public bool HandsOver(IReadOnlyList<string> args) =>
-        Forwarded.Owns(args, BuildRoot()) || (agent is not null && AgentLauncher.LauncherArgs(args) is not null);
+    /// <summary>Whether <paramref name="args"/> go to an agent, another process sharing this console.</summary>
+    public bool HandsOver(IReadOnlyList<string> args) => agent is not null && AgentLauncher.LauncherArgs(args) is not null;
 
     /// <summary>Runs one command line and returns its exit code, under a root span naming the command.</summary>
     public async Task<int> RunAsync(IReadOnlyList<string> args, CancellationToken cancellationToken)
@@ -120,13 +110,7 @@ internal sealed class RigApp(
                 : await agent.RunAsync(launch).ConfigureAwait(false);
         }
 
-        var root = BuildRoot();
-        if (Forwarded.Owns(args, root))
-        {
-            return await python.RunAsync(args, error).ConfigureAwait(false);
-        }
-
-        var parsed = root.Parse(args);
+        var parsed = BuildRoot().Parse(args);
         if (parsed.Errors.Count > 0)
         {
             foreach (var problem in parsed.Errors)

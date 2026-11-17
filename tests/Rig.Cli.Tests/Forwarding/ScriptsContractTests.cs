@@ -5,7 +5,6 @@ using Rig.Cli.C4;
 using Rig.Cli.Chrome;
 using Rig.Cli.Devenv;
 using Rig.Cli.Estate;
-using Rig.Cli.Forwarding;
 using Rig.Cli.Governance;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
@@ -30,11 +29,10 @@ using Rig.Core.Tests.Skills;
 namespace Rig.Cli.Tests.Forwarding;
 
 /// <summary>
-/// The rig scripts and the forwarding table, checked against <c>pyproject.toml</c>: every script but
-/// <c>desktop-manager</c> starts this CLI, each names a command it owns, and nothing forwarded goes back to <c>rig</c>.
-/// Each forwarded Python program is checked to answer <c>--help</c> by <c>tests/test_csharp_cli.py</c>.
+/// The rig scripts, checked against <c>pyproject.toml</c>: every script but <c>desktop-manager</c> starts this CLI, and
+/// each names a command it owns.
 /// </summary>
-public sealed partial class ForwardedContractTests
+public sealed partial class ScriptsContractTests
 {
     private static readonly string Project = Path.Combine(RepoRoot(), "pyproject.toml");
     private static readonly HttpClient Refusing = new(new StubHandler(_ => throw new InvalidOperationException("nothing may connect")));
@@ -53,27 +51,17 @@ public sealed partial class ForwardedContractTests
     [Fact]
     public void Every_script_names_a_command_csharp_owns()
     {
-        // `uv run latex build` runs `rig latex build`, so latex must be a C# command, not a forwarded one.
-        var forwarded = Forwarded.Commands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
-        var owned = FullApp().BuildRoot().Subcommands.Select(c => c.Name).Where(name => !forwarded.Contains(name)).ToHashSet(StringComparer.Ordinal);
+        // `uv run latex build` runs `rig latex build`, so latex must be a C# command.
+        var owned = FullApp().BuildRoot().Subcommands.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
         var handedOver = Scripts().Where(s => s.Value == "rig.csharp_cli:entry" && s.Key != "rig").Select(s => s.Key).ToList();
 
         Assert.NotEmpty(handedOver);
         Assert.All(handedOver, name => Assert.Contains(name, owned));
     }
 
-    [Fact]
-    public void Nothing_forwarded_goes_back_to_rig()
-    {
-        // The rig script is this CLI: a row launching it would loop.
-        Assert.All(Forwarded.Commands, c => Assert.NotEqual("rig", c.Launch[0]));
-        Assert.All(Forwarded.Commands, c => Assert.True(c.Launch[0] is "python" or "desktop-manager", $"{c.Name} launches {c.Launch[0]}"));
-    }
-
     // Every ported command, built with fakes; only the command tree is read.
     private static RigApp FullApp() =>
         new(
-            new PythonRig(new FakeProc(), "/rig"),
             new FakeGitHub(),
             _ => Task.FromResult<RepoSlug?>(null),
             TextWriter.Null,

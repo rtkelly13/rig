@@ -2,8 +2,8 @@
 
 rig runs on C# (#85). ``uv run rig …``, ``uv run workspace …``, ``uv run latex …`` and the rest hand their
 line to ``dotnet run --project <this checkout>/src/Rig.Cli -- …``, attached to this console, with the exit
-code returned unchanged. The project is found beside this file, so the C# CLI and the Python commands it
-still forwards (its ``Forwarded`` table) always come from the same tree.
+code returned unchanged. The project is found beside this file, so the C# CLI and the Python tools it starts
+always come from the same tree.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from pathlib import Path
 
 from rig import tracing
 
-#: The rig checkout the C# CLI runs Python tools from (mdformat, forwarded commands): set to this one, so both
+#: The rig checkout the C# CLI runs Python tools from (mdformat, the web upstream): set to this one, so both
 #: halves and their uv environment come from the same tree.
 HOME_VARIABLE = "RIG_HOME"
 

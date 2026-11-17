@@ -13,18 +13,15 @@ namespace Rig.Cli.Forwarding;
 internal static class CommandTree
 {
     /// <summary>One actual registration; groups with actions are included as independently callable capabilities.</summary>
-    internal sealed record Registration(string Path, bool Action, string[] Aliases, bool Forwarded);
+    internal sealed record Registration(string Path, bool Action, string[] Aliases);
 
-    /// <summary>Inspect the same tree and forwarding decision used by production dispatch.</summary>
+    /// <summary>Inspect the same tree production dispatch parses.</summary>
     public static Registration[] Read(Command root) => Walk(root, []).ToArray();
 
     /// <summary>Machine-readable inspection, reserved for development/CI.</summary>
-    public static string Export(Command root, IReadOnlyList<string[]> probes, bool windows) => JsonSerializer.Serialize(new
+    public static string Export(Command root, bool windows) => JsonSerializer.Serialize(new
     {
         commands = Read(root),
-        forwarding = Forwarded.Commands.Select(c => new { c.Name, c.Launch }),
-        bare = Array.Empty<string>(),
-        dispatch = probes.Select(args => new { Path = string.Join(' ', args), Forwarded = Forwarded.Owns(args, root) }),
         rawAliases = AgentLauncher.ShortcutFlags.Where(flag => AgentLauncher.LauncherArgs([flag]) is not null)
             .Select(flag => new { Path = flag, Target = "agent" })
             .Concat([new { Path = "<bare>", Target = "agent" }, new { Path = "agent models", Target = "models" }, new { Path = "agent --models", Target = "models" }]),
@@ -42,13 +39,11 @@ internal static class CommandTree
         foreach (var child in command.Subcommands)
         {
             var path = parents.Append(child.Name).ToArray();
-            yield return new Registration(string.Join(' ', path), child.Action is not null, child.Aliases.ToArray(), Forwarded.Owns(path, Root(command)));
+            yield return new Registration(string.Join(' ', path), child.Action is not null, child.Aliases.ToArray());
             foreach (var row in Walk(child, path))
             {
                 yield return row;
             }
         }
     }
-
-    private static Command Root(Command command) => command.Parents.OfType<Command>().FirstOrDefault() is { } parent ? Root(parent) : command;
 }
