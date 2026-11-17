@@ -1,6 +1,6 @@
-using Rig.Core.Text;
-using System.Text;
 using System.Globalization;
+using System.Text;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 

@@ -1,9 +1,9 @@
-using Rig.Core.Text;
-using Rig.Core.GitHub;
-using System.Text.RegularExpressions;
-using Rig.Core.Processes;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Rig.Core.Estate;
+using Rig.Core.GitHub;
+using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.WorkItems;
 

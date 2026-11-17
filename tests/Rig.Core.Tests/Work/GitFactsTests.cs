@@ -1,8 +1,8 @@
-using Rig.Core.Text;
-using Rig.Core.Tests.Fakes;
-using Rig.Core.Processes;
 using Rig.Core.Estate;
+using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 using Rig.Core.WorkItems;
 
 namespace Rig.Core.Tests.WorkItems;

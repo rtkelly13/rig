@@ -1,9 +1,9 @@
-using Rig.Core.Text;
-using System.Text.Json.Nodes;
-using System.Text;
-using Rig.Core.Processes;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Packages;
 

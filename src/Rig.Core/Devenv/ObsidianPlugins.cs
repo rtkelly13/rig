@@ -1,7 +1,7 @@
 using System.Collections.Frozen;
 using System.Text.Json;
-using Rig.Core.Text;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Devenv;
 
