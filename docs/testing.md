@@ -43,7 +43,8 @@ global `using Xunit` and aggressive parallel collections, so a new project needs
 |:--|:--|
 | `Rig.Core.Tests` | `Rig.Core` behaviour, with CsCheck properties beside the example tests |
 | `Rig.Cli.Tests` | command parsing, output and the Python forwarding rows |
-| `Rig.Web.Tests` | ASP.NET routes, MCP and the SPA assets |
+| `Rig.Web.Tests` | ASP.NET routes, MCP, the SPA assets and the design-token rules |
+| `Rig.Web.BrowserTests` | the SPA in headless Chromium (Playwright), both themes; needs `playwright.ps1 install chromium` |
 | `Rig.Architecture.Tests` | the layer rules (NetArchTest) |
 | `Rig.CommandOwnership.Tests` | the ownership gate's discovery |
 | `Rig.Specs` | the Gherkin scenarios, through Reqnroll ([BDD specs](development.md#bdd-specs-testsrigspecs)) |

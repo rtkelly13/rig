@@ -817,6 +817,12 @@
     "tests/test_workspace_config.py",
     "tests/test_workspace_ports.py",
     "tests/test_worktree_state.py",
-    "tests/trace_observations.py"
+    "tests/trace_observations.py",
+    "tests/test_web_spa.py",
+    "tests/test_web_ops_spa.py",
+    "tests/test_dashboard_frontend.py",
+    "tests/test_design_tokens.py",
+    "tests/rig_web_host.py",
+    "tests/triage_seed.py"
   ]
 }

@@ -11,6 +11,7 @@
     <Project Path="tests/Rig.CommandOwnership.Tests/Rig.CommandOwnership.Tests.csproj" />
     <Project Path="tests/Rig.Core.Tests/Rig.Core.Tests.csproj" />
     <Project Path="tests/Rig.Specs/Rig.Specs.csproj" />
+    <Project Path="tests/Rig.Web.BrowserTests/Rig.Web.BrowserTests.csproj" />
     <Project Path="tests/Rig.Web.Tests/Rig.Web.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/" />

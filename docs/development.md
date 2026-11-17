@@ -26,7 +26,7 @@ committed because the Python CLI and server must work without Node:
 | `styles/c4.src.css` | `src/rig/c4_okf/static/c4.css` |
 
 Rebuild after touching a template, an entry or a design-system bump. Colours, type sizes and
-spacing come from design-system tokens only: `tests/test_design_tokens.py` fails on raw hex/`rgb()`
+spacing come from design-system tokens only: `DesignTokensTests` in `tests/Rig.Web.Tests` fails on raw hex/`rgb()`
 or arbitrary-value classes (`text-[0.82rem]`) in the sources and templates. A missing token is
 added upstream in rtkelly-labs/design-system, not hard-coded here.
 
@@ -105,7 +105,7 @@ Pure Windows unit tests, path semantics, and mock wrappers execute on Linux CI a
 Test isolation guards (autouse, so new tests get them for free):
 
 - `tests/conftest.py` points `LOCALAPPDATA` and `APPDATA` at per-test temp dirs and clears `DESKTOP_MANAGER_LOG_DIR`, so no test writes into the live runtime, restore logs or plans.
-- The browser tests (`test_web_spa`, `test_web_ops_spa`) run against the C# `rig web` host, so they need `dotnet` on PATH and fail without it. `tests/rig_web_host.py` builds the CLI once (or takes `RIG_CLI_DLL`), runs it on port 0 from a temp checkout, and stops only the process it started ([web-routes.md](web-routes.md#testing)).
+- The browser tests are C# Playwright tests in `tests/Rig.Web.BrowserTests`, driving an in-process `RigWebHost` ([web-routes.md](web-routes.md#testing)). Install Chromium once after a build: `pwsh tests/Rig.Web.BrowserTests/bin/Debug/net10.0/playwright.ps1 install chromium`.
 
 Windows-safe tests (the `test-windows` job catches these, but write them right first time):
 

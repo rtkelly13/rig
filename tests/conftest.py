@@ -96,13 +96,9 @@ def isolate_app_state_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: py
     ``current_environment()`` sets it process-wide with ``setdefault``, so one test's
     value would otherwise leak into every later one.
 
-    Playwright finds its browsers under ``%LOCALAPPDATA%``, so its path is pinned to
-    the real install first. ``WORKSPACE_HOME`` is pointed at an empty folder so the
+    ``WORKSPACE_HOME`` is pointed at an empty folder so the
     developer's Orca marks in ``~/.workspace/config.json`` never change what discovery offers.
     """
-    real_local = os.environ.get("LOCALAPPDATA")
-    if real_local and "PLAYWRIGHT_BROWSERS_PATH" not in os.environ:
-        monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(Path(real_local) / "ms-playwright"))
     monkeypatch.delenv("DESKTOP_MANAGER_LOG_DIR", raising=False)
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path_factory.mktemp("localappdata")))
     monkeypatch.setenv("APPDATA", str(tmp_path_factory.mktemp("appdata")))

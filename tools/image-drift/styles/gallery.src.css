@@ -6,7 +6,7 @@
  *
  * Every colour, type size, radius and shadow comes from
  * @rtkelly-labs/design-system: no hand-written values here or in the templates
- * (the root tests/test_design_tokens.py enforces it). A missing token is fixed upstream
+ * (Rig.Web.Tests DesignTokensTests enforces it). A missing token is fixed upstream
  * in rtkelly-labs/design-system, not patched in here.
  */
 

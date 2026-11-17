@@ -82,8 +82,8 @@ The first measurement, on 2026-11-05, counted each test function as one test:
 - 63% of test functions run no line that another test does not also run.
 - **190 groups of tests (612 tests in all) run exactly the same lines.** Most are example
   tables written as separate functions over one helper. Turn each group into a parametrized
-  test rather than deleting it. The exception is `test_web_spa`: those tests drive a browser,
-  and the code they test is JavaScript, which coverage cannot see.
+  test rather than deleting it. The exception was the browser tests, now C# Playwright tests in
+  `tests/Rig.Web.BrowserTests`: the code they test is JavaScript, which coverage cannot see.
 - **81 tests each run 300 or more lines, none of them unique.** They are the candidates for
   merging into a shared fixture with sharper assertions. Check them against mutants before
   merging.

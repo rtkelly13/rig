@@ -76,7 +76,6 @@ dev = [
     "ty>=0.0.84",
     "pytest>=9.0.2",
     "pytest-xdist>=3.0.0",
-    "playwright>=1.62.0",
     "ruff>=0.9.9",
     "coverage>=7.6.12",
     "pytest-cov>=6.0.0",
@@ -263,13 +262,11 @@ disable = ["fake-location", "patching"]
 fake-location-allow = [
     "tests/desktop_manager/test_runtime.py",
     "tests/test_c4_okf.py",
-    "tests/test_web_ops_spa.py",
 ]
 patching-allow = [
     "tests/conftest.py",
     "tests/desktop_manager/test_runtime.py",
     "tests/test_c4_okf.py",
-    "tests/test_web_spa.py",
 ]
 pyright-pragma-allow = []
 boundary-modules = [

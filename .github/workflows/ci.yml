@@ -206,7 +206,7 @@ jobs:
 
   test:
     name: test
-    needs: [changes, build]
+    needs: changes
     if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     # Hard cap. The serial suite took ~4m on 2026-11-04; xdist roughly halves it.
@@ -225,29 +225,11 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync --dev
-      # The SPA tests (test_web_spa, test_web_ops_spa) drive headless Chromium. Cache Playwright's browser
-      # binaries to avoid 25-35s download overhead on every CI run.
-      - name: Cache Playwright Chromium
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-linux-${{ hashFiles('uv.lock') }}
-      - name: Install Playwright Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: uv run playwright install --with-deps chromium
-      # The SPA tests drive the C# rig web host (tests/rig_web_host.py); reuse the build job's CLI.
+      # Python tests that shell out to the C# CLI (test_csharp_cli) need dotnet on PATH.
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
-      - name: Download rig CLI
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: rig-cli
-          path: ${{ runner.temp }}/rig-cli
       - name: Run tests with coverage
-        env:
-          RIG_CLI_DLL: ${{ runner.temp }}/rig-cli/rig.dll
         run: |
           uv run pytest -n auto --durations=15 --cov=src --cov-context=test --record-sizes=coverage-by-test/sizes.json --cov-report=xml:coverage.xml --cov-report=json:coverage.json --cov-report=term-missing
 
@@ -377,16 +359,7 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync --dev
-      - name: Cache Playwright Chromium
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: playwright-cache-win
-        with:
-          path: ~\AppData\Local\ms-playwright
-          key: playwright-windows-${{ hashFiles('uv.lock') }}
-      - name: Install Playwright Chromium
-        if: steps.playwright-cache-win.outputs.cache-hit != 'true'
-        run: uv run playwright install chromium
-      # The SPA tests drive the C# rig web host (tests/rig_web_host.py).
+      # Python tests that shell out to the C# CLI (test_csharp_cli) need dotnet on PATH.
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -395,11 +368,7 @@ jobs:
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
-      - name: Build the C# rig CLI
-        run: dotnet build src/Rig.Cli -c Release -o "${{ runner.temp }}/rig-cli"
       - name: Run tests
-        env:
-          RIG_CLI_DLL: ${{ runner.temp }}/rig-cli/rig.dll
         run: uv run pytest -m "not integration" -p no:cacheprovider --basetemp="${{ runner.temp }}/pytest" -ra
 
   # The brand-asset pipeline is its own uv project (tools/image-drift, ADR 0022): its own lock,
@@ -526,6 +495,9 @@ jobs:
               tests/Rig.CommandOwnership.Tests/Rig.CommandOwnership.Tests.csproj
               tests/Rig.Specs/Rig.Specs.csproj
               tests/Rig.Web.Tests/Rig.Web.Tests.csproj
+          # The SPA tests drive headless Chromium through Playwright.
+          - shard: browser
+            projects: tests/Rig.Web.BrowserTests/Rig.Web.BrowserTests.csproj
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -548,6 +520,18 @@ jobs:
           for project in $PROJECTS; do
             dotnet build "$project" --no-restore -c Release
           done
+      # Cache Playwright's browser binaries to avoid the download on every run; the version pin lives in
+      # Directory.Packages.props, so the key follows it.
+      - name: Cache Playwright Chromium
+        if: matrix.shard == 'browser'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-dotnet-linux-${{ hashFiles('Directory.Packages.props') }}
+      - name: Install Playwright Chromium
+        if: matrix.shard == 'browser' && steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
       # The COM source generator's stubs and CsWin32's interop (Desktop/Windows) are Windows-only and generated, so
       # they are left out like the [ExcludeFromCodeCoverage] interop they serve; the Windows job exercises them.
       - name: Test with coverage
@@ -688,6 +672,15 @@ jobs:
           global-json-file: global.json
       - name: Build
         run: dotnet build rig.slnx -c Release
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: playwright-dotnet-windows-${{ hashFiles('Directory.Packages.props') }}
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net10.0/playwright.ps1 install chromium
       - name: Test
         run: dotnet test --solution rig.slnx --no-build -c Release
 

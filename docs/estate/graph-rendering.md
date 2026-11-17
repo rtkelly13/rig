@@ -2,8 +2,8 @@
 
 **Code:** [`web/estateEdges.ts`](../../web/estateEdges.ts) (the router) ·
 [`web/Estate.tsx`](../../web/Estate.tsx) (the page) ·
-**Test:** `test_estate_lines_turn_in_gutters_and_never_cross_a_box` in
-[`tests/test_web_spa.py`](../../tests/test_web_spa.py) ·
+**Test:** `EstateLinesBrowserTests` in
+[`tests/Rig.Web.BrowserTests`](../../tests/Rig.Web.BrowserTests/EstateLinesBrowserTests.cs) ·
 **Generic version:** the vault's `graph-layout` skill (`obsidian-vault/.agents/skills/graph-layout/`)
 
 The estate page draws the repos as a dependency graph. The boxes are placed by the
