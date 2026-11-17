@@ -94,29 +94,27 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
             return null;
         }
 
-        foreach (var attestation in attestations)
+        var payload = attestations
+            .Where(a => (JsonShape.AsText(a.Field("predicateType")) ?? string.Empty).Contains("slsa.dev/provenance", StringComparison.Ordinal))
+            .Select(a => JsonShape.AsText(a.Field("bundle").Field("dsseEnvelope").Field("payload")))
+            .FirstOrDefault(p => p is not null);
+        if (payload is null)
         {
-            var payload = JsonShape.AsText(attestation.Field("bundle").Field("dsseEnvelope").Field("payload"));
-            if (payload is null || !(JsonShape.AsText(attestation.Field("predicateType")) ?? string.Empty).Contains("slsa.dev/provenance", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var build = Decode(payload).Field("predicate").Field("buildDefinition");
-            if (build.Field("externalParameters").Field("workflow") is not JsonObject workflow)
-            {
-                return null;
-            }
-
-            var gh = build.Field("internalParameters").Field("github");
-            return new(
-                JsonShape.AsText(workflow.Field("repository")) ?? string.Empty,
-                JsonShape.AsText(workflow.Field("path")) ?? string.Empty,
-                Long(gh.Field("repository_id")),
-                Long(gh.Field("repository_owner_id")));
+            return null;
         }
 
-        return null;
+        var build = Decode(payload).Field("predicate").Field("buildDefinition");
+        if (build.Field("externalParameters").Field("workflow") is not JsonObject workflow)
+        {
+            return null;
+        }
+
+        var gh = build.Field("internalParameters").Field("github");
+        return new(
+            JsonShape.AsText(workflow.Field("repository")) ?? string.Empty,
+            JsonShape.AsText(workflow.Field("path")) ?? string.Empty,
+            Long(gh.Field("repository_id")),
+            Long(gh.Field("repository_owner_id")));
     }
 
     /// <summary>
@@ -126,29 +124,19 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     public static IReadOnlyList<TrustConfig> ParseNpmTrust(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var configs = new List<TrustConfig>();
-        foreach (var document in Documents(text))
-        {
-            IEnumerable<JsonNode?> entries = document switch
+        return [.. Documents(text)
+            .SelectMany(document => document switch
             {
                 JsonArray list => list,
                 JsonObject single => [single],
-                _ => [],
-            };
-            foreach (var entry in entries)
-            {
-                if (entry.Field("claims") is JsonObject claims)
-                {
-                    configs.Add(new(JsonShape.AsText(claims.Field("repository")) ?? string.Empty, JsonShape.AsText(claims.Field("workflow_ref").Field("file")) ?? string.Empty, JsonShape.AsText(claims.Field("environment"))));
-                }
-                else if (JsonShape.AsText(entry.Field("repository")) is { } repository)
-                {
-                    configs.Add(new(repository, JsonShape.AsText(entry.Field("file")) ?? string.Empty, JsonShape.AsText(entry.Field("environment"))));
-                }
-            }
-        }
-
-        return configs;
+                _ => (IEnumerable<JsonNode?>)[],
+            })
+            .Select(entry => entry.Field("claims") is JsonObject claims
+                ? new TrustConfig(JsonShape.AsText(claims.Field("repository")) ?? string.Empty, JsonShape.AsText(claims.Field("workflow_ref").Field("file")) ?? string.Empty, JsonShape.AsText(claims.Field("environment")))
+                : JsonShape.AsText(entry.Field("repository")) is { } repository
+                    ? new TrustConfig(repository, JsonShape.AsText(entry.Field("file")) ?? string.Empty, JsonShape.AsText(entry.Field("environment")))
+                    : null)
+            .OfType<TrustConfig>()];
     }
 
     private static List<JsonNode?> Documents(string text)
@@ -175,21 +163,11 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         try
         {
             using var response = await http.GetAsync(new Uri(url), cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-
-            return Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+            return response.IsSuccessStatusCode ? Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false)) : null;
         }
-        catch (HttpRequestException)
+        catch (Exception e) when (e is HttpRequestException || (e is TaskCanceledException && !cancellationToken.IsCancellationRequested))
         {
-            // Offline, DNS or TLS: the lookup reads as no answer rather than ending the audit.
-            return null;
-        }
-        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            // HttpClient's own timeout.
+            // Offline, DNS, TLS or HttpClient's own timeout: the lookup reads as no answer rather than ending the audit.
             return null;
         }
     }
