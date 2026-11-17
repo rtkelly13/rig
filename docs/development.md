@@ -21,7 +21,7 @@ committed because the Python CLI and server must work without Node:
 
 | Entry | Output |
 |---|---|
-| `web/app.src.css` | `src/rig/web_host/templates/app_assets/app.css` (with the SPA bundle) |
+| `web/app.src.css` | `src/Rig.Web/templates/app_assets/app.css` (with the SPA bundle) |
 | `tools/image-drift/styles/gallery.src.css` | `tools/image-drift/src/image_drift/templates/gallery.css`, inlined into preview pages |
 | `styles/c4.src.css` | `src/Rig.Web/C4/static/c4.css` |
 

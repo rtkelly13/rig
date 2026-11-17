@@ -7,7 +7,7 @@ internal static class Repo
     public static string Root { get; } = Find();
 
     /// <summary>The SPA document, its bundle and the studio files the host serves.</summary>
-    public static string Templates { get; } = Path.Join(Root, "src", "rig", "web_host", "templates");
+    public static string Templates { get; } = Path.Join(Root, "src", "Rig.Web", "templates");
 
     private static string Find()
     {

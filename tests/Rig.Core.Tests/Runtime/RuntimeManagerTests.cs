@@ -74,12 +74,13 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Null(state.Previous);
         Assert.Equal(PathResolution.Resolve(repo), state.Repo);
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
-            ["uv", "sync", "--project", copy, "--frozen", "--no-dev", "--link-mode", "copy"]));
-        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
             ["dotnet", "publish", Path.Join(copy, "src", "Rig.Launcher"), "-c", "Release", "-o", Path.Join(copy, "rig"), "-m:2", "-v", "q"]));
         var windows = OperatingSystem.IsWindows();
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "run", "--help"]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "install", "--help"]));
+        // No Python environment is built or probed: the copy is the published rig and nothing else.
+        Assert.DoesNotContain(tools.Calls, call => call.Argv[0] == "uv" || call.Argv.Contains("import rig.csharp_cli", StringComparer.Ordinal));
+        Assert.False(Directory.Exists(Path.Join(copy, ".venv")));
     }
 
     [Fact]
@@ -329,10 +330,8 @@ public sealed class RuntimeManagerTests : IDisposable
     }
 
     [Fact]
-    public void Executable_and_Published_return_correct_names_per_os()
+    public void Published_returns_correct_names_per_os()
     {
-        Assert.EndsWith(Path.Join("bin", "rig"), RuntimeManager.Executable("/rt/curr", "rig", windows: false), StringComparison.Ordinal);
-        Assert.EndsWith(Path.Join("Scripts", "rig.exe"), RuntimeManager.Executable(@"C:\rt\curr", "rig", windows: true), StringComparison.Ordinal);
         Assert.EndsWith(Path.Join("rig", "rig"), RuntimeManager.Published("/rt/curr", "rig", windows: false), StringComparison.Ordinal);
         Assert.EndsWith(Path.Join("rig", "rig.exe"), RuntimeManager.Published(@"C:\rt\curr", "rig", windows: true), StringComparison.Ordinal);
     }
@@ -746,13 +745,6 @@ public sealed class RuntimeManagerTests : IDisposable
     }
 
     [Fact]
-    public void Executable_renders_platform_paths()
-    {
-        Assert.Equal(Path.Join("/c", ".venv", "bin", "rig"), RuntimeManager.Executable("/c", "rig", windows: false));
-        Assert.Equal(Path.Join(@"C:\c", ".venv", "Scripts", "rig.exe"), RuntimeManager.Executable(@"C:\c", "rig", windows: true));
-    }
-
-    [Fact]
     public void RunningCopy_detects_whether_path_is_inside_root()
     {
         Assert.True(RuntimeManager.RunningCopy(Path.Join(Root, "copy1"), Root));
@@ -889,11 +881,6 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Equal(Path.Join(Root, RuntimeManager.LinkName), RuntimeManager.CurrentLink(Root));
         Assert.True(RuntimeManager.RunningCopy(Path.Join(Root, "sub", "file"), Root));
         Assert.False(RuntimeManager.RunningCopy(_temp.Path, Root));
-
-        var unixExe = RuntimeManager.Executable("/copy", "python", windows: false);
-        Assert.Equal(Path.Join("/copy", ".venv", "bin", "python"), unixExe);
-        var winExe = RuntimeManager.Executable(@"C:\copy", "python", windows: true);
-        Assert.Equal(Path.Join(@"C:\copy", ".venv", "Scripts", "python.exe"), winExe);
 
         var unixPub = RuntimeManager.Published("/copy", "rig", windows: false);
         Assert.Equal(Path.Join("/copy", "rig", "rig"), unixPub);

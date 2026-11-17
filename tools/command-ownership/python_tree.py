@@ -12,7 +12,6 @@ import importlib
 import inspect
 import json
 import sys
-import textwrap
 import tomllib
 from pathlib import Path
 
@@ -26,54 +25,6 @@ def callback_id(callback):
     if original.__closure__:
         raise RuntimeError(f"Unsupported stateful CLI closure: {original.__module__}:{original.__qualname__}")
     return f"{original.__module__}:{original.__qualname__}"
-
-
-def thin_alias(callback):
-    """Accept exactly a whole-line delegation, with no policy, branching or fallback."""
-    # Typer adapts even a plain callback through this exact framework code object.
-    # Strip that one adapter, not arbitrary decorators that happen to use wraps().
-    framework_codes = {
-        code
-        for code in typer.main.get_callback.__code__.co_consts
-        if inspect.iscode(code) and code.co_name == "wrapper"
-    }
-    registered = callback.__wrapped__ if callback.__code__ in framework_codes else callback
-    original = inspect.unwrap(registered)
-    if original is not registered:
-        return None
-    from rig import csharp_cli
-
-    if original.__globals__.get("csharp_cli") is not csharp_cli or original.__globals__.get("typer") is not typer:
-        return None
-    tree = ast.parse(textwrap.dedent(inspect.getsource(original)))
-    function = tree.body[0]
-    body = function.body
-    if isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
-        body = body[1:]
-    if len(body) != 1 or not isinstance(body[0], ast.Raise):
-        return None
-    raised = body[0].exc
-    if not isinstance(raised, ast.Call) or ast.unparse(raised.func) != "typer.Exit" or raised.args:
-        return None
-    if len(raised.keywords) != 1 or raised.keywords[0].arg != "code":
-        return None
-    call = raised.keywords[0].value
-    if (
-        not isinstance(call, ast.Call)
-        or ast.unparse(call.func) != "csharp_cli.run"
-        or len(call.args) != 1
-        or call.keywords
-    ):
-        return None
-    argument = call.args[0]
-    if not isinstance(argument, ast.List) or not argument.elts:
-        return None
-    *prefix, tail = argument.elts
-    if not isinstance(tail, ast.Starred) or ast.unparse(tail.value) != "ctx.args":
-        return None
-    if not all(isinstance(item, ast.Constant) and isinstance(item.value, str) for item in prefix):
-        return None
-    return " ".join(item.value for item in prefix)
 
 
 def imported_names(tree):
@@ -124,7 +75,7 @@ def walk(command, path):
             "Path": path,
             "Owner": f"py:{callback_id(callback)}",
             "Platforms": ["linux", "macos", "windows"],
-            "Alias": thin_alias(callback),
+            "Alias": None,
         }
     if isinstance(command, click.Group):
         with click.Context(command) as context:
@@ -204,7 +155,7 @@ def discover(root):
     project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
     if project["project"].get("gui-scripts") or project["project"].get("entry-points"):
         raise RuntimeError("Unsupported GUI/plugin entry points; add a runtime discovery adapter")
-    for name, target in project["project"]["scripts"].items():
+    for name, target in project["project"].get("scripts", {}).items():
         if target != "rig.csharp_cli:entry":
             raise RuntimeError(f"Unsupported console entry point: {name}={target}; add a runtime discovery adapter")
         surfaces.append(f"script:{name}={target}")
