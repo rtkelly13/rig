@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Otel;
@@ -166,36 +167,42 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         return [.. seen.Values.Order(UnicodeText.CodePointOrder)];
     }
 
-    /// <summary>The marks in <paramref name="path"/>; none when it is missing, unreadable or malformed.</summary>
-    public static Dictionary<string, FileMark> ReadMarks(string path)
+    /// <summary>The marks in <paramref name="path"/>; none when it is missing, unreadable or malformed, in which case <paramref name="problem"/> hears what was wrong.</summary>
+    public static Dictionary<string, FileMark> ReadMarks(string path, Action<string>? problem = null)
     {
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(path, Encoding.UTF8));
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
-            {
-                return [];
-            }
-
-            var marks = new Dictionary<string, FileMark>(StringComparer.Ordinal);
-            foreach (var entry in document.RootElement.EnumerateObject())
-            {
-                if (entry.Value.ValueKind != JsonValueKind.Object
-                    || LaxJson.Int(LaxJson.Field(entry.Value, "size")) is not { } size
-                    || LaxJson.Int(LaxJson.Field(entry.Value, "mtime_ns")) is not { } mtime)
-                {
-                    return [];
-                }
-
-                marks[entry.Name] = new FileMark(size, mtime);
-            }
-
-            return marks;
+            return JsonProblem.Run(path, () => Marks(File.ReadAllText(path, Encoding.UTF8)));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        catch (JsonInputException e)
+        {
+            problem?.Invoke(e.Message);
+            return [];
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return [];
         }
+    }
+
+    private static Dictionary<string, FileMark> Marks(string text)
+    {
+        using var document = JsonDocument.Parse(text);
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(document.RootElement));
+        }
+
+        var marks = new Dictionary<string, FileMark>(StringComparer.Ordinal);
+        foreach (var entry in document.RootElement.EnumerateObject())
+        {
+            var path = JsonProblem.Child("$", entry.Name);
+            marks[entry.Name] = entry.Value.ValueKind == JsonValueKind.Object
+                ? new FileMark(JsonProblem.WholeNumber(entry.Value, "size", path), JsonProblem.WholeNumber(entry.Value, "mtime_ns", path))
+                : throw JsonProblem.Expected(path, "an object", JsonProblem.Describe(entry.Value));
+        }
+
+        return marks;
     }
 
     /// <summary>Writes <paramref name="marks"/> sorted, two-space indented, through a temporary file.</summary>
@@ -237,9 +244,9 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(files);
-        var marks = ReadMarks(statePath);
-        List<FileResult> results = [];
         List<string> errors = [];
+        var marks = ReadMarks(statePath, errors.Add);
+        List<FileResult> results = [];
         var unchanged = 0;
         foreach (var path in files)
         {
@@ -302,7 +309,8 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         {
             using var document = JsonDocument.Parse(File.ReadAllText(state, Encoding.UTF8));
             return document.RootElement.ValueKind == JsonValueKind.Object
-                && LaxJson.Field(document.RootElement, "repo") is { ValueKind: JsonValueKind.String } repo
+                && document.RootElement.TryGetProperty("repo", out var repo)
+                && repo.ValueKind == JsonValueKind.String
                 ? repo.GetString()
                 : null;
         }

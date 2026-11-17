@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Otel;
@@ -13,7 +15,9 @@ namespace Rig.Core.Otel;
 /// <param name="Span">The span, as written.</param>
 /// <param name="EndNs">Its end time, else its start time, else 0.</param>
 /// <param name="Incomplete">It was flushed before it ended (<c>span.incomplete</c>).</param>
-public sealed record FileSpan(string TraceId, string SpanId, JsonNode? Resource, JsonNode? Scope, JsonObject Span, long EndNs, bool Incomplete);
+/// <param name="Origin">Where it was read from, e.g. <c>file.ndjson line 3</c>; empty when it was not read.</param>
+/// <param name="SpanPath">The JSON path of the span in its line, so a fault found later names it.</param>
+public sealed record FileSpan(string TraceId, string SpanId, JsonNode? Resource, JsonNode? Scope, JsonObject Span, long EndNs, bool Incomplete, string Origin = "", string SpanPath = "$");
 
 /// <summary>
 /// The OTLP/JSON trace files rig and its tools write, read and regrouped for the collector.
@@ -23,8 +27,11 @@ public static class TraceSpans
     /// <summary>How many spans go in one request body.</summary>
     public const int BatchSpans = 500;
 
-    /// <summary>Every span in the trace file at <paramref name="path"/>; none when it cannot be read.</summary>
-    public static IReadOnlyList<FileSpan> Read(string path)
+    /// <summary>
+    /// Every span in the trace file at <paramref name="path"/>; none when it cannot be read. Each line or span skipped is
+    /// reported to <paramref name="skipped"/> as <c>path line N: $.json.path: expected X, found Y</c>.
+    /// </summary>
+    public static IReadOnlyList<FileSpan> Read(string path, Action<string>? skipped = null)
     {
         string text;
         try
@@ -36,22 +43,25 @@ public static class TraceSpans
             return [];
         }
 
-        return Parse(text);
+        return Parse(text, skipped, path);
     }
 
     /// <summary>
     /// Every span in <paramref name="text"/>. A line that is not an envelope (including a torn last line) is skipped
-    /// whole, as is a span without a string trace and span id.
+    /// whole, as is a span without a string trace and span id or with a start or end time that is not a whole number.
+    /// Each skip is reported to <paramref name="skipped"/> as <c>source line N: $.json.path: expected X, found Y</c>.
     /// </summary>
-    public static IReadOnlyList<FileSpan> Parse(string text)
+    public static IReadOnlyList<FileSpan> Parse(string text, Action<string>? skipped = null, string source = "trace data")
     {
         ArgumentNullException.ThrowIfNull(text);
         var spans = new List<FileSpan>();
+        var number = 0;
         foreach (var line in UnicodeText.SplitLines(text))
         {
-            if (UnicodeText.Strip(line).Length > 0 && Envelope(line) is { } envelope)
+            number++;
+            if (UnicodeText.Strip(line).Length > 0)
             {
-                spans.AddRange(envelope);
+                spans.AddRange(Envelope(line, $"{source} line {number.ToString(CultureInfo.InvariantCulture)}", skipped));
             }
         }
 
@@ -121,44 +131,44 @@ public static class TraceSpans
         return bodies;
     }
 
-    // The spans of one line, or null when the line is not an envelope. The envelope is decoded strictly: a
-    // field of the wrong shape anywhere in it dropped the whole line.
-    private static List<FileSpan>? Envelope(string line)
+    // The spans of one line; none, reported, when the line is not an envelope. The envelope is decoded strictly: a
+    // field of the wrong shape anywhere in it drops the whole line, and a span whose own fields are wrong drops that span.
+    private static List<FileSpan> Envelope(string line, string origin, Action<string>? skipped)
     {
-        JsonElement root;
         try
         {
-            using var document = JsonDocument.Parse(line);
-            root = document.RootElement.Clone();
+            return JsonProblem.Run(origin, () => Decode(line, origin, skipped));
         }
-        catch (JsonException)
+        catch (JsonInputException e)
         {
-            return null;
+            skipped?.Invoke(e.Message);
+            return [];
         }
+    }
 
-        if (root.ValueKind != JsonValueKind.Object || Objects(LaxJson.Field(root, "resourceSpans")) is not { } resources)
+    private static List<FileSpan> Decode(string line, string origin, Action<string>? skipped)
+    {
+        using var document = JsonDocument.Parse(line);
+        var root = document.RootElement.Clone();
+        if (root.ValueKind != JsonValueKind.Object)
         {
-            return null;
+            throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(root));
         }
 
         var spans = new List<FileSpan>();
-        foreach (var resource in resources)
+        foreach (var (resource, resourcePath) in Objects(root, "resourceSpans", "$"))
         {
-            if (Objects(LaxJson.Field(resource, "scopeSpans")) is not { } scopes)
+            var resourceNode = Node(OtlpJson.Field(resource, "resource"));
+            foreach (var (scope, scopePath) in Objects(resource, "scopeSpans", resourcePath))
             {
-                return null;
-            }
-
-            var resourceNode = Node(LaxJson.Field(resource, "resource"));
-            foreach (var scope in scopes)
-            {
-                if (Objects(LaxJson.Field(scope, "spans")) is not { } raws)
+                var scopeNode = Node(OtlpJson.Field(scope, "scope"));
+                foreach (var (raw, spanPath) in Objects(scope, "spans", scopePath))
                 {
-                    return null;
+                    if (View(raw, spanPath, origin, resourceNode, scopeNode, skipped) is { } span)
+                    {
+                        spans.Add(span);
+                    }
                 }
-
-                var scopeNode = Node(LaxJson.Field(scope, "scope"));
-                spans.AddRange(raws.Select(raw => View(raw, resourceNode, scopeNode)).OfType<FileSpan>());
             }
         }
 
@@ -166,36 +176,69 @@ public static class TraceSpans
     }
 
     // An absent list reads as empty; anything but a list of objects fails.
-    private static List<JsonElement>? Objects(JsonElement? value) => value switch
+    private static List<(JsonElement Item, string Path)> Objects(JsonElement parent, string key, string path)
     {
-        null => [],
-        { ValueKind: JsonValueKind.Array } array when array.EnumerateArray().All(item => item.ValueKind == JsonValueKind.Object) => [.. array.EnumerateArray()],
-        _ => null,
-    };
-
-    private static FileSpan? View(JsonElement raw, JsonNode? resource, JsonNode? scope)
-    {
-        if (LaxJson.Field(raw, "traceId") is not { ValueKind: JsonValueKind.String } trace
-            || LaxJson.Field(raw, "spanId") is not { ValueKind: JsonValueKind.String } span
-            || trace.GetString() is not { Length: > 0 } traceId
-            || span.GetString() is not { Length: > 0 } spanId)
+        if (OtlpJson.Field(parent, key) is not { } value)
         {
-            return null;
+            return [];
         }
 
-        var end = LaxJson.Int(LaxJson.Field(raw, "endTimeUnixNano")) ?? 0;
-        var start = LaxJson.Int(LaxJson.Field(raw, "startTimeUnixNano")) ?? 0;
-        return new FileSpan(traceId, spanId, resource?.DeepClone(), scope?.DeepClone(), (JsonObject)Node(raw)!, end != 0 ? end : start, Incomplete(raw));
+        var listPath = JsonProblem.Child(path, key);
+        return value.ValueKind == JsonValueKind.Array
+            ? [.. value.EnumerateArray().Select((item, index) => item.ValueKind == JsonValueKind.Object
+                ? (item, JsonProblem.Item(listPath, index))
+                : throw JsonProblem.Expected(JsonProblem.Item(listPath, index), "an object", JsonProblem.Describe(item)))]
+            : throw JsonProblem.Expected(listPath, "a list", JsonProblem.Describe(value));
     }
 
-    // Lenient: attributes of the wrong shape (or any attribute not an object) read as none.
-    private static bool Incomplete(JsonElement raw) =>
-        Objects(LaxJson.Field(raw, "attributes")) is { } attributes
-        && attributes.Any(attribute =>
-            LaxJson.Field(attribute, "key") is { ValueKind: JsonValueKind.String } key
-            && key.ValueEquals("span.incomplete")
-            && LaxJson.Field(attribute, "value") is { ValueKind: JsonValueKind.Object } value
-            && LaxJson.Bool(LaxJson.Field(value, "boolValue")) == true);
+    private static FileSpan? View(JsonElement raw, string path, string origin, JsonNode? resource, JsonNode? scope, Action<string>? skipped)
+    {
+        try
+        {
+            var traceId = Id(raw, "traceId", path);
+            var spanId = Id(raw, "spanId", path);
+            var end = OtlpJson.Int64(OtlpJson.Field(raw, "endTimeUnixNano"), JsonProblem.Child(path, "endTimeUnixNano")) ?? 0;
+            var start = OtlpJson.Int64(OtlpJson.Field(raw, "startTimeUnixNano"), JsonProblem.Child(path, "startTimeUnixNano")) ?? 0;
+            return new FileSpan(traceId, spanId, resource?.DeepClone(), scope?.DeepClone(), (JsonObject)Node(raw)!, end != 0 ? end : start, Incomplete(raw, path), origin, path);
+        }
+        catch (JsonInputException e)
+        {
+            skipped?.Invoke(e.Within(origin).Message);
+            return null;
+        }
+    }
+
+    private static string Id(JsonElement raw, string key, string path) => OtlpJson.Field(raw, key) switch
+    {
+        { ValueKind: JsonValueKind.String } text when text.GetString() is { Length: > 0 } id => id,
+        { } other => throw JsonProblem.Expected(JsonProblem.Child(path, key), "a non-empty string", JsonProblem.Describe(other)),
+        null => throw JsonProblem.Expected(JsonProblem.Child(path, key), "a non-empty string", "nothing"),
+    };
+
+    // The span.incomplete attribute is a bool; attributes of any other name are not read.
+    private static bool Incomplete(JsonElement raw, string path)
+    {
+        foreach (var (attribute, attributePath) in Objects(raw, "attributes", path))
+        {
+            if (OtlpJson.Field(attribute, "key") is { ValueKind: JsonValueKind.String } key
+                && key.ValueEquals("span.incomplete")
+                && OtlpJson.Field(attribute, "value") is { ValueKind: not JsonValueKind.Null } value)
+            {
+                var valuePath = JsonProblem.Child(attributePath, "value");
+                if (value.ValueKind != JsonValueKind.Object)
+                {
+                    throw JsonProblem.Expected(valuePath, "an object", JsonProblem.Describe(value));
+                }
+
+                if (OtlpJson.Bool(OtlpJson.Field(value, "boolValue"), JsonProblem.Child(valuePath, "boolValue")) == true)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 
     // A node from an element, the last of a repeated key winning.
     private static JsonNode? Node(JsonElement? element)

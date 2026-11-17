@@ -273,20 +273,16 @@ public sealed class ChromeTracesTests
     }
 
     [Fact]
-    public void Attribute_values_decode_as_recorded()
+    public void Attribute_values_decode_to_plain_values()
     {
         var attributes = new JsonArray(
             new JsonObject { ["key"] = "list", ["value"] = JsonNode.Parse("""{"arrayValue":{"values":[{"stringValue":"a"},{"intValue":"2"},{"doubleValue":1.5},{"boolValue":true}]}}""") },
             new JsonObject { ["key"] = "empty", ["value"] = JsonNode.Parse("""{"arrayValue":{}}""") },
-            new JsonObject { ["key"] = "badlist", ["value"] = JsonNode.Parse("""{"arrayValue":{"values":[7]},"stringValue":"s"}""") },
-            new JsonObject { ["key"] = "notlist", ["value"] = JsonNode.Parse("""{"arrayValue":3,"intValue":" -4 "}""") },
-            new JsonObject { ["key"] = "wrong", ["value"] = JsonNode.Parse("""{"stringValue":1,"boolValue":"x","intValue":true}""") },
-            new JsonObject { ["key"] = "whole", ["value"] = JsonNode.Parse("""{"intValue":5.0}""") },
-            new JsonObject { ["key"] = "frac", ["value"] = JsonNode.Parse("""{"intValue":5.5,"doubleValue":2}""") },
-            new JsonObject { ["key"] = "falsy", ["value"] = JsonNode.Parse("""{"intValue":false}""") },
-            new JsonObject { ["key"] = "nothing", ["value"] = JsonNode.Parse("""{"intValue":"x","doubleValue":"y"}""") },
+            new JsonObject { ["key"] = "array_first", ["value"] = JsonNode.Parse("""{"arrayValue":{"values":[]},"stringValue":"s"}""") },
+            new JsonObject { ["key"] = "digits", ["value"] = JsonNode.Parse("""{"intValue":"-4"}""") },
+            new JsonObject { ["key"] = "number", ["value"] = JsonNode.Parse("""{"intValue":5,"doubleValue":2}""") },
+            new JsonObject { ["key"] = "real", ["value"] = JsonNode.Parse("""{"doubleValue":2}""") },
             new JsonObject { ["key"] = "nullvalue", ["value"] = JsonNode.Parse("""{"intValue":null}""") },
-            new JsonObject { ["key"] = "huge", ["value"] = JsonNode.Parse("""{"intValue":1e30}""") },
             new JsonObject { ["key"] = "novalue" });
         var raw = Raw("s", "f1");
         raw["attributes"] = attributes;
@@ -295,16 +291,36 @@ public sealed class ChromeTracesTests
 
         Assert.Equal(new object?[] { "a", 2L, 1.5, true }, (List<object?>)span.Attributes["list"]!);
         Assert.Empty((List<object?>)span.Attributes["empty"]!);
-        Assert.Equal("s", span.Attributes["badlist"]);
-        Assert.Equal(-4L, span.Attributes["notlist"]);
-        Assert.Equal(1L, span.Attributes["wrong"]);
-        Assert.Equal(5L, span.Attributes["whole"]);
-        Assert.Equal(2.0, span.Attributes["frac"]);
-        Assert.Equal(0L, span.Attributes["falsy"]);
-        Assert.Null(span.Attributes["nothing"]);
+        Assert.Empty((List<object?>)span.Attributes["array_first"]!);
+        Assert.Equal(-4L, span.Attributes["digits"]);
+        Assert.Equal(5L, span.Attributes["number"]);
+        Assert.Equal(2.0, span.Attributes["real"]);
         Assert.Null(span.Attributes["nullvalue"]);
-        Assert.Null(span.Attributes["huge"]);
         Assert.Null(span.Attributes["novalue"]);
+    }
+
+    [Theory]
+    [InlineData("""{"stringValue":1}""", "value.stringValue: expected a string, found the number 1")]
+    [InlineData("""{"boolValue":"x"}""", "value.boolValue: expected true or false, found the string \"x\"")]
+    [InlineData("""{"boolValue":1}""", "value.boolValue: expected true or false, found the number 1")]
+    [InlineData("""{"intValue":true}""", "value.intValue: expected a whole number or a string of digits, found true")]
+    [InlineData("""{"intValue":5.5}""", "value.intValue: expected a whole number or a string of digits, found the number 5.5")]
+    [InlineData("""{"intValue":5.0}""", "value.intValue: expected a whole number or a string of digits, found the number 5.0")]
+    [InlineData("""{"intValue":" -4 "}""", "value.intValue: expected a whole number or a string of digits, found the string \" -4 \"")]
+    [InlineData("""{"intValue":"x"}""", "value.intValue: expected a whole number or a string of digits, found the string \"x\"")]
+    [InlineData("""{"doubleValue":"y"}""", "value.doubleValue: expected a number, found the string \"y\"")]
+    [InlineData("""{"arrayValue":3}""", "value.arrayValue: expected an object holding values, found the number 3")]
+    [InlineData("""{"arrayValue":{"values":[7]}}""", "value.arrayValue.values[0]: expected an AnyValue object, found the number 7")]
+    [InlineData("""{"arrayValue":{"values":"x"}}""", "value.arrayValue.values: expected a list, found the string \"x\"")]
+    public void An_attribute_value_of_the_wrong_type_skips_the_span_and_says_why(string value, string problem)
+    {
+        var raw = Raw("s", "f1");
+        raw["attributes"] = new JsonArray(new JsonObject { ["key"] = "k", ["value"] = JsonNode.Parse(value) });
+        List<string> skipped = [];
+
+        Assert.Empty(ChromeTraces.ParseLines([Envelope(raw)], skipped.Add, "traces.ndjson"));
+
+        Assert.Equal(["traces.ndjson line 1: $.resourceSpans[0].scopeSpans[0].spans[0].attributes[0]." + problem], skipped);
     }
 
     [Theory]
@@ -340,18 +356,33 @@ public sealed class ChromeTracesTests
     }
 
     [Theory]
-    [InlineData("""{"code":2,"message":null}""", "None")]
-    [InlineData("""{"code":2,"message":true}""", "True")]
-    [InlineData("""{"code":2,"message":false}""", "False")]
-    [InlineData("""{"code":2,"message":3}""", "3")]
-    [InlineData("""{"code":2.0,"message":"m"}""", "m")]
-    [InlineData("""{"code":"2","message":"m"}""", "")]
+    [InlineData("""{"code":2,"message":null}""", "")]
+    [InlineData("""{"code":2}""", "")]
+    [InlineData("""{"code":2,"message":"m"}""", "m")]
+    [InlineData("""{"code":1,"message":"m"}""", "")]
+    [InlineData("""{"message":"m"}""", "")]
     public void The_error_is_the_message_of_an_error_status(string status, string error)
     {
         var raw = Raw("s", "s1");
         raw["status"] = JsonNode.Parse(status);
 
         Assert.Equal(error, Assert.Single(ChromeTraces.ParseLines([Envelope(raw)])).Error);
+    }
+
+    [Theory]
+    [InlineData("""{"code":2,"message":true}""", "status.message: expected a string, found true")]
+    [InlineData("""{"code":2,"message":3}""", "status.message: expected a string, found the number 3")]
+    [InlineData("""{"code":2.0,"message":"m"}""", "status.code: expected a whole number, found the number 2.0")]
+    [InlineData("""{"code":"2","message":"m"}""", "status.code: expected a whole number, found the string \"2\"")]
+    public void A_status_of_the_wrong_type_skips_the_span_and_says_why(string status, string problem)
+    {
+        var raw = Raw("s", "s1");
+        raw["status"] = JsonNode.Parse(status);
+        List<string> skipped = [];
+
+        Assert.Empty(ChromeTraces.ParseLines([Envelope(raw)], skipped.Add, "traces.ndjson"));
+
+        Assert.Equal(["traces.ndjson line 1: $.resourceSpans[0].scopeSpans[0].spans[0]." + problem], skipped);
     }
 
     [Fact]

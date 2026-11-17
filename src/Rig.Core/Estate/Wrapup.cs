@@ -717,7 +717,7 @@ public sealed class WrapupOrca(IProc proc)
     {
         try
         {
-            var root = OrcaJson.Object(text);
+            var root = OrcaJson.Object(text, "orca output");
             _ = OrcaJson.Bool(root, "ok");
             return root;
         }
@@ -759,7 +759,7 @@ internal static class WrapupWire
     {
         try
         {
-            var root = OrcaJson.Object(text);
+            var root = OrcaJson.Object(text, "orca receipt");
             var ok = OrcaJson.Bool(root, "ok") ?? false;
             var error = OrcaJson.Lenient(() => OrcaJson.Object(root, "error"));
             return (true, ok, error is null ? null : OrcaJson.Lenient(() => OrcaJson.String(error, "message")));

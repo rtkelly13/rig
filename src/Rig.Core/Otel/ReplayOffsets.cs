@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Otel;
@@ -37,8 +38,11 @@ public static class ReplayOffsets
     public static bool SameFile(ReplayOffset? held, ReadOnlySpan<byte> raw) =>
         held is not null && held.Sent >= 0 && held.Sent <= raw.Length && (held.Head.Length == 0 || held.Head == HeadHash(raw, held.Sent));
 
-    /// <summary>The offsets in <paramref name="path"/>; none when it is missing, unreadable, or any entry is malformed.</summary>
-    public static Dictionary<string, ReplayOffset> Read(string path)
+    /// <summary>
+    /// The offsets in <paramref name="path"/>; none when it is missing, unreadable, or any entry is malformed, in which case
+    /// <paramref name="problem"/> hears <c>path: $.json.path: expected X, found Y</c>.
+    /// </summary>
+    public static Dictionary<string, ReplayOffset> Read(string path, Action<string>? problem = null)
     {
         string text;
         try
@@ -50,52 +54,51 @@ public static class ReplayOffsets
             return [];
         }
 
-        return Parse(text);
+        return Parse(text, problem, path);
     }
 
-    /// <summary>The offsets in <paramref name="text"/>; none when any entry is malformed, as the decode is all or nothing.</summary>
-    public static Dictionary<string, ReplayOffset> Parse(string text)
+    /// <summary>
+    /// The offsets in <paramref name="text"/>; none when any entry is malformed, as the decode is all or nothing, in which case
+    /// <paramref name="problem"/> hears <c>source: $.json.path: expected X, found Y</c>.
+    /// </summary>
+    public static Dictionary<string, ReplayOffset> Parse(string text, Action<string>? problem = null, string source = "replay offsets")
     {
         try
         {
-            using var document = JsonDocument.Parse(text);
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
-            {
-                return [];
-            }
-
-            var offsets = new Dictionary<string, ReplayOffset>(StringComparer.Ordinal);
-            foreach (var entry in document.RootElement.EnumerateObject())
-            {
-                if (entry.Value.ValueKind != JsonValueKind.Object
-                    || Inode(LaxJson.Field(entry.Value, "inode")) is not { } inode
-                    || LaxJson.Int(LaxJson.Field(entry.Value, "sent")) is not { } sent)
-                {
-                    return [];
-                }
-
-                var head = LaxJson.Field(entry.Value, "head");
-                if (head is { ValueKind: not JsonValueKind.String })
-                {
-                    return [];
-                }
-
-                offsets[entry.Name] = new ReplayOffset(inode, sent, head?.GetString() ?? string.Empty);
-            }
-
-            return offsets;
+            return JsonProblem.Run(source, () => Decode(text));
         }
-        catch (JsonException)
+        catch (JsonInputException e)
         {
+            problem?.Invoke(e.Message);
             return [];
         }
     }
 
-    // An inode is unsigned and can pass long.MaxValue; a negative one (only a hand-edited file holds one) is malformed.
-    private static ulong? Inode(JsonElement? value) =>
-        value is { ValueKind: JsonValueKind.Number } n && n.TryGetUInt64(out var whole) ? whole
-        : LaxJson.Int(value) is { } lax and >= 0 ? (ulong)lax
-        : null;
+    private static Dictionary<string, ReplayOffset> Decode(string text)
+    {
+        using var document = JsonDocument.Parse(text);
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(document.RootElement));
+        }
+
+        var offsets = new Dictionary<string, ReplayOffset>(StringComparer.Ordinal);
+        foreach (var entry in document.RootElement.EnumerateObject())
+        {
+            var path = JsonProblem.Child("$", entry.Name);
+            if (entry.Value.ValueKind != JsonValueKind.Object)
+            {
+                throw JsonProblem.Expected(path, "an object", JsonProblem.Describe(entry.Value));
+            }
+
+            offsets[entry.Name] = new ReplayOffset(
+                JsonProblem.UnsignedInteger(entry.Value, "inode", path),
+                JsonProblem.WholeNumber(entry.Value, "sent", path),
+                JsonProblem.OptionalString(entry.Value, "head", path) ?? string.Empty);
+        }
+
+        return offsets;
+    }
 
     /// <summary>The state file's text: sorted by key, two-space indented, ending in a newline.</summary>
     public static string Render(IReadOnlyDictionary<string, ReplayOffset> offsets)

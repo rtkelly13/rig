@@ -24,6 +24,7 @@ namespace Rig.Cli.Chrome;
 /// <param name="driver">Opens Chrome for the commands that read it; null on Linux, where no native driver exists.</param>
 /// <param name="windows">Whether this is the Windows composition, which alone has the PATH shim to install.</param>
 /// <param name="notes">Writes and opens the note an interrupted unattended run leaves; <see cref="ChromeNotes.Default"/> when null.</param>
+/// <param name="error">Where a span skipped as malformed is reported; the process's standard error when null.</param>
 internal sealed class ChromeTabsCommand(
     Func<string, string?> environment,
     string home,
@@ -32,7 +33,8 @@ internal sealed class ChromeTabsCommand(
     TextWriter output,
     ChromeTabsDriver? driver = null,
     bool windows = true,
-    ChromeNotes? notes = null)
+    ChromeNotes? notes = null,
+    TextWriter? error = null)
 {
     /// <summary>The group's name, shared with the forwarding row.</summary>
     public const string Name = "chrome-tabs";
@@ -378,7 +380,9 @@ internal sealed class ChromeTabsCommand(
     private string Directory(string? chosen) => chosen ?? ChromeTraces.TracesDir(environment, home);
 
     private IReadOnlyList<TraceRun> Load(string? directory, int days) =>
-        ChromeTraces.Runs(ChromeTraces.LoadSpans(Directory(directory), Today, days));
+        ChromeTraces.Runs(ChromeTraces.LoadSpans(Directory(directory), Today, days, Skipped));
+
+    private void Skipped(string problem) => (error ?? Console.Error).Write($"rig: skipped {problem}\n");
 
     private int Runs(int days, int limit, bool json, string? directory)
     {

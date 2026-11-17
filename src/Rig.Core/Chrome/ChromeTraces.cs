@@ -249,22 +249,48 @@ public static partial class ChromeTraces
         return Prune(directory, today);
     }
 
-    /// <summary>Spans from OTLP/JSON lines. A complete span replaces an earlier incomplete copy; bad lines and spans are skipped.</summary>
-    public static IReadOnlyList<TraceSpan> ParseLines(IEnumerable<string> lines)
+    /// <summary>
+    /// Spans from OTLP/JSON lines. A complete span replaces an earlier incomplete copy; bad lines and spans are skipped, each
+    /// reported to <paramref name="skipped"/> as <c>source line N: $.json.path: expected X, found Y</c>.
+    /// </summary>
+    public static IReadOnlyList<TraceSpan> ParseLines(IEnumerable<string> lines, Action<string>? skipped = null, string source = "trace lines")
     {
         ArgumentNullException.ThrowIfNull(lines);
-        var spans = new List<TraceSpan>();
-        foreach (var file in TraceSpans.Parse(string.Join("\n", lines)))
+        return Choose(TraceSpans.Parse(string.Join("\n", lines), skipped, source), skipped);
+    }
+
+    /// <summary>
+    /// Every span in the day files of the last <paramref name="days"/> days; every file when null. Skips are reported to
+    /// <paramref name="skipped"/> as <see cref="ParseLines"/> does, naming the file.
+    /// </summary>
+    public static IReadOnlyList<TraceSpan> LoadSpans(string directory, DateOnly today, int? days = null, Action<string>? skipped = null)
+    {
+        var since = days is { } window ? today.AddDays(-window) : DateOnly.MinValue;
+        List<FileSpan> files = [];
+        foreach (var file in TraceFiles(directory).Where(file => file.Day >= since))
         {
-            if (Span(file) is { } span)
+            try
             {
-                spans.Add(span);
+                files.AddRange(TraceSpans.Parse(File.ReadAllText(file.Path, Encoding.UTF8), skipped, file.Path));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
             }
         }
 
+        return Choose(files, skipped);
+    }
+
+    private static List<TraceSpan> Choose(IEnumerable<FileSpan> files, Action<string>? skipped)
+    {
         var chosen = new OrderedDictionary<(string, string), TraceSpan>();
-        foreach (var span in spans)
+        foreach (var file in files)
         {
+            if (Span(file, skipped) is not { } span)
+            {
+                continue;
+            }
+
             var key = (span.TraceId, span.SpanId);
             if (!chosen.TryGetValue(key, out var held) || held.Incomplete || !span.Incomplete)
             {
@@ -273,25 +299,6 @@ public static partial class ChromeTraces
         }
 
         return [.. chosen.Values];
-    }
-
-    /// <summary>Every span in the day files of the last <paramref name="days"/> days; every file when null.</summary>
-    public static IReadOnlyList<TraceSpan> LoadSpans(string directory, DateOnly today, int? days = null)
-    {
-        var since = days is { } window ? today.AddDays(-window) : DateOnly.MinValue;
-        List<string> lines = [];
-        foreach (var file in TraceFiles(directory).Where(file => file.Day >= since))
-        {
-            try
-            {
-                lines.AddRange(UnicodeText.SplitLines(File.ReadAllText(file.Path, Encoding.UTF8)));
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-            }
-        }
-
-        return ParseLines(lines);
     }
 
     /// <summary>Organise runs, oldest first, each with its descendant spans.</summary>
@@ -548,7 +555,7 @@ public static partial class ChromeTraces
             _ => "[" + string.Join(", ", ((IEnumerable<object?>)value).Select(item => item is string text ? QuotedText.Str(text) : YamlString(item))) + "]",
         };
 
-    private static TraceSpan? Span(FileSpan file)
+    private static TraceSpan? Span(FileSpan file, Action<string>? skipped)
     {
         var span = file.Span;
         try
@@ -557,9 +564,9 @@ public static partial class ChromeTraces
             {
                 null when !span.ContainsKey("status") => null,
                 JsonObject found => found,
-                _ => throw new FormatException("status"),
+                var other => throw JsonProblem.Expected(span, "status", "an object", other),
             };
-            var error = status is not null && IsErrorCode(status["code"]) ? Message(status) : string.Empty;
+            var error = status is not null && IsErrorCode(status) ? Message(status) : string.Empty;
             return new TraceSpan(
                 file.TraceId,
                 file.SpanId,
@@ -568,139 +575,48 @@ public static partial class ChromeTraces
                 RequiredInt(span, "startTimeUnixNano"),
                 RequiredInt(span, "endTimeUnixNano"),
                 error,
-                Attributes(span["attributes"], span.ContainsKey("attributes")),
-                [.. Items(span["events"], span.ContainsKey("events")).Select(Event)]);
+                OtlpJson.Attributes(span, "attributes"),
+                [.. OtlpJson.Items(span, "events").Select((item, index) => Event(item, JsonProblem.Item(JsonProblem.Child("$", "events"), index)))]);
         }
-        catch (FormatException)
+        catch (JsonInputException e)
         {
+            skipped?.Invoke(e.Under(file.Origin, file.SpanPath).Message);
             return null;
         }
     }
 
-    private static TraceEvent Event(JsonNode? node)
+    private static TraceEvent Event(JsonNode? node, string path)
     {
         if (node is not JsonObject spanEvent)
         {
-            throw new FormatException("event");
+            throw JsonProblem.Expected(path, "an object", JsonProblem.Describe(node));
         }
 
-        return new TraceEvent(
-            OptionalString(spanEvent, "name"),
-            RequiredInt(spanEvent, "timeUnixNano"),
-            Attributes(spanEvent["attributes"], spanEvent.ContainsKey("attributes")));
-    }
-
-    private static Dictionary<string, object?> Attributes(JsonNode? node, bool present)
-    {
-        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var item in Items(node, present))
-        {
-            if (item is not JsonObject attribute || attribute["key"] is not JsonValue key || key.GetValueKind() != JsonValueKind.String)
-            {
-                throw new FormatException("attribute");
-            }
-
-            attributes[key.GetValue<string>()] = attribute.ContainsKey("value") ? AnyValue(attribute["value"]) : null;
-        }
-
-        return attributes;
-    }
-
-    private static JsonArray Items(JsonNode? node, bool present) =>
-        node switch
-        {
-            null when !present => [],
-            JsonArray items => items,
-            _ => throw new FormatException("list"),
-        };
-
-    // An OTLP AnyValue as a plain value: an array becomes a list and intValue's decimal string a long. Each field is
-    // read leniently, so a field of the wrong type counts as absent.
-    private static object? AnyValue(JsonNode? node)
-    {
-        if (node is not JsonObject value)
-        {
-            throw new FormatException("value");
-        }
-
-        if (ArrayValue(value["arrayValue"]) is { } array)
-        {
-            return array;
-        }
-
-        if (value["stringValue"] is JsonValue text && text.GetValueKind() == JsonValueKind.String)
-        {
-            return text.GetValue<string>();
-        }
-
-        if (value["boolValue"] is JsonValue flag && flag.GetValueKind() is JsonValueKind.True or JsonValueKind.False)
-        {
-            return flag.GetValue<bool>();
-        }
-
-        if (LaxInt(value["intValue"]) is { } whole)
-        {
-            return whole;
-        }
-
-        return value["doubleValue"] is JsonValue real && real.GetValueKind() == JsonValueKind.Number ? real.GetValue<double>() : null;
-    }
-
-    private static List<object?>? ArrayValue(JsonNode? node)
-    {
-        if (node is not JsonObject array)
-        {
-            return null;
-        }
-
-        try
-        {
-            return [.. Items(array["values"], array.ContainsKey("values")).Select(AnyValue)];
-        }
-        catch (FormatException)
-        {
-            return null;
-        }
-    }
-
-    // pydantic's lax int: a whole number, a bool, or a string holding a whole number.
-    private static long? LaxInt(JsonNode? node)
-    {
-        if (node is not JsonValue value)
-        {
-            return null;
-        }
-
-        return value.GetValueKind() switch
-        {
-            JsonValueKind.Number when value.TryGetValue<long>(out var whole) => whole,
-            JsonValueKind.Number when value.TryGetValue<double>(out var real) && real == Math.Floor(real) && Math.Abs(real) < 9.2e18 => (long)real,
-            JsonValueKind.String when long.TryParse(UnicodeText.Strip(value.GetValue<string>()), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed) => parsed,
-            JsonValueKind.True => 1,
-            JsonValueKind.False => 0,
-            _ => null,
-        };
+        return new TraceEvent(OptionalString(spanEvent, "name"), RequiredInt(spanEvent, "timeUnixNano"), OtlpJson.Attributes(spanEvent, "attributes"));
     }
 
     private static long RequiredInt(JsonObject owner, string key) =>
-        !owner.ContainsKey(key) ? 0 : LaxInt(owner[key]) ?? throw new FormatException(key);
+        !owner.ContainsKey(key) ? 0 : OtlpJson.Int64(owner[key]) ?? throw JsonProblem.Expected(owner, key, "a whole number or a string of digits", null);
 
     private static string OptionalString(JsonObject owner, string key) =>
         !owner.ContainsKey(key) ? string.Empty
         : owner[key] is JsonValue value && value.GetValueKind() == JsonValueKind.String ? value.GetValue<string>()
-        : throw new FormatException(key);
+        : throw JsonProblem.Expected(owner, key, "a string", owner[key]);
 
-    private static bool IsErrorCode(JsonNode? code) =>
-        code is JsonValue value && value.GetValueKind() == JsonValueKind.Number && value.TryGetValue<double>(out var number) && number == OtlpStatusError;
+    private static bool IsErrorCode(JsonObject status) =>
+        status["code"] switch
+        {
+            null => false,
+            JsonValue value when value.GetValueKind() == JsonValueKind.Number && value.TryGetValue<long>(out var number) => number == OtlpStatusError,
+            var other => throw JsonProblem.Expected(status, "code", "a whole number", other),
+        };
 
     private static string Message(JsonObject status) =>
-        !status.ContainsKey("message") ? string.Empty
-        : status["message"] switch
+        status["message"] switch
         {
-            null => "None",
+            null => string.Empty,
             JsonValue value when value.GetValueKind() == JsonValueKind.String => value.GetValue<string>(),
-            JsonValue value when value.GetValueKind() is JsonValueKind.True or JsonValueKind.False => value.GetValue<bool>() ? "True" : "False",
-            var other => other.ToJsonString(),
+            var other => throw JsonProblem.Expected(status, "message", "a string", other),
         };
 
     [GeneratedRegex(@"^([0-9]{4}-[0-9]{2}-[0-9]{2})\.ndjson$")]

@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Orca;
 
@@ -62,17 +63,20 @@ public sealed record OrcaPolicy(
 
     /// <summary>Reads the policy file at <paramref name="path"/>.</summary>
     /// <exception cref="InvalidDataException">The file is malformed.</exception>
-    public static OrcaPolicy Load(string path) => Parse(File.ReadAllText(path));
+    public static OrcaPolicy Load(string path) => Parse(File.ReadAllText(path), path);
 
     /// <summary>Decodes a policy document.</summary>
     /// <exception cref="InvalidDataException">It is malformed: not JSON, a field of the wrong type, or an unknown mode.</exception>
-    public static OrcaPolicy Parse(string text)
+    public static OrcaPolicy Parse(string text, string source = "agent policy") => OrcaJson.Run(source, () => Decode(text, source));
+
+    private static OrcaPolicy Decode(string text, string source)
     {
-        var root = OrcaJson.Object(text);
+        var root = OrcaJson.Object(text, source);
         var repos = new SortedDictionary<string, RepoPolicy>(StringComparer.Ordinal);
-        foreach (var (name, _) in OrcaJson.Object(root, "repos") ?? [])
+        var repoNodes = OrcaJson.Object(root, "repos") ?? [];
+        foreach (var (name, _) in repoNodes)
         {
-            repos[name] = Repo(OrcaJson.Object(OrcaJson.Object(root, "repos")!, name) ?? throw new InvalidDataException($"repos.{name}: expected an object"));
+            repos[name] = Repo(OrcaJson.Object(repoNodes, name) ?? throw OrcaJson.Reject(JsonProblem.Expected(JsonProblem.Child(repoNodes.GetPath(), name), "an object", "null")));
         }
 
         return new(

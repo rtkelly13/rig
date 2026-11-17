@@ -169,7 +169,7 @@ public sealed class OrcaRuntime
         JsonObject root;
         try
         {
-            root = OrcaJson.Object(metadata);
+            root = OrcaJson.Object(metadata, "Orca runtime metadata");
         }
         catch (InvalidDataException)
         {

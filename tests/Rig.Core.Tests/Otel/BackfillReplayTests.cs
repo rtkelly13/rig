@@ -543,10 +543,10 @@ public sealed class BackfillReplayTests : IDisposable
 
     [Theory]
     [InlineData("18446744073709551615", 18446744073709551615UL)]
-    [InlineData("\"7\"", 7UL)]
+    [InlineData("\"7\"", null)]
     [InlineData("-1", null)]
     [InlineData("1.5", null)]
-    public void An_offset_s_inode_is_unsigned_and_read_leniently(string inode, ulong? expected)
+    public void An_offset_s_inode_is_an_unsigned_integer(string inode, ulong? expected)
     {
         var offsets = ReplayOffsets.Parse("{\"k\": {\"inode\": " + inode + ", \"sent\": 3}}");
 
