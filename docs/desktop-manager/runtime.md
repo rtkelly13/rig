@@ -65,7 +65,7 @@ move the tasks without registering them again:
 
 ```bash
 "%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe" jobs install
-"%LOCALAPPDATA%\shared-utilities\runtime\current\.venv\Scripts\desktop-manager.exe" chrome-tabs install
+"%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe" chrome-tabs install
 ```
 
 `jobs install` registers the Logon, Tick and Display Guard tasks that run every

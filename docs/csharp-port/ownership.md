@@ -35,8 +35,6 @@ The inspector combines:
   C# root discovery includes target-typed `new()` and type aliases through Roslyn's semantic model.
   Node `bin`/package scripts and standalone Node scripts, tracked executable modes, and checked-in
   command/shell/PowerShell/LaunchAgent launchers. Launcher contents are fingerprinted.
-- Each actual `Forwarded.Commands` route expanded into the inspected Python leaves. Probe arguments go back
-  through **`Forwarded.Owns` itself**. A migrated action that still dispatches to Python fails discovery.
 - Both composed job registries, including the optional workspace jobs, using inert fixture paths. They are
   callers, not independent implementations. No job is run. The MCP server's actual C# tool attributes and the Python web
   child's mounted route callables are inspected without serving requests. Legacy web callables are fingerprinted
@@ -208,8 +206,7 @@ Organise orchestration core validation on macOS, 2026-11-16: `dotnet build rig.s
 passed with zero warnings and errors. `OrganiseRunnerTests` passed 23/23 over the shared fakes; the
 Chrome suites passed 792/796 (4 platform skips) in Core and 63/63 in the CLI. The full solution run
 passed 5,626 of 5,656 with 30 skips and zero failures. The ownership gate against `origin/main` passed with
-398 inspected surfaces, zero pre-existing overlaps and zero violations. `dotnet format
---verify-no-changes` was clean, and `uv run status` passed every check except the expected dirty
+398 inspected surfaces, zero pre-existing overlaps and zero violations. `dotnet format --verify-no-changes` was clean, and `uv run status` passed every check except the expected dirty
 worktree. The Python `test_chrome_organise.py` oracle passed 19/19, so the surface is unchanged; the
 orchestration core is `implemented`, not switched.
 
@@ -233,8 +230,7 @@ evidence only, recorded under `WIN-NONINTERACTIVE`. These procedures remain pend
 recorded. Do not close #85 on this PR.
 
 **#217 acceptance/caller gaps.** Removing the seven losing Windows Chrome registrations is a source-ownership
-change only. No native `WIN-CHROME` run is recorded from this Mac, so `rig chrome-tabs
-group|list|prune|rank|saved-groups|install|uninstall` is now the sole Windows path while the real UI
+change only. No native `WIN-CHROME` run is recorded from this Mac, so `rig chrome-tabs group|list|prune|rank|saved-groups|install|uninstall` is now the sole Windows path while the real UI
 effects, focus restoration and cleanup remain to be accepted. Any caller still spelling
 `desktop-manager chrome-tabs ...` on Windows must migrate to the `rig` spelling; this PR updates the
 repository's own callers and the ledger, not installed runtimes, tasks or other machines. The `WIN-CHROME`
