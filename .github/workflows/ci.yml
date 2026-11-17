@@ -233,21 +233,9 @@ jobs:
         run: |
           uv run pytest -n auto --durations=15 --cov=src --cov-context=test --record-sizes=coverage-by-test/sizes.json --cov-report=xml:coverage.xml --cov-report=json:coverage.json --cov-report=term-missing
 
-      # Line + branch coverage. The floor is [tool.coverage.report] fail_under in pyproject.toml
-      # (pytest-cov already fails the run below it),
-      # and coverage_floor makes it a ratchet towards 95%: it never falls, and it must rise once
-      # coverage passes it by more than the slack. Coverage shows what runs, not what is
-      # checked; mutation score covers that (docs/testing.md).
-      - name: Fetch the base branch's coverage floor
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          gh api "repos/${GITHUB_REPOSITORY}/contents/pyproject.toml?ref=${BASE_SHA}" \
-            -H "Accept: application/vnd.github.raw" > base-pyproject.toml
-      - name: Coverage floor ratchet
-        run: uv run python -m rig.repo_governance.coverage_floor coverage.json --base-pyproject base-pyproject.toml
+      # Line + branch coverage: pytest-cov fails the run below [tool.coverage.report] fail_under.
+      # The Python "only rises" ratchet is retired: every port PR deletes covered Python (#85, #285).
+      # The C# floor (scripts/coverage-floor.cs) is the ratchet that remains.
 
       # Per-test footprint: lines each test executes, and lines no other test does. A test with no
       # unique lines is a candidate to merge, sharpen or delete (docs/testing.md).
