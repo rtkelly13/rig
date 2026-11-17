@@ -63,36 +63,14 @@ public static class WrapupRun
         ArgumentNullException.ThrowIfNull(store);
         var at = WrapupStamps.Timestamp(now);
         var output = rows.ToList();
-        var byPath = new Dictionary<string, List<int>>(StringComparer.Ordinal);
-        List<string> order = [];
-        for (var i = 0; i < output.Count; i++)
+        foreach (var group in output.Select((row, i) => (Row: row, Index: i)).GroupBy(x => x.Row.Path, StringComparer.Ordinal).ToList())
         {
-            if (!byPath.TryGetValue(output[i].Path, out var list))
-            {
-                byPath[output[i].Path] = list = [];
-                order.Add(output[i].Path);
-            }
-
-            list.Add(i);
-        }
-
-        foreach (var path in order)
-        {
-            var indexes = byPath[path];
-            List<object> additions = [];
-            foreach (var i in indexes)
-            {
-                var row = output[i];
-                if (row.Status == WrapupStatus.Sent)
-                {
-                    additions.Add(AskFor(row, at, template));
-                }
-                else if (NewAnswer(row) is { } answer)
-                {
-                    additions.Add(answer with { At = at });
-                }
-            }
-
+            var path = group.Key;
+            var indexes = group.Select(x => x.Index).ToList();
+            List<object> additions =
+            [
+                .. group.Select(x => x.Row.Status == WrapupStatus.Sent ? AskFor(x.Row, at, template) : (object?)(NewAnswer(x.Row) is { } answer ? answer with { At = at } : null)).OfType<object>(),
+            ];
             if (additions.Count == 0)
             {
                 continue;
@@ -102,14 +80,12 @@ public static class WrapupRun
             var state = store.Read(path) ?? WrapupState.Empty(first.WorktreeId, first.Branch);
             foreach (var item in additions)
             {
-                if (item is AskRecord ask)
+                state = item switch
                 {
-                    state = state.WithAsk(ask);
-                }
-                else if (item is AnswerRecord answer && !AnsweredSince(state, answer))
-                {
-                    state = state.WithAnswer(answer);
-                }
+                    AskRecord ask => state.WithAsk(ask),
+                    AnswerRecord answer when !AnsweredSince(state, answer) => state.WithAnswer(answer),
+                    _ => state,
+                };
             }
 
             if (await store.WriteAsync(path, state, cancellationToken).ConfigureAwait(false) is { } failure)
@@ -292,8 +268,7 @@ public static class WrapupRun
         ArgumentNullException.ThrowIfNull(pending);
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(todo);
-        var state = store.Read(worktree);
-        if (state is null || state.Asks.Count == 0)
+        if (store.Read(worktree) is not { Asks.Count: > 0 } state)
         {
             return new(null, "no wrap-up ask is recorded in this worktree");
         }
@@ -321,36 +296,25 @@ public static class WrapupRun
 
     internal static string Said(WrapupRow row)
     {
-        if (row.Status == WrapupStatus.Waiting)
-        {
-            return "waiting on you" + (row.Note.Length > 0 ? $": {row.Note}" : "");
-        }
-
-        if (row.Verdict is null)
-        {
-            return "answered, without a WRAPUP line";
-        }
-
-        return row.Verdict.Done ? "answered: done" : $"answered: pending: {row.Verdict.Detail}";
+        return row.Status == WrapupStatus.Waiting ? "waiting on you" + (row.Note.Length > 0 ? $": {row.Note}" : "")
+            : row.Verdict is null ? "answered, without a WRAPUP line"
+            : row.Verdict.Done ? "answered: done"
+            : $"answered: pending: {row.Verdict.Detail}";
     }
 
     /// <summary>The verdict on <paramref name="row"/> when the state file does not have it yet.</summary>
     private static AnswerRecord? NewAnswer(WrapupRow row)
     {
-        if (row.Status != WrapupStatus.Answered || row.Verdict is null)
+        if (row is not { Status: WrapupStatus.Answered, Verdict: { } said })
         {
             return null;
         }
 
-        var verdict = row.Verdict.Done ? "done" : "pending";
+        var verdict = said.Done ? "done" : "pending";
         var askedAt = row.Asked?.At;
-        var last = row.Recorded;
-        if (last is not null && askedAt is not null && last.AskedAt == askedAt)
-        {
-            return null; // already recorded for this ask: by `report`, or by an earlier run
-        }
 
-        if (last is not null && last.AskedAt == askedAt && last.Verdict == verdict && last.Detail == row.Verdict.Detail)
+        // Already recorded for this ask: by `report`, or by an earlier run.
+        if (row.Recorded is { } last && last.AskedAt == askedAt && (askedAt is not null || (last.Verdict == verdict && last.Detail == said.Detail)))
         {
             return null;
         }
@@ -358,51 +322,21 @@ public static class WrapupRun
         // A reply read later says nothing of the commit it was written at. The ask's commit is the
         // conservative stand-in: if HEAD moved since, the inbox shows the verdict as older than the PR.
         var head = !string.IsNullOrEmpty(row.Asked?.Head) ? row.Asked.Head : row.Facts?.Head ?? "";
-        return new AnswerRecord("", row.Pane, verdict, row.Verdict.Detail, head, askedAt);
+        return new AnswerRecord("", row.Pane, verdict, said.Detail, head, askedAt);
     }
 
     /// <summary>Whether the agent reported on the same ask after this run read the file: its own word wins.</summary>
     private static bool AnsweredSince(WrapupState state, AnswerRecord answer) =>
         answer.AskedAt is not null && state.Answers.Any(a => a.AskedAt == answer.AskedAt && a.Pane == answer.Pane);
 
-    private static HashSet<string> Descendants(WrapupRow row, List<WrapupRow> rows)
-    {
-        var children = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-        foreach (var r in rows)
-        {
-            _ = children.TryAdd(r.WorktreeId, r.Children);
-        }
-
-        var found = new HashSet<string>(StringComparer.Ordinal);
-        var stack = new List<string>(row.Children);
-        while (stack.Count > 0)
-        {
-            var id = stack[^1];
-            stack.RemoveAt(stack.Count - 1);
-            if (found.Add(id))
-            {
-                stack.AddRange(children.GetValueOrDefault(id, []));
-            }
-        }
-
-        return found;
-    }
-
     /// <summary>The first queued ask none of whose subtasks is still queued or outstanding.</summary>
     private static int? Next(List<int> queue, IEnumerable<int> flights, List<WrapupRow> rows)
     {
         var inFlight = flights.ToList();
         var pending = queue.Concat(inFlight).Select(i => rows[i].WorktreeId).ToHashSet(StringComparer.Ordinal);
-        foreach (var i in queue)
-        {
-            if (!Descendants(rows[i], rows).Overlaps(pending))
-            {
-                return i;
-            }
-        }
-
-        // Unreachable while subtask links form a tree; never stall on a cycle.
-        return queue.Count > 0 && inFlight.Count == 0 ? queue[0] : null;
+        // Past the first queued ask with no pending subtask: unreachable while subtask links form a tree; never stall on a cycle.
+        return queue.Cast<int?>().FirstOrDefault(i => !Wrapup.Descendants(rows[i!.Value], rows).Overlaps(pending))
+            ?? (queue.Count > 0 && inFlight.Count == 0 ? queue[0] : null);
     }
 
     private static WrapupRow? Reported(WrapupRow row, IWrapupStore store)
@@ -440,16 +374,8 @@ public static class WrapupRun
 
     private static Dictionary<(string, string), WrapupAgent> Agents(IReadOnlyList<WrapupWorktree> worktrees)
     {
-        var agents = new Dictionary<(string, string), WrapupAgent>();
-        foreach (var w in worktrees)
-        {
-            foreach (var a in w.Agents ?? [])
-            {
-                agents[(w.WorktreeId, a.PaneKey)] = a;
-            }
-        }
-
-        return agents;
+        return worktrees.SelectMany(w => w.Agents ?? [], (w, a) => (Key: (w.WorktreeId, a.PaneKey), Agent: a))
+            .GroupBy(x => x.Key).ToDictionary(group => group.Key, group => group.Last().Agent);
     }
 }
 
@@ -514,11 +440,7 @@ public sealed class WrapupFollower(string appData, IDetachedStart detached, IRea
 
             return handle;
         }
-        catch (IOException)
-        {
-            return null;
-        }
-        catch (UnauthorizedAccessException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             return null;
         }
