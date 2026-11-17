@@ -30,7 +30,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     public static TimeSpan LayoutPause { get; } = TimeSpan.FromMilliseconds(200);
 
     /// <summary>The foreground window's handle, whatever owns it.</summary>
-    public long ForegroundWindow() => _win32.ForegroundWindow();
+    public long ForegroundWindow() => win32.ForegroundWindow();
 
     /// <summary>
     /// Brings the window to the front until the lease is disposed, which puts the cursor, the previous foreground window
@@ -39,24 +39,24 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     /// </summary>
     public ForegroundLease Foreground(long handle, TimeSpan? timeout = null)
     {
-        if (_win32.CursorPosition() is not var (x, y))
+        if (win32.CursorPosition() is not var (x, y))
         {
             return new ForegroundLease(false, null);
         }
 
-        var previous = _win32.ForegroundWindow();
-        var wasMinimised = _win32.IsMinimized(handle);
+        var previous = win32.ForegroundWindow();
+        var wasMinimised = win32.IsMinimized(handle);
         void Restore()
         {
-            _ = _input.MoveCursor(x, y);
+            _ = input.MoveCursor(x, y);
             if (wasMinimised)
             {
-                _ = _input.Minimize(handle);
+                _ = input.Minimize(handle);
             }
 
-            if (previous != 0 && previous != handle && _win32.IsWindow(previous))
+            if (previous != 0 && previous != handle && win32.IsWindow(previous))
             {
-                _ = _input.SetForeground(previous);
+                _ = input.SetForeground(previous);
             }
         }
 
@@ -66,7 +66,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
             PressKey(AltKey);
             if (wasMinimised)
             {
-                _ = _input.Restore(handle);
+                _ = input.Restore(handle);
             }
 
             var arrived = TakeForeground(handle, timeout ?? ForegroundTimeout);
@@ -90,7 +90,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     /// </summary>
     public bool BringForward(long handle, TimeSpan? timeout = null)
     {
-        if (_win32.ForegroundWindow() == handle)
+        if (win32.ForegroundWindow() == handle)
         {
             return true;
         }
@@ -130,7 +130,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
             return Outcome(false, "window is not in the foreground");
         }
 
-        var pid = _win32.ProcessIdOf(tab.WindowHandle);
+        var pid = win32.ProcessIdOf(tab.WindowHandle);
         var home = homeHandle is { } other && other != tab.WindowHandle ? other : (long?)null;
         var before = 0;
         if (home is { } homeWindow)
@@ -198,13 +198,13 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
                 return Outcome(false, "group created but its title field did not appear; left unnamed");
             }
 
-            if (!field.HasKeyboardFocus || _win32.ProcessIdOf(_win32.ForegroundWindow()) != pid)
+            if (!field.HasKeyboardFocus || win32.ProcessIdOf(win32.ForegroundWindow()) != pid)
             {
                 PressEscape();
                 return Outcome(false, "group created but its title field lost focus; left unnamed");
             }
 
-            _ = _input.SendKeys(KeyEvent.Text(title));
+            _ = input.SendKeys(KeyEvent.Text(title));
             PressKey(ReturnKey);
         }
 
@@ -215,7 +215,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         }
 
         var joined = PollUntil(
-            () => _reader.FindTabElement(tab) is { } element && ChromeUiaReader.GroupOf(element)?.Title == title,
+            () => reader.FindTabElement(tab) is { } element && ChromeUiaReader.GroupOf(element)?.Title == title,
             wait);
         return joined ? Outcome(true, isNew ? "created" : "joined") : Outcome(false, $"tab did not show up in group {QuotedText.Str(title)}");
     }
@@ -239,7 +239,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
             return Refused(refusal);
         }
 
-        var target = _reader.ReadWindow(targetHandle);
+        var target = reader.ReadWindow(targetHandle);
         if (target?.Tabs.FirstOrDefault(each => each.Selected) is not { } active)
         {
             return Refused("target window has gone or has no active tab");
@@ -250,7 +250,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
             return Refused("window is not in the foreground");
         }
 
-        var pid = _win32.ProcessIdOf(tab.WindowHandle);
+        var pid = win32.ProcessIdOf(tab.WindowHandle);
         var before = target.Tabs.Select(each => each.RuntimeId).ToHashSet();
         if (OpenTabMenu(tab, element, pid, wait) is { } notOpened)
         {
@@ -285,7 +285,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         var moved = Poll(
             () =>
             {
-                if (_reader.ReadWindow(targetHandle) is not { } window)
+                if (reader.ReadWindow(targetHandle) is not { } window)
                 {
                     return null;
                 }
@@ -310,7 +310,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         var started = _clock.GetTimestamp();
         GroupOutcome Outcome(bool done, string detail) => new(done, detail, _clock.GetElapsedTime(started));
 
-        var element = _reader.FindTabElement(tab);
+        var element = reader.FindTabElement(tab);
         if (element is null || ChromeUiaReader.GroupOf(element)?.Title != title)
         {
             return Outcome(false, $"tab is no longer in a group called {QuotedText.Str(title)}");
@@ -326,7 +326,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
             return Outcome(false, "group header not found");
         }
 
-        var pid = _win32.ProcessIdOf(tab.WindowHandle);
+        var pid = win32.ProcessIdOf(tab.WindowHandle);
         if (!MenusClosed(pid, wait))
         {
             return Outcome(false, "a menu from the previous step is still open");
@@ -344,42 +344,9 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         }
 
         ungroup.Invoke();
-
-        // Chrome ignores a dialog's buttons for a moment after it appears, and treats presses closer together than a
-        // double-click as accidental, so the confirm is pressed only once the dialog has settled, and retried no faster.
-        long? seenAt = null;
-        long? pressedAt = null;
-        var gone = PollUntil(
-            () =>
-            {
-                if (_reader.FindTabElement(tab) is not { } live || ChromeUiaReader.GroupOf(live) is null)
-                {
-                    return true;
-                }
-
-                if (DialogButton(tab.WindowHandle, UngroupDialogTitle, "ungroup") is not { } confirm)
-                {
-                    return false;
-                }
-
-                var now = _clock.GetTimestamp();
-                seenAt ??= now;
-                if (_clock.GetElapsedTime(seenAt.Value, now) >= DialogSettle
-                    && (pressedAt is null || _clock.GetElapsedTime(pressedAt.Value, now) >= DialogSettle))
-                {
-                    pressedAt = now;
-                    try
-                    {
-                        confirm.Invoke();
-                    }
-                    catch (UiaException)
-                    {
-                        // The dialog went as it was pressed; the next probe sees whether the group went with it.
-                    }
-                }
-
-                return false;
-            },
+        var gone = PollConfirming(
+            () => reader.FindTabElement(tab) is not { } live || ChromeUiaReader.GroupOf(live) is null,
+            () => DialogButton(tab.WindowHandle, UngroupDialogTitle, "ungroup"),
             wait + DialogSettle + DialogSettle);
         return gone ? Outcome(true, "ungrouped") : Outcome(false, $"group {QuotedText.Str(title)} is still there");
     }
@@ -405,7 +372,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         IUiaElement? dialog;
         try
         {
-            dialog = _uia.ElementFromHandle(handle)?.FindFirst(UiaScope.Descendants, new UiaCondition(Name: dialogTitle));
+            dialog = uia.ElementFromHandle(handle)?.FindFirst(UiaScope.Descendants, new UiaCondition(Name: dialogTitle));
         }
         catch (UiaException)
         {
@@ -427,7 +394,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     /// the count rising above a baseline taken from it.
     /// </summary>
     public int? TitledInGroup(long handle, string groupTitle, string tabTitle) =>
-        _reader.ReadWindow(handle)?.Tabs.Count(each => each.Title == tabTitle && each.Group?.Title == groupTitle);
+        reader.ReadWindow(handle)?.Tabs.Count(each => each.Title == tabTitle && each.Group?.Title == groupTitle);
 
     /// <summary>
     /// Whether a click at (<paramref name="x"/>, <paramref name="y"/>) reaches this element of the tab's window: the
@@ -438,8 +405,8 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     {
         ArgumentNullException.ThrowIfNull(tab);
         ArgumentNullException.ThrowIfNull(element);
-        var under = _win32.WindowFromPoint(x, y);
-        if (under == 0 || _win32.Root(under) != tab.WindowHandle)
+        var under = win32.WindowFromPoint(x, y);
+        if (under == 0 || win32.Root(under) != tab.WindowHandle)
         {
             return false;
         }
@@ -447,7 +414,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
         IUiaElement? strip;
         try
         {
-            strip = _uia.ElementFromHandle(tab.WindowHandle) is { } root ? _reader.FindTabStrip(tab.WindowHandle, root) : null;
+            strip = uia.ElementFromHandle(tab.WindowHandle) is { } root ? reader.FindTabStrip(tab.WindowHandle, root) : null;
         }
         catch (UiaException)
         {
@@ -462,7 +429,7 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     /// <summary>Whether the tab can be grouped or moved: it is still there, under the same title, in no group.</summary>
     private bool Fits(ChromeTab tab, [NotNullWhen(true)] out IUiaElement? element, [NotNullWhen(false)] out string? refusal)
     {
-        element = _reader.FindTabElement(tab);
+        element = reader.FindTabElement(tab);
         if (element is null)
         {
             refusal = "tab no longer present";
@@ -499,12 +466,12 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
             return false;
         }
 
-        _ = _input.MoveCursor(x, y);
-        _ = _input.RightClick();
+        _ = input.MoveCursor(x, y);
+        _ = input.RightClick();
         return true;
     }
 
-    private void PressKey(ushort virtualKey) => _ = _input.SendKeys(KeyEvent.Tap(virtualKey));
+    private void PressKey(ushort virtualKey) => _ = input.SendKeys(KeyEvent.Tap(virtualKey));
 
     /// <summary>Asks for the foreground, and asks again half way: a window just moved in from another desktop can refuse the first.</summary>
     private bool TakeForeground(long handle, TimeSpan timeout)
@@ -516,8 +483,8 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
                 PressKey(AltKey);
             }
 
-            _ = _input.SetForeground(handle);
-            if (PollUntil(() => _win32.ForegroundWindow() == handle, timeout / 2))
+            _ = input.SetForeground(handle);
+            if (PollUntil(() => win32.ForegroundWindow() == handle, timeout / 2))
             {
                 return true;
             }
