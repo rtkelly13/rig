@@ -46,7 +46,7 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
 /// <param name="output">Where the banner goes.</param>
 /// <param name="error">Where problems go.</param>
 /// <param name="ops">The data behind the MCP tools; null builds this machine's real sources.</param>
-/// <param name="aliases">The legacy subcommands that forward to <c>rig tools</c>.</param>
+/// <param name="aliases">The <c>install</c>, <c>ensure</c>, <c>uninstall</c>, <c>backup</c>, <c>migrate</c> and <c>db-status</c> subcommands that forward to <c>rig tools</c>.</param>
 internal sealed class WebCommand(
     WebPlaces places,
     Action<Uri> openBrowser,

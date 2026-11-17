@@ -11,8 +11,7 @@ using Rig.Core.Text;
 namespace Rig.Cli.Governance;
 
 /// <summary>
-/// The in-repo files governance writes: <c>license</c>, <c>sync-templates</c> and <c>gitignore</c>. Ported from
-/// <c>rig.repo_governance.cli_sync</c> and <c>cli_audits</c>.
+/// The in-repo files governance writes: <c>license</c>, <c>sync-templates</c> and <c>gitignore</c>.
 /// </summary>
 internal sealed partial class GovernanceCommand
 {

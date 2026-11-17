@@ -666,7 +666,7 @@ public sealed class RepoPolicies
     // license: a bare type, or {"type": …}; an object without a type declares the default.
     private static string? LicenseOf(LicenseConfig? license) => license is null ? null : license.Type ?? string.Empty;
 
-    // expected_owner: null declares "no expected owner", which the Python keeps as "" so it still stops the lookup.
+    // expected_owner: null declares "no expected owner": kept as "" so it still stops the lookup.
     private static string? ExpectedOwnerOf(JsonElement expectedOwner, string source) =>
         expectedOwner.ValueKind switch
         {

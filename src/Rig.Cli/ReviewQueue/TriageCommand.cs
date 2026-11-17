@@ -29,7 +29,7 @@ internal sealed class TriageCommand(TriageHost host, IQueueSource source, TextWr
     {
     }
 
-    /// <summary>The complete triage CLI, with no Python fallback.</summary>
+    /// <summary>The complete triage CLI.</summary>
     public Command Build()
     {
         var triage = DeclarativeCommand.Build(this);
@@ -38,7 +38,7 @@ internal sealed class TriageCommand(TriageHost host, IQueueSource source, TextWr
         return triage;
     }
 
-    /// <summary>A group named without one of its verbs is the parser's error, as before.</summary>
+    /// <summary>A group named without one of its verbs is the parser's error.</summary>
     public int Run() => DeclarativeCommand.RequireSubcommand(error);
 
     /// <summary><c>rig triage refresh</c>: fetch tracked items and rewrite the queue.</summary>
@@ -102,7 +102,7 @@ internal sealed class TriageCommand(TriageHost host, IQueueSource source, TextWr
         /// <summary>Verifies the queue and says whether it is valid.</summary>
         public int Run(CliContext context)
         {
-            // System.CommandLine accepts an unmatched option as a positional string. Typer required -- for these.
+            // System.CommandLine accepts an unmatched option as a positional string.
             if (Path?.StartsWith('-') == true && !context.Result.ParseResult.Tokens.Any(token => token.Type == TokenType.DoubleDash))
             {
                 error.Write($"rig: Unrecognized command or argument '{Path}'.\nRun 'rig --help' for the commands.\n");

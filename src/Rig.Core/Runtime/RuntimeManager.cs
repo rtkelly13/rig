@@ -64,8 +64,7 @@ public sealed record RuntimeInstallResult(string Sha, string Copy, bool Changed,
 public sealed record RuntimeStatus(string Root, string Link, RuntimeState State, InstalledInfo? Current, InstalledInfo? Previous, int? Behind);
 
 /// <summary>
-/// The pinned copy of one commit that the scheduled tasks run from. Ported from <c>desktop_manager.runtime</c>:
-/// each copy is a plain folder under <c>&lt;app data&gt;/runtime/&lt;sha12&gt;</c>,
+/// The pinned copy of one commit that the scheduled tasks run from. Each copy is a plain folder under <c>&lt;app data&gt;/runtime/&lt;sha12&gt;</c>,
 /// with its published <c>rig</c>, and <c>current</c> is the link the tasks and the PATH shim follow.
 /// </summary>
 /// <param name="proc">Runs git, dotnet and, on Windows, <c>mklink</c>.</param>
@@ -128,7 +127,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             : throw new InvalidDataException($"{path} is not a JSON object.");
     }
 
-    /// <summary>Writes <paramref name="state"/> as Python's <c>json.dumps(indent=2)</c> did, replacing it atomically.</summary>
+    /// <summary>Writes <paramref name="state"/> as indented JSON, replacing it atomically.</summary>
     /// <param name="state">The state to record.</param>
     public void WriteState(RuntimeState state)
     {
@@ -181,7 +180,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     /// <param name="repo">The checkout to take the commit from.</param>
     /// <param name="refName">The commit to install.</param>
     /// <param name="fetch">Whether to fetch origin first for an <c>origin/*</c> ref.</param>
-    /// <param name="progress">Reports each step, as the Python printed it.</param>
+    /// <param name="progress">Reports each step.</param>
     public RuntimeInstallResult Install(string repo, string refName, bool fetch = true, Action<string>? progress = null)
     {
         ArgumentNullException.ThrowIfNull(repo);
@@ -595,7 +594,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            // The copy stays for a later install, as Python's rmtree(ignore_errors=True) left it.
+            // The copy stays for a later install.
         }
     }
 

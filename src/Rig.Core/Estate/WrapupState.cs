@@ -266,7 +266,7 @@ public static class WorktreeState
     }
 }
 
-/// <summary>Timestamps and ids as <c>wrapup_state.py</c> wrote them.</summary>
+/// <summary>Timestamps and ids as the state file spells them.</summary>
 public static class WrapupStamps
 {
     /// <summary>Eight hex digits: enough to tell one worktree's asks apart, short enough to type.</summary>

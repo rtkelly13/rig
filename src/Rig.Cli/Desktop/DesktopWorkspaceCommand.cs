@@ -6,8 +6,7 @@ using Rig.Core.Desktop;
 namespace Rig.Cli.Desktop;
 
 /// <summary>
-/// <c>rig desktop workspace</c>: the layout manager and display guard. Ported from the Typer <c>workspace</c> group,
-/// which no longer exists in the Python CLI (issue #243).
+/// <c>rig desktop workspace</c>: the layout manager and display guard.
 /// </summary>
 /// <param name="host">Where it looks and writes.</param>
 [ExcludeFromCodeCoverage(Justification = "Desktop workspace commands require a live Windows desktop environment.")]
@@ -26,7 +25,7 @@ internal sealed partial class DesktopWorkspaceCommand(DesktopHost host)
     /// <summary>The exit code <c>restore</c> uses when fewer screens are live than the plan places windows on.</summary>
     public const int RestoreDeferred = 4;
 
-    /// <summary>The <c>workspace</c> group with every ported subcommand.</summary>
+    /// <summary>The <c>workspace</c> group with every subcommand.</summary>
     public Command Build()
     {
         return new Command(Name, Description)

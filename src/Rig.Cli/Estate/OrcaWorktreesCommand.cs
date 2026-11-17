@@ -13,7 +13,7 @@ namespace Rig.Cli.Estate;
 
 /// <summary>
 /// <c>rig estate orca-worktrees</c>: Orca's worktrees whose work is finished and, with <c>--apply</c>, their removal through
-/// Orca. Ported from the Python <c>estate/orca_worktrees_cli.py</c>; the verdicts are <see cref="OrcaWorktrees"/>'.
+/// Orca. The verdicts are <see cref="OrcaWorktrees"/>'.
 /// </summary>
 /// <param name="host">The working directory, which is always kept, and <c>~</c> in a path.</param>
 /// <param name="orca">Where each Orca profile keeps its files, and the exchange that talks to it.</param>

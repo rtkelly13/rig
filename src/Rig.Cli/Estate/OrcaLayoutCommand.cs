@@ -14,7 +14,7 @@ namespace Rig.Cli.Estate;
 
 /// <summary>
 /// <c>rig estate orca</c>: Orca's projects and groups against the <c>orca.group</c> each managed project declares, and,
-/// with <c>--apply</c>, the changes that make them match. Ported from the Python <c>estate/orca_cli.py</c>.
+/// with <c>--apply</c>, the changes that make them match.
 /// </summary>
 /// <param name="host">The code root, <c>~</c> in a path, the estate owners and this machine's skip list.</param>
 /// <param name="orca">Where each Orca profile keeps its files, and the exchange that talks to it.</param>

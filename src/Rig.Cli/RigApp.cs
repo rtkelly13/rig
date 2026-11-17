@@ -19,7 +19,7 @@ internal sealed class RigApp(
     OriginReader origin,
     TextWriter output,
     TextWriter error,
-    IReadOnlyList<Func<Command>>? ported = null,
+    IReadOnlyList<Func<Command>>? commands = null,
     AgentLauncher? agent = null,
     IReadOnlyList<Func<Command>>? gh = null)
 {
@@ -46,7 +46,7 @@ internal sealed class RigApp(
         }
 
         root.Subcommands.Add(group);
-        foreach (var build in ported ?? [])
+        foreach (var build in commands ?? [])
         {
             root.Subcommands.Add(build());
         }
@@ -96,7 +96,7 @@ internal sealed class RigApp(
     {
         if (agent is not null && AgentLauncher.LauncherArgs(args) is { } launch)
         {
-            // agent models lists the models the agents run: the ported models command.
+            // agent models lists the models the agents run: the models command.
             return launch.Count > 0 && launch[0] is "models" or "--models"
                 ? await RunCommandAsync(["models", .. launch.Skip(1)], cancellationToken).ConfigureAwait(false)
                 : await agent.RunAsync(launch).ConfigureAwait(false);

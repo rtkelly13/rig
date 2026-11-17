@@ -9,7 +9,7 @@ namespace Rig.Cli.Estate;
 
 /// <summary>
 /// <c>rig estate downloads</c>: the large items in Downloads, what kind of thing each is, and which Google Drive already
-/// holds byte for byte. Ported from the Python <c>estate downloads</c>. Read-only: nothing is moved or deleted.
+/// holds byte for byte. Read-only: nothing is moved or deleted.
 /// </summary>
 /// <param name="downloads">Scans the folder.</param>
 /// <param name="folder">The Downloads folder.</param>

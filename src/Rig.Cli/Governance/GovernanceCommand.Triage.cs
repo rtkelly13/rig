@@ -14,7 +14,6 @@ namespace Rig.Cli.Governance;
 
 /// <summary>
 /// The triage dashboards and the merge preflight: <c>issue-triage</c>, <c>pr-triage</c> and <c>verify-pr-checks</c>.
-/// Ported from <c>rig.repo_governance.cli_triage</c> and <c>review_threads</c>.
 /// </summary>
 internal sealed partial class GovernanceCommand
 {

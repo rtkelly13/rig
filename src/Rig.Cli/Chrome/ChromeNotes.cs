@@ -5,7 +5,6 @@ namespace Rig.Cli.Chrome;
 /// <summary>
 /// The note an unattended organise leaves when the user's input stops grouping: written to
 /// <c>&lt;temp&gt;/workspace-manager/&lt;file&gt;</c> and opened in Notepad on Windows. Elsewhere it is only written.
-/// Ported from <c>desktop_manager.restore_fallbacks.open_note</c>.
 /// </summary>
 /// <param name="Directory">The folder notes are written to.</param>
 /// <param name="Open">Shows a written note to the user.</param>

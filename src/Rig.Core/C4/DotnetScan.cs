@@ -412,7 +412,7 @@ public static partial class DotnetScan
         return index < 0 ? head : head[..index];
     }
 
-    /// <summary>Python's <c>len(text.splitlines())</c> for normalised text.</summary>
+    /// <summary>The number of lines in normalised text: a trailing newline adds none.</summary>
     internal static int PythonLines(string text)
     {
         ArgumentNullException.ThrowIfNull(text);

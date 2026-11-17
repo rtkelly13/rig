@@ -43,7 +43,7 @@ internal static class WindowsChrome
 {
     /// <summary>
     /// Opens the native session. Desktop numbers are unknown, and windows are never moved between desktops, when the
-    /// shell's desktops cannot be reached, as in the Python.
+    /// shell's desktops cannot be reached.
     /// </summary>
     public static ChromeSession Open()
     {

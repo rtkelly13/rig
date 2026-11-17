@@ -8,6 +8,8 @@ ls:
   .zsh: exists:0
   .ps1: exists:0
   .psm1: exists:0
+  .py: exists:0
+  .pyi: exists:0
   "**":
     .sh: exists:0
     .bash: exists:0
@@ -24,8 +26,6 @@ ls:
     .xml: regex:.*
     .sql: regex:.*
     .txt: regex:.*
-    .py: regex:.*
-    .pyi: regex:.*
     .ts: regex:.*
     .js: regex:.*
     .mjs: regex:.*
@@ -42,8 +42,6 @@ ls:
     .xml: regex:.*
     .sql: regex:.*
     .txt: regex:.*
-    .py: regex:.*
-    .pyi: regex:.*
     .ts: regex:.*
     .js: regex:.*
     .mjs: regex:.*

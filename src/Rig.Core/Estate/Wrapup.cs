@@ -812,7 +812,7 @@ public static class Wrapup
     }
 }
 
-/// <summary>Reads Orca through its CLI, as <c>wrapup.py</c> did: <c>orca worktree ps</c>, <c>terminal list</c>, <c>repo list</c> and <c>terminal send</c>.</summary>
+/// <summary>Reads Orca through its CLI: <c>orca worktree ps</c>, <c>terminal list</c>, <c>repo list</c> and <c>terminal send</c>.</summary>
 /// <param name="proc">Runs <c>orca</c>.</param>
 public sealed class WrapupOrca(IProc proc)
 {

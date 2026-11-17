@@ -11,8 +11,7 @@ namespace Rig.Web.Ops;
 public sealed record DiskUsageView(string Path, long Total, long Used, long Free);
 
 /// <summary>
-/// The estate's ops answers: the decisions feed, the disk's headroom, and trimming idle worktrees. Ported from
-/// <c>rig.estate.web</c>; one <see cref="TrimCache"/> lives as long as the host.
+/// The estate's ops answers: the decisions feed, the disk's headroom, and trimming idle worktrees. One <see cref="TrimCache"/> lives as long as the host.
 /// </summary>
 public sealed class EstateOps : IDisposable
 {

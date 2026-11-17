@@ -9,8 +9,7 @@ using Rig.Core.Workspace;
 namespace Rig.Cli.Governance;
 
 /// <summary>
-/// The Vercel audits: <c>vercel-gating</c> and <c>vercel-projects</c>. Both only read Vercel and GitHub. Ported from
-/// <c>rig.repo_governance.cli_audits</c>.
+/// The Vercel audits: <c>vercel-gating</c> and <c>vercel-projects</c>. Both only read Vercel and GitHub.
 /// </summary>
 internal sealed partial class GovernanceCommand
 {

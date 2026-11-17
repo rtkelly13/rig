@@ -22,8 +22,7 @@ internal sealed record OrcaHost(OrcaLocations Locations, IOrcaExchange Exchange,
 }
 
 /// <summary>
-/// <c>rig workspace orca</c>: audit and sync the Orca install against <c>config/orca.json</c>. Ported from
-/// <c>src/rig/workspace/orca_cli.py</c>.
+/// <c>rig workspace orca</c>: audit and sync the Orca install against <c>config/orca.json</c>.
 /// </summary>
 /// <param name="host">Where the estate and its registry are.</param>
 /// <param name="orca">How Orca is reached.</param>

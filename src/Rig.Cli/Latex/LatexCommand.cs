@@ -60,7 +60,7 @@ internal sealed class LatexCommand(IProc proc, LatexHost host, TextWriter output
         return latex;
     }
 
-    /// <summary>A group named without one of its verbs is the parser's error, as before.</summary>
+    /// <summary>A group named without one of its verbs is the parser's error.</summary>
     public int Run() => DeclarativeCommand.RequireSubcommand(error);
 
     /// <summary>The blog checkout: <c>personal/blog</c> under the code root, else the working directory or a sibling.</summary>

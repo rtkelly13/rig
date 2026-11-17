@@ -7,7 +7,7 @@ namespace Rig.Core.Chrome.Windows;
 
 /// <summary>
 /// Reads Chrome's browser windows and their tabs through UI Automation: every window on every desktop and profile,
-/// each tab's selection, pinning and group. The read side of <c>desktop_manager.chrome.uia_core</c>.
+/// each tab's selection, pinning and group.
 /// </summary>
 /// <remarks>
 /// Chrome rebuilds tab views as tabs load, move or close, so an element can go stale mid-read. A window is re-read until

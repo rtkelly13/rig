@@ -16,7 +16,7 @@ namespace Rig.Web;
 /// | <c>POST /api/triage/watch</c> | <see cref="TriageAnswer"/>, after observing <c>{"repo", "number"}</c> once |
 /// | <c>POST /api/triage/interact</c> | <see cref="TriageAnswer"/>, after recording an interaction |
 ///
-/// Browser writes are accepted only from this dashboard, with a JSON body, as the Python handler required.
+/// Browser writes are accepted only from this dashboard, with a JSON body.
 /// </remarks>
 internal static class TriageRoutes
 {

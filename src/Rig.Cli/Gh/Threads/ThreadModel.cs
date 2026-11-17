@@ -46,7 +46,7 @@ internal static partial class ThreadModel
     /// <summary>Shortest SHA prefix <c>resolve</c> accepts; git's own default abbreviation.</summary>
     public const int MinShaLength = 7;
 
-    /// <summary>Summaries are cut to this many characters (Unicode scalars, as Python counts them).</summary>
+    /// <summary>Summaries are cut to this many characters (Unicode scalars).</summary>
     public const int SummaryWidth = 120;
 
     /// <summary>
@@ -169,7 +169,7 @@ internal static partial class ThreadModel
         return alt.Length > 0 ? $"[{alt}]" : string.Empty;
     }
 
-    /// <summary>Python's <c>" ".join(text.split())</c>: runs of whitespace become one space, ends trimmed.</summary>
+    /// <summary>Runs of whitespace become one space, ends trimmed.</summary>
     private static string CollapseWhitespace(string text) =>
         string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 

@@ -8,7 +8,7 @@ namespace Rig.Cli.Models;
 
 /// <summary>
 /// <c>rig models</c> (and <c>rig agent models</c>): lists the AI models rig's coding agents run, as a table or JSON.
-/// Ported from <c>rig.models</c>. Always exits 0.
+/// Always exits 0.
 /// </summary>
 /// <param name="discovery">Finds the models.</param>
 /// <param name="output">Where the list goes.</param>

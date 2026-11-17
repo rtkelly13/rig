@@ -6,8 +6,7 @@ using Rig.Web.Ops;
 namespace Rig.Web;
 
 /// <summary>
-/// The routes the Python web child used to serve: the triage inbox, the estate's ops answers, and telemetry. Ported
-/// from <c>rig.triage.web</c>, <c>rig.estate.web</c> and <c>rig.otel_stack.web</c>, so the host no longer forwards them.
+/// The ops routes: the triage inbox, the estate's ops answers, and telemetry.
 /// </summary>
 public sealed class OpsRoutes : IDisposable
 {

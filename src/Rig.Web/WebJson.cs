@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 namespace Rig.Web;
 
 /// <summary>
-/// JSON as the Python server wrote it: snake_case keys and nulls kept. The React app in <c>web/</c> declares the same
+/// JSON with snake_case keys and nulls kept. The React app in <c>web/</c> declares the same
 /// shapes in TypeScript, so a renamed key here is a broken page there.
 /// </summary>
 internal static class WebJson
