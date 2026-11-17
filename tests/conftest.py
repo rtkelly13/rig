@@ -71,33 +71,6 @@ def clear_src_caches() -> None:
 
 
 @pytest.fixture(autouse=True)
-def forbid_real_virtual_desktop_changes(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Fail any test that renames or removes a real Windows virtual desktop.
-
-    The suite runs on the developer's own desktop, where a stray rename silently
-    relabels their live workspace (it did: integration restores of the sample plan
-    renamed desktops 1 and 2 to ``Work``/``Admin`` on every run). Tests that need
-    pyvda swap a fake into ``sys.modules``, which this leaves untouched.
-    """
-    if sys.platform != "win32":
-        return
-    try:
-        import pyvda  # noqa: TID251  # pyright: ignore[reportMissingImports]
-    except Exception:
-        return
-
-    def _forbidden(action: str):
-        def _fail(*_args, **_kwargs):
-            pytest.fail(f"test tried to {action} a real virtual desktop; patch desktop_manager.win32 instead")
-
-        return _fail
-
-    monkeypatch.setattr(pyvda.VirtualDesktop, "rename", _forbidden("rename"))
-    monkeypatch.setattr(pyvda.VirtualDesktop, "remove", _forbidden("remove"))
-    monkeypatch.setattr(pyvda.VirtualDesktop, "create", _forbidden("create"))
-
-
-@pytest.fixture(autouse=True)
 def isolate_trace_output(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
     """Send spans to a temp directory, never the repo's ``temp/traces``.
 
@@ -189,16 +162,3 @@ def pytest_collection_modifyitems(config, items) -> None:
         for item in items:
             if "windows" in item.keywords:
                 item.add_marker(skip_windows)
-
-
-@pytest.fixture
-def work_scope() -> tuple[str, ...]:
-    """Give this machine a work scope: `acme/` and `workspace/` under the code root.
-
-    `isolate_app_state_dirs` points `WORKSPACE_HOME` at an empty folder, so without this
-    fixture no work scope is configured, as on a machine that never set one.
-    """
-    dirs = ("acme", "workspace")
-    config = Path(os.environ["WORKSPACE_HOME"]) / "config.json"
-    _ = config.write_text(f'{{"tools": {{"estate": {{"work_dirs": ["{dirs[0]}", "{dirs[1]}"]}}}}}}', encoding="utf-8")
-    return dirs

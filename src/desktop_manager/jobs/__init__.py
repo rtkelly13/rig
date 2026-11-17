@@ -1,1 +1,1 @@
-"""Run every logon, recurring and daily machine job from one registry; see `registry`."""
+"""Legacy scheduled-task adapter for the C# job runner; see `scheduled`."""

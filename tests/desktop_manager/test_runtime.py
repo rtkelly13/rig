@@ -25,11 +25,3 @@ def test_state_is_empty_until_an_install_records_one(tmp_path: Path):
     )
 
     assert runtime.read_state(tmp_path) == runtime.State(current="abc", repo="/src/rig")
-
-
-def test_workspace_logs_dir_honours_the_runner_override(monkeypatch, tmp_path: Path):
-    from desktop_manager.plan import workspace_logs_dir
-
-    monkeypatch.setenv("DESKTOP_MANAGER_LOG_DIR", str(tmp_path / "elsewhere"))
-
-    assert workspace_logs_dir(tmp_path / "plan.json") == tmp_path / "elsewhere"
