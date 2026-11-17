@@ -3,6 +3,10 @@ name: vault-health
 description: Check and repair vault integrity - broken wikilinks, orphans, frontmatter, filenames, duplicate notes. Use after batch promotion, before a cleanup pass, or when asked about the state of the vault.
 ---
 
+> **Load `vault-reference` first.** It holds what every vault skill shares: where the
+> git and Drive copies live, how to work in the vault repo, the frontmatter and provenance
+> rules CI enforces, and how to lint and land a vault PR. This skill assumes it.
+
 # Health
 
 Maintenance lives in `rig` as the `vault` CLI (ADR 0013 in the vault repo;

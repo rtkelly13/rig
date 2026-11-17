@@ -3,9 +3,9 @@ name: vault-portal
 description: Treat the vault as a documentation portal - OKF concept notes, repository entries, starred-repo indexes, and agent-vs-human provenance. Use when adding documentation for a repo, refreshing the repo indexes, attributing a note, or asked how the vault is structured as a portal.
 ---
 
-> **Where to run these.** Vault scripts live in `~/code/personal/obsidian-vault`; `cd` there first, or use
-> the absolute paths below. This skill is installed globally by `devenv`, so it is
-> available from any repo — which means the cwd is not guaranteed to be the vault.
+> **Load `vault-reference` first.** It holds what every vault skill shares: where the
+> git and Drive copies live, how to work in the vault repo, the frontmatter and provenance
+> rules CI enforces, and how to lint and land a vault PR. This skill assumes it.
 
 # The vault as a documentation portal
 
@@ -23,7 +23,7 @@ Every note says who wrote it, using OKF's actor convention:
 ```yaml
 generated:
   by: human:rtkelly13          # a person
-  by: claude-opus-5/1m         # an agent — <producer>/<version>
+  by: agent:claude-opus-5-5    # an agent — agent:<model-id>; never a bare model id
   by: process:bookmark-import  # automation
 ```
 
@@ -45,15 +45,16 @@ wrote this **and nobody has checked it**".
 Backfill or re-check attribution:
 
 ```bash
-python3 ~/code/personal/obsidian-vault/scripts/okf-provenance.py            # dry run, shows the tally
-python3 ~/code/personal/obsidian-vault/scripts/okf-provenance.py --apply
+uv run --no-project ~/code/personal/obsidian-vault/scripts/okf-provenance.py            # dry run, shows the tally
+uv run --no-project ~/code/personal/obsidian-vault/scripts/okf-provenance.py --apply
 ```
 
 ## OKF frontmatter
 
-`type` is the only field OKF requires. The vault's existing values (`resource`,
-`resource-hub`, `note`, `project`, `area`) are already valid — OKF keeps no central
-registry of type names. Generated bundles add `Repository` and `Reference`.
+OKF itself requires only `type` and keeps no registry of type names, but the vault's CI is
+stricter: the allowed `type` and `status` values and the required fields are listed in
+`vault-reference`. Generated bundles also write `Repository` and `Reference`. `Repository` is
+not in CI's list, so a PR that touches those notes fails OKF003.
 
 | Field | Use |
 |---|---|
@@ -64,7 +65,7 @@ registry of type names. Generated bundles add `Repository` and `Reference`.
 | `sources` | where the content came from: `- resource:` plus optional `title`, `author` |
 | `generated` | `{ by, at }` — see above |
 | `verified` | `{ by, at }` — a person checked it |
-| `status` | `draft` / `stable` / `deprecated` |
+| `status` | required by the vault's CI; values in `vault-reference` |
 | `stale_after` | ISO date after which content should be distrusted |
 
 `index.md` and `log.md` are reserved names: a directory listing and a dated update
@@ -76,8 +77,8 @@ Every repository has an entry under `Vault/Projects/Repos/`, and starred reposit
 indexed by language under `Vault/Resources/Starred/`.
 
 ```bash
-python3 ~/code/personal/obsidian-vault/scripts/okf-sync.py --dry-run
-python3 ~/code/personal/obsidian-vault/scripts/okf-sync.py
+uv run --no-project ~/code/personal/obsidian-vault/scripts/okf-sync.py --dry-run
+uv run --no-project ~/code/personal/obsidian-vault/scripts/okf-sync.py
 ```
 
 Run as the first step of a triage pass, not on a schedule — see `vault-triage`. The sync

@@ -3,9 +3,9 @@ name: vault-reconcile
 description: Reconcile the Google Drive vault with the git vault after editing on mobile. Use when the two copies have drifted, before a triage pass, or when notes appear in one place and not the other.
 ---
 
-> **Where to run these.** Vault scripts live in `~/code/personal/obsidian-vault`; `cd` there first, or use
-> the absolute paths below. This skill is installed globally by `devenv`, so it is
-> available from any repo — which means the cwd is not guaranteed to be the vault.
+> **Load `vault-reference` first.** It holds what every vault skill shares: where the
+> git and Drive copies live, how to work in the vault repo, the frontmatter and provenance
+> rules CI enforces, and how to lint and land a vault PR. This skill assumes it.
 
 # Reconcile
 
@@ -49,7 +49,7 @@ tar -czf /tmp/drive-vault-$(date +%Y%m%d-%H%M%S).tar.gz \
   -C "$(dirname "$DRIVE_VAULT_PATH")" Vault
 ```
 
-**1. Unescape wikilinks.** `python3 ~/code/personal/obsidian-vault/scripts/vault-reconcile.py --fix-links --apply`
+**1. Unescape wikilinks.** `uv run --no-project ~/code/personal/obsidian-vault/scripts/vault-reconcile.py --fix-links --apply`
 
 mdformat escapes wikilinks as `\[[target]\]`, which Obsidian will not resolve. The first
 run found **3,386 occurrences across 88 files** in Drive and none in the repo. Do this
@@ -74,7 +74,7 @@ Decide conflicts on evidence, not on the mtimes you just changed. The backup fro
 holds the uncontaminated times:
 
 ```bash
-python3 - <<'PY'
+uv run --no-project python - <<'PY'
 import tarfile, pathlib, datetime as dt
 bk = tarfile.open("/tmp/drive-vault-<stamp>.tar.gz")
 repo = pathlib.Path("Vault")

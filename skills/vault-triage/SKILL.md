@@ -3,9 +3,9 @@ name: vault-triage
 description: Turn captured links in the ledger into curated vault notes - deciding keep, hub or drop, and writing notes that follow the vault's conventions. Use when promoting captures, filing resources, creating hub notes, or asked to work the backlog.
 ---
 
-> **Where to run these.** Vault scripts live in `~/code/personal/obsidian-vault`; `cd` there first, or use
-> the absolute paths below. This skill is installed globally by `devenv`, so it is
-> available from any repo — which means the cwd is not guaranteed to be the vault.
+> **Load `vault-reference` first.** It holds what every vault skill shares: where the
+> git and Drive copies live, how to work in the vault repo, the frontmatter and provenance
+> rules CI enforces, and how to lint and land a vault PR. This skill assumes it.
 
 # Triage
 
@@ -17,8 +17,8 @@ about not faking the decision when it hasn't been made.
 Triage begins with two commands, not with reading links:
 
 ```bash
-python3 ~/code/personal/obsidian-vault/scripts/okf-sync.py      # refresh repo indexes + data/starred.tsv
-python3 ~/code/personal/obsidian-vault/scripts/triage-rank.py --apply
+uv run --no-project ~/code/personal/obsidian-vault/scripts/okf-sync.py      # refresh repo indexes + data/starred.tsv
+uv run --no-project ~/code/personal/obsidian-vault/scripts/triage-rank.py --apply
 ```
 
 `triage-rank` marks every ledger row that is **also starred on GitHub**. A link dropped
@@ -146,34 +146,8 @@ that produced `Resources/EngineeringEngineering`.
 
 Run `vault-health` after any batch promotion.
 
-## Provenance and lint before pushing
+## Before pushing
 
-The vault's `Verify OKF Frontmatter` check (okf-lint) fails a PR on any note it touches,
-including notes that were already wrong on `main`.
-
-- **`generated.by` is `agent:<model-id>`**, `<producer>/<version>`, `human:<name>` or
-  `process:<name>` (vault ADR 0007). A bare model id (`claude-opus-5-5`, `claude`, `codex`)
-  fails as OKF012. Every new note needs `generated:` (OKF009).
-- **Only claim authorship you can show.** For a note you write, that is your own model id.
-  For an existing note with no `generated:`, find who wrote it in the session logs
-  (`~/.claude/projects`, `~/.codex/sessions`, `~/.gemini/`) before adding one, and leave it
-  absent if nothing shows it. Review bots check this claim.
-- **`type`** must be one of `area`, `concept`, `guide`, `index`, `note`, `policy`,
-  `project`, `reference`, `resource`, `resource-hub` (OKF003).
-
-The check diffs against `origin/main`, not the PR's base, so lint against `origin/main`
-locally before pushing and fix whatever the touched notes already carried. Run the same
-code CI runs, at the SHA pinned in the vault's `.github/workflows/okf-lint.yml`:
-
-```bash
-# once, into the vault's gitignored temp/
-git clone -q https://github.com/rtkelly-labs/github-actions temp/github-actions
-cd temp/github-actions && git checkout -q <pinned-sha> && cd -
-
-# from the vault worktree being pushed
-VAULT_PATH=Vault BASE_REF=origin/main REQUIRE_PROVENANCE=true uv run --no-project python -c \
-  "import sys; sys.path.insert(0, '<vault>/temp/github-actions/src'); from estate_actions.cli import run; sys.exit(run('okf-lint'))"
-```
-
-Leaving `BASE_REF` empty lints the whole vault, which still reports thousands of older
-violations. Use it to find one class (for example, every OKF012), not as a gate.
+Set `generated.by` to your own `agent:<model-id>` on every note you write, then lint
+against `origin/main` and check wikilinks, as `vault-reference` describes. CI fails on faults
+a touched hub note already had, so fix those in the same PR.

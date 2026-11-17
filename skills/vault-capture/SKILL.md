@@ -3,9 +3,9 @@ name: vault-capture
 description: Pull newly-dropped links out of the Slack self-DM into the capture ledger, resolving X/Twitter links to real text. Use when backfilling Slack, catching up the ledger, or when asked what has been captured since a date.
 ---
 
-> **Where to run these.** Vault scripts live in `~/code/personal/obsidian-vault`; `cd` there first, or use
-> the absolute paths below. This skill is installed globally by `devenv`, so it is
-> available from any repo — which means the cwd is not guaranteed to be the vault.
+> **Load `vault-reference` first.** It holds what every vault skill shares: where the
+> git and Drive copies live, how to work in the vault repo, the frontmatter and provenance
+> rules CI enforces, and how to lint and land a vault PR. This skill assumes it.
 
 # Capture
 
