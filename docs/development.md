@@ -120,8 +120,9 @@ Windows-safe tests (the Windows jobs catch these, but write them right first tim
   `tests/Rig.Architecture.Tests`, and the coverage floor ([testing.md](testing.md#the-c-coverage-floor)).
 - **Ownership gate**: `tools/command-ownership` checks `config/command-ownership.json` against the C# command tree
   (see [The C# front door](#the-c-front-door)).
-- **LOC report** (report-only, never a gate): `dotnet run --project tools/loc-report -- . [--markdown]` prints C# code lines per
-  `src/` area and the Python carry-over counts; CI appends it to the job summary. Markers live in `tools/loc-report/Markers.cs`.
+- **LOC report** (report-only, never a gate):
+  `dotnet run --project tools/loc-report -- . [--markdown]` prints C# code lines per `src/` area and the Python
+  carry-over counts; CI appends it to the job summary. Markers live in `tools/loc-report/Markers.cs`.
 - **Repo gates**: `ls-lint` for filenames and script languages, `zizmor` for workflows, and
   `rig repo-governance agents-audit . --strict` for AGENTS.md pointers.
 - **image-drift**: `cd tools/image-drift && uv sync && uv run ruff check . && uv run ty check && uv run pytest`;
