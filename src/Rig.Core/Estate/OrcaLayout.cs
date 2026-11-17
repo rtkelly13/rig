@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.GitHub;
 using Rig.Core.Orca;
@@ -641,15 +640,7 @@ public static class OrcaLayout
 
     private static IEnumerable<JsonObject> Projects(string path)
     {
-        JsonNode? root;
-        try
-        {
-            root = JsonNode.Parse(File.ReadAllText(path));
-        }
-        catch (JsonException e)
-        {
-            throw new InvalidDataException($"{path}: {e.Message}", e);
-        }
+        var root = JsonFile.Parse(path);
 
         if (root is not JsonObject top)
         {
