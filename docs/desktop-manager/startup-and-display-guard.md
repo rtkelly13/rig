@@ -1,6 +1,6 @@
 # Startup and the display guard
 
-`desktop-manager jobs install` registers the sign-in restore and the display
+`rig jobs install` registers the sign-in restore and the display
 guard alongside the machine's other scheduled jobs, and removes the standalone
 "Workspace Restore" and "Workspace Display Guard" tasks older installers registered,
 so nothing restores twice. See [jobs.md](jobs.md). Install it from the installed

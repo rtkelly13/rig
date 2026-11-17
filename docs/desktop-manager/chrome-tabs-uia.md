@@ -198,7 +198,7 @@ flickering as the closes move between windows.
 ## Installing
 
 The scheduled `organise --unattended` run (see [Organise](#organise)) belongs to
-`desktop-manager jobs install`: its Tick task runs it, as you, only while you are
+`rig jobs install`: its Tick task runs it, as you, only while you are
 logged on, never overlapping (see [jobs.md](jobs.md)).
 Its output goes to the job log like any other job's (`rig jobs log chrome-organise`);
 there is no separate `organise.log` any more. An installed `chrome-tabs` shim from

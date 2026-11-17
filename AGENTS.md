@@ -3,7 +3,7 @@
 Shared development utilities — desktop workspace management, general tooling, and reusable patterns.
 
 > [!IMPORTANT]
-> **Agent Directive**: Always run `rig help` at the start of every session to familiarize yourself with the available utility toolkit and latest command structures. It prints the `rig` overview; `uv run desktop-manager --help` lists the desktop tools. Inside a rig checkout, `dotnet run --project src/Rig.Cli -- <command>` runs that checkout's code instead of the installed copy.
+> **Agent Directive**: Always run `rig help` at the start of every session to familiarize yourself with the available utility toolkit and latest command structures. It prints the `rig` overview, the desktop tools (`rig desktop`) included. Inside a rig checkout, `dotnet run --project src/Rig.Cli -- <command>` runs that checkout's code instead of the installed copy.
 
 ## Commands
 
