@@ -26,12 +26,13 @@ public static class ChromeInstall
 
     /// <summary>
     /// <c>rig.exe</c> inside the runtime's <c>current</c> copy, which <c>rig runtime install</c>
-    /// maintains: <c>%LOCALAPPDATA%\shared-utilities\runtime\current\.venv\Scripts\rig.exe</c>.
+    /// maintains: <c>%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe</c>.
     /// </summary>
     /// <param name="environment">Reads an environment variable.</param>
     /// <param name="home">The user's home, for when <c>LOCALAPPDATA</c> is unset.</param>
     public static string RuntimeRig(Func<string, string?> environment, string home) =>
-        Path.Join(Local(environment, home), "shared-utilities", "runtime", "current", ".venv", "Scripts", "rig.exe");
+        Runtime.RuntimeManager.Published(
+            Runtime.RuntimeManager.CurrentLink(Path.Join(Local(environment, home), "shared-utilities", "runtime")), "rig", windows: true);
 
     /// <summary>The shim's text: a batch file that runs <paramref name="rig"/> <c>chrome-tabs</c> with every argument.</summary>
     /// <param name="rig">The <c>rig.exe</c> the shim runs.</param>

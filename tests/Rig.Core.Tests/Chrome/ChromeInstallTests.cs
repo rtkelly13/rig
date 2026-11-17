@@ -32,7 +32,7 @@ public sealed class ChromeInstallTests
     public void RuntimeRig_renders_full_path()
     {
         var path = ChromeInstall.RuntimeRig(_ => @"C:\Local", @"C:\Users\me");
-        Assert.Equal(Path.Join(@"C:\Local", "shared-utilities", "runtime", "current", ".venv", "Scripts", "rig.exe"), path);
+        Assert.Equal(Path.Join(@"C:\Local", "shared-utilities", "runtime", "current", "rig", "rig.exe"), path);
     }
 
     [Fact]
