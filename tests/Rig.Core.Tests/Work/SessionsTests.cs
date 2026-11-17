@@ -137,6 +137,33 @@ public sealed class SessionsTests
     }
 
     [Fact]
+    public async Task A_project_folder_that_cannot_be_read_does_not_hide_the_other_projects()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            // Mode bits do not lock a Windows folder.
+            return;
+        }
+
+        using var temp = new TempDir();
+        await File.WriteAllTextAsync(temp.File("projects/locked/hidden.jsonl"), """{"type":"user","message":{"content":"hidden"}}""", Utf8, Token);
+        await File.WriteAllTextAsync(temp.File("projects/open/seen.jsonl"), """{"type":"user","message":{"content":"hello"}}""", Utf8, Token);
+        var locked = Path.Join(temp.Path, "projects", "locked");
+        File.SetUnixFileMode(locked, UnixFileMode.None);
+        var source = new ClaudeWorkSessions(temp.Path, Path.Join(temp.Path, "session-ends"), (_, _) => false);
+        try
+        {
+            var scan = await source.ReadAsync(DateTimeOffset.MinValue, Token);
+
+            Assert.Equal("seen", Assert.Single(scan.Sessions).SessionId);
+        }
+        finally
+        {
+            File.SetUnixFileMode(locked, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
+    [Fact]
     public async Task A_registry_file_that_cannot_be_read_says_nothing()
     {
         if (OperatingSystem.IsWindows())

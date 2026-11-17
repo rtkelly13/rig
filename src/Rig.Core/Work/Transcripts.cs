@@ -77,9 +77,23 @@ internal static class Transcripts
         [
             .. Directory.EnumerateDirectories(projects)
                 .Order(StringComparer.Ordinal)
-                .SelectMany(project => Directory.EnumerateFiles(project, "*.jsonl").Order(StringComparer.Ordinal))
+                .SelectMany(In)
                 .Where(path => File.GetLastWriteTimeUtc(path) >= since.UtcDateTime),
         ];
+    }
+
+    // A project folder that cannot be read, or that went away since it was listed, has no transcripts to offer;
+    // it must not cost the report every other project's sessions.
+    private static IReadOnlyList<string> In(string project)
+    {
+        try
+        {
+            return [.. Directory.EnumerateFiles(project, "*.jsonl").Order(StringComparer.Ordinal)];
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
     }
 
     /// <summary>Summarises the transcript at <paramref name="path"/>. Unparseable lines are skipped, never fatal.</summary>
