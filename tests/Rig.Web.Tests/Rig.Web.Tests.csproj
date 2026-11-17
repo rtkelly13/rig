@@ -6,7 +6,7 @@
     <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="Fakes/TempDir.cs" />
     <Compile Include="../Rig.Web.BrowserTests/Repo.cs" Link="Fakes/Repo.cs" />
   </ItemGroup>
-  <ItemGroup Label="Responses recorded from the Python StudioServer, the parity baseline">
+  <ItemGroup Label="Recorded responses, the frozen parity baseline">
     <None Include="Recorded/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

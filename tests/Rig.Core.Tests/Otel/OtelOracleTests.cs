@@ -5,7 +5,7 @@ using Rig.Core.Otel;
 namespace Rig.Core.Tests.Otel;
 
 /// <summary>
-/// Holds <c>Rig.Core.Otel</c> to <c>rig.otel_stack</c>. <c>otel-oracle.json</c> records what the Python wrote for the
+/// A frozen recorded baseline whose generator is gone; it holds <c>Rig.Core.Otel</c> to the recording. <c>otel-oracle.json</c> records what was written for the
 /// collector and ClickHouse configs, the forward URL check, the Windows netstat parse, the launch record, the pins, the
 /// replay head hash and offsets file, a trace file's spans, best copies and request bodies, and the service plist.
 /// </summary>
@@ -20,7 +20,7 @@ public sealed class OtelOracleTests
 
     [Theory]
     [MemberData(nameof(ConfigCases))]
-    public void Collector_config_matches_the_python(int index)
+    public void Collector_config_matches_the_recording(int index)
     {
         var expected = Oracle["collector_config"]![index]!;
 
@@ -30,7 +30,7 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void Yaml_quoting_matches_the_python()
+    public void Yaml_quoting_matches_the_recording()
     {
         foreach (var (text, quoted) in Oracle["yaml_quoted"]!.AsObject())
         {
@@ -40,7 +40,7 @@ public sealed class OtelOracleTests
 
     [Theory]
     [MemberData(nameof(ClickHouseCases))]
-    public void Clickhouse_server_config_matches_the_python(int index)
+    public void Clickhouse_server_config_matches_the_recording(int index)
     {
         var expected = Oracle["clickhouse"]![index]!;
 
@@ -50,14 +50,14 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void Clickhouse_users_and_contrib_configs_match_the_python()
+    public void Clickhouse_users_and_contrib_configs_match_the_recording()
     {
         Assert.Equal(Oracle["users_xml"]!.GetValue<string>(), ClickHouseConfig.UsersXml());
         Assert.Equal(Oracle["contrib_yaml"]!.GetValue<string>(), ClickHouseConfig.CollectorYaml());
     }
 
     [Fact]
-    public void Forward_urls_are_checked_as_the_python_did()
+    public void Forward_urls_are_checked_as_recorded()
     {
         foreach (var (url, expected) in Oracle["forward"]!.AsObject())
         {
@@ -74,7 +74,7 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void Netstat_listeners_match_the_python()
+    public void Netstat_listeners_match_the_recording()
     {
         var netstat = Oracle["netstat"]!;
         var text = netstat["text"]!.GetValue<string>();
@@ -86,7 +86,7 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void Collector_commands_are_recognised_as_the_python_did()
+    public void Collector_commands_are_recognised_as_recorded()
     {
         foreach (var (command, expected) in Oracle["is_collector"]!.AsObject())
         {
@@ -95,7 +95,7 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void Launch_records_round_trip_as_the_python_did()
+    public void Launch_records_round_trip_as_recorded()
     {
         foreach (var (text, expected) in Oracle["launched"]!.AsObject())
         {
@@ -115,7 +115,7 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void Pins_match_the_python()
+    public void Pins_match_the_recording()
     {
         Assert.Equal(OtelPins.Version, Oracle["version"]!.GetValue<string>());
         AssertSame(Oracle["releases"]!, OtelPins.Releases.ToDictionary(p => p.Key, p => (object)new { asset = p.Value.Asset, sha256 = p.Value.Sha256, binary = p.Value.Binary }));
@@ -127,7 +127,7 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void Head_hashes_match_the_python()
+    public void Head_hashes_match_the_recording()
     {
         foreach (var entry in Oracle["head_hash"]!.AsArray())
         {
@@ -138,7 +138,7 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void The_offsets_file_matches_the_python_and_reads_back()
+    public void The_offsets_file_matches_the_recording_and_reads_back()
     {
         var offsets = new Dictionary<string, ReplayOffset>(StringComparer.Ordinal)
         {
@@ -155,7 +155,7 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void Trace_spans_match_the_python()
+    public void Trace_spans_match_the_recording()
     {
         var backfill = Oracle["backfill"]!;
         var spans = TraceSpans.Parse(backfill["text"]!.GetValue<string>());
@@ -167,7 +167,7 @@ public sealed class OtelOracleTests
     }
 
     [Fact]
-    public void The_service_plist_matches_the_python()
+    public void The_service_plist_matches_the_recording()
     {
         var expected = Convert.FromBase64String(Oracle["plist"]!.GetValue<string>());
 

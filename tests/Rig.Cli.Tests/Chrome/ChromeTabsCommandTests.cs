@@ -15,9 +15,8 @@ using Rig.Core.Workspace;
 namespace Rig.Cli.Tests.Chrome;
 
 /// <summary>
-/// <c>rig chrome-tabs</c>. <c>traces</c> runs over <see cref="ChromeTraces"/>, which its own tests hold to Python's
-/// reports; <c>list</c>, <c>rank</c> and <c>prune</c> over a fake session; <c>install</c> and <c>uninstall</c> over a temp home. These check what the command adds: the files it picks, the lines,
-/// the JSON and its key order, the exit codes, and which lines stay with the Python.
+/// <c>rig chrome-tabs</c>. <c>traces</c> runs over <see cref="ChromeTraces"/>, whose own tests hold its reports; <c>list</c>, <c>rank</c> and <c>prune</c> over a fake session; <c>install</c> and <c>uninstall</c> over a temp home. These check what the command adds: the files it picks, the lines,
+/// the JSON and its key order, the exit codes.
 /// </summary>
 public sealed class ChromeTabsCommandTests : IDisposable
 {
@@ -197,7 +196,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task Summary_as_json_keeps_python_key_order()
+    public async Task Summary_as_json_keeps_the_recorded_key_order()
     {
         TwoRuns();
 
@@ -436,7 +435,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task List_as_json_has_the_python_fields_in_order()
+    public async Task List_as_json_has_the_recorded_fields_in_order()
     {
         Assert.Equal(0, await Tabs("list", "--json", "--prs-only"));
 

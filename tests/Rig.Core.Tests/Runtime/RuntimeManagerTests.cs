@@ -78,7 +78,7 @@ public sealed class RuntimeManagerTests : IDisposable
         var windows = OperatingSystem.IsWindows();
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "run", "--help"]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "install", "--help"]));
-        // No Python environment is built or probed: the copy is the published rig and nothing else.
+        // No interpreter environment is built or probed: the copy is the published rig and nothing else.
         Assert.DoesNotContain(tools.Calls, call => call.Argv[0] == "uv" || call.Argv.Contains("import rig.csharp_cli", StringComparer.Ordinal));
         Assert.False(Directory.Exists(Path.Join(copy, ".venv")));
     }
@@ -247,7 +247,7 @@ public sealed class RuntimeManagerTests : IDisposable
     }
 
     [Fact]
-    public void State_is_written_in_the_python_shape_and_read_back()
+    public void State_is_written_in_the_recorded_shape_and_read_back()
     {
         var manager = Manager(new Tools(_system));
 

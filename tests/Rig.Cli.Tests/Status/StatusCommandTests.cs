@@ -5,7 +5,7 @@ using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.Status;
 
-/// <summary>Ported from the Python <c>repo_health</c> entry point, which had no tests of its own.</summary>
+/// <summary><c>rig status</c> through its command line.</summary>
 public sealed class StatusCommandTests : IDisposable
 {
     private const string Here = "/work/rig/src";

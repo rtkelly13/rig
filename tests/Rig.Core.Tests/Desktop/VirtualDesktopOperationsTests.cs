@@ -188,7 +188,7 @@ public sealed class VirtualDesktopOperationsTests
     }
 
     [Fact]
-    public void Any_retirement_removes_what_the_python_removed_onto_the_desktop_it_chose()
+    public void Any_retirement_removes_what_the_recording_removed_onto_the_desktop_it_chose()
     {
         string[] pool = ["a", "b", "X", "x", ""];
         var names = Gen.Int[0, pool.Length - 1].Select(index => pool[index]);

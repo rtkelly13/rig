@@ -277,7 +277,7 @@ public sealed class CachesTests : IDisposable
     }
 
     [Fact]
-    public void Status_names_print_as_python_wrote_them()
+    public void Status_names_print_as_recorded()
     {
         Assert.Equal("would run", new Pruned("c", "x", PruneStatus.WouldRun).StatusName);
         Assert.Equal("done", new Pruned("c", "x", PruneStatus.Done).StatusName);

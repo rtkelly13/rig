@@ -7,10 +7,7 @@ using Rig.Core.Tests;
 namespace Rig.Cli.Tests.Jobs;
 
 /// <summary>
-/// <c>Rig.Core.Jobs</c> replayed against <c>jobs-oracle.json</c>, recorded from Python's <c>desktop_manager.jobs</c>: the
-/// same registry, the same data in <c>state.json</c> and <c>last-&lt;trigger&gt;.json</c>, the same reading of damaged
-/// files, the same plan and the same cells. The Python test <c>test_the_csharp_oracle_is_what_python_records</c> holds
-/// Python to the same file while its runner still writes these files.
+/// <c>Rig.Core.Jobs</c> replayed against <c>jobs-oracle.json</c>, a frozen recorded baseline whose generator is gone: the registry, the data in <c>state.json</c> and <c>last-&lt;trigger&gt;.json</c>, the reading of damaged files, the plan and the cells.
 /// </summary>
 public sealed class JobsOracleTests : IDisposable
 {
@@ -42,7 +39,7 @@ public sealed class JobsOracleTests : IDisposable
     }
 
     [Fact]
-    public void A_written_state_is_canonically_what_python_records()
+    public void A_written_state_is_canonically_what_was_recorded()
     {
         foreach (var write in Oracle.GetProperty("state_writes").EnumerateArray())
         {
@@ -55,7 +52,7 @@ public sealed class JobsOracleTests : IDisposable
     }
 
     [Fact]
-    public void A_damaged_state_reads_as_python_reads_it()
+    public void A_damaged_state_reads_as_recorded()
     {
         foreach (var read in Oracle.GetProperty("state_reads").EnumerateArray())
         {
@@ -81,7 +78,7 @@ public sealed class JobsOracleTests : IDisposable
     }
 
     [Fact]
-    public void A_damaged_run_record_reads_as_python_reads_it()
+    public void A_damaged_run_record_reads_as_recorded()
     {
         foreach (var read in Oracle.GetProperty("run_reads").EnumerateArray())
         {
@@ -101,7 +98,7 @@ public sealed class JobsOracleTests : IDisposable
     }
 
     [Fact]
-    public void Every_recorded_plan_takes_and_skips_as_python_did()
+    public void Every_recorded_plan_takes_and_skips_as_recorded()
     {
         File.WriteAllText(Path.Join(_temp.Path, "present"), string.Empty);
         var state = new Dictionary<string, Outcome>(StringComparer.Ordinal);
@@ -133,7 +130,7 @@ public sealed class JobsOracleTests : IDisposable
     }
 
     [Fact]
-    public void The_result_and_last_run_cells_are_python_s()
+    public void The_result_and_last_run_cells_are_recorded()
     {
         foreach (var cell in Oracle.GetProperty("cells").EnumerateArray())
         {
@@ -162,7 +159,7 @@ public sealed class JobsOracleTests : IDisposable
     }
 
     [Fact]
-    public void A_whole_run_writes_what_python_writes_and_reports_what_it_reports()
+    public void A_whole_run_writes_what_was_recorded_and_reports_what_it_reports()
     {
         var index = 0;
         foreach (var recorded in Oracle.GetProperty("runs").EnumerateArray())
@@ -212,7 +209,7 @@ public sealed class JobsOracleTests : IDisposable
     }
 
     [Fact]
-    public void A_run_section_reads_as_python_reads_it()
+    public void A_run_section_reads_as_recorded()
     {
         var path = Path.Join(_temp.Path, "output.log");
         foreach (var recorded in Oracle.GetProperty("run_outputs").EnumerateArray())
@@ -251,7 +248,7 @@ public sealed class JobsOracleTests : IDisposable
     private static string? RunText(string path) =>
         File.Exists(path) ? Crash(File.ReadAllText(path).Replace("\r\n", "\n", StringComparison.Ordinal)) : null;
 
-    // Python's recorded _fake_execute: the script's lines under a header, then the end marker.
+    // The recorded fake execution: the script's lines under a header, then the end marker.
     private sealed class ScriptedExecutor : IJobExecutor
     {
         public long Execute(Job job, string logsDir, string runId)
@@ -281,7 +278,7 @@ public sealed class JobsOracleTests : IDisposable
         public override long GetTimestamp() => 0;
     }
 
-    // POSIX separators and no .exe, as the Python records them, so the comparison holds on Windows.
+    // POSIX separators and no .exe, as recorded, so the comparison holds on Windows.
     private static string Normalise(string value)
     {
         var text = value.Replace('\\', '/');
@@ -341,7 +338,7 @@ public sealed class JobsOracleTests : IDisposable
         return path;
     }
 
-    // The oracle records Python's bytes; after the writer moved to System.Text.Json, the same data is all that is
+    // The oracle holds the recorded bytes; after the writer moved to System.Text.Json, the same data is all that is
     // claimed, not the same spelling.
     private static void AssertSameJson(string expected, string actual) =>
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), JsonNode.Parse(actual)), $"Expected {expected}{System.Environment.NewLine}Actual {actual}");

@@ -2,7 +2,7 @@ using Rig.Core.Policy;
 
 namespace Rig.Core.Tests.Policy;
 
-/// <summary>Ported from the classification and loading cases of the Python <c>tests/test_policy.py</c>.</summary>
+/// <summary>Command classification and loading.</summary>
 public sealed class CommandPolicyTests : IDisposable
 {
     private readonly TempDir _dir = new();

@@ -4,7 +4,7 @@ using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Policy;
 
-/// <summary>The Python behaviours the policy port reproduces (<c>fnmatch</c>, <c>shlex</c>) and the JSON rig writes.</summary>
+/// <summary>The recorded behaviours the policy code reproduces (<c>fnmatch</c>, <c>shlex</c>) and the JSON rig writes.</summary>
 public sealed class TextFormatTests
 {
     [Theory]

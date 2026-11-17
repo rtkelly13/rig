@@ -2,7 +2,7 @@ using Rig.Core.Desktop;
 
 namespace Rig.Core.Tests.Desktop;
 
-/// <summary>The exact rationals placement geometry is measured in, behaving as Python's <c>fractions.Fraction</c>.</summary>
+/// <summary>The exact rationals placement geometry is measured in, with the arithmetic of <c>fractions.Fraction</c> that the recorded values came from.</summary>
 public sealed class FractionTests
 {
     [Fact]
@@ -69,7 +69,7 @@ public sealed class FractionTests
     }
 
     [Fact]
-    public void A_fraction_prints_and_converts_as_python_does()
+    public void A_fraction_prints_and_converts_as_recorded()
     {
         Assert.Equal("1/3", new Fraction(1, 3).ToString());
         Assert.Equal("-2", new Fraction(-4, 2).ToString());

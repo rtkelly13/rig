@@ -5,9 +5,9 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// Holds the C# vault text rules to what the Python they were ported from returned. <c>vault-text-oracle.json</c> records
-/// each Python helper's result, or the <c>ValueError</c> it raised, for a corpus of URLs, stems, titles and paths built to
-/// hit the edges: Python's whitespace and casing, <c>urlsplit</c>'s failures, <c>parse_qs</c> grouping, code-point
+/// A frozen recorded baseline whose generator is gone. <c>vault-text-oracle.json</c> records
+/// each recorded helper's result, or the <c>ValueError</c> it raised, for a corpus of URLs, stems, titles and paths built to
+/// hit the edges: whitespace and casing, <c>urlsplit</c>'s failures, <c>parse_qs</c> grouping, code-point
 /// truncation and the candidate scoring. Set <c>RIG_VAULT_ORACLE</c> to a second fixture of the same shape, such as one
 /// recorded from a real vault, to check that too.
 /// </summary>
@@ -21,16 +21,16 @@ public sealed class VaultTextOracleTests
 
     [Theory]
     [MemberData(nameof(Functions))]
-    public void Matches_the_python_for_every_recorded_case(string fn)
+    public void Matches_the_recording_for_every_recorded_case(string fn)
     {
         var mismatches = Cases.Value
             .Where(c => c.Fn == fn)
             .Select(c => (Case: c, Actual: Run(c)))
             .Where(pair => !Same(pair.Case.Expected, pair.Actual))
-            .Select(pair => $"{pair.Case.Args.ToJsonString()} -> {pair.Actual.ToJsonString()}, Python gave {pair.Case.Expected.ToJsonString()}")
+            .Select(pair => $"{pair.Case.Args.ToJsonString()} -> {pair.Actual.ToJsonString()}, recorded {pair.Case.Expected.ToJsonString()}")
             .ToList();
 
-        Assert.True(mismatches.Count == 0, $"{mismatches.Count} case(s) differ from the Python:\n{string.Join('\n', mismatches.Take(40))}");
+        Assert.True(mismatches.Count == 0, $"{mismatches.Count} case(s) differ from the recording:\n{string.Join('\n', mismatches.Take(40))}");
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class VaultTextOracleTests
 
     private static JsonObject Result(double value) => Result(JsonValue.Create(value));
 
-    // Numbers compare by value, as Python writes 100.0 and System.Text.Json may write 100.
+    // Numbers compare by value, as the recording writes 100.0 and System.Text.Json may write 100.
     private static bool Same(JsonNode expected, JsonNode actual)
     {
         if (expected["result"] is JsonValue e && actual["result"] is JsonValue a

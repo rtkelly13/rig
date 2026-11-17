@@ -2,7 +2,7 @@ using Rig.Core.Jobs;
 
 namespace Rig.Core.Tests.Jobs;
 
-/// <summary>A rig run from an installed runtime copy keeps the copy's plan, as the Python registry does.</summary>
+/// <summary>A rig run from an installed runtime copy keeps the copy's plan, .</summary>
 public sealed class JobsSiteTests : IDisposable
 {
     private readonly TempDir _temp = new();

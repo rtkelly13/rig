@@ -2,7 +2,7 @@ using Rig.Core.Roots;
 
 namespace Rig.Core.Tests.Roots;
 
-/// <summary><see cref="AppData"/> beyond the cases the knowledge-server oracle recorded from the Python.</summary>
+/// <summary><see cref="AppData"/> beyond the cases the knowledge-server oracle recorded.</summary>
 public sealed class AppDataTests
 {
     [Fact]

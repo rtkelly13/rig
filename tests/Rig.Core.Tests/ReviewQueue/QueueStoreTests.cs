@@ -17,9 +17,9 @@ public sealed class QueueStoreTests : IDisposable
     public void Dispose() => _temp.Dispose();
 
     [Fact]
-    public void Reads_a_python_database_without_changing_snapshots_history_or_unrelated_data()
+    public void Reads_a_recorded_database_without_changing_snapshots_history_or_unrelated_data()
     {
-        using var oracle = PythonDatabase();
+        using var oracle = RecordedDatabase();
         var entries = Store.Read();
         var recorded = oracle.RootElement.GetProperty("entry");
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(recorded.GetRawText()), JsonSerializer.SerializeToNode(entries[0], QueueJson.Options)));
@@ -145,7 +145,7 @@ public sealed class QueueStoreTests : IDisposable
     [Fact]
     public void Migration_name_conflicts_refuse_the_database_without_rewriting_history()
     {
-        using var oracle = PythonDatabase();
+        using var oracle = RecordedDatabase();
         Execute("UPDATE schema_migrations SET name='002_conflicting_branch' WHERE version=2");
         var error = Assert.Throws<InvalidDataException>(() => Store.Read());
         Assert.Contains("002_triage", error.Message, StringComparison.Ordinal);
@@ -174,7 +174,7 @@ public sealed class QueueStoreTests : IDisposable
         Assert.Throws<SqliteException>(() => Store.Update(writer => writer.ImportActivity(Item(1), [activity])));
     }
 
-    private JsonDocument PythonDatabase()
+    private JsonDocument RecordedDatabase()
     {
         var oracle = JsonDocument.Parse(File.ReadAllText(Path.Join(AppContext.BaseDirectory, "ReviewQueue", "queue-store-oracle.json")));
         Directory.CreateDirectory(Path.GetDirectoryName(Db)!);
@@ -199,7 +199,7 @@ public sealed class QueueStoreTests : IDisposable
         using var connection = new SqliteConnection($"Data Source={Db};Pooling=False");
         connection.Open();
         using var command = connection.CreateCommand();
-#pragma warning disable CA2100 // Test-owned SQL literals and the recorded Python database fixture only.
+#pragma warning disable CA2100 // Test-owned SQL literals and the recorded database fixture only.
         command.CommandText = sql;
 #pragma warning restore CA2100
         command.ExecuteNonQuery();

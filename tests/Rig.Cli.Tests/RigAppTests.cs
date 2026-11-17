@@ -100,7 +100,7 @@ public sealed class RigAppTests : IDisposable
     }
 
     [Fact]
-    public async Task A_ported_subcommand_of_a_python_group_is_parsed_here()
+    public async Task A_subcommand_of_a_group_is_parsed_here()
     {
         Assert.Equal(0, await Run("chrome-tabs", "doctor", "--help"));
 

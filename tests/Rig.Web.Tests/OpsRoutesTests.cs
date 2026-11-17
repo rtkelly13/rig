@@ -11,7 +11,7 @@ using Rig.Web.Tests.Fakes;
 
 namespace Rig.Web.Tests;
 
-/// <summary>The routes the Python web child used to serve: triage, the estate's ops answers and telemetry.</summary>
+/// <summary>The routes of the ops surface: triage, the estate's ops answers and telemetry.</summary>
 public sealed class OpsRoutesTests : IAsyncLifetime
 {
     private Harness _harness = null!;

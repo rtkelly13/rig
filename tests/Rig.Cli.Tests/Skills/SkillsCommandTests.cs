@@ -9,7 +9,7 @@ using Rig.Core.Tests.Skills;
 namespace Rig.Cli.Tests.Skills;
 
 /// <summary>
-/// <c>rig skills</c>'s output and exit codes; ported from the Python <c>rig.skills.cli</c>. The checkout, home and
+/// <c>rig skills</c>'s output and exit codes. The checkout, home and
 /// clones are all temp folders, and git is a fake.
 /// </summary>
 public sealed class SkillsCommandTests : IDisposable

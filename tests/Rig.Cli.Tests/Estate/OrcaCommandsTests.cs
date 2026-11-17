@@ -328,7 +328,7 @@ public sealed class OrcaCommandsTests : IDisposable
         File.WriteAllText(ConfigFile, new JsonObject { ["projects"] = projects }.ToJsonString());
     }
 
-    // The estate as the Python fixture held it: rig and blobflags in personal/tooling, Iceberg.NET at the top level.
+    // The estate as the recorded fixture held it: rig and blobflags in personal/tooling, Iceberg.NET at the top level.
     private FakeOrca Fixture() => new FakeOrca
     {
         Repos = { Repo("personal/rig", "rtkelly13", "g-tooling"), Repo("personal/blobflags", "rtkelly13", "g-tooling"), Repo("rtkelly-labs/Iceberg.NET", "rtkelly-labs", null) },

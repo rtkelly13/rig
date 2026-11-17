@@ -5,7 +5,7 @@ using Rig.Core.Tests.Otel;
 
 namespace Rig.Core.Tests.Estate;
 
-/// <summary><see cref="CloneDiscovery"/>: the bounded scan, and the cache it shares with the Python tool.</summary>
+/// <summary><see cref="CloneDiscovery"/>: the bounded scan, and the cache it writes.</summary>
 public sealed class CloneDiscoveryTests
 {
     private static readonly DateTimeOffset Noon = new(2026, 11, 11, 12, 0, 0, TimeSpan.Zero);
@@ -90,7 +90,7 @@ public sealed class CloneDiscoveryTests
     }
 
     [Fact]
-    public async Task A_python_written_timestamp_reads_back()
+    public async Task A_recorded_timestamp_reads_back()
     {
         using var root = new TempDir();
         _ = root.Folder("a/.git");

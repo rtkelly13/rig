@@ -6,7 +6,7 @@ using Rig.Web.Tests.Fakes;
 namespace Rig.Web.Tests;
 
 /// <summary>
-/// The C4 viewer's page and JSON, answered as the Python <c>c4_okf</c> server answered them. <c>Recorded/c4/responses</c>
+/// The C4 viewer's page and JSON, answered as the recorded server answered them. <c>Recorded/c4/responses</c>
 /// holds that server's answers, byte for byte, to every request against <c>Recorded/c4/hard</c>.
 /// </summary>
 public sealed partial class C4RoutesTests : IAsyncLifetime
@@ -63,7 +63,7 @@ public sealed partial class C4RoutesTests : IAsyncLifetime
 
     [Theory]
     [MemberData(nameof(Recordings))]
-    public async Task Answers_what_the_python_server_answered(string recording)
+    public async Task Answers_what_the_recorded_server_answered(string recording)
     {
         var text = await File.ReadAllTextAsync(Path.Join(AppContext.BaseDirectory, "Recorded", "c4", "responses", recording), TestContext.Current.CancellationToken);
         var split = text.IndexOf('\n', StringComparison.Ordinal);
@@ -118,7 +118,7 @@ public sealed partial class C4RoutesTests : IAsyncLifetime
     [Fact]
     public async Task A_malformed_frontmatter_is_worded_by_the_YAML_library()
     {
-        // The Python server answered with PyYAML's multi-line parser error here; the C# answer is YamlDotNet's one line.
+        // The recorded server answered with PyYAML's multi-line parser error here; the C# answer is YamlDotNet's one line.
         using var response = await GetAsync("/api/c4/concept?bundle=rig&id=bad2");
         var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 

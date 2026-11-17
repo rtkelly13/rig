@@ -3,7 +3,7 @@ using Rig.Core.Orca;
 
 namespace Rig.Core.Tests.Orca;
 
-/// <summary>Policies, repos and snapshots shaped as the Python tests in <c>tests/test_workspace_orca*.py</c> built them.</summary>
+/// <summary>Policies, repos and snapshots shaped as the Orca command tests need them.</summary>
 internal static class OrcaFixtures
 {
     public static readonly DateTimeOffset Now = new(2026, 10, 24, 12, 0, 0, TimeSpan.Zero);

@@ -67,7 +67,7 @@ public sealed class GovernanceCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task The_json_payload_keeps_python_s_keys_and_order()
+    public async Task The_json_payload_keeps_the_recorded_keys_and_order()
     {
         var repo = await RepoAsync("bad", "GEMINI.md");
 

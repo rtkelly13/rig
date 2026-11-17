@@ -11,7 +11,7 @@ using Rig.Core.Vault;
 namespace Rig.Cli.Tests.Vault;
 
 /// <summary>
-/// <c>rig vault knowledge-server</c> through its command line, ported from the Python <c>tests/obsidian/test_knowledge_server.py</c>.
+/// <c>rig vault knowledge-server</c> through its command line.
 /// The home, the LaunchAgents folder and rig's data folder are temp folders; launchctl, npm and claude are faked, and the
 /// health probe never leaves the process.
 /// </summary>
