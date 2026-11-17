@@ -345,10 +345,10 @@ public sealed class C4BundleTests : IDisposable
         Assert.Equal("owner2", index["Acme.TypeC"]);
         Assert.False(index.ContainsKey("Shared")); // Ambiguous type declared in two owners is dropped
 
-        Assert.Equal(0, DotnetScan.PythonLines(""));
-        Assert.Equal(1, DotnetScan.PythonLines("one"));
-        Assert.Equal(1, DotnetScan.PythonLines("one\n"));
-        Assert.Equal(2, DotnetScan.PythonLines("one\ntwo"));
+        Assert.Equal(0, DotnetScan.LineCount(""));
+        Assert.Equal(1, DotnetScan.LineCount("one"));
+        Assert.Equal(1, DotnetScan.LineCount("one\n"));
+        Assert.Equal(2, DotnetScan.LineCount("one\ntwo"));
 
         var proj = new Project("TestProj", "/path/TestProj.csproj", "TestProj", ["net10.0"], false, [], []);
         Assert.Equal(string.Empty, DotnetScan.ComponentKey(proj, "TestProj"));
