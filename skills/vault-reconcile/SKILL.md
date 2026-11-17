@@ -11,17 +11,32 @@ description: Reconcile the Google Drive vault with the git vault after editing o
 
 Two copies of the vault exist on purpose:
 
-- **Google Drive** — `~/Google Drive/My Drive/Obsidian/Vault`, what Obsidian opens and
-  what the phone edits
+- **Google Drive** — `~/Library/CloudStorage/GoogleDrive-<account>/My Drive/Obsidian/Vault`,
+  what Obsidian opens and what the phone edits
 - **git** — `~/code/personal/obsidian-vault/Vault`, the record
 
 They drift in both directions. This brings them back to one thing, deterministically,
 and **never deletes** — a file that vanished from one side is indistinguishable from one
 that has not synced yet, so both are kept.
 
+## Locate the Drive copy first
+
+Google Drive for desktop mounts each signed-in account at
+`~/Library/CloudStorage/GoogleDrive-<account>/`. The vault is in the personal account,
+not the work one. The `~/Google Drive/` shortcut is gone, but the script's default still
+points at it, so **always pass `--drive`**: without it, the run reports every note as
+repo-only.
+
 ```bash
-python3 ~/code/personal/obsidian-vault/scripts/vault-reconcile.py            # report only; always start here
+export DRIVE_VAULT_PATH="$(ls -d ~/Library/CloudStorage/GoogleDrive-*/"My Drive/Obsidian/Vault")"
+uv run --no-project ~/code/personal/obsidian-vault/scripts/vault-reconcile.py \
+  --drive "$DRIVE_VAULT_PATH"            # report only; always start here
 ```
+
+The glob must match exactly one folder. The `<account>` part is an email address, so
+never write it into a committed file.
+
+Every command below takes the same `--drive "$DRIVE_VAULT_PATH"`.
 
 ## Run it in this order
 
@@ -31,7 +46,7 @@ The order is load-bearing. Each step changes what the next one sees.
 
 ```bash
 tar -czf /tmp/drive-vault-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/"Google Drive/My Drive/Obsidian" Vault
+  -C "$(dirname "$DRIVE_VAULT_PATH")" Vault
 ```
 
 **1. Unescape wikilinks.** `python3 ~/code/personal/obsidian-vault/scripts/vault-reconcile.py --fix-links --apply`

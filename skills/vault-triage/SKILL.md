@@ -63,7 +63,7 @@ A social URL is rarely the resource. Classify before filing, because the tier de
 |---|---|---|
 | **T1 — essay** | `is_note_tweet`, or text > 280 chars with no outbound url facet | The tweet. It is the content. |
 | **T2 — pointer** | ≥1 facet with `type: "url"` | **The target**, not the tweet. The tweet is provenance — record it in `source_tweet`. |
-| **T3 — visual** | media facets only, short text | Nothing. A line in a hub `## Watchlist` — design inspiration is browsed, not read. |
+| **T3 — visual** | media facets only, short text | Nothing. A line in a hub `## Watchlist` — design inspiration is browsed, not read. Where the image is the point (a diagram, a TIL card), save it to `Vault/Attachments/x/` and embed it beside the line (see `vault-capture`). |
 | **T0 — deleted** | resolver returns 404 | Nothing. Record as `deleted` so it is not re-fetched. |
 
 A single T2 tweet often carries **several** targets — a thread of icon sites, a bundle of
@@ -116,7 +116,10 @@ tags:
 source: <url>
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-curation_source: slack_backfill
+curation_source: slack_capture
+generated:
+  by: agent:<model-id>   # e.g. agent:claude-opus-5-5, the model writing the note
+  at: YYYY-MM-DD
 ---
 
 # Title
@@ -142,3 +145,35 @@ to the vault root and silently creates a stray top-level folder — the same pat
 that produced `Resources/EngineeringEngineering`.
 
 Run `vault-health` after any batch promotion.
+
+## Provenance and lint before pushing
+
+The vault's `Verify OKF Frontmatter` check (okf-lint) fails a PR on any note it touches,
+including notes that were already wrong on `main`.
+
+- **`generated.by` is `agent:<model-id>`**, `<producer>/<version>`, `human:<name>` or
+  `process:<name>` (vault ADR 0007). A bare model id (`claude-opus-5-5`, `claude`, `codex`)
+  fails as OKF012. Every new note needs `generated:` (OKF009).
+- **Only claim authorship you can show.** For a note you write, that is your own model id.
+  For an existing note with no `generated:`, find who wrote it in the session logs
+  (`~/.claude/projects`, `~/.codex/sessions`, `~/.gemini/`) before adding one, and leave it
+  absent if nothing shows it. Review bots check this claim.
+- **`type`** must be one of `area`, `concept`, `guide`, `index`, `note`, `policy`,
+  `project`, `reference`, `resource`, `resource-hub` (OKF003).
+
+The check diffs against `origin/main`, not the PR's base, so lint against `origin/main`
+locally before pushing and fix whatever the touched notes already carried. Run the same
+code CI runs, at the SHA pinned in the vault's `.github/workflows/okf-lint.yml`:
+
+```bash
+# once, into the vault's gitignored temp/
+git clone -q https://github.com/rtkelly-labs/github-actions temp/github-actions
+cd temp/github-actions && git checkout -q <pinned-sha> && cd -
+
+# from the vault worktree being pushed
+VAULT_PATH=Vault BASE_REF=origin/main REQUIRE_PROVENANCE=true uv run --no-project python -c \
+  "import sys; sys.path.insert(0, '<vault>/temp/github-actions/src'); from estate_actions.cli import run; sys.exit(run('okf-lint'))"
+```
+
+Leaving `BASE_REF` empty lints the whole vault, which still reports thousands of older
+violations. Use it to find one class (for example, every OKF012), not as a gate.
