@@ -261,12 +261,10 @@ disable = ["fake-location", "patching"]
 # shrink: move a fake into tests/fakes/, or replace a patch with a fake passed through a seam.
 fake-location-allow = [
     "tests/desktop_manager/test_runtime.py",
-    "tests/test_c4_okf.py",
 ]
 patching-allow = [
     "tests/conftest.py",
     "tests/desktop_manager/test_runtime.py",
-    "tests/test_c4_okf.py",
 ]
 pyright-pragma-allow = []
 boundary-modules = [

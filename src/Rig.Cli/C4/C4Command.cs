@@ -10,7 +10,7 @@ internal sealed record C4Host(string DefaultBundle, Func<string, IReadOnlyList<s
 
 /// <summary>
 /// <c>rig c4</c>: check, walk and compose a C4 model kept as an OKF bundle, and derive one from .NET code.
-/// Ported from <c>rig.c4_okf.cli</c>; output and exit codes match the Python command it replaced.
+/// Ported from the Python C4 CLI; output and exit codes match the Python command it replaced.
 /// </summary>
 internal sealed class C4Command(C4Host host, TextWriter output, TextWriter error)
 {

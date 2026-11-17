@@ -223,16 +223,6 @@ def discover(root):
                 raise RuntimeError(f"Unsupported development CLI factory: {file}; expose its runtime tree")
 
     # The C# MCP tool attributes are inspected by the C# command-tree export.
-    # Mount the real child-route factories without serving requests or executing handlers.
-    # Their implementation digests make changes to opaque legacy dispatch explicit in review.
-    import hashlib
-
-    from desktop_manager.web_upstream import mounted_routes
-
-    for route in mounted_routes():
-        implementation = route if inspect.isfunction(route) else type(route)
-        digest = hashlib.sha256(inspect.getsource(implementation).encode("utf-8")).hexdigest()
-        surfaces.append(f"web-child:{implementation.__module__}:{implementation.__qualname__}:{digest}")
     return {"Commands": sorted(commands, key=lambda c: c["Id"]), "Surfaces": sorted(surfaces)}
 
 
