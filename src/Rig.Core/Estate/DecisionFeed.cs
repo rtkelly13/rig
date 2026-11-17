@@ -1,4 +1,4 @@
-using System.Globalization;
+using Rig.Core.Text;
 using System.Text.Json;
 
 namespace Rig.Core.Estate;
@@ -34,7 +34,7 @@ public static class DecisionFeed
             return new DecisionFeedView([], string.Empty, $"No decisions feed yet: the estate-decisions job has not written {path}.");
         }
 
-        var stamp = new DateTimeOffset(written, TimeSpan.Zero).ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
+        var stamp = IsoTime.Seconds(new DateTimeOffset(written, TimeSpan.Zero));
         if (Parse(path) is not { } decisions)
         {
             return new DecisionFeedView([], stamp, $"The decisions feed {path} is not in the expected shape.");

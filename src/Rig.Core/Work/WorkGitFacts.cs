@@ -1,3 +1,4 @@
+using Rig.Core.Text;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Rig.Core.Estate;
