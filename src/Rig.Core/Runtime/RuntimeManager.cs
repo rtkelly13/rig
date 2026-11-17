@@ -105,6 +105,9 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     /// <summary>The folder <c>dotnet publish</c> writes a copy's <c>rig</c> and <c>rigw</c> into.</summary>
     public static string PublishedFolder(string copy) => Path.Join(copy, "rig");
 
+    /// <summary>The projects published into <see cref="PublishedFolder"/>, in order: <c>rig</c>, then the <c>rigw</c> launcher.</summary>
+    public static IReadOnlyList<string> PublishedProjects { get; } = ["Rig.Cli", "Rig.Launcher"];
+
     /// <summary>A copy's published <c>rig</c> or <c>rigw</c>, as <c>dotnet publish</c> wrote it.</summary>
     public static string Published(string copy, string name, bool windows) =>
         Path.Join(PublishedFolder(copy), windows ? $"{name}.exe" : name);
@@ -391,8 +394,14 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
     }
 
-    private void Publish(string copy) =>
-        _ = Must(["dotnet", "publish", Path.Join(copy, "src", "Rig.Launcher"), "-c", "Release", "-o", PublishedFolder(copy), "-m:2", "-v", "q"], copy);
+    // rig first: publishing only the launcher leaves out rig.deps.json, so rig cannot find its native libraries (SQLite).
+    private void Publish(string copy)
+    {
+        foreach (var project in PublishedProjects)
+        {
+            _ = Must(["dotnet", "publish", Path.Join(copy, "src", project), "-c", "Release", "-o", PublishedFolder(copy), "-m:2", "-v", "q"], copy);
+        }
+    }
 
     private List<string> Check(string copy)
     {
@@ -404,7 +413,8 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             [Published(copy, "rig", windows), "jobs", "install", "--help"],
         ];
         var plan = Path.Join(copy, "desktop-manager", "workspace-plan.bundle.json");
-        if (File.Exists(plan))
+        // The desktop plan names Windows folders and placeholders, so it only validates on Windows.
+        if (windows && File.Exists(plan))
         {
             commands.Add([Published(copy, "rig", windows), "desktop", "workspace", "validate-plan", "--config", plan]);
         }
