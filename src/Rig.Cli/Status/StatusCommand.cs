@@ -14,15 +14,15 @@ namespace Rig.Cli.Status;
 internal sealed record StatusResult(string Name, bool Passed, string Detail = "");
 
 /// <summary>
-/// <c>rig status</c> (and the <c>status</c> entry point): checks the repo is well managed — git state, then each
-/// quality gate, and the tests when asked. Ported from <c>repo_health.cli</c>. Exit codes: 0 every check passed, 1
+/// <c>rig status</c> (and the <c>status</c> entry point): checks the repo is well managed — git state, and the C#
+/// tests when asked. The Python gates went with the Python (#285); CI runs the C# analyzers and format checks. Ported from <c>repo_health.cli</c>. Exit codes: 0 every check passed, 1
 /// something did not.
 /// </summary>
-/// <param name="proc">Runs the gates.</param>
+/// <param name="proc">Runs the tests.</param>
 /// <param name="git">Runs git, hardened under untrusted folders.</param>
 /// <param name="workingDirectory">The folder the command was run from; the repo is the one around it.</param>
 /// <param name="console">Where the verdict and check table go.</param>
-[CliCommand(Name = "status", Description = "Check the repo is well-managed: git state, lint, types, and security.")]
+[CliCommand(Name = "status", Description = "Check the repo is well-managed: git state, and the tests with --tests.")]
 internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory, IAnsiConsole console)
 {
     /// <summary>The instance DotMake binds the options onto; rig always builds the wired one above instead.</summary>
@@ -32,7 +32,7 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
     }
 
     /// <summary>The same command over a plain writer, wrapped in the machine-safe console.</summary>
-    /// <param name="proc">Runs the gates.</param>
+    /// <param name="proc">Runs the tests.</param>
     /// <param name="git">Runs git, hardened under untrusted folders.</param>
     /// <param name="workingDirectory">The folder the command was run from.</param>
     /// <param name="output">Where the report goes.</param>
@@ -41,28 +41,11 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
     {
     }
 
-    /// <summary>The quality gates, in report order.</summary>
-    public static readonly IReadOnlyList<(string Name, string[] Argv)> Gates =
-    [
-        ("Lockfile", ["uv", "lock", "--check"]),
-        ("Lint", ["uv", "run", "ruff", "check", "src/", "--quiet"]),
-        ("Format", ["uv", "run", "ruff", "format", "src/", "--check", "--quiet"]),
-        ("Types", ["uv", "run", "basedpyright"]),
-        ("ty", ["uv", "run", "ty", "check", "src", "packages/type-ratchet/src"]),
-        ("Ratchet", ["uv", "run", "ratchet"]),
-        ("Imports", ["uv", "run", "lint-imports"]),
-        ("Security", ["uv", "run", "bandit", "-r", "src/", "-q", "-ll"]),
-    ];
-
     private const int DetailLength = 100;
 
     /// <summary>Also run the test suite.</summary>
-    [CliOption(Name = "--tests", Aliases = ["-t"], Description = "Also run the test suite.")]
+    [CliOption(Name = "--tests", Aliases = ["-t"], Description = "Also run the C# test suite (dotnet test).")]
     public bool Tests { get; set; }
-
-    /// <summary>Run only the tests the CI marker selects.</summary>
-    [CliOption(Name = "--ci", Description = "Run only tests marked @pytest.mark.ci.")]
-    public bool CiOnly { get; set; }
 
     /// <summary>The <c>rig status</c> command.</summary>
     public Command Build() => DeclarativeCommand.Build(this);
@@ -89,16 +72,9 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
         var root = top.Length > 0 ? top : workingDirectory;
 
         List<StatusResult> results = [.. await GitResultsAsync(root, cancellationToken).ConfigureAwait(false)];
-        foreach (var (name, argv) in Gates)
+        if (Tests)
         {
-            var (ok, text) = await RunInAsync(root, argv, cancellationToken).ConfigureAwait(false);
-            results.Add(new StatusResult(name, ok, ok ? string.Empty : LastLine(text)));
-        }
-
-        if (Tests || CiOnly)
-        {
-            string[] argv = CiOnly ? ["uv", "run", "pytest", "-q", "--tb=no", "-m", "ci"] : ["uv", "run", "pytest", "-q", "--tb=no"];
-            var (ok, text) = await RunInAsync(root, argv, cancellationToken).ConfigureAwait(false);
+            var (ok, text) = await RunInAsync(root, ["dotnet", "test", "--solution", "rig.slnx"], cancellationToken).ConfigureAwait(false);
             results.Add(new StatusResult("Tests", ok, LastLine(text)));
         }
 

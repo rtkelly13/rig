@@ -37,12 +37,8 @@ required-environments = [
     "sys_platform == 'win32'",
     "sys_platform == 'linux'",
 ]
-# Held to the root lock's versions, so this project and the rest of the repository are linted
-# and type-checked by the same tools. Bump them together.
+# Pinned so the lint and type gates stay stable across relocks. Bump them together.
 constraint-dependencies = ["ruff==0.15.9", "ty==0.0.84", "basedpyright==1.40.2"]
-
-[tool.uv.sources]
-type-ratchet = { path = "../../packages/type-ratchet", editable = true }
 
 [dependency-groups]
 dev = [
@@ -55,7 +51,6 @@ dev = [
     "pytest-xdist>=3.0.0",
     "ruff>=0.9.9",
     "ty>=0.0.84",
-    "type-ratchet",
     "types-defusedxml>=0.7.0.20260504",
 ]
 
@@ -163,25 +158,3 @@ source_paths = ["src/image_drift/simplifier/syntactic.py"]
 also_copy = ["tests/", "src/"]
 pytest_add_cli_args = ["-p", "no:xdist", "-p", "no:cacheprovider", "-q"]
 pytest_add_cli_args_test_selection = ["tests/test_svg_syntactic_minifier.py"]
-
-[tool.repo-health.ratchet]
-paths = ["src"]
-hint = "Remove them. See docs/python-types.md at the repository root for the replacements."
-disable = ["fake-location", "patching"]
-# Test files that patch modules. Lists only shrink: replace a patch with a fake passed through a seam.
-patching-allow = [
-    "tests/test_image_drift_explore_promote.py",
-    "tests/test_image_drift_metrics.py",
-    "tests/test_pathways.py",
-    "tests/test_production_cuts.py",
-    "tests/test_svg_simplifier_gate.py",
-    "tests/test_svg_syntactic_minifier.py",
-]
-pyright-pragma-allow = []
-boundary-modules = ["src/image_drift/typed_json.py"]
-str-key-receivers = ["self.headers", "handler.headers"]
-loose-dict-aliases = ["JsonObject"]
-
-[[tool.repo-health.ratchet.rule-sets]]
-files = ["tests/*"]
-rules = ["fake-location", "patching"]

@@ -188,7 +188,6 @@ dev = [
     { name = "pytest-xdist" },
     { name = "ruff" },
     { name = "ty" },
-    { name = "type-ratchet" },
     { name = "types-defusedxml" },
 ]
 
@@ -218,7 +217,6 @@ dev = [
     { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "ruff", specifier = ">=0.9.9" },
     { name = "ty", specifier = ">=0.0.84" },
-    { name = "type-ratchet", editable = "../../packages/type-ratchet" },
     { name = "types-defusedxml", specifier = ">=0.7.0.20260504" },
 ]
 
@@ -645,11 +643,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/29/ec/994d87252f065dda5a500bc8afc726d18f6582d81d6f4ff1feb8a267c800/ty-0.0.84-py3-none-win_amd64.whl", hash = "sha256:71cc9aa7a7c89d4e12c6a814e9c0c3310ad5bee44efedbd6f5a42d91e9ac0f0d", size = 13962879, upload-time = "2026-09-24T13:16:18.191Z" },
     { url = "https://files.pythonhosted.org/packages/6d/1c/e6e91852b72566b1ab9aca504712857dfb89324c12092a5bd61d42d34427/ty-0.0.84-py3-none-win_arm64.whl", hash = "sha256:6c9d3718c4a0d318bc9c92af9b2aa85c3294e7dff54cf1d69ad79568f56516da", size = 13656453, upload-time = "2026-09-24T13:16:21.51Z" },
 ]
-
-[[package]]
-name = "type-ratchet"
-version = "0.1.0"
-source = { editable = "../../packages/type-ratchet" }
 
 [[package]]
 name = "typer"

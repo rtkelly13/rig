@@ -23,7 +23,6 @@ From this directory:
 uv sync
 uv run ruff check . && uv run ruff format --check .
 uv run basedpyright && uv run ty check src
-uv run ratchet
 uv run bandit -r src/ -ll
 uv run playwright install chromium   # once, for the rendering tests
 uv run pytest --cov=src

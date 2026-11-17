@@ -10,7 +10,7 @@ public sealed class CommandPolicyTests : IDisposable
     public void Dispose() => _dir.Dispose();
 
     [Theory]
-    [InlineData("uv run pytest tests/test_policy.py", CommandRisk.Safe)]
+    [InlineData("dotnet test --solution rig.slnx", CommandRisk.Safe)]
     [InlineData("pnpm build", CommandRisk.Local)]
     [InlineData("pnpm test:watch", CommandRisk.Local)]
     [InlineData("pnpm publish", CommandRisk.External)]
@@ -28,8 +28,8 @@ public sealed class CommandPolicyTests : IDisposable
         Assert.Equal(risk, PolicyFiles.Load().Check(command));
 
     [Theory]
-    [InlineData("uv run pytest tests && git push")]
-    [InlineData("uv run pytest $(printf hidden)")]
+    [InlineData("dotnet test --solution rig.slnx && git push")]
+    [InlineData("dotnet test $(printf hidden)")]
     [InlineData("git log `whoami`")]
     [InlineData("git status ; ls")]
     [InlineData("git status | wc")]
@@ -120,14 +120,14 @@ public sealed class CommandPolicyTests : IDisposable
         var path = PolicyFiles.Write(_dir.Path, """
             {"skills": {"allow": ["one"]},
              "commands": {"denied": [{"pattern": "rm*", "exclude_systems": ["claude"]}],
-                          "safe": ["uv run help", {"pattern": "uv run pytest*", "rationale": "Tests."}]}}
+                          "safe": ["uv run help", {"pattern": "dotnet test*", "rationale": "Tests."}]}}
             """);
 
         var policy = CommandPolicy.Load(path, windows: false);
 
         Assert.Equal(["one"], policy.SkillsAllowlist);
         Assert.Equal(
-            [("uv run help", "", CommandRisk.Safe), ("uv run pytest*", "Tests.", CommandRisk.Safe), ("rm*", "", CommandRisk.Denied)],
+            [("uv run help", "", CommandRisk.Safe), ("dotnet test*", "Tests.", CommandRisk.Safe), ("rm*", "", CommandRisk.Denied)],
             policy.CommandRules.Select(r => (r.Pattern, r.Rationale, r.Risk)));
         Assert.Equal(["claude"], policy.CommandRules[2].ExcludeSystems);
     }
