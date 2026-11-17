@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Evaluation spike for issue #317. Deliberately outside rig.slnx and CI: it needs a Chromium binary and
+       the Python reference dump. The shipping bar (warnings as errors, latest-all analyzers) is relaxed
+       because this is throwaway measurement code, not product code. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ImageStackEval</RootNamespace>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-minimum</AnalysisLevel>
+    <AnalysisModePerformance>Default</AnalysisModePerformance>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CA1707;CA1812</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="SixLabors.ImageSharp" />
+    <PackageReference Include="Svg.Skia" />
+  </ItemGroup>
+</Project>
