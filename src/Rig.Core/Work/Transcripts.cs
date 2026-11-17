@@ -1,6 +1,6 @@
-using Rig.Core.Text;
-using System.Text.Json;
 using System.Text;
+using System.Text.Json;
+using Rig.Core.Text;
 
 namespace Rig.Core.WorkItems;
 

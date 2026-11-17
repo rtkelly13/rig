@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Json.Nodes;
 using System.Text.Json;
-using Rig.Core.Text;
+using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.GitHub;
 

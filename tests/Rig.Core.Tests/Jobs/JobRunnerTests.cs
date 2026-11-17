@@ -1,7 +1,7 @@
-using Rig.Core.Text;
-using System.Text;
 using System.Diagnostics;
+using System.Text;
 using Rig.Core.Jobs;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Jobs;
 

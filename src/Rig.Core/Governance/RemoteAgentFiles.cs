@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.Text;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Governance;
 
