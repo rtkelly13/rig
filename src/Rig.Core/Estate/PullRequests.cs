@@ -169,7 +169,7 @@ public sealed class PullRequests(Git git, IGitHubApi github)
             }
 
             var info = connection["pageInfo"];
-            cursor = Text(info?["endCursor"]);
+            cursor = JsonShape.AsText(info?["endCursor"]);
             if (!(info?["hasNextPage"] is JsonValue more && more.TryGetValue<bool>(out var next) && next) || string.IsNullOrEmpty(cursor))
             {
                 break;
@@ -203,12 +203,10 @@ public sealed class PullRequests(Git git, IGitHubApi github)
 
     // A search hit that is an issue, not a PR, arrives as {} and is skipped.
     private static PullRequest? Pull(JsonNode? node) =>
-        node is JsonObject pull && Text(pull["headRefName"]) is { Length: > 0 } head
+        node is JsonObject pull && JsonShape.AsText(pull["headRefName"]) is { Length: > 0 } head
             && pull["number"] is JsonValue number && number.TryGetValue<int>(out var value)
-            ? new PullRequest(value, Text(pull["state"]) ?? string.Empty, head, Text(pull["headRefOid"]) ?? string.Empty)
+            ? new PullRequest(value, JsonShape.AsText(pull["state"]) ?? string.Empty, head, JsonShape.AsText(pull["headRefOid"]) ?? string.Empty)
             : null;
-
-    private static string? Text(JsonNode? node) => JsonShape.AsText(node);
 
     // The newest PR number wins per head, bringing its own state.
     private static void Keep(Dictionary<string, PullRequest> into, PullRequest pull)

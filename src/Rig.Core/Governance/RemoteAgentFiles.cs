@@ -121,7 +121,7 @@ public sealed class RemoteAgentFiles(IProc proc)
         var repos = new List<OwnerRepo>();
         foreach (var row in rows)
         {
-            if (row is not JsonObject repo || Str(repo["nameWithOwner"]) is not { } name
+            if (row is not JsonObject repo || JsonShape.AsText(repo["nameWithOwner"]) is not { } name
                 || Flag(repo, "isArchived") is not { } archived || Flag(repo, "isFork") is not { } fork)
             {
                 return null;
@@ -134,7 +134,7 @@ public sealed class RemoteAgentFiles(IProc proc)
                     break;
                 case JsonObject reference when !reference.ContainsKey("name"):
                     break;
-                case JsonObject reference when Str(reference["name"]) is { } named:
+                case JsonObject reference when JsonShape.AsText(reference["name"]) is { } named:
                     branch = named;
                     break;
                 default:
@@ -177,7 +177,7 @@ public sealed class RemoteAgentFiles(IProc proc)
                 continue;
             }
 
-            if (Str(value) is not { } path)
+            if (JsonShape.AsText(value) is not { } path)
             {
                 return null;
             }
@@ -209,8 +209,6 @@ public sealed class RemoteAgentFiles(IProc proc)
             return null;
         }
     }
-
-    private static string? Str(JsonNode? node) => JsonShape.AsText(node);
 
     // A boolean field, false when absent; null when present but not a boolean.
     private static bool? Flag(JsonObject node, string name) =>
