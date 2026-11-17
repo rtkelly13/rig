@@ -5,7 +5,7 @@
 //   dotnet run scripts/coverage-floor.cs -- <coverage.json>... [--props Directory.Build.props] [--base-props PATH]
 //
 // The floor, target and slack are RigCoverageFloor, RigCoverageTarget and RigCoverageSlack in
-// Directory.Build.props. Coverage is line and branch together, as the Python ratchet measures it, read from coverlet's
+// Directory.Build.props. Coverage is line and branch together, read from coverlet's
 // json reports (--coverlet-output-format json), which keep each branch's identity so reports merge exactly.
 // Rules:
 //   - coverage may not drop below the floor;

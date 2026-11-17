@@ -5,9 +5,7 @@
     "safe": [
       {"pattern": "rig help", "rationale": "Read command documentation."},
       {"pattern": "rig status*", "rationale": "Inspect repository health."},
-      {"pattern": "uv run pytest*", "rationale": "Run validation tests."},
-      {"pattern": "uv run ruff check*", "rationale": "Run static lint checks."},
-      {"pattern": "uv run pyright*", "rationale": "Run type checks."},
+      {"pattern": "dotnet test*", "rationale": "Run validation tests."},
       {"pattern": "rig gh threads list *", "rationale": "Lists a PR's unresolved review threads; read-only. Runs on the C# CLI (src/Rig.Cli/Gh/Threads); temporary until gh resolves threads itself."},
       {"pattern": "rig gh pr wait *", "rationale": "Polls a PR until it merges or cannot land without action; read-only. Runs on the C# CLI (src/Rig.Cli/Gh/Pr)."},
       {"pattern": "pnpm test*", "rationale": "Run project tests."},
@@ -118,7 +116,6 @@
       {"pattern": "agent-browser *", "rationale": "Browser automation is policy-gated by profile allowlists."}
     ],
     "local": [
-      {"pattern": "uv run ruff format*", "rationale": "Writes formatting changes."},
       {"pattern": "pnpm build*", "rationale": "Writes build artifacts."},
       {"pattern": "pnpm format*", "rationale": "Writes formatting changes."},
       {"pattern": "pnpm test:*watch*", "rationale": "Starts a long-running watcher."},
