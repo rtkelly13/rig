@@ -477,7 +477,7 @@ def build_sample_plan(workspace: Path, terminal_count: int = 3) -> WorkspacePlan
         notes=[
             "Desktop 1 terminals launch the default coding command from the configured workspace.",
             "Adjust app paths and arguments for browsers, Slack, Obsidian, or IDE windows before restoring.",
-            "Run `uv run desktop-manager jobs install` after you are happy with the plan.",
+            "Run `rig jobs install` after you are happy with the plan.",
         ],
         desktops=[
             DesktopPlan(name="Work", launch=terminals),

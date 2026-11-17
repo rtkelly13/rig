@@ -27,7 +27,7 @@ public sealed class RigAppTests : IDisposable
             .RunAsync(args, TestContext.Current.CancellationToken);
 
     [Fact]
-    public async Task Help_prints_the_overview_and_points_at_the_desktop_tools()
+    public async Task Help_prints_the_overview_and_names_no_other_cli()
     {
         Assert.Equal(0, await Run("help"));
 
@@ -35,7 +35,7 @@ public sealed class RigAppTests : IDisposable
         var help = _out.ToString();
         Assert.Contains(RigApp.Description, help, StringComparison.Ordinal);
         Assert.Contains("  chrome-tabs ", help, StringComparison.Ordinal);
-        Assert.EndsWith(RigApp.DesktopPointer, help.TrimEnd(), StringComparison.Ordinal);
+        Assert.DoesNotContain("desktop-manager", help, StringComparison.Ordinal);
     }
 
     [Theory]

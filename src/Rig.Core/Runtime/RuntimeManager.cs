@@ -103,7 +103,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     public static bool RunningCopy(string path, string root) =>
         PathResolution.IsUnder(PathResolution.Resolve(path), PathResolution.Resolve(root));
 
-    /// <summary>A copy's environment executable, such as its own <c>python</c> or <c>desktop-manager</c>.</summary>
+    /// <summary>A copy's environment executable, such as its own <c>python</c>.</summary>
     public static string Executable(string copy, string name, bool windows) =>
         Path.Join(copy, ".venv", windows ? "Scripts" : "bin", windows ? $"{name}.exe" : name);
 
@@ -403,11 +403,9 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     private List<string> Check(string copy)
     {
         var windows = OperatingSystem.IsWindows();
-        var desktopManager = Executable(copy, "desktop-manager", windows);
         var python = Executable(copy, "python", windows);
         List<IReadOnlyList<string>> commands =
         [
-            [desktopManager, "--help"],
             [Published(copy, "rig", windows), "chrome-tabs", "organise", "--help"],
             [Published(copy, "rig", windows), "jobs", "run", "--help"],
             [Published(copy, "rig", windows), "jobs", "install", "--help"],

@@ -25,7 +25,6 @@ dependencies = [
 
 [project.scripts]
 rig = "rig.csharp_cli:entry"
-desktop-manager = "desktop_manager.cli:main"
 estate = "rig.csharp_cli:entry"
 otel-stack = "rig.csharp_cli:entry"
 help = "rig.csharp_cli:entry"
@@ -130,7 +129,6 @@ forbidden_modules = [
     "desktop_manager.placement",
     "desktop_manager.desktop_reconcile",
     "desktop_manager.restore",
-    "desktop_manager.cli",
 ]
 ignore_imports = [
 ]
