@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import sys
-from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -71,21 +70,6 @@ def clear_src_caches() -> None:
 
 
 @pytest.fixture(autouse=True)
-def isolate_trace_output(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
-    """Send spans to a temp directory, never the repo's ``temp/traces``.
-
-    Flushes before the env var is restored, so nothing buffered during the test
-    reaches the real trace files at interpreter exit.
-    """
-    from rig import tracing
-
-    trace_dir = tmp_path_factory.mktemp("traces")
-    monkeypatch.setenv("SHARED_UTILITIES_TRACE_DIR", str(trace_dir))
-    yield trace_dir
-    tracing.shutdown_tracing()
-
-
-@pytest.fixture(autouse=True)
 def isolate_app_state_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> None:
     """Point per-user app state at temp directories, never the developer's own.
 
@@ -103,27 +87,6 @@ def isolate_app_state_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: py
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path_factory.mktemp("localappdata")))
     monkeypatch.setenv("APPDATA", str(tmp_path_factory.mktemp("appdata")))
     monkeypatch.setenv("WORKSPACE_HOME", str(tmp_path_factory.mktemp("workspace-home")))
-
-
-@pytest.fixture(autouse=True)
-def csharp_calls() -> Iterator[list[list[str]]]:
-    """Record each hand-over to the C# rig CLI instead of starting dotnet; every one succeeds.
-
-    A Python caller of a ported command (devenv projecting the command policy, say) would
-    otherwise build and run the real C# CLI against the developer's home. A test that cares
-    what was handed over asks for this fixture and reads the argv lists.
-    """
-    from rig import csharp_cli
-
-    calls: list[list[str]] = []
-
-    def record(command: list[str], _env: dict[str, str]) -> int:
-        calls.append(command)
-        return 0
-
-    token = csharp_cli.RUNNER.set(record)
-    yield calls
-    csharp_cli.RUNNER.reset(token)
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

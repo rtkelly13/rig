@@ -17,7 +17,7 @@ public enum ShimOutcome
 
 /// <summary>
 /// The <c>rig</c> command on PATH, pointing at the runtime's <c>current</c> link so later installs and rollbacks move it
-/// with no rewrite. Ported from <c>desktop_manager.rig_shim</c>: a file at that path rig did not write is left alone.
+/// with no rewrite. A file at that path rig did not write is left alone.
 /// </summary>
 public static class RigShim
 {
@@ -56,7 +56,7 @@ public static class RigShim
     public static ShimOutcome Install(string shim, string root, bool windows)
     {
         ArgumentNullException.ThrowIfNull(shim);
-        var text = Render(RuntimeManager.Executable(RuntimeManager.CurrentLink(root), "rig", windows), windows);
+        var text = Render(RuntimeManager.Published(RuntimeManager.CurrentLink(root), "rig", windows), windows);
         var bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(text);
         if (File.Exists(shim))
         {

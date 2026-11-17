@@ -20,21 +20,6 @@ dependencies = [
     "markdown-it-py>=4.0.0",
 ]
 
-[project.scripts]
-rig = "rig.csharp_cli:entry"
-estate = "rig.csharp_cli:entry"
-otel-stack = "rig.csharp_cli:entry"
-help = "rig.csharp_cli:entry"
-status = "rig.csharp_cli:entry"
-agent = "rig.csharp_cli:entry"
-vault = "rig.csharp_cli:entry"
-md-lint = "rig.csharp_cli:entry"
-repo-governance = "rig.csharp_cli:entry"
-workspace = "rig.csharp_cli:entry"
-devenv = "rig.csharp_cli:entry"
-latex = "rig.csharp_cli:entry"
-mail = "rig.csharp_cli:entry"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -52,7 +37,7 @@ members = ["packages/type-ratchet"]
 type-ratchet = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/desktop_manager", "src/rig"]
+packages = ["src/rig"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "packages/type-ratchet/tests"]
@@ -90,24 +75,14 @@ dev = [
 ]
 
 [tool.importlinter]
-root_packages = ["rig", "desktop_manager"]
+root_packages = ["rig"]
 include_external_packages = false
 
 [[tool.importlinter.contracts]]
-id = "top-layers"
-name = "desktop_manager sits above rig"
-type = "layers"
-layers = ["desktop_manager", "rig"]
-# Today's violations (plan item G1, #30). Each entry names the item that removes it;
-# G3 deletes every ignore_imports list.
-ignore_imports = [
-]
-
-[[tool.importlinter.contracts]]
 id = "acyclic-siblings"
-name = "rig and desktop_manager subpackages are acyclic"
+name = "rig subpackages are acyclic"
 type = "acyclic_siblings"
-ancestors = ["rig", "desktop_manager"]
+ancestors = ["rig"]
 ignore_imports = []
 
 [tool.ruff]
@@ -137,18 +112,8 @@ ignore = [
 "typings/**" = ["N801", "N802", "N803", "N815", "N816", "F403", "TID251"]
 "**/*_windows.py" = ["TID251"]
 "**/windows/**" = ["TID251"]
-# subprocess.* is banned (TID251, plan item B10, #30). Permanent owners:
-# tracing.run is the one executor that rig.proc and every other caller goes through;
-# type-ratchet is a stdlib-only package that cannot import rig.
-"src/rig/tracing.py" = ["TID251"]
+# subprocess.* is banned (TID251, plan item B10, #30). type-ratchet is a stdlib-only package, so it may call it.
 "packages/type-ratchet/**" = ["TID251"]
-# Temporary: callers that still spawn processes directly. Each entry goes when its
-# file moves onto rig.tracing.run / rig.proc; G4 deletes whatever is left.
-# Removed by G4 (migrate onto rig.tracing.run):
-"src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
-# Temporary: tests that build real temp repos with raw git. F2 moves them onto the
-# shared real-git fixture in tests/fakes/; G4 deletes whatever is left.
-"tests/desktop_manager/test_runtime.py" = ["TID251"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "_winapi".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
@@ -170,11 +135,11 @@ ignore = [
 "win32gui".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
 "win32process".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
 "winreg".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
-"subprocess.Popen".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
-"subprocess.call".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
-"subprocess.check_call".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
-"subprocess.check_output".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
-"subprocess.run".msg = "Run processes through rig.proc (git/gh) or rig.tracing.run, so every call is a span with stdin closed"
+"subprocess.Popen".msg = "rig does not spawn processes from Python: run them from C#, or add a noqa with the reason"
+"subprocess.call".msg = "rig does not spawn processes from Python: run them from C#, or add a noqa with the reason"
+"subprocess.check_call".msg = "rig does not spawn processes from Python: run them from C#, or add a noqa with the reason"
+"subprocess.check_output".msg = "rig does not spawn processes from Python: run them from C#, or add a noqa with the reason"
+"subprocess.run".msg = "rig does not spawn processes from Python: run them from C#, or add a noqa with the reason"
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -254,24 +219,18 @@ hint = "Remove them. See docs/python-types.md for the replacements."
 disable = ["fake-location", "patching"]
 # Today's test files that define fakes outside tests/fakes/ or patch modules (F3, #411). Lists only
 # shrink: move a fake into tests/fakes/, or replace a patch with a fake passed through a seam.
-fake-location-allow = [
-    "tests/desktop_manager/test_runtime.py",
-]
+fake-location-allow = []
 patching-allow = [
     "tests/conftest.py",
-    "tests/desktop_manager/test_runtime.py",
 ]
 pyright-pragma-allow = []
 boundary-modules = [
     "src/rig/typed_json.py",
-    "src/rig/typed_yaml.py",
     "packages/type-ratchet/src/type_ratchet/config.py",
 ]
 str-key-receivers = ["self.headers", "handler.headers"]
 loose-dict-aliases = ["JsonObject"]
-loose-dict-allow = [
-    "src/rig/tracing.py",
-]
+loose-dict-allow = []
 
 # tests/ gates only the test-side rules (docs/testing.md#shared-fakes-and-steps). Fakes live in
 # tests/fakes/, which may patch while the allowlist below shrinks; the first matching set wins.
