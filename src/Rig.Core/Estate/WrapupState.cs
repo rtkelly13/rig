@@ -110,10 +110,7 @@ public sealed record WrapupState(string Schema, string WorktreeId, string Branch
     {
         try
         {
-            if (JsonNode.Parse(text) is not JsonObject root)
-            {
-                return null;
-            }
+            if (JsonNode.Parse(text) is not JsonObject root) { return null; }
 
             return new WrapupState(
                 Text(root, "schema", CurrentSchema),
@@ -134,18 +131,12 @@ public sealed record WrapupState(string Schema, string WorktreeId, string Branch
                         Text(a, "via", "reply"))
                     : throw new InvalidDataException("answer"))]);
         }
-        catch (Exception e) when (e is JsonException or InvalidDataException or InvalidOperationException)
-        {
-            return null;
-        }
+        catch (Exception e) when (e is JsonException or InvalidDataException or InvalidOperationException) { return null; }
     }
 
     private static string Text(JsonObject parent, string key, string? fallback = null)
     {
-        if (!parent.ContainsKey(key))
-        {
-            return fallback ?? throw new InvalidDataException(key);
-        }
+        if (!parent.ContainsKey(key)) { return fallback ?? throw new InvalidDataException(key); }
 
         return JsonShape.FieldText(parent, key) ?? throw new InvalidDataException(key);
     }
@@ -211,18 +202,12 @@ public static class WorktreeState
     {
         ArgumentNullException.ThrowIfNull(git);
         ArgumentNullException.ThrowIfNull(names);
-        if (!Directory.Exists(worktree))
-        {
-            return "not-a-repo";
-        }
+        if (!Directory.Exists(worktree)) { return "not-a-repo"; }
 
         foreach (var name in names.Count > 0 ? names : ["probe.json"])
         {
             var ran = await git.RunAsync(worktree, ["check-ignore", "--quiet", "--no-index", $"{StateDir}/{name}"], cancellationToken: cancellationToken).ConfigureAwait(false);
-            if (!ran.Ok)
-            {
-                return ran.Code == NotIgnored ? "no" : "not-a-repo";
-            }
+            if (!ran.Ok) { return ran.Code == NotIgnored ? "no" : "not-a-repo"; }
         }
 
         return "yes";

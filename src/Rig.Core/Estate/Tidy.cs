@@ -145,10 +145,7 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
     {
         ArgumentNullException.ThrowIfNull(report);
         var plan = await PlanAsync(new TidyTarget(report, force, mergedHeads, busy, checks), cancellationToken).ConfigureAwait(false);
-        if (apply)
-        {
-            _ = await ApplyAsync(plan, cancellationToken).ConfigureAwait(false);
-        }
+        if (apply) { _ = await ApplyAsync(plan, cancellationToken).ConfigureAwait(false); }
 
         return plan.Changes;
     }
@@ -188,10 +185,7 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
         {
             ct.ThrowIfCancellationRequested();
             var change = plan.Changes[index];
-            if (change.Kind != ChangeKind.WouldChange)
-            {
-                continue;
-            }
+            if (change.Kind != ChangeKind.WouldChange) { continue; }
 
             var updated = change.Check == "worktree-prunable"
                 ? await PruneAsync(plan.Target.Report.Repo, apply: true, ct).ConfigureAwait(false)
@@ -218,10 +212,7 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
 
     private async Task<TidyAction> PruneAsync(string repo, bool apply, CancellationToken cancellationToken)
     {
-        if (!apply)
-        {
-            return new TidyAction("worktree-prunable", repo, TidyOutcome.WouldClean, "git worktree prune");
-        }
+        if (!apply) { return new TidyAction("worktree-prunable", repo, TidyOutcome.WouldClean, "git worktree prune"); }
 
         var ran = await git.RunAsync(repo, [.. Trim.LongPaths, "worktree", "prune"], RemoveTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
         return new TidyAction("worktree-prunable", repo, ran.Ok ? TidyOutcome.Cleaned : TidyOutcome.Failed, Said(ran, "pruned"));
@@ -301,10 +292,7 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
         var dirty = facts is not null
             ? facts.HasUncommittedChanges
             : (await git.LinesAsync(path, "status", "--porcelain").ConfigureAwait(false)) is null or { Count: > 0 };
-        if (!force && dirty)
-        {
-            return new TidyAction(finding.Check, path, TidyOutcome.Refused, "uncommitted changes");
-        }
+        if (!force && dirty) { return new TidyAction(finding.Check, path, TidyOutcome.Refused, "uncommitted changes"); }
 
         var orphaned = force ? 0 : await OrphanedAsync(path, "HEAD").ConfigureAwait(false);
         if (orphaned is not 0
@@ -323,10 +311,7 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
             return new TidyAction(finding.Check, path, TidyOutcome.Refused, unrecorded);
         }
 
-        if (!apply)
-        {
-            return new TidyAction(finding.Check, path, TidyOutcome.WouldClean, $"git worktree remove {path}");
-        }
+        if (!apply) { return new TidyAction(finding.Check, path, TidyOutcome.WouldClean, $"git worktree remove {path}"); }
 
         var ran = await git.RunAsync(repo, [.. Trim.LongPaths, "worktree", "remove", path], RemoveTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
         return new TidyAction(finding.Check, path, ran.Ok ? TidyOutcome.Cleaned : TidyOutcome.Failed, Said(ran, "removed"));
@@ -336,10 +321,7 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
     // to lose. --force covers commits a coverage proof already placed on a remote; it never clears a hard reason.
     private static string Refusal(WorktreeFacts? facts, bool force)
     {
-        if (facts is null)
-        {
-            return string.Empty;
-        }
+        if (facts is null) { return string.Empty; }
 
         var reasons = WorktreeRemovalJudge.Judge(facts, new RemovalPolicy(DiscardUnpushedCommits: force)).Reasons;
         return facts.OwnershipUnreadable ? "cannot read this clone's git dir"
@@ -354,10 +336,7 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
     // checkout, so a clone inside its ignored temp/ is reported as what it is.
     private static string Unrecorded(WorktreeFacts? facts)
     {
-        if (facts is null)
-        {
-            return string.Empty;
-        }
+        if (facts is null) { return string.Empty; }
 
         if (facts.HasIgnoredNotes)
         {
@@ -392,15 +371,9 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
         var refusal = Guard(repo, path) is { Length: > 0 } outside ? outside
             : !link && TreeMeasure.HasCheckoutBelow(path) ? "holds a git checkout"
             : busy?.Refusal(path, force) ?? string.Empty;
-        if (refusal.Length > 0)
-        {
-            return new TidyAction(finding.Check, path, TidyOutcome.Refused, refusal);
-        }
+        if (refusal.Length > 0) { return new TidyAction(finding.Check, path, TidyOutcome.Refused, refusal); }
 
-        if (!apply)
-        {
-            return new TidyAction(finding.Check, path, TidyOutcome.WouldClean, $"rm -rf {path}");
-        }
+        if (!apply) { return new TidyAction(finding.Check, path, TidyOutcome.WouldClean, $"rm -rf {path}"); }
 
         try
         {

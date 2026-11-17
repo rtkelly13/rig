@@ -75,10 +75,7 @@ public sealed record Shelf(string Repo, string Ref, string Sha, string Subject, 
         };
         foreach (var (key, value) in new[] { ("branch", Trailers.Branch), ("base", Trailers.Base), ("path", Trailers.Path), ("pr", Trailers.Pr), ("at", Trailers.At), ("by", Trailers.By) })
         {
-            if (value.Length > 0)
-            {
-                data[key] = value;
-            }
+            if (value.Length > 0) { data[key] = value; }
         }
 
         return data;
@@ -126,10 +123,7 @@ public sealed class ShelfStore(Git git)
         foreach (var line in text.ReplaceLineEndings("\n").Split('\n'))
         {
             var colon = line.IndexOf(':', StringComparison.Ordinal);
-            if (colon < 0)
-            {
-                continue;
-            }
+            if (colon < 0) { continue; }
 
             var key = line[..colon];
             if (key.StartsWith("Shelved-", StringComparison.Ordinal) && !key.Contains(' ', StringComparison.Ordinal))
@@ -156,10 +150,7 @@ public sealed class ShelfStore(Git git)
         foreach (var line in listed.Detail.Split('\n'))
         {
             var tab = line.IndexOf('\t', StringComparison.Ordinal);
-            if (tab >= 0 && tab + 1 < line.Length)
-            {
-                shelves[line[(tab + 1)..].Trim()] = line[..tab].Trim();
-            }
+            if (tab >= 0 && tab + 1 < line.Length) { shelves[line[(tab + 1)..].Trim()] = line[..tab].Trim(); }
         }
 
         return shelves;
@@ -198,10 +189,7 @@ public sealed class ShelfStore(Git git)
     {
         ArgumentNullException.ThrowIfNull(shelf);
         ArgumentNullException.ThrowIfNull(mergedPrs);
-        if (!shelf.Subject.StartsWith(Prefix, StringComparison.Ordinal) || shelf.Snapshot)
-        {
-            return string.Empty;
-        }
+        if (!shelf.Subject.StartsWith(Prefix, StringComparison.Ordinal) || shelf.Snapshot) { return string.Empty; }
 
         var pr = shelf.Trailers.Pr.TrimStart('#');
         var baseSha = shelf.Trailers.Base;
@@ -243,10 +231,7 @@ public sealed class ShelfStore(Git git)
         }
 
         var target = path ?? Path.Combine(clone, (shelf.Trailers.Path.Length > 0 ? shelf.Trailers.Path : $".worktrees/{shelf.Name}").Replace('/', Path.DirectorySeparatorChar));
-        if (Directory.Exists(target) || File.Exists(target))
-        {
-            return new ShelfStep(false, $"{target} already exists");
-        }
+        if (Directory.Exists(target) || File.Exists(target)) { return new ShelfStep(false, $"{target} already exists"); }
 
         var branch = shelf.Trailers.Branch;
         var baseSha = $"{shelf.Sha}^";
@@ -270,10 +255,7 @@ public sealed class ShelfStore(Git git)
             added = await RunAsync(clone, ["worktree", "add", "--detach", target, baseSha]).ConfigureAwait(false);
         }
 
-        if (!added.Ok)
-        {
-            return new ShelfStep(false, $"worktree add: {added.Detail}");
-        }
+        if (!added.Ok) { return new ShelfStep(false, $"worktree add: {added.Detail}"); }
 
         if (shelf.Snapshot)
         {
@@ -284,10 +266,7 @@ public sealed class ShelfStore(Git git)
                 restored = await RunAsync(target, ["reset", "-q", "--mixed", "HEAD"]).ConfigureAwait(false);
             }
 
-            if (!restored.Ok)
-            {
-                return new ShelfStep(false, $"restoring snapshot into {target}: {restored.Detail}");
-            }
+            if (!restored.Ok) { return new ShelfStep(false, $"restoring snapshot into {target}: {restored.Detail}"); }
         }
 
         return new ShelfStep(true, target);

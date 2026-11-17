@@ -124,16 +124,10 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
         {
             foreach (var bundle in Bundles(appDir))
             {
-                if (!seen.Add(PathResolution.Resolve(bundle)))
-                {
-                    continue;
-                }
+                if (!seen.Add(PathResolution.Resolve(bundle))) { continue; }
 
                 var size = await disk.SizeAsync(bundle, cancellationToken).ConfigureAwait(false);
-                if (size < minSize)
-                {
-                    continue;
-                }
+                if (size < minSize) { continue; }
 
                 var (modified, accessed) = Directory.Exists(bundle)
                     ? (StatTime.FromStat(Directory.GetLastWriteTimeUtc(bundle)), StatTime.FromStat(Directory.GetLastAccessTimeUtc(bundle)))
@@ -158,10 +152,7 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
         foreach (var entry in registry.Entries())
         {
             var app = await EntryToAppAsync(entry, measure: true, cancellationToken).ConfigureAwait(false);
-            if (app is null || app.Bytes < minSize || !seen.Add((app.Name.ToLowerInvariant(), app.Version)))
-            {
-                continue;
-            }
+            if (app is null || app.Bytes < minSize || !seen.Add((app.Name.ToLowerInvariant(), app.Version))) { continue; }
 
             apps.Add(app);
         }
@@ -176,16 +167,10 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
     public async Task<InstalledApp?> EntryToAppAsync(UninstallEntry entry, bool measure, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        if (entry.DisplayName is not string name || string.IsNullOrWhiteSpace(name))
-        {
-            return null;
-        }
+        if (entry.DisplayName is not string name || string.IsNullOrWhiteSpace(name)) { return null; }
 
         // Updates and runtime components are children of an app, not apps of their own.
-        if (Number(entry.SystemComponent) == 1 || Truthy(entry.ParentKeyName))
-        {
-            return null;
-        }
+        if (Number(entry.SystemComponent) == 1 || Truthy(entry.ParentKeyName)) { return null; }
 
         var location = entry.InstallLocation is string raw && !string.IsNullOrWhiteSpace(raw) ? raw.Trim().Trim('"') : null;
         var size = Number(entry.EstimatedSize) is > 0 and var kib ? kib * 1024 : 0;
@@ -217,19 +202,13 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
         {
             return [.. Directory.EnumerateFileSystemEntries(appDir).Where(entry => Suffix(entry) == ".app" && Directory.Exists(entry))];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return [];
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
     }
 
     private async Task<string> BundleVersionAsync(string bundle, CancellationToken cancellationToken)
     {
         var plist = System.IO.Path.Join(bundle, "Contents", "Info.plist");
-        if (!File.Exists(plist))
-        {
-            return "unknown";
-        }
+        if (!File.Exists(plist)) { return "unknown"; }
 
         var ran = await proc.RunAsync(new ProcRequest(["defaults", "read", plist, "CFBundleShortVersionString"]) { Timeout = VersionTimeout }, cancellationToken).ConfigureAwait(false);
         return ran.OutOrEmpty is { Length: > 0 } version ? version : "unknown";

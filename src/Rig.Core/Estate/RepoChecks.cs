@@ -50,10 +50,7 @@ public sealed record LocalBranch(string Name, string Upstream = "", bool Upstrea
         var found = new List<LocalBranch>();
         foreach (var line in forEachRef.ReplaceLineEndings("\n").Split('\n'))
         {
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(line)) { continue; }
 
             var parts = line.Split('\t');
             var name = Strip(parts[0], "refs/heads/");
@@ -241,10 +238,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
         var findings = new List<Finding>();
         foreach (var branch in await ListBranchesAsync(repo).ConfigureAwait(false))
         {
-            if (Protected.Contains(branch.Name) || branch.IsCurrent)
-            {
-                continue;
-            }
+            if (Protected.Contains(branch.Name) || branch.IsCurrent) { continue; }
 
             if (branch.UpstreamGone)
             {
@@ -282,10 +276,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
     public async Task<IReadOnlyList<TempEntry>> ScanTempAsync(string repo)
     {
         var temp = Path.Join(repo, "temp");
-        if (!Directory.Exists(temp))
-        {
-            return [];
-        }
+        if (!Directory.Exists(temp)) { return []; }
 
         var registered = (await Worktree.ListAsync(git, repo).ConfigureAwait(false))
             .Where(tree => !tree.IsMain)
@@ -295,10 +286,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
         foreach (var child in Directory.EnumerateFileSystemEntries(temp).Order(PathOrder.Instance))
         {
             var info = new FileInfo(child);
-            if (!info.Exists && !Directory.Exists(child) && info.LinkTarget is null)
-            {
-                continue;
-            }
+            if (!info.Exists && !Directory.Exists(child) && info.LinkTarget is null) { continue; }
 
             entries.Add(new TempEntry(child, Size(child), new DateTimeOffset(info.LastWriteTimeUtc), registered.Contains(PathResolution.Resolve(child))));
         }
@@ -312,10 +300,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
         ArgumentNullException.ThrowIfNull(entries);
         var temp = Path.Join(repo, "temp");
         var findings = new List<Finding>();
-        if (!Directory.Exists(temp))
-        {
-            return findings;
-        }
+        if (!Directory.Exists(temp)) { return findings; }
 
         if (!await IsIgnoredAsync(repo, temp).ConfigureAwait(false))
         {
@@ -331,10 +316,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
         foreach (var entry in entries)
         {
             var age = now - entry.Modified;
-            if (age < staleAfter)
-            {
-                continue;
-            }
+            if (age < staleAfter) { continue; }
 
             var size = Bytes.HumanToGb(entry.Bytes);
             findings.Add(entry.IsWorktree
@@ -398,16 +380,10 @@ public sealed class RepoChecks(Git git, TimeProvider time)
         {
             text = File.ReadAllText(Path.Join(path, ".git"));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return null; }
 
         var first = text.Trim().Split('\n', 2)[0].TrimEnd('\r');
-        if (!first.StartsWith("gitdir:", StringComparison.Ordinal))
-        {
-            return null;
-        }
+        if (!first.StartsWith("gitdir:", StringComparison.Ordinal)) { return null; }
 
         var target = first["gitdir:".Length..].Trim();
         return Path.IsPathRooted(target) ? target : Path.Join(path, target);
@@ -423,10 +399,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
     public static string? ForeignAdminDir(string treePath, string ownWorktrees)
     {
         var admin = WorktreeAdminDir(treePath);
-        if (admin is null)
-        {
-            return null;
-        }
+        if (admin is null) { return null; }
 
         var parent = Path.GetDirectoryName(PathResolution.Resolve(admin));
         return parent is not null && PathResolution.Same(parent, PathResolution.Resolve(ownWorktrees)) ? null : admin;
@@ -440,18 +413,12 @@ public sealed class RepoChecks(Git git, TimeProvider time)
         {
             lines = File.ReadAllLines(Path.Join(admin, "logs", "HEAD"));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return string.Empty;
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return string.Empty; }
 
         foreach (var line in lines.Reverse())
         {
             var fields = line.Split((char[]?)null, 3, StringSplitOptions.RemoveEmptyEntries);
-            if (fields.Length >= 2 && !fields[1].All(c => c == '0'))
-            {
-                return fields[1];
-            }
+            if (fields.Length >= 2 && !fields[1].All(c => c == '0')) { return fields[1]; }
         }
 
         return string.Empty;
@@ -461,15 +428,9 @@ public sealed class RepoChecks(Git git, TimeProvider time)
     private static long Size(string path)
     {
         var top = new FileInfo(path);
-        if (top.LinkTarget is { } link)
-        {
-            return System.Text.Encoding.UTF8.GetByteCount(link);
-        }
+        if (top.LinkTarget is { } link) { return System.Text.Encoding.UTF8.GetByteCount(link); }
 
-        if (top.Exists)
-        {
-            return top.Length;
-        }
+        if (top.Exists) { return top.Length; }
 
         long total = 0;
         var stack = new Stack<string>([path]);
@@ -480,10 +441,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
             {
                 entries = [.. new DirectoryInfo(stack.Pop()).EnumerateFileSystemInfos()];
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                continue;
-            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
 
             foreach (var entry in entries)
             {
@@ -511,10 +469,7 @@ public sealed class RepoChecks(Git git, TimeProvider time)
     {
         string[] names = ["TODO.md", "todo.md"];
         var present = names.Where(name => File.Exists(Path.Join(repo, name))).ToList();
-        if (present.Count < 2)
-        {
-            return present;
-        }
+        if (present.Count < 2) { return present; }
 
         var listed = Directory.EnumerateFiles(repo).Select(Path.GetFileName).ToHashSet(StringComparer.Ordinal);
         return listed.Contains(names[0]) && listed.Contains(names[1]) ? present : present[..1];

@@ -69,10 +69,7 @@ public sealed class PullRequests(Git git, IGitHubApi github)
     /// <param name="cancellationToken">Cancels the calls.</param>
     public async Task<Dictionary<string, PullRequest>> HeadsAsync(string repo, int limit = DefaultLimit, bool includeMine = true, CancellationToken cancellationToken = default)
     {
-        if (await OriginAsync(repo, cancellationToken).ConfigureAwait(false) is not { } slug)
-        {
-            return [];
-        }
+        if (await OriginAsync(repo, cancellationToken).ConfigureAwait(false) is not { } slug) { return []; }
 
         var heads = await PagedAsync(
             (page, after) => ApiRequest.GraphQL(Recent, new Dictionary<string, object?> { ["owner"] = slug.Owner, ["name"] = slug.Name, ["page"] = page, ["after"] = after }),
@@ -87,10 +84,7 @@ public sealed class PullRequests(Git git, IGitHubApi github)
                 data => data["search"],
                 limit,
                 cancellationToken).ConfigureAwait(false);
-            foreach (var pull in mine.Values)
-            {
-                Keep(heads, pull);
-            }
+            foreach (var pull in mine.Values) { Keep(heads, pull); }
         }
 
         return heads;
@@ -117,10 +111,7 @@ public sealed class PullRequests(Git git, IGitHubApi github)
     public static async Task<int?> MergedPrAsync(Git git, string repo, string branch, IReadOnlyDictionary<string, PullRequest>? mergedHeads)
     {
         ArgumentNullException.ThrowIfNull(git);
-        if (mergedHeads is null)
-        {
-            return null;
-        }
+        if (mergedHeads is null) { return null; }
 
         if (!mergedHeads.TryGetValue(branch, out var pull))
         {
@@ -134,10 +125,7 @@ public sealed class PullRequests(Git git, IGitHubApi github)
             }
         }
 
-        if (pull.HeadOid.Length == 0)
-        {
-            return null;
-        }
+        if (pull.HeadOid.Length == 0) { return null; }
 
         var contained = await git.RunAsync(repo, ["merge-base", "--is-ancestor", $"refs/heads/{branch}", pull.HeadOid]).ConfigureAwait(false);
         return contained.Ok ? pull.Number : null;
@@ -155,17 +143,11 @@ public sealed class PullRequests(Git git, IGitHubApi github)
         for (var seen = 0; seen < limit; seen += Page)
         {
             var ran = await github.CallAsync(request(Math.Min(Page, limit - seen), cursor), cancellationToken).ConfigureAwait(false);
-            if (!ran.Ok || Connection(ran.Out, connectionOf) is not { } connection)
-            {
-                break;
-            }
+            if (!ran.Ok || Connection(ran.Out, connectionOf) is not { } connection) { break; }
 
             foreach (var node in connection["nodes"] as JsonArray ?? [])
             {
-                if (Pull(node) is { } pull)
-                {
-                    Keep(found, pull);
-                }
+                if (Pull(node) is { } pull) { Keep(found, pull); }
             }
 
             var info = connection["pageInfo"];
@@ -181,10 +163,7 @@ public sealed class PullRequests(Git git, IGitHubApi github)
 
     private static JsonNode? Connection(string output, Func<JsonNode, JsonNode?> connectionOf)
     {
-        if (string.IsNullOrWhiteSpace(output))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(output)) { return null; }
 
         try
         {

@@ -8,10 +8,7 @@ public static class Ago
     /// <summary><c>12m ago</c>, <c>3h ago</c> or <c>4d ago</c>; <c>just now</c> when there is no age.</summary>
     public static string Format(TimeSpan? age)
     {
-        if (age is not { } delta)
-        {
-            return "just now";
-        }
+        if (age is not { } delta) { return "just now"; }
 
         var hours = (long)Math.Floor(delta.TotalHours);
         return hours switch

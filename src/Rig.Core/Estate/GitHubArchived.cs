@@ -45,10 +45,7 @@ public static partial class GitHubArchived
     {
         ArgumentNullException.ThrowIfNull(github);
         var query = BuildQuery(slugs);
-        if (query.Length == 0)
-        {
-            return new HashSet<string>(StringComparer.Ordinal);
-        }
+        if (query.Length == 0) { return new HashSet<string>(StringComparer.Ordinal); }
 
         var ran = await github.CallAsync(ApiRequest.GraphQL(query, new Dictionary<string, object?>()), cancellationToken).ConfigureAwait(false);
         return ran.Out.Length > 0 ? Parse(ran.Out) : null;
@@ -59,18 +56,12 @@ public static partial class GitHubArchived
     {
         try
         {
-            if (JsonNode.Parse(reply) is not JsonObject root || root["data"] is not JsonObject data)
-            {
-                return null;
-            }
+            if (JsonNode.Parse(reply) is not JsonObject root || root["data"] is not JsonObject data) { return null; }
 
             var archived = new HashSet<string>(StringComparer.Ordinal);
             foreach (var (_, node) in data)
             {
-                if (node is null)
-                {
-                    continue;
-                }
+                if (node is null) { continue; }
 
                 if (node is not JsonObject repository
                     || !TryField(repository, "nameWithOwner", JsonValueKind.String, out var name)
@@ -87,20 +78,14 @@ public static partial class GitHubArchived
 
             return archived;
         }
-        catch (JsonException)
-        {
-            return null;
-        }
+        catch (JsonException) { return null; }
     }
 
     // A field that is present and of the expected kind (a boolean when expecting True): a repository missing either is unreadable.
     private static bool TryField(JsonObject parent, string key, JsonValueKind kind, out JsonNode? value)
     {
         value = JsonShape.Field(parent, key);
-        if (!parent.ContainsKey(key))
-        {
-            return false;
-        }
+        if (!parent.ContainsKey(key)) { return false; }
 
         var actual = value?.GetValueKind();
         return kind == JsonValueKind.True ? actual is JsonValueKind.True or JsonValueKind.False : actual == kind;

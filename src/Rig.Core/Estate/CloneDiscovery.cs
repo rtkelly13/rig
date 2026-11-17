@@ -64,25 +64,16 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
     public static IReadOnlyList<string> Scan(string root, int maxDepth = DefaultMaxDepth)
     {
         var resolved = PathResolution.Resolve(root);
-        if (!Directory.Exists(resolved))
-        {
-            return [];
-        }
+        if (!Directory.Exists(resolved)) { return []; }
 
-        if (IsRepo(resolved))
-        {
-            return [resolved];
-        }
+        if (IsRepo(resolved)) { return [resolved]; }
 
         var found = new List<string>();
         var frontier = new List<string> { resolved };
         for (var depth = 0; depth < maxDepth && frontier.Count > 0; depth++)
         {
             var next = new List<string>();
-            foreach (var child in frontier.SelectMany(Children))
-            {
-                (IsRepo(child) ? found : next).Add(child);
-            }
+            foreach (var child in frontier.SelectMany(Children)) { (IsRepo(child) ? found : next).Add(child); }
 
             frontier = next;
         }
@@ -127,10 +118,7 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
             return [.. Directory.EnumerateDirectories(parent)
                 .Where(child => Path.GetFileName(child) is var name && !name.StartsWith('.') && !Skipped.Contains(name))];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return [];
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
     }
 
     // The whole cache. A missing or corrupt file, or a junk entry, reads as absent: a cache is never the point.
@@ -139,10 +127,7 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
         var entries = new Dictionary<string, CachedScan>(StringComparer.Ordinal);
         foreach (var (key, value) in JsonFile.TryParse(cacheFile) as JsonObject ?? [])
         {
-            if (CachedScan.FromJson(value) is { } entry)
-            {
-                entries[key] = entry;
-            }
+            if (CachedScan.FromJson(value) is { } entry) { entries[key] = entry; }
         }
 
         return entries;
@@ -151,10 +136,7 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
     private void WriteCache(Dictionary<string, CachedScan> entries)
     {
         var document = new JsonObject();
-        foreach (var (key, entry) in entries)
-        {
-            document[key] = entry.ToJson();
-        }
+        foreach (var (key, entry) in entries) { document[key] = entry.ToJson(); }
 
         try
         {
@@ -190,10 +172,7 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
             var paths = new List<string>();
             foreach (var repo in repos)
             {
-                if (repo is not JsonValue value || !value.TryGetValue<string>(out var path))
-                {
-                    return null;
-                }
+                if (repo is not JsonValue value || !value.TryGetValue<string>(out var path)) { return null; }
 
                 paths.Add(path);
             }

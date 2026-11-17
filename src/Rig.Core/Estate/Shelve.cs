@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Rig.Core.Processes;
 using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
+using Rig.Core.Storage;
 using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
@@ -252,10 +253,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         ArgumentNullException.ThrowIfNull(part);
         var cleaned = IllegalRefChars().Replace(part, "-").Replace("..", "-", StringComparison.Ordinal).Replace("@{", "-", StringComparison.Ordinal).Trim('.');
-        if (cleaned.EndsWith(".lock", StringComparison.Ordinal))
-        {
-            cleaned = cleaned[..^".lock".Length];
-        }
+        if (cleaned.EndsWith(".lock", StringComparison.Ordinal)) { cleaned = cleaned[..^".lock".Length]; }
 
         return cleaned.Length > 0 ? cleaned : "-";
     }
@@ -275,10 +273,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             ? System.IO.Path.GetRelativePath(root, resolved).Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Where(part => part != ".")
             : [System.IO.Path.GetFileName(path.TrimEnd(System.IO.Path.DirectorySeparatorChar))];
         var list = parts.ToList();
-        if (list.Count > 1 && Containers.Contains(list[0], StringComparer.Ordinal))
-        {
-            list.RemoveAt(0);
-        }
+        if (list.Count > 1 && Containers.Contains(list[0], StringComparer.Ordinal)) { list.RemoveAt(0); }
 
         return string.Join('/', list.Select(RefComponent));
     }
@@ -332,24 +327,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         for (var i = 0; i < fields.Length; i++)
         {
             var entry = fields[i];
-            if (entry.Length < 4)
-            {
-                continue;
-            }
+            if (entry.Length < 4) { continue; }
 
-            var code = entry[..2];
-            var path = entry[3..];
-            if (code == "??")
-            {
-                untracked.Add(path);
-                continue;
-            }
-
-            changed.Add(path);
-            if (code[0] is 'R' or 'C')
-            {
-                i++;
-            }
+            (entry[..2] == "??" ? untracked : changed).Add(entry[3..]);
+            if (entry[0] is 'R' or 'C' && entry[..2] != "??") { i++; }
         }
 
         return new Porcelain(changed, untracked);
@@ -365,10 +346,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         ArgumentNullException.ThrowIfNull(path);
         var normal = path.Replace('\\', '/');
         var parts = normal.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0)
-        {
-            return false;
-        }
+        if (parts.Length == 0) { return false; }
 
         var joined = string.Join('/', parts);
         var last = parts[^1];
@@ -399,11 +377,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         var email = await _store.OutAsync(repo, "config", "user.email").ConfigureAwait(false);
         var local = email.Split('@', 2)[0];
-        if (local.Length == 0)
-        {
-            local = Environment.GetEnvironmentVariable("USERNAME") ?? string.Empty;
-        }
-
+        local = local.Length > 0 ? local : Environment.GetEnvironmentVariable("USERNAME") ?? string.Empty;
         return RefComponent(local.Length > 0 ? local : "unknown");
     }
 
@@ -416,15 +390,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         ArgumentNullException.ThrowIfNull(tops);
         var own = PathResolution.Resolve(path);
-        var found = new List<string>();
-        foreach (var tree in await Worktree.ListAsync(git, clone).ConfigureAwait(false))
-        {
-            var resolved = PathResolution.Resolve(tree.Path);
-            if (!PathResolution.Same(resolved, own) && PathResolution.IsUnder(resolved, own))
-            {
-                found.Add(tree.Path);
-            }
-        }
+        var found = (await Worktree.ListAsync(git, clone).ConfigureAwait(false))
+            .Where(tree => PathResolution.Resolve(tree.Path) is var resolved && !PathResolution.Same(resolved, own) && PathResolution.IsUnder(resolved, own))
+            .Select(tree => tree.Path)
+            .ToList();
 
         foreach (var top in tops)
         {
@@ -432,28 +401,16 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             while (stack.Count > 0)
             {
                 var current = stack.Pop();
-                FileSystemInfo[] entries;
-                try
+                var entries = Entries(current);
+                if (entries.Any(entry => entry.Name == ".git"))
                 {
-                    entries = new DirectoryInfo(current).GetFileSystemInfos();
-                }
-                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-                {
+                    found.Add(current);
                     continue;
                 }
 
-                foreach (var entry in entries)
+                foreach (var entry in entries.Where(entry => entry is DirectoryInfo && !IsLink(entry)))
                 {
-                    if (entry.Name == ".git")
-                    {
-                        found.Add(current);
-                        break;
-                    }
-
-                    if (entry is DirectoryInfo && !IsLink(entry))
-                    {
-                        stack.Push(entry.FullName);
-                    }
+                    stack.Push(entry.FullName);
                 }
             }
         }
@@ -477,21 +434,9 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
 
         candidates.AddRange(status.Changed.Concat(status.Untracked).Take(2000).Select(entry => System.IO.Path.Join(worktree, entry)));
         DateTime? newest = null;
-        foreach (var candidate in candidates)
+        foreach (var candidate in candidates.Where(Exists))
         {
-            if (!File.Exists(candidate) && !Directory.Exists(candidate))
-            {
-                continue;
-            }
-
-            try
-            {
-                var written = File.GetLastWriteTimeUtc(candidate);
-                newest = newest is null || written > newest ? written : newest;
-            }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-            {
-            }
+            newest = FileGuard.Try(() => (DateTime?)File.GetLastWriteTimeUtc(candidate), null) is { } written && (newest is null || written > newest) ? written : newest;
         }
 
         return newest is { } at ? new DateTimeOffset(at, TimeSpan.Zero) : null;
@@ -563,37 +508,21 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         var decision = WorktreeRemovalJudge.Judge(
             facts with { InUse = busy?.WorkingIn(path) ?? false },
             RemovalPolicy.Strict);
-        if (facts.OwnershipUnreadable)
+        void Need(bool when, string text)
         {
-            plan.DecisionNeeded.Add("cannot read this clone's git dir");
+            if (when) { plan.DecisionNeeded.Add(text); }
         }
 
-        if (decision.Reasons.Contains(RemovalRefusalReason.InUse))
-        {
-            plan.DecisionNeeded.Add("a process is working in it (a shell, agent or Orca terminal)");
-        }
-
-        if (decision.Reasons.Contains(RemovalRefusalReason.ForeignClone))
-        {
-            plan.DecisionNeeded.Add("belongs to another clone — see worktree-foreign-owner");
-        }
-
-        if (decision.Reasons.Contains(RemovalRefusalReason.UnbornHead))
-        {
-            plan.DecisionNeeded.Add("unborn HEAD — see worktree-unborn-head");
-        }
-
-        if (decision.Reasons.Contains(RemovalRefusalReason.ReflogOnlyCommit))
-        {
-            plan.DecisionNeeded.Add(facts.ReflogUnreadable
+        Need(facts.OwnershipUnreadable, "cannot read this clone's git dir");
+        Need(decision.Reasons.Contains(RemovalRefusalReason.InUse), "a process is working in it (a shell, agent or Orca terminal)");
+        Need(decision.Reasons.Contains(RemovalRefusalReason.ForeignClone), "belongs to another clone — see worktree-foreign-owner");
+        Need(decision.Reasons.Contains(RemovalRefusalReason.UnbornHead), "unborn HEAD — see worktree-unborn-head");
+        Need(
+            decision.Reasons.Contains(RemovalRefusalReason.ReflogOnlyCommit),
+            facts.ReflogUnreadable
                 ? "cannot read its reflog, so commits only it knows about may be lost"
                 : $"{facts.ReflogOnlyCommitCount} commit(s) only a reflog names — push or keep the worktree");
-        }
-
-        if (status.Error.Length > 0)
-        {
-            plan.DecisionNeeded.Add($"could not read the worktree: {status.Error}");
-        }
+        Need(status.Error.Length > 0, $"could not read the worktree: {status.Error}");
 
         if (status.Dirty)
         {
@@ -648,7 +577,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         }
 
         var keptFiles = keep.SelectMany(entry => Files(System.IO.Path.Join(path, entry))).ToList();
-        foreach (var entry in keep) { plan.KeepIgnored.Add(entry); }
+        keep.ForEach(plan.KeepIgnored.Add);
         plan.KeepIgnoredBytes = keptFiles.Sum(file => file.Size);
         if (keep.Count > 0)
         {
@@ -656,7 +585,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             var weight = $"{keep.Count} ignored path(s), {megabytes} MB";
             if (options.IncludeIgnored)
             {
-                foreach (var entry in keep) { plan.CarryIgnored.Add(entry); }
+                keep.ForEach(plan.CarryIgnored.Add);
                 plan.Action = Snapshot;
                 plan.Reasons.Add($"{weight} carried");
             }
@@ -671,25 +600,14 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             }
         }
 
-        var big = status.Untracked.Where(entry =>
-        {
-            var file = new FileInfo(System.IO.Path.Join(path, entry));
-            return file.Exists && file.Length > BigFile;
-        }).ToList();
+        var big = status.Untracked.Where(entry => new FileInfo(System.IO.Path.Join(path, entry)) is { Exists: true } file && file.Length > BigFile).ToList();
         if (options.IncludeIgnored)
         {
             big.AddRange(keptFiles.Where(file => file.Size > BigFile).Select(file => System.IO.Path.GetRelativePath(path, file.Path)));
         }
 
-        if (big.Count > 0)
-        {
-            plan.DecisionNeeded.Add($"over {BigFile / 1048576} MB: {string.Join(", ", big.Take(5))}");
-        }
-
-        if (tree.Locked)
-        {
-            plan.DecisionNeeded.Add(tree.LockReason.Length > 0 ? $"locked: {tree.LockReason}" : "locked");
-        }
+        Need(big.Count > 0, $"over {BigFile / 1048576} MB: {string.Join(", ", big.Take(5))}");
+        Need(tree.Locked, tree.LockReason.Length > 0 ? $"locked: {tree.LockReason}" : "locked");
 
         // `--idle 0` disables the guard outright, including for mtimes ahead of now.
         var active = await LastActivityAsync(path, status).ConfigureAwait(false);
@@ -728,10 +646,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             return $"could not read {remote}'s default branch, so its history is unproven: {Head(listed.Detail, 120)}";
         }
 
-        if (listed.Detail.Length == 0)
-        {
-            return string.Empty;
-        }
+        if (listed.Detail.Length == 0) { return string.Empty; }
 
         var sha = listed.Detail.Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries)[0];
         if (!(await _store.RunAsync(path, ["cat-file", "-e", $"{sha}^{{commit}}"]).ConfigureAwait(false)).Ok)
@@ -765,23 +680,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         ArgumentNullException.ThrowIfNull(plan);
         var status = await ReadStatusAsync(plan.Path).ConfigureAwait(false);
-        if (await MovedAsync(plan, status).ConfigureAwait(false) is { Length: > 0 } moved)
-        {
-            return moved;
-        }
+        if (await MovedAsync(plan, status).ConfigureAwait(false) is { Length: > 0 } moved) { return moved; }
 
         var held = await HeldAsync(plan, sha, status).ConfigureAwait(false);
-        if (!held.Ok)
-        {
-            return $"could not re-read the worktree: {held.Detail}";
-        }
-
-        if (held.Detail.Length == 0)
-        {
-            return "changed since planning";
-        }
-
-        return FreshIgnored(plan, status);
+        return !held.Ok ? $"could not re-read the worktree: {held.Detail}" : held.Detail.Length == 0 ? "changed since planning" : FreshIgnored(plan, status);
     }
 
     // ------------------------------------------------------------------ acting
@@ -807,19 +709,11 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         try
         {
             var environment = new Dictionary<string, string>(StringComparer.Ordinal) { ["GIT_INDEX_FILE"] = System.IO.Path.Join(scratch.FullName, "index") };
-            var steps = new List<string[]> { ReadHead, AddAll };
-            if (forced.Count > 0)
-            {
-                steps.Add(["add", "-f", "--", .. forced]);
-            }
-
+            string[][] steps = forced.Count > 0 ? [ReadHead, AddAll, ["add", "-f", "--", .. forced]] : [ReadHead, AddAll];
             foreach (var step in steps)
             {
                 var ran = await _store.RunAsync(path, step, environment).ConfigureAwait(false);
-                if (!ran.Ok)
-                {
-                    return new ShelfStep(false, $"git {step[0]} {step[1]}: {ran.Detail}");
-                }
+                if (!ran.Ok) { return new ShelfStep(false, $"git {step[0]} {step[1]}: {ran.Detail}"); }
             }
 
             var tree = await _store.RunAsync(path, ["write-tree"], environment).ConfigureAwait(false);
@@ -827,13 +721,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         }
         finally
         {
-            try
-            {
-                scratch.Delete(recursive: true);
-            }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-            {
-            }
+            _ = FileGuard.Try(() => { scratch.Delete(recursive: true); return true; }, false);
         }
     }
 
@@ -841,20 +729,13 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     public async Task<ShelfStep> MarkerAsync(ShelvePlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        string tree;
+        var tree = $"{plan.Head}^{{tree}}";
         if (plan.Action == Snapshot)
         {
             var written = await SnapshotTreeAsync(plan.Path, plan.CarryIgnored).ConfigureAwait(false);
-            if (!written.Ok)
-            {
-                return written;
-            }
+            if (!written.Ok) { return written; }
 
             tree = written.Detail;
-        }
-        else
-        {
-            tree = $"{plan.Head}^{{tree}}";
         }
 
         var resolvedPath = PathResolution.Resolve(plan.Path);
@@ -872,10 +753,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         ArgumentNullException.ThrowIfNull(reference);
         var listed = await _store.RunAsync(clone, ["ls-remote", ShelfStore.Remote, reference]).ConfigureAwait(false);
-        if (!listed.Ok || listed.Detail.Split('\t', 2)[0] != sha)
-        {
-            return false;
-        }
+        if (!listed.Ok || listed.Detail.Split('\t', 2)[0] != sha) { return false; }
 
         var local = reference.StartsWith("refs/heads/", StringComparison.Ordinal) ? reference["refs/heads/".Length..] : reference;
         _ = await _store.RunAsync(clone, ["fetch", "-q", ShelfStore.Remote, $"+{reference}:refs/remotes/{ShelfStore.Remote}/{local}"]).ConfigureAwait(false);
@@ -1010,17 +888,11 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         if (sha.Length == 0)
         {
             var marker = await MarkerAsync(plan).ConfigureAwait(false);
-            if (!marker.Ok)
-            {
-                return new ShelveResult(plan, "failed", marker.Detail);
-            }
+            if (!marker.Ok) { return new ShelveResult(plan, "failed", marker.Detail); }
 
             sha = marker.Detail;
             var pushed = await _store.RunAsync(plan.Clone, ["push", "-q", remote, $"{sha}:{plan.Ref}"]).ConfigureAwait(false);
-            if (!pushed.Ok)
-            {
-                return new ShelveResult(plan, "failed", $"push {plan.Ref}: {pushed.Detail}", sha);
-            }
+            if (!pushed.Ok) { return new ShelveResult(plan, "failed", $"push {plan.Ref}: {pushed.Detail}", sha); }
         }
 
         if (!await OnRemoteAsync(plan.Clone, plan.Ref, sha).ConfigureAwait(false))
@@ -1048,35 +920,20 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
 
     private static bool IsLink(FileSystemInfo entry) => entry.LinkTarget is not null || entry.Attributes.HasFlag(FileAttributes.ReparsePoint);
 
+    private static FileSystemInfo[] Entries(string directory) =>
+        FileGuard.Try(() => new DirectoryInfo(directory).GetFileSystemInfos(), []);
+
     // Every file under root (or root itself) with its size, links never followed.
     private static List<(string Path, long Size)> Files(string root)
     {
-        if (File.Exists(root))
-        {
-            return [(root, new FileInfo(root).Length)];
-        }
+        if (File.Exists(root)) { return [(root, new FileInfo(root).Length)]; }
 
         var found = new List<(string Path, long Size)>();
         var stack = new Stack<string>([root]);
         while (stack.Count > 0)
         {
-            FileSystemInfo[] entries;
-            try
+            foreach (var entry in Entries(stack.Pop()).Where(entry => !IsLink(entry)))
             {
-                entries = new DirectoryInfo(stack.Pop()).GetFileSystemInfos();
-            }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-            {
-                continue;
-            }
-
-            foreach (var entry in entries)
-            {
-                if (IsLink(entry))
-                {
-                    continue;
-                }
-
                 if (entry is DirectoryInfo)
                 {
                     stack.Push(entry.FullName);
@@ -1098,19 +955,13 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(status);
         var parent = await _store.OutAsync(plan.Path, "rev-parse", "--verify", "-q", $"{sha}^").ConfigureAwait(false);
-        if (parent != plan.Head)
-        {
-            return new ShelfStep(true, string.Empty);
-        }
+        if (parent != plan.Head) { return new ShelfStep(true, string.Empty); }
 
         var tree = plan.Head;
         if (status.Dirty || plan.CarryIgnored.Count > 0)
         {
             var written = await SnapshotTreeAsync(plan.Path, plan.CarryIgnored).ConfigureAwait(false);
-            if (!written.Ok)
-            {
-                return written;
-            }
+            if (!written.Ok) { return written; }
 
             tree = written.Detail;
         }
@@ -1123,10 +974,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     // Why the worktree cannot be judged against its plan any more: git cannot read it, or HEAD moved. Empty when neither.
     private async Task<string> MovedAsync(ShelvePlan plan, ShelveStatus status)
     {
-        if (status.Error.Length > 0)
-        {
-            return $"could not re-read the worktree: {status.Error}";
-        }
+        if (status.Error.Length > 0) { return $"could not re-read the worktree: {status.Error}"; }
 
         var head = await _store.OutAsync(plan.Path, "rev-parse", "HEAD").ConfigureAwait(false);
         return head != plan.Head ? $"HEAD moved to {(head.Length > 0 ? Head(head, 9) : "?")} since planning" : string.Empty;
@@ -1170,10 +1018,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             detail.Clear().Append("worktree removed (finished after git stopped part-way)");
         }
 
-        if (Exists(plan.Path))
-        {
-            detail.Append(SweepLinkSkeleton(plan.Path));
-        }
+        if (Exists(plan.Path)) { detail.Append(SweepLinkSkeleton(plan.Path)); }
 
         if (plan.Branch.Length > 0)
         {
@@ -1189,24 +1034,16 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     // Appends the result to the ledger. The ref and its trailers are the record; the ledger is a convenience.
     private ShelveResult Ledger(ShelveResult result)
     {
-        if (ledger is null)
-        {
-            return result;
-        }
+        if (ledger is null) { return result; }
 
         var line = new JsonObject { ["at"] = IsoTime.Format(clock.GetUtcNow()) };
-        foreach (var (key, value) in result.ToJson())
-        {
-            line[key] = value?.DeepClone();
-        }
+        foreach (var (key, value) in result.ToJson()) { line[key] = value?.DeepClone(); }
 
         try
         {
             File.AppendAllText(ledger, JsonOutput.Line(line) + "\n");
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        {
-        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
 
         return result;
     }

@@ -73,10 +73,7 @@ public sealed class GitWorktreePort(Git git) : IGitWorktreePort
     {
         var refs = await git.RunAsync(tree.Path, ["rev-list", "--all"], cancellationToken: cancellationToken).ConfigureAwait(false);
         var head = await git.RunAsync(tree.Path, ["log", "-g", ReflogFormat, "HEAD", "--"], cancellationToken: cancellationToken).ConfigureAwait(false);
-        if (!refs.Ok || !head.Ok)
-        {
-            return (0, true);
-        }
+        if (!refs.Ok || !head.Ok) { return (0, true); }
 
         var names = head.Out.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
         IReadOnlyList<string> branch = [];
@@ -86,10 +83,7 @@ public sealed class GitWorktreePort(Git git) : IGitWorktreePort
             // Disambiguate against files/directories with the same name as the branch by querying refs/heads and passing '--'.
             var branchRef = tree.Branch.StartsWith("refs/", StringComparison.Ordinal) ? tree.Branch : $"refs/heads/{tree.Branch}";
             var ran = await git.RunAsync(tree.Path, ["log", "-g", ReflogFormat, branchRef, "--"], cancellationToken: cancellationToken).ConfigureAwait(false);
-            if (!ran.Ok)
-            {
-                return (0, true);
-            }
+            if (!ran.Ok) { return (0, true); }
 
             branch = ran.Out.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
         }

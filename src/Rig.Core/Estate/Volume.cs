@@ -112,17 +112,11 @@ public static class Volume
         while (reader.ReadLine() is { } line)
         {
             number++;
-            if (line.Length == 0)
-            {
-                continue;
-            }
+            if (line.Length == 0) { continue; }
 
             var cells = Cells(line);
             var allocated = Integer(cells, 2, number);
-            if (allocated is null || allocated < floor)
-            {
-                continue;
-            }
+            if (allocated is null || allocated < floor) { continue; }
 
             folders.Add(new Folder(cells[0].TrimEnd('\\'), allocated.Value, Integer(cells, 1, number) ?? 0, Integer(cells, 5, number) ?? 0));
         }
@@ -145,10 +139,7 @@ public static class Volume
             else
             {
                 var parent = Parent(folder.Path).ToLowerInvariant();
-                if (!children.TryGetValue(parent, out var list))
-                {
-                    children[parent] = list = [];
-                }
+                if (!children.TryGetValue(parent, out var list)) { children[parent] = list = []; }
 
                 list.Add(folder);
             }
@@ -158,10 +149,7 @@ public static class Volume
         void Walk(Folder node, int level)
         {
             rows.Add(new TreeRow(level, node));
-            if (level >= maxDepth)
-            {
-                return;
-            }
+            if (level >= maxDepth) { return; }
 
             foreach (var child in (children.GetValueOrDefault(node.Path.ToLowerInvariant()) ?? []).OrderByDescending(child => child.Allocated))
             {
@@ -169,10 +157,7 @@ public static class Volume
             }
         }
 
-        foreach (var root in roots.OrderByDescending(root => root.Allocated))
-        {
-            Walk(root, 0);
-        }
+        foreach (var root in roots.OrderByDescending(root => root.Allocated)) { Walk(root, 0); }
 
         return rows;
     }
@@ -194,16 +179,10 @@ public static class Volume
         // Sorted with the trailing separator: bare, `repo-b` sorts between `repo` and `repo\x`.
         foreach (var (folder, key) in folders.Select(folder => (folder, Key: folder.Path.ToLowerInvariant() + "\\")).OrderBy(pair => pair.Key, StringComparer.Ordinal))
         {
-            if (consumed is not null && key.StartsWith(consumed, StringComparison.Ordinal))
-            {
-                continue;
-            }
+            if (consumed is not null && key.StartsWith(consumed, StringComparison.Ordinal)) { continue; }
 
             consumed = null;
-            if (Category(folder.Path, root) is not { } category)
-            {
-                continue;
-            }
+            if (Category(folder.Path, root) is not { } category) { continue; }
 
             Add(totals, category, folder.Allocated);
             consumed = key;
@@ -248,10 +227,7 @@ public static class Volume
     public static long RootFiles(IReadOnlyCollection<Folder> folders)
     {
         ArgumentNullException.ThrowIfNull(folders);
-        if (folders.FirstOrDefault(folder => Depth(folder.Path) == 0) is not { } root)
-        {
-            return 0;
-        }
+        if (folders.FirstOrDefault(folder => Depth(folder.Path) == 0) is not { } root) { return 0; }
 
         return Math.Max(root.Allocated - folders.Where(folder => Depth(folder.Path) == 1).Sum(folder => folder.Allocated), 0);
     }
@@ -337,10 +313,7 @@ public static class Volume
 
     private static long? Integer(List<string> cells, int column, int line)
     {
-        if (column >= cells.Count || cells[column].Length == 0)
-        {
-            return null;
-        }
+        if (column >= cells.Count || cells[column].Length == 0) { return null; }
 
         return long.TryParse(cells[column], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var value)
             ? value

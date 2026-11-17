@@ -40,22 +40,13 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
         while (stack.TryPop(out var current))
         {
             // A folder the walk cannot list is one it cannot clear, and the remover would unlock and empty it.
-            if (Entries(current) is not { } entries)
-            {
-                return Unmeasured;
-            }
+            if (Entries(current) is not { } entries) { return Unmeasured; }
 
             foreach (var entry in entries)
             {
-                if (entry.Name == ".git")
-                {
-                    return Unmeasured;
-                }
+                if (entry.Name == ".git") { return Unmeasured; }
 
-                if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                {
-                    continue;
-                }
+                if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint)) { continue; }
 
                 if (entry is DirectoryInfo)
                 {
@@ -81,10 +72,7 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
             }
         }
 
-        if (smallTotal == 0)
-        {
-            return new TreeMeasure(apparent, known);
-        }
+        if (smallTotal == 0) { return new TreeMeasure(apparent, known); }
 
         var share = sampledBytes == 0 ? 1.0 : (double)sampledFreeable / sampledBytes;
         return new TreeMeasure(apparent, Math.Min(known + (long)(smallTotal * share), apparent), Estimated: true);
@@ -98,27 +86,18 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
     /// </summary>
     public static bool HasCheckoutBelow(string path, bool ownGit = false)
     {
-        if (File.Exists(path))
-        {
-            return false;
-        }
+        if (File.Exists(path)) { return false; }
 
         var stack = new Stack<string>([path]);
         while (stack.TryPop(out var current))
         {
-            if (Entries(current) is not { } entries)
-            {
-                return true;
-            }
+            if (Entries(current) is not { } entries) { return true; }
 
             foreach (var entry in entries)
             {
                 if (entry.Name == ".git")
                 {
-                    if (ownGit && current == path)
-                    {
-                        continue;
-                    }
+                    if (ownGit && current == path) { continue; }
 
                     return true;
                 }

@@ -38,15 +38,9 @@ public sealed class TreeRemoval(IProc proc)
             return;
         }
 
-        if (root.LinkTarget is null && !root.Exists)
-        {
-            throw new DirectoryNotFoundException($"{path} does not exist.");
-        }
+        if (root.LinkTarget is null && !root.Exists) { throw new DirectoryNotFoundException($"{path} does not exist."); }
 
-        if (root.LinkTarget is not null)
-        {
-            throw new IOException($"{path} is a link; removing a tree never follows one.");
-        }
+        if (root.LinkTarget is not null) { throw new IOException($"{path} is a link; removing a tree never follows one."); }
 
         await RemoveFolderAsync(root, null, cancellationToken).ConfigureAwait(false);
     }
@@ -98,10 +92,7 @@ public sealed class TreeRemoval(IProc proc)
             if (entry.Attributes.HasFlag(FileAttributes.ReadOnly) && !entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
             {
                 entry.Attributes &= ~FileAttributes.ReadOnly;
-                if (TryDelete(entry))
-                {
-                    return;
-                }
+                if (TryDelete(entry)) { return; }
             }
 
             // Still denied: the folder holding it is what refuses, so open that, never the tree's own parent.
@@ -121,10 +112,7 @@ public sealed class TreeRemoval(IProc proc)
             Delete(entry);
             return true;
         }
-        catch (UnauthorizedAccessException)
-        {
-            return false;
-        }
+        catch (UnauthorizedAccessException) { return false; }
     }
 
     private static void Delete(FileSystemInfo entry)

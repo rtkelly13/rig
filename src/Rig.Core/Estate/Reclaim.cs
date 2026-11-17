@@ -165,10 +165,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
         foreach (var tree in trees)
         {
             var resolved = PathResolution.Resolve(tree.Path);
-            if (PathResolution.IsUnder(resolved, root) || !Directory.Exists(resolved))
-            {
-                continue;
-            }
+            if (PathResolution.IsUnder(resolved, root) || !Directory.Exists(resolved)) { continue; }
 
             var size = await disk.SizeAsync(resolved, cancellationToken).ConfigureAwait(false);
             if (size >= floor)
@@ -196,18 +193,12 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
     public async Task<IReadOnlyList<string>> ApplyAsync(RepoReclaim plan, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        if (plan.Removal is not { } removal)
-        {
-            return ["reclaim requires a removal port to apply"];
-        }
+        if (plan.Removal is not { } removal) { return ["reclaim requires a removal port to apply"]; }
 
         foreach (var entry in plan.Changes)
         {
             ct.ThrowIfCancellationRequested();
-            if (entry.Kind != ChangeKind.WouldChange)
-            {
-                continue;
-            }
+            if (entry.Kind != ChangeKind.WouldChange) { continue; }
 
             var status = await ApplyAsync(plan.Repo, entry, apply: true, plan.Force, removal, plan.Busy, ct).ConfigureAwait(false);
             entry.Kind = status switch
@@ -262,10 +253,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
             }
 
             // A separate clone, or another repository's worktree, in its ignored temp/ would go the same way.
-            if (TreeMeasure.HasCheckoutBelow(entry.Path, ownGit: true))
-            {
-                return "holds a git checkout";
-            }
+            if (TreeMeasure.HasCheckoutBelow(entry.Path, ownGit: true)) { return "holds a git checkout"; }
 
             var tree = trees.FirstOrDefault(candidate => !candidate.IsMain && PathResolution.Same(PathResolution.Resolve(candidate.Path), resolved));
             if (tree is { } registered)
@@ -273,50 +261,26 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
                 var facts = await _worktrees.ReadAsync(clone, registered, cancellationToken).ConfigureAwait(false);
                 facts = facts with { InUse = busy?.WorkingIn(facts.Path) ?? false };
                 var decision = WorktreeRemovalJudge.Judge(facts, new RemovalPolicy(DiscardUnpushedCommits: force));
-                if (facts.OwnershipUnreadable)
-                {
-                    return "cannot read its git dir";
-                }
+                if (facts.OwnershipUnreadable) { return "cannot read its git dir"; }
 
-                if (decision.Reasons.Contains(RemovalRefusalReason.ForeignClone))
-                {
-                    return "belongs to another clone";
-                }
+                if (decision.Reasons.Contains(RemovalRefusalReason.ForeignClone)) { return "belongs to another clone"; }
 
-                if (decision.Reasons.Contains(RemovalRefusalReason.UnbornHead))
-                {
-                    return "unborn HEAD";
-                }
+                if (decision.Reasons.Contains(RemovalRefusalReason.UnbornHead)) { return "unborn HEAD"; }
 
                 if (decision.Reasons.Contains(RemovalRefusalReason.Locked))
                 {
                     return facts.LockReason.Length > 0 ? $"locked: {facts.LockReason}" : "locked";
                 }
 
-                if (decision.Reasons.Contains(RemovalRefusalReason.InUse))
-                {
-                    return "in use";
-                }
+                if (decision.Reasons.Contains(RemovalRefusalReason.InUse)) { return "in use"; }
 
-                if (!force && facts.HasUncommittedChanges)
-                {
-                    return "dirty worktree";
-                }
+                if (!force && facts.HasUncommittedChanges) { return "dirty worktree"; }
 
-                if (!force && decision.Reasons.Contains(RemovalRefusalReason.UnpushedCommits))
-                {
-                    return "only copy";
-                }
+                if (!force && decision.Reasons.Contains(RemovalRefusalReason.UnpushedCommits)) { return "only copy"; }
 
-                if (decision.Reasons.Contains(RemovalRefusalReason.IgnoredNotes))
-                {
-                    return "ignored notes";
-                }
+                if (decision.Reasons.Contains(RemovalRefusalReason.IgnoredNotes)) { return "ignored notes"; }
 
-                if (decision.Reasons.Contains(RemovalRefusalReason.ReflogOnlyCommit))
-                {
-                    return "reflog-only commits";
-                }
+                if (decision.Reasons.Contains(RemovalRefusalReason.ReflogOnlyCommit)) { return "reflog-only commits"; }
             }
             else
             {
@@ -326,46 +290,28 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
                     return "dirty worktree";
                 }
 
-                if (!force && await OrphanedAsync(entry.Path).ConfigureAwait(false))
-                {
-                    return "only copy";
-                }
+                if (!force && await OrphanedAsync(entry.Path).ConfigureAwait(false)) { return "only copy"; }
             }
 
-            if (!apply)
-            {
-                return "would remove";
-            }
+            if (!apply) { return "would remove"; }
 
             var done = await git.RunAsync(clone, [.. Trim.LongPaths, "worktree", "remove", entry.Path], WorktreeRemoveTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
             return done.Ok ? "removed" : "failed";
         }
 
-        if (!Trim.IsStrictlyBelow(entry.Path, clone))
-        {
-            return "outside clone";
-        }
+        if (!Trim.IsStrictlyBelow(entry.Path, clone)) { return "outside clone"; }
 
         // temp/ scratch can hold a clone or another repository's worktree, which no regenerate command brings back.
-        if (entry.Category == "temp" && TreeMeasure.HasCheckoutBelow(entry.Path))
-        {
-            return "holds a git checkout";
-        }
+        if (entry.Category == "temp" && TreeMeasure.HasCheckoutBelow(entry.Path)) { return "holds a git checkout"; }
 
-        if (!apply)
-        {
-            return "would remove";
-        }
+        if (!apply) { return "would remove"; }
 
         try
         {
             await removal.RemoveAsync(entry.Path, cancellationToken).ConfigureAwait(false);
             return "removed";
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return "failed";
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return "failed"; }
     }
 
     // Whether HEAD holds a commit on no remote; true when git cannot say.
@@ -388,10 +334,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
         }
 
         Consider(Path.Join(repo, name));
-        foreach (var child in Children(repo, directoriesOnly: true))
-        {
-            Consider(Path.Join(child, name));
-        }
+        foreach (var child in Children(repo, directoriesOnly: true)) { Consider(Path.Join(child, name)); }
 
         return found;
     }
@@ -403,10 +346,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
             var children = directoriesOnly ? Directory.EnumerateDirectories(folder) : Directory.EnumerateFileSystemEntries(folder);
             return [.. children.Order(PathOrder.Instance)];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return [];
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
     }
 
     // temp/ per child rather than one lump: some of it is live worktrees, some scratch, and each needs its own decision.
@@ -420,16 +360,10 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
         var found = new List<Reclaimable>();
         foreach (var child in Children(temp, directoriesOnly: false))
         {
-            if (new FileInfo(child).LinkTarget is not null)
-            {
-                continue;
-            }
+            if (new FileInfo(child).LinkTarget is not null) { continue; }
 
             var size = await disk.SizeAsync(child, cancellationToken).ConfigureAwait(false);
-            if (size < floor)
-            {
-                continue;
-            }
+            if (size < floor) { continue; }
 
             var resolved = PathResolution.Resolve(child);
             var isTree = worktrees.Contains(resolved);

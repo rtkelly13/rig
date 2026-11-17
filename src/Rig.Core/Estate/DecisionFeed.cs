@@ -52,18 +52,12 @@ public static class DecisionFeed
         {
             text = File.ReadAllText(path, System.Text.Encoding.UTF8);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return null; }
 
         try
         {
             using var document = JsonDocument.Parse(text);
-            if (document.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return null;
-            }
+            if (document.RootElement.ValueKind != JsonValueKind.Array) { return null; }
 
             var decisions = new List<Decision>();
             foreach (var item in document.RootElement.EnumerateArray())
@@ -87,9 +81,6 @@ public static class DecisionFeed
 
             return decisions;
         }
-        catch (JsonException)
-        {
-            return null;
-        }
+        catch (JsonException) { return null; }
     }
 }

@@ -49,10 +49,7 @@ public sealed class Downloads(IDiskUsage disk)
         var ext = InstalledApps.Suffix(path).ToLowerInvariant();
         foreach (var (category, extensions) in new[] { ("installer", Installer), ("archive", Archive), ("dataset", Dataset), ("media", Media), ("document", Document) })
         {
-            if (extensions.Contains(ext))
-            {
-                return category;
-            }
+            if (extensions.Contains(ext)) { return category; }
         }
 
         if (Directory.Exists(path))
@@ -61,20 +58,11 @@ public sealed class Downloads(IDiskUsage disk)
             {
                 var exts = Directory.EnumerateFileSystemEntries(path).Take(Sample).Where(File.Exists)
                     .Select(child => InstalledApps.Suffix(child).ToLowerInvariant()).ToHashSet();
-                if (exts.Overlaps(Media))
-                {
-                    return "media";
-                }
+                if (exts.Overlaps(Media)) { return "media"; }
 
-                if (exts.Overlaps(Dataset))
-                {
-                    return "dataset";
-                }
+                if (exts.Overlaps(Dataset)) { return "dataset"; }
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                return "other";
-            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return "other"; }
         }
 
         return "other";
@@ -89,24 +77,15 @@ public sealed class Downloads(IDiskUsage disk)
         try
         {
             var isDir = Directory.Exists(local);
-            if (isDir != Directory.Exists(remote))
-            {
-                return false;
-            }
+            if (isDir != Directory.Exists(remote)) { return false; }
 
-            if (!isDir)
-            {
-                return SameFile(local, remote);
-            }
+            if (!isDir) { return SameFile(local, remote); }
 
             var left = TreeFiles(local);
             var right = TreeFiles(remote);
             return left.Keys.ToHashSet(StringComparer.Ordinal).SetEquals(right.Keys) && left.All(pair => SameFile(pair.Value, right[pair.Key]));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
     }
 
     /// <summary>
@@ -122,10 +101,7 @@ public sealed class Downloads(IDiskUsage disk)
         {
             children = [.. Directory.EnumerateFileSystemEntries(folder).Where(child => !System.IO.Path.GetFileName(child).StartsWith('.'))];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return [];
-        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
 
         var items = new List<DownloadItem>();
         foreach (var child in children)
@@ -140,15 +116,9 @@ public sealed class Downloads(IDiskUsage disk)
                     : File.Exists(target) ? new FileInfo(target).Length
                     : -1;
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                continue;
-            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
 
-            if (size < 0 || size < minSize)
-            {
-                continue;
-            }
+            if (size < 0 || size < minSize) { continue; }
 
             var name = System.IO.Path.GetFileName(child);
             var duplicate = cloudRoots.Select(root => System.IO.Path.Join(root, name)).FirstOrDefault(candidate => Path.Exists(candidate) && ContentsIdentical(child, candidate));
@@ -165,10 +135,7 @@ public sealed class Downloads(IDiskUsage disk)
             var info = new FileInfo(path);
             return info.LinkTarget is null ? path : info.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? path;
         }
-        catch (IOException)
-        {
-            return path;
-        }
+        catch (IOException) { return path; }
     }
 
     private static bool SameFile(string left, string right) =>
@@ -192,10 +159,7 @@ public sealed class Downloads(IDiskUsage disk)
             {
                 if (entry is DirectoryInfo)
                 {
-                    if (!entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                    {
-                        pending.Push(entry.FullName);
-                    }
+                    if (!entry.Attributes.HasFlag(FileAttributes.ReparsePoint)) { pending.Push(entry.FullName); }
                 }
                 else if (entry.Name != ".DS_Store" && File.Exists(entry.FullName))
                 {

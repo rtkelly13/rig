@@ -75,10 +75,7 @@ public sealed record Footprint(long Bytes, DateTime Newest)
             {
                 try
                 {
-                    if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                    {
-                        continue;
-                    }
+                    if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint)) { continue; }
 
                     if (entry is DirectoryInfo)
                     {
@@ -246,15 +243,9 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
         }
 
         var info = await RunAsync([exe, "info", "--format", "{{.ServerVersion}}"], ProbeTimeout, cancellationToken).ConfigureAwait(false);
-        if (info.Code != 0)
-        {
-            return new Pruned(category, command, PruneStatus.Skipped, "Docker daemon not running");
-        }
+        if (info.Code != 0) { return new Pruned(category, command, PruneStatus.Skipped, "Docker daemon not running"); }
 
-        if (!apply)
-        {
-            return new Pruned(category, command, PruneStatus.WouldRun, "size is known only after the prune");
-        }
+        if (!apply) { return new Pruned(category, command, PruneStatus.WouldRun, "size is known only after the prune"); }
 
         var done = await RunAsync([exe, "builder", "prune", "-f", "--filter", DockerFilter], PruneTimeout, cancellationToken).ConfigureAwait(false);
         return done.Code != 0
@@ -293,10 +284,7 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
         {
             foreach (var session in Subdirs(project.FullName))
             {
-                if (!SessionName().IsMatch(session.Name))
-                {
-                    continue;
-                }
+                if (!SessionName().IsMatch(session.Name)) { continue; }
 
                 var size = Footprint.Of(session.FullName);
                 DateTime own;
@@ -305,16 +293,10 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
                     session.Refresh();
                     own = session.LastWriteTimeUtc;
                 }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-                {
-                    continue;
-                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
 
                 var last = size.Newest > own ? size.Newest : own;
-                if (last <= cutoff)
-                {
-                    idle.Add(new IdleSession(session.FullName, size.Bytes, last));
-                }
+                if (last <= cutoff) { idle.Add(new IdleSession(session.FullName, size.Bytes, last)); }
             }
         }
 
@@ -328,10 +310,7 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
         ArgumentOutOfRangeException.ThrowIfNegative(idleDays);
         const string category = "claude temp";
         var command = $"delete session dirs idle {idleDays}+ days under {root}";
-        if (!Directory.Exists(root))
-        {
-            return new Pruned(category, command, PruneStatus.Skipped, $"{root} does not exist");
-        }
+        if (!Directory.Exists(root)) { return new Pruned(category, command, PruneStatus.Skipped, $"{root} does not exist"); }
 
         var sessions = IdleSessions(root, idleDays);
         var total = sessions.Sum(s => s.Bytes);

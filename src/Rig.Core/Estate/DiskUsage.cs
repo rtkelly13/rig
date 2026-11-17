@@ -25,10 +25,7 @@ public sealed class DiskUsage(IProc proc) : IDiskUsage
     /// <inheritdoc />
     public async Task<long> SizeAsync(string path, CancellationToken cancellationToken = default)
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return Walk(path);
-        }
+        if (OperatingSystem.IsWindows()) { return Walk(path); }
 
         var ran = await proc.RunAsync(new ProcRequest(["du", "-sk", path]) { Timeout = Timeout }, cancellationToken).ConfigureAwait(false);
         var first = ran.Ok ? ran.Out.Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() : null;
@@ -53,10 +50,7 @@ public sealed class DiskUsage(IProc proc) : IDiskUsage
         {
             foreach (var entry in TreeMeasure.Entries(current) ?? [])
             {
-                if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                {
-                    continue;
-                }
+                if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint)) { continue; }
 
                 if (entry is DirectoryInfo)
                 {
