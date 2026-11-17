@@ -15,7 +15,7 @@ internal sealed record AgentSettings(string? Preferred = null, bool Danger = fal
 {
     /// <summary>
     /// The settings in <paramref name="json"/>, a workspace config. A file that is not JSON, or whose
-    /// <c>tools.agent</c> has a value of the wrong kind, gives the defaults, as the Python's validation did.
+    /// <c>tools.agent</c> has a value of the wrong kind, gives the defaults.
     /// </summary>
     public static AgentSettings Parse(string json)
     {
@@ -80,7 +80,7 @@ internal sealed record AgentHost(string ConfigPath, string WorkingDirectory, Fun
 /// <summary>
 /// The <c>agent</c> launcher, also reached as a bare <c>rig</c>, <c>rig agent</c> and a leading shortcut flag
 /// (<c>rig -ccc</c>): starts the preferred AI coding agent, or the one a flag picks, with the rest of the line
-/// passed on untouched. Ported from <c>rig.agent_launcher</c>. Exit codes: the agent's own; 2 for a bad line or
+/// passed on untouched. Exit codes: the agent's own; 2 for a bad line or
 /// agent id; 127 when the agent is not on PATH.
 /// </summary>
 /// <param name="proc">Starts the agent, attached to this console.</param>

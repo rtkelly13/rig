@@ -68,8 +68,7 @@ internal sealed record DesktopHost(
 }
 
 /// <summary>
-/// <c>rig desktop</c>: the desktop-manager commands, mounted on rig as the one CLI root (plan G5). The workspace group is
-/// ported to C#; the remaining desktop-manager groups still run in the Python CLI.
+/// <c>rig desktop</c>: the desktop-manager commands, mounted on rig as the one CLI root (plan G5).
 /// </summary>
 /// <param name="host">Where it looks and writes.</param>
 internal sealed class DesktopCommand(DesktopHost host)
@@ -81,7 +80,7 @@ internal sealed class DesktopCommand(DesktopHost host)
     public const string Description =
         "Windows desktop workspaces: restore or audit a plan, align open windows, and guard them across monitor drop-outs.";
 
-    /// <summary>The <c>desktop</c> command with its ported workspace subcommands.</summary>
+    /// <summary>The <c>desktop</c> command with its workspace subcommands.</summary>
     public Command Build()
     {
         var command = new Command(Name, Description);

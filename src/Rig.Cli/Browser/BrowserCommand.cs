@@ -15,12 +15,12 @@ internal sealed record BrowserHost(string Home, string? Shell, bool Windows, Fun
 
 /// <summary>
 /// <c>rig browser</c>: sets up what the upstream <c>agent-browser</c> CLI reads. Only setup lives here; run the upstream
-/// binary directly. Ported from <c>rig.agent_browser.cli</c> and devenv's agent-browser step. Always exits 0.
+/// binary directly. Always exits 0.
 /// </summary>
 /// <param name="host">Where it sets up.</param>
 /// <param name="proc">Runs the daemon probe.</param>
 /// <param name="output">Where profile progress goes.</param>
-/// <param name="error">Where environment progress goes, as the Python printed it.</param>
+/// <param name="error">Where environment progress goes.</param>
 internal sealed class BrowserCommand(BrowserHost host, IProc proc, TextWriter output, TextWriter error)
 {
     /// <summary>The <c>browser</c> command.</summary>

@@ -8,8 +8,7 @@ using Rig.Core.Text;
 namespace Rig.Cli.Governance;
 
 /// <summary>
-/// The checks over a checkout and its GitHub remote: <c>check-names</c> and <c>prune-branches</c>. Ported from
-/// <c>rig.repo_governance.cli_repo_checks</c>.
+/// The checks over a checkout and its GitHub remote: <c>check-names</c> and <c>prune-branches</c>.
 /// </summary>
 internal sealed partial class GovernanceCommand
 {

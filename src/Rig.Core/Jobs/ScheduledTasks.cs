@@ -78,7 +78,7 @@ public sealed class Schtasks(IProc proc, string scratchDirectory) : IScheduledTa
         (await proc.RunAsync(new ProcRequest(["schtasks", "/Delete", "/TN", name, "/F"]), cancellationToken).ConfigureAwait(false)).Ok;
 }
 
-/// <summary>When this machine booted, as <c>desktop_manager.jobs.session_windows.boot_time</c> answers it.</summary>
+/// <summary>When this machine booted.</summary>
 public static class BootTime
 {
     /// <summary>

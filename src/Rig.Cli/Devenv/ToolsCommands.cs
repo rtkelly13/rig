@@ -7,8 +7,7 @@ namespace Rig.Cli.Devenv;
 
 /// <summary>
 /// <c>rig devenv tools</c>, <c>runtimes</c> and <c>update</c>: the developer tool catalog, checked and installed through
-/// the platform's package manager. Ported from devenv's <c>steps/tools.py</c>, <c>steps/runtimes.py</c>,
-/// <c>tool_manager.py</c> and <c>providers</c>.
+/// the platform's package manager.
 /// </summary>
 /// <param name="host">Where it looks.</param>
 /// <param name="proc">Runs the package manager, uv and fnm.</param>

@@ -11,11 +11,10 @@ using Rig.Core.Text;
 namespace Rig.Cli.Chrome;
 
 /// <summary>
-/// <c>rig chrome-tabs</c>, ported from <c>desktop-manager chrome-tabs</c>. <c>traces</c> runs everywhere, and <c>organise</c>
+/// <c>rig chrome-tabs</c>: <c>traces</c> runs everywhere, and <c>organise</c>
 /// is registered everywhere because the scheduled job runs it on every platform, refusing where there is no driver;
 /// <c>list</c>, <c>rank</c>, <c>prune</c>, <c>group</c>, <c>saved-groups</c>, <c>install</c> and <c>uninstall</c> only where
-/// there is one. Ported from <c>desktop_manager.chrome.traces_cli</c> and <c>desktop_manager.chrome.cli</c>, whose messages
-/// all go to stdout.
+/// there is one. Every message goes to stdout.
 /// </summary>
 /// <param name="environment">Reads an environment variable (<c>LOCALAPPDATA</c> places the traces).</param>
 /// <param name="home">The user's home, where the traces live when <c>LOCALAPPDATA</c> is unset.</param>
@@ -38,7 +37,7 @@ internal sealed class ChromeTabsCommand(
     /// <summary>The group's name, shared with the forwarding row.</summary>
     public const string Name = "chrome-tabs";
 
-    /// <summary>The group's help, as <c>desktop-manager chrome-tabs</c> words it.</summary>
+    /// <summary>The group's help.</summary>
     public const string Description =
         "Chrome tabs via UI Automation: list them, prune GitHub PR tabs and duplicate pages, group by repo, or organise (both, window by window).";
 
@@ -757,7 +756,7 @@ internal sealed class ChromeTabsCommand(
 
     private static string Memory(ChromeTab tab) => tab.MemoryMb is { } mb ? TabRank.FormatSize(mb) : "-";
 
-    /// <summary>A window as <c>list --json</c> prints it: the Python dataclass's fields in order, <c>rect</c> and <c>monitor</c> as arrays.</summary>
+    /// <summary>A window as <c>list --json</c> prints it: the fields in order, <c>rect</c> and <c>monitor</c> as arrays.</summary>
     internal static JsonObject WindowJson(ChromeWindow window, IEnumerable<ChromeTab> tabs) => new()
     {
         ["hwnd"] = window.Handle,

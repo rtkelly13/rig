@@ -280,7 +280,7 @@ public static partial class CheckNames
         return extension.StartsWith('y') && extension.EndsWith("ml", StringComparison.Ordinal) && extension.Length >= 3;
     }
 
-    // The workflow's top-level mapping with string keys only, PyYAML's `on: → True` folded back; null when unreadable.
+    // The workflow's top-level mapping with string keys only, the YAML 1.1 `on: → True` key folded back; null when unreadable.
     private static YamlMap? Load(string file)
     {
         YamlValue? loaded;

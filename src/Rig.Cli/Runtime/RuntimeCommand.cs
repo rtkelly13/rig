@@ -15,8 +15,7 @@ namespace Rig.Cli.Runtime;
 internal sealed record RuntimeHost(string Root, string Checkout, string Home, bool Windows, IProc Proc, TimeProvider Clock);
 
 /// <summary>
-/// <c>rig runtime</c>: the pinned copy of one commit that the scheduled tasks run from. Ported from
-/// <c>desktop_manager.runtime_cli</c>, without rich's colours. Exit codes: 0 success, 1 the install, rollback or
+/// <c>rig runtime</c>: the pinned copy of one commit that the scheduled tasks run from. Exit codes: 0 success, 1 the install, rollback or
 /// status failed, 2 there is no checkout to install from.
 /// </summary>
 /// <param name="host">Where the copies live and which checkout they come from.</param>
@@ -193,7 +192,7 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
         return manager.ReadState().Repo is { Length: > 0 } recorded ? recorded : null;
     }
 
-    // The rig checkout containing `start`: its pyproject.toml names the project, as find_checkout did in Python.
+    // The rig checkout containing `start`: its pyproject.toml names the project.
     internal static string? FindCheckout(string start)
     {
         for (var directory = Path.GetFullPath(start); directory is not null; directory = Path.GetDirectoryName(directory))

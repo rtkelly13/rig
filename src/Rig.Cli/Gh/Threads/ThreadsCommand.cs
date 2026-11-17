@@ -240,7 +240,7 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
 
     private sealed record ResolveArgs(int Pr, string ThreadId, string Sha, string? Note, string? Repo, bool DryRun, bool Json);
 
-    /// <summary>A thread as <c>list --json</c> prints it: the fields in Python's order, without the derived location.</summary>
+    /// <summary>A thread as <c>list --json</c> prints it: without the derived location.</summary>
     private sealed record PrintedThread(
         string Id, string Path, int? Line, bool Outdated, bool Resolved, string Author, string Summary, string Url, string Body)
     {

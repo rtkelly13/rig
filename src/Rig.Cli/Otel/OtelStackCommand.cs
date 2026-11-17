@@ -37,10 +37,10 @@ internal sealed record OtelParts(
     Func<TimeSpan, CancellationToken, Task> Sleep);
 
 /// <summary>
-/// <c>otel-stack</c>: rig's local OpenTelemetry. Ported from <c>rig.otel_stack.cli</c> and <c>cli_clickhouse</c>. The
+/// <c>otel-stack</c>: rig's local OpenTelemetry. The
 /// always-on core collector writes rotated files (7 days); <c>clickhouse</c> is the on-demand half, started by
 /// <c>up</c> and stopped by <c>down</c>, and nothing in the always-on half depends on it. The collector commands
-/// report everything on stdout, the ClickHouse ones their failures on stderr, as the Python did.
+/// report everything on stdout, the ClickHouse ones their failures on stderr.
 /// </summary>
 internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, TextWriter output, TextWriter error)
 {

@@ -14,7 +14,7 @@ internal sealed record VaultHost(Func<string, string?> Environment, string Home)
 
 /// <summary>
 /// <c>rig vault</c>: link health, orphans, metadata and filename maintenance for the Obsidian vault, plus the shared
-/// OpenKnowledge server (<see cref="KnowledgeServerCommand"/>). Ported from <c>rig.obsidian.cli</c>. Everything reports
+/// OpenKnowledge server (<see cref="KnowledgeServerCommand"/>). Everything reports
 /// before it repairs: each <c>--apply</c> command changes nothing without the flag. Maintenance targets the git copy of
 /// the vault (<see cref="VaultPath"/>).
 /// </summary>
@@ -85,7 +85,7 @@ internal sealed class VaultCommand(IProc proc, VaultHost host, KnowledgeServerCo
 
         var json = new Option<bool>("--json") { Description = "Emit machine-readable JSON" };
         var lint = new Command("lint", LintHelp) { json };
-        // The Python discarded the lint's verdict, so findings still exit 0; --json's "ok" carries it.
+        // The lint's verdict is not the exit code, so findings still exit 0; --json's "ok" carries it.
         lint.SetAction(parsed =>
         {
             var report = new VaultLinter(Vault).Report();
@@ -182,7 +182,7 @@ internal sealed class VaultCommand(IProc proc, VaultHost host, KnowledgeServerCo
         return command;
     }
 
-    // A command that only says it is a dry run without --apply, as the Python's link, fix and hub commands did.
+    // A command that only says it is a dry run without --apply.
     private Command Applying(string name, string description, string applyHelp, string what, Func<CancellationToken, Task> apply)
     {
         var flag = new Option<bool>("--apply") { Description = applyHelp };

@@ -10,7 +10,7 @@ namespace Rig.Cli.Estate;
 
 /// <summary>
 /// <c>rig estate apps</c>: installed applications by size, version and when each was last touched, the dormant ones
-/// marked. Ported from the Python <c>estate apps</c>. Read-only.
+/// marked. Read-only.
 /// </summary>
 /// <param name="apps">Scans the bundles on macOS, the Uninstall keys on Windows.</param>
 /// <param name="appDirs">The folders a Mac keeps applications in.</param>

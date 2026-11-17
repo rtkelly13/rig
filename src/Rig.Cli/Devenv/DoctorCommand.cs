@@ -8,8 +8,7 @@ namespace Rig.Cli.Devenv;
 /// <summary>
 /// <c>rig doctor</c> and <c>rig devenv doctor</c>: each devenv area's <c>--check</c>, run in this process through the
 /// root command, plus the toolchain, the repository folder and the Claude settings file. Exits 1 when a required part
-/// is missing or stale. Ported from devenv's <c>doctor/core.py</c>; the toolchain section now reports the .NET SDK
-/// and uv instead of Python, ruff, pyright and pytest.
+/// is missing or stale. The toolchain section reports the .NET SDK and uv.
 /// </summary>
 /// <param name="host">Where it looks: the home folder, the working directory and the PATH.</param>
 /// <param name="proc">Runs git, gh, dotnet and uv.</param>

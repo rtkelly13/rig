@@ -2,7 +2,7 @@
 type: C4 Component
 title: Web control plane — components
 description: The handler, its route modules and the static pages it serves.
-resource: https://github.com/rtkelly13/rig/tree/main/src/rig/web_host
+resource: https://github.com/rtkelly13/rig/tree/main/src/Rig.Web
 tags: [rig, web, c4]
 generated: { by: claude-code/opus-5-5, at: 2026-11-04 }
 ---
@@ -11,13 +11,13 @@ generated: { by: claude-code/opus-5-5, at: 2026-11-04 }
 C4Component
 title Web control plane — components
 Person(ryan, "Ryan")
-Container(dm, "desktop-manager", "Python")
+Container(dm, "rig", ".NET")
 ContainerDb(db, "rig.db", "SQLite", $link="../rig-db.md")
 Container_Ext(studioapi, "Asset Studio API", "image-reconcile serve, :8092", "tools/image-drift: indexes assets/ and temp/variations/")
 
 Container_Boundary(web, "Web control plane") {
-  Component(server, "StudioServer", "ThreadingHTTPServer", "Routes /api/* and static files", $link="request-handler.md")
-  Component(c4, "C4 viewer", "rig.c4_okf", "OKF bundle API and zoom UI")
+  Component(server, "RigWebHost", "ASP.NET Core", "Routes /api/* and static files", $link="request-handler.md")
+  Component(c4, "C4 viewer", "Rig.Web.C4", "OKF bundle API and zoom UI")
   Component(studio, "studio.js", "Vanilla JS", "Estate operations and Asset Studio tabs")
   Component(c4ui, "c4.js", "Vanilla JS, Pele", "Renders diagrams, zooms on click")
 }
@@ -37,7 +37,6 @@ Rel(dm, server, "Starts")
 This experiment. The decision to render in the browser rather than in a Node process is recorded in
 [no Node at runtime](decisions/no-node-at-runtime.md).
 
-## StudioServer
+## RigWebHost
 
-`server.py` sits at the 800-line ratchet cap, which is why the C4 routes live in their own module and the server
-only delegates to them.
+`RigWebHost` hosts the Kestrel server; each route module (`C4Routes`, `OpsRoutes`, `JobsRoutes` and the rest) maps its own endpoints.

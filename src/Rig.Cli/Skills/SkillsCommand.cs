@@ -17,7 +17,7 @@ internal sealed record SkillsHost(string Checkout, string Home, string WorkingDi
 
 /// <summary>
 /// <c>rig skills</c>: keeps the agent CLIs' global skills folders linked to the curated catalog, overlays extra
-/// skills reversibly, and vendors upstream skills. Ported from <c>rig.skills.cli</c>.
+/// skills reversibly, and vendors upstream skills.
 /// </summary>
 /// <param name="host">Where it reads and writes.</param>
 /// <param name="git">Runs git for vendor clones.</param>
@@ -360,7 +360,7 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     private SkillPlaces Places(ParseResult parsed) =>
         new(host.Checkout, parsed.GetValue(home) ?? host.Home, host.WorkingDirectory, host.Windows);
 
-    // A filesystem or registry failure is reported, not thrown: the Python raised it as a traceback and exit 1.
+    // A filesystem or registry failure is reported, not thrown.
     private int Guarded(ParseResult parsed, Func<SkillPlaces, int> run)
     {
         try

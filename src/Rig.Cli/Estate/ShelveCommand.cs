@@ -12,8 +12,7 @@ namespace Rig.Cli.Estate;
 
 /// <summary>
 /// <c>rig estate shelve</c>, <c>unshelve</c> and <c>shelved</c>: set aside a worktree <c>tidy</c> refuses by pushing
-/// what exists only there to a <c>TEMP-SHELVED:</c> side ref, list what is shelved, and bring a shelf back. Ported from
-/// <c>src/rig/estate/shelve_cli.py</c>; the work is in <see cref="Shelver"/> and <see cref="ShelfStore"/>.
+/// what exists only there to a <c>TEMP-SHELVED:</c> side ref, list what is shelved, and bring a shelf back. The work is in <see cref="Shelver"/> and <see cref="ShelfStore"/>.
 /// </summary>
 /// <param name="host">Where it looks; the ledger lives in its home folder.</param>
 /// <param name="git">Runs git.</param>
@@ -62,7 +61,7 @@ internal sealed class ShelveCommand(
 
         var number = value[..^1];
         var dot = number.IndexOf('.', StringComparison.Ordinal);
-        var digits = dot < 0 ? number : number.Remove(dot, 1); // Python's isdigit after dropping one dot.
+        var digits = dot < 0 ? number : number.Remove(dot, 1); // One dot is allowed.
         if (value[^1] is not ('m' or 'h' or 'd') || digits.Length == 0 || !digits.All(char.IsAsciiDigit))
         {
             return null;

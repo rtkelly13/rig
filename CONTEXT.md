@@ -38,10 +38,10 @@ When discovering skills and configurations, `devenv` follows a **Silent Strict P
 ## 3. Engineering Quality Standards
 
 All packages in `shared-utilities` adhere strictly to our foundational standards:
-- **Package Management & Tooling**: 100% standardized on `uv` (ADR 0002).
-- **Type Safety**: Strict standard typing with `pyright` (0 type suppressions, ADR 0003).
-- **Formatting & Linting**: `ruff check` and `ruff format` across all files (ADR 0004).
-- **Testing**: Stack-native `pytest` testing public interfaces via vertical slicing (ADR 0005).
+- **Package Management & Tooling**: the .NET SDK and NuGet for the CLI; `uv` only for the remaining Python tools (ADR 0002).
+- **Type Safety**: Nullable reference types and warnings as errors across the C# solution (ADR 0022).
+- **Formatting & Linting**: `dotnet format` and the Roslyn analyzers across all C# files.
+- **Testing**: xUnit v3 tests of public interfaces via vertical slicing (ADR 0005).
 - **Automation**: GitHub CLI (`gh`) for transport and CI/CD operations (ADR 0006).
 - **Planning**: Spec-First engineering via `/grill-me` and `/domain-modeling` (ADR 0010).
 

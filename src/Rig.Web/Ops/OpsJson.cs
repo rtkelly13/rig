@@ -48,7 +48,7 @@ public sealed class OpsRequestException : Exception
 }
 
 /// <summary>
-/// The ops routes' JSON and request rules, as the Python route helpers wrote them: snake_case keys,
+/// The ops routes' JSON and request rules: snake_case keys,
 /// nulls kept, compact bodies, <c>no-store</c>, and a write accepted only from this dashboard on a loopback address.
 /// </summary>
 public static class OpsJson

@@ -29,7 +29,7 @@ internal sealed record WorkspaceHost(string PersonalDir, string ScopesFile, stri
 internal sealed record GitignoreArgs(string? Root, string? Repo, string? Language, string? Config);
 
 /// <summary>
-/// <c>rig workspace</c>: estate workspace management, ported from the Python <c>workspace</c> CLI.
+/// <c>rig workspace</c>: estate workspace management.
 /// </summary>
 /// <param name="host">Where it looks.</param>
 /// <param name="proc">Runs git and gh.</param>
@@ -42,7 +42,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
     /// <summary>What <c>rig workspace</c> is.</summary>
     public const string Description = "Virtual monorepo estate management for the personal folder.";
 
-    /// <summary>The <c>workspace</c> group with its ported subcommands.</summary>
+    /// <summary>The <c>workspace</c> group with its subcommands.</summary>
     public Command Build()
     {
         var workspace = new Command("workspace", Description);
@@ -96,7 +96,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         return clean;
     }
 
-    // Resolved like the Python's Path.resolve(): a linked personal folder's org folders sit beside its target.
+    // Resolved through links: a linked personal folder's org folders sit beside its target.
     private string EstateDir(string? root) => PathResolution.Resolve(string.IsNullOrEmpty(root) ? host.PersonalDir : root);
 
     // Git hardened under the configured code root (the personal folder's parent), never one derived from --root:
@@ -199,7 +199,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         }
     }
 
-    // The JSON the Python printed, field for field.
+    // The JSON printed, field for field.
     private static JsonObject AuditReport(EstateAuditResult audit) =>
         new()
         {
@@ -364,7 +364,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
 
     internal static string Languages(IReadOnlyList<string> languages) => languages.Count > 0 ? string.Join(", ", languages) : "common";
 
-    // The row the Python's --json printed: the repo, then the result's fields in their declared order.
+    // The row --json prints: the repo, then the result's fields in their declared order.
     internal static JsonObject Row(string name, string path, GitignoreInspection result) =>
         new()
         {
@@ -465,7 +465,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
     private async Task<int> DoctorAsync(string? root, bool refresh, bool json, bool strict, CancellationToken cancellationToken)
     {
         var estate = EstateDir(root);
-        // The Python skipped the scan when the estate folder is missing; the org folders are only looked at beside it.
+        // The scan is skipped when the estate folder is missing; the org folders are only looked at beside it.
         var parents = Directory.Exists(estate) ? EstateScopes.Load(host.ScopesFile).RepoParentDirs(estate) : [];
         var resolver = new RepoResolver(new GhApi(proc), RepoResolver.DefaultCacheFile(host.Home), time);
         var checks = await RepoFolderCheck.EstateAsync(CodeGit, resolver, parents, refresh, cancellationToken).ConfigureAwait(false);
@@ -494,7 +494,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         return strict && !clean ? 1 : 0;
     }
 
-    // The JSON the Python printed, field for field.
+    // The JSON printed, field for field.
     private static JsonObject Report(string estate, bool clean, IReadOnlyList<RepoFolderCheck> checks) =>
         new()
         {

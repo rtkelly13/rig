@@ -25,7 +25,7 @@ internal sealed record WrapupHost(string RigExecutable, IWrapupFollower Follower
 
 /// <summary>
 /// <c>rig estate wrapup</c>: asks idle Orca Claude sessions whether their change is finished, and <c>report</c>, how they answer.
-/// Ported from the Python <c>estate/wrapup_cli.py</c>; the decisions are <see cref="Wrapup"/>'s and <see cref="WrapupRun"/>'s.
+/// The decisions are <see cref="Wrapup"/>'s and <see cref="WrapupRun"/>'s.
 /// </summary>
 /// <param name="host">The estate's folders, the prompt template's home and the working directory.</param>
 /// <param name="git">Reads each worktree and writes its state file.</param>

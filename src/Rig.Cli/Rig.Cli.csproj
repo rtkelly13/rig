@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- The rig front door (ADR 0022). Commands not yet ported forward to the Python CLI (Forwarding/). -->
+  <!-- The rig command line (ADR 0022). -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>Rig.Cli</RootNamespace>

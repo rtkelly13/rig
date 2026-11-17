@@ -7,8 +7,8 @@ using Rig.Core.Flags;
 namespace Rig.Cli.Flags;
 
 /// <summary>
-/// <c>rig flags</c>: list the feature flags and store overrides in <c>rig.db</c>. Ported from <c>rig.flags.cli</c>;
-/// messages, unknown-flag errors included, go to stdout as they did there.
+/// <c>rig flags</c>: list the feature flags and store overrides in <c>rig.db</c>.
+/// Messages, unknown-flag errors included, go to stdout.
 /// </summary>
 /// <param name="store">The stored overrides, read and written here.</param>
 /// <param name="output">Where every message goes.</param>
@@ -36,7 +36,7 @@ internal sealed class FlagsCommand(FlagStore store, TextWriter output, TextWrite
         return flags;
     }
 
-    /// <summary>A group named without one of its verbs is the parser's error, as before.</summary>
+    /// <summary>A group named without one of its verbs is the parser's error.</summary>
     public int Run() => DeclarativeCommand.RequireSubcommand(error);
 
     private static string OnOff(bool value) => value ? "on" : "off";
@@ -54,7 +54,7 @@ internal sealed class FlagsCommand(FlagStore store, TextWriter output, TextWrite
         /// <summary>Where the message goes.</summary>
         protected TextWriter Output { get; } = output;
 
-        /// <summary>Writes what <paramref name="run"/> returned, or the unknown-flag error, and exits as Python did.</summary>
+        /// <summary>Writes what <paramref name="run"/> returned, or the unknown-flag error, and exits with the matching code.</summary>
         protected int Report(Func<string, string> run)
         {
             try

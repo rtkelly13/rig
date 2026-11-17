@@ -15,7 +15,7 @@ internal sealed record PolicyHost(string PolicyPath, string Home, string EstateR
 
 /// <summary>
 /// <c>rig policy</c>: classifies commands against the estate policy, audits the estate's manifest commands, and
-/// projects the policy into agents' native permission files. Ported from <c>rig.policy.cli</c>.
+/// projects the policy into agents' native permission files.
 /// </summary>
 /// <param name="host">Where it reads and writes.</param>
 /// <param name="output">Where reports go.</param>
@@ -78,7 +78,7 @@ internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWrit
 
     private CommandPolicy Load() => CommandPolicy.Load(host.PolicyPath, host.Windows);
 
-    // A malformed or missing policy is reported, not thrown: the Python raised it as a traceback and exit 1.
+    // A malformed or missing policy is reported, not thrown.
     private int Guarded(Func<int> run)
     {
         try

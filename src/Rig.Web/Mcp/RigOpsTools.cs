@@ -49,7 +49,7 @@ public sealed class RigOpsTools(RigOps ops)
     /// <summary>What one job run printed.</summary>
     [McpServerTool(Name = "run_output", ReadOnly = true)]
     [Description("What one job run printed; output is null when the run saved none or it has been pruned.")]
-    [SuppressMessage("Naming", "CA1707", Justification = "The MCP argument is run_id, as the route path and the Python server spell it.")]
+    [SuppressMessage("Naming", "CA1707", Justification = "The MCP argument is run_id, as the route path spells it.")]
     public string RunOutput(
         [Description("The job's name, as list_jobs gives it.")] string job,
         [Description("The run's id, as list_runs gives it.")] string run_id)

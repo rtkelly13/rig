@@ -25,8 +25,7 @@ public sealed record DiskUsageView(string Path, long Total, long Used, long Free
 
 /// <summary>
 /// The ops data the <c>rig web mcp</c> tools answer, built by the same view builders the JSON routes use, so an agent
-/// and the ops pages never disagree. Every source is injectable for tests. Ported from
-/// <c>desktop_manager.web_mcp.OpsTools</c>.
+/// and the ops pages never disagree. Every source is injectable for tests.
 /// </summary>
 public sealed class RigOps : IDisposable
 {

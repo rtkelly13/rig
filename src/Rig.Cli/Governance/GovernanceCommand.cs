@@ -28,7 +28,7 @@ internal sealed record GovernanceHost(string CodeRoot, string Cwd, string Checko
 }
 
 /// <summary>
-/// <c>rig repo-governance</c>: the subcommands ported from <c>src/rig/repo_governance</c>.
+/// <c>rig repo-governance</c>: repository governance: policies, audits, triage and sync.
 /// </summary>
 /// <param name="host">Where it looks.</param>
 /// <param name="proc">Runs git and gh.</param>
@@ -51,7 +51,7 @@ internal sealed partial class GovernanceCommand(
 
     private const string Rubric = "docs/agents/agent-consistency.md";
 
-    /// <summary>The <c>repo-governance</c> group with its ported subcommands.</summary>
+    /// <summary>The <c>repo-governance</c> group with its subcommands.</summary>
     public Command Build()
     {
         var governance = new Command("repo-governance", Description);

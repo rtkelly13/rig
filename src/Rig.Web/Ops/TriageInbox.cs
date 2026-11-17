@@ -16,7 +16,7 @@ public sealed record TriageWatch(string Repo, int Number);
 
 /// <summary>
 /// The persistent triage queue behind <c>/api/triage</c>: local snapshots and history from SQLite, with the agent's
-/// wrap-up verdict attached. Ported from the retired Python triage handler and <c>rig.triage.web</c>.
+/// wrap-up verdict attached.
 /// </summary>
 public sealed class TriageInbox : IDisposable
 {
@@ -90,7 +90,7 @@ public sealed class TriageInbox : IDisposable
         _signals.Dispose();
     }
 
-    // A failed scan leaves every verdict null rather than failing the inbox, as the Python handler did.
+    // A failed scan leaves every verdict null rather than failing the inbox.
     private async Task<IReadOnlyDictionary<AgentKey, AgentSignal>> SignalsAsync(CancellationToken cancellationToken)
     {
         try

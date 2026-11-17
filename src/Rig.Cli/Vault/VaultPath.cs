@@ -40,7 +40,7 @@ internal static class VaultPath
         return string.IsNullOrEmpty(value) ? Path.Combine(home, "Google Drive", "My Drive", "Obsidian", "Vault") : ExpandHome(value, home);
     }
 
-    /// <summary>Expands a leading <c>~</c> to <paramref name="home"/>, as Python's <c>expanduser</c> does.</summary>
+    /// <summary>Expands a leading <c>~</c> to <paramref name="home"/>.</summary>
     public static string ExpandHome(string path, string home)
     {
         ArgumentNullException.ThrowIfNull(path);

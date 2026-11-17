@@ -13,7 +13,7 @@ namespace Rig.Web;
 /// | <c>GET /static/{file}</c> | a file under the templates folder |
 /// | <c>GET /media/assets/{file}</c> | a brand image under the assets folder, for the estate cards |
 ///
-/// Files are sent as Python's <c>StudioServer</c> sent them: the content type its <c>mimetypes</c> gave for each extension
+/// Files are sent with the content type of each extension
 /// the checkout serves (<see cref="ContentTypes"/>), and <c>no-cache, no-store, must-revalidate</c>. A path that is
 /// missing, or that resolves outside its folder, is a 404.
 /// </remarks>
@@ -25,7 +25,7 @@ internal static class FrontendRoutes
     /// <summary>The prefixes the app's client-side router owns.</summary>
     public static readonly IReadOnlyList<string> AppPrefixes = ["/triage", "/repos", "/estate", "/ops"];
 
-    /// <summary>What Python's <c>mimetypes.guess_type</c> answered, by extension; anything else is a byte stream.</summary>
+    /// <summary>The content type by extension; anything else is a byte stream.</summary>
     public static readonly IReadOnlyDictionary<string, string> ContentTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
         [".css"] = "text/css",
@@ -77,7 +77,7 @@ internal static class FrontendRoutes
     }
 
     /// <summary>
-    /// The request target after <paramref name="prefix"/>, undecoded, as Python's handler read it: a static file's name
+    /// The request target after <paramref name="prefix"/>, undecoded: a static file's name
     /// was used as sent, and a brand image's was decoded once. <see cref="Under"/> refuses whatever leaves the folder.
     /// </summary>
     internal static string Rest(HttpContext context, string prefix)
@@ -109,7 +109,7 @@ internal static class FrontendRoutes
             return null;
         }
 
-        // Python resolved links before checking, so a link inside the folder, to a file or to a directory on the way,
+        // Links are resolved before checking, so a link inside the folder, to a file or to a directory on the way,
         // may not lead out of it.
         var realFolder = Real(folder) is { } real ? Path.TrimEndingDirectorySeparator(real) + Path.DirectorySeparatorChar : null;
         return realFolder is not null && Real(target) is { } realTarget && realTarget.StartsWith(realFolder, StringComparison.Ordinal)

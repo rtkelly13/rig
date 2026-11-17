@@ -17,8 +17,7 @@ internal sealed record DatabaseToolHost(string DbPath, string BackupDir, TimePro
 /// <summary>
 /// <c>rig tools</c>: the background service lifecycle (<c>install</c>, <c>ensure</c>, <c>uninstall</c>, <c>status</c>) for
 /// the web dashboard, MCP server, desktop restore and OTel collector, plus the shared SQLite database's
-/// <c>status</c>, <c>migrate</c> and <c>backup</c>. Ported from <c>desktop_manager.web_cli</c>,
-/// <c>desktop_manager.service_installer</c> and <c>rig.db</c>; the legacy <c>rig web</c> subcommands are aliases here.
+/// <c>status</c>, <c>migrate</c> and <c>backup</c>. The <c>rig web</c> subcommands are aliases here.
 /// </summary>
 /// <param name="services">Installs and reports services on this machine's platform.</param>
 /// <param name="database">Where the shared database and its backups live.</param>
@@ -84,7 +83,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         };
     }
 
-    /// <summary>The legacy <c>rig web install|ensure|uninstall|backup|migrate|db-status</c> aliases.</summary>
+    /// <summary>The <c>rig web install|ensure|uninstall|backup|migrate|db-status</c> aliases.</summary>
     public IReadOnlyList<Command> BuildWebAliases()
     {
         var installPreview = PreviewOption();

@@ -13,7 +13,7 @@ public sealed record JobsSite(string Plan, string PersonalRoot, IReadOnlyDiction
     /// <summary>The folder under the app data folder that holds the runtime copies.</summary>
     public const string RuntimeFolder = "runtime";
 
-    /// <summary>Restore's log folder variable, <c>desktop_manager.plan.LOG_DIR_ENV</c>.</summary>
+    /// <summary>Restore's log folder variable.</summary>
     public const string LogDirVariable = "DESKTOP_MANAGER_LOG_DIR";
 
     /// <summary>The trace folder variable, <c>rig.tracing.TRACE_HOME_ENV</c>.</summary>

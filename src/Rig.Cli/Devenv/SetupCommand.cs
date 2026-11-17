@@ -30,8 +30,7 @@ internal sealed record SetupRun(string Mode, bool DryRun, bool Interactive, stri
 
 /// <summary>
 /// <c>rig devenv setup</c>, the onboarding wizard, and <c>rig devenv ai</c>, its first step alone. Each step is a list of rig command lines, run in this process
-/// through the root command, so a step is exactly what typing those commands does. Ported from devenv's
-/// <c>cli.py</c> setup, <c>engine/runner.py</c> and <c>steps/ai_tools</c>.
+/// through the root command, so a step is exactly what typing those commands does.
 /// </summary>
 /// <param name="host">Where it sets up, and where prompts are answered.</param>
 /// <param name="output">Where headers and progress go.</param>
