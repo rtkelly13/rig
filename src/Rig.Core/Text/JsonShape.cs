@@ -65,6 +65,22 @@ public static class JsonShape
             _ => null,
         };
 
+    /// <summary>The string field <paramref name="name"/> of <paramref name="parent"/>, or null when it is absent or not a string.</summary>
+    public static string? Text(JsonElement parent, string name) =>
+        parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+
+    /// <summary>
+    /// The integer field <paramref name="name"/>: a number written without a point or exponent (3.0 and true are not). Long, since
+    /// a Windows NTSTATUS exit such as 3221225477 (0xC0000005) is past int's range.
+    /// </summary>
+    public static long? StrictInteger(JsonElement parent, string name) =>
+        parent.TryGetProperty(name, out var value)
+        && value.ValueKind == JsonValueKind.Number
+        && value.GetRawText().IndexOfAny(['.', 'e', 'E']) < 0
+        && value.TryGetInt64(out var number)
+            ? number
+            : null;
+
     /// <summary>The <paramref name="key"/> field, or null when the parent is not an object or the field is absent.</summary>
     public static JsonNode? Field(JsonObject? parent, string key) =>
         parent is not null && parent.TryGetPropertyValue(key, out var node) ? node : null;
