@@ -582,6 +582,9 @@ jobs:
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pwsh "${{ runner.temp }}/rig-cli/playwright.ps1" install --with-deps chromium
+      - name: Restore the Playwright driver's execute bit
+        # upload-artifact drops file modes.
+        run: chmod +x "${{ runner.temp }}/rig-cli/.playwright/node/linux-x64/node"
       - name: Cross-check the renderers
         run: >-
           dotnet "${{ runner.temp }}/rig-cli/rig.dll" image cross-check
