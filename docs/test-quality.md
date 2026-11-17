@@ -71,7 +71,7 @@ their execution traces. rig's per-test coverage data gives each scenario exactly
 
 | Measure | Tool | Where |
 |:--|:--|:--|
-| Line and branch coverage, ratcheting towards 95% | pytest-cov with `rig.repo_governance.coverage_floor` | Every CI run ([testing.md](testing.md)) |
+| Line and branch coverage (Python: a fixed floor; C#: ratcheting towards 95%) | pytest-cov `fail_under`; `scripts/coverage-floor.cs` | Every CI run ([testing.md](testing.md)) |
 | Lines covered and unique lines for each test | `rig.repo_governance.coverage_by_test` | Every CI run: a job summary plus the `coverage-by-test` artifact |
 | Style and size of each test | `pytest --record-sizes PATH`, joined by `coverage_by_test --sizes PATH` | Every CI run: a table by style and size in the job summary, and `style`/`size` columns in the CSVs |
 | Mutation score | `uv run --with mutmut mutmut run` | On demand |
