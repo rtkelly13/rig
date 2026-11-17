@@ -33,3 +33,5 @@ M:System.Threading.Tasks.Task.Run(System.Func{System.Threading.Tasks.Task},Syste
 M:System.Threading.Tasks.Task.Run``1(System.Func{System.Threading.Tasks.Task{``0}});Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of Task.Run.
 M:System.Threading.Tasks.Task.Run``1(System.Func{System.Threading.Tasks.Task{``0}},System.Threading.CancellationToken);Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of Task.Run.
 P:System.Threading.Tasks.Task.Factory;Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of Task.Factory.StartNew.
+T:System.Threading.Tasks.TaskFactory;Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of a TaskFactory.
+T:System.Threading.Tasks.TaskFactory`1;Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of a TaskFactory.
