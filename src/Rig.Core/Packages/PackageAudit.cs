@@ -48,18 +48,11 @@ public static partial class PackageAudit
         }
 
         var canonical = live.FullName;
-        if (Same(declared, canonical))
-        {
-            report.Add("repo", CheckStatus.Ok, canonical);
-        }
-        else
-        {
-            report.Add(
-                "repo",
-                CheckStatus.Fail,
-                $"managed-projects.json says {declared}; GitHub redirects to {canonical}",
-                $"set {binding.Project}'s repo to git@github.com:{canonical}.git");
-        }
+        report.Add(
+            "repo",
+            Same(declared, canonical)
+                ? (CheckStatus.Ok, canonical, string.Empty)
+                : (CheckStatus.Fail, $"managed-projects.json says {declared}; GitHub redirects to {canonical}", $"set {binding.Project}'s repo to git@github.com:{canonical}.git"));
 
         var release = await fetcher.RegistryReleaseAsync(spec, cancellationToken).ConfigureAwait(false);
         await CheckManifestAsync(report, spec, fetcher, canonical, release, now, cancellationToken).ConfigureAwait(false);
@@ -149,17 +142,14 @@ public static partial class PackageAudit
             return;
         }
 
-        if (PackageVersions.IsAhead(version, release.Version))
-        {
-            var age = release.Published is { } published
-                ? string.Create(CultureInfo.InvariantCulture, $", published {(long)Math.Floor((now - published).TotalDays)} days ago")
-                : string.Empty;
-            report.Add("version", CheckStatus.Warn, $"manifest is at {version}; the registry's latest is {release.Version}{age}");
-        }
-        else
-        {
-            report.Add("version", CheckStatus.Ok, $"{release.Version} published");
-        }
+        var age = release.Published is { } published
+            ? string.Create(CultureInfo.InvariantCulture, $", published {(long)Math.Floor((now - published).TotalDays)} days ago")
+            : string.Empty;
+        report.Add(
+            "version",
+            PackageVersions.IsAhead(version, release.Version)
+                ? (CheckStatus.Warn, $"manifest is at {version}; the registry's latest is {release.Version}{age}", string.Empty)
+                : (CheckStatus.Ok, $"{release.Version} published", string.Empty));
     }
 
     // The file-wide checks; returns the workflow's text for the registry-specific ones.
@@ -175,26 +165,15 @@ public static partial class PackageAudit
         }
 
         var secrets = string.Join(", ", TokenSecretPattern().Matches(text).Select(m => m.Groups[1].Value).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
-        if (!spec.IsOidc)
-        {
-            report.Add(
-                "workflow",
-                CheckStatus.Warn,
-                $"publishes with a long-lived token ({(secrets.Length == 0 ? "secret" : secrets)})",
-                "move to trusted publishing and set auth to oidc");
-        }
-        else if (!IdTokenWritePattern().IsMatch(text))
-        {
-            report.Add("workflow", CheckStatus.Fail, $"{path} lacks `id-token: write`; OIDC publishing cannot work");
-        }
-        else if (secrets.Length > 0)
-        {
-            report.Add("workflow", CheckStatus.Warn, $"OIDC enabled but {secrets} still referenced");
-        }
-        else
-        {
-            report.Add("workflow", CheckStatus.Ok, $"{path} has id-token: write");
-        }
+        report.Add(
+            "workflow",
+            !spec.IsOidc
+                ? (CheckStatus.Warn, $"publishes with a long-lived token ({(secrets.Length == 0 ? "secret" : secrets)})", "move to trusted publishing and set auth to oidc")
+                : !IdTokenWritePattern().IsMatch(text)
+                    ? (CheckStatus.Fail, $"{path} lacks `id-token: write`; OIDC publishing cannot work", string.Empty)
+                    : secrets.Length > 0
+                        ? (CheckStatus.Warn, $"OIDC enabled but {secrets} still referenced", string.Empty)
+                        : (CheckStatus.Ok, $"{path} has id-token: write", string.Empty));
 
         return text;
     }
@@ -231,31 +210,16 @@ public static partial class PackageAudit
         var builtFrom = Slug(provenance.RepositoryUrl);
         var trustFix =
             $"npm trust revoke {spec.Name} --id <id>; npm trust github {spec.Name} --repo {live.FullName} --file {spec.Workflow} --allow-publish{EnvFlag(spec)}";
-        if (provenance.RepositoryId is { } repositoryId && repositoryId != live.Id)
+        var verdict = provenance switch
         {
-            report.Add(
-                "provenance",
-                CheckStatus.Fail,
-                string.Create(CultureInfo.InvariantCulture, $"{release.Version} was built by a different repository ({builtFrom}, id {repositoryId})"));
-        }
-        else if (provenance.OwnerId is { } ownerId && ownerId != live.OwnerId)
-        {
-            report.Add(
-                "provenance",
-                CheckStatus.Fail,
-                string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"repository moved since {release.Version} was published: {builtFrom} -> {live.FullName} (owner id {ownerId} -> {live.OwnerId}); the trust config still names the old owner"),
-                trustFix);
-        }
-        else if (!Same(builtFrom, live.FullName))
-        {
-            report.Add("provenance", CheckStatus.Fail, $"{release.Version} built from {builtFrom}", trustFix);
-        }
-        else
-        {
-            report.Add("provenance", CheckStatus.Ok, $"{release.Version} built from {builtFrom}/{provenance.WorkflowPath}");
-        }
+            { RepositoryId: { } repositoryId } when repositoryId != live.Id =>
+                (CheckStatus.Fail, string.Create(CultureInfo.InvariantCulture, $"{release.Version} was built by a different repository ({builtFrom}, id {repositoryId})"), string.Empty),
+            { OwnerId: { } ownerId } when ownerId != live.OwnerId =>
+                (CheckStatus.Fail, string.Create(CultureInfo.InvariantCulture, $"repository moved since {release.Version} was published: {builtFrom} -> {live.FullName} (owner id {ownerId} -> {live.OwnerId}); the trust config still names the old owner"), trustFix),
+            _ when !Same(builtFrom, live.FullName) => (CheckStatus.Fail, $"{release.Version} built from {builtFrom}", trustFix),
+            _ => (CheckStatus.Ok, $"{release.Version} built from {builtFrom}/{provenance.WorkflowPath}", string.Empty),
+        };
+        report.Add("provenance", verdict);
     }
 
     private static async Task CheckNpmTrustAsync(Report report, PackageSpec spec, IPackageFetcher fetcher, string canonical, CancellationToken cancellationToken)
@@ -304,63 +268,38 @@ public static partial class PackageAudit
 
         var job = workflow.LoginJobs[0];
         var where = $"job {job.Name}";
-        if (!job.IdTokenWrite)
-        {
-            report.Add("login", CheckStatus.Fail, $"{where} runs NuGet/login without `id-token: write`");
-        }
-        else if (job.User is null)
-        {
-            report.Add("login", CheckStatus.Warn, $"{where} sends user {(string.IsNullOrEmpty(job.UserInput) ? "(none)" : job.UserInput)}: no literal to check");
-        }
-        else if (spec.NuGetUser is null)
-        {
-            report.Add("login", CheckStatus.Skip, $"{where} logs in as {job.User}; declare nuget_user to check it");
-        }
-        else if (!Same(job.User, spec.NuGetUser))
-        {
-            report.Add(
-                "login",
-                CheckStatus.Fail,
-                $"{where} logs in as {job.User}; expected {spec.NuGetUser}",
-                $"set NuGet/login's user to {spec.NuGetUser} (the nuget.org profile name, not an email)");
-        }
-        else
-        {
-            report.Add("login", CheckStatus.Ok, $"{where} logs in as {job.User} with id-token: write");
-        }
+        var login = !job.IdTokenWrite
+            ? (CheckStatus.Fail, $"{where} runs NuGet/login without `id-token: write`", string.Empty)
+            : job.User is null
+                ? (CheckStatus.Warn, $"{where} sends user {(string.IsNullOrEmpty(job.UserInput) ? "(none)" : job.UserInput)}: no literal to check", string.Empty)
+                : spec.NuGetUser is null
+                    ? (CheckStatus.Skip, $"{where} logs in as {job.User}; declare nuget_user to check it", string.Empty)
+                    : !Same(job.User, spec.NuGetUser)
+                        ? (CheckStatus.Fail, $"{where} logs in as {job.User}; expected {spec.NuGetUser}", $"set NuGet/login's user to {spec.NuGetUser} (the nuget.org profile name, not an email)")
+                        : (CheckStatus.Ok, $"{where} logs in as {job.User} with id-token: write", string.Empty);
+        report.Add("login", login);
 
-        if (spec.Environment is not null && !Same(job.Environment, spec.Environment))
+        if (spec.Environment is not null)
         {
             report.Add(
                 "environment",
-                CheckStatus.Fail,
-                $"{where} runs in {(string.IsNullOrEmpty(job.Environment) ? "no environment" : job.Environment)}; the policy requires {spec.Environment}");
-        }
-        else if (spec.Environment is not null)
-        {
-            report.Add("environment", CheckStatus.Ok, $"{where} runs in {spec.Environment}");
+                Same(job.Environment, spec.Environment)
+                    ? (CheckStatus.Ok, $"{where} runs in {spec.Environment}", string.Empty)
+                    : (CheckStatus.Fail, $"{where} runs in {(string.IsNullOrEmpty(job.Environment) ? "no environment" : job.Environment)}; the policy requires {spec.Environment}", string.Empty));
         }
         else if (job.Environment is not null)
         {
             report.Add("environment", CheckStatus.Skip, $"{where} runs in {job.Environment}; declare it if the policy requires it");
         }
 
-        if (!job.PushFound)
-        {
-            report.Add("push", CheckStatus.Warn, $"{where} has no `nuget push` after NuGet/login; its key lasts one hour");
-        }
-        else if (job.PushSecrets.Count > 0)
-        {
-            report.Add("push", CheckStatus.Warn, $"push still reads {string.Join(", ", job.PushSecrets)}; use NuGet/login's key");
-        }
-        else if (!job.SkipDuplicate)
-        {
-            report.Add("push", CheckStatus.Warn, "push lacks --skip-duplicate, so a rerun after a partial publish fails");
-        }
-        else
-        {
-            report.Add("push", CheckStatus.Ok, "pushes with NuGet/login's key and --skip-duplicate");
-        }
+        var (pushStatus, pushDetail) = !job.PushFound
+            ? (CheckStatus.Warn, $"{where} has no `nuget push` after NuGet/login; its key lasts one hour")
+            : job.PushSecrets.Count > 0
+                ? (CheckStatus.Warn, $"push still reads {string.Join(", ", job.PushSecrets)}; use NuGet/login's key")
+                : !job.SkipDuplicate
+                    ? (CheckStatus.Warn, "push lacks --skip-duplicate, so a rerun after a partial publish fails")
+                    : (CheckStatus.Ok, "pushes with NuGet/login's key and --skip-duplicate");
+        report.Add("push", pushStatus, pushDetail);
     }
 
     private static void CheckNuGetRelease(Report report, PackageSpec spec, Release? release, string canonical)
@@ -371,14 +310,10 @@ public static partial class PackageAudit
             return;
         }
 
-        if (release.Listed)
-        {
-            report.Add("registry", CheckStatus.Ok, $"{release.Version} is the newest listed version");
-        }
-        else
-        {
-            report.Add("registry", CheckStatus.Warn, $"every version is unlisted (newest {release.Version})");
-        }
+        report.Add(
+            "registry",
+            release.Listed ? CheckStatus.Ok : CheckStatus.Warn,
+            release.Listed ? $"{release.Version} is the newest listed version" : $"every version is unlisted (newest {release.Version})");
 
         CheckNuGetOwners(report, spec, release);
         if (!release.Listed)
@@ -445,18 +380,11 @@ public static partial class PackageAudit
 
         var have = owners.Select(owner => owner.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
         var missing = expected.Where(owner => !have.Contains(owner)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
-        if (missing.Count > 0)
-        {
-            report.Add(
-                "owners",
-                CheckStatus.Warn,
-                $"search lists {live} (as of the last publish); missing {string.Join(", ", missing)}",
-                $"confirm at https://www.nuget.org/packages/{spec.Name}/Manage");
-        }
-        else
-        {
-            report.Add("owners", CheckStatus.Ok, $"search lists {live} (as of the last publish)");
-        }
+        report.Add(
+            "owners",
+            missing.Count > 0
+                ? (CheckStatus.Warn, $"search lists {live} (as of the last publish); missing {string.Join(", ", missing)}", $"confirm at https://www.nuget.org/packages/{spec.Name}/Manage")
+                : (CheckStatus.Ok, $"search lists {live} (as of the last publish)", string.Empty));
     }
 
     private static async Task CheckRunsAsync(Report report, PackageSpec spec, IPackageFetcher fetcher, string canonical, CancellationToken cancellationToken)
@@ -469,18 +397,12 @@ public static partial class PackageAudit
         }
 
         var failed = ConsecutiveFailures(conclusions);
-        if (failed > 0)
-        {
-            report.Add("runs", CheckStatus.Fail, string.Create(CultureInfo.InvariantCulture, $"last {failed} completed publish run(s) failed"));
-        }
-        else if (conclusions.Count > 0)
-        {
-            report.Add("runs", CheckStatus.Ok, $"latest publish run: {conclusions[0]}");
-        }
-        else
-        {
-            report.Add("runs", CheckStatus.Skip, "no completed publish runs");
-        }
+        var (runStatus, runDetail) = failed > 0
+            ? (CheckStatus.Fail, string.Create(CultureInfo.InvariantCulture, $"last {failed} completed publish run(s) failed"))
+            : conclusions.Count > 0
+                ? (CheckStatus.Ok, $"latest publish run: {conclusions[0]}")
+                : (CheckStatus.Skip, "no completed publish runs");
+        report.Add("runs", runStatus, runDetail);
     }
 
     // One checklist per NuGet policy, after its last package, when asked for or when drift suggests it. Bindings that
@@ -559,5 +481,7 @@ public static partial class PackageAudit
         public List<Finding> Findings { get; } = [];
 
         public void Add(string check, CheckStatus status, string detail, string fix = "") => Findings.Add(new(package, check, status, detail, fix));
+
+        public void Add(string check, (CheckStatus Status, string Detail, string Fix) result) => Add(check, result.Status, result.Detail, result.Fix);
     }
 }
