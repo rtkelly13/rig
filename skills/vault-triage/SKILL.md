@@ -3,9 +3,7 @@ name: vault-triage
 description: Turn captured links in the ledger into curated vault notes - deciding keep, hub or drop, and writing notes that follow the vault's conventions. Use when promoting captures, filing resources, creating hub notes, or asked to work the backlog.
 ---
 
-> **Where to run these.** Vault scripts live in `~/code/personal/obsidian-vault`; `cd` there first, or use
-> the absolute paths below. This skill is installed globally by `devenv`, so it is
-> available from any repo — which means the cwd is not guaranteed to be the vault.
+> **Load `vault-reference` first** for paths, repo rules and provenance.
 
 # Triage
 
@@ -17,24 +15,20 @@ about not faking the decision when it hasn't been made.
 Triage begins with two commands, not with reading links:
 
 ```bash
-python3 ~/code/personal/obsidian-vault/scripts/okf-sync.py      # refresh repo indexes + data/starred.tsv
-python3 ~/code/personal/obsidian-vault/scripts/triage-rank.py --apply
+uv run --no-project ~/code/personal/obsidian-vault/scripts/okf-sync.py      # refresh repo indexes + data/starred.tsv
+uv run --no-project ~/code/personal/obsidian-vault/scripts/triage-rank.py --apply
 ```
 
 `triage-rank` marks every ledger row that is **also starred on GitHub**. A link dropped
 in Slack *and* starred carries two independent signals of intent.
 
-**A starred link is never a drop.** On the first backfill this caught four links marked
-`drop` for being "outside your domains" that had in fact been starred — the star is
-evidence of a decision already made, and it outranks a guess about relevance. Where a
-star contradicts a verdict, the star wins and the note says so.
-
-A starred link sitting at `hub` is a promotion candidate worth a second look, not an
-automatic keep.
+**A starred link is never a drop.** The first backfill caught four starred links marked
+`drop` as "outside your domains": the star is a decision already made, and it outranks a
+guess. A starred link at `hub` is worth a second look, not an automatic keep.
 
 ## Verdicts
 
-Record every ledger row in `data/slack_backfill_triage.tsv` as
+Record every ledger row in `data/slack_capture_triage_<from>_<to>.tsv` as
 `url<TAB>cluster<TAB>verdict<TAB>destination`:
 
 - `keep` — earns its own note
@@ -47,7 +41,8 @@ a rejected link resurfacing next quarter. A ledger of only the keeps is half a m
 ## The rule that matters
 
 Write prose only where the content is actually known. If the page hasn't been read, set
-`status: unread` and leave the slots empty.
+`status: unread` and leave the slots empty. For X Articles and long posts, the full text is
+in the capture's resolved JSON: summarise from that.
 
 The retired pipeline pasted raw crawl output under `## Summary` — mermaid source and all.
 Those 70 notes are the worst in the vault, identifiable by `staging_id:` in frontmatter,
@@ -72,6 +67,10 @@ Dedupe targets against the vault *and* against each other before filing, since t
 repo gets tweeted repeatedly.
 
 Typical split on real data: roughly 40% T1, 35% T2, 25% T3.
+
+Where an image is the point (a diagram, a TIL card), save it beside the entry: the URL from
+the resolved JSON with `?name=orig`, to `Vault/Attachments/x/<status-id>-<n>.<ext>`, embedded as
+`![[<status-id>-<n>.<ext>|480]]` with the same extension. Posts get deleted; the file stays.
 
 ## Grouping
 
@@ -101,22 +100,24 @@ real content is nested.
 | Management, communication | `Resources/Leadership/` |
 | Seniority, role progression | `Resources/Career/` |
 
-The taxonomy moves. Captures drifted heavily toward design through 2026 and earned a new
-`Resources/Design` category — propose a new one when a cluster outgrows its home rather
-than forcing links into a folder that no longer fits.
+The taxonomy moves: design captures earned `Resources/Design` in 2026. Propose a new
+category when a cluster outgrows its home.
 
 ## Note shapes
 
 ```markdown
 ---
 type: resource
-status: active        # `unread` when the page has not been read
+status: active
 tags:
 - engineering
 source: <url>
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-curation_source: slack_backfill
+curation_source: slack_capture
+generated:
+  by: agent:<model-id>
+  at: YYYY-MM-DD
 ---
 
 # Title
@@ -137,8 +138,6 @@ Hub note — `type: resource-hub`, with `## Subtopics`, `## Keepers` (wikilinks)
 
 ## Mechanics
 
-Create notes with **absolute paths**. A relative `../` from inside `Resources/` resolves
-to the vault root and silently creates a stray top-level folder — the same path-join bug
-that produced `Resources/EngineeringEngineering`.
-
-Run `vault-health` after any batch promotion.
+Create notes with **absolute paths**: a relative `../` from inside `Resources/` silently
+makes a stray top-level folder (hence `Resources/EngineeringEngineering`). Run
+`vault-health` after a batch, and lint as `vault-reference` describes before pushing.
