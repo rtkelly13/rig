@@ -312,19 +312,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             lines.Add($"Shelved-PR: #{number.ToString(CultureInfo.InvariantCulture)}");
         }
 
-        lines.Add($"Shelved-At: {IsoSeconds(at)}");
+        lines.Add($"Shelved-At: {IsoTime.Seconds(at)}");
         lines.Add("Shelved-By: estate shelve");
         return string.Join('\n', lines) + "\n";
     }
-
-    /// <summary>ISO 8601 to the second.</summary>
-    public static string IsoSeconds(DateTimeOffset at) => at.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
-
-    /// <summary>ISO 8601; microseconds shown only when there are any.</summary>
-    public static string Iso(DateTimeOffset at) =>
-        at.Ticks % TimeSpan.TicksPerSecond / 10 == 0
-            ? IsoSeconds(at)
-            : at.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffffzzz", CultureInfo.InvariantCulture);
 
     // ------------------------------------------------------------------ inspection
 
@@ -1203,7 +1194,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             return result;
         }
 
-        var line = new JsonObject { ["at"] = Iso(clock.GetUtcNow()) };
+        var line = new JsonObject { ["at"] = IsoTime.Format(clock.GetUtcNow()) };
         foreach (var (key, value) in result.ToJson())
         {
             line[key] = value?.DeepClone();

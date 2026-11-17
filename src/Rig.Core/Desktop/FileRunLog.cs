@@ -1,3 +1,4 @@
+using Rig.Core.Text;
 using System.Globalization;
 using System.Text;
 
@@ -37,7 +38,7 @@ public sealed class FileRunLog : IRunLog
     /// <inheritdoc/>
     public void Log(string message)
     {
-        var line = $"[{_time.GetLocalNow().ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture)}] {message}";
+        var line = $"[{IsoTime.Seconds(_time.GetLocalNow())}] {message}";
         Directory.CreateDirectory(Path.GetDirectoryName(RunPath)!);
         _lines.Add(line);
         File.AppendAllText(RunPath, line + "\n", Utf8);

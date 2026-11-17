@@ -339,7 +339,7 @@ public static partial class ChromeTraces
             ["id"] = run.Id,
             ["trace_id"] = run.Root.TraceId,
             ["span_id"] = run.Root.SpanId,
-            ["started"] = run.Started(zone).ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture),
+            ["started"] = IsoTime.Seconds(run.Started(zone)),
             ["seconds"] = Math.Round(run.Root.Seconds, 2, MidpointRounding.ToEven),
             ["trigger"] = run.Trigger,
             ["unattended"] = run.Unattended,
