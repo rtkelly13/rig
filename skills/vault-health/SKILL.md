@@ -3,9 +3,7 @@ name: vault-health
 description: Check and repair vault integrity - broken wikilinks, orphans, frontmatter, filenames, duplicate notes. Use after batch promotion, before a cleanup pass, or when asked about the state of the vault.
 ---
 
-> **Load `vault-reference` first.** It holds what every vault skill shares: where the
-> git and Drive copies live, how to work in the vault repo, the frontmatter and provenance
-> rules CI enforces, and how to lint and land a vault PR. This skill assumes it.
+> **Load `vault-reference` first** for paths, repo rules and provenance.
 
 # Health
 
@@ -60,8 +58,6 @@ not the goal; a vault you can navigate is.
 
 ## Before adding machinery
 
-This is ~2,900 lines doing one job, inside a repo that already exists. It was 18,246
-lines of source and 33,056 of tests doing thirteen, in a repo of its own, and produced
-70 notes in its life. If a new rule is worth having, add it to
-`src/Rig.Core/Vault/LintRules.cs` and `VaultLinter.cs`. Before adding anything larger, ask what
-decision it actually makes for you.
+The previous system was 51,000 lines in its own repo and produced 70 notes. A new rule
+goes in `src/Rig.Core/Vault/LintRules.cs` and `VaultLinter.cs`; before adding anything
+larger, ask what decision it makes for you.

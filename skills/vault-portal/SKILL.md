@@ -3,9 +3,7 @@ name: vault-portal
 description: Treat the vault as a documentation portal - OKF concept notes, repository entries, starred-repo indexes, and agent-vs-human provenance. Use when adding documentation for a repo, refreshing the repo indexes, attributing a note, or asked how the vault is structured as a portal.
 ---
 
-> **Load `vault-reference` first.** It holds what every vault skill shares: where the
-> git and Drive copies live, how to work in the vault repo, the frontmatter and provenance
-> rules CI enforces, and how to lint and land a vault PR. This skill assumes it.
+> **Load `vault-reference` first** for paths, repo rules and provenance.
 
 # The vault as a documentation portal
 
@@ -18,18 +16,9 @@ Spec: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPE
 
 ## Provenance — the part that matters most
 
-Every note says who wrote it, using OKF's actor convention:
-
-```yaml
-generated:
-  by: human:rtkelly13          # a person
-  by: agent:claude-opus-5-5    # an agent — agent:<model-id>; never a bare model id
-  by: process:bookmark-import  # automation
-```
-
-**Absent means unattributed, never "human".** 917 notes are legitimately unattributed —
-created in 2026 with no evidence either way — and guessing would make the field worthless.
-When you touch such a note, set it to what you actually know.
+Every note says who wrote it in `generated.by`; the actor forms and the evidence rule are
+in `vault-reference`. About 900 notes are legitimately unattributed, and guessing would make
+the field worthless.
 
 Add `verified:` when a person has checked agent-written content:
 
@@ -51,21 +40,14 @@ uv run --no-project ~/code/personal/obsidian-vault/scripts/okf-provenance.py --a
 
 ## OKF frontmatter
 
-OKF itself requires only `type` and keeps no registry of type names, but the vault's CI is
-stricter: the allowed `type` and `status` values and the required fields are listed in
-`vault-reference`. Generated bundles also write `Repository` and `Reference`. `Repository` is
-not in CI's list, so a PR that touches those notes fails OKF003.
+`type`, `status`, `created` and `generated` are in `vault-reference`; generated bundles'
+`Repository` type is not accepted. The other OKF fields:
 
 | Field | Use |
 |---|---|
-| `type` | **required** — the kind of concept |
 | `title`, `description` | display name, one-sentence summary |
 | `resource` | URI of the thing the note is about |
-| `tags` | list of strings |
 | `sources` | where the content came from: `- resource:` plus optional `title`, `author` |
-| `generated` | `{ by, at }` — see above |
-| `verified` | `{ by, at }` — a person checked it |
-| `status` | required by the vault's CI; values in `vault-reference` |
 | `stale_after` | ISO date after which content should be distrusted |
 
 `index.md` and `log.md` are reserved names: a directory listing and a dated update
@@ -81,12 +63,9 @@ uv run --no-project ~/code/personal/obsidian-vault/scripts/okf-sync.py --dry-run
 uv run --no-project ~/code/personal/obsidian-vault/scripts/okf-sync.py
 ```
 
-Run as the first step of a triage pass, not on a schedule — see `vault-triage`. The sync
-also writes `data/starred.tsv`, which `scripts/triage-rank.py` cross-references to rank
-captures. Refreshing indexes and triaging captures are the same activity, so they happen
-together rather than drifting apart on separate cadences.
-
-Uses your local `gh` credentials. Nothing scheduled, no stored token.
+Run it as the first step of a triage pass, not on a schedule: it also writes
+`data/starred.tsv`, which `triage-rank` uses. It uses your local `gh` credentials; no
+stored token.
 
 **The sync owns the frontmatter and the block between `<!-- okf:begin -->` and
 `<!-- okf:end -->`. Everything else in the file is yours and survives every re-run.**
