@@ -58,10 +58,6 @@ type-ratchet = { workspace = true }
 [tool.hatch.build.targets.wheel]
 packages = ["src/desktop_manager", "src/rig"]
 
-[tool.hatch.build.targets.wheel.force-include]
-# The installed chrome-tabs snapshot has no checkout; site_hosts falls back to this copy.
-"config/chrome-site-groups.json" = "desktop_manager/chrome/chrome-site-groups.json"
-
 [tool.pytest.ini_options]
 testpaths = ["tests", "packages/type-ratchet/tests"]
 pythonpath = ["src"]
@@ -127,7 +123,6 @@ name = "win32 adapters do not import features"
 type = "forbidden"
 source_modules = ["desktop_manager.win32"]
 forbidden_modules = [
-    "desktop_manager.chrome",
     "desktop_manager.commands",
     "desktop_manager.handlers",
     "desktop_manager.jobs",
@@ -181,11 +176,6 @@ ignore = [
 "**/windows/**" = ["TID251"]
 "src/desktop_manager/win32/*.py" = ["TID251"]
 "src/desktop_manager/display_guard.py" = ["TID251"]
-"src/desktop_manager/chrome/desktops.py" = ["TID251"]
-"src/desktop_manager/chrome/presence.py" = ["TID251"]
-"src/desktop_manager/chrome/uia.py" = ["TID251"]
-"src/desktop_manager/chrome/uia_core.py" = ["TID251"]
-"src/desktop_manager/chrome/window_info.py" = ["TID251"]
 "src/desktop_manager/processes.py" = ["TID251"]
 "src/desktop_manager/terminal_init.py" = ["TID251"]
 # subprocess.* is banned (TID251, plan item B10, #30). Permanent owners:
@@ -201,13 +191,10 @@ ignore = [
 "src/desktop_manager/launching.py" = ["TID251"]
 "src/desktop_manager/restore_fallbacks.py" = ["TID251"]
 "src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
-# Landed on main while this stack was open; same G4 migration.
-"src/desktop_manager/chrome/drivers/macos_jxa.py" = ["TID251"]
 # Temporary: tests that build real temp repos with raw git. F2 moves them onto the
 # shared real-git fixture in tests/fakes/; G4 deletes whatever is left.
 "tests/desktop_manager/test_runtime.py" = ["TID251"]
 "tests/test_estate.py" = ["TID251"]
-"tests/desktop_manager/test_chrome_site_hosts.py" = ["TID251"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "_winapi".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
@@ -293,9 +280,6 @@ omit = [
     # Win32 and UI Automation adapters: they only drive the live Windows desktop, so the Linux
     # job cannot run them and they would sit in its denominator as permanent misses. Keep logic
     # out of them; anything testable belongs in a module that stays measured here.
-    "src/desktop_manager/chrome/input_windows.py",
-    "src/desktop_manager/chrome/uia.py",
-    "src/desktop_manager/chrome/uia_core.py",
     "src/desktop_manager/win32/*",
     # Superseded by C# rig desktop workspace (#243, ADR 0022):
     "src/desktop_manager/desktop_port.py",
@@ -353,9 +337,7 @@ disable = ["fake-location", "patching"]
 # Today's test files that define fakes outside tests/fakes/ or patch modules (F3, #411). Lists only
 # shrink: move a fake into tests/fakes/, or replace a patch with a fake passed through a seam.
 fake-location-allow = [
-    "tests/desktop_manager/fake_chrome.py",
     "tests/desktop_manager/integration/test_workspace_restore.py",
-    "tests/desktop_manager/test_chrome_macos_grouping.py",
     "tests/desktop_manager/test_display_guard.py",
     "tests/desktop_manager/test_runtime.py",
     "tests/desktop_manager/test_windows_workspace_unit.py",
@@ -374,11 +356,6 @@ patching-allow = [
     "tests/desktop_manager/integration/test_workspace_status.py",
     "tests/desktop_manager/test_app_updates.py",
     "tests/desktop_manager/test_appx_resolution_cache.py",
-    "tests/desktop_manager/test_chrome_macos_actions.py",
-    "tests/desktop_manager/test_chrome_macos_grouping.py",
-    "tests/desktop_manager/test_chrome_macos_reader.py",
-    "tests/desktop_manager/test_chrome_presence.py",
-    "tests/desktop_manager/test_chrome_site_hosts.py",
     "tests/desktop_manager/test_clean_launch_environment.py",
     "tests/desktop_manager/test_jobs_history.py",
     "tests/desktop_manager/test_monitor_shortfall.py",
@@ -408,7 +385,6 @@ boundary-modules = [
 str-key-receivers = ["self.headers", "handler.headers"]
 loose-dict-aliases = ["JsonObject"]
 loose-dict-allow = [
-    "src/desktop_manager/chrome/traces.py",
     "src/desktop_manager/models.py",
     "src/rig/estate/discovery.py",
     "src/rig/tracing.py",
