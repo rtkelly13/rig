@@ -1,8 +1,8 @@
-# ADR 0024: The Image Pipeline in C# Uses ImageSharp and Playwright
+# ADR 0024: The Image Pipeline in C# Has Two Renderers That Cross-Check Each Other
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Applies to:** `image_drift` (the brand-asset pipeline), rig issues #85 and #317
-- **Proposes superseding:** item 7 of [ADR 0022](0022-csharp-is-rigs-primary-language.md) (`image_drift` stays Python)
+- **Supersedes:** item 7 of [ADR 0022](0022-csharp-is-rigs-primary-language.md) (`image_drift` stays Python)
 
 ## Context
 
@@ -64,7 +64,60 @@ Run on macOS arm64 with the flag mapping in `Program.cs`, 0.8 to 0.9 s per image
 Python binding's apart from the one-line `Generator:` comment, for both projects. 1.0.0-alpha.4 has a different
 flag set and a different output, so it is not a drop-in. Windows x64 execution was not measured (hash only).
 
-## Recommendation
+## Decision
+
+The owner decided to support **both** renderers and use each to cross-check the other.
+
+1. **A renderer port with two implementations.** `ISvgRenderer` (the name the harness uses) renders an SVG to
+   straight-alpha RGBA at a given size. One implementation drives Chromium through Microsoft.Playwright (stack 1's
+   renderer); the other draws with Svg.Skia (stacks 2 and 3's renderer). Renderers are interchangeable behind the
+   port.
+2. **ImageSharp does all raster work on both**: decode, the `load_normalised` resize, metrics input, PNG encode and
+   ICO. Stack 3 beat stack 2 on parity with Pillow (composite error 0.042 vs 0.46), so SkiaSharp is used only
+   inside Svg.Skia and never for resizing or metrics.
+3. **Chromium is authoritative** for promotion and for production cuts, because it is the only renderer that keeps
+   byte-identity with today's output (0 differing pixels on all 23 renders). It needs a pinned Chromium revision
+   in CI.
+4. **Svg.Skia is the fast, browser-free renderer** for previews, the gallery and local runs without Chromium. It is
+   about 6 times faster warm and about 5 times faster cold, and needs no browser download. Its output never decides
+   a promotion or writes a production cut.
+5. **Cross-check.** A command (and a CI job) renders every master and every production cut with both renderers and
+   reports per file: max abs, mean abs, differing-pixel %, the metric deltas, and whether any promotion verdict
+   would differ between the renderers. A divergence above the thresholds below means an SVG feature one renderer
+   mishandles (filters, gradients and opacity are where Svg.Skia diverges); it is reported by file, never silently
+   averaged or tolerated. The report is a typed, per-file document of values and thresholds, shaped so that it can
+   later be emitted as Diffra evidence (rtkelly-labs/Diffra). Nothing depends on Diffra now.
+6. **The experiment folder is deleted by the port's final slice.** `experiments/image-stack-eval/` is the
+   measurement record and the seed code (`Metrics.cs`, `Stacks.cs`, `IcoFile.cs`); once the port has absorbed it,
+   git is the record and the folder goes (see [ADR 0022](0022-csharp-is-rigs-primary-language.md) policy of deleting
+   replaced code).
+7. **vtracer stays a pinned process**, release 0.6.4 (checksums above).
+
+This supersedes item 7 of [ADR 0022](0022-csharp-is-rigs-primary-language.md): `image_drift` moves to C#.
+
+### Divergence thresholds (Svg.Skia against Chromium, both through ImageSharp)
+
+Set from the measured worst cases (stack 3 rows, 23 renders, 2 projects) with headroom. Exceeding any one is a
+reported divergence; the verdict-flip row is a hard failure.
+
+| Quantity | Measured worst | Threshold |
+|---|---:|---:|
+| Mean abs difference (0..255) | 0.60 | 1.0 |
+| Differing pixels | 14.2% | 20% |
+| Max abs difference | 76 (parquet at 180 px) | reported, not gated: single anti-aliased edge pixels reach it |
+| RMSE | 0.021 pp | 0.1 pp |
+| SSIM | 0.00032 | 0.001 |
+| Composite | 0.042 pp | 0.1 pp |
+| Promotion verdict | 0 of 5 flipped | any flip fails |
+
+These are proposals from a two-project sample on macOS arm64. They are recorded here, and revised by amending this
+ADR, when Windows and Linux Svg.Skia runs exist. The mipmap and cubic SkiaSharp resize variants are not used and
+their larger errors do not apply.
+
+## Recommendation (superseded by the Decision above)
+
+The evaluation's own ranking, kept for the record: stack 1, ImageSharp + Microsoft.Playwright, is the only
+pixel-identical stack. The reasons stand and are why Chromium is authoritative.
 
 **Stack 1: ImageSharp + Microsoft.Playwright.**
 
@@ -104,7 +157,11 @@ If the owner accepts this, ADR 0022 item 7 is superseded for `image_drift`. vtra
 
 ## Consequences
 
-- If accepted: port `image_drift` in stages, metrics first (the C# metrics in the harness already match Python to
-  the figures above), then the renderer, with `Metrics.cs`, `Stacks.cs` and `IcoFile.cs` as the starting point.
+- Port `image_drift` in stages, metrics first (the C# metrics in the harness already match Python to the figures
+  above), then the renderer port and both implementations, then the cross-check command and its CI job, with
+  `Metrics.cs`, `Stacks.cs` and `IcoFile.cs` as the starting point. The final slice deletes
+  `experiments/image-stack-eval/`.
 - Needs a pinned Chromium revision in CI so that cuts are reproducible across machines.
-- If rejected, ADR 0022 item 7 stands and the experiment stays as the record.
+- The cross-check job is the standing detector for SVG features Svg.Skia mishandles; the stale committed cuts and
+  the ICO resize rounding (findings above) are fixed as part of the port, not hidden by the thresholds.
+- Windows and Linux Svg.Skia runs are still owed (see above); thresholds are amended once they exist.
