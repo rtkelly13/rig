@@ -117,9 +117,7 @@ so add one only when the loose dict is the module's job: building JSON output fr
 file another tool owns (Claude `settings.json`, the opencode config, Obsidian plugin data) where unknown keys must
 survive. If only one function in a module needs it, move that function to a serializer module rather than listing
 the module.
-
-`uv run ratchet` is the `type-ratchet` package in `packages/type-ratchet`; see its
-[README](../packages/type-ratchet/README.md) for every rule and config key.
+`uv run ratchet` was the `type-ratchet` package, deleted in #285.
 
 There are no baselines. A new occurrence of a gated rule fails CI in the PR that adds it, so fix it there rather than
 suppressing it.
