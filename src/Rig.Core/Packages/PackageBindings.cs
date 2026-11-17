@@ -60,15 +60,7 @@ public static class PackageBindings
     public static IReadOnlyList<PackageBinding> Load(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
-        JsonNode? root;
-        try
-        {
-            root = JsonNode.Parse(File.ReadAllText(path));
-        }
-        catch (JsonException e)
-        {
-            throw new InvalidDataException($"{path}: {e.Message}", e);
-        }
+        var root = JsonFile.Parse(path);
 
         if (root is not JsonObject document)
         {

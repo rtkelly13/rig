@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Text;
 using Rig.Core.Workspace;
@@ -74,15 +73,7 @@ public sealed record EstateCatalogue(IReadOnlyList<EstateProject> Projects)
     private static Dictionary<string, (string? Color, string? Icon)> Badges(string path)
     {
         var found = new Dictionary<string, (string? Color, string? Icon)>(StringComparer.Ordinal);
-        JsonNode? root;
-        try
-        {
-            root = File.Exists(path) ? JsonNode.Parse(File.ReadAllText(path)) : null;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return found;
-        }
+        var root = JsonFile.TryParse(path);
 
         if (root is not JsonObject config || config["repos"] is not JsonObject byName)
         {

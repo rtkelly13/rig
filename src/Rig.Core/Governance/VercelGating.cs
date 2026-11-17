@@ -201,15 +201,7 @@ public sealed class VercelGating(IVercelApi api, Git git)
     /// </summary>
     public static (IReadOnlyList<string>? Allow, IReadOnlyList<string>? Deny) DeploymentMap(string vercelJson)
     {
-        JsonNode? root;
-        try
-        {
-            root = JsonNode.Parse(File.ReadAllText(vercelJson));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return (null, null);
-        }
+        var root = JsonFile.TryParse(vercelJson);
 
         var enabled = root is JsonObject file && file["git"] is JsonObject gitConfig ? gitConfig["deploymentEnabled"] : null;
         return enabled switch
