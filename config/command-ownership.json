@@ -336,7 +336,6 @@
     {"Id": "mcp:trim_candidates","Capability": "surface:mcp:trim_candidates","Owner": "mcp:trim_candidates","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "module:desktop_manager.jobs.scheduled","Capability": "surface:module:desktop_manager.jobs.scheduled","Owner": "module:desktop_manager.jobs.scheduled","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "module:desktop_manager.web_upstream","Capability": "surface:module:desktop_manager.web_upstream","Owner": "module:desktop_manager.web_upstream","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "module:rig.platform_table","Capability": "surface:module:rig.platform_table","Owner": "module:rig.platform_table","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "module:rig.repo_governance.coverage_by_test","Capability": "surface:module:rig.repo_governance.coverage_by_test","Owner": "module:rig.repo_governance.coverage_by_test","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "module:rig.repo_governance.coverage_floor","Capability": "surface:module:rig.repo_governance.coverage_floor","Owner": "module:rig.repo_governance.coverage_floor","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "module:rig.repo_governance.generate_coverage_comment","Capability": "surface:module:rig.repo_governance.generate_coverage_comment","Owner": "module:rig.repo_governance.generate_coverage_comment","Platforms": ["linux","macos","windows"],"AliasTo": null},
@@ -525,7 +524,8 @@
     "py:desktop-manager runtime install|desktop_manager.runtime_forward:install",
     "py:desktop-manager runtime rollback|desktop_manager.runtime_forward:rollback",
     "py:desktop-manager runtime status|desktop_manager.runtime_forward:status",
-    "script:desktop-manager=desktop_manager.cli:main"
+    "script:desktop-manager=desktop_manager.cli:main",
+    "module:rig.platform_table"
   ],
   "RetiredFiles": [
     "src/rig/c4_okf/cli.py",
@@ -678,6 +678,10 @@
     "src/desktop_manager/runtime_forward.py",
     "tests/desktop_manager/test_cli_pure_helpers.py",
     "tests/desktop_manager/test_jobs_forward.py",
-    "tests/desktop_manager/test_runtime_forward.py"
+    "tests/desktop_manager/test_runtime_forward.py",
+    "src/rig/platforms.py",
+    "src/rig/platform_table.py",
+    "tests/test_platforms.py",
+    "tests/test_entrypoints_portable.py"
   ]
 }

@@ -192,14 +192,6 @@ def pytest_collection_modifyitems(config, items) -> None:
 
 
 @pytest.fixture
-def as_windows(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Pass ``@requires(Platform.WINDOWS)`` gates for CLI tests whose Windows calls are faked."""
-    from rig.platforms import Platform
-
-    monkeypatch.setattr("rig.platforms.get_current_platform", lambda: Platform.WINDOWS)
-
-
-@pytest.fixture
 def work_scope() -> tuple[str, ...]:
     """Give this machine a work scope: `acme/` and `workspace/` under the code root.
 

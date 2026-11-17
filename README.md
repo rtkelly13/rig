@@ -81,19 +81,6 @@ uv run --project tools/image-drift image-reconcile serve
 See [`docs/brand-assets/README.md`](docs/brand-assets/README.md) for the governing model, thresholds, and the
 promotion gate that protects the traced masters.
 
-## Platform Support
-
-Commands are portable unless listed below. Off their platform, the listed ones exit 1
-with `<command> is only available on <platform>.`, and `--help` tags them `[Windows only]`. The table is generated from the `requires` markers in the code;
-regenerate it with `uv run python -m rig.platform_table --write`.
-
-<!-- platform-table:start -->
-
-| Command | Platforms |
-| --- | --- |
-
-<!-- platform-table:end -->
-
 ## Development
 
 ```bash
