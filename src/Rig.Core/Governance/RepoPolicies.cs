@@ -504,16 +504,16 @@ public sealed class RepoPolicies
         return claudeMd is not ("symlink" or "absent" or "any")
             ? throw Bad(source, $"claude_md '{claudeMd}' is not one of symlink, absent, any")
             : new()
-        {
-            MaxLines = hygiene.MaxLines ?? defaults.MaxLines,
-            ClaudeMd = claudeMd,
-            BespokeAgentFiles = hygiene.BespokeAgentFiles ?? defaults.BespokeAgentFiles,
-            Require = hygiene.Require ?? defaults.Require,
-            CheckPaths = hygiene.CheckPaths ?? defaults.CheckPaths,
-            ReportOnly = hygiene.ReportOnly ?? defaults.ReportOnly,
-            DocsIndexMinFiles = hygiene.DocsIndexMinFiles ?? defaults.DocsIndexMinFiles,
-            MaxCodeBlockLines = hygiene.MaxCodeBlockLines ?? defaults.MaxCodeBlockLines,
-        };
+            {
+                MaxLines = hygiene.MaxLines ?? defaults.MaxLines,
+                ClaudeMd = claudeMd,
+                BespokeAgentFiles = hygiene.BespokeAgentFiles ?? defaults.BespokeAgentFiles,
+                Require = hygiene.Require ?? defaults.Require,
+                CheckPaths = hygiene.CheckPaths ?? defaults.CheckPaths,
+                ReportOnly = hygiene.ReportOnly ?? defaults.ReportOnly,
+                DocsIndexMinFiles = hygiene.DocsIndexMinFiles ?? defaults.DocsIndexMinFiles,
+                MaxCodeBlockLines = hygiene.MaxCodeBlockLines ?? defaults.MaxCodeBlockLines,
+            };
     }
 
     private static RepoSelectionRules? Selection(RepoSelectionConfig? selection) =>
