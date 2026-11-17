@@ -16,8 +16,8 @@ namespace Rig.Cli.Web;
 /// <param name="DbPath">The shared SQLite database.</param>
 /// <param name="CodeRoot">The code root whose <c>personal/</c> checkouts the estate graph reads.</param>
 /// <param name="PythonRoutes">
-/// Python web routes already listening, fronted instead of starting a child: the browser tests serve them in-process
-/// with faked state (<c>tests/rig_web_host.py</c>). Null starts the child, as a normal launch does.
+/// Python web routes already listening, fronted instead of starting a child: a test can serve them in-process
+/// with faked state. Null starts the child, as a normal launch does.
 /// </param>
 internal sealed record WebPlaces(string Checkout, string RegistryFile, string WorkingDirectory, string DbPath, string CodeRoot, Uri? PythonRoutes = null)
 {
