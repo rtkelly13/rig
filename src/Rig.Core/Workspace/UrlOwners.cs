@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Rig.Core.GitHub;
+using System.Text.Json.Nodes;
 using Rig.Core.Text;
+using Rig.Core.GitHub;
 
 namespace Rig.Core.Workspace;
 

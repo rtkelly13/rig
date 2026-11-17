@@ -1,6 +1,6 @@
 using Rig.Core.Text;
-using System.Net;
 using System.Text.Json;
+using System.Net;
 using System.Text.Json.Nodes;
 
 namespace Rig.Core.Packages;
