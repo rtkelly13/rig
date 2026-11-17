@@ -105,7 +105,10 @@ public sealed class OrganiseRunner(
     Func<double> clock,
     TimeProvider time)
 {
-    private static readonly ActivitySource Source = new("Rig.Chrome");
+    /// <summary>The activity source every Chrome step's span comes from.</summary>
+    public const string SourceName = "Rig.Chrome";
+
+    private static readonly ActivitySource Source = new(SourceName);
 
     /// <summary>
     /// Runs <c>organise</c>: chrome read once for the close plans, then afresh for grouping and consolidation. A
@@ -137,6 +140,18 @@ public sealed class OrganiseRunner(
             run?.SetTag("run.skipped", error.Message);
             return new OrganiseResult(!options.Unattended, outcome);
         }
+        catch (Exception error) when (run is not null && Recorded(run, error))
+        {
+            throw;
+        }
+    }
+
+    // Marks the run failed with the exception that ended it, then lets it go on: the filter never handles it.
+    private static bool Recorded(Activity run, Exception error)
+    {
+        _ = run.SetStatus(ActivityStatusCode.Error, error.Message);
+        _ = run.AddException(error);
+        return false;
     }
 
     private UnattendedGrouping UnattendedGroupingFor() =>

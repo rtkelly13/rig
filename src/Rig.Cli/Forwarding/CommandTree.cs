@@ -29,7 +29,7 @@ internal static class CommandTree
             .Select(flag => new { Path = flag, Target = "agent" })
             .Concat([new { Path = "<bare>", Target = "agent" }, new { Path = "agent models", Target = "models" }, new { Path = "agent --models", Target = "models" }]),
         agentTargets = AgentLauncher.Agents.Select(agent => $"{agent.Id}={agent.Executable}"),
-        jobs = JobRegistry.Default(new JobsEnvironment("/scripts", "/plan", "/workspace", "/code/personal", [], "/feed", "/orca", "/chrome.log", windows))
+        jobs = JobRegistry.Default(new JobsEnvironment("/scripts", "/plan", "/workspace", "/code/personal", [], "/feed", "/orca", windows))
             .Select(j => $"{j.Name}={string.Join(' ', j.Argv)}"),
         mcpTools = typeof(RigOpsTools).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .Select(method => method.GetCustomAttribute<McpServerToolAttribute>()?.Name)

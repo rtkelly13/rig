@@ -420,6 +420,20 @@ public sealed class OrganiseRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_run_that_crashes_records_the_exception_on_its_span()
+    {
+        using var spans = new RecordedSpans(OrganiseRunner.SourceName);
+        _read = () => throw new InvalidOperationException("driver went away");
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => Runner().RunAsync(Options(), TestContext.Current.CancellationToken));
+
+        var run = Root(spans.Stopped);
+        Assert.Equal((ActivityStatusCode.Error, "driver went away"), (run.Status, run.StatusDescription));
+        var recorded = Assert.Single(run.Events, happened => happened.Name == "exception");
+        Assert.Equal(thrown.Message, recorded.Tags.Single(tag => tag.Key == "exception.message").Value);
+    }
+
+    [Fact]
     public async Task An_unreadable_run_leaves_no_step_half_done()
     {
         _windows = [Window(W1, Profile, 1, Tab(Pr(1)), Tab(Pr(2)))];

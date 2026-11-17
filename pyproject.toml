@@ -377,7 +377,6 @@ patching-allow = [
     "tests/desktop_manager/test_chrome_macos_actions.py",
     "tests/desktop_manager/test_chrome_macos_grouping.py",
     "tests/desktop_manager/test_chrome_macos_reader.py",
-    "tests/desktop_manager/test_chrome_organise.py",
     "tests/desktop_manager/test_chrome_presence.py",
     "tests/desktop_manager/test_chrome_site_hosts.py",
     "tests/desktop_manager/test_clean_launch_environment.py",
@@ -409,7 +408,6 @@ boundary-modules = [
 str-key-receivers = ["self.headers", "handler.headers"]
 loose-dict-aliases = ["JsonObject"]
 loose-dict-allow = [
-    "src/desktop_manager/chrome/cli.py",
     "src/desktop_manager/chrome/traces.py",
     "src/desktop_manager/models.py",
     "src/rig/estate/discovery.py",

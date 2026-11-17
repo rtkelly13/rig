@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -6,6 +7,7 @@ using System.Text.Json.Nodes;
 using Rig.Cli.Chrome;
 using Rig.Core.Chrome;
 using Rig.Core.GitHub;
+using Rig.Core.Jobs;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Workspace;
@@ -256,22 +258,6 @@ public sealed class ChromeTabsCommandTests : IDisposable
         var error = Assert.Single(parsed.Errors);
         Assert.Equal($"Invalid value for '{option}': {value} is not in the range x>=1.", error.Message);
     }
-
-    [Theory]
-    [InlineData(false, "chrome-tabs", "traces", "runs")]
-    [InlineData(true, "chrome-tabs", "organise")]
-    [InlineData(true, "chrome-tabs", "--help")]
-    [InlineData(true, "chrome-tabs")]
-    public void Only_traces_runs_here_and_the_rest_goes_to_python(bool forwarded, params string[] args)
-    {
-        var root = new RootCommand { new ChromeTabsCommand(_ => null, "/home", new FixedTime(Now), TimeZoneInfo.Utc, _out).Build() };
-
-        Assert.Equal(forwarded, Rig.Cli.Forwarding.Forwarded.Owns(args, root));
-    }
-
-    [Fact]
-    public void The_forwarded_row_shows_the_groups_help() =>
-        Assert.Contains((ChromeTabsCommand.Name, ChromeTabsCommand.Description), Rig.Cli.Forwarding.Forwarded.Commands.Select(row => (row.Name, row.Description)));
 
     // Two windows: a "Work" profile window with a PR tab and a plain page, and a minimised "Default" window on no known desktop.
     private static readonly IReadOnlyList<ChromeWindow> Windows =
@@ -610,26 +596,130 @@ public sealed class ChromeTabsCommandTests : IDisposable
     }
 
     [Theory]
-    [InlineData(true, false, "chrome-tabs", "list")]
-    [InlineData(true, false, "chrome-tabs", "rank", "--json")]
-    [InlineData(false, true, "chrome-tabs", "list")]
-    [InlineData(false, true, "chrome-tabs", "rank")]
-    [InlineData(true, false, "chrome-tabs", "prune")]
-    [InlineData(false, true, "chrome-tabs", "prune")]
-    [InlineData(true, false, "chrome-tabs", "group", "--dry-run")]
-    [InlineData(false, true, "chrome-tabs", "group")]
-    [InlineData(true, false, "chrome-tabs", "saved-groups")]
-    [InlineData(false, true, "chrome-tabs", "saved-groups")]
-    [InlineData(true, true, "chrome-tabs", "organise")]
-    [InlineData(true, false, "chrome-tabs", "install")]
-    [InlineData(true, false, "chrome-tabs", "uninstall")]
-    [InlineData(false, true, "chrome-tabs", "install")]
-    [InlineData(false, true, "chrome-tabs", "uninstall")]
-    public void Driver_commands_run_here_only_with_a_driver(bool withDriver, bool forwarded, params string[] args)
+    [InlineData(true, true, "list rank prune group saved-groups install uninstall")]
+    [InlineData(true, false, "list rank prune group")]
+    [InlineData(false, false, "")]
+    public void Traces_and_organise_are_always_here_and_the_driver_commands_only_with_a_driver(bool driver, bool windows, string more)
     {
-        var root = new RootCommand { WithDriver(withDriver).Build() };
+        var command = new ChromeTabsCommand(_ => null, "/home", new FixedTime(Now), TimeZoneInfo.Utc, _out, driver ? Driver() : null, windows).Build();
 
-        Assert.Equal(forwarded, Rig.Cli.Forwarding.Forwarded.Owns(args, root));
+        Assert.Equal(["traces", "organise", .. more.Split(' ', StringSplitOptions.RemoveEmptyEntries)], command.Subcommands.Select(sub => sub.Name));
+    }
+
+    private readonly List<string> _opened = [];
+
+    private string Notes => Path.Join(_temp.Path, "notes");
+
+    private async Task<int> Organise(bool driver = true, TimeProvider? time = null, params string[] args) =>
+        await new ChromeTabsCommand(
+                name => name == "LOCALAPPDATA" ? _temp.Path : null,
+                "/home",
+                time ?? new FixedTime(Now),
+                TimeZoneInfo.Utc,
+                _out,
+                driver ? Driver() : null,
+                notes: new ChromeNotes(Notes, _opened.Add))
+            .Build()
+            .Parse(["organise", .. args])
+            .InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+    [Fact]
+    public async Task Organise_traces_its_run_to_the_chrome_folder_beneath_whatever_span_started_it()
+    {
+        // In `rig` the run starts under the CLI's own span, which is written to rig's file, not this one.
+        using var outer = new ActivitySource("Test.Outer");
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == outer.Name,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+        };
+        ActivitySource.AddActivityListener(listener);
+        string parent;
+        using (var cli = outer.StartActivity("rig.cli"))
+        {
+            parent = Assert.IsType<Activity>(cli).SpanId.ToHexString();
+            Assert.Equal(0, await Organise(args: ["--dry-run", "--no-github"]));
+        }
+
+        // The listener hears every Chrome span in the process, so runs from tests alongside can land here too.
+        var run = Assert.Single(Load(), found => found.Root.ParentId == parent);
+        Assert.Equal("dry_run", run.Root.Attributes["run.outcome"]?.ToString());
+        Assert.Equal("manual", run.Root.Attributes["chrome.trigger"]?.ToString());
+        Assert.Contains(run.Spans, span => span.Name == "chrome_tabs.read_windows");
+        _out.GetStringBuilder().Clear();
+        Assert.Equal(0, await Run("runs", "--json"));
+        Assert.Contains(JsonNode.Parse(_out.ToString())!.AsArray(), row => (string?)row!["id"] == run.Id);
+    }
+
+    [Fact]
+    public async Task Organise_without_a_driver_refuses()
+    {
+        Assert.Equal(1, await Organise(driver: false));
+
+        Assert.Equal(["organise is only available on Windows/macOS."], Lines);
+        Assert.False(Directory.Exists(Traces));
+    }
+
+    [Theory]
+    [InlineData("scheduled", false)]
+    [InlineData("manual", true)]
+    public async Task Only_a_scheduled_organise_prunes_old_trace_files(string trigger, bool kept)
+    {
+        _ = Directory.CreateDirectory(Traces);
+        var old = Path.Join(Traces, "2026-01-01.ndjson");
+        await File.WriteAllTextAsync(old, "", TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, await Organise(args: ["--dry-run", "--no-github", "--trigger", trigger]));
+
+        Assert.Equal(kept, File.Exists(old));
+        Assert.Equal(!kept, Lines.Contains("Pruned 1 trace files older than 30 days"));
+    }
+
+    [Theory]
+    [InlineData("--min-size", "0", "x>=1")]
+    [InlineData("--idle-minutes", "-1", "x>=0")]
+    [InlineData("--wait-minutes", "-0.5", "x>=0")]
+    public void Organise_options_outside_their_ranges_are_usage_errors(string option, string value, string range)
+    {
+        var parsed = WithDriver().Build().Parse(["organise", option, value]);
+
+        Assert.Equal($"Invalid value for '{option}': {value} is not in the range {range}.", Assert.Single(parsed.Errors).Message);
+    }
+
+    [Theory]
+    [InlineData("scheduled", true)]
+    [InlineData("manual", false)]
+    public async Task Only_a_scheduled_organise_writes_its_running_spans_two_minutes_before_the_job_is_killed(string trigger, bool armed)
+    {
+        var time = new ArmedTime(Now);
+
+        Assert.Equal(0, await Organise(time: time, args: ["--dry-run", "--no-github", "--trigger", trigger]));
+
+        // The periodic flush is the trace writer's own timer; this is the one-shot the command arms.
+        Assert.Equal(armed ? [TimeSpan.FromMinutes(JobRegistry.ChromeOrganiseLimitMinutes - 2)] : [], time.OneShots);
+    }
+
+    [Fact]
+    public void Organise_takes_what_the_scheduled_job_passes_and_hides_the_trigger()
+    {
+        var command = WithDriver().Build();
+        var organise = command.Subcommands.Single(sub => sub.Name == "organise");
+
+        Assert.Empty(command.Parse(["organise", "--unattended", "--consolidate-saved", "--trigger", "scheduled", "--wait-minutes", "10"]).Errors);
+        Assert.True(organise.Options.Single(option => option.Name == "--trigger").Hidden);
+    }
+
+    [Fact]
+    public void A_note_is_rewritten_each_time_but_opened_once_a_run()
+    {
+        var note = new ChromeNotes(Notes, _opened.Add).Once();
+
+        note("paused.txt", ["first"]);
+        note("paused.txt", ["second", "line"]);
+
+        var path = Path.Join(Notes, "paused.txt");
+        Assert.Equal([path], _opened);
+        Assert.Equal("second\nline\n", File.ReadAllText(path));
     }
 
     private string Home => Path.Join(_temp.Path, "home");
@@ -638,7 +728,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
 
     private string Shim => Path.Join(Home, ".local", "bin", "chrome-tabs.cmd");
 
-    private string Target => Path.Join(Local, "shared-utilities", "runtime", "current", ".venv", "Scripts", "desktop-manager.exe");
+    private string Target => Path.Join(Local, "shared-utilities", "runtime", "current", ".venv", "Scripts", "rig.exe");
 
     private async Task<int> Installs(params string[] args) =>
         await new ChromeTabsCommand(
@@ -700,5 +790,34 @@ public sealed class ChromeTabsCommandTests : IDisposable
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
+    }
+
+    // Records the due time of each one-shot timer and never fires it.
+    private sealed class ArmedTime(DateTimeOffset now) : TimeProvider
+    {
+        public List<TimeSpan> OneShots { get; } = [];
+
+        public override DateTimeOffset GetUtcNow() => now;
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            if (period == Timeout.InfiniteTimeSpan)
+            {
+                OneShots.Add(dueTime);
+            }
+
+            return new Idle();
+        }
+
+        private sealed class Idle : ITimer
+        {
+            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+
+            public void Dispose()
+            {
+            }
+
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
     }
 }

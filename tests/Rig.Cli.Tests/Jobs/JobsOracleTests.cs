@@ -308,7 +308,6 @@ public sealed class JobsOracleTests : IDisposable
             [.. env.GetProperty("work_roots").EnumerateArray().Select(root => root.GetString()!)],
             Text("decisions_feed"),
             Text("orca_user_data"),
-            JobRegistry.ChromeTabsLog(Oracle.GetProperty("local_app_data").GetString(), "/home"),
             OperatingSystem.IsWindows());
     }
 

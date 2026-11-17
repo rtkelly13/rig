@@ -222,12 +222,12 @@ def check(copy: Path, runner: Runner = run) -> list[str]:
     python = str(executable(copy, "python"))
     commands: list[list[str]] = [
         [desktop_manager, "--help"],
-        [desktop_manager, "chrome-tabs", "--help"],
+        [str(published(copy, "rig")), "chrome-tabs", "organise", "--help"],
         [str(published(copy, "rig")), "jobs", "run", "--help"],
         [str(published(copy, "rig")), "jobs", "install", "--help"],
     ]
     if sys.platform == "win32":
-        commands.append([python, "-c", "import desktop_manager.chrome.scheduled, desktop_manager.windows_workspace"])
+        commands.append([python, "-c", "import desktop_manager.windows_workspace"])
     else:
         commands.append([python, "-c", "import rig.web_host.server"])
     plan = copy / PLAN_RELATIVE

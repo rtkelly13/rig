@@ -4,15 +4,18 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Rig.Core.Chrome;
 using Rig.Core.GitHub;
+using Rig.Core.Jobs;
+using Rig.Core.Otel;
 using Rig.Core.Text;
 
 namespace Rig.Cli.Chrome;
 
 /// <summary>
-/// <c>rig chrome-tabs</c>: the ported half of <c>desktop-manager chrome-tabs</c>. <c>traces</c> runs here everywhere;
-/// <c>list</c>, <c>rank</c>, <c>prune</c>, <c>group</c>, <c>saved-groups</c>, <c>install</c> and <c>uninstall</c> where there is a driver. The forwarding
-/// table hands every other line to the Python group. Ported from <c>desktop_manager.chrome.traces_cli</c> and
-/// <c>desktop_manager.chrome.cli</c>, whose messages all go to stdout.
+/// <c>rig chrome-tabs</c>, ported from <c>desktop-manager chrome-tabs</c>. <c>traces</c> runs everywhere, and <c>organise</c>
+/// is registered everywhere because the scheduled job runs it on every platform, refusing where there is no driver;
+/// <c>list</c>, <c>rank</c>, <c>prune</c>, <c>group</c>, <c>saved-groups</c>, <c>install</c> and <c>uninstall</c> only where
+/// there is one. Ported from <c>desktop_manager.chrome.traces_cli</c> and <c>desktop_manager.chrome.cli</c>, whose messages
+/// all go to stdout.
 /// </summary>
 /// <param name="environment">Reads an environment variable (<c>LOCALAPPDATA</c> places the traces).</param>
 /// <param name="home">The user's home, where the traces live when <c>LOCALAPPDATA</c> is unset.</param>
@@ -21,8 +24,16 @@ namespace Rig.Cli.Chrome;
 /// <param name="output">Where every line goes.</param>
 /// <param name="driver">Opens Chrome for the commands that read it; null on Linux, where no native driver exists.</param>
 /// <param name="windows">Whether this is the Windows composition, which alone has the PATH shim to install.</param>
+/// <param name="notes">Writes and opens the note an interrupted unattended run leaves; <see cref="ChromeNotes.Default"/> when null.</param>
 internal sealed class ChromeTabsCommand(
-    Func<string, string?> environment, string home, TimeProvider time, TimeZoneInfo zone, TextWriter output, ChromeTabsDriver? driver = null, bool windows = true)
+    Func<string, string?> environment,
+    string home,
+    TimeProvider time,
+    TimeZoneInfo zone,
+    TextWriter output,
+    ChromeTabsDriver? driver = null,
+    bool windows = true,
+    ChromeNotes? notes = null)
 {
     /// <summary>The group's name, shared with the forwarding row.</summary>
     public const string Name = "chrome-tabs";
@@ -34,14 +45,22 @@ internal sealed class ChromeTabsCommand(
     /// <summary><c>traces show</c> exits with this when no run matches.</summary>
     public const int NoRunExit = 1;
 
+    /// <summary>The trigger the scheduled job passes: it alone prunes old trace files.</summary>
+    public const string ScheduledTrigger = "scheduled";
+
     /// <summary>
-    /// The <c>chrome-tabs</c> command. <c>list</c>, <c>rank</c>, <c>prune</c>, <c>group</c>, <c>saved-groups</c>, <c>install</c> and <c>uninstall</c> are only registered
-    /// with a driver (Windows or macOS): without one, the forwarding table hands them to the Python, which refuses the
-    /// platform-specific commands itself.
+    /// How long a scheduled run goes before it writes the spans still running: two minutes short of the job's limit,
+    /// so a run killed there still shows in <c>traces runs</c>, marked incomplete.
+    /// </summary>
+    public static readonly TimeSpan LastWordsAfter = TimeSpan.FromMinutes(JobRegistry.ChromeOrganiseLimitMinutes - 2);
+
+    /// <summary>
+    /// The <c>chrome-tabs</c> command. <c>list</c>, <c>rank</c>, <c>prune</c>, <c>group</c>, <c>saved-groups</c>, <c>install</c> and
+    /// <c>uninstall</c> are only registered with a driver (Windows or macOS).
     /// </summary>
     public Command Build()
     {
-        var command = new Command(Name, Description) { Traces() };
+        var command = new Command(Name, Description) { Traces(), Organise() };
         if (driver is not null)
         {
             command.Subcommands.Add(List(driver));
@@ -164,6 +183,79 @@ internal sealed class ChromeTabsCommand(
         return group;
     }
 
+    private Command Organise()
+    {
+        var organise = new Command(
+            "organise",
+            "Prune, then group, one window at a time: the whole tidy in one command. [Windows/macOS only]\n\n"
+            + "Windows go in screen order: the current desktop first, then monitor by monitor, top to bottom. Each window has "
+            + "its tabs closed and its active tab put back before the next starts. Then grouping (as `group`) runs window by "
+            + "window over what is left; it brings each window forward and uses the mouse.\n\n"
+            + "`--consolidate-saved` then deletes closed duplicate saved groups, but only when grouping created a new group: "
+            + "joining an open group never saves a duplicate. A consolidation that failed or deleted anything is looked at "
+            + "again next run, since a delete can bring chips out of the overflow.\n\n"
+            + "`--unattended` is what the scheduled job runs. It does nothing at all while a call is live: a tab recording or "
+            + "sharing the screen, an audible call site, or Chrome holding the microphone or camera. Grouping then waits, for "
+            + "up to `--wait-minutes`, until the machine has been idle for `--idle-minutes` and is not locked or on a call. "
+            + "Grouping stops at the first key press or mouse move, opens a note, and goes again once the machine has been "
+            + "left alone for 30 seconds. It waits up to 5 minutes for that, at most twice, then leaves the rest to the next run.\n\n"
+            + "Every step that brings windows forward puts you back on the virtual desktop you were on when it started.\n\n"
+            + "Every run is traced to the `chrome-tabs traces` directory; see `traces runs`.");
+        var dryRun = new Option<bool>("--dry-run") { Description = "Print both plans; change nothing." };
+        var profile = Profile();
+        var github = new Option<bool>("--github") { Description = "Query GitHub for PR state, chains, size, review and checks (the default)." };
+        var noGithub = new Option<bool>("--no-github") { Description = "Skip the PR rules and every GitHub call; GitHub pages are still de-duplicated by title." };
+        var sites = new Option<bool>("--sites") { Description = "Close duplicate non-PR pages by per-site title rules (the default)." };
+        var noSites = new Option<bool>("--no-sites") { Description = "Leave duplicate non-PR pages alone." };
+        var minSize = AtLeastOne(new Option<int>("--min-size")
+        {
+            Description = "Fewest tabs of one repo or site that start a new group.",
+            DefaultValueFactory = _ => 2,
+        });
+        var unattended = new Option<bool>("--unattended")
+        {
+            Description = "For the schedule: prune as `prune --unattended`, and group only while nobody is using the machine.",
+        };
+        var idleMinutes = NotNegative(new Option<double>("--idle-minutes")
+        {
+            Description = "With --unattended: minutes without input before grouping may start. Keep it under the machine's "
+                + "auto-lock: a locked session cannot be grouped.",
+            DefaultValueFactory = _ => 1,
+        });
+        var waitMinutes = NotNegative(new Option<double>("--wait-minutes")
+        {
+            Description = "With --unattended: how long to keep waiting for the machine to go idle before leaving grouping "
+                + "to the next run. 0 gives up at once.",
+            DefaultValueFactory = _ => ChromeInstall.DefaultWaitMinutes,
+        });
+        var thisDesktop = new Option<bool>("--this-desktop") { Description = "Group only windows on the current desktop; never bring others over." };
+        var consolidate = new Option<bool>("--consolidate-saved")
+        {
+            Description = "When grouping created a new group, afterwards delete closed duplicate saved groups, as `saved-groups --consolidate`.",
+        };
+        var trigger = new Option<string>("--trigger") { Description = "What started the run, for its trace.", DefaultValueFactory = _ => "manual", Hidden = true };
+        foreach (var option in new Option[] { dryRun, profile, github, noGithub, sites, noSites, minSize, unattended, idleMinutes, waitMinutes, thisDesktop, consolidate, trigger })
+        {
+            organise.Options.Add(option);
+        }
+
+        organise.SetAction((parsed, cancellationToken) => OrganiseTabs(
+            new OrganiseOptions(
+                parsed.GetValue(dryRun),
+                parsed.GetValue(profile),
+                !parsed.GetValue(noGithub),
+                !parsed.GetValue(noSites),
+                parsed.GetValue(minSize),
+                parsed.GetValue(unattended),
+                parsed.GetValue(idleMinutes),
+                parsed.GetValue(waitMinutes),
+                parsed.GetValue(thisDesktop),
+                parsed.GetValue(consolidate),
+                parsed.GetValue(trigger) ?? "manual"),
+            cancellationToken));
+        return organise;
+    }
+
     private Command SavedGroupsCommand(ChromeTabsDriver chrome)
     {
         var saved = new Command(
@@ -270,6 +362,18 @@ internal sealed class ChromeTabsCommand(
         return option;
     }
 
+    private static Option<double> NotNegative(Option<double> option)
+    {
+        option.Validators.Add(result =>
+        {
+            if (result.GetValueOrDefault<double>() < 0)
+            {
+                result.AddError(string.Create(CultureInfo.InvariantCulture, $"Invalid value for '{option.Name}': {result.GetValueOrDefault<double>()} is not in the range x>=0."));
+            }
+        });
+        return option;
+    }
+
     private DateOnly Today => DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
 
     private string Directory(string? chosen) => chosen ?? ChromeTraces.TracesDir(environment, home);
@@ -368,7 +472,7 @@ internal sealed class ChromeTabsCommand(
 
     private int WriteShim()
     {
-        var target = ChromeInstall.RuntimeDesktopManager(environment, home);
+        var target = ChromeInstall.RuntimeRig(environment, home);
         var shim = ChromeInstall.ShimPath(home);
         _ = System.IO.Directory.CreateDirectory(Path.GetDirectoryName(shim)!);
         File.WriteAllText(shim, ChromeInstall.RenderShim(target));
@@ -470,6 +574,48 @@ internal sealed class ChromeTabsCommand(
             CultureInfo.InvariantCulture,
             $"Closed {applied.Count - failures.Count}/{applied.Count} {timings}, {perClose:F2}s per close, total {time.GetElapsedTime(started).TotalSeconds:F2}s"));
         return failures.Count > 0 ? 1 : 0;
+    }
+
+    private async Task<int> OrganiseTabs(OrganiseOptions options, CancellationToken cancellationToken)
+    {
+        if (driver is null)
+        {
+            Say("organise is only available on Windows/macOS.");
+            return 1;
+        }
+
+        // The run's spans go to the chrome-tabs traces folder, under the scope `traces` reads; the `rig` root span that
+        // parents them stays in rig's own file.
+        var directory = ChromeTraces.TracesDir(environment, home);
+        using var traces = new TraceFileWriter(
+            Name, new Dictionary<string, string> { [OrganiseRunner.SourceName] = ChromeTraces.Scope }, environment, directory, time);
+        traces.SetDirectory(directory);
+        traces.FlushPeriodically(TimeSpan.FromSeconds(ChromeTraces.FlushIntervalSeconds));
+        using var lastWords = options.Trigger == ScheduledTrigger
+            ? time.CreateTimer(_ => traces.Flush(includeOpen: true), null, LastWordsAfter, Timeout.InfiniteTimeSpan)
+            : null;
+        if (options.Trigger == ScheduledTrigger && ChromeTraces.PruneDaily(directory, Today) is { Count: > 0 } pruned)
+        {
+            Say(string.Create(CultureInfo.InvariantCulture, $"Pruned {pruned.Count} trace files older than {ChromeTraces.KeepDays} days"));
+        }
+
+        var note = (notes ?? ChromeNotes.Default).Once();
+        var runner = new OrganiseRunner(
+            driver.Open(),
+            driver.GitHub,
+            driver.Owners,
+            SavedConsolidation.MarkerPath(environment, home),
+            Say,
+            () => note(UnattendedGrouping.PausedNote, UnattendedGrouping.PausedNoteLines),
+            seconds =>
+            {
+                _ = cancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(seconds));
+                cancellationToken.ThrowIfCancellationRequested();
+            },
+            () => time.GetTimestamp() / (double)time.TimestampFrequency,
+            time);
+        var result = await runner.RunAsync(options, cancellationToken).ConfigureAwait(false);
+        return result.Failed ? 1 : 0;
     }
 
     private int GroupTabs(ChromeTabsDriver chrome, bool dryRun, string? profile, int minSize, bool thisDesktop)

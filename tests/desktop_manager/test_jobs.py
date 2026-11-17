@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -44,7 +43,6 @@ def _job(
     requires=(),
     idle_minutes: int = 0,
     retry_exit_codes=(),
-    detail_log: Path | None = None,
 ) -> Job:
     return Job(
         name=name,
@@ -56,7 +54,6 @@ def _job(
         requires=tuple(requires),
         idle_minutes=idle_minutes,
         retry_exit_codes=frozenset(retry_exit_codes),
-        detail_log=detail_log,
     )
 
 
@@ -208,6 +205,7 @@ def test_rig_jobs_start_the_csharp_front_door_with_their_command_group():
         "otel-collector": "otel-stack",
         "estate-prune-caches": "estate",
         "estate-decisions": "estate",
+        "chrome-organise": "chrome-tabs",
     }
     aliases = {env.script(name) for name in ("estate", "workspace", "otel-stack")}
     assert not [job.name for job in jobs.values() if job.argv[0] in aliases]
@@ -309,41 +307,6 @@ def test_a_failed_job_keeps_the_end_of_its_output_and_the_run_is_recorded(tmp_pa
     )
     assert read_state(tmp_path / STATE_NAME) == {"fine": fine, "broken": broken}
     assert "       | !! worktree-reclaim: exit 1" in lines
-
-
-def test_a_job_that_logs_elsewhere_is_explained_from_its_own_log(tmp_path: Path):
-    own_log = tmp_path / "organise.log"
-    own_log.write_text("--- 2026-10-10 08:45:00 organise\nClosed 1/1\n", encoding="utf-8")
-    os.utime(own_log, (0, 0))
-    printing = _printing({"chrome": (1, "")})
-
-    def execute(job: Job, logs: Path, run_id: str) -> int:
-        with own_log.open("a", encoding="utf-8") as log:
-            log.write("--- 2026-10-10 09:00:00 organise\nNot closed #236: tab is still present\nClosed 0/1\n")
-        return printing(job, logs, run_id)
-
-    run([_job("chrome", detail_log=own_log)], Trigger.TICK, tmp_path, booted=BOOTED, execute=execute, clock=lambda: NOW)
-
-    outcome = read_state(tmp_path / STATE_NAME)["chrome"]
-    assert (outcome.summary, outcome.detail) == ("Closed 0/1", ("Not closed #236: tab is still present", "Closed 0/1"))
-
-
-def test_a_job_that_died_before_logging_is_not_explained_by_an_earlier_run(tmp_path: Path):
-    own_log = tmp_path / "organise.log"
-    own_log.write_text("--- 2026-10-10 08:45:00 organise\nClosed 0/1\n", encoding="utf-8")
-
-    run(
-        [_job("chrome", detail_log=own_log)],
-        Trigger.TICK,
-        tmp_path,
-        booted=BOOTED,
-        execute=_printing({"chrome": (1, "")}),
-        clock=lambda: NOW,
-        report=lambda _: None,
-    )
-
-    outcome = read_state(tmp_path / STATE_NAME)["chrome"]
-    assert (outcome.summary, outcome.detail) == (None, ())
 
 
 def test_the_run_is_recorded_before_its_first_job_finishes(tmp_path: Path):
