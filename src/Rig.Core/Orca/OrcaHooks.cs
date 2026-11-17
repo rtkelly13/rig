@@ -11,16 +11,16 @@ public sealed record Scripts(string Setup = "", string Archive = "")
     /// <summary>The script of <paramref name="kind"/>: <c>setup</c> or <c>archive</c>.</summary>
     public string Of(string kind) => kind == "setup" ? Setup : Archive;
 
-    /// <summary>Scripts from a JSON object, or null when a script is not a string.</summary>
-    internal static Scripts? FromJson(JsonObject? json) => json is null ? null : OrcaJson.Lenient(() =>
-        new Scripts(OrcaJson.String(json, "setup") ?? "", OrcaJson.String(json, "archive") ?? ""));
+    /// <summary>Scripts from a JSON object, or null when there is none.</summary>
+    /// <exception cref="InvalidDataException">A script is not a string.</exception>
+    internal static Scripts? FromJson(JsonObject? json) => json is null ? null : new Scripts(OrcaJson.String(json, "setup") ?? "", OrcaJson.String(json, "archive") ?? "");
 }
 
 /// <summary>Orca's per-repo <c>hookSettings</c>. <c>repo.update</c> replaces it whole, so writes carry every field.</summary>
 /// <param name="Mode">Orca's <c>mode</c>.</param>
 /// <param name="SetupRunPolicy">Orca's <c>setupRunPolicy</c>.</param>
 /// <param name="SetupAgentStartupPolicy">Orca's <c>setupAgentStartupPolicy</c>.</param>
-/// <param name="Scripts">The local scripts, or null when absent or unreadable.</param>
+/// <param name="Scripts">The local scripts, or null when absent.</param>
 /// <param name="CommandSourcePolicy"><c>local-only</c>, <c>shared-only</c>, <c>run-both</c>, or null.</param>
 public sealed record HookSettings(
     string? Mode = null,
@@ -30,12 +30,12 @@ public sealed record HookSettings(
     string? CommandSourcePolicy = null)
 {
     /// <summary>Hook settings from Orca's JSON.</summary>
-    /// <exception cref="InvalidDataException">A field other than <c>scripts</c> has the wrong type.</exception>
+    /// <exception cref="InvalidDataException">A field has the wrong type.</exception>
     internal static HookSettings FromJson(JsonObject json) => new(
         OrcaJson.String(json, "mode"),
         OrcaJson.String(json, "setupRunPolicy"),
         OrcaJson.String(json, "setupAgentStartupPolicy"),
-        OrcaJson.Lenient(() => Scripts.FromJson(OrcaJson.Object(json, "scripts"))),
+        Scripts.FromJson(OrcaJson.Object(json, "scripts")),
         OrcaJson.String(json, "commandSourcePolicy"));
 
     /// <summary>The settings as <c>repo.update</c> takes them: null fields left out, empty strings kept.</summary>

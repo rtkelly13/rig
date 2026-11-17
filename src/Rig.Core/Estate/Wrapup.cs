@@ -675,25 +675,20 @@ public sealed class WrapupOrca(IProc proc)
     /// <exception cref="WrapupException">Orca could not answer.</exception>
     public async Task<IReadOnlyList<WrapupWorktree>> ReadWorktreesAsync(CancellationToken cancellationToken = default)
     {
-        var ps = Envelope(await CallAsync(["worktree", "ps", "--limit", PsLimit, "--json"], cancellationToken).ConfigureAwait(false));
-        return (ps is null ? null : WrapupWire.Worktrees(ps)) ?? throw new WrapupException(Unreadable);
+        return Decode("orca worktree ps", await CallAsync(["worktree", "ps", "--limit", PsLimit, "--json"], cancellationToken).ConfigureAwait(false), WrapupWire.Worktrees);
     }
 
     /// <summary>Worktrees with their agents, live terminals and registered repos.</summary>
     /// <exception cref="WrapupException">Orca could not answer.</exception>
     public async Task<WrapupSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken = default)
     {
-        var ps = Envelope(await CallAsync(["worktree", "ps", "--limit", PsLimit, "--json"], cancellationToken).ConfigureAwait(false));
-        var terminals = Envelope(await CallAsync(["terminal", "list", "--json"], cancellationToken).ConfigureAwait(false));
-        var repos = Envelope(await CallAsync(["repo", "list", "--json"], cancellationToken).ConfigureAwait(false));
-        var worktrees = ps is null ? null : WrapupWire.Worktrees(ps);
-        var live = terminals is null ? null : WrapupWire.Terminals(terminals);
-        if (worktrees is null || live is null)
-        {
-            throw new WrapupException(Unreadable);
-        }
-
-        return new WrapupSnapshot(worktrees, live, (repos is null ? null : WrapupWire.Repos(repos)) ?? [], WrapupWire.Truncated(ps!));
+        var (worktrees, truncated) = Decode(
+            "orca worktree ps",
+            await CallAsync(["worktree", "ps", "--limit", PsLimit, "--json"], cancellationToken).ConfigureAwait(false),
+            ps => (WrapupWire.Worktrees(ps), WrapupWire.Truncated(ps)));
+        var live = Decode("orca terminal list", await CallAsync(["terminal", "list", "--json"], cancellationToken).ConfigureAwait(false), WrapupWire.Terminals);
+        var repos = Decode("orca repo list", await CallAsync(["repo", "list", "--json"], cancellationToken).ConfigureAwait(false), WrapupWire.Repos);
+        return new WrapupSnapshot(worktrees, live, repos, truncated);
     }
 
     /// <summary>Pastes <paramref name="text"/> into an agent terminal and presses Enter, waiting briefly to see it submitted. Null when sent, else why not.</summary>
@@ -713,17 +708,21 @@ public sealed class WrapupOrca(IProc proc)
             : $"exit {ran.Code}";
     }
 
-    private static JsonObject? Envelope(string text)
+    // Orca's envelope is {"ok": ..., "result": {...}}; a shape rig does not read says where, in the same words every JSON reader uses.
+    private static T Decode<T>(string source, string text, Func<JsonObject, T> read)
     {
         try
         {
-            var root = OrcaJson.Object(text, "orca output");
-            _ = OrcaJson.Bool(root, "ok");
-            return root;
+            var root = OrcaJson.Object(text, source);
+            return OrcaJson.Run(source, () =>
+            {
+                _ = OrcaJson.Bool(root, "ok");
+                return read(root);
+            });
         }
-        catch (InvalidDataException)
+        catch (InvalidDataException e)
         {
-            return null;
+            throw new WrapupException($"{Unreadable}: {e.Message}", e);
         }
     }
 
@@ -743,26 +742,29 @@ public sealed class WrapupOrca(IProc proc)
     }
 }
 
-/// <summary>Decodes Orca's answers as pydantic did: a row missing a required field is dropped, an optional field of the wrong type is null.</summary>
+/// <summary>
+/// Decodes Orca's answers. Orca owns the format, so fields rig does not read are ignored; a field rig reads that has the wrong
+/// type, or a row without a required field, fails the read with <c>$.worktrees[2].repoId: expected a string, found the number 4</c>.
+/// </summary>
 internal static class WrapupWire
 {
-    public static List<WrapupWorktree>? Worktrees(JsonObject envelope) => Rows(envelope, "worktrees", Worktree);
+    public static List<WrapupWorktree> Worktrees(JsonObject envelope) => Rows(envelope, "worktrees", Worktree);
 
-    public static List<WrapupTerminal>? Terminals(JsonObject envelope) => Rows(envelope, "terminals", Terminal);
+    public static List<WrapupTerminal> Terminals(JsonObject envelope) => Rows(envelope, "terminals", Terminal);
 
-    public static List<WrapupRepo>? Repos(JsonObject envelope) => Rows(envelope, "repos", Repo);
+    public static List<WrapupRepo> Repos(JsonObject envelope) => Rows(envelope, "repos", Repo);
 
-    public static bool Truncated(JsonObject envelope) =>
-        Result(envelope) is { } result && Lenient(() => OrcaJson.Bool(result, "truncated")) == true;
+    public static bool Truncated(JsonObject envelope) => OrcaJson.Bool(Result(envelope), "truncated") == true;
 
+    /// <summary>What a <c>terminal send</c> receipt says; <c>Decoded</c> is false when it is not a receipt, which a send that exited 0 survives.</summary>
     public static (bool Decoded, bool Ok, string? Message) Receipt(string text)
     {
         try
         {
             var root = OrcaJson.Object(text, "orca receipt");
             var ok = OrcaJson.Bool(root, "ok") ?? false;
-            var error = OrcaJson.Lenient(() => OrcaJson.Object(root, "error"));
-            return (true, ok, error is null ? null : OrcaJson.Lenient(() => OrcaJson.String(error, "message")));
+            var error = OrcaJson.Object(root, "error");
+            return (true, ok, error is null ? null : OrcaJson.String(error, "message"));
         }
         catch (InvalidDataException)
         {
@@ -770,45 +772,18 @@ internal static class WrapupWire
         }
     }
 
-    private static T? Lenient<T>(Func<T?> read)
-        where T : struct
+    private static JsonObject Result(JsonObject envelope) =>
+        OrcaJson.Object(envelope, "result") ?? throw OrcaJson.Reject(JsonProblem.Missing(envelope, "result", "an object"));
+
+    private static List<T> Rows<T>(JsonObject envelope, string key, Func<JsonObject, T> read)
     {
-        try
-        {
-            return read();
-        }
-        catch (InvalidDataException)
-        {
-            return null;
-        }
+        var result = Result(envelope);
+        return OrcaJson.Array(result, key) is { } items ? [.. OrcaJson.Objects(items).Select(read)] : [];
     }
 
-    private static JsonObject? Result(JsonObject envelope) => OrcaJson.Lenient(() => OrcaJson.Object(envelope, "result"));
+    private static string Required(JsonObject row, string key) => OrcaJson.Required(row, key);
 
-    private static List<T>? Rows<T>(JsonObject envelope, string key, Func<JsonObject, T> read)
-        where T : class
-    {
-        if (Result(envelope) is not { } result)
-        {
-            return null;
-        }
-
-        if (!result.ContainsKey(key))
-        {
-            return [];
-        }
-
-        if (JsonShape.Field(result, key) is not { } node || JsonShape.AsArray(node) is not { } items)
-        {
-            return null;
-        }
-
-        return [.. items.Select(item => item is JsonObject row ? OrcaJson.Lenient(() => read(row)) : null).OfType<T>()];
-    }
-
-    private static string Required(JsonObject row, string key) => OrcaJson.String(row, key) ?? throw new InvalidDataException($"{key}: required");
-
-    private static string? Text(JsonObject row, string key) => OrcaJson.Lenient(() => OrcaJson.String(row, key));
+    private static string? Text(JsonObject row, string key) => OrcaJson.String(row, key);
 
     private static WrapupWorktree Worktree(JsonObject row) => new(Required(row, "worktreeId"), Required(row, "repoId"), Required(row, "path"))
     {
@@ -816,21 +791,12 @@ internal static class WrapupWire
         DisplayName = Text(row, "displayName"),
         Branch = Text(row, "branch"),
         ParentId = Text(row, "parentWorktreeId"),
-        LinkedPr = OrcaJson.Lenient(() => OrcaJson.Object(row, "linkedPR") is { } pr ? Pr(pr) : null),
-        Agents = OrcaJson.Lenient(() => OrcaJson.Array(row, "agents") is { } agents
-            ? (IReadOnlyList<WrapupAgent>)[.. agents.Select(a => a is JsonObject agent ? OrcaJson.Lenient(() => Agent(agent)) : null).OfType<WrapupAgent>()]
-            : null),
+        LinkedPr = OrcaJson.Object(row, "linkedPR") is { } pr ? Pr(pr) : null,
+        Agents = OrcaJson.Array(row, "agents") is { } agents ? (IReadOnlyList<WrapupAgent>)[.. OrcaJson.Objects(agents).Select(Agent)] : null,
     };
 
-    private static WrapupPr Pr(JsonObject pr)
-    {
-        if (JsonShape.Field(pr, "number") is not { } node || JsonShape.AsInteger(node) is not { } number)
-        {
-            throw new InvalidDataException("number: expected a whole number");
-        }
-
-        return new(number, Text(pr, "state"), Text(pr, "checksStatus"));
-    }
+    private static WrapupPr Pr(JsonObject pr) =>
+        new(OrcaJson.Integer(pr, "number") ?? throw OrcaJson.Reject(JsonProblem.Missing(pr, "number", "a whole number")), Text(pr, "state"), Text(pr, "checksStatus"));
 
     private static WrapupAgent Agent(JsonObject row) => new(Required(row, "paneKey"), Required(row, "state"))
     {
@@ -840,10 +806,10 @@ internal static class WrapupWire
         ConversationName = Text(row, "conversationName"),
         LastMessage = Text(row, "lastAssistantMessage"),
         ToolName = Text(row, "toolName"),
-        StateStartedAt = JsonShape.AsNumber(JsonShape.Field(row, "stateStartedAt")),
-        ProgramStatus = OrcaJson.Lenient(() => OrcaJson.Object(row, "programStatus") is { } status
+        StateStartedAt = OrcaJson.Number(row, "stateStartedAt"),
+        ProgramStatus = OrcaJson.Object(row, "programStatus") is { } status
             ? new WrapupProgramStatus(Text(status, "state"), Text(status, "kind"), Text(status, "message"))
-            : null),
+            : null,
     };
 
     private static WrapupTerminal Terminal(JsonObject row) => new(
@@ -851,9 +817,10 @@ internal static class WrapupWire
         Text(row, "tabId"),
         Text(row, "leafId"),
         Text(row, "agentIdentity"),
-        Lenient(() => OrcaJson.Bool(row, "writable")));
+        OrcaJson.Bool(row, "writable"));
 
-    private static WrapupRepo Repo(JsonObject row) => new(Required(row, "id"), Required(row, "path"), OrcaJson.String(row, "displayName") ?? (row.ContainsKey("displayName") ? throw new InvalidDataException("displayName") : ""));
+    private static WrapupRepo Repo(JsonObject row) =>
+        new(Required(row, "id"), Required(row, "path"), OrcaJson.String(row, "displayName") ?? (row.ContainsKey("displayName") ? throw OrcaJson.Reject(JsonProblem.Expected(row, "displayName", "a string", null)) : ""));
 }
 
 /// <summary>String helpers that wrap-up's output depends on.</summary>

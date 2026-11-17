@@ -205,7 +205,7 @@ public sealed class WorkCollector(
         }
 
         var items = WorkJoin.BuildItems(new JoinInputs(repos, attributed, prResults.Prs, prResults.Lookups), moment, options.StaleAfter);
-        var report = new WorkReport(moment, options.Root, items) { Warnings = prResults.Warnings };
+        var report = new WorkReport(moment, options.Root, items) { Warnings = [.. scan.Problems, .. prResults.Warnings] };
         return new Collected(report, timings, Stopwatch.GetElapsedTime(started).TotalSeconds);
     }
 

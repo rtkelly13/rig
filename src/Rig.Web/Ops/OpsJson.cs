@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Data.Sqlite;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
+using Rig.Core.Text;
 
 namespace Rig.Web.Ops;
 
@@ -63,7 +64,7 @@ public static class OpsJson
         WriteIndented = false,
     };
 
-    /// <summary>Reads a browser write: every required field must be present, as pydantic's validation demanded.</summary>
+    /// <summary>Reads a browser write: every required field must be present and typed as declared; a number is never read from a string.</summary>
     public static readonly JsonSerializerOptions Boundary = new(Options)
     {
         RespectRequiredConstructorParameters = true,
@@ -87,7 +88,13 @@ public static class OpsJson
         return Results.Text(body, WebJson.ContentType, statusCode: status).WithHeader("Cache-Control", "no-store");
     }
 
-    /// <summary><paramref name="value"/> as compact JSON, the way pydantic's <c>model_dump_json</c> wrote it.</summary>
+    /// <summary>The <typeparamref name="T"/> a browser write's <paramref name="body"/> holds.</summary>
+    /// <exception cref="JsonInputException">The body is not JSON, or a field is missing or has the wrong type; the message reads <c>request body: $.field: expected X, found Y</c>.</exception>
+    public static T Read<T>(string body)
+        where T : class =>
+        JsonProblem.Run("request body", () => JsonSerializer.Deserialize<T>(body, Boundary) ?? throw JsonProblem.Expected("$", "an object", "null"));
+
+    /// <summary><paramref name="value"/> as compact JSON.</summary>
     public static string Serialize<T>(T value) => JsonSerializer.Serialize(value, Options);
 
     /// <summary>
@@ -105,7 +112,7 @@ public static class OpsJson
         {
             return Error(failure.Status, failure.Message);
         }
-        catch (Exception error) when (error is ArgumentException or JsonException or FormatException or InvalidDataException)
+        catch (Exception error) when (error is ArgumentException or JsonException or JsonInputException or FormatException or InvalidDataException)
         {
             return Error(StatusCodes.Status400BadRequest, error.Message);
         }

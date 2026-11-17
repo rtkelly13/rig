@@ -233,7 +233,7 @@ public sealed class RigOps : IDisposable
     }
 }
 
-/// <summary>The ops answers' JSON: snake_case keys, nulls kept, compact like pydantic's <c>model_dump_json</c>.</summary>
+/// <summary>The ops answers' JSON: snake_case keys, nulls kept, compact.</summary>
 internal static class OpsJson
 {
     private static readonly JsonSerializerOptions Options = new()

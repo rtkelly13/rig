@@ -17,11 +17,14 @@ public sealed class ObsidianOrphans(IProc proc, string home)
     /// <summary>How long the desktop app gets to answer.</summary>
     public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
 
-    /// <summary>The app's orphan list, stripped and without blank lines, or nothing unless <paramref name="vault"/> is the vault it has open.</summary>
-    public async Task<IReadOnlyList<string>> ListAsync(string vault, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// The app's orphan list, stripped and without blank lines, or nothing unless <paramref name="vault"/> is the vault it has open.
+    /// <paramref name="problem"/> hears <c>obsidian.json: $.json.path: expected X, found Y</c> for each part of the app's settings it skipped.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> ListAsync(string vault, Action<string>? problem = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(vault);
-        var open = OpenVault();
+        var open = OpenVault(problem);
         if (open is null || RealPath(open) != RealPath(vault))
         {
             return [];
@@ -37,34 +40,74 @@ public sealed class ObsidianOrphans(IProc proc, string home)
         return [.. UnicodeText.SplitLines(text).Select(UnicodeText.Strip).Where(line => line.Length > 0)];
     }
 
-    // obsidian.json holds {"vaults": {id: {"path": str, "open": bool}}}; a misshapen entry is passed over, a misshapen file ignored.
-    private string? OpenVault()
+    // obsidian.json holds {"vaults": {id: {"path": str, "open": bool}}}, and is the app's own format, so fields rig does not read are
+    // ignored. A misshapen file or entry is passed over and reported; a missing or unreadable file is not a fault.
+    private string? OpenVault(Action<string>? problem)
     {
         var registry = Path.Join(home, "Library", "Application Support", "obsidian", "obsidian.json");
-        var root = JsonFile.TryParse(registry);
-
-        if (root is not JsonObject document || (document["vaults"] is { } vaults && vaults is not JsonObject))
+        string text;
+        try
+        {
+            text = File.ReadAllText(registry);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
             return null;
         }
 
-        foreach (var (_, entry) in document["vaults"]?.AsObject() ?? [])
+        try
         {
-            if (entry is JsonObject fields
-                && Field(fields, "path", JsonValueKind.String) is { } path
-                && Field(fields, "open", JsonValueKind.True, JsonValueKind.False) is { } open
-                && open.GetValueKind() == JsonValueKind.True
-                && path.GetValue<string>().Length > 0)
+            return JsonProblem.Run(registry, () => OpenVaultIn(JsonNode.Parse(text), registry, problem));
+        }
+        catch (JsonInputException e)
+        {
+            problem?.Invoke(e.Message);
+            return null;
+        }
+    }
+
+    private static string? OpenVaultIn(JsonNode? root, string registry, Action<string>? problem)
+    {
+        var document = root as JsonObject ?? throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(root));
+        if (document["vaults"] is null)
+        {
+            return null;
+        }
+
+        var vaults = document["vaults"] as JsonObject ?? throw JsonProblem.Expected(document, "vaults", "an object", document["vaults"]);
+        foreach (var (name, entry) in vaults)
+        {
+            try
             {
-                return path.GetValue<string>();
+                if (OpenPath(entry as JsonObject ?? throw JsonProblem.Expected(JsonProblem.Child(vaults.GetPath(), name), "an object", JsonProblem.Describe(entry))) is { } path)
+                {
+                    return path;
+                }
+            }
+            catch (JsonInputException e)
+            {
+                problem?.Invoke(e.Within(registry).Message);
             }
         }
 
         return null;
     }
 
-    private static JsonNode? Field(JsonObject fields, string name, params JsonValueKind[] kinds) =>
-        fields[name] is { } value && kinds.Contains(value.GetValueKind()) ? value : null;
+    // The vault's path when it is the open one; a vault with no "open" is not open.
+    private static string? OpenPath(JsonObject fields)
+    {
+        var path = fields["path"] is JsonValue { } value && value.GetValueKind() == JsonValueKind.String
+            ? value.GetValue<string>()
+            : throw JsonProblem.Expected(fields, "path", "a string", fields["path"]);
+        var open = fields["open"] switch
+        {
+            null => false,
+            { } flag when flag.GetValueKind() == JsonValueKind.True => true,
+            { } flag when flag.GetValueKind() == JsonValueKind.False => false,
+            var other => throw JsonProblem.Expected(fields, "open", "a boolean", other),
+        };
+        return open && path.Length > 0 ? path : null;
+    }
 
     /// <summary>
     /// The absolute path with every symlink along it followed, ; a part that does not

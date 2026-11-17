@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -35,8 +34,7 @@ internal static class EstateOpsRoutes
             OpsJson.Run(() => Task.FromResult(OpsJson.Ok(context, ops.Trim(OpsJson.Flag(context, "refresh")))))));
         routes.MapPost($"{Estate}/trim/apply", Handler(context => OpsJson.Run(async () =>
         {
-            var request = JsonSerializer.Deserialize<EstateApply>(await OpsJson.BodyAsync(context).ConfigureAwait(false), OpsJson.Boundary)
-                ?? throw new ArgumentException("Invalid trim request");
+            var request = OpsJson.Read<EstateApply>(await OpsJson.BodyAsync(context).ConfigureAwait(false));
             return OpsJson.Ok(context, await ops.ApplyAsync(request.Paths, context.RequestAborted).ConfigureAwait(false));
         })));
         routes.MapMethods($"{Estate}/{{**rest}}", AnyMethod, Handler(context =>

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -38,13 +37,12 @@ internal static class TriageRoutes
         })));
         routes.MapPost($"{Prefix}/watch", Handler(context => OpsJson.Run(async () =>
         {
-            var watch = TriageInbox.Watch(await OpsJson.BodyAsync(context).ConfigureAwait(false), OpsJson.Boundary);
+            var watch = TriageInbox.Watch(await OpsJson.BodyAsync(context).ConfigureAwait(false));
             return OpsJson.Ok(context, Answer(await inbox.WatchAsync(watch.Repo, watch.Number, context.RequestAborted).ConfigureAwait(false), inbox));
         })));
         routes.MapPost($"{Prefix}/interact", Handler(context => OpsJson.Run(async () =>
         {
-            var request = JsonSerializer.Deserialize<QueueInteraction>(await OpsJson.BodyAsync(context).ConfigureAwait(false), OpsJson.Boundary)
-                ?? throw new ArgumentException("Invalid triage interaction");
+            var request = OpsJson.Read<QueueInteraction>(await OpsJson.BodyAsync(context).ConfigureAwait(false));
             request.Validate();
             return OpsJson.Ok(context, Answer(await inbox.RecordAsync(request, context.RequestAborted).ConfigureAwait(false), inbox));
         })));

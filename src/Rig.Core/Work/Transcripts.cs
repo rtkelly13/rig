@@ -48,7 +48,8 @@ internal sealed record SessionRecord(
 /// one level deeper and are never read. A clean exit appends a <c>cost-state</c> entry after the last message; a
 /// crash, an OOM kill or a killed terminal leaves none. How the last turn ended says whether the work finished: a
 /// reply in plain text means the session was waiting on the user; a tool call or a tool result with nothing after
-/// it means it died mid-task. The format is Claude Code's, so every field is optional and read leniently.
+/// it means it died mid-task. The format is Claude Code's, so every field is optional and unknown fields are ignored; a field rig reads
+/// with the wrong type, or a line that is not JSON, skips that line and is reported.
 /// </summary>
 internal static class Transcripts
 {
@@ -64,7 +65,7 @@ internal static class Transcripts
     private const string InteractiveEntrypoint = "cli";
 
     // Tool inputs nest deeply; a line is skipped only when it is not JSON, not because it is deep.
-    private static readonly JsonDocumentOptions Lenient = new() { MaxDepth = 1024 };
+    private static readonly JsonDocumentOptions DeepDocuments = new() { MaxDepth = 1024 };
 
     /// <summary>The top-level transcripts under <paramref name="projects"/> modified at or after <paramref name="since"/>, in a stable order.</summary>
     public static IReadOnlyList<string> Touched(string projects, DateTimeOffset since)
@@ -97,10 +98,14 @@ internal static class Transcripts
         }
     }
 
-    /// <summary>Summarises the transcript at <paramref name="path"/>. Unparseable lines are skipped, never fatal.</summary>
-    public static async Task<SessionRecord> ReadAsync(string path, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Summarises the transcript at <paramref name="path"/>. A line that is not JSON, or holds a field of the wrong type, is skipped,
+    /// never fatal; <paramref name="problem"/> hears <c>path:line: $.json.path: expected X, found Y</c> for each.
+    /// </summary>
+    public static async Task<SessionRecord> ReadAsync(string path, Action<string>? problem = null, CancellationToken cancellationToken = default)
     {
         var summary = new Summary();
+        var number = 0;
 
         // Claude appends to a live transcript while rig reads it; sharing writes and deletes keeps Windows from refusing the open.
         var options = new FileStreamOptions
@@ -113,56 +118,57 @@ internal static class Transcripts
         using var reader = new StreamReader(path, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, options);
         while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
         {
-            summary.Add(line);
+            summary.Add(line, $"{path}:{++number}", problem);
         }
 
         return summary.Finish(Path.GetFileNameWithoutExtension(path));
     }
 
-    /// <summary>Summarises a transcript's <paramref name="lines"/>.</summary>
-    public static SessionRecord Summarise(string sessionId, IEnumerable<string> lines)
+    /// <summary>Summarises a transcript's <paramref name="lines"/>; <paramref name="problem"/> hears each line skipped, as <see cref="ReadAsync"/> words it.</summary>
+    public static SessionRecord Summarise(string sessionId, IEnumerable<string> lines, Action<string>? problem = null)
     {
         var summary = new Summary();
+        var number = 0;
         foreach (var line in lines)
         {
-            summary.Add(line);
+            summary.Add(line, $"{sessionId}:{++number}", problem);
         }
 
         return summary.Finish(sessionId);
     }
 
-    // The JSON value: null, false, zero and anything empty are false.
-    private static bool Truthy(JsonElement parent, string name) =>
-        parent.TryGetProperty(name, out var value) && value.ValueKind switch
-        {
-            JsonValueKind.True => true,
-            JsonValueKind.Number => value.GetDouble() != 0,
-            JsonValueKind.String => value.GetString()!.Length > 0,
-            JsonValueKind.Array => value.GetArrayLength() > 0,
-            JsonValueKind.Object => value.EnumerateObject().Any(),
-            _ => false,
-        };
+    // A flag is a JSON boolean or absent: 1, "yes" and [] are not booleans.
+    private static bool Flag(JsonElement parent, string name, string path) =>
+        !parent.TryGetProperty(name, out var value)
+            ? false
+            : value.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                _ => throw JsonProblem.Expected(JsonProblem.Child(path, name), "a boolean", JsonProblem.Describe(value)),
+            };
+
+    // A string field, or absent. Null is a wrong type here, as it is for every strict string.
+    private static string? Text(JsonElement parent, string name) => JsonProblem.OptionalString(parent, name, "$");
 
     private static string? NonEmpty(string? text) => string.IsNullOrEmpty(text) ? null : text;
 
-    private static Entry? Parse(string line)
+    // The entry a line holds, or null for a blank line. A line that is not a JSON object, or holds a field rig reads with the wrong
+    // type, is a JsonInputException naming the source.
+    private static Entry? Parse(string line, string source)
     {
-        JsonDocument document;
-        try
-        {
-            document = JsonDocument.Parse(line, Lenient);
-        }
-        catch (JsonException)
+        if (line.Trim().Length == 0)
         {
             return null;
         }
 
-        using (document)
+        return JsonProblem.Run(source, () =>
         {
+            using var document = JsonDocument.Parse(line, DeepDocuments);
             var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object)
             {
-                return null;
+                throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(root));
             }
 
             string? text = null;
@@ -177,23 +183,23 @@ internal static class Transcripts
                 }
                 else if (content.ValueKind == JsonValueKind.Array)
                 {
-                    blocks = [.. content.EnumerateArray().Where(block => block.ValueKind == JsonValueKind.Object).Select(block => JsonShape.Text(block, "type"))];
+                    blocks = [.. content.EnumerateArray().Where(block => block.ValueKind == JsonValueKind.Object).Select(block => Text(block, "type"))];
                 }
             }
 
             return new Entry(
-                JsonShape.Text(root, "type"),
-                JsonShape.Text(root, "cwd"),
-                JsonShape.Text(root, "entrypoint"),
-                JsonShape.Text(root, "timestamp"),
+                Text(root, "type"),
+                Text(root, "cwd"),
+                Text(root, "entrypoint"),
+                Text(root, "timestamp"),
                 text,
                 blocks,
-                Truthy(root, "isCompactSummary"),
-                Truthy(root, "isMeta"),
-                JsonShape.Text(root, "customTitle"),
-                JsonShape.Text(root, "aiTitle"),
-                JsonShape.Text(root, "summary"));
-        }
+                Flag(root, "isCompactSummary", "$"),
+                Flag(root, "isMeta", "$"),
+                Text(root, "customTitle"),
+                Text(root, "aiTitle"),
+                Text(root, "summary"));
+        });
     }
 
     // One transcript line: the content as typed text, or the types of its blocks.
@@ -255,10 +261,21 @@ internal static class Transcripts
         private string? _entrypoint;
         private Entry? _lastTurn;
 
-        public void Add(string line)
+        public void Add(string line, string source, Action<string>? problem)
         {
             var number = _line++;
-            if (Parse(line) is not { } entry)
+            Entry? parsed;
+            try
+            {
+                parsed = Parse(line, source);
+            }
+            catch (JsonInputException e)
+            {
+                problem?.Invoke(e.Message);
+                return;
+            }
+
+            if (parsed is not { } entry)
             {
                 return;
             }

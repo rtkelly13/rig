@@ -277,7 +277,7 @@ public sealed class WrapupTests
     }
 
     [Fact]
-    public async Task ReadSnapshot_decodes_orca_and_drops_rows_it_cannot_read()
+    public async Task ReadSnapshot_decodes_orca_and_ignores_fields_it_does_not_read()
     {
         var proc = new FakeProc();
         proc.Answer(
@@ -286,12 +286,11 @@ public sealed class WrapupTests
                   {"worktreeId": "w1", "repoId": "r", "path": "/w1", "branch": "refs/heads/x", "parentWorktreeId": "w0",
                    "linkedPR": {"number": 7, "state": "open"},
                    "agents": [{"paneKey": "t1:l1", "state": "done", "agentType": "claude", "stateStartedAt": 1.5,
-                               "programStatus": {"message": "hi"}}, {"state": "done"}]},
-                  {"repoId": "r", "path": "/nope"},
-                  {"worktreeId": "w2", "repoId": "r", "path": "/w2", "linkedPR": {"number": "x"}, "agents": "no"}]}}
+                               "programStatus": {"message": "hi"}, "unreadField": [1, 2]}]},
+                  {"worktreeId": "w2", "repoId": "r", "path": "/w2", "unreadField": {"a": 1}}]}}
                 """, ""),
             "orca", "worktree", "ps");
-        proc.Answer(new Ran(0, """{"ok": true, "result": {"terminals": [{"handle": "h1", "tabId": "t1", "leafId": "l1", "writable": true}, {"tabId": "t2"}]}}""", ""), "orca", "terminal", "list");
+        proc.Answer(new Ran(0, """{"ok": true, "result": {"terminals": [{"handle": "h1", "tabId": "t1", "leafId": "l1", "writable": true}]}}""", ""), "orca", "terminal", "list");
         proc.Answer(new Ran(0, """{"ok": true, "result": {"repos": [{"id": "r", "path": "/r", "displayName": "R"}]}}""", ""), "orca", "repo", "list");
 
         var snapshot = await new WrapupOrca(proc).ReadSnapshotAsync(Token);
@@ -307,6 +306,37 @@ public sealed class WrapupTests
         Assert.Equal("t1:l1", Assert.Single(snapshot.Terminals).PaneKey);
         Assert.Equal(new WrapupRepo("r", "/r", "R"), Assert.Single(snapshot.Repos));
         Assert.Equal(["orca", "worktree", "ps", "--limit", "1000", "--json"], proc.Requests[0].Argv);
+    }
+
+    [Theory]
+    [InlineData("""{"ok": true, "result": {"worktrees": [{"repoId": "r", "path": "/p"}]}}""", "orca worktree ps: $.result.worktrees[0].worktreeId: expected a string, found nothing")]
+    [InlineData("""{"ok": true, "result": {"worktrees": [{"worktreeId": "w", "repoId": "r", "path": "/p", "linkedPR": {"number": "7"}}]}}""", "orca worktree ps: $.result.worktrees[0].linkedPR.number: expected a whole number, found the string \"7\"")]
+    [InlineData("""{"ok": true, "result": {"worktrees": [{"worktreeId": "w", "repoId": "r", "path": "/p", "linkedPR": {"number": 7.5}}]}}""", "orca worktree ps: $.result.worktrees[0].linkedPR.number: expected a whole number, found the number 7.5")]
+    [InlineData("""{"ok": true, "result": {"worktrees": [{"worktreeId": "w", "repoId": "r", "path": "/p", "agents": "no"}]}}""", "orca worktree ps: $.result.worktrees[0].agents: expected a list, found the string \"no\"")]
+    [InlineData("""{"ok": true, "result": {"worktrees": [{"worktreeId": "w", "repoId": "r", "path": "/p", "agents": [{"state": "done"}]}]}}""", "orca worktree ps: $.result.worktrees[0].agents[0].paneKey: expected a string, found nothing")]
+    [InlineData("""{"ok": true, "result": {"truncated": "yes", "worktrees": []}}""", "orca worktree ps: $.result.truncated: expected a boolean, found the string \"yes\"")]
+    [InlineData("""{"ok": true}""", "orca worktree ps: $.result: expected an object, found nothing")]
+    [InlineData("""{"ok": 1, "result": {}}""", "orca worktree ps: $.ok: expected a boolean, found the number 1")]
+    public async Task A_misshapen_answer_names_the_command_the_json_path_and_what_was_found(string answer, string detail)
+    {
+        var proc = new FakeProc();
+        proc.Answer(new Ran(0, answer, ""), "orca", "worktree", "ps");
+
+        var failure = await Assert.ThrowsAsync<WrapupException>(() => new WrapupOrca(proc).ReadSnapshotAsync(Token));
+
+        Assert.Equal($"orca answered in a shape this version of rig does not read: {detail}", failure.Message);
+    }
+
+    [Fact]
+    public async Task A_terminal_with_a_wrongly_typed_flag_is_an_error_not_a_guess()
+    {
+        var proc = new FakeProc();
+        proc.Answer(new Ran(0, """{"ok": true, "result": {"worktrees": []}}""", ""), "orca", "worktree", "ps");
+        proc.Answer(new Ran(0, """{"ok": true, "result": {"terminals": [{"handle": "h1", "writable": 1}]}}""", ""), "orca", "terminal", "list");
+
+        var failure = await Assert.ThrowsAsync<WrapupException>(() => new WrapupOrca(proc).ReadSnapshotAsync(Token));
+
+        Assert.EndsWith("orca terminal list: $.result.terminals[0].writable: expected a boolean, found the number 1", failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]

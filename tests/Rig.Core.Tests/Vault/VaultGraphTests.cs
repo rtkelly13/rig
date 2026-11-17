@@ -260,6 +260,23 @@ public sealed class VaultGraphTests : IDisposable
         Assert.Equal(expected, UnicodeText.SplitLines(text));
     }
 
+    [Theory]
+    [InlineData("""{"vaults": {"a": {"path": 3, "open": true}}}""", "$.vaults.a.path: expected a string, found the number 3")]
+    [InlineData("""{"vaults": {"a": {"path": "/v", "open": "true"}}}""", "$.vaults.a.open: expected a boolean, found the string \"true\"")]
+    [InlineData("""{"vaults": {"a": 5}}""", "$.vaults.a: expected an object, found the number 5")]
+    [InlineData("""{"vaults": []}""", "$.vaults: expected an object, found a list")]
+    [InlineData("""[]""", "$: expected an object, found a list")]
+    public async Task A_misshapen_obsidian_registry_is_reported_with_its_json_path(string json, string detail)
+    {
+        Registry(json);
+        var problems = new List<string>();
+
+        var listed = await new ObsidianOrphans(proc, Home).ListAsync(Vault, problems.Add, TestContext.Current.CancellationToken);
+
+        Assert.Empty(listed);
+        Assert.Equal($"{Path.Join(Home, "Library", "Application Support", "obsidian", "obsidian.json")}: {detail}", Assert.Single(problems));
+    }
+
     private static string Vaults(params (string Path, bool Open)[] vaults) =>
         new JsonObject
         {

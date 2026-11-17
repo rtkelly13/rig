@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Rig.Core.ReviewQueue;
 
 namespace Rig.Web.Ops;
@@ -122,11 +121,9 @@ public sealed class TriageInbox : IDisposable
     }
 
     /// <summary>Decodes a watch request, refusing an item number that cannot name one.</summary>
-    public static TriageWatch Watch(string body, JsonSerializerOptions options)
+    public static TriageWatch Watch(string body)
     {
-        ArgumentNullException.ThrowIfNull(body);
-        ArgumentNullException.ThrowIfNull(options);
-        var request = JsonSerializer.Deserialize<TriageWatch>(body, options) ?? throw new ArgumentException("Invalid triage watch request");
+        var request = OpsJson.Read<TriageWatch>(body);
         return request.Number > 0 ? request : throw new ArgumentException("Invalid triage watch request");
     }
 }

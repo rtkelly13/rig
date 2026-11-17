@@ -42,13 +42,15 @@ public sealed class ClaudeWorkSessions(string home, string ledgerDirectory, Func
         var live = await SessionRegistry.ReadLiveAsync(Path.Join(home, "sessions"), isAlive, cancellationToken).ConfigureAwait(false);
         var ends = await SessionRegistry.ReadEndsAsync(ledgerDirectory, cancellationToken).ConfigureAwait(false);
         var sessions = new List<SessionFacts>();
+        var problems = new List<string>();
         var read = 0;
         foreach (var path in Transcripts.Touched(Path.Join(home, "projects"), since))
         {
             SessionRecord record;
+            var skipped = new List<string>();
             try
             {
-                record = await Transcripts.ReadAsync(path, cancellationToken).ConfigureAwait(false);
+                record = await Transcripts.ReadAsync(path, skipped.Add, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
@@ -56,6 +58,11 @@ public sealed class ClaudeWorkSessions(string home, string ledgerDirectory, Func
             }
 
             read++;
+            if (skipped.Count > 0)
+            {
+                problems.Add(skipped.Count == 1 ? $"skipped a line: {skipped[0]}" : $"skipped {skipped.Count} lines, the first: {skipped[0]}");
+            }
+
             var running = live.GetValueOrDefault(record.SessionId);
             if (running is null && (!record.Interactive || record.PromptCount == 0))
             {
@@ -79,7 +86,7 @@ public sealed class ClaudeWorkSessions(string home, string ledgerDirectory, Func
                 running?.Pid));
         }
 
-        return new SessionScan(sessions, read);
+        return new SessionScan(sessions, read) { Problems = problems };
     }
 
     // The ledger says /clear, and the transcript was not used again after that.

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Estate;
 using Rig.Core.Otel;
+using Rig.Core.Text;
 using Rig.Core.ReviewQueue;
 using Rig.Core.Roots;
 using Rig.Core.Tests;
@@ -419,11 +420,31 @@ public sealed class OpsCoreTests
     [Fact]
     public void Triage_watch_needs_a_repository_and_a_positive_number()
     {
-        var watch = TriageInbox.Watch("""{"repo":"owner/repo","number":7}""", OpsJson.Boundary);
+        var watch = TriageInbox.Watch("""{"repo":"owner/repo","number":7}""");
         Assert.Equal(new TriageWatch("owner/repo", 7), watch);
 
-        Assert.Throws<ArgumentException>(() => TriageInbox.Watch("""{"repo":"owner/repo","number":0}""", OpsJson.Boundary));
-        Assert.Throws<JsonException>(() => TriageInbox.Watch("""{"number":1}""", OpsJson.Boundary));
+        Assert.Throws<ArgumentException>(() => TriageInbox.Watch("""{"repo":"owner/repo","number":0}"""));
+        Assert.Throws<JsonInputException>(() => TriageInbox.Watch("""{"number":1}"""));
+    }
+
+    [Theory]
+    [InlineData("""{"repo":"owner/repo","number":"7"}""", "request body: $.number: not valid JSON: The JSON value could not be converted to")]
+    [InlineData("""{"repo":"owner/repo","number":7.5}""", "request body: $.number: not valid JSON: The JSON value could not be converted to")]
+    [InlineData("""{"repo":3,"number":7}""", "request body: $.repo: not valid JSON: The JSON value could not be converted to")]
+    [InlineData("""not json""", "request body: $: not valid JSON:")]
+    public void A_browser_write_with_a_wrongly_typed_field_names_the_body_and_the_json_path(string body, string expected)
+    {
+        var rejected = Assert.Throws<JsonInputException>(() => TriageInbox.Watch(body));
+
+        Assert.StartsWith(expected, rejected.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_browser_write_that_is_not_an_object_is_rejected_with_the_expected_and_found()
+    {
+        var rejected = Assert.Throws<JsonInputException>(() => OpsJson.Read<TriageWatch>("null"));
+
+        Assert.Equal("request body: $: expected an object, found null", rejected.Message);
     }
 
     private static string Envelope(long startNs)

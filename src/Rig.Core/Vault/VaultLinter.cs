@@ -157,9 +157,9 @@ public sealed partial class VaultLinter
             {
                 suggested = FilenameStem.Suggest(
                     stem,
-                    title: Truthy(read.Front.Text("title")) ?? string.Empty,
-                    sourceUrl: Truthy(read.Front.Text("source")) ?? Truthy(read.Front.Text("url")) ?? string.Empty,
-                    relatedArticle: Truthy(read.Front.Text("related_article")) ?? string.Empty);
+                    title: NonEmpty(read.Front.Text("title")) ?? string.Empty,
+                    sourceUrl: NonEmpty(read.Front.Text("source")) ?? NonEmpty(read.Front.Text("url")) ?? string.Empty,
+                    relatedArticle: NonEmpty(read.Front.Text("related_article")) ?? string.Empty);
             }
             catch (FormatException exception)
             {
@@ -220,7 +220,7 @@ public sealed partial class VaultLinter
             }
 
             var isSocial = read.Front.Text("type") == "social" || note.FullPath.Contains("Social Media Posts", StringComparison.Ordinal);
-            if (Truthy(read.Front.Text("source")) is { } source)
+            if (NonEmpty(read.Front.Text("source")) is { } source)
             {
                 string url;
                 try
@@ -245,7 +245,7 @@ public sealed partial class VaultLinter
                 continue;
             }
 
-            var title = Truthy(read.Front.Text("title")) ?? note.Relative.Stem;
+            var title = NonEmpty(read.Front.Text("title")) ?? note.Relative.Stem;
             var normalized = UnicodeText.Lower(UnicodeText.Strip(ShortHash().Replace(CopySuffix().Replace(title, string.Empty, 1), string.Empty, 1)));
             Add(byTitle, titleOrder, $"title:{parent}/{normalized}", note);
         }
@@ -439,7 +439,7 @@ public sealed partial class VaultLinter
             .OrderBy(n => string.Join('\0', n.Relative.Parts), UnicodeText.CodePointOrder),
     ];
 
-    private static string? Truthy(string? text) => string.IsNullOrEmpty(text) ? null : text;
+    private static string? NonEmpty(string? text) => string.IsNullOrEmpty(text) ? null : text;
 
     internal static bool Excluded(string fullPath, params string[] extra) =>
         fullPath.Contains(".git", StringComparison.Ordinal)
