@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Unicode;
 using Rig.Core.Processes;
 using Rig.Core.Services;
+using Rig.Core.Storage;
 
 namespace Rig.Core.Vault;
 
@@ -222,14 +223,7 @@ public sealed class KnowledgeServer(IProc proc, Launchd launchd, KnowledgeServer
     /// <summary>The registration in this user's <c>~/.claude.json</c>; absent when it cannot be read.</summary>
     public Registration CurrentRegistration()
     {
-        try
-        {
-            return ReadRegistration(File.ReadAllBytes(places.ClaudeJson));
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return Registration.Absent;
-        }
+        return FileGuard.Try(() => ReadRegistration(File.ReadAllBytes(places.ClaudeJson)), Registration.Absent);
     }
 
     /// <summary>

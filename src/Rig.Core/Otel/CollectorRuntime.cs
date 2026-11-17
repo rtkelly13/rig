@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Sockets;
 using System.Text;
 using Rig.Core.Processes;
+using Rig.Core.Storage;
 
 namespace Rig.Core.Otel;
 
@@ -149,14 +150,7 @@ public sealed class CollectorRuntime(OtelPaths paths, IProc proc, IDetachedStart
     /// <summary>What <see cref="StartAsync"/> last recorded, or null.</summary>
     public Launched? Recorded()
     {
-        try
-        {
-            return Launched.Parse(File.ReadAllText(paths.PidFile, Encoding.UTF8));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        return FileGuard.Try(() => Launched.Parse(File.ReadAllText(paths.PidFile, Encoding.UTF8)), null);
     }
 
     /// <summary>The recorded pid while it is still the collector that was launched.</summary>

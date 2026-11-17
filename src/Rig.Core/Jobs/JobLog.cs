@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Rig.Core.Storage;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Jobs;
@@ -71,14 +72,7 @@ public static partial class JobLog
     /// <summary>The file's length, or 0 when it cannot be read.</summary>
     public static long Size(string? path)
     {
-        try
-        {
-            return path is not null && File.Exists(path) ? new FileInfo(path).Length : 0;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return 0;
-        }
+        return FileGuard.Try(() => path is not null && File.Exists(path) ? new FileInfo(path).Length : 0, 0);
     }
 
     /// <summary>What was appended to the file after it was <paramref name="offset"/> bytes long; empty when it cannot be read.</summary>

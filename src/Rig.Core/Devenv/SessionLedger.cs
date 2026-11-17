@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Policy;
+using Rig.Core.Storage;
 
 namespace Rig.Core.Devenv;
 
@@ -69,14 +70,7 @@ public static class SessionLedger
     /// <summary>Whether the script at <paramref name="hookPath"/> matches the bundled one, line endings aside.</summary>
     public static bool ScriptCurrent(string hookPath)
     {
-        try
-        {
-            return Canonical(File.ReadAllBytes(hookPath)).AsSpan().SequenceEqual(Script);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
+        return FileGuard.Try(() => Canonical(File.ReadAllBytes(hookPath)).AsSpan().SequenceEqual(Script), false);
     }
 
     /// <summary>Copies the bundled script to <paramref name="hookPath"/>; throws <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/> when it cannot.</summary>
