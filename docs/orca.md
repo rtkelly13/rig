@@ -293,10 +293,10 @@ nothing in rig causes or prevents it.
 still records each tab's worktree, title and agent session id (`unifiedTabs[].aiVaultTitle`,
 plus `sleepingAgentSessionsByPaneKey[].providerSession` with the session's own `cwd`).
 
-**Recover** with the read-only Orca script in `tools/orca-lost-tabs/`:
+**Recover** with the read-only `rig workspace orca lost-tabs`:
 
 ```bash
-uv run python -I tools/orca-lost-tabs/orca_lost_tabs.py --orca-data "$APPDATA/orca"
+rig workspace orca lost-tabs --orca-data "$APPDATA/orca"   # --json for machines; --before <backup.db> picks the snapshot
 ```
 
 It compares the newest backup saved before the running Orca started with the live state, skips
@@ -307,7 +307,7 @@ and a session started in a worktree the sidebar hides fails with `selector_not_f
 
 **Recover the same day.** Orca writes a backup about once an hour and keeps only the newest
 five, so the pre-restart snapshot rotates away roughly five hours after Orca comes back up.
-Once it has, the script stops with `no backup saved before this Orca started`, and the
+Once it has, the command stops with `no backup saved before this Orca started`, and the
 fallback is `daemon.log` (`session-exited` at the shutdown time) plus the session's
 transcript under `~/.claude/projects`.
 

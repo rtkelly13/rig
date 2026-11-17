@@ -40,6 +40,6 @@ and findings are in each CLI's `--help`; these guides hold what `--help` can't.
 | [forks.md](forks.md) | Managed forks: a repo tracking an upstream we don't own, with our changes on top |
 | [triage.md](triage.md) | `rig triage`: the estate-wide PR and issue queue and its `rig web` page |
 | [web-ops.md](web-ops.md) | The Operations pages under `/ops` in `rig web` |
-| [orca.md](orca.md) | `workspace orca doctor/sync`: agent launch flags, worktree folders and per-repo setup |
+| [orca.md](orca.md) | `workspace orca doctor/sync/lost-tabs`: agent launch flags, worktree folders and per-repo setup |
 | [obs-recording.md](obs-recording.md) | Recording a live talk with OBS |
 | [bootable-usb-windows.md](bootable-usb-windows.md) | Rewriting an Ubuntu LTS install stick from Windows |

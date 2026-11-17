@@ -304,6 +304,7 @@
     {"Id": "cs:workspace gitignore sync","Capability": "workspace gitignore sync","Owner": "cs:workspace gitignore sync","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:workspace orca","Capability": "workspace orca","Owner": "cs:workspace orca","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:workspace orca doctor","Capability": "workspace orca doctor","Owner": "cs:workspace orca doctor","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:workspace orca lost-tabs","Capability": "workspace orca lost-tabs","Owner": "cs:workspace orca lost-tabs","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:workspace orca sync","Capability": "workspace orca sync","Owner": "cs:workspace orca sync","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:workspace packages","Capability": "workspace packages","Owner": "cs:workspace packages","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:workspace packages audit","Capability": "workspace packages audit","Owner": "cs:workspace packages audit","Platforms": ["linux","macos","windows"],"AliasTo": null},

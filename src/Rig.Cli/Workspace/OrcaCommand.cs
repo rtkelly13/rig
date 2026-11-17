@@ -1,6 +1,7 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Text.Json.Nodes;
+using Microsoft.Data.Sqlite;
 using Rig.Cli.Rendering;
 using Rig.Core.Orca;
 using Rig.Core.Packages;
@@ -43,6 +44,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
         var group = new Command("orca", "Manage Orca workspace configuration (agent flags, repos, hooks, base refs, colors).");
         group.Subcommands.Add(Doctor());
         group.Subcommands.Add(Sync());
+        group.Subcommands.Add(LostTabs());
         return group;
     }
 
@@ -86,6 +88,31 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
             new SyncArgs(parsed.GetValue(apply), parsed.GetValue(config), parsed.GetValue(repo), parsed.GetValue(root), parsed.GetValue(orcaData), parsed.GetValue(json)),
             cancellationToken));
         return sync;
+    }
+
+    private Command LostTabs()
+    {
+        var orcaData = OrcaDataOption();
+        var before = new Option<string?>("--before") { Description = "Backup database to compare from (default: the newest saved before this Orca started)" };
+        var json = new Option<bool>("--json") { Description = "Output the report as JSON" };
+        var lostTabs = new Command("lost-tabs", "List the agent tabs Orca lost across a restart, with the orca terminal create line that reopens each. Read-only.") { orcaData, before, json };
+        lostTabs.SetAction(parsed => LostTabs(parsed.GetValue(orcaData), parsed.GetValue(before), parsed.GetValue(json)));
+        return lostTabs;
+    }
+
+    private int LostTabs(string? orcaData, string? before, bool json)
+    {
+        try
+        {
+            var report = OrcaLostTabs.Find(orca.Locations, orcaData, before);
+            output.Write(json ? report.ToJson() + "\n" : report.ToText());
+            return 0;
+        }
+        catch (Exception e) when (e is InvalidOperationException or SqliteException or IOException)
+        {
+            orca.Error.WriteLine(e.Message);
+            return 1;
+        }
     }
 
     private async Task<int> DoctorAsync(string? config, string? root, string? orcaData, bool json, CancellationToken cancellationToken)

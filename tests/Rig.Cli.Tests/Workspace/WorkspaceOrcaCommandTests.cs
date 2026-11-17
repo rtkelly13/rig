@@ -6,6 +6,7 @@ using Rig.Core.Orca;
 using Rig.Core.Processes;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Tests.Orca;
 using Rig.Core.Workspace;
 
 namespace Rig.Cli.Tests.Workspace;
@@ -71,6 +72,23 @@ public sealed class WorkspaceOrcaCommandTests : IDisposable
         string[] full = [.. args, "--orca-data", OrcaData];
         var code = await new RootCommand { command.Build() }.Parse(full).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, Token);
         return (code, output.ToString().ReplaceLineEndings("\n"), error.ToString().ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public async Task Lost_tabs_reports_what_the_backup_had_and_the_live_state_lost()
+    {
+        var profile = Path.Join(OrcaData, "profiles", "local-default");
+        var backup = SessionDb.Write(Path.Join(profile, "profile-state.db.backup.1.db"), """{"unifiedTabs": {"w::/w": [{"id": "a", "label": "build", "aiVaultTitle": {"agent": "claude", "sessionId": "s1"}}]}}""", 1);
+        _ = SessionDb.Write(Path.Join(profile, OrcaProfile.LiveDb), """{"unifiedTabs": {}}""", 2);
+
+        var (code, output, _) = await RunAsync("workspace", "orca", "lost-tabs", "--json", "--before", backup);
+        var (missing, _, error) = await RunAsync("workspace", "orca", "lost-tabs", "--before", Path.Join(OrcaData, "nope.db"));
+
+        Assert.Equal(0, code);
+        var lost = Assert.Single(JsonNode.Parse(output)!["lost"]!.AsArray());
+        Assert.Equal(("build", "s1"), ((string?)lost!["title"], (string?)lost["session_id"]));
+        Assert.Equal(1, missing);
+        Assert.Contains("nope.db", error, StringComparison.Ordinal);
     }
 
     [Fact]
