@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Rig.Core.Storage;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Governance;
@@ -231,17 +232,8 @@ public static partial class RepoHygiene
             return new("N/A (No Workflows)", true);
         }
 
-        var unpinned = 0;
-        foreach (var file in workflows)
-        {
-            foreach (var line in DocsTree.ReadText(file).Split('\n'))
-            {
-                if (UsesPattern().Match(line) is { Success: true } match && !HexSha().IsMatch(match.Groups[3].Value))
-                {
-                    unpinned++;
-                }
-            }
-        }
+        var unpinned = workflows.SelectMany(file => DocsTree.ReadText(file).Split('\n'))
+            .Count(line => UsesPattern().Match(line) is { Success: true } match && !HexSha().IsMatch(match.Groups[3].Value));
 
         return unpinned == 0 ? new("PINNED", true) : new($"UNPINNED ({unpinned} actions)", UnpinnedCount: unpinned);
     }
@@ -429,24 +421,8 @@ public static partial class RepoHygiene
             }
         }
 
-        lines.AddRange(
-        [
-            string.Empty,
-            "ignore:",
-            "  - .git",
-            "  - .venv",
-            "  - \"**/.venv\"",
-            "  - node_modules",
-            "  - \"**/node_modules\"",
-            "  - temp",
-            "  - .temp",
-            "  - \"**/temp\"",
-            "  - .worktrees",
-            "  - bin",
-            "  - obj",
-            "  - dist",
-            "  - build",
-        ]);
+        lines.AddRange([string.Empty, "ignore:", "  - .git", "  - .venv", "  - \"**/.venv\"", "  - node_modules", "  - \"**/node_modules\"", "  - temp", "  - .temp", "  - \"**/temp\"",
+            "  - .worktrees", "  - bin", "  - obj", "  - dist", "  - build"]);
         if (allowedExceptions.Count > 0)
         {
             lines.Add("  # Explicit repository exceptions:");
@@ -511,17 +487,7 @@ public static partial class RepoHygiene
     /// </summary>
     public static bool HasDependabotVersionUpdates(string repoPath)
     {
-        if (FirstFile(repoPath, DependabotConfigFiles) is not { } file)
-        {
-            return false;
-        }
-
-        string content;
-        try
-        {
-            content = DocsTree.ReadText(file);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        if (FirstFile(repoPath, DependabotConfigFiles) is not { } file || FileGuard.Try(() => DocsTree.ReadText(file), null) is not { } content)
         {
             return false;
         }

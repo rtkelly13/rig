@@ -192,16 +192,7 @@ public sealed class RepoPolicies
     {
         if (explicitLanguages is { Count: > 0 })
         {
-            var resolved = new List<string>();
-            foreach (var language in explicitLanguages.SelectMany(language => language.Split(',')).Select(NormalizeLanguage))
-            {
-                if (language.Length > 0 && !resolved.Contains(language))
-                {
-                    resolved.Add(language);
-                }
-            }
-
-            return resolved;
+            return [.. explicitLanguages.SelectMany(language => language.Split(',')).Select(NormalizeLanguage).Where(language => language.Length > 0).Distinct()];
         }
 
         if (Resolve(key, layer => layer.Languages) is { Count: > 0 } configured)
@@ -345,28 +336,15 @@ public sealed class RepoPolicies
             return new(ban.AllowedScriptExtensions, ban.BannedScriptExtensions);
         }
 
-        var allowed = new List<string>();
-        var banned = new List<string>();
-        var hasPython = false;
-        foreach (var language in ResolveLanguages(key, repoPath))
-        {
-            var id = NormalizeLanguage(language);
-            hasPython |= id == "python";
-            if (Presets.FirstOrDefault(preset => preset.Id == id) is not { } preset)
-            {
-                continue;
-            }
-
-            allowed.AddRange(preset.ScriptExtensions.Where(ext => !allowed.Contains(ext)).Distinct());
-            banned.AddRange(preset.BannedScriptExtensions.Where(ext => !banned.Contains(ext)).Distinct());
-        }
-
-        if (hasPython)
+        var ids = ResolveLanguages(key, repoPath).Select(NormalizeLanguage).ToList();
+        var used = ids.Select(id => Presets.FirstOrDefault(preset => preset.Id == id)).OfType<LanguagePreset>().ToList();
+        var banned = used.SelectMany(preset => preset.BannedScriptExtensions).Distinct().ToList();
+        if (ids.Contains("python"))
         {
             _ = banned.Remove(".py");
         }
 
-        return new(allowed, banned);
+        return new([.. used.SelectMany(preset => preset.ScriptExtensions).Distinct()], banned);
     }
 
     /// <summary>
@@ -390,23 +368,9 @@ public sealed class RepoPolicies
     public IReadOnlyList<string> ReposForOrg(string org)
     {
         ArgumentNullException.ThrowIfNull(org);
-        var repos = new List<string>();
-        foreach (var (_, layer, names) in _profiles)
-        {
-            if (layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase))
-            {
-                repos.AddRange(names);
-            }
-        }
-
-        foreach (var (name, layer) in _overrides)
-        {
-            if (layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase) && !repos.Contains(name))
-            {
-                repos.Add(name);
-            }
-        }
-
+        bool Expects(Layer layer) => layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase);
+        List<string> repos = [.. _profiles.Where(p => Expects(p.Layer)).SelectMany(p => p.Repos)];
+        repos.AddRange(_overrides.Where(o => Expects(o.Layer) && !repos.Contains(o.Name)).Select(o => o.Name));
         return repos;
     }
 
@@ -537,12 +501,9 @@ public sealed class RepoPolicies
 
         var defaults = AgentsMdRules.Default;
         var claudeMd = hygiene.ClaudeMd ?? defaults.ClaudeMd;
-        if (claudeMd is not ("symlink" or "absent" or "any"))
-        {
-            throw Bad(source, $"claude_md '{claudeMd}' is not one of symlink, absent, any");
-        }
-
-        return new()
+        return claudeMd is not ("symlink" or "absent" or "any")
+            ? throw Bad(source, $"claude_md '{claudeMd}' is not one of symlink, absent, any")
+            : new()
         {
             MaxLines = hygiene.MaxLines ?? defaults.MaxLines,
             ClaudeMd = claudeMd,
@@ -555,35 +516,23 @@ public sealed class RepoPolicies
         };
     }
 
-    private static RepoSelectionRules? Selection(RepoSelectionConfig? selection)
-    {
-        if (selection is null)
-        {
-            return null;
-        }
+    private static RepoSelectionRules? Selection(RepoSelectionConfig? selection) =>
+        selection is null
+            ? null
+            : new(
+                selection.ManageForks ?? RepoSelectionRules.Default.ManageForks,
+                selection.RequirePushAccess ?? RepoSelectionRules.Default.RequirePushAccess,
+                selection.Exempt ?? RepoSelectionRules.Default.Exempt);
 
-        var defaults = RepoSelectionRules.Default;
-        return new(
-            selection.ManageForks ?? defaults.ManageForks,
-            selection.RequirePushAccess ?? defaults.RequirePushAccess,
-            selection.Exempt ?? defaults.Exempt);
-    }
-
-    private static MergeSettings? Merge(RepoMergeSettingsConfig? block)
-    {
-        if (block is null)
-        {
-            return null;
-        }
-
-        var defaults = MergeSettings.Default;
-        return new(
-            block.DeleteBranchOnMerge ?? defaults.DeleteBranchOnMerge,
-            block.AllowSquashMerge ?? defaults.AllowSquashMerge,
-            block.AllowMergeCommit ?? defaults.AllowMergeCommit,
-            block.AllowRebaseMerge ?? defaults.AllowRebaseMerge,
-            block.AllowAutoMerge ?? defaults.AllowAutoMerge);
-    }
+    private static MergeSettings? Merge(RepoMergeSettingsConfig? block) =>
+        block is null
+            ? null
+            : new(
+                block.DeleteBranchOnMerge ?? MergeSettings.Default.DeleteBranchOnMerge,
+                block.AllowSquashMerge ?? MergeSettings.Default.AllowSquashMerge,
+                block.AllowMergeCommit ?? MergeSettings.Default.AllowMergeCommit,
+                block.AllowRebaseMerge ?? MergeSettings.Default.AllowRebaseMerge,
+                block.AllowAutoMerge ?? MergeSettings.Default.AllowAutoMerge);
 
     private static List<LabelSpec>? LabelsOf(IReadOnlyList<LabelConfig>? labels, string source) =>
         labels is null
@@ -611,57 +560,36 @@ public sealed class RepoPolicies
             _ => throw Bad(source, $"environments.{environment}.reviewers is not a list of strings"),
         };
 
-    private static PagesPolicy? PagesOf(PagesConfig? block, string source)
-    {
-        if (block is null)
-        {
-            return null;
-        }
-
-        var buildType = block.BuildType ?? "workflow";
-        if (buildType is not ("workflow" or "legacy"))
-        {
-            throw Bad(source, $"pages.build_type '{buildType}' is neither 'workflow' nor 'legacy'");
-        }
-
-        return new(block.Enabled ?? false, buildType, block.Cname, block.HttpsEnforced ?? true);
-    }
+    private static PagesPolicy? PagesOf(PagesConfig? block, string source) =>
+        block is null
+            ? null
+            : (block.BuildType ?? "workflow") is var buildType and ("workflow" or "legacy")
+                ? new(block.Enabled ?? false, buildType, block.Cname, block.HttpsEnforced ?? true)
+                : throw Bad(source, $"pages.build_type '{block.BuildType}' is neither 'workflow' nor 'legacy'");
 
     private static ForkSpec? ForkOf(ForkConfig? block, string source) =>
         block is { } fork
             ? new(fork.Upstream ?? throw Bad(source, "fork has no upstream"), fork.UpstreamBranch ?? "main")
             : null;
 
-    private static BranchCleanupRules? CleanupOf(BranchCleanupConfig? block)
-    {
-        if (block is null)
-        {
-            return null;
-        }
+    private static BranchCleanupRules? CleanupOf(BranchCleanupConfig? block) =>
+        block is null
+            ? null
+            : new(
+                block.Enabled ?? BranchCleanupRules.Default.Enabled,
+                block.Protected ?? BranchCleanupRules.Default.Protected,
+                block.ProtectOpenPrHeads ?? BranchCleanupRules.Default.ProtectOpenPrHeads,
+                block.ProtectPrefixes ?? BranchCleanupRules.Default.ProtectPrefixes);
 
-        var defaults = BranchCleanupRules.Default;
-        return new(
-            block.Enabled ?? defaults.Enabled,
-            block.Protected ?? defaults.Protected,
-            block.ProtectOpenPrHeads ?? defaults.ProtectOpenPrHeads,
-            block.ProtectPrefixes ?? defaults.ProtectPrefixes);
-    }
-
-    private static ScriptBanRules? ScriptBanOf(ScriptBanConfig? block)
-    {
-        if (block is null)
-        {
-            return null;
-        }
-
-        var defaults = ScriptBanRules.Default;
-        return new(
-            block.Enabled ?? defaults.Enabled,
-            block.BannedExtensions ?? defaults.BannedExtensions,
-            block.AllowedExceptions ?? defaults.AllowedExceptions,
-            block.AllowedScriptExtensions ?? defaults.AllowedScriptExtensions,
-            block.BannedScriptExtensions ?? defaults.BannedScriptExtensions);
-    }
+    private static ScriptBanRules? ScriptBanOf(ScriptBanConfig? block) =>
+        block is null
+            ? null
+            : new(
+                block.Enabled ?? ScriptBanRules.Default.Enabled,
+                block.BannedExtensions ?? ScriptBanRules.Default.BannedExtensions,
+                block.AllowedExceptions ?? ScriptBanRules.Default.AllowedExceptions,
+                block.AllowedScriptExtensions ?? ScriptBanRules.Default.AllowedScriptExtensions,
+                block.BannedScriptExtensions ?? ScriptBanRules.Default.BannedScriptExtensions);
 
     // license: a bare type, or {"type": …}; an object without a type declares the default.
     private static string? LicenseOf(LicenseConfig? license) => license is null ? null : license.Type ?? string.Empty;
