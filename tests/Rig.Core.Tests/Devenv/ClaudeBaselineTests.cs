@@ -21,7 +21,7 @@ public sealed class ClaudeBaselineTests : IDisposable
         Assert.Equal(
             [
                 "+ permissions.defaultMode: 'acceptEdits'",
-                "+ model: 'opus-5.5'",
+                "+ model: 'opus'",
                 "+ effortLevel: 'medium'",
                 "+ autoCompactEnabled: True",
                 "+ autoCompactWindow: 200000",
@@ -45,12 +45,30 @@ public sealed class ClaudeBaselineTests : IDisposable
     [Fact]
     public void Existing_preferences_and_permissions_are_never_clobbered()
     {
-        var merge = Merge("""{"model":"claude-3-5-sonnet","permissions":{"allow":["Bash(my_custom_script:*)", 7],"deny":["Read(.env)"],"defaultMode":"dontAcceptEdits"}}""");
+        var merge = Merge("""{"effortLevel":"high","advisorModel":"fable","permissions":{"allow":["Bash(my_custom_script:*)", 7],"deny":["Read(.env)"],"defaultMode":"dontAcceptEdits"}}""");
 
-        Assert.Equal("claude-3-5-sonnet", (string?)merge.Settings["model"]);
+        Assert.Equal("high", (string?)merge.Settings["effortLevel"]);
+        Assert.Equal("fable", (string?)merge.Settings["advisorModel"]);
         Assert.Equal("""{"allow":["Bash(my_custom_script:*)",7],"deny":["Read(.env)"],"defaultMode":"dontAcceptEdits"}""", merge.Settings["permissions"]!.ToJsonString());
-        Assert.DoesNotContain(merge.Changes, c => c.Contains("permissions", StringComparison.Ordinal) || c.Contains("model", StringComparison.Ordinal));
+        Assert.DoesNotContain(merge.Changes, c => c.Contains("permissions", StringComparison.Ordinal) || c.Contains("effortLevel", StringComparison.Ordinal) || c.Contains("advisorModel", StringComparison.Ordinal));
     }
+
+    [Theory]
+    [InlineData("""{"model":"claude-fable-5-2"}""", "~ model: 'claude-fable-5-2' -> 'opus'")]
+    [InlineData("""{"model":"sonnet"}""", "~ model: 'sonnet' -> 'opus'")]
+    [InlineData("""{"model":null}""", "~ model: 'opus'")]
+    [InlineData("{}", "+ model: 'opus'")]
+    public void The_managed_model_is_reset_to_opus(string json, string change)
+    {
+        var merge = Merge(json);
+
+        Assert.Equal("opus", (string?)merge.Settings["model"]);
+        Assert.Contains(change, merge.Changes);
+    }
+
+    [Fact]
+    public void A_model_already_opus_is_no_change() =>
+        Assert.DoesNotContain(Merge("""{"model":"opus"}""").Changes, c => c.Contains("model", StringComparison.Ordinal));
 
     [Fact]
     public void Caps_join_the_env_beside_existing_variables_and_a_set_cap_is_kept()

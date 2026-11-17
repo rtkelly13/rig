@@ -7,20 +7,30 @@ namespace Rig.Core.Devenv;
 
 /// <summary>Settings with the baseline merged in, and a line per addition.</summary>
 /// <param name="Settings">The merged settings.</param>
-/// <param name="Changes">One line per value added, as <c>+ key: value</c>.</param>
+/// <param name="Changes">One line per value added, as <c>+ key: value</c>, or reset, as <c>~ key: old -> new</c>.</param>
 public sealed record SettingsMerge(JsonObject Settings, IReadOnlyList<string> Changes);
 
 /// <summary>
 /// The Claude Code settings baseline, merged into <c>~/.claude/settings.json</c> as a union that never clobbers: a key
-/// already set, even to another value, is kept. Command permissions are not baselined here: they come from the estate
+/// already set, even to another value, is kept. The <see cref="Managed"/> keys are the exception: rig owns them and
+/// resets them on every run. Command permissions are not baselined here: they come from the estate
 /// policy (<c>config/cli-allowlists.json</c>) through <see cref="NativeProjection"/>.
 /// </summary>
 public static class ClaudeBaseline
 {
-    /// <summary>Top-level preferences. <c>workflowSizeGuideline</c> is advice to Claude; <see cref="Env"/> enforces it.</summary>
+    /// <summary>
+    /// Top-level keys rig owns outright, reset to these values whatever is there. Claude Code's <c>/model</c> picker and
+    /// its model-launch prompts write <c>model</c> into this file, and a fill-if-missing baseline would keep their choice
+    /// forever. <c>opus</c> is the alias for the latest Opus. <c>advisorModel</c> is deliberately not managed.
+    /// </summary>
+    public static readonly IReadOnlyList<(string Key, JsonValue Value)> Managed =
+    [
+        ("model", JsonValue.Create("opus")),
+    ];
+
+    /// <summary>Top-level preferences, filled in only where missing. <c>workflowSizeGuideline</c> is advice to Claude; <see cref="Env"/> enforces it.</summary>
     public static readonly IReadOnlyList<(string Key, JsonValue Value)> Preferences =
     [
-        ("model", JsonValue.Create("opus-5.5")),
         ("effortLevel", JsonValue.Create("medium")),
         ("autoCompactEnabled", JsonValue.Create(true)),
         ("autoCompactWindow", JsonValue.Create(200000)),
@@ -77,6 +87,7 @@ public static class ClaudeBaseline
         var changes = new List<string>();
 
         AddMissing(ObjectAt(merged, "permissions"), Permissions, "permissions.", changes);
+        Reset(merged, Managed, changes);
         AddMissing(merged, Preferences, string.Empty, changes);
         AddMissing(ObjectAt(merged, "env"), Env, "env.", changes);
         AddMissing(ObjectAt(merged, "attribution"), Attribution, "attribution.", changes);
@@ -125,6 +136,22 @@ public static class ClaudeBaseline
         var created = new JsonObject();
         parent[key] = created;
         return created;
+    }
+
+    private static void Reset(JsonObject target, IEnumerable<(string Key, JsonValue Value)> managed, List<string> changes)
+    {
+        foreach (var (key, value) in managed)
+        {
+            if (target[key] is JsonNode current && JsonNode.DeepEquals(current, value))
+            {
+                continue;
+            }
+
+            changes.Add(target[key] is JsonValue old
+                ? string.Create(CultureInfo.InvariantCulture, $"~ {key}: {Repr(old)} -> {Repr(value)}")
+                : string.Create(CultureInfo.InvariantCulture, $"{(target.ContainsKey(key) ? "~" : "+")} {key}: {Repr(value)}"));
+            target[key] = value.DeepClone();
+        }
     }
 
     private static void AddMissing(JsonObject target, IEnumerable<(string Key, JsonValue Value)> baseline, string prefix, List<string> changes)
