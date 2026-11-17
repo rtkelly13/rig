@@ -543,7 +543,7 @@ public static partial class TraceAnalytics
         return attributes;
     }
 
-    // Lenient, as Python's pydantic was: a value of the wrong shape reads as null rather than dropping the span.
+    // Lenient: a value of the wrong shape reads as null rather than dropping the span.
     private static object? AnyValue(JsonNode? node)
     {
         if (node is not JsonObject value)

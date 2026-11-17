@@ -62,7 +62,7 @@ public sealed class TrimPlan : IPlan<Trimmable>
 }
 
 /// <summary>
-/// Regenerable output inside worktrees nobody has used for a week. Ported from <c>src/rig/estate/trim.py</c>.
+/// Regenerable output inside worktrees nobody has used for a week.
 /// </summary>
 /// <remarks>
 /// <para>

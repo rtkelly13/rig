@@ -1,7 +1,7 @@
 namespace Rig.Core.Jobs;
 
 /// <summary>
-/// Where the jobs' commands and files live on one machine. Ported from <c>desktop_manager.jobs.registry.Environment</c>.
+/// Where the jobs' commands and files live on one machine.
 /// </summary>
 /// <param name="Scripts">The rig environment's scripts folder: <c>rig</c> and its <c>python</c>.</param>
 /// <param name="Plan">The workspace plan restore and align read.</param>
@@ -59,7 +59,7 @@ public sealed record JobsEnvironment(
     }
 }
 
-/// <summary>The jobs the coordinator runs, in the order a run takes them. Ported from <c>desktop_manager.jobs.registry</c>.</summary>
+/// <summary>The jobs the coordinator runs, in the order a run takes them.</summary>
 public static class JobRegistry
 {
     /// <summary><c>workspace restore</c> found fewer screens than the plan places windows on and opened nothing.</summary>

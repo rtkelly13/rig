@@ -5,8 +5,6 @@ namespace Rig.Core.Desktop;
 
 /// <summary>
 /// The live workspace as a plan: what is open on each virtual desktop, and the draft launch entries an export writes.
-/// Ported from the status and capture halves of <c>desktop_manager.restore</c> and
-/// <c>desktop_manager.plan.build_launch_entries_for_desktop</c>.
 /// </summary>
 public static class WorkspaceStatus
 {

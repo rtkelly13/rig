@@ -11,7 +11,7 @@ namespace Rig.Core.Desktop.Windows;
 /// </summary>
 /// <remarks>
 /// <see cref="VirtualDesktopBuilds"/> picks the interfaces from the Windows build. Every failing call surfaces as a
-/// <see cref="DesktopException"/> carrying the HRESULT; the <see cref="IWindowDesktops"/> reads answer as the Python
+/// <see cref="DesktopException"/> carrying the HRESULT; the <see cref="IWindowDesktops"/> reads answer
 /// did instead, so a window the shell has no view for counts as on the current desktop and on no numbered one.
 /// </remarks>
 [SupportedOSPlatform("windows")]

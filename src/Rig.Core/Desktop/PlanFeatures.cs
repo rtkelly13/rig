@@ -31,8 +31,7 @@ public sealed class UnknownFeatureException : Exception
 public sealed record PlanFlag(string Name, bool Default, bool? Override = null);
 
 /// <summary>
-/// Feature flags and the logon deferral applied to a loaded plan. Ported from <c>desktop_manager.plan</c>
-/// (<c>resolve_feature_flags</c>, <c>apply_feature_flags</c>, <c>with_stored_flags</c>, <c>defer_logon_commands</c>).
+/// Feature flags and the logon deferral applied to a loaded plan.
 /// </summary>
 public static class PlanFeatures
 {

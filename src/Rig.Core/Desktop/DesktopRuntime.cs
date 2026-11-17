@@ -1,6 +1,6 @@
 namespace Rig.Core.Desktop;
 
-/// <summary>A window open on the machine now. Ported from <c>desktop_manager.models.LiveWindow</c>.</summary>
+/// <summary>A window open on the machine now.</summary>
 /// <param name="Handle">The window's handle.</param>
 /// <param name="Title">Its title.</param>
 /// <param name="Pid">The id of the process that owns it.</param>
@@ -23,17 +23,17 @@ public sealed record LiveWindow(
     PlacementSpec? InferredPlacement = null,
     Rect? Bounds = null);
 
-/// <summary>The window found for a launch entry, if any. Ported from <c>desktop_manager.models.WindowMatch</c>.</summary>
+/// <summary>The window found for a launch entry, if any.</summary>
 /// <param name="Handle">The window, or null when none showed up.</param>
 /// <param name="MovedToTargetDesktop">Whether it had to be moved onto the target desktop.</param>
 public sealed record WindowMatch(long? Handle, bool MovedToTargetDesktop = false);
 
-/// <summary>Whether a launch entry's window was placed. Ported from <c>desktop_manager.models.PlacementOutcome</c>.</summary>
+/// <summary>Whether a launch entry's window was placed.</summary>
 /// <param name="Placed">Whether the window was found and put in its slot.</param>
 /// <param name="MovedToTargetDesktop">Whether it had to be moved onto the target desktop first.</param>
 public sealed record PlacementOutcome(bool Placed, bool MovedToTargetDesktop = false);
 
-/// <summary>What moving an existing window into an entry's place changed. Ported from <c>desktop_manager.window_reuse.WindowMove</c>.</summary>
+/// <summary>What moving an existing window into an entry's place changed.</summary>
 /// <param name="MovedToDesktop">Whether it changed desktop.</param>
 /// <param name="MovedToPlacement">Whether it changed position.</param>
 public sealed record WindowMove(bool MovedToDesktop, bool MovedToPlacement);

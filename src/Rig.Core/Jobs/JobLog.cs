@@ -1,11 +1,11 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Rig.Core.Vault;
 
 namespace Rig.Core.Jobs;
 
 /// <summary>
-/// The job logs: each run appends a section headed <c>--- &lt;timestamp&gt; [&lt;run id&gt;] &lt;argv&gt;</c>. Ported from the
-/// log helpers in <c>desktop_manager.jobs.runner</c>.
+/// The job logs: each run appends a section headed <c>--- &lt;timestamp&gt; [&lt;run id&gt;] &lt;argv&gt;</c>.
 /// </summary>
 public static partial class JobLog
 {
@@ -37,7 +37,7 @@ public static partial class JobLog
             return [];
         }
 
-        var lines = SplitLines(text);
+        var lines = UnicodeText.SplitLines(text);
         var headers = Enumerable.Range(0, lines.Count).Where(index => SectionHeader().IsMatch(lines[index])).ToList();
         var chosen = headers.Where(index => runId is null || lines[index].Contains($"[{runId}]", StringComparison.Ordinal)).ToList();
         if (chosen.Count == 0)
@@ -64,7 +64,7 @@ public static partial class JobLog
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            // Python's _rotate gives up quietly too: the log just grows until the next run.
+            // Rotation gives up quietly too: the log just grows until the next run.
         }
     }
 
@@ -96,40 +96,6 @@ public static partial class JobLog
         {
             return [];
         }
-    }
-
-    /// <summary>
-    /// Python's <c>str.splitlines</c>: a line ends at <c>\r\n</c>, <c>\n</c>, <c>\r</c>, <c>\v</c>, <c>\f</c>,
-    /// <c>\x1c</c>-<c>\x1e</c>, <c>\x85</c>, <c>\u2028</c> or <c>\u2029</c>, and a final end makes no empty line.
-    /// </summary>
-    public static IReadOnlyList<string> SplitLines(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        var lines = new List<string>();
-        var start = 0;
-        for (var index = 0; index < text.Length; index++)
-        {
-            var c = text[index];
-            if (c is not ('\n' or '\r' or '\v' or '\f' or '\x1c' or '\x1d' or '\x1e' or '\x85' or '\u2028' or '\u2029'))
-            {
-                continue;
-            }
-
-            lines.Add(text[start..index]);
-            if (c == '\r' && index + 1 < text.Length && text[index + 1] == '\n')
-            {
-                index++;
-            }
-
-            start = index + 1;
-        }
-
-        if (start < text.Length)
-        {
-            lines.Add(text[start..]);
-        }
-
-        return lines;
     }
 
     // Shared, since a running job may still be writing the file.

@@ -41,7 +41,7 @@ public sealed record ItemFilter
 
 /// <summary>
 /// The pure joining logic: attribute sessions, build one item per (repo, branch), derive its state, sort and filter.
-/// Ported from <c>desktop_manager/work/join.py</c>. No subprocess, filesystem or network lives here.
+/// No subprocess, filesystem or network lives here.
 /// </summary>
 public static partial class WorkJoin
 {

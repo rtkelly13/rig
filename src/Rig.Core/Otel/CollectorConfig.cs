@@ -4,8 +4,7 @@ using System.Text;
 namespace Rig.Core.Otel;
 
 /// <summary>
-/// The always-on collector's config: OTLP in on loopback, one rotating JSON-lines file per signal out. Ported from
-/// <c>rig.otel_stack.collector_config</c>, text for text.
+/// The always-on collector's config: OTLP in on loopback, one rotating JSON-lines file per signal out.
 /// </summary>
 /// <remarks>
 /// <para>Everything is chosen for an idle laptop on battery: receivers bind 127.0.0.1 only; <c>batch</c> (10 s) is the only
@@ -122,6 +121,6 @@ public static class CollectorConfig
         return text.Replace("\r\n", "\n", StringComparison.Ordinal);
     }
 
-    /// <summary>A path with forward slashes, as Python's <c>as_posix</c> writes it (backslashes are separators only on Windows).</summary>
+    /// <summary>A path with forward slashes (backslashes are separators only on Windows).</summary>
     internal static string Posix(string path) => OperatingSystem.IsWindows() ? path.Replace('\\', '/') : path;
 }

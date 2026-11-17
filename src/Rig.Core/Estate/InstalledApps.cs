@@ -98,9 +98,7 @@ public sealed class UninstallRegistry : IUninstallRegistry
 }
 
 /// <summary>
-/// Installed applications by size, version and when they were last touched, so the dormant ones stand out. Ported from
-/// <c>src/rig/estate/apps.py</c> and <c>apps_windows.py</c>: macOS walks the <c>.app</c> bundles; Windows has no such
-/// folder, so it reads the Uninstall keys, measuring the install folder when the installer left no size.
+/// Installed applications by size, version and when they were last touched, so the dormant ones stand out.
 /// </summary>
 /// <param name="proc">Runs <c>defaults</c> for a bundle's version.</param>
 /// <param name="disk">Sizes a bundle or install folder.</param>
@@ -138,7 +136,7 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
                 }
 
                 var (modified, accessed) = Directory.Exists(bundle)
-                    ? (PythonTime.FromStat(Directory.GetLastWriteTimeUtc(bundle)), PythonTime.FromStat(Directory.GetLastAccessTimeUtc(bundle)))
+                    ? (StatTime.FromStat(Directory.GetLastWriteTimeUtc(bundle)), StatTime.FromStat(Directory.GetLastAccessTimeUtc(bundle)))
                     : (time.GetUtcNow(), time.GetUtcNow());
                 var version = await BundleVersionAsync(bundle, cancellationToken).ConfigureAwait(false);
                 apps.Add(new InstalledApp(System.IO.Path.GetFileName(bundle), bundle, size, version, modified, accessed));
@@ -200,7 +198,7 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
             && DateTime.TryParseExact(date.Trim(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var day)
             ? new DateTimeOffset(day, TimeSpan.Zero)
             : null;
-        DateTimeOffset? touched = location is not null && Path.Exists(location) ? PythonTime.FromStat(File.GetLastWriteTimeUtc(location)) : null;
+        DateTimeOffset? touched = location is not null && Path.Exists(location) ? StatTime.FromStat(File.GetLastWriteTimeUtc(location)) : null;
         var modified = (installed, touched) switch
         {
             ({ } a, { } b) => a > b ? a : b,
@@ -237,7 +235,7 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
         return ran.OutOrEmpty is { Length: > 0 } version ? version : "unknown";
     }
 
-    /// <summary>A name's extension as Python's <c>Path.suffix</c> reads it: none for a dot-file such as <c>.app</c>.</summary>
+    /// <summary>A name's extension: none for a dot-file such as <c>.app</c>.</summary>
     internal static string Suffix(string path)
     {
         var name = System.IO.Path.GetFileName(path);
@@ -254,7 +252,7 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
         _ => null,
     };
 
-    // Python's truthiness, for a value the installer may have written as a string or a number.
+    // Truthiness, for a value the installer may have written as a string or a number.
     private static bool Truthy(object? value) => value switch
     {
         null => false,
@@ -264,13 +262,13 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
     };
 }
 
-/// <summary>Timestamps as Python's <c>datetime</c> makes and prints them, so a ported command's JSON is unchanged.</summary>
-public static class PythonTime
+/// <summary>Timestamps as ISO 8601 text, so a ported command's JSON is unchanged.</summary>
+public static class StatTime
 {
     /// <summary>
     /// A file time as <c>datetime.fromtimestamp(st.st_mtime, tz=UTC)</c> gives it: through the same float seconds, rounded
     /// half-to-even to the microsecond. .NET keeps a file time to 100 ns, dropping the last two digits of the nanoseconds
-    /// Python reads, so a fraction is taken at the middle of the 100 ns it lies in: that decides the rounding the way the
+    /// the OS reports, so a fraction is taken at the middle of the 100 ns it lies in: that decides the rounding the way the
     /// full value would, except in the rare case it lies within 50 ns of half a microsecond.
     /// </summary>
     public static DateTimeOffset FromStat(DateTime utc)

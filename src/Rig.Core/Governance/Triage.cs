@@ -33,7 +33,7 @@ public sealed record IssueItem(
     /// <summary><c>owner/name#number</c>.</summary>
     public string ShortRef => $"{Repo}#{Number.ToString(CultureInfo.InvariantCulture)}";
 
-    /// <summary>The item as Python's <c>model_dump(mode="json")</c> wrote it.</summary>
+    /// <summary>The item.</summary>
     public JsonObject ToJson() => new()
     {
         ["repo"] = Repo,
@@ -75,7 +75,7 @@ public sealed record IssueDashboard(int Total, IReadOnlyDictionary<IssueBucket, 
     /// <summary>The issues in <paramref name="bucket"/>.</summary>
     public IReadOnlyList<IssueItem> this[IssueBucket bucket] => Buckets[bucket];
 
-    /// <summary>The dashboard as Python's <c>model_dump(mode="json")</c> wrote it.</summary>
+    /// <summary>The dashboard.</summary>
     public JsonObject ToJson() => new()
     {
         ["total_issues"] = Total,
@@ -137,7 +137,7 @@ public sealed record PrItem(
     /// <summary><c>owner/name#number</c>.</summary>
     public string ShortRef => $"{Repo}#{Number.ToString(CultureInfo.InvariantCulture)}";
 
-    /// <summary>The item as Python's <c>model_dump(mode="json")</c> wrote it.</summary>
+    /// <summary>The item.</summary>
     public JsonObject ToJson() => new()
     {
         ["repo"] = Repo,
@@ -188,7 +188,7 @@ public sealed record PrDashboard(int Total, IReadOnlyDictionary<PrBucket, IReadO
     /// <summary>The PRs in <paramref name="bucket"/>.</summary>
     public IReadOnlyList<PrItem> this[PrBucket bucket] => Buckets[bucket];
 
-    /// <summary>The dashboard as Python's <c>model_dump(mode="json")</c> wrote it.</summary>
+    /// <summary>The dashboard.</summary>
     public JsonObject ToJson() => new()
     {
         ["total_prs"] = Total,
@@ -214,8 +214,7 @@ public sealed record ReviewThreadsResult(bool IsAligned, string Message);
 
 /// <summary>
 /// The issue and PR triage dashboards and their batch actions, read through <c>gh</c>. A repo gh cannot list, or answers
-/// with something unreadable, contributes nothing. Ported from <c>rig.repo_governance.issue_triage</c> and
-/// <c>pr_triage</c>.
+/// with something unreadable, contributes nothing.
 /// </summary>
 /// <param name="proc">Runs gh.</param>
 public sealed class Triage(IProc proc)

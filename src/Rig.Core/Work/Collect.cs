@@ -92,9 +92,7 @@ public sealed class WorkTimings
 public sealed record Collected(WorkReport Report, WorkTimings Timings, double Total);
 
 /// <summary>
-/// Gathers every source and joins them into a <see cref="WorkReport"/>. Ported from
-/// <c>desktop_manager/work/collect.py</c>; sessions and git refs overlap, and <c>git status</c> overlaps the GitHub
-/// lookups.
+/// Gathers every source and joins them into a <see cref="WorkReport"/>.
 /// </summary>
 /// <param name="git">Reads the estate's git facts.</param>
 /// <param name="prs">Looks up pull requests.</param>

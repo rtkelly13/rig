@@ -24,7 +24,7 @@ public sealed record SenderRow(string Sender, int Threads, int Claimed, IReadOnl
 }
 
 /// <summary>
-/// Which senders in a saved inbox sample no rule claims yet. Ported from <c>rig.mail.coverage</c>. The input is what the
+/// Which senders in a saved inbox sample no rule claims yet. The input is what the
 /// Gmail connector's <c>search_threads</c> returns, saved to a file per page. Matching is local and approximate:
 /// <c>from</c>, <c>to</c> and <c>subject</c> are checked the way Gmail broadly does (substring, case-insensitive); a rule that
 /// leans on <c>query</c> or <c>exclude</c> cannot be evaluated offline, so its claims are flagged as approximate.
@@ -92,7 +92,7 @@ public static class MailCoverage
         ];
     }
 
-    /// <summary>The coverage rows as indented JSON, field for field as the Python wrote it.</summary>
+    /// <summary>The coverage rows as indented JSON, field for field.</summary>
     public static string CoverageJson(IEnumerable<SenderRow> rows)
     {
         var w = new IndentedJsonWriter();
@@ -104,7 +104,7 @@ public static class MailCoverage
         })).ToString();
     }
 
-    // A page read leniently, as the Python's Lenient fields did: a field of the wrong shape counts as missing.
+    // A page read leniently: a field of the wrong shape counts as missing.
     private static List<SampleMessage> ReadPage(string text, string where)
     {
         JsonElement page;
@@ -138,7 +138,7 @@ public static class MailCoverage
         return sample;
     }
 
-    // The last value under key, as Python's json keeps the last of a repeated key.
+    // The last value under key; the last of a repeated key wins.
     private static JsonElement? Field(JsonElement element, string key)
     {
         JsonElement? found = null;

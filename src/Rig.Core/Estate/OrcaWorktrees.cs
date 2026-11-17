@@ -82,7 +82,7 @@ public sealed record PrAnswer(bool Known, PullRequest? Pr = null);
 public delegate Task<PrAnswer> PrLookup(string repo, string branch, CancellationToken cancellationToken);
 
 /// <summary>
-/// Which of Orca's worktrees are finished, and clearing them out. Ported from <c>src/rig/estate/orca_worktrees.py</c>.
+/// Which of Orca's worktrees are finished, and clearing them out.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -564,7 +564,7 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         return inner == outer || inner.StartsWith(outer.TrimEnd('\\', '/') + Path.DirectorySeparatorChar, StringComparison.Ordinal);
     }
 
-    // Python's f"{value:.{digits}f}": round half to even on the exact value. F0 is exact; F1 matches outside exact ties.
+    // Round half to even on the exact value. F0 is exact; F1 matches outside exact ties.
     private static string Fixed(double value, int digits) =>
         digits == 0
             ? Math.Round(value, MidpointRounding.ToEven).ToString("F0", CultureInfo.InvariantCulture)

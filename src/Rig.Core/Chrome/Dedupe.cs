@@ -57,7 +57,7 @@ public sealed record DedupePlan(IReadOnlyList<SiteClose> Closes, IReadOnlyList<S
 
 /// <summary>
 /// Decides which non-PR duplicate tabs to close, using <see cref="SiteRules"/>. Pure, like <see cref="PrPrune"/>, and
-/// shares its keeper choice and executor. Ported from <c>desktop_manager.chrome.dedupe</c>.
+/// shares its keeper choice and executor.
 /// </summary>
 /// <remarks>
 /// Per profile, tabs whose titles one rule keys alike are one page: the keeper stays and the rest close. Never closed:

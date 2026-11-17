@@ -40,10 +40,6 @@ public sealed record FlagState(Flag Flag, bool? Override)
 /// The feature flags shared across the rig stack, each declared once with its default and what it switches. Overrides
 /// live in <c>rig.db</c> (<see cref="FlagStore"/>).
 /// </summary>
-/// <remarks>
-/// <c>rig.flags.registry</c> keeps a Python copy while <c>desktop_manager</c> still reads flags in Python; the flags
-/// oracle test holds the two to one list, and the Python copy goes when its last caller is ported (#85 s15/s28).
-/// </remarks>
 public static class FeatureFlags
 {
     /// <summary>Every declared flag, in the order <c>rig flags list</c> shows them.</summary>

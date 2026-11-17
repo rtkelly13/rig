@@ -66,7 +66,7 @@ public sealed record OrganiseResult(bool Failed, string Outcome)
 
 /// <summary>
 /// <c>chrome-tabs organise</c>: prune, then group, one window at a time, with the counts and verdicts recorded on a
-/// <c>chrome_tabs.organise</c> span. Ported from <c>_organise</c> in <c>desktop_manager.chrome.cli</c>.
+/// <c>chrome_tabs.organise</c> span.
 /// </summary>
 /// <remarks>
 /// <para>

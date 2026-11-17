@@ -69,7 +69,7 @@ public sealed record MailRule(string Name, MailMatch Match, MailActions Actions,
 }
 
 /// <summary>
-/// The rules file and the Gmail search each rule stands for. Ported from <c>rig.mail.rules</c>. Rules apply in order; the
+/// The rules file and the Gmail search each rule stands for. Rules apply in order; the
 /// first rule that claims a sender wins in coverage.
 /// </summary>
 /// <param name="Rules">The rules, in file order.</param>
@@ -290,7 +290,7 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
         }
     }
 
-    // Python's re.match with ^...$: $ also matches before a final newline.
+    // With ^...$, $ also matches before a final newline.
     [GeneratedRegex(@"^\d+[dmy]\n?\z")]
     private static partial Regex Duration();
 
@@ -379,7 +379,7 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
 
     private static string? OptionalStr(YamlValue value, string at) => value is YamlNull ? null : Str(value, at);
 
-    // A YAML bool reads back as Python's True or False; nothing else renders that way.
+    // A YAML bool reads back as True or False; nothing else renders that way.
     private static bool? Bool(YamlValue value, string at) => value switch
     {
         YamlNull => null,

@@ -12,8 +12,7 @@ namespace Rig.Core.Otel;
 public sealed record ReplayOffset(ulong Inode, long Sent, string Head = "");
 
 /// <summary>
-/// The replay state file, ported from <c>rig.otel_stack.replay</c>: a JSON object keyed by inode, each entry the byte
-/// offset already sent and a hash of the file's start, so a later file handed the same inode is told apart.
+/// The replay state file,
 /// </summary>
 public static class ReplayOffsets
 {
@@ -33,7 +32,7 @@ public static class ReplayOffsets
     /// <summary>
     /// Whether <paramref name="held"/> still describes <paramref name="raw"/>: no longer than it, and the same start. A
     /// negative offset (only a hand-edited or corrupt state file holds one) is refused, so the file is replayed from its
-    /// start; the Python accepted it and sliced from the end.
+    /// start; it once sliced from the end.
     /// </summary>
     public static bool SameFile(ReplayOffset? held, ReadOnlySpan<byte> raw) =>
         held is not null && held.Sent >= 0 && held.Sent <= raw.Length && (held.Head.Length == 0 || held.Head == HeadHash(raw, held.Sent));
@@ -54,7 +53,7 @@ public static class ReplayOffsets
         return Parse(text);
     }
 
-    /// <summary>The offsets in <paramref name="text"/>; none when any entry is malformed, as the Python's decode was all or nothing.</summary>
+    /// <summary>The offsets in <paramref name="text"/>; none when any entry is malformed, as the decode is all or nothing.</summary>
     public static Dictionary<string, ReplayOffset> Parse(string text)
     {
         try

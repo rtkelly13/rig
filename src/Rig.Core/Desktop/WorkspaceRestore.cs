@@ -19,8 +19,7 @@ public sealed record RestoreOptions(IReadOnlyDictionary<string, string> Substitu
 
 /// <summary>
 /// Restore a workspace plan onto the machine: set the desktops up, plan each one against the windows open now, then
-/// reuse or launch every entry, retrying a desktop until it matches. Ported from
-/// <c>desktop_manager.handlers.restore_handler</c>.
+/// reuse or launch every entry, retrying a desktop until it matches.
 /// </summary>
 public static class WorkspaceRestore
 {
@@ -53,7 +52,7 @@ public static class WorkspaceRestore
 
         var steps = new StepTimer(log, RestoreSteps.Scope, () => port.Now);
         log.Log(
-            $"Starting restore dry_run={PyBool(options.DryRun)} close_existing={PyBool(options.CloseExisting)} diff_existing={PyBool(options.DiffExisting)} "
+            $"Starting restore dry_run={Flag(options.DryRun)} close_existing={Flag(options.CloseExisting)} diff_existing={Flag(options.DiffExisting)} "
             + $"desktops={options.TargetDesktop ?? "all"} workspace={plan.Workspace ?? "None"}");
 
         IReadOnlySet<long> preserved = options.DiffExisting || options.CloseExisting ? port.WindowHandlesToPreserve() : new HashSet<long>();
@@ -292,5 +291,5 @@ public static class WorkspaceRestore
         return run.Port.ApplySecondPassPlacements(run.Plan, pending, run.Log);
     }
 
-    private static string PyBool(bool value) => value ? "True" : "False";
+    private static string Flag(bool value) => value ? "True" : "False";
 }

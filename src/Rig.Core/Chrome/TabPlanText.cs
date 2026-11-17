@@ -5,8 +5,7 @@ namespace Rig.Core.Chrome;
 
 /// <summary>
 /// The <c>chrome-tabs</c> plans as plain lines. Pure, so what each command prints is testable. A line that starts with
-/// a space is detail; any other line is a heading. Ported from <c>desktop_manager.chrome.render</c> and the plan-line
-/// helpers in <c>cli_common</c>.
+/// a space is detail; any other line is a heading.
 /// </summary>
 public static class TabPlanText
 {

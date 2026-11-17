@@ -14,7 +14,7 @@ public interface IProcessSignals
 }
 
 /// <summary>
-/// The libc <c>kill</c>, as the Python's <c>os.kill</c>. Windows has neither signal 0 nor SIGTERM, and nothing the
+/// The libc <c>kill</c>. Windows has neither signal 0 nor SIGTERM, and nothing the
 /// ClickHouse stack starts runs there, so there a pid is never alive and is never signalled.
 /// </summary>
 public sealed partial class ProcessSignals : IProcessSignals

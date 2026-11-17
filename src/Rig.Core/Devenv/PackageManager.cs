@@ -4,7 +4,7 @@ namespace Rig.Core.Devenv;
 
 /// <summary>
 /// The platform's package manager: winget on Windows, Homebrew elsewhere. Every call is a process; a failure is
-/// <see langword="false"/>, never an exception. Ported from devenv's <c>providers</c>.
+/// <see langword="false"/>, never an exception.
 /// </summary>
 /// <param name="proc">Runs the package manager.</param>
 public abstract class PackageManager(IProc proc)

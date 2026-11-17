@@ -9,7 +9,7 @@ namespace Rig.Core.Governance;
 /// <summary>
 /// The check names a repo's workflows report on a pull request, read off the YAML on disk. A required status check is a
 /// contract between the workflows and the ruleset, and nothing in GitHub connects the two halves; see
-/// docs/repo-governance/required-checks.md. Ported from <c>rig.repo_governance.check_names</c>.
+/// docs/repo-governance/required-checks.md.
 /// </summary>
 public static partial class CheckNames
 {
@@ -324,7 +324,7 @@ public static partial class CheckNames
         var single => [KeyText(single)],
     };
 
-    // The last value under string key `key`, as a Python dict holds it.
+    // The last value under string key `key`.
     private static YamlValue? Lookup(YamlMap map, string key) =>
         map.Entries.LastOrDefault(e => e.Key is YamlString { Text: var text } && text == key).Value;
 

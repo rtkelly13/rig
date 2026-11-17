@@ -25,9 +25,7 @@ public sealed record AgentSignal(string Verdict, string Detail, string At, strin
 public sealed record AgentRoot(string Repo, string Root);
 
 /// <summary>
-/// Reads the wrap-up verdicts <c>estate wrapup</c> records per worktree, keyed by repository and branch. Ported from
-/// <c>rig.triage.agents</c>: a scan is reused for <see cref="TtlSeconds"/>, because each one lists the worktrees of
-/// every managed repository and the inbox polls.
+/// Reads the wrap-up verdicts <c>estate wrapup</c> records per worktree, keyed by repository and branch.
 /// </summary>
 public sealed class AgentSignals : IDisposable
 {
@@ -213,7 +211,7 @@ public sealed class AgentSignals : IDisposable
     /// <inheritdoc/>
     public void Dispose() => _gate.Dispose();
 
-    // A timestamp that cannot be read sorts before every one that can, as Python's datetime.min did.
+    // A timestamp that cannot be read sorts before every one that can.
     private static DateTimeOffset When(string text) =>
         WrapupStamps.Parse(text) ?? DateTimeOffset.MinValue;
 }

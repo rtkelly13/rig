@@ -3,6 +3,7 @@ using Rig.Core.Policy;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Text;
+using Rig.Core.Vault;
 
 namespace Rig.Core.Tests.Governance;
 
@@ -483,9 +484,9 @@ public sealed class AgentsMdAuditTests : IDisposable
     [Fact]
     public void Split_lines_breaks_where_python_does()
     {
-        Assert.Equal(["a", "b", "c", "d", "", "e"], AgentsMdAudit.SplitLines("a\r\nb\rc\u2028d\n\u000ce"));
-        Assert.Empty(AgentsMdAudit.SplitLines(string.Empty));
-        Assert.Equal(["x"], AgentsMdAudit.SplitLines("x\n"));
+        Assert.Equal(["a", "b", "c", "d", "", "e"], UnicodeText.SplitLines("a\r\nb\rc\u2028d\n\u000ce"));
+        Assert.Empty(UnicodeText.SplitLines(string.Empty));
+        Assert.Equal(["x"], UnicodeText.SplitLines("x\n"));
     }
 
     [Fact]

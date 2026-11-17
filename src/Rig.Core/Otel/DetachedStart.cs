@@ -10,7 +10,7 @@ namespace Rig.Core.Otel;
 
 /// <summary>
 /// Starts a program that outlives rig: standard input from the null device, output and errors appended to a log, and
-/// out of rig's session so closing the terminal does not stop it. The Python did this with <c>Popen</c>
+/// out of rig's session so closing the terminal does not stop it. It uses <c>Popen</c>
 /// (<c>start_new_session</c>, or <c>DETACHED_PROCESS</c> on Windows).
 /// </summary>
 public interface IDetachedStart
@@ -108,7 +108,7 @@ public sealed class WindowsDetachedStart : IDetachedStart
 public static class WindowsCommandLine
 {
     /// <summary>
-    /// <paramref name="argv"/> as one command line, quoted as Python's <c>subprocess.list2cmdline</c> did: an
+    /// <paramref name="argv"/> as one command line, quoted: an
     /// argument with a space or tab, or an empty one, is quoted; backslashes are doubled only before a quote.
     /// </summary>
     public static string Join(IEnumerable<string> argv)

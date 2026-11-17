@@ -45,7 +45,7 @@ public sealed record ConsolidationPlan(
 /// <summary>
 /// Chrome's saved tab groups, read off the bookmarks bar, and the plan that deletes the duplicates: for each title with
 /// an open copy every closed copy, for a title with only closed copies all but the leftmost. Open copies are never
-/// touched. Ported from <c>desktop_manager.chrome.saved_groups</c>.
+/// touched.
 /// </summary>
 public static partial class SavedGroups
 {

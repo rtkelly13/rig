@@ -22,7 +22,7 @@ public sealed record ManagedRepoSpec(
     bool Enabled = true,
     string? OrcaGroup = null);
 
-/// <summary>Reads the managed-project registry. Ported from <c>rig.workspace.engine.load_managed_specs</c>.</summary>
+/// <summary>Reads the managed-project registry.</summary>
 public static class ManagedProjects
 {
     /// <summary>The registry's file name under a rig checkout's <c>config/</c>.</summary>
@@ -33,7 +33,7 @@ public static class ManagedProjects
 
     /// <summary>
     /// The registry rig reads: <paramref name="checkout"/>'s, else the one under <paramref name="workingDirectory"/>,
-    /// as Python's <c>rig.roots.checkout_config</c> chose.
+    /// as the checkout config chose.
     /// </summary>
     public static string RegistryFile(string checkout, string workingDirectory)
     {
@@ -58,7 +58,7 @@ public static class ManagedProjects
     }
 
     // Entries are decoded one at a time: a misshapen entry is skipped rather than losing the whole registry, which is
-    // what the Python reader did. The typed entry still comes from the source-generated context, so unknown keys such
+    // what the earlier reader did. The typed entry still comes from the source-generated context, so unknown keys such
     // as vercel or ports are ignored without reflection.
     private static List<ManagedRepoSpec> Decode(string path, bool retired)
     {

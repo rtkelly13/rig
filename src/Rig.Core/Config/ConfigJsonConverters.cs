@@ -5,7 +5,7 @@ namespace Rig.Core.Config;
 
 /// <summary>
 /// Reads <c>license</c>, which the policy allows as a bare type (<c>"MIT"</c>) or as <c>{"type": "MIT"}</c>. A bare
-/// string round-trips as one; anything else is refused with the field named, as the Python config did.
+/// string round-trips as one; anything else is refused with the field named.
 /// </summary>
 public sealed class LicenseConfigJsonConverter : JsonConverter<LicenseConfig>
 {

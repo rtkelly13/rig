@@ -42,8 +42,7 @@ public sealed class LocalPathProbe : IPathProbe
 }
 
 /// <summary>
-/// Checking a plan's entries and placements, and fitting <c>columns</c> layouts to the screens. Ported from
-/// <c>desktop_manager.placement</c>. Where Python asks Win32 for the monitors, these take the count or widths as
+/// Checking a plan's entries and placements, and fitting <c>columns</c> layouts to the screens. These take the count or widths as
 /// arguments.
 /// </summary>
 public static class Placement
@@ -468,6 +467,6 @@ public static class Placement
         return errors;
     }
 
-    // Python's f"{float(value * 100):.1f}%".
+    // A percentage to one decimal place.
     private static string Percent(Fraction value) => (value * 100).ToDouble().ToString("F1", CultureInfo.InvariantCulture) + "%";
 }

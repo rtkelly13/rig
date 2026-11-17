@@ -1,7 +1,7 @@
 namespace Rig.Core.WorkItems;
 
 /// <summary>
-/// Path comparison and normalisation as Python's <c>os.path.normcase(os.path.normpath(...))</c> gives it: separators
+/// Path comparison and normalisation, as <c>os.path.normcase(os.path.normpath(...))</c> gives it: separators
 /// folded to the platform's, <c>.</c> and <c>..</c> collapsed, and case folded on Windows only.
 /// </summary>
 internal static class WorkPaths
@@ -59,7 +59,7 @@ internal static class WorkPaths
 }
 
 /// <summary>
-/// Times in the JSON schema, formatted as Python's <c>datetime.isoformat()</c>: six fractional digits only when the
+/// Times in the JSON schema, formatted as ISO 8601: six fractional digits only when the
 /// microsecond is non-zero, and an offset such as <c>+00:00</c>.
 /// </summary>
 internal static class IsoTime
@@ -102,7 +102,7 @@ internal static class IsoTime
     ];
 
     /// <summary>
-    /// <paramref name="text"/> read as Python's <c>datetime.fromisoformat</c> reads the forms Claude Code and a person
+    /// <paramref name="text"/> read as ISO 8601, in the forms Claude Code and a person
     /// write: a date, or a date and time with an optional fraction and an optional <c>Z</c> or offset. A time without
     /// an offset is UTC. Null when it is none of those.
     /// </summary>

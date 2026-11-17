@@ -28,7 +28,7 @@ public sealed record OrcaPaths(string EstateRoot, string CodeRoot, string Home)
         return parts is ["~", "code", ..] ? Posix(string.Join('/', [CodeRoot, .. parts[2..]])) : Expand(path);
     }
 
-    /// <summary><paramref name="path"/> with a leading <c>~</c> expanded and the result normalised, as Python's <c>Path.expanduser()</c>.</summary>
+    /// <summary><paramref name="path"/> with a leading <c>~</c> expanded and the result normalised.</summary>
     public string Expand(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -37,7 +37,7 @@ public sealed record OrcaPaths(string EstateRoot, string CodeRoot, string Home)
             : Posix(path);
     }
 
-    /// <summary><paramref name="path"/> normalised as Python's <c>Path(path).as_posix()</c>: forward slashes, no empty or <c>.</c> segments.</summary>
+    /// <summary><paramref name="path"/> normalised: forward slashes, no empty or <c>.</c> segments.</summary>
     public static string Posix(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -199,7 +199,7 @@ public static class OrcaDoctor
         return findings;
     }
 
-    /// <summary>Repos by display name; a later repo with the same name wins, as a Python dict comprehension keeps it.</summary>
+    /// <summary>Repos by display name; a later repo with the same name wins.</summary>
     internal static Dictionary<string, OrcaRepo> ByName(IReadOnlyList<OrcaRepo> repos)
     {
         var byName = new Dictionary<string, OrcaRepo>(StringComparer.Ordinal);

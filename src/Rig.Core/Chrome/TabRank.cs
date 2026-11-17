@@ -55,8 +55,7 @@ public sealed record MemoryPlan(double LimitMb, double BeforeMb, double AfterMb,
 }
 
 /// <summary>
-/// Ranks every tab by how much it is worth keeping, and plans closes that fit a memory budget. Ported from
-/// <c>desktop_manager.chrome.rank</c>.
+/// Ranks every tab by how much it is worth keeping, and plans closes that fit a memory budget.
 /// </summary>
 /// <remarks>
 /// <para>

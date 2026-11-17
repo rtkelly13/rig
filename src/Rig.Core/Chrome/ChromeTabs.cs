@@ -52,7 +52,7 @@ public sealed record TabName(string Title, bool Loaded, IReadOnlyList<string> Al
 /// <summary>
 /// What Chrome packs into a tab's or a group header's accessible name: the title, then optional alert suffixes, a
 /// "Part of group" suffix and, on a loaded tab, a memory suffix. Chrome's English strings only; another UI language
-/// leaves the tab looking unloaded with a longer title. Ported from <c>desktop_manager.chrome.tabs</c>.
+/// leaves the tab looking unloaded with a longer title.
 /// </summary>
 public static partial class TabNames
 {

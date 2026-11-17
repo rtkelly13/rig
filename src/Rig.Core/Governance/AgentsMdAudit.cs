@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Text;
+using Rig.Core.Vault;
 
 namespace Rig.Core.Governance;
 
@@ -97,7 +98,7 @@ public sealed record AgentsMdAuditResult(
 /// Audits <c>AGENTS.md</c> and the docs tree against the machine-decidable rules of
 /// <c>docs/agents/agent-consistency.md</c>. Every finding carries a stable <c>check:path</c> key a repo may dismiss by
 /// committing a waiver to <c>.agents-audit.json</c>; waivers need a reason, may expire, and are reported once they
-/// suppress nothing. Ported from <c>rig.repo_governance.agents_md_audit</c>.
+/// suppress nothing.
 /// </summary>
 /// <param name="git">Runs git, to read whether <c>CLAUDE.md</c> is committed as a link.</param>
 /// <param name="time">The clock waivers expire by.</param>
@@ -210,7 +211,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
 
         var waivers = LoadWaivers(repo);
         var today = DateOnly.FromDateTime(time.GetLocalNow().DateTime);
-        var active = waivers.Where(w => PyStrip(w.Reason).Length > 0 && !w.ExpiredOn(today)).Select(w => w.Key).ToHashSet(StringComparer.Ordinal);
+        var active = waivers.Where(w => Strip(w.Reason).Length > 0 && !w.ExpiredOn(today)).Select(w => w.Key).ToHashSet(StringComparer.Ordinal);
         var findings = raw.Where(f => !active.Contains(f.Key)).ToList();
         var suppressed = raw.Where(f => active.Contains(f.Key)).ToList();
         findings.AddRange(WaiverFindings(repo, waivers, raw.Select(f => f.Key).ToHashSet(StringComparer.Ordinal), today));
@@ -221,7 +222,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     public static IReadOnlyList<KeyValuePair<string, int>> CollectMetrics(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var lines = SplitLines(text);
+        var lines = UnicodeText.SplitLines(text);
         var sections = new List<int>();
         var current = 0;
         foreach (var line in lines)
@@ -252,7 +253,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
         ArgumentNullException.ThrowIfNull(text);
         var kept = new List<string>();
         var inFence = false;
-        foreach (var line in SplitLines(text))
+        foreach (var line in UnicodeText.SplitLines(text))
         {
             if (Fence().IsMatch(line))
             {
@@ -265,35 +266,6 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
         }
 
         return string.Join('\n', kept);
-    }
-
-    /// <summary>Python's <c>str.splitlines()</c>.</summary>
-    public static IReadOnlyList<string> SplitLines(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        var lines = new List<string>();
-        var start = 0;
-        for (var i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (c is '\n' or '\r' or '\v' or '\f' or '\x1c' or '\x1d' or '\x1e' or '\x85' or '\u2028' or '\u2029')
-            {
-                lines.Add(text[start..i]);
-                if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
-                {
-                    i++;
-                }
-
-                start = i + 1;
-            }
-        }
-
-        if (start < text.Length)
-        {
-            lines.Add(text[start..]);
-        }
-
-        return lines;
     }
 
     private static IEnumerable<AgentsMdFinding> CheckRootSize(string text, AgentsMdRules rules)
@@ -310,7 +282,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     {
         var seen = new Dictionary<string, int>(StringComparer.Ordinal);
         var number = 0;
-        foreach (var line in SplitLines(text))
+        foreach (var line in UnicodeText.SplitLines(text))
         {
             number++;
             var match = Heading().Match(line);
@@ -319,7 +291,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
                 continue;
             }
 
-            var title = PyStrip(match.Groups[2].Value);
+            var title = Strip(match.Groups[2].Value);
             if (seen.TryGetValue(title, out var first))
             {
                 yield return new("duplicate-heading", AgentsMdSeverity.Error, AgentsFileName,
@@ -337,7 +309,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     {
         foreach (Match match in MdLink().Matches(StripCode(text)))
         {
-            var target = PyStrip(match.Groups[1].Value.Split('#', 2)[0]);
+            var target = Strip(match.Groups[1].Value.Split('#', 2)[0]);
             if (target.Length == 0 || target.StartsWith("http://", StringComparison.Ordinal) || target.StartsWith("https://", StringComparison.Ordinal)
                 || target.StartsWith("mailto:", StringComparison.Ordinal) || target.StartsWith('#'))
             {
@@ -457,7 +429,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
 
         try
         {
-            return PyStrip(DocsTree.ReadText(path)) == AgentsFileName;
+            return Strip(DocsTree.ReadText(path)) == AgentsFileName;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -496,12 +468,12 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     private static IEnumerable<AgentsMdFinding> CheckPathLiveness(string repo, string text)
     {
         var number = 0;
-        foreach (var line in SplitLines(text))
+        foreach (var line in UnicodeText.SplitLines(text))
         {
             number++;
             foreach (Match match in Backticked().Matches(line))
             {
-                var candidate = PyStrip(match.Groups[1].Value);
+                var candidate = Strip(match.Groups[1].Value);
                 if (LooksLikePath(candidate) && !DocsTree.Exists(Path.Combine(repo, candidate)))
                 {
                     yield return new("path-liveness", AgentsMdSeverity.Warn, AgentsFileName,
@@ -514,10 +486,10 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     private static IEnumerable<AgentsMdFinding> CheckRequiredContent(string text, AgentsMdRules rules)
     {
         var lowered = text.ToLowerInvariant();
-        var head = SplitLines(string.Join('\n', SplitLines(text).Take(12)));
+        var head = UnicodeText.SplitLines(string.Join('\n', UnicodeText.SplitLines(text).Take(12)));
         var present = new Dictionary<string, bool>(StringComparer.Ordinal)
         {
-            ["description"] = head.Any(line => PyStrip(line).Length > 0 && !DescriptionPrefixes.Any(prefix => line.StartsWith(prefix, StringComparison.Ordinal))),
+            ["description"] = head.Any(line => Strip(line).Length > 0 && !DescriptionPrefixes.Any(prefix => line.StartsWith(prefix, StringComparison.Ordinal))),
             ["package_manager"] = PackageManagers.Any(manager => lowered.Contains(manager, StringComparison.Ordinal)),
             ["commands"] = lowered.Contains("## commands", StringComparison.Ordinal) || text.Contains("```", StringComparison.Ordinal),
         };
@@ -678,7 +650,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
                 continue;
             }
 
-            var lines = SplitLines(DocsTree.ReadText(doc));
+            var lines = UnicodeText.SplitLines(DocsTree.ReadText(doc));
             var i = 0;
             while (i < lines.Count)
             {
@@ -692,7 +664,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
                 var fence = match.Groups[1].Value;
                 var language = match.Groups[2].Value.ToLowerInvariant();
                 var end = i + 1;
-                while (end < lines.Count && !PyStrip(lines[end]).StartsWith(fence, StringComparison.Ordinal))
+                while (end < lines.Count && !Strip(lines[end]).StartsWith(fence, StringComparison.Ordinal))
                 {
                     end++;
                 }
@@ -738,7 +710,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
 
         foreach (var waiver in waivers)
         {
-            if (PyStrip(waiver.Reason).Length == 0)
+            if (Strip(waiver.Reason).Length == 0)
             {
                 findings.Add(new("waiver-unreasoned", AgentsMdSeverity.Error, WaiverFileName,
                     $"Waiver for `{waiver.Key}` has no reason. A dismissal without a reason is not reviewable."));
@@ -818,8 +790,8 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
 
     private static string Parent(string path) => Path.GetDirectoryName(path) ?? path;
 
-    // Python's str.strip(): its whitespace also takes in the separators \x1c to \x1f.
-    private static string PyStrip(string text)
+    // Trims whitespace, which here also takes in the separators \x1c to \x1f.
+    private static string Strip(string text)
     {
         static bool Space(char c) => char.IsWhiteSpace(c) || c is >= '\x1c' and <= '\x1f';
         var start = 0;

@@ -1,8 +1,7 @@
 namespace Rig.Core.GitHub;
 
 /// <summary>
-/// Stack and queue chains from one repository's full open-PR list. Pure; ported from the chain half of
-/// <c>rig.github_prs</c>.
+/// Stack and queue chains from one repository's full open-PR list. Pure;
 /// </summary>
 public static class PrChains
 {

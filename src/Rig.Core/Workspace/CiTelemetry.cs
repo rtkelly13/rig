@@ -52,7 +52,7 @@ public sealed record RunTelemetry(
 
 /// <summary>
 /// CI utilisation across the estate: recent workflow runs read through <c>gh api</c>, each job's wall time weighted by
-/// what its runner bills. The runner is inferred from the job's name, as the Python did; GitHub's job record does not
+/// what its runner bills. The runner is inferred from the job's name; GitHub's job record does not
 /// carry the billed OS.
 /// </summary>
 /// <param name="github">The GitHub REST seam.</param>

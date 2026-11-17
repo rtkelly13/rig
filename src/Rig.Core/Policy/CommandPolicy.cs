@@ -5,7 +5,6 @@ namespace Rig.Core.Policy;
 
 /// <summary>
 /// The estate command policy (<c>config/cli-allowlists.json</c>): command globs by tier, and the skills allowlist.
-/// Ported from <c>rig.policy.engine</c>.
 /// </summary>
 public sealed class CommandPolicy
 {

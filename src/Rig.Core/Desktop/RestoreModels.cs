@@ -15,7 +15,7 @@ public enum EntryAction
     Satisfied,
 }
 
-/// <summary>One entry's step in a restore. Ported from <c>desktop_manager.restore_models.PlannedEntryExecution</c>.</summary>
+/// <summary>One entry's step in a restore.</summary>
 /// <param name="Desktop">The desktop it belongs to.</param>
 /// <param name="DesktopIndex">That desktop's number, from 1.</param>
 /// <param name="Entry">The entry.</param>
@@ -32,7 +32,7 @@ public sealed record PlannedEntryExecution(
 
 /// <summary>
 /// One desktop's steps in a restore. Mutable: a retry replans its steps in place and carries what earlier attempts
-/// learned. Ported from <c>desktop_manager.restore_models.PlannedDesktopExecution</c>.
+/// learned.
 /// </summary>
 /// <param name="desktop">The desktop.</param>
 /// <param name="desktopIndex">Its number, from 1.</param>
@@ -64,7 +64,7 @@ public sealed class PlannedDesktopExecution(DesktopPlan desktop, int desktopInde
     public HashSet<string> LaunchedEntryNames { get; } = new(StringComparer.Ordinal);
 }
 
-/// <summary>Everything a restore will do, desktop by desktop. Ported from <c>desktop_manager.restore_models.RestoreExecutionPlan</c>.</summary>
+/// <summary>Everything a restore will do, desktop by desktop.</summary>
 public sealed class RestoreExecutionPlan
 {
     /// <summary>The desktops to restore, in plan order.</summary>
@@ -111,7 +111,7 @@ public sealed class RestoreExecutionPlan
 
     /// <summary>
     /// The 1-based position of the desktop named <paramref name="targetDesktop"/>, ignoring case; <see langword="null"/>
-    /// when none is asked for. Ported from <c>desktop_manager.restore_planner.resolve_target_desktop_index</c>.
+    /// when none is asked for.
     /// </summary>
     /// <exception cref="ArgumentException">No desktop has that name.</exception>
     public static int? ResolveTargetDesktopIndex(WorkspacePlan plan, string? targetDesktop)

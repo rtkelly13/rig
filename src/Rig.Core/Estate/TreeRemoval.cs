@@ -5,7 +5,7 @@ using Rig.Core.Processes;
 namespace Rig.Core.Estate;
 
 /// <summary>
-/// Deletes a folder and everything under it. Ported from <c>src/rig/estate/trim.py</c> <c>remove_tree</c>.
+/// Deletes a folder and everything under it.
 /// </summary>
 /// <remarks>
 /// <para>

@@ -11,8 +11,7 @@ public sealed record ClosePlanOptions(bool GitHub = true, bool Sites = true, dou
 
 /// <summary>
 /// The close plans <c>prune</c> and <c>organise</c> share: the PR rules, the site rules and the memory budget, each
-/// printed as it is made. Ported from <c>_close_plans</c> and <c>_make_close_plans</c> in
-/// <c>desktop_manager.chrome.cli</c>.
+/// printed as it is made.
 /// </summary>
 public static class ChromeClosePlans
 {

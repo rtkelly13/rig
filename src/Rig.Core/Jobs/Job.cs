@@ -25,7 +25,6 @@ public enum JobCadence
 
 /// <summary>
 /// One recurring thing that keeps the machine aligned, run by the coordinator instead of a scheduled task of its own.
-/// Ported from <c>desktop_manager.jobs.registry.Job</c>.
 /// </summary>
 /// <param name="Name">The job's name, as <c>--only</c> and the state file know it.</param>
 /// <param name="Description">One line on what it does.</param>
@@ -63,7 +62,7 @@ public sealed record Job(
     public string TriggerList => string.Join(", ", Triggers.Select(JobWords.Wire).Order(StringComparer.Ordinal));
 }
 
-/// <summary>The words the state files, the CLI and Python use for triggers and cadences.</summary>
+/// <summary>The words the state files and the CLI use for triggers and cadences.</summary>
 public static class JobWords
 {
     /// <summary>The triggers' words, in the order help lists them.</summary>

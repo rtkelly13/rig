@@ -45,8 +45,8 @@ internal sealed class AppsCommand(InstalledApps apps, IReadOnlyList<string> appD
                 ["path"] = app.Path,
                 ["bytes"] = app.Bytes,
                 ["version"] = app.Version,
-                ["modified"] = PythonTime.IsoFormat(app.Modified),
-                ["accessed"] = PythonTime.IsoFormat(app.Accessed),
+                ["modified"] = StatTime.IsoFormat(app.Modified),
+                ["accessed"] = StatTime.IsoFormat(app.Accessed),
                 ["is_dormant"] = app.IsDormant(now),
             })]);
             await output.WriteLineAsync(JsonOutput.Format(payload).AsMemory(), cancellationToken).ConfigureAwait(false);

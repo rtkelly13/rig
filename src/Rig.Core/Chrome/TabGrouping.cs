@@ -81,8 +81,7 @@ public sealed record GroupOptions(
     SiteHosts? Sites = null);
 
 /// <summary>
-/// Decides which tabs to gather into one tab group per GitHub repository or work site. Ported from
-/// <c>desktop_manager.chrome.grouping</c>.
+/// Decides which tabs to gather into one tab group per GitHub repository or work site.
 /// </summary>
 /// <remarks>
 /// <para>

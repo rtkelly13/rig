@@ -4,7 +4,7 @@ using System.Text;
 namespace Rig.Core.Services;
 
 /// <summary>
-/// Writes an XML property list byte for byte as Python's <c>plistlib.dumps</c> did: keys sorted, tab indents, and only
+/// Writes an XML property list byte for byte: keys sorted, tab indents, and only
 /// the value kinds a LaunchAgent uses (strings, whole numbers, booleans, string lists and nested dictionaries).
 /// </summary>
 public static class Plist

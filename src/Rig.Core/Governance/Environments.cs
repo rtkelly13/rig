@@ -28,7 +28,7 @@ public sealed record EnvironmentSync(IReadOnlyList<EnvironmentAction> Actions, I
 /// <summary>
 /// Audits and synchronizes GitHub deployment environments. On personal repos the <c>release</c> environment is
 /// deliberately bare (required reviewers are org-only, and GitHub forbids self-approval); reviewer support exists for
-/// the day a repo moves to an org with a second human. Ported from <c>rig.repo_governance.release_environments</c>.
+/// the day a repo moves to an org with a second human.
 /// </summary>
 public static class ReleaseEnvironments
 {

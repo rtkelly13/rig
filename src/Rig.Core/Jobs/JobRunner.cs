@@ -32,8 +32,7 @@ public sealed record JobRunnerSeams(
 
 /// <summary>
 /// One coordinator run: takes the run lock, runs each due job in turn, and records every decision in
-/// <c>last-&lt;trigger&gt;.json</c>, every outcome in <c>state.json</c> and every run in <c>runs.ndjson</c>. Ported from
-/// <c>desktop_manager.jobs.runner.run</c>. Each job runs inside a <c>job &lt;name&gt;</c> span of <see cref="Source"/>,
+/// <c>last-&lt;trigger&gt;.json</c>, every outcome in <c>state.json</c> and every run in <c>runs.ndjson</c>. Each job runs inside a <c>job &lt;name&gt;</c> span of <see cref="Source"/>,
 /// whose ids its history line keeps.
 /// </summary>
 public sealed class JobRunner(JobRunnerSeams seams)
@@ -50,7 +49,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
     /// <summary>How long the summary line may be.</summary>
     public const int SummaryChars = 200;
 
-    /// <summary>The scope Python's runner wrote its job spans under, kept so the trace readers find them.</summary>
+    /// <summary>The scope the job spans are written under, kept so the trace readers find them.</summary>
     public const string Scope = "desktop_manager.jobs";
 
     /// <summary>The source of the <c>job &lt;name&gt;</c> spans.</summary>
@@ -133,7 +132,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
         return decisions.Any(item => item.Outcome is { Ok: false }) ? 1 : 0;
     }
 
-    /// <summary>A time as Python's <c>isoformat(timespec="seconds")</c> writes an aware one.</summary>
+    /// <summary>An aware time as ISO 8601 to the second.</summary>
     public static string Iso(DateTimeOffset time) => time.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
 
     /// <summary>How <c>jobs run</c> reports an outcome: <c>exit 0 after 3s: summary</c> or <c>error after 0s: why</c>.</summary>
@@ -178,7 +177,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
         {
             returnCode = seams.Executor.Execute(job, logs, runId);
         }
-#pragma warning disable CA1031 // A job that cannot start is recorded as an error, as Python's runner records any exception.
+#pragma warning disable CA1031 // A job that cannot start is recorded as an error.
         catch (Exception crash)
 #pragma warning restore CA1031
         {
@@ -221,7 +220,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
         return outcome;
     }
 
-    // Python's text[:count]: the first count code points, so a pair of surrogates is never split.
+    // The first count code points, so a pair of surrogates is never split.
     private static string Truncate(string text, int count)
     {
         var builder = new StringBuilder();

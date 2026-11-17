@@ -182,7 +182,7 @@ public sealed record RepoFacts(string Path, string Name, string DefaultBranch, I
 public readonly record struct BranchKey(string RepoPath, string Branch);
 
 /// <summary>
-/// Compares <see cref="BranchKey"/> the way Python compares its <c>(Path, str)</c> key: paths case-insensitively on
+/// Compares <see cref="BranchKey"/> as a <c>(Path, str)</c> key compares: paths case-insensitively on
 /// Windows only, branches always ordinally.
 /// </summary>
 public sealed class BranchKeyComparer : IEqualityComparer<BranchKey>

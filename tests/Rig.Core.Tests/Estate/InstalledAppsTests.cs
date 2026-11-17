@@ -131,10 +131,10 @@ public sealed class InstalledAppsTests : IDisposable
     {
         var stamp = DateTime.UnixEpoch.AddTicks((1_700_000_000L * TimeSpan.TicksPerSecond) + 5_657_755);
 
-        var value = PythonTime.FromStat(stamp);
+        var value = StatTime.FromStat(stamp);
 
-        Assert.Equal("2023-11-14T22:13:20.565776+00:00", PythonTime.IsoFormat(value));
-        Assert.Equal("2023-11-14T22:13:20+00:00", PythonTime.IsoFormat(PythonTime.FromStat(DateTime.UnixEpoch.AddSeconds(1_700_000_000))));
+        Assert.Equal("2023-11-14T22:13:20.565776+00:00", StatTime.IsoFormat(value));
+        Assert.Equal("2023-11-14T22:13:20+00:00", StatTime.IsoFormat(StatTime.FromStat(DateTime.UnixEpoch.AddSeconds(1_700_000_000))));
     }
 
     private sealed class Listed(params UninstallEntry[] entries) : IUninstallRegistry

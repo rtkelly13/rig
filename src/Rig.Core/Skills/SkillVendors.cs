@@ -43,7 +43,7 @@ public sealed record SkillVendor(
 
 /// <summary>
 /// Vendors upstream skills: clones or updates each vendor's repository, then copies the skills it allows into
-/// <c>skills/vendored/&lt;vendor&gt;</c>, removing those it no longer does. Ported from <c>rig.skills.vendor</c>.
+/// <c>skills/vendored/&lt;vendor&gt;</c>, removing those it no longer does.
 /// Clones live in the code root's <c>external/</c>, so every git call on them is hardened.
 /// </summary>
 /// <param name="git">Runs git.</param>

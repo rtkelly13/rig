@@ -97,7 +97,7 @@ public sealed class TidyPlan : IPlan<TidyAction>
 }
 
 /// <summary>
-/// The only estate code that deletes a branch or a worktree. Ported from <c>src/rig/estate/cleanup.py</c>.
+/// The only estate code that deletes a branch or a worktree.
 /// </summary>
 /// <remarks>
 /// <para>

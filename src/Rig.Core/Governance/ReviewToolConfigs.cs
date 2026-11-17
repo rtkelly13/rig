@@ -16,7 +16,7 @@ public sealed record ToolChange(string Tool, bool Changed, string Message);
 
 /// <summary>
 /// The in-repo config files of the code review tools: CodeRabbit, Codecov, DeepSource and Qodana. Each is written only
-/// when absent; an existing file is never overwritten. Ported from <c>rig.repo_governance.review_tool_configs</c>.
+/// when absent; an existing file is never overwritten.
 /// </summary>
 public static class ReviewToolConfigs
 {

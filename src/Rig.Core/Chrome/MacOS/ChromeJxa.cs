@@ -5,7 +5,7 @@ namespace Rig.Core.Chrome.MacOS;
 
 /// <summary>
 /// Chrome's macOS scripting dictionary through osascript: stable window and tab ids, titles and URLs. JXA runs in
-/// osascript, never in a web page. Ported from <c>desktop_manager.chrome.drivers.macos_jxa</c>.
+/// osascript, never in a web page.
 /// </summary>
 /// <param name="proc">Runs osascript.</param>
 public sealed class ChromeJxa(IProc proc) : IChromeJxa
@@ -114,7 +114,7 @@ public static class ChromeProfiles
 
         if (cache.ValueKind != JsonValueKind.Object)
         {
-            // The section does not fit, so it reads as absent, as a lenient field does in Python.
+            // The section does not fit, so it reads as absent.
             return found;
         }
 

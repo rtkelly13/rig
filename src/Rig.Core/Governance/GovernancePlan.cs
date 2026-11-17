@@ -3,8 +3,7 @@ using Rig.Core.Processes;
 namespace Rig.Core.Governance;
 
 /// <summary>
-/// <c>repo-governance plan</c>: every GitHub-side resource, desired → observed → plan → apply. Ported from
-/// <c>rig.repo_governance.cli_plan</c>.
+/// <c>repo-governance plan</c>: every GitHub-side resource, desired → observed → plan → apply.
 /// </summary>
 public static class GovernancePlan
 {

@@ -8,7 +8,7 @@ namespace Rig.Core.Jobs;
 /// <param name="Reason">Why: its cadence, <c>requested</c>, a retry, or why it is skipped.</param>
 public sealed record Planned(Job Job, bool Run, string Reason);
 
-/// <summary>Which jobs a run takes and why. Ported from <c>desktop_manager.jobs.runner.plan</c>.</summary>
+/// <summary>Which jobs a run takes and why.</summary>
 public static class JobPlan
 {
     /// <summary>

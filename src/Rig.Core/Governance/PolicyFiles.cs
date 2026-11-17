@@ -14,8 +14,7 @@ public sealed record RepoMetadata(string RepoName, bool IsPublic, string License
 
 /// <summary>
 /// The governance policy files <c>apply-policy</c> and <c>sync-policies</c> write: AI_POLICY.md, SECURITY.md and the
-/// README's AI disclosure. Ported from <c>rig.repo_governance.policy_template_engine</c>; the Jinja templates are
-/// embedded and use only <c>{{ name }}</c>, which <see cref="OssTemplates.Fill"/> fills.
+/// README's AI disclosure.
 /// </summary>
 /// <param name="proc">Runs gh.</param>
 /// <param name="git">Reads the origin, so gh describes it rather than an <c>upstream</c> remote.</param>
@@ -117,7 +116,7 @@ public sealed class PolicyFiles(IProc proc, Git git)
 
             if (badgeAt != -1)
             {
-                // Rejoining the lines drops a final newline, as Python's splitlines and join did.
+                // Rejoining the lines drops a final newline.
                 lines.Insert(badgeAt + 1, Badge);
                 text = string.Join('\n', lines);
             }
@@ -154,7 +153,7 @@ public sealed class PolicyFiles(IProc proc, Git git)
         }
     }
 
-    // Python's str.splitlines over text whose line endings are already "\n": no empty entry after a final newline.
+    // Splitting text whose line endings are already "\n": no empty entry after a final newline.
     private static List<string> SplitLines(string text)
     {
         var lines = text.Split('\n').ToList();

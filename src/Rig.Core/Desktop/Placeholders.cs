@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Rig.Core.Desktop;
 
-/// <summary><c>{name}</c> placeholders in plan values. Ported from <c>desktop_manager.placeholders</c> and the resolution in <c>desktop_manager.models</c>.</summary>
+/// <summary><c>{name}</c> placeholders in plan values.</summary>
 public static partial class Placeholders
 {
     /// <summary>Placeholders every plan can use, read from the environment variable named, where it is set.</summary>

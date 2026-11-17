@@ -5,8 +5,8 @@ namespace Rig.Core.Jobs;
 
 /// <summary>
 /// The coordinator's <c>run.lock</c>: one run at a time on Windows, where the lock is byte 0 of the file, the same byte
-/// Python's <c>msvcrt.locking</c> takes, so a C# run and a Python run exclude each other. Elsewhere there is no
-/// cross-process lock, as in Python, and every run gets it. Ported from <c>desktop_manager.display_guard.hold_lock</c>.
+/// every rig run locks, so runs exclude each other. Elsewhere there is no
+/// cross-process lock and every run gets it.
 /// </summary>
 public static class RunLock
 {

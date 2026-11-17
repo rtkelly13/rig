@@ -207,7 +207,7 @@ public static partial class NuGetGovernance
 
     private static string? Str(YamlValue? value) => value is YamlString text ? text.Text : null;
 
-    // A job id as GitHub reads it: Python's str() of the key.
+    // A job id as GitHub reads it: the key as text.
     private static string KeyText(YamlValue key) => key switch
     {
         YamlString text => text.Text,

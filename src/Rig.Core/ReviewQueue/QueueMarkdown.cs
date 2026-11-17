@@ -164,7 +164,7 @@ public static partial class QueueMarkdown
         return text[start..(end + End.Length)];
     }
 
-    // html.escape(..., quote=True), including Python's spelling for apostrophes.
+    // html.escape(..., quote=True), with <c>&#x27;</c> for apostrophes.
     private static string Escape(string text) => text.Replace("&", "&amp;", StringComparison.Ordinal)
         .Replace("<", "&lt;", StringComparison.Ordinal).Replace(">", "&gt;", StringComparison.Ordinal)
         .Replace("\"", "&quot;", StringComparison.Ordinal).Replace("'", "&#x27;", StringComparison.Ordinal)

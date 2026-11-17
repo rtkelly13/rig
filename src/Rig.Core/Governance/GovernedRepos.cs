@@ -7,8 +7,7 @@ namespace Rig.Core.Governance;
 
 /// <summary>
 /// Which local checkouts repo governance acts on. Code merely cloned is out of scope: whether a checkout is a fork,
-/// and whether you may push to it, comes from GitHub, and a profile naming a repo opts it in. Ported from
-/// <c>rig.repo_governance.repo_discovery</c>.
+/// and whether you may push to it, comes from GitHub, and a profile naming a repo opts it in.
 /// </summary>
 /// <param name="proc">Runs <c>gh</c>.</param>
 /// <param name="git">Runs git, for each checkout's origin.</param>

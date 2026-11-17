@@ -8,8 +8,7 @@ namespace Rig.Core.Chrome.Windows;
 /// <summary>
 /// Acts on Chrome's tabs and saved groups through UI Automation: select a tab, close one, put each window's selection
 /// back, delete a duplicate saved group from the bookmarks bar, and (with the window in front, in
-/// <c>ChromeUiaActions.Grouping.cs</c>) group, move and ungroup tabs. Ported from <c>desktop_manager.chrome.uia</c>;
-/// callers decide what to act on, this only knows how to do it safely.
+/// <c>ChromeUiaActions.Grouping.cs</c>) group, move and ungroup tabs.
 /// </summary>
 /// <remarks>
 /// <para>

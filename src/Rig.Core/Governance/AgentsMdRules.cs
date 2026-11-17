@@ -6,7 +6,7 @@ namespace Rig.Core.Governance;
 /// </summary>
 public sealed record AgentsMdRules
 {
-    /// <summary>The checks reported but never gated, as the Python's defaults name them.</summary>
+    /// <summary>The checks reported but never gated.</summary>
     public static readonly IReadOnlyList<string> DefaultReportOnly = ["instruction-count", "forcing-language", "section-outlier"];
 
     /// <summary>The rules with every field at its default.</summary>

@@ -4,10 +4,10 @@ namespace Rig.Core.Desktop;
 
 /// <summary>
 /// The rules rig layers over <see cref="IVirtualDesktops"/>: range checks, verified renames, adding desktops up to a
-/// count and retiring switched-off desktops. Ported from <c>desktop_manager.win32.desktops</c>.
+/// count and retiring switched-off desktops.
 /// </summary>
 /// <remarks>
-/// None of these throw for a <see cref="DesktopException"/>: each reports what happened, as the Python did, so restore
+/// None of these throw for a <see cref="DesktopException"/>: each reports what happened, so restore
 /// can fall back to hotkeys or carry on.
 /// </remarks>
 public static class VirtualDesktopOperations

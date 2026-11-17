@@ -12,7 +12,7 @@ public interface IPortProbe
     Task<bool> ListeningAsync(int port, string host = CollectorConfig.Host, CancellationToken cancellationToken = default);
 }
 
-/// <summary>Probes with a real TCP connection, as the Python's <c>socket.create_connection</c> did.</summary>
+/// <summary>Probes with a real TCP connection.</summary>
 public sealed class TcpPortProbe : IPortProbe
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(0.5);
@@ -46,7 +46,7 @@ public sealed record Owner(int Pid, string Command)
 }
 
 /// <summary>
-/// Running the collector without a service manager, ported from <c>rig.otel_stack.runtime</c>. macOS runs it under its
+/// Running the collector without a service manager, macOS runs it under its
 /// LaunchAgent; Windows has no agent, so <c>collector ensure</c> starts the binary detached when nothing listens on the
 /// HTTP port. A pid file outlives its process and the pid can then belong to anything, so only a process that still
 /// matches the launched binary (and, where <c>ps</c> exists, its start time) is ever signalled.
@@ -210,7 +210,7 @@ public sealed class CollectorRuntime(OtelPaths paths, IProc proc, IDetachedStart
     /// <summary>
     /// Stops a collector <see cref="StartAsync"/> launched; false when there was none still running. A stale record is
     /// discarded and nothing is signalled. Unix gets SIGTERM, so the collector flushes; Windows has no such signal, and
-    /// <c>taskkill /F</c> ends it as the Python's <c>os.kill</c> did there.
+    /// <c>taskkill /F</c> ends it there.
     /// </summary>
     public async Task<bool> StopRecordedAsync(CancellationToken cancellationToken = default)
     {
@@ -233,7 +233,7 @@ public sealed class CollectorRuntime(OtelPaths paths, IProc proc, IDetachedStart
     private async Task<int?> WindowsListenerAsync(int port, CancellationToken cancellationToken) =>
         CollectorProcess.ParseNetstatListener(await RunAsync(cancellationToken, "netstat", "-ano", "-p", "TCP").ConfigureAwait(false), port);
 
-    // Standard output whatever the exit code, as the Python read `done.stdout` with check=False.
+    // Standard output whatever the exit code.
     private async Task<string> RunAsync(CancellationToken cancellationToken, params string[] argv) =>
         (await proc.RunAsync(new ProcRequest(argv), cancellationToken).ConfigureAwait(false)).Out;
 

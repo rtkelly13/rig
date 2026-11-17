@@ -11,7 +11,7 @@ namespace Rig.Core.Jobs;
 public sealed record ScheduledSeams(TimeProvider Clock, Func<TimeSpan, bool> WaitForShell, string TracesDir);
 
 /// <summary>
-/// What the scheduled tasks add around a coordinator run, ported from <c>desktop_manager.jobs.scheduled</c>. A task has
+/// What the scheduled tasks add around a coordinator run, A task has
 /// no console, so the run's narrative goes to <c>coordinator.log</c>, each line naming the run. A logon run first waits
 /// for Explorer's shell window, the precondition for the virtual-desktop APIs the restore uses, and deletes trace files
 /// older than <see cref="TraceKeepDays"/>. A run that crashes is logged and exits 1.
@@ -38,7 +38,7 @@ public static class ScheduledRun
     /// <param name="jobsDir">The coordinator's folder.</param>
     /// <param name="seams">The clock, the shell wait and the traces folder.</param>
     /// <param name="run">The coordinator run, given the run id and the report.</param>
-    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "A scheduled run has no console: whatever it throws is logged and exits 1, as Python's did.")]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "A scheduled run has no console: whatever it throws is logged and exits 1.")]
     public static int Run(JobTrigger trigger, string jobsDir, ScheduledSeams seams, Func<string, Action<string>, int> run)
     {
         ArgumentNullException.ThrowIfNull(seams);

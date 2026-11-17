@@ -9,7 +9,7 @@ public sealed record MissingPathGroup(int DesktopIndex, IReadOnlyList<LaunchEntr
 
 /// <summary>
 /// The launches a restore could not start because a path is missing, grouped by the missing path, so restore can open
-/// one note per path afterwards. Ported from the state half of <c>desktop_manager.restore_fallbacks</c>.
+/// one note per path afterwards.
 /// </summary>
 public sealed partial class RestoreFailureFallbacks
 {
@@ -58,7 +58,7 @@ public sealed partial class RestoreFailureFallbacks
         return match.Success ? $"Launch target resolved {match.Groups["field"].Value} does not exist: {match.Groups["value"].Value}" : message;
     }
 
-    // Python's re.match with $: anchored at the start, and the end may sit before one trailing newline.
+    // Anchored at the start, and the end may sit before one trailing newline.
     [GeneratedRegex(@"^Launch entry `(?<entry>.+?)` resolved (?<field>path|cwd|arg) does not exist: (?<value>.+)$")]
     private static partial Regex MissingPathError();
 }

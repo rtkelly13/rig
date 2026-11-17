@@ -102,7 +102,7 @@ public interface IMacUiApi : IAxApi
 /// Retained accessibility elements and Quartz input for foreground browser actions. An <see cref="AxNode"/>'s
 /// <see cref="AxNode.Identity"/> is metadata, never an action handle: this session retains the element behind every node
 /// it decodes, keyed by the node itself, and releases them all on <see cref="Dispose"/>. Scoped to one action, never to
-/// construction. Ported from <c>desktop_manager.chrome.drivers.macos_ui</c>.
+/// construction.
 /// </summary>
 public sealed class MacUi : AxReader, IDisposable
 {
@@ -455,7 +455,7 @@ public sealed class MacUi : AxReader, IDisposable
         return node;
     }
 
-    // Eight characters a chunk, counted as Python counts them (code points), so no chunk splits a surrogate pair.
+    // Eight characters a chunk, counted in code points, so no chunk splits a surrogate pair.
     private static List<string> Chunks(string text)
     {
         var chunks = new List<string>();

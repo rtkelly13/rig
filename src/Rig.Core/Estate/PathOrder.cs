@@ -1,7 +1,7 @@
 namespace Rig.Core.Estate;
 
 /// <summary>
-/// Orders paths segment by segment, as Python sorts <c>pathlib</c> paths: <c>foo/bar</c> before <c>foo-x</c>, where a
+/// Orders paths segment by segment, as a path sorts: <c>foo/bar</c> before <c>foo-x</c>, where a
 /// plain string comparison puts the <c>-</c> first. Each segment compares ordinally.
 /// </summary>
 public sealed class PathOrder : IComparer<string>

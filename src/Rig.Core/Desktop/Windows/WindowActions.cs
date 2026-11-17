@@ -3,9 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
-/// Moving, raising and closing windows, ending processes and typing, as restore does them. Ported from the write half
-/// of <c>desktop_manager.win32.geometry</c>, <c>close_current_desktop_windows</c>, <c>terminate_process_id</c> and
-/// <c>wait_for_process_exit</c> in <c>desktop_manager.win32.inventory</c>, and <c>send_input</c>.
+/// Moving, raising and closing windows, ending processes and typing, as restore does them.
 /// </summary>
 /// <param name="win32">The Win32 writes.</param>
 /// <param name="inventory">The reads the writes are planned from.</param>

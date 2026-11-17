@@ -1,8 +1,7 @@
 namespace Rig.Core.Governance;
 
 /// <summary>
-/// One required <c>.gitignore</c> rule or rule group from <c>config/repo_policies.json</c>. Ported from
-/// <c>rig.repo_governance.policy_config.GitignoreEntry</c>.
+/// One required <c>.gitignore</c> rule or rule group from <c>config/repo_policies.json</c>.
 /// </summary>
 /// <param name="Name">What it is called, so a repo override can replace it.</param>
 /// <param name="Comment">The comment written above its lines.</param>
@@ -28,7 +27,7 @@ public sealed record GitignoreEntry(string Name, string Comment, IReadOnlyList<s
 
     private static readonly string[] DsStoreForms = [".DS_Store", ".DS_Store*", "**/.DS_Store", "*/.DS_Store"];
 
-    // Python's str.splitlines separators, \r\n counted once.
+    // Line separators, \r\n counted once.
     private static readonly string[] LineBreaks = ["\r\n", "\n", "\r", "\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"];
 
     /// <summary>The lines of <see cref="Write"/> that <paramref name="gitignoreText"/> does not satisfy.</summary>
