@@ -68,7 +68,8 @@ internal static class Discovery
                     // to the production CLI entry point whose tree we inspected above.
                     CheckLauncher(File.ReadAllText(Path.Join(root, "src/Rig.Launcher/Launcher.cs")));
                 }
-                else if (project is not ("src/Rig.Cli/Rig.Cli.csproj" or "tools/command-ownership/CommandOwnership.csproj"))
+                // SHORT-TERM: loc-report is a report-only CI tool with no command tree. Remove this exemption with it (#320).
+                else if (project is not ("src/Rig.Cli/Rig.Cli.csproj" or "tools/command-ownership/CommandOwnership.csproj" or "tools/loc-report/LocReport.csproj"))
                 {
                     throw new InvalidOperationException($"Unsupported executable project: {project}; add its runtime discovery adapter");
                 }

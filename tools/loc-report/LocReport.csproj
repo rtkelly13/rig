@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- SHORT-TERM: a stopgap until Diffra's line counter (rtkelly-labs/Diffra#159) replaces it. Delete with #320. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>

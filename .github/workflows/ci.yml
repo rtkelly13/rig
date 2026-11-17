@@ -582,6 +582,7 @@ jobs:
           git merge-base --is-ancestor "$current_main" HEAD
 
   # Report only: never a gate, and `ci` does not need it. Its failure cannot block a merge.
+  # SHORT-TERM: replaced by `diffra record --name loc` once rtkelly-labs/Diffra#159 ships; delete with #320.
   loc-report:
     name: loc-report
     if: github.event_name != 'schedule'
