@@ -29,6 +29,10 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     private const string BeginMarker = "# BEGIN shared-utilities policy";
     private const string EndMarker = "# END shared-utilities policy";
 
+    private static readonly string[] OpencodeNames = ["opencode.json", "opencode.jsonc", "config.json"];
+
+    private static readonly string[] EffectOrder = ["allow", "ask", "deny"];
+
     // Surfaces whose rules always match as prefixes: an exact policy command still allows anything after it.
     private static readonly HashSet<string> PrefixMatchOnly = new(["codex", "antigravity"], StringComparer.Ordinal);
 
@@ -133,16 +137,8 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
 
     private static string OpencodeConfig(string folder)
     {
-        foreach (var name in new[] { "opencode.json", "opencode.jsonc", "config.json" })
-        {
-            var candidate = IOPath.Join(folder, name);
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        return IOPath.Join(folder, "opencode.json");
+        return OpencodeNames.Select(name => IOPath.Join(folder, name)).FirstOrDefault(File.Exists)
+            ?? IOPath.Join(folder, "opencode.json");
     }
 
     // Universal newlines.
@@ -151,25 +147,18 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     private static JsonObject LoadObject(string path) =>
         !File.Exists(path) ? [] : JsonNode.Parse(ReadText(path)) as JsonObject ?? throw new InvalidDataException("native config root must be an object");
 
-    private static JsonObject ObjectAt(JsonObject parent, string key, string label)
-    {
-        var child = parent[key] switch
-        {
-            null => [],
-            JsonObject existing => existing,
-            _ => throw new InvalidDataException($"{label} must be an object"),
-        };
-        parent[key] = child;
-        return child;
-    }
+    private static JsonObject ObjectAt(JsonObject parent, string key, string label) => ChildAt(parent, key, label, "an object", new JsonObject());
 
-    private static JsonArray ArrayAt(JsonObject parent, string key, string label)
+    private static JsonArray ArrayAt(JsonObject parent, string key, string label) => ChildAt(parent, key, label, "an array", new JsonArray());
+
+    private static T ChildAt<T>(JsonObject parent, string key, string label, string kind, T empty)
+        where T : JsonNode
     {
         var child = parent[key] switch
         {
-            null => [],
-            JsonArray existing => existing,
-            _ => throw new InvalidDataException($"{label} must be an array"),
+            null => empty,
+            T existing => existing,
+            _ => throw new InvalidDataException($"{label} must be {kind}"),
         };
         parent[key] = child;
         return child;
@@ -352,11 +341,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
             }
         }
 
-        var ordered = new List<KeyValuePair<string, string>>();
-        foreach (var effect in new[] { "allow", "ask", "deny" })
-        {
-            ordered.AddRange(effects.Where(entry => entry.Value == effect).Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value)));
-        }
+        var ordered = EffectOrder.SelectMany(effect => effects.Where(entry => entry.Value == effect)).ToList();
 
         foreach (var shell in shells)
         {
@@ -427,29 +412,19 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     private bool Shadowed(CommandPrefix prefix, List<string> denies)
     {
         var wildcard = prefix.Wildcard || PrefixMatchOnly.Contains(System);
-        foreach (var deny in denies)
+        return denies.Any(deny =>
         {
             if (!wildcard)
             {
-                if (Glob.Matches(prefix.Command, deny, Windows))
-                {
-                    return true;
-                }
-
-                continue;
+                return Glob.Matches(prefix.Command, deny, Windows);
             }
 
             var head = deny.Split('*', 2)[0];
             var words = head.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
             var headTokens = head.EndsWith(' ') ? words : words[..^Math.Min(1, words.Length)];
             var shorter = Math.Min(headTokens.Length, prefix.Tokens.Count);
-            if (prefix.Tokens.Take(shorter).SequenceEqual(headTokens.Take(shorter), StringComparer.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        return false;
+            return prefix.Tokens.Take(shorter).SequenceEqual(headTokens.Take(shorter), StringComparer.Ordinal);
+        });
     }
 
     private ProjectionResult ApplyCodex(string path, CommandPolicy policy, bool dryRun)
