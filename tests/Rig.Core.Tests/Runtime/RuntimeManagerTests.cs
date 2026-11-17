@@ -73,8 +73,12 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Equal(Path.GetFileName(copy), state.Current);
         Assert.Null(state.Previous);
         Assert.Equal(PathResolution.Resolve(repo), state.Repo);
+        // rig is published on its own first, or its deps.json is missing and it cannot load native SQLite.
+        Assert.Equal(
+            [Path.Join(copy, "src", "Rig.Cli"), Path.Join(copy, "src", "Rig.Launcher")],
+            tools.Calls.Where(call => call.Argv is ["dotnet", "publish", ..]).Select(call => call.Argv[2]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
-            ["dotnet", "publish", Path.Join(copy, "src", "Rig.Launcher"), "-c", "Release", "-o", Path.Join(copy, "rig"), "-m:2", "-v", "q"]));
+            ["dotnet", "publish", Path.Join(copy, "src", "Rig.Cli"), "-c", "Release", "-o", Path.Join(copy, "rig"), "-m:2", "-v", "q"]));
         var windows = OperatingSystem.IsWindows();
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "run", "--help"]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "install", "--help"]));
@@ -142,7 +146,7 @@ public sealed class RuntimeManagerTests : IDisposable
     }
 
     [Fact]
-    public void The_check_validates_the_copys_workspace_plan()
+    public void The_check_validates_the_copys_workspace_plan_on_windows_only()
     {
         var repo = NewRepo();
         var sha = Commit(repo, new Dictionary<string, string> { ["desktop-manager/workspace-plan.bundle.json"] = "{}" });
@@ -152,9 +156,11 @@ public sealed class RuntimeManagerTests : IDisposable
 
         var copy = Path.Join(Root, sha[..RuntimeManager.ShortShaLength]);
         var windows = OperatingSystem.IsWindows();
-        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
+        var validated = tools.Calls.Any(call => call.Argv.SequenceEqual(
             [RuntimeManager.Published(copy, "rig", windows), "desktop", "workspace", "validate-plan", "--config",
                 Path.Join(copy, "desktop-manager", "workspace-plan.bundle.json")]));
+        // The plan holds Windows folders and placeholders, so elsewhere it would always fail.
+        Assert.Equal(windows, validated);
     }
 
     [Fact]
@@ -508,25 +514,6 @@ public sealed class RuntimeManagerTests : IDisposable
 
         File.WriteAllText(installedPath, "[\"not an object\"]");
         Assert.Throws<InvalidDataException>(() => RuntimeManager.ReadInstalled(copyDir));
-    }
-
-    [Fact]
-    public void Check_validates_workspace_plan_when_bundle_exists()
-    {
-        var repo = NewRepo();
-        var sha = Commit(repo, new Dictionary<string, string>
-        {
-            ["desktop-manager/workspace-plan.bundle.json"] = "{}",
-        });
-        var tools = new Tools(_system);
-        var manager = Manager(tools);
-
-        var result = manager.Install(repo, "HEAD", fetch: false);
-
-        var copy = Path.Join(Root, sha[..RuntimeManager.ShortShaLength]);
-        Assert.True(result.Changed);
-        Assert.Contains(tools.Calls, call => call.Argv[0] == RuntimeManager.Published(copy, "rig", OperatingSystem.IsWindows())
-            && call.Argv.Contains("validate-plan"));
     }
 
     [Fact]
