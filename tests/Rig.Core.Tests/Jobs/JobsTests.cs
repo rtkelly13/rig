@@ -1,5 +1,6 @@
 using Rig.Core.Jobs;
 using Rig.Core.Processes;
+using Rig.Core.Runtime;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Workspace;
 
@@ -89,6 +90,16 @@ public sealed class JobsTests : IDisposable
         Assert.Equal(Path.Join("/appdata", "workspace-manager", "windows-workspace.json"), JobRegistry.DefaultPlanPath("/appdata", "/home", windows: true));
         Assert.Equal(Path.Join("/home", ".config", "workspace-manager", "windows-workspace.json"), JobRegistry.DefaultPlanPath(string.Empty, "/home", windows: true));
         Assert.Equal(Path.Join("/home", ".config", "workspace-manager", "windows-workspace.json"), JobRegistry.DefaultPlanPath("/appdata", "/home", windows: false));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void The_jobs_rig_is_the_checkouts_published_one(bool windows)
+    {
+        var env = new JobsEnvironment(RuntimeManager.PublishedFolder("/copy"), "plan", null, "/code/personal", [], "feed", "orca", windows);
+        Assert.Equal(RuntimeManager.Published("/copy", "rig", windows), env.Script("rig"));
+        Assert.DoesNotContain(".venv", env.Script("rig"), StringComparison.Ordinal);
     }
 
     [Fact]

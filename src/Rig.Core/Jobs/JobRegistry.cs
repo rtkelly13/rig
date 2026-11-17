@@ -3,7 +3,7 @@ namespace Rig.Core.Jobs;
 /// <summary>
 /// Where the jobs' commands and files live on one machine.
 /// </summary>
-/// <param name="Scripts">The rig environment's scripts folder: <c>rig</c> and its <c>python</c>.</param>
+/// <param name="Scripts">The folder holding the published <c>rig</c> the jobs run (<c>RuntimeManager.PublishedFolder</c> of the checkout).</param>
 /// <param name="Plan">The workspace plan restore and align read.</param>
 /// <param name="WorkspaceRoot">The work workspace checkout (<c>tools.estate.workspace_repo</c>); null leaves its jobs out.</param>
 /// <param name="PersonalRoot">The folder holding the personal clones; its parent is the code root every estate job scans.</param>

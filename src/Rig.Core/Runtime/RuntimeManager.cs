@@ -102,9 +102,12 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     public static bool RunningCopy(string path, string root) =>
         PathResolution.IsUnder(PathResolution.Resolve(path), PathResolution.Resolve(root));
 
+    /// <summary>The folder <c>dotnet publish</c> writes a copy's <c>rig</c> and <c>rigw</c> into.</summary>
+    public static string PublishedFolder(string copy) => Path.Join(copy, "rig");
+
     /// <summary>A copy's published <c>rig</c> or <c>rigw</c>, as <c>dotnet publish</c> wrote it.</summary>
     public static string Published(string copy, string name, bool windows) =>
-        Path.Join(copy, "rig", windows ? $"{name}.exe" : name);
+        Path.Join(PublishedFolder(copy), windows ? $"{name}.exe" : name);
 
     /// <summary>The folder this manager keeps its copies in.</summary>
     public string Root => root;
@@ -389,7 +392,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     }
 
     private void Publish(string copy) =>
-        _ = Must(["dotnet", "publish", Path.Join(copy, "src", "Rig.Launcher"), "-c", "Release", "-o", Path.Join(copy, "rig"), "-m:2", "-v", "q"], copy);
+        _ = Must(["dotnet", "publish", Path.Join(copy, "src", "Rig.Launcher"), "-c", "Release", "-o", PublishedFolder(copy), "-m:2", "-v", "q"], copy);
 
     private List<string> Check(string copy)
     {
