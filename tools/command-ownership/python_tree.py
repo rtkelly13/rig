@@ -119,14 +119,11 @@ def cli_factories(tree, imports):
 def walk(command, path):
     if command.callback is not None:
         callback = command.callback
-        from rig.platforms import supported_platforms
-
-        platforms = supported_platforms(callback)
         yield {
             "Id": f"py:{path}|{callback_id(callback)}",
             "Path": path,
             "Owner": f"py:{callback_id(callback)}",
-            "Platforms": sorted(p.name.lower() for p in platforms) if platforms else ["linux", "macos", "windows"],
+            "Platforms": ["linux", "macos", "windows"],
             "Alias": thin_alias(callback),
         }
     if isinstance(command, click.Group):
