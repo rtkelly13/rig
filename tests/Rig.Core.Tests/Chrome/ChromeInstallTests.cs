@@ -29,16 +29,16 @@ public sealed class ChromeInstallTests
     }
 
     [Fact]
-    public void RuntimeDesktopManager_renders_full_path()
+    public void RuntimeRig_renders_full_path()
     {
-        var path = ChromeInstall.RuntimeDesktopManager(_ => @"C:\Local", @"C:\Users\me");
-        Assert.Equal(Path.Join(@"C:\Local", "shared-utilities", "runtime", "current", ".venv", "Scripts", "desktop-manager.exe"), path);
+        var path = ChromeInstall.RuntimeRig(_ => @"C:\Local", @"C:\Users\me");
+        Assert.Equal(Path.Join(@"C:\Local", "shared-utilities", "runtime", "current", ".venv", "Scripts", "rig.exe"), path);
     }
 
     [Fact]
     public void RenderShim_renders_batch_script()
     {
-        var rendered = ChromeInstall.RenderShim(@"C:\bin\desktop-manager.exe");
-        Assert.Equal("@echo off\r\n\"C:\\bin\\desktop-manager.exe\" chrome-tabs %*\r\n", rendered);
+        var rendered = ChromeInstall.RenderShim(@"C:\bin\rig.exe");
+        Assert.Equal("@echo off\r\n\"C:\\bin\\rig.exe\" chrome-tabs %*\r\n", rendered);
     }
 }

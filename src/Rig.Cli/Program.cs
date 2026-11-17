@@ -432,7 +432,6 @@ internal static class Program
             MachineConfig.WorkDirs(machineConfig, codeRoot, home),
             Decisions.DefaultFeedPath(localAppData, home),
             OrcaLocations.Current.EstateUserData(),
-            JobRegistry.ChromeTabsLog(localAppData, home),
             windows);
         return new JobsHost(
             JobState.JobsDir(AppData.Current()),

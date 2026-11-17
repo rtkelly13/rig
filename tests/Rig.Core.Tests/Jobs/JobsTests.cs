@@ -89,13 +89,12 @@ public sealed class JobsTests : IDisposable
         Assert.Equal(Path.Join("/appdata", "workspace-manager", "windows-workspace.json"), JobRegistry.DefaultPlanPath("/appdata", "/home", windows: true));
         Assert.Equal(Path.Join("/home", ".config", "workspace-manager", "windows-workspace.json"), JobRegistry.DefaultPlanPath(string.Empty, "/home", windows: true));
         Assert.Equal(Path.Join("/home", ".config", "workspace-manager", "windows-workspace.json"), JobRegistry.DefaultPlanPath("/appdata", "/home", windows: false));
-        Assert.Equal(Path.Join("/home", "AppData", "Local", "shared-utilities", "chrome-tabs", "organise.log"), JobRegistry.ChromeTabsLog(null, "/home"));
     }
 
     [Fact]
     public void On_windows_scripts_carry_exe_and_estate_roots_compare_without_case()
     {
-        var env = new JobsEnvironment("/rig/Scripts", "plan", "/Code/work/workspace", "/code/personal", ["/CODE/work", "/elsewhere/work"], "feed", "orca", "log", Windows: true);
+        var env = new JobsEnvironment("/rig/Scripts", "plan", "/Code/work/workspace", "/code/personal", ["/CODE/work", "/elsewhere/work"], "feed", "orca", Windows: true);
 
         Assert.Equal(Path.Join("/rig/Scripts", "rig.exe"), env.Script("rig"));
         Assert.Equal([env.CodeRoot, "/elsewhere/work"], env.EstateRoots);
@@ -104,7 +103,7 @@ public sealed class JobsTests : IDisposable
     [Fact]
     public void Off_windows_case_tells_estate_roots_apart()
     {
-        var env = new JobsEnvironment("/rig/bin", "plan", "/Code/work/ws", "/code/personal", ["work"], "feed", "orca", "log", Windows: false);
+        var env = new JobsEnvironment("/rig/bin", "plan", "/Code/work/ws", "/code/personal", ["work"], "feed", "orca", Windows: false);
 
         Assert.Equal([env.CodeRoot, "work", "/Code/work/ws"], env.EstateRoots);
         Assert.Equal(Path.Join("/rig/bin", "rig"), env.Script("rig"));
@@ -113,7 +112,7 @@ public sealed class JobsTests : IDisposable
     [Fact]
     public void The_workspace_paths_need_a_workspace_repo()
     {
-        var env = new JobsEnvironment("/rig/bin", "plan", null, "/code/personal", [], "feed", "orca", "log", Windows: false);
+        var env = new JobsEnvironment("/rig/bin", "plan", null, "/code/personal", [], "feed", "orca", Windows: false);
 
         Assert.Throws<InvalidOperationException>(() => env.WorkspacePython);
     }

@@ -99,7 +99,6 @@ public sealed class RigOps : IDisposable
             MachineConfig.WorkDirs(machineConfig, codeRoot, home),
             Rig.Core.Estate.Decisions.DefaultFeedPath(localAppData, home),
             OrcaLocations.Current.EstateUserData(),
-            JobRegistry.ChromeTabsLog(localAppData, home),
             windows);
         var jobs = JobRegistry.Default(environment);
         var proc = new SystemProc();

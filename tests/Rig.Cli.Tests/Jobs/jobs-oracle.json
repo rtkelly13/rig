@@ -44,9 +44,13 @@
    "name": "chrome-organise",
    "description": "Close merged, duplicate and superseded Chrome tabs, and group the rest, once idle.",
    "argv": [
-    "/rig/.venv/bin/python",
-    "-m",
-    "desktop_manager.chrome.scheduled",
+    "/rig/.venv/bin/rig",
+    "chrome-tabs",
+    "organise",
+    "--unattended",
+    "--consolidate-saved",
+    "--trigger",
+    "scheduled",
     "--wait-minutes",
     "10"
    ],
@@ -58,7 +62,7 @@
    "requires": [],
    "idle_minutes": 0,
    "retry_exit_codes": [],
-   "detail_log": "/local/shared-utilities/chrome-tabs/organise.log",
+   "detail_log": null,
    "feature": null
   },
   {
