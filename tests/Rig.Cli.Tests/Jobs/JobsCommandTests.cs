@@ -141,6 +141,32 @@ public sealed class JobsCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Install_refuses_when_the_published_rig_is_missing_and_changes_no_tasks()
+    {
+        _missingRig = "/runtime/rig/rig";
+        var tasks = new FakeTasks();
+
+        Assert.Equal(1, await Run(tasks, "install"));
+
+        Assert.Empty(tasks.Registered);
+        Assert.Empty(tasks.Deleted);
+        Assert.Empty(tasks.Started);
+        Assert.Contains("/runtime/rig/rig", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("rig runtime install", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Status_reports_a_missing_published_rig_as_a_finding_and_still_succeeds()
+    {
+        _missingRig = "/runtime/rig/rig";
+
+        Assert.Equal(0, await Run(null, "status"));
+
+        Assert.Contains("Finding: the published rig is missing: /runtime/rig/rig.", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("rig runtime install", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Install_requires_windows()
     {
         Assert.Equal(1, await Run(null, "install"));
@@ -438,7 +464,10 @@ public sealed class JobsCommandTests : IDisposable
         },
         TracesDir,
         _ => Task.FromResult(new JobsInstallTarget(_temp.Path, "plan.json", "rigw.exe")),
-        () => "CORP\\me & you");
+        () => "CORP\\me & you",
+        () => _missingRig);
+
+    private string? _missingRig;
 
     private Task<int> Run(IScheduledTasks? tasks, params string[] args) =>
         new JobsCommand(Host(tasks), _out).Build().Parse(args)
