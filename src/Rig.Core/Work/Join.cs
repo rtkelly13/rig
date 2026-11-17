@@ -82,20 +82,9 @@ public static partial class WorkJoin
             return null;
         }
 
-        foreach (var pattern in new[] { Ticket(), LowerTicket() })
-        {
-            foreach (Match match in pattern.Matches(branch))
-            {
-                var ticket = match.Groups[1].Value.ToUpperInvariant();
-                var project = ticket[..ticket.IndexOf('-', StringComparison.Ordinal)].ToLowerInvariant();
-                if (!NotAProject.Contains(project))
-                {
-                    return ticket;
-                }
-            }
-        }
-
-        return null;
+        return new[] { Ticket(), LowerTicket() }
+            .SelectMany(pattern => pattern.Matches(branch).Select(match => match.Groups[1].Value.ToUpperInvariant()))
+            .FirstOrDefault(ticket => !NotAProject.Contains(ticket[..ticket.IndexOf('-', StringComparison.Ordinal)].ToLowerInvariant()));
     }
 
     /// <summary>
@@ -110,22 +99,11 @@ public static partial class WorkJoin
     public static WorkSessionState ClassifySession(string? liveStatus, bool isLive, bool cleared, bool exitedCleanly, string turnState)
     {
         ArgumentNullException.ThrowIfNull(turnState);
-        if (isLive)
-        {
-            return liveStatus == "idle" ? WorkSessionState.WaitingOnUser : WorkSessionState.Live;
-        }
-
-        if (cleared)
-        {
-            return WorkSessionState.Cleared;
-        }
-
-        if (exitedCleanly)
-        {
-            return WorkSessionState.EndedClean;
-        }
-
-        return turnState is "mid-tool" or "unanswered" ? WorkSessionState.DiedMidTask : WorkSessionState.DiedIdle;
+        return isLive ? (liveStatus == "idle" ? WorkSessionState.WaitingOnUser : WorkSessionState.Live)
+            : cleared ? WorkSessionState.Cleared
+            : exitedCleanly ? WorkSessionState.EndedClean
+            : turnState is "mid-tool" or "unanswered" ? WorkSessionState.DiedMidTask
+            : WorkSessionState.DiedIdle;
     }
 
     /// <summary>Which (repo, branch) a session belongs to, judged by its last working directory.</summary>
@@ -149,17 +127,9 @@ public static partial class WorkJoin
             return new Attribution(null, Reason: "no working directory recorded");
         }
 
-        if (!exists(cwd))
-        {
-            return new Attribution(null, Reason: $"directory gone: {cwd}");
-        }
-
-        if (index.Find(cwd) is { } found)
-        {
-            return new Attribution(found.RepoPath, found.Branch);
-        }
-
-        return resolveUnknown(cwd) ?? new Attribution(null, Reason: $"not in a git checkout: {cwd}");
+        return !exists(cwd) ? new Attribution(null, Reason: $"directory gone: {cwd}")
+            : index.Find(cwd) is { } found ? new Attribution(found.RepoPath, found.Branch)
+            : resolveUnknown(cwd) ?? new Attribution(null, Reason: $"not in a git checkout: {cwd}");
     }
 
     /// <summary>
@@ -212,9 +182,7 @@ public static partial class WorkJoin
             return new StateDecision(WorkState.Active, [$"activity {Ago(now - activity)} ago", .. gone]);
         }
 
-        return lastActivity is null
-            ? new StateDecision(WorkState.Stale, ["no activity recorded", .. gone])
-            : new StateDecision(WorkState.Stale, [$"no activity for {Ago(now - lastActivity.Value)}", .. gone]);
+        return new StateDecision(WorkState.Stale, [lastActivity is null ? "no activity recorded" : $"no activity for {Ago(now - lastActivity.Value)}", .. gone]);
     }
 
     /// <summary>One item per (repo, branch) checked out anywhere or holding a session, plus the unattached bucket.</summary>
@@ -225,32 +193,14 @@ public static partial class WorkJoin
     {
         ArgumentNullException.ThrowIfNull(inputs);
         var views = Views(inputs);
-        var byKey = new Dictionary<BranchKey, List<SessionFacts>>(BranchKeyComparer.Instance);
-        var unattached = new List<SessionFacts>();
-        foreach (var attributed in inputs.Sessions)
-        {
-            if (attributed.Attribution.RepoPath is not { } path)
-            {
-                unattached.Add(attributed.Session);
-                continue;
-            }
-
-            var key = new BranchKey(path, attributed.Attribution.Branch.Length > 0 ? attributed.Attribution.Branch : DetachedBranch);
-            if (!byKey.TryGetValue(key, out var list))
-            {
-                list = [];
-                byKey[key] = list;
-            }
-
-            list.Add(attributed.Session);
-        }
-
-        var items = new List<WorkItem>();
-        foreach (var key in Keys(inputs))
-        {
-            items.Add(Item(key, views[key.RepoPath], inputs, byKey.TryGetValue(key, out var sessions) ? sessions : [], now, staleAfter));
-        }
-
+        var byKey = inputs.Sessions
+            .Where(attributed => attributed.Attribution.RepoPath is not null)
+            .GroupBy(attributed => new BranchKey(attributed.Attribution.RepoPath!, BranchOrDetached(attributed.Attribution.Branch)), BranchKeyComparer.Instance)
+            .ToDictionary(group => group.Key, group => group.Select(attributed => attributed.Session).ToList(), BranchKeyComparer.Instance);
+        var unattached = inputs.Sessions.Where(attributed => attributed.Attribution.RepoPath is null).Select(attributed => attributed.Session).ToList();
+        var items = Keys(inputs)
+            .Select(key => Item(key, views[key.RepoPath], inputs, byKey.TryGetValue(key, out var sessions) ? sessions : [], now, staleAfter))
+            .ToList();
         if (unattached.Count > 0)
         {
             items.Add(UnattachedItem(unattached));
@@ -267,7 +217,7 @@ public static partial class WorkJoin
         return
         [
             .. items
-                .OrderBy(item => Rank(item.State))
+                .OrderBy(item => (int)item.State)
                 .ThenByDescending(item => item.LastActivity ?? DateTimeOffset.MinValue)
                 .ThenBy(item => item.Key, StringComparer.Ordinal),
         ];
@@ -288,34 +238,14 @@ public static partial class WorkJoin
     {
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(spec);
-        var kept = new List<WorkItem>();
-        foreach (var item in items)
-        {
-            if (!string.IsNullOrEmpty(spec.Repo)
-                && (item.Repo is null || !item.Repo.Contains(spec.Repo, StringComparison.OrdinalIgnoreCase)))
-            {
-                continue;
-            }
-
-            if (spec.States.Count > 0 && !spec.States.Contains(item.State))
-            {
-                continue;
-            }
-
-            if (spec.Since is { } since && (item.LastActivity is null || item.LastActivity < since))
-            {
-                continue;
-            }
-
-            if (!spec.IncludeQuietTrunk && spec.States.Count == 0 && IsQuietTrunk(item))
-            {
-                continue;
-            }
-
-            kept.Add(item);
-        }
-
-        return kept;
+        return
+        [
+            .. items.Where(item =>
+                (string.IsNullOrEmpty(spec.Repo) || (item.Repo is not null && item.Repo.Contains(spec.Repo, StringComparison.OrdinalIgnoreCase)))
+                && (spec.States.Count == 0 || spec.States.Contains(item.State))
+                && (spec.Since is not { } since || (item.LastActivity is not null && item.LastActivity >= since))
+                && (spec.IncludeQuietTrunk || spec.States.Count > 0 || !IsQuietTrunk(item))),
+        ];
     }
 
     /// <summary>How many items are in each state, in display order, including the states with none.</summary>
@@ -323,13 +253,8 @@ public static partial class WorkJoin
     public static IReadOnlyDictionary<WorkState, int> CountStates(IEnumerable<WorkItem> items)
     {
         ArgumentNullException.ThrowIfNull(items);
-        var counts = StateOrder.ToDictionary(state => state, _ => 0);
-        foreach (var item in items)
-        {
-            counts[item.State]++;
-        }
-
-        return counts;
+        var counts = items.CountBy(item => item.State).ToDictionary();
+        return StateOrder.ToDictionary(state => state, state => counts.GetValueOrDefault(state));
     }
 
     private static Dictionary<string, RepoView> Views(JoinInputs inputs)
@@ -346,17 +271,14 @@ public static partial class WorkJoin
         }
 
         // A session can sit in a checkout outside the code root; give its repo a minimal view.
-        foreach (var attributed in inputs.Sessions)
+        foreach (var path in inputs.Sessions.Select(attributed => attributed.Attribution.RepoPath).OfType<string>().Where(path => !views.ContainsKey(path)))
         {
-            if (attributed.Attribution.RepoPath is { } path && !views.ContainsKey(path))
-            {
-                views[path] = new RepoView(
-                    path,
-                    Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar)),
-                    string.Empty,
-                    [],
-                    new Dictionary<string, BranchRef>(StringComparer.Ordinal));
-            }
+            views[path] = new RepoView(
+                path,
+                Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar)),
+                string.Empty,
+                [],
+                new Dictionary<string, BranchRef>(StringComparer.Ordinal));
         }
 
         return views;
@@ -364,34 +286,11 @@ public static partial class WorkJoin
 
     private static List<BranchKey> Keys(JoinInputs inputs)
     {
-        var seen = new HashSet<BranchKey>(BranchKeyComparer.Instance);
-        var keys = new List<BranchKey>();
-        void Keep(string repoPath, string branch)
-        {
-            var key = new BranchKey(repoPath, branch.Length > 0 ? branch : DetachedBranch);
-            if (seen.Add(key))
-            {
-                keys.Add(key);
-            }
-        }
-
-        foreach (var repo in inputs.Repos)
-        {
-            foreach (var checkout in repo.Checkouts)
-            {
-                Keep(repo.Path, checkout.Branch);
-            }
-        }
-
-        foreach (var attributed in inputs.Sessions)
-        {
-            if (attributed.Attribution.RepoPath is { } path)
-            {
-                Keep(path, attributed.Attribution.Branch);
-            }
-        }
-
-        return keys;
+        var located = inputs.Repos.SelectMany(repo => repo.Checkouts.Select(checkout => new BranchKey(repo.Path, checkout.Branch)));
+        var sessions = inputs.Sessions
+            .Where(attributed => attributed.Attribution.RepoPath is not null)
+            .Select(attributed => new BranchKey(attributed.Attribution.RepoPath!, attributed.Attribution.Branch));
+        return [.. located.Concat(sessions).Select(key => key with { Branch = BranchOrDetached(key.Branch) }).Distinct(BranchKeyComparer.Instance)];
     }
 
     private static WorkItem Item(
@@ -404,7 +303,7 @@ public static partial class WorkJoin
     {
         var branch = key.Branch;
         var detached = branch == DetachedBranch;
-        var checkouts = view.Checkouts.Where(checkout => (checkout.Branch.Length > 0 ? checkout.Branch : DetachedBranch) == branch).ToList();
+        var checkouts = view.Checkouts.Where(checkout => BranchOrDetached(checkout.Branch) == branch).ToList();
         var ordered = OrderSessions(sessions);
         var branchRef = detached ? null : view.Branches.GetValueOrDefault(branch);
         var isTrunk = !detached && (view.DefaultBranch.Length > 0 ? branch == view.DefaultBranch : branch is "main" or "master");
@@ -452,19 +351,9 @@ public static partial class WorkJoin
     private static IReadOnlyList<SessionFacts> OrderSessions(IReadOnlyList<SessionFacts> sessions) =>
         [.. sessions.OrderByDescending(session => session.LastActivity ?? DateTimeOffset.MinValue)];
 
-    private static DateTimeOffset? Latest(DateTimeOffset? first, DateTimeOffset? second, DateTimeOffset? third)
-    {
-        DateTimeOffset? latest = null;
-        foreach (var moment in new[] { first, second, third })
-        {
-            if (moment is { } value && (latest is null || value > latest))
-            {
-                latest = value;
-            }
-        }
+    private static DateTimeOffset? Latest(DateTimeOffset? first, DateTimeOffset? second, DateTimeOffset? third) => new[] { first, second, third }.Max();
 
-        return latest;
-    }
+    internal static string BranchOrDetached(string branch) => branch.Length > 0 ? branch : DetachedBranch;
 
     private static Signals SignalsOf(PrInfo? pr, IReadOnlyList<Checkout> checkouts, IReadOnlyList<SessionFacts> sessions, BranchRef? branchRef)
     {
@@ -478,16 +367,6 @@ public static partial class WorkJoin
     }
 
     private static string Plural(int count, string noun) => $"{count} {noun}{(count == 1 ? string.Empty : "s")}";
-
-    private static int Rank(WorkState state) => state switch
-    {
-        WorkState.Active => 0,
-        WorkState.Merged => 1,
-        WorkState.Closed => 2,
-        WorkState.Stale => 3,
-        WorkState.Trunk => 4,
-        _ => 5,
-    };
 
     internal static string Ago(TimeSpan elapsed)
     {
@@ -534,20 +413,13 @@ public sealed class CheckoutIndex
     public CheckoutIndex(IEnumerable<RepoFacts> repos)
     {
         ArgumentNullException.ThrowIfNull(repos);
-        var located = new List<LocatedCheckout>();
-        foreach (var repo in repos)
-        {
-            foreach (var checkout in repo.Checkouts)
-            {
-                located.Add(new LocatedCheckout(
-                    repo.Path,
-                    checkout.Branch.Length > 0 ? checkout.Branch : WorkJoin.DetachedBranch,
-                    WorkPaths.Normalise(checkout.Path)));
-            }
-        }
-
         // Longest first, so a worktree at <repo>/temp/<name> wins over the clone that contains it.
-        _located = [.. located.OrderByDescending(entry => entry.Normalised.Length)];
+        _located =
+        [
+            .. repos
+                .SelectMany(repo => repo.Checkouts.Select(checkout => new LocatedCheckout(repo.Path, WorkJoin.BranchOrDetached(checkout.Branch), WorkPaths.Normalise(checkout.Path))))
+                .OrderByDescending(entry => entry.Normalised.Length),
+        ];
     }
 
     /// <summary>The checkout holding <paramref name="cwd"/>, or null when none does.</summary>
@@ -556,15 +428,7 @@ public sealed class CheckoutIndex
     {
         ArgumentNullException.ThrowIfNull(cwd);
         var target = WorkPaths.Normalise(cwd);
-        foreach (var entry in _located)
-        {
-            if (WorkPaths.IsUnder(target, entry.Normalised))
-            {
-                return entry;
-            }
-        }
-
-        return null;
+        return _located.Find(entry => WorkPaths.IsUnder(target, entry.Normalised));
     }
 }
 

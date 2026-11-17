@@ -100,41 +100,13 @@ public sealed class WorkPrSource(
             var answers = new Dictionary<string, PrInfo?>(StringComparer.Ordinal);
             for (var index = 0; index < branches.Count; index++)
             {
-                var branch = branches[index];
-                if (!repository.TryGetPropertyValue($"b{index}", out var connection) || connection is null)
-                {
-                    answers[branch] = null;
-                    continue;
-                }
-
-                if (connection is not JsonObject connectionObject)
+                var (usable, pr) = Newest(repository[$"b{index}"]);
+                if (!usable)
                 {
                     return null;
                 }
 
-                if (!connectionObject.TryGetPropertyValue("nodes", out var nodes))
-                {
-                    answers[branch] = null;
-                    continue;
-                }
-
-                if (nodes is not JsonArray array)
-                {
-                    return null;
-                }
-
-                if (array.Count == 0 || array[0] is null)
-                {
-                    answers[branch] = null;
-                    continue;
-                }
-
-                if (array[0] is not JsonObject node)
-                {
-                    return null;
-                }
-
-                answers[branch] = NodeInfo(node);
+                answers[branches[index]] = pr;
             }
 
             return answers;
@@ -156,37 +128,20 @@ public sealed class WorkPrSource(
         var cache = ReadCache();
         var warnings = new List<string>();
         var lookups = new Dictionary<string, PrLookup>(WorkPaths.Comparer);
-        var groups = new List<SlugGroupBuilder>();
-        var bySlug = new Dictionary<string, SlugGroupBuilder>(StringComparer.Ordinal);
-        foreach (var request in requests)
+        foreach (var request in requests.Where(request => request.Slug.Length == 0))
         {
-            if (request.Slug.Length == 0)
-            {
-                lookups[request.RepoPath] = PrLookup.Unavailable;
-                warnings.Add($"{Path.GetFileName(request.RepoPath.TrimEnd(Path.DirectorySeparatorChar))}: origin is not a GitHub remote");
-                continue;
-            }
-
-            if (!bySlug.TryGetValue(request.Slug, out var group))
-            {
-                group = new SlugGroupBuilder(request.Slug);
-                bySlug[request.Slug] = group;
-                groups.Add(group);
-            }
-
-            group.Requests.Add(request);
-            foreach (var branch in request.Branches)
-            {
-                if (group.Seen.Add(branch))
-                {
-                    group.Branches.Add(branch);
-                }
-            }
+            lookups[request.RepoPath] = PrLookup.Unavailable;
+            warnings.Add($"{Path.GetFileName(request.RepoPath.TrimEnd(Path.DirectorySeparatorChar))}: origin is not a GitHub remote");
         }
 
+        var groups = requests
+            .Where(request => request.Slug.Length > 0)
+            .GroupBy(request => request.Slug, StringComparer.Ordinal)
+            .Select(group => new SlugGroup(group.Key, [.. group], [.. group.SelectMany(request => request.Branches).Distinct(StringComparer.Ordinal)]))
+            .ToList();
         var answered = new Dictionary<string, CachedRepo>(StringComparer.Ordinal);
         var cachedSlugs = new HashSet<string>(StringComparer.Ordinal);
-        var toFetch = new List<SlugGroupBuilder>();
+        var toFetch = new List<SlugGroup>();
         foreach (var group in groups)
         {
             if (!refresh && cache.TryGetValue(group.Slug, out var hit) && hit.Answers(group.Branches, now, _ttl))
@@ -265,41 +220,18 @@ public sealed class WorkPrSource(
         var builder = new StringBuilder("\"");
         foreach (var character in value)
         {
-            switch (character)
+            _ = builder.Append(character switch
             {
-                case '"':
-                    builder.Append("\\\"");
-                    break;
-                case '\\':
-                    builder.Append("\\\\");
-                    break;
-                case '\b':
-                    builder.Append("\\b");
-                    break;
-                case '\f':
-                    builder.Append("\\f");
-                    break;
-                case '\n':
-                    builder.Append("\\n");
-                    break;
-                case '\r':
-                    builder.Append("\\r");
-                    break;
-                case '\t':
-                    builder.Append("\\t");
-                    break;
-                default:
-                    if (character < ' ' || character > '~')
-                    {
-                        builder.Append("\\u").Append(((int)character).ToString("x4", CultureInfo.InvariantCulture));
-                    }
-                    else
-                    {
-                        builder.Append(character);
-                    }
-
-                    break;
-            }
+                '"' => "\\\"",
+                '\\' => "\\\\",
+                '\b' => "\\b",
+                '\f' => "\\f",
+                '\n' => "\\n",
+                '\r' => "\\r",
+                '\t' => "\\t",
+                < ' ' or > '~' => "\\u" + ((int)character).ToString("x4", CultureInfo.InvariantCulture),
+                _ => character.ToString(),
+            });
         }
 
         return builder.Append('"').ToString();
@@ -312,6 +244,24 @@ public sealed class WorkPrSource(
             cancellationToken).ConfigureAwait(false);
         return ran.Ok ? ParseResponse(ran.Out, branches) : null;
     }
+
+    // Whether the alias held a well-formed connection, and its newest PR; an absent or null one is a usable "none".
+    private static (bool Usable, PrInfo? Pr) Newest(JsonNode? connection) => connection switch
+    {
+        null => (true, null),
+        JsonObject asked when !asked.ContainsKey("nodes") => (true, null),
+        JsonObject asked => asked["nodes"] switch
+        {
+            JsonArray nodes => nodes.FirstOrDefault() switch
+            {
+                null => (true, null),
+                JsonObject node => (true, NodeInfo(node)),
+                _ => (false, null),
+            },
+            _ => (false, null),
+        },
+        _ => (false, null),
+    };
 
     private static PrInfo? NodeInfo(JsonObject node)
     {
@@ -412,30 +362,13 @@ public sealed class WorkPrSource(
 
     private void WriteCache(IReadOnlyDictionary<string, CachedRepo> entries)
     {
-        var payload = new JsonObject();
-        foreach (var (slug, entry) in entries)
-        {
-            var branches = new JsonObject();
-            foreach (var (branch, pr) in entry.Branches)
+        var payload = new JsonObject(entries.Select(entry => KeyValuePair.Create<string, JsonNode?>(
+            entry.Key,
+            new JsonObject
             {
-                branches[branch] = pr is null
-                    ? null
-                    : new JsonObject
-                    {
-                        ["number"] = pr.Number,
-                        ["status"] = pr.Status.Wire(),
-                        ["url"] = pr.Url,
-                        ["updated_at"] = IsoTime.Format(pr.UpdatedAt),
-                    };
-            }
-
-            payload[slug] = new JsonObject
-            {
-                ["fetched_at"] = IsoTime.Format(entry.FetchedAt),
-                ["branches"] = branches,
-            };
-        }
-
+                ["fetched_at"] = IsoTime.Format(entry.Value.FetchedAt),
+                ["branches"] = new JsonObject(entry.Value.Branches.Select(branch => KeyValuePair.Create<string, JsonNode?>(branch.Key, CachedPr(branch.Value)))),
+            })));
         try
         {
             _ = Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(cacheFile!))!);
@@ -447,6 +380,16 @@ public sealed class WorkPrSource(
         }
     }
 
+    private static JsonObject? CachedPr(PrInfo? pr) => pr is null
+        ? null
+        : new JsonObject
+        {
+            ["number"] = pr.Number,
+            ["status"] = pr.Status.Wire(),
+            ["url"] = pr.Url,
+            ["updated_at"] = IsoTime.Format(pr.UpdatedAt),
+        };
+
     private sealed record CachedRepo(DateTimeOffset FetchedAt, IReadOnlyDictionary<string, PrInfo?> Branches)
     {
         public bool Answers(IReadOnlyList<string> wanted, DateTimeOffset now, TimeSpan ttl) =>
@@ -455,14 +398,5 @@ public sealed class WorkPrSource(
 
     // One GitHub slug and every request for it, so clones sharing a slug are queried once with the union of their
     // branches instead of overwriting each other's answers.
-    private sealed class SlugGroupBuilder(string slug)
-    {
-        public string Slug { get; } = slug;
-
-        public List<string> Branches { get; } = [];
-
-        public HashSet<string> Seen { get; } = new(StringComparer.Ordinal);
-
-        public List<PrRequest> Requests { get; } = [];
-    }
+    private sealed record SlugGroup(string Slug, IReadOnlyList<PrRequest> Requests, IReadOnlyList<string> Branches);
 }
