@@ -104,6 +104,8 @@ jobs:
           name: rig-cli
           path: ${{ runner.temp }}/rig-cli
           retention-days: 1
+          # The Playwright driver sits in the hidden .playwright folder; image-cross-check installs Chromium from it.
+          include-hidden-files: true
       - name: Upload ownership tool
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

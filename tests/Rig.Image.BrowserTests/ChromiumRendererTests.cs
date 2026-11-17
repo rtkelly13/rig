@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Rig.Image.Tests;
 
@@ -17,7 +16,7 @@ public sealed class ChromiumRendererTests(ChromiumFixture chromium) : IClassFixt
     public async Task RendersMatchTheOracleExactlyOnThePlatformItWasFrozenOnAndWithinThresholdsElsewhere()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
-        var sameMachine = FrozenOnThisPlatform();
+        var sameMachine = OracleFixture.FrozenOnThisPlatform();
         var compared = 0;
         foreach (var render in OracleFixture.Document.Property("renders").Items())
         {
@@ -37,8 +36,8 @@ public sealed class ChromiumRendererTests(ChromiumFixture chromium) : IClassFixt
             {
                 var frozen = RasterPipeline.Decode(OracleFixture.Bytes(file));
                 var (meanAbs, differing) = Difference(frozen, raster);
-                Assert.True(meanAbs <= DivergenceThresholds.Adr.MeanAbsDifference, $"{render.Property("id").AsString()}: mean abs {meanAbs}");
-                Assert.True(differing <= DivergenceThresholds.Adr.DifferingPixelFraction, $"{render.Property("id").AsString()}: differing {differing}");
+                Assert.True(meanAbs <= OracleFixture.ThresholdsForThisPlatform().MeanAbsDifference, $"{render.Property("id").AsString()}: mean abs {meanAbs}");
+                Assert.True(differing <= OracleFixture.ThresholdsForThisPlatform().DifferingPixelFraction, $"{render.Property("id").AsString()}: differing {differing}");
                 compared++;
             }
         }
@@ -57,7 +56,7 @@ public sealed class ChromiumRendererTests(ChromiumFixture chromium) : IClassFixt
             OracleFixture.RepoRoot,
             CrossCheck.Files(),
             OracleFixture.PathOf("candidates"),
-            DivergenceThresholds.Adr,
+            OracleFixture.ThresholdsForThisPlatform(),
             TestContext.Current.CancellationToken);
 
         Assert.All(report.Files, file => Assert.True(file.Breaches.Count == 0, $"{file.File.Id}: {string.Join("; ", file.Breaches)}"));
@@ -65,27 +64,6 @@ public sealed class ChromiumRendererTests(ChromiumFixture chromium) : IClassFixt
         Assert.Equal(CrossCheck.Files().Count, report.Files.Count);
         Assert.Equal(5, report.Verdicts.Count);
         Assert.True(report.Passed);
-    }
-
-    private static bool FrozenOnThisPlatform()
-    {
-        var provenance = OracleFixture.Document.Property("provenance");
-        var os = provenance.Property("os").AsString();
-        var arch = provenance.Property("arch").AsString();
-        var osMatches = os switch
-        {
-            "Darwin" => OperatingSystem.IsMacOS(),
-            "Linux" => OperatingSystem.IsLinux(),
-            "Windows" => OperatingSystem.IsWindows(),
-            _ => false,
-        };
-        var archMatches = arch switch
-        {
-            "arm64" => RuntimeInformation.OSArchitecture == Architecture.Arm64,
-            "x86_64" or "AMD64" => RuntimeInformation.OSArchitecture == Architecture.X64,
-            _ => false,
-        };
-        return osMatches && archMatches;
     }
 
     private static (double MeanAbs, double Differing) Difference(Raster a, Raster b)

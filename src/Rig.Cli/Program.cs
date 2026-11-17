@@ -28,7 +28,6 @@ using Rig.Cli.Vault;
 using Rig.Cli.Web;
 using Rig.Cli.Work;
 using Rig.Cli.Workspace;
-using Rig.Image;
 using Rig.Core.Browser;
 using Rig.Core.Devenv;
 using Rig.Core.Estate;
@@ -46,6 +45,7 @@ using Rig.Core.Tools;
 using Rig.Core.Vault;
 using Rig.Core.WorkItems;
 using Rig.Core.Workspace;
+using Rig.Image;
 using Rig.Web.Mcp;
 
 namespace Rig.Cli;
