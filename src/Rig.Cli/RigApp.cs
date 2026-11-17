@@ -33,9 +33,6 @@ internal sealed class RigApp(
     /// <summary>The command, and the <c>help</c> entry point, that print the overview.</summary>
     public const string HelpCommand = "help";
 
-    /// <summary>The overview's last line: the desktop tools are a separate CLI with their own help.</summary>
-    public const string DesktopPointer = "Desktop windows, sessions and tabs: run 'rig desktop workspace --help' or 'desktop-manager --help'.";
-
     /// <summary>The root command: every command, plus the agent launcher so help lists it.</summary>
     public RootCommand BuildRoot()
     {
@@ -60,14 +57,9 @@ internal sealed class RigApp(
             root.Subcommands.Add(new Command(AgentLauncher.CommandName, AgentLauncher.Description));
         }
 
-        var help = new Command(HelpCommand, "The rig overview: every command, then where the desktop tools are listed.");
-        help.SetAction(async (_, cancellationToken) =>
-        {
-            var code = await root.Parse(["--help"]).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, cancellationToken)
-                .ConfigureAwait(false);
-            await output.WriteLineAsync(DesktopPointer).ConfigureAwait(false);
-            return code;
-        });
+        var help = new Command(HelpCommand, "The rig overview: every command and what it does.");
+        help.SetAction((_, cancellationToken) =>
+            root.Parse(["--help"]).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, cancellationToken));
         root.Subcommands.Add(help);
         return root;
     }

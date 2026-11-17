@@ -80,16 +80,11 @@ public sealed class DiscoveryTests
     }
 
     [Fact]
-    public void Every_job_is_a_surface_and_python_paths_are_canonical()
+    public void Every_job_is_a_surface()
     {
         var tree = new Discovery.CsTree([], ["job=rig triage verify"]);
         var rows = Discovery.Commands(new Discovery.PythonTree([], []), new Dictionary<string, Discovery.CsTree> { ["linux"] = tree }).ToArray();
         Assert.Contains(rows, r => r.Id == "cs-job:linux:job=rig triage verify");
-        Assert.Equal("align", Discovery.Canonical("desktop-manager workspace align"));
-        Assert.Equal("desktop workspace name-desktops", Discovery.Canonical("desktop-manager workspace ensure-desktops"));
-        Assert.Equal("desktop workspace name-desktops", Discovery.Canonical("desktop-manager workspace sync-desktops"));
-        Assert.Equal("desktop help", Discovery.Canonical("desktop-manager help"));
-        Assert.Equal("triage verify", Discovery.Canonical("triage verify"));
     }
 
     [Fact]
@@ -141,13 +136,12 @@ public sealed class DiscoveryTests
         Assert.Equal("cs:missing", alias.AliasTo);
         Assert.Contains(OwnershipRules.Check([alias.Id], new OwnershipLedger([alias], [], [], [])), e => e.StartsWith("Alias must dispatch", StringComparison.Ordinal));
         Assert.Null(Discovery.EntrySurface("script:rig=rig.csharp_cli:entry").AliasTo);
-        Assert.Null(Discovery.EntrySurface("script:desktop-manager=desktop_manager.cli:main").AliasTo);
     }
 
     [Fact]
-    public void A_migrated_align_cannot_coexist_with_its_legacy_desktop_spelling()
+    public void A_migrated_command_cannot_coexist_with_a_python_one_on_the_same_path()
     {
-        var python = new Discovery.PythonTree([new("py:align", "desktop-manager workspace align", "py:align", ["windows"], null)], []);
+        var python = new Discovery.PythonTree([new("py:align", "align", "py:align", ["windows"], null)], []);
         var tree = new Discovery.CsTree([new("align", true, [])], []);
         var rows = Discovery.Commands(python, new Dictionary<string, Discovery.CsTree> { ["windows"] = tree }).ToArray();
         Assert.Contains(OwnershipRules.Check(rows.Select(row => row.Id).ToArray(), new OwnershipLedger(rows, [], [], [])), error => error.StartsWith("Overlapping implementations: align|windows", StringComparison.Ordinal));

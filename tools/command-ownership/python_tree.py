@@ -208,7 +208,7 @@ def discover(root):
     if project["project"].get("gui-scripts") or project["project"].get("entry-points"):
         raise RuntimeError("Unsupported GUI/plugin entry points; add a runtime discovery adapter")
     for name, target in project["project"]["scripts"].items():
-        if target not in {"rig.csharp_cli:entry", "desktop_manager.cli:main"}:
+        if target != "rig.csharp_cli:entry":
             raise RuntimeError(f"Unsupported console entry point: {name}={target}; add a runtime discovery adapter")
         surfaces.append(f"script:{name}={target}")
         module_name, _, function = target.partition(":")

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -117,20 +116,3 @@ def test_dry_run_lists_the_desktop_it_would_retire(tmp_path: Path, monkeypatch: 
     actions = restore_workspace_with_options(plan, dry_run=True, diff_existing=True)
 
     assert actions[0] == "Remove switched-off desktop(s), if present: Personal"
-
-
-def test_cli_main_opens_a_root_span_named_after_the_command(
-    monkeypatch: pytest.MonkeyPatch, isolate_trace_output: Path
-) -> None:
-    from desktop_manager import cli
-
-    monkeypatch.setattr(sys, "argv", ["desktop-manager", "jobs", "--help"])
-    with pytest.raises(SystemExit) as exit_info:
-        cli.main()
-    assert exit_info.value.code == 0
-
-    spans = _spans(isolate_trace_output)
-    root = next(span for span in spans if span["name"] == "desktop-manager jobs")
-    assert root["parentSpanId"] == ""
-    assert root["status"]["code"] == 1
-    assert (isolate_trace_output / "desktop-manager").is_dir()

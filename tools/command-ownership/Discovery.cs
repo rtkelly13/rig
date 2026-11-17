@@ -149,10 +149,9 @@ internal static class Discovery
 
         foreach (var command in python.Commands)
         {
-            var capability = Canonical(command.Path);
             yield return command.Alias is { } target
                 ? new CommandOwner(command.Id, target, $"cs:{target}", command.Platforms, $"cs:{target}")
-                : new CommandOwner(command.Id, capability, command.Owner, command.Platforms);
+                : new CommandOwner(command.Id, command.Path, command.Owner, command.Platforms);
         }
 
         foreach (var tree in trees)
@@ -163,17 +162,6 @@ internal static class Discovery
             }
         }
     }
-
-    internal static string Canonical(string path) => path.StartsWith("desktop-manager ", StringComparison.Ordinal)
-        ? path["desktop-manager ".Length..] switch
-        {
-            "help" => "desktop help",
-            "workspace align" => "align",
-            "workspace ensure-desktops" or "workspace sync-desktops" => "desktop workspace name-desktops",
-            var desktop when desktop.StartsWith("workspace ", StringComparison.Ordinal) => "desktop " + desktop,
-            var other => other,
-        }
-        : path;
 
     internal static CommandOwner Surface(string id) => new(id, $"surface:{id}", id, AllPlatforms);
 
