@@ -1,9 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.Versioning;
 using Microsoft.Win32;
-using Rig.Core.Processes;
+using System.Runtime.Versioning;
 using Rig.Core.Roots;
+using Rig.Core.Processes;
 
 namespace Rig.Core.Estate;
 

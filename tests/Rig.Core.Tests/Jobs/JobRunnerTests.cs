@@ -1,6 +1,6 @@
 using Rig.Core.Text;
-using System.Diagnostics;
 using System.Text;
+using System.Diagnostics;
 using Rig.Core.Jobs;
 
 namespace Rig.Core.Tests.Jobs;

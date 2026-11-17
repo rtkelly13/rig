@@ -1,8 +1,8 @@
 using Rig.Core.Text;
-using Rig.Core.Estate;
-using Rig.Core.Processes;
-using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;
+using Rig.Core.Processes;
+using Rig.Core.Estate;
+using Rig.Core.Tests.Fakes;
 
 namespace Rig.Core.Tests.Estate;
 
