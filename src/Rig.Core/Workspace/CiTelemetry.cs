@@ -90,23 +90,23 @@ public sealed class CiTelemetry(IGitHubApi github)
     public static JobTelemetry Job(JsonObject job)
     {
         ArgumentNullException.ThrowIfNull(job);
-        var name = Text(job, "name") ?? "unknown";
-        return new(Number(job, "id"), name, InferRunner(name), Seconds(Text(job, "started_at"), Text(job, "completed_at")));
+        var name = JsonShape.FieldText(job, "name") ?? "unknown";
+        return new(Number(job, "id"), name, InferRunner(name), Seconds(JsonShape.FieldText(job, "started_at"), JsonShape.FieldText(job, "completed_at")));
     }
 
     /// <summary>A run from its <c>actions/runs</c> record and its jobs' records.</summary>
     public static RunTelemetry Run(string repo, JsonObject run, IEnumerable<JsonObject> jobs)
     {
         ArgumentNullException.ThrowIfNull(run);
-        var started = Text(run, "run_started_at") is { Length: > 0 } runStarted ? runStarted : Text(run, "created_at");
+        var started = JsonShape.FieldText(run, "run_started_at") is { Length: > 0 } runStarted ? runStarted : JsonShape.FieldText(run, "created_at");
         return new(
             repo,
             Number(run, "id"),
-            Text(run, "name") ?? "Unknown",
-            Text(run, "event") ?? "unknown",
-            Text(run, "head_branch") ?? string.Empty,
-            Text(run, "conclusion") ?? "unknown",
-            Seconds(started, Text(run, "updated_at")),
+            JsonShape.FieldText(run, "name") ?? "Unknown",
+            JsonShape.FieldText(run, "event") ?? "unknown",
+            JsonShape.FieldText(run, "head_branch") ?? string.Empty,
+            JsonShape.FieldText(run, "conclusion") ?? "unknown",
+            Seconds(started, JsonShape.FieldText(run, "updated_at")),
             [.. jobs.Select(Job)]);
     }
 
@@ -146,8 +146,6 @@ public sealed class CiTelemetry(IGitHubApi github)
 
     private static DateTimeOffset? Instant(string? text) =>
         DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var instant) ? instant : null;
-
-    private static string? Text(JsonObject node, string name) => JsonShape.FieldText(node, name);
 
     private static long Number(JsonObject node, string name) => JsonShape.FieldInteger(node, name) ?? 0;
 }

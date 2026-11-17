@@ -116,16 +116,16 @@ public sealed class RepoResolver(IGitHubApi github, string cacheFile, TimeProvid
 
         for (var i = 0; i < slugs.Count; i++)
         {
-            if (data[$"r{i}"] is JsonObject node && Text(node, "name") is { Length: > 0 } name)
+            if (data[$"r{i}"] is JsonObject node && JsonShape.FieldText(node, "name") is { Length: > 0 } name)
             {
                 var slug = slugs[i];
                 found[slug] = new CanonicalRepo(
                     slug.Owner,
                     name,
-                    Text(node, "nameWithOwner") is { Length: > 0 } full ? full : $"{slug.Owner}/{name}",
+                    JsonShape.FieldText(node, "nameWithOwner") is { Length: > 0 } full ? full : $"{slug.Owner}/{name}",
                     slug.Name,
                     Flag(node, "isArchived"),
-                    Address(Text(node, "url")));
+                    Address(JsonShape.FieldText(node, "url")));
             }
         }
 
@@ -153,16 +153,16 @@ public sealed class RepoResolver(IGitHubApi github, string cacheFile, TimeProvid
         foreach (var (key, value) in repos)
         {
             if (value is JsonObject item
-                && Text(item, "canonical_name") is { Length: > 0 } name
-                && DateTimeOffset.TryParse(Text(item, "fetched_at"), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var fetchedAt))
+                && JsonShape.FieldText(item, "canonical_name") is { Length: > 0 } name
+                && DateTimeOffset.TryParse(JsonShape.FieldText(item, "fetched_at"), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var fetchedAt))
             {
                 var repo = new CanonicalRepo(
-                    Text(item, "owner") ?? string.Empty,
+                    JsonShape.FieldText(item, "owner") ?? string.Empty,
                     name,
-                    Text(item, "name_with_owner") ?? string.Empty,
-                    Text(item, "queried_name") ?? string.Empty,
+                    JsonShape.FieldText(item, "name_with_owner") ?? string.Empty,
+                    JsonShape.FieldText(item, "queried_name") ?? string.Empty,
                     Flag(item, "is_archived"),
-                    Address(Text(item, "url")));
+                    Address(JsonShape.FieldText(item, "url")));
                 entries[key] = new CacheEntry(repo, fetchedAt);
             }
         }
@@ -215,8 +215,6 @@ public sealed class RepoResolver(IGitHubApi github, string cacheFile, TimeProvid
             return null;
         }
     }
-
-    private static string? Text(JsonObject node, string name) => JsonShape.FieldText(node, name);
 
     private static Uri? Address(string? text) => Uri.TryCreate(text, UriKind.Absolute, out var address) ? address : null;
 

@@ -215,7 +215,7 @@ public sealed class ObsidianPlugins(HttpClient http)
     // The release's tag and asset urls by name; InvalidDataException when it is not that shape.
     private static (string Tag, Dictionary<string, string> Assets) Release(JsonNode? release)
     {
-        if (release is not JsonObject found || Str(found["tag_name"]) is not { } tag || found["assets"] is not JsonArray assets)
+        if (release is not JsonObject found || JsonShape.AsText(found["tag_name"]) is not { } tag || found["assets"] is not JsonArray assets)
         {
             throw new InvalidDataException("the release has no tag or assets");
         }
@@ -223,7 +223,7 @@ public sealed class ObsidianPlugins(HttpClient http)
         var byName = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var asset in assets)
         {
-            if (asset is not JsonObject entry || Str(entry["name"]) is not { } name || Str(entry["browser_download_url"]) is not { } url)
+            if (asset is not JsonObject entry || JsonShape.AsText(entry["name"]) is not { } name || JsonShape.AsText(entry["browser_download_url"]) is not { } url)
             {
                 throw new InvalidDataException("a release asset has no name or url");
             }
@@ -235,12 +235,10 @@ public sealed class ObsidianPlugins(HttpClient http)
     }
 
     private static PluginSpec? Spec(JsonObject entry) =>
-        Str(entry["id"]) is { } id && Str(entry["repo"]) is { } repo && Str(entry["name"]) is { } name ? new PluginSpec(id, repo, name) : null;
-
-    private static string? Str(JsonNode? node) => JsonShape.AsText(node);
+        JsonShape.AsText(entry["id"]) is { } id && JsonShape.AsText(entry["repo"]) is { } repo && JsonShape.AsText(entry["name"]) is { } name ? new PluginSpec(id, repo, name) : null;
 
     // A list entry as text: strings as they are, anything else as JSON.
-    private static string Text(JsonNode? node) => Str(node) ?? node?.ToJsonString() ?? "None";
+    private static string Text(JsonNode? node) => JsonShape.AsText(node) ?? node?.ToJsonString() ?? "None";
 
     private static JsonNode? Read(string path)
     {
