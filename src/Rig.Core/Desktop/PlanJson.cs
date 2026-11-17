@@ -30,24 +30,20 @@ public sealed class InvalidPlanException : Exception
 internal static class PlanJsonWriter
 {
     // Text fields are written only when they hold something.
-    public static void AddText(JsonObject data, string key, string? value)
+    public static JsonObject AddText(this JsonObject data, string key, string? value) => data.AddIf(!string.IsNullOrEmpty(value), key, value);
+
+    public static JsonObject AddIf(this JsonObject data, bool condition, string key, JsonNode? value)
     {
-        if (!string.IsNullOrEmpty(value))
+        if (condition)
         {
             data[key] = value;
-        }
-    }
-
-    public static JsonObject Map<T>(IReadOnlyDictionary<string, T> values, Func<T, JsonNode?> write)
-    {
-        var data = new JsonObject();
-        foreach (var (key, value) in values)
-        {
-            data[key] = write(value);
         }
 
         return data;
     }
+
+    public static JsonObject Map<T>(IReadOnlyDictionary<string, T> values, Func<T, JsonNode?> write) =>
+        new(values.Select(pair => KeyValuePair.Create(pair.Key, write(pair.Value))));
 }
 
 /// <summary>

@@ -227,20 +227,10 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
     {
         var matches = Match(planned, actual, substitutions);
         var windows = actual.CapturedWindows;
-        var plannedByScreen = new SortedDictionary<int, List<string>>();
-        foreach (var entry in planned.Launch.Where(entry => !entry.Disabled && entry.Placement is not null))
-        {
-            Bucket(plannedByScreen, entry.Placement!.Screen).Add(entry.Name);
-        }
-
-        var actualByScreen = new SortedDictionary<int, List<string>>();
-        foreach (var window in windows.Where(window => window.ScreenNumber is not null))
-        {
-            Bucket(actualByScreen, window.ScreenNumber!.Value).Add(WindowLabel(window));
-        }
-
+        var plannedByScreen = planned.Launch.Where(entry => !entry.Disabled && entry.Placement is not null).ToLookup(entry => entry.Placement!.Screen, entry => entry.Name);
+        var actualByScreen = windows.Where(window => window.ScreenNumber is not null).ToLookup(window => window.ScreenNumber!.Value, WindowLabel);
         var screens = new List<ScreenDiff>();
-        foreach (var screen in plannedByScreen.Keys.Union(actualByScreen.Keys).Order())
+        foreach (var screen in plannedByScreen.Select(group => group.Key).Union(actualByScreen.Select(group => group.Key)).Order())
         {
             var entryIndexes = Enumerable.Range(0, planned.Launch.Count)
                 .Where(index => planned.Launch[index] is { Disabled: false, Placement: { } placement } && placement.Screen == screen)
@@ -286,8 +276,8 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
 
             screens.Add(new(screen)
             {
-                Planned = plannedByScreen.GetValueOrDefault(screen) ?? [],
-                Actual = actualByScreen.GetValueOrDefault(screen) ?? [],
+                Planned = [.. plannedByScreen[screen]],
+                Actual = [.. actualByScreen[screen]],
                 Matched = matched,
                 Misplaced = misplaced,
                 Borrowed = borrowed,
@@ -299,17 +289,6 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
         return screens;
     }
 
-    private static List<string> Bucket(SortedDictionary<int, List<string>> buckets, int screen)
-    {
-        if (!buckets.TryGetValue(screen, out var names))
-        {
-            names = [];
-            buckets[screen] = names;
-        }
-
-        return names;
-    }
-
     // Each entry takes its best-scoring window, best pair first; it sorts (score, entry, window) descending, so a
     // tie goes to the later entry, then the later window.
     private static (Dictionary<int, int> ByEntry, Dictionary<int, int> ByWindow) Match(
@@ -317,26 +296,15 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
         DesktopPlan actual,
         IReadOnlyDictionary<string, string> substitutions)
     {
-        var scored = new List<(int Score, int Entry, int Window)>();
-        for (var entryIndex = 0; entryIndex < planned.Launch.Count; entryIndex++)
-        {
-            var entry = planned.Launch[entryIndex];
-            if (entry.Disabled)
+        var scored = planned.Launch
+            .Select((entry, entryIndex) => (Entry: entry, Index: entryIndex))
+            .Where(item => !item.Entry.Disabled)
+            .SelectMany(item =>
             {
-                continue;
-            }
-
-            var competing = WindowReuse.CompetingSiblingTitles(planned.Launch, entry);
-            for (var windowIndex = 0; windowIndex < actual.CapturedWindows.Count; windowIndex++)
-            {
-                var score = WindowReuse.CapturedWindowMatchScore(entry, actual.CapturedWindows[windowIndex], substitutions, competing);
-                if (score > 0)
-                {
-                    scored.Add((score, entryIndex, windowIndex));
-                }
-            }
-        }
-
+                var competing = WindowReuse.CompetingSiblingTitles(planned.Launch, item.Entry);
+                return actual.CapturedWindows.Select((window, windowIndex) => (Score: WindowReuse.CapturedWindowMatchScore(item.Entry, window, substitutions, competing), Entry: item.Index, Window: windowIndex));
+            })
+            .Where(item => item.Score > 0);
         var byEntry = new Dictionary<int, int>();
         var byWindow = new Dictionary<int, int>();
         foreach (var (_, entryIndex, windowIndex) in scored.OrderDescending())
