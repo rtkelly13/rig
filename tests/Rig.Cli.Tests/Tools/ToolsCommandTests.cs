@@ -54,10 +54,7 @@ public sealed class ToolsCommandTests : IDisposable
         {
             new WebCommand(
                 places,
-                _ => throw new InvalidOperationException("nothing may start"),
-                new Probe(),
                 _ => throw new InvalidOperationException("nothing may open"),
-                (_, _) => Task.CompletedTask,
                 _out,
                 _error,
                 aliases: tools.BuildWebAliases()).Build(),

@@ -478,7 +478,6 @@ public sealed class McpTests
     private sealed class Harness : IAsyncDisposable
     {
         private readonly TempDir _dir = new();
-        private readonly HttpClient _forwarding = new(new NoUpstream());
         private RigWebHost _host = null!;
         private HttpClientTransport? _transport;
         private readonly List<string[]> _started = [];
@@ -551,8 +550,6 @@ public sealed class McpTests
                     Path.Join(Root, "decisions.json"),
                     Path.Join(Root, "temp", "triage", "queue.md"),
                     Path.Join(Root, "temp", "traces", "sdk")),
-                _forwarding,
-                () => null,
                 Ops);
         }
 
@@ -594,7 +591,6 @@ public sealed class McpTests
             }
 
             await _host.DisposeAsync();
-            _forwarding.Dispose();
             Ops.Dispose();
             _dir.Dispose();
         }
@@ -608,11 +604,5 @@ public sealed class McpTests
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => Response();
 
         private HttpResponseMessage Response() => new(System.Net.HttpStatusCode.OK) { Content = new StringContent(body) };
-    }
-
-    private sealed class NoUpstream : HttpMessageHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.NotFound));
     }
 }

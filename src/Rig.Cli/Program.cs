@@ -44,7 +44,6 @@ using Rig.Core.Tools;
 using Rig.Core.Vault;
 using Rig.Core.WorkItems;
 using Rig.Core.Workspace;
-using Rig.Web;
 using Rig.Web.Mcp;
 
 namespace Rig.Cli;
@@ -60,8 +59,8 @@ internal static class Program
         var exportMacTree = exportTree && args.Contains("macos", StringComparer.Ordinal);
         var codeRoot = CodeRoot.Current();
         // RIG_HOME first; then the runtime copy a published rigw or rig runs from, so its jobs use that copy; then the checkout.
-        var rigHome = Environment.GetEnvironmentVariable(PythonRig.HomeVariable);
-        var checkout = PythonRig.ResolveCheckout(
+        var rigHome = Environment.GetEnvironmentVariable(RigCheckout.HomeVariable);
+        var checkout = RigCheckout.Resolve(
             string.IsNullOrEmpty(rigHome) ? JobsSite.CopyOf(AppContext.BaseDirectory, AppData.Current()) ?? JobsSite.PublishedCheckout(AppContext.BaseDirectory) : rigHome,
             codeRoot);
         // The root command and every process it runs are traced, so a failure says which folder and line caused it.
@@ -119,7 +118,6 @@ internal static class Program
             Environment.CurrentDirectory,
             Environment.GetEnvironmentVariable("LOCALAPPDATA"),
             Console.In);
-        var python = new PythonRig(checkout);
         var github = new GhApi(proc);
         Gh.OriginReader origin = async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false));
         var servicePlatform = exportWindowsTree || (!exportTree && OperatingSystem.IsWindows())
@@ -331,12 +329,8 @@ internal static class Program
                         ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory),
                         Environment.CurrentDirectory,
                         Path.Join(AppData.Current(), "rig.db"),
-                        codeRoot,
-                        WebPlaces.PythonRoutesFrom(Environment.GetEnvironmentVariable(WebPlaces.PythonRoutesVariable))),
-                    args => ProcessChildServer.Start(python.Module("desktop_manager.web_upstream", args)),
-                    probe,
+                        codeRoot),
                     OpenBrowser,
-                    Task.Delay,
                     Console.Out,
                     Console.Error,
                     RigOps.ForCheckout(checkout),

@@ -1,8 +1,6 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
-using System.Globalization;
 using Rig.Core;
-using Rig.Core.Otel;
 using Rig.Core.Roots;
 using Rig.Web;
 using Rig.Web.Mcp;
@@ -10,26 +8,21 @@ using Rig.Web.Mcp;
 namespace Rig.Cli.Web;
 
 /// <summary>Where <c>rig web</c> finds what it serves.</summary>
-/// <param name="Checkout">The rig checkout: the frontend under <c>src/rig/web_host/templates</c> and the brand images under <c>assets</c>.</param>
+/// <param name="Checkout">The rig checkout: the frontend under <c>src/rig/web_host/templates</c>, the C4 viewer under <c>src/Rig.Web/C4/static</c> and the brand images under <c>assets</c>.</param>
 /// <param name="RegistryFile">The managed-projects registry the estate cards are read from.</param>
 /// <param name="WorkingDirectory">The folder rig was run from.</param>
 /// <param name="DbPath">The shared SQLite database.</param>
 /// <param name="CodeRoot">The code root whose <c>personal/</c> checkouts the estate graph reads.</param>
-/// <param name="PythonRoutes">
-/// Python web routes already listening, fronted instead of starting a child: a test can serve them in-process
-/// with faked state. Null starts the child, as a normal launch does.
-/// </param>
-internal sealed record WebPlaces(string Checkout, string RegistryFile, string WorkingDirectory, string DbPath, string CodeRoot, Uri? PythonRoutes = null)
+internal sealed record WebPlaces(string Checkout, string RegistryFile, string WorkingDirectory, string DbPath, string CodeRoot)
 {
-    /// <summary>The variable naming Python web routes already listening (<see cref="PythonRoutes"/>).</summary>
-    public const string PythonRoutesVariable = "RIG_WEB_PYTHON_ROUTES";
-
-    /// <summary>The routes <paramref name="configured"/> names: an absolute <c>http</c> URL, else null.</summary>
-    public static Uri? PythonRoutesFrom(string? configured) =>
-        Uri.TryCreate(configured, UriKind.Absolute, out var address) && address.Scheme == Uri.UriSchemeHttp ? address : null;
-
     /// <summary>The built frontend.</summary>
     public string TemplatesDir => Path.Join(Checkout, "src", "rig", "web_host", "templates");
+
+    /// <summary>The C4 viewer's page and static files.</summary>
+    public string C4StaticDir => Path.Join(Checkout, "src", "Rig.Web", "C4", "static");
+
+    /// <summary>The sample C4 bundle the viewer opens first; the source checkout ships it, a runtime copy may not.</summary>
+    public string C4SampleBundle => Path.Join(Checkout, "experiments", "c4-okf", "rig");
 
     /// <summary>The brand images served under <c>/media/assets/</c>.</summary>
     public string AssetsRoot => Path.Join(Checkout, "assets");
@@ -43,36 +36,26 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
 }
 
 /// <summary>
-/// <c>rig web</c>: runs the dashboard. The ASP.NET host owns the port and answers the routes ported to C#; the rest go to
-/// the Python routes, which it starts as a child on a free loopback port and stops when it stops (<see cref="PythonRoutes"/>).
+/// <c>rig web</c>: runs the dashboard. The ASP.NET host owns the port and answers every route.
 /// The service and database subcommands (<c>install</c>, <c>ensure</c>, <c>uninstall</c>, <c>backup</c>, <c>migrate</c>,
 /// <c>db-status</c>) are aliases for <c>rig tools</c>; <c>mcp</c> serves the ops tools over stdio.
 /// Exit codes: 0 stopped, 2 could not listen.
 /// </summary>
 /// <param name="places">What it serves.</param>
-/// <param name="startPython">Starts the Python CLI with these arguments as a child the host owns.</param>
-/// <param name="probe">Asks whether the child is listening yet.</param>
 /// <param name="openBrowser">Opens a page in the browser.</param>
-/// <param name="delay">Waits between probes.</param>
 /// <param name="output">Where the banner goes.</param>
 /// <param name="error">Where problems go.</param>
 /// <param name="ops">The data behind the MCP tools; null builds this machine's real sources.</param>
 /// <param name="aliases">The legacy subcommands that forward to <c>rig tools</c>.</param>
 internal sealed class WebCommand(
     WebPlaces places,
-    Func<IReadOnlyList<string>, IChildServer> startPython,
-    IPortProbe probe,
     Action<Uri> openBrowser,
-    Func<TimeSpan, CancellationToken, Task> delay,
     TextWriter output,
     TextWriter error,
     RigOps? ops = null,
     IReadOnlyList<Command>? aliases = null)
 {
     private readonly Lazy<RigOps> _ops = new(() => ops ?? RigOps.Default());
-
-    /// <summary>How long the Python routes get to start listening.</summary>
-    public static readonly TimeSpan PythonStart = TimeSpan.FromSeconds(60);
 
     /// <summary>The <c>rig web</c> command.</summary>
     public Command Build()
@@ -118,34 +101,13 @@ internal sealed class WebCommand(
             Rig.Core.Estate.Decisions.DefaultFeedPath(Environment.GetEnvironmentVariable("LOCALAPPDATA"), home),
             places.QueuePath,
             places.TracesDir,
-            places.CodeRoot);
-        if (places.PythonRoutes is { } running)
+            places.CodeRoot,
+            places.C4StaticDir,
+            places.C4SampleBundle);
+        var server = await RigWebHost.CreateAsync(settings, _ops.Value, cancellationToken: cancellationToken).ConfigureAwait(false);
+        await using (server.ConfigureAwait(false))
         {
-            using var fronting = RigWebHost.ForwardingClient();
-            var fronted = await RigWebHost.CreateAsync(settings, fronting, () => running, _ops.Value, cancellationToken: cancellationToken).ConfigureAwait(false);
-            await using (fronted.ConfigureAwait(false))
-            {
-                return await ServeAsync(fronted, settings, open, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        var python = new PythonRoutes(
-            childPort => startPython(["web", "upstream", "--port", childPort.ToString(CultureInfo.InvariantCulture)]),
-            probe,
-            delay);
-        await using (python.ConfigureAwait(false))
-        {
-            if (await python.StartAsync(PythonStart, cancellationToken).ConfigureAwait(false) is { } problem)
-            {
-                await error.WriteLineAsync($"rig web: {problem}; only the routes ported to C# will answer.").ConfigureAwait(false);
-            }
-
-            using var forwarding = RigWebHost.ForwardingClient();
-            var server = await RigWebHost.CreateAsync(settings, forwarding, () => python.Address, _ops.Value, cancellationToken: cancellationToken).ConfigureAwait(false);
-            await using (server.ConfigureAwait(false))
-            {
-                return await ServeAsync(server, settings, open, cancellationToken).ConfigureAwait(false);
-            }
+            return await ServeAsync(server, settings, open, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -181,7 +143,7 @@ internal sealed class WebCommand(
         }
         catch (OperationCanceledException)
         {
-            // Ctrl+C: the host and the Python routes stop as the usings unwind.
+            // Ctrl+C: the host stops as the using unwinds.
         }
 
         await output.WriteLineAsync("Stopping server...").ConfigureAwait(false);

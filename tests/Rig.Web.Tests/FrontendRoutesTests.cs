@@ -10,13 +10,9 @@ public sealed class FrontendRoutesTests : IAsyncLifetime
     private const string Document = "<!DOCTYPE html><html><body id=\"rig-app\">[ RIG ]</body></html>";
 
     private readonly EstateTree _tree = new();
-    private readonly Upstream _upstream = new() { Answer = _ => new(HttpStatusCode.NotFound) { Content = new StringContent("from python") } };
     private readonly SocketsHttpHandler _noRedirects = new() { AllowAutoRedirect = false };
-    private readonly HttpClient _forwarding;
     private RigWebHost? _host;
     private HttpClient _client = null!;
-
-    public FrontendRoutesTests() => _forwarding = new(_upstream);
 
     public async ValueTask InitializeAsync()
     {
@@ -27,7 +23,7 @@ public sealed class FrontendRoutesTests : IAsyncLifetime
         _tree.Write("templates/data.bin", "bytes");
         _tree.Write("assets/blog/with space.svg", "<svg viewBox='0 0 1 1'></svg>");
         _tree.Write("outside.txt", "secret");
-        _host = await RigWebHost.CreateAsync(_tree.Settings(), _forwarding, () => Upstream.Address);
+        _host = await RigWebHost.CreateAsync(_tree.Settings());
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client = new HttpClient(_noRedirects, disposeHandler: false) { BaseAddress = _host.Address };
     }
@@ -36,8 +32,6 @@ public sealed class FrontendRoutesTests : IAsyncLifetime
     {
         _client.Dispose();
         _noRedirects.Dispose();
-        _forwarding.Dispose();
-        _upstream.Dispose();
         if (_host is not null)
         {
             await _host.DisposeAsync();
@@ -67,7 +61,6 @@ public sealed class FrontendRoutesTests : IAsyncLifetime
         Assert.Equal("text/html; charset=utf-8", response.Content.Headers.ContentType?.ToString());
         Assert.Equal("no-store", response.Headers.NonValidated["Cache-Control"].ToString());
         Assert.Equal(Document, await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
-        Assert.Empty(_upstream.Seen);
     }
 
     [Fact]
@@ -119,7 +112,6 @@ public sealed class FrontendRoutesTests : IAsyncLifetime
 
         Assert.StartsWith("HTTP/1.1 404", answer, StringComparison.Ordinal);
         Assert.EndsWith($$"""{"error":{{System.Text.Json.JsonSerializer.Serialize(error)}}}""", answer, StringComparison.Ordinal);
-        Assert.Empty(_upstream.Seen);
     }
 
     [Theory]
@@ -127,12 +119,11 @@ public sealed class FrontendRoutesTests : IAsyncLifetime
     [InlineData("/media/assets/../outside.txt")]
     [InlineData("/static/%2e%2e/outside.txt")]
     [InlineData("/media/assets-evil/outside.txt")]
-    public async Task Dot_segments_leave_the_folder_before_routing_so_the_python_routes_answer(string path)
+    public async Task Dot_segments_leave_the_folder_before_routing_so_no_route_answers(string path)
     {
         var answer = await RawGetAsync(path);
 
         Assert.StartsWith("HTTP/1.1 404", answer, StringComparison.Ordinal);
-        Assert.Contains("\r\nfrom python\r\n", answer, StringComparison.Ordinal);
         Assert.DoesNotContain("secret", answer, StringComparison.Ordinal);
     }
 

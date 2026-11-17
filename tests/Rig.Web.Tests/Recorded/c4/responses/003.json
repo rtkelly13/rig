@@ -1,0 +1,2 @@
+{"path": "/api/c4/concept?id=notype", "status": 200}
+{"id":"notype","title":"No type","type":null,"level":null,"description":null,"resource":null,"tags":[],"generated":null,"verified":null,"diagram":null,"keyword":null,"notes_html":"<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n","element_notes":{},"zooms":[],"inbound":[],"findings":[{"code":"okf-type","severity":"error","concept":"notype","message":"OKF requires a `type` in the frontmatter"},{"code":"orphan","severity":"info","concept":"notype","message":"no concept links to this note"}]}

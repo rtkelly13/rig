@@ -1,0 +1,2 @@
+{"path": "/api/c4/expand?id=ctx&alias=shop", "status": 200}
+{"id":"ctx","alias":"shop","diagram":"C4Context\nPerson(user, \"User\")\nSystem_Boundary(shop, \"Shop\") {\n  Container(api, \"API\", \"Python\", $link=\"/ctx.md\")\n  ContainerDb(db, \"DB\", \"Postgres\")\n}\nSystem_Ext(pay, \"Payments\")\n  Rel(user, api, \"Calls\")\n  Rel(api, db, \"Reads\")\n  Rel(api, pay, \"Charges\")\n"}

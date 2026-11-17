@@ -14,6 +14,8 @@ namespace Rig.Web;
 /// <param name="DecisionsFeed">The decisions feed the <c>estate-decisions</c> job writes (<c>decisions.json</c>).</param>
 /// <param name="QueuePath">The triage queue's regenerable Markdown projection.</param>
 /// <param name="TracesDir">This checkout's own <c>temp/traces/sdk</c>, one of the roots telemetry reads.</param>
+/// <param name="C4StaticDir">The C4 viewer's page and static files (<c>/c4/</c>).</param>
+/// <param name="C4SampleBundle">The sample C4 bundle the viewer opens first; its siblings are offered too. Empty when the checkout has no <c>experiments/</c>.</param>
 public sealed record WebHostSettings(
     string Host,
     int Port,
@@ -27,7 +29,9 @@ public sealed record WebHostSettings(
     string DecisionsFeed,
     string QueuePath,
     string TracesDir,
-    string CodeRoot = "")
+    string CodeRoot = "",
+    string C4StaticDir = "",
+    string C4SampleBundle = "")
 {
     /// <summary>The code root, falling back to the parent of EstateRoot if empty.</summary>
     public string EffectiveCodeRoot => string.IsNullOrEmpty(CodeRoot) ? (Path.GetDirectoryName(EstateRoot) ?? "") : CodeRoot;

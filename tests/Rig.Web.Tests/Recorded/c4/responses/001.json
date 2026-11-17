@@ -1,0 +1,2 @@
+{"path": "/api/c4/concept?id=bad", "status": 200}
+{"id":"bad","title":"Bad","type":null,"level":null,"description":null,"resource":null,"tags":[],"generated":null,"verified":null,"diagram":null,"keyword":null,"notes_html":"<p>no frontmatter here &lt;em&gt;x&lt;/em&gt;</p>\n","element_notes":{},"zooms":[],"inbound":[],"findings":[{"code":"okf-frontmatter","severity":"error","concept":"bad","message":"no YAML frontmatter"},{"code":"orphan","severity":"info","concept":"bad","message":"no concept links to this note"}]}

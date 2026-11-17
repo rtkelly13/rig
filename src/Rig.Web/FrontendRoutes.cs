@@ -15,7 +15,7 @@ namespace Rig.Web;
 ///
 /// Files are sent as Python's <c>StudioServer</c> sent them: the content type its <c>mimetypes</c> gave for each extension
 /// the checkout serves (<see cref="ContentTypes"/>), and <c>no-cache, no-store, must-revalidate</c>. A path that is
-/// missing, or that resolves outside its folder, is a 404. <c>/c4/static/</c> is the C4 viewer's and is not served here.
+/// missing, or that resolves outside its folder, is a 404.
 /// </remarks>
 internal static class FrontendRoutes
 {

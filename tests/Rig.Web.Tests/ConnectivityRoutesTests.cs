@@ -8,7 +8,6 @@ namespace Rig.Web.Tests;
 public sealed class ConnectivityRoutesTests : IAsyncLifetime
 {
     private readonly EstateTree _tree = new();
-    private readonly HttpClient _forwarding = new(new Upstream());
     private RigWebHost? _host;
     private HttpClient _client = null!;
 
@@ -16,7 +15,7 @@ public sealed class ConnectivityRoutesTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _host = await RigWebHost.CreateAsync(_tree.Settings(), _forwarding, () => null);
+        _host = await RigWebHost.CreateAsync(_tree.Settings());
         await _host.StartAsync(Token);
         _client = new HttpClient { BaseAddress = _host.Address };
     }
@@ -24,7 +23,6 @@ public sealed class ConnectivityRoutesTests : IAsyncLifetime
     public async ValueTask DisposeAsync()
     {
         _client.Dispose();
-        _forwarding.Dispose();
         if (_host is not null)
         {
             await _host.DisposeAsync();

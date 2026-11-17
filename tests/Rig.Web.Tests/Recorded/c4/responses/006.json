@@ -1,0 +1,2 @@
+{"path": "/api/c4/expand?id=ctx&alias=pay", "status": 400}
+{"error":"`pay` is not a zoomable element of `ctx`"}
