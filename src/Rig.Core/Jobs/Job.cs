@@ -56,9 +56,6 @@ public sealed record Job(
     /// <summary>Exit codes meaning "could not run yet": a tick reruns the job until it exits otherwise, once per boot.</summary>
     public IReadOnlySet<int> RetryExitCodes { get; init; } = new HashSet<int>();
 
-    /// <summary>The <c>--- </c>-headed log the job writes its own narrative to, when that is not stdout.</summary>
-    public string? DetailLog { get; init; }
-
     /// <summary>The rig flag that must be on for the job to run; naming the job in <c>--only</c> runs it anyway.</summary>
     public string? Feature { get; init; }
 

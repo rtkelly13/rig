@@ -57,8 +57,6 @@ class Job:
     idle_minutes: int = 0
     #: Exit codes meaning "could not run yet": a tick reruns the job until it exits otherwise, once per boot.
     retry_exit_codes: frozenset[int] = frozenset()
-    #: The `--- `-headed log the job writes its own narrative to, when that is not stdout.
-    detail_log: Path | None = None
     #: The rig flag that must be on for the job to run; naming the job in `--only` runs it anyway.
     feature: str | None = None
 

@@ -109,25 +109,23 @@ public sealed class JobRunnerTests : IDisposable
     }
 
     [Fact]
-    public void A_big_log_is_rotated_before_the_run_and_a_rewritten_own_log_is_saved_whole()
+    public void A_big_log_is_rotated_before_the_run_and_the_saved_output_is_this_runs_alone()
     {
         var logs = JobState.LogsDir(_temp.Path);
         Directory.CreateDirectory(logs);
         var log = JobState.LogPath(logs, "own");
         File.WriteAllBytes(log, new byte[JobLog.LimitBytes + 1]);
-        var own = Path.Join(_temp.Path, "own-detail.log");
-        File.WriteAllText(own, new string('o', 100));
-        var executor = new ScriptExecutor { Own = "--- 2026-11-12 09:00:00 own\nrewritten\n" };
-        var job = new Job("own", string.Empty, ["x"], new HashSet<JobTrigger> { JobTrigger.Tick }, JobCadence.EveryRun, 5) { DetailLog = own };
+        var executor = new ScriptExecutor { Line = "rotated" };
+        var job = new Job("own", string.Empty, ["x"], new HashSet<JobTrigger> { JobTrigger.Tick }, JobCadence.EveryRun, 5);
 
         var report = new List<string>();
         var exit = Runner(executor, report).Run([job], JobTrigger.Tick, _temp.Path, Booted, new Dictionary<string, bool>());
 
         Assert.Equal(0, exit);
         Assert.Equal(JobLog.LimitBytes + 1, new FileInfo(log + ".1").Length);
-        Assert.Equal("     own: exit 0 after 0s: rewritten", report[^1]);
+        Assert.Equal("     own: exit 0 after 0s: rotated", report[^1]);
         var saved = File.ReadAllText(Path.Join(_temp.Path, "runs", "own", "tick-20261112-090000.log"));
-        Assert.Equal("--- 2026-11-12 09:00:00 [tick-20261112-090000] x\n--- exit 0\n--- 2026-11-12 09:00:00 own\nrewritten\n", saved);
+        Assert.Equal("--- 2026-11-12 09:00:00 [tick-20261112-090000] x\nrotated\n--- exit 0\n", saved);
     }
 
     [Fact]
@@ -212,8 +210,6 @@ public sealed class JobRunnerTests : IDisposable
     {
         public List<string> Ran { get; } = [];
 
-        public string? Own { get; init; }
-
         public string? Line { get; init; }
 
         public long Exit { get; init; }
@@ -223,11 +219,6 @@ public sealed class JobRunnerTests : IDisposable
             Ran.Add(job.Name);
             Directory.CreateDirectory(logsDir);
             File.AppendAllText(JobState.LogPath(logsDir, job.Name), $"--- 2026-11-12 09:00:00 [{runId}] x\n{(Line is null ? string.Empty : Line + "\n")}--- exit 0\n");
-            if (Own is not null && job.DetailLog is { } own)
-            {
-                File.WriteAllText(own, Own);
-            }
-
             return Exit;
         }
     }

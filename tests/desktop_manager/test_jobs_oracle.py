@@ -62,7 +62,6 @@ def _job_record(job: Job) -> dict[str, object]:
         "requires": [_norm(str(path)) for path in job.requires],
         "idle_minutes": job.idle_minutes,
         "retry_exit_codes": sorted(job.retry_exit_codes),
-        "detail_log": None if job.detail_log is None else _norm(str(job.detail_log)),
         "feature": job.feature,
     }
 
@@ -279,7 +278,7 @@ _RUN_SCRIPTS: dict[str, dict[str, object]] = {
     "quiet": {"lines": [], "code": 0},
     "fails": {"lines": [f"line {n}" for n in range(1, 15)], "code": 3},
     "crashes": {"raise": "boom"},
-    "elsewhere": {"lines": [], "code": 1, "detail": ["own narrative", "own failure"]},
+    "silent": {"lines": [], "code": 1},
     "slow": {"lines": ["half way"], "timeout": True},
     "busy": {"lines": ["idle work"], "code": 0, "idle_minutes": 5},
     "later": {"lines": [], "code": 0, "logon_only": True},
@@ -314,7 +313,6 @@ def _run_jobs(root: Path) -> list[Job]:
                 Cadence.EVERY_RUN,
                 5,
                 idle_minutes=int(script.get("idle_minutes", 0)),  # pyright: ignore[reportArgumentType]
-                detail_log=root / f"{name}-own.log" if "detail" in script else None,
             )
         )
     return jobs
@@ -328,10 +326,6 @@ def _fake_execute(job: Job, logs: Path, run_id: str) -> int:
     logs.mkdir(parents=True, exist_ok=True)
     lines: list[str] = script["lines"]  # pyright: ignore[reportAssignmentType]
     body = f"--- 2026-11-12 09:00:00 [{run_id}] x {job.name}\n" + "".join(f"{line}\n" for line in lines)
-    if "detail" in script and job.detail_log is not None:
-        detail: list[str] = script["detail"]  # pyright: ignore[reportAssignmentType]
-        with job.detail_log.open("ab") as own:
-            _ = own.write(("--- 2026-11-12 09:00:00 own\n" + "".join(f"{line}\n" for line in detail)).encode())
     if script.get("timeout"):
         body += "--- timed out after 5 min\n"
         code = 124
