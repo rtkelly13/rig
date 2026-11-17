@@ -208,7 +208,7 @@ def machine_idle_seconds() -> float:
     """Seconds since the last keyboard or mouse input; unbounded off Windows."""
     if sys.platform != "win32":
         return float("inf")
-    from desktop_manager.chrome.presence import idle_seconds
+    from desktop_manager.win32.idle import idle_seconds
 
     return idle_seconds()
 
