@@ -20,7 +20,7 @@ const outputFor = (committed) => (checking ? path.join(scratch, committed) : pat
 const stylesheets = [
   ['web/app.src.css', 'src/rig/web_host/templates/app_assets/app.css'],
   ['tools/image-drift/styles/gallery.src.css', 'tools/image-drift/src/image_drift/templates/gallery.css'],
-  ['styles/c4.src.css', 'src/rig/c4_okf/static/c4.css'],
+  ['styles/c4.src.css', 'src/Rig.Web/C4/static/c4.css'],
 ];
 
 const appAssets = 'src/rig/web_host/templates/app_assets';

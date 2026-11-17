@@ -1,5 +1,5 @@
 /* C4 viewer rules. styles/c4.src.css compiles them, with the @rtkelly-labs/design-system tokens they read,
-   into src/rig/c4_okf/static/c4.css. Diagram colours map --pele-* onto the same tokens.
+   into src/Rig.Web/C4/static/c4.css. Diagram colours map --pele-* onto the same tokens.
 
    Colour carries the C4 level: each kind of element has one hue, and the level pill above the map uses the hue
    of the elements that level is about. External elements stay grey and dashed, so the eye lands on what is
