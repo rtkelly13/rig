@@ -419,19 +419,13 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     // Each item mapped Workers at a time, the results in the items' order.
     private static async Task<IReadOnlyList<TResult>> MapAsync<TItem, TResult>(IReadOnlyList<TItem> items, Func<TItem, Task<TResult>> map, CancellationToken cancellationToken)
     {
-        using var gate = new SemaphoreSlim(Workers);
-        return await Task.WhenAll(items.Select(async item =>
-        {
-            await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return await Task.Run(() => map(item), cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                _ = gate.Release();
-            }
-        })).ConfigureAwait(false);
+        var results = new TResult[items.Count];
+        var options = new ParallelOptions { MaxDegreeOfParallelism = Workers, CancellationToken = cancellationToken };
+        await Parallel.ForEachAsync(
+            Enumerable.Range(0, items.Count),
+            options,
+            async (index, _) => results[index] = await map(items[index]).ConfigureAwait(false)).ConfigureAwait(false);
+        return results;
     }
 
     // What the disk alone says about one worktree; idle, clean and pushed, only its PR state can make it a decision.

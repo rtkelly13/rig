@@ -57,8 +57,13 @@ public sealed class ProcessJobExecutor(TimeProvider clock, IReadOnlyDictionary<s
         using var process = Process.Start(start) ?? throw new InvalidOperationException($"{job.Argv[0]} did not start");
         process.StandardInput.Close();
         var copies = new[] { process.StandardOutput.BaseStream, process.StandardError.BaseStream }
-            .Select(stream => Task.Run(() => Copy(stream, log, gate)))
+            .Select(stream => new Thread(() => Copy(stream, log, gate)) { IsBackground = true, Name = "rig-job-log" })
             .ToArray();
+        foreach (var copy in copies)
+        {
+            copy.Start();
+        }
+
         var limit = timeout ?? TimeSpan.FromMinutes(job.TimeoutMinutes);
         if (limit <= TimeSpan.Zero || !process.WaitForExit(limit))
         {
@@ -84,7 +89,15 @@ public sealed class ProcessJobExecutor(TimeProvider clock, IReadOnlyDictionary<s
     }
 
     // A grandchild that keeps the pipes open must not hold the run up past its exit.
-    private static void WaitFor(Task[] copies) => _ = Task.WaitAll(copies, TimeSpan.FromSeconds(5));
+    private static void WaitFor(Thread[] copies)
+    {
+        var deadline = Stopwatch.GetTimestamp() + (5 * Stopwatch.Frequency);
+        foreach (var copy in copies)
+        {
+            var left = Stopwatch.GetElapsedTime(Stopwatch.GetTimestamp(), deadline);
+            _ = copy.Join(left > TimeSpan.Zero ? left : TimeSpan.Zero);
+        }
+    }
 
     // The raw bytes, so the log keeps whatever the job wrote, in the order each pipe delivered it.
     private static void Copy(Stream from, FileStream to, Lock gate)

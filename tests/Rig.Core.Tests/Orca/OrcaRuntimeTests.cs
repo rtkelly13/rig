@@ -195,16 +195,16 @@ public sealed class OrcaRuntimeTests : IDisposable
         listener.Listen(1);
         try
         {
-            var server = Task.Run(
-                async () =>
-                {
-                    using var client = await listener.AcceptAsync(Token);
-                    await using var stream = new NetworkStream(client);
-                    using var reader = new StreamReader(stream, Encoding.UTF8);
-                    var request = await reader.ReadLineAsync(Token);
-                    await stream.WriteAsync(Encoding.UTF8.GetBytes($"{{\"_keepalive\":true}}\n{{\"id\":\"r1\",\"ok\":true,\"result\":{request}}}\n"), Token);
-                },
-                Token);
+            async Task ServeAsync()
+            {
+                using var client = await listener.AcceptAsync(Token);
+                await using var stream = new NetworkStream(client);
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                var request = await reader.ReadLineAsync(Token);
+                await stream.WriteAsync(Encoding.UTF8.GetBytes($"{{\"_keepalive\":true}}\n{{\"id\":\"r1\",\"ok\":true,\"result\":{request}}}\n"), Token);
+            }
+
+            var server = ServeAsync();
 
             var result = await new OrcaRuntime(new(OrcaTransport.Unix, path), "t", new SocketOrcaExchange(), () => "r1").CallAsync("ping", null, Token);
             await server;
@@ -222,16 +222,16 @@ public sealed class OrcaRuntimeTests : IDisposable
     {
         var name = $"rig-orca-{Guid.NewGuid():N}"[..20];
         await using var pipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-        var server = Task.Run(
-            async () =>
-            {
-                await pipe.WaitForConnectionAsync(Token);
-                using var reader = new StreamReader(pipe, Encoding.UTF8, leaveOpen: true);
-                _ = await reader.ReadLineAsync(Token);
-                await pipe.WriteAsync("""{"id":"r1","ok":true,"result":"pong"}"""u8.ToArray().Append((byte)'\n').ToArray(), Token);
-                pipe.Disconnect();
-            },
-            Token);
+        async Task ServeAsync()
+        {
+            await pipe.WaitForConnectionAsync(Token);
+            using var reader = new StreamReader(pipe, Encoding.UTF8, leaveOpen: true);
+            _ = await reader.ReadLineAsync(Token);
+            await pipe.WriteAsync("""{"id":"r1","ok":true,"result":"pong"}"""u8.ToArray().Append((byte)'\n').ToArray(), Token);
+            pipe.Disconnect();
+        }
+
+        var server = ServeAsync();
 
         var result = await new OrcaRuntime(new(OrcaTransport.NamedPipe, $@"\\.\pipe\{name}"), "t", new SocketOrcaExchange(), () => "r1").CallAsync("ping", null, Token);
         await server;
