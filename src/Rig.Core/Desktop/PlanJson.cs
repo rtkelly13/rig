@@ -29,7 +29,7 @@ public sealed class InvalidPlanException : Exception
 /// <summary>Building the JSON a plan file holds.</summary>
 internal static class PlanJsonWriter
 {
-    // Text fields are written only when they hold something, as Python's `if self.x:` did.
+    // Text fields are written only when they hold something.
     public static void AddText(JsonObject data, string key, string? value)
     {
         if (!string.IsNullOrEmpty(value))
@@ -51,7 +51,7 @@ internal static class PlanJsonWriter
 }
 
 /// <summary>
-/// Reading a hand-edited plan leniently, as the Python loader's pydantic lax mode did: a number where text belongs
+/// Reading a hand-edited plan leniently: a number where text belongs
 /// reads as its digits, <c>"900"</c> and <c>900.0</c> read as 900, <c>"yes"</c> and <c>1</c> read as true, an optional
 /// field of the wrong shape reads as absent, and a list field holding anything but a list reads as empty. Anything that
 /// still does not fit throws <see cref="InvalidPlanException"/>.
@@ -203,7 +203,7 @@ internal static class PlanJsonReader
 
     public static string? OptionalText(JsonObject data, string key) => data[key] is null ? null : Text(data[key], key);
 
-    // Plans are hand-edited, so a number or boolean where text belongs is read as Python's str() of it.
+    // Plans are hand-edited, so a number or boolean where text belongs is read as its text.
     public static string Text(JsonNode? node, string key) => node is JsonValue value
         ? value.GetValueKind() switch
         {
@@ -215,7 +215,7 @@ internal static class PlanJsonReader
         }
         : throw Invalid(key, "text");
 
-    // Python's str() of a parsed JSON number: integers as written, fractions as the float's repr.
+    // A parsed JSON number as text: integers as written, fractions as the float's repr.
     public static string NumberText(JsonValue value)
     {
         var raw = value.ToJsonString();
@@ -236,7 +236,7 @@ internal static class PlanJsonReader
     public static bool Bool(JsonObject data, string key) =>
         data.ContainsKey(key) ? LaxBool(data[key]) ?? throw Invalid(key, "true or false") : false;
 
-    // A truthy value, as Python's bool() reads it: null, false, zero, "" and empty containers are false.
+    // A truthy value: null, false, zero, "" and empty containers are false.
     public static bool Truthy(JsonNode? node) => node switch
     {
         JsonArray list => list.Count > 0,

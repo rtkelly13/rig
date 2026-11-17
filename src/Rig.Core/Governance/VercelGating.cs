@@ -56,8 +56,7 @@ public sealed record VercelProjectLink(string Name, string? Slug);
 /// project must never create one for a push that cannot serve anything: either it does not create deployments on
 /// branch pushes, or the repo's <c>vercel.json</c> declares a <c>git.deploymentEnabled</c> allowlist with a deny-all
 /// fallback. Observed deployments back that up empirically. The judgement (<see cref="Plan"/>) is pure; reading
-/// Vercel and the checkout is separate. Ported from <c>rig.repo_governance.vercel_gating</c>; see
-/// docs/repo-governance/vercel-gating.md.
+/// Vercel and the checkout is separate.
 /// </summary>
 /// <param name="api">The Vercel API.</param>
 /// <param name="git">Reads the checkout's <c>origin/main</c>.</param>

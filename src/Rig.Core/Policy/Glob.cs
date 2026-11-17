@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace Rig.Core.Policy;
 
 /// <summary>
-/// Python's <c>fnmatch.fnmatch</c>: <c>*</c>, <c>?</c> and <c>[seq]</c>/<c>[!seq]</c> over the whole name, with
+/// An fnmatch-style glob: <c>*</c>, <c>?</c> and <c>[seq]</c>/<c>[!seq]</c> over the whole name, with
 /// <c>*</c> crossing spaces and slashes. Case-sensitive, except on Windows, where both sides are case-folded and
 /// <c>/</c> read as <c>\</c> first, as <c>os.path.normcase</c> does there.
 /// </summary>

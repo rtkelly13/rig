@@ -22,7 +22,6 @@ public sealed record DevTool(string Id, string Name, string Description, string 
 /// <summary>
 /// The developer tool catalog: the bundled one, then any <c>*.json</c> under <c>~/.config/devenv/tools</c>, then under
 /// the working folder's <c>.devenv/tools</c>, then the <c>custom_catalogs</c> listed in <c>~/.config/devenv/config.json</c>.
-/// Ported from devenv's <c>config/loader.py</c>.
 /// </summary>
 public static class ToolCatalog
 {

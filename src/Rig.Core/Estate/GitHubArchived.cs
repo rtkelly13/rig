@@ -7,8 +7,7 @@ using Rig.Core.Text;
 namespace Rig.Core.Estate;
 
 /// <summary>
-/// Which estate repos GitHub reports as archived, in one GraphQL query for all of them. Ported from
-/// <c>src/rig/estate/github_archived.py</c>.
+/// Which estate repos GitHub reports as archived, in one GraphQL query for all of them.
 /// </summary>
 /// <remarks>
 /// An archived repo is finished: it does not belong in Orca, and a local clone of it is something to clean up.

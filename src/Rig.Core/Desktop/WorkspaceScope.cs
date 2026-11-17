@@ -2,7 +2,7 @@ namespace Rig.Core.Desktop;
 
 /// <summary>
 /// Narrowing a plan or a status capture to one desktop or one screen, as <c>workspace audit</c> and <c>restore</c> do
-/// with <c>--desktop</c> and <c>--screen</c>. Ported from <c>desktop_manager.cli._plan_for_scope</c>.
+/// with <c>--desktop</c> and <c>--screen</c>.
 /// </summary>
 public static class WorkspaceScope
 {

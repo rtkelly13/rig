@@ -103,7 +103,7 @@ public static class ClaudeBaseline
         return new SettingsMerge(merged, changes);
     }
 
-    /// <summary>Python's <c>repr</c> of a baseline value, as the change lines show it: <c>'text'</c>, <c>True</c>, <c>3</c>.</summary>
+    /// <summary>A baseline value quoted, as the change lines show it: <c>'text'</c>, <c>True</c>, <c>3</c>.</summary>
     public static string Repr(JsonValue value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -116,7 +116,7 @@ public static class ClaudeBaseline
         };
     }
 
-    // Python's str repr: single quotes, or double quotes when the text holds a ' and no ".
+    // Single quotes, or double quotes when the text holds a ' and no ".
     private static string Quote(string text)
     {
         var escaped = text.Replace("\\", "\\\\", StringComparison.Ordinal);

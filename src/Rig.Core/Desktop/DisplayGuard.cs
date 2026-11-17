@@ -3,7 +3,7 @@ using Rig.Core.Jobs;
 
 namespace Rig.Core.Desktop;
 
-/// <summary>How a window is shown. Ported from <c>desktop_manager.display_guard.ShowState</c>.</summary>
+/// <summary>How a window is shown.</summary>
 public enum ShowState
 {
     /// <summary>Neither minimized nor maximized.</summary>
@@ -183,8 +183,7 @@ public sealed record DisplayGuardSettings
 /// </summary>
 /// <remarks>
 /// The platform-independent core; a Windows port supplies the machine. A system sleep counts as a topology change even
-/// when the monitor set looks the same, because the guard cannot see what happened while it was suspended. Ported from
-/// <c>desktop_manager.display_guard.DisplayGuard</c>.
+/// when the monitor set looks the same, because the guard cannot see what happened while it was suspended.
 /// </remarks>
 public sealed class DisplayGuard(IDisplayGuardPorts ports, DisplayGuardSettings? settings = null)
 {
@@ -438,7 +437,7 @@ public sealed class DisplayGuard(IDisplayGuardPorts ports, DisplayGuardSettings?
 
 /// <summary>
 /// The guard's and restore's cross-process locks, in one per-user folder whatever plan or runtime copy runs them, so
-/// the guard always sees a running restore. Ported from <c>desktop_manager.display_guard</c>'s lock helpers.
+/// the guard always sees a running restore.
 /// </summary>
 public static class DisplayGuardLocks
 {

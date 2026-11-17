@@ -35,8 +35,7 @@ public sealed record AnswerRecord(
 }
 
 /// <summary>
-/// What <c>estate wrapup</c> remembers per worktree: <c>temp/.rig/wrapup.json</c>, schema <c>rig.wrapup/1</c>. Ported from
-/// <c>src/rig/estate/wrapup_state.py</c>, which the triage inbox still reads, so the file stays byte-compatible.
+/// What <c>estate wrapup</c> remembers per worktree: <c>temp/.rig/wrapup.json</c>, schema <c>rig.wrapup/1</c>.
 /// </summary>
 /// <param name="Schema">The schema the file carries.</param>
 /// <param name="WorktreeId">Orca's id for the worktree.</param>
@@ -187,8 +186,7 @@ public sealed class FileWrapupStore(Git git) : IWrapupStore
 }
 
 /// <summary>
-/// Where rig keeps state about one worktree: <c>&lt;worktree&gt;/temp/.rig/</c>. Ported from <c>src/rig/worktree_state.py</c>
-/// (docs/repo-governance/worktree-state.md): one file per feature, written only where git ignores it, replaced atomically.
+/// Where rig keeps state about one worktree: <c>&lt;worktree&gt;/temp/.rig/</c>.
 /// </summary>
 public static class WorktreeState
 {
@@ -274,7 +272,7 @@ public static class WrapupStamps
     /// <summary>Eight hex digits: enough to tell one worktree's asks apart, short enough to type.</summary>
     public static string NewAskId() => Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
 
-    /// <summary>Python's <c>isoformat(timespec="milliseconds")</c> in UTC: <c>2026-01-02T03:04:05.678+00:00</c>.</summary>
+    /// <summary>ISO 8601 to the millisecond in UTC: <c>2026-01-02T03:04:05.678+00:00</c>.</summary>
     public static string Timestamp(DateTimeOffset when) => when.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'+00:00'", CultureInfo.InvariantCulture);
 
     /// <summary>The instant <paramref name="text"/> names, or null when it is not an ISO 8601 timestamp.</summary>

@@ -5,7 +5,7 @@ using System.Text;
 namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
-/// Starting a plan entry as a process. Ported from the launch half of <c>desktop_manager.launching</c>.
+/// Starting a plan entry as a process.
 /// </summary>
 /// <param name="getVariable">Reads an environment variable, such as <c>LOCALAPPDATA</c>.</param>
 /// <param name="home">What a leading <c>~</c> stands for.</param>
@@ -20,7 +20,7 @@ public sealed class Launching(Func<string, string?>? getVariable = null, string?
         "wt.exe",
     };
 
-    /// <summary>The Python <c>wt-pwsh</c> terminal shell.</summary>
+    /// <summary>The <c>wt-pwsh</c> terminal shell.</summary>
     public const string WindowsTerminalShell = "wt-pwsh";
 
     private readonly Func<string, string?> _getVariable = getVariable ?? Environment.GetEnvironmentVariable;

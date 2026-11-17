@@ -16,9 +16,7 @@ namespace Rig.Core.Otel;
 public sealed record FileSpan(string TraceId, string SpanId, JsonNode? Resource, JsonNode? Scope, JsonObject Span, long EndNs, bool Incomplete);
 
 /// <summary>
-/// The OTLP/JSON trace files rig and its tools write, read and regrouped for the collector. Ported from the pure half of
-/// <c>rig.otel_stack.backfill</c>: a span can be written twice (incomplete at a forced flush, then complete), and the
-/// complete copy is the one sent.
+/// The OTLP/JSON trace files rig and its tools write, read and regrouped for the collector.
 /// </summary>
 public static class TraceSpans
 {
@@ -123,7 +121,7 @@ public static class TraceSpans
         return bodies;
     }
 
-    // The spans of one line, or null when the line is not an envelope. The Python decoded the envelope strictly: a
+    // The spans of one line, or null when the line is not an envelope. The envelope is decoded strictly: a
     // field of the wrong shape anywhere in it dropped the whole line.
     private static List<FileSpan>? Envelope(string line)
     {
@@ -199,7 +197,7 @@ public static class TraceSpans
             && LaxJson.Field(attribute, "value") is { ValueKind: JsonValueKind.Object } value
             && LaxJson.Bool(LaxJson.Field(value, "boolValue")) == true);
 
-    // A node from an element, the last of a repeated key winning as in Python's json.
+    // A node from an element, the last of a repeated key winning.
     private static JsonNode? Node(JsonElement? element)
     {
         switch (element)
@@ -221,7 +219,7 @@ public static class TraceSpans
         }
     }
 
-    // A grouping key with object keys sorted, as the Python grouped by json.dumps(sort_keys=True).
+    // A grouping key with object keys sorted.
     private static string Canonical(JsonNode? node)
     {
         var text = new StringBuilder();

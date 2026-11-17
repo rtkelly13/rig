@@ -3,10 +3,10 @@ using System.Text;
 namespace Rig.Core.Policy;
 
 /// <summary>
-/// Python's POSIX <c>shlex</c> with <c>whitespace_split</c>: <see cref="Split"/> is <c>shlex.split</c>, and
+/// POSIX <c>shlex</c> word splitting with <c>whitespace_split</c>: <see cref="Split"/> is <c>shlex.split</c>, and
 /// <see cref="ShellTokens"/> is a lexer built with <c>punctuation_chars=";&amp;|&lt;&gt;"</c>, which also starts a
 /// comment at <c>#</c> and returns each run of those characters as a token of its own. Throws
-/// <see cref="FormatException"/> where Python raises <c>ValueError</c>: an unclosed quote or a trailing escape.
+/// <see cref="FormatException"/> where <c>shlex</c> raises <c>ValueError</c>: an unclosed quote or a trailing escape.
 /// </summary>
 public static class Shlex
 {

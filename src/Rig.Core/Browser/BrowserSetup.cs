@@ -66,7 +66,7 @@ public sealed record BrowserEnvOutcome(int Applied, int Skipped);
 
 /// <summary>
 /// Provisions what the upstream <c>agent-browser</c> CLI reads: user-scoped defaults (never-clobber), the dedicated
-/// profile folders and per-profile shell shortcuts. Ported from <c>rig.agent_browser</c> and devenv's agent-browser step.
+/// profile folders and per-profile shell shortcuts.
 /// </summary>
 /// <param name="places">The home being set up.</param>
 /// <param name="processEnvironment">Reads this process's environment, checked before the persisted store.</param>

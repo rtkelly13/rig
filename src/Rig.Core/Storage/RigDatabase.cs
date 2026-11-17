@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Rig.Core.Storage;
 
-/// <summary>The shared rig SQLite database and the numbered migrations already used by Python.</summary>
+/// <summary>The shared rig SQLite database and the numbered migrations.</summary>
 public static class RigDatabase
 {
     private sealed record Migration(int Version, string Name, string Sql);
@@ -93,7 +93,7 @@ public static class RigDatabase
     }
 
     /// <summary>Read the schema version and applied migrations without changing either.</summary>
-    /// <remarks>The <c>schema_migrations</c> table is created when absent, as Python's reader did, so an empty database answers 0.</remarks>
+    /// <remarks>The <c>schema_migrations</c> table is created when absent, so an empty database answers 0.</remarks>
     public static SchemaState Inspect(string path)
     {
         using var connection = Connect(path);

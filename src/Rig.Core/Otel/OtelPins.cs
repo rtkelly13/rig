@@ -37,7 +37,7 @@ public sealed class UnsupportedPlatformException : Exception
 }
 
 /// <summary>
-/// The pinned binaries, ported from <c>rig.otel_stack.collector</c> and <c>rig.otel_stack.pinned</c>. Every archive's
+/// The pinned binaries, Every archive's
 /// sha256 is pinned from the GitHub release's asset digest and checked before anything is unpacked.
 /// </summary>
 /// <remarks>

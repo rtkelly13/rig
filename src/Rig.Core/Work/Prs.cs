@@ -36,8 +36,7 @@ public sealed record PrResults(
 }
 
 /// <summary>
-/// The newest PR for each work-item branch: one aliased GraphQL query per repo, cached briefly. Ported from
-/// <c>desktop_manager/work/prs.py</c>. A failed call is never cached and never stops the command.
+/// The newest PR for each work-item branch: one aliased GraphQL query per repo, cached briefly. A failed call is never cached and never stops the command.
 /// </summary>
 /// <param name="github">Runs the GraphQL queries.</param>
 /// <param name="cacheFile">The PR cache, or null to keep no cache.</param>
@@ -258,7 +257,7 @@ public sealed class WorkPrSource(
         };
     }
 
-    /// <summary>Escapes a string as Python's <c>json.dumps</c> does by default: non-ASCII becomes <c>\uXXXX</c>.</summary>
+    /// <summary>Escapes a string as <c>json.dumps</c> does by default: non-ASCII becomes <c>\uXXXX</c>.</summary>
     /// <param name="value">The text to quote.</param>
     internal static string JsonQuote(string value)
     {

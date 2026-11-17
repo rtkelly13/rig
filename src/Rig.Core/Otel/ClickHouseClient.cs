@@ -38,10 +38,9 @@ public sealed record SpanKey(string TraceId, string SpanId);
 public sealed record TableStats(string Table, ulong Rows, ulong BytesOnDisk);
 
 /// <summary>
-/// The reads of the on-demand ClickHouse that the stack and backfill need, over its HTTP interface; ported from
-/// <c>rig.otel_stack.query</c>. Values are bound by ClickHouse to <c>{name:Type}</c> placeholders, never spliced into SQL.
+/// The reads of the on-demand ClickHouse that the stack and backfill need, over its HTTP interface; Values are bound by ClickHouse to <c>{name:Type}</c> placeholders, never spliced into SQL.
 /// </summary>
-/// <param name="http">Sends the requests; its timeout is the caller's (the Python used 30 seconds).</param>
+/// <param name="http">Sends the requests; its timeout is the caller's (30 seconds by default).</param>
 /// <param name="baseUrl">The server, <see cref="LocalUrl"/> by default.</param>
 public sealed class ClickHouseClient(HttpClient http, Uri? baseUrl = null)
 {

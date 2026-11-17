@@ -84,7 +84,7 @@ public static class BrandAssets
             }
         }
 
-        // OrderBy is stable, as Python's sort is: equal ranks keep their file order.
+        // OrderBy is stable: equal ranks keep their file order.
         return new(candidates.OrderBy(c => c.Rank).Select(c => c.Url).FirstOrDefault(), banner);
     }
 

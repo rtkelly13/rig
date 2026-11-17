@@ -72,7 +72,7 @@ public sealed record EstateAuditResult(
 
 /// <summary>
 /// Audits and cleans the personal estate folder against the managed projects (ADR 0017: nothing exists in the
-/// personal folder without the CLI managing it). Ported from <c>rig.workspace.engine</c>.
+/// personal folder without the CLI managing it).
 /// </summary>
 /// <param name="git">Reads clones' remotes and statuses.</param>
 /// <param name="scopes">The estate's orgs, which place org-owned projects in sibling folders.</param>
@@ -83,7 +83,7 @@ public sealed class EstateAudit(Git git, EstateScopes scopes)
         [".claude", ".DS_Store", ".pnpm-store", "personal.code-workspace", "AGENTS.md", "CLAUDE.md", "TODO.md", "temp"],
         StringComparer.Ordinal);
 
-    /// <summary>The snake-case name the Python gave <paramref name="kind"/>, used in reports.</summary>
+    /// <summary>The snake-case name of <paramref name="kind"/>, used in reports.</summary>
     public static string Value(EstateItemKind kind) => kind switch
     {
         EstateItemKind.ManagedRepo => "managed_repo",
@@ -286,7 +286,7 @@ public sealed class EstateAudit(Git git, EstateScopes scopes)
                     }
                 }
 
-                // Python's rmtree refused a link rather than deleting through it; so does this.
+                // A link is refused rather than deleting through it; so does this.
                 if (new DirectoryInfo(item.Path).LinkTarget is not null)
                 {
                     return new(false, $"Failed to remove {item.Name}: it is a symbolic link");

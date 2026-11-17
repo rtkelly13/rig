@@ -5,8 +5,7 @@ namespace Rig.Core.Desktop;
 
 /// <summary>
 /// A restore's run log on disk: every line is appended to the run's own timestamped file, and the file holding the
-/// latest run is rewritten with all of them. Ported from <c>desktop_manager.models.RestoreRunLogger</c> and
-/// <c>plan.restore_log_paths</c>. The caller chooses the folder; reading <c>DESKTOP_MANAGER_LOG_DIR</c> stays with it.
+/// latest run is rewritten with all of them. The caller chooses the folder; reading <c>DESKTOP_MANAGER_LOG_DIR</c> stays with it.
 /// </summary>
 public sealed class FileRunLog : IRunLog
 {

@@ -27,10 +27,8 @@ public sealed class DigestMismatchException : Exception
 }
 
 /// <summary>
-/// Downloads, verifies, then unpacks the pinned binaries. Ported from the install halves of <c>rig.otel_stack.collector</c>
-/// and <c>rig.otel_stack.pinned</c>. Nothing is unpacked before the download's sha256 matches the pin, only the one named
-/// regular file is taken from an archive, and a <c>.sha256</c> marker beside the binary (the pin and a newline, as the
-/// Python wrote it) makes a verified install a no-op.
+/// Downloads, verifies, then unpacks the pinned binaries. Nothing is unpacked before the download's sha256 matches the pin, only the one named
+/// regular file is taken from an archive, and a <c>.sha256</c> marker beside the binary (the pin and a newline) makes a verified install a no-op.
 /// </summary>
 /// <param name="http">Follows redirects (release assets redirect to a CDN) but is only ever given an https URL.</param>
 public sealed class OtelInstaller(HttpClient http)

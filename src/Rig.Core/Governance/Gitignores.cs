@@ -34,8 +34,7 @@ public sealed record RepoGitignore<T>(string RepoName, string RepoPath, T Result
 
 /// <summary>
 /// Checks and fills in the <c>.gitignore</c> entries <c>config/repo_policies.json</c> requires of each clone. Only
-/// missing lines are appended, so running it again changes nothing. Ported from
-/// <c>rig.repo_governance.gitignore_manager</c>.
+/// missing lines are appended, so running it again changes nothing.
 /// </summary>
 /// <param name="git">Runs git, for each clone's remote and whether git ignores rig's state folder.</param>
 /// <param name="scopes">The estate's owners and org folders.</param>

@@ -2,8 +2,7 @@ namespace Rig.Core.Desktop;
 
 /// <summary>
 /// Reading a plan the way the desktop commands do: the per-user default path, the logs folder beside it, and the
-/// checks <c>load_plan</c> runs before anything uses the result. Ported from the load half of
-/// <c>desktop_manager.plan</c>.
+/// checks <c>load_plan</c> runs before anything uses the result.
 /// </summary>
 public static class PlanLoading
 {
@@ -71,7 +70,7 @@ public static class PlanLoading
 
     /// <summary>
     /// <paramref name="plan"/> after <see cref="Placement.ValidatePlan"/> and <see cref="Placement.ValidatePlanStructure"/>
-    /// pass. Messages match Python's: a plan with entries is "Invalid workspace plan" and one whose layout is wrong is
+    /// pass. A plan with entries is "Invalid workspace plan" and one whose layout is wrong is
     /// "Structurally invalid workspace plan".
     /// </summary>
     /// <exception cref="InvalidPlanException">The plan is invalid.</exception>
@@ -102,7 +101,7 @@ public static class PlanLoading
 
     /// <summary>
     /// The machine plan from the repository's bundle template, with <paramref name="workspace"/> and
-    /// <paramref name="personalWorkspace"/> filled in and verified. Ported from <c>build_bespoke_machine_plan</c>.
+    /// <paramref name="personalWorkspace"/> filled in and verified.
     /// </summary>
     /// <exception cref="InvalidPlanException">The template is not a valid plan.</exception>
     public static WorkspacePlan BuildMachinePlan(string templatePath, string workspace, string? personalWorkspace = null)

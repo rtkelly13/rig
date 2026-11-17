@@ -20,7 +20,7 @@ public enum OverlayState
 /// <summary>
 /// The personal gh token scope overlay. The team baseline and the scope checks live in the workspace repo
 /// (<c>devenv doctor git auth</c>); rig only places these personal extras at <c>~/.config/devenv/gh-scopes.json</c>,
-/// where the workspace merges them in. <c>gh-scopes.json</c> is embedded here. Ported from devenv's <c>github_cli</c>.
+/// where the workspace merges them in. <c>gh-scopes.json</c> is embedded here.
 /// </summary>
 public static class GhScopes
 {

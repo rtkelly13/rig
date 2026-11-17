@@ -8,8 +8,7 @@ using Windows.Win32.UI.Input.KeyboardAndMouse;
 namespace Rig.Core.Chrome.Windows;
 
 /// <summary>
-/// The input clock, the lock screen and the privacy settings' device use, through Win32. Ported from
-/// <c>desktop_manager.chrome.presence</c>.
+/// The input clock, the lock screen and the privacy settings' device use, through Win32.
 /// </summary>
 [SupportedOSPlatform("windows6.1")]
 [ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]

@@ -318,7 +318,7 @@ public static partial class Manifests
 
     private static List<Consumption> NuGetReferences(string text, string repo, string evidence, IReadOnlyDictionary<string, string> versions)
     {
-        // A later reference to the same package replaces an earlier one in place, as a Python dict does.
+        // A later reference to the same package replaces an earlier one in place.
         var references = new OrderedDictionary<string, Consumption>(StringComparer.Ordinal);
         var updates = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (Match match in PackageReference().Matches(text))

@@ -3,7 +3,7 @@ namespace Rig.Core.Chrome.MacOS;
 /// <summary>
 /// One decoded accessibility element of Chrome's browser UI. <see cref="Identity"/> is the element's CFHash: metadata
 /// for telling elements apart, never a handle to act on. Two nodes are equal when every field and every child is, as
-/// Python's frozen dataclass compared them, so the same element decoded twice compares equal.
+/// Compared by value, so the same element decoded twice compares equal.
 /// </summary>
 /// <param name="Identity">The element's CFHash; 0 for a node read without one.</param>
 /// <param name="Role">AXRole.</param>

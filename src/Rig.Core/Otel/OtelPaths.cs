@@ -1,8 +1,7 @@
 namespace Rig.Core.Otel;
 
 /// <summary>
-/// Where the collector's binary, config, data and log live: all under rig's per-user folder. Ported from
-/// <c>rig.otel_stack.paths</c>; the layout is the Python's, so either finds what the other wrote.
+/// Where the collector's binary, config, data and log live: all under rig's per-user folder.
 /// </summary>
 /// <param name="BaseDir">rig's per-user folder (<see cref="Roots.AppData.Current"/> in production).</param>
 public sealed record OtelPaths(string BaseDir)

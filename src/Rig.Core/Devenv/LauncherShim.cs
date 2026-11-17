@@ -3,8 +3,7 @@ namespace Rig.Core.Devenv;
 /// <summary>
 /// The <c>agent</c> launcher: a shim at the code root (<c>agent.sh</c>, and <c>agent.ps1</c> on Windows) running
 /// <c>rig agent</c> from this checkout's C# CLI, and a marked block in the shell profile defining an <c>agent</c>
-/// function that calls it without changing folder. Ported from devenv's <c>agent_launcher_setup</c> and
-/// <c>agent_shortcut</c>.
+/// function that calls it without changing folder.
 /// </summary>
 public static class LauncherShim
 {

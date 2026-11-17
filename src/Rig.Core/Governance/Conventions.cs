@@ -156,8 +156,7 @@ public sealed record ConventionsReport(
 
 /// <summary>
 /// The per-repo conventions behind <c>status</c>, <c>audit</c> and <c>enforce</c>: owner, merge settings, the managed
-/// ruleset and the hygiene files. Ported from <c>rig.repo_governance.cli_repo_checks</c> and the inspect and align
-/// halves of <c>github_rulesets</c>.
+/// ruleset and the hygiene files.
 /// </summary>
 /// <param name="proc">Runs gh.</param>
 /// <param name="api">GitHub's REST API.</param>
@@ -312,6 +311,6 @@ public sealed class Conventions(IProc proc, IGitHubApi api, GovernedRepos repos,
             : new("error", []);
     }
 
-    // The declared ruleset as Python's json.dumps writes it; read back from the text, as the live one is.
+    // The declared ruleset; read back from the text, as the live one is.
     private string Payload(string slug) => JsonOutput.Line(RulesetResource.Payload(policies, slug));
 }

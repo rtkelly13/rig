@@ -8,8 +8,7 @@ using Rig.Core.Text;
 namespace Rig.Core.GitHub;
 
 /// <summary>
-/// Pull-request state and merge chains from GitHub's GraphQL API, through <see cref="IGitHubApi"/>. Ported from
-/// <c>rig.github_prs</c>.
+/// Pull-request state and merge chains from GitHub's GraphQL API, through <see cref="IGitHubApi"/>.
 /// </summary>
 /// <remarks>
 /// Per repository, one query lists the open PRs and looks each requested PR up by alias. Nothing throws for a GitHub
@@ -212,7 +211,7 @@ public static class PrResolver
         return new Answer(repository, aliasErrors);
     }
 
-    // The reply's repository object and errors; null when the whole body is misshapen, as the Python's lenient decode.
+    // The reply's repository object and errors; null when the whole body is misshapen.
     private static Body? ParseBody(string text)
     {
         try

@@ -5,14 +5,14 @@ namespace Rig.Core.Flags;
 
 /// <summary>
 /// The flag overrides stored in the <c>feature_flags</c> table of <c>rig.db</c>. Each call opens the database, makes
-/// sure the table exists (the same definition as Python's migration <c>003_feature_flags</c>, so the two agree on one
+/// sure the table exists (migration <c>003_feature_flags</c>, so the two agree on one
 /// file) and closes it again.
 /// </summary>
 /// <param name="dbPath">The database file; its folder is created when missing.</param>
 /// <param name="clock">The clock that stamps <c>updated_at</c>; the system clock when null.</param>
 public sealed class FlagStore(string dbPath, TimeProvider? clock = null)
 {
-    /// <summary>The table's definition, as Python's migration creates it.</summary>
+    /// <summary>The table's definition.</summary>
     public const string Schema =
         "CREATE TABLE IF NOT EXISTS feature_flags ( name TEXT PRIMARY KEY, enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)), updated_at TEXT NOT NULL )";
 

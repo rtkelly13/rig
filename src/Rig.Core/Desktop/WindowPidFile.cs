@@ -3,8 +3,7 @@ using System.Text.Json;
 namespace Rig.Core.Desktop;
 
 /// <summary>
-/// Tell apart windows of one executable by the pid an app records for each instance. Ported from
-/// <c>desktop_manager.window_pid_file</c>.
+/// Tell apart windows of one executable by the pid an app records for each instance.
 /// </summary>
 /// <remarks>
 /// Orca runs one window per profile, and every profile's window is <c>Orca.exe</c> titled "Orca", so title, process and
@@ -35,7 +34,7 @@ public static class WindowPidFile
             return root.ValueKind == JsonValueKind.Object
                 && root.TryGetProperty("pid", out var pid)
                 && pid.ValueKind == JsonValueKind.Number
-                && pid.GetRawText().TrimStart('-').All(char.IsAsciiDigit) // Python's StrictInt takes no 1.0 or 1e3.
+                && pid.GetRawText().TrimStart('-').All(char.IsAsciiDigit) // No 1.0 or 1e3.
                 && pid.TryGetInt32(out var value)
                     ? value
                     : null;

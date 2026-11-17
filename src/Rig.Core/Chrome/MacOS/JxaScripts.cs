@@ -5,8 +5,7 @@ using Rig.Core.Text;
 namespace Rig.Core.Chrome.MacOS;
 
 /// <summary>
-/// The JXA that reads and acts on Chrome through its macOS scripting dictionary. Each script is the text Python's
-/// <c>desktop_manager.chrome.drivers.macos_jxa</c> sent to osascript, byte for byte. Ids are checked before they are
+/// The JXA that reads and acts on Chrome through its macOS scripting dictionary. Each script is sent to osascript byte for byte. Ids are checked before they are
 /// spliced in, and page text only ever enters a script as JSON string data.
 /// </summary>
 public static class JxaScripts

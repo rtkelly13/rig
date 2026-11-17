@@ -7,8 +7,8 @@ using Microsoft.Win32.SafeHandles;
 namespace Rig.Core.Otel;
 
 /// <summary>
-/// A file's identity that survives a rename: its inode on Unix, its NTFS file id on Windows. This is Python's
-/// <c>os.stat().st_ino</c>, so state the Python wrote keeps meaning the same file. .NET has no managed API for it.
+/// A file's identity that survives a rename: its inode on Unix, its NTFS file id on Windows. This is
+/// <c>os.stat().st_ino</c>, so recorded state keeps meaning the same file. .NET has no managed API for it.
 /// </summary>
 public static partial class FileIds
 {
@@ -35,7 +35,7 @@ public static partial class FileIds
         return result == 0 ? *(ulong*)(buffer + InodeOffset) : null;
     }
 
-    // Windows has no inode; Python's st_ino there is the 64-bit file index, high word first.
+    // Windows has no inode; the inode is the 64-bit file index, high word first.
     [SupportedOSPlatform("windows")]
     [ExcludeFromCodeCoverage(Justification = "Windows-only; exercised by the Windows test job.")]
     private static ulong? WindowsFileId(string path)

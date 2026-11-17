@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
+using Rig.Core.Vault;
 
 namespace Rig.Core.Estate;
 
@@ -39,8 +40,7 @@ public sealed record WrapupReported(AnswerRecord? Answer, string Error = "");
 
 /// <summary>
 /// Sends the prompts, writes what was seen to each worktree's <c>temp/.rig/wrapup.json</c>, and records an agent's own
-/// verdict (<c>estate wrapup report</c>). Ported from <c>wrapup.py</c>, <c>wrapup_record.py</c>, <c>wrapup_report.py</c>
-/// and <c>wrapup_watch.py</c>.
+/// verdict (<c>estate wrapup report</c>).
 /// </summary>
 public static class WrapupRun
 {
@@ -433,7 +433,7 @@ public static class WrapupRun
         }
 
         var verdict = Wrapup.ParseVerdict(agent.LastMessage);
-        var first = WrapupText.SplitLines(agent.LastMessage ?? "").Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? "";
+        var first = UnicodeText.SplitLines(agent.LastMessage ?? "").Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? "";
         var note = verdict is not null ? "" : $"replied without a WRAPUP line: {WrapupText.Head(first, 160)}";
         return row with { Status = WrapupStatus.Answered, State = agent.State, Verdict = verdict, Note = note };
     }

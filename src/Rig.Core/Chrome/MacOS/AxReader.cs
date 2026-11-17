@@ -63,7 +63,7 @@ public interface IAxApi
 /// Reads an application's browser UI through accessibility, read-only and without prompting. Every copied value is
 /// released by the method that copied it; borrowed children are read while their array lives. Page content and the
 /// menu bar are never entered, and one read decodes at most <see cref="Budget"/> elements, <see cref="MaxDepth"/>
-/// deep. Ported from <c>desktop_manager.chrome.drivers.macos_ax</c>.
+/// deep.
 /// </summary>
 public class AxReader
 {
@@ -204,7 +204,7 @@ public class AxReader
     /// <summary>A flag attribute, from a boolean or a number; null when it is absent or neither.</summary>
     protected bool? Flag(nint element, string attribute) => Scalar(element, attribute).Flag;
 
-    // A string, or a flag from a boolean or a number, as Python's scalar read them; neither for anything else.
+    // A string, or a flag from a boolean or a number; neither for anything else.
     private (string? Text, bool? Flag) Scalar(nint element, string attribute)
     {
         var value = Copy(element, attribute);

@@ -1,8 +1,7 @@
 namespace Rig.Core.Desktop;
 
 /// <summary>
-/// The machine's virtual desktops: read, switch, create, name, remove, and move windows between them. Ported from
-/// <c>desktop_manager.win32.desktops</c>, which reached them through pyvda.
+/// The machine's virtual desktops: read, switch, create, name, remove, and move windows between them.
 /// </summary>
 /// <remarks>
 /// Desktops are numbered from 1 in position order, and a number names whichever desktop holds that position when the

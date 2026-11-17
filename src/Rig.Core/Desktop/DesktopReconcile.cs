@@ -23,7 +23,7 @@ public sealed record DesktopRenameAction(int Index, string CurrentName, string T
 
 /// <summary>
 /// The drift between the declared virtual desktops and the live ones: what to retire, create, rename, leave unchanged
-/// and report as an unmanaged surplus. Ported from <c>desktop_manager.desktop_reconcile.DesktopReconciliationPlan</c>.
+/// and report as an unmanaged surplus.
 /// </summary>
 /// <param name="TargetDesktops">The names the plan declares, in order.</param>
 /// <param name="CurrentDesktops">The names that were live when the plan was drawn.</param>
@@ -49,8 +49,7 @@ public sealed record DesktopReconciliationPlan(IReadOnlyList<string> TargetDeskt
 }
 
 /// <summary>
-/// What reconciling the live desktops did, or (in a dry run) what it would do. Ported from
-/// <c>desktop_manager.desktop_reconcile.DesktopReconciliationResult</c>.
+/// What reconciling the live desktops did, or (in a dry run) what it would do.
 /// </summary>
 /// <param name="Plan">The drift the result applied.</param>
 public sealed record DesktopReconciliationResult(DesktopReconciliationPlan Plan)
@@ -82,7 +81,7 @@ public sealed record DesktopReconciliationResult(DesktopReconciliationPlan Plan)
 
 /// <summary>
 /// Virtual desktop reconciliation (Infrastructure as Code): the pure drift planner and the orchestration that applies
-/// it through <see cref="IVirtualDesktops"/>. Ported from <c>desktop_manager.desktop_reconcile</c>.
+/// it through <see cref="IVirtualDesktops"/>.
 /// </summary>
 public static class DesktopReconcile
 {

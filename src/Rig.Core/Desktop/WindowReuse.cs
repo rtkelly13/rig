@@ -9,12 +9,11 @@ namespace Rig.Core.Desktop;
 public sealed record ReuseClaim(LiveWindow? Window, IReadOnlyList<LiveWindow> Remaining);
 
 /// <summary>
-/// Matching windows to plan entries by title, process, pid file and position. Ported from the platform-free half of
-/// <c>desktop_manager.window_reuse</c>; moving and confirming windows are <see cref="IDesktopPort"/> members.
+/// Matching windows to plan entries by title, process, pid file and position.
 /// </summary>
 /// <remarks>
 /// Where a score needs a placement's pixels for a window known only by its bounds, the caller passes
-/// <c>placementBounds</c> (Python read the live monitors there). Without it that bonus is left out.
+/// <c>placementBounds</c> Without it that bonus is left out.
 /// </remarks>
 public static class WindowReuse
 {
@@ -294,7 +293,7 @@ public static class WindowReuse
         ArgumentNullException.ThrowIfNull(entry);
         if (entry.Type == LaunchEntry.Terminal)
         {
-            // Python prints a missing directory as None.
+            // A missing directory prints as None.
             var directory = Placeholders.Substitute(entry.Cwd, substitutions) ?? "None";
             return $"terminal `{entry.Name}` -> {Placeholders.Substitute(entry.Command, substitutions)} (cwd: {directory})";
         }

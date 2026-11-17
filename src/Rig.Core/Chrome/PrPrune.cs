@@ -79,8 +79,7 @@ public sealed record PrunePlan(
 }
 
 /// <summary>
-/// Decides which GitHub pull-request tabs to close. Pure: no UI Automation, no network. Ported from
-/// <c>desktop_manager.chrome.pr_prune</c>.
+/// Decides which GitHub pull-request tabs to close. Pure: no UI Automation, no network.
 /// </summary>
 /// <remarks>
 /// <para>Per Chrome profile, across all of that profile's windows:</para>

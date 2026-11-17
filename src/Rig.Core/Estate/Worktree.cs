@@ -2,7 +2,7 @@ using Rig.Core.Processes;
 
 namespace Rig.Core.Estate;
 
-/// <summary>One entry of <c>git worktree list --porcelain</c>. Ported from <c>src/rig/estate/checks.py</c>.</summary>
+/// <summary>One entry of <c>git worktree list --porcelain</c>.</summary>
 /// <param name="Path">The worktree's folder, as git reports it but with the platform's separators: git prints <c>/</c> on Windows too.</param>
 /// <param name="Head">The commit HEAD names.</param>
 /// <param name="Branch">The branch checked out, without <c>refs/heads/</c>; empty when detached.</param>

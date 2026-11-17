@@ -87,8 +87,7 @@ public sealed record Shelf(string Repo, string Ref, string Sha, string Subject, 
 
 /// <summary>
 /// The shelves on origin: what <c>estate shelve</c> pushed, read back, pruned and restored. A shelf's trailers say where
-/// its work came from, so listing, pruning and restoring need nothing but the ref. Ported from
-/// <c>src/rig/estate/shelf_store.py</c>.
+/// its work came from, so listing, pruning and restoring need nothing but the ref.
 /// </summary>
 /// <param name="git">Runs git in the clone.</param>
 public sealed class ShelfStore(Git git)

@@ -2,7 +2,7 @@ namespace Rig.Core.Roots;
 
 /// <summary>
 /// The per-user folder for rig's app state (runtime copies, logs, the shared database), where <c>rig.roots.app_data_dir</c>
-/// put it, so the C# and the Python find the same installs.
+/// put it, so every tool finds the same installs.
 /// </summary>
 public static class AppData
 {

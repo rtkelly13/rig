@@ -9,8 +9,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace Rig.Core.Chrome.Windows;
 
 /// <summary>
-/// The shell property store and window placement, through CsWin32's generated interop. Ported from
-/// <c>desktop_manager.chrome.window_info</c>.
+/// The shell property store and window placement, through CsWin32's generated interop.
 /// </summary>
 [SupportedOSPlatform("windows6.1")]
 [ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]

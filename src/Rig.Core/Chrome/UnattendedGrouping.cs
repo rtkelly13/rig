@@ -34,8 +34,7 @@ public sealed record GroupingResult(int Planned, int Moved = 0, bool Created = f
 
 /// <summary>
 /// Unattended grouping: wait for an idle machine before taking the mouse, and when the user's input stops grouping,
-/// leave a note and go again once the machine has been left alone. Ported from the running half of
-/// <c>desktop_manager.chrome.unattended</c>.
+/// leave a note and go again once the machine has been left alone.
 /// </summary>
 /// <param name="runner">Carries out a plan.</param>
 /// <param name="presence">The machine's idle clock, lock and devices.</param>
@@ -223,9 +222,9 @@ public sealed class UnattendedGrouping(
         return tags;
     }
 
-    // Python's "{:.0f}": round half to even, no decimals.
+    // Round half to even, no decimals.
     private static string Whole(double value) => Math.Round(value, MidpointRounding.ToEven).ToString("F0", CultureInfo.InvariantCulture);
 
-    // Python's "{:g}" for the small round numbers these are.
+    // The shortest form, for the small round numbers these are.
     private static string Short(double value) => value.ToString(CultureInfo.InvariantCulture);
 }

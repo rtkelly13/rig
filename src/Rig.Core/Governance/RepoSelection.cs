@@ -15,7 +15,7 @@ public sealed record RepoSelectionRules(bool ManageForks = false, bool RequirePu
 /// <param name="Reason">Why it does not, or why a registered repo is exempt; empty otherwise.</param>
 public sealed record ManageDecision(bool Managed, string Reason = "");
 
-/// <summary>The decision whether governance touches a repo. Ported from <c>rig.repo_governance.repo_selection</c>.</summary>
+/// <summary>The decision whether governance touches a repo.</summary>
 public static class RepoSelection
 {
     /// <summary>The GitHub permissions that count as push access.</summary>

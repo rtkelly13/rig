@@ -11,8 +11,7 @@ public interface IDiskUsage
 }
 
 /// <summary>
-/// The bytes deleting a tree would free. Ported from <c>src/rig/estate/disksize.py</c> <c>du</c>: on POSIX,
-/// <c>du -sk</c>; on Windows, where <c>du</c> is not on the PATH a scheduled task gets, a managed walk.
+/// The bytes deleting a tree would free.
 /// </summary>
 /// <param name="proc">Runs <c>du</c>.</param>
 public sealed class DiskUsage(IProc proc) : IDiskUsage

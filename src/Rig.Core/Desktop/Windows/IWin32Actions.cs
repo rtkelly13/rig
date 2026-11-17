@@ -62,7 +62,7 @@ public enum ZOrder
 
 /// <summary>
 /// One keyboard event for <c>SendInput</c>: a virtual key, or with <see cref="KeyEvent.Unicode"/> a UTF-16 unit in
-/// <paramref name="Scan"/>. Ported from <c>desktop_manager.win32.send_input.KeyEvent</c>.
+/// <paramref name="Scan"/>.
 /// </summary>
 /// <param name="VirtualKey">The virtual-key code, or 0 for a Unicode unit.</param>
 /// <param name="Scan">The scan code, or the UTF-16 unit.</param>

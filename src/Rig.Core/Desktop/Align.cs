@@ -110,7 +110,7 @@ public sealed record AlignDecision(int DesktopIndex, string DesktopName, LaunchE
         return notes.Count > 0 ? $"{label} ({string.Join("; ", notes)})" : label;
     }
 
-    /// <summary>The outcome as Python names it.</summary>
+    /// <summary>The outcome.</summary>
     public static string Wire(AlignOutcome outcome) => outcome switch
     {
         AlignOutcome.InPlace => "in place",
@@ -122,7 +122,7 @@ public sealed record AlignDecision(int DesktopIndex, string DesktopName, LaunchE
         _ => throw new ArgumentOutOfRangeException(nameof(outcome)),
     };
 
-    /// <summary>The skip reason as Python names it.</summary>
+    /// <summary>The skip reason.</summary>
     public static string Wire(SkipReason reason) => reason switch
     {
         Rig.Core.Desktop.SkipReason.Minimized => "minimized",
@@ -205,7 +205,7 @@ public interface IAlignPorts
 /// <summary>
 /// Put already-open plan windows back on their planned desktop and slot, without launching anything. The placement-only
 /// sibling of restore: it reuses restore's window matching, decides per entry whether the matched window is in place,
-/// needs moving or must be left alone, and only then touches the machine. Ported from <c>desktop_manager.align</c>.
+/// needs moving or must be left alone, and only then touches the machine.
 /// </summary>
 public static class Align
 {

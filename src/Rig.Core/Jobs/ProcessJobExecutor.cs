@@ -6,7 +6,6 @@ namespace Rig.Core.Jobs;
 
 /// <summary>
 /// Starts a job as a process with no window and no input, its stdout and stderr appended to its log as they come.
-/// Ported from <c>desktop_manager.jobs.runner.execute_subprocess</c>: the same header, end markers and environment.
 /// </summary>
 /// <param name="clock">Stamps the header in local time.</param>
 /// <param name="environment">Variables each job gets unless this process already has them (<see cref="JobsSite.Environment"/>).</param>

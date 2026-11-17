@@ -1,6 +1,6 @@
 namespace Rig.Core.Processes;
 
-/// <summary>Finds a program on a PATH value the way a shell does, like <c>which(1)</c> and Python's <c>shutil.which</c>.</summary>
+/// <summary>Finds a program on a PATH value the way a shell does, like <c>which(1)</c>.</summary>
 public static class ProgramPath
 {
     /// <summary>
@@ -11,7 +11,7 @@ public static class ProgramPath
     public static string? Find(string program, string? path, string? extensions = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(program);
-        // As shutil.which does since Python 3.12: with a PATHEXT list, the bare name only counts when it already ends in one
+        // With a PATHEXT list, the bare name only counts when it already ends in one
         // of the extensions, so an extensionless shim beside npm.cmd is never picked.
         var listed = (extensions ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var bare = listed.Length == 0 || listed.Any(extension => program.EndsWith(extension, StringComparison.OrdinalIgnoreCase));

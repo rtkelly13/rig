@@ -11,8 +11,7 @@ namespace Rig.Core.Otel;
 public sealed record ReplayResult(string Path, int Lines, string Error = "");
 
 /// <summary>
-/// Replays the collector's logs and metrics files into ClickHouse, each line once; ported from
-/// <c>rig.otel_stack.replay</c>. Log records and metric points have no identity ClickHouse can be asked about, so
+/// Replays the collector's logs and metrics files into ClickHouse, each line once; Log records and metric points have no identity ClickHouse can be asked about, so
 /// each file is tracked by inode with the byte offset already sent. The collector rotates by renaming, which keeps the
 /// inode, so lines are not resent after rotation. The offset moves past each line as soon as it is accepted, and only
 /// complete lines are sent. A hash of each file's start tells a file apart from a later one given the same inode.
@@ -84,7 +83,7 @@ public sealed class Replay(IOtlpSender sender)
     }
 
     /// <summary>
-    /// The lines of <paramref name="raw"/>, each with its ending, as Python's <c>bytes.splitlines(keepends=True)</c>:
+    /// The lines of <paramref name="raw"/>, each with its ending:
     /// split after <c>\n</c>, <c>\r\n</c> or a lone <c>\r</c>.
     /// </summary>
     public static IEnumerable<ReadOnlyMemory<byte>> SplitLines(ReadOnlyMemory<byte> raw)

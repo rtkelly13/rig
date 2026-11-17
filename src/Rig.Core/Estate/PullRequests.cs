@@ -17,7 +17,7 @@ public sealed record PullRequest(int Number, string State, string HeadRef, strin
 }
 
 /// <summary>
-/// What GitHub knows about a clone's branches, in as few calls as possible. Ported from <c>src/rig/estate/prs.py</c>.
+/// What GitHub knows about a clone's branches, in as few calls as possible.
 /// </summary>
 /// <remarks>
 /// One GraphQL page answers number, state and head together, so the newest PR per head wins with its state attached. A

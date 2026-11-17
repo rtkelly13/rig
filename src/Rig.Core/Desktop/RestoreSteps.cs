@@ -28,8 +28,7 @@ public sealed record RestoreRun(
 }
 
 /// <summary>
-/// One desktop's restore: reuse or launch each entry, retry the desktop, verify it. Ported from
-/// <c>desktop_manager.handlers.restore_steps</c>. Only a <see cref="DesktopException"/> fails an entry; anything else
+/// One desktop's restore: reuse or launch each entry, retry the desktop, verify it. Only a <see cref="DesktopException"/> fails an entry; anything else
 /// is a bug and ends the run.
 /// </summary>
 public static class RestoreSteps
@@ -124,7 +123,7 @@ public static class RestoreSteps
                 run.Log.Log($"Retrying desktop {desktop.DesktopIndex}: attempt {attempt} of {MaxDesktopAttempts}");
                 if (desktop.SatisfiedEntryNames.Count > 0)
                 {
-                    run.Log.Log($"Leaving already-placed entries alone: {PythonList(desktop.SatisfiedEntryNames.Order(StringComparer.Ordinal).Select(QuotedText.Str))}");
+                    run.Log.Log($"Leaving already-placed entries alone: {BracketList(desktop.SatisfiedEntryNames.Order(StringComparer.Ordinal).Select(QuotedText.Str))}");
                 }
             }
 
@@ -531,16 +530,16 @@ public static class RestoreSteps
 
     internal static string Seconds(TimeSpan elapsed, string format) => elapsed.TotalSeconds.ToString(format, CultureInfo.InvariantCulture);
 
-    // Python's `value or '?'`: a missing or zero number reads as a question mark.
+    // A missing or zero number reads as a question mark.
     internal static string PidOrUnknown(int? value) => value is { } known and not 0 ? known.ToString(CultureInfo.InvariantCulture) : "?";
 
     private static string NumberOrNone(int? value) => value?.ToString(CultureInfo.InvariantCulture) ?? "None";
 
     private static string ReprOrNone(string? value) => value is null ? "None" : QuotedText.Str(value);
 
-    private static string Handles(IEnumerable<long> handles) => PythonList(handles.Order().Select(handle => handle.ToString(CultureInfo.InvariantCulture)));
+    private static string Handles(IEnumerable<long> handles) => BracketList(handles.Order().Select(handle => handle.ToString(CultureInfo.InvariantCulture)));
 
-    private static string PythonList(IEnumerable<string> items) => $"[{string.Join(", ", items)}]";
+    private static string BracketList(IEnumerable<string> items) => $"[{string.Join(", ", items)}]";
 
     private sealed record DesktopCompletion(bool IsComplete, string Diff, IReadOnlySet<string> SatisfiedEntryNames);
 }

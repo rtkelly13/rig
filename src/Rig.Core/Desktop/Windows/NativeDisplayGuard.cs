@@ -6,8 +6,7 @@ using Rig.Core.Vault;
 namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
-/// The real machine as the display guard sees it: monitors, display events and window placements. Ported from
-/// <c>desktop_manager.display_guard_windows</c>.
+/// The real machine as the display guard sees it: monitors, display events and window placements.
 /// </summary>
 [SupportedOSPlatform("windows")]
 [ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]
@@ -32,7 +31,7 @@ public sealed class NativeDisplayGuardPorts : IDisplayGuardPorts
         }
         catch (Exception error) when (error is DllNotFoundException or EntryPointNotFoundException)
         {
-            // Older Windows: the process stays DPI-unaware, as Python's guard could when the call was missing.
+            // Older Windows: the process stays DPI-unaware.
         }
     }
 
@@ -283,7 +282,6 @@ public sealed class NativeDisplayGuardPorts : IDisplayGuardPorts
 /// <summary>
 /// Count display-change, resume and unlock broadcasts on a hidden window. Polling the monitor set alone can miss a
 /// drop-and-return that completes between two polls; every such flap still broadcasts <c>WM_DISPLAYCHANGE</c>.
-/// Ported from <c>desktop_manager.display_guard_windows.DisplayEventListener</c>.
 /// </summary>
 [SupportedOSPlatform("windows")]
 [ExcludeFromCodeCoverage(Justification = "Win32 message loop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]
@@ -328,7 +326,7 @@ public sealed class DisplayEventListener : IDisposable
     /// <inheritdoc/>
     public void Dispose()
     {
-        // The loop belongs to the process's lifetime, as Python's daemon thread did.
+        // The loop belongs to the process's lifetime.
     }
 
     private void Bump(string reason)

@@ -28,9 +28,7 @@ public sealed record Launched(int Pid, string Binary, string Started = "")
 }
 
 /// <summary>
-/// The pure parts of running the collector without a service manager, ported from <c>rig.otel_stack.runtime</c>: the
-/// forward endpoint's shape, who listens on a port from <c>netstat</c>'s output, and whether a command line is the core
-/// collector. Something else can hold the ports, such as a Docker collector publishing 4317/4318, so <c>ensure</c> refuses
+/// The pure parts of running the collector without a service manager, Something else can hold the ports, such as a Docker collector publishing 4317/4318, so <c>ensure</c> refuses
 /// to treat a foreign collector as this one.
 /// </summary>
 public static partial class CollectorProcess
@@ -40,8 +38,8 @@ public static partial class CollectorProcess
 
     /// <summary>
     /// <paramref name="endpoint"/> as a forward endpoint: an http(s) base URL with a host and port, given back as scheme and
-    /// authority. The scheme is lower-cased and the authority kept as written, as Python's <c>urlsplit</c> did.
-    /// A port that is not a number in range gets the "must look like" message, where the Python passed on
+    /// authority. The scheme is lower-cased and the authority kept as written.
+    /// A port that is not a number in range gets the "must look like" message, where it once passed on
     /// <c>urlsplit</c>'s own <c>ValueError</c> text.
     /// </summary>
     /// <exception cref="FormatException">It is not such a URL.</exception>

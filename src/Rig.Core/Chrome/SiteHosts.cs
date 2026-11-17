@@ -14,7 +14,7 @@ public sealed record SiteDomain(string Domain, string Site);
 /// a host: its URL's where the driver reports one (macOS), else the one history ties its title to (Windows). A host
 /// matches a domain it equals or ends with (<c>www.npmjs.com</c> matches <c>npmjs.com</c>), and the longest matching
 /// domain wins, so <c>gemini.google.com</c> is AI while <c>docs.google.com</c> stays Google. Call hosts are not here:
-/// they never group, and that is a safety rule kept in code. Ported from <c>desktop_manager.chrome.site_hosts</c>.
+/// they never group, and that is a safety rule kept in code.
 /// </summary>
 /// <param name="domains">The configured domains.</param>
 public sealed partial class SiteHosts(IReadOnlyList<SiteDomain> domains)

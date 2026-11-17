@@ -5,8 +5,7 @@ using Rig.Core.Vault;
 namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
-/// Finding an entry's window on the machine and putting it in place. Ported from
-/// <c>desktop_manager.win32.entry_windows</c>.
+/// Finding an entry's window on the machine and putting it in place.
 /// </summary>
 /// <param name="inventory">The window reads.</param>
 /// <param name="desktops">Which virtual desktop a window is on, and how to move it.</param>

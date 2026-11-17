@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 
 namespace Rig.Core.Desktop;
 
-/// <summary>A screen rectangle in pixels. Ported from <c>desktop_manager.models.Rect</c>.</summary>
+/// <summary>A screen rectangle in pixels.</summary>
 /// <param name="Left">The left edge.</param>
 /// <param name="Top">The top edge.</param>
 /// <param name="Width">The width.</param>
@@ -27,7 +27,7 @@ public sealed record Rect(int Left, int Top, int Width, int Height)
     private static int FloorHalf(int value) => (int)Math.Floor(value / 2.0);
 }
 
-/// <summary>Where a window sits on its screen. Ported from <c>desktop_manager.models.PlacementLayout</c>.</summary>
+/// <summary>Where a window sits on its screen.</summary>
 /// <param name="Mode"><c>full</c>, <c>halves</c>, <c>thirds</c>, <c>two-thirds</c>, <c>quarters</c> or <c>columns</c>.</param>
 /// <param name="Slot">Which region of the mode, from 1.</param>
 /// <param name="Orientation"><c>halves</c> only: <c>vertical</c> or <c>horizontal</c>.</param>
@@ -53,7 +53,7 @@ public sealed record PlacementLayout(string Mode, int Slot = 1, string? Orientat
     }
 }
 
-/// <summary>A window's planned screen and region. Ported from <c>desktop_manager.models.PlacementSpec</c>.</summary>
+/// <summary>A window's planned screen and region.</summary>
 /// <param name="Screen">The screen, numbered from 1.</param>
 /// <param name="Layout">The region of that screen.</param>
 /// <param name="Subdivide">An optional split of that region, with the same shape.</param>
@@ -72,7 +72,7 @@ public sealed record PlacementSpec(int Screen, PlacementLayout Layout, Placement
     }
 }
 
-/// <summary>A window as a status capture or exported plan records it. Ported from <c>desktop_manager.models.WindowSnapshot</c>.</summary>
+/// <summary>A window as a status capture or exported plan records it.</summary>
 /// <param name="Title">The window title.</param>
 /// <param name="Pid">The owning process id.</param>
 /// <param name="ProcessName">The owning process's image name.</param>
@@ -122,7 +122,7 @@ public sealed record WindowSnapshot(
     }
 }
 
-/// <summary>One thing a desktop launches: an app or a terminal. Ported from <c>desktop_manager.models.LaunchEntry</c>.</summary>
+/// <summary>One thing a desktop launches: an app or a terminal.</summary>
 /// <param name="Name">The entry's name, unique within the plan.</param>
 public sealed record LaunchEntry(string Name)
 {
@@ -240,7 +240,7 @@ public sealed record LaunchEntry(string Name)
     }
 }
 
-/// <summary>One virtual desktop: its name and what it launches. Ported from <c>desktop_manager.models.DesktopPlan</c>.</summary>
+/// <summary>One virtual desktop: its name and what it launches.</summary>
 /// <param name="Name">The desktop's name.</param>
 public sealed record DesktopPlan(string Name)
 {
@@ -292,7 +292,7 @@ public sealed record DesktopPlan(string Name)
     }
 }
 
-/// <summary>The whole workspace: every desktop, in order, and the plan's settings. Ported from <c>desktop_manager.models.WorkspacePlan</c>.</summary>
+/// <summary>The whole workspace: every desktop, in order, and the plan's settings.</summary>
 public sealed record WorkspacePlan
 {
     /// <summary>The plan format version this code writes.</summary>

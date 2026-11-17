@@ -41,7 +41,7 @@ public sealed record Leftover(long Bytes, int Files, IReadOnlyList<string> Sampl
 public delegate Task<IReadOnlyDictionary<string, PullRequest>?> PullRequestLookup(string clone, CancellationToken cancellationToken);
 
 /// <summary>
-/// The worktree questions only a human should answer, as one feed. Ported from the Python <c>rig.estate.decisions</c>, which keeps only the feed reader.
+/// The worktree questions only a human should answer, as one feed.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -240,7 +240,7 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
                 }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException)
                 {
-                    // Gone or unreadable since the listing: passed over, as Python's OSError is.
+                    // Gone or unreadable since the listing: passed over.
                 }
             }
         }
@@ -254,7 +254,7 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
         return index < 0 ? Kinds.Count : index;
     }
 
-    // As Python's str(Path) prints git's forward-slashed path on Windows.
+    // Git's forward-slashed path on Windows.
     private static string Shown(string path) => Path.GetFullPath(path);
 
     private static long Size(string path) => Footprint.Of(path).Bytes;

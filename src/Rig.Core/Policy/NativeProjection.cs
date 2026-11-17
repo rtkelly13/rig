@@ -16,11 +16,11 @@ public sealed record CommandPrefix(IReadOnlyList<string> Tokens, bool Wildcard)
 
 /// <summary>
 /// Writes the estate command policy into one agent's native permission file, keeping every setting the policy does
-/// not own. Ported from <c>rig.policy.projections</c>.
+/// not own.
 /// </summary>
 /// <param name="System">The agent surface: <c>claude</c>, <c>codex</c>, <c>opencode</c> or <c>antigravity</c>.</param>
 /// <param name="Path">Its native permission file, or null when it exposes none.</param>
-/// <param name="Windows">Whether files are written with CRLF line endings, as Python's text mode did there.</param>
+/// <param name="Windows">Whether files are written with CRLF line endings.</param>
 public sealed record NativeProjection(string System, string? Path, bool Windows)
 {
     /// <summary>Every surface, in the order <c>policy sync</c> visits them.</summary>
@@ -145,7 +145,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
         return IOPath.Join(folder, "opencode.json");
     }
 
-    // Python read files in text mode: universal newlines.
+    // Universal newlines.
     private static string ReadText(string path) => File.ReadAllText(path).ReplaceLineEndings("\n");
 
     private static JsonObject LoadObject(string path) =>

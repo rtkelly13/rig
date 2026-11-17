@@ -4,8 +4,7 @@ using Rig.Core.Vault;
 namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
-/// The windows, processes and monitors on a Windows machine, as restore reads them. Ported from
-/// <c>desktop_manager.win32.inventory</c> and the read half of <c>desktop_manager.win32.geometry</c>.
+/// The windows, processes and monitors on a Windows machine, as restore reads them.
 /// </summary>
 /// <param name="win32">The Win32 reads.</param>
 /// <param name="desktops">Which virtual desktop each window is on.</param>
@@ -218,7 +217,7 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
 
     /// <summary>
     /// Visible windows whose casefolded title is <paramref name="target"/> (when <paramref name="exact"/>) or contains
-    /// it. <paramref name="target"/> must already be casefolded, as the Python's callers did.
+    /// it. <paramref name="target"/> must already be casefolded.
     /// </summary>
     public IReadOnlyList<long> MatchingWindows(string target, bool exact = false, bool currentDesktopOnly = true)
     {

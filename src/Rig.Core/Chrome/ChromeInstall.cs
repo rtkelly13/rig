@@ -2,7 +2,7 @@ namespace Rig.Core.Chrome;
 
 /// <summary>
 /// Where the scheduled Chrome Tabs run keeps its state, and the <c>chrome-tabs</c> command
-/// shim on PATH. Ported from <c>desktop_manager.chrome.install_location</c> and <c>desktop_manager.chrome.install</c>.
+/// shim on PATH.
 /// </summary>
 public static class ChromeInstall
 {

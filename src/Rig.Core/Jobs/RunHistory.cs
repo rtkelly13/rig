@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Rig.Core.Roots;
 using Rig.Core.Text;
+using Rig.Core.Vault;
 
 namespace Rig.Core.Jobs;
 
@@ -32,8 +33,7 @@ public sealed record JobRun(
 
 /// <summary>
 /// Every job run the coordinator made: one <see cref="JobRun"/> line in <c>runs.ndjson</c> and the run's slice of the
-/// job log as <c>runs/&lt;job&gt;/&lt;run id&gt;.log</c>. Ported from <c>desktop_manager.jobs.history</c>'s writers;
-/// the web page and the MCP read them. Write failures are swallowed: the history never gates a run.
+/// job log as <c>runs/&lt;job&gt;/&lt;run id&gt;.log</c>. Write failures are swallowed: the history never gates a run.
 /// </summary>
 public static partial class RunHistory
 {
@@ -75,7 +75,7 @@ public static partial class RunHistory
         }
 
         var found = new List<JobRun>();
-        foreach (var line in JobLog.SplitLines(text).Reverse())
+        foreach (var line in UnicodeText.SplitLines(text).Reverse())
         {
             if (line.Trim().Length == 0 || ReadRun(line) is not { } run || (job is not null && run.Job != job))
             {

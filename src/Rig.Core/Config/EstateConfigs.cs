@@ -54,7 +54,7 @@ public sealed record ManagedProjectOrca
 
 /// <summary>
 /// <c>config/repo_policies.json</c>: the default policy layer, the named profiles and overrides, language presets and
-/// the GitHub Apps the governance commands reconcile. Unknown keys are ignored, as the Python config did.
+/// the GitHub Apps the governance commands reconcile. Unknown keys are ignored.
 /// </summary>
 public sealed record RepoPoliciesConfig
 {

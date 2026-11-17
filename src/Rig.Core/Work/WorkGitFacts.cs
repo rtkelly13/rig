@@ -18,7 +18,7 @@ public sealed record RefScan(IReadOnlyList<BranchRef> Branches, string DefaultBr
 public sealed record Track(int? Ahead, int? Behind, bool Gone);
 
 /// <summary>
-/// The pure parsers for the three git reads the work list makes, ported from <c>desktop_manager/work/git_facts.py</c>.
+/// The pure parsers for the three git reads the work list makes,
 /// </summary>
 public static partial class WorkGitParsers
 {
@@ -211,8 +211,7 @@ public static partial class WorkGitParsers
 }
 
 /// <summary>
-/// Reads the work list's git facts through <see cref="Git"/> and <see cref="CloneDiscovery"/>, ported from
-/// <c>desktop_manager/work/git_facts.py</c>.
+/// Reads the work list's git facts through <see cref="Git"/> and <see cref="CloneDiscovery"/>,
 /// </summary>
 /// <param name="git">Runs git.</param>
 /// <param name="discovery">Finds the clones under the code root.</param>

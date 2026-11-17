@@ -12,7 +12,7 @@ public sealed record GitIdentity(string Id, string Name, string Email, string? S
 
 /// <summary>
 /// devenv's git setup: the identities in <c>~/.config/devenv/config.json</c> and the <c>includeIf</c> blocks that
-/// route each folder to one. Ported from devenv's <c>steps/git.py</c> and <c>config/loader.py</c>.
+/// route each folder to one.
 /// </summary>
 public static class GitSetup
 {

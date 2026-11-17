@@ -15,7 +15,7 @@ public sealed record HygieneResult(string Status, bool IsAligned = false, string
 /// <summary>
 /// The files inside a checkout the conventions require: AGENTS.md's conventions block, <c>.npmrc</c>, the pre-push hook,
 /// <c>TODO.md</c>, <c>.ls-lint.yml</c>, pinned action SHAs and the Dependabot/Renovate split. Each check reads; each
-/// align writes only when not a dry run. Ported from <c>rig.repo_governance.repo_hygiene</c>.
+/// align writes only when not a dry run.
 /// </summary>
 public static partial class RepoHygiene
 {

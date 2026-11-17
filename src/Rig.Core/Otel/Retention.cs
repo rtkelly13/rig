@@ -1,7 +1,7 @@
 namespace Rig.Core.Otel;
 
 /// <summary>
-/// Keeps 7 days of the collector's rotated files. Ported from <c>rig.otel_stack.retention</c>. The file exporter's own
+/// Keeps 7 days of the collector's rotated files. The file exporter's own
 /// <c>max_days</c> only prunes when a file rotates (at 100 MB), which a quiet week may never trigger, so <c>collector
 /// ensure</c>, every tick, prunes by age as well. The active <c>&lt;signal&gt;.jsonl</c> is never touched: the collector
 /// holds it open and it is the newest data.

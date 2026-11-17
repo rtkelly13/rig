@@ -7,7 +7,7 @@ namespace Rig.Core.Policy;
 
 /// <summary>
 /// What <c>policy audit</c> reads: the commands an estate's manifests declare, and how often known command families
-/// appear in shell history, counted without returning a line of it. Ported from <c>rig.policy.engine</c>.
+/// appear in shell history, counted without returning a line of it.
 /// </summary>
 public static partial class ProjectAudit
 {
@@ -100,7 +100,7 @@ public static partial class ProjectAudit
         return [.. counts.OrderByDescending(c => c.Count)];
     }
 
-    // The scripts whose command is text; a malformed file throws, as Python's json.loads did.
+    // The scripts whose command is text; a malformed file throws.
     private static List<(string Name, string Source)> PackageScripts(string json) =>
         JsonNode.Parse(json) is JsonObject { } package && package["scripts"] is JsonObject scripts
             ? scripts.Where(s => s.Value is JsonValue v && v.GetValueKind() == JsonValueKind.String)
@@ -146,7 +146,7 @@ public static partial class ProjectAudit
     [GeneratedRegex("""^(?:(?<bare>[A-Za-z0-9_\-]+)|(?<key>"(?:[^"\\]|\\.)*"|'[^']*'))\s*=\s*(?<value>"(?:[^"\\]|\\.)*"|'[^']*')\s*(#.*)?$""")]
     private static partial Regex ScriptLine();
 
-    // str.splitlines: every line boundary Python recognises.
+    // Every line boundary.
     [GeneratedRegex(@"\r\n|[\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029]")]
     private static partial Regex LineBreak();
 

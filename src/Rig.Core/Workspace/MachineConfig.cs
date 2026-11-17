@@ -5,7 +5,7 @@ namespace Rig.Core.Workspace;
 
 /// <summary>
 /// This machine's <c>~/.workspace/config.json</c>: settings that differ between machines. A missing or malformed
-/// file, or a setting of the wrong type, reads as unset. Ported from <c>rig.workspace_config</c>.
+/// file, or a setting of the wrong type, reads as unset.
 /// </summary>
 public static class MachineConfig
 {

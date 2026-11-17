@@ -4,7 +4,7 @@ using Rig.Core.Roots;
 
 namespace Rig.Core.Governance;
 
-/// <summary>The key a local checkout's governance policy is looked up by. Ported from <c>rig.repo_governance.policy_key</c>.</summary>
+/// <summary>The key a local checkout's governance policy is looked up by.</summary>
 public static class PolicyKeys
 {
     /// <summary>

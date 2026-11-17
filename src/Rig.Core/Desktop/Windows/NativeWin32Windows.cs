@@ -7,8 +7,8 @@ namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
 /// The Win32 reads, through user32, kernel32 and dwmapi. Process paths come from <c>QueryFullProcessImageNameW</c> with
-/// limited query rights, which names more processes than the Python's <c>GetModuleFileNameEx</c> could (elevated ones
-/// among them). The process is DPI-unaware, as the Python was, so coordinates match what the Python read.
+/// limited query rights, which names more processes than <c>GetModuleFileNameEx</c> could (elevated ones
+/// among them). The process is DPI-unaware, so coordinates match what older readers saw.
 /// </summary>
 [SupportedOSPlatform("windows")]
 [ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]
