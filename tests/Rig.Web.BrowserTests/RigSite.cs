@@ -12,18 +12,16 @@ namespace Rig.Web.BrowserTests;
 /// </summary>
 /// <remarks>
 /// The host reads nothing of this machine's. Its database, registry, assets and code root are all under one temp
-/// folder, with <c>personal/</c> holding the estate's git checkouts, and no Python routes run behind it.
+/// folder, with <c>personal/</c> holding the estate's git checkouts.
 /// </remarks>
 public sealed class RigSite : IAsyncDisposable
 {
     private readonly TempDir _dir;
-    private readonly HttpClient _forwarding;
     private readonly RigWebHost _host;
 
-    private RigSite(TempDir dir, HttpClient forwarding, RigWebHost host)
+    private RigSite(TempDir dir, RigWebHost host)
     {
         _dir = dir;
-        _forwarding = forwarding;
         _host = host;
     }
 
@@ -67,9 +65,8 @@ public sealed class RigSite : IAsyncDisposable
             Path.Join(dir.Path, "temp", "triage", "queue.md"),
             Path.Join(dir.Path, "temp", "traces", "sdk"),
             codeRoot);
-        var forwarding = RigWebHost.ForwardingClient();
-        var host = await RigWebHost.CreateAsync(settings, forwarding, () => null, cancellationToken: cancellationToken);
-        var site = new RigSite(dir, forwarding, host);
+        var host = await RigWebHost.CreateAsync(settings, cancellationToken: cancellationToken);
+        var site = new RigSite(dir, host);
         try
         {
             await host.StartAsync(cancellationToken);
@@ -95,7 +92,6 @@ public sealed class RigSite : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _host.DisposeAsync();
-        _forwarding.Dispose();
         _dir.Dispose();
     }
 
