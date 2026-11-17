@@ -21,6 +21,7 @@ public sealed partial class C4RoutesTests : IAsyncLifetime
         var samples = Path.Join(_checkout.Path, "experiments", "c4-okf");
         CopyDirectory(Path.Join(AppContext.BaseDirectory, "Recorded", "c4", "hard"), Path.Join(samples, "hard"));
         Put("experiments/c4-okf/rig/a.md", "---\ntype: C4 Context\ntitle: A\n---\n");
+        Put("experiments/c4-okf/rig/bad2.md", "---\ntype: [unclosed\n---\nbody\n");
         Put("experiments/c4-okf/parquet-sourcegenerator/b.md", "---\ntype: C4 Context\ntitle: B\n---\n");
         Put("src/Rig.Web/C4/static/index.html", "<title>C4</title>");
         Put("src/Rig.Web/C4/static/c4.js", "console.log(1);");
@@ -112,6 +113,19 @@ public sealed partial class C4RoutesTests : IAsyncLifetime
         Assert.Equal("{\"error\":\"no concept `nope`\"}", await concept.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         Assert.Equal(HttpStatusCode.NotFound, endpoint.StatusCode);
         Assert.Equal("{\"error\":\"unknown endpoint /api/c4/nope\"}", await endpoint.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task A_malformed_frontmatter_is_worded_by_the_YAML_library()
+    {
+        // The Python server answered with PyYAML's multi-line parser error here; the C# answer is YamlDotNet's one line.
+        using var response = await GetAsync("/api/c4/concept?bundle=rig&id=bad2");
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+
+        Assert.Contains(
+            "\"message\":\"frontmatter is not valid YAML: While parsing a flow sequence, did not find expected ',' or ']'.\"",
+            body,
+            StringComparison.Ordinal);
     }
 
     [Fact]

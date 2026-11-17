@@ -80,7 +80,7 @@ Imports point down this stack and never up or sideways:
 `rig` sits below `desktop_manager` as a whole. `desktop_manager` may import `rig`, never the reverse.
 
 The package graph is acyclic at every depth. That includes the top level (`rig` ↔ `desktop_manager`) and
-sibling packages (`rig.c4_okf` ↔ `rig.repo_governance`), not just individual modules. A cycle almost always means a
+sibling packages (`rig.estate` ↔ `rig.repo_governance`), not just individual modules. A cycle almost always means a
 shared concept is living inside one feature; the fix is to move it down, not to add a lazy import.
 
 ## Data
