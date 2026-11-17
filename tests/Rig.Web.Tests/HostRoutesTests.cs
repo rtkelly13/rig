@@ -4,7 +4,7 @@ using Rig.Web.Tests.Fakes;
 
 namespace Rig.Web.Tests;
 
-/// <summary>The host's own endpoints, answered as the Python <c>StudioServer</c> answered them.</summary>
+/// <summary>The host's own endpoints, answered as the recorded server answered them.</summary>
 public sealed class HostRoutesTests : IAsyncLifetime
 {
     private readonly EstateTree _tree = new();
@@ -30,7 +30,7 @@ public sealed class HostRoutesTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Estate_matches_the_recorded_python_answer()
+    public async Task Estate_matches_the_recorded_answer()
     {
         using var response = await _client.GetAsync(new Uri("/api/estate", UriKind.Relative), TestContext.Current.CancellationToken);
 

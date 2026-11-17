@@ -8,7 +8,7 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// What the oracle cannot show: where <see cref="VaultGraph"/> parts from the Python on purpose, the Python's quirks it keeps
+/// What the oracle cannot show: where <see cref="VaultGraph"/> parts from the recording on purpose, the recorded quirks it keeps
 /// until they are fixed on their own, the output cap, and the desktop app's orphan list, which the oracle stubbed out.
 /// </summary>
 public sealed class VaultGraphTests : IDisposable
@@ -77,7 +77,7 @@ public sealed class VaultGraphTests : IDisposable
     }
 
     [Fact]
-    public async Task Linking_orphans_twice_appends_the_link_twice_as_the_python_did()
+    public async Task Linking_orphans_twice_appends_the_link_twice_as_recorded()
     {
         // A known flaw kept on purpose: the append neither looks for the link first nor stops the note being an orphan,
         // since a link written with its .md is one the scan does not count. Fixing it is its own change.
@@ -132,7 +132,7 @@ public sealed class VaultGraphTests : IDisposable
     [Fact]
     public void A_note_named_md_at_the_root_does_not_resolve_a_link_to_its_title()
     {
-        // The Python keyed it by its path with every .md removed, which is empty, and an empty match read as no match.
+        // The recording keyed it by its path with every .md removed, which is empty, and an empty match read as no match.
         Write(".md", "dot\n");
         Write("Note.md", "[[.md]]\n");
 
@@ -255,7 +255,7 @@ public sealed class VaultGraphTests : IDisposable
     [InlineData("a\r\nb\rc", new[] { "a", "b", "c" })]
     [InlineData("a\vb\fc\u001cd\u001de\u001ef\u0085g\u2028h\u2029i", new[] { "a", "b", "c", "d", "e", "f", "g", "h", "i" })]
     [InlineData("a\u001fb\tc", new[] { "a\u001fb\tc" })]
-    public void SplitLines_breaks_where_python_does(string text, string[] expected)
+    public void SplitLines_breaks_as_recorded(string text, string[] expected)
     {
         Assert.Equal(expected, UnicodeText.SplitLines(text));
     }

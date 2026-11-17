@@ -45,7 +45,7 @@ public sealed class FlagStoreTests : IDisposable
     }
 
     [Fact]
-    public void An_override_is_stamped_in_python_isoformat_utc()
+    public void An_override_is_stamped_in_recorded_isoformat_utc()
     {
         new FlagStore(Db, new ManualClock(new DateTimeOffset(2026, 11, 12, 9, 30, 5, 123, TimeSpan.Zero))).Set("work-fork", true);
 

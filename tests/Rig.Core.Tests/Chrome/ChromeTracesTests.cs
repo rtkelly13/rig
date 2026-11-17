@@ -6,7 +6,7 @@ namespace Rig.Core.Tests.Chrome;
 
 /// <summary>
 /// Organise-run traces: retention, reading spans back, and the runs, tree and summary reports. The rendered lines are
-/// the Python reports' output for the same fixture. Replaces the retention and report halves of
+/// the recorded reports' output for the same fixture. Replaces the retention and report halves of
 /// <c>test_chrome_traces</c>.
 /// </summary>
 public sealed class ChromeTracesTests
@@ -273,7 +273,7 @@ public sealed class ChromeTracesTests
     }
 
     [Fact]
-    public void Attribute_values_decode_as_python_read_them()
+    public void Attribute_values_decode_as_recorded()
     {
         var attributes = new JsonArray(
             new JsonObject { ["key"] = "list", ["value"] = JsonNode.Parse("""{"arrayValue":{"values":[{"stringValue":"a"},{"intValue":"2"},{"doubleValue":1.5},{"boolValue":true}]}}""") },
@@ -407,7 +407,7 @@ public sealed class ChromeTracesTests
     // -- reports --------------------------------------------------------------------------------------------------
 
     [Fact]
-    public void The_tree_matches_the_python_report()
+    public void The_tree_matches_the_recorded_report()
     {
         var found = FixtureRuns();
 
@@ -431,7 +431,7 @@ public sealed class ChromeTracesTests
     }
 
     [Fact]
-    public void Lists_and_odd_values_render_as_python_printed_them()
+    public void Lists_and_odd_values_render_as_recorded()
     {
         var raw = Raw("s", "a1", end: 0.25);
         raw["attributes"] = JsonNode.Parse("""[{"key":"l","value":{"arrayValue":{"values":[{"stringValue":"a'b"},{"intValue":"1"},{"doubleValue":0.1}]}}},{"key":"n"}]""");
@@ -441,7 +441,7 @@ public sealed class ChromeTracesTests
     }
 
     [Fact]
-    public void The_runs_list_matches_the_python_report()
+    public void The_runs_list_matches_the_recorded_report()
     {
         Assert.Equal(
             "run       started             took  trigger    outcome     closed  grouping         waited  checks  last block",
@@ -456,7 +456,7 @@ public sealed class ChromeTracesTests
     }
 
     [Fact]
-    public void A_run_as_json_matches_the_python_report()
+    public void A_run_as_json_matches_the_recorded_report()
     {
         var json = ChromeTraces.RunJson(FixtureRuns()[0], Bst);
 
@@ -476,7 +476,7 @@ public sealed class ChromeTracesTests
     }
 
     [Fact]
-    public void The_summary_matches_the_python_report()
+    public void The_summary_matches_the_recorded_report()
     {
         var summary = ChromeTraces.Summarise(FixtureRuns());
 

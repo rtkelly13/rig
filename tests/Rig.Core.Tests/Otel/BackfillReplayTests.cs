@@ -172,7 +172,7 @@ public sealed class BackfillReplayTests : IDisposable
     }
 
     [Fact]
-    public void Marks_round_trip_in_the_python_s_layout()
+    public void Marks_round_trip_in_the_recorded_layout()
     {
         Backfill.WriteMarks(marks, new Dictionary<string, FileMark>(StringComparer.Ordinal) { ["/b.ndjson"] = new(2, 20), ["/a.ndjson"] = new(1, 10) });
 
@@ -280,7 +280,7 @@ public sealed class BackfillReplayTests : IDisposable
     }
 
     [Fact]
-    public async Task A_python_mark_with_whole_nanoseconds_still_matches()
+    public async Task A_recorded_mark_with_whole_nanoseconds_still_matches()
     {
         var file = Traces("a.ndjson", TraceLines.Span("t1", "s1", Settled));
         var mark = Backfill.Mark(file)!;
@@ -404,7 +404,7 @@ public sealed class BackfillReplayTests : IDisposable
     }
 
     [Fact]
-    public void Lines_split_as_python_s_splitlines_keeping_ends()
+    public void Lines_split_as_recorded_splitlines_keeping_ends()
     {
         static string[] Split(string text) => [.. Replay.SplitLines(Encoding.UTF8.GetBytes(text)).Select(line => TraceLines.Utf8(line.ToArray()))];
 
@@ -515,7 +515,7 @@ public sealed class BackfillReplayTests : IDisposable
     }
 
     [Fact]
-    public async Task A_python_written_offset_is_honoured()
+    public async Task A_recorded_offset_is_honoured()
     {
         var (data, state) = ReplayFolder();
         var raw = "{\"a\":1}\n{\"b\":2}\n"u8.ToArray();

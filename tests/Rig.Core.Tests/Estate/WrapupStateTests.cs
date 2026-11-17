@@ -9,7 +9,7 @@ namespace Rig.Core.Tests.Estate;
 /// <summary>What <c>estate wrapup</c> remembers per worktree, and <c>estate wrapup report</c>. Ported from <c>tests/test_estate_wrapup_report.py</c>.</summary>
 public sealed class WrapupStateTests
 {
-    /// <summary>Python's <c>encode_json</c> for <see cref="GoldenState"/>, byte for byte; the triage inbox still reads these files.</summary>
+    /// <summary>The recorded encoding of <see cref="GoldenState"/>, byte for byte; the triage inbox still reads these files.</summary>
     private const string Golden =
         """{"schema":"rig.wrapup/1","worktree_id":"w—1","branch":"feat/é","asks":[{"at":"2026-11-07T11:00:00.000+00:00","pane":"t1:l1","session":"Fix the “thing” — é","head":"abc","facts":"clean; no PR","template_sha":"0123456789ab","id":"aaaa1111"}],"answers":[{"at":"2026-11-07T12:00:00.000+00:00","pane":"t1:l1","verdict":"pending","detail":"merge #9 <now> & \"then\"","head":"f00d","asked_at":"2026-11-07T11:00:00.000+00:00","todo":["merge #9","close #4"],"via":"report"},{"at":"x","pane":"t2:l2","verdict":"done","detail":"","head":"","asked_at":null,"todo":[],"via":"reply"}]}""";
 
@@ -31,7 +31,7 @@ public sealed class WrapupStateTests
     }
 
     [Fact]
-    public void The_state_file_encodes_byte_for_byte_as_python_did()
+    public void The_state_file_encodes_byte_for_byte_as_recorded()
     {
         Assert.Equal(Golden, GoldenState.Encode());
         Assert.Equal(GoldenState.Encode(), WrapupState.Decode(Golden)!.Encode());

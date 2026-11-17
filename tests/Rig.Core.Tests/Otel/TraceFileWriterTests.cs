@@ -81,7 +81,7 @@ public sealed class TraceFileWriterTests : IDisposable
     }
 
     [Fact]
-    public void Attribute_values_follow_the_python_encoding()
+    public void Attribute_values_follow_the_recorded_encoding()
     {
         Assert.Equal("""{"intValue":"7"}""", Json(TraceFileWriter.AttributeValue(7L)));
         Assert.Equal("""{"intValue":"255"}""", Json(TraceFileWriter.AttributeValue((byte)255)));

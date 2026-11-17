@@ -6,7 +6,7 @@ using Rig.Core.WorkItems;
 namespace Rig.Core.Tests.WorkItems;
 
 /// <summary>
-/// The text view's cells against what the Python table held for the same report (<c>work-list-text.fixture.json</c>,
+/// The text view's cells against what the recorded table held for the same report (<c>work-list-text.fixture.json</c>,
 /// written by <c>desktop_manager.work.cli</c> before it was retired, with its styling stripped).
 /// </summary>
 public sealed class WorkTextTests
@@ -14,7 +14,7 @@ public sealed class WorkTextTests
     private static readonly DateTimeOffset Now = WorkFixtures.Now;
 
     [Fact]
-    public void Every_row_says_what_the_python_table_said()
+    public void Every_row_says_what_the_recorded_table_said()
     {
         var report = WorkFixtures.Report();
         var rows = Fixture()["rows"]!.AsArray();
@@ -67,7 +67,7 @@ public sealed class WorkTextTests
     }
 
     [Fact]
-    public void Ages_read_as_python_wrote_them()
+    public void Ages_read_as_recorded()
     {
         foreach (var entry in Fixture()["ago"]!.AsArray())
         {
@@ -78,7 +78,7 @@ public sealed class WorkTextTests
     }
 
     [Fact]
-    public void Since_is_parsed_or_refused_as_python_did()
+    public void Since_is_parsed_or_refused_as_recorded()
     {
         foreach (var entry in Fixture()["since"]!.AsArray())
         {

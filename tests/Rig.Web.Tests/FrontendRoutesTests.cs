@@ -4,7 +4,7 @@ using Rig.Web.Tests.Fakes;
 
 namespace Rig.Web.Tests;
 
-/// <summary>The app's document, its static files and the brand images, answered as the Python <c>StudioServer</c> answered them.</summary>
+/// <summary>The app's document, its static files and the brand images, answered as the recorded server answered them.</summary>
 public sealed class FrontendRoutesTests : IAsyncLifetime
 {
     private const string Document = "<!DOCTYPE html><html><body id=\"rig-app\">[ RIG ]</body></html>";

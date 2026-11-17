@@ -16,7 +16,7 @@ public sealed class EstateGraphTests : IDisposable
     public void Dispose() => _estate.Dispose();
 
     [Fact]
-    public async Task The_graph_matches_what_the_Python_scan_recorded()
+    public async Task The_graph_matches_what_the_recorded_scan_held()
     {
         var folder = Path.Join(AppContext.BaseDirectory, "Connectivity");
         await _estate.LayOutAsync(JsonNode.Parse(await File.ReadAllTextAsync(Path.Join(folder, "graph-fixture.json"), Token))!.AsObject());
@@ -260,7 +260,7 @@ public sealed class EstateGraphTests : IDisposable
     }
 
     [Fact]
-    public async Task Scanned_at_is_written_as_Python_wrote_it()
+    public async Task Scanned_at_is_written_as_recorded()
     {
         _estate.Owned("a");
         var graph = await _estate.Graph(new FixedTime(new DateTimeOffset(2026, 11, 12, 10, 0, 0, 123, 456, TimeSpan.Zero))).BuildAsync(_estate.Registry, _estate.Personal, Token);

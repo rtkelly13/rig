@@ -5,8 +5,8 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// Holds the C# frontmatter reader to python-frontmatter and PyYAML's CSafeLoader. <c>frontmatter-oracle.json</c> records,
-/// for each note's raw bytes, whether Python refused it and otherwise the kind of every key the lint reads: YAML 1.1's
+/// A frozen recorded baseline whose generator is gone; it holds the C# frontmatter reader to YAML 1.1 as PyYAML read it. <c>frontmatter-oracle.json</c> records,
+/// for each note's raw bytes, whether it was refused and otherwise the kind of every key the lint reads: YAML 1.1's
 /// implicit types, tags, merge keys, duplicate keys, the <c>---</c> boundary's quirks, BOMs, CRLF and bad UTF-8. Set
 /// <c>RIG_FRONTMATTER_ORACLE</c> to a second fixture of the same shape, such as one recorded from a real vault.
 /// </summary>
@@ -18,7 +18,7 @@ public sealed class FrontmatterOracleTests
         ["type", "title", "source", "url", "related_article", "lint_ignore", "lint-ignore", "status", "created"];
 
     [Fact]
-    public void Reads_every_recorded_note_as_python_did()
+    public void Reads_every_recorded_note_as_recorded()
     {
         var cases = Load(Path.Combine(AppContext.BaseDirectory, "Vault", "frontmatter-oracle.json")).ToList();
         var extra = Environment.GetEnvironmentVariable(ExtraFixtureVariable);
@@ -30,10 +30,10 @@ public sealed class FrontmatterOracleTests
         var mismatches = cases
             .Select(c => (Case: c, Actual: Describe(Frontmatter.Read(c.Raw))))
             .Where(pair => !JsonNode.DeepEquals(pair.Case.Expected, pair.Actual))
-            .Select(pair => $"{Show(pair.Case.Raw)} -> {pair.Actual.ToJsonString()}, Python gave {pair.Case.Expected.ToJsonString()}")
+            .Select(pair => $"{Show(pair.Case.Raw)} -> {pair.Actual.ToJsonString()}, recorded {pair.Case.Expected.ToJsonString()}")
             .ToList();
 
-        Assert.True(mismatches.Count == 0, $"{mismatches.Count} of {cases.Count} note(s) differ from the Python:\n{string.Join('\n', mismatches.Take(40))}");
+        Assert.True(mismatches.Count == 0, $"{mismatches.Count} of {cases.Count} note(s) differ from the recording:\n{string.Join('\n', mismatches.Take(40))}");
     }
 
     [Fact]
@@ -56,20 +56,20 @@ public sealed class FrontmatterOracleTests
         Assert.Null(read.Get("missing"));
     }
 
-    // PyYAML raises KeyError, IndexError or AttributeError on these, which the Python lint never caught; C# refuses the note.
+    // PyYAML raises KeyError, IndexError or AttributeError on these, which the recorded lint never caught; C# refuses the note.
     [Theory]
     [InlineData("type: !!bool maybe")]
     [InlineData("type: !!int ''")]
     [InlineData("type: !!float ''")]
     [InlineData("type: !!timestamp nope")]
-    public void A_value_python_crashed_on_is_refused(string line) =>
+    public void A_value_that_crashed_the_recording_is_refused(string line) =>
         Assert.NotNull(Frontmatter.Parse($"---\n{line}\n---\nBody\n").Error);
 
     [Fact]
     public void A_stream_of_two_documents_is_refused() => Assert.Throws<VaultYamlException>(() => VaultYaml.Load("a: 1\n---\nb: 2\n"));
 
     // Known gap: PyYAML reads a block scalar whose first line is only spaces as '', YamlDotNet refuses it, so such a note
-    // is logged and passed over where the Python read it. Pinned so a fix shows up here.
+    // is logged and passed over where the recording read it. Pinned so a fix shows up here.
     [Fact]
     public void A_block_scalar_opened_by_a_line_of_spaces_is_refused_where_pyyaml_read_it_as_empty() =>
         Assert.Throws<VaultYamlException>(() => VaultYaml.Load("status: |\n  \ncreated: x\n"));
@@ -91,14 +91,14 @@ public sealed class FrontmatterOracleTests
     [InlineData(1.7976931348623157e308, "1.7976931348623157e+308")]
     [InlineData(5e-324, "5e-324")]
     [InlineData(double.NegativeInfinity, "-inf")]
-    public void Floats_print_as_python_repr_does(double value, string expected) => Assert.Equal(expected, YamlFloat.Repr(value));
+    public void Floats_print_as_recorded(double value, string expected) => Assert.Equal(expected, YamlFloat.Repr(value));
 
     [Theory]
     [InlineData("12", 10, 12)]
     [InlineData(" -0x1f ", 16, -31)]
     [InlineData("0o17", 8, 15)]
     [InlineData("+101", 2, 5)]
-    public void Ints_parse_as_python_int_does(string text, int radix, long expected) =>
+    public void Ints_parse_as_recorded(string text, int radix, long expected) =>
         Assert.Equal(expected, (long)YamlInt.Parse(text, radix));
 
     [Theory]
@@ -113,7 +113,7 @@ public sealed class FrontmatterOracleTests
     [InlineData("inf", double.PositiveInfinity)]
     [InlineData("-Infinity", double.NegativeInfinity)]
     [InlineData(" 1.5e3 ", 1500.0)]
-    public void Floats_parse_as_python_float_does(string text, double expected) => Assert.Equal(expected, YamlFloat.Parse(text));
+    public void Floats_parse_as_recorded(string text, double expected) => Assert.Equal(expected, YamlFloat.Parse(text));
 
     [Fact]
     public void Nan_parses() => Assert.True(double.IsNaN(YamlFloat.Parse("NaN")));

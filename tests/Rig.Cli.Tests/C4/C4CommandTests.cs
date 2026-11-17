@@ -6,7 +6,7 @@ using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.C4;
 
-/// <summary><c>rig c4</c> through the C# front door: check, model, tree, expand and derive, with no Python fallback.</summary>
+/// <summary><c>rig c4</c> through the C# front door: check, model, tree, expand and derive.</summary>
 public sealed class C4CommandTests : IDisposable
 {
     private const string Context = """

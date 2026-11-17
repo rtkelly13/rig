@@ -3,7 +3,7 @@ using Rig.Core.Policy;
 
 namespace Rig.Core.Tests.Policy;
 
-/// <summary>Ported from the projection cases of the Python <c>tests/test_policy.py</c>; every one writes under a temp home.</summary>
+/// <summary>Every case writes under a temp home.</summary>
 public sealed class NativeProjectionTests : IDisposable
 {
     private readonly TempDir _dir = new();

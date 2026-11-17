@@ -107,7 +107,7 @@ public sealed class WorkspaceCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task The_json_report_keeps_the_python_fields()
+    public async Task The_json_report_keeps_the_recorded_fields()
     {
         Clone("personal", "shared-utilities", "rtkelly13/shared-utilities");
         GitHubNames("rig");

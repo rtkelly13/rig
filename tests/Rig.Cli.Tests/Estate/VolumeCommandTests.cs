@@ -9,7 +9,7 @@ namespace Rig.Cli.Tests.Estate;
 
 /// <summary>
 /// <c>rig estate volume</c> over a synthetic WizTree export in a temp folder, with the drive's space and the environment
-/// faked: no drive is scanned and WizTree is never run. The JSON is what the Python command printed for the same export.
+/// faked: no drive is scanned and WizTree is never run. The JSON is the recorded output for the same export.
 /// </summary>
 public sealed class VolumeCommandTests : IDisposable
 {
@@ -55,9 +55,9 @@ public sealed class VolumeCommandTests : IDisposable
         (@"C:\Program Files\App\bin\", 5 * GB, 5 * GB),
     ];
 
-    // What `estate volume --csv export.csv --code-root C:\code --json` printed from Python for the same export, drive and
+    // What `estate volume --csv export.csv --code-root C:\code --json` recorded for the same export, drive and
     // environment; the test compares the data, not the spelling, since the writer is System.Text.Json now.
-    private const string PythonJson = """
+    private const string RecordedJson = """
         {
           "drive": "C",
           "total": 1073741824000,
@@ -278,14 +278,14 @@ public sealed class VolumeCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task The_json_has_what_python_printed_for_the_same_export()
+    public async Task The_json_is_the_recorded_one_for_the_same_export()
     {
         var (code, output, error) = await RunAsync("--csv", Export(), "--code-root", @"C:\code", "--json");
 
         Assert.Equal((0, string.Empty), (code, error));
         Assert.True(
             System.Text.Json.Nodes.JsonNode.DeepEquals(
-                System.Text.Json.Nodes.JsonNode.Parse(PythonJson),
+                System.Text.Json.Nodes.JsonNode.Parse(RecordedJson),
                 System.Text.Json.Nodes.JsonNode.Parse(output)),
             output);
     }

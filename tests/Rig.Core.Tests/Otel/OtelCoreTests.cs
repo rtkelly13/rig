@@ -168,7 +168,7 @@ public sealed class OtelCoreTests : IDisposable
     }
 
     [Fact]
-    public void Repeated_keys_keep_the_last_as_python_did()
+    public void Repeated_keys_keep_the_last_as_recorded()
     {
         var span = Assert.Single(TraceSpans.Parse("""{"resourceSpans": [{"scopeSpans": [{"spans": [{"traceId": "a", "traceId": "b", "spanId": "s", "n": 1, "n": 2}]}]}]}"""));
 

@@ -12,7 +12,7 @@ public sealed class EstateParsingTests
     [InlineData(1536, "1.5KB")]
     [InlineData(5L * 1024 * 1024 * 1024, "5.0GB")]
     [InlineData(3L * 1024 * 1024 * 1024 * 1024, "3.0TB")]
-    public void Human_formats_like_python(long size, string expected) => Assert.Equal(expected, Bytes.Human(size));
+    public void Human_formats_as_recorded(long size, string expected) => Assert.Equal(expected, Bytes.Human(size));
 
     [Fact]
     public void HumanToGb_stops_at_gigabytes() => Assert.Equal("3072.0GB", Bytes.HumanToGb(3L * 1024 * 1024 * 1024 * 1024));

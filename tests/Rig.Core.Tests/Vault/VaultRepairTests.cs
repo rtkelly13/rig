@@ -4,7 +4,7 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// Where <see cref="VaultRepair"/> parts from the Python on purpose: a note the Python would have crashed on, or whose
+/// Where <see cref="VaultRepair"/> parts from the recording on purpose: a note the recording would have crashed on, or whose
 /// frontmatter cannot be edited in place, is logged and passed over. The oracle holds everything else.
 /// </summary>
 public sealed class VaultRepairTests : IDisposable
@@ -126,7 +126,7 @@ public sealed class VaultRepairTests : IDisposable
     [InlineData("a-b c.d \u00bd \u2160", 6)]
     [InlineData("\U00010400\U00010401 --- ", 1)]
     [InlineData("", 0)]
-    public void Words_counts_what_pythons_w_plus_matches(string text, int expected)
+    public void Words_counts_what_the_recorded_word_class_matches(string text, int expected)
     {
         Assert.Equal(expected, VaultRepair.Words(text));
     }

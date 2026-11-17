@@ -7,8 +7,7 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// Holds <see cref="KnowledgeServer"/> and <see cref="AppData"/> to <c>rig.obsidian.knowledge_server</c> and
-/// <c>rig.roots.app_data_dir</c>. <c>knowledge-server-oracle.json</c> records what the Python made of <c>~/.claude.json</c>
+/// A frozen recorded baseline whose generator is gone; it holds <see cref="KnowledgeServer"/> and <see cref="AppData"/> to the recording. <c>knowledge-server-oracle.json</c> records what was made of <c>~/.claude.json</c>
 /// and <c>package.json</c> texts (lenient pydantic decodes), the <c>claude mcp</c> commands it would run, its LaunchAgent
 /// plists byte for byte, and its app-data folder for macOS and Linux. Top-level <c>NaN</c> and <c>Infinity</c>, which
 /// pydantic's parser accepted, are a deliberate difference; <see cref="KnowledgeServerTests"/> holds it.
@@ -19,7 +18,7 @@ public sealed class KnowledgeServerOracleTests
         JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Vault", "knowledge-server-oracle.json")))!.AsObject();
 
     [Fact]
-    public void Constants_match_the_python()
+    public void Constants_match_the_recording()
     {
         var constants = Oracle["constants"]!;
         Assert.Equal(KnowledgeServer.Label, constants["label"]!.GetValue<string>());
@@ -33,7 +32,7 @@ public sealed class KnowledgeServerOracleTests
     }
 
     [Fact]
-    public void Claude_json_reads_and_connects_as_python_did()
+    public void Claude_json_reads_and_connects_as_recorded()
     {
         var mismatches = new List<string>();
         foreach (var node in Oracle["registrations"]!.AsArray())
@@ -49,7 +48,7 @@ public sealed class KnowledgeServerOracleTests
             var connect = new JsonArray([.. KnowledgeServer.ConnectCommands(read, "/bin/claude").Select(c => new JsonArray([.. c.Select(a => JsonValue.Create(a))]))]);
             if (read != expected || read.Shared != node["shared"]!.GetValue<bool>() || !JsonNode.DeepEquals(connect, node["connect"]))
             {
-                mismatches.Add($"{Convert.ToBase64String(text)}: {read} {connect.ToJsonString()}, Python {expected} {node["connect"]!.ToJsonString()}");
+                mismatches.Add($"{Convert.ToBase64String(text)}: {read} {connect.ToJsonString()}, recorded {expected} {node["connect"]!.ToJsonString()}");
             }
         }
 
@@ -57,7 +56,7 @@ public sealed class KnowledgeServerOracleTests
     }
 
     [Fact]
-    public void Package_manifests_read_as_python_did()
+    public void Package_manifests_read_as_recorded()
     {
         using var temp = new TempDir();
         foreach (var node in Oracle["manifests"]!.AsArray())
@@ -88,7 +87,7 @@ public sealed class KnowledgeServerOracleTests
     }
 
     [Fact]
-    public void The_app_data_folder_is_where_python_put_it()
+    public void The_app_data_folder_is_where_it_was_recorded()
     {
         foreach (var node in Oracle["app_data"]!.AsArray().Select(n => n!.AsObject()))
         {

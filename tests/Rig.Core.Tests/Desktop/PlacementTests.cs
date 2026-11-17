@@ -10,7 +10,7 @@ public sealed class PlacementTests
 {
     private static readonly Dictionary<string, string> NoSubstitutions = [];
 
-    /// <summary>A layout and the one error Python reports for it, or none.</summary>
+    /// <summary>A layout and the one error reported for it, or none.</summary>
     public static TheoryData<PlacementLayout, string?> Layouts => new()
     {
         { new("full"), null },

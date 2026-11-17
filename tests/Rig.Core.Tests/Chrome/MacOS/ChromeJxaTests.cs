@@ -15,7 +15,7 @@ public sealed class ChromeJxaTests
 {
     private const string Title = "Notes, \"雪\"\nline";
 
-    // The reply the snapshot script gives for one minimised window holding one tab, as Python's tests recorded it.
+    // The reply the snapshot script gives for one minimised window holding one tab, as recorded.
     private static JsonObject Recorded(string title = Title) => new()
     {
         ["pid"] = 123,
@@ -161,14 +161,14 @@ public sealed class ChromeJxaTests
     }
 
     [Fact]
-    public void A_title_with_a_lone_surrogate_reads_as_python_reads_it()
+    public void A_title_with_a_lone_surrogate_reads_as_recorded()
     {
         var reply = JsonElement.Parse(Recorded().ToJsonString().Replace("\"title\":\"Chrome work\"", "\"title\":\"a\\ud83db\"", StringComparison.Ordinal));
         Assert.Equal("a\ud83db", JxaDecode.Snapshot(reply).Windows[0].Title);
     }
 
     [Fact]
-    public void Every_escape_reads_as_python_reads_it_beside_a_lone_surrogate()
+    public void Every_escape_reads_as_recorded_beside_a_lone_surrogate()
     {
         var reply = JsonElement.Parse("""{"status": "\ude00 \"q\" \\ \/ \b\f\n\r\t é 😀 雪"}""");
         Assert.Equal("\ude00 \"q\" \\ / \b\f\n\r\t é 😀 雪", JxaDecode.Status(reply));
@@ -380,7 +380,7 @@ public sealed class ChromeJxaTests
     }
 
     [Fact]
-    public void Scripts_keep_python_layout()
+    public void Scripts_keep_the_recorded_layout()
     {
         Assert.StartsWith("\nObjC.import('AppKit');\nfunction run() {\n", JxaScripts.Snapshot, StringComparison.Ordinal);
         Assert.EndsWith("\n}\n", JxaScripts.Snapshot, StringComparison.Ordinal);

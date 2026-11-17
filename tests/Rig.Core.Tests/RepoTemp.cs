@@ -11,7 +11,7 @@ public static class RepoTemp
 
     /// <summary>
     /// A fresh folder to build a vault in, whose path holds none of the substrings the vault code matches against a
-    /// note's full path (it saw what Python saw, the vault's path included). A checkout under, say, <c>~/Resources</c>
+    /// note's full path (the recorded run saw the vault's path included). A checkout under, say, <c>~/Resources</c>
     /// falls back to the system temp folder; the test is skipped if that holds one too. Nothing is created.
     /// </summary>
     public static string NewVaultParent(string prefix)

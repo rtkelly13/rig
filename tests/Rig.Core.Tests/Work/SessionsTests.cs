@@ -9,7 +9,7 @@ using Rig.Core.WorkItems;
 namespace Rig.Core.Tests.WorkItems;
 
 /// <summary>
-/// The session reader against what the Python reader said about the same files (<c>work-sessions.fixture.json</c>,
+/// The session reader against what was recorded for the same files (<c>work-sessions.fixture.json</c>,
 /// written by <c>desktop_manager.work.session_store</c> before it was retired).
 /// </summary>
 public sealed class SessionsTests
@@ -22,7 +22,7 @@ public sealed class SessionsTests
 
     [Theory]
     [MemberData(nameof(TranscriptCases))]
-    public void A_transcript_is_summarised_as_python_summarised_it(string name)
+    public void A_transcript_is_summarised_as_recorded(string name)
     {
         var entry = Fixture()["transcripts"]!.AsArray().Single(item => (string)item!["name"]! == name)!;
         var expected = entry["expected"]!;
@@ -81,7 +81,7 @@ public sealed class SessionsTests
     }
 
     [Fact]
-    public async Task A_claude_home_is_read_as_python_read_it()
+    public async Task A_claude_home_is_read_as_recorded()
     {
         using var temp = new TempDir();
         var home = Fixture()["home"]!;
@@ -278,7 +278,7 @@ public sealed class SessionsTests
         }
     }
 
-    // A session as the Python fixture spells it, key for key.
+    // A session as the recorded fixture spells it, key for key.
     private static string Wire(SessionFacts session) =>
         new JsonObject
         {

@@ -6,7 +6,7 @@ using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.Models;
 
-/// <summary>Ported from the Python <c>tests/test_models_discovery.py</c>.</summary>
+/// <summary><c>rig models</c> discovery through its command line.</summary>
 public sealed class ModelsCommandTests : IDisposable
 {
     private readonly DirectoryInfo _home = Directory.CreateTempSubdirectory("rig-models-");

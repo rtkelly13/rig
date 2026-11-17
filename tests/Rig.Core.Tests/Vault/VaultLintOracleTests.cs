@@ -4,9 +4,9 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// Holds the C# vault lint to <c>rig.obsidian.lint_manager.VaultLinter</c>. <c>lint-oracle.json</c> records synthetic vaults
+/// A frozen recorded baseline whose generator is gone; it holds the C# vault lint to the recording. <c>lint-oracle.json</c> records synthetic vaults
 /// (every metadata, filename and duplicate rule, refused notes, dot-folders, a folder named <c>*.md</c>, and on POSIX names
-/// Windows cannot hold and symlinks) with the Python's JSON report, per-folder stats and vault stats. The Python visited
+/// Windows cannot hold and symlinks) with the recorded JSON report, per-folder stats and vault stats. The recording visited
 /// notes in directory order, so metadata findings are compared as a multiset. Set <c>RIG_LINT_ORACLE</c> to a fixture of
 /// the same shape whose cases name a <c>vault</c> folder instead of listing files, such as one recorded from a real vault.
 /// </summary>
@@ -15,7 +15,7 @@ public sealed class VaultLintOracleTests
     private const string ExtraFixtureVariable = "RIG_LINT_ORACLE";
 
     [Fact]
-    public void Lints_every_recorded_vault_as_python_did()
+    public void Lints_every_recorded_vault_as_recorded()
     {
         var cases = Load(Path.Combine(AppContext.BaseDirectory, "Vault", "lint-oracle.json")).ToList();
         var extra = Environment.GetEnvironmentVariable(ExtraFixtureVariable);
@@ -45,13 +45,13 @@ public sealed class VaultLintOracleTests
             }
         }
 
-        Assert.True(mismatches.Count == 0, $"{mismatches.Count} difference(s) from the Python:\n{string.Join('\n', mismatches.Take(40))}");
+        Assert.True(mismatches.Count == 0, $"{mismatches.Count} difference(s) from the recording:\n{string.Join('\n', mismatches.Take(40))}");
     }
 
     [Fact]
     public void A_note_whose_source_is_malformed_is_passed_over_not_fatal()
     {
-        // The Python's filename check let urlsplit's ValueError escape and the lint crashed; C# logs the note and moves on.
+        // The recorded filename check let urlsplit's ValueError escape and the lint crashed; C# logs the note and moves on.
         using var vault = new TempVault();
         vault.Write("Resources/Topic/bad_source.md", "---\ntype: resource\nsource: http://[::1\nstatus: x\ncreated: y\n---\n");
         vault.Write("Resources/Topic/other_note.md", "---\ntype: resource\nsource: https://example.org/a\nstatus: x\ncreated: y\n---\n");
@@ -131,7 +131,7 @@ public sealed class VaultLintOracleTests
         Assert.Equal([new("Total", 0)], VaultLinter.VaultStats(Path.Combine(Path.GetTempPath(), $"rig-no-vault-{Guid.NewGuid():N}")));
 
     [Fact]
-    public void Json_is_written_as_python_json_dumps_writes_it()
+    public void Json_is_written_as_recorded()
     {
         var report = new LintReport(
             false,
@@ -184,7 +184,7 @@ public sealed class VaultLintOracleTests
 
         if (report["ok"]!.GetValue<bool>() != expected["ok"]!.GetValue<bool>())
         {
-            yield return $"{name}: ok is {report["ok"]}, Python gave {expected["ok"]}";
+            yield return $"{name}: ok is {report["ok"]}, recorded {expected["ok"]}";
         }
 
         foreach (var group in new[] { "errors", "warnings" })
@@ -240,11 +240,11 @@ public sealed class VaultLintOracleTests
         var wantedHealth = oracle.Expected["health"]!.AsObject();
         if (health.ToJsonString() != wantedHealth.ToJsonString())
         {
-            yield return $"{name}: vault stats {health.ToJsonString()}, Python gave {wantedHealth.ToJsonString()}";
+            yield return $"{name}: vault stats {health.ToJsonString()}, recorded {wantedHealth.ToJsonString()}";
         }
     }
 
-    // The Python's TVS000 reasons carry its own exception text, which the oracle drops.
+    // The recorded TVS000 reasons carry their own exception text, which the oracle drops.
     private static List<string> Multiset(JsonArray items) =>
     [
         .. items.Select(item =>
@@ -263,7 +263,7 @@ public sealed class VaultLintOracleTests
     {
         if (!JsonNode.DeepEquals(actual, expected))
         {
-            yield return $"{label}: {actual?.ToJsonString()}, Python gave {expected?.ToJsonString()}";
+            yield return $"{label}: {actual?.ToJsonString()}, recorded {expected?.ToJsonString()}";
         }
     }
 
@@ -277,7 +277,7 @@ public sealed class VaultLintOracleTests
             }
             else if (!JsonNode.DeepEquals(value, wanted))
             {
-                yield return $"{label}: {key} = {value?.ToJsonString()}, Python gave {wanted?.ToJsonString()}";
+                yield return $"{label}: {key} = {value?.ToJsonString()}, recorded {wanted?.ToJsonString()}";
             }
         }
 

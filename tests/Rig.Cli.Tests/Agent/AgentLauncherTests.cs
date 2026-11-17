@@ -4,7 +4,7 @@ using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.Agent;
 
-/// <summary>Ported from the Python <c>tests/test_agent_launcher.py</c>. Nothing here starts a real agent.</summary>
+/// <summary>Nothing here starts a real agent.</summary>
 public sealed class AgentLauncherTests : IDisposable
 {
     private const string WindowsCheckout = "C:/code/personal/shared-utilities";

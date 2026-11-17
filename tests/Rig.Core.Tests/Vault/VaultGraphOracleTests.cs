@@ -6,18 +6,18 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// Holds <see cref="VaultGraph"/> to <c>rig.obsidian.link_manager</c> and <c>orphan_manager</c>. <c>graph-oracle.json</c>
+/// A frozen recorded baseline whose generator is gone; it holds <see cref="VaultGraph"/> to the recording. <c>graph-oracle.json</c>
 /// records, for each synthetic vault, every graph command run on a fresh copy (the writers twice on the same copy): the
-/// lines handed to the log, the result, and every file afterwards. The Python's desktop-app orphan list was stubbed empty;
+/// lines handed to the log, the result, and every file afterwards. The recorded desktop-app orphan list was stubbed empty;
 /// here the app's settings are missing from an empty home, so the same scan runs. The log is compared as a multiset, since
-/// the Python listed unlinked mentions in directory order, and without its Rich markup, which C# does not print.
-/// The <c>strict</c> vault, where the Python crashed, and line endings in <c>links fix</c> are deliberate differences;
+/// the recording listed unlinked mentions in directory order, and without its Rich markup, which C# does not print.
+/// The <c>strict</c> vault, where the recording crashed, and line endings in <c>links fix</c> are deliberate differences;
 /// <see cref="VaultGraphTests"/> holds them.
 /// </summary>
 public sealed class VaultGraphOracleTests
 {
     [Fact]
-    public async Task Runs_every_recorded_graph_command_as_python_did()
+    public async Task Runs_every_recorded_graph_command_as_recorded()
     {
         var mismatches = new List<string>();
         foreach (var node in JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Vault", "graph-oracle.json"), TestContext.Current.CancellationToken))!.AsArray())
@@ -39,7 +39,7 @@ public sealed class VaultGraphOracleTests
             }
         }
 
-        Assert.True(mismatches.Count == 0, $"{mismatches.Count} difference(s) from the Python:\n{string.Join('\n', mismatches.Take(60))}");
+        Assert.True(mismatches.Count == 0, $"{mismatches.Count} difference(s) from the recording:\n{string.Join('\n', mismatches.Take(60))}");
     }
 
     private static async Task<List<string>> Run(string label, JsonArray files, Dictionary<string, byte[]> originals, JsonObject run)
@@ -101,7 +101,7 @@ public sealed class VaultGraphOracleTests
 
         if (!JsonNode.DeepEquals(actual, expected))
         {
-            yield return $"{label}: result {actual?.ToJsonString()}, Python {expected?.ToJsonString()}";
+            yield return $"{label}: result {actual?.ToJsonString()}, recorded {expected?.ToJsonString()}";
         }
     }
 
@@ -130,7 +130,7 @@ public sealed class VaultGraphOracleTests
             {
                 if (got.Link != link.GetValue<string>())
                 {
-                    yield return $"{label}: {path} links to {got.Link}, Python left a link to {link}";
+                    yield return $"{label}: {path} links to {got.Link}, the recording left a link to {link}";
                 }
 
                 continue;
@@ -140,13 +140,13 @@ public sealed class VaultGraphOracleTests
             var bytes = got.Bytes ?? [];
             if (lineEndingsKept && originals.TryGetValue(path, out var original) && original.AsSpan().IndexOf("\r\n"u8) >= 0)
             {
-                // The Python rewrote a fixed note with \n endings; the C# keeps the note's own.
+                // The recording rewrote a fixed note with \n endings; the C# keeps the note's own.
                 bytes = Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(bytes).Replace("\r\n", "\n", StringComparison.Ordinal));
             }
 
             if (!bytes.AsSpan().SequenceEqual(want))
             {
-                yield return $"{label}: {path} is {Encoding.UTF8.GetString(bytes).ReplaceLineEndings("⏎")}, Python left {Encoding.UTF8.GetString(want).ReplaceLineEndings("⏎")}";
+                yield return $"{label}: {path} is {Encoding.UTF8.GetString(bytes).ReplaceLineEndings("⏎")}, recording left {Encoding.UTF8.GetString(want).ReplaceLineEndings("⏎")}";
             }
         }
 
@@ -192,7 +192,7 @@ public sealed class VaultGraphOracleTests
             var (got, want) = (left.GetValueOrDefault(key), right.GetValueOrDefault(key));
             if (got != want)
             {
-                yield return $"{label}: {key.ReplaceLineEndings("⏎")} x{got}, Python x{want}";
+                yield return $"{label}: {key.ReplaceLineEndings("⏎")} x{got}, recorded x{want}";
             }
         }
     }

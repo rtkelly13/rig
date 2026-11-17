@@ -7,7 +7,7 @@ using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.Latex;
 
-/// <summary>Ported case for case from the Python <c>latex</c> entry point, which had no tests of its own.</summary>
+/// <summary><c>rig latex</c> through its command line.</summary>
 public sealed class LatexCommandTests : IDisposable
 {
     private static readonly Ran Fine = new(0, string.Empty, string.Empty);

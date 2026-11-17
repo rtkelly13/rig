@@ -76,7 +76,7 @@ public sealed class PruneCachesCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task Json_writes_every_field_python_wrote_with_nulls_for_unknown_sizes()
+    public async Task Json_writes_every_recorded_field_with_nulls_for_unknown_sizes()
     {
         var (proc, uv, _) = Located();
         var temp = Path.Join(_root.Path, "no-claude");

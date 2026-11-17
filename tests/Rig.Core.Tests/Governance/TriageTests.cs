@@ -67,7 +67,7 @@ public sealed class TriageTests
     }
 
     [Fact]
-    public void The_issue_dashboard_writes_python_shaped_json()
+    public void The_issue_dashboard_writes_recorded_shape_json()
     {
         var dashboard = Triage.Dashboard([Issue(labels: "bug")], Now);
 

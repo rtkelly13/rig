@@ -26,7 +26,7 @@ public sealed class JoinTests
     [InlineData("snapshot-2026", null)]
     [InlineData("main", null)]
     [InlineData(null, null)]
-    public void ParseTicket_matches_the_python_cases(string? branch, string? ticket) =>
+    public void ParseTicket_matches_the_recorded_cases(string? branch, string? ticket) =>
         Assert.Equal(ticket, WorkJoin.ParseTicket(branch));
 
     [Theory]
@@ -37,7 +37,7 @@ public sealed class JoinTests
     [InlineData(null, false, false, false, "mid-tool", WorkSessionState.DiedMidTask)]
     [InlineData(null, false, false, false, "unanswered", WorkSessionState.DiedMidTask)]
     [InlineData(null, false, false, false, "answered", WorkSessionState.DiedIdle)]
-    public void ClassifySession_matches_the_python_cases(
+    public void ClassifySession_matches_the_recorded_cases(
         string? liveStatus,
         bool isLive,
         bool cleared,

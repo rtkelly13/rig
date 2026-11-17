@@ -5,8 +5,8 @@ using Rig.Core.Text;
 namespace Rig.Core.Tests.Text;
 
 /// <summary>
-/// The shared serializer settings: every one writes LF on every platform (#260), and the four spellings Python's
-/// <c>json.dumps</c> produced stay distinct.
+/// The shared serializer settings: every one writes LF on every platform (#260), and the four spellings the recorded
+/// <c>json.dumps</c> output used stay distinct.
 /// </summary>
 public sealed class JsonOutputOptionsTests
 {

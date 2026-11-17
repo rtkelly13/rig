@@ -7,8 +7,7 @@ using Rig.Core.Tests.Fakes;
 namespace Rig.Cli.Tests.Gh;
 
 /// <summary>
-/// <c>rig gh threads</c> (TEMPORARY): list, reply to and resolve PR review threads through a fake GitHub. Ported case
-/// for case from the retired Python tests, through the whole command line.
+/// <c>rig gh threads</c> (TEMPORARY): list, reply to and resolve PR review threads through a fake GitHub. Through the whole command line.
 /// </summary>
 public sealed class ThreadsCommandTests
 {

@@ -8,7 +8,6 @@ namespace Rig.Core.Tests.GitHub;
 
 /// <summary>
 /// <see cref="RepoResolver"/> and <see cref="RepoFolderCheck"/> over a scripted GitHub and a temp cache file.
-/// Ported from the deleted Python resolver's tests, <c>tests/test_workspace_repo_resolver.py</c>.
 /// </summary>
 public sealed class RepoResolverTests : IDisposable
 {
@@ -107,7 +106,7 @@ public sealed class RepoResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task The_cache_keeps_the_python_resolvers_format()
+    public async Task The_cache_keeps_the_recorded_format()
     {
         _answer = new(0, Answer((0, "rig")), string.Empty);
 
@@ -122,7 +121,7 @@ public sealed class RepoResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task A_cache_the_python_resolver_wrote_is_read()
+    public async Task A_recorded_cache_is_read()
     {
         await File.WriteAllTextAsync(CacheFile, """
             {"repos": {"rtkelly13/rig": {"owner": "rtkelly13", "canonical_name": "rig", "name_with_owner": "rtkelly13/rig",

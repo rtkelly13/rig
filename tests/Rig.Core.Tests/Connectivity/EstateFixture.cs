@@ -7,7 +7,7 @@ namespace Rig.Core.Tests.Connectivity;
 
 /// <summary>
 /// A throwaway estate: real git checkouts under <c>personal/</c>, each manifest staged so <c>git ls-files</c> lists it,
-/// and a registry at <c>rig/config/managed-projects.json</c>, as the Python tests built it.
+/// and a registry at <c>rig/config/managed-projects.json</c>.
 /// </summary>
 internal sealed class EstateFixture : IDisposable
 {
