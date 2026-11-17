@@ -398,7 +398,10 @@ public sealed class RepoChecks(Git git, TimeProvider time)
         {
             text = File.ReadAllText(Path.Join(path, ".git"));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return null; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
 
         var first = text.Trim().Split('\n', 2)[0].TrimEnd('\r');
         if (!first.StartsWith("gitdir:", StringComparison.Ordinal))
@@ -437,7 +440,10 @@ public sealed class RepoChecks(Git git, TimeProvider time)
         {
             lines = File.ReadAllLines(Path.Join(admin, "logs", "HEAD"));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return string.Empty; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return string.Empty;
+        }
 
         foreach (var line in lines.Reverse())
         {
@@ -474,7 +480,10 @@ public sealed class RepoChecks(Git git, TimeProvider time)
             {
                 entries = [.. new DirectoryInfo(stack.Pop()).EnumerateFileSystemInfos()];
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
 
             foreach (var entry in entries)
             {

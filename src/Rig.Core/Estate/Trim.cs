@@ -400,7 +400,10 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
         {
             await removal.RemoveAsync(item.Path, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return $"failed: {e.Message}"; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return $"failed: {e.Message}";
+        }
 
         return "removed";
     }

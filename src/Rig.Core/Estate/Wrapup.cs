@@ -377,7 +377,10 @@ public static class Wrapup
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(target);
         var repoPaths = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var repo in snapshot.Repos) { repoPaths[repo.Id] = repo.Path; }
+        foreach (var repo in snapshot.Repos)
+        {
+            repoPaths[repo.Id] = repo.Path;
+        }
 
         var inScope = snapshot.Worktrees.Where(w => Classify(repoPaths.GetValueOrDefault(w.RepoId, w.Path), personal, work, home) == target.Scope).ToList();
         var kids = inScope.Where(w => !string.IsNullOrEmpty(w.ParentId)).ToLookup(w => w.ParentId!, StringComparer.Ordinal);
@@ -416,7 +419,10 @@ public static class Wrapup
 
         var tops = inScope.GroupBy(w => w.WorktreeId, StringComparer.Ordinal).Select(group => group.Last())
             .Where(w => selected.Contains(w.WorktreeId) && !(!string.IsNullOrEmpty(w.ParentId) && selected.Contains(w.ParentId)));
-        foreach (var top in tops.OrderBy(Key, StringComparer.Ordinal)) { Walk(top, 0); }
+        foreach (var top in tops.OrderBy(Key, StringComparer.Ordinal))
+        {
+            Walk(top, 0);
+        }
 
         return placed;
     }
@@ -575,7 +581,10 @@ public static class Wrapup
         {
             if (found.Add(id))
             {
-                foreach (var child in byId[id].FirstOrDefault()?.Children ?? []) { stack.Push(child); }
+                foreach (var child in byId[id].FirstOrDefault()?.Children ?? [])
+                {
+                    stack.Push(child);
+                }
             }
         }
 
@@ -712,7 +721,10 @@ public sealed class WrapupOrca(IProc proc)
             _ = OrcaJson.Bool(root, "ok");
             return root;
         }
-        catch (InvalidDataException) { return null; }
+        catch (InvalidDataException)
+        {
+            return null;
+        }
     }
 
     private Task<Ran> RunAsync(IReadOnlyList<string> args, CancellationToken cancellationToken) =>
@@ -752,7 +764,10 @@ internal static class WrapupWire
             var error = OrcaJson.Lenient(() => OrcaJson.Object(root, "error"));
             return (true, ok, error is null ? null : OrcaJson.Lenient(() => OrcaJson.String(error, "message")));
         }
-        catch (InvalidDataException) { return (false, false, null); }
+        catch (InvalidDataException)
+        {
+            return (false, false, null);
+        }
     }
 
     private static T? Lenient<T>(Func<T?> read)
@@ -762,7 +777,10 @@ internal static class WrapupWire
         {
             return read();
         }
-        catch (InvalidDataException) { return null; }
+        catch (InvalidDataException)
+        {
+            return null;
+        }
     }
 
     private static JsonObject? Result(JsonObject envelope) => OrcaJson.Lenient(() => OrcaJson.Object(envelope, "result"));

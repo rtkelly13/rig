@@ -72,7 +72,10 @@ public static partial class HardLinks
                 ? new FileIdentity(info.VolumeSerialNumber, ((ulong)info.FileIndexHigh << 32) | info.FileIndexLow, info.NumberOfLinks)
                 : throw new Win32Exception(Marshal.GetLastPInvokeError());
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or Win32Exception) { return null; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or Win32Exception)
+        {
+            return null;
+        }
     }
 
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]

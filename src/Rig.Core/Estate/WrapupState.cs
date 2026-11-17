@@ -134,7 +134,10 @@ public sealed record WrapupState(string Schema, string WorktreeId, string Branch
                         Text(a, "via", "reply"))
                     : throw new InvalidDataException("answer"))]);
         }
-        catch (Exception e) when (e is JsonException or InvalidDataException or InvalidOperationException) { return null; }
+        catch (Exception e) when (e is JsonException or InvalidDataException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private static string Text(JsonObject parent, string key, string? fallback = null)

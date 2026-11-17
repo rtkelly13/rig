@@ -305,7 +305,10 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
                     session.Refresh();
                     own = session.LastWriteTimeUtc;
                 }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    continue;
+                }
 
                 var last = size.Newest > own ? size.Newest : own;
                 if (last <= cutoff)

@@ -389,7 +389,10 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
                 .Where(child => child.LinkTarget is null)
                 .Select(child => child.FullName)];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
 
         children.Sort(PathOrder.Instance);
         return children;

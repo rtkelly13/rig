@@ -87,7 +87,10 @@ public sealed class PullRequests(Git git, IGitHubApi github)
                 data => data["search"],
                 limit,
                 cancellationToken).ConfigureAwait(false);
-            foreach (var pull in mine.Values) { Keep(heads, pull); }
+            foreach (var pull in mine.Values)
+            {
+                Keep(heads, pull);
+            }
         }
 
         return heads;

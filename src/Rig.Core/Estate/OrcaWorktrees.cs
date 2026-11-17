@@ -604,7 +604,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
 
             return pulls;
         }
-        catch (JsonException) { return null; }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static bool TryText(JsonObject pull, string key, out string value)
@@ -753,7 +756,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         {
             return (await runtime.WorktreesAsync(cancellationToken).ConfigureAwait(false)).All(w => w.Id != worktreeId);
         }
-        catch (OrcaUnavailableException) { return false; }
+        catch (OrcaUnavailableException)
+        {
+            return false;
+        }
     }
 
     private sealed record BranchPull(int Number, string State, string HeadOid, bool CrossRepository);

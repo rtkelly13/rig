@@ -1094,13 +1094,18 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         }
 
         var line = new JsonObject { ["at"] = IsoTime.Format(clock.GetUtcNow()) };
-        foreach (var (key, value) in result.ToJson()) { line[key] = value?.DeepClone(); }
+        foreach (var (key, value) in result.ToJson())
+        {
+            line[key] = value?.DeepClone();
+        }
 
         try
         {
             File.AppendAllText(ledger, JsonOutput.Line(line) + "\n");
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+        }
 
         return result;
     }

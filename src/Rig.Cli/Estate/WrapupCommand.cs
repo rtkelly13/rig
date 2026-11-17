@@ -316,7 +316,10 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
         var rows = await Wrapup.PlanAsync(
             placed, snapshot.Terminals, now, options, (path, token) => Wrapup.ReadGitFactsAsync(git, path, token), store, cancellationToken).ConfigureAwait(false);
         var byId = new Dictionary<string, WrapupWorktree>(StringComparer.Ordinal);
-        foreach (var p in placed) { byId[p.Worktree.WorktreeId] = p.Worktree; }
+        foreach (var p in placed)
+        {
+            byId[p.Worktree.WorktreeId] = p.Worktree;
+        }
 
         if (args.ShowPrompt)
         {

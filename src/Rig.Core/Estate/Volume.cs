@@ -169,7 +169,10 @@ public static class Volume
             }
         }
 
-        foreach (var root in roots.OrderByDescending(root => root.Allocated)) { Walk(root, 0); }
+        foreach (var root in roots.OrderByDescending(root => root.Allocated))
+        {
+            Walk(root, 0);
+        }
 
         return rows;
     }

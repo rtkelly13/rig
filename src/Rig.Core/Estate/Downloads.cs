@@ -71,7 +71,10 @@ public sealed class Downloads(IDiskUsage disk)
                     return "dataset";
                 }
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return "other"; }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                return "other";
+            }
         }
 
         return "other";
@@ -100,7 +103,10 @@ public sealed class Downloads(IDiskUsage disk)
             var right = TreeFiles(remote);
             return left.Keys.ToHashSet(StringComparer.Ordinal).SetEquals(right.Keys) && left.All(pair => SameFile(pair.Value, right[pair.Key]));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -116,7 +122,10 @@ public sealed class Downloads(IDiskUsage disk)
         {
             children = [.. Directory.EnumerateFileSystemEntries(folder).Where(child => !System.IO.Path.GetFileName(child).StartsWith('.'))];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
 
         var items = new List<DownloadItem>();
         foreach (var child in children)
@@ -131,7 +140,10 @@ public sealed class Downloads(IDiskUsage disk)
                     : File.Exists(target) ? new FileInfo(target).Length
                     : -1;
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
 
             if (size < 0 || size < minSize)
             {
@@ -153,7 +165,10 @@ public sealed class Downloads(IDiskUsage disk)
             var info = new FileInfo(path);
             return info.LinkTarget is null ? path : info.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? path;
         }
-        catch (IOException) { return path; }
+        catch (IOException)
+        {
+            return path;
+        }
     }
 
     private static bool SameFile(string left, string right) =>

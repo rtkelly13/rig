@@ -198,7 +198,10 @@ public static class WrapupRun
                 {
                     agents = Agents(await rolling.Orca.ReadWorktreesAsync(cancellationToken).ConfigureAwait(false));
                 }
-                catch (WrapupException) { agents = []; }
+                catch (WrapupException)
+                {
+                    agents = [];
+                }
 
                 foreach (var flight in flights.ToList())
                 {
@@ -437,7 +440,10 @@ public sealed class WrapupFollower(string appData, IDetachedStart detached, IRea
 
             return handle;
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return null; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     /// <inheritdoc />

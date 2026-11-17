@@ -121,7 +121,10 @@ public sealed class TreeRemoval(IProc proc)
             Delete(entry);
             return true;
         }
-        catch (UnauthorizedAccessException) { return false; }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     private static void Delete(FileSystemInfo entry)

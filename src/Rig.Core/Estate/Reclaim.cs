@@ -362,7 +362,10 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
             await removal.RemoveAsync(entry.Path, cancellationToken).ConfigureAwait(false);
             return "removed";
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return "failed"; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return "failed";
+        }
     }
 
     // Whether HEAD holds a commit on no remote; true when git cannot say.
@@ -385,7 +388,10 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
         }
 
         Consider(Path.Join(repo, name));
-        foreach (var child in Children(repo, directoriesOnly: true)) { Consider(Path.Join(child, name)); }
+        foreach (var child in Children(repo, directoriesOnly: true))
+        {
+            Consider(Path.Join(child, name));
+        }
 
         return found;
     }
@@ -397,7 +403,10 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
             var children = directoriesOnly ? Directory.EnumerateDirectories(folder) : Directory.EnumerateFileSystemEntries(folder);
             return [.. children.Order(PathOrder.Instance)];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
     }
 
     // temp/ per child rather than one lump: some of it is live worktrees, some scratch, and each needs its own decision.

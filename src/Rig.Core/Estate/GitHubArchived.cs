@@ -87,7 +87,10 @@ public static partial class GitHubArchived
 
             return archived;
         }
-        catch (JsonException) { return null; }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     // A field that is present and of the expected kind (a boolean when expecting True): a repository missing either is unreadable.

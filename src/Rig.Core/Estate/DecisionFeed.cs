@@ -52,7 +52,10 @@ public static class DecisionFeed
         {
             text = File.ReadAllText(path, System.Text.Encoding.UTF8);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return null; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
 
         try
         {
@@ -84,6 +87,9 @@ public static class DecisionFeed
 
             return decisions;
         }
-        catch (JsonException) { return null; }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }

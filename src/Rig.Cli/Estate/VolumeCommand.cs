@@ -94,7 +94,10 @@ internal sealed class VolumeCommand(
         if (json)
         {
             var partition = new JsonObject();
-            foreach (var (name, size) in parts) { partition[name] = size; }
+            foreach (var (name, size) in parts)
+            {
+                partition[name] = size;
+            }
 
             var payload = new JsonObject
             {
@@ -137,7 +140,10 @@ internal sealed class VolumeCommand(
         }
 
         var artefacts = new TextTable($"Dev artefacts under {request.CodeRoot} (outermost match, no overlap)", [("Category", false), ("Allocated", true)]);
-        foreach (var (name, size) in parts) { _ = artefacts.Add(name, Bytes.Human(size)); }
+        foreach (var (name, size) in parts)
+        {
+            _ = artefacts.Add(name, Bytes.Human(size));
+        }
 
         var hogs = new TextTable("Known Windows hogs", [("Hog", false), ("Allocated", true), ("Remedy", false), ("Safety", false)]);
         foreach (var hit in found.Where(hit => hit.Allocated >= HogFloor))

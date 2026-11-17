@@ -79,7 +79,10 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
         for (var depth = 0; depth < maxDepth && frontier.Count > 0; depth++)
         {
             var next = new List<string>();
-            foreach (var child in frontier.SelectMany(Children)) { (IsRepo(child) ? found : next).Add(child); }
+            foreach (var child in frontier.SelectMany(Children))
+            {
+                (IsRepo(child) ? found : next).Add(child);
+            }
 
             frontier = next;
         }
@@ -124,7 +127,10 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
             return [.. Directory.EnumerateDirectories(parent)
                 .Where(child => Path.GetFileName(child) is var name && !name.StartsWith('.') && !Skipped.Contains(name))];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
     }
 
     // The whole cache. A missing or corrupt file, or a junk entry, reads as absent: a cache is never the point.
@@ -145,7 +151,10 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
     private void WriteCache(Dictionary<string, CachedScan> entries)
     {
         var document = new JsonObject();
-        foreach (var (key, entry) in entries) { document[key] = entry.ToJson(); }
+        foreach (var (key, entry) in entries)
+        {
+            document[key] = entry.ToJson();
+        }
 
         try
         {

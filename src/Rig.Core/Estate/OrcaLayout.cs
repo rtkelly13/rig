@@ -52,7 +52,10 @@ public sealed class GroupTree
     public GroupTree(IReadOnlyList<OrcaGroup> rows)
     {
         Rows = rows ?? throw new ArgumentNullException(nameof(rows));
-        foreach (var row in rows) { _byId[row.Id] = row; }
+        foreach (var row in rows)
+        {
+            _byId[row.Id] = row;
+        }
     }
 
     /// <summary>The groups, in Orca's order.</summary>
@@ -282,7 +285,10 @@ public static class OrcaLayout
             occupied.UnionWith(groups.Lineage(found.GroupId));
         }
 
-        foreach (var groupId in state.WorkspaceGroups) { occupied.UnionWith(groups.Lineage(groupId)); }
+        foreach (var groupId in state.WorkspaceGroups)
+        {
+            occupied.UnionWith(groups.Lineage(groupId));
+        }
 
         var kept = (keep ?? []).ToHashSet(StringComparer.Ordinal);
         var allowed = within?.ToHashSet(StringComparer.Ordinal);
@@ -412,7 +418,10 @@ public static class OrcaLayout
         var active = Unskipped(declared, skipped);
         var state = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
         var byPath = new Dictionary<string, Registration>(StringComparer.Ordinal);
-        foreach (var registration in state.Registrations) { byPath[Posix(registration.Path)] = registration; }
+        foreach (var registration in state.Registrations)
+        {
+            byPath[Posix(registration.Path)] = registration;
+        }
 
         var declaredSlugs = declared.Select(p => p.Slug.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
         foreach (var finding in Audit(declared, state, codeRoot, isEstateOwner, exists, archived, skipped))

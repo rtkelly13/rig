@@ -217,7 +217,10 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
         {
             return [.. Directory.EnumerateFileSystemEntries(appDir).Where(entry => Suffix(entry) == ".app" && Directory.Exists(entry))];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
     }
 
     private async Task<string> BundleVersionAsync(string bundle, CancellationToken cancellationToken)
