@@ -93,11 +93,9 @@ internal sealed partial class DesktopWorkspaceCommand
         bool reconcile,
         CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace align").ConfigureAwait(false);
-        if (denied != 0)
+        if (await WindowsOnly("workspace align").ConfigureAwait(false) is not { } machine)
         {
-            return denied;
+            return 1;
         }
 
         if (!OperatingSystem.IsWindows())
@@ -136,7 +134,6 @@ internal sealed partial class DesktopWorkspaceCommand
         }
 
         var prefix = dryRun ? "align (dry run)" : "align";
-        var machine = native!;
         if (Placement.FindMonitorShortfall(plan, machine.Win32.Monitors().Count) is { } shortfall)
         {
             Report($"{prefix}: skipped (plan needs {shortfall.Required} screens, {shortfall.Live} detected)", echo: true);
@@ -210,28 +207,8 @@ internal sealed partial class DesktopWorkspaceCommand
 
     private async Task<int> NameDesktopsCommand(string? config, bool dryRun, CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace name-desktops").ConfigureAwait(false);
-        if (denied != 0)
+        if (await Open("workspace name-desktops", config).ConfigureAwait(false) is not Opened(var machine, var path, var plan))
         {
-            return denied;
-        }
-
-        var path = ConfigPath(config);
-        if (!File.Exists(path))
-        {
-            await host.Output.WriteLineAsync($"Config not found: {path}").ConfigureAwait(false);
-            return 1;
-        }
-
-        WorkspacePlan plan;
-        try
-        {
-            plan = Load(path, [], []);
-        }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
-        {
-            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return 1;
         }
 
@@ -241,7 +218,7 @@ internal sealed partial class DesktopWorkspaceCommand
 
         var result = DesktopReconcile.Reconcile(
             targets,
-            native!.Desktops,
+            machine.Desktops,
             plan.RetiredDesktopNames,
             TimeSpan.FromMilliseconds(plan.SwitchDelayMs),
             dryRun);
@@ -326,11 +303,9 @@ internal sealed partial class DesktopWorkspaceCommand
         bool dryRun,
         CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace guard").ConfigureAwait(false);
-        if (denied != 0)
+        if (await WindowsOnly("workspace guard").ConfigureAwait(false) is not { } machine)
         {
-            return denied;
+            return 1;
         }
 
         if (!OperatingSystem.IsWindows())
@@ -362,8 +337,8 @@ internal sealed partial class DesktopWorkspaceCommand
         using var events = new DisplayEventListener(Log);
         events.Start();
         var ports = new NativeDisplayGuardPorts(
-            native!.Win32,
-            native.Desktops,
+            machine.Win32,
+            machine.Desktops,
             Path.Join(locks, DisplayGuardLocks.RestoreLockFileName),
             Log,
             events);

@@ -23,6 +23,12 @@ internal sealed record DesktopNative(IWin32Windows Win32, IWin32Actions Actions,
         new NativeWin32Actions(),
         ComVirtualDesktops.Open(),
         new Launching());
+
+    /// <summary>The desktop port over these pieces.</summary>
+    public NativeDesktopPort Port(TimeProvider time) => new(Win32, Actions, Desktops, Launching, time);
+
+    /// <summary>The window inventory over these pieces.</summary>
+    public WindowInventory Inventory() => new(Win32, Desktops);
 }
 
 /// <summary>What <c>rig desktop</c> reads: the plan's location, this machine's aliases, the flags and the console.</summary>

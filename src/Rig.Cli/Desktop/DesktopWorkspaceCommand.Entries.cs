@@ -75,28 +75,8 @@ internal sealed partial class DesktopWorkspaceCommand
 
     private async Task<int> DetectAppCommand(string? name, string? desktop, string? config, CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace detect-app").ConfigureAwait(false);
-        if (denied != 0)
+        if (await Open("workspace detect-app", config).ConfigureAwait(false) is not Opened(var machine, _, var plan))
         {
-            return denied;
-        }
-
-        var path = ConfigPath(config);
-        if (!File.Exists(path))
-        {
-            await host.Output.WriteLineAsync($"Config not found: {path}").ConfigureAwait(false);
-            return 1;
-        }
-
-        WorkspacePlan plan;
-        try
-        {
-            plan = Load(path, [], []);
-        }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
-        {
-            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return 1;
         }
 
@@ -107,8 +87,7 @@ internal sealed partial class DesktopWorkspaceCommand
             return 1;
         }
 
-        var machine = native!;
-        var inventory = new WindowInventory(machine.Win32, machine.Desktops);
+        var inventory = machine.Inventory();
         var foundAny = false;
         foreach (var location in entries)
         {
@@ -137,11 +116,9 @@ internal sealed partial class DesktopWorkspaceCommand
 
     private async Task<int> LaunchFileCommand(string entryFile, string? config, bool dryRun, CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace launch-file").ConfigureAwait(false);
-        if (denied != 0)
+        if (await WindowsOnly("workspace launch-file").ConfigureAwait(false) is not { } machine)
         {
-            return denied;
+            return 1;
         }
 
         LaunchEntry entry;
@@ -166,7 +143,7 @@ internal sealed partial class DesktopWorkspaceCommand
 
         try
         {
-            _ = native!.Launching.Launch(entry, substitutions);
+            _ = machine.Launching.Launch(entry, substitutions);
             await host.Output.WriteLineAsync($"Launched: {entry.Name}").ConfigureAwait(false);
             return 0;
         }
@@ -179,32 +156,11 @@ internal sealed partial class DesktopWorkspaceCommand
 
     private async Task<int> TestItemCommand(string name, string? desktop, string? config, bool dryRun, CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace test-item").ConfigureAwait(false);
-        if (denied != 0)
+        if (await Open("workspace test-item", config).ConfigureAwait(false) is not Opened(var machine, var path, var plan))
         {
-            return denied;
-        }
-
-        var path = ConfigPath(config);
-        if (!File.Exists(path))
-        {
-            await host.Output.WriteLineAsync($"Config not found: {path}").ConfigureAwait(false);
             return 1;
         }
 
-        WorkspacePlan plan;
-        try
-        {
-            plan = Load(path, [], []);
-        }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
-        {
-            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
-            return 1;
-        }
-
-        var machine = native!;
         var resolvedDesktop = desktop;
         if (resolvedDesktop is null)
         {
@@ -236,7 +192,7 @@ internal sealed partial class DesktopWorkspaceCommand
         }
 
         var log = new FileRunLog(host.LogsDirectory(path), host.Time);
-        var port = new NativeDesktopPort(machine.Win32, machine.Actions, machine.Desktops, machine.Launching, host.Time);
+        var port = machine.Port(host.Time);
         try
         {
             _ = port.EnsureCurrentDesktop(location.DesktopIndex, TimeSpan.FromMilliseconds(plan.SwitchDelayMs));
@@ -272,28 +228,8 @@ internal sealed partial class DesktopWorkspaceCommand
         bool dryRun,
         CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace restart-app").ConfigureAwait(false);
-        if (denied != 0)
+        if (await Open("workspace restart-app", config).ConfigureAwait(false) is not Opened(var machine, var path, var plan))
         {
-            return denied;
-        }
-
-        var path = ConfigPath(config);
-        if (!File.Exists(path))
-        {
-            await host.Output.WriteLineAsync($"Config not found: {path}").ConfigureAwait(false);
-            return 1;
-        }
-
-        WorkspacePlan plan;
-        try
-        {
-            plan = Load(path, [], []);
-        }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
-        {
-            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return 1;
         }
 
@@ -304,12 +240,11 @@ internal sealed partial class DesktopWorkspaceCommand
             return 1;
         }
 
-        var machine = native!;
-        var inventory = new WindowInventory(machine.Win32, machine.Desktops);
+        var inventory = machine.Inventory();
         var actions = new WindowActions(machine.Actions, inventory);
         var substitutions = host.Substitutions(plan);
         var log = dryRun ? null : new FileRunLog(host.LogsDirectory(path), host.Time);
-        var port = new NativeDesktopPort(machine.Win32, machine.Actions, machine.Desktops, machine.Launching, host.Time);
+        var port = machine.Port(host.Time);
 
         foreach (var location in matches)
         {
@@ -379,11 +314,9 @@ internal sealed partial class DesktopWorkspaceCommand
 
     private async Task<int> UpdateOrcaCommand(string? config, double closeTimeout, bool dryRun, CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace update-orca").ConfigureAwait(false);
-        if (denied != 0)
+        if (await WindowsOnly("workspace update-orca").ConfigureAwait(false) is not { } machine)
         {
-            return denied;
+            return 1;
         }
 
         if (!OperatingSystem.IsWindows())
@@ -409,8 +342,7 @@ internal sealed partial class DesktopWorkspaceCommand
             return 1;
         }
 
-        var machine = native!;
-        var inventory = new WindowInventory(machine.Win32, machine.Desktops);
+        var inventory = machine.Inventory();
         var actions = new WindowActions(machine.Actions, inventory);
         var log = dryRun ? null : new FileRunLog(host.LogsDirectory(path), host.Time);
         var localAppData = host.Environment("LOCALAPPDATA") ?? Path.Join(host.Home, "AppData", "Local");
@@ -440,7 +372,7 @@ internal sealed partial class DesktopWorkspaceCommand
 
         if (!dryRun)
         {
-            var port = new NativeDesktopPort(machine.Win32, machine.Actions, machine.Desktops, machine.Launching, host.Time);
+            var port = machine.Port(host.Time);
             var substitutions = host.Substitutions(plan);
             foreach (var (desktopIndex, desktop, entry) in OrcaUpdate.Entries(plan))
             {

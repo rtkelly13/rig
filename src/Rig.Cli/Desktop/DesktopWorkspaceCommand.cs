@@ -103,14 +103,45 @@ internal sealed partial class DesktopWorkspaceCommand(DesktopHost host)
         return PlanLoading.Verify(plan, path, host.Substitutions(plan), new LocalPathProbe());
     }
 
-    private async Task<int> WindowsOnly(DesktopNative? native, string command)
+    private sealed record Loaded(string Path, WorkspacePlan Plan);
+
+    private sealed record Opened(DesktopNative Machine, string Path, WorkspacePlan Plan);
+
+    /// <summary>Reads the plan a command runs against; prints why and returns null when it cannot.</summary>
+    private async Task<Loaded?> ReadPlan(string? config, IReadOnlyList<string>? enable = null, IReadOnlyList<string>? disable = null, bool verify = true)
     {
-        if (native is not null && OperatingSystem.IsWindows())
+        var path = ConfigPath(config);
+        if (!File.Exists(path))
         {
-            return 0;
+            await host.Output.WriteLineAsync($"Config not found: {path}").ConfigureAwait(false);
+            return null;
+        }
+
+        try
+        {
+            return new Loaded(path, verify ? Load(path, enable ?? [], disable ?? []) : LoadContext(path, enable ?? [], disable ?? []));
+        }
+        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
+        {
+            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
+            return null;
+        }
+    }
+
+    private async Task<DesktopNative?> WindowsOnly(string command)
+    {
+        if (host.Windows() is { } native && OperatingSystem.IsWindows())
+        {
+            return native;
         }
 
         await host.Output.WriteLineAsync($"{command} requires Windows.").ConfigureAwait(false);
-        return 1;
+        return null;
     }
+
+    /// <summary>Reads the plan on a Windows machine; prints why and returns null when either is missing.</summary>
+    private async Task<Opened?> Open(string command, string? config, IReadOnlyList<string>? enable = null, IReadOnlyList<string>? disable = null) =>
+        await WindowsOnly(command).ConfigureAwait(false) is { } native && await ReadPlan(config, enable, disable).ConfigureAwait(false) is { } loaded
+            ? new Opened(native, loaded.Path, loaded.Plan)
+            : null;
 }
