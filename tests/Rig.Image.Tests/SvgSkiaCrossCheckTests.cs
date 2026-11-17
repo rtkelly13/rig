@@ -9,7 +9,7 @@ public sealed class SvgSkiaCrossCheckTests
         await using var skia = new SvgSkiaRenderer();
         await using var chromium = new FrozenRenderer();
 
-        var report = await CrossCheck.RunAsync(chromium, skia, OracleFixture.RepoRoot, files, OracleFixture.PathOf("candidates"), DivergenceThresholds.Adr, TestContext.Current.CancellationToken);
+        var report = await CrossCheck.RunAsync(chromium, skia, OracleFixture.RepoRoot, files, OracleFixture.PathOf("candidates"), OracleFixture.ThresholdsForThisPlatform(), TestContext.Current.CancellationToken);
 
         Assert.Equal(files.Count, report.Files.Count);
         Assert.All(report.Files, file => Assert.True(file.Breaches.Count == 0, $"{file.File.Id}: {string.Join("; ", file.Breaches)}"));
