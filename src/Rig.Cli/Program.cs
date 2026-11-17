@@ -154,7 +154,7 @@ internal static class Program
                     Console.Error).Build,
                 new MdLintCommand(
                     proc,
-                    new MdLintHost(checkout, Environment.GetEnvironmentVariable, home),
+                    new MdLintHost(Environment.GetEnvironmentVariable, home),
                     Console.Error).Build,
                 new VaultCommand(
                     proc,

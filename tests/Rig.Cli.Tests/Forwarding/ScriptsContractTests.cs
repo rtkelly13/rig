@@ -68,7 +68,7 @@ public sealed partial class ScriptsContractTests
             TextWriter.Null,
             [
                 new LatexCommand(new FakeProc(), new LatexHost(_ => null, string.Empty, "/", "/"), TextWriter.Null, TextWriter.Null).Build,
-                new MdLintCommand(new FakeProc(), new MdLintHost("/rig", _ => null, "/"), TextWriter.Null).Build,
+                new MdLintCommand(new FakeProc(), new MdLintHost(_ => null, "/"), TextWriter.Null).Build,
                 new VaultCommand(
                     new FakeProc(),
                     new VaultHost(_ => null, "/"),

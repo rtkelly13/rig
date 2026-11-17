@@ -10,8 +10,6 @@ namespace Rig.Cli.Tests.Vault;
 /// <summary>Ported from the Python <c>md-lint</c> entry point, which had only an import smoke test.</summary>
 public sealed class MdLintCommandTests : IDisposable
 {
-    private const string Checkout = "/rig";
-
     private readonly TempDir _home = new();
     private readonly FakeProc _proc = new();
     private readonly StringWriter _out = new();
@@ -27,18 +25,18 @@ public sealed class MdLintCommandTests : IDisposable
 
     private string DefaultVault => Path.Combine(_home.Path, "code", "personal", "obsidian-vault", "Vault");
 
-    private MdLintCommand Command() => new(_proc, new MdLintHost(Checkout, v => _environment.GetValueOrDefault(v), _home.Path), _err);
+    private MdLintCommand Command() => new(_proc, new MdLintHost(v => _environment.GetValueOrDefault(v), _home.Path), _err);
 
     private Task<int> Run(params string[] args) => Command().Build().Parse(args).InvokeAsync(
         new InvocationConfiguration { Output = _out, Error = _err }, TestContext.Current.CancellationToken);
 
-    private static string[] Mdformat(params string[] args) => ["uv", "run", "--no-sync", "--project", Checkout, "mdformat", .. args];
+    private static string[] Mdformat(params string[] args) => ["uvx", "--with", "mdformat-frontmatter==2.0.10", "--with", "mdformat-ruff==0.1.3", "mdformat==1.0.0", .. args];
 
     [Fact]
-    public async Task With_no_paths_it_checks_the_vault_with_rigs_own_mdformat()
+    public async Task With_no_paths_it_checks_the_vault_with_pinned_mdformat()
     {
         _home.Folder("code/personal/obsidian-vault/Vault");
-        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
+        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uvx");
 
         Assert.Equal(0, await Run("md-lint"));
 
@@ -51,7 +49,7 @@ public sealed class MdLintCommandTests : IDisposable
     [Fact]
     public async Task Fix_rewrites_the_named_paths_and_passes_other_flags_to_mdformat()
     {
-        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
+        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uvx");
 
         Assert.Equal(0, await Run("md-lint", "a.md", "--fix", "docs", "--wrap", "80"));
 
@@ -61,7 +59,7 @@ public sealed class MdLintCommandTests : IDisposable
     [Fact]
     public async Task Fix_after_a_double_dash_still_fixes_as_the_python_did()
     {
-        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
+        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uvx");
 
         Assert.Equal(0, await Run("md-lint", "--", "--fix", "note.md"));
 
@@ -71,7 +69,7 @@ public sealed class MdLintCommandTests : IDisposable
     [Fact]
     public async Task Mdformats_exit_code_is_returned_unchanged()
     {
-        _proc.Answer(new Ran(1, string.Empty, string.Empty), "uv");
+        _proc.Answer(new Ran(1, string.Empty, string.Empty), "uvx");
 
         Assert.Equal(1, await Run("md-lint", "note.md"));
     }
@@ -93,13 +91,13 @@ public sealed class MdLintCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task Without_uv_it_says_where_mdformat_comes_from()
+    public async Task Without_uvx_it_says_where_mdformat_comes_from()
     {
-        _proc.Unanswered = new Ran(Ran.NotFound, string.Empty, "uv is not on PATH");
+        _proc.Unanswered = new Ran(Ran.NotFound, string.Empty, "uvx is not on PATH");
 
         Assert.Equal(2, await Run("md-lint", "note.md"));
 
-        Assert.Contains("rig md-lint: uv is not on PATH. mdformat runs from rig's uv environment.", _err.ToString(), StringComparison.Ordinal);
+        Assert.Contains("rig md-lint: uvx is not on PATH. mdformat runs through uvx.", _err.ToString(), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -114,7 +112,7 @@ public sealed class MdLintCommandTests : IDisposable
     [Fact]
     public async Task Rig_serves_md_lint_itself()
     {
-        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
+        _proc.Answer(new Ran(0, string.Empty, string.Empty), "uvx");
         var app = new RigApp(
             new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), _out, _err, [Command().Build]);
 
