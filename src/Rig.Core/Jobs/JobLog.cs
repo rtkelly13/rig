@@ -99,28 +99,6 @@ public static partial class JobLog
     }
 
     /// <summary>
-    /// When the file last changed and how long it is, or null when it is missing: Windows' coarse clock can leave an
-    /// append's write time unchanged, so the length counts too.
-    /// </summary>
-    public static (DateTime Written, long Size)? Stamp(string? path)
-    {
-        try
-        {
-            if (path is null || !File.Exists(path))
-            {
-                return null;
-            }
-
-            var info = new FileInfo(path);
-            return (info.LastWriteTimeUtc, info.Length);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
     /// Python's <c>str.splitlines</c>: a line ends at <c>\r\n</c>, <c>\n</c>, <c>\r</c>, <c>\v</c>, <c>\f</c>,
     /// <c>\x1c</c>-<c>\x1e</c>, <c>\x85</c>, <c>\u2028</c> or <c>\u2029</c>, and a final end makes no empty line.
     /// </summary>

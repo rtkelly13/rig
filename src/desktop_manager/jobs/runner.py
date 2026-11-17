@@ -9,8 +9,7 @@ Every run has an id (`<trigger>-<YYYYmmdd-HHMMSS>`). It heads the run's section
 of each job log, reaches the job as `RUN_ID_ENV`, and names the run in
 `last-<trigger>.json`, which lists every job the run took or skipped. A job's
 outcome keeps the last line it printed as its summary and, when it failed, the
-end of its output, read from `Job.detail_log` when the job logs there instead of
-to stdout. `rig jobs status` and `rig jobs last` then show why a job failed without
+end of its output. `rig jobs status` and `rig jobs last` then show why a job failed without
 opening a log.
 
 Each job run also goes into the run history (`history`): one `JobRun` line in
@@ -224,8 +223,6 @@ def _run_one(
     offset = _size(log)
     started = clock()
     begun = time.monotonic()
-    before = _modified(job.detail_log)
-    detail_offset = _size(job.detail_log) if job.detail_log is not None else 0
     attributes: dict[str, tracing.AttributeValue] = {"job.trigger": str(trigger), "job.run_id": run_id}
     with tracing.span(f"job {job.name}", scope="desktop_manager.jobs", **attributes) as span:
         try:
@@ -239,16 +236,7 @@ def _run_one(
         if error or returncode != 0:
             span.error = error or f"exit {returncode}"
     printed = run_output(log, run_id)
-    # Its own log's last section explains this run only if this run wrote to it.
-    if job.detail_log is not None and not printed and _modified(job.detail_log) != before:
-        printed = run_output(job.detail_log)
     failed = returncode != 0 or error is not None
-    # A job that redirects its stdout (chrome-organise) leaves only markers in the coordinator log,
-    # so the saved output carries what this run added to its own log too.
-    detail = b""
-    if job.detail_log is not None and _modified(job.detail_log) != before:
-        # A log that shrank was rotated or rewritten during the run, so all of it is this run's.
-        detail = _read_from(job.detail_log, detail_offset if _size(job.detail_log) >= detail_offset else 0)
     outcome = Outcome(
         started=started.isoformat(timespec="seconds"),
         seconds=round(time.monotonic() - begun, 1),
@@ -269,7 +257,7 @@ def _run_one(
             returncode=returncode,
             trigger=outcome.trigger,
             error=error,
-            output=save_output(directory, job.name, run_id, _read_from(log, offset) + detail),
+            output=save_output(directory, job.name, run_id, _read_from(log, offset)),
             trace_id=tracing.current_trace_id(),
             span_id=span.span_id,
         ),
@@ -301,25 +289,6 @@ def _read_from(path: Path, offset: int) -> bytes:
             return handle.read()
     except OSError:
         return b""
-
-
-@dataclass(frozen=True, slots=True)
-class _Stamp:
-    """When a file last changed and how long it is: Windows' coarse clock can leave an append's mtime unchanged."""
-
-    mtime_ns: int
-    size: int
-
-
-def _modified(path: Path | None) -> _Stamp | None:
-    """The stamp of `path`, or None when it is missing."""
-    try:
-        if path is None:
-            return None
-        stat = path.stat()
-        return _Stamp(stat.st_mtime_ns, stat.st_size)
-    except OSError:
-        return None
 
 
 def run_output(path: Path, run_id: str | None = None) -> list[str]:

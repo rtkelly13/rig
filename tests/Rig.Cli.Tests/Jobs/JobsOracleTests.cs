@@ -230,7 +230,7 @@ public sealed class JobsOracleTests : IDisposable
         }
     }
 
-    // The recorded run's jobs: each script's name, triggers, idle need and own log, in the recorded order.
+    // The recorded run's jobs: each script's name, triggers and idle need, in the recorded order.
     private static List<Job> RunJobs(string directory) =>
     [
         .. Oracle.GetProperty("run_scripts").EnumerateObject().Select(script => new Job(
@@ -242,7 +242,6 @@ public sealed class JobsOracleTests : IDisposable
             5)
         {
             IdleMinutes = script.Value.TryGetProperty("idle_minutes", out var idle) ? idle.GetInt32() : 0,
-            DetailLog = script.Value.TryGetProperty("detail", out _) ? Path.Join(directory, $"{script.Name}-own.log") : null,
         }),
     ];
 
@@ -252,7 +251,7 @@ public sealed class JobsOracleTests : IDisposable
     private static string? RunText(string path) =>
         File.Exists(path) ? Crash(File.ReadAllText(path).Replace("\r\n", "\n", StringComparison.Ordinal)) : null;
 
-    // Python's recorded _fake_execute: the script's lines under a header, its own log's narrative, then the end marker.
+    // Python's recorded _fake_execute: the script's lines under a header, then the end marker.
     private sealed class ScriptedExecutor : IJobExecutor
     {
         public long Execute(Job job, string logsDir, string runId)
@@ -265,11 +264,6 @@ public sealed class JobsOracleTests : IDisposable
 
             string Lines(string name) => string.Concat(script.GetProperty(name).EnumerateArray().Select(line => line.GetString() + "\n"));
             var body = $"--- 2026-11-12 09:00:00 [{runId}] x {job.Name}\n" + Lines("lines");
-            if (job.DetailLog is { } own)
-            {
-                File.AppendAllText(own, "--- 2026-11-12 09:00:00 own\n" + Lines("detail"));
-            }
-
             long code = script.TryGetProperty("timeout", out _) ? JobRunner.TimedOut : script.GetProperty("code").GetInt64();
             body += code == JobRunner.TimedOut ? "--- timed out after 5 min\n" : $"--- exit {code}\n";
             File.AppendAllText(JobState.LogPath(logsDir, job.Name), body);
@@ -322,7 +316,6 @@ public sealed class JobsOracleTests : IDisposable
         ["requires"] = new JsonArray([.. job.Requires.Select(path => (JsonNode?)Normalise(path))]),
         ["idle_minutes"] = job.IdleMinutes,
         ["retry_exit_codes"] = new JsonArray([.. job.RetryExitCodes.Order().Select(code => (JsonNode?)code)]),
-        ["detail_log"] = job.DetailLog is null ? null : Normalise(job.DetailLog),
         ["feature"] = job.Feature,
     };
 
