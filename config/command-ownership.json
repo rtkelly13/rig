@@ -318,6 +318,7 @@
     {"Id": "executable-project:src/Rig.Launcher/Rig.Launcher.csproj:WinExe","Capability": "surface:executable-project:src/Rig.Launcher/Rig.Launcher.csproj:WinExe","Owner": "executable-project:src/Rig.Launcher/Rig.Launcher.csproj:WinExe","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "executable-project:tools/command-ownership/CommandOwnership.csproj:Exe","Capability": "surface:executable-project:tools/command-ownership/CommandOwnership.csproj:Exe","Owner": "executable-project:tools/command-ownership/CommandOwnership.csproj:Exe","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "file-app:scripts/coverage-floor.cs","Capability": "surface:file-app:scripts/coverage-floor.cs","Owner": "file-app:scripts/coverage-floor.cs","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "file-app:scripts/require-jobs-succeeded.cs","Capability": "surface:file-app:scripts/require-jobs-succeeded.cs","Owner": "file-app:scripts/require-jobs-succeeded.cs","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "file-app:tools/command-ownership/Program.cs","Capability": "surface:file-app:tools/command-ownership/Program.cs","Owner": "file-app:tools/command-ownership/Program.cs","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "launcher:config/obs/install.sh:E85B07835C0F05BAC5C9F4FA81211D8947530F3690936DF5F4D759F112C221C0","Capability": "surface:launcher:config/obs/install.sh:E85B07835C0F05BAC5C9F4FA81211D8947530F3690936DF5F4D759F112C221C0","Owner": "launcher:config/obs/install.sh:E85B07835C0F05BAC5C9F4FA81211D8947530F3690936DF5F4D759F112C221C0","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "launcher:mcp_server_wrapper.sh:0CEC4715C18F7265DF1E261B05AC5223ABB20253A09AB502B3F482D5C3A66371","Capability": "surface:launcher:mcp_server_wrapper.sh:0CEC4715C18F7265DF1E261B05AC5223ABB20253A09AB502B3F482D5C3A66371","Owner": "launcher:mcp_server_wrapper.sh:0CEC4715C18F7265DF1E261B05AC5223ABB20253A09AB502B3F482D5C3A66371","Platforms": ["linux","macos","windows"],"AliasTo": null},
@@ -351,7 +352,6 @@
     {"Id": "project:src/Rig.Web/Rig.Web.csproj:Microsoft.NET.Sdk","Capability": "surface:project:src/Rig.Web/Rig.Web.csproj:Microsoft.NET.Sdk","Owner": "project:src/Rig.Web/Rig.Web.csproj:Microsoft.NET.Sdk","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Capability": "surface:project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Owner": "project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "python-file:.github/scripts/coverage_diff.py","Capability": "surface:python-file:.github/scripts/coverage_diff.py","Owner": "python-file:.github/scripts/coverage_diff.py","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "python-file:.github/scripts/require_jobs_succeeded.py","Capability": "surface:python-file:.github/scripts/require_jobs_succeeded.py","Owner": "python-file:.github/scripts/require_jobs_succeeded.py","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "python-file:tools/command-ownership/python_tree.py","Capability": "surface:python-file:tools/command-ownership/python_tree.py","Owner": "python-file:tools/command-ownership/python_tree.py","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "script:agent=rig.csharp_cli:entry","Capability": "agent","Owner": "cs:agent","Platforms": ["linux","macos","windows"],"AliasTo": "cs:agent"},
     {"Id": "script:devenv=rig.csharp_cli:entry","Capability": "devenv","Owner": "cs:devenv","Platforms": ["linux","macos","windows"],"AliasTo": "cs:devenv"},
@@ -526,6 +526,7 @@
     "python-job:worktree-reclaim=/workspace/.venv/Scripts/python.exe -m workspace_cli.main worktree reclaim --all-repos --apply"
   ],
   "RetiredFiles": [
+    ".github/scripts/require_jobs_succeeded.py",
     "src/rig/repo_governance/coverage_floor.py",
     "tests/test_coverage_floor.py",
     "src/rig/c4_okf/cli.py",
