@@ -90,7 +90,7 @@ ______________________________________________________________________
 
 Agent settings baselines are managed as non-destructive unions: existing user configurations, custom MCP servers, and credentials are never overwritten.
 
-- **Claude Code**: `~/.claude/settings.json` is configured by `rig devenv claude` ([ClaudeBaseline.cs](../../src/Rig.Core/Devenv/ClaudeBaseline.cs)). Sets safe model defaults (`opus-5.5`), auto-compaction budgets (200k tokens), workflow guidelines, and suppresses automated attribution trailers.
+- **Claude Code**: `~/.claude/settings.json` is configured by `rig devenv claude` ([ClaudeBaseline.cs](../../src/Rig.Core/Devenv/ClaudeBaseline.cs)). Manages the default model (`opus`, reset on every run so a `/model` choice never sticks; `advisorModel` is left alone), and fills in auto-compaction budgets (200k tokens), workflow guidelines, and suppresses automated attribution trailers.
 - **OpenCode**: `~/.config/opencode/config.json` is configured by `rig devenv opencode` ([OpencodeDefaults.cs](../../src/Rig.Core/Devenv/OpencodeDefaults.cs)).
 
 ______________________________________________________________________
