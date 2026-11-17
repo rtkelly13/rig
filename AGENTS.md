@@ -25,12 +25,9 @@ when the merge is already queued. Never loop on `gh pr view` or `gh pr checks --
 blocked by anything but a failed check. Exit 0 is merged; exit 1 names what to fix, and for open review
 threads that is `rig gh threads resolve`. [docs/git/waiting-for-a-pr.md](docs/git/waiting-for-a-pr.md).
 
-[docs/development.md](docs/development.md) has the rest: pytest markers and which tests run where,
-the Windows-safe test rules, every quality gate, and the Tailwind gallery build. Read it before
-writing tests. Shared test doubles live in `tests/fakes/` (one per port); reuse them
-([docs/testing.md](docs/testing.md#shared-fakes)).
-Read [docs/python-types.md](docs/python-types.md) before writing Python in `src/`:
-basedpyright is strict with `Any` banned, and the ratchet blocks the shapes it lists.
+[docs/development.md](docs/development.md) has the rest: which tests run where, the Windows-safe test rules,
+every quality gate, and the Tailwind gallery build. Read it before writing tests. Shared test doubles live in
+`tests/Rig.Core.Tests/Fakes/` (one per port); reuse them ([docs/testing.md](docs/testing.md#shared-fakes)).
 
 ## Working Rules
 

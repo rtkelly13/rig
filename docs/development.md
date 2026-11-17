@@ -8,9 +8,7 @@ the commands an agent runs every session.
 `AGENTS.md` lists the everyday ones. Beyond those:
 
 ```bash
-dotnet run --project src/Rig.Cli -- status --ci         # CI-safe tests only (@pytest.mark.ci)
-uv run pytest -m ci                                     # the same subset, directly
-uv run pytest --cov=src --cov-report=term-missing       # coverage
+dotnet run --project src/Rig.Cli -- status --tests      # git state, then the solution's tests
 pnpm install && pnpm css:build                          # rebuild every committed web asset
 pnpm css:check                                          # fails if any committed output is stale
 ```
@@ -32,7 +30,7 @@ added upstream in rtkelly-labs/design-system, not hard-coded here.
 
 ## The C# front door
 
-`rig` is moving to C# (ADR 0022, #85). `src/Rig.Cli` is the front door. There are no Python entry points: `rig gh …`, `rig latex build` and `rig help` (the overview) are the installed
+`rig` is C# (ADR 0022, #85). `src/Rig.Cli` is the front door. There are no Python entry points: `rig gh …`, `rig latex build` and `rig help` (the overview) are the installed
 shim, and `dotnet run --project src/Rig.Cli -- …` is the same command from a checkout.
 The `desktop-manager` script is gone; its commands are `rig desktop`, `rig jobs`, `rig runtime` and
 `rig chrome-tabs`.
@@ -44,10 +42,10 @@ runs this checkout's code, so it is the form for developing rig and for CI. The 
 C# parses every command itself; nothing is forwarded to Python. The Python tools C# still starts (mdformat, through pinned `uvx`) find the checkout from `RIG_HOME` when it is set, else
 `<code root>/personal/rig`.
 
-The [command ownership gate](csharp-port/ownership.md) inspects actual C#/Python registrations and forwarding,
-then checks `config/command-ownership.json`. Update the ledger and retire the superseded implementation in the
-same PR as each cutover. CI rejects new independent overlaps and unregistered executables; its exact initial
-overlap baseline only shrinks. This gate runs on the PR's merged result and participates in the required `ci` check.
+The [command ownership gate](csharp-port/ownership.md) inspects the C# command tree, executables and launchers,
+then checks `config/command-ownership.json`. Add a ledger row for each new surface, and tombstone each deleted
+file in `RetiredFiles`, in the same PR. CI rejects an unregistered executable or a retired surface coming back.
+This gate runs on the PR's merged result and participates in the required `ci` check.
 
 `rig web mcp` is a stdio MCP server served by the C# CLI. `dotnet run` restores and builds without writing to stdout,
 even from a clean `src/Rig.Cli` with no `obj` or `bin`, so the protocol stays clean; a failed build never starts the
@@ -82,52 +80,47 @@ real worktrees and real files. A scenario tagged `@real` always uses the on-disk
 unless `RIG_REGRESSION=1` is set. Reqnroll writes `*.feature.cs` beside each feature: they are generated,
 gitignored, and rebuilt on every build.
 
-## Pytest Markers
+## Tests and CI
 
-Mark tests so the CI-safe subset can be run without external dependencies:
+All tests are C# (xUnit v3 on Microsoft.Testing.Platform); [testing.md](testing.md) covers the styles and the
+coverage floor. The brand pipeline `tools/image-drift` is the one Python project and runs its own gates (below).
 
-- `@pytest.mark.ci` — no Windows APIs, no live system state; runs in any CI environment
-- `@pytest.mark.windows` — requires Windows OS with win32 APIs
-- `@pytest.mark.integration` — requires live state (open windows, virtual desktops running)
-- `property` — applied automatically to Hypothesis tests; see [testing.md](testing.md)
+- **Linux**: the `dotnet` job builds and tests `rig.slnx`; `dotnet-coverage` checks the 95% floor.
+- **Windows**: `dotnet-windows` and `image-drift-windows` run conditionally, to conserve runner minutes on private repos:
+  - nightly on `main` (03:43 UTC), so a break that lands on `main` surfaces the next morning;
+  - on pull requests whose branch or title contains `windows` or `win32`, or with the label `ci:windows` (adding the
+    label to an open PR starts a run);
+  - on manual `workflow_dispatch`.
+- Pure Windows logic, path semantics and wrappers run on Linux against fakes. Only a test that needs live Win32 or a
+  real desktop is left to the Windows runner: skip it elsewhere with `Assert.SkipUnless(OperatingSystem.IsWindows(), ...)`.
+- The browser tests are Playwright tests in `tests/Rig.Web.BrowserTests`, driving an in-process `RigWebHost`
+  ([web-routes.md](web-routes.md#testing)). Install Chromium once after a build:
+  `pwsh tests/Rig.Web.BrowserTests/bin/Debug/net10.0/playwright.ps1 install chromium`.
 
-CI runs the suite on Ubuntu (`test`, with coverage and Windows portability lint gates). To conserve runner minutes on private repos, `test-windows` on `windows-latest` runs conditionally:
+Windows-safe tests (the Windows jobs catch these, but write them right first time):
 
-- Nightly on `main` (03:43 UTC), not on every merge — a break that lands on `main` surfaces the next morning. Linux jobs skip the nightly run.
-- On pull requests whose branch or title contains `windows` or `win32` (or with label `ci:windows`; adding the label to an open PR starts a run)
-- On manual `workflow_dispatch`
-
-Pure Windows unit tests, path semantics, and mock wrappers execute on Linux CI against fakes; only tests actually requiring live win32 APIs or native Windows subsystem behavior are deferred to `test-windows`. Anything that drives a real desktop, window or UI Automation tree must carry `integration`, or it will run on the Windows runner.
-
-Test isolation guards (autouse, so new tests get them for free):
-
-- `tests/conftest.py` points `LOCALAPPDATA` and `APPDATA` at per-test temp dirs and clears `DESKTOP_MANAGER_LOG_DIR`, so no test writes into the live runtime, restore logs or plans.
-- The browser tests are C# Playwright tests in `tests/Rig.Web.BrowserTests`, driving an in-process `RigWebHost` ([web-routes.md](web-routes.md#testing)). Install Chromium once after a build: `pwsh tests/Rig.Web.BrowserTests/bin/Debug/net10.0/playwright.ps1 install chromium`.
-
-Windows-safe tests (the `test-windows` job catches these, but write them right first time):
-
-- **Links**: never call `os.symlink` directly: without Developer Mode it fails with WinError 1314. Product code goes through `Rig.Core.Skills.IDirectoryLinker` for the same reason.
-- **Encoding**: always pass `encoding="utf-8"` to `read_text`, `write_text` and `open`. The Windows default is cp1252.
-- **Paths in output**: render paths with `.as_posix()` wherever a report, snapshot or assertion compares text. Otherwise Windows prints backslashes.
-- **Line endings**: when a test hashes a checked-in file, give that file type `-text` in `.gitattributes`, as `*.svg` has. Otherwise CRLF conversion on checkout changes the digest.
-- **Machine state**: never depend on the real monitor count, open windows or running processes. The C# fakes (`FakeDesktop`, `FakeProc`) answer for them.
-- **Filenames**: Windows cannot create names containing `:`, `?` or `*`. Mark those tests with `skipif(sys.platform == "win32")`. In C#, skip them with `Assert.SkipWhen(OperatingSystem.IsWindows(), ...)`.
+- **Links**: never create a symlink directly: without Developer Mode it fails with WinError 1314. Product code goes
+  through `Rig.Core.Skills.IDirectoryLinker` for the same reason.
+- **Paths in output**: render paths with forward slashes wherever a report, snapshot or assertion compares text.
+- **Line endings**: LF everywhere. When a test hashes a checked-in file, give that file type `-text` in
+  `.gitattributes`, as `*.svg` has.
+- **Machine state**: never depend on the real monitor count, open windows or running processes. The C# fakes
+  (`FakeDesktop`, `FakeProc`) answer for them.
+- **Filenames**: Windows cannot create names containing `:`, `?` or `*`; skip those tests on Windows.
 - **Console width**: compare wrapped CLI output with whitespace normalised. The Windows console wraps at 80 columns.
 
 ## Standards and quality gates
 
-- **Package Manager**: `uv` for Python, `pnpm` for the Tailwind build
-- **Local Relational & Analytics Database**: DuckDB (`duckdb`). Always prefer DuckDB for local analytics, structured ledger querying, and cross-referencing high-volume JSON/metadata feeds to prevent repetitive API calls.
-- **Lint/Format**: Ruff (strict rules), basedpyright (strict type checking, explicit and inferred `Any` banned), ty, Bandit (security)
-- **Workflow**:
-  - All changes **MUST** be made via Pull Request (no direct pushes to `main`).
-  - All CI checks (Lint, Typecheck, Tests) **MUST** pass before merge.
-  - Merges **MUST** use Squash only (strictly enforced in repo settings).
-- **Quality tools**:
-  - **Ruff**: Strict styling, complexity, and logic rules.
-  - **basedpyright**: `typeCheckingMode = "strict"` applies to every file; there is no per-path `strict` list. On top of strict, these rules are errors: `reportExplicitAny`, `reportAny`, `reportIgnoreCommentWithoutRule`, `reportImplicitOverride` (mark overrides with `@override`), `reportUnannotatedClassAttribute`, `reportImportCycles` (lazy imports count too; break cycles by moving shared code into a leaf module), `reportUninitializedInstanceVariable`, `reportUnusedParameter` and `reportPrivateLocalImportUsage`. There is no baseline, so every error fails CI.
-  - **ty**: `uv run ty check src packages/type-ratchet/src` also gates CI and `rig status`. It checks with `python-platform = "all"`, so Windows-only code is checked the same way on a Linux runner as on a Windows machine.
-  - **Type-soup ratchet**: `uv run ratchet` fails on any fixed tuple, `cast()`, ignore comment, `noqa`, `getattr`, long module, file-level `# pyright:` pragma or string-key read (`x["k"]`, `x.get("k")`, apart from `os.environ` and the `str-key-receivers` in pyproject) under the `paths` in `[tool.repo-health.ratchet]` (`src/` and the ratchet's own package), on any `json`/`yaml` parse or `isinstance(x, dict)` outside the `typed_json`/`typed_yaml` boundary modules (stub untyped libraries in `typings/` instead), and on any `dict[str, object]`, `Mapping[str, object]` or `JsonObject` (`loose-dict`) outside the serializers and config round-trips in `loose-dict-allow`. Follow [python-types.md](python-types.md) for the banned shapes and their replacements. The ratchet is the standalone, stdlib-only `type-ratchet` package in `packages/type-ratchet`, deleted in #285.
-  - **import-linter**: `uv run lint-imports` checks the `[tool.importlinter]` contracts in pyproject (gates CI and `rig status`): `desktop_manager` sits above `rig` and sibling subpackages are acyclic. Each contract's `ignore_imports` lists today's violations with the plan item that removes it. Don't add to it: fix the import or move shared code into a leaf module. An entry that no longer matches fails the run, so delete it in the PR that removes the import.
-  - **Bandit**: Automated security scanning.
-  - **Pytest**: Coverage-enforced testing.
+- **Package managers**: NuGet for C#, `pnpm` for the Tailwind build, `uv` for `tools/image-drift` only.
+- **Local analytics**: DuckDB for structured ledger querying and cross-referencing large JSON feeds, to avoid
+  repeating API calls.
+- **Workflow**: every change goes through a pull request, never a direct push to `main`. All required CI checks pass
+  before merge. Merges are squash only (enforced in repo settings).
+- **C# gates**: `dotnet build` with analyzers and nullable on, `dotnet format --verify-no-changes`, the layer rules in
+  `tests/Rig.Architecture.Tests`, and the coverage floor ([testing.md](testing.md#the-c-coverage-floor)).
+- **Ownership gate**: `tools/command-ownership` checks `config/command-ownership.json` against the C# command tree
+  (see [The C# front door](#the-c-front-door)).
+- **Repo gates**: `ls-lint` for filenames and script languages, `zizmor` for workflows, and
+  `rig repo-governance agents-audit . --strict` for AGENTS.md pointers.
+- **image-drift**: `cd tools/image-drift && uv sync && uv run ruff check . && uv run ty check && uv run pytest`;
+  CI runs the same, plus basedpyright and bandit, in the `image-drift` jobs.

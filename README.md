@@ -84,18 +84,13 @@ promotion gate that protects the traced masters.
 ## Development
 
 ```bash
-# Run tests
-uv run pytest
-
-# Format code
-uv run ruff format src/
-
-# Lint code
-uv run ruff check src/
-
-# Type check
-uv run basedpyright
+dotnet build rig.slnx -m:2        # build
+dotnet test --solution rig.slnx   # run the tests
+dotnet format rig.slnx            # format
 ```
+
+The brand pipeline in `tools/image-drift` is Python: `cd tools/image-drift && uv sync && uv run pytest`.
+See [docs/development.md](docs/development.md) for every gate.
 
 ## License
 
