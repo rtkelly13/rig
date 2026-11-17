@@ -347,8 +347,7 @@
     {"Id": "project:src/Rig.Core/Rig.Core.csproj:Microsoft.NET.Sdk","Capability": "surface:project:src/Rig.Core/Rig.Core.csproj:Microsoft.NET.Sdk","Owner": "project:src/Rig.Core/Rig.Core.csproj:Microsoft.NET.Sdk","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "project:src/Rig.Launcher/Rig.Launcher.csproj:Microsoft.NET.Sdk","Capability": "surface:project:src/Rig.Launcher/Rig.Launcher.csproj:Microsoft.NET.Sdk","Owner": "project:src/Rig.Launcher/Rig.Launcher.csproj:Microsoft.NET.Sdk","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "project:src/Rig.Web/Rig.Web.csproj:Microsoft.NET.Sdk","Capability": "surface:project:src/Rig.Web/Rig.Web.csproj:Microsoft.NET.Sdk","Owner": "project:src/Rig.Web/Rig.Web.csproj:Microsoft.NET.Sdk","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Capability": "surface:project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Owner": "project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "python-file:tools/command-ownership/python_tree.py","Capability": "surface:python-file:tools/command-ownership/python_tree.py","Owner": "python-file:tools/command-ownership/python_tree.py","Platforms": ["linux","macos","windows"],"AliasTo": null}
+    {"Id": "project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Capability": "surface:project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Owner": "project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Platforms": ["linux","macos","windows"],"AliasTo": null}
   ],
   "Baseline": [],
   "Retired": [
@@ -871,6 +870,12 @@
     "typings/win32com/propsys/propsys.pyi",
     "typings/win32com/propsys/pscon.pyi",
     "typings/win32gui.pyi",
-    "typings/win32process.pyi"
+    "typings/win32process.pyi",
+    "pyproject.toml",
+    "tests/__init__.py",
+    "tests/conftest.py",
+    "tests/sizes.py",
+    "tests/test_command_discovery.py",
+    "tools/command-ownership/python_tree.py"
   ]
 }
