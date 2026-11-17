@@ -94,10 +94,7 @@ internal sealed class VolumeCommand(
         if (json)
         {
             var partition = new JsonObject();
-            foreach (var (name, size) in parts)
-            {
-                partition[name] = size;
-            }
+            foreach (var (name, size) in parts) { partition[name] = size; }
 
             var payload = new JsonObject
             {
@@ -140,10 +137,7 @@ internal sealed class VolumeCommand(
         }
 
         var artefacts = new TextTable($"Dev artefacts under {request.CodeRoot} (outermost match, no overlap)", [("Category", false), ("Allocated", true)]);
-        foreach (var (name, size) in parts)
-        {
-            _ = artefacts.Add(name, Bytes.Human(size));
-        }
+        foreach (var (name, size) in parts) { _ = artefacts.Add(name, Bytes.Human(size)); }
 
         var hogs = new TextTable("Known Windows hogs", [("Hog", false), ("Allocated", true), ("Remedy", false), ("Safety", false)]);
         foreach (var hit in found.Where(hit => hit.Allocated >= HogFloor))
@@ -162,10 +156,7 @@ internal sealed class VolumeCommand(
 
     private async Task<IReadOnlyList<Folder>> LoadAsync(Request request, CancellationToken cancellationToken)
     {
-        if (request.Csv is { Length: > 0 } csv)
-        {
-            return Volume.Load(host.ExpandHome(csv), LoadFloor);
-        }
+        if (request.Csv is { Length: > 0 } csv) { return Volume.Load(host.ExpandHome(csv), LoadFloor); }
 
         // Resolved, as the elevated WizTree child may not expand a short 8.3 name.
         var target = Path.Join(LongPath(Path.GetTempPath()), $"wiztree-{request.Drive.Trim(':').ToLowerInvariant()}.csv");
@@ -177,10 +168,7 @@ internal sealed class VolumeCommand(
         }
         finally
         {
-            if (!request.KeepCsv)
-            {
-                File.Delete(target);
-            }
+            if (!request.KeepCsv) { File.Delete(target); }
         }
     }
 
@@ -188,10 +176,7 @@ internal sealed class VolumeCommand(
     private static string LongPath(string path)
     {
         var full = Path.GetFullPath(path);
-        if (!OperatingSystem.IsWindows() || !full.Contains('~', StringComparison.Ordinal))
-        {
-            return full;
-        }
+        if (!OperatingSystem.IsWindows() || !full.Contains('~', StringComparison.Ordinal)) { return full; }
 
         var current = Path.GetPathRoot(full) ?? full;
         foreach (var part in full[current.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))

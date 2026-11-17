@@ -94,10 +94,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
     internal static string Headline(IReadOnlyList<WorktreeRow> rows, bool applied)
     {
         var removable = rows.Where(r => r.Removable).ToList();
-        if (!applied)
-        {
-            return $"{removable.Count} of {rows.Count} Orca worktree(s) finished; the rest are kept";
-        }
+        if (!applied) { return $"{removable.Count} of {rows.Count} Orca worktree(s) finished; the rest are kept"; }
 
         var removed = removable.Count(r => r.Removed);
         var failed = removable.Count(r => r.Failed);
@@ -114,19 +111,13 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
         }
 
         var live = await ConnectAsync(Profiles(args), cancellationToken).ConfigureAwait(false);
-        if (live is null)
-        {
-            return 2;
-        }
+        if (live is null) { return 2; }
 
         var scopes = new IReadOnlySet<string>?[live.Count];
         if (args.Repos.Length > 0)
         {
             var chosen = await ScopesAsync(live, args.Repos, cancellationToken).ConfigureAwait(false);
-            if (chosen is null)
-            {
-                return 2;
-            }
+            if (chosen is null) { return 2; }
 
             chosen.CopyTo(scopes, 0);
         }
@@ -138,10 +129,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
         for (var i = 0; i < live.Count; i++)
         {
             var (name, runtime) = live[i];
-            if (scopes[i] is { Count: 0 })
-            {
-                continue;
-            }
+            if (scopes[i] is { Count: 0 }) { continue; }
 
             try
             {
@@ -151,10 +139,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             catch (OrcaUnavailableException e)
             {
                 await error.WriteLineAsync($"{name} Orca profile failed: {e.Message}".AsMemory(), cancellationToken).ConfigureAwait(false);
-                if (i == 0 && rows.Count == 0)
-                {
-                    return 2;
-                }
+                if (i == 0 && rows.Count == 0) { return 2; }
 
                 // A later profile failing keeps what earlier ones found, and removed, on the report.
                 profileFailed = true;
@@ -269,10 +254,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
         }
 
         List<(string, bool)> columns = [("profile", false), ("project", false), ("worktree", false), ("branch", false), ("verdict", false), ("reason", false)];
-        if (args.Apply)
-        {
-            columns.Add(("outcome", false));
-        }
+        if (args.Apply) { columns.Add(("outcome", false)); }
 
         var table = new TextTable(headline, columns);
         var ordered = shown

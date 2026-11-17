@@ -146,10 +146,7 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
     /// <summary>The table and its counts line, as the dry run, the applied run or the hand-off to a follower prints them.</summary>
     internal static string Render(IReadOnlyList<WrapupRow> rows, bool applied, bool background = false)
     {
-        if (rows.Count == 0)
-        {
-            return "No matching Claude sessions in Orca.\n";
-        }
+        if (rows.Count == 0) { return "No matching Claude sessions in Orca.\n"; }
 
         var mode = background ? "ASKING IN THE BACKGROUND" : applied ? "APPLIED" : "DRY-RUN (pass --apply to send)";
         var table = new TextTable(
@@ -164,10 +161,7 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
                 answer.Add(row.Verdict.Done ? "done" : "pending" + (row.Verdict.Detail.Length > 0 ? $": {row.Verdict.Detail}" : ""));
             }
 
-            if (row.Note.Length > 0)
-            {
-                answer.Add(row.Note);
-            }
+            if (row.Note.Length > 0) { answer.Add(row.Note); }
 
             if (row.Children.Count > 0)
             {
@@ -316,10 +310,7 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
         var rows = await Wrapup.PlanAsync(
             placed, snapshot.Terminals, now, options, (path, token) => Wrapup.ReadGitFactsAsync(git, path, token), store, cancellationToken).ConfigureAwait(false);
         var byId = new Dictionary<string, WrapupWorktree>(StringComparer.Ordinal);
-        foreach (var p in placed)
-        {
-            byId[p.Worktree.WorktreeId] = p.Worktree;
-        }
+        foreach (var p in placed) { byId[p.Worktree.WorktreeId] = p.Worktree; }
 
         if (args.ShowPrompt)
         {
@@ -401,10 +392,7 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
             await PrintAsync(rows, false, truncated, asks > 0, cancellationToken).ConfigureAwait(false);
         }
 
-        if (asks == 0)
-        {
-            return 0;
-        }
+        if (asks == 0) { return 0; }
 
         if (wrapup.Follower.Running())
         {
@@ -427,22 +415,13 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
     {
         List<string> argv = [args.Personal ? "--personal" : "--work"];
         argv.AddRange(args.Repos.SelectMany(r => new[] { "--repo", r }));
-        if (args.All)
-        {
-            argv.Add("--all");
-        }
+        if (args.All) { argv.Add("--all"); }
 
         argv.AddRange(args.Worktrees.SelectMany(w => new[] { "--worktree", w }));
-        if (args.Children)
-        {
-            argv.Add("--children");
-        }
+        if (args.Children) { argv.Add("--children"); }
 
         argv.AddRange(["--idle", args.Idle, "--max", args.Max.ToString(CultureInfo.InvariantCulture), "--wait", args.Wait]);
-        if (args.IncludeSettled)
-        {
-            argv.Add("--include-settled");
-        }
+        if (args.IncludeSettled) { argv.Add("--include-settled"); }
 
         argv.AddRange(["--template", Path.GetFullPath(templateFile), "--apply"]);
         return argv;
