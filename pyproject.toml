@@ -132,7 +132,6 @@ forbidden_modules = [
     "desktop_manager.handlers",
     "desktop_manager.jobs",
     "desktop_manager.queries",
-    "desktop_manager.work",
     "desktop_manager.placement",
     "desktop_manager.desktop_reconcile",
     "desktop_manager.restore",
@@ -180,7 +179,6 @@ ignore = [
 "typings/**" = ["N801", "N802", "N803", "N815", "N816", "F403", "TID251"]
 "**/*_windows.py" = ["TID251"]
 "**/windows/**" = ["TID251"]
-"src/desktop_manager/work/session_store.py" = ["TID251"]  # ctypes.windll for the live-session pid start time
 "src/desktop_manager/win32/*.py" = ["TID251"]
 "src/desktop_manager/display_guard.py" = ["TID251"]
 "src/desktop_manager/chrome/desktops.py" = ["TID251"]
@@ -414,7 +412,6 @@ loose-dict-allow = [
     "src/desktop_manager/chrome/cli.py",
     "src/desktop_manager/chrome/traces.py",
     "src/desktop_manager/models.py",
-    "src/desktop_manager/work/serialize.py",
     "src/rig/estate/discovery.py",
     "src/rig/tracing.py",
 ]

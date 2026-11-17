@@ -16,16 +16,13 @@ from desktop_manager.chrome.cli import chrome_tabs_app
 from desktop_manager.cli_common import console
 from desktop_manager.jobs.cli import jobs_app
 from desktop_manager.runtime_cli import runtime_app
-from desktop_manager.work.cli import work_app
 from rig import tracing
 
 app = typer.Typer(name="desktop-manager", no_args_is_help=True, add_completion=False)
 
 app.add_typer(chrome_tabs_app)
 app.add_typer(runtime_app)
-app.add_typer(work_app)
 app.add_typer(jobs_app)
-app.add_typer(work_app)
 
 
 @app.command(name="help")
@@ -64,11 +61,6 @@ def help_cmd() -> None:
     console.print()
     _render_group(chrome_tabs_app, "chrome-tabs")
     console.print("  Trace reports: rig chrome-tabs traces --help\n")
-
-    # --- work item commands ---
-    console.rule("[bold]Work item commands[/bold]", style="dim")
-    console.print()
-    _render_group(work_app, "work")
 
     # --- machine jobs ---
     console.rule("[bold]Machine jobs[/bold]", style="dim")

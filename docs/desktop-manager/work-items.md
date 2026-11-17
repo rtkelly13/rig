@@ -1,6 +1,6 @@
 # Work items
 
-`desktop-manager work list` shows one row per **work item**, which is a (repo, branch) pair. Each row joins three sources:
+`rig work list` shows one row per **work item**, which is a (repo, branch) pair. Each row joins three sources:
 
 - **Git:** the branch's checkouts (main checkout and linked worktrees), whether they are dirty, unpushed commits, and the upstream.
 - **GitHub:** the newest pull request whose head is the branch.
@@ -9,10 +9,10 @@
 The command is read-only. It changes no repository, closes no session and touches no tab.
 
 ```
-desktop-manager work list                      # rich table on stdout
-desktop-manager work list --json               # stable schema, below
-desktop-manager work list --state merged       # cleanup candidates
-desktop-manager work list --repo data-platform --since 7d --sessions
+rig work list                      # plain-text table on stdout
+rig work list --json               # stable schema, below
+rig work list --state merged       # cleanup candidates
+rig work list --repo data-platform --since 7d --sessions
 ```
 
 | Option | Effect |
@@ -58,7 +58,7 @@ Answers are cached per repo in `~/.work-items-prs.json` for 10 minutes. A failed
 
 ### Claude Code sessions
 
-Sessions are read through `desktop_manager.work.session_store`, from three places:
+Sessions are read by `ClaudeWorkSessions` (`src/Rig.Core/Work/ClaudeSessions.cs`), from three places:
 
 - the transcripts in `~/.claude/projects` changed within `--session-days`
 - the live registry in `~/.claude/sessions`
@@ -92,7 +92,7 @@ The rules, applied in this order:
 
 1. **Longest matching checkout path wins.** A worktree at `<clone>/temp/<name>` beats the clone that contains it.
 2. **Directory no longer exists → unattached.** This covers removed worktrees. Such a session is never credited to the clone that used to contain the directory.
-3. **Directory outside every known checkout, but inside a git repo → that repo.** The repo comes from `work.session_store.folder_facts`. It gets an item with no checkouts listed.
+3. **Directory outside every known checkout, but inside a git repo → that repo.** The repo comes from `SessionFolders.Resolve`. It gets an item with no checkouts listed.
 4. **Anything else → unattached.** The usual case is the code root itself, for example `C:\code`.
 
 All unattached sessions go into one `unattached` item. They are not given to a per-repo trunk item, because guessing the repo would credit the session to work it may never have touched.
@@ -145,7 +145,7 @@ The JSON is versioned by `schema_version`.
 - Times are ISO 8601 with an offset.
 - `null` means unknown or not applicable.
 
-[`src/desktop_manager/work/serialize.py`](../../src/desktop_manager/work/serialize.py) holds an annotated example of the full payload, next to the code that builds it. Run `desktop-manager work list --json` for a live one.
+[`src/Rig.Core/Work/WorkJson.cs`](../../src/Rig.Core/Work/WorkJson.cs) builds the payload, and [`work-list.fixture.json`](../../tests/Rig.Core.Tests/Work/work-list.fixture.json) is a full example of one. Run `rig work list --json` for a live one.
 
 `items` holds only the items that pass the filters.
 
