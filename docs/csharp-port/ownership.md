@@ -25,28 +25,20 @@ The inspector combines:
   with a driver that refuses native execution on this Mac. macOS gets its own composition export rather than
   inheriting the Linux tree; new native wiring must honor the inspection platform. Inspection invokes no actions.
   Pre-parser agent shortcuts, the bare launch, model shortcuts and actual external agent targets are exported too.
-- Python AST discovery of Typer/Click factories, followed by **runtime traversal** of their composed command trees,
-  including hidden commands and dynamically listed Click children. Unmounted apps are inspected too. Unsupported
-  local factories, stateful callback closures, failed imports and unresolved children fail discovery.
-  New console targets, GUI/plugin entry points and executable projects need explicit runtime adapters; a new ledger
-  row cannot silently approve an unsupported framework. Named Python shims must resolve to their C# command.
-- Every Python `__main__`/guard under core `src/`, console script target, development Python file, C# `Main`,
-  top-level C# file app, C# command root and project (Roslyn syntax, project XML and evaluated MSBuild output types),
-  C# root discovery includes target-typed `new()` and type aliases through Roslyn's semantic model.
-  Node `bin`/package scripts and standalone Node scripts, tracked executable modes, and checked-in
-  command/shell/PowerShell/LaunchAgent launchers. Launcher contents are fingerprinted.
-- Both composed job registries, including the optional workspace jobs, using inert fixture paths. They are
+- Every C# `Main`, top-level C# file app, C# command root and project (Roslyn syntax, project XML and evaluated
+  MSBuild output types); C# root discovery includes target-typed `new()` and type aliases through Roslyn's
+  semantic model. Node `bin`/package scripts and standalone Node scripts, tracked executable modes, and
+  checked-in command/shell/PowerShell/LaunchAgent launchers. Launcher contents are fingerprinted. No Python
+  is inspected: `tools/image-drift` is the only Python project and no rig command reaches it.
+- The composed C# job registry, including the optional workspace jobs, using inert fixture paths. They are
   callers, not independent implementations. No job is run. The MCP server's actual C# tool attributes are inspected
   without serving requests.
 
-The Python probe is a development inspection adapter for the legacy runtime, not new rig product behavior.
-The ownership rules, source inspection and gate runner are C#. The Python web child is gone, so the probe no longer inspects any web route.
+The ownership rules, source inspection and gate runner are C#. The Python probe that once inspected the legacy
+Typer/Click runtime was deleted with that runtime (#285).
 
 `Id` identifies the observed registration. `Capability` is its normalized command path; `Owner` is the canonical
-implementation. A Python wrapper counts as an alias only when its inspected AST is exactly a whole-line dispatch
-to the real `csharp_cli.run`, without branches, fallback or independent behavior. Only Typer's exact built-in
-callback adapter is stripped; user decorators are independent behavior. Reusing one callback under
-several names also shares one implementation. C# aliases come from the actual command object's alias collection.
+implementation. Reusing one callback under several names shares one implementation. C# aliases come from the actual command object's alias collection.
 New registrations need reviewed ledger rows. Metadata must match discovery, so changing a ledger owner or platform
 cannot conceal an independent implementation.
 
@@ -235,26 +227,14 @@ effects, focus restoration and cleanup remain to be accepted. Any caller still s
 repository's own callers and the ledger, not installed runtimes, tasks or other machines. The `WIN-CHROME`
 and `ROLLOUT` rows above stay open until that evidence is recorded.
 
-## Sunset the migration gate at final cutover
+## Sunset the migration gate
 
-_State after #217:_ the overlap baseline is empty, but this is an overlap-only slice, not port completion:
-main still has core Python files and dozens of Python-owned registrations, and routes still have callers
-(`jobs install` and the remaining web children). The ledger and this
-gate stay in place until the source migration, native acceptance and rollout criteria above are met.
+_State after #285:_ every core command, web and MCP surface and job caller has a C# owner, the overlap baseline is
+empty and the legacy Python runtime, its inspection probe and its tests are deleted. The gate is C# only. It stays
+as a small permanent check: each registration needs a reviewed ledger row, and the `Retired` and `RetiredFiles`
+tombstones keep a deleted surface from coming back. Tombstones are permanent by rule (`OwnershipRules.Check`), so
+the lists only grow; collapsing them would mean changing that rule, which is a separate decision.
 
-This cross-language inventory is temporary migration machinery. Close it down in the final #85 cutover PR
-once all core commands, web/MCP children and job callers have C# owners, the overlap baseline is empty,
-core Python implementations and forwarding fallbacks are deleted, and the named native acceptance and estate
-rollout evidence above is recorded. ADR 0022's isolated `tools/image-drift` exception remains separate.
-An empty discovery result alone is never sufficient: failed or unsupported discovery must continue to fail closed.
-
-That final PR should delete the Python inspection adapter and its tests, the migration ledger and baseline,
-temporary legacy capability mappings, unused discovery tooling/dependencies, and the `command-ownership` CI job
-and aggregate dependency. Preserve the migration evidence in #85 and Git history rather than maintaining a
-per-command migration roster forever. Source deletion and deployed runtime rollout remain separate checklist items.
-
-In the same PR, replace this machinery with small permanent C# architecture and command-tree checks for unique
-canonical registrations, thin aliases, one CLI front door, and rejection of core Python or legacy forwarding
-returning. These keep retirement enforced after the per-entry tombstones are removed. Keep the existing coverage,
-nullable, analyzer and architecture gates. Do not add an automatic disable flag while the port is incomplete;
-review the final removal against recorded source, native acceptance and rollout evidence before closing #85.
+What remains of the port is evidence, not code: the named native acceptance procedures above and the estate rollout
+records stay `pending` in [acceptance.md](acceptance.md) until someone records a run. ADR 0022's isolated
+`tools/image-drift` exception stays Python.

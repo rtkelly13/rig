@@ -71,7 +71,7 @@ an installed wheel, where `assets/` does not exist.
    (`image-reconcile diagnose`), attributing drift orthogonally between luminance
    (geometry/edges) and chrominance (palette/tint).
 
-All six are enforced by `tests/test_brand_asset_governance.py` and
+All six are enforced by `tools/image-drift/tests/test_brand_asset_governance.py` and
 `tools/image-drift/tests/test_image_drift_labs.py`.
 
 ### `production-cuts.csv` schema
@@ -92,7 +92,7 @@ All six are enforced by `tests/test_brand_asset_governance.py` and
 (`tools/image-drift/src/image_drift/production_cuts.py`). `svg` rows are copies, `png` rows are Chromium
 renders at the row's size, and `ico` rows bundle 48/32/16px up to the row's width. `favicon*`
 cut types come from the builder's `favicon` variant; every other cut comes from the canonical
-master. `tests/test_production_cuts.py` checks the export against each CSV.
+master. `tools/image-drift/tests/test_production_cuts.py` checks the export against each CSV.
 
 ---
 
@@ -156,7 +156,7 @@ Unlike SSIM, this needs no renderer — it is arithmetic over parsed path data, 
 it runs everywhere the test suite runs. (The drift test is
 `skipif(not chromium_available())` and therefore *silently skips* wherever
 Playwright is absent; the conformance test never does.) It is pinned by
-`tests/test_edge_regularity.py` to be:
+`tools/image-drift/tests/test_edge_regularity.py` to be:
 
 - **deterministic** — bit-identical across runs and processes;
 - **invariant** to path order, whitespace, and translation. Float summation is
@@ -238,7 +238,7 @@ for 0.004 SSIM. It is visibly the same mark with crisper edges.
 Every pathway is deterministic — same inputs, byte-identical output — and the
 fitter especially so: fixed field order, fixed step schedule, no randomness, and
 ties broken toward the incumbent so the walk cannot oscillate between
-equal-scoring neighbours. `tests/test_pathways.py` pins this.
+equal-scoring neighbours. `tools/image-drift/tests/test_pathways.py` pins this.
 
 None of them promotes anything. Pathways propose; `promote` disposes.
 

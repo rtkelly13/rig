@@ -34,22 +34,17 @@ The others are well-known results, but check them before quoting.
 A test has two independent properties: its **style**, which is how it is written, and its
 **size**, which is the resources it actually uses at runtime.
 
-- **Style** is example or property (Hypothesis). `tests/conftest.py` tags property tests
-  automatically. Everything else is an example test. The `bdd` style remains in the size probe,
-  but no Python suite uses it since pytest-bdd went with `estate shelve`'s move to C#.
-- **Size** follows Google's definitions, as `rig.repo_governance.size_probe` applies them:
+- **Style** is example or property (CsCheck), or a Gherkin scenario (Reqnroll).
+- **Size** follows Google's definitions:
   - **small**: one process, with no subprocess, filesystem write or socket;
   - **medium**: subprocesses, filesystem writes or localhost sockets;
-  - **large**: a socket to another machine, or the `integration` marker (a live desktop).
+  - **large**: a socket to another machine, or a live desktop (the Windows-only tests).
 
 Classify by the size a test actually uses, not by what its author intended.
-Trautsch & Grabowski (ICST 2017)† found that Python developers overestimate how many unit
+Trautsch & Grabowski (ICST 2017)† found that developers overestimate how many unit
 tests they write. Trautsch, Herbold & Grabowski (JSS 2020)†, studying 38,782 tests, found
 that unit and integration tests catch the same kinds of defect. The difference is that unit
 tests locate the defect more precisely.
-
-The existing `integration` marker is narrower than size. It means the test needs a live
-desktop session.
 
 ## A scorecard for each type
 
@@ -57,7 +52,7 @@ desktop session.
 |:--|:--|:--|
 | Small (unit) | Mutants killed in its own module; pseudo-tested functions it reaches; assertions per test; runtime | Unique lines: its job is to locate a fault, not to reach new code |
 | Medium / large (integration) | Lines that no small test reaches; mutants that only it kills; flakiness under random order and reruns; runtime | Assertion density |
-| Property | Mutants killed per test; how evenly its inputs spread (`event()` and `target()`); share of inputs discarded | Unique lines: it runs code that other tests run, but over many more inputs |
+| Property | Mutants killed per test; how evenly its inputs spread; share of inputs discarded | Unique lines: it runs code that other tests run, but over many more inputs |
 | BDD | Scenarios with identical execution traces; step reuse; mutants killed in behaviour-level code | Line counts |
 
 Ravi & Coblenz (OOPSLA 2025)† found that, per test, a property test found about 50 times as
@@ -65,74 +60,17 @@ many mutants as an average unit test. A preprint reports the totals the other wa
 can be true, so compare tests one at a time, not suite against suite.
 
 For BDD, Binamungu, Embury & Konstantinou (2018–2020)† find duplicate scenarios by comparing
-their execution traces. rig's per-test coverage data gives each scenario exactly that trace.
+their execution traces.
 
 ## What rig measures today
 
 | Measure | Tool | Where |
 |:--|:--|:--|
-| Line and branch coverage (Python: a fixed floor; C#: ratcheting towards 95%) | pytest-cov `fail_under`; `scripts/coverage-floor.cs` | Every CI run ([testing.md](testing.md)) |
-| Lines covered and unique lines for each test | `rig.repo_governance.coverage_by_test` | Every CI run: a job summary plus the `coverage-by-test` artifact |
-| Style and size of each test | `pytest --record-sizes PATH`, joined by `coverage_by_test --sizes PATH` | Every CI run: a table by style and size in the job summary, and `style`/`size` columns in the CSVs |
-| Mutation score | `uv run --with mutmut mutmut run` | On demand |
+| Line and branch coverage, floor 95% | `scripts/coverage-floor.cs` over coverlet reports | Every CI run ([testing.md](testing.md#the-c-coverage-floor)) |
 
-The first measurement, on 2026-11-05, counted each test function as one test:
-
-- 2,677 test functions run 22,155 lines. Only 26% of those lines are run by exactly one test.
-- 63% of test functions run no line that another test does not also run.
-- **190 groups of tests (612 tests in all) run exactly the same lines.** Most are example
-  tables written as separate functions over one helper. Turn each group into a parametrized
-  test rather than deleting it. The exception was the browser tests, now C# Playwright tests in
-  `tests/Rig.Web.BrowserTests`: the code they test is JavaScript, which coverage cannot see.
-- **81 tests each run 300 or more lines, none of them unique.** They are the candidates for
-  merging into a shared fixture with sharper assertions. Check them against mutants before
-  merging.
-- **38 source files are reached by no test at all.** That is 863 missed statements, and each
-  file needs one smoke test through `CliRunner`.
-
-### The numbers are repeatable
-
-Two runs used to agree on unique counts, but the covered count moved for about 2% of tests.
-Under xdist, the test that first reaches a lazy import or a cache depends on which worker it
-lands on, and module-level code and cache warm-up were credited to that test. Two fixes removed
-this. Definition lines are import-only in the report, and `tests/conftest.py` clears every `src`
-cache before each test. Two runs now give byte-identical results at every level.
-
-### Sizes, measured
-
-`--record-sizes` installs an audit hook (PEP 578) and records what each test's body does. Fixture
-setup is left out, so a `tmp_path` a test never writes to does not make it medium. On 2026-11-05:
-
-- **About 70% of tests are small and 29% medium.** Most medium tests only write files; 179 also
-  start a subprocess, usually `git`.
-- **One test reaches the internet.** `test_cli_packages_status_and_artifacts_alias` resolves
-  `registry.npmjs.org` on every run. It is large, unhermetic, and next in line to fake.
-- **There are 19 property tests.** A derived marker can silently stop applying: the `bdd` marker
-  selected nothing for months after pytest-bdd 8 dropped the `__scenario__` attribute that
-  `conftest.py` looked for. A test now checks that the `property` marker reaches the suite's own tests.
-
-## Python tooling
-
-| Measure | Tool |
-|:--|:--|
-| Mutation, per test | mutmut 3, which maps tests to mutants. It needs `fork`, so it runs under WSL on Windows. cosmic-ray is an alternative. |
-| Pseudo-tested functions | No Python tool was found. rig can build one: replace each function body, then rerun only the tests that the coverage data says reach it. |
-| Checked coverage | No Python tool was found. A practical stand-in is to count `assert` statements in each test with `ast`. |
-| Flakiness | pytest-randomly for order, plus pytest-rerunfailures or pytest-flakefinder |
-| Smells | pytest-smell |
-| Property-test statistics | Hypothesis observability (`HYPOTHESIS_EXPERIMENTAL_OBSERVABILITY`)† |
-
-## Build order
-
-1. **Make the per-test numbers repeatable.** Done: definition lines are import-only, and caches
-   are cleared between tests.
-2. **Tag each test's size at runtime.** Done: `--record-sizes` writes a sidecar file and
-   `coverage_by_test --sizes` groups by it. Pytest's `-m` cannot select on size, because it is
-   only known after the test runs.
-3. **Build a detector for pseudo-tested functions.** Use the coverage data to choose which
-   tests to rerun.
-4. **Map each test to the mutants it kills.** Run mutmut 3 as a scheduled CI job, not on
-   laptops. This mapping decides which tests with no unique lines can really go.
+The per-test footprint, size probe and mutation tooling were Python-only (pytest-cov contexts, an audit hook,
+mutmut) and went with the Python suite in #285. The 2026-11 baseline they produced is in git history. A C# mutation
+tool is the open measurement: it would decide which tests with no unique lines can really go.
 
 ## Where the evidence disagrees
 
