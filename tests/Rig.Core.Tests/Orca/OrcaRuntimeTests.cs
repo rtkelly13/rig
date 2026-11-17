@@ -190,21 +190,9 @@ public sealed class OrcaRuntimeTests : IDisposable
     public async Task The_socket_exchange_talks_over_a_unix_socket()
     {
         var path = Path.Join(Path.GetTempPath(), $"o{Guid.NewGuid():N}"[..10]);
-        using var listener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-        listener.Bind(new UnixDomainSocketEndPoint(path));
-        listener.Listen(1);
         try
         {
-            async Task ServeAsync()
-            {
-                using var client = await listener.AcceptAsync(Token);
-                await using var stream = new NetworkStream(client);
-                using var reader = new StreamReader(stream, Encoding.UTF8);
-                var request = await reader.ReadLineAsync(Token);
-                await stream.WriteAsync(Encoding.UTF8.GetBytes($"{{\"_keepalive\":true}}\n{{\"id\":\"r1\",\"ok\":true,\"result\":{request}}}\n"), Token);
-            }
-
-            var server = ServeAsync();
+            var server = EchoOverSocketAsync(path, Token);
 
             var result = await new OrcaRuntime(new(OrcaTransport.Unix, path), "t", new SocketOrcaExchange(), () => "r1").CallAsync("ping", null, Token);
             await server;
@@ -221,22 +209,39 @@ public sealed class OrcaRuntimeTests : IDisposable
     public async Task The_socket_exchange_talks_over_a_named_pipe()
     {
         var name = $"rig-orca-{Guid.NewGuid():N}"[..20];
-        await using var pipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-        async Task ServeAsync()
-        {
-            await pipe.WaitForConnectionAsync(Token);
-            using var reader = new StreamReader(pipe, Encoding.UTF8, leaveOpen: true);
-            _ = await reader.ReadLineAsync(Token);
-            await pipe.WriteAsync("""{"id":"r1","ok":true,"result":"pong"}"""u8.ToArray().Append((byte)'\n').ToArray(), Token);
-            pipe.Disconnect();
-        }
-
-        var server = ServeAsync();
+        var server = PongOverPipeAsync(name, Token);
 
         var result = await new OrcaRuntime(new(OrcaTransport.NamedPipe, $@"\\.\pipe\{name}"), "t", new SocketOrcaExchange(), () => "r1").CallAsync("ping", null, Token);
         await server;
 
         Assert.Equal("pong", (string?)result);
+    }
+
+    // The two servers below stay off the test's synchronization context: the runner's context is a few threads shared
+    // with every synchronous test, and a reply queued behind those arrives after the exchange has given up.
+    // Each is listening by the time it returns its task: everything before the first await runs on the caller.
+    private static async Task EchoOverSocketAsync(string path, CancellationToken cancellationToken)
+    {
+        using var listener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        listener.Bind(new UnixDomainSocketEndPoint(path));
+        listener.Listen(1);
+        using var client = await listener.AcceptAsync(cancellationToken).ConfigureAwait(false);
+        var stream = new NetworkStream(client);
+        await using var owned = stream.ConfigureAwait(false);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var request = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+        await stream.WriteAsync(Encoding.UTF8.GetBytes($"{{\"_keepalive\":true}}\n{{\"id\":\"r1\",\"ok\":true,\"result\":{request}}}\n"), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task PongOverPipeAsync(string name, CancellationToken cancellationToken)
+    {
+        var pipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        await using var owned = pipe.ConfigureAwait(false);
+        await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+        using var reader = new StreamReader(pipe, Encoding.UTF8, leaveOpen: true);
+        _ = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+        await pipe.WriteAsync("""{"id":"r1","ok":true,"result":"pong"}"""u8.ToArray().Append((byte)'\n').ToArray(), cancellationToken).ConfigureAwait(false);
+        pipe.Disconnect();
     }
 
     [Fact]
