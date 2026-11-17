@@ -68,14 +68,12 @@ public sealed class DiscoveryTests
     }
 
     [Fact]
-    public void Runtime_aliases_and_python_aliases_resolve_to_their_csharp_owner()
+    public void Runtime_aliases_resolve_to_their_csharp_owner()
     {
-        var python = new Discovery.PythonTree(
-            [new("py:trace", "desktop-manager chrome-tabs traces", "old", ["macos", "windows"], "chrome-tabs traces")], []);
         var command = new Discovery.CsCommand("chrome-tabs traces", true, ["reports"]);
         var tree = new Discovery.CsTree([command], []);
-        var rows = Discovery.Commands(python, new Dictionary<string, Discovery.CsTree> { ["macos"] = tree, ["windows"] = tree }).ToArray();
-        Assert.Equal(3, rows.Length);
+        var rows = Discovery.Commands(new Dictionary<string, Discovery.CsTree> { ["macos"] = tree, ["windows"] = tree }).ToArray();
+        Assert.Equal(2, rows.Length);
         Assert.Empty(OwnershipRules.Check(rows.Select(r => r.Id).ToArray(), new OwnershipLedger(rows, [], [], [])));
     }
 
@@ -83,7 +81,7 @@ public sealed class DiscoveryTests
     public void Every_job_is_a_surface()
     {
         var tree = new Discovery.CsTree([], ["job=rig triage verify"]);
-        var rows = Discovery.Commands(new Discovery.PythonTree([], []), new Dictionary<string, Discovery.CsTree> { ["linux"] = tree }).ToArray();
+        var rows = Discovery.Commands(new Dictionary<string, Discovery.CsTree> { ["linux"] = tree }).ToArray();
         Assert.Contains(rows, r => r.Id == "cs-job:linux:job=rig triage verify");
     }
 
@@ -92,7 +90,7 @@ public sealed class DiscoveryTests
     {
         var command = new Discovery.CsCommand("new", true, []);
         var tree = new Discovery.CsTree([command, command], []);
-        Assert.Throws<InvalidOperationException>(() => Discovery.Commands(new Discovery.PythonTree([], []), new Dictionary<string, Discovery.CsTree> { ["linux"] = tree }).ToArray());
+        Assert.Throws<InvalidOperationException>(() => Discovery.Commands(new Dictionary<string, Discovery.CsTree> { ["linux"] = tree }).ToArray());
     }
 
     [Fact]
@@ -107,7 +105,6 @@ public sealed class DiscoveryTests
             AgentTargets = ["external=outside"],
         };
         var proc = new FakeProc()
-            .Answer(new Ran(0, JsonSerializer.Serialize(new Discovery.PythonTree([], [])), ""), "uv")
             .Answer(new Ran(0, JsonSerializer.Serialize(tree), ""), "dotnet", "rig.dll")
             .Answer(new Ran(0, project + '\0', ""), "git", "ls-files")
             .Answer(new Ran(0, "100755 abc 0\tscripts/executable\0", ""), "git", "ls-files", "--stage")
@@ -120,30 +117,10 @@ public sealed class DiscoveryTests
         Assert.Equal(5, Discovery.Read(temp.Path, "rig.dll", proc).Length);
         proc.Answer(new Ran(0, "Unsupported", ""), "dotnet", "msbuild");
         Assert.Throws<InvalidOperationException>(() => Discovery.Read(temp.Path, "rig.dll", proc));
-        proc.Answer(new Ran(0, "Exe", ""), "dotnet", "msbuild")
-            .Answer(new Ran(0, JsonSerializer.Serialize(new Discovery.PythonTree([], ["same", "same"])), ""), "uv");
-        Assert.Throws<InvalidOperationException>(() => Discovery.Read(temp.Path, "rig.dll", proc));
+        proc.Answer(new Ran(0, "Exe", ""), "dotnet", "msbuild");
         const string unknown = "src/New/New.csproj";
         File.WriteAllText(temp.File(unknown), "<Project Sdk=\"Microsoft.NET.Sdk\" />");
         proc.Answer(new Ran(0, unknown + '\0', ""), "git", "ls-files");
         Assert.Contains("Unsupported executable project", Assert.Throws<InvalidOperationException>(() => Discovery.Read(temp.Path, "rig.dll", proc)).Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Named_console_shims_are_aliases_and_cannot_claim_nonexistent_csharp_commands()
-    {
-        var alias = Discovery.EntrySurface("script:missing=rig.csharp_cli:entry");
-        Assert.Equal("cs:missing", alias.AliasTo);
-        Assert.Contains(OwnershipRules.Check([alias.Id], new OwnershipLedger([alias], [], [], [])), e => e.StartsWith("Alias must dispatch", StringComparison.Ordinal));
-        Assert.Null(Discovery.EntrySurface("script:rig=rig.csharp_cli:entry").AliasTo);
-    }
-
-    [Fact]
-    public void A_migrated_command_cannot_coexist_with_a_python_one_on_the_same_path()
-    {
-        var python = new Discovery.PythonTree([new("py:align", "align", "py:align", ["windows"], null)], []);
-        var tree = new Discovery.CsTree([new("align", true, [])], []);
-        var rows = Discovery.Commands(python, new Dictionary<string, Discovery.CsTree> { ["windows"] = tree }).ToArray();
-        Assert.Contains(OwnershipRules.Check(rows.Select(row => row.Id).ToArray(), new OwnershipLedger(rows, [], [], [])), error => error.StartsWith("Overlapping implementations: align|windows", StringComparison.Ordinal));
     }
 }
