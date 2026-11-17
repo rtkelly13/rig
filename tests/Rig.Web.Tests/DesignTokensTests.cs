@@ -25,7 +25,7 @@ public sealed partial class DesignTokensTests
         ("tools/image-drift/src/image_drift/templates", ".jinja"),
         ("src/rig/web_host/templates", ".html"),
         ("src/rig/web_host/templates", "studio.css"),
-        ("src/rig/c4_okf/static", ".html"),
+        ("src/Rig.Web/C4/static", ".html"),
     ];
 
     public static TheoryData<string, string[]> Detection => new()
