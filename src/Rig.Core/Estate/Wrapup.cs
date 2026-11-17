@@ -300,7 +300,10 @@ public static class Wrapup
     public static async Task<GitFacts?> ReadGitFactsAsync(Git git, string path, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(git);
-        if (!Directory.Exists(path)) { return null; }
+        if (!Directory.Exists(path))
+        {
+            return null;
+        }
 
         ConfiguredTaskAwaitable<Ran> Run(params string[] args) => git.RunAsync(path, args, cancellationToken: cancellationToken).ConfigureAwait(false);
         var merged = (await Run("merge-base", "--is-ancestor", "HEAD", "origin/HEAD")).Ok || (await Run("merge-base", "--is-ancestor", "HEAD", "origin/main")).Ok;
@@ -332,7 +335,10 @@ public static class Wrapup
                 parts.Add($"{facts.Unpushed} commit(s) on no remote");
             }
 
-            if (pr is null) { parts.Add(facts.Merged ? "nothing beyond the default branch" : "no PR"); }
+            if (pr is null)
+            {
+                parts.Add(facts.Merged ? "nothing beyond the default branch" : "no PR");
+            }
         }
 
         if (pr is not null)
@@ -447,7 +453,10 @@ public static class Wrapup
         {
             var w = item.Worktree;
             var agents = (w.Agents ?? []).Where(a => a.ParentPaneKey is null && a.AgentType is not null && options.Agents.Contains(a.AgentType)).ToList();
-            if (agents.Count == 0) { continue; }
+            if (agents.Count == 0)
+            {
+                continue;
+            }
 
             var git = await facts(w.Path, cancellationToken).ConfigureAwait(false);
             var settled = IsSettled(git, w.LinkedPr);
@@ -611,7 +620,10 @@ public static class Wrapup
     /// <summary>Defers asks past --max; the deepest subtasks go first, so children answer before their parents.</summary>
     private static List<WrapupRow> Cap(List<WrapupRow> rows, int? maxSends)
     {
-        if (maxSends is not { } max) { return rows; }
+        if (maxSends is not { } max)
+        {
+            return rows;
+        }
 
         var deferred = SendOrder(rows).Skip(Math.Max(max, 0)).ToHashSet();
         return [.. rows.Select((r, i) => deferred.Contains(i) ? r with { Status = WrapupStatus.Deferred } : r)];
@@ -667,7 +679,10 @@ public sealed class WrapupOrca(IProc proc)
         var repos = Envelope(await CallAsync(["repo", "list", "--json"], cancellationToken).ConfigureAwait(false));
         var worktrees = ps is null ? null : WrapupWire.Worktrees(ps);
         var live = terminals is null ? null : WrapupWire.Terminals(terminals);
-        if (worktrees is null || live is null) { throw new WrapupException(Unreadable); }
+        if (worktrees is null || live is null)
+        {
+            throw new WrapupException(Unreadable);
+        }
 
         return new WrapupSnapshot(worktrees, live, (repos is null ? null : WrapupWire.Repos(repos)) ?? [], WrapupWire.Truncated(ps!));
     }
@@ -679,7 +694,10 @@ public sealed class WrapupOrca(IProc proc)
             ["terminal", "send", "--terminal", handle, "--text", text, "--enter", "--wait-submit", Wrapup.SubmitWaitSeconds.ToString(CultureInfo.InvariantCulture), "--json"],
             cancellationToken).ConfigureAwait(false);
         var (decoded, ok, message) = ran.Out.Trim().Length > 0 ? WrapupWire.Receipt(ran.Out) : (false, false, null);
-        if (ran.Ok && (!decoded || ok)) { return null; }
+        if (ran.Ok && (!decoded || ok))
+        {
+            return null;
+        }
 
         return !string.IsNullOrEmpty(message) ? message
             : WrapupText.FirstLine(ran.Err.Length > 0 ? ran.Err : ran.Out) is { Length: > 0 } line ? line
@@ -752,11 +770,20 @@ internal static class WrapupWire
     private static List<T>? Rows<T>(JsonObject envelope, string key, Func<JsonObject, T> read)
         where T : class
     {
-        if (Result(envelope) is not { } result) { return null; }
+        if (Result(envelope) is not { } result)
+        {
+            return null;
+        }
 
-        if (!result.ContainsKey(key)) { return []; }
+        if (!result.ContainsKey(key))
+        {
+            return [];
+        }
 
-        if (JsonShape.Field(result, key) is not { } node || JsonShape.AsArray(node) is not { } items) { return null; }
+        if (JsonShape.Field(result, key) is not { } node || JsonShape.AsArray(node) is not { } items)
+        {
+            return null;
+        }
 
         return [.. items.Select(item => item is JsonObject row ? OrcaJson.Lenient(() => read(row)) : null).OfType<T>()];
     }

@@ -106,7 +106,10 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     public static void WriteFeed(string path, IEnumerable<Decision> decisions)
     {
         var folder = Path.GetDirectoryName(Path.GetFullPath(path));
-        if (!string.IsNullOrEmpty(folder)) { _ = Directory.CreateDirectory(folder); }
+        if (!string.IsNullOrEmpty(folder))
+        {
+            _ = Directory.CreateDirectory(folder);
+        }
 
         var temporary = Path.ChangeExtension(path, ".tmp");
         File.WriteAllText(temporary, DumpFeed(decisions) + "\n", new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -163,7 +166,10 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     {
         ArgumentNullException.ThrowIfNull(clone);
         var repo = Path.GetFileName(Path.TrimEndingDirectorySeparator(clone));
-        if (await IsDubiousAsync(clone).ConfigureAwait(false)) { return [Dubious(repo, clone)]; }
+        if (await IsDubiousAsync(clone).ConfigureAwait(false))
+        {
+            return [Dubious(repo, clone)];
+        }
 
         var now = time.GetUtcNow();
         var trees = (await Worktree.ListAsync(git, clone, cancellationToken).ConfigureAwait(false))
@@ -214,7 +220,10 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
             {
                 try
                 {
-                    if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint)) { continue; }
+                    if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        continue;
+                    }
 
                     if (entry is DirectoryInfo)
                     {
@@ -267,7 +276,10 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
             parts.Add($"{orphaned} commit(s) on no remote");
         }
 
-        if (dirty) { parts.Add("uncommitted changes"); }
+        if (dirty)
+        {
+            parts.Add("uncommitted changes");
+        }
 
         // Not `push -u origin <branch>`: that lands half-finished work on a PR branch. The shelve preview pushes
         // nothing and lists anything a person must settle first.
@@ -332,9 +344,15 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     private static bool IsLeftBehind(string path, bool needsMarker)
     {
         var marker = Path.Join(path, ".git");
-        if (Directory.Exists(marker)) { return false; }
+        if (Directory.Exists(marker))
+        {
+            return false;
+        }
 
-        if (File.Exists(marker)) { return GitDir(marker) is { } admin && !Path.Exists(admin); }
+        if (File.Exists(marker))
+        {
+            return GitDir(marker) is { } admin && !Path.Exists(admin);
+        }
 
         return !needsMarker;
     }
@@ -353,7 +371,10 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
         }
 
         var at = text.IndexOf("gitdir:", StringComparison.Ordinal);
-        if (at < 0 || !string.IsNullOrWhiteSpace(text[..at])) { return null; }
+        if (at < 0 || !string.IsNullOrWhiteSpace(text[..at]))
+        {
+            return null;
+        }
 
         var admin = text[(at + "gitdir:".Length)..].Trim();
         return Path.IsPathRooted(admin) ? admin : Path.Join(Path.GetDirectoryName(marker), admin);
@@ -377,9 +398,15 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     private async Task<Verdict> JudgeAsync(string repo, Worktree tree, int idleDays, DateTimeOffset now)
     {
         var path = Shown(tree.Path);
-        if (await IsDubiousAsync(tree.Path).ConfigureAwait(false)) { return new(Dubious(repo, path)); }
+        if (await IsDubiousAsync(tree.Path).ConfigureAwait(false))
+        {
+            return new(Dubious(repo, path));
+        }
 
-        if (now - trim.LastActivity(tree.Path) < TimeSpan.FromDays(idleDays)) { return new(); }
+        if (now - trim.LastActivity(tree.Path) < TimeSpan.FromDays(idleDays))
+        {
+            return new();
+        }
 
         var orphaned = await Exposure.CountAsync(git, tree.Path, "rev-list", "--count", "HEAD", "--not", "--remotes").ConfigureAwait(false);
         var dirty = (await git.OutAsync(tree.Path, "status", "--porcelain").ConfigureAwait(false)).Length > 0;

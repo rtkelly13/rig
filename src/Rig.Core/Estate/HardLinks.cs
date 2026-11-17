@@ -46,10 +46,16 @@ public static partial class HardLinks
         var result = OperatingSystem.IsMacOS() && RuntimeInformation.ProcessArchitecture == Architecture.X64
             ? LStatInode64(path, buffer)
             : LStat(path, buffer);
-        if (result != 0) { return null; }
+        if (result != 0)
+        {
+            return null;
+        }
 
         var inode = *(ulong*)(buffer + InodeOffset);
-        if (OperatingSystem.IsMacOS()) { return new FileIdentity(*(uint*)buffer, inode, *(ushort*)(buffer + 6)); }
+        if (OperatingSystem.IsMacOS())
+        {
+            return new FileIdentity(*(uint*)buffer, inode, *(ushort*)(buffer + 6));
+        }
 
         var links = RuntimeInformation.ProcessArchitecture == Architecture.X64 ? *(ulong*)(buffer + 16) : *(uint*)(buffer + 20);
         return new FileIdentity(*(ulong*)buffer, inode, links);

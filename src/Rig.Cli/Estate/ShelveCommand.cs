@@ -54,12 +54,18 @@ internal sealed class ShelveCommand(
     {
         ArgumentNullException.ThrowIfNull(text);
         var value = text.Trim().ToLowerInvariant();
-        if (value is "" or "0") { return TimeSpan.Zero; }
+        if (value is "" or "0")
+        {
+            return TimeSpan.Zero;
+        }
 
         var number = value[..^1];
         var dot = number.IndexOf('.', StringComparison.Ordinal);
         var digits = dot < 0 ? number : number.Remove(dot, 1); // One dot is allowed.
-        if (value[^1] is not ('m' or 'h' or 'd') || digits.Length == 0 || !digits.All(char.IsAsciiDigit)) { return null; }
+        if (value[^1] is not ('m' or 'h' or 'd') || digits.Length == 0 || !digits.All(char.IsAsciiDigit))
+        {
+            return null;
+        }
 
         var amount = double.Parse(number, CultureInfo.InvariantCulture);
         return value[^1] switch
@@ -133,7 +139,10 @@ internal sealed class ShelveCommand(
 
         var options = flags with { Idle = idle };
         var targets = await TargetsAsync(scope, cancellationToken).ConfigureAwait(false);
-        if (targets.Refusal is { } refusal) { return await RefuseAsync(refusal, cancellationToken).ConfigureAwait(false); }
+        if (targets.Refusal is { } refusal)
+        {
+            return await RefuseAsync(refusal, cancellationToken).ConfigureAwait(false);
+        }
 
         var shelver = new Shelver(git, new TreeRemoval(proc), time, Path.Join(host.Home, LedgerName));
         var busy = await Busy.SnapshotAsync(proc, cancellationToken).ConfigureAwait(false);
@@ -194,7 +203,10 @@ internal sealed class ShelveCommand(
             var label = result?.Outcome ?? (plan.DecisionNeeded.Count > 0 ? "needs-decision" : plan.Action);
             counts[label] = counts.GetValueOrDefault(label) + 1;
             var why = string.Join("; ", plan.DecisionNeeded.Count > 0 ? plan.DecisionNeeded : plan.Reasons);
-            if (result is { Detail.Length: > 0 } && plan.DecisionNeeded.Count == 0) { why = result.Detail; }
+            if (result is { Detail.Length: > 0 } && plan.DecisionNeeded.Count == 0)
+            {
+                why = result.Detail;
+            }
 
             var pr = plan.Pr is { } number and not 0 ? $" #{number.ToString(CultureInfo.InvariantCulture)} {plan.PrState.ToLowerInvariant()}" : string.Empty;
             var branch = plan.Branch.Length > 0 ? plan.Branch : $"detached@{plan.Head[..Math.Min(7, plan.Head.Length)]}";
@@ -217,7 +229,10 @@ internal sealed class ShelveCommand(
             foreach (var clone in chosen)
             {
                 var trees = (await Worktree.ListAsync(git, clone, cancellationToken).ConfigureAwait(false)).Where(Shelvable).ToList();
-                if (trees.Count > 0) { found.Add(new Target(clone, trees)); }
+                if (trees.Count > 0)
+                {
+                    found.Add(new Target(clone, trees));
+                }
             }
 
             return (found, null);
@@ -228,7 +243,10 @@ internal sealed class ShelveCommand(
         foreach (var want in wanted)
         {
             var clone = await CloneOfAsync(want).ConfigureAwait(false);
-            if (clone is null) { return ([], $"{want} is not inside a git worktree"); }
+            if (clone is null)
+            {
+                return ([], $"{want} is not inside a git worktree");
+            }
 
             var match = (await Worktree.ListAsync(git, clone, cancellationToken).ConfigureAwait(false))
                 .Where(tree => PathResolution.IsUnder(want, PathResolution.Resolve(tree.Path)))
@@ -258,10 +276,16 @@ internal sealed class ShelveCommand(
     // The clone a worktree belongs to, via its common git dir.
     private async Task<string?> CloneOfAsync(string path)
     {
-        if (!Directory.Exists(path)) { return null; }
+        if (!Directory.Exists(path))
+        {
+            return null;
+        }
 
         var common = await git.OutAsync(path, "rev-parse", "--path-format=absolute", "--git-common-dir").ConfigureAwait(false);
-        if (common.Length == 0) { return null; }
+        if (common.Length == 0)
+        {
+            return null;
+        }
 
         var resolved = common.TrimEnd('/', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
         return Path.GetFileName(resolved) == ".git" ? Path.GetDirectoryName(resolved) : resolved;
@@ -345,9 +369,15 @@ internal sealed class ShelveCommand(
         public JsonObject ToJson()
         {
             var data = Shelf.ToJson();
-            if (Prune is not null) { data["prune"] = Prune; }
+            if (Prune is not null)
+            {
+                data["prune"] = Prune;
+            }
 
-            if (Pruned is { } pruned) { data["pruned"] = pruned; }
+            if (Pruned is { } pruned)
+            {
+                data["pruned"] = pruned;
+            }
 
             return data;
         }
@@ -378,7 +408,10 @@ internal sealed class ShelveCommand(
         }
 
         List<(string Heading, bool Right)> columns = [("clone", false), ("shelf", false), ("branch", false), ("PR", false), ("snapshot", false), ("at", false)];
-        if (prune) { columns.Add(("prune", false)); }
+        if (prune)
+        {
+            columns.Add(("prune", false));
+        }
 
         var table = new TextTable("Shelved" + (prune && !apply ? " (prune dry run — pass --apply)" : string.Empty), columns);
         foreach (var row in rows)
@@ -400,7 +433,10 @@ internal sealed class ShelveCommand(
     private async Task<List<ShelvedRow>> RowsAsync(string clone, bool prune, bool apply, CancellationToken cancellationToken)
     {
         var shelves = await store.ListAsync(clone).ConfigureAwait(false);
-        if (shelves.Count == 0) { return []; }
+        if (shelves.Count == 0)
+        {
+            return [];
+        }
 
         if (!prune)
         {
@@ -410,13 +446,19 @@ internal sealed class ShelveCommand(
         var merged = new Dictionary<int, string>();
         foreach (var pull in (await new PullRequests(git, github).HeadsAsync(clone, cancellationToken: cancellationToken).ConfigureAwait(false)).Values)
         {
-            if (pull.Merged) { merged[pull.Number] = pull.HeadOid; }
+            if (pull.Merged)
+            {
+                merged[pull.Number] = pull.HeadOid;
+            }
         }
 
         var head = await git.OutAsync(clone, "symbolic-ref", "--short", $"refs/remotes/{ShelfStore.Remote}/HEAD").ConfigureAwait(false);
         var prefix = $"{ShelfStore.Remote}/";
         var defaultBranch = head.StartsWith(prefix, StringComparison.Ordinal) ? head[prefix.Length..] : head;
-        if (defaultBranch.Length == 0) { defaultBranch = "main"; }
+        if (defaultBranch.Length == 0)
+        {
+            defaultBranch = "main";
+        }
 
         var rows = new List<ShelvedRow>();
         foreach (var shelf in shelves)

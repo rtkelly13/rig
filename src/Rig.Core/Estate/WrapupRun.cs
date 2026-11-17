@@ -71,7 +71,10 @@ public static class WrapupRun
             [
                 .. group.Select(x => x.Row.Status == WrapupStatus.Sent ? AskFor(x.Row, at, template) : (object?)(NewAnswer(x.Row) is { } answer ? answer with { At = at } : null)).OfType<object>(),
             ];
-            if (additions.Count == 0) { continue; }
+            if (additions.Count == 0)
+            {
+                continue;
+            }
 
             var first = output[indexes[0]];
             var state = store.Read(path) ?? WrapupState.Empty(first.WorktreeId, first.Branch);
@@ -183,7 +186,10 @@ public static class WrapupRun
                     progress(output[i], "asked");
                 }
 
-                if (flights.Count == 0) { continue; }
+                if (flights.Count == 0)
+                {
+                    continue;
+                }
 
                 var earliest = flights.Min(f => f.Deadline);
                 await clock.SleepAsync(TimeSpan.FromSeconds(Math.Max(0.0, Math.Min(PollSeconds, earliest - clock.Monotonic))), cancellationToken).ConfigureAwait(false);
@@ -267,7 +273,10 @@ public static class WrapupRun
         var ask = !string.IsNullOrEmpty(askId)
             ? state.AskById(askId)
             : state.Asks.Reverse().FirstOrDefault(a => state.AnswerTo(a) is null) ?? state.Asks[^1];
-        if (ask is null) { return new(null, $"no ask {askId} is recorded in this worktree"); }
+        if (ask is null)
+        {
+            return new(null, $"no ask {askId} is recorded in this worktree");
+        }
 
         var answer = new AnswerRecord(
             WrapupStamps.Timestamp(now),
@@ -293,7 +302,10 @@ public static class WrapupRun
     /// <summary>The verdict on <paramref name="row"/> when the state file does not have it yet.</summary>
     private static AnswerRecord? NewAnswer(WrapupRow row)
     {
-        if (row is not { Status: WrapupStatus.Answered, Verdict: { } said }) { return null; }
+        if (row is not { Status: WrapupStatus.Answered, Verdict: { } said })
+        {
+            return null;
+        }
 
         var verdict = said.Done ? "done" : "pending";
         var askedAt = row.Asked?.At;

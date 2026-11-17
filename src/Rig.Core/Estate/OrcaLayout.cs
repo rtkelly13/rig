@@ -66,7 +66,10 @@ public sealed class GroupTree
         var current = groupId;
         while (current is not null && seen.Add(current))
         {
-            if (!_byId.TryGetValue(current, out var row)) { return null; }
+            if (!_byId.TryGetValue(current, out var row))
+            {
+                return null;
+            }
 
             names.Add(row.Name);
             current = row.ParentId;
@@ -248,7 +251,10 @@ public static class OrcaLayout
         ArgumentNullException.ThrowIfNull(groups);
         var name = project.Slug.Split('/', 2)[^1];
         var top = (project.Group ?? string.Empty).Split('/', 2)[0];
-        if (top.Length > 0) { return Path.Join(groups.Folder(top) ?? Path.Join(codeRoot, top), name); }
+        if (top.Length > 0)
+        {
+            return Path.Join(groups.Folder(top) ?? Path.Join(codeRoot, top), name);
+        }
 
         var candidates = Directory.Exists(codeRoot)
             ? Directory.EnumerateDirectories(codeRoot).Select(child => Path.Join(child, name)).Order(PathOrder.Instance).ToList()
@@ -336,7 +342,10 @@ public static class OrcaLayout
             if (!known.Contains(slug) && archived.Contains(slug))
             {
                 run.Add(Archived, found.Name, Posix(found.Path), $"in Orca, but {slug} is archived", "remove it from Orca", ApplyCommand);
-                if (run.Exists(found.Path)) { run.Findings.Add(ArchivedCloneOf(found.Name, found.Path, slug)); }
+                if (run.Exists(found.Path))
+                {
+                    run.Findings.Add(ArchivedCloneOf(found.Name, found.Path, slug));
+                }
             }
             else if (!known.Contains(slug) && isEstateOwner(slug.Split('/', 2)[0]))
             {
@@ -408,7 +417,10 @@ public static class OrcaLayout
         var declaredSlugs = declared.Select(p => p.Slug.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
         foreach (var finding in Audit(declared, state, codeRoot, isEstateOwner, exists, archived, skipped))
         {
-            if (only is not null && !only.Contains(finding.Repo)) { continue; }
+            if (only is not null && !only.Contains(finding.Repo))
+            {
+                continue;
+            }
 
             if (finding.Kind == Unregistered)
             {
@@ -454,13 +466,19 @@ public static class OrcaLayout
         {
             var found = bySlug[project.Slug.ToLowerInvariant()];
             var target = project.Group ?? string.Empty;
-            if (!exists(found.Path) || (groups.PathOf(found.GroupId) ?? string.Empty) == target) { continue; }
+            if (!exists(found.Path) || (groups.PathOf(found.GroupId) ?? string.Empty) == target)
+            {
+                continue;
+            }
 
             _ = await runtime.MoveProjectAsync(found.Id, target.Length > 0 ? groups.IdOf(target) : null, cancellationToken).ConfigureAwait(false);
             log($"moved {project.Name} to {(target.Length > 0 ? target : "the top level")}");
         }
 
-        if (only is not null) { return carried; }
+        if (only is not null)
+        {
+            return carried;
+        }
 
         state = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
         foreach (var group in EmptyGroups(state, keep: KeptPaths(active, archived)))
@@ -511,7 +529,10 @@ public static class OrcaLayout
             log($"removed {found.Name} from the work Orca profile");
         }
 
-        if (emptied.Count == 0) { return; }
+        if (emptied.Count == 0)
+        {
+            return;
+        }
 
         // Occupancy is read again once the repos are gone: a folder workspace or repo added since planning keeps its group.
         var fresh = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
@@ -612,9 +633,15 @@ public static class OrcaLayout
     {
         var root = JsonFile.Parse(path);
 
-        if (root is not JsonObject top) { throw new InvalidDataException($"{path}: expected a JSON object"); }
+        if (root is not JsonObject top)
+        {
+            throw new InvalidDataException($"{path}: expected a JSON object");
+        }
 
-        if (!top.ContainsKey("projects")) { return []; }
+        if (!top.ContainsKey("projects"))
+        {
+            return [];
+        }
 
         return JsonShape.Field(top, "projects") is { } projects
             && JsonShape.AsArray(projects) is { } list
@@ -653,7 +680,10 @@ public static class OrcaLayout
             }
 
             var clone = found?.Path ?? ExpectedClone(project, groups, codeRoot);
-            if (exists(clone)) { Findings.Add(ArchivedCloneOf(project.Name, clone, project.Slug)); }
+            if (exists(clone))
+            {
+                Findings.Add(ArchivedCloneOf(project.Name, clone, project.Slug));
+            }
         }
 
         // A project this machine skips: never registered, and a registration already there is only reported.

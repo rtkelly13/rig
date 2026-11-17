@@ -125,7 +125,10 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     {
         var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
         var parent = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path)) ?? string.Empty;
-        if (ByName.TryGetValue(name, out var category)) { return category; }
+        if (ByName.TryGetValue(name, out var category))
+        {
+            return category;
+        }
 
         return name switch
         {
@@ -172,7 +175,10 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     public DateTimeOffset LastActivity(string worktree)
     {
         var admin = RepoChecks.WorktreeAdminDir(worktree) ?? Path.Join(worktree, ".git");
-        if (!Directory.Exists(admin)) { return time.GetUtcNow(); }
+        if (!Directory.Exists(admin))
+        {
+            return time.GetUtcNow();
+        }
 
         var stamps = new[] { "index", "HEAD", Path.Join("logs", "HEAD") }
             .Select(name => Path.Join(admin, name))
@@ -188,9 +194,15 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
         var idle = new List<string>();
         foreach (var tree in await Worktree.ListAsync(git, clone).ConfigureAwait(false))
         {
-            if (tree.IsMain || tree.Bare || tree.Locked || tree.Prunable || !Directory.Exists(tree.Path)) { continue; }
+            if (tree.IsMain || tree.Bare || tree.Locked || tree.Prunable || !Directory.Exists(tree.Path))
+            {
+                continue;
+            }
 
-            if (IsIdle(tree.Path, idleDays)) { idle.Add(tree.Path); }
+            if (IsIdle(tree.Path, idleDays))
+            {
+                idle.Add(tree.Path);
+            }
         }
 
         return idle;
@@ -230,12 +242,18 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     public async Task<IReadOnlyList<string>> ApplyAsync(TrimPlan plan, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        if (plan.Target.Removal is not { } removal) { return ["trim requires a removal port to apply"]; }
+        if (plan.Target.Removal is not { } removal)
+        {
+            return ["trim requires a removal port to apply"];
+        }
 
         foreach (var item in plan.Changes)
         {
             ct.ThrowIfCancellationRequested();
-            if (item.Kind != ChangeKind.WouldChange) { continue; }
+            if (item.Kind != ChangeKind.WouldChange)
+            {
+                continue;
+            }
 
             var refused = item.Refused.Length > 0
                 ? item.Refused
@@ -277,7 +295,10 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
                 continue;
             }
 
-            if (size.Freeable < floor) { continue; }
+            if (size.Freeable < floor)
+            {
+                continue;
+            }
 
             judged.Add(new Trimmable(root, path, category, size, await RefusalAsync(root, path, ignored.Contains(relative)).ConfigureAwait(false)));
         }
@@ -288,10 +309,16 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     /// <summary>Why <paramref name="path"/> may not be removed from the checkout at <paramref name="root"/>; empty when it may.</summary>
     public async Task<string> RefusalAsync(string root, string path, bool ignored)
     {
-        if (!IsStrictlyBelow(path, root)) { return "resolves outside the worktree"; }
+        if (!IsStrictlyBelow(path, root))
+        {
+            return "resolves outside the worktree";
+        }
 
         var tracked = await GitLinesAsync(root, ["ls-files", "--", Relative(root, path)]).ConfigureAwait(false);
-        if (tracked is null || tracked.Count > 0) { return "contains tracked files"; }
+        if (tracked is null || tracked.Count > 0)
+        {
+            return "contains tracked files";
+        }
 
         return ignored ? string.Empty : "not gitignored";
     }
@@ -304,20 +331,41 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     {
         ArgumentNullException.ThrowIfNull(item);
         var folder = new DirectoryInfo(item.Path);
-        if (folder.LinkTarget is not null) { return "is a link"; }
+        if (folder.LinkTarget is not null)
+        {
+            return "is a link";
+        }
 
-        if (!folder.Exists) { return "no longer exists"; }
+        if (!folder.Exists)
+        {
+            return "no longer exists";
+        }
 
         var registration = await RegistrationRefusalAsync(item.Worktree).ConfigureAwait(false);
-        if (registration.Length > 0) { return registration; }
+        if (registration.Length > 0)
+        {
+            return registration;
+        }
 
-        if (CategoryOf(item.Path) != item.Category) { return "no longer regenerable output"; }
+        if (CategoryOf(item.Path) != item.Category)
+        {
+            return "no longer regenerable output";
+        }
 
-        if (!IsIdle(item.Worktree, idleDays)) { return "worktree is in use again"; }
+        if (!IsIdle(item.Worktree, idleDays))
+        {
+            return "worktree is in use again";
+        }
 
-        if (TreeMeasure.Measure(item.Path).HoldsCheckout) { return "holds a git checkout"; }
+        if (TreeMeasure.Measure(item.Path).HoldsCheckout)
+        {
+            return "holds a git checkout";
+        }
 
-        if (!IsStrictlyBelow(item.Path, item.Worktree)) { return "resolves outside the worktree"; }
+        if (!IsStrictlyBelow(item.Path, item.Worktree))
+        {
+            return "resolves outside the worktree";
+        }
 
         var relative = Relative(item.Worktree, item.Path);
         var ignored = await GitLinesAsync(item.Worktree, ["check-ignore", "--", relative]).ConfigureAwait(false);
@@ -343,7 +391,10 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     {
         ArgumentNullException.ThrowIfNull(item);
         ArgumentNullException.ThrowIfNull(removal);
-        if (item.Refused.Length > 0) { return "refused"; }
+        if (item.Refused.Length > 0)
+        {
+            return "refused";
+        }
 
         try
         {

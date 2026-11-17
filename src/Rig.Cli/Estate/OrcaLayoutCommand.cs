@@ -116,7 +116,10 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
             var state = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
             findings = [.. OrcaLayout.Audit(declared, state, root, isEstateOwner, archived: archived, skipped: skipped)];
             findings.AddRange(carried.Where(c => !findings.Contains(c)).ToList());
-            if (only is not null) { findings = [.. OrcaLayout.Scoped(findings, declared, only)]; }
+            if (only is not null)
+            {
+                findings = [.. OrcaLayout.Scoped(findings, declared, only)];
+            }
         }
         catch (OrcaUnavailableException e)
         {

@@ -64,9 +64,15 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
     public static IReadOnlyList<string> Scan(string root, int maxDepth = DefaultMaxDepth)
     {
         var resolved = PathResolution.Resolve(root);
-        if (!Directory.Exists(resolved)) { return []; }
+        if (!Directory.Exists(resolved))
+        {
+            return [];
+        }
 
-        if (IsRepo(resolved)) { return [resolved]; }
+        if (IsRepo(resolved))
+        {
+            return [resolved];
+        }
 
         var found = new List<string>();
         var frontier = new List<string> { resolved };
@@ -127,7 +133,10 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
         var entries = new Dictionary<string, CachedScan>(StringComparer.Ordinal);
         foreach (var (key, value) in JsonFile.TryParse(cacheFile) as JsonObject ?? [])
         {
-            if (CachedScan.FromJson(value) is { } entry) { entries[key] = entry; }
+            if (CachedScan.FromJson(value) is { } entry)
+            {
+                entries[key] = entry;
+            }
         }
 
         return entries;
@@ -172,7 +181,10 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
             var paths = new List<string>();
             foreach (var repo in repos)
             {
-                if (repo is not JsonValue value || !value.TryGetValue<string>(out var path)) { return null; }
+                if (repo is not JsonValue value || !value.TryGetValue<string>(out var path))
+                {
+                    return null;
+                }
 
                 paths.Add(path);
             }

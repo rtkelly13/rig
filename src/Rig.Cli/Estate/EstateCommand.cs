@@ -272,7 +272,10 @@ internal sealed class EstateCommand(
         var clones = scope.All
             ? await ClonesAsync(root, scope.Refresh, quiet: false, cancellationToken).ConfigureAwait(false)
             : await SelectedClonesAsync(root, scope.Repos, scope.Refresh, cancellationToken).ConfigureAwait(false);
-        if (clones is null) { return 2; }
+        if (clones is null)
+        {
+            return 2;
+        }
 
         var table = new TextTable(
             "Tidy" + (apply ? string.Empty : " (dry run — pass --apply)"),
@@ -290,7 +293,10 @@ internal sealed class EstateCommand(
         {
             var heads = merged ? await MergedHeadsAsync(clone, cancellationToken).ConfigureAwait(false) : null;
             var report = await checker.InspectAsync(clone, heads).ConfigureAwait(false);
-            if (!report.Findings.Any(f => f.Actionable)) { continue; }
+            if (!report.Findings.Any(f => f.Actionable))
+            {
+                continue;
+            }
 
             var actions = await tidy.CleanRepoAsync(report, apply, force, heads, busy, checks.Length > 0 ? checks : null, cancellationToken).ConfigureAwait(false);
             foreach (var action in actions)
@@ -337,10 +343,16 @@ internal sealed class EstateCommand(
                 return null;
             }
 
-            if (!chosen.Contains(found, PathResolution.Comparer)) { chosen.Add(found); }
+            if (!chosen.Contains(found, PathResolution.Comparer))
+            {
+                chosen.Add(found);
+            }
         }
 
-        if (names.Count == 0) { return chosen; }
+        if (names.Count == 0)
+        {
+            return chosen;
+        }
 
         var known = await ClonesAsync(root, refresh, quiet: false, cancellationToken).ConfigureAwait(false);
         foreach (var name in names)
@@ -356,7 +368,10 @@ internal sealed class EstateCommand(
                 return null;
             }
 
-            if (!chosen.Contains(hits[0], PathResolution.Comparer)) { chosen.Add(hits[0]); }
+            if (!chosen.Contains(hits[0], PathResolution.Comparer))
+            {
+                chosen.Add(hits[0]);
+            }
         }
 
         return chosen;
@@ -405,7 +420,10 @@ internal sealed class EstateCommand(
         foreach (var clone in clones)
         {
             var entries = (await scanner.ScanRepoAsync(clone, floor, cancellationToken).ConfigureAwait(false)).Entries.Where(e => e.Bytes >= floor).ToList();
-            if (entries.Count == 0) { continue; }
+            if (entries.Count == 0)
+            {
+                continue;
+            }
 
             var exposure = await Exposure.InspectAsync(git, clone, perBranch: false).ConfigureAwait(false);
             if (exposure.AtRisk)
@@ -547,7 +565,10 @@ internal sealed class EstateCommand(
         foreach (var clone in clones)
         {
             var exposure = await Exposure.InspectAsync(git, clone, perBranch: true).ConfigureAwait(false);
-            if (exposure.AtRisk) { exposed.Add(exposure); }
+            if (exposure.AtRisk)
+            {
+                exposed.Add(exposure);
+            }
         }
 
         var ranked = exposed.OrderByDescending(e => e.Score).ToList();
@@ -578,7 +599,10 @@ internal sealed class EstateCommand(
     {
         const int Shown = 8;
         var lines = new List<string> { string.Empty, Path.GetFileName(exposure.Repo) };
-        if (!exposure.HasRemote) { lines.Add("  no remote at all — every commit here is local-only"); }
+        if (!exposure.HasRemote)
+        {
+            lines.Add("  no remote at all — every commit here is local-only");
+        }
 
         if (exposure.LocalOnlyCommits > 0)
         {
@@ -659,7 +683,10 @@ internal sealed class EstateCommand(
         foreach (var finding in report.Findings.OrderBy(f => f.Severity))
         {
             _ = table.Add(finding.SeverityName, finding.Check, Short(finding.Subject, clone), finding.Message);
-            if (finding.Fix.Length > 0) { _ = table.Add(string.Empty, string.Empty, string.Empty, finding.Fix); }
+            if (finding.Fix.Length > 0)
+            {
+                _ = table.Add(string.Empty, string.Empty, string.Empty, finding.Fix);
+            }
         }
 
         await output.WriteAsync(table.Render().AsMemory(), cancellationToken).ConfigureAwait(false);
@@ -731,7 +758,10 @@ internal sealed class EstateCommand(
     // The given path, else the checkout containing the working directory, else the working directory itself.
     private async Task<string> OneCloneAsync(string? path)
     {
-        if (!string.IsNullOrEmpty(path)) { return PathResolution.Resolve(ExpandHome(path)); }
+        if (!string.IsNullOrEmpty(path))
+        {
+            return PathResolution.Resolve(ExpandHome(path));
+        }
 
         var top = await git.OutAsync(host.WorkingDirectory, "rev-parse", "--show-toplevel").ConfigureAwait(false);
         return top.Length > 0 ? PathResolution.Resolve(top) : host.WorkingDirectory; // git answers with / on Windows

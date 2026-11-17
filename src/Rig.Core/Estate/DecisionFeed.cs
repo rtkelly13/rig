@@ -57,7 +57,10 @@ public static class DecisionFeed
         try
         {
             using var document = JsonDocument.Parse(text);
-            if (document.RootElement.ValueKind != JsonValueKind.Array) { return null; }
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return null;
+            }
 
             var decisions = new List<Decision>();
             foreach (var item in document.RootElement.EnumerateArray())

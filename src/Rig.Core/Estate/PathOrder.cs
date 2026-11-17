@@ -18,14 +18,20 @@ public sealed class PathOrder : IComparer<string>
     /// <inheritdoc />
     public int Compare(string? x, string? y)
     {
-        if (x is null || y is null) { return x is null ? (y is null ? 0 : -1) : 1; }
+        if (x is null || y is null)
+        {
+            return x is null ? (y is null ? 0 : -1) : 1;
+        }
 
         var left = Parts(x);
         var right = Parts(y);
         for (var i = 0; i < Math.Min(left.Length, right.Length); i++)
         {
             var order = string.CompareOrdinal(left[i], right[i]);
-            if (order != 0) { return order; }
+            if (order != 0)
+            {
+                return order;
+            }
         }
 
         return left.Length.CompareTo(right.Length);

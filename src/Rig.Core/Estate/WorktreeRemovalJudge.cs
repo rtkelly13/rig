@@ -65,18 +65,30 @@ public static class WorktreeRemovalJudge
         ArgumentNullException.ThrowIfNull(facts);
         ArgumentNullException.ThrowIfNull(policy);
         var reasons = new List<RemovalRefusalReason>();
-        if (facts.InUse) { reasons.Add(RemovalRefusalReason.InUse); }
+        if (facts.InUse)
+        {
+            reasons.Add(RemovalRefusalReason.InUse);
+        }
 
         if ((facts.HasIgnoredNotes || facts.IgnoredUnreadable) && !policy.DiscardIgnoredNotes)
         {
             reasons.Add(RemovalRefusalReason.IgnoredNotes);
         }
 
-        if (facts.IsUnborn) { reasons.Add(RemovalRefusalReason.UnbornHead); }
+        if (facts.IsUnborn)
+        {
+            reasons.Add(RemovalRefusalReason.UnbornHead);
+        }
 
-        if (facts.IsForeignClone || facts.OwnershipUnreadable) { reasons.Add(RemovalRefusalReason.ForeignClone); }
+        if (facts.IsForeignClone || facts.OwnershipUnreadable)
+        {
+            reasons.Add(RemovalRefusalReason.ForeignClone);
+        }
 
-        if (facts.IsLocked) { reasons.Add(RemovalRefusalReason.Locked); }
+        if (facts.IsLocked)
+        {
+            reasons.Add(RemovalRefusalReason.Locked);
+        }
 
         if (facts.ReflogOnlyCommitCount > 0 || facts.ReflogUnreadable)
         {

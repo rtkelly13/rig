@@ -49,7 +49,10 @@ public sealed class Downloads(IDiskUsage disk)
         var ext = InstalledApps.Suffix(path).ToLowerInvariant();
         foreach (var (category, extensions) in new[] { ("installer", Installer), ("archive", Archive), ("dataset", Dataset), ("media", Media), ("document", Document) })
         {
-            if (extensions.Contains(ext)) { return category; }
+            if (extensions.Contains(ext))
+            {
+                return category;
+            }
         }
 
         if (Directory.Exists(path))
@@ -58,9 +61,15 @@ public sealed class Downloads(IDiskUsage disk)
             {
                 var exts = Directory.EnumerateFileSystemEntries(path).Take(Sample).Where(File.Exists)
                     .Select(child => InstalledApps.Suffix(child).ToLowerInvariant()).ToHashSet();
-                if (exts.Overlaps(Media)) { return "media"; }
+                if (exts.Overlaps(Media))
+                {
+                    return "media";
+                }
 
-                if (exts.Overlaps(Dataset)) { return "dataset"; }
+                if (exts.Overlaps(Dataset))
+                {
+                    return "dataset";
+                }
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return "other"; }
         }
@@ -77,9 +86,15 @@ public sealed class Downloads(IDiskUsage disk)
         try
         {
             var isDir = Directory.Exists(local);
-            if (isDir != Directory.Exists(remote)) { return false; }
+            if (isDir != Directory.Exists(remote))
+            {
+                return false;
+            }
 
-            if (!isDir) { return SameFile(local, remote); }
+            if (!isDir)
+            {
+                return SameFile(local, remote);
+            }
 
             var left = TreeFiles(local);
             var right = TreeFiles(remote);
@@ -118,7 +133,10 @@ public sealed class Downloads(IDiskUsage disk)
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
 
-            if (size < 0 || size < minSize) { continue; }
+            if (size < 0 || size < minSize)
+            {
+                continue;
+            }
 
             var name = System.IO.Path.GetFileName(child);
             var duplicate = cloudRoots.Select(root => System.IO.Path.Join(root, name)).FirstOrDefault(candidate => Path.Exists(candidate) && ContentsIdentical(child, candidate));
@@ -159,7 +177,10 @@ public sealed class Downloads(IDiskUsage disk)
             {
                 if (entry is DirectoryInfo)
                 {
-                    if (!entry.Attributes.HasFlag(FileAttributes.ReparsePoint)) { pending.Push(entry.FullName); }
+                    if (!entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        pending.Push(entry.FullName);
+                    }
                 }
                 else if (entry.Name != ".DS_Store" && File.Exists(entry.FullName))
                 {

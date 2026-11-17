@@ -169,11 +169,20 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     public static Judgement Decide(OrcaWorktreeFacts facts, double idleDays = DefaultIdleDays)
     {
         ArgumentNullException.ThrowIfNull(facts);
-        if (facts.IsCurrent) { return new(Current, "this command is running inside it"); }
+        if (facts.IsCurrent)
+        {
+            return new(Current, "this command is running inside it");
+        }
 
-        if (facts.BusyAgents > 0) { return new(Busy, $"{facts.BusyAgents} agent(s) still working or waiting"); }
+        if (facts.BusyAgents > 0)
+        {
+            return new(Busy, $"{facts.BusyAgents} agent(s) still working or waiting");
+        }
 
-        if (!facts.Exists) { return new(Missing, "the folder is gone"); }
+        if (!facts.Exists)
+        {
+            return new(Missing, "the folder is gone");
+        }
 
         if (!facts.IsWorktree)
         {
@@ -182,11 +191,20 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
                 : new(LeftoverDiffers, facts.LeftoverDetail is { Length: > 0 } detail ? detail : "not a git worktree; could not compare it");
         }
 
-        if (facts.Foreign) { return new(Foreign, "its git is not the registered project's"); }
+        if (facts.Foreign)
+        {
+            return new(Foreign, "its git is not the registered project's");
+        }
 
-        if (facts.Dirty) { return new(Dirty, "uncommitted or untracked files"); }
+        if (facts.Dirty)
+        {
+            return new(Dirty, "uncommitted or untracked files");
+        }
 
-        if (!facts.PrKnown) { return new(PrUnknown, "GitHub could not list the branch's PRs"); }
+        if (!facts.PrKnown)
+        {
+            return new(PrUnknown, "GitHub could not list the branch's PRs");
+        }
 
         if (facts.Pr is { Merged: true } merged)
         {
@@ -195,11 +213,20 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
                 : new(Merged, $"PR #{merged.Number} merged");
         }
 
-        if (facts.Pr is { State: "OPEN" } open) { return new(OpenPr, $"PR #{open.Number} open"); }
+        if (facts.Pr is { State: "OPEN" } open)
+        {
+            return new(OpenPr, $"PR #{open.Number} open");
+        }
 
-        if (facts.Pr is { } closed) { return new(ClosedPr, $"PR #{closed.Number} closed without merging: decide by hand"); }
+        if (facts.Pr is { } closed)
+        {
+            return new(ClosedPr, $"PR #{closed.Number} closed without merging: decide by hand");
+        }
 
-        if (!facts.InDefault) { return new(Unmerged, "commits not in the default branch, and no PR"); }
+        if (!facts.InDefault)
+        {
+            return new(Unmerged, "commits not in the default branch, and no PR");
+        }
 
         return facts.IdleDays < idleDays
             ? new(Recent, $"already in the default branch, but active {NumberText.Fixed(facts.IdleDays, 1)} day(s) ago")
@@ -226,10 +253,16 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     {
         ArgumentNullException.ThrowIfNull(branch);
         ArgumentNullException.ThrowIfNull(repo);
-        if (branch.Length == 0) { return new(false, "detached when it broke; nothing to compare it with"); }
+        if (branch.Length == 0)
+        {
+            return new(false, "detached when it broke; nothing to compare it with");
+        }
 
         var common = (await git.RunAsync(repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"], cancellationToken: cancellationToken).ConfigureAwait(false)).OutOrEmpty;
-        if (common.Length == 0) { return new(false, $"could not find the git folder of {OrcaLayout.Posix(repo)}"); }
+        if (common.Length == 0)
+        {
+            return new(false, $"could not find the git folder of {OrcaLayout.Posix(repo)}");
+        }
 
         if (!(await git.RunAsync(repo, ["rev-parse", "--verify", "--quiet", $"refs/heads/{branch}"], cancellationToken: cancellationToken).ConfigureAwait(false)).Ok)
         {
@@ -281,7 +314,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
             }
         }
 
-        if (!(changed.Ok && untracked.Ok)) { return new(false, "git could not compare the folder"); }
+        if (!(changed.Ok && untracked.Ok))
+        {
+            return new(false, "git could not compare the folder");
+        }
 
         var differing = (changed.Out + untracked.Out).ReplaceLineEndings("\n").Split('\n').Where(line => line.Trim().Length > 0).ToList();
         return differing.Count > 0
@@ -299,7 +335,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         ArgumentNullException.ThrowIfNull(git);
         ArgumentNullException.ThrowIfNull(proc);
         var origin = await git.RunAsync(repo, ["remote", "get-url", "origin"], TimeSpan.FromSeconds(10), cancellationToken: cancellationToken).ConfigureAwait(false);
-        if (!origin.Ok || RepoSlug.FromRemote(origin.Out.Trim()) is not { } slug) { return new(false); }
+        if (!origin.Ok || RepoSlug.FromRemote(origin.Out.Trim()) is not { } slug)
+        {
+            return new(false);
+        }
 
         var ran = await proc.RunAsync(
             new ProcRequest(["gh", "pr", "list", "--repo", slug.FullName, "--head", branch, "--state", "all", "--limit", "100", "--json", "number,state,headRefOid,isCrossRepository"])
@@ -308,10 +347,16 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
             },
             cancellationToken).ConfigureAwait(false);
         var pulls = ran.Ok ? BranchPulls(ran.Out) : null;
-        if (pulls is null) { return new(false); }
+        if (pulls is null)
+        {
+            return new(false);
+        }
 
         var own = pulls.Where(p => !p.CrossRepository).ToList();
-        if (own.Count == 0) { return new(true); }
+        if (own.Count == 0)
+        {
+            return new(true);
+        }
 
         var newest = own.MaxBy(p => p.Number)!;
         return new(true, new PullRequest(newest.Number, newest.State, branch, newest.HeadOid));
@@ -331,7 +376,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         var busy = activity?.AgentStates.Count(state => state is not null && BusyStates.Contains(state)) ?? 0;
         var idle = worktree.LastActivityMs is { } last && last != 0 ? (nowMs - last) / MsPerDay : 0.0;
         var facts = new OrcaWorktreeFacts(Directory.Exists(path), false, IsCurrent(cwd, path), busy, IdleDays: Math.Max(idle, 0.0));
-        if (!facts.Exists || facts.IsCurrent || busy > 0) { return facts; }
+        if (!facts.Exists || facts.IsCurrent || busy > 0)
+        {
+            return facts;
+        }
 
         var branch = ShortBranch(worktree.Branch);
         if (!await IsWorktreeAsync(path, cancellationToken).ConfigureAwait(false))
@@ -376,7 +424,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         CancellationToken cancellationToken = default)
     {
         var repos = (await runtime.ProjectsAsync(cancellationToken).ConfigureAwait(false)).Where(r => only is null || only.Contains(r.Id)).ToList();
-        if (repos.Count == 0) { return []; }
+        if (repos.Count == 0)
+        {
+            return [];
+        }
 
         var activity = new Dictionary<string, OrcaActivity>(StringComparer.Ordinal);
         foreach (var running in await runtime.ActivityAsync(cancellationToken).ConfigureAwait(false))
@@ -395,7 +446,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         var rows = new List<WorktreeRow>();
         foreach (var worktree in await runtime.WorktreesAsync(cancellationToken).ConfigureAwait(false))
         {
-            if (worktree.IsMain || !names.TryGetValue(worktree.RepoId, out var project)) { continue; }
+            if (worktree.IsMain || !names.TryGetValue(worktree.RepoId, out var project))
+            {
+                continue;
+            }
 
             var facts = await GatherAsync(worktree, paths[worktree.RepoId], activity.GetValueOrDefault(worktree.Id), nowMs, cwd, cancellationToken).ConfigureAwait(false);
             var judgement = Decide(facts, idleDays);
@@ -519,7 +573,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     {
         try
         {
-            if (JsonNode.Parse(text) is not JsonArray items) { return null; }
+            if (JsonNode.Parse(text) is not JsonArray items)
+            {
+                return null;
+            }
 
             var pulls = new List<BranchPull>();
             foreach (var item in items)
@@ -529,12 +586,18 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
                     return null;
                 }
 
-                if (!TryText(pull, "state", out var state) || !TryText(pull, "headRefOid", out var oid)) { return null; }
+                if (!TryText(pull, "state", out var state) || !TryText(pull, "headRefOid", out var oid))
+                {
+                    return null;
+                }
 
                 var cross = JsonShape.Field(pull, "isCrossRepository") is { } flag
                     ? JsonShape.AsBool(flag) ?? (bool?)null
                     : false;
-                if (cross is null) { return null; }
+                if (cross is null)
+                {
+                    return null;
+                }
 
                 pulls.Add(new(n, state, oid, cross.Value));
             }
@@ -547,7 +610,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     private static bool TryText(JsonObject pull, string key, out string value)
     {
         value = string.Empty;
-        if (JsonShape.Field(pull, key) is not { } raw) { return true; }
+        if (JsonShape.Field(pull, key) is not { } raw)
+        {
+            return true;
+        }
 
         if (JsonShape.AsText(raw) is { } text)
         {
@@ -572,7 +638,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
 
     private async Task<bool> BelongsToAsync(string path, string? repo, CancellationToken cancellationToken)
     {
-        if (repo is null) { return false; }
+        if (repo is null)
+        {
+            return false;
+        }
 
         var mine = await CommonDirAsync(path, cancellationToken).ConfigureAwait(false);
         return mine.Length > 0 && mine == await CommonDirAsync(repo, cancellationToken).ConfigureAwait(false);
@@ -592,7 +661,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
                 return beyond;
             }
 
-            if (await git.OutAsync(path, "rev-parse", "HEAD").ConfigureAwait(false) == mergedOid) { return 0; }
+            if (await git.OutAsync(path, "rev-parse", "HEAD").ConfigureAwait(false) == mergedOid)
+            {
+                return 0;
+            }
         }
 
         return await Exposure.CountAsync(git, path, "rev-list", "--count", "HEAD", "--not", "--remotes").ConfigureAwait(false);
@@ -613,7 +685,10 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
             return Directory.Exists(path) || File.Exists(path) ? "its folder is back" : string.Empty;
         }
 
-        if (repo is null) { return "its project is no longer registered"; }
+        if (repo is null)
+        {
+            return "its project is no longer registered";
+        }
 
         if (row.Verdict == Leftover)
         {

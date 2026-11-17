@@ -253,7 +253,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         ArgumentNullException.ThrowIfNull(part);
         var cleaned = IllegalRefChars().Replace(part, "-").Replace("..", "-", StringComparison.Ordinal).Replace("@{", "-", StringComparison.Ordinal).Trim('.');
-        if (cleaned.EndsWith(".lock", StringComparison.Ordinal)) { cleaned = cleaned[..^".lock".Length]; }
+        if (cleaned.EndsWith(".lock", StringComparison.Ordinal))
+        {
+            cleaned = cleaned[..^".lock".Length];
+        }
 
         return cleaned.Length > 0 ? cleaned : "-";
     }
@@ -273,7 +276,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             ? System.IO.Path.GetRelativePath(root, resolved).Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Where(part => part != ".")
             : [System.IO.Path.GetFileName(path.TrimEnd(System.IO.Path.DirectorySeparatorChar))];
         var list = parts.ToList();
-        if (list.Count > 1 && Containers.Contains(list[0], StringComparer.Ordinal)) { list.RemoveAt(0); }
+        if (list.Count > 1 && Containers.Contains(list[0], StringComparer.Ordinal))
+        {
+            list.RemoveAt(0);
+        }
 
         return string.Join('/', list.Select(RefComponent));
     }
@@ -327,10 +333,16 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         for (var i = 0; i < fields.Length; i++)
         {
             var entry = fields[i];
-            if (entry.Length < 4) { continue; }
+            if (entry.Length < 4)
+            {
+                continue;
+            }
 
             (entry[..2] == "??" ? untracked : changed).Add(entry[3..]);
-            if (entry[0] is 'R' or 'C' && entry[..2] != "??") { i++; }
+            if (entry[0] is 'R' or 'C' && entry[..2] != "??")
+            {
+                i++;
+            }
         }
 
         return new Porcelain(changed, untracked);
@@ -346,7 +358,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         ArgumentNullException.ThrowIfNull(path);
         var normal = path.Replace('\\', '/');
         var parts = normal.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) { return false; }
+        if (parts.Length == 0)
+        {
+            return false;
+        }
 
         var joined = string.Join('/', parts);
         var last = parts[^1];
@@ -510,7 +525,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             RemovalPolicy.Strict);
         void Need(bool when, string text)
         {
-            if (when) { plan.DecisionNeeded.Add(text); }
+            if (when)
+            {
+                plan.DecisionNeeded.Add(text);
+            }
         }
 
         Need(facts.OwnershipUnreadable, "cannot read this clone's git dir");
@@ -646,7 +664,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             return $"could not read {remote}'s default branch, so its history is unproven: {Head(listed.Detail, 120)}";
         }
 
-        if (listed.Detail.Length == 0) { return string.Empty; }
+        if (listed.Detail.Length == 0)
+        {
+            return string.Empty;
+        }
 
         var sha = listed.Detail.Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries)[0];
         if (!(await _store.RunAsync(path, ["cat-file", "-e", $"{sha}^{{commit}}"]).ConfigureAwait(false)).Ok)
@@ -680,7 +701,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         ArgumentNullException.ThrowIfNull(plan);
         var status = await ReadStatusAsync(plan.Path).ConfigureAwait(false);
-        if (await MovedAsync(plan, status).ConfigureAwait(false) is { Length: > 0 } moved) { return moved; }
+        if (await MovedAsync(plan, status).ConfigureAwait(false) is { Length: > 0 } moved)
+        {
+            return moved;
+        }
 
         var held = await HeldAsync(plan, sha, status).ConfigureAwait(false);
         return !held.Ok ? $"could not re-read the worktree: {held.Detail}" : held.Detail.Length == 0 ? "changed since planning" : FreshIgnored(plan, status);
@@ -713,7 +737,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             foreach (var step in steps)
             {
                 var ran = await _store.RunAsync(path, step, environment).ConfigureAwait(false);
-                if (!ran.Ok) { return new ShelfStep(false, $"git {step[0]} {step[1]}: {ran.Detail}"); }
+                if (!ran.Ok)
+                {
+                    return new ShelfStep(false, $"git {step[0]} {step[1]}: {ran.Detail}");
+                }
             }
 
             var tree = await _store.RunAsync(path, ["write-tree"], environment).ConfigureAwait(false);
@@ -733,7 +760,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         if (plan.Action == Snapshot)
         {
             var written = await SnapshotTreeAsync(plan.Path, plan.CarryIgnored).ConfigureAwait(false);
-            if (!written.Ok) { return written; }
+            if (!written.Ok)
+            {
+                return written;
+            }
 
             tree = written.Detail;
         }
@@ -753,7 +783,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         ArgumentNullException.ThrowIfNull(reference);
         var listed = await _store.RunAsync(clone, ["ls-remote", ShelfStore.Remote, reference]).ConfigureAwait(false);
-        if (!listed.Ok || listed.Detail.Split('\t', 2)[0] != sha) { return false; }
+        if (!listed.Ok || listed.Detail.Split('\t', 2)[0] != sha)
+        {
+            return false;
+        }
 
         var local = reference.StartsWith("refs/heads/", StringComparison.Ordinal) ? reference["refs/heads/".Length..] : reference;
         _ = await _store.RunAsync(clone, ["fetch", "-q", ShelfStore.Remote, $"+{reference}:refs/remotes/{ShelfStore.Remote}/{local}"]).ConfigureAwait(false);
@@ -888,11 +921,17 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         if (sha.Length == 0)
         {
             var marker = await MarkerAsync(plan).ConfigureAwait(false);
-            if (!marker.Ok) { return new ShelveResult(plan, "failed", marker.Detail); }
+            if (!marker.Ok)
+            {
+                return new ShelveResult(plan, "failed", marker.Detail);
+            }
 
             sha = marker.Detail;
             var pushed = await _store.RunAsync(plan.Clone, ["push", "-q", remote, $"{sha}:{plan.Ref}"]).ConfigureAwait(false);
-            if (!pushed.Ok) { return new ShelveResult(plan, "failed", $"push {plan.Ref}: {pushed.Detail}", sha); }
+            if (!pushed.Ok)
+            {
+                return new ShelveResult(plan, "failed", $"push {plan.Ref}: {pushed.Detail}", sha);
+            }
         }
 
         if (!await OnRemoteAsync(plan.Clone, plan.Ref, sha).ConfigureAwait(false))
@@ -926,7 +965,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     // Every file under root (or root itself) with its size, links never followed.
     private static List<(string Path, long Size)> Files(string root)
     {
-        if (File.Exists(root)) { return [(root, new FileInfo(root).Length)]; }
+        if (File.Exists(root))
+        {
+            return [(root, new FileInfo(root).Length)];
+        }
 
         var found = new List<(string Path, long Size)>();
         var stack = new Stack<string>([root]);
@@ -955,13 +997,19 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(status);
         var parent = await _store.OutAsync(plan.Path, "rev-parse", "--verify", "-q", $"{sha}^").ConfigureAwait(false);
-        if (parent != plan.Head) { return new ShelfStep(true, string.Empty); }
+        if (parent != plan.Head)
+        {
+            return new ShelfStep(true, string.Empty);
+        }
 
         var tree = plan.Head;
         if (status.Dirty || plan.CarryIgnored.Count > 0)
         {
             var written = await SnapshotTreeAsync(plan.Path, plan.CarryIgnored).ConfigureAwait(false);
-            if (!written.Ok) { return written; }
+            if (!written.Ok)
+            {
+                return written;
+            }
 
             tree = written.Detail;
         }
@@ -974,7 +1022,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     // Why the worktree cannot be judged against its plan any more: git cannot read it, or HEAD moved. Empty when neither.
     private async Task<string> MovedAsync(ShelvePlan plan, ShelveStatus status)
     {
-        if (status.Error.Length > 0) { return $"could not re-read the worktree: {status.Error}"; }
+        if (status.Error.Length > 0)
+        {
+            return $"could not re-read the worktree: {status.Error}";
+        }
 
         var head = await _store.OutAsync(plan.Path, "rev-parse", "HEAD").ConfigureAwait(false);
         return head != plan.Head ? $"HEAD moved to {(head.Length > 0 ? Head(head, 9) : "?")} since planning" : string.Empty;
@@ -1018,7 +1069,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             detail.Clear().Append("worktree removed (finished after git stopped part-way)");
         }
 
-        if (Exists(plan.Path)) { detail.Append(SweepLinkSkeleton(plan.Path)); }
+        if (Exists(plan.Path))
+        {
+            detail.Append(SweepLinkSkeleton(plan.Path));
+        }
 
         if (plan.Branch.Length > 0)
         {
@@ -1034,7 +1088,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     // Appends the result to the ledger. The ref and its trailers are the record; the ledger is a convenience.
     private ShelveResult Ledger(ShelveResult result)
     {
-        if (ledger is null) { return result; }
+        if (ledger is null)
+        {
+            return result;
+        }
 
         var line = new JsonObject { ["at"] = IsoTime.Format(clock.GetUtcNow()) };
         foreach (var (key, value) in result.ToJson()) { line[key] = value?.DeepClone(); }
