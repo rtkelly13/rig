@@ -2,7 +2,7 @@
 
 Two declarations in `config/managed-projects.json` tie a URL to the project it
 belongs to, without asking the page: a local app's **port range**, and the
-project's **Vercel project names**. `rig.workspace.url_owners` reads both, and
+project's **Vercel project names**. `Rig.Core.Workspace.UrlOwners` reads both, and
 `chrome-tabs group` uses them to put a tab beside its repo's PRs and issues.
 
 ## Local port ranges

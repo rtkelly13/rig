@@ -130,9 +130,7 @@ Every `coordinator.log` line names it, it heads that run's section of each job l
   show it beside the exit code.
 - **Why it failed.** A failed job also keeps the last 12 lines of its output.
   `coordinator.log` prints them under the failure, and `rig jobs status` and `rig jobs last`
-  print them below the table. A job that writes its narrative to its own log, as
-  `chrome-organise` does to `chrome-tabs\organise.log`, is read from that log's
-  last section instead.
+  print them below the table.
 - **The latest run.** `last-logon.json` and `last-tick.json` record each trigger's
   latest run: every job it ran or skipped, with the reason, and each outcome. The
   record is saved after every job, so a run killed part-way shows as not finished.
@@ -169,8 +167,8 @@ Everything is under `%LOCALAPPDATA%\shared-utilities\jobs\`:
 
 - `runs\<job>\<run_id>.log`: each recorded run's own output.
 
-Restore still logs to `workspace-restore\logs`. Chrome organise still logs to
-`chrome-tabs\organise.log` and writes its traces to `chrome-tabs\traces`.
+Restore still logs to `workspace-restore\logs`. Chrome organise writes its traces to
+`chrome-tabs\traces`.
 
 ## In `rig web`
 

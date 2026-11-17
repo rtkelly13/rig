@@ -39,13 +39,9 @@ rig chrome-tabs install             # `chrome-tabs` command on PATH
 rig chrome-tabs uninstall
 ```
 
-`list`, `rank`, `prune`, `group`, `saved-groups`, `install`, `uninstall` and
-`traces` are C# (`src/Rig.Cli/Chrome/`). `organise` still runs in Python and
-`rig` forwards the whole line there, so it behaves and prints as it did under
-the old spelling. `desktop-manager chrome-tabs organise …` still works as the
-legacy spelling of that one command; the Python `list`, `rank`, `prune`,
-`group`, `saved-groups`, `install` and `uninstall` bodies were deleted in
-#265, so `rig chrome-tabs …` is the only spelling for them.
+Every command is C# (`src/Rig.Cli/Chrome/`), and `rig chrome-tabs …` is the
+only spelling: the Python package, including `organise` and its scheduled entry
+point, is deleted.
 
 ## Grouping
 
@@ -76,7 +72,7 @@ project's claimed range, or a `*.vercel.app` deployment named after one of the
 project's Vercel projects ([local ports and Vercel names](../estate/url-ownership.md)).
 Such tabs join that repo's group.
 
-Video-call tabs (`site_rules.CALLS`: Meet, Zoom, Teams, Slack huddles and so
+Video-call tabs (`SiteRules.Calls`: Meet, Zoom, Teams, Slack huddles and so
 on) have no key and never move. Nor do pinned tabs, or tabs already in a group
 with another title.
 
@@ -204,8 +200,10 @@ flickering as the closes move between windows.
 The scheduled `organise --unattended` run (see [Organise](#organise)) belongs to
 `desktop-manager jobs install`: its Tick task runs it, as you, only while you are
 logged on, never overlapping (see [jobs.md](jobs.md)).
-The output goes to `organise.log` in `%LOCALAPPDATA%\shared-utilities\chrome-tabs`,
-rotated at 1 MB.
+Its output goes to the job log like any other job's (`rig jobs log chrome-organise`);
+there is no separate `organise.log` any more. An installed `chrome-tabs` shim from
+before the move runs `desktop-manager chrome-tabs`, which is gone, so rerun
+`rig chrome-tabs install` once.
 
 `chrome-tabs install` writes a `chrome-tabs.cmd` shim to `~/.local/bin` that runs the
 installed runtime's `current` copy, so it follows `runtime install` and `rollback`
@@ -243,9 +241,9 @@ The root span's `group.outcome` is `grouped`, `nothing_to_group`, `deferred`,
 The spans go to `%LOCALAPPDATA%\shared-utilities\chrome-tabs\traces\<YYYY-MM-DD>.ndjson`,
 one file per day. Each line is an OTLP-JSON envelope, the same format the
 repo-wide `rig.tracing` writes. The process flushes them every 30
-seconds and again on exit. Just before the task's time limit, the scheduled
-entry point also writes the spans still running, marked `span.incomplete`, so a
-killed run still shows up.
+seconds and again on exit. Two minutes before the job's time limit, a scheduled
+run also writes the spans still running, marked `span.incomplete`, so a killed
+run still shows up.
 
 The first scheduled run of each day deletes day files more than 30 days old.
 There is no separate cleanup task.
@@ -284,7 +282,6 @@ The commands are C#; `organise` and the scheduled entry point are still Python.
 | Output | `src/Rig.Core/Chrome/TabPlanText.cs` | The plans as printable lines |
 | Traces | `src/Rig.Core/Chrome/ChromeTraces.cs` | Where organise traces go, retention, and the reports |
 | Install | `src/Rig.Core/Chrome/ChromeInstall.cs` | The scheduled run's root and the `chrome-tabs` shim |
-| Python, still live | `src/desktop_manager/chrome/cli.py` (`organise`), `cli_common.py`, `scheduled.py`, `traces.py`, `install_location.py` | `organise`, the scheduled `--unattended` entry point, and the trace and log paths it shares with C# |
 
 The Python bodies for the ported commands are gone: `list`, `rank`, `prune`
 and `group` were removed in #265 and `traces_cli.py`, which held the Python
@@ -399,20 +396,21 @@ Safety layers, applied in order:
 | title | any multi-word title, including a bare artifact title | `title:<title>` |
 | title | a one-word title: report only | `title:<title>` |
 
-The first matching rule wins. To add a site, put a rule in `site_rules.RULES`
-before the `title` fallbacks, or a pattern in `NEVER`. Add real titles for the
-new site to `tests/desktop_manager/test_chrome_dedupe.py`.
+The first matching rule wins. To add a site, put a rule in `SiteRules.Rules`
+(`src/Rig.Core/Chrome/SiteRules.cs`) before the `title` fallbacks, or a pattern in
+`SiteRules.Never`. Add real titles for the new site to
+`tests/Rig.Core.Tests/Chrome/DedupeTests.cs`.
 
 ## Ranking and the memory budget
 
 `rank_tabs` puts each tab in one of two groups. A **protected** tab is never
 closed by the memory budget. Tabs are protected, in this order, for being:
 
-1. a video call, matched by title (see `site_rules.CALLS`);
+1. a video call, matched by title (see `SiteRules.Calls`);
 2. audible, or using live media;
 3. pinned;
 4. the active tab of its window;
-5. a page that `site_rules` cannot identify.
+5. a page that `SiteRules` cannot identify.
 
 Every other tab gets a **score** built from named factors:
 
