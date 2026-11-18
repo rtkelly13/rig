@@ -154,6 +154,7 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
 
     // Copies state from the app-data folder's pre-rename name, so the first install into the renamed folder keeps rig.db,
     // the jobs state and the logs. The old folder and its runtime copies stay until the tasks no longer use them.
+    // TODO(2027-01-31): delete with the rest of the shared-utilities -> rig migration (AppDataMigration, the legacy task names) once every machine has run `rig runtime install` and `rig jobs install`.
     private void ReportMigration()
     {
         if (Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(host.Root)) is not { } appData)

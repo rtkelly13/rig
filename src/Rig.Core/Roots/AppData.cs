@@ -13,6 +13,7 @@ public static class AppData
     /// The folder's name before the repo was renamed. <c>rig runtime install</c> copies state out of a folder with this
     /// name beside the current one (<see cref="AppDataMigration"/>).
     /// </summary>
+    // TODO(2027-01-31): delete with the rest of the shared-utilities -> rig migration (AppDataMigration, the legacy task names) once every machine has run `rig runtime install` and `rig jobs install`.
     public const string LegacyName = "shared-utilities";
 
     /// <summary>

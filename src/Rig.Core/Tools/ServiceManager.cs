@@ -204,6 +204,17 @@ public sealed class ServiceManager(ServiceHost host)
         return $"{Jobs.CoordinatorTasks.Folder}\\{target.DisplayName}{(preview ? " Preview" : string.Empty)}";
     }
 
+    /// <summary>
+    /// The task's name under <see cref="Jobs.CoordinatorTasks.LegacyFolder"/>, where it was registered before the repo was
+    /// renamed. Install and uninstall delete it, so an old task never keeps starting the service from the old runtime copy.
+    /// </summary>
+    // TODO(2027-01-31): delete with the rest of the shared-utilities -> rig migration (AppDataMigration, the legacy task names) once every machine has run `rig runtime install` and `rig jobs install`.
+    public static string LegacyTaskName(ServiceTarget target, bool preview)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return $"{Jobs.CoordinatorTasks.LegacyFolder}\\{target.DisplayName}{(preview ? " Preview" : string.Empty)}";
+    }
+
     /// <summary>The systemd user unit's name.</summary>
     public static string UnitName(ServiceTarget target, bool preview)
     {
@@ -285,6 +296,7 @@ public sealed class ServiceManager(ServiceHost host)
         var name = TaskName(target, preview);
         string[] create = ["schtasks", "/Create", "/TN", name, "/TR", WindowsCommand(command), "/SC", "ONLOGON", "/F"];
         (await host.Proc.RunAsync(new ProcRequest(create), cancellationToken).ConfigureAwait(false)).EnsureOk(create);
+        await DeleteLegacyTaskAsync(target, preview, cancellationToken).ConfigureAwait(false);
         _ = await host.Proc.RunAsync(new ProcRequest(["schtasks", "/Run", "/TN", name]), cancellationToken).ConfigureAwait(false);
         return port is { } listening
             ? $"Registered and started Windows scheduled task [{name}] on port {listening.ToString(CultureInfo.InvariantCulture)}."
@@ -324,8 +336,12 @@ public sealed class ServiceManager(ServiceHost host)
     {
         var name = TaskName(target, preview);
         _ = await host.Proc.RunAsync(new ProcRequest(["schtasks", "/Delete", "/TN", name, "/F"]), cancellationToken).ConfigureAwait(false);
+        await DeleteLegacyTaskAsync(target, preview, cancellationToken).ConfigureAwait(false);
         return $"Removed Windows Task Scheduler entry [{name}].";
     }
+
+    private async Task DeleteLegacyTaskAsync(ServiceTarget target, bool preview, CancellationToken cancellationToken) =>
+        _ = await host.Proc.RunAsync(new ProcRequest(["schtasks", "/Delete", "/TN", LegacyTaskName(target, preview), "/F"]), cancellationToken).ConfigureAwait(false);
 
     private async Task<string> UninstallLinuxAsync(ServiceTarget target, bool preview, CancellationToken cancellationToken)
     {

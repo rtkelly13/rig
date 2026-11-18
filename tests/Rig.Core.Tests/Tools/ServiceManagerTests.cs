@@ -110,7 +110,8 @@ public sealed class ServiceManagerTests : IDisposable
         Assert.Equal(
             ["schtasks", "/Create", "/TN", "Rig\\Web Dashboard Preview", "/TR", "/rig web --port 8091 --no-open --preview", "/SC", "ONLOGON", "/F"],
             proc.Requests[0].Argv);
-        Assert.Equal(["schtasks", "/Run", "/TN", "Rig\\Web Dashboard Preview"], proc.Requests[1].Argv);
+        Assert.Equal(["schtasks", "/Delete", "/TN", "Shared Utilities\\Web Dashboard Preview", "/F"], proc.Requests[1].Argv);
+        Assert.Equal(["schtasks", "/Run", "/TN", "Rig\\Web Dashboard Preview"], proc.Requests[2].Argv);
     }
 
     [Fact]
@@ -191,14 +192,16 @@ public sealed class ServiceManagerTests : IDisposable
     }
 
     [Fact]
-    public async Task Windows_uninstall_deletes_the_task()
+    public async Task Windows_uninstall_deletes_the_task_and_its_pre_rename_twin()
     {
         var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
 
         var result = await new ServiceManager(Host(ServicePlatform.Windows, proc)).UninstallAsync(ServiceTarget.Desktop, true, Token);
 
         Assert.Equal("Removed Windows Task Scheduler entry [Rig\\Desktop Preview].", result.Message);
-        Assert.Equal(["schtasks", "/Delete", "/TN", "Rig\\Desktop Preview", "/F"], Assert.Single(proc.Requests).Argv);
+        Assert.Equal(
+            [["schtasks", "/Delete", "/TN", "Rig\\Desktop Preview", "/F"], ["schtasks", "/Delete", "/TN", "Shared Utilities\\Desktop Preview", "/F"]],
+            proc.Requests.Select(r => r.Argv));
     }
 
     [Fact]

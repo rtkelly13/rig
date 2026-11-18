@@ -26,6 +26,7 @@ public static class CoordinatorTasks
     public const string Folder = "Rig";
 
     /// <summary>The folder they were registered in before the repo was renamed.</summary>
+    // TODO(2027-01-31): delete with the rest of the shared-utilities -> rig migration (AppDataMigration, the legacy task names) once every machine has run `rig runtime install` and `rig jobs install`.
     public const string LegacyFolder = "Shared Utilities";
 
     /// <summary>The sign-in run.</summary>

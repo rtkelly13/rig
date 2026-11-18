@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Rig.Core.Roots;
 
 namespace Rig.Core.Tests.Roots;
@@ -60,6 +61,48 @@ public sealed class AppDataMigrationTests : IDisposable
     }
 
     [Fact]
+    public void A_folder_copied_in_part_gets_its_missing_files_on_the_next_run()
+    {
+        Write(Path.Join(Legacy, "jobs", "state.json"), "{}");
+        Write(Path.Join(Legacy, "jobs", "logs", "restore.log"), "log");
+        Write(Path.Join(Current, "jobs", "state.json"), "newer");
+
+        var result = AppDataMigration.CopyLegacy(Current);
+
+        Assert.Equal(["jobs"], result.Copied);
+        Assert.Equal("newer", File.ReadAllText(Path.Join(Current, "jobs", "state.json")));
+        Assert.Equal("log", File.ReadAllText(Path.Join(Current, "jobs", "logs", "restore.log")));
+    }
+
+    [Fact]
+    public void A_database_open_in_wal_mode_is_copied_with_its_committed_rows_and_without_its_sidecars()
+    {
+        _ = Directory.CreateDirectory(Legacy);
+        var source = Path.Join(Legacy, "rig.db");
+        using (var writer = Open(source))
+        {
+            using (var setup = writer.CreateCommand())
+            {
+                setup.CommandText = "PRAGMA journal_mode=WAL; PRAGMA wal_autocheckpoint=0; CREATE TABLE t (v TEXT); INSERT INTO t VALUES ('a'), ('b');";
+                _ = setup.ExecuteNonQuery();
+            }
+
+            Assert.True(File.Exists(source + "-wal"));
+
+            var result = AppDataMigration.CopyLegacy(Current);
+
+            Assert.Equal(["rig.db"], result.Copied);
+            Assert.Empty(result.Failed);
+        }
+
+        Assert.False(File.Exists(Path.Join(Current, "rig.db-wal")));
+        using var copy = Open(Path.Join(Current, "rig.db"));
+        using var count = copy.CreateCommand();
+        count.CommandText = "SELECT count(*) FROM t";
+        Assert.Equal(2L, count.ExecuteScalar());
+    }
+
+    [Fact]
     public void Nothing_happens_without_a_legacy_folder()
     {
         var result = AppDataMigration.CopyLegacy(Current);
@@ -74,6 +117,13 @@ public sealed class AppDataMigrationTests : IDisposable
         Write(Path.Join(Legacy, "rig.db"), "db");
 
         Assert.Null(AppDataMigration.CopyLegacy(Legacy).Legacy);
+    }
+
+    private static SqliteConnection Open(string path)
+    {
+        var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path, Pooling = false }.ToString());
+        connection.Open();
+        return connection;
     }
 
     private static void Write(string path, string text)
