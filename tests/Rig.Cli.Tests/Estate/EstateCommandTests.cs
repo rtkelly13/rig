@@ -31,23 +31,27 @@ public sealed class EstateCommandTests : IDisposable
 
     private string Risky => Path.Join(Code, "risky");
 
-    private async Task BuildEstateAsync()
+    private Task BuildEstateAsync() => GitTemplates.CopyAsync(nameof(EstateCommandTests), BuildEstateAsync, _root.Path);
+
+    private static async Task BuildEstateAsync(string root)
     {
-        _ = await CloneAsync("safe");
-        var risky = await CloneAsync("risky");
+        _ = await CloneAsync(root, "safe");
+        var risky = await CloneAsync(root, "risky");
         _ = await Repos.GitAsync(risky, "switch", "-q", "-c", "wip");
         await Repos.CommitAsync(risky, "wip");
         await File.WriteAllTextAsync(Path.Join(risky, "first.txt"), "edited", Token);
     }
 
+    private async Task<string> CloneAsync(string name) => PathResolution.Resolve(await CloneAsync(_root.Path, name));
+
     // A clone of a fresh bare origin, with main pushed.
-    private async Task<string> CloneAsync(string name)
+    private static async Task<string> CloneAsync(string root, string name)
     {
-        var origin = Path.Join(_root.Path, "origins", $"{name}.git");
-        _ = await Repos.GitAsync(_root.Path, "init", "-q", "--bare", "-b", "main", origin);
-        var clone = await Repos.InitAsync(Path.Join(_root.Path, "code", name), origin);
+        var origin = Path.Join(root, "origins", $"{name}.git");
+        _ = await Repos.GitAsync(root, "init", "-q", "--bare", "-b", "main", origin);
+        var clone = await Repos.InitAsync(Path.Join(root, "code", name), origin);
         _ = await Repos.GitAsync(clone, "push", "-q", "-u", "origin", "main");
-        return PathResolution.Resolve(clone);
+        return clone;
     }
 
     private Task<(int Code, string Out, string Err)> RunAsync(params string[] args) => RunWithAsync(Repos.Proc, args);
