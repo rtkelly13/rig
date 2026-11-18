@@ -35,3 +35,7 @@ M:System.Threading.Tasks.Task.Run``1(System.Func{System.Threading.Tasks.Task{``0
 P:System.Threading.Tasks.Task.Factory;Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of Task.Factory.StartNew.
 T:System.Threading.Tasks.TaskFactory;Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of a TaskFactory.
 T:System.Threading.Tasks.TaskFactory`1;Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of a TaskFactory.
+
+# Nullable annotations are the parameter contract (#318); validate untrusted input where it is deserialised.
+M:System.ArgumentNullException.ThrowIfNull(System.Object,System.String);Mark the parameter non-nullable instead; nullable annotations are the contract (#318).
+M:System.ArgumentNullException.ThrowIfNull(System.Void*,System.String);Mark the parameter non-nullable instead; nullable annotations are the contract (#318).
