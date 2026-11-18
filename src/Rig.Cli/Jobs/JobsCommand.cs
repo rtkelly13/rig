@@ -20,7 +20,7 @@ namespace Rig.Cli.Jobs;
 /// <param name="Trace">Starts writing a real run's job spans; disposing it writes them out.</param>
 /// <param name="WaitForShell">Waits up to a time for Explorer's shell window, before a <c>--scheduled</c> logon run.</param>
 /// <param name="TracesDir">The shared traces folder a <c>--scheduled</c> logon run prunes.</param>
-/// <param name="InstallTarget">Resolves and validates the stable task targets before registration.</param>
+/// <param name="InstallTarget">Resolves and validates the stable task targets before registration, for a launcher and an optional pythonw.</param>
 /// <param name="UserId">The interactive identity used by the tasks.</param>
 /// <param name="MissingRig">The published <c>rig</c> the tasks would point at when it does not exist, else null.</param>
 internal sealed record JobsHost(
@@ -36,7 +36,7 @@ internal sealed record JobsHost(
     Func<IDisposable> Trace,
     Func<TimeSpan, bool> WaitForShell,
     string TracesDir,
-    Func<CancellationToken, Task<JobsInstallTarget>> InstallTarget,
+    Func<JobsLauncher, string?, CancellationToken, Task<JobsInstallTarget>> InstallTarget,
     Func<string> UserId,
     Func<string?> MissingRig);
 
@@ -86,8 +86,19 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
 
         var noStart = new Option<bool>("--no-start") { Description = "Do not start the display guard now." };
         var start = new Option<bool>("--start") { Description = "Start the display guard now as well as at logon (the default)." };
-        var install = new Command("install", "Register the Logon, Tick and Display Guard tasks, and retire the separate tasks they replace.") { noStart, start };
-        install.SetAction((parsed, cancellationToken) => Install(!parsed.GetValue(noStart), cancellationToken));
+        var launcher = new Option<string>("--launcher")
+        {
+            Description = "How the tasks start rig: pythonw opens no window; direct needs no Python but flashes a console briefly.",
+            DefaultValueFactory = _ => "pythonw",
+        };
+        launcher.AcceptOnlyFromAmong("pythonw", "direct");
+        var pythonw = new Option<string?>("--pythonw") { Description = "The pythonw.exe that starts rig. Default: uv's managed Python." };
+        var install = new Command("install", "Register the Logon, Tick and Display Guard tasks, and retire the separate tasks they replace.") { noStart, start, launcher, pythonw };
+        install.SetAction((parsed, cancellationToken) => Install(
+            !parsed.GetValue(noStart),
+            parsed.GetRequiredValue(launcher) == "direct" ? JobsLauncher.Direct : JobsLauncher.Pythonw,
+            parsed.GetValue(pythonw),
+            cancellationToken));
 
         return new Command("jobs", "Logon, every-15-minute and daily jobs that keep this machine aligned, run from one registry.")
         {
@@ -109,7 +120,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
 
     private string LogsDir => JobState.LogsDir(host.JobsDir);
 
-    private async Task<int> Install(bool start, CancellationToken cancellationToken)
+    private async Task<int> Install(bool start, JobsLauncher launcher, string? pythonw, CancellationToken cancellationToken)
     {
         if (host.Tasks is not { } tasks)
         {
@@ -125,7 +136,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
 
         try
         {
-            var target = await host.InstallTarget(cancellationToken).ConfigureAwait(false);
+            var target = await host.InstallTarget(launcher, pythonw, cancellationToken).ConfigureAwait(false);
             var user = host.UserId();
             var now = host.Clock.GetLocalNow();
             foreach (var name in CoordinatorTasks.All)
@@ -153,7 +164,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
                 await output.WriteLineAsync($"Retired {name}").ConfigureAwait(false);
             }
 
-            await output.WriteLineAsync($"Runs from: {target.Rigw}\nPlan: {target.Plan}").ConfigureAwait(false);
+            await output.WriteLineAsync($"Runs from: {target.Rig}\nLauncher: {target.Pythonw ?? "direct"}\nPlan: {target.Plan}").ConfigureAwait(false);
             return 0;
         }
         catch (Exception error) when (error is ProcException or InvalidOperationException or IOException or UnauthorizedAccessException)

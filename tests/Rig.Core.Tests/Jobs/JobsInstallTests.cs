@@ -15,19 +15,22 @@ public sealed class JobsInstallTests : IDisposable
     public void Dispose() => _temp.Dispose();
 
     [Theory]
-    [InlineData(CoordinatorTasks.Logon, "_LOGON", "logon")]
-    [InlineData(CoordinatorTasks.Tick, "_TICK", "tick")]
-    [InlineData(CoordinatorTasks.Guard, "_GUARD", null)]
-    public void Task_policy_matches_the_legacy_oracle_with_only_the_reviewed_action_cutover(string name, string key, string? trigger)
+    [InlineData(CoordinatorTasks.Logon, "_LOGON", "logon", true)]
+    [InlineData(CoordinatorTasks.Tick, "_TICK", "tick", true)]
+    [InlineData(CoordinatorTasks.Guard, "_GUARD", null, true)]
+    [InlineData(CoordinatorTasks.Guard, "_GUARD", null, false)]
+    public void Task_policy_matches_the_legacy_oracle_with_only_the_reviewed_action_cutover(string name, string key, string? trigger, bool python)
     {
-        var target = new JobsInstallTarget(Path.Join(_temp.Path, "repo & tools"), Path.Join(_temp.Path, "plan & co.json"), Path.Join(_temp.Path, "rigw.exe"));
+        var target = new JobsInstallTarget(
+            Path.Join(_temp.Path, "repo & tools"), Path.Join(_temp.Path, "plan & co.json"), Path.Join(_temp.Path, "rig.exe"), python ? Path.Join(_temp.Path, "pythonw.exe") : null);
         using var oracle = JsonDocument.Parse(File.ReadAllText(Path.Join(AppContext.BaseDirectory, "Jobs", "task-xml-oracle.json")));
         var expected = XElement.Parse(oracle.RootElement.GetProperty(key).GetString()!);
         var action = expected.Element(Ns + "Actions")!.Element(Ns + "Exec")!;
-        action.Element(Ns + "Command")!.Value = target.Rigw;
-        action.Element(Ns + "Arguments")!.Value = trigger is null
-            ? $"desktop workspace guard --config \"{target.Plan}\""
-            : $"jobs run --trigger {trigger} --scheduled";
+        var command = trigger is null ? $"desktop workspace guard --config \"{target.Plan}\"" : $"jobs run --trigger {trigger} --scheduled";
+        action.Element(Ns + "Command")!.Value = python ? target.Pythonw! : target.Rig;
+        action.Element(Ns + "Arguments")!.Value = python
+            ? $"-I -c \"{JobsInstallTarget.Wrapper}\" \"{target.Rig}\" {command}"
+            : $"--detach-console {command}";
         action.SetElementValue(Ns + "WorkingDirectory", target.Root);
 
         var actual = JobsTaskXml.Render(name, target, "CORP\\me & you", new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.FromHours(2)));
@@ -38,7 +41,7 @@ public sealed class JobsInstallTests : IDisposable
 
     [Fact]
     public void An_unknown_task_is_refused() =>
-        Assert.Throws<ArgumentException>(() => JobsTaskXml.Render("unknown", new("root", "plan", "rigw"), "user", DateTimeOffset.UtcNow));
+        Assert.Throws<ArgumentException>(() => JobsTaskXml.Render("unknown", new("root", "plan", "rig"), "user", DateTimeOffset.UtcNow));
 
     [Theory]
     [InlineData(true)]
@@ -47,11 +50,11 @@ public sealed class JobsInstallTests : IDisposable
     {
         var root = Path.Join(_temp.Path, "checkout");
         var plan = Path.Join(_temp.Path, "user-plan.json");
-        var target = new JobsInstallTarget(root, plan, Path.Join(root, "temp", "jobs-runtime", "rigw.exe"));
+        var target = new JobsInstallTarget(root, plan, Path.Join(root, "temp", "jobs-runtime", "rig.exe"));
         Targets(target);
         var proc = new FakeProc().Answer(new Ran(git ? 0 : 1, Path.Join(root, ".git"), ""), "git");
 
-        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(root, Path.Join(_temp.Path, "app"), plan, proc, TestContext.Current.CancellationToken));
+        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(root, Path.Join(_temp.Path, "app"), plan, proc, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
         Assert.Equal(root, Assert.Single(proc.Requests).WorkingDirectory);
     }
 
@@ -62,11 +65,11 @@ public sealed class JobsInstallTests : IDisposable
     {
         var app = Path.Join(_temp.Path, "app");
         var current = Path.Join(app, "runtime", "current");
-        var target = new JobsInstallTarget(current, Path.Join(current, "desktop-manager", "workspace-plan.bundle.json"), Path.Join(current, "rig", "rigw.exe"));
+        var target = new JobsInstallTarget(current, Path.Join(current, "desktop-manager", "workspace-plan.bundle.json"), Path.Join(current, "rig", "rig.exe"), Path.Join(_temp.Path, "py", "pythonw.exe"));
         Targets(target);
         var proc = new FakeProc();
 
-        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(Path.Join(app, "runtime", copy), app, "ignored", proc, TestContext.Current.CancellationToken));
+        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(Path.Join(app, "runtime", copy), app, "ignored", proc, JobsLauncher.Pythonw, target.Pythonw, TestContext.Current.CancellationToken));
         Assert.Empty(proc.Requests);
     }
 
@@ -74,7 +77,7 @@ public sealed class JobsInstallTests : IDisposable
     public async Task Linked_worktrees_are_refused_before_checking_or_changing_targets()
     {
         var proc = new FakeProc().Answer(new Ran(0, Path.Join(_temp.Path, "main", ".git"), ""), "git");
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", proc, TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", proc, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
         Assert.Contains("not a worktree", error.Message, StringComparison.Ordinal);
     }
 
@@ -82,21 +85,22 @@ public sealed class JobsInstallTests : IDisposable
     public async Task A_git_failure_cannot_hide_a_linked_worktree()
     {
         await File.WriteAllTextAsync(Path.Join(_temp.Path, ".git"), "gitdir: elsewhere", TestContext.Current.CancellationToken);
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", new FakeProc(), TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", new FakeProc(), JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
         Assert.Contains("Cannot verify the main checkout", error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
-    public async Task A_missing_launcher_or_plan_refuses_installation(int missing)
+    [InlineData(2)]
+    public async Task A_missing_rig_plan_or_pythonw_refuses_installation(int missing)
     {
-        var target = new JobsInstallTarget(_temp.Path, Path.Join(_temp.Path, "plan"), Path.Join(_temp.Path, "temp", "jobs-runtime", "rigw.exe"));
+        var target = new JobsInstallTarget(_temp.Path, Path.Join(_temp.Path, "plan"), Path.Join(_temp.Path, "temp", "jobs-runtime", "rig.exe"), Path.Join(_temp.Path, "py", "pythonw.exe"));
         Targets(target);
-        var path = new[] { target.Rigw, target.Plan }[missing];
+        var path = new[] { target.Rig, target.Plan, target.Pythonw! }[missing];
         File.Delete(path);
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, new FakeProc(), TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, new FakeProc(), JobsLauncher.Pythonw, target.Pythonw, TestContext.Current.CancellationToken));
         Assert.Contains(path, error.Message, StringComparison.Ordinal);
     }
 
@@ -141,9 +145,41 @@ public sealed class JobsInstallTests : IDisposable
         await Assert.ThrowsAsync<ProcException>(() => tasks.StartAsync(CoordinatorTasks.Guard, TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task Without_a_pythonw_uv_names_its_managed_python_from_outside_any_project()
+    {
+        var target = new JobsInstallTarget(_temp.Path, Path.Join(_temp.Path, "plan"), Path.Join(_temp.Path, "temp", "jobs-runtime", "rig.exe"), Path.Join(_temp.Path, "py", "pythonw.exe"));
+        Targets(target);
+        var app = Path.Join(_temp.Path, "app");
+        var proc = new FakeProc().Answer(new Ran(0, "", ""), "git").Answer(new Ran(0, Path.Join(_temp.Path, "py", "python.exe") + "\n", ""), "uv");
+
+        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(_temp.Path, app, target.Plan, proc, JobsLauncher.Pythonw, null, TestContext.Current.CancellationToken));
+        var uv = proc.Requests[^1];
+        Assert.Equal(["uv", "python", "find", "--managed-python", "--no-project"], uv.Argv);
+        Assert.Equal(app, uv.WorkingDirectory);
+    }
+
+    [Fact]
+    public async Task Without_uv_python_the_error_names_both_ways_out()
+    {
+        var target = new JobsInstallTarget(_temp.Path, Path.Join(_temp.Path, "plan"), Path.Join(_temp.Path, "temp", "jobs-runtime", "rig.exe"));
+        Targets(target);
+        var proc = new FakeProc().Answer(new Ran(0, "", ""), "git").Answer(new Ran(2, "", "no python"), "uv");
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, proc, JobsLauncher.Pythonw, null, TestContext.Current.CancellationToken));
+        Assert.Contains("--pythonw", error.Message, StringComparison.Ordinal);
+        Assert.Contains("--launcher direct", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_pythonw_action_hands_rig_its_parent_and_no_console() =>
+        Assert.Equal(
+            """-I -c "import os,subprocess,sys;os.environ['RIG_PARENT_PID']=str(os.getpid());sys.exit(subprocess.call(sys.argv[1:],creationflags=0x08000000))" "C:\r\rig.exe" jobs run""",
+            new JobsInstallTarget("root", "plan", @"C:\r\rig.exe", "pythonw.exe").Arguments("jobs run"));
+
     private static void Targets(JobsInstallTarget target)
     {
-        foreach (var path in new[] { target.Rigw, target.Plan })
+        foreach (var path in new[] { target.Rig, target.Plan, target.Pythonw }.OfType<string>())
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, "fixture");

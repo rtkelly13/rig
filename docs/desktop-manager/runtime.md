@@ -21,7 +21,7 @@ copy, and refuses any commit after its removal.
 %LOCALAPPDATA%\shared-utilities\
   runtime\
     <sha12>\                     the commit's files (git archive)
-      rig\                        rig and rigw, published from the commit
+      rig\                        rig, published from the commit
       installed.json             sha, ref, source repo, install time
     current                      junction to the copy in use
     state.json                   current and previous copy, source repo
@@ -30,8 +30,8 @@ copy, and refuses any commit after its removal.
 ```
 
 A copy keeps the repo's layout, so the workspace plan (`desktop-manager/`) and
-anything else found relative to the code is pinned with it. It has no Python environment. `rig` and `rigw` are
-published from the commit's `src/Rig.Launcher` into `rig\` with `dotnet publish`.
+anything else found relative to the code is pinned with it. It has no Python environment. `rig` is
+published from the commit's `src/Rig.Cli` into `rig\` with `dotnet publish`.
 A `rig` started from `<copy>\rig\` (by its own name or through `current`) runs as
 that copy: its jobs use the copy's bundled plan.
 

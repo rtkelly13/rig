@@ -69,7 +69,7 @@ References point down this stack and never up or sideways. They are project refe
 `tests/Rig.Architecture.Tests` (NetArchTest) enforces the namespace rules inside a project:
 
 1. **Composition roots**: `src/Rig.Cli/Program.cs` for `rig`, and `Rig.Web.RigWebHost` for the web host (each route
-   group is a static `Map` it calls). `Rig.Launcher` is the thin published launcher over `Rig.Cli`. These are the
+   group is a static `Map` it calls). These are the
    only projects that mount commands or routes.
 2. **Features**: the command and route groups in `Rig.Cli` and `Rig.Web`, and the feature namespaces in `Rig.Core`
    (`Estate`, `Desktop`, `Chrome`, `ReviewQueue`, ...). Features are independent of each other. When two features

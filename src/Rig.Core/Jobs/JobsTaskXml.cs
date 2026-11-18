@@ -3,7 +3,7 @@ using System.Xml.Linq;
 
 namespace Rig.Core.Jobs;
 
-/// <summary>The coordinator's three tasks. Every action runs the windowless C# launcher, including the display guard.</summary>
+/// <summary>The coordinator's three tasks. Every action starts rig the way the target says, without a console window, including the display guard.</summary>
 public static class JobsTaskXml
 {
     private static readonly XNamespace Ns = "http://schemas.microsoft.com/windows/2004/02/mit/task";
@@ -33,9 +33,9 @@ public static class JobsTaskXml
                 E("AllowHardTerminate", true), E("StartWhenAvailable", !tick), E("RunOnlyIfNetworkAvailable", false), E("AllowStartOnDemand", true),
                 E("Enabled", true), E("Hidden", false), E("RunOnlyIfIdle", false), E("WakeToRun", false), E("ExecutionTimeLimit", guard ? "PT0S" : "PT2H"),
                 E("Priority", tick ? 7 : 4), guard ? E("RestartOnFailure", E("Interval", "PT1M"), E("Count", 10)) : null),
-            new XElement(Ns + "Actions", new XAttribute("Context", "Author"), E("Exec", E("Command", target.Rigw),
-                E("Arguments", guard ? $"desktop workspace guard --config \"{target.Plan}\""
-                    : $"jobs run --trigger {(tick ? "tick" : "logon")} --scheduled"), E("WorkingDirectory", target.Root))));
+            new XElement(Ns + "Actions", new XAttribute("Context", "Author"), E("Exec", E("Command", target.Command),
+                E("Arguments", target.Arguments(guard ? $"desktop workspace guard --config \"{target.Plan}\""
+                    : $"jobs run --trigger {(tick ? "tick" : "logon")} --scheduled")), E("WorkingDirectory", target.Root))));
         return "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n" + task + "\n";
     }
 

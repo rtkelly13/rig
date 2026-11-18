@@ -102,13 +102,13 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     public static bool RunningCopy(string path, string root) =>
         PathResolution.IsUnder(PathResolution.Resolve(path), PathResolution.Resolve(root));
 
-    /// <summary>The folder <c>dotnet publish</c> writes a copy's <c>rig</c> and <c>rigw</c> into.</summary>
+    /// <summary>The folder <c>dotnet publish</c> writes a copy's <c>rig</c> into.</summary>
     public static string PublishedFolder(string copy) => Path.Join(copy, "rig");
 
-    /// <summary>The projects published into <see cref="PublishedFolder"/>, in order: <c>rig</c>, then the <c>rigw</c> launcher.</summary>
-    public static IReadOnlyList<string> PublishedProjects { get; } = ["Rig.Cli", "Rig.Launcher"];
+    /// <summary>The projects published into <see cref="PublishedFolder"/>, <c>rig</c>.</summary>
+    public static IReadOnlyList<string> PublishedProjects { get; } = ["Rig.Cli"];
 
-    /// <summary>A copy's published <c>rig</c> or <c>rigw</c>, as <c>dotnet publish</c> wrote it.</summary>
+    /// <summary>A copy's published <c>rig</c>, as <c>dotnet publish</c> wrote it.</summary>
     public static string Published(string copy, string name, bool windows) =>
         Path.Join(PublishedFolder(copy), windows ? $"{name}.exe" : name);
 

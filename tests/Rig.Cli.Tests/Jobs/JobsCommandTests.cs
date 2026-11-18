@@ -109,7 +109,30 @@ public sealed class JobsCommandTests : IDisposable
         Assert.Contains($"Registered {CoordinatorTasks.Guard}\n", _out.ToString(), StringComparison.Ordinal);
         Assert.Contains("Retired Workspace Restore\n", _out.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain("Retired Chrome Tabs Prune", _out.ToString(), StringComparison.Ordinal);
-        Assert.Contains("Runs from: rigw.exe\nPlan: plan.json\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Runs from: rig.exe\nLauncher: pythonw.exe\nPlan: plan.json\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.Equal((JobsLauncher.Pythonw, null), _launch);
+    }
+
+    [Theory]
+    [InlineData(new[] { "--launcher", "direct" }, JobsLauncher.Direct, null, "direct")]
+    [InlineData(new[] { "--pythonw", "C:\\py\\pythonw.exe" }, JobsLauncher.Pythonw, "C:\\py\\pythonw.exe", "pythonw.exe")]
+    public async Task Install_passes_the_chosen_launcher_to_the_target(string[] options, JobsLauncher launcher, string? pythonw, string shown)
+    {
+        Assert.Equal(0, await Run(new FakeTasks(), ["install", "--no-start", .. options]));
+
+        Assert.Equal((launcher, pythonw), _launch);
+        Assert.Contains($"Launcher: {shown}\n", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_unknown_launcher_is_refused_before_any_task_changes()
+    {
+        var tasks = new FakeTasks();
+
+        Assert.NotEqual(0, await Run(tasks, ["install", "--launcher", "rigw"]));
+
+        Assert.Empty(tasks.Registered);
+        Assert.Null(_launch);
     }
 
     [Fact]
@@ -129,7 +152,7 @@ public sealed class JobsCommandTests : IDisposable
     public async Task A_target_validation_failure_changes_no_tasks()
     {
         var tasks = new FakeTasks();
-        var host = Host(tasks) with { InstallTarget = _ => throw new InvalidOperationException("missing rigw") };
+        var host = Host(tasks) with { InstallTarget = (_, _, _) => throw new InvalidOperationException("missing rig") };
 
         Assert.Equal(1, await new JobsCommand(host, _out).Build().Parse(["install"]).InvokeAsync(
             new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken));
@@ -137,7 +160,7 @@ public sealed class JobsCommandTests : IDisposable
         Assert.Empty(tasks.Registered);
         Assert.Empty(tasks.Deleted);
         Assert.Empty(tasks.Started);
-        Assert.Equal("missing rigw\n", _out.ToString());
+        Assert.Equal("missing rig\n", _out.ToString());
     }
 
     [Fact]
@@ -463,11 +486,17 @@ public sealed class JobsCommandTests : IDisposable
             return _shellReady;
         },
         TracesDir,
-        _ => Task.FromResult(new JobsInstallTarget(_temp.Path, "plan.json", "rigw.exe")),
+        (launcher, pythonw, _) =>
+        {
+            _launch = (launcher, pythonw);
+            return Task.FromResult(new JobsInstallTarget(_temp.Path, "plan.json", "rig.exe", launcher == JobsLauncher.Direct ? null : "pythonw.exe"));
+        },
         () => "CORP\\me & you",
         () => _missingRig);
 
     private string? _missingRig;
+
+    private (JobsLauncher Launcher, string? Pythonw)? _launch;
 
     private Task<int> Run(IScheduledTasks? tasks, params string[] args) =>
         new JobsCommand(Host(tasks), _out).Build().Parse(args)
