@@ -19,7 +19,7 @@ public sealed record JobsSite(string Plan, string PersonalRoot, IReadOnlyDiction
     /// <summary>The trace folder variable, <c>rig.tracing.TRACE_HOME_ENV</c>.</summary>
     public const string TraceHomeVariable = "SHARED_UTILITIES_TRACE_HOME";
 
-    /// <summary>The folder inside a runtime copy that holds the published <c>rig</c> and <c>rigw</c>.</summary>
+    /// <summary>The folder inside a runtime copy that holds the published <c>rig</c>.</summary>
     public const string PublishFolder = "rig";
 
     /// <summary>The main checkout containing a development task publish under temp/jobs-runtime, else null.</summary>

@@ -54,13 +54,15 @@ namespace Rig.Cli;
 [ExcludeFromCodeCoverage(Justification = "Wiring only; RigApp carries the behaviour and is tested.")]
 internal static class Program
 {
-    internal static async Task<int> Main(string[] args)
+    internal static Task<int> Main(string[] args) => Run(ScheduledLaunch.Apply(args));
+
+    private static async Task<int> Run(string[] args)
     {
         var exportTree = args.Length > 0 && args[0] == "--export-command-tree";
         var exportWindowsTree = exportTree && args.Contains("windows", StringComparer.Ordinal);
         var exportMacTree = exportTree && args.Contains("macos", StringComparer.Ordinal);
         var codeRoot = CodeRoot.Current();
-        // RIG_HOME first; then the runtime copy a published rigw or rig runs from, so its jobs use that copy; then the checkout.
+        // RIG_HOME first; then the runtime copy a published rig runs from, so its jobs use that copy; then the checkout.
         var rigHome = Environment.GetEnvironmentVariable(RigCheckout.HomeVariable);
         var checkout = RigCheckout.Resolve(
             string.IsNullOrEmpty(rigHome) ? JobsSite.CopyOf(AppContext.BaseDirectory, AppData.Current()) ?? JobsSite.PublishedCheckout(AppContext.BaseDirectory) : rigHome,
@@ -446,7 +448,7 @@ internal static class Program
                 TimeProvider.System),
             ShellWindow.WaitFor,
             Path.Join(AppData.Current(), "traces"),
-            ct => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, ct),
+            (launcher, pythonw, ct) => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, launcher, pythonw, ct),
             () => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USERDOMAIN")) ? Environment.UserName : $"{Environment.GetEnvironmentVariable("USERDOMAIN")}\\{Environment.UserName}",
             () => File.Exists(environment.Script("rig")) ? null : environment.Script("rig"));
     }

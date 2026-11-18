@@ -123,8 +123,8 @@ back, it often leaves the windows where it moved them. So a monitor that drops o
 on each sleep/wake cycle scrambles the workspace, even after a good restore.
 
 `jobs install` registers the guard as the `Display Guard` scheduled task. The task
-runs `rig desktop workspace guard` under the windowless `rigw.exe` for the whole session, with no console
-window. While it runs, the guard:
+runs `rig desktop workspace guard` for the whole session, started through `pythonw` (or `--launcher direct`) so it
+has no console window ([jobs.md](jobs.md#launchers)). While it runs, the guard:
 
 - Snapshots every managed window's placement every few seconds while the monitor
   set is stable. It keeps one snapshot for each monitor topology it has seen.

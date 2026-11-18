@@ -82,6 +82,8 @@ a verified thin dispatcher to `cs:web` — so the baseline is now empty. A Mac C
 obsolete Python registrations in the same PR rather than add macOS baseline allowances.
 
 The jobs progression (#85, #30 G5) adds `rigw`, a windowless entry point into the same production CLI.
+(#358 later removed `rigw`, which CrowdStrike Falcon quarantined; the tasks now start `rig` itself, see
+[jobs.md](../desktop-manager/jobs.md#launchers).)
 Its discovery adapter verifies that the launcher's only member passes the original argument array directly to
 `Cli.Program.Main`; extra behavior or rewritten arguments fail discovery. Its executable project and entry point
 are registered separately without introducing another command owner. `jobs uninstall` now has one C# owner,

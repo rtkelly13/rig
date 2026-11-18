@@ -17,15 +17,14 @@ rig jobs install                       # register the tasks (run from the runtim
 ```
 
 All `rig jobs` subcommands run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`).
-The `desktop-manager jobs` spelling is gone. New Logon and Tick tasks start `rigw` directly. The old
-`desktop_manager.jobs.scheduled` module delegates to the published `rigw` for task registrations
-that have not been refreshed; it no longer runs the Python coordinator.
+The `desktop-manager jobs` spelling is gone. Task registrations from before the C# port still name the old
+`desktop_manager.jobs.scheduled` module; `rig jobs install` replaces them.
 The C# runner preserves `state.json`, `last-<trigger>.json`, `runs.ndjson` and the `run.lock` byte.
 Each job runs in a `job <name>` span written to the `desktop-manager-jobs` trace files, whose ids its
 `runs.ndjson` line keeps.
 
-The tasks run `<runtime>\current\rig\rigw.exe jobs run --trigger <t> --scheduled`. `rigw` is `rig` built as a
-Windows app (`src/Rig.Launcher`), so a task opens no console. `--scheduled`, hidden from `--help`, wraps the run in scheduled logging and maintenance: the narrative goes to `coordinator.log` (moved to `.log.1` past
+The tasks run `<runtime>\current\rig\rig.exe jobs run --trigger <t> --scheduled` without a console window, started
+by one of two launchers (see [Launchers](#launchers)). `--scheduled`, hidden from `--help`, wraps the run in scheduled logging and maintenance: the narrative goes to `coordinator.log` (moved to `.log.1` past
 512 KB), every line naming the run, and a crash is logged and exits 1. A logon run first waits up to two minutes for
 Explorer's shell window and deletes trace files older than 14 days. A plain `rig jobs run` does none of this.
 Both sides read and write the same `state.json` and `last-<trigger>.json`, held byte for byte to
@@ -50,14 +49,33 @@ through later `runtime install` and `runtime rollback`:
 ```
 
 Run from a checkout, `jobs install` refuses a linked worktree because the tasks are machine-wide.
-Publish `src/Rig.Launcher` into `temp/jobs-runtime` in the main checkout first. All three tasks use
-that `rigw.exe`; Display Guard runs `rig desktop workspace guard` with the user plan.
-The installer validates the launcher and plan before registering any tasks, then
+Publish `src/Rig.Cli` into `temp/jobs-runtime` in the main checkout first. All three tasks use
+that `rig.exe`; Display Guard runs `rig desktop workspace guard` with the user plan.
+The installer validates rig, the plan and `pythonw` before registering any tasks, then
 registers all three before retiring the old tasks. `--no-start` skips starting the guard immediately.
 Runtime installations always register paths through `current` and use its bundled plan.
 `jobs install` also refuses, changing no tasks, when the published `rig` the tasks run (`<checkout>/rig/rig`) is
 missing, as it is under `dotnet run` or a dev `RIG_HOME`; run `rig runtime install`. `jobs status` reports the same
 as a finding without failing.
+
+### Launchers
+
+A console program started by Task Scheduler gets a console window. `--launcher` picks how the tasks avoid it:
+
+| `--launcher` | Action | On screen | Needs |
+|:-------------|:-------|:----------|:------|
+| `pythonw` (default) | `pythonw.exe -I -c "<wrapper>" rig.exe <command>` | nothing | a Python install |
+| `direct` | `rig.exe --detach-console <command>` | a console flashes for a moment | nothing |
+
+The `pythonw` wrapper is a one-line program in the task's arguments (`JobsInstallTarget.Wrapper`), so no script
+ships with rig. It starts rig with `CREATE_NO_WINDOW`, passes rig's exit code back, and sets `RIG_PARENT_PID` so
+rig exits when the wrapper does: Task Scheduler stops only the process it started, so without it, stopping or
+reinstalling the Display Guard would leave the old guard running. `--pythonw <path>` picks the interpreter;
+otherwise `uv python find --managed-python --no-project` names it, whose minor-version folder outlives patch
+upgrades. `--detach-console` must come first; rig frees its console before anything else runs.
+
+There is no separate windowless executable. The earlier `rigw.exe` (rig built as a Windows app) was quarantined
+by CrowdStrike Falcon on every Release build, so it was removed.
 
 Source tests pin task policy against `tests/Rig.Core.Tests/Jobs/task-xml-oracle.json`. Native
 `WIN-JOBS` acceptance and estate rollout remain pending separate Windows evidence; these source

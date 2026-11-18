@@ -73,9 +73,9 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Equal(Path.GetFileName(copy), state.Current);
         Assert.Null(state.Previous);
         Assert.Equal(PathResolution.Resolve(repo), state.Repo);
-        // rig is published on its own first, or its deps.json is missing and it cannot load native SQLite.
+        // Only rig is published: the scheduled tasks start it through pythonw, or directly, never through a second executable.
         Assert.Equal(
-            [Path.Join(copy, "src", "Rig.Cli"), Path.Join(copy, "src", "Rig.Launcher")],
+            [Path.Join(copy, "src", "Rig.Cli")],
             tools.Calls.Where(call => call.Argv is ["dotnet", "publish", ..]).Select(call => call.Argv[2]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
             ["dotnet", "publish", Path.Join(copy, "src", "Rig.Cli"), "-c", "Release", "-o", Path.Join(copy, "rig"), "-m:2", "-v", "q"]));
