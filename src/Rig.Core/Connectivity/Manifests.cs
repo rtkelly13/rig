@@ -16,33 +16,18 @@ namespace Rig.Core.Connectivity;
 public sealed record ProjectLink(string Target, string Evidence);
 
 /// <summary>What one repo's tracked manifests publish and consume.</summary>
-public sealed class Inventory
+/// <param name="Publications">The packages it publishes.</param>
+/// <param name="Consumptions">The packages it consumes.</param>
+/// <param name="ProjectRefs">Its MSBuild project references.</param>
+/// <param name="Paths">The manifests found, relative to the repo with forward slashes.</param>
+/// <param name="Warnings">What could not be read.</param>
+public sealed record Inventory(
+    IReadOnlyList<Publication> Publications,
+    IReadOnlyList<Consumption> Consumptions,
+    IReadOnlyList<ProjectLink> ProjectRefs,
+    IReadOnlyList<string> Paths,
+    IReadOnlyList<string> Warnings)
 {
-    /// <summary>The packages it publishes.</summary>
-    public IReadOnlyList<Publication> Publications => PublicationsFound;
-
-    internal List<Publication> PublicationsFound { get; } = [];
-
-    /// <summary>The packages it consumes.</summary>
-    public IReadOnlyList<Consumption> Consumptions => ConsumptionsFound;
-
-    internal List<Consumption> ConsumptionsFound { get; set; } = [];
-
-    /// <summary>Its MSBuild project references.</summary>
-    public IReadOnlyList<ProjectLink> ProjectRefs => ProjectRefsFound;
-
-    internal List<ProjectLink> ProjectRefsFound { get; } = [];
-
-    /// <summary>The manifests found, relative to the repo with forward slashes.</summary>
-    public IReadOnlyList<string> Paths => PathsFound;
-
-    internal List<string> PathsFound { get; set; } = [];
-
-    /// <summary>What could not be read.</summary>
-    public IReadOnlyList<string> Warnings => WarningsFound;
-
-    internal List<string> WarningsFound { get; } = [];
-
     /// <summary>Whether the manifests were listed at all.</summary>
     public bool Scanned => !Warnings.Any(warning => warning.StartsWith(Manifests.Unavailable, StringComparison.Ordinal));
 }
@@ -133,100 +118,101 @@ public static partial class Manifests
     public static async Task<Inventory> ReadAsync(Git git, string root, string repo, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(root);
-        var inventory = new Inventory();
+        IReadOnlyList<string> paths;
         try
         {
-            inventory.PathsFound = [.. inventory.PathsFound, .. await ListAsync(git, root, cancellationToken).ConfigureAwait(false)];
+            paths = await ListAsync(git, root, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e) when (e is InvalidOperationException or InvalidDataException or IOException or UnauthorizedAccessException)
         {
-            inventory.WarningsFound.Add($"{Unavailable}: {e.Message}");
-            return inventory;
+            return new Inventory([], [], [], [], [$"{Unavailable}: {e.Message}"]);
         }
 
-        var central = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
-        var manifests = new List<(string Evidence, string Full)>();
-        foreach (var evidence in inventory.Paths)
-        {
-            var full = Path.GetFullPath(Path.Join(root, evidence));
-            if (Path.GetFileName(full) == "Directory.Packages.props")
+        var files = paths.Select(evidence => (Evidence: evidence, Full: Path.GetFullPath(Path.Join(root, evidence)))).ToList();
+        var props = await files
+            .Where(file => Path.GetFileName(file.Full) == "Directory.Packages.props")
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<PropsRead> (file, token) =>
             {
                 try
                 {
-                    if (new FileInfo(full).Length > MaxBytes)
-                    {
-                        throw new InvalidDataException("Manifest exceeds 2 MB");
-                    }
-
-                    var bytes = await File.ReadAllBytesAsync(full, cancellationToken).ConfigureAwait(false);
-                    var text = XmlComment().Replace(StrictUtf8.GetString(bytes), string.Empty);
-                    var versions = Folder(central, Path.GetDirectoryName(full)!);
-                    foreach (Match tag in PackageVersionTag().Matches(text))
-                    {
-                        versions[Canonical("nuget", Attribute(tag.Value, "Include"))] = Attribute(tag.Value, "Version");
-                    }
+                    var text = XmlComment().Replace(await ReadTextAsync(file.Full, token).ConfigureAwait(false), string.Empty);
+                    var versions = PackageVersionTag().Matches(text)
+                        .GroupBy(tag => Canonical("nuget", Attribute(tag.Value, "Include")), StringComparer.Ordinal)
+                        .ToDictionary(group => group.Key, group => Attribute(group.Last().Value, "Version"), StringComparer.Ordinal);
+                    return new PropsRead(Path.GetDirectoryName(file.Full)!, versions, null);
                 }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or DecoderFallbackException)
                 {
-                    inventory.WarningsFound.Add($"{evidence}: {e.Message}");
+                    return new PropsRead(null, [], $"{file.Evidence}: {e.Message}");
                 }
-            }
-            else
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var central = props
+            .Where(read => read.Folder is not null)
+            .ToDictionary(read => read.Folder!, read => read.Versions, StringComparer.Ordinal);
+
+        var reads = await files
+            .Where(file => Path.GetFileName(file.Full) != "Directory.Packages.props")
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<ManifestRead> (file, token) =>
             {
-                manifests.Add((evidence, full));
-            }
-        }
-
-        foreach (var (evidence, full) in manifests)
-        {
-            try
-            {
-                if (new FileInfo(full).Length > MaxBytes)
+                try
                 {
-                    throw new InvalidDataException("Manifest exceeds 2 MB");
-                }
+                    var text = await ReadTextAsync(file.Full, token).ConfigureAwait(false);
+                    if (file.Full.EndsWith(".csproj", StringComparison.Ordinal) || file.Full.EndsWith(".props", StringComparison.Ordinal))
+                    {
+                        text = XmlComment().Replace(text, string.Empty);
+                    }
 
-                var bytes = await File.ReadAllBytesAsync(full, cancellationToken).ConfigureAwait(false);
-                var text = StrictUtf8.GetString(bytes);
-                if (full.EndsWith(".csproj", StringComparison.Ordinal) || full.EndsWith(".props", StringComparison.Ordinal))
+                    return new ManifestRead(
+                        Path.GetFileName(file.Full) switch
+                        {
+                            "package.json" => ReadNpm(text, repo, file.Evidence),
+                            "pyproject.toml" => ReadPython(text, repo, file.Evidence),
+                            _ => ReadMsBuild(text, repo, file.Evidence, file.Full, central),
+                        },
+                        null);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or DecoderFallbackException or JsonException or TomlException)
                 {
-                    text = XmlComment().Replace(text, string.Empty);
+                    return new ManifestRead(Parsed.None, $"{file.Evidence}: {e.Message}");
                 }
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
-                switch (Path.GetFileName(full))
-                {
-                    case "package.json":
-                        ReadNpm(inventory, text, repo, evidence);
-                        break;
-                    case "pyproject.toml":
-                        ReadPython(inventory, text, repo, evidence);
-                        break;
-                    default:
-                        ReadMsBuild(inventory, text, repo, evidence, full, central);
-                        break;
-                }
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or DecoderFallbackException or JsonException or TomlException)
-            {
-                inventory.WarningsFound.Add($"{evidence}: {e.Message}");
-            }
-        }
-
-        return inventory;
+        return new Inventory(
+            [.. reads.SelectMany(read => read.Found.Publications)],
+            [.. reads.SelectMany(read => read.Found.Consumptions)],
+            [.. reads.SelectMany(read => read.Found.ProjectRefs)],
+            paths,
+            [.. props.Select(read => read.Warning).Concat(reads.Select(read => read.Warning)).OfType<string>()]);
     }
 
-    private static Dictionary<string, string> Folder(Dictionary<string, Dictionary<string, string>> central, string folder)
+    // A manifest's text, refused when over the size cap.
+    private static async Task<string> ReadTextAsync(string full, CancellationToken cancellationToken)
     {
-        if (!central.TryGetValue(folder, out var versions))
+        if (new FileInfo(full).Length > MaxBytes)
         {
-            versions = new Dictionary<string, string>(StringComparer.Ordinal);
-            central[folder] = versions;
+            throw new InvalidDataException("Manifest exceeds 2 MB");
         }
 
-        return versions;
+        var bytes = await File.ReadAllBytesAsync(full, cancellationToken).ConfigureAwait(false);
+        return StrictUtf8.GetString(bytes);
     }
 
-    private static void ReadNpm(Inventory inventory, string text, string repo, string evidence)
+    private sealed record PropsRead(string? Folder, Dictionary<string, string> Versions, string? Warning);
+
+    private sealed record ManifestRead(Parsed Found, string? Warning);
+
+    private sealed record Parsed(IReadOnlyList<Publication> Publications, IReadOnlyList<Consumption> Consumptions, IReadOnlyList<ProjectLink> ProjectRefs)
+    {
+        public static Parsed None { get; } = new([], [], []);
+    }
+
+    private static Parsed ReadNpm(string text, string repo, string evidence)
     {
         // The whole manifest is validated before any of it counts: a malformed one adds nothing.
         var package = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false }) as JsonObject
@@ -241,53 +227,42 @@ public static partial class Manifests
             })
             .ToList();
 
-        if (name.Length > 0)
-        {
-            inventory.PublicationsFound.Add(new Publication("npm", Canonical("npm", name), repo, evidence));
-        }
-
-        inventory.ConsumptionsFound = [.. inventory.ConsumptionsFound, .. consumptions];
+        return new Parsed(
+            [.. (name.Length > 0 ? new[] { new Publication("npm", Canonical("npm", name), repo, evidence) } : [])],
+            consumptions,
+            []);
     }
 
-    private static void ReadPython(Inventory inventory, string text, string repo, string evidence)
+    private static Parsed ReadPython(string text, string repo, string evidence)
     {
         var document = TomlSerializer.Deserialize<TomlTable>(text) ?? throw new InvalidDataException("expected a TOML document");
         if (!document.TryGetValue("project", out var value))
         {
-            return;
+            return Parsed.None;
         }
 
         var project = value as TomlTable ?? throw new InvalidDataException("project: expected a table");
         // As for npm, nothing counts until the whole project table has validated.
         var name = project.TryGetValue("name", out var named) ? named as string ?? throw new InvalidDataException("project.name: expected a string") : string.Empty;
-        var requirements = Strings(project, "dependencies", "project.dependencies").Select(requirement => ("runtime", requirement)).ToList();
-        if (project.TryGetValue("optional-dependencies", out var optional))
-        {
-            var extras = optional as TomlTable ?? throw new InvalidDataException("project.optional-dependencies: expected a table");
-            requirements = [.. requirements, .. extras.SelectMany(extra => Strings(extras, extra.Key, $"project.optional-dependencies.{extra.Key}").Select(requirement => ($"optional:{extra.Key}", requirement)))];
-        }
+        var extras = project.TryGetValue("optional-dependencies", out var optional)
+            ? optional as TomlTable ?? throw new InvalidDataException("project.optional-dependencies: expected a table")
+            : [];
+        (string Scope, string Requirement)[] requirements =
+        [
+            .. Strings(project, "dependencies", "project.dependencies").Select(requirement => ("runtime", requirement)),
+            .. extras.SelectMany(extra => Strings(extras, extra.Key, $"project.optional-dependencies.{extra.Key}").Select(requirement => ($"optional:{extra.Key}", requirement))),
+        ];
 
-        if (name.Length > 0)
-        {
-            inventory.PublicationsFound.Add(new Publication("pypi", Canonical("pypi", name), repo, evidence));
-        }
-
-        foreach (var (scope, requirement) in requirements)
-        {
-            if (PythonName().Match(requirement) is { Success: true } match)
-            {
-                inventory.ConsumptionsFound.Add(new Consumption("pypi", Canonical("pypi", match.Value), repo, requirement, scope, evidence));
-            }
-        }
+        return new Parsed(
+            [.. (name.Length > 0 ? new[] { new Publication("pypi", Canonical("pypi", name), repo, evidence) } : [])],
+            [.. requirements
+                .Where(item => PythonName().IsMatch(item.Requirement))
+                .Select(item => new Consumption("pypi", Canonical("pypi", PythonName().Match(item.Requirement).Value), repo, item.Requirement, item.Scope, evidence))],
+            []);
     }
 
-    private static void ReadMsBuild(Inventory inventory, string text, string repo, string evidence, string full, Dictionary<string, Dictionary<string, string>> central)
+    private static Parsed ReadMsBuild(string text, string repo, string evidence, string full, Dictionary<string, Dictionary<string, string>> central)
     {
-        if (PackageId().Match(text) is { Success: true } id && !id.Groups[1].Value.Contains("$(", StringComparison.Ordinal))
-        {
-            inventory.PublicationsFound.Add(new Publication("nuget", Canonical("nuget", id.Groups[1].Value), repo, evidence));
-        }
-
         // The nearest Directory.Packages.props above the project sets its central versions.
         IReadOnlyDictionary<string, string> versions = new Dictionary<string, string>();
         for (var folder = Path.GetDirectoryName(full); folder is not null; folder = Path.GetDirectoryName(folder))
@@ -299,16 +274,15 @@ public static partial class Manifests
             }
         }
 
-        inventory.ConsumptionsFound = [.. inventory.ConsumptionsFound, .. NuGetReferences(text, repo, evidence, versions)];
-        foreach (Match reference in ProjectReferenceTag().Matches(text))
-        {
-            var target = Attribute(reference.Value, "Include");
-            if (target.Length > 0 && !target.Contains("$(", StringComparison.Ordinal))
-            {
-                var resolved = PathResolution.Resolve(Path.Join(Path.GetDirectoryName(full), target.Replace('\\', '/')));
-                inventory.ProjectRefsFound.Add(new ProjectLink(resolved, evidence));
-            }
-        }
+        return new Parsed(
+            [.. (PackageId().Match(text) is { Success: true } id && !id.Groups[1].Value.Contains("$(", StringComparison.Ordinal)
+                ? new[] { new Publication("nuget", Canonical("nuget", id.Groups[1].Value), repo, evidence) }
+                : [])],
+            NuGetReferences(text, repo, evidence, versions),
+            [.. ProjectReferenceTag().Matches(text)
+                .Select(reference => Attribute(reference.Value, "Include"))
+                .Where(target => target.Length > 0 && !target.Contains("$(", StringComparison.Ordinal))
+                .Select(target => new ProjectLink(PathResolution.Resolve(Path.Join(Path.GetDirectoryName(full), target.Replace('\\', '/'))), evidence))]);
     }
 
     private static List<Consumption> NuGetReferences(string text, string repo, string evidence, IReadOnlyDictionary<string, string> versions)

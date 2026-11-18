@@ -161,55 +161,65 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             roots[identity] = identity == current ? checkout : scopes.ProjectDir(estateDir, spec.Name, spec.Repo);
         }
 
-        var publications = bindings
+        var inventories = await specs
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<Inventory?> (spec, token) =>
+            {
+                var identity = Slug(spec.Repo);
+                var local = roots[identity];
+                return Directory.Exists(local) ? await Manifests.ReadAsync(git, local, identity, token).ConfigureAwait(false) : null;
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        List<Publication> bound = [.. bindings
             .Select(binding => new Publication(
                 binding.Spec.Registry,
                 Manifests.Canonical(binding.Spec.Registry, binding.Spec.Name),
                 Slug(binding.Repo),
-                $"config/managed-projects.json · {binding.Spec.Manifest}"))
-            .ToList();
-        var consumptions = new List<Consumption>();
-        var projects = new List<GraphProject>();
-        var dependencies = new List<Dependency>();
-        foreach (var spec in specs)
-        {
-            var identity = Slug(spec.Repo);
-            var local = roots[identity];
-            var inventory = Directory.Exists(local) ? await Manifests.ReadAsync(git, local, identity, cancellationToken).ConfigureAwait(false) : null;
-            if (inventory is not null)
+                $"config/managed-projects.json · {binding.Spec.Manifest}"))];
+        List<Publication> publications = [.. bound, .. inventories.SelectMany(inventory => inventory?.Publications ?? [])];
+        List<Consumption> consumptions = [.. inventories.SelectMany(inventory => inventory?.Consumptions ?? [])];
+        List<GraphProject> projects =
+        [
+            .. specs.Select((spec, index) =>
             {
-                publications = [.. publications, .. inventory.Publications];
-                consumptions = [.. consumptions, .. inventory.Consumptions];
-                foreach (var reference in inventory.ProjectRefs)
-                {
-                    dependencies =
-                        [.. dependencies, .. roots
-                        .Where(upstream => upstream.Key != identity && PathResolution.IsUnder(reference.Target, PathResolution.Resolve(upstream.Value)))
-                        .Select(upstream => new Dependency(upstream.Key, identity, "project", Path.GetFileName(reference.Target), "project reference", "runtime", reference.Evidence))];
-                }
-            }
+                var identity = Slug(spec.Repo);
+                var inventory = inventories[index];
 
-            var provided = publications.Where(p => p.Repo == identity).Select(p => p.Package).Distinct().Order(StringComparer.Ordinal).ToList();
-            projects.Add(new GraphProject(
-                identity,
-                spec.Name,
-                spec.Description,
-                spec.Domain,
-                spec.Stack,
-                spec.Enabled,
-                inventory is { Scanned: true },
-                inventory?.Paths.Count ?? 0,
-                provided,
-                inventory is null ? [Unscanned] : [.. inventory.Warnings]));
-        }
+                // Only what the registry binds and the inventories read up to this project count as provided.
+                var provided = bound
+                    .Concat(inventories.Take(index + 1).SelectMany(read => read?.Publications ?? []))
+                    .Where(p => p.Repo == identity)
+                    .Select(p => p.Package)
+                    .Distinct()
+                    .Order(StringComparer.Ordinal)
+                    .ToList();
+                return new GraphProject(
+                    identity,
+                    spec.Name,
+                    spec.Description,
+                    spec.Domain,
+                    spec.Stack,
+                    spec.Enabled,
+                    inventory is { Scanned: true },
+                    inventory?.Paths.Count ?? 0,
+                    provided,
+                    inventory is null ? [Unscanned] : [.. inventory.Warnings]);
+            }),
+        ];
+        List<Dependency> projectRefs =
+        [
+            .. specs.SelectMany((spec, index) => (inventories[index]?.ProjectRefs ?? []).SelectMany(reference => roots
+                .Where(upstream => upstream.Key != Slug(spec.Repo) && PathResolution.IsUnder(reference.Target, PathResolution.Resolve(upstream.Value)))
+                .Select(upstream => new Dependency(upstream.Key, Slug(spec.Repo), "project", Path.GetFileName(reference.Target), "project reference", "runtime", reference.Evidence)))),
+        ];
 
         var publishers = publications
             .GroupBy(p => (p.Registry, p.Package))
             .Select(group => (group.Key, Repos: group.Select(p => p.Repo).Distinct().Order(StringComparer.Ordinal).ToList()))
             .ToList();
         var providers = publishers.Where(p => p.Repos.Count == 1).ToDictionary(p => p.Key, p => p.Repos[0]);
-        dependencies =
-            [.. dependencies, .. consumptions
+        var consumed = consumptions
             .Where(c => providers.TryGetValue((c.Registry, c.Package), out var provider) && provider != c.Repo)
             .Select(c => new Dependency(providers[(c.Registry, c.Package)], c.Repo, c.Registry, c.Package, c.Requirement, c.Scope, c.Evidence))
             .Distinct()
@@ -219,39 +229,31 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             .ThenBy(d => d.Package, StringComparer.Ordinal)
             .ThenBy(d => d.Scope, StringComparer.Ordinal)
             .ThenBy(d => d.Evidence, StringComparer.Ordinal)
-            .ThenBy(d => d.Requirement, StringComparer.Ordinal)];
-        var warnings = publishers
-            .Where(p => p.Repos.Count > 1)
-            .OrderBy(p => p.Key.Registry, StringComparer.Ordinal)
-            .ThenBy(p => p.Key.Package, StringComparer.Ordinal)
-            .Select(p => $"Ambiguous publisher for {p.Key.Registry}:{p.Key.Package}; no connection was guessed.")
-            .ToList();
+            .ThenBy(d => d.Requirement, StringComparer.Ordinal);
 
         var known = projects.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
-        var names = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var project in projects)
-        {
-            names[project.Name] = project.Id;
-        }
-
-        foreach (var (repo, dependsOn) in Declared(registryFile))
-        {
-            var target = Slug(repo);
-            foreach (var upstream in dependsOn)
+        var names = projects.GroupBy(p => p.Name, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.Last().Id, StringComparer.Ordinal);
+        var declaredEdges = Declared(registryFile)
+            .SelectMany(entry => entry.DependsOn.Select(upstream =>
             {
+                var target = Slug(entry.Repo);
                 var source = names.TryGetValue(upstream, out var named) ? named : Slug(upstream);
-                if (known.Contains(source) && known.Contains(target) && source != target)
-                {
-                    dependencies.Add(new Dependency(source, target, "declared", upstream, "declared dependency", "runtime", DeclaredEvidence));
-                }
-                else
-                {
-                    warnings.Add($"Unknown or self dependency {upstream} for {target}");
-                }
-            }
-        }
+                return (Upstream: upstream, Target: target, Source: source, Valid: known.Contains(source) && known.Contains(target) && source != target);
+            }))
+            .ToList();
 
-        var sorted = dependencies
+        List<string> warnings =
+        [
+            .. publishers
+                .Where(p => p.Repos.Count > 1)
+                .OrderBy(p => p.Key.Registry, StringComparer.Ordinal)
+                .ThenBy(p => p.Key.Package, StringComparer.Ordinal)
+                .Select(p => $"Ambiguous publisher for {p.Key.Registry}:{p.Key.Package}; no connection was guessed."),
+            .. declaredEdges.Where(edge => !edge.Valid).Select(edge => $"Unknown or self dependency {edge.Upstream} for {edge.Target}"),
+        ];
+        var sorted = projectRefs
+            .Concat(consumed)
+            .Concat(declaredEdges.Where(edge => edge.Valid).Select(edge => new Dependency(edge.Source, edge.Target, "declared", edge.Upstream, "declared dependency", "runtime", DeclaredEvidence)))
             .OrderBy(d => d.Source, StringComparer.Ordinal)
             .ThenBy(d => d.Target, StringComparer.Ordinal)
             .ThenBy(d => d.Registry, StringComparer.Ordinal)
