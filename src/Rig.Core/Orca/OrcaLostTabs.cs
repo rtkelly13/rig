@@ -155,7 +155,7 @@ public static class OrcaLostTabs
         query.CommandText = "select payload, updated_at from profile_state_documents where domain = 'workspaceSession'";
         using var rows = query.ExecuteReader();
         return rows.Read()
-            ? (OrcaJson.Object(rows.GetString(0)), rows.GetInt64(1))
+            ? (OrcaJson.Object(rows.GetString(0), $"{db} workspaceSession"), rows.GetInt64(1))
             : throw new InvalidOperationException($"{db}: no workspaceSession document");
     }
 
