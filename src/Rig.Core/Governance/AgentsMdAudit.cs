@@ -204,18 +204,18 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
             .. CheckBespokeAgentFiles(repo, rules),
             .. CheckRequiredContent(text, rules),
             .. CheckGenerationMarkers(text),
+            .. (rules.CheckPaths ? CheckPathLiveness(repo, text) : []),
         ];
-        if (rules.CheckPaths)
-        {
-            raw = [.. raw, .. CheckPathLiveness(repo, text)];
-        }
 
         var waivers = LoadWaivers(repo);
         var today = DateOnly.FromDateTime(time.GetLocalNow().DateTime);
         var active = waivers.Where(w => Strip(w.Reason).Length > 0 && !w.ExpiredOn(today)).Select(w => w.Key).ToHashSet(StringComparer.Ordinal);
-        var findings = raw.Where(f => !active.Contains(f.Key)).ToList();
         var suppressed = raw.Where(f => active.Contains(f.Key)).ToList();
-        findings = [.. findings, .. WaiverFindings(repo, waivers, raw.Select(f => f.Key).ToHashSet(StringComparer.Ordinal), today)];
+        List<AgentsMdFinding> findings =
+        [
+            .. raw.Where(f => !active.Contains(f.Key)),
+            .. WaiverFindings(repo, waivers, raw.Select(f => f.Key).ToHashSet(StringComparer.Ordinal), today),
+        ];
         return new(name, findings, suppressed, CollectMetrics(text));
     }
 
@@ -551,10 +551,12 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     private static List<string> IndexEntries(string folder)
     {
         var listed = DocsTree.List(folder).ToList();
-        var entries = listed.Where(p => DocsTree.IsMarkdownName(Path.GetFileName(p)) && DocsTree.IsFile(p) && !IsIndex(p)).ToList();
-        entries = [.. entries, .. listed.Where(d => DocsTree.IsDir(d) && DocsTree.Walk(d).Any(p => DocsTree.IsMarkdownName(Path.GetFileName(p))))];
-        entries.Sort(DocsTree.Order);
-        return entries;
+        return
+        [
+            .. listed.Where(p => DocsTree.IsMarkdownName(Path.GetFileName(p)) && DocsTree.IsFile(p) && !IsIndex(p))
+                .Concat(listed.Where(d => DocsTree.IsDir(d) && DocsTree.Walk(d).Any(p => DocsTree.IsMarkdownName(Path.GetFileName(p)))))
+                .Order(DocsTree.Order),
+        ];
     }
 
     private static IEnumerable<AgentsMdFinding> CheckDocsIndex(string repo, AgentsMdRules rules)
@@ -671,20 +673,13 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     // AGENTS.md, then every markdown file under docs/, sorted.
     private static List<string> MarkdownFiles(string repo)
     {
-        var found = new List<string>();
         var root = Path.Join(repo, AgentsFileName);
-        if (DocsTree.IsFile(root))
-        {
-            found.Add(root);
-        }
-
         var docsDir = Path.Join(repo, "docs");
-        if (DocsTree.IsDir(docsDir))
-        {
-            found = [.. found, .. DocsTree.Walk(docsDir).Where(p => DocsTree.IsMarkdownName(Path.GetFileName(p)) && DocsTree.IsFile(p)).Order(DocsTree.Order)];
-        }
-
-        return found;
+        return
+        [
+            .. (DocsTree.IsFile(root) ? new[] { root } : []),
+            .. (DocsTree.IsDir(docsDir) ? DocsTree.Walk(docsDir).Where(p => DocsTree.IsMarkdownName(Path.GetFileName(p)) && DocsTree.IsFile(p)).Order(DocsTree.Order) : Enumerable.Empty<string>()),
+        ];
     }
 
     private static List<AgentsMdFinding> WaiverFindings(string repo, IReadOnlyList<AgentsMdWaiver> waivers, HashSet<string> keysSeen, DateOnly today)

@@ -304,11 +304,11 @@ public sealed class Triage(IProc proc)
     /// <summary>The repo's open issues (at most 100), optionally only those labelled <paramref name="label"/>.</summary>
     public async Task<IReadOnlyList<IssueItem>> IssuesAsync(string repo, string? label = null, CancellationToken cancellationToken = default)
     {
-        List<string> argv = ["gh", "issue", "list", "--repo", repo, "--state", "open", "--limit", "100", "--json", IssueFields];
-        if (!string.IsNullOrEmpty(label))
-        {
-            argv = [.. argv, "--label", label];
-        }
+        List<string> argv =
+        [
+            "gh", "issue", "list", "--repo", repo, "--state", "open", "--limit", "100", "--json", IssueFields,
+            .. (string.IsNullOrEmpty(label) ? [] : new[] { "--label", label }),
+        ];
 
         return await ReadRowsAsync(argv, row => new IssueItem(
             repo,

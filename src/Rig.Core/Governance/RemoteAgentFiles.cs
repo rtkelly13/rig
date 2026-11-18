@@ -74,41 +74,35 @@ public sealed class RemoteAgentFiles(IProc proc)
     {
         ArgumentNullException.ThrowIfNull(owners);
         ArgumentNullException.ThrowIfNull(isRegistered);
-        var findings = new List<RemoteAgentFile>();
-        var unread = new List<string>();
-        foreach (var owner in owners)
-        {
-            var repos = await ListOwnerReposAsync(owner, cancellationToken).ConfigureAwait(false);
-            if (repos is null)
+        var perOwner = await owners
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<(List<RemoteAgentFile> Findings, List<string> Unread)> (owner, token) =>
             {
-                unread.Add(owner);
-                continue;
-            }
-
-            foreach (var repo in repos)
-            {
-                if (repo.IsFork && !isRegistered(repo.NameWithOwner))
+                var repos = await ListOwnerReposAsync(owner, token).ConfigureAwait(false);
+                if (repos is null)
                 {
-                    continue;
+                    return ([], [owner]);
                 }
 
-                if (repo.Branch.Length == 0)
-                {
-                    continue;
-                }
-
-                var paths = await DefaultBranchPathsAsync(repo.NameWithOwner, repo.Branch, cancellationToken).ConfigureAwait(false);
-                if (paths is null)
-                {
-                    unread.Add(repo.NameWithOwner);
-                    continue;
-                }
-
-                findings = [.. findings, .. FindRedundant(paths).Select(path => new RemoteAgentFile(repo.NameWithOwner, path, repo.IsArchived))];
-            }
-        }
-
-        return new([.. findings.OrderBy(f => f.Repo, StringComparer.Ordinal).ThenBy(f => f.Path, StringComparer.Ordinal)], unread);
+                var perRepo = await repos
+                    .Where(repo => !(repo.IsFork && !isRegistered(repo.NameWithOwner)) && repo.Branch.Length != 0)
+                    .ToAsyncEnumerable()
+                    .Select(async ValueTask<(List<RemoteAgentFile> Findings, List<string> Unread)> (repo, repoToken) =>
+                    {
+                        var paths = await DefaultBranchPathsAsync(repo.NameWithOwner, repo.Branch, repoToken).ConfigureAwait(false);
+                        return paths is null
+                            ? ([], [repo.NameWithOwner])
+                            : ([.. FindRedundant(paths).Select(path => new RemoteAgentFile(repo.NameWithOwner, path, repo.IsArchived))], []);
+                    })
+                    .ToListAsync(token)
+                    .ConfigureAwait(false);
+                return ([.. perRepo.SelectMany(result => result.Findings)], [.. perRepo.SelectMany(result => result.Unread)]);
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return new(
+            [.. perOwner.SelectMany(result => result.Findings).OrderBy(f => f.Repo, StringComparer.Ordinal).ThenBy(f => f.Path, StringComparer.Ordinal)],
+            [.. perOwner.SelectMany(result => result.Unread)]);
     }
 
     private async Task<List<OwnerRepo>?> ListOwnerReposAsync(string owner, CancellationToken cancellationToken)

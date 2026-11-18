@@ -37,30 +37,30 @@ public static class ReleaseEnvironments
     {
         ArgumentNullException.ThrowIfNull(desired);
         ArgumentNullException.ThrowIfNull(current);
-        var actions = new List<EnvironmentAction>();
-        foreach (var policy in desired.OrderBy(p => p.Name, StringComparer.Ordinal))
+        var declared = desired.Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
+        return
+        [
+            .. desired.OrderBy(p => p.Name, StringComparer.Ordinal).SelectMany(policy => PolicyActions(policy, current)),
+            .. current.Keys.Where(name => !declared.Contains(name)).Order(StringComparer.Ordinal)
+                .Select(name => new EnvironmentAction("undeclared", name, "exists on GitHub but no profile declares it")),
+        ];
+    }
+
+    private static IEnumerable<EnvironmentAction> PolicyActions(EnvironmentPolicy policy, IReadOnlyDictionary<string, CurrentEnvironment> current)
+    {
+        if (!current.TryGetValue(policy.Name, out var env))
         {
-            if (!current.TryGetValue(policy.Name, out var env))
-            {
-                actions.Add(new("create", policy.Name, $"wait_timer={policy.WaitTimer}"));
-                continue;
-            }
-
-            if (policy.WaitTimer != 0 && env.WaitTimer != policy.WaitTimer)
-            {
-                actions.Add(new("wait-timer", policy.Name, $"{env.WaitTimer} -> {policy.WaitTimer}"));
-            }
-
-            if (policy.Reviewers.Except(env.Reviewers ?? [], StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList() is { Count: > 0 } missing)
-            {
-                actions.Add(new("add-reviewers", policy.Name, string.Join(", ", missing)));
-            }
+            return [new("create", policy.Name, $"wait_timer={policy.WaitTimer}")];
         }
 
-        var declared = desired.Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
-        actions = [.. actions, .. current.Keys.Where(name => !declared.Contains(name)).Order(StringComparer.Ordinal)
-            .Select(name => new EnvironmentAction("undeclared", name, "exists on GitHub but no profile declares it"))];
-        return actions;
+        var missing = policy.Reviewers.Except(env.Reviewers ?? [], StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        return
+        [
+            .. (policy.WaitTimer != 0 && env.WaitTimer != policy.WaitTimer
+                ? new[] { new EnvironmentAction("wait-timer", policy.Name, $"{env.WaitTimer} -> {policy.WaitTimer}") }
+                : []),
+            .. (missing.Count > 0 ? new[] { new EnvironmentAction("add-reviewers", policy.Name, string.Join(", ", missing)) } : []),
+        ];
     }
 
     /// <summary>

@@ -130,25 +130,23 @@ public static partial class VercelProjects
             }
         }
 
-        var findings = new List<OwnershipFinding>();
-        foreach (var project in owned)
-        {
-            string? owner = null;
-            if (project.Source is { } source && !bySlug.TryGetValue(source.ToLowerInvariant(), out owner)
-                && byRepoName.TryGetValue(RepoName(source).ToLowerInvariant(), out owner))
-            {
-                findings.Add(new(project.Name, "warn", "stale-link", $"Vercel names {source}, which is now {slugOf[owner]}: relink the project", owner));
-            }
-
-            findings.Add(Verdict(project, declared.GetValueOrDefault(project.Name), owner));
-        }
-
         var present = owned.Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
-        findings = [.. findings, ..
-            declared.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+        return
+        [
+            .. owned.SelectMany(project =>
+            {
+                string? owner = null;
+                var source = project.Source;
+                OwnershipFinding[] stale = source is not null && !bySlug.TryGetValue(source.ToLowerInvariant(), out owner)
+                    && byRepoName.TryGetValue(RepoName(source).ToLowerInvariant(), out owner)
+                    ? [new(project.Name, "warn", "stale-link", $"Vercel names {source}, which is now {slugOf[owner]}: relink the project", owner)]
+                    : [];
+                return stale.Append(Verdict(project, declared.GetValueOrDefault(project.Name), owner));
+            }),
+            .. declared.OrderBy(pair => pair.Key, StringComparer.Ordinal)
                 .Where(pair => !present.Contains(pair.Key))
-                .Select(pair => new OwnershipFinding(pair.Key, "error", "missing", "declared, but there is no such Vercel project", pair.Value.Project))];
-        return findings;
+                .Select(pair => new OwnershipFinding(pair.Key, "error", "missing", "declared, but there is no such Vercel project", pair.Value.Project)),
+        ];
     }
 
     /// <summary>The managed <c>owner/repo</c> holding <paramref name="sha"/>, trying <paramref name="first"/>'s repo first.</summary>

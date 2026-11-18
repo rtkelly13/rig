@@ -22,15 +22,12 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
     /// <summary>The clones in <paramref name="personalDir"/> and the org folders beside it, each folder's sorted by name.</summary>
     public IReadOnlyList<string> EstateClones(string personalDir)
     {
-        var clones = new List<string>();
-        foreach (var parent in scopes.RepoParentDirs(personalDir).Where(DocsTree.IsDir))
-        {
-            clones = [.. clones, .. DocsTree.List(parent)
+        return
+        [
+            .. scopes.RepoParentDirs(personalDir).Where(DocsTree.IsDir).SelectMany(parent => DocsTree.List(parent)
                 .Order(DocsTree.Order)
-                .Where(child => DocsTree.IsDir(child) && DocsTree.Exists(Path.Join(child, ".git")))];
-        }
-
-        return clones;
+                .Where(child => DocsTree.IsDir(child) && DocsTree.Exists(Path.Join(child, ".git")))),
+        ];
     }
 
     /// <summary>Whether <paramref name="repoPath"/> is in scope, and why not when it is not.</summary>
@@ -134,35 +131,27 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
     public async Task<IReadOnlyList<string>> DiscoverOrgReposAsync(string org, string personalDir, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(org);
-        var repos = new List<string>();
         var listed = await proc.RunAsync(
             new ProcRequest(["gh", "repo", "list", org, "--no-archived", "--limit", "100", "--json", "nameWithOwner"]) { Timeout = IdentityTimeout },
             cancellationToken).ConfigureAwait(false);
-        if (listed.Ok && GitHubCalls.Parse(listed.Out) is JsonArray rows)
-        {
-            repos = [.. repos, .. rows.Select(row => GitHubCalls.Str(row, "nameWithOwner")).OfType<string>()];
-        }
-
+        List<string> repos = listed.Ok && GitHubCalls.Parse(listed.Out) is JsonArray rows
+            ? [.. rows.Select(row => GitHubCalls.Str(row, "nameWithOwner")).OfType<string>()]
+            : [];
         if (repos.Count > 0)
         {
             return repos;
         }
 
-        repos = [.. repos, .. policies.ReposForOrg(org).Select(name => name.Contains('/', StringComparison.Ordinal) ? name : $"{org}/{name}")];
-        foreach (var clone in EstateClones(personalDir))
-        {
-            var name = Path.GetFileName(clone);
-            if (OwnedBy(name, org) || policies.IsRepoInOrg(name, org))
-            {
-                var slug = await GhRepoNameAsync(clone, cancellationToken).ConfigureAwait(false) is { Length: > 0 } found ? found : $"{org}/{name}";
-                if (!repos.Contains(slug))
-                {
-                    repos.Add(slug);
-                }
-            }
-        }
-
-        return repos;
+        List<string> registered = [.. policies.ReposForOrg(org).Select(name => name.Contains('/', StringComparison.Ordinal) ? name : $"{org}/{name}")];
+        var slugs = await EstateClones(personalDir)
+            .Select(clone => (Clone: clone, Name: Path.GetFileName(clone)))
+            .Where(item => OwnedBy(item.Name, org) || policies.IsRepoInOrg(item.Name, org))
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<string> (item, token) =>
+                await GhRepoNameAsync(item.Clone, token).ConfigureAwait(false) is { Length: > 0 } found ? found : $"{org}/{item.Name}")
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return [.. registered, .. slugs.Where(slug => !registered.Contains(slug)).Distinct()];
     }
 
     // Whether a checkout belongs to `org`: by its GitHub owner, its policy's expected owner or its registration.
