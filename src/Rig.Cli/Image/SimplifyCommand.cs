@@ -7,7 +7,7 @@ using Rig.Image;
 namespace Rig.Cli.Image;
 
 /// <summary>
-/// <c>rig image simplify</c>: multi-pass SVG simplification (geometric decimation, scour-style scrubbing, coordinate
+/// <c>rig image simplify</c> (Chromium unless <c>--fast</c>; ADR 0024): multi-pass SVG simplification (geometric decimation, scour-style scrubbing, coordinate
 /// quantisation) gated on visual drift against the unsimplified render. Exit codes: 0 gate met, 1 gate not met, 2 an
 /// input, renderer or document could not be handled.
 /// </summary>
@@ -47,18 +47,24 @@ internal sealed class SimplifyCommand(ImageHost host, TextWriter output, TextWri
     [CliOption(Name = "--in-place", Aliases = ["-i"], Required = false, Description = "Overwrite the input with the simplified SVG.")]
     public bool InPlace { get; set; }
 
-    /// <summary>A browser executable; giving one renders with Chromium instead of Svg.Skia.</summary>
-    [CliOption(Name = "--chromium", Required = false, Description = "Render with this Chromium executable instead of Svg.Skia.")]
+    /// <summary>A browser executable to use instead of Playwright's Chromium.</summary>
+    [CliOption(Name = "--chromium", Required = false, Description = "Render with this Chromium executable instead of the one Playwright installed.")]
     public string? Chromium { get; set; }
 
-    /// <summary>Renders with Playwright's own Chromium instead of Svg.Skia.</summary>
-    [CliOption(Name = "--authoritative", Required = false, Description = "Render with Playwright's Chromium instead of Svg.Skia.")]
-    public bool Authoritative { get; set; }
+    /// <summary>Renders with Svg.Skia, which is not authoritative, so the result cannot overwrite the input.</summary>
+    [CliOption(Name = "--fast", Required = false, Description = "Render with Svg.Skia instead of Chromium, for previews; cannot be combined with --in-place or --chromium.")]
+    public bool Fast { get; set; }
 
     /// <summary>Simplifies, prints and returns the exit code.</summary>
     public async Task<int> RunAsync(CliContext context)
     {
         var cancellationToken = context.CancellationToken;
+        if (Fast && (InPlace || Chromium is not null))
+        {
+            await error.WriteLineAsync($"Error: --fast renders with Svg.Skia, which is not authoritative (ADR 0024); it cannot be combined with {(InPlace ? "--in-place" : "--chromium")}. Drop --fast to render with Chromium.").ConfigureAwait(false);
+            return (int)ExitCode.Error;
+        }
+
         var input = Path.GetFullPath(Svg);
         if (!File.Exists(input))
         {
@@ -70,7 +76,7 @@ internal sealed class SimplifyCommand(ImageHost host, TextWriter output, TextWri
         GatedOutput gated;
         try
         {
-            var renderer = Chromium is not null || Authoritative ? await host.LaunchAuthoritative(Chromium).ConfigureAwait(false) : host.CreateFast();
+            var renderer = Fast ? host.CreateFast() : await host.LaunchAuthoritative(Chromium).ConfigureAwait(false);
             await using (renderer.ConfigureAwait(false))
             {
                 gated = await new DriftGate(renderer, host.Scratch).OptimizeAsync(input, target, Tolerance, MinSsim, MaxRmse, cancellationToken).ConfigureAwait(false);

@@ -359,8 +359,8 @@ slice lives in `src/Rig.Image` and does not replace the Python yet; slice 4 dele
 - **`rig image simplify <svg>`** (`Rig.Image.Simplifier` and `DriftGate`) ports `image_drift.simplifier`: geometric
   decimation (NetTopologySuite for the shapely geometry), a scour-style scrubbing pass, viewBox-aware quantisation,
   then a loop that renders the original and each candidate at 1000 px, scores them with `DriftMetrics` and halves the
-  tolerance until `--min-ssim` and `--max-rmse` are met (exit 1 when they are not). It renders with Svg.Skia;
-  `--authoritative` or `--chromium <exe>` renders with Chromium instead. The output is `<name>.optimized.svg`
+  tolerance until `--min-ssim` and `--max-rmse` are met (exit 1 when they are not). It renders with Chromium (authoritative, ADR 0024); `--fast` renders with Svg.Skia for previews and cannot be combined with `--in-place` or `--chromium`;
+  `--chromium <exe>` picks the browser executable. The output is `<name>.optimized.svg`
   unless `--output` or `--in-place` says otherwise, and a missed budget never overwrites the input. The Python's
   `--snapshot`, `--project` and `--variations-dir` options are not ported with the Asset Studio snapshot manager.
   The simplifier's expected outputs are frozen in `tests/Rig.Image.Tests/SimplifierOracle/` and regenerated with:
