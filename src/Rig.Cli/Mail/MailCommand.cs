@@ -106,19 +106,14 @@ internal sealed class MailCommand(MailHost host, TextWriter output, TextWriter e
             foreach (var rule in ruleset.Rules)
             {
                 var acts = rule.Actions;
-                var names = new List<string>();
-                if (!string.IsNullOrEmpty(acts.Label))
-                {
-                    names.Add($"label:{acts.Label}");
-                }
-
-                names.AddRange(new[] { ("archive", acts.Archive), ("read", acts.MarkRead), ("star", acts.Star), ("trash", acts.Trash) }
-                    .Where(flag => flag.Item2)
-                    .Select(flag => flag.Item1));
-                if (acts.Important is { } important)
-                {
-                    names.Add(important ? "important" : "not-important");
-                }
+                List<string> names =
+                [
+                    .. string.IsNullOrEmpty(acts.Label) ? [] : new[] { $"label:{acts.Label}" },
+                    .. new[] { ("archive", acts.Archive), ("read", acts.MarkRead), ("star", acts.Star), ("trash", acts.Trash) }
+                        .Where(flag => flag.Item2)
+                        .Select(flag => flag.Item1),
+                    .. acts.Important is { } important ? new[] { important ? "important" : "not-important" } : [],
+                ];
 
                 table.Add(rule.Name, MailRuleSet.MatchQuery(rule.Match), string.Join(", ", names), rule.Exportable ? "yes" : $"sweep only (older_than:{rule.OlderThan})");
             }

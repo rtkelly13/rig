@@ -68,15 +68,15 @@ public static class OrcaDoctor
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(managedProjects);
-        List<OrcaFinding> findings = [.. SettingsFindings(policy, snapshot.Settings, snapshot.ProfileDir, paths, now)];
-        findings.AddRange(AgentChecks(policy, snapshot).Select(Finding));
-        if (policy.AgentPermissions is not null && snapshot.LaunchArgs is null)
-        {
-            findings.Add(new("agents", "launch args", CheckStatus.Skip, "Orca is not running to ask"));
-        }
-
-        findings.AddRange(RepoFindings(policy, snapshot.Repos, paths, managedProjects));
-        return findings;
+        return
+        [
+            .. SettingsFindings(policy, snapshot.Settings, snapshot.ProfileDir, paths, now),
+            .. AgentChecks(policy, snapshot).Select(Finding),
+            .. policy.AgentPermissions is not null && snapshot.LaunchArgs is null
+                ? new[] { new OrcaFinding("agents", "launch args", CheckStatus.Skip, "Orca is not running to ask") }
+                : [],
+            .. RepoFindings(policy, snapshot.Repos, paths, managedProjects),
+        ];
     }
 
     /// <summary>Custom arguments and permission modes from the stored settings, and launch arguments from the running Orca.</summary>
@@ -85,24 +85,19 @@ public static class OrcaDoctor
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentNullException.ThrowIfNull(snapshot);
         var stored = snapshot.Settings?.Settings;
-        List<AgentCheck> checks = stored is null ? [] : [.. AgentPermissions.CustomArgsChecks(policy.AgentArgs, stored.AgentDefaultArgs ?? new Dictionary<string, string>())];
+        var custom = stored is null ? [] : AgentPermissions.CustomArgsChecks(policy.AgentArgs, stored.AgentDefaultArgs ?? new Dictionary<string, string>());
         if (policy.AgentPermissions is not { } want)
         {
-            return checks;
+            return [.. custom];
         }
 
-        if (stored is not null)
-        {
-            var overrides = stored.PermissionOverrides ?? new Dictionary<string, string>();
-            checks.AddRange(AgentPermissions.PermissionChecks(want, overrides.Keys, stored.PermissionDefault, overrides));
-        }
-
-        if (snapshot.LaunchArgs is not null)
-        {
-            checks.AddRange(AgentPermissions.LaunchChecks(want, policy.AgentArgs, snapshot.LaunchArgs));
-        }
-
-        return checks;
+        var overrides = stored?.PermissionOverrides ?? new Dictionary<string, string>();
+        return
+        [
+            .. custom,
+            .. stored is null ? [] : AgentPermissions.PermissionChecks(want, overrides.Keys, stored.PermissionDefault, overrides),
+            .. snapshot.LaunchArgs is null ? [] : AgentPermissions.LaunchChecks(want, policy.AgentArgs, snapshot.LaunchArgs),
+        ];
     }
 
     /// <summary>The scripts the policy names for a repo, trimmed: setup first, then archive.</summary>
@@ -173,30 +168,23 @@ public static class OrcaDoctor
         }
 
         var byName = ByName(repos);
-        List<OrcaFinding> findings = [];
-        foreach (var (name, want) in policy.Repos.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-        {
-            if (byName.GetValueOrDefault(name) is { } repo)
-            {
-                findings.AddRange(RepoPolicyFindings(name, repo, want));
-                continue;
-            }
-
-            var path = want.Path is not null ? paths.RepoPath(want.Path) : OrcaPaths.Posix(Path.Join(paths.EstateRoot, name));
-            findings.Add(new($"repo {name}", "registered", CheckStatus.Fail, "named in config/orca.json but not registered in Orca", $"orca repo add --path {path}"));
-        }
-
         var registered = repos.Select(repo => OrcaPaths.Posix(repo.Path)).ToHashSet(StringComparer.Ordinal);
-        foreach (var name in managedProjects)
-        {
-            var path = OrcaPaths.Posix(Path.Join(paths.EstateRoot, name));
-            if (Path.Exists(Path.Join(path, ".git")) && !registered.Contains(path) && !policy.Repos.ContainsKey(name))
-            {
-                findings.Add(new($"repo {name}", "registered", CheckStatus.Warn, "managed project cloned locally but not registered in Orca", $"orca repo add --path {path}"));
-            }
-        }
+        return
+        [
+            .. policy.Repos.OrderBy(pair => pair.Key, StringComparer.Ordinal).SelectMany(pair => byName.GetValueOrDefault(pair.Key) is { } repo
+                ? RepoPolicyFindings(pair.Key, repo, pair.Value)
+                : [Unregistered(pair.Key, pair.Value, paths)]),
+            .. managedProjects
+                .Select(name => (Name: name, Path: OrcaPaths.Posix(Path.Join(paths.EstateRoot, name))))
+                .Where(project => Path.Exists(Path.Join(project.Path, ".git")) && !registered.Contains(project.Path) && !policy.Repos.ContainsKey(project.Name))
+                .Select(project => new OrcaFinding($"repo {project.Name}", "registered", CheckStatus.Warn, "managed project cloned locally but not registered in Orca", $"orca repo add --path {project.Path}")),
+        ];
+    }
 
-        return findings;
+    private static OrcaFinding Unregistered(string name, RepoPolicy want, OrcaPaths paths)
+    {
+        var path = want.Path is not null ? paths.RepoPath(want.Path) : OrcaPaths.Posix(Path.Join(paths.EstateRoot, name));
+        return new($"repo {name}", "registered", CheckStatus.Fail, "named in config/orca.json but not registered in Orca", $"orca repo add --path {path}");
     }
 
     /// <summary>Repos by display name; a later repo with the same name wins.</summary>

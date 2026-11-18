@@ -230,43 +230,31 @@ public sealed record RulesetShape(
     public IReadOnlyList<string> DriftOf(RulesetShape live)
     {
         ArgumentNullException.ThrowIfNull(live);
-        var drift = new List<string>();
-        if (live.Enforcement != "active")
-        {
-            drift.Add($"enforcement {(string.IsNullOrEmpty(live.Enforcement) ? "unknown" : live.Enforcement)}");
-        }
-
-        if (live.Target != Target)
-        {
-            drift.Add("ruleset must target branches");
-        }
-
-        if (!SameRefs(live.Include, Include) || !SameRefs(live.Exclude, Exclude))
-        {
-            drift.Add("branch conditions differ from declared coverage");
-        }
-
-        if (live.BypassActorCount > 0)
-        {
-            drift.Add("bypass actors can skip required conversation resolution");
-        }
-
         var have = live.Rules.ToDictionary(r => r.Key, r => r.Value, StringComparer.Ordinal);
         var declared = Rules.Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
-        foreach (var (type, want) in Rules)
+        return
+        [
+            .. (live.Enforcement != "active"
+                ? new[] { $"enforcement {(string.IsNullOrEmpty(live.Enforcement) ? "unknown" : live.Enforcement)}" }
+                : []),
+            .. (live.Target != Target ? new[] { "ruleset must target branches" } : []),
+            .. (!SameRefs(live.Include, Include) || !SameRefs(live.Exclude, Exclude)
+                ? new[] { "branch conditions differ from declared coverage" }
+                : []),
+            .. (live.BypassActorCount > 0 ? new[] { "bypass actors can skip required conversation resolution" } : []),
+            .. Rules.SelectMany(rule => RuleDrift(have, rule.Key, rule.Value)),
+            .. live.Rules.Where(r => !declared.Contains(r.Key)).Select(r => $"undeclared rule {r.Key}"),
+        ];
+    }
+
+    private static IEnumerable<string> RuleDrift(Dictionary<string, string> have, string type, string want)
+    {
+        if (!have.TryGetValue(type, out var held))
         {
-            if (!have.TryGetValue(type, out var held))
-            {
-                drift.Add($"missing rule {type}");
-            }
-            else if (held != want)
-            {
-                drift.Add($"{type}: live {held} != declared {want}");
-            }
+            return [$"missing rule {type}"];
         }
 
-        drift.AddRange(live.Rules.Where(r => !declared.Contains(r.Key)).Select(r => $"undeclared rule {r.Key}"));
-        return drift;
+        return held != want ? [$"{type}: live {held} != declared {want}"] : [];
     }
 
     private static bool SameRefs(IReadOnlyList<string>? a, IReadOnlyList<string>? b) =>

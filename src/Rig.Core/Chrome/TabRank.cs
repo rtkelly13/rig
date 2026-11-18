@@ -178,7 +178,7 @@ public static class TabRank
         {
             var state = states.GetValueOrDefault(pr) ?? new PrState(PrStatus.Unknown);
             details = state.Details;
-            factors.AddRange(PrFactors(state.Status, details));
+            factors = [.. PrFactors(state.Status, details)];
             if (details is not null && details.ChangedLines > OversizedLines)
             {
                 flags.Add($"oversized: +{details.Additions}/-{details.Deletions} in {details.ChangedFiles} files");

@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Devenv;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Devenv;
@@ -25,6 +26,7 @@ public sealed class SetupCommandTests : IDisposable
 
     private string Home => _home.Path;
 
+    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "The test stubs sibling commands whose names are runtime data; a DotMake [CliCommand] class has a fixed compile-time name.")]
     private Command Recorder(string name)
     {
         var command = new Command(name) { TreatUnmatchedTokensAsErrors = false };
@@ -38,6 +40,7 @@ public sealed class SetupCommandTests : IDisposable
 
     private Task<(int Code, string Out, string Err)> RunAsync(string answers, params string[] args) => InvokeAsync(answers, ["devenv", "setup", .. args]);
 
+    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "The test stubs sibling commands whose names are runtime data; a DotMake [CliCommand] class has a fixed compile-time name.")]
     private async Task<(int Code, string Out, string Err)> InvokeAsync(string answers, string[] args)
     {
         using var output = new StringWriter();

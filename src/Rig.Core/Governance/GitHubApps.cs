@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
 
@@ -261,18 +262,25 @@ public sealed class GitHubApps(IGitHubApi api, RepoPolicies policies, Func<strin
     }
 
     // Every entry under key, read a page at a time until a short page.
-    private async Task<List<JsonNode?>> PagesAsync(string route, string key, CancellationToken cancellationToken)
+    private async Task<List<JsonNode?>> PagesAsync(string route, string key, CancellationToken cancellationToken) =>
+        await PageEntries(route, key, cancellationToken).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    // A page at a time until a short one: whether to ask for the next page depends on the last answer.
+    private async IAsyncEnumerable<JsonNode?> PageEntries(string route, string key, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var entries = new List<JsonNode?>();
         for (var number = 1; ; number++)
         {
             var paged = string.Create(CultureInfo.InvariantCulture, $"{route}?per_page={PageSize}&page={number}");
             var page = (await GitHubCalls.ReadJsonAsync(api, paged, cancellationToken).ConfigureAwait(false))[key] as JsonArray
                 ?? throw new GitHubReadException($"GET {paged}: no {key} list");
-            entries.AddRange(page);
+            foreach (var entry in page)
+            {
+                yield return entry;
+            }
+
             if (page.Count < PageSize)
             {
-                return entries;
+                yield break;
             }
         }
     }

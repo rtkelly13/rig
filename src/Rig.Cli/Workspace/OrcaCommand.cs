@@ -140,16 +140,14 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
             return Unavailable;
         }
 
-        List<SyncAction> actions = [];
-        if (args.Repo is null)
-        {
-            actions.AddRange(OrcaSync.SettingsManualActions(policy, snapshot));
-            actions.AddRange(await OrcaSync.SyncAgentLaunchAsync(policy, snapshot, args.Apply, live, cancellationToken).ConfigureAwait(false));
-        }
-
         var retired = Projects().Where(spec => !spec.Enabled).Select(spec => spec.Name).ToHashSet(StringComparer.Ordinal);
-        actions.AddRange(await OrcaSync.SyncReposAsync(
-            policy, snapshot, Paths(args.Root), args.Apply, args.Repo, new OrcaCliRunner(proc, userData), live, retired, cancellationToken).ConfigureAwait(false));
+        IReadOnlyList<SyncAction> settings = args.Repo is null ? [.. OrcaSync.SettingsManualActions(policy, snapshot)] : [];
+        IReadOnlyList<SyncAction> launch = args.Repo is null
+            ? await OrcaSync.SyncAgentLaunchAsync(policy, snapshot, args.Apply, live, cancellationToken).ConfigureAwait(false)
+            : [];
+        var repos = await OrcaSync.SyncReposAsync(
+            policy, snapshot, Paths(args.Root), args.Apply, args.Repo, new OrcaCliRunner(proc, userData), live, retired, cancellationToken).ConfigureAwait(false);
+        List<SyncAction> actions = [.. settings, .. launch, .. repos];
 
         if (args.Json)
         {

@@ -224,29 +224,35 @@ public sealed class RepoPolicies
             return [];
         }
 
-        var candidates = new List<string>();
         try
         {
             var children = Directory.EnumerateFileSystemEntries(repoPath).ToList();
-            candidates.AddRange(children.Select(Path.GetFileName).OfType<string>().Where(name => !name.StartsWith(".git", StringComparison.Ordinal)));
-            foreach (var child in children.Where(child => Directory.Exists(child) && !SkippedDirPrefixes.Any(Path.GetFileName(child).StartsWith)))
-            {
-                try
-                {
-                    candidates.AddRange(Directory.EnumerateFileSystemEntries(child).Select(Path.GetFileName).OfType<string>());
-                }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-                {
-                    // An unreadable folder reveals nothing.
-                }
-            }
+            List<string> candidates =
+            [
+                .. children.Select(Path.GetFileName).OfType<string>().Where(name => !name.StartsWith(".git", StringComparison.Ordinal)),
+                .. children
+                    .Where(child => Directory.Exists(child) && !SkippedDirPrefixes.Any(Path.GetFileName(child).StartsWith))
+                    .SelectMany(NamesIn),
+            ];
+            return [.. Presets.Where(preset => candidates.Any(preset.MatchesFile)).Select(preset => preset.Id)];
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return [];
         }
+    }
 
-        return [.. Presets.Where(preset => candidates.Any(preset.MatchesFile)).Select(preset => preset.Id)];
+    private static List<string> NamesIn(string folder)
+    {
+        try
+        {
+            return [.. Directory.EnumerateFileSystemEntries(folder).Select(Path.GetFileName).OfType<string>()];
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // An unreadable folder reveals nothing.
+            return [];
+        }
     }
 
     /// <summary>
@@ -345,28 +351,12 @@ public sealed class RepoPolicies
             return new(ban.AllowedScriptExtensions, ban.BannedScriptExtensions);
         }
 
-        var allowed = new List<string>();
-        var banned = new List<string>();
-        var hasPython = false;
-        foreach (var language in ResolveLanguages(key, repoPath))
-        {
-            var id = NormalizeLanguage(language);
-            hasPython |= id == "python";
-            if (Presets.FirstOrDefault(preset => preset.Id == id) is not { } preset)
-            {
-                continue;
-            }
-
-            allowed.AddRange(preset.ScriptExtensions.Where(ext => !allowed.Contains(ext)).Distinct());
-            banned.AddRange(preset.BannedScriptExtensions.Where(ext => !banned.Contains(ext)).Distinct());
-        }
-
-        if (hasPython)
-        {
-            _ = banned.Remove(".py");
-        }
-
-        return new(allowed, banned);
+        var languages = ResolveLanguages(key, repoPath).Select(NormalizeLanguage).ToList();
+        var presets = languages.Select(id => Presets.FirstOrDefault(preset => preset.Id == id)).OfType<LanguagePreset>().ToList();
+        var hasPython = languages.Contains("python");
+        return new(
+            [.. presets.SelectMany(preset => preset.ScriptExtensions).Distinct()],
+            [.. presets.SelectMany(preset => preset.BannedScriptExtensions).Distinct().Where(ext => !hasPython || ext != ".py")]);
     }
 
     /// <summary>
@@ -390,24 +380,18 @@ public sealed class RepoPolicies
     public IReadOnlyList<string> ReposForOrg(string org)
     {
         ArgumentNullException.ThrowIfNull(org);
-        var repos = new List<string>();
-        foreach (var (_, layer, names) in _profiles)
-        {
-            if (layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase))
-            {
-                repos.AddRange(names);
-            }
-        }
-
-        foreach (var (name, layer) in _overrides)
-        {
-            if (layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase) && !repos.Contains(name))
-            {
-                repos.Add(name);
-            }
-        }
-
-        return repos;
+        var owned = _profiles
+            .Where(profile => profile.Layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(profile => profile.Repos)
+            .ToList();
+        return
+        [
+            .. owned,
+            .. _overrides
+                .Where(item => item.Layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase) && !owned.Contains(item.Name))
+                .Select(item => item.Name)
+                .Distinct(),
+        ];
     }
 
     /// <summary>Whether <paramref name="repo"/> belongs to <paramref name="org"/>: by its slug's owner, its expected owner or registration.</summary>

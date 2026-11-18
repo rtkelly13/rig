@@ -46,16 +46,11 @@ public static class TraceSpans
     public static IReadOnlyList<FileSpan> Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var spans = new List<FileSpan>();
-        foreach (var line in UnicodeText.SplitLines(text))
-        {
-            if (UnicodeText.Strip(line).Length > 0 && Envelope(line) is { } envelope)
-            {
-                spans.AddRange(envelope);
-            }
-        }
-
-        return spans;
+        return [.. UnicodeText.SplitLines(text)
+            .Where(line => UnicodeText.Strip(line).Length > 0)
+            .Select(Envelope)
+            .Where(envelope => envelope is not null)
+            .SelectMany(envelope => envelope!)];
     }
 
     /// <summary>One copy per span: the complete one when both were written, otherwise the last.</summary>
@@ -141,28 +136,24 @@ public static class TraceSpans
             return null;
         }
 
-        var spans = new List<FileSpan>();
-        foreach (var resource in resources)
-        {
-            if (Objects(LaxJson.Field(resource, "scopeSpans")) is not { } scopes)
+        var perResource = resources
+            .Select(resource =>
             {
-                return null;
-            }
-
-            var resourceNode = Node(LaxJson.Field(resource, "resource"));
-            foreach (var scope in scopes)
-            {
-                if (Objects(LaxJson.Field(scope, "spans")) is not { } raws)
+                if (Objects(LaxJson.Field(resource, "scopeSpans")) is not { } scopes)
                 {
                     return null;
                 }
 
-                var scopeNode = Node(LaxJson.Field(scope, "scope"));
-                spans.AddRange(raws.Select(raw => View(raw, resourceNode, scopeNode)).OfType<FileSpan>());
-            }
-        }
-
-        return spans;
+                var resourceNode = Node(LaxJson.Field(resource, "resource"));
+                var perScope = scopes
+                    .Select(scope => Objects(LaxJson.Field(scope, "spans")) is { } raws
+                        ? (List<FileSpan>?)[.. raws.Select(raw => View(raw, resourceNode, Node(LaxJson.Field(scope, "scope")))).OfType<FileSpan>()]
+                        : null)
+                    .ToList();
+                return perScope.Contains(null) ? null : (List<FileSpan>?)[.. perScope.SelectMany(found => found!)];
+            })
+            .ToList();
+        return perResource.Contains(null) ? null : [.. perResource.SelectMany(found => found!)];
     }
 
     // An absent list reads as empty; anything but a list of objects fails.

@@ -17,33 +17,29 @@ public sealed class VaultLintOracleTests
     [Fact]
     public void Lints_every_recorded_vault_as_recorded()
     {
-        var cases = Load(Path.Combine(AppContext.BaseDirectory, "Vault", "lint-oracle.json")).ToList();
         var extra = Environment.GetEnvironmentVariable(ExtraFixtureVariable);
-        if (!string.IsNullOrEmpty(extra))
-        {
-            cases.AddRange(Load(extra));
-        }
+        List<OracleCase> cases = [.. Load(Path.Combine(AppContext.BaseDirectory, "Vault", "lint-oracle.json")), .. string.IsNullOrEmpty(extra) ? [] : Load(extra)];
+        List<string> mismatches =
+        [
+            .. cases.Where(c => !(c.PosixOnly && OperatingSystem.IsWindows())).SelectMany(oracle =>
+            {
+                if (oracle.Vault is { } vault)
+                {
+                    return Compare(oracle, vault);
+                }
 
-        var mismatches = new List<string>();
-        foreach (var oracle in cases.Where(c => !(c.PosixOnly && OperatingSystem.IsWindows())))
-        {
-            if (oracle.Vault is { } vault)
-            {
-                mismatches.AddRange(Compare(oracle, vault));
-                continue;
-            }
-
-            var root = Path.Combine(RepoTemp.NewVaultParent("rig-lint"), "Vault");
-            try
-            {
-                Materialize(root, oracle.Files);
-                mismatches.AddRange(Compare(oracle, root));
-            }
-            finally
-            {
-                Directory.Delete(Path.GetDirectoryName(root)!, recursive: true);
-            }
-        }
+                var root = Path.Combine(RepoTemp.NewVaultParent("rig-lint"), "Vault");
+                try
+                {
+                    Materialize(root, oracle.Files);
+                    return Compare(oracle, root).ToList();
+                }
+                finally
+                {
+                    Directory.Delete(Path.GetDirectoryName(root)!, recursive: true);
+                }
+            }),
+        ];
 
         Assert.True(mismatches.Count == 0, $"{mismatches.Count} difference(s) from the recording:\n{string.Join('\n', mismatches.Take(40))}");
     }

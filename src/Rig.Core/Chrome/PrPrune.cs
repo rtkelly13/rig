@@ -145,49 +145,32 @@ public static partial class PrPrune
         var items = PrTabs(windows);
         var chains = resolution.Chains.Where(chain => !resolution.FailedRepos.ContainsKey(chain.Slug)).ToList();
 
-        var closes = new List<PlannedClose>();
-        var reports = new List<PrReport>();
-        var kept = new List<PrTab>();
-        foreach (var profile in items.GroupBy(item => item.Profile, StringComparer.Ordinal).OrderBy(group => group.Key, StringComparer.Ordinal))
-        {
-            PlanProfile([.. profile], resolution.States, chains, closes, reports, kept);
-        }
+        var profiles = items
+            .GroupBy(item => item.Profile, StringComparer.Ordinal)
+            .OrderBy(group => group.Key, StringComparer.Ordinal)
+            .Select(profile => PlanProfile([.. profile], resolution.States, chains))
+            .ToList();
 
-        return new PrunePlan(closes, reports, kept, items.Select(item => item.Pr).ToHashSet());
+        return new PrunePlan(
+            [.. profiles.SelectMany(profile => profile.Closes)],
+            [.. profiles.SelectMany(profile => profile.Reports)],
+            [.. profiles.SelectMany(profile => profile.Kept)],
+            items.Select(item => item.Pr).ToHashSet());
     }
 
-    private static void PlanProfile(
+    private static (List<PlannedClose> Closes, List<PrReport> Reports, List<PrTab> Kept) PlanProfile(
         List<PrTab> items,
         IReadOnlyDictionary<PrRef, PrState> states,
-        List<RepoChain> chains,
-        List<PlannedClose> allCloses,
-        List<PrReport> reports,
-        List<PrTab> kept)
+        List<RepoChain> chains)
     {
         var byPr = items.GroupBy(item => item.Pr).ToDictionary(group => group.Key, group => group.ToList());
-        var closes = new List<PlannedClose>();
-        var openPrs = new HashSet<PrRef>();
-
-        foreach (var pr in byPr.Keys.Order())
-        {
-            var state = states.GetValueOrDefault(pr) ?? new PrState(PrStatus.Unknown, "not resolved");
-            switch (state.Status)
-            {
-                case PrStatus.Unknown:
-                    var detail = state.Error.Length > 0 ? state.Error : "unknown state";
-                    reports.AddRange(byPr[pr].Select(item => new PrReport(item, ReportKind.Unknown, detail)));
-                    break;
-                case PrStatus.Closed:
-                    closes.AddRange(byPr[pr].Select(item => new PlannedClose(item, CloseKind.Closed, "closed without merging")));
-                    break;
-                case PrStatus.Merged:
-                    closes.AddRange(byPr[pr].Select(item => new PlannedClose(item, CloseKind.Merged, "merged")));
-                    break;
-                default:
-                    openPrs.Add(pr);
-                    break;
-            }
-        }
+        var resolved = byPr.Keys.Order()
+            .Select(pr => (Pr: pr, State: states.GetValueOrDefault(pr) ?? new PrState(PrStatus.Unknown, "not resolved")))
+            .ToList();
+        var openPrs = resolved
+            .Where(entry => entry.State.Status is not (PrStatus.Unknown or PrStatus.Closed or PrStatus.Merged))
+            .Select(entry => entry.Pr)
+            .ToHashSet();
 
         // Rule 3: PR-level decisions first, so a chain keeper's duplicates are settled by rule 1 below.
         var superseded = new Dictionary<PrRef, (CloseKind Kind, string Reason, PrRef Keeper)>();
@@ -211,40 +194,48 @@ public static partial class PrPrune
         }
 
         // Rule 1 over every open PR that survives the chains; the chain keeper's kept tab is found here.
-        var keptTab = new Dictionary<PrRef, PrTab>();
-        foreach (var pr in openPrs.Where(pr => !superseded.ContainsKey(pr)).Order())
-        {
-            var group = byPr[pr];
-            var keeperItem = ClosePlans.Keeper(group);
-            keptTab[pr] = keeperItem;
-            kept.Add(keeperItem);
-            closes.AddRange(
-                group.Where(item => !ReferenceEquals(item, keeperItem))
-                    .Select(item => new PlannedClose(item, CloseKind.Duplicate, $"duplicate of tab {ClosePlans.Describe(keeperItem)}", keeperItem.Tab)));
-        }
-
-        foreach (var pr in superseded.Keys.Order())
-        {
-            var by = superseded[pr];
-            var keeperTab = keptTab.GetValueOrDefault(by.Keeper)?.Tab;
-            closes.AddRange(byPr[pr].Select(item => new PlannedClose(item, by.Kind, by.Reason, keeperTab)));
-        }
+        var keepers = openPrs
+            .Where(pr => !superseded.ContainsKey(pr))
+            .Order()
+            .Select(pr => (Pr: pr, Group: byPr[pr], Keeper: ClosePlans.Keeper(byPr[pr])))
+            .ToList();
+        var keptTab = keepers.ToDictionary(entry => entry.Pr, entry => entry.Keeper);
+        List<PlannedClose> closes =
+        [
+            .. resolved.SelectMany(entry => entry.State.Status switch
+            {
+                PrStatus.Closed => byPr[entry.Pr].Select(item => new PlannedClose(item, CloseKind.Closed, "closed without merging")),
+                PrStatus.Merged => byPr[entry.Pr].Select(item => new PlannedClose(item, CloseKind.Merged, "merged")),
+                _ => [],
+            }),
+            .. keepers.SelectMany(entry => entry.Group
+                .Where(item => !ReferenceEquals(item, entry.Keeper))
+                .Select(item => new PlannedClose(item, CloseKind.Duplicate, $"duplicate of tab {ClosePlans.Describe(entry.Keeper)}", entry.Keeper.Tab))),
+            .. superseded.Keys.Order().SelectMany(pr =>
+            {
+                var by = superseded[pr];
+                var keeperTab = keptTab.GetValueOrDefault(by.Keeper)?.Tab;
+                return byPr[pr].Select(item => new PlannedClose(item, by.Kind, by.Reason, keeperTab));
+            }),
+        ];
 
         // Pinned and audible tabs are never closed, whatever the rule said.
-        foreach (var close in closes)
-        {
-            var tab = close.Item.Tab;
-            if (tab.Pinned || tab.Audible)
-            {
-                var guard = tab.Pinned ? "pinned" : "audible";
-                reports.Add(new PrReport(close.Item, ReportKind.Protected, $"{guard}; would close as: {close.Reason}"));
-                kept.Add(close.Item);
-            }
-            else
-            {
-                allCloses.Add(close);
-            }
-        }
+        var protectedCloses = closes.Where(close => close.Item.Tab.Pinned || close.Item.Tab.Audible).ToList();
+        return (
+            [.. closes.Where(close => !protectedCloses.Contains(close))],
+            [
+                .. resolved.Where(entry => entry.State.Status == PrStatus.Unknown).SelectMany(entry =>
+                {
+                    var detail = entry.State.Error.Length > 0 ? entry.State.Error : "unknown state";
+                    return byPr[entry.Pr].Select(item => new PrReport(item, ReportKind.Unknown, detail));
+                }),
+                .. protectedCloses.Select(close =>
+                {
+                    var guard = close.Item.Tab.Pinned ? "pinned" : "audible";
+                    return new PrReport(close.Item, ReportKind.Protected, $"{guard}; would close as: {close.Reason}");
+                }),
+            ],
+            [.. keepers.Select(entry => entry.Keeper), .. protectedCloses.Select(close => close.Item)]);
     }
 
     [GeneratedRegex(@"· Pull Request #(?<number>\d+) · (?<owner>[\w.-]+)/(?<repo>[\w.-]+)(?=\s|$)")]

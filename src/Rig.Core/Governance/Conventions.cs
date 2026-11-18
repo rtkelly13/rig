@@ -84,58 +84,46 @@ public sealed record ConventionsReport(
     /// </summary>
     public IReadOnlyList<string> AuditLines()
     {
-        var lines = new List<string>();
-        if (AuditAligned)
-        {
-            lines.Add($"✓ {Name} ({Slug}): FULLY COMPLIANT");
-        }
-        else
-        {
-            lines.Add($"⚠ {Name} ({Slug}): DRIFT DETECTED");
-            Detail(!Owner.IsAligned, $"Repository owner/org governance failure: {Owner.Message}");
-            Detail(!Settings.BaseBranchAligned, $"Base branch deviation: default branch is '{Settings.DefaultBranch}', expected '{Settings.ExpectedBranch}'");
-            if (!(Settings.DeleteOnMerge && Settings.SquashOnly))
-            {
-                lines.Add("   - Repo settings (squash merge / delete branch) not enforced");
-            }
-            else
-            {
-                Detail(!Settings.IsAligned && Settings.BaseBranchAligned, "Repo settings not enforced");
-            }
-
-            Detail(!Ruleset.IsAligned, $"GitHub Ruleset: {Ruleset.Status}");
-            Detail(!Npmrc.IsAligned, $".npmrc status: {Npmrc.Status}");
-            Detail(!Agents.IsAligned, $"AGENTS.md status: {Agents.Status}");
-            Detail(!Gitignore.IsAligned, $".gitignore status: {Gitignore.Status}");
-            Detail(!Todo.IsAligned, $"TODO.md status: {Todo.Status}");
-            Detail(!Pinned.IsAligned, $"Workflow Pinned SHAs status: {Pinned.Status}");
-            Detail(!LsLint.IsAligned, $".ls-lint.yml status: {LsLint.Status}");
-            if (!Names.IsAligned)
-            {
-                lines.Add($"   - Required check(s) no pull_request job declares: {QuotedText.List(Names.Missing)}");
-                lines.Add($"     declared: {QuotedText.List(Names.Declared.Keys.Order(StringComparer.Ordinal))} — run 'repo-governance check-names' for detail");
-            }
-
-            Detail(!Dependabot.IsAligned, $"Dependabot / Renovate conflict: {Dependabot.Reason}");
-        }
-
-        if (NotAdopted is { } advisory)
-        {
-            lines.Add($"   · {advisory}");
-        }
+        IEnumerable<string> body = AuditAligned
+            ? [$"✓ {Name} ({Slug}): FULLY COMPLIANT"]
+            :
+            [
+                $"⚠ {Name} ({Slug}): DRIFT DETECTED",
+                .. Drifted(
+                [
+                    (!Owner.IsAligned, $"Repository owner/org governance failure: {Owner.Message}"),
+                    (!Settings.BaseBranchAligned, $"Base branch deviation: default branch is '{Settings.DefaultBranch}', expected '{Settings.ExpectedBranch}'"),
+                    (!(Settings.DeleteOnMerge && Settings.SquashOnly) || (!Settings.IsAligned && Settings.BaseBranchAligned),
+                        !(Settings.DeleteOnMerge && Settings.SquashOnly) ? "Repo settings (squash merge / delete branch) not enforced" : "Repo settings not enforced"),
+                    (!Ruleset.IsAligned, $"GitHub Ruleset: {Ruleset.Status}"),
+                    (!Npmrc.IsAligned, $".npmrc status: {Npmrc.Status}"),
+                    (!Agents.IsAligned, $"AGENTS.md status: {Agents.Status}"),
+                    (!Gitignore.IsAligned, $".gitignore status: {Gitignore.Status}"),
+                    (!Todo.IsAligned, $"TODO.md status: {Todo.Status}"),
+                    (!Pinned.IsAligned, $"Workflow Pinned SHAs status: {Pinned.Status}"),
+                    (!LsLint.IsAligned, $".ls-lint.yml status: {LsLint.Status}"),
+                ]),
+                .. (Names.IsAligned
+                    ? []
+                    : new[]
+                    {
+                        $"   - Required check(s) no pull_request job declares: {QuotedText.List(Names.Missing)}",
+                        $"     declared: {QuotedText.List(Names.Declared.Keys.Order(StringComparer.Ordinal))} — run 'repo-governance check-names' for detail",
+                    }),
+                .. Drifted([(!Dependabot.IsAligned, $"Dependabot / Renovate conflict: {Dependabot.Reason}")]),
+            ];
 
         // Shape is advisory: a compliant repo can still carry a name that breaks the next time CI is touched.
-        lines.AddRange(Names.Warnings.Select(pair => $"   · check name {QuotedText.Str(pair.Key)}: {string.Join("; ", pair.Value)}"));
-        return lines;
-
-        void Detail(bool drifted, string line)
-        {
-            if (drifted)
-            {
-                lines.Add($"   - {line}");
-            }
-        }
+        return
+        [
+            .. body,
+            .. (NotAdopted is { } advisory ? new[] { $"   · {advisory}" } : []),
+            .. Names.Warnings.Select(pair => $"   · check name {QuotedText.Str(pair.Key)}: {string.Join("; ", pair.Value)}"),
+        ];
     }
+
+    private static IEnumerable<string> Drifted(IEnumerable<(bool Drifted, string Line)> checks) =>
+        checks.Where(check => check.Drifted).Select(check => $"   - {check.Line}");
 
     /// <summary>The cells of this repo's row in the status table.</summary>
     public IReadOnlyList<string> StatusRow() =>

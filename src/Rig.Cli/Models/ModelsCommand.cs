@@ -48,12 +48,9 @@ internal sealed class ModelsCommand(ModelDiscovery discovery, TextWriter output)
 
     private async Task<int> RunAsync(string? agent, string? provider, bool all, bool json, CancellationToken cancellationToken)
     {
-        IReadOnlyList<DiscoveredModel> models = await discovery.DiscoverAsync(agent, all, cancellationToken).ConfigureAwait(false);
+        var discovered = await discovery.DiscoverAsync(agent, all, cancellationToken).ConfigureAwait(false);
         var wanted = (provider ?? string.Empty).Trim().ToLowerInvariant();
-        if (wanted.Length > 0)
-        {
-            models = [.. models.Where(m => m.Provider is { } p && p.ToLowerInvariant().Contains(wanted, StringComparison.Ordinal))];
-        }
+        IReadOnlyList<DiscoveredModel> models = wanted.Length > 0 ? [.. discovered.Where(m => m.Provider is { } p && p.ToLowerInvariant().Contains(wanted, StringComparison.Ordinal))] : discovered;
 
         if (json)
         {

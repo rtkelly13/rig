@@ -136,7 +136,8 @@ public sealed class TrimCache : IDisposable
 
             lock (_gate)
             {
-                _items = [.. _items.Where(item => !removed.Contains(Key(item.Path)))];
+                var kept = _items.Where(item => !removed.Contains(Key(item.Path))).ToList();
+                _items = kept;
                 _stale = true;
             }
 
@@ -153,14 +154,16 @@ public sealed class TrimCache : IDisposable
         new(
             async cancellationToken =>
             {
-                var found = new List<Trimmable>();
-                foreach (var clone in clones())
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    found.AddRange(await trim.ScanAsync(clone).ConfigureAwait(false));
-                }
-
-                return [.. found.OrderByDescending(item => item.Size.Freeable)];
+                var perClone = await clones()
+                    .ToAsyncEnumerable()
+                    .Select(async ValueTask<IReadOnlyList<Trimmable>> (clone, token) =>
+                    {
+                        token.ThrowIfCancellationRequested();
+                        return await trim.ScanAsync(clone).ConfigureAwait(false);
+                    })
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                return [.. perClone.SelectMany(found => found).OrderByDescending(item => item.Size.Freeable)];
             },
             (item, _) => trim.RecheckAsync(item),
             (item, cancellationToken) => Trim.RemoveAsync(item, removal, cancellationToken),

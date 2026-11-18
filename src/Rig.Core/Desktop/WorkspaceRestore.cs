@@ -108,11 +108,10 @@ public static class WorkspaceRestore
             }
         }
 
-        var actions = RetireActions(plan);
-        actions.AddRange(execution.RenderActions());
+        List<string> planned = [.. RetireActions(plan), .. execution.RenderActions()];
         if (options.DryRun)
         {
-            return actions;
+            return planned;
         }
 
         // CLI self-updates start up front so their runtime overlaps the restore instead of blocking each terminal.
@@ -159,20 +158,22 @@ public static class WorkspaceRestore
             previous = desktop.DesktopIndex;
         }
 
+        IReadOnlyList<string> fallbackActions = [];
         if (run.Fallbacks.HasMissingPaths)
         {
             using (steps.Step("restore.missing_path_fallbacks"))
             {
-                actions.AddRange(port.OpenMissingPathFallbacks(run.Fallbacks, log));
+                fallbackActions = [.. port.OpenMissingPathFallbacks(run.Fallbacks, log)];
             }
         }
 
+        IReadOnlyList<string> secondPassActions = [];
         if (secondPass.Count > 0)
         {
             var count = secondPass.Values.Sum(entries => entries.Count);
             using (steps.Step("restore.second_pass", tags: [new("entry.count", count)]))
             {
-                actions.AddRange(SecondPass(run, secondPass, count, targetIndex));
+                secondPassActions = [.. SecondPass(run, secondPass, count, targetIndex)];
             }
         }
         else
@@ -180,6 +181,7 @@ public static class WorkspaceRestore
             log.Log("First pass fully successful; skipped second-pass placement");
         }
 
+        IReadOnlyList<string> returnActions = [];
         if (startingDesktop is { } start)
         {
             bool returned;
@@ -189,13 +191,13 @@ public static class WorkspaceRestore
                 step.Set("desktop.confirmed", returned);
             }
 
-            actions.Add($"Return to starting desktop {start}");
+            returnActions = [$"Return to starting desktop {start}"];
             log.Log($"Returned to starting desktop {start} ({(returned ? "confirmed" : "best-effort only")})");
         }
 
         steps.LogSummary();
         log.Log("Restore finished successfully");
-        return actions;
+        return [.. planned, .. fallbackActions, .. secondPassActions, .. returnActions];
     }
 
     // Retire switched-off desktops, top the count up, and return the starting desktop.

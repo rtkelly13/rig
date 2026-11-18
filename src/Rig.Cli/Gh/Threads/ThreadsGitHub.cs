@@ -147,16 +147,21 @@ internal sealed class ThreadsGitHub(IGitHubApi api)
 
     private static async Task<List<T>> PagesAsync<T>(Func<string?, Task<(List<T> Items, WirePageInfo Info)>> fetchPage, string what)
     {
+        var pages = await PageItemsAsync(fetchPage, what).ToListAsync().ConfigureAwait(false);
+        return [.. pages.SelectMany(page => page)];
+    }
+
+    private static async IAsyncEnumerable<List<T>> PageItemsAsync<T>(Func<string?, Task<(List<T> Items, WirePageInfo Info)>> fetchPage, string what)
+    {
         string? cursor = null;
         HashSet<string> seen = new(StringComparer.Ordinal);
-        IReadOnlyList<T> items = [];
         for (var page = 0; page < MaxPages; page++)
         {
             var (pageItems, info) = await fetchPage(cursor).ConfigureAwait(false);
-            items = [.. items, .. pageItems];
+            yield return pageItems;
             if (!info.HasNextPage)
             {
-                return [.. items];
+                yield break;
             }
 
             cursor = info.EndCursor;

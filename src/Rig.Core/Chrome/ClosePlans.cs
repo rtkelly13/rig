@@ -152,31 +152,35 @@ public static class ClosePlans
         }
 
         var first = (order ?? []).Where(known.ContainsKey).Distinct().ToList();
-        var applied = new List<AppliedClose>();
-        foreach (var handle in first.Concat(handles.Where(handle => !first.Contains(handle))))
-        {
-            var window = known[handle];
-            var results = new List<AppliedClose>();
-            if (byWindow.GetValueOrDefault(handle) is { } closes)
+        var perWindow = first.Concat(handles.Where(handle => !first.Contains(handle)))
+            .Select(handle =>
             {
-                using var activity = Source.StartActivity("chrome_tabs.close_window");
-                activity?.SetTag("window.profile", window.ProfileName ?? window.ProfileKey);
-                activity?.SetTag("close.planned", closes.Count);
-                foreach (var close in closes)
+                var window = known[handle];
+                List<AppliedClose> results = [];
+                if (byWindow.GetValueOrDefault(handle) is { } closes)
                 {
-                    var outcome = actions.CloseTab(close.Item.Tab);
-                    results.Add(new AppliedClose(close, outcome.Closed, outcome.Detail, outcome.Elapsed));
+                    using var activity = Source.StartActivity("chrome_tabs.close_window");
+                    activity?.SetTag("window.profile", window.ProfileName ?? window.ProfileKey);
+                    activity?.SetTag("close.planned", closes.Count);
+                    results =
+                    [
+                        .. closes.Select(close =>
+                        {
+                            var outcome = actions.CloseTab(close.Item.Tab);
+                            return new AppliedClose(close, outcome.Closed, outcome.Detail, outcome.Elapsed);
+                        }),
+                    ];
+
+                    actions.RestoreSelection([window], Activations(closes));
+                    activity?.SetTag("close.closed", results.Count(result => result.Closed));
                 }
 
-                actions.RestoreSelection([window], Activations(closes));
-                activity?.SetTag("close.closed", results.Count(result => result.Closed));
-            }
+                afterWindow?.Invoke(window, results);
+                return results;
+            })
+            .ToList();
 
-            applied.AddRange(results);
-            afterWindow?.Invoke(window, results);
-        }
-
-        return applied;
+        return [.. perWindow.SelectMany(results => results)];
     }
 
     /// <summary>

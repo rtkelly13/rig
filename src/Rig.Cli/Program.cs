@@ -236,7 +236,8 @@ internal static class Program
                         OperatingSystem.IsWindows(),
                         proc,
                         TimeProvider.System),
-                    Console.Out).Build,
+                    Console.Out,
+                    Console.Error).Build,
                 () => tools.Build(),
                 new MailCommand(
                     new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),

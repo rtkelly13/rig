@@ -475,21 +475,15 @@ internal sealed partial class DesktopWorkspaceCommand
     {
         var wantedName = name is null ? null : UnicodeText.CaseFold(name);
         var wantedDesktop = desktop is null ? null : UnicodeText.CaseFold(desktop);
-        var entries = new List<EntryLocation>();
-        for (var index = 0; index < plan.Desktops.Count; index++)
-        {
-            var item = plan.Desktops[index];
-            if (wantedDesktop is not null && UnicodeText.CaseFold(item.Name) != wantedDesktop)
-            {
-                continue;
-            }
-
-            entries.AddRange(item.Launch
-                .Where(entry => wantedName is null || UnicodeText.CaseFold(entry.Name) == wantedName)
-                .Select(entry => new EntryLocation(index + 1, item, entry)));
-        }
-
-        return entries;
+        return
+        [
+            .. plan.Desktops
+                .Select((item, index) => (Item: item, Number: index + 1))
+                .Where(pair => wantedDesktop is null || UnicodeText.CaseFold(pair.Item.Name) == wantedDesktop)
+                .SelectMany(pair => pair.Item.Launch
+                    .Where(entry => wantedName is null || UnicodeText.CaseFold(entry.Name) == wantedName)
+                    .Select(entry => new EntryLocation(pair.Number, pair.Item, entry))),
+        ];
     }
 
     private static IReadOnlyList<long> WindowHandlesFor(LaunchEntry entry, WindowInventory inventory) =>

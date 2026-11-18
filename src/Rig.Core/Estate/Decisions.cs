@@ -124,13 +124,13 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     public async Task<IReadOnlyList<Decision>> CollectRootsAsync(IEnumerable<string> roots, int idleDays = Trim.DefaultIdleDays, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(roots);
-        var found = new List<Decision>();
-        foreach (var root in roots.Where(Directory.Exists))
-        {
-            found.AddRange(await CollectAsync(root, idleDays, cancellationToken).ConfigureAwait(false));
-        }
-
-        return Ordered(Unique(found, windows));
+        var perRoot = await roots
+            .Where(Directory.Exists)
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<IReadOnlyList<Decision>> (root, token) => await CollectAsync(root, idleDays, token).ConfigureAwait(false))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return Ordered(Unique([.. perRoot.SelectMany(found => found)], windows));
     }
 
     /// <summary>One decision per path, the last one found standing; on Windows paths differing only in case or slash direction are one.</summary>
@@ -149,13 +149,12 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     /// <summary>Every decision under one code root, ordered.</summary>
     public async Task<IReadOnlyList<Decision>> CollectAsync(string root, int idleDays = Trim.DefaultIdleDays, CancellationToken cancellationToken = default)
     {
-        var found = new List<Decision>();
-        foreach (var clone in CloneDiscovery.Scan(root))
-        {
-            found.AddRange(await CloneDecisionsAsync(clone, idleDays, cancellationToken).ConfigureAwait(false));
-        }
-
-        return Ordered(found);
+        var perClone = await CloneDiscovery.Scan(root)
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<IReadOnlyList<Decision>> (clone, token) => await CloneDecisionsAsync(clone, idleDays, token).ConfigureAwait(false))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return Ordered([.. perClone.SelectMany(found => found)]);
     }
 
     /// <summary>
@@ -176,17 +175,18 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
             .Where(tree => !(tree.IsMain || tree.Bare || tree.Prunable) && Directory.Exists(tree.Path))
             .ToList();
         var verdicts = await MapAsync(trees, tree => JudgeAsync(repo, tree, idleDays, now), cancellationToken).ConfigureAwait(false);
-        var found = verdicts.Where(verdict => verdict.Decision is not null).Select(verdict => verdict.Decision!).ToList();
         var quiet = trees.Where((_, index) => verdicts[index].NeedsPullRequest).ToList();
         var heads = quiet.Count > 0 ? await pullRequests(clone, cancellationToken).ConfigureAwait(false) : null;
-        if (heads is not null)
-        {
-            var pulls = await MapAsync(quiet, tree => Task.FromResult(PullRequestDecision(repo, clone, tree, heads, idleDays)), cancellationToken).ConfigureAwait(false);
-            found.AddRange(pulls.Where(item => item is not null).Select(item => item!));
-        }
-
-        found.AddRange(await MapAsync(LeftBehind(clone), path => Task.FromResult(Locked(repo, path)), cancellationToken).ConfigureAwait(false));
-        return found;
+        var pulls = heads is not null
+            ? await MapAsync(quiet, tree => Task.FromResult(PullRequestDecision(repo, clone, tree, heads, idleDays)), cancellationToken).ConfigureAwait(false)
+            : [];
+        var locked = await MapAsync(LeftBehind(clone), path => Task.FromResult(Locked(repo, path)), cancellationToken).ConfigureAwait(false);
+        return
+        [
+            .. verdicts.Where(verdict => verdict.Decision is not null).Select(verdict => verdict.Decision!),
+            .. pulls.Where(item => item is not null).Select(item => item!),
+            .. locked,
+        ];
     }
 
     /// <summary>True when git refuses to read <paramref name="path"/> because someone else owns it.</summary>

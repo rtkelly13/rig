@@ -68,7 +68,8 @@ public sealed class GitHubAppsTests
     [Fact]
     public async Task Audit_reports_missing_partial_and_all_repo_installations()
     {
-        _discovered.AddRange(["labs/d", "elsewhere/e"]);
+        _discovered.Add("labs/d");
+        _discovered.Add("elsewhere/e");
         var apps = Installed("selected", "a");
 
         var audits = await apps.AuditAsync("labs", Token);

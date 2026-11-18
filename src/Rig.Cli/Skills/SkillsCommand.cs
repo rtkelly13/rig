@@ -163,12 +163,11 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
         var command = new Command("list", "List the curated skills discovered in the repository, personal overrides and vendors.") { query };
         command.SetAction(parsed => Guarded(parsed, places =>
         {
-            var skills = SkillCatalog.At(places).Curated();
-            if (parsed.GetValue(query) is { Length: > 0 } text)
-            {
-                var q = UnicodeText.Lower(text);
-                skills = [.. skills.Where(s => UnicodeText.Lower(s.Name).Contains(q, StringComparison.Ordinal) || UnicodeText.Lower(s.Description).Contains(q, StringComparison.Ordinal))];
-            }
+            var curated = SkillCatalog.At(places).Curated();
+            var q = parsed.GetValue(query) is { Length: > 0 } text ? UnicodeText.Lower(text) : null;
+            var skills = q is null
+                ? curated
+                : [.. curated.Where(s => UnicodeText.Lower(s.Name).Contains(q, StringComparison.Ordinal) || UnicodeText.Lower(s.Description).Contains(q, StringComparison.Ordinal))];
 
             var table = new TextTable($"Skills Catalog ({skills.Count} total)", [("Skill Name", false), ("Source", false), ("Description", false)]);
             foreach (var skill in skills)
@@ -305,15 +304,12 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     private async Task<int> UpdateAsync(SkillPlaces places, IReadOnlyList<string> systems, string? only, bool sync, CancellationToken ct)
     {
         await output.WriteLineAsync("Fetching & Updating Upstream Vendored Skills").ConfigureAwait(false);
-        var vendors = SkillVendors.Load(places.Vendors);
-        if (only is not null)
+        var configured = SkillVendors.Load(places.Vendors);
+        var vendors = only is null ? configured : [.. configured.Where(v => v.Name == only)];
+        if (only is not null && vendors.Count == 0)
         {
-            vendors = [.. vendors.Where(v => v.Name == only)];
-            if (vendors.Count == 0)
-            {
-                await output.WriteLineAsync($"Error: Vendor '{only}' not found in configuration.").ConfigureAwait(false);
-                return 1;
-            }
+            await output.WriteLineAsync($"Error: Vendor '{only}' not found in configuration.").ConfigureAwait(false);
+            return 1;
         }
 
         var results = await new SkillVendors(git, host.ExternalClones, places.Vendored, places.Windows)

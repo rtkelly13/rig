@@ -34,20 +34,23 @@ public static class GovernancePlan
             return new(target.Slug, [new("owner", "refused", $"owner governance failure: {owner.Message}", Change.Refused)], []);
         }
 
-        var planned = new List<Planned>();
-        foreach (var planner in planners ?? Resources)
-        {
-            planned.Add(await planner.PlanAsync(policies, api, target, cancellationToken).ConfigureAwait(false));
-        }
-
-        var errors = planned.Where(p => p.Error is not null).Select(p => $"{p.Resource}: {p.Error}").ToList();
-        if (apply)
-        {
-            foreach (var plan in planned)
-            {
-                errors.AddRange(await plan.Apply(cancellationToken).ConfigureAwait(false));
-            }
-        }
+        var planned = await (planners ?? Resources)
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<Planned> (planner, token) => await planner.PlanAsync(policies, api, target, token).ConfigureAwait(false))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var applied = apply
+            ? await planned
+                .ToAsyncEnumerable()
+                .Select(async ValueTask<IReadOnlyList<string>> (plan, token) => await plan.Apply(token).ConfigureAwait(false))
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false)
+            : [];
+        List<string> errors =
+        [
+            .. planned.Where(p => p.Error is not null).Select(p => $"{p.Resource}: {p.Error}"),
+            .. applied.SelectMany(result => result),
+        ];
 
         return new(target.Slug, [.. planned.SelectMany(p => p.Changes)], errors);
     }

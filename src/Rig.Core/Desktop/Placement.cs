@@ -65,38 +65,21 @@ public static class Placement
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(substitutions);
-        var errors = new List<string>();
-        if (plan.Desktops.Count == 0)
-        {
-            errors.Add("Workspace plan must define at least one desktop");
-        }
-
-        var desktopNames = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var desktop in plan.Desktops)
-        {
-            if (!desktopNames.Add(desktop.Name))
-            {
-                errors.Add($"Duplicate desktop name: {desktop.Name}");
-            }
-
-            var entryNames = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var entry in desktop.Launch)
-            {
-                if (!entryNames.Add(entry.Name))
-                {
-                    errors.Add($"{desktop.Name}: duplicate launch entry `{entry.Name}`");
-                }
-
-                errors.AddRange(EntryErrors(entry, desktop.Name, substitutions, paths));
-                errors.AddRange(CommandAtLogonErrors(entry, desktop.Name));
-                if (entry.Placement is not null)
-                {
-                    errors.AddRange(ValidatePlacementSpec(entry.Placement, desktop.Name, entry.Name, monitorCount));
-                }
-            }
-        }
-
-        return errors;
+        return
+        [
+            .. plan.Desktops.Count == 0 ? new[] { "Workspace plan must define at least one desktop" } : [],
+            .. plan.Desktops.SelectMany((desktop, desktopIndex) => (string[])
+            [
+                .. plan.Desktops.Take(desktopIndex).Any(earlier => earlier.Name == desktop.Name) ? new[] { $"Duplicate desktop name: {desktop.Name}" } : [],
+                .. desktop.Launch.SelectMany((entry, entryIndex) => (string[])
+                [
+                    .. desktop.Launch.Take(entryIndex).Any(earlier => earlier.Name == entry.Name) ? new[] { $"{desktop.Name}: duplicate launch entry `{entry.Name}`" } : [],
+                    .. EntryErrors(entry, desktop.Name, substitutions, paths),
+                    .. CommandAtLogonErrors(entry, desktop.Name),
+                    .. entry.Placement is null ? [] : ValidatePlacementSpec(entry.Placement, desktop.Name, entry.Name, monitorCount),
+                ]),
+            ]),
+        ];
     }
 
     /// <summary>
@@ -107,52 +90,45 @@ public static class Placement
     public static IReadOnlyList<string> ValidatePlanStructure(WorkspacePlan plan, int? expectedScreenCount = null, bool strict = false, int detectedScreenCount = 0)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        var issues = new List<string>();
         var screenCount = ResolveScreenCount(plan, expectedScreenCount, detectedScreenCount);
-        foreach (var desktop in plan.Desktops)
+        return [.. plan.Desktops.SelectMany(desktop => StructureIssues(desktop, plan, screenCount, strict))];
+    }
+
+    private static string[] StructureIssues(DesktopPlan desktop, WorkspacePlan plan, int screenCount, bool strict)
+    {
+        var placed = desktop.Launch
+            .Where(entry => entry.Placement is not null && IsActive(entry, plan.Features))
+            .Select(entry => (entry.Placement!.Screen, Rect: Geometry.NormalizedPlacementRect(entry.Placement)))
+            .ToList();
+        var referenced = placed.Select(item => item.Screen).Distinct().Order().ToList();
+        return
+        [
+            .. desktop.Launch.Count == 0 ? new[] { $"{desktop.Name}: virtual desktop is empty" } : [],
+            .. placed.Count == 0
+                ? []
+                : (string[])
+                [
+                    .. screenCount > 0
+                        ? Enumerable.Range(1, screenCount).Except(referenced).Select(screen => $"{desktop.Name}: screen {screen} is empty")
+                        : [],
+                    .. referenced.SelectMany(screen => ScreenIssues(desktop, placed, screen, screenCount, strict)),
+                ],
+        ];
+    }
+
+    private static string[] ScreenIssues(DesktopPlan desktop, List<(int Screen, UnitRect Rect)> placed, int screen, int screenCount, bool strict)
+    {
+        if (screenCount > 0 && screen > screenCount)
         {
-            if (desktop.Launch.Count == 0)
-            {
-                issues.Add($"{desktop.Name}: virtual desktop is empty");
-            }
-
-            var placed = desktop.Launch
-                .Where(entry => entry.Placement is not null && IsActive(entry, plan.Features))
-                .Select(entry => (entry.Placement!.Screen, Rect: Geometry.NormalizedPlacementRect(entry.Placement)))
-                .ToList();
-            if (placed.Count == 0)
-            {
-                continue;
-            }
-
-            var referenced = placed.Select(item => item.Screen).Distinct().Order().ToList();
-            if (screenCount > 0)
-            {
-                issues.AddRange(Enumerable.Range(1, screenCount).Except(referenced).Select(screen => $"{desktop.Name}: screen {screen} is empty"));
-            }
-
-            foreach (var screen in referenced)
-            {
-                if (screenCount > 0 && screen > screenCount)
-                {
-                    issues.Add($"{desktop.Name}: screen {screen} exceeds expected screen count {screenCount}");
-                    continue;
-                }
-
-                var coverage = Geometry.CoverageSummary([.. placed.Where(item => item.Screen == screen).Select(item => item.Rect)]);
-                if (coverage.Empty > Fraction.Zero)
-                {
-                    issues.Add($"{desktop.Name}: screen {screen} leaves {Percent(coverage.Empty)} empty");
-                }
-
-                if (strict && coverage.Overlap > Fraction.Zero)
-                {
-                    issues.Add($"{desktop.Name}: screen {screen} overlaps {Percent(coverage.Overlap)}");
-                }
-            }
+            return [$"{desktop.Name}: screen {screen} exceeds expected screen count {screenCount}"];
         }
 
-        return issues;
+        var coverage = Geometry.CoverageSummary([.. placed.Where(item => item.Screen == screen).Select(item => item.Rect)]);
+        return
+        [
+            .. coverage.Empty > Fraction.Zero ? new[] { $"{desktop.Name}: screen {screen} leaves {Percent(coverage.Empty)} empty" } : [],
+            .. strict && coverage.Overlap > Fraction.Zero ? new[] { $"{desktop.Name}: screen {screen} overlaps {Percent(coverage.Overlap)}" } : [],
+        ];
     }
 
     /// <summary>
@@ -171,28 +147,21 @@ public static class Placement
     {
         ArgumentNullException.ThrowIfNull(placement);
         var prefix = $"{desktopName}/{entryName}";
-        var errors = new List<string>();
-        if (placement.Screen < 1)
-        {
-            errors.Add($"{prefix}: placement screen must be >= 1");
-        }
-
-        if (monitorCount != 0 && placement.Screen > monitorCount)
-        {
-            errors.Add($"{prefix}: placement screen {placement.Screen} exceeds detected monitor count {monitorCount}");
-        }
-
-        errors.AddRange(LayoutErrors(placement.Layout, prefix));
-        if (placement.Subdivide is not null)
-        {
-            errors.AddRange(LayoutErrors(placement.Subdivide, prefix));
-            if (placement.Subdivide.Mode == "columns")
-            {
-                errors.Add($"{prefix}: columns applies to the screen, not a subdivide");
-            }
-        }
-
-        return errors;
+        return
+        [
+            .. placement.Screen < 1 ? new[] { $"{prefix}: placement screen must be >= 1" } : [],
+            .. monitorCount != 0 && placement.Screen > monitorCount
+                ? new[] { $"{prefix}: placement screen {placement.Screen} exceeds detected monitor count {monitorCount}" }
+                : [],
+            .. LayoutErrors(placement.Layout, prefix),
+            .. placement.Subdivide is null
+                ? []
+                : (string[])
+                [
+                    .. LayoutErrors(placement.Subdivide, prefix),
+                    .. placement.Subdivide.Mode == "columns" ? new[] { $"{prefix}: columns applies to the screen, not a subdivide" } : [],
+                ],
+        ];
     }
 
     /// <summary>
@@ -279,22 +248,13 @@ public static class Placement
         switch (entry.Type)
         {
             case "terminal":
-                var errors = new List<string>();
-                if (string.IsNullOrEmpty(entry.Command))
-                {
-                    errors.Add($"{where}: terminal missing command");
-                }
-
-                if (string.IsNullOrEmpty(entry.Cwd))
-                {
-                    errors.Add($"{where}: terminal missing cwd");
-                }
-                else if (paths is not null)
-                {
-                    errors.AddRange(FolderErrors(entry.Cwd, substitutions, where, paths));
-                }
-
-                return errors;
+                return
+                [
+                    .. string.IsNullOrEmpty(entry.Command) ? new[] { $"{where}: terminal missing command" } : [],
+                    .. string.IsNullOrEmpty(entry.Cwd)
+                        ? new List<string> { $"{where}: terminal missing cwd" }
+                        : paths is not null ? FolderErrors(entry.Cwd, substitutions, where, paths) : [],
+                ];
             case "app" when string.IsNullOrEmpty(entry.Path):
                 return [$"{where}: app missing path"];
             case "app" when paths is not null:
@@ -338,32 +298,26 @@ public static class Placement
             return [$"{where}: {error.Message}"];
         }
 
-        var errors = new List<string>();
         var executable = paths.ResolveExecutable(path);
-        if (!paths.Exists(executable))
-        {
-            errors.Add($"{where}: app path does not exist: {executable}");
-        }
-
-        var localArgs = new List<string>();
-        foreach (var rawArg in rawArgs)
+        var missingExecutable = paths.Exists(executable) ? [] : new[] { $"{where}: app path does not exist: {executable}" };
+        var substituted = rawArgs.Select(rawArg =>
         {
             try
             {
-                var arg = Placeholders.Substitute(rawArg, substitutions)!;
-                if (LocalPathArg(arg) is not null)
-                {
-                    localArgs.Add(arg);
-                }
+                return (Arg: (string?)Placeholders.Substitute(rawArg, substitutions), Error: (string?)null);
             }
             catch (InvalidPlanException error)
             {
-                errors.Add($"{where}: {error.Message}");
+                return (Arg: (string?)null, Error: (string?)$"{where}: {error.Message}");
             }
-        }
-
-        errors.AddRange(localArgs.Where(arg => !paths.Exists(arg) && !LooksLikeObsidianVault(path, arg)).Select(arg => $"{where}: arg does not exist: {arg}"));
-        return errors;
+        }).ToList();
+        var localArgs = substituted.Select(item => item.Arg).OfType<string>().Where(arg => LocalPathArg(arg) is not null).ToList();
+        return
+        [
+            .. missingExecutable,
+            .. substituted.Select(item => item.Error).OfType<string>(),
+            .. localArgs.Where(arg => !paths.Exists(arg) && !LooksLikeObsidianVault(path, arg)).Select(arg => $"{where}: arg does not exist: {arg}"),
+        ];
     }
 
     private static List<string> FolderErrors(string rawValue, IReadOnlyDictionary<string, string> substitutions, string where, IPathProbe paths)

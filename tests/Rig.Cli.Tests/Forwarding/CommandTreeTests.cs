@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Rig.Cli.Forwarding;
 
@@ -7,6 +8,7 @@ namespace Rig.Cli.Tests.Forwarding;
 public sealed class CommandTreeTests
 {
     [Fact]
+    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "The test asserts on a command tree whose verbs and aliases are built in a loop at runtime; DotMake classes are fixed at compile time.")]
     public void Dynamic_registrations_aliases_and_actions_come_from_the_composed_tree()
     {
         var group = new Command("chrome-tabs");

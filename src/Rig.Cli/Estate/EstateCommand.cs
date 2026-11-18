@@ -598,34 +598,19 @@ internal sealed class EstateCommand(
     private static string RiskLines(Exposure exposure)
     {
         const int Shown = 8;
-        var lines = new List<string> { string.Empty, Path.GetFileName(exposure.Repo) };
-        if (!exposure.HasRemote)
-        {
-            lines.Add("  no remote at all — every commit here is local-only");
-        }
-
-        if (exposure.LocalOnlyCommits > 0)
-        {
-            lines.Add($"  {exposure.LocalOnlyCommits} commit(s) on no remote");
-            lines.AddRange(exposure.Branches.Take(Shown).Select(branch => $"      cd {exposure.Repo} && git push -u origin {branch}"));
-            if (exposure.Branches.Count > Shown)
-            {
-                lines.Add($"      … and {exposure.Branches.Count - Shown} more branches");
-            }
-        }
-
-        if (exposure.DirtyFiles > 0)
-        {
-            lines.Add($"  {exposure.DirtyFiles} uncommitted file(s)");
-        }
-
-        if (exposure.Stashes > 0)
-        {
-            var entries = exposure.Stashes == 1 ? "entry" : "entries";
-            lines.Add($"  {exposure.Stashes} stash {entries} (one stack shared by every worktree of this repo)");
-        }
-
-        return string.Join('\n', lines);
+        string[] noRemote = exposure.HasRemote ? [] : ["  no remote at all — every commit here is local-only"];
+        string[] unpushed = exposure.LocalOnlyCommits > 0
+            ?
+            [
+                $"  {exposure.LocalOnlyCommits} commit(s) on no remote",
+                .. exposure.Branches.Take(Shown).Select(branch => $"      cd {exposure.Repo} && git push -u origin {branch}"),
+                .. exposure.Branches.Count > Shown ? [$"      … and {exposure.Branches.Count - Shown} more branches"] : Array.Empty<string>(),
+            ]
+            : [];
+        string[] dirty = exposure.DirtyFiles > 0 ? [$"  {exposure.DirtyFiles} uncommitted file(s)"] : [];
+        var entries = exposure.Stashes == 1 ? "entry" : "entries";
+        string[] stashed = exposure.Stashes > 0 ? [$"  {exposure.Stashes} stash {entries} (one stack shared by every worktree of this repo)"] : [];
+        return string.Join('\n', (string[])[string.Empty, Path.GetFileName(exposure.Repo), .. noRemote, .. unpushed, .. dirty, .. stashed]);
     }
 
     private async Task<int> DoctorAsync(string? path, bool json, bool merged, CancellationToken cancellationToken)

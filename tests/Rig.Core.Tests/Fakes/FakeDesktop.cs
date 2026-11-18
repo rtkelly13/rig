@@ -49,7 +49,7 @@ public sealed class FakeDesktop : IDesktopPort
     private long _nextHandle = 1000;
 
     /// <summary>The desktops' names, in position order.</summary>
-    public List<string> DesktopNames { get; } = ["Desktop 1"];
+    public List<string> DesktopNames { get; internal set; } = ["Desktop 1"];
 
     /// <summary>The current desktop, from 1.</summary>
     public int Current { get; set; } = 1;
@@ -91,7 +91,9 @@ public sealed class FakeDesktop : IDesktopPort
     public bool CurrentUnknown { get; set; }
 
     /// <summary>The missing-path fallbacks restore asked to open, as entry names.</summary>
-    public List<string> OpenedFallbacks { get; } = [];
+    private readonly List<List<string>> _openedBatches = [];
+
+    public List<string> OpenedFallbacks => [.. _openedBatches.SelectMany(batch => batch)];
 
     /// <inheritdoc/>
     public TimeSpan Now { get; set; }
@@ -346,7 +348,7 @@ public sealed class FakeDesktop : IDesktopPort
     {
         ArgumentNullException.ThrowIfNull(fallbacks);
         var names = fallbacks.MissingPathEntries.SelectMany(pair => pair.Value.Entries).Select(entry => entry.Name).ToList();
-        OpenedFallbacks.AddRange(names);
+        _openedBatches.Add(names);
         return [.. names.Select(name => $"Open missing-path note for {name}")];
     }
 

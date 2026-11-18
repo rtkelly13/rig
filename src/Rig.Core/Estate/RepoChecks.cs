@@ -124,12 +124,16 @@ public sealed class RepoChecks(Git git, TimeProvider time)
     /// <param name="staleAfter">How old scratch must be to report; <see cref="DefaultStaleAfter"/> when null.</param>
     public async Task<RepoReport> InspectAsync(string repo, IReadOnlyDictionary<string, PullRequest>? mergedHeads = null, TimeSpan? staleAfter = null)
     {
-        var findings = new List<Finding>();
-        findings.AddRange(await CheckWorktreesAsync(repo, mergedHeads).ConfigureAwait(false));
-        findings.AddRange(await CheckBranchesAsync(repo).ConfigureAwait(false));
+        var worktreeFindings = await CheckWorktreesAsync(repo, mergedHeads).ConfigureAwait(false);
+        var branchFindings = await CheckBranchesAsync(repo).ConfigureAwait(false);
         var temp = await ScanTempAsync(repo).ConfigureAwait(false);
-        findings.AddRange(await CheckTempAsync(repo, temp, staleAfter ?? DefaultStaleAfter).ConfigureAwait(false));
-        findings.AddRange(await CheckRepoStateAsync(repo).ConfigureAwait(false));
+        List<Finding> findings =
+        [
+            .. worktreeFindings,
+            .. branchFindings,
+            .. await CheckTempAsync(repo, temp, staleAfter ?? DefaultStaleAfter).ConfigureAwait(false),
+            .. await CheckRepoStateAsync(repo).ConfigureAwait(false),
+        ];
         var trees = await Worktree.ListAsync(git, repo).ConfigureAwait(false);
         var branches = await ListBranchesAsync(repo).ConfigureAwait(false);
         return new RepoReport(repo, findings, temp.Sum(entry => entry.Bytes), Math.Max(trees.Count - 1, 0), branches.Count);

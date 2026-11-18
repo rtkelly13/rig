@@ -40,17 +40,14 @@ try
         }
     }
 
-    var errors = CommandOwnership.Check(actual.Select(c => c.Id).ToArray(), ledger, previous).ToList();
     var expected = ledger.Commands.GroupBy(c => c.Id, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
-    foreach (var row in actual)
-    {
-        if (expected.TryGetValue(row.Id, out var entry) && (entry.Capability != row.Capability || entry.Owner != row.Owner || entry.AliasTo != row.AliasTo || !entry.Platforms.Order(StringComparer.Ordinal).SequenceEqual(row.Platforms.Order(StringComparer.Ordinal))))
-        {
-            errors.Add($"Ownership does not match inspected registration: {row.Id}");
-        }
-    }
-
-    errors.AddRange(ledger.RetiredFiles.Where(f => File.Exists(Path.Join(root, f))).Select(f => $"Retired source resurrected: {f}"));
+    var mismatched = actual
+        .Where(row => expected.TryGetValue(row.Id, out var entry) && (entry.Capability != row.Capability || entry.Owner != row.Owner || entry.AliasTo != row.AliasTo || !entry.Platforms.Order(StringComparer.Ordinal).SequenceEqual(row.Platforms.Order(StringComparer.Ordinal))))
+        .Select(row => $"Ownership does not match inspected registration: {row.Id}");
+    var resurrected = ledger.RetiredFiles
+        .Where(f => File.Exists(Path.Join(root, f)))
+        .Select(f => $"Retired source resurrected: {f}");
+    List<string> errors = [.. CommandOwnership.Check(actual.Select(c => c.Id).ToArray(), ledger, previous), .. mismatched, .. resurrected];
     foreach (var error in errors)
     {
         Console.Error.WriteLine(error);

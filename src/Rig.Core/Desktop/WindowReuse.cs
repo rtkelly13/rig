@@ -394,17 +394,11 @@ public static class WindowReuse
 
     private static List<string> ChromeTitleHints(LaunchEntry entry, IReadOnlyDictionary<string, string> substitutions)
     {
-        var hints = new List<string>();
-        foreach (var arg in entry.Args)
-        {
-            var url = Placeholders.Substitute(arg, substitutions);
-            if (url.StartsWith("http://", StringComparison.Ordinal) || url.StartsWith("https://", StringComparison.Ordinal))
-            {
-                hints.AddRange(ChromeHintsForUrl(url));
-            }
-        }
-
-        return [.. hints.Distinct(StringComparer.Ordinal)];
+        return [.. entry.Args
+            .Select(arg => Placeholders.Substitute(arg, substitutions))
+            .Where(url => url.StartsWith("http://", StringComparison.Ordinal) || url.StartsWith("https://", StringComparison.Ordinal))
+            .SelectMany(ChromeHintsForUrl)
+            .Distinct(StringComparer.Ordinal)];
     }
 
     private static List<string> ChromeHintsForUrl(string url)

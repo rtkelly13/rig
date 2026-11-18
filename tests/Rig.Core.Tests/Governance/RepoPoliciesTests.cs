@@ -168,9 +168,12 @@ public sealed class RepoPoliciesTests : IDisposable
     public void No_checked_in_required_checks_list_is_empty_or_repeats_a_check()
     {
         var file = JsonNode.Parse(File.ReadAllText(Path.Join(Checkout, "config", RepoPolicies.FileName)))!.AsObject();
-        var layers = new List<(string Where, JsonNode? Layer)> { ("defaults", file["defaults"]) };
-        layers.AddRange(file["profiles"]!.AsObject().Select(p => ($"profile {p.Key}", p.Value)));
-        layers.AddRange(file["repo_overrides"]!.AsObject().Select(p => ($"override {p.Key}", p.Value)));
+        List<(string Where, JsonNode? Layer)> layers =
+        [
+            ("defaults", file["defaults"]),
+            .. file["profiles"]!.AsObject().Select(p => ($"profile {p.Key}", p.Value)),
+            .. file["repo_overrides"]!.AsObject().Select(p => ($"override {p.Key}", p.Value)),
+        ];
 
         foreach (var (where, layer) in layers)
         {

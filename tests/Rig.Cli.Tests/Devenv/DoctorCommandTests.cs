@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Devenv;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
@@ -22,6 +23,7 @@ public sealed class DoctorCommandTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "The test stubs sibling commands whose names are runtime data; a DotMake [CliCommand] class has a fixed compile-time name.")]
     private Command Recorder(string name)
     {
         var command = new Command(name) { TreatUnmatchedTokensAsErrors = false };
@@ -33,6 +35,7 @@ public sealed class DoctorCommandTests : IDisposable
         return command;
     }
 
+    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "The test stubs sibling commands whose names are runtime data; a DotMake [CliCommand] class has a fixed compile-time name.")]
     private async Task<(int Code, string Out)> RunAsync(bool windows = false, Func<string, string?>? find = null, string? workingDirectory = null)
     {
         using var output = new StringWriter();

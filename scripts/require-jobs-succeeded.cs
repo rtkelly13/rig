@@ -22,7 +22,7 @@ catch (JsonException)
 
 if (needs.ValueKind != JsonValueKind.Object || !needs.EnumerateObject().Any())
 {
-    Console.WriteLine("::error::NEEDS_JSON is not a non-empty mapping of jobs.");
+    Console.Out.WriteLine("::error::NEEDS_JSON is not a non-empty mapping of jobs.");
     return 1;
 }
 
@@ -46,9 +46,9 @@ foreach (var job in needs.EnumerateObject())
 if (failed.Count > 0)
 {
     failed.Sort(StringComparer.Ordinal);
-    Console.WriteLine($"::error::Required jobs did not succeed: {string.Join(", ", failed)}");
+    Console.Out.WriteLine($"::error::Required jobs did not succeed: {string.Join(", ", failed)}");
     return 1;
 }
 
-Console.WriteLine("All checks passed.");
+Console.Out.WriteLine("All checks passed.");
 return 0;

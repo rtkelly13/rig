@@ -399,6 +399,7 @@ public static partial class RepoHygiene
         ArgumentNullException.ThrowIfNull(allowedScriptExtensions);
         ArgumentNullException.ThrowIfNull(bannedScriptExtensions);
         var banned = (bannedExtensions ?? ScriptBanRules.Default.BannedExtensions).Select(Dotted).ToList();
+        string[] scopes = allowedScriptExtensions.Count > 0 || bannedScriptExtensions.Count > 0 ? ["scripts", "\"scripts/**\""] : [];
         List<string> lines =
         [
             "# .ls-lint.yml",
@@ -410,27 +411,16 @@ public static partial class RepoHygiene
             // An empty `ls:` is null to ls-lint; `{}` keeps the file valid when the ban and scripts/ rules are both empty.
             banned.Count > 0 || allowedScriptExtensions.Count > 0 || bannedScriptExtensions.Count > 0 ? "ls:" : "ls: {}",
             .. banned.Select(ext => $"  {ext}: exists:0"),
-        ];
-        if (banned.Count > 0)
-        {
-            lines.Add("  \"**\":");
-            lines.AddRange(banned.Select(ext => $"    {ext}: exists:0"));
-        }
-
-        if (allowedScriptExtensions.Count > 0 || bannedScriptExtensions.Count > 0)
-        {
-            foreach (var scope in new[] { "scripts", "\"scripts/**\"" })
-            {
-                lines.Add($"  {scope}:");
-                lines.AddRange(CommonScriptSupportExtensions.Select(ext => $"    {ext}: regex:.*"));
-                lines.AddRange(allowedScriptExtensions.Select(Dotted).Where(ext => !CommonScriptSupportExtensions.Contains(ext)).Select(ext => $"    {ext}: regex:.*"));
-                lines.AddRange(bannedScriptExtensions.Select(ext => $"    {Dotted(ext)}: exists:0"));
-                lines.Add("    .*: exists:0");
-            }
-        }
-
-        lines.AddRange(
-        [
+            .. banned.Count > 0 ? new[] { "  \"**\":" } : [],
+            .. banned.Count > 0 ? banned.Select(ext => $"    {ext}: exists:0") : [],
+            .. scopes.SelectMany(scope => (string[])
+            [
+                $"  {scope}:",
+                .. CommonScriptSupportExtensions.Select(ext => $"    {ext}: regex:.*"),
+                .. allowedScriptExtensions.Select(Dotted).Where(ext => !CommonScriptSupportExtensions.Contains(ext)).Select(ext => $"    {ext}: regex:.*"),
+                .. bannedScriptExtensions.Select(ext => $"    {Dotted(ext)}: exists:0"),
+                "    .*: exists:0",
+            ]),
             string.Empty,
             "ignore:",
             "  - .git",
@@ -446,14 +436,10 @@ public static partial class RepoHygiene
             "  - obj",
             "  - dist",
             "  - build",
-        ]);
-        if (allowedExceptions.Count > 0)
-        {
-            lines.Add("  # Explicit repository exceptions:");
-            lines.AddRange(allowedExceptions.Select(exception => $"  - {exception}"));
-        }
-
-        lines.Add(string.Empty);
+            .. allowedExceptions.Count > 0 ? new[] { "  # Explicit repository exceptions:" } : [],
+            .. allowedExceptions.Select(exception => $"  - {exception}"),
+            string.Empty,
+        ];
         return string.Join('\n', lines);
     }
 

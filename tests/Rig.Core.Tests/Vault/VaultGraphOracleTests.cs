@@ -19,30 +19,29 @@ public sealed class VaultGraphOracleTests
     [Fact]
     public async Task Runs_every_recorded_graph_command_as_recorded()
     {
-        var mismatches = new List<string>();
-        foreach (var node in JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Vault", "graph-oracle.json"), TestContext.Current.CancellationToken))!.AsArray())
-        {
-            var oracle = node!.AsObject();
-            if ((oracle["posix_only"]!.GetValue<bool>() && OperatingSystem.IsWindows()) || oracle["name"]!.GetValue<string>() == "strict")
+        var recorded = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Vault", "graph-oracle.json"), TestContext.Current.CancellationToken))!.AsArray();
+        var runs = recorded
+            .Select(node => node!.AsObject())
+            .Where(oracle => !(oracle["posix_only"]!.GetValue<bool>() && OperatingSystem.IsWindows()) && oracle["name"]!.GetValue<string>() != "strict")
+            .SelectMany(oracle =>
             {
-                continue;
-            }
-
-            var files = oracle["files"]!.AsArray();
-            var originals = files
-                .Select(f => f!.AsObject())
-                .Where(f => f["b64"] is not null)
-                .ToDictionary(f => f["path"]!.GetValue<string>(), f => Convert.FromBase64String(f["b64"]!.GetValue<string>()), StringComparer.Ordinal);
-            foreach (var run in oracle["runs"]!.AsArray().Select(r => r!.AsObject()))
-            {
-                mismatches.AddRange(await Run($"{oracle["name"]} {run["op"]}", files, originals, run));
-            }
-        }
+                var files = oracle["files"]!.AsArray();
+                var originals = files
+                    .Select(f => f!.AsObject())
+                    .Where(f => f["b64"] is not null)
+                    .ToDictionary(f => f["path"]!.GetValue<string>(), f => Convert.FromBase64String(f["b64"]!.GetValue<string>()), StringComparer.Ordinal);
+                return oracle["runs"]!.AsArray().Select(r => (Name: oracle["name"], Files: files, Originals: originals, Run: r!.AsObject()));
+            });
+        var perRun = await runs
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<List<string>> (item, token) => await Run($"{item.Name} {item.Run["op"]}", item.Files, item.Originals, item.Run, token))
+            .ToListAsync(TestContext.Current.CancellationToken);
+        List<string> mismatches = [.. perRun.SelectMany(differences => differences)];
 
         Assert.True(mismatches.Count == 0, $"{mismatches.Count} difference(s) from the recording:\n{string.Join('\n', mismatches.Take(60))}");
     }
 
-    private static async Task<List<string>> Run(string label, JsonArray files, Dictionary<string, byte[]> originals, JsonObject run)
+    private static async Task<List<string>> Run(string label, JsonArray files, Dictionary<string, byte[]> originals, JsonObject run, CancellationToken token)
     {
         var parent = RepoTemp.NewVaultParent("rig-graph");
         var root = Path.Combine(parent, "Vault");
@@ -50,28 +49,32 @@ public sealed class VaultGraphOracleTests
         try
         {
             VaultLintOracleTests.Materialize(root, files);
-            var differences = new List<string>();
-            var pass = 0;
-            foreach (var expected in run["passes"]!.AsArray().Select(p => p!.AsObject()))
-            {
-                var at = $"{label} pass {++pass}";
-                var said = new List<string>();
-                var graph = new VaultGraph(root, said.Add, new ObsidianOrphans(new FakeProc(), Path.Combine(parent, "home")));
-                JsonNode? result = op switch
+            var passes = run["passes"]!.AsArray().Select(p => p!.AsObject()).ToAsyncEnumerable();
+            var perPass = await passes
+                .Select(async ValueTask<List<string>> (expected, index, passToken) =>
                 {
-                    "links-list" => Report(graph.ListLinks()),
-                    "links-fix" => graph.FixLinks() is var f ? new JsonObject { ["broken_found"] = f.BrokenFound, ["fixed"] = f.Fixed } : null,
-                    "orphans-list" => new JsonArray([.. (await graph.ListOrphansAsync()).Select(o => JsonValue.Create(o))]),
-                    "orphans-link" => await graph.LinkOrphansAsync() is var l ? new JsonObject { ["orphans_found"] = l.OrphansFound, ["linked"] = l.Linked } : null,
-                    _ => await graph.RootHubsAsync() is var h ? new JsonObject { ["hubs_created"] = h.HubsCreated, ["links_added"] = h.LinksAdded } : null,
-                };
+                    var at = $"{label} pass {index + 1}";
+                    var said = new List<string>();
+                    var graph = new VaultGraph(root, said.Add, new ObsidianOrphans(new FakeProc(), Path.Combine(parent, "home")));
+                    JsonNode? result = op switch
+                    {
+                        "links-list" => Report(graph.ListLinks()),
+                        "links-fix" => graph.FixLinks() is var f ? new JsonObject { ["broken_found"] = f.BrokenFound, ["fixed"] = f.Fixed } : null,
+                        "orphans-list" => new JsonArray([.. (await graph.ListOrphansAsync(passToken)).Select(o => JsonValue.Create(o))]),
+                        "orphans-link" => await graph.LinkOrphansAsync(passToken) is var l ? new JsonObject { ["orphans_found"] = l.OrphansFound, ["linked"] = l.Linked } : null,
+                        _ => await graph.RootHubsAsync(passToken) is var h ? new JsonObject { ["hubs_created"] = h.HubsCreated, ["links_added"] = h.LinksAdded } : null,
+                    };
 
-                differences.AddRange(Result(at, result, expected["result"]));
-                differences.AddRange(Multiset($"{at} log", said, [.. expected["log"]!.AsArray().Select(l => Unmarked(l!.GetValue<string>()))]));
-                differences.AddRange(After(at, root, originals, expected["after"]!.AsObject(), lineEndingsKept: op == "links-fix"));
-            }
+                    return (List<string>)
+                    [
+                        .. Result(at, result, expected["result"]),
+                        .. Multiset($"{at} log", said, [.. expected["log"]!.AsArray().Select(l => Unmarked(l!.GetValue<string>()))]),
+                        .. After(at, root, originals, expected["after"]!.AsObject(), lineEndingsKept: op == "links-fix"),
+                    ];
+                })
+                .ToListAsync(token);
 
-            return differences;
+            return [.. perPass.SelectMany(differences => differences)];
         }
         finally
         {

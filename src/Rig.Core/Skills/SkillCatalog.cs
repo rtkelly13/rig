@@ -114,37 +114,25 @@ public sealed record SkillPlaces(string Checkout, string Home, string WorkingDir
     /// </summary>
     public IReadOnlyList<SkillSource> Sources()
     {
-        var sources = new List<SkillSource>();
         var workspace = Path.Join(WorkingDirectory, "skills");
-        if (Directory.Exists(workspace)
-            && !DirectoryLinks.Same(PathResolution.Resolve(workspace), PathResolution.Resolve(CanonicalSkills), Windows))
-        {
-            sources.Add(new("workspace", workspace));
-        }
-
-        if (Directory.Exists(CanonicalSkills))
-        {
-            sources.Add(new("shared-utilities", CanonicalSkills));
-        }
-
         var custom = Path.Join(Home, ".config", "devenv", "skills");
-        if (Directory.Exists(custom))
-        {
-            sources.Add(new("user-custom", custom));
-        }
-
         var vendors = Path.Join(Home, ".config", "devenv", "vendors");
-        if (Directory.Exists(vendors))
-        {
-            sources.AddRange(Directory.EnumerateDirectories(vendors)
-                .Select(Path.GetFileName)
-                .OfType<string>()
-                .Where(name => !name.StartsWith('.'))
-                .Order(UnicodeText.CodePointOrder)
-                .Select(name => new SkillSource(name, Path.Join(vendors, name))));
-        }
-
-        return sources;
+        var workspaceIsDistinct = Directory.Exists(workspace)
+            && !DirectoryLinks.Same(PathResolution.Resolve(workspace), PathResolution.Resolve(CanonicalSkills), Windows);
+        return
+        [
+            .. workspaceIsDistinct ? new[] { new SkillSource("workspace", workspace) } : [],
+            .. Directory.Exists(CanonicalSkills) ? new[] { new SkillSource("shared-utilities", CanonicalSkills) } : [],
+            .. Directory.Exists(custom) ? new[] { new SkillSource("user-custom", custom) } : [],
+            .. Directory.Exists(vendors)
+                ? Directory.EnumerateDirectories(vendors)
+                    .Select(Path.GetFileName)
+                    .OfType<string>()
+                    .Where(name => !name.StartsWith('.'))
+                    .Order(UnicodeText.CodePointOrder)
+                    .Select(name => new SkillSource(name, Path.Join(vendors, name)))
+                : [],
+        ];
     }
 }
 

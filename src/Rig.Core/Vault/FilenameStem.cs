@@ -266,8 +266,7 @@ public static partial class FilenameStem
         }
 
         var labels = host.Split('.');
-        var suffixes = new List<string> { host, labels[0] };
-        suffixes.AddRange(labels.Where(label => !Tlds.Contains(label)));
+        List<string> suffixes = [host, labels[0], .. labels.Where(label => !Tlds.Contains(label))];
         var updated = cleaned;
         foreach (var suffix in suffixes.Select(UnicodeText.Strip).Where(suffix => suffix.Length > 0))
         {

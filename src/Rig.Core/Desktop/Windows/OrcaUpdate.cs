@@ -102,16 +102,9 @@ public static class OrcaUpdate
     public static IReadOnlyList<(int DesktopIndex, DesktopPlan Desktop, LaunchEntry Entry)> Entries(WorkspacePlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        var entries = new List<(int, DesktopPlan, LaunchEntry)>();
-        for (var index = 0; index < plan.Desktops.Count; index++)
-        {
-            var desktop = plan.Desktops[index];
-            entries.AddRange(desktop.Launch
-                .Where(entry => !entry.Disabled && EntryTargetsOrca(entry))
-                .Select(entry => (index + 1, desktop, entry)));
-        }
-
-        return entries;
+        return [.. plan.Desktops.SelectMany((desktop, index) => desktop.Launch
+            .Where(entry => !entry.Disabled && EntryTargetsOrca(entry))
+            .Select(entry => (index + 1, desktop, entry)))];
     }
 
     /// <summary>The disk and process state of an Orca update.</summary>
@@ -337,8 +330,7 @@ public static class OrcaUpdate
                 result.Add($"  - would run {state.Staged.Installer} --updated /S");
             }
 
-            result.AddRange(entries.Select(item => $"  - would relaunch `{item.Entry.Name}` on {item.Desktop.Name}"));
-            return new(result);
+            return new([.. result, .. entries.Select(item => $"  - would relaunch `{item.Entry.Name}` on {item.Desktop.Name}")]);
         }
 
         result.Add($"  - {CloseAll(inventory, actions, timeout, log.Log)}");

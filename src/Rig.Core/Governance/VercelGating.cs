@@ -79,48 +79,53 @@ public sealed class VercelGating(IVercelApi api, Git git)
     public static IReadOnlyList<VercelFinding> Plan(VercelProjectFacts facts, long nowMs, int windowDays)
     {
         ArgumentNullException.ThrowIfNull(facts);
-        var findings = new List<VercelFinding>();
         var windowMs = nowMs - (windowDays * DayMs);
         var recent = facts.RecentDeployments.Where(d => d.CreatedAtMs >= windowMs).ToList();
-
-        // 1. The creation gate: `enabled` with no repo-level deny-all creates on every branch push.
-        if (facts.CreateDeployments == "enabled" && !HasDenyAll(facts))
-        {
-            findings.Add(new(
-                facts.Name,
-                "creation-gate",
-                "error",
-                "creates a deployment for every branch push; ignored builds still count toward the 100/day. Add a git.deploymentEnabled "
-                + "allowlist with a '**: false' fallback to the repo's vercel.json, or turn off deployment creation for branches in project settings."));
-        }
-        else if (facts.Allow is not null && !HasDenyAll(facts))
-        {
-            findings.Add(new(
-                facts.Name,
-                "allowlist-has-no-deny-all",
-                "warn",
-                "git.deploymentEnabled lists no deny-all fallback, so unlisted branches still create deployments by default."));
-        }
-
-        // 2. The empirical leak: whatever the flags say, deployments were created off the allowed refs.
         var leaked = recent.Where(d => !RefIsAllowed(d.Ref, facts)).ToList();
-        if (leaked.Count > 0)
-        {
-            var listing = string.Join(
-                ", ",
-                leaked.GroupBy(d => d.Ref, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => $"{g.Key} ×{g.Count()}"));
-            findings.Add(new(
-                facts.Name,
-                "budget-leak",
-                "error",
-                string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"created {leaked.Count} deployment(s) off the allowed refs in the last {windowDays}d — each one burns the daily budget: {listing}")));
-        }
+        var listing = string.Join(
+            ", ",
+            leaked.GroupBy(d => d.Ref, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => $"{g.Key} ×{g.Count()}"));
+        return
+        [
+            // 1. The creation gate: `enabled` with no repo-level deny-all creates on every branch push.
+            .. (facts.CreateDeployments == "enabled" && !HasDenyAll(facts)
+                ?
+                [
+                    new VercelFinding(
+                        facts.Name,
+                        "creation-gate",
+                        "error",
+                        "creates a deployment for every branch push; ignored builds still count toward the 100/day. Add a git.deploymentEnabled "
+                        + "allowlist with a '**: false' fallback to the repo's vercel.json, or turn off deployment creation for branches in project settings."),
+                ]
+                : facts.Allow is not null && !HasDenyAll(facts)
+                    ?
+                    [
+                        new VercelFinding(
+                            facts.Name,
+                            "allowlist-has-no-deny-all",
+                            "warn",
+                            "git.deploymentEnabled lists no deny-all fallback, so unlisted branches still create deployments by default."),
+                    ]
+                    : Array.Empty<VercelFinding>()),
 
-        // 3. Production freshness: the served build is behind the branch it should serve.
-        findings.AddRange(Freshness(facts, recent));
-        return findings;
+            // 2. The empirical leak: whatever the flags say, deployments were created off the allowed refs.
+            .. (leaked.Count > 0
+                ? new[]
+                {
+                    new VercelFinding(
+                        facts.Name,
+                        "budget-leak",
+                        "error",
+                        string.Create(
+                            CultureInfo.InvariantCulture,
+                            $"created {leaked.Count} deployment(s) off the allowed refs in the last {windowDays}d — each one burns the daily budget: {listing}")),
+                }
+                : []),
+
+            // 3. Production freshness: the served build is behind the branch it should serve.
+            .. Freshness(facts, recent),
+        ];
     }
 
     /// <summary>Every project in the team, by name, with the repository its git link names.</summary>

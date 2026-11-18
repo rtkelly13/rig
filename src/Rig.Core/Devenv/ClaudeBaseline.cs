@@ -99,8 +99,7 @@ public static class ClaudeBaseline
             changes.Add($"+ mcpServers.{name}");
         }
 
-        changes.AddRange(SessionLedger.Merge(merged, sessionEndCommand));
-        return new SettingsMerge(merged, changes);
+        return new SettingsMerge(merged, [.. changes, .. SessionLedger.Merge(merged, sessionEndCommand)]);
     }
 
     /// <summary>A baseline value quoted, as the change lines show it: <c>'text'</c>, <c>True</c>, <c>3</c>.</summary>

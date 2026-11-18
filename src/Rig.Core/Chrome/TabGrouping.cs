@@ -247,39 +247,33 @@ public static partial class TabGrouping
         ArgumentNullException.ThrowIfNull(windows);
         options ??= new GroupOptions();
         var context = new Context(options.MinSize, options.Owners ?? UrlOwners.None, options.Sites ?? PackagedSites.Value);
-        List<GroupMove> moves = [];
-        List<Ungroup> ungroups = [];
-        List<SkippedWindow> skipped = [];
-        List<BlockedKey> blocked = [];
-        int already = 0, elsewhere = 0;
-
         var numbered = windows.Select((window, index) => new Numbered(index + 1, window));
-        foreach (var profile in numbered.GroupBy(item => item.Window.ProfileKey, StringComparer.Ordinal))
-        {
-            HashSet<long> eligible = [];
-            foreach (var (number, window) in profile)
+        var perProfile = numbered
+            .GroupBy(item => item.Window.ProfileKey, StringComparer.Ordinal)
+            .Select(profile =>
             {
-                if (!options.AllDesktops && currentDesktop is not null && window.DesktopNumber != currentDesktop)
+                var away = profile
+                    .Where(item => !options.AllDesktops && currentDesktop is not null && item.Window.DesktopNumber != currentDesktop)
+                    .ToList();
+                HashSet<long> eligible = [.. profile.Except(away).Select(item => item.Window.Handle)];
+                var skipped = away.Select(item =>
                 {
-                    var where = window.DesktopNumber is { } desktop
+                    var where = item.Window.DesktopNumber is { } desktop
                         ? string.Create(CultureInfo.InvariantCulture, $"desktop {desktop}")
                         : "an unknown desktop";
-                    skipped.Add(new(number, ProfileOf(window), $"on {where}, not the current one"));
-                }
-                else
-                {
-                    eligible.Add(window.Handle);
-                }
-            }
+                    return new SkippedWindow(item.Number, ProfileOf(item.Window), $"on {where}, not the current one");
+                }).ToList();
+                var hosts = options.Hosts?.GetValueOrDefault(profile.Key) ?? NoHosts;
+                return (Skipped: skipped, Result: PlanProfile([.. profile], eligible, hosts, context));
+            })
+            .ToList();
 
-            var hosts = options.Hosts?.GetValueOrDefault(profile.Key) ?? NoHosts;
-            var result = PlanProfile([.. profile], eligible, hosts, context);
-            moves.AddRange(result.Moves);
-            ungroups.AddRange(result.Ungroups);
-            blocked.AddRange(result.Blocked);
-            already += result.AlreadyGrouped;
-            elsewhere += result.Elsewhere;
-        }
+        List<GroupMove> moves = [.. perProfile.SelectMany(profile => profile.Result.Moves)];
+        List<Ungroup> ungroups = [.. perProfile.SelectMany(profile => profile.Result.Ungroups)];
+        List<BlockedKey> blocked = [.. perProfile.SelectMany(profile => profile.Result.Blocked)];
+        List<SkippedWindow> skipped = [.. perProfile.SelectMany(profile => profile.Skipped)];
+        var already = perProfile.Sum(profile => profile.Result.AlreadyGrouped);
+        var elsewhere = perProfile.Sum(profile => profile.Result.Elsewhere);
 
         var order = ExecutionOrder(moves);
         return new GroupPlan(
@@ -305,21 +299,16 @@ public static partial class TabGrouping
                 byTitle => byTitle.GroupBy(found => found.Tab.Group!.RuntimeId).Select(members => members.ToList()).ToList(),
                 StringComparer.Ordinal);
         var review = ReviewWindow(keys, eligible);
-
-        List<GroupMove> moves = [];
-        List<Ungroup> ungroups = [];
-        List<BlockedKey> blocked = [];
-        int already = 0, elsewhere = 0;
-        foreach (var spec in keys)
+        var plans = keys.Select(spec =>
         {
             var live = spec.Tabs.Where(found => eligible.Contains(found.Window.Handle)).ToList();
             var loose = live.Where(found => found.Tab.Group is null).ToList();
-            elsewhere += live.Count(found => found.Tab.Group is { } group && group.Title != spec.Title);
+            var elsewhere = live.Count(found => found.Tab.Group is { } group && group.Title != spec.Title);
             var everyGroup = groups.GetValueOrDefault(spec.Title) ?? [];
             var titled = everyGroup.Where(members => eligible.Contains(members[0].Window.Handle)).ToList();
             if (titled.Count == 0 && loose.Count == 0)
             {
-                continue;
+                return new GroupPlan([], [], 0, elsewhere, [], []);
             }
 
             var profile = ProfileOf(spec.Tabs[0].Window);
@@ -327,15 +316,12 @@ public static partial class TabGrouping
             {
                 // Some group with its title is away; with none here there are loose tabs here, so either way it blocks.
                 var away = everyGroup.Select(DesktopOf).Except(titled.Select(DesktopOf)).Order();
-                blocked.Add(new(profile, spec.Title, $"its group is on desktop {string.Join(", ", away)}"));
-
-                already += titled.Sum(members => members.Count);
-                continue;
+                return new GroupPlan([], [], titled.Sum(members => members.Count), elsewhere, [], [new(profile, spec.Title, $"its group is on desktop {string.Join(", ", away)}")]);
             }
 
             if (titled.Count == 0 && loose.Count < context.MinSize)
             {
-                continue;
+                return new GroupPlan([], [], 0, elsewhere, [], []);
             }
 
             var ranked = titled.OrderByDescending(members => members.Count).ThenBy(members => members[0].Number).ToList();
@@ -346,21 +332,18 @@ public static partial class TabGrouping
             var duplicates = ranked.Where(members => !ReferenceEquals(members, home)).ToList();
             if (duplicates.SelectMany(members => members).Any(found => TabKey(found.Tab, hosts, context.Owners, context.Sites) != spec.Key))
             {
-                blocked.Add(new(profile, spec.Title, string.Create(CultureInfo.InvariantCulture, $"{titled.Count} groups share its title, one holds other tabs")));
-                already += titled.Sum(members => members.Count);
-                continue;
+                return new GroupPlan([], [], titled.Sum(members => members.Count), elsewhere, [], [new(profile, spec.Title, string.Create(CultureInfo.InvariantCulture, $"{titled.Count} groups share its title, one holds other tabs"))]);
             }
 
-            already += home?.Count ?? 0;
+            var already = home?.Count ?? 0;
             var joiners = loose.Concat(duplicates.SelectMany(members => members))
                 .OrderBy(found => found.Number)
                 .ThenBy(found => found.Tab.Index)
                 .ToList();
-            ungroups.AddRange(duplicates.Select(members => new Ungroup(members[0].Tab.Group!, [.. members.Select(found => found.Tab)], members[0].Number, profile)));
+            List<Ungroup> ungroups = [.. duplicates.Select(members => new Ungroup(members[0].Tab.Group!, [.. members.Select(found => found.Tab)], members[0].Number, profile))];
             if (home is not null)
             {
-                moves.AddRange(joiners.Select(found => Move(found, spec, profile, home[0], isNew: false)));
-                continue;
+                return new GroupPlan([.. joiners.Select(found => Move(found, spec, profile, home[0], isNew: false))], [], already, elsewhere, ungroups, []);
             }
 
             if (target is null)
@@ -370,11 +353,16 @@ public static partial class TabGrouping
             }
 
             var creator = joiners.FirstOrDefault(found => found.Window.Handle == target.Window.Handle) ?? joiners[0];
-            moves.Add(Move(creator, spec, profile, target, isNew: true));
-            moves.AddRange(joiners.Where(found => !ReferenceEquals(found, creator)).Select(found => Move(found, spec, profile, target, isNew: false)));
-        }
+            return new GroupPlan([Move(creator, spec, profile, target, isNew: true), .. joiners.Where(found => !ReferenceEquals(found, creator)).Select(found => Move(found, spec, profile, target, isNew: false))], [], already, elsewhere, ungroups, []);
+        }).ToList();
 
-        return new GroupPlan(moves, [], already, elsewhere, ungroups, blocked);
+        return new GroupPlan(
+            [.. plans.SelectMany(plan => plan.Moves)],
+            [],
+            plans.Sum(plan => plan.AlreadyGrouped),
+            plans.Sum(plan => plan.Elsewhere),
+            [.. plans.SelectMany(plan => plan.Ungroups)],
+            [.. plans.SelectMany(plan => plan.Blocked)]);
     }
 
     private static int DesktopOf(List<Found> members) => members[0].Window.DesktopNumber ?? 0;

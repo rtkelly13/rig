@@ -109,12 +109,12 @@ internal sealed partial class GovernanceCommand
     {
         var repos = await ReposToTriageAsync(scope, cancellationToken).ConfigureAwait(false);
         var triage = new Triage(proc);
-        var issues = new List<IssueItem>();
-        foreach (var repo in repos)
-        {
-            issues.AddRange(await triage.IssuesAsync(repo, label, cancellationToken).ConfigureAwait(false));
-        }
-
+        var perRepo = await repos
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<IReadOnlyList<IssueItem>> (repo, token) => await triage.IssuesAsync(repo, label, token).ConfigureAwait(false))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        List<IssueItem> issues = [.. perRepo.SelectMany(items => items)];
         var dashboard = Triage.Dashboard(issues, time.GetUtcNow());
         if (scope.Json)
         {
@@ -145,13 +145,16 @@ internal sealed partial class GovernanceCommand
         var repos = await ReposToTriageAsync(scope, cancellationToken).ConfigureAwait(false);
         var policies = RepoPolicies.Load(host.PolicyFile);
         var triage = new Triage(proc);
-        var prs = new List<PrItem>();
-        foreach (var repo in repos)
-        {
-            var required = policies.RequiredChecks(repo) is { Count: > 0 } registered ? registered : Triage.LegacyRequiredChecks;
-            prs.AddRange(await triage.PullRequestsAsync(repo, required, cancellationToken).ConfigureAwait(false));
-        }
-
+        var perRepo = await repos
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<IReadOnlyList<PrItem>> (repo, token) =>
+            {
+                var required = policies.RequiredChecks(repo) is { Count: > 0 } registered ? registered : Triage.LegacyRequiredChecks;
+                return await triage.PullRequestsAsync(repo, required, token).ConfigureAwait(false);
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        List<PrItem> prs = [.. perRepo.SelectMany(items => items)];
         var dashboard = Triage.Dashboard(prs, time.GetUtcNow());
         if (scope.Json)
         {
@@ -252,21 +255,16 @@ internal sealed partial class GovernanceCommand
             return await repos.DiscoverOrgReposAsync(scope.Org, host.PersonalDir, cancellationToken).ConfigureAwait(false);
         }
 
-        var found = new List<string>();
-        foreach (var target in await repos.ResolveTargetsAsync(scope.Path, scope.All, host.PersonalDir, host.Cwd, scope.Org, cancellationToken).ConfigureAwait(false))
-        {
-            if (await repos.GhRepoNameAsync(target, cancellationToken).ConfigureAwait(false) is { Length: > 0 } name && !found.Contains(name))
-            {
-                found.Add(name);
-            }
-        }
-
-        if (!string.IsNullOrEmpty(scope.Org) && found.Count == 0)
-        {
-            found.AddRange(await repos.DiscoverOrgReposAsync(scope.Org, host.PersonalDir, cancellationToken).ConfigureAwait(false));
-        }
-
-        return found;
+        var targets = await repos.ResolveTargetsAsync(scope.Path, scope.All, host.PersonalDir, host.Cwd, scope.Org, cancellationToken).ConfigureAwait(false);
+        var names = await targets
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<string?> (target, token) => await repos.GhRepoNameAsync(target, token).ConfigureAwait(false))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        List<string> found = [.. names.OfType<string>().Where(name => name.Length > 0).Distinct()];
+        return found.Count == 0 && !string.IsNullOrEmpty(scope.Org)
+            ? [.. await repos.DiscoverOrgReposAsync(scope.Org, host.PersonalDir, cancellationToken).ConfigureAwait(false)]
+            : found;
     }
 
     private static void Section<T>(StringBuilder text, string heading, IReadOnlyList<T> items, Func<T, (string Ref, string Line, string Link)> describe)

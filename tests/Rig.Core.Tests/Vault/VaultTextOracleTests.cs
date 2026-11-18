@@ -128,14 +128,8 @@ public sealed class VaultTextOracleTests
 
     private static List<OracleCase> LoadAll()
     {
-        var cases = Load(Path.Combine(AppContext.BaseDirectory, "Vault", "vault-text-oracle.json")).ToList();
         var extra = Environment.GetEnvironmentVariable(ExtraFixtureVariable);
-        if (!string.IsNullOrEmpty(extra))
-        {
-            cases.AddRange(Load(extra));
-        }
-
-        return cases;
+        return [.. Load(Path.Combine(AppContext.BaseDirectory, "Vault", "vault-text-oracle.json")), .. string.IsNullOrEmpty(extra) ? [] : Load(extra)];
     }
 
     private static IEnumerable<OracleCase> Load(string path)

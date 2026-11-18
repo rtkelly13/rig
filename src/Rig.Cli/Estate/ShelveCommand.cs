@@ -388,12 +388,12 @@ internal sealed class ShelveCommand(
         var chosen = all
             ? await clones(codeRoot(root), refresh, json, cancellationToken).ConfigureAwait(false)
             : [await oneClone(repo).ConfigureAwait(false)];
-        var rows = new List<ShelvedRow>();
-        foreach (var clone in chosen)
-        {
-            rows.AddRange(await RowsAsync(clone, prune, apply, cancellationToken).ConfigureAwait(false));
-        }
-
+        var perClone = await chosen
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<List<ShelvedRow>> (clone, token) => await RowsAsync(clone, prune, apply, token).ConfigureAwait(false))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        List<ShelvedRow> rows = [.. perClone.SelectMany(clone => clone)];
         var code = rows.Any(row => row.Pruned == false) ? 1 : 0; // a drop that was asked for and failed
         if (json)
         {
