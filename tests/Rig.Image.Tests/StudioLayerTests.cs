@@ -234,6 +234,57 @@ public sealed class StudioLayerTests : IDisposable
     }
 
     [Fact]
+    public void The_studio_lists_the_production_cuts_the_csv_declares_with_their_sizes_on_disk()
+    {
+        var assets = Path.Join(_root, "assets");
+        var cuts = Path.Join(assets, "demo", "production-cuts");
+        Directory.CreateDirectory(cuts);
+        File.WriteAllText(
+            Path.Join(cuts, "production-cuts.csv"),
+            "filename,cut_type,width,height,format,purpose,description\ndemo-8.png,cut_8,8,8,png,Small,An eight pixel cut\ndemo-9.png,cut_9,9,9,png,Missing,Never exported\n");
+        File.WriteAllBytes(Path.Join(cuts, "demo-8.png"), RasterPipeline.EncodePng(Solid(8, 40)));
+        var api = new StudioApi(assets, Path.Join(_root, "variations"));
+
+        var listed = JsonDocument.Parse(api.Projects().Body).RootElement.GetProperty("projects")[0].GetProperty("production_cuts");
+
+        Assert.Equal(2, listed.GetArrayLength());
+        Assert.Equal("cut_8", listed[0].GetProperty("cut_type").GetString());
+        Assert.True(listed[0].GetProperty("size_bytes").GetInt64() > 0);
+        Assert.Equal("Small", listed[0].GetProperty("purpose").GetString());
+        Assert.Equal("/media/assets/demo/production-cuts/demo-8.png", listed[0].GetProperty("url").GetString());
+        Assert.Equal(0, listed[1].GetProperty("size_bytes").GetInt64());
+    }
+
+    [Fact]
+    public void The_studio_lists_recorded_variation_runs_with_their_steps_and_media_urls()
+    {
+        var assets = Path.Join(_root, "assets");
+        Directory.CreateDirectory(Path.Join(assets, "demo", "reference"));
+        var api = new StudioApi(assets, Path.Join(_root, "variations"));
+        Assert.Equal(200, api.Snapshot("{\"project\": \"demo\", \"run_id\": \"r1\", \"step_idx\": 3, \"step_name\": \"fit\", \"svg_content\": \"<svg/>\", \"metrics\": {\"ssim\": 0.5}, \"notes\": \"why\"}").Status);
+
+        var demo = JsonDocument.Parse(api.Projects().Body).RootElement.GetProperty("projects")[0];
+
+        var run = demo.GetProperty("variation_runs")[0];
+        Assert.Equal("r1", run.GetProperty("run_id").GetString());
+        var step = run.GetProperty("steps")[0];
+        Assert.Equal("fit", step.GetProperty("step_name").GetString());
+        Assert.StartsWith("/media/variations/demo/r1/", step.GetProperty("svg_url").GetString(), StringComparison.Ordinal);
+        Assert.Equal(JsonValueKind.Null, step.GetProperty("png_url").ValueKind);
+        Assert.Equal(0.5, step.GetProperty("metrics").GetProperty("ssim").GetDouble());
+        Assert.Equal("why", step.GetProperty("notes").GetString());
+    }
+
+    [Fact]
+    public void Snapshot_text_fields_that_are_not_strings_are_rejected()
+    {
+        var api = new StudioApi(Path.Join(_root, "assets"), Path.Join(_root, "variations"));
+
+        Assert.Equal(400, api.Snapshot("{\"project\": \"p\", \"run_id\": \"r\", \"notes\": 4}").Status);
+        Assert.Equal(200, api.Snapshot("{\"project\": \"p\", \"run_id\": \"r\", \"notes\": null, \"step_name\": null}").Status);
+    }
+
+    [Fact]
     public void The_studio_diff_reports_missing_and_unresolvable_inputs_and_unreadable_images()
     {
         Assert.Equal(400, StudioApi.Diff(null, "x", path => path).Status);
