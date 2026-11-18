@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Orca;
@@ -304,31 +305,18 @@ public static class Wrapup
             return null;
         }
 
-        var merged = false;
-        foreach (var @base in (string[])["origin/HEAD", "origin/main"])
-        {
-            if ((await git.RunAsync(path, ["merge-base", "--is-ancestor", "HEAD", @base], cancellationToken: cancellationToken).ConfigureAwait(false)).Ok)
-            {
-                merged = true;
-                break;
-            }
-        }
-
-        var dirty = (await git.RunAsync(path, ["status", "--porcelain"], cancellationToken: cancellationToken).ConfigureAwait(false)).OutOrEmpty.Length > 0;
-        var count = (await git.RunAsync(path, ["rev-list", "--count", "HEAD", "--not", "--remotes"], cancellationToken: cancellationToken).ConfigureAwait(false)).OutOrEmpty;
-        var head = (await git.RunAsync(path, ["rev-parse", "HEAD"], cancellationToken: cancellationToken).ConfigureAwait(false)).OutOrEmpty;
+        ConfiguredTaskAwaitable<Ran> Run(params string[] args) => git.RunAsync(path, args, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var merged = (await Run("merge-base", "--is-ancestor", "HEAD", "origin/HEAD")).Ok || (await Run("merge-base", "--is-ancestor", "HEAD", "origin/main")).Ok;
+        var dirty = (await Run("status", "--porcelain")).OutOrEmpty.Length > 0;
+        var count = (await Run("rev-list", "--count", "HEAD", "--not", "--remotes")).OutOrEmpty;
+        var head = (await Run("rev-parse", "HEAD")).OutOrEmpty;
         return new GitFacts(dirty, count.Length > 0 && count.All(char.IsAsciiDigit) ? int.Parse(count, CultureInfo.InvariantCulture) : 0, merged, head);
     }
 
     /// <summary>Nothing left by the facts alone: clean, nothing unpushed, and the PR (or the branch) is merged.</summary>
     public static bool IsSettled(GitFacts? facts, WrapupPr? pr)
     {
-        if (facts is null || facts.Dirty || facts.Unpushed != 0)
-        {
-            return false;
-        }
-
-        return pr is not null ? pr.State is "merged" or "closed" : facts.Merged;
+        return facts is { Dirty: false, Unpushed: 0 } && (pr is not null ? pr.State is "merged" or "closed" : facts.Merged);
     }
 
     /// <summary>One line a person, or the asked agent, can read.</summary>
@@ -377,12 +365,9 @@ public static class Wrapup
         ArgumentNullException.ThrowIfNull(personal);
         ArgumentNullException.ThrowIfNull(work);
         var expanded = WrapupText.ExpandUser(path, home);
-        if (personal.Any(parent => PathResolution.IsUnder(expanded, parent)))
-        {
-            return WrapupScope.Personal;
-        }
-
-        return work.Any(folder => PathResolution.IsUnder(expanded, folder)) ? WrapupScope.Work : null;
+        return personal.Any(parent => PathResolution.IsUnder(expanded, parent)) ? WrapupScope.Personal
+            : work.Any(folder => PathResolution.IsUnder(expanded, folder)) ? WrapupScope.Work
+            : null;
     }
 
     /// <summary>The worktrees in scope, in tree order: each parent followed by its children.</summary>
@@ -398,21 +383,7 @@ public static class Wrapup
         }
 
         var inScope = snapshot.Worktrees.Where(w => Classify(repoPaths.GetValueOrDefault(w.RepoId, w.Path), personal, work, home) == target.Scope).ToList();
-        var byId = new Dictionary<string, WrapupWorktree>(StringComparer.Ordinal);
-        var kids = new Dictionary<string, List<WrapupWorktree>>(StringComparer.Ordinal);
-        foreach (var w in inScope)
-        {
-            byId[w.WorktreeId] = w;
-            if (!string.IsNullOrEmpty(w.ParentId))
-            {
-                if (!kids.TryGetValue(w.ParentId, out var list))
-                {
-                    kids[w.ParentId] = list = [];
-                }
-
-                list.Add(w);
-            }
-        }
+        var kids = inScope.Where(w => !string.IsNullOrEmpty(w.ParentId)).ToLookup(w => w.ParentId!, StringComparer.Ordinal);
 
         var wantedRepos = target.Repos.Select(WrapupText.Fold).ToHashSet(StringComparer.Ordinal);
         var chosen = inScope.Where(w => target.AllRepos || wantedRepos.Contains(WrapupText.Fold(w.Repo ?? ""))).ToList();
@@ -428,12 +399,9 @@ public static class Wrapup
             var stack = new Stack<string>(selected);
             while (stack.Count > 0)
             {
-                foreach (var child in kids.GetValueOrDefault(stack.Pop(), []))
+                foreach (var child in kids[stack.Pop()].Where(child => selected.Add(child.WorktreeId)))
                 {
-                    if (selected.Add(child.WorktreeId))
-                    {
-                        stack.Push(child.WorktreeId);
-                    }
+                    stack.Push(child.WorktreeId);
                 }
             }
         }
@@ -443,17 +411,14 @@ public static class Wrapup
         void Walk(WrapupWorktree w, int depth)
         {
             placed.Add(new(w, depth));
-            foreach (var child in kids.GetValueOrDefault(w.WorktreeId, []).OrderBy(Key, StringComparer.Ordinal))
+            foreach (var child in kids[w.WorktreeId].Where(child => selected.Contains(child.WorktreeId)).OrderBy(Key, StringComparer.Ordinal))
             {
-                if (selected.Contains(child.WorktreeId))
-                {
-                    Walk(child, depth + 1);
-                }
+                Walk(child, depth + 1);
             }
         }
 
-        var tops = inScope.Where(w => selected.Contains(w.WorktreeId) && byId[w.WorktreeId] == w
-            && !(!string.IsNullOrEmpty(w.ParentId) && selected.Contains(w.ParentId)));
+        var tops = inScope.GroupBy(w => w.WorktreeId, StringComparer.Ordinal).Select(group => group.Last())
+            .Where(w => selected.Contains(w.WorktreeId) && !(!string.IsNullOrEmpty(w.ParentId) && selected.Contains(w.ParentId)));
         foreach (var top in tops.OrderBy(Key, StringComparer.Ordinal))
         {
             Walk(top, 0);
@@ -466,13 +431,9 @@ public static class Wrapup
     public static WrapupVerdict? ParseVerdict(string? message)
     {
         var found = VerdictLine.Match(message ?? "");
-        if (!found.Success)
-        {
-            return null;
-        }
-
-        var detail = found.Groups["detail"].Value.Trim().TrimEnd('*', '`', ' ').Trim();
-        return new WrapupVerdict(string.Equals(found.Groups["kind"].Value, "done", StringComparison.OrdinalIgnoreCase), detail);
+        return found.Success
+            ? new WrapupVerdict(string.Equals(found.Groups["kind"].Value, "done", StringComparison.OrdinalIgnoreCase), found.Groups["detail"].Value.Trim().TrimEnd('*', '`', ' ').Trim())
+            : null;
     }
 
     /// <summary>One row per top-level agent of the chosen kinds, in tree order. Nothing is sent here.</summary>
@@ -490,11 +451,7 @@ public static class Wrapup
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(facts);
         ArgumentNullException.ThrowIfNull(store);
-        var byPane = new Dictionary<string, WrapupTerminal>(StringComparer.Ordinal);
-        foreach (var terminal in terminals)
-        {
-            byPane[terminal.PaneKey] = terminal;
-        }
+        var byPane = terminals.GroupBy(terminal => terminal.PaneKey, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.Last(), StringComparer.Ordinal);
 
         var selected = placed.Select(p => p.Worktree.WorktreeId).ToHashSet(StringComparer.Ordinal);
         List<WrapupRow> rows = [];
@@ -520,27 +477,15 @@ public static class Wrapup
                 var answer = ask is not null ? saved.AnswerTo(ask) : null;
                 var status = Status(agent, terminal, idle, settled, options, ask, answered: answer is not null);
                 var verdict = status == WrapupStatus.Answered ? VerdictOf(agent, answer) : null;
-                string note;
-                if (status == WrapupStatus.Waiting)
+                var note = status switch
                 {
-                    note = WaitingNote(agent);
-                }
-                else if (status == WrapupStatus.Answered && verdict is null)
-                {
-                    note = "replied without a WRAPUP line: " + WrapupText.FirstLine(agent.LastMessage);
-                }
-                else if (status == WrapupStatus.Unconfirmed && ask is not null)
-                {
-                    note = $"asked {WrapupText.Head(ask.At, 16)}Z, but the pane has not moved since: check it";
-                }
-                else if (status != WrapupStatus.Answered && recorded is not null)
-                {
-                    note = $"last answer {WrapupText.Head(recorded.At, 16)}Z: {recorded.Verdict}" + (recorded.Detail.Length > 0 ? $": {recorded.Detail}" : "");
-                }
-                else
-                {
-                    note = "";
-                }
+                    WrapupStatus.Waiting => WaitingNote(agent),
+                    WrapupStatus.Answered when verdict is null => "replied without a WRAPUP line: " + WrapupText.FirstLine(agent.LastMessage),
+                    WrapupStatus.Unconfirmed when ask is not null => $"asked {WrapupText.Head(ask.At, 16)}Z, but the pane has not moved since: check it",
+                    not WrapupStatus.Answered when recorded is not null =>
+                        $"last answer {WrapupText.Head(recorded.At, 16)}Z: {recorded.Verdict}" + (recorded.Detail.Length > 0 ? $": {recorded.Detail}" : ""),
+                    _ => "",
+                };
 
                 rows.Add(new WrapupRow(
                     w.Repo ?? "",
@@ -587,17 +532,7 @@ public static class Wrapup
         ArgumentNullException.ThrowIfNull(row);
         ArgumentNullException.ThrowIfNull(rows);
         ArgumentNullException.ThrowIfNull(worktrees);
-        var byWorktree = new Dictionary<string, List<WrapupRow>>(StringComparer.Ordinal);
-        foreach (var r in rows)
-        {
-            if (!byWorktree.TryGetValue(r.WorktreeId, out var list))
-            {
-                byWorktree[r.WorktreeId] = list = [];
-            }
-
-            list.Add(r);
-        }
-
+        var byWorktree = rows.ToLookup(r => r.WorktreeId, StringComparer.Ordinal);
         var values = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["repo"] = row.Repo,
@@ -616,25 +551,15 @@ public static class Wrapup
         ArgumentNullException.ThrowIfNull(values);
         return Placeholder.Replace(template, m =>
         {
-            if (m.Groups["escaped"].Success)
-            {
-                return "$";
-            }
-
             var name = m.Groups["named"].Success ? m.Groups["named"].Value : m.Groups["braced"].Success ? m.Groups["braced"].Value : null;
-            return name is not null && values.TryGetValue(name, out var value) ? value : m.Value;
+            return m.Groups["escaped"].Success ? "$" : name is not null && values.TryGetValue(name, out var value) ? value : m.Value;
         });
     }
 
     /// <summary>The command line the prompt hands the agent, shell-quoted (the runtime copy's path has a space).</summary>
     public static string ReportCommand(string askId, string rigExecutable)
     {
-        List<string> parts = [rigExecutable, "estate", "wrapup", "report"];
-        if (!string.IsNullOrEmpty(askId))
-        {
-            parts.AddRange(["--ask", askId]);
-        }
-
+        string[] parts = [rigExecutable, "estate", "wrapup", "report", .. string.IsNullOrEmpty(askId) ? [] : (string[])["--ask", askId]];
         return string.Join(' ', parts.Select(WrapupText.ShellQuote));
     }
 
@@ -643,34 +568,27 @@ public static class Wrapup
     {
         ArgumentNullException.ThrowIfNull(row);
         ArgumentNullException.ThrowIfNull(rows);
-        var byParent = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-        foreach (var r in rows)
+        return Descendants(row, rows).Sum(id => rows.Count(r => r.WorktreeId == id && r.Status != WrapupStatus.Settled && r.Verdict is not { Done: true }));
+    }
+
+    /// <summary>Ids of every selected worktree below <paramref name="row"/>, through its children and theirs.</summary>
+    internal static HashSet<string> Descendants(WrapupRow row, IReadOnlyList<WrapupRow> rows)
+    {
+        var byId = rows.ToLookup(r => r.WorktreeId, StringComparer.Ordinal);
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        var stack = new Stack<string>(row.Children);
+        while (stack.TryPop(out var id))
         {
-            _ = byParent.TryAdd(r.WorktreeId, r.Children);
+            if (found.Add(id))
+            {
+                foreach (var child in byId[id].FirstOrDefault()?.Children ?? [])
+                {
+                    stack.Push(child);
+                }
+            }
         }
 
-        var pending = 0;
-        var stack = new List<string>(row.Children);
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        while (stack.Count > 0)
-        {
-            var id = stack[^1];
-            stack.RemoveAt(stack.Count - 1);
-            if (!seen.Add(id))
-            {
-                continue;
-            }
-
-            foreach (var r in rows.Where(r => r.WorktreeId == id))
-            {
-                var finished = r.Status == WrapupStatus.Settled || r.Verdict is { Done: true };
-                pending += finished ? 0 : 1;
-            }
-
-            stack.AddRange(byParent.GetValueOrDefault(id, []));
-        }
-
-        return pending;
+        return found;
     }
 
     /// <summary>What a waiting agent is waiting on.</summary>
@@ -686,55 +604,23 @@ public static class Wrapup
     /// <summary>Whether the pane changed state after <paramref name="ask"/>: the prompt arrived, or its owner carried on.</summary>
     private static bool MovedSince(WrapupAgent agent, AskRecord ask)
     {
-        var askedAt = WrapupStamps.Parse(ask.At);
-        if (askedAt is null || agent.StateStartedAt is null)
-        {
-            return true;
-        }
-
-        return agent.StateStartedAt.Value / 1000 > askedAt.Value.ToUnixTimeMilliseconds() / 1000.0;
+        return WrapupStamps.Parse(ask.At) is not { } askedAt || agent.StateStartedAt is not { } started || started / 1000 > askedAt.ToUnixTimeMilliseconds() / 1000.0;
     }
 
     private static string Status(WrapupAgent agent, WrapupTerminal? terminal, TimeSpan? idle, bool settled, WrapupOptions options, AskRecord? ask, bool answered)
     {
         var asked = (agent.Prompt ?? "").TrimStart().StartsWith(Marker, StringComparison.Ordinal);
-        if (asked && answered)
-        {
-            // The agent recorded its verdict (`estate wrapup report`), even if it is still finishing its turn.
-            return WrapupStatus.Answered;
-        }
 
-        if (agent.State == "working")
-        {
-            return asked ? WrapupStatus.Answering : WrapupStatus.Working;
-        }
-
-        if (agent.State == "waiting")
-        {
-            return WrapupStatus.Waiting;
-        }
-
-        if (asked)
-        {
-            return WrapupStatus.Answered;
-        }
-
-        if (ask is not null && !answered && !MovedSince(agent, ask))
-        {
-            return WrapupStatus.Unconfirmed;
-        }
-
-        if (terminal is null || terminal.Writable != true || terminal.AgentIdentity != agent.AgentType)
-        {
-            return WrapupStatus.NoTerminal;
-        }
-
-        if (idle is null || idle < options.Idle)
-        {
-            return WrapupStatus.Recent;
-        }
-
-        return settled && !options.IncludeSettled ? WrapupStatus.Settled : WrapupStatus.Ask;
+        // An answered ask has its verdict recorded (`estate wrapup report`), even if the agent is still finishing its turn.
+        return asked && answered ? WrapupStatus.Answered
+            : agent.State == "working" ? (asked ? WrapupStatus.Answering : WrapupStatus.Working)
+            : agent.State == "waiting" ? WrapupStatus.Waiting
+            : asked ? WrapupStatus.Answered
+            : ask is not null && !answered && !MovedSince(agent, ask) ? WrapupStatus.Unconfirmed
+            : terminal is not { Writable: true } || terminal.AgentIdentity != agent.AgentType ? WrapupStatus.NoTerminal
+            : idle is null || idle < options.Idle ? WrapupStatus.Recent
+            : settled && !options.IncludeSettled ? WrapupStatus.Settled
+            : WrapupStatus.Ask;
     }
 
     private static WrapupVerdict? VerdictOf(WrapupAgent agent, AnswerRecord? answer) =>
@@ -752,63 +638,28 @@ public static class Wrapup
         return [.. rows.Select((r, i) => deferred.Contains(i) ? r with { Status = WrapupStatus.Deferred } : r)];
     }
 
-    private static string ChildSummary(WrapupRow row, Dictionary<string, List<WrapupRow>> rowsByWorktree, IReadOnlyDictionary<string, WrapupWorktree> worktrees)
+    private static string ChildSummary(WrapupRow row, ILookup<string, WrapupRow> rowsByWorktree, IReadOnlyDictionary<string, WrapupWorktree> worktrees)
     {
-        if (row.Children.Count == 0)
+        var lines = row.Children.Where(worktrees.ContainsKey).Select(childId =>
         {
-            return "none";
-        }
-
-        List<string> lines = [];
-        foreach (var childId in row.Children)
-        {
-            if (!worktrees.TryGetValue(childId, out var child))
-            {
-                continue;
-            }
-
-            var childRows = rowsByWorktree.GetValueOrDefault(childId, []);
-            var verdicts = childRows.Where(r => r.Verdict is not null).Select(r => r.Verdict!).ToList();
-            string said;
-            if (verdicts.Count > 0)
-            {
-                said = verdicts.All(v => v.Done) ? "done" : "pending: " + string.Join("; ", verdicts.Where(v => !v.Done).Select(v => v.Detail));
-            }
-            else if (childRows.Count > 0)
-            {
-                said = string.Join(", ", childRows.Select(r => r.Status).Distinct().Order(StringComparer.Ordinal));
-            }
-            else
-            {
-                said = "no agent";
-            }
-
-            var facts = DescribeFacts(childRows.Count > 0 ? childRows[0].Facts : null, child.LinkedPr);
-            lines.Add($"{child.Repo ?? "None"}/{child.Name} ({child.BranchName}; {facts}; {said})");
-        }
-
+            var child = worktrees[childId];
+            var childRows = rowsByWorktree[childId].ToList();
+            var verdicts = childRows.Select(r => r.Verdict).OfType<WrapupVerdict>().ToList();
+            var said = verdicts.Count > 0
+                ? (verdicts.All(v => v.Done) ? "done" : "pending: " + string.Join("; ", verdicts.Where(v => !v.Done).Select(v => v.Detail)))
+                : childRows.Count > 0 ? string.Join(", ", childRows.Select(r => r.Status).Distinct().Order(StringComparer.Ordinal))
+                : "no agent";
+            return $"{child.Repo ?? "None"}/{child.Name} ({child.BranchName}; {DescribeFacts(childRows.FirstOrDefault()?.Facts, child.LinkedPr)}; {said})";
+        }).ToList();
         return lines.Count > 0 ? string.Join("; ", lines) : "none";
     }
 
     private static bool MatchesWorktree(WrapupWorktree worktree, IReadOnlyList<string> wanted, string home, string workingDirectory)
     {
         var names = new HashSet<string>(StringComparer.Ordinal) { WrapupText.Fold(worktree.Name), WrapupText.Fold(WrapupText.BaseName(worktree.Path)), WrapupText.Fold(worktree.BranchName) };
-        foreach (var want in wanted)
-        {
-            if (names.Contains(WrapupText.Fold(want)))
-            {
-                return true;
-            }
-
-            var candidate = WrapupText.ExpandUser(want, home);
-            if (Path.IsPathRooted(candidate)
-                && PathResolution.Same(Path.GetFullPath(candidate, workingDirectory), Path.GetFullPath(worktree.Path, workingDirectory)))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return wanted.Any(want => names.Contains(WrapupText.Fold(want))
+            || (WrapupText.ExpandUser(want, home) is var candidate && Path.IsPathRooted(candidate)
+                && PathResolution.Same(Path.GetFullPath(candidate, workingDirectory), Path.GetFullPath(worktree.Path, workingDirectory))));
     }
 }
 
@@ -1021,12 +872,7 @@ public static class WrapupText
     public static string ShellQuote(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        if (text.Length == 0)
-        {
-            return "''";
-        }
-
-        return SafeWord.IsMatch(text) ? text : "'" + text.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
+        return text.Length == 0 ? "''" : SafeWord.IsMatch(text) ? text : "'" + text.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
     }
 
     /// <summary>The first <paramref name="length"/> characters.</summary>
@@ -1042,13 +888,8 @@ public static class WrapupText
     public static string ExpandUser(string path, string home)
     {
         ArgumentNullException.ThrowIfNull(path);
-        if (path == "~")
-        {
-            return home;
-        }
-
-        return path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~" + Path.DirectorySeparatorChar, StringComparison.Ordinal)
-            ? Path.Join(home, path[2..])
+        return path == "~" ? home
+            : path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~" + Path.DirectorySeparatorChar, StringComparison.Ordinal) ? Path.Join(home, path[2..])
             : path;
     }
 }
