@@ -103,11 +103,18 @@ This supersedes item 7 of [ADR 0022](0022-csharp-is-rigs-primary-language.md): `
 Set from the measured worst cases (stack 3 rows, 23 renders, 2 projects) with headroom. Exceeding any one is a
 reported divergence; the verdict-flip row is a hard failure.
 
-**Split by size (amended).** The pixel thresholds apply to cuts of 180 px and up. At 16 and 32 px (the favicon
-entries) one anti-aliased edge is a large share of the image, so the two renderers routinely differ on more than
-20% of pixels and by more than 1.0 mean abs (parquet favicon.16 measured 1.43) without any visible fault. Those
-sizes are reported with every value but fail only on a changed promote/reject decision. Cuts between 32 and 180 px
-are gated as large cuts.
+**Split by size (amended).** Anti-aliased edges are a larger share of a smaller image, so the gates narrow as cuts
+shrink. Every value is reported at every size.
+
+| Cut size | Gated on |
+|---|---|
+| 500 px and up | every threshold below |
+| 33 to 499 px (the 180 px avatar and apple-touch icon) | mean abs, RMSE, SSIM, composite and the promotion verdict; differing pixels reported, not gated |
+| 16 and 32 px (favicon entries) | the promotion verdict only |
+
+The measurements behind the split: at 16 and 32 px the renderers differ on more than 20% of pixels and by more
+than 1.0 mean abs (parquet favicon.16: 1.43). At 180 px on Linux and Windows parquet differs on 24.1% of pixels
+with mean abs inside its limit. Neither is a visible fault, and neither flips a verdict.
 
 | Quantity | Measured worst | Threshold |
 |---|---:|---:|
