@@ -18,8 +18,6 @@ internal static class Discovery
         MetadataReference.CreateFromFile(typeof(System.CommandLine.RootCommand).Assembly.Location),
     ];
 
-    internal readonly record struct PythonCommand(string Id, string Path, string Owner, string[] Platforms, string? Alias);
-    internal readonly record struct PythonTree(PythonCommand[] Commands, string[] Surfaces);
     internal readonly record struct CsCommand(string Path, bool Action, string[] Aliases);
     internal readonly record struct RawAlias(string Path, string Target);
     internal readonly record struct CsTree(CsCommand[] Commands, string[] Jobs)
@@ -44,14 +42,12 @@ internal static class Discovery
 
     internal static CommandOwner[] Read(string root, string dll, IProc proc)
     {
-        var python = Decode<PythonTree>(Capture(proc, root, "uv", "run", "--no-sync", "python", "tools/command-ownership/python_tree.py", root));
         var trees = new Dictionary<string, CsTree>(StringComparer.Ordinal);
         // The Windows-only registration branch is expanded without calling any native driver.
         trees.Add("linux", Decode<CsTree>(Capture(proc, root, "dotnet", dll, "--export-command-tree")));
         trees.Add("macos", Decode<CsTree>(Capture(proc, root, "dotnet", dll, "--export-command-tree", "macos")));
         trees.Add("windows", Decode<CsTree>(Capture(proc, root, "dotnet", dll, "--export-command-tree", "windows")));
-        var rows = Commands(python, trees).ToList();
-        rows.AddRange(python.Surfaces.Select(id => EntrySurface(id)));
+        var rows = Commands(trees).ToList();
         var files = Capture(proc, root, "git", "ls-files", "--cached", "--others", "--exclude-standard", "-z").Split('\0', StringSplitOptions.RemoveEmptyEntries);
         rows.AddRange(Sources(root, files));
         var index = Capture(proc, root, "git", "ls-files", "--stage", "-z");
@@ -108,7 +104,7 @@ internal static class Discovery
         }
     }
 
-    internal static IEnumerable<CommandOwner> Commands(PythonTree python, IReadOnlyDictionary<string, CsTree> trees)
+    internal static IEnumerable<CommandOwner> Commands(IReadOnlyDictionary<string, CsTree> trees)
     {
         foreach (var alias in trees.Values.SelectMany(t => t.RawAliases).Distinct())
         {
@@ -120,7 +116,7 @@ internal static class Discovery
             yield return Surface($"agent-target:{target}");
         }
 
-        // The MCP server's actual tool attributes, as the Python probe used to read its registration loop.
+        // The MCP server's actual tool attributes, read from the attributes, not a registration loop.
         foreach (var tool in trees.Values.SelectMany(t => t.McpTools).Distinct(StringComparer.Ordinal))
         {
             yield return Surface($"mcp:{tool}");
@@ -147,13 +143,6 @@ internal static class Discovery
             }
         }
 
-        foreach (var command in python.Commands)
-        {
-            yield return command.Alias is { } target
-                ? new CommandOwner(command.Id, target, $"cs:{target}", command.Platforms, $"cs:{target}")
-                : new CommandOwner(command.Id, command.Path, command.Owner, command.Platforms);
-        }
-
         foreach (var tree in trees)
         {
             foreach (var job in tree.Value.Jobs)
@@ -164,21 +153,6 @@ internal static class Discovery
     }
 
     internal static CommandOwner Surface(string id) => new(id, $"surface:{id}", id, AllPlatforms);
-
-    internal static CommandOwner EntrySurface(string id)
-    {
-        const string target = "=rig.csharp_cli:entry";
-        if (id.StartsWith("script:", StringComparison.Ordinal) && id.EndsWith(target, StringComparison.Ordinal))
-        {
-            var command = id["script:".Length..^target.Length];
-            if (command != "rig")
-            {
-                return new CommandOwner(id, command, $"cs:{command}", AllPlatforms, $"cs:{command}");
-            }
-        }
-
-        return Surface(id);
-    }
 
     // Parse C# syntax instead of grep: catches new mains and top-level apps, including alternate executable projects.
     internal static IEnumerable<CommandOwner> Sources(string root, IEnumerable<string> files)

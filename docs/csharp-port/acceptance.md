@@ -12,8 +12,9 @@ The ownership guide remains authoritative for registration and dispatch rules, t
 baseline, and the named acceptance procedures. This ledger points at those procedures instead of
 restating them.
 
-At merge `71032fad` it carries fifteen rows with merged evidence and four rows that remain Python. No
-row records a native acceptance run: every native cell is `pending` with its procedure, or
+**Source port: complete (#285).** Every row is `switched`, `legacy deleted` or retired: the Python runtime, its
+tests and tooling are deleted, and `tools/image-drift` is the one intentional Python project (ADR 0022). Native
+acceptance is the open part: no row records a native run, so every native cell is `pending` with its procedure, or
 `not applicable` with its reason. #222 and #248 are internal work inside already switched surfaces,
 so they update a row rather than add one.
 
@@ -100,8 +101,8 @@ A hosted-runner pass, a skipped platform test or a successful compile is not `pa
   refers to it in the same PR. Procedure names are stable identifiers, not prose.
 - `state` changes only in the PR that switches or deletes the implementation. Docs-only PRs may
   correct a wrong citation, but never advance a state.
-- Before #85 closes, every row is `switched` or `legacy deleted` — or retired with a stated reason —
-  and every native cell is `passed` or `not applicable`. `ROLLOUT` stays open until the estate
+- Before #85 closes, every native cell is `passed` or `not applicable`. Every row is already `switched` or
+  `legacy deleted`, or retired with a stated reason. `ROLLOUT` stays open until the estate
   inventory for that capability is recorded.
 - When this ledger and `ownership.md` disagree, `ownership.md`'s gate output wins and the ledger is
   corrected in the next PR.

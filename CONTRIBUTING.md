@@ -31,7 +31,13 @@ We follow a strict, modern GitHub workflow across our repositories:
 
 3. **Code Quality & Testing**:
    - Ensure your code passes all local linting, type checks, and automated tests.
-   - For Python projects:
+   - For C# projects:
+     ```bash
+     dotnet build rig.slnx -m:2
+     dotnet test --solution rig.slnx
+     dotnet format rig.slnx --verify-no-changes
+     ```
+   - For Python projects (`tools/image-drift`):
      ```bash
      uv run ruff check .
      uv run ruff format --check .
