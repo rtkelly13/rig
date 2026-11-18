@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Rig.Core.Jobs;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
 using Rig.Core.Services;
@@ -77,6 +78,12 @@ public sealed record ServiceTarget(string Name, string DisplayName, int? Default
 /// <param name="Delay">Waits between probes; tests advance the clock instead.</param>
 /// <param name="LaunchdDomain">The launchd domain, <c>gui/&lt;uid&gt;</c>; unused on other platforms.</param>
 /// <param name="PathValue">The <c>PATH</c> the service inherits, as the installer's own; null omits it.</param>
+/// <param name="UserId">The Windows user a logon task runs as, <c>DOMAIN\user</c>; unused on other platforms.</param>
+/// <param name="ScratchDirectory">Where a task's XML is written for <c>schtasks /XML</c>; null uses the temp folder.</param>
+/// <param name="Pythonw">
+/// Finds the <c>pythonw</c> a Windows task starts rig through, so no window appears; null, or a null answer, starts rig
+/// directly with <see cref="JobsInstallTarget.DetachFlag"/>.
+/// </param>
 public sealed record ServiceHost(
     string Home,
     string WorkingDirectory,
@@ -87,7 +94,10 @@ public sealed record ServiceHost(
     TimeProvider Clock,
     Func<TimeSpan, CancellationToken, Task> Delay,
     Func<CancellationToken, Task<string>> LaunchdDomain,
-    string? PathValue = null);
+    string? PathValue = null,
+    string? UserId = null,
+    string? ScratchDirectory = null,
+    Func<CancellationToken, Task<string?>>? Pythonw = null);
 
 /// <summary>What an install or uninstall did, in the words the command prints.</summary>
 /// <param name="Message">The one-line report.</param>
@@ -120,7 +130,7 @@ public sealed class ServiceManager(ServiceHost host)
         return host.Platform switch
         {
             ServicePlatform.MacOS => new ServiceResult(await InstallMacAsync(target, preview, effectivePort, command, cancellationToken).ConfigureAwait(false)),
-            ServicePlatform.Windows => new ServiceResult(await InstallWindowsAsync(target, preview, effectivePort, command, cancellationToken).ConfigureAwait(false)),
+            ServicePlatform.Windows => new ServiceResult(await InstallWindowsAsync(target, preview, effectivePort, arguments, cancellationToken).ConfigureAwait(false)),
             ServicePlatform.Linux => new ServiceResult(await InstallLinuxAsync(target, preview, effectivePort, command, cancellationToken).ConfigureAwait(false)),
             _ => throw new ArgumentOutOfRangeException(nameof(target), host.Platform, "unknown service platform"),
         };
@@ -291,11 +301,13 @@ public sealed class ServiceManager(ServiceHost host)
             : $"Loaded macOS LaunchAgent [{Label(target, preview)}].";
     }
 
-    private async Task<string> InstallWindowsAsync(ServiceTarget target, bool preview, int? port, IReadOnlyList<string> command, CancellationToken cancellationToken)
+    private async Task<string> InstallWindowsAsync(ServiceTarget target, bool preview, int? port, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         var name = TaskName(target, preview);
-        string[] create = ["schtasks", "/Create", "/TN", name, "/TR", WindowsCommand(command), "/SC", "ONLOGON", "/F"];
-        (await host.Proc.RunAsync(new ProcRequest(create), cancellationToken).ConfigureAwait(false)).EnsureOk(create);
+        var userId = host.UserId ?? throw new InvalidOperationException("Cannot register a logon task: the Windows user is unknown.");
+        var (program, line) = await WindowsActionAsync(arguments, cancellationToken).ConfigureAwait(false);
+        var xml = ServiceTaskXml.Render(target, preview, program, line, host.WorkingDirectory, userId);
+        await new Schtasks(host.Proc, host.ScratchDirectory ?? Path.GetTempPath()).RegisterAsync(name, xml, cancellationToken).ConfigureAwait(false);
         await DeleteLegacyTaskAsync(target, preview, cancellationToken).ConfigureAwait(false);
         _ = await host.Proc.RunAsync(new ProcRequest(["schtasks", "/Run", "/TN", name]), cancellationToken).ConfigureAwait(false);
         return port is { } listening
@@ -384,6 +396,21 @@ public sealed class ServiceManager(ServiceHost host)
 
     private async Task RunLinuxAsync(IReadOnlyList<string> argv, CancellationToken cancellationToken) =>
         (await host.Proc.RunAsync(new ProcRequest(argv), cancellationToken).ConfigureAwait(false)).EnsureOk(argv);
+
+    // pythonw running the jobs tasks' wrapper around rig, so no window appears and stopping the task stops rig; or rig
+    // itself, told to free the console Windows opens for it.
+    private async Task<(string Program, string Arguments)> WindowsActionAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    {
+        var pythonw = host.Pythonw is { } find ? await find(cancellationToken).ConfigureAwait(false) : null;
+        if (pythonw is null)
+        {
+            return (host.RigCommand[0], WindowsCommand([.. host.RigCommand.Skip(1), JobsInstallTarget.DetachFlag, .. arguments]));
+        }
+
+        return File.Exists(pythonw)
+            ? (Path.GetFullPath(pythonw), $"-I -c \"{JobsInstallTarget.Wrapper}\" {WindowsCommand([.. host.RigCommand, .. arguments])}")
+            : throw new InvalidOperationException($"pythonw is missing: {pythonw}. Pass --pythonw <path>, or --launcher direct to run without Python.");
+    }
 
     private static string WindowsCommand(IReadOnlyList<string> command) =>
         string.Join(' ', command.Select(argument => argument.Contains(' ', StringComparison.Ordinal) || argument.Contains('"', StringComparison.Ordinal)

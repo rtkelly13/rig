@@ -314,6 +314,51 @@ public sealed class ToolsCommandTests : IDisposable
         Assert.StartsWith("Database backup created: ", _out.ToString(), StringComparison.Ordinal);
     }
 
+    // A Windows host whose default pythonw lookup fails, as it does on a machine without uv's managed Python.
+    private ServiceHost WindowsHost(FakeProc proc) =>
+        Host(proc) with
+        {
+            Platform = ServicePlatform.Windows,
+            UserId = "CORP\\me",
+            ScratchDirectory = _temp.Path,
+            Pythonw = _ => throw new InvalidOperationException("No pythonw found"),
+        };
+
+    [Fact]
+    public async Task Windows_install_looks_up_the_default_pythonw_and_stops_when_there_is_none()
+    {
+        var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
+
+        var exit = await Run(ToolsRoot(WindowsHost(proc)), "tools", "install", "web");
+
+        Assert.Equal(ToolsCommand.FailureExit, exit);
+        Assert.Equal("rig tools install web: No pythonw found\n", _error.ToString().ReplaceLineEndings("\n"));
+        Assert.Empty(proc.Requests);
+    }
+
+    [Fact]
+    public async Task Windows_install_with_the_direct_launcher_needs_no_python()
+    {
+        var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
+
+        var exit = await Run(WebRoot(WindowsHost(proc)), "web", "install", "--launcher", "direct");
+
+        Assert.Equal(0, exit);
+        Assert.Equal(["schtasks", "/Create", "/TN", "Rig\\Web Dashboard", "/XML"], proc.Requests[0].Argv.Take(5));
+    }
+
+    [Fact]
+    public async Task Windows_install_uses_the_named_pythonw()
+    {
+        var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
+        var missing = Path.Join(_temp.Path, "absent", "pythonw.exe");
+
+        var exit = await Run(ToolsRoot(WindowsHost(proc)), "tools", "install", "web", "--pythonw", missing);
+
+        Assert.Equal(ToolsCommand.FailureExit, exit);
+        Assert.Contains($"pythonw is missing: {missing}", _error.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Web_install_failure_is_exit_1()
     {

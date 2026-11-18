@@ -28,7 +28,33 @@ public sealed class ServiceManagerTests : IDisposable
             clock ?? new ManualClock(Now),
             delay ?? ((_, _) => Task.CompletedTask),
             _ => Task.FromResult("gui/501"),
-            path);
+            path,
+            "CORP\\me",
+            temp.Path);
+
+    // A Windows host that starts rig through pythonw when given one, else directly, and a proc that keeps each task's XML.
+    private (ServiceHost Host, FakeProc Proc, List<string> Xml) WindowsHost(Ran? answer = null, string? pythonw = null)
+    {
+        var xml = new List<string>();
+        var proc = new FakeProc
+        {
+            BeforeRun = request =>
+            {
+                if (request.Argv is ["schtasks", "/Create", _, _, "/XML", var file, ..])
+                {
+                    xml.Add(File.ReadAllText(file, System.Text.Encoding.Unicode));
+                }
+            },
+        }.Answer(answer ?? new Ran(0, string.Empty, string.Empty), "schtasks");
+        return (Host(ServicePlatform.Windows, proc) with { Pythonw = pythonw is null ? null : _ => Task.FromResult<string?>(pythonw) }, proc, xml);
+    }
+
+    private string Pythonw()
+    {
+        var path = Path.Join(temp.Path, "pythonw.exe");
+        File.WriteAllText(path, string.Empty);
+        return path;
+    }
 
     [Fact]
     public async Task Mac_install_writes_a_long_lived_plist_then_bootstraps_it()
@@ -100,39 +126,91 @@ public sealed class ServiceManagerTests : IDisposable
     }
 
     [Fact]
-    public async Task Windows_install_registers_and_runs_a_logon_task()
+    public async Task Windows_install_registers_a_logon_task_from_xml_and_runs_it()
     {
-        var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
+        var pythonw = Pythonw();
+        var (host, proc, xml) = WindowsHost(pythonw: pythonw);
 
-        var result = await new ServiceManager(Host(ServicePlatform.Windows, proc)).InstallAsync(ServiceTarget.Web, preview: true, port: null, Token);
+        var result = await new ServiceManager(host).InstallAsync(ServiceTarget.Web, preview: true, port: null, Token);
 
         Assert.Equal("Registered and started Windows scheduled task [Rig\\Web Dashboard Preview] on port 8091.", result.Message);
-        Assert.Equal(
-            ["schtasks", "/Create", "/TN", "Rig\\Web Dashboard Preview", "/TR", "/rig web --port 8091 --no-open --preview", "/SC", "ONLOGON", "/F"],
-            proc.Requests[0].Argv);
+        Assert.Equal(["schtasks", "/Create", "/TN", "Rig\\Web Dashboard Preview", "/XML", proc.Requests[0].Argv[5], "/F"], proc.Requests[0].Argv);
         Assert.Equal(["schtasks", "/Delete", "/TN", "Shared Utilities\\Web Dashboard Preview", "/F"], proc.Requests[1].Argv);
         Assert.Equal(["schtasks", "/Run", "/TN", "Rig\\Web Dashboard Preview"], proc.Requests[2].Argv);
+        var action = Action(Assert.Single(xml));
+        Assert.Equal(pythonw, action.Command);
+        Assert.Equal($"-I -c \"{Rig.Core.Jobs.JobsInstallTarget.Wrapper}\" /rig web --port 8091 --no-open --preview", action.Arguments);
+        Assert.Equal("/work", action.WorkingDirectory);
     }
 
     [Fact]
-    public async Task Windows_quotes_arguments_with_spaces_and_reports_a_portless_target()
+    public async Task Windows_without_pythonw_starts_rig_directly_and_frees_its_console()
     {
-        var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
-        var host = Host(ServicePlatform.Windows, proc) with { RigCommand = ["/rig folder/rig"] };
+        var (host, _, xml) = WindowsHost();
+        host = host with { RigCommand = ["dotnet", "/rig folder/rig.dll"] };
 
         var result = await new ServiceManager(host).InstallAsync(ServiceTarget.Desktop, preview: false, port: null, Token);
 
         Assert.Equal("Registered and started Windows scheduled task [Rig\\Desktop].", result.Message);
-        Assert.Equal("\"/rig folder/rig\" desktop workspace restore", proc.Requests[0].Argv[5]);
+        var action = Action(Assert.Single(xml));
+        Assert.Equal("dotnet", action.Command);
+        Assert.Equal("\"/rig folder/rig.dll\" --detach-console desktop workspace restore", action.Arguments);
+    }
+
+    [Fact]
+    public async Task Windows_refuses_a_missing_pythonw_before_registering_anything()
+    {
+        var (host, proc, _) = WindowsHost(pythonw: Path.Join(temp.Path, "absent", "pythonw.exe"));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => new ServiceManager(host).InstallAsync(ServiceTarget.Web, false, null, Token));
+
+        Assert.Contains("--launcher direct", error.Message, StringComparison.Ordinal);
+        Assert.Empty(proc.Requests);
+    }
+
+    [Fact]
+    public async Task Windows_needs_the_user_a_logon_task_runs_as()
+    {
+        var (host, proc, _) = WindowsHost();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new ServiceManager(host with { UserId = null }).InstallAsync(ServiceTarget.Web, false, null, Token));
+
+        Assert.Empty(proc.Requests);
     }
 
     [Fact]
     public async Task Windows_install_failure_is_reported()
     {
-        var proc = new FakeProc().Answer(new Ran(1, string.Empty, "denied"), "schtasks");
+        var (host, _, _) = WindowsHost(new Ran(1, string.Empty, "denied"));
 
-        await Assert.ThrowsAsync<ProcException>(() =>
-            new ServiceManager(Host(ServicePlatform.Windows, proc)).InstallAsync(ServiceTarget.Web, false, null, Token));
+        await Assert.ThrowsAsync<ProcException>(() => new ServiceManager(host).InstallAsync(ServiceTarget.Web, false, null, Token));
+    }
+
+    /// <summary>
+    /// Each service's task as <see cref="ServiceTaskXml.Render"/> writes it, kept in <c>Tools/Tasks/&lt;file&gt;.xml</c> so a
+    /// policy change shows up as a reviewable diff. Set <c>RIG_UPDATE_SNAPSHOTS=1</c> to rewrite the files from the renderer.
+    /// </summary>
+    [Theory]
+    [InlineData("web", false, "web")]
+    [InlineData("collector", true, "collector-preview")]
+    public void Task_xml_matches_its_snapshot(string name, bool preview, string file)
+    {
+        var actual = ServiceTaskXml.Render(ServiceTarget.Find(name)!, preview, "C:\\Python\\pythonw.exe", "-I -c \"wrapper\" \"C:\\rig & tools\\rig.exe\" web", "C:\\rig & tools", "CORP\\me & you");
+        var path = Path.Join(Path.GetDirectoryName(RepoTemp.Root), "tests", "Rig.Core.Tests", "Tools", "Tasks", file + ".xml");
+        if (Environment.GetEnvironmentVariable("RIG_UPDATE_SNAPSHOTS") == "1")
+        {
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, actual.ReplaceLineEndings("\n"));
+        }
+
+        Assert.Equal(File.ReadAllText(path).ReplaceLineEndings("\n"), actual.ReplaceLineEndings("\n"));
+    }
+
+    private static (string Command, string Arguments, string WorkingDirectory) Action(string xml)
+    {
+        System.Xml.Linq.XNamespace ns = "http://schemas.microsoft.com/windows/2004/02/mit/task";
+        var exec = System.Xml.Linq.XElement.Parse(xml).Element(ns + "Actions")!.Element(ns + "Exec")!;
+        return (exec.Element(ns + "Command")!.Value, exec.Element(ns + "Arguments")!.Value, exec.Element(ns + "WorkingDirectory")!.Value);
     }
 
     [Fact]
