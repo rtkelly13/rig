@@ -55,6 +55,18 @@ internal sealed class SimplifyCommand(ImageHost host, TextWriter output, TextWri
     [CliOption(Name = "--fast", Required = false, Description = "Render with Svg.Skia instead of Chromium, for previews; cannot be combined with --in-place or --chromium.")]
     public bool Fast { get; set; }
 
+    /// <summary>Also publish the result as a step of a <c>simplification-run</c> in the variations tree.</summary>
+    [CliOption(Name = "--snapshot", Aliases = ["-s"], Required = false, Description = "Publish the optimisation candidate into the variations tree.")]
+    public bool Snapshot { get; set; }
+
+    /// <summary>The project the snapshot belongs to.</summary>
+    [CliOption(Name = "--project", Aliases = ["-p"], Required = false, Description = "Project name for the snapshot (defaults to the SVG's parent folder name).")]
+    public string? Project { get; set; }
+
+    /// <summary>The snapshot root.</summary>
+    [CliOption(Name = "--variations-dir", Required = false, Description = "Git-ignored snapshot root.")]
+    public string VariationsDir { get; set; } = Path.Join("temp", "variations");
+
     /// <summary>Simplifies, prints and returns the exit code.</summary>
     public async Task<int> RunAsync(CliContext context)
     {
@@ -109,7 +121,29 @@ internal sealed class SimplifyCommand(ImageHost host, TextWriter output, TextWri
         }
 
         await output.WriteAsync(Format(gated)).ConfigureAwait(false);
+        if (Snapshot && gated.Report.GatePassed)
+        {
+            await output.WriteLineAsync(await PublishSnapshotAsync(input, gated, cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
+        }
+
         return gated.Report.GatePassed ? (int)ExitCode.Clean : (int)ExitCode.Drift;
+    }
+
+    private async Task<string> PublishSnapshotAsync(string input, GatedOutput gated, CancellationToken cancellationToken)
+    {
+        var report = gated.Report;
+        var project = Project ?? Path.GetFileName(Path.GetDirectoryName(input)) ?? string.Empty;
+        var svg = await File.ReadAllTextAsync(gated.Path, cancellationToken).ConfigureAwait(false);
+        var step = new SnapshotManager(Path.GetFullPath(VariationsDir)).CaptureStep(
+            project,
+            "simplification-run",
+            1,
+            "svg-optimized",
+            svg,
+            null,
+            new Dictionary<string, object> { ["ssim"] = report.Ssim, ["psnr"] = report.PsnrDb, ["rmse"] = report.RmsePct, ["cand_size"] = report.FinalSizeBytes },
+            string.Create(CultureInfo.InvariantCulture, $"Automated multi-pass simplification (tolerance={report.Tolerance:0.00}px, SSIM={report.Ssim:0.0000}, -{report.SizeReductionPct}% bytes)"));
+        return $"Snapshot published for project [{project}]: {Path.GetFileName(step.SvgPath)}";
     }
 
     private string Format(GatedOutput gated)

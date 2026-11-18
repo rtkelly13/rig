@@ -40,6 +40,36 @@ public sealed class SimplifyCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Snapshot_publishes_the_result_as_a_step_of_the_simplification_run()
+    {
+        var input = Write("logo.svg");
+        var variations = Path.Join(_temp.Path, "variations");
+
+        var exit = await Run("image", "simplify", input, "--snapshot", "--project", "brand", "--variations-dir", variations);
+
+        Assert.True(exit == 0, _out + _err.ToString());
+        var run = new SnapshotManager(variations).GetRun("brand", "simplification-run");
+        var step = Assert.Single(run!.Steps);
+        Assert.Equal("svg-optimized", step.StepName);
+        Assert.Equal(1, step.StepIdx);
+        Assert.StartsWith("Automated multi-pass simplification (tolerance=", step.Notes, StringComparison.Ordinal);
+        Assert.Contains("cand_size", step.Metrics.Keys);
+        Assert.Contains("Snapshot published for project [brand]", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Snapshot_defaults_the_project_to_the_input_folder_name()
+    {
+        var input = Write("logo.svg");
+        var variations = Path.Join(_temp.Path, "variations");
+
+        var exit = await Run("image", "simplify", input, "-s", "--variations-dir", variations);
+
+        Assert.Equal(0, exit);
+        Assert.Equal(["simplification-run"], new SnapshotManager(variations).ListRuns(Path.GetFileName(_temp.Path)));
+    }
+
+    [Fact]
     public async Task An_explicit_output_is_used()
     {
         var input = Write("logo.svg");
