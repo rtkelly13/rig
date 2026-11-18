@@ -120,12 +120,12 @@ public static class JobRegistry
                 [rig, "estate", "risk", "--root", code], Both, JobCadence.Daily, 30),
             new("estate-trim", "Delete node_modules, venvs and build output in estate worktrees idle 7+ days.",
                 [rig, "estate", "trim", "--apply", "--root", code], Both, JobCadence.Daily, 30),
-            new("estate-orca", "Register every cloned managed project in the personal Orca, in its group.",
+            new("estate-orca", "Register every cloned managed project in Orca, in its group.",
                 [rig, "estate", "orca", "--apply", "--code-root", code, "--orca-data", env.OrcaUserData], Both, JobCadence.Daily, 10)
             {
                 RetryExitCodes = new HashSet<int> { OrcaUnavailable },
             },
-            new("orca-sync", "Apply config/orca.json to the personal Orca: agent default args, repo colours, scripts, refs.",
+            new("orca-sync", "Apply config/orca.json to Orca: agent default args, repo colours, scripts, refs.",
                 [rig, "workspace", "orca", "sync", "--apply", "--root", env.PersonalRoot, "--orca-data", env.OrcaUserData], Both,
                 JobCadence.Daily, 10)
             {

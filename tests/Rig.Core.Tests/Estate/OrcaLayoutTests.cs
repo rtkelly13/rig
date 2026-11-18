@@ -409,15 +409,13 @@ public sealed class OrcaLayoutTests : IDisposable
     // ---------------------------------------------------------------- which profile
 
     [Fact]
-    public void The_estate_has_its_own_profile_on_windows_and_shares_orcas_elsewhere()
+    public void The_estate_shares_the_default_profile_on_every_platform()
     {
-        var windows = new OrcaLocations(_ => null, "/home/u", OrcaOs.Windows);
-        Assert.Equal("orca-personal", Path.GetFileName(windows.EstateUserData()));
-        Assert.Equal(windows.DefaultUserData(), windows.WorkUserData());
-
-        var mac = new OrcaLocations(_ => null, "/home/u", OrcaOs.MacOs);
-        Assert.Equal(mac.DefaultUserData(), mac.EstateUserData());
-        Assert.Null(mac.WorkUserData());
+        foreach (var os in new[] { OrcaOs.Windows, OrcaOs.MacOs, OrcaOs.Linux })
+        {
+            var locations = new OrcaLocations(_ => null, "/home/u", os);
+            Assert.Equal(locations.DefaultUserData(), locations.EstateUserData());
+        }
     }
 
     // ---------------------------------------------------------------- repos this machine skips

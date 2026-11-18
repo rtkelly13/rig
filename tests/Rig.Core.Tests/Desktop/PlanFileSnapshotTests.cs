@@ -16,7 +16,7 @@ public sealed class PlanFileSnapshotTests
     public static TheoryData<string> Plans => ["sample-workspace", "workspace-plan.bundle"];
 
     /// <summary>The desktop files the bundle lists.</summary>
-    public static TheoryData<string> Desktops => ["admin", "lab", "personal", "review", "work"];
+    public static TheoryData<string> Desktops => ["admin", "ide", "lab", "personal", "work"];
 
     [Theory]
     [MemberData(nameof(Plans))]

@@ -1,0 +1,41 @@
+{
+  "name": "IDE",
+  "launch": [
+    {
+      "name": "VS Code Workspace",
+      "type": "app",
+      "path": "{vscode-path}",
+      "args": [
+        "--new-window",
+        "{rig-root}\\rig.code-workspace"
+      ],
+      "summary": "Opens the multi-root workspace file in VS Code, full screen 1, with Fork beside it on screen 2.",
+      "delay_ms": 1600,
+      "placement": {
+        "screen": 1,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_title": "(Workspace)",
+      "window_process_name": "Code.exe",
+      "window_wait_timeout_ms": 30000
+    },
+    {
+      "name": "Fork",
+      "type": "app",
+      "path": "{fork-path}",
+      "summary": "Opens Fork full screen 2, beside VS Code, for branches and diffs.",
+      "delay_ms": 1200,
+      "placement": {
+        "screen": 2,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_process_name": "Fork.exe"
+    }
+  ]
+}

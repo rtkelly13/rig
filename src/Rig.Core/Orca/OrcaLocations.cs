@@ -50,15 +50,8 @@ public sealed record OrcaLocations(Func<string, string?> Variable, string Home, 
         return Path.Join(parent, "orca");
     }
 
-    /// <summary>On Windows the personal estate runs its own Orca profile (<c>--user-data-dir</c>) beside the default one.</summary>
-    public const string EstateProfileFolder = "orca-personal";
-
-    /// <summary>The Orca profile that holds the personal estate: its own folder on Windows, the default elsewhere.</summary>
-    public string EstateUserData() =>
-        Os == OrcaOs.Windows ? Path.Join(Path.GetDirectoryName(DefaultUserData()), EstateProfileFolder) : DefaultUserData();
-
-    /// <summary>The default Orca profile when it is not the estate's (Windows), where estate repos do not belong; else null.</summary>
-    public string? WorkUserData() => Os == OrcaOs.Windows ? DefaultUserData() : null;
+    /// <summary>The Orca profile that holds the estate: the default one, which it shares with the work repos.</summary>
+    public string EstateUserData() => DefaultUserData();
 
     /// <summary>The instance's <c>orca-runtime.json</c>.</summary>
     public string RuntimeMetadata(string? userData) =>

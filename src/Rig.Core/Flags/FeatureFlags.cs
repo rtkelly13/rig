@@ -45,7 +45,7 @@ public static class FeatureFlags
     /// <summary>Every declared flag, in the order <c>rig flags list</c> shows them.</summary>
     public static IReadOnlyList<Flag> All { get; } =
     [
-        new("orca-sessions", true, "Work desktop: the Work and Personal Orca windows."),
+        new("orca-sessions", true, "Work desktop: the Orca window."),
         new("personal-desktop", false, "The Personal virtual desktop."),
         new("experimental-desktop", false, "The Lab virtual desktop."),
         new("claude-session-restore", false, "At sign-in, resume cut-off Claude sessions and start `claude` in empty terminals."),

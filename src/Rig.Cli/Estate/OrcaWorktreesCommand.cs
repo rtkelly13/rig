@@ -33,8 +33,8 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             AllowMultipleArgumentsPerToken = false,
         };
         var every = new Option<bool>("--all") { Description = "Every Orca project. Required when --repo is not given." };
-        var userData = new Option<string?>("--orca-data") { Description = "The estate's Orca user-data folder (default: orca-personal on Windows)" };
-        var workData = new Option<string?>("--work-orca-data") { Description = "The work Orca profile (default: Orca's own folder on Windows; none elsewhere)" };
+        var userData = new Option<string?>("--orca-data") { Description = "The estate's Orca user-data folder (default: Orca's own)" };
+        var workData = new Option<string?>("--work-orca-data") { Description = "The work Orca profile (default: none)" };
         var personalOnly = new Option<bool>("--personal-only") { Description = "Leave the work profile alone" };
         var idleDays = new Option<double>("--idle-days")
         {
@@ -48,7 +48,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             "orca-worktrees",
             "Orca's worktrees whose work is finished: merged, landed, or already half-deleted.\n\n"
             + "The scope is always explicit, as for `estate tidy`: `--repo` names Orca projects, `--all` takes every project in "
-            + "both profiles. Neither, or both, is an error.\n\n"
+            + "the Orca profile (and the work profile, if named). Neither, or both, is an error.\n\n"
             + "Read-only unless --apply. A worktree is finished when its branch's newest PR merged with nothing local since "
             + "(`merged`), when it holds nothing outside the default branch and has sat idle for --idle-days (`landed`), when its "
             + "folder is gone (`missing`), or when an interrupted delete left a folder git no longer knows and every file in it "
@@ -169,7 +169,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
     {
         var estate = string.IsNullOrEmpty(args.OrcaData) ? orca.Locations.EstateUserData() : host.ExpandHome(args.OrcaData);
         var chosen = new List<(string, string)> { ("personal", estate) };
-        var work = string.IsNullOrEmpty(args.WorkOrcaData) ? orca.Locations.WorkUserData() : host.ExpandHome(args.WorkOrcaData);
+        var work = string.IsNullOrEmpty(args.WorkOrcaData) ? null : host.ExpandHome(args.WorkOrcaData);
         if (!args.PersonalOnly && work is not null && !PathResolution.Same(PathResolution.Resolve(work), PathResolution.Resolve(estate)))
         {
             chosen.Add(("work", work));

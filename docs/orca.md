@@ -13,8 +13,8 @@ rig workspace orca sync            # dry-run: preview changes against Orca
 rig workspace orca sync --apply    # apply planned changes
 rig workspace orca sync --apply --repo rig  # target a specific repo
 
-# a second Orca instance, such as the personal one on a work machine, from outside it
-rig workspace orca sync --orca-data "$APPDATA/orca-personal" --root C:/code --apply
+# a specific Orca instance, from outside it
+rig workspace orca sync --orca-data "$APPDATA/orca" --root C:/code --apply
 ```
 
 Both commands take `--orca-data <folder>`, an Orca instance's user-data folder. Without it they
@@ -29,7 +29,7 @@ code root (`rig.roots`, `C:/code` on the Windows work machine), not literally un
 folder. `--root` is the personal folder, for repos the policy names without a path.
 
 The [job coordinator](desktop-manager/jobs.md) runs `sync --apply` and `estate orca --apply`
-daily against the personal instance (`orca-personal` on Windows).
+daily against the default instance, which holds the work repos and the estate.
 
 ## What `config/orca.json` declares
 
@@ -237,10 +237,10 @@ in the tab.
 
 ## Updates
 
-On the Work desktop two Orca profiles run side by side: `Work Orca` on the default profile and
-`Personal Orca` on `--user-data-dir=%APPDATA%\orca-personal`. Orca's in-app "restart to update"
-runs the NSIS installer, which closes *every* `Orca.exe` but relaunches only the profile that
-asked. rig applies updates instead, so dismiss Orca's update prompts.
+The Work desktop runs one Orca, `Work Orca`, on the default profile. Orca's in-app "restart to
+update" runs the NSIS installer, which closes *every* `Orca.exe` but relaunches only the profile
+that asked, so with more than one profile running it drops the others. rig applies updates
+instead, so dismiss Orca's update prompts.
 
 - electron-updater stages each download in `%LOCALAPPDATA%\orca-updater\pending\`
   (`update-info.json` and `orca-windows-setup.exe`) and never clears it after installing. An update
@@ -248,7 +248,7 @@ asked. rig applies updates instead, so dismiss Orca's update prompts.
   per-user Uninstall entry's `DisplayVersion`).
 - **At restore**, before any window is inventoried, a pending update is installed silently
   (`--updated /S`, after checking the recorded SHA-512) when no Orca is running. The restore then
-  launches both profiles as usual. With Orca already running the update stays staged and the run
+  launches Orca as usual. With Orca already running the update stays staged and the run
   log points at the command below.
 - **On demand**:
 
@@ -258,11 +258,11 @@ asked. rig applies updates instead, so dismiss Orca's update prompts.
 
   It asks every Orca window to close and waits (Orca saves sessions as it quits) before
   force-killing survivors, waits out any installer Orca started itself on quit, installs if still
-  behind, then relaunches every enabled Orca entry in its planned placement, Work before Personal.
+  behind, then relaunches every enabled Orca entry in its planned placement.
   It exits 0 with nothing to do when Orca is current, and 1 when the installer failed (Orca is
   still relaunched on the old build).
-- If an update was applied from inside Orca anyway, `restart-app --name "Personal Orca"` or the
-  next restore brings the missing profile back.
+- If an update was applied from inside Orca anyway, `restart-app --name "Work Orca"` or the
+  next restore brings it back.
 
 ## Agent tabs closed by a Windows shutdown
 
@@ -278,8 +278,7 @@ the still-running window takes that as the shell ending, closes the tab and save
 exits first loses more tabs; it is a race, not a profile setting. This is Orca's bug, and
 nothing in rig causes or prevents it.
 
-**Evidence**, all under the instance's user-data folder (`%APPDATA%/orca` for work,
-`%APPDATA%/orca-personal` for personal):
+**Evidence**, all under the instance's user-data folder (`%APPDATA%/orca`):
 
 - `logs/daemon.log`: a burst of `session-exited` / `"cause":"exited"` at shutdown, before the
   next `startup`.
@@ -346,8 +345,7 @@ check it again after an Orca update.
   outside an Orca terminal, pick the instance with `ORCA_USER_DATA_PATH` and clear the other
   `ORCA_*` variables (see [Driving the other instance's CLI](#driving-the-other-instances-cli)).
 - **The runtime API tells you which agents need input.** It is the socket or named pipe in each
-  instance's `orca-runtime.json` (`%APPDATA%\orca` for work, `%APPDATA%\orca-personal` for the
-  estate), one JSON line per request (`{id, authToken, method, params}`), the same transport
+  instance's `orca-runtime.json` (`%APPDATA%\orca`), one JSON line per request (`{id, authToken, method, params}`), the same transport
   `OrcaRuntime` uses for [the sidebar](estate/orca.md). Methods seen working:
   - `worktree.ps`: every agent with its state, one of `working`, `blocked`, `waiting`, `done`
     or `idle`. `blocked` and `waiting` mean it needs a human.
@@ -357,6 +355,6 @@ check it again after an Orca update.
 
   Only some agent panes keep a terminal handle; for the rest, focus the worktree's terminal.
 - **`orca://` links only reach the default instance.** The scheme is registered once, to the
-  work Orca, so a link cannot open anything in `orca-personal`. Use the CLI or the runtime API.
+  default Orca, so a link cannot open anything in another `--user-data-dir` profile. Use the CLI or the runtime API.
 - **Agent hooks.** Orca sets `ORCA_AGENT_HOOK_*` variables in agent terminals, and has its own
   plugin system and automations; none of these are used by rig yet.

@@ -95,7 +95,7 @@ A run takes its jobs in registry order, one at a time:
 | `estate-sync` | logon, tick | daily | `estate sync`: fetch and prune every clone under the code root (`C:\code`: personal, the org and work folders, external) |
 | `estate-risk` | logon, tick | daily | `estate risk`: report uncommitted or unpushed work across the code root |
 | `estate-trim` | logon, tick | daily | `estate trim --apply`: delete `node_modules`, venvs and build output in worktrees idle 7+ days, across the code root |
-| `estate-orca` | logon, tick | daily, retried while Orca is down | `estate orca --apply`: register every cloned managed project in the personal Orca, in its group |
+| `estate-orca` | logon, tick | daily, retried while Orca is down | `estate orca --apply`: register every cloned managed project in Orca, in its group |
 | `orca-sync` | logon, tick | daily, retried while Orca is down | `workspace orca sync --apply`: apply `config/orca.json` (agent default args, repo colours, scripts, base refs) |
 | `workspace-maintain` | logon, tick | every run | the workspace repo's `maintain run --due`, which tracks its own due tasks |
 
@@ -130,10 +130,9 @@ A run takes its jobs in registry order, one at a time:
   locked at logon, so its sessions come up on the first tick after unlocking.
   `restore` and `claude-sessions` both exit 4 when fewer screens are live than the
   plan needs, so they run once the screens are back.
-  `estate-orca` and `orca-sync` exit 3 when the personal Orca is not running, so
-  they run on the first tick after it starts. Both target `orca-personal` on
-  Windows (the estate's instance), not the work instance a scheduled task would
-  otherwise default to.
+  `estate-orca` and `orca-sync` exit 3 when Orca is not running, so they run on
+  the first tick after it starts. Both target the default Orca profile, which
+  holds the work repos and the estate alike.
 - **One run at a time.** A run holds `run.lock`. A logon run waits up to 30 minutes
   for a tick that started first. A tick that finds another run in progress skips.
 
