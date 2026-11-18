@@ -256,6 +256,7 @@
     {"Id": "cs:triage refresh","Capability": "triage refresh","Owner": "cs:triage refresh","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:triage verify","Capability": "triage verify","Owner": "cs:triage verify","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:vault","Capability": "vault","Owner": "cs:vault","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:vault drive-backup","Capability": "vault drive-backup","Owner": "cs:vault drive-backup","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:vault graph","Capability": "vault graph","Owner": "cs:vault graph","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:vault graph hubs","Capability": "vault graph hubs","Owner": "cs:vault graph hubs","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:vault graph links","Capability": "vault graph links","Owner": "cs:vault graph links","Platforms": ["linux","macos","windows"],"AliasTo": null},

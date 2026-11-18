@@ -172,6 +172,7 @@ internal static class Program
                         ProgramPath.Find,
                         Console.Out,
                         Console.Error),
+                    new DriveBackupCommand(git, new VaultHost(Environment.GetEnvironmentVariable, home), TimeProvider.System, Console.Out, Console.Error),
                     Console.Out,
                     Console.Error).Build,
                 new ChromeTabsCommand(
