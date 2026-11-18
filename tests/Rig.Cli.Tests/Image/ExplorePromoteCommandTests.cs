@@ -15,6 +15,7 @@ public sealed class ExplorePromoteCommandTests : IDisposable
     private readonly StringWriter _out = new();
     private readonly StringWriter _err = new();
     private int _candidateGrey = 255;
+    private Func<string?, Task<ISvgRenderer>>? _launch;
 
     public void Dispose()
     {
@@ -146,6 +147,34 @@ public sealed class ExplorePromoteCommandTests : IDisposable
         Assert.Contains(message, _err.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Explore_without_a_master_svg_exits_two()
+    {
+        await Arrange();
+        File.Delete(Path.Join(_temp.Path, "assets", "rtkelly-labs", "rtkelly-labs.svg"));
+
+        var exit = await Run("image", "explore");
+
+        Assert.Equal(2, exit);
+        Assert.Contains("expected the master SVG at", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Explore_and_promote_name_a_missing_chromium_and_exit_two()
+    {
+        await Arrange();
+        var variations = Path.Join(_temp.Path, "variations");
+        await Run("image", "explore", "--run-id", "r1", "--variations-dir", variations);
+        _launch = _ => throw new RendererUnavailableException("no browser");
+
+        var explore = await Run("image", "explore", "--variations-dir", variations);
+        var promote = await Run("image", "promote", "--run-id", "r1", "--candidate", "1", "--variations-dir", variations);
+
+        Assert.Equal([2, 2], [explore, promote]);
+        Assert.Contains("Chromium is required to score candidates (no browser)", _err.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Chromium is required to re-run the gate (no browser)", _err.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task Arrange()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
@@ -163,7 +192,7 @@ public sealed class ExplorePromoteCommandTests : IDisposable
         var host = new ImageHost(
             _temp.Path,
             Path.Join(_temp.Path, "scratch"),
-            _ => Task.FromResult<ISvgRenderer>(new Scripted(() => _candidateGrey)),
+            _launch ?? (_ => Task.FromResult<ISvgRenderer>(new Scripted(() => _candidateGrey))),
             () => throw new InvalidOperationException("the fast renderer never decides explore or promote"));
         return new ImageCommand(host, _out, _err).Build().Parse(args).InvokeAsync(
             new InvocationConfiguration { Output = _out, Error = _err }, TestContext.Current.CancellationToken);

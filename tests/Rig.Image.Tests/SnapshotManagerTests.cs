@@ -30,6 +30,24 @@ public sealed class SnapshotManagerTests : IDisposable
     }
 
     [Fact]
+    public void A_sidecar_that_is_not_an_object_or_not_json_still_registers_its_path_and_a_bare_object_is_the_metrics()
+    {
+        var manager = new SnapshotManager(_root);
+        var folder = Path.Join(_root, "labs", "run-1");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Join(folder, "labs__run-1__00_a__20260101_000000.json"), "[1]");
+        File.WriteAllText(Path.Join(folder, "labs__run-1__01_b__20260101_000000.json"), "{broken");
+        File.WriteAllText(Path.Join(folder, "labs__run-1__02_c__20260101_000000.json"), "{\"ssim\": 0.5}");
+
+        var steps = manager.GetRun("labs", "run-1")!.Steps;
+
+        Assert.All(steps, s => Assert.NotNull(s.MetadataPath));
+        Assert.Empty(steps[0].Metrics);
+        Assert.Empty(steps[1].Metrics);
+        Assert.Equal(["ssim"], steps[2].Metrics.Keys);
+    }
+
+    [Fact]
     public void GetRun_parses_steps_in_index_order_with_their_metrics_and_notes()
     {
         var manager = new SnapshotManager(_root);
