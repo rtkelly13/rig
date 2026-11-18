@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The SVG simplifier (#325): geometry through NetTopologySuite, document cleanup through System.Xml.Linq. It decodes no raster,
+       so the owner's SkiaSharp-or-ImageSharp choice does not touch it. The drift gate that renders lives in Rig.Image. -->
+  <PropertyGroup>
+    <RootNamespace>Rig.Image.Simplifier</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Replaces shapely (GEOS) for the polygon and polyline simplification. -->
+    <PackageReference Include="NetTopologySuite" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rig.Image.Tests" />
+  </ItemGroup>
+</Project>

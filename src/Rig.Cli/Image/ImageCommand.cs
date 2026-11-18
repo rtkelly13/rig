@@ -35,6 +35,7 @@ internal sealed class ImageCommand(ImageHost host, TextWriter output, TextWriter
     {
         var image = DeclarativeCommand.Build(this);
         image.Add(DeclarativeCommand.Build(new CrossCheckCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new SimplifyCommand(host, output, error)));
         return image;
     }
 
