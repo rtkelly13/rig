@@ -1,12 +1,12 @@
 namespace Rig.Core.Vault;
 
-/// <summary>A value of a YAML document as the YAML 1.1 safe schema builds it, kept only as far as the vault tools look at it.</summary>
+/// <summary>A value of a YAML document as the vault tools read it.</summary>
 public abstract record YamlValue;
 
 /// <summary>A null.</summary>
 public sealed record YamlNull : YamlValue
 {
-    /// <summary>The one <c>None</c>.</summary>
+    /// <summary>The one null.</summary>
     public static YamlNull Value { get; } = new();
 }
 
@@ -15,8 +15,7 @@ public sealed record YamlNull : YamlValue
 public sealed record YamlString(string Text) : YamlValue;
 
 /// <summary>
-/// A scalar that is not a string or <c>None</c>: an int, float, bool, date or datetime. <paramref name="Rendered"/> is what
-/// the YAML 1.1 safe schema renders it as.
+/// A scalar that is not a string or null: an int, float, bool, date or datetime. <paramref name="Rendered"/> is its canonical text.
 /// </summary>
 /// <param name="Rendered">The value as text.</param>
 public sealed record YamlScalar(string Rendered) : YamlValue;
@@ -29,9 +28,3 @@ public sealed record YamlList(IReadOnlyList<YamlValue> Items) : YamlValue;
 /// <param name="Entries">Its entries, in insertion order.</param>
 public sealed record YamlMap(IReadOnlyList<KeyValuePair<YamlValue, YamlValue>> Entries) : YamlValue;
 
-/// <summary>Anything else the loader builds (bytes, a set, a tuple), which the vault tools never read into.</summary>
-public sealed record YamlOther : YamlValue
-{
-    /// <summary>The one placeholder.</summary>
-    public static YamlOther Value { get; } = new();
-}

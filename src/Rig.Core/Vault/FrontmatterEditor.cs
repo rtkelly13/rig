@@ -171,7 +171,7 @@ public static class FrontmatterEditor
     {
         (YamlString a, YamlString b) => a.Text == b.Text,
         (YamlScalar a, YamlScalar b) => a.Rendered == b.Rendered,
-        (YamlNull, YamlNull) or (YamlOther, YamlOther) => true,
+        (YamlNull, YamlNull) => true,
         (YamlList a, YamlList b) => a.Items.Count == b.Items.Count && a.Items.Zip(b.Items).All(p => Same(p.First, p.Second)),
         (YamlMap a, YamlMap b) => a.Entries.Count == b.Entries.Count
             && a.Entries.Zip(b.Entries).All(p => Same(p.First.Key, p.Second.Key) && Same(p.First.Value, p.Second.Value)),

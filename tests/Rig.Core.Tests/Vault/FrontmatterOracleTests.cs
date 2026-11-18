@@ -5,8 +5,8 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// A frozen recorded baseline whose generator is gone; it holds the C# frontmatter reader to YAML 1.1 as PyYAML read it. <c>frontmatter-oracle.json</c> records,
-/// for each note's raw bytes, whether it was refused and otherwise the kind of every key the lint reads: YAML 1.1's
+/// Recorded notes with what the frontmatter reader makes of them. <c>frontmatter-oracle.json</c> records,
+/// for each note's raw bytes, whether it was refused and otherwise the kind of every key the lint reads: the
 /// implicit types, tags, merge keys, duplicate keys, the <c>---</c> boundary's quirks, BOMs, CRLF and bad UTF-8. Set
 /// <c>RIG_FRONTMATTER_ORACLE</c> to a second fixture of the same shape, such as one recorded from a real vault.
 /// </summary>
@@ -56,23 +56,14 @@ public sealed class FrontmatterOracleTests
         Assert.Null(read.Get("missing"));
     }
 
-    // PyYAML raises KeyError, IndexError or AttributeError on these, which the recorded lint never caught; C# refuses the note.
     [Theory]
     [InlineData("type: !!bool maybe")]
-    [InlineData("type: !!int ''")]
-    [InlineData("type: !!float ''")]
-    [InlineData("type: !!timestamp nope")]
-    public void A_value_that_crashed_the_recording_is_refused(string line) =>
+    [InlineData("type: !!int 5")]
+    public void A_tag_other_than_str_is_refused(string line) =>
         Assert.NotNull(Frontmatter.Parse($"---\n{line}\n---\nBody\n").Error);
 
     [Fact]
     public void A_stream_of_two_documents_is_refused() => Assert.Throws<VaultYamlException>(() => VaultYaml.Load("a: 1\n---\nb: 2\n"));
-
-    // Known gap: PyYAML reads a block scalar whose first line is only spaces as '', YamlDotNet refuses it, so such a note
-    // is logged and passed over where the recording read it. Pinned so a fix shows up here.
-    [Fact]
-    public void A_block_scalar_opened_by_a_line_of_spaces_is_refused_where_pyyaml_read_it_as_empty() =>
-        Assert.Throws<VaultYamlException>(() => VaultYaml.Load("status: |\n  \ncreated: x\n"));
 
     [Fact]
     public void An_empty_stream_holds_no_document() => Assert.Null(VaultYaml.Load(string.Empty));
@@ -91,35 +82,68 @@ public sealed class FrontmatterOracleTests
     [InlineData(1.7976931348623157e308, "1.7976931348623157e+308")]
     [InlineData(5e-324, "5e-324")]
     [InlineData(double.NegativeInfinity, "-inf")]
-    public void Floats_print_as_recorded(double value, string expected) => Assert.Equal(expected, YamlFloat.Repr(value));
+    public void Floats_print_with_a_point_or_an_exponent(double value, string expected) => Assert.Equal(expected, YamlFloat.Repr(value));
 
     [Theory]
-    [InlineData("12", 10, 12)]
-    [InlineData(" -0x1f ", 16, -31)]
-    [InlineData("0o17", 8, 15)]
-    [InlineData("+101", 2, 5)]
-    public void Ints_parse_as_recorded(string text, int radix, long expected) =>
-        Assert.Equal(expected, (long)YamlInt.Parse(text, radix));
+    [InlineData("12", "12")]
+    [InlineData("-0x1f", "-31")]
+    [InlineData("1_000", "1000")]
+    [InlineData("+7", "7")]
+    [InlineData("1.50", "1.5")]
+    [InlineData("-.inf", "-inf")]
+    [InlineData(".NaN", "nan")]
+    [InlineData("yes", "True")]
+    [InlineData("Off", "False")]
+    [InlineData("2024-01-31", "2024-01-31")]
+    [InlineData("2024-01-31 10:20:30", "2024-01-31 10:20:30")]
+    public void A_plain_scalar_of_another_type_renders_as_its_value(string text, string rendered) =>
+        Assert.Equal(new YamlScalar(rendered), VaultYaml.Load(text));
 
     [Theory]
-    [InlineData("", 10)]
-    [InlineData("12a", 10)]
-    [InlineData("0x", 16)]
-    [InlineData("8", 8)]
-    [InlineData("1-2", 10)]
-    public void A_bad_int_is_refused(string text, int radix) => Assert.Throws<VaultYamlException>(() => YamlInt.Parse(text, radix));
-
-    [Theory]
-    [InlineData("inf", double.PositiveInfinity)]
-    [InlineData("-Infinity", double.NegativeInfinity)]
-    [InlineData(" 1.5e3 ", 1500.0)]
-    public void Floats_parse_as_recorded(string text, double expected) => Assert.Equal(expected, YamlFloat.Parse(text));
+    [InlineData("0755")]
+    [InlineData("1e3")]
+    [InlineData("2024-13-45")]
+    [InlineData("1.2.3")]
+    [InlineData("'12'")]
+    public void Anything_else_stays_a_string(string text) => Assert.IsType<YamlString>(VaultYaml.Load(text));
 
     [Fact]
-    public void Nan_parses() => Assert.True(double.IsNaN(YamlFloat.Parse("NaN")));
+    public void A_merge_key_adds_the_entries_it_names_behind_the_ones_written()
+    {
+        var loaded = Assert.IsType<YamlMap>(VaultYaml.Load("base: &b {a: 1, b: 2}\nuse:\n  <<: *b\n  b: 3\n"));
+        var use = Assert.IsType<YamlMap>(loaded.Entries[1].Value);
+
+        Assert.Equal([new(new YamlString("b"), new YamlScalar("3")), new(new YamlString("a"), new YamlScalar("1"))], use.Entries);
+    }
+
+    [Theory]
+    [InlineData("<<: 12", 1, 5)]
+    [InlineData("<<: [12]", 1, 5)]
+    [InlineData("a: 1\n<<: [{b: 2}, 12]", 2, 5)]
+    public void A_merge_key_that_names_anything_but_mappings_is_refused_with_its_position(string text, int line, int column)
+    {
+        var refused = Assert.Throws<VaultYamlException>(() => VaultYaml.Load(text));
+
+        Assert.Contains($"line {line}, column {column}", refused.Message, StringComparison.Ordinal);
+    }
 
     [Fact]
-    public void A_bad_float_is_refused() => Assert.Throws<VaultYamlException>(() => YamlFloat.Parse("1e"));
+    public void A_merge_key_naming_a_sequence_of_mappings_still_merges_them_in_order()
+    {
+        var loaded = Assert.IsType<YamlMap>(VaultYaml.Load("<<: [{a: 1}, {a: 2, b: 3}]\nc: 4\n"));
+
+        Assert.Equal(
+            [new(new YamlString("c"), new YamlScalar("4")), new(new YamlString("a"), new YamlScalar("1")), new(new YamlString("b"), new YamlScalar("3"))],
+            loaded.Entries);
+    }
+
+    [Fact]
+    public void A_repeated_key_keeps_its_place_and_its_last_value()
+    {
+        var loaded = Assert.IsType<YamlMap>(VaultYaml.Load("a: 1\nb: 2\na: 3\n"));
+
+        Assert.Equal([new(new YamlString("a"), new YamlScalar("3")), new(new YamlString("b"), new YamlScalar("2"))], loaded.Entries);
+    }
 
     private static JsonObject Describe(FrontmatterRead read)
     {

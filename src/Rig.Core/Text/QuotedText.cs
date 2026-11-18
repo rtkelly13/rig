@@ -10,7 +10,7 @@ namespace Rig.Core.Text;
 /// </summary>
 public static class QuotedText
 {
-    /// <summary><c>repr(text)</c>: single quotes, or double when the text holds a single quote and no double one.</summary>
+    /// <summary>The text quoted: single quotes, or double when the text holds a single quote and no double one.</summary>
     public static string Str(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -33,7 +33,7 @@ public static class QuotedText
         return built.Append(quote).ToString();
     }
 
-    /// <summary><c>repr(list_of_str)</c>: <c>['a', 'b']</c>.</summary>
+    /// <summary>A list of strings, quoted: <c>['a', 'b']</c>.</summary>
     public static string List(IEnumerable<string> items) => "[" + string.Join(", ", items.Select(Str)) + "]";
 
     /// <summary><c>str(value)</c> of a bool, an int or None.</summary>
