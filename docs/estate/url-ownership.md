@@ -31,7 +31,7 @@ A port then names its project:
 
 ### The rules
 
-`rig.workspace.ports.load_port_claims` enforces them, and a test holds the
+`Rig.Core.Workspace.UrlOwners.LoadPortClaims` enforces them, and a test holds the
 committed config to them:
 
 - A range lies within 1024–65535, with `start` no greater than `end`.
@@ -85,6 +85,6 @@ recognised. A custom preview suffix on your own domain (Vercel's Preview
 Deployment Suffix) needs a Pro plan add-on, so the prefix is the convention
 instead.
 
-`rig.workspace.vercel_names` validates the names: real Vercel names, none
+`UrlOwners.LoadVercelClaims` validates the names: real Vercel names, none
 declared twice. Whether they are right is established from Vercel itself by
 `repo-governance vercel-projects` ([audit](../repo-governance/vercel-gating.md#ownership-vercel-projects)).

@@ -18,9 +18,8 @@ run is one trace. Tracing never breaks the tool: write errors are swallowed.
 ## Wired tools
 
 - `estate`: root span per command, a span per clone, every `git`/`gh` subprocess.
-- Every `git` and `gh` call anywhere in rig: one span each (`scope` `rig.proc.git` /
-  `rig.proc.gh`, with the command, cwd, exit code, duration and a stderr snippet on
-  failure), because they all go through `rig.proc`, which runs on `tracing.run`.
+- Every process Python starts: one span each, because it goes through `tracing.run`. (The
+  Python `rig.proc` git/gh wrapper was deleted in #281.)
 - `desktop-manager`: root span per command (`rig desktop workspace restore`). A
   restore nests:
   - `workspace.restore` (dry run, flags, desktop count, retired desktops)
@@ -38,10 +37,7 @@ run is one trace. Tracing never breaks the tool: write errors are swallowed.
 
 ## Running processes
 
-Run `git` and `gh` through `rig.proc` (`git`, `git_out`, `gh`, `run_gh`), never `subprocess`
-directly. Each call is a span; stdin is closed; output is UTF-8 with replacement; there is no console window on Windows. A call whose working
-directory is under `<code root>/external` or `<code root>/other` is hardened: hooks,
-fsmonitor, `ext::` transports and submodule recursion are off, and git never prompts.
+Run processes through `tracing.run`, never `subprocess` directly. Each call is a span; stdin is closed; output is UTF-8 with replacement; there is no console window on Windows.
 
 ## Adding spans
 
@@ -59,7 +55,6 @@ with tracing.span("step", scope="my_tool", **{"item.name": name}) as span:
 @tracing.traced("my_tool.helper", scope="my_tool")
 def helper() -> None: ...
 
-proc.git("status", cwd=repo)                 # git/gh: use rig.proc (span + hardening)
 tracing.run(["uv", "sync"], capture_output=True, text=True)  # other commands: subprocess.run, as a span
 tracing.submit(pool, fn, arg)                # pool.submit, carrying the current span
 threading.Thread(target=contextvars.copy_context().run, args=(fn, arg))  # same for bare threads

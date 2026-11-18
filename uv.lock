@@ -93,15 +93,6 @@ wheels = [
 ]
 
 [[package]]
-name = "comtypes"
-version = "1.4.16"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c6/2a/65274c13327f637ec13af8d39f2cf579d9ebe7a0e683696b5f05236d2805/comtypes-1.4.16.tar.gz", hash = "sha256:cd66d1add01265cface4df51ba1e31cd1657e04463c281c802e737e79e1ba93c", size = 260252, upload-time = "2026-03-02T23:11:42.413Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/7c/0eb685107290b6221c03c46d39214a4e42a124189691cb83ae3228257f46/comtypes-1.4.16-py3-none-any.whl", hash = "sha256:e18d85179ff12955524c5a8c3bc09cb3c0d890f1da4d7123d14244c7b78f84c8", size = 296230, upload-time = "2026-03-02T23:11:41.049Z" },
-]
-
-[[package]]
 name = "coverage"
 version = "7.13.5"
 source = { registry = "https://pypi.org/simple" }
@@ -138,18 +129,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/98/aa7fccaa97d0f3192bec013c4e6fd6d294a6ed44b640e6bb61f479e00ed5/coverage-7.13.5-cp313-cp313t-win_amd64.whl", hash = "sha256:da86cdcf10d2519e10cabb8ac2de03da1bcb6e4853790b7fbd48523332e3a819", size = 223851, upload-time = "2026-03-17T10:32:04.416Z" },
     { url = "https://files.pythonhosted.org/packages/3d/8b/e5c469f7352651e5f013198e9e21f97510b23de957dd06a84071683b4b60/coverage-7.13.5-cp313-cp313t-win_arm64.whl", hash = "sha256:0ecf12ecb326fe2c339d93fc131816f3a7367d223db37817208905c89bded911", size = 222104, upload-time = "2026-03-17T10:32:06.65Z" },
     { url = "https://files.pythonhosted.org/packages/9e/ee/a4cf96b8ce1e566ed238f0659ac2d3f007ed1d14b181bcb684e19561a69a/coverage-7.13.5-py3-none-any.whl", hash = "sha256:34b02417cf070e173989b3db962f7ed56d2f644307b2cf9d5a0f258e13084a61", size = 211346, upload-time = "2026-03-17T10:33:15.691Z" },
-]
-
-[[package]]
-name = "deepdiff"
-version = "9.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "orderly-set" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/24/20/63dd34163ed07393968128dc8c7ab948c96e47c4ce76976ea533de64909d/deepdiff-9.0.0.tar.gz", hash = "sha256:4872005306237b5b50829803feff58a1dfd20b2b357a55de22e7ded65b2008a7", size = 151952, upload-time = "2026-03-30T05:52:23.769Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/c4/da7089cd7aa4ab554f56e18a7fb08dcfed8fd2ae91fa528f5b1be207a148/deepdiff-9.0.0-py3-none-any.whl", hash = "sha256:b1ae0dd86290d86a03de5fbee728fde43095c1472ae4974bdab23ab4656305bd", size = 170540, upload-time = "2026-03-30T05:52:22.008Z" },
 ]
 
 [[package]]
@@ -425,15 +404,6 @@ wheels = [
 ]
 
 [[package]]
-name = "orderly-set"
-version = "5.5.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4a/88/39c83c35d5e97cc203e9e77a4f93bf87ec89cf6a22ac4818fdcc65d66584/orderly_set-5.5.0.tar.gz", hash = "sha256:e87185c8e4d8afa64e7f8160ee2c542a475b738bc891dc3f58102e654125e6ce", size = 27414, upload-time = "2025-07-10T20:10:55.885Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/27/fb8d7338b4d551900fa3e580acbe7a0cf655d940e164cb5c00ec31961094/orderly_set-5.5.0-py3-none-any.whl", hash = "sha256:46f0b801948e98f427b412fcabb831677194c05c3b699b80de260374baa0b1e7", size = 13068, upload-time = "2025-07-10T20:10:54.377Z" },
-]
-
-[[package]]
 name = "packaging"
 version = "26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -625,29 +595,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pyvda"
-version = "0.5.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "comtypes", marker = "sys_platform == 'win32'" },
-    { name = "pywin32", marker = "sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/23/544bcb95a2fa023bc9c3495f29b69a4c406e925702ddb3d4739e65ff3c0a/pyvda-0.5.0.tar.gz", hash = "sha256:cd4b8ec91e6a3bd34f3123cded06b3c37b4142798bd7fd18a2fddc4fc7ea9ad9", size = 16241, upload-time = "2024-12-07T21:15:15.825Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/f6/5ce18631b23c6861fd6f1351833e51ea25d72a453794cdf11e89d38d73cf/pyvda-0.5.0-py3-none-any.whl", hash = "sha256:6318568714c452a03b324be00f7986eb818a56f4564d8e27e53ac519881bbb2d", size = 16832, upload-time = "2024-12-07T21:15:14.787Z" },
-]
-
-[[package]]
-name = "pywin32"
-version = "311"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/be/3fd5de0979fcb3994bfee0d65ed8ca9506a8a1260651b86174f6a86f52b3/pywin32-311-cp313-cp313-win32.whl", hash = "sha256:f95ba5a847cba10dd8c4d8fefa9f2a6cf283b8b88ed6178fa8a6c1ab16054d0d", size = 8705700, upload-time = "2025-07-14T20:13:26.471Z" },
-    { url = "https://files.pythonhosted.org/packages/e3/28/e0a1909523c6890208295a29e05c2adb2126364e289826c0a8bc7297bd5c/pywin32-311-cp313-cp313-win_amd64.whl", hash = "sha256:718a38f7e5b058e76aee1c56ddd06908116d35147e133427e59a3983f703a20d", size = 9494700, upload-time = "2025-07-14T20:13:28.243Z" },
-    { url = "https://files.pythonhosted.org/packages/04/bf/90339ac0f55726dce7d794e6d79a18a91265bdf3aa70b6b9ca52f35e022a/pywin32-311-cp313-cp313-win_arm64.whl", hash = "sha256:7b4075d959648406202d92a2310cb990fea19b535c7f4a78d3f5e10b926eeb8a", size = 8709318, upload-time = "2025-07-14T20:13:30.348Z" },
-]
-
-[[package]]
 name = "pyyaml"
 version = "6.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -684,14 +631,11 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
-    { name = "comtypes", marker = "sys_platform == 'win32'" },
     { name = "duckdb" },
     { name = "markdown-it-py" },
     { name = "mdformat" },
     { name = "platformdirs" },
     { name = "pydantic" },
-    { name = "pyvda", marker = "sys_platform == 'win32'" },
-    { name = "pywin32", marker = "sys_platform == 'win32'" },
     { name = "pyyaml" },
     { name = "rich" },
     { name = "type-ratchet" },
@@ -703,7 +647,6 @@ dev = [
     { name = "bandit" },
     { name = "basedpyright" },
     { name = "coverage" },
-    { name = "deepdiff" },
     { name = "hypothesis" },
     { name = "import-linter" },
     { name = "mdformat-frontmatter" },
@@ -716,21 +659,17 @@ dev = [
     { name = "pytest-xdist" },
     { name = "ruff" },
     { name = "ty" },
-    { name = "types-pywin32" },
     { name = "types-pyyaml" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.0" },
-    { name = "comtypes", marker = "sys_platform == 'win32'", specifier = ">=1.4.16" },
     { name = "duckdb", specifier = ">=1.5.5" },
     { name = "markdown-it-py", specifier = ">=4.0.0" },
     { name = "mdformat", specifier = ">=1.0.0" },
     { name = "platformdirs", specifier = ">=4.3" },
     { name = "pydantic", specifier = ">=2.12.5" },
-    { name = "pyvda", marker = "sys_platform == 'win32'", specifier = ">=0.5.0" },
-    { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=311" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "rich", specifier = ">=14.2.0" },
     { name = "type-ratchet", editable = "packages/type-ratchet" },
@@ -742,7 +681,6 @@ dev = [
     { name = "bandit", specifier = ">=1.8.3" },
     { name = "basedpyright", specifier = ">=1.40.2" },
     { name = "coverage", specifier = ">=7.6.12" },
-    { name = "deepdiff", specifier = ">=8.6.1" },
     { name = "hypothesis", specifier = ">=6.140" },
     { name = "import-linter", specifier = ">=2.15" },
     { name = "mdformat-frontmatter", specifier = ">=2.0.10" },
@@ -755,7 +693,6 @@ dev = [
     { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "ruff", specifier = ">=0.9.9" },
     { name = "ty", specifier = ">=0.0.84" },
-    { name = "types-pywin32", specifier = ">=312.0.0.20261006" },
     { name = "types-pyyaml", specifier = ">=6.0.12" },
 ]
 
@@ -863,15 +800,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f5/24/cb09efec5cc954f7f9b930bf8279447d24618bb6758d4f6adf2574c41780/typer-0.24.1.tar.gz", hash = "sha256:e39b4732d65fbdcde189ae76cf7cd48aeae72919dea1fdfc16593be016256b45", size = 118613, upload-time = "2026-02-21T16:54:40.609Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4a/91/48db081e7a63bb37284f9fbcefda7c44c277b18b0e13fbc36ea2335b71e6/typer-0.24.1-py3-none-any.whl", hash = "sha256:112c1f0ce578bfb4cab9ffdabc68f031416ebcc216536611ba21f04e9aa84c9e", size = 56085, upload-time = "2026-02-21T16:54:41.616Z" },
-]
-
-[[package]]
-name = "types-pywin32"
-version = "312.0.0.20261006"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/03/56/602c6f487a6d572356166d83c201a572aac03b209b165d13be54e891a8a6/types_pywin32-312.0.0.20261006.tar.gz", hash = "sha256:f7e4360ed0421021c3f98f47031bb37d92a93797d2561efc906c6fecc5418060", size = 357616, upload-time = "2026-10-06T08:15:00.329Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a1/49/793ff1f063bfc549d5ce01aedb284945484b18a5bd41ae39ae29fbb446df/types_pywin32-312.0.0.20261006-py3-none-any.whl", hash = "sha256:d96f96c2d6dd61a3bee72a212d855fd6b56ed0e8fc27660a3d6b5ebe36c49ebb", size = 419371, upload-time = "2026-10-06T08:14:58.947Z" },
 ]
 
 [[package]]

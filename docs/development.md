@@ -90,7 +90,7 @@ gitignored, and rebuilt on every build.
 Mark tests so the CI-safe subset can be run without external dependencies:
 
 - `@pytest.mark.ci` — no Windows APIs, no live system state; runs in any CI environment
-- `@pytest.mark.windows` — requires Windows OS with pyvda/win32 APIs
+- `@pytest.mark.windows` — requires Windows OS with win32 APIs
 - `@pytest.mark.integration` — requires live state (open windows, virtual desktops running)
 - `property` — applied automatically to Hypothesis tests; see [testing.md](testing.md)
 
@@ -106,15 +106,14 @@ Test isolation guards (autouse, so new tests get them for free):
 
 - `tests/conftest.py` points `LOCALAPPDATA` and `APPDATA` at per-test temp dirs and clears `DESKTOP_MANAGER_LOG_DIR`, so no test writes into the live runtime, restore logs or plans.
 - The browser tests (`test_web_spa`, `test_web_ops_spa`) run against the C# `rig web` host, so they need `dotnet` on PATH and fail without it. `tests/rig_web_host.py` builds the CLI once (or takes `RIG_CLI_DLL`), runs it on port 0 from a temp checkout, and stops only the process it started ([web-routes.md](web-routes.md#testing)).
-- `tests/desktop_manager/integration/conftest.py` fakes desktop navigation, reports every process as not running, and fails a test that reaches the real `move_existing_window_to_entry`. A test exercising window reuse patches that move itself.
 
 Windows-safe tests (the `test-windows` job catches these, but write them right first time):
 
-- **Links**: create directory links with `tests/links.py` `dir_link`. It makes a junction, which needs no privilege. Use `file_symlink_or_skip` when a test truly needs a file symlink. Never call `os.symlink` directly: without Developer Mode it fails with WinError 1314. Product code goes through `Rig.Core.Skills.IDirectoryLinker` for the same reason.
+- **Links**: never call `os.symlink` directly: without Developer Mode it fails with WinError 1314. Product code goes through `Rig.Core.Skills.IDirectoryLinker` for the same reason.
 - **Encoding**: always pass `encoding="utf-8"` to `read_text`, `write_text` and `open`. The Windows default is cp1252.
 - **Paths in output**: render paths with `.as_posix()` wherever a report, snapshot or assertion compares text. Otherwise Windows prints backslashes.
 - **Line endings**: when a test hashes a checked-in file, give that file type `-text` in `.gitattributes`, as `*.svg` has. Otherwise CRLF conversion on checkout changes the digest.
-- **Machine state**: never depend on the real monitor count, open windows or running processes. `tests/desktop_manager/conftest.py` fakes three monitors, and the integration conftest reports every process as not running.
+- **Machine state**: never depend on the real monitor count, open windows or running processes. The C# fakes (`FakeDesktop`, `FakeProc`) answer for them.
 - **Filenames**: Windows cannot create names containing `:`, `?` or `*`. Mark those tests with `skipif(sys.platform == "win32")`. In C#, skip them with `Assert.SkipWhen(OperatingSystem.IsWindows(), ...)`.
 - **Console width**: compare wrapped CLI output with whitespace normalised. The Windows console wraps at 80 columns.
 
@@ -130,8 +129,8 @@ Windows-safe tests (the `test-windows` job catches these, but write them right f
 - **Quality tools**:
   - **Ruff**: Strict styling, complexity, and logic rules.
   - **basedpyright**: `typeCheckingMode = "strict"` applies to every file; there is no per-path `strict` list. On top of strict, these rules are errors: `reportExplicitAny`, `reportAny`, `reportIgnoreCommentWithoutRule`, `reportImplicitOverride` (mark overrides with `@override`), `reportUnannotatedClassAttribute`, `reportImportCycles` (lazy imports count too; break cycles by moving shared code into a leaf module), `reportUninitializedInstanceVariable`, `reportUnusedParameter` and `reportPrivateLocalImportUsage`. There is no baseline, so every error fails CI.
-  - **ty**: `uv run ty check src packages/type-ratchet/src` also gates CI and `rig status`. It checks with `python-platform = "all"`, so Windows-only code is checked the same way on a Linux runner as on a Windows machine. Untyped Windows modules are listed in `[tool.ty.analysis] replace-imports-with-any`.
+  - **ty**: `uv run ty check src packages/type-ratchet/src` also gates CI and `rig status`. It checks with `python-platform = "all"`, so Windows-only code is checked the same way on a Linux runner as on a Windows machine.
   - **Type-soup ratchet**: `uv run ratchet` fails on any fixed tuple, `cast()`, ignore comment, `noqa`, `getattr`, long module, file-level `# pyright:` pragma or string-key read (`x["k"]`, `x.get("k")`, apart from `os.environ` and the `str-key-receivers` in pyproject) under the `paths` in `[tool.repo-health.ratchet]` (`src/` and the ratchet's own package), on any `json`/`yaml` parse or `isinstance(x, dict)` outside the `typed_json`/`typed_yaml` boundary modules (stub untyped libraries in `typings/` instead), and on any `dict[str, object]`, `Mapping[str, object]` or `JsonObject` (`loose-dict`) outside the serializers and config round-trips in `loose-dict-allow`. Follow [python-types.md](python-types.md) for the banned shapes and their replacements. The ratchet is the standalone, stdlib-only `type-ratchet` package in `packages/type-ratchet` (a uv workspace member); its [README](../packages/type-ratchet/README.md) covers the rules, config keys and git install for other repos.
-  - **import-linter**: `uv run lint-imports` checks the `[tool.importlinter]` contracts in pyproject (gates CI and `rig status`): `desktop_manager` sits above `rig`, sibling subpackages are acyclic, `desktop_manager.win32` does not import features, and the main `rig` features are independent. Each contract's `ignore_imports` lists today's violations with the plan item that removes it. Don't add to it: fix the import or move shared code into a leaf module. An entry that no longer matches fails the run, so delete it in the PR that removes the import.
+  - **import-linter**: `uv run lint-imports` checks the `[tool.importlinter]` contracts in pyproject (gates CI and `rig status`): `desktop_manager` sits above `rig` and sibling subpackages are acyclic. Each contract's `ignore_imports` lists today's violations with the plan item that removes it. Don't add to it: fix the import or move shared code into a leaf module. An entry that no longer matches fails the run, so delete it in the PR that removes the import.
   - **Bandit**: Automated security scanning.
   - **Pytest**: Coverage-enforced testing.

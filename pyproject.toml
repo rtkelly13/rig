@@ -11,13 +11,10 @@ dependencies = [
     "click>=8.1.0",
     "mdformat>=1.0.0",
     "pydantic>=2.12.5",
-    "pyvda>=0.5.0; sys_platform == 'win32'",
     "rich>=14.2.0",
     "typer>=0.21.1",
     "pyyaml>=6.0.2",
     "duckdb>=1.5.5",
-    "comtypes>=1.4.16; sys_platform == 'win32'",
-    "pywin32>=311; sys_platform == 'win32'",
     "type-ratchet",
     "platformdirs>=4.3",
     "markdown-it-py>=4.0.0",
@@ -75,7 +72,6 @@ markers = [
 
 [dependency-groups]
 dev = [
-    "deepdiff>=8.6.1",
     "types-pyyaml>=6.0.12",
     "ty>=0.0.84",
     "pytest>=9.0.2",
@@ -89,7 +85,6 @@ dev = [
     "mdformat-frontmatter>=2.0.10",
     "pre-commit>=4.0.0",
     "basedpyright>=1.40.2",
-    "types-pywin32>=312.0.0.20261006",
     "import-linter>=2.15",
     "hypothesis>=6.140",
     "pytest-timeout>=2.3",
@@ -115,35 +110,6 @@ name = "rig and desktop_manager subpackages are acyclic"
 type = "acyclic_siblings"
 ancestors = ["rig", "desktop_manager"]
 ignore_imports = []
-
-[[tool.importlinter.contracts]]
-id = "win32-adapters"
-name = "win32 adapters do not import features"
-type = "forbidden"
-source_modules = ["desktop_manager.win32"]
-forbidden_modules = [
-    "desktop_manager.commands",
-    "desktop_manager.handlers",
-    "desktop_manager.jobs",
-    "desktop_manager.queries",
-    "desktop_manager.placement",
-    "desktop_manager.desktop_reconcile",
-    "desktop_manager.restore",
-]
-ignore_imports = [
-]
-
-[[tool.importlinter.contracts]]
-id = "rig-features"
-name = "rig features are independent"
-type = "independence"
-modules = [
-    "rig.estate",
-    "rig.workspace",
-    "rig.repo_governance",
-]
-ignore_imports = [
-]
 
 [tool.ruff]
 line-length = 120
@@ -172,10 +138,6 @@ ignore = [
 "typings/**" = ["N801", "N802", "N803", "N815", "N816", "F403", "TID251"]
 "**/*_windows.py" = ["TID251"]
 "**/windows/**" = ["TID251"]
-"src/desktop_manager/win32/*.py" = ["TID251"]
-"src/desktop_manager/display_guard.py" = ["TID251"]
-"src/desktop_manager/processes.py" = ["TID251"]
-"src/desktop_manager/terminal_init.py" = ["TID251"]
 # subprocess.* is banned (TID251, plan item B10, #30). Permanent owners:
 # tracing.run is the one executor that rig.proc and every other caller goes through;
 # type-ratchet is a stdlib-only package that cannot import rig.
@@ -184,15 +146,10 @@ ignore = [
 # Temporary: callers that still spawn processes directly. Each entry goes when its
 # file moves onto rig.tracing.run / rig.proc; G4 deletes whatever is left.
 # Removed by G4 (migrate onto rig.tracing.run):
-"src/desktop_manager/app_updates.py" = ["TID251"]
-"src/desktop_manager/jobs/runner.py" = ["TID251"]
-"src/desktop_manager/launching.py" = ["TID251"]
-"src/desktop_manager/restore_fallbacks.py" = ["TID251"]
 "src/desktop_manager/runtime.py" = ["TID251"]  # raw git fetch/archive (binary) and uv sync
 # Temporary: tests that build real temp repos with raw git. F2 moves them onto the
 # shared real-git fixture in tests/fakes/; G4 deletes whatever is left.
 "tests/desktop_manager/test_runtime.py" = ["TID251"]
-"tests/test_estate.py" = ["TID251"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "_winapi".msg = "Windows-only: use it in a Windows module (win32/, *_windows.py, windows/) listed in ruff per-file-ignores, or behind `sys.platform == \"win32\"` with `# noqa: TID251`"
@@ -248,19 +205,6 @@ executionEnvironments = [
 python-version = "3.13"
 python-platform = "all"
 
-[tool.ty.analysis]
-replace-imports-with-any = [
-    "comtypes.**",
-    "pywintypes",
-    "win32api",
-    "win32com.**",
-    "win32con",
-    "win32gui",
-    "win32event",
-    "win32process",
-    "pyvda",
-]
-
 [tool.ty.terminal]
 error-on-warning = true
 output-format = "concise"
@@ -275,27 +219,12 @@ branch = true
 omit = [
     "*/__init__.py",
     "*/__pycache__/*",
-    # Win32 and UI Automation adapters: they only drive the live Windows desktop, so the Linux
-    # job cannot run them and they would sit in its denominator as permanent misses. Keep logic
-    # out of them; anything testable belongs in a module that stays measured here.
-    "src/desktop_manager/win32/*",
-    # Superseded by C# rig desktop workspace (#243, ADR 0022):
-    "src/desktop_manager/desktop_port.py",
-    "src/desktop_manager/desktop_reconcile.py",
-    "src/desktop_manager/geometry.py",
-    "src/desktop_manager/models.py",
-    "src/desktop_manager/placement.py",
-    "src/desktop_manager/plan.py",
-    "src/desktop_manager/processes.py",
-    "src/desktop_manager/restore*.py",
-    "src/desktop_manager/window_*.py",
-    "src/desktop_manager/windows_workspace.py",
 ]
 
 [tool.coverage.report]
 # The floor. A ratchet (rig.repo_governance.coverage_floor, run in CI) stops it falling and
 # makes it follow coverage up to [tool.rig.coverage_ratchet] target. See docs/testing.md.
-fail_under = 86
+fail_under = 90
 show_missing = true
 skip_covered = true
 exclude_lines = [
@@ -315,14 +244,11 @@ slack = 2  # points coverage may sit above the floor before the floor must rise
 # the selection to the tests that exercise it. See docs/testing.md.
 [tool.mutmut]
 source_paths = [
-    "src/desktop_manager/placement.py",
     "src/rig/typed_json.py",
 ]
 also_copy = ["tests/", "desktop-manager/", "src/", "typings/", "config/", "assets/"]
 pytest_add_cli_args = ["-p", "no:xdist", "-p", "no:cacheprovider", "-q"]
 pytest_add_cli_args_test_selection = [
-    "tests/desktop_manager/test_placement_pure.py",
-    "tests/desktop_manager/test_placement_properties.py",
     "tests/test_typed_json.py",
 ]
 
@@ -335,41 +261,14 @@ disable = ["fake-location", "patching"]
 # Today's test files that define fakes outside tests/fakes/ or patch modules (F3, #411). Lists only
 # shrink: move a fake into tests/fakes/, or replace a patch with a fake passed through a seam.
 fake-location-allow = [
-    "tests/desktop_manager/integration/test_workspace_restore.py",
-    "tests/desktop_manager/test_display_guard.py",
     "tests/desktop_manager/test_runtime.py",
-    "tests/desktop_manager/test_windows_workspace_unit.py",
-    "tests/desktop_manager/test_work_items.py",
-    "tests/desktop_manager/test_workspace_win32_behavior.py",
     "tests/test_c4_okf.py",
     "tests/test_web_ops_spa.py",
 ]
 patching-allow = [
     "tests/conftest.py",
-    "tests/desktop_manager/conftest.py",
-    "tests/desktop_manager/integration/conftest.py",
-    "tests/desktop_manager/integration/test_desktop_placement.py",
-    "tests/desktop_manager/integration/test_restore_tracing.py",
-    "tests/desktop_manager/integration/test_workspace_restore.py",
-    "tests/desktop_manager/integration/test_workspace_status.py",
-    "tests/desktop_manager/test_app_updates.py",
-    "tests/desktop_manager/test_appx_resolution_cache.py",
-    "tests/desktop_manager/test_clean_launch_environment.py",
-    "tests/desktop_manager/test_jobs_history.py",
-    "tests/desktop_manager/test_monitor_shortfall.py",
-    "tests/desktop_manager/test_orca_update.py",
-    "tests/desktop_manager/test_placement_pure.py",
-    "tests/desktop_manager/test_restore_duplicate_launch_guards.py",
-    "tests/desktop_manager/test_reusable_window_matching.py",
     "tests/desktop_manager/test_runtime.py",
-    "tests/desktop_manager/test_windows_workspace_unit.py",
-    "tests/desktop_manager/test_workspace_paths.py",
-    "tests/desktop_manager/test_workspace_win32_behavior.py",
     "tests/test_c4_okf.py",
-    "tests/test_github_prs.py",
-    "tests/test_proc.py",
-    "tests/test_rig_flags.py",
-    "tests/test_scopes.py",
     "tests/test_web_spa.py",
 ]
 pyright-pragma-allow = []
@@ -381,8 +280,6 @@ boundary-modules = [
 str-key-receivers = ["self.headers", "handler.headers"]
 loose-dict-aliases = ["JsonObject"]
 loose-dict-allow = [
-    "src/desktop_manager/models.py",
-    "src/rig/estate/discovery.py",
     "src/rig/tracing.py",
 ]
 

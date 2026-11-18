@@ -227,23 +227,12 @@ def discover(root):
     # Their implementation digests make changes to opaque legacy dispatch explicit in review.
     import hashlib
 
-    from desktop_manager.jobs.registry import Environment, default_jobs
     from desktop_manager.web_upstream import mounted_routes
 
     for route in mounted_routes():
         implementation = route if inspect.isfunction(route) else type(route)
         digest = hashlib.sha256(inspect.getsource(implementation).encode("utf-8")).hexdigest()
         surfaces.append(f"web-child:{implementation.__module__}:{implementation.__qualname__}:{digest}")
-    environment = Environment(
-        scripts=Path("/scripts"),
-        plan=Path("/plan"),
-        workspace_root=Path("/workspace"),
-        personal_root=Path("/code/personal"),
-        work_roots=(),
-        decisions_feed=Path("/feed"),
-        orca_user_data=Path("/orca"),
-    )
-    surfaces.extend(f"python-job:{job.name}={' '.join(job.argv)}" for job in default_jobs(environment))
     return {"Commands": sorted(commands, key=lambda c: c["Id"]), "Surfaces": sorted(surfaces)}
 
 
