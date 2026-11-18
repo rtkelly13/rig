@@ -48,10 +48,10 @@ public static class FeatureFlags
         new("orca-sessions", true, "Work desktop: the Work and Personal Orca windows."),
         new("wt-terminals", false, "Work desktop: Windows Terminal sessions each running `claude`."),
         new("warp-terminals", false, "Work desktop: the earlier Warp terminal sessions."),
-        new("work-chrome", true, "Work desktop screen 2: the work-profile Chrome window."),
+        new("work-chrome", false, "Work desktop screen 2: the work-profile Chrome window."),
         new("work-fork", false, "Work desktop screen 2: the Fork window, now on the Review desktop."),
         new("personal-desktop", false, "The Personal virtual desktop."),
-        new("experimental-desktop", true, "The Lab virtual desktop."),
+        new("experimental-desktop", false, "The Lab virtual desktop."),
         new("claude-session-restore", false, "At sign-in, resume cut-off Claude sessions and start `claude` in empty terminals."),
     ];
 

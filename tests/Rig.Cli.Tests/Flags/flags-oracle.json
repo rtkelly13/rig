@@ -18,7 +18,7 @@
   },
   {
    "name": "work-chrome",
-   "default": true,
+   "default": false,
    "description": "Work desktop screen 2: the work-profile Chrome window."
   },
   {
@@ -33,7 +33,7 @@
   },
   {
    "name": "experimental-desktop",
-   "default": true,
+   "default": false,
    "description": "The Lab virtual desktop."
   },
   {
@@ -73,8 +73,8 @@
     ],
     [
      "work-chrome",
-     "on",
-     "on",
+     "off",
+     "off",
      "-",
      "Work desktop screen 2: the work-profile Chrome window."
     ],
@@ -94,8 +94,8 @@
     ],
     [
      "experimental-desktop",
-     "on",
-     "on",
+     "off",
+     "off",
      "-",
      "The Lab virtual desktop."
     ],
@@ -161,8 +161,8 @@
     ],
     [
      "work-chrome",
-     "on",
-     "on",
+     "off",
+     "off",
      "-",
      "Work desktop screen 2: the work-profile Chrome window."
     ],
@@ -182,8 +182,8 @@
     ],
     [
      "experimental-desktop",
-     "on",
-     "on",
+     "off",
+     "off",
      "-",
      "The Lab virtual desktop."
     ],
@@ -265,8 +265,8 @@
     ],
     [
      "work-chrome",
-     "on",
-     "on",
+     "off",
+     "off",
      "-",
      "Work desktop screen 2: the work-profile Chrome window."
     ],
@@ -286,8 +286,8 @@
     ],
     [
      "experimental-desktop",
-     "on",
-     "on",
+     "off",
+     "off",
      "-",
      "The Lab virtual desktop."
     ],
@@ -329,8 +329,8 @@
     ],
     [
      "work-chrome",
-     "on",
-     "on",
+     "off",
+     "off",
      "-",
      "Work desktop screen 2: the work-profile Chrome window."
     ],
@@ -350,8 +350,8 @@
     ],
     [
      "experimental-desktop",
-     "on",
-     "on",
+     "off",
+     "off",
      "-",
      "The Lab virtual desktop."
     ],

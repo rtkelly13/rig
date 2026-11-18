@@ -14,12 +14,13 @@
             "--new-window",
             "{rig-root}\\rig.code-workspace"
           ],
-          "summary": "Opens the multi-root workspace file full-screen in VS Code for cross-repo code review.",
+          "summary": "Opens the multi-root workspace file in VS Code for cross-repo code review, on the left half of screen 1 beside Fork.",
           "placement": {
             "screen": 1,
             "layout": {
-              "mode": "full",
-              "slot": 1
+              "mode": "halves",
+              "slot": 1,
+              "orientation": "vertical"
             }
           },
           "window_title": "(Workspace)",
@@ -32,9 +33,9 @@
           "delay_ms": 2200,
           "command": "rig tools ensure web \u0026\u0026 \u0022{chrome-path}\u0022 --user-data-dir=\u0022{chrome-user-data}\u0022 --profile-directory=\u0022{chrome-profile-personal}\u0022 --app=http://127.0.0.1:8090",
           "cwd": "{rig-root}",
-          "summary": "Starts the rig web dashboard service if it is not already answering, then opens it as a Chrome app window full-screen on screen 3. Replaces the prs-to-review checklist.",
+          "summary": "Starts the rig web dashboard service if it is not already answering, then opens it as a Chrome app window full-screen on screen 2. Replaces the prs-to-review checklist.",
           "placement": {
-            "screen": 3,
+            "screen": 2,
             "layout": {
               "mode": "full",
               "slot": 1
@@ -49,12 +50,13 @@
           "type": "app",
           "delay_ms": 1200,
           "path": "{fork-path}",
-          "summary": "Opens Fork full-screen for inspecting branches and diffs while reviewing.",
+          "summary": "Opens Fork on the right half of screen 1, beside VS Code, for inspecting branches and diffs while reviewing.",
           "placement": {
-            "screen": 2,
+            "screen": 1,
             "layout": {
-              "mode": "full",
-              "slot": 1
+              "mode": "halves",
+              "slot": 2,
+              "orientation": "vertical"
             }
           },
           "window_process_name": "Fork.exe"
@@ -108,9 +110,9 @@
           "args": [
             "--user-data-dir={orca-personal-data}"
           ],
-          "summary": "Orca on a second profile (\u0060--user-data-dir\u0060), full screen 3, holding the personal repos that \u0060rig estate orca --apply\u0060 registers. Orca is one window per profile, so a second window needs a second profile. Orca\u0027s in-app update relaunches only the profile that ran it, so rig applies updates instead: restore installs a staged update while no Orca is running, and \u0060desktop-manager workspace update-orca\u0060 closes both profiles, installs and relaunches both. If an in-app update closes this one anyway, the next restore finds no orca-runtime.json pid for it and launches it.",
+          "summary": "Orca on a second profile (\u0060--user-data-dir\u0060), full screen 2, holding the personal repos that \u0060rig estate orca --apply\u0060 registers. Orca is one window per profile, so a second window needs a second profile. Orca\u0027s in-app update relaunches only the profile that ran it, so rig applies updates instead: restore installs a staged update while no Orca is running, and \u0060desktop-manager workspace update-orca\u0060 closes both profiles, installs and relaunches both. If an in-app update closes this one anyway, the next restore finds no orca-runtime.json pid for it and launches it.",
           "placement": {
-            "screen": 3,
+            "screen": 2,
             "layout": {
               "mode": "full",
               "slot": 1
@@ -335,12 +337,13 @@
             "--new-window",
             "https://mail.google.com/"
           ],
-          "summary": "Opens Gmail in a dedicated Chrome window with the work profile.",
+          "summary": "Opens Gmail in a dedicated Chrome window with the work profile, on the left half of screen 1.",
           "placement": {
             "screen": 1,
             "layout": {
-              "mode": "full",
-              "slot": 1
+              "mode": "halves",
+              "slot": 1,
+              "orientation": "vertical"
             }
           },
           "window_process_name": "chrome.exe"
@@ -357,12 +360,13 @@
             "https://meet.google.com/",
             "https://calendar.google.com/"
           ],
-          "summary": "Opens Chrome with the work profile, with Google Meet and Calendar tabs.",
+          "summary": "Opens Chrome with the work profile, with Google Meet and Calendar tabs, on the right half of screen 1.",
           "placement": {
-            "screen": 2,
+            "screen": 1,
             "layout": {
-              "mode": "full",
-              "slot": 1
+              "mode": "halves",
+              "slot": 2,
+              "orientation": "vertical"
             }
           },
           "window_process_name": "chrome.exe"
@@ -373,7 +377,7 @@
           "delay_ms": 1600,
           "path": "{slack-path}",
           "placement": {
-            "screen": 3,
+            "screen": 2,
             "layout": {
               "mode": "halves",
               "slot": 1,
@@ -388,7 +392,7 @@
           "delay_ms": 900,
           "path": "{onepassword-path}",
           "placement": {
-            "screen": 3,
+            "screen": 2,
             "layout": {
               "mode": "halves",
               "slot": 2,
@@ -430,8 +434,9 @@
           "placement": {
             "screen": 2,
             "layout": {
-              "mode": "full",
-              "slot": 1
+              "mode": "halves",
+              "slot": 1,
+              "orientation": "vertical"
             }
           },
           "window_title": "rig",
@@ -470,29 +475,14 @@
           ],
           "summary": "Opens the rig repo folder in its own VS Code window. Deliberately opens the folder rather than rig.code-workspace: the Review desktop owns that multi-root workspace file, and VS Code focuses the already-open workspace window instead of opening a second one, so two desktops opening the same .code-workspace collide onto one window. A plain folder window is a distinct VS Code window.",
           "placement": {
-            "screen": 3,
-            "layout": {
-              "mode": "halves",
-              "slot": 1,
-              "orientation": "vertical"
-            }
-          },
-          "window_process_name": "Code.exe"
-        },
-        {
-          "name": "Fork",
-          "type": "app",
-          "delay_ms": 1200,
-          "path": "{fork-path}",
-          "placement": {
-            "screen": 3,
+            "screen": 2,
             "layout": {
               "mode": "halves",
               "slot": 2,
               "orientation": "vertical"
             }
           },
-          "window_process_name": "Fork.exe"
+          "window_process_name": "Code.exe"
         }
       ],
       "feature": "personal-desktop"
@@ -517,33 +507,15 @@
           "window_wait_timeout_ms": 20000
         },
         {
-          "name": "Lab Fork",
-          "type": "app",
-          "delay_ms": 1200,
-          "path": "{fork-path}",
-          "args": [
-            "{workspace-root}"
-          ],
-          "summary": "Fork on the workspace repo for inspecting the branches and diffs T3 Code produces.",
-          "placement": {
-            "screen": 2,
-            "layout": {
-              "mode": "full",
-              "slot": 1
-            }
-          },
-          "window_process_name": "Fork.exe"
-        },
-        {
           "name": "Lab Terminal",
           "type": "terminal",
           "delay_ms": 1200,
           "shell": "wt-pwsh",
           "command": "claude",
           "cwd": "{workspace-root}",
-          "summary": "A plain Claude Code session beside T3 Code, for running the same task each way.",
+          "summary": "A plain Claude Code session beside T3 Code, for running the same task each way. Fork is not on this desktop: it keeps one window, which the first desktop already places.",
           "placement": {
-            "screen": 3,
+            "screen": 2,
             "layout": {
               "mode": "full",
               "slot": 1
@@ -565,8 +537,8 @@
     "Feature flags and their defaults live in the rig flags registry (\u0060rig flags list\u0060); \u0060rig flags enable|disable NAME\u0060 stores a machine override in rig.db. Entries carry a \u0060feature\u0060 name; a feature that is off disables its entries exactly as \u0060disabled: true\u0060 would, so a variant can be paused without deleting its configuration.",
     "A desktop ref can carry a \u0060feature\u0060 too. A desktop behind a switched-off feature is not created at all and the desktops after it move up, so \u0060personal-desktop: false\u0060 means three desktops, not four with an empty one.",
     "Switching a desktop\u0027s feature off also retires it: restore removes a leftover virtual desktop past the planned count that carries that desktop\u0027s name, moving its windows to the last kept desktop. Other extra desktops are left alone. \u0060--enable personal-desktop\u0060 brings it back.",
-    "\u0060experimental-desktop\u0060 adds a trailing Lab desktop for evaluating new tooling (currently T3 Code) without disturbing the daily desktops. Switch it off for one run with \u0060workspace restore --disable experimental-desktop\u0060.",
-    "\u0060orca-sessions\u0060 puts two Orca windows on the Work desktop in place of the Workspace Terminal columns: the default profile (work repos) on screen 1 and a second \u0060--user-data-dir\u0060 profile (personal repos) on screen 3. Roll back with \u0060rig flags disable orca-sessions\u0060 and \u0060rig flags enable wt-terminals\u0060.",
+    "\u0060experimental-desktop\u0060 adds a trailing Lab desktop for evaluating new tooling (currently T3 Code) without disturbing the daily desktops. It is off by default; try it for one run with \u0060workspace restore --enable experimental-desktop\u0060.",
+    "\u0060orca-sessions\u0060 puts two Orca windows on the Work desktop in place of the Workspace Terminal columns: the default profile (work repos) on screen 1 and a second \u0060--user-data-dir\u0060 profile (personal repos) on screen 2. Roll back with \u0060rig flags disable orca-sessions\u0060 and \u0060rig flags enable wt-terminals\u0060.",
     "Desktop names (Review, Work, Admin, Personal, Lab) are re-applied on every restore; \u0060workspace name-desktops\u0060 re-applies them (and retires switched-off desktops) on demand.",
     "Aliases here are defaults. \u0060{localappdata}\u0060, \u0060{appdata}\u0060, \u0060{userprofile}\u0060 and \u0060{programfiles}\u0060 come from the environment, and \u0060tools.desktop.aliases\u0060 in \u0060~/.workspace/config.json\u0060 overrides or adds any alias on one machine (\u0060chrome-profile-work\u0060, \u0060workspace-root\u0060, an app path).",
     "Override a default for one run with \u0060workspace restore --enable NAME\u0060 / \u0060--disable NAME\u0060. Inspect with \u0060workspace features\u0060."
@@ -586,7 +558,7 @@
     "orca-work-data": "{appdata}\\orca",
     "orca-personal-data": "{appdata}\\orca-personal",
     "orca-path": "{localappdata}\\Programs\\orca\\Orca.exe",
-    "onepassword-path": "C:\\Program Files\\WindowsApps\\Agilebits.1Password_8.12.28.25_x64__amwd9z03whsfe\\1Password.exe",
+    "onepassword-path": "{localappdata}\\Microsoft\\WindowsApps\\1Password.exe",
     "slack-path": "{localappdata}\\slack\\slack.exe",
     "obsidian-path": "{localappdata}\\Programs\\Obsidian\\Obsidian.exe",
     "obsidian-vault": "{personal-root}\\obsidian-vault\\Vault",

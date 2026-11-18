@@ -93,6 +93,17 @@ public sealed class PlacementTests
     }
 
     [Fact]
+    public void A_disabled_entry_or_desktop_needs_no_screen()
+    {
+        var entry = Plan(Desktop("Work", Entry("A", 2), Entry("Paused", 3) with { Disabled = true }));
+        var desktop = Plan(Desktop("Work", Entry("A", 2)), Desktop("Lab", Entry("B", 3)) with { Disabled = true });
+
+        Assert.Null(Placement.FindMonitorShortfall(entry, 2));
+        Assert.Null(Placement.FindMonitorShortfall(desktop, 2));
+        Assert.Equal(new MonitorShortfall(2, 1), Placement.FindMonitorShortfall(entry, 1));
+    }
+
+    [Fact]
     public void An_empty_desktop_and_an_unfilled_screen_are_reported()
     {
         var plan = Plan(Desktop("Empty"), Desktop("Work", Entry("A", 1, new("thirds", 1)), Entry("B", 1, new("thirds", 2))));
@@ -229,6 +240,20 @@ public sealed class PlacementTests
         Assert.Equal(
             ["Work/A: placement screen 3 exceeds detected monitor count 2"],
             Placement.ValidatePlan(Plan(Desktop("Work", Entry("A", 3))), NoSubstitutions, monitorCount: 2));
+
+    [Fact]
+    public void An_entry_that_does_not_launch_is_not_held_to_the_screens_connected_now()
+    {
+        var plan = Plan(Desktop("Work", Entry("A", 1), Entry("B", 2), Entry("Paused", 3) with { Feature = "paused" }, Entry("Off", 3) with { Disabled = true })) with
+        {
+            Features = new Dictionary<string, bool>(StringComparer.Ordinal) { ["paused"] = false },
+        };
+
+        Assert.Empty(Placement.ValidatePlan(plan, NoSubstitutions, monitorCount: 2));
+        Assert.Equal(2, Placement.ResolveScreenCount(plan));
+        Assert.Empty(Placement.ValidatePlanStructure(plan));
+        Assert.Equal(["Work/Paused: placement screen 3 exceeds detected monitor count 2"], Placement.ValidatePlan(plan with { Features = new Dictionary<string, bool>(StringComparer.Ordinal) { ["paused"] = true } }, NoSubstitutions, monitorCount: 2));
+    }
 
     [Theory]
     [InlineData("run", null, null)]

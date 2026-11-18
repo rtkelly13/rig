@@ -29,8 +29,9 @@
       "placement": {
         "screen": 2,
         "layout": {
-          "mode": "full",
-          "slot": 1
+          "mode": "halves",
+          "slot": 1,
+          "orientation": "vertical"
         }
       },
       "window_title": "rig",
@@ -69,29 +70,14 @@
       ],
       "summary": "Opens the rig repo folder in its own VS Code window. Deliberately opens the folder rather than rig.code-workspace: the Review desktop owns that multi-root workspace file, and VS Code focuses the already-open workspace window instead of opening a second one, so two desktops opening the same .code-workspace collide onto one window. A plain folder window is a distinct VS Code window.",
       "placement": {
-        "screen": 3,
-        "layout": {
-          "mode": "halves",
-          "slot": 1,
-          "orientation": "vertical"
-        }
-      },
-      "window_process_name": "Code.exe"
-    },
-    {
-      "name": "Fork",
-      "type": "app",
-      "delay_ms": 1200,
-      "path": "{fork-path}",
-      "placement": {
-        "screen": 3,
+        "screen": 2,
         "layout": {
           "mode": "halves",
           "slot": 2,
           "orientation": "vertical"
         }
       },
-      "window_process_name": "Fork.exe"
+      "window_process_name": "Code.exe"
     }
   ]
 }
