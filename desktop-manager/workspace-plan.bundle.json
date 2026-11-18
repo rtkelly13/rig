@@ -9,7 +9,7 @@
     "A desktop ref can carry a `feature` too. A desktop behind a switched-off feature is not created at all and the desktops after it move up, so `personal-desktop: false` means three desktops, not four with an empty one.",
     "Switching a desktop's feature off also retires it: restore removes a leftover virtual desktop past the planned count that carries that desktop's name, moving its windows to the last kept desktop. Other extra desktops are left alone. `--enable personal-desktop` brings it back.",
     "`experimental-desktop` adds a trailing Lab desktop for evaluating new tooling (currently T3 Code) without disturbing the daily desktops. It is off by default; try it for one run with `workspace restore --enable experimental-desktop`.",
-    "`orca-sessions` puts Orca on the Work desktop's screen 1: one profile holding the work repos and rig.",
+    "`orca-sessions` puts Orca on the Work desktop's screen 1: one profile holding the work repos and rig. Screen 2 holds the rig triage inbox.",
     "Desktop names (Review, Work, Admin, Personal, Lab) are re-applied on every restore; `workspace name-desktops` re-applies them (and retires switched-off desktops) on demand.",
     "Aliases here are defaults. `{localappdata}`, `{appdata}`, `{userprofile}` and `{programfiles}` come from the environment, and `tools.desktop.aliases` in `~/.workspace/config.json` overrides or adds any alias on one machine (`chrome-profile-work`, `workspace-root`, an app path).",
     "Override a default for one run with `workspace restore --enable NAME` / `--disable NAME`. Inspect with `workspace features`."

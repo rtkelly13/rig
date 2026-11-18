@@ -64,7 +64,7 @@ A desktop ref in the bundle can carry a `feature` too. For example,
 ## Flags in the machine plan
 
 - `orca-sessions` (on) opens Orca on screen 1 of the Work desktop, one profile
-  holding the work repos and rig. The earlier Windows Terminal, Warp, work-Chrome and Fork
+  holding the work repos and rig; screen 2 holds the rig triage inbox, with no flag. The earlier Windows Terminal, Warp, work-Chrome and Fork
   variants were deleted when the plan moved to two screens; git history keeps them.
 - `personal-desktop` and `experimental-desktop` (both off) keep the Personal and
   Lab desktops as opt-ins, and while off they retire any leftover desktop of that

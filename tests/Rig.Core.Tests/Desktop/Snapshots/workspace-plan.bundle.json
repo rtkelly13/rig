@@ -83,6 +83,24 @@
           "window_process_name": "Orca.exe",
           "window_wait_timeout_ms": 30000,
           "window_pid_file": "{orca-work-data}\\orca-runtime.json"
+        },
+        {
+          "name": "Work Triage",
+          "type": "command",
+          "delay_ms": 2200,
+          "command": "rig tools ensure web \u0026\u0026 \u0022{chrome-path}\u0022 --user-data-dir=\u0022{chrome-user-data}\u0022 --profile-directory=\u0022{chrome-profile-personal}\u0022 --app=http://127.0.0.1:8090/triage/inbox",
+          "cwd": "{rig-root}",
+          "summary": "The rig triage queue (\u0060rig triage\u0060) as a Chrome app window, full screen 2, beside Orca: starts the rig web dashboard if it is not already answering, then opens its triage inbox. It shares the dashboard\u0027s window title with Rig Web on the Review desktop; restore matches each desktop\u0027s own windows first, so neither claims the other.",
+          "placement": {
+            "screen": 2,
+            "layout": {
+              "mode": "full",
+              "slot": 1
+            }
+          },
+          "window_title": "Rig // Estate Management",
+          "window_process_name": "chrome.exe",
+          "window_wait_timeout_ms": 45000
         }
       ]
     },
@@ -301,7 +319,7 @@
     "A desktop ref can carry a \u0060feature\u0060 too. A desktop behind a switched-off feature is not created at all and the desktops after it move up, so \u0060personal-desktop: false\u0060 means three desktops, not four with an empty one.",
     "Switching a desktop\u0027s feature off also retires it: restore removes a leftover virtual desktop past the planned count that carries that desktop\u0027s name, moving its windows to the last kept desktop. Other extra desktops are left alone. \u0060--enable personal-desktop\u0060 brings it back.",
     "\u0060experimental-desktop\u0060 adds a trailing Lab desktop for evaluating new tooling (currently T3 Code) without disturbing the daily desktops. It is off by default; try it for one run with \u0060workspace restore --enable experimental-desktop\u0060.",
-    "\u0060orca-sessions\u0060 puts Orca on the Work desktop\u0027s screen 1: one profile holding the work repos and rig.",
+    "\u0060orca-sessions\u0060 puts Orca on the Work desktop\u0027s screen 1: one profile holding the work repos and rig. Screen 2 holds the rig triage inbox.",
     "Desktop names (Review, Work, Admin, Personal, Lab) are re-applied on every restore; \u0060workspace name-desktops\u0060 re-applies them (and retires switched-off desktops) on demand.",
     "Aliases here are defaults. \u0060{localappdata}\u0060, \u0060{appdata}\u0060, \u0060{userprofile}\u0060 and \u0060{programfiles}\u0060 come from the environment, and \u0060tools.desktop.aliases\u0060 in \u0060~/.workspace/config.json\u0060 overrides or adds any alias on one machine (\u0060chrome-profile-work\u0060, \u0060workspace-root\u0060, an app path).",
     "Override a default for one run with \u0060workspace restore --enable NAME\u0060 / \u0060--disable NAME\u0060. Inspect with \u0060workspace features\u0060."

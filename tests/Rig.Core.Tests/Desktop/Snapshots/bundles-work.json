@@ -18,6 +18,24 @@
       "window_process_name": "Orca.exe",
       "window_wait_timeout_ms": 30000,
       "window_pid_file": "{orca-work-data}\\orca-runtime.json"
+    },
+    {
+      "name": "Work Triage",
+      "type": "command",
+      "delay_ms": 2200,
+      "command": "rig tools ensure web \u0026\u0026 \u0022{chrome-path}\u0022 --user-data-dir=\u0022{chrome-user-data}\u0022 --profile-directory=\u0022{chrome-profile-personal}\u0022 --app=http://127.0.0.1:8090/triage/inbox",
+      "cwd": "{rig-root}",
+      "summary": "The rig triage queue (\u0060rig triage\u0060) as a Chrome app window, full screen 2, beside Orca: starts the rig web dashboard if it is not already answering, then opens its triage inbox. It shares the dashboard\u0027s window title with Rig Web on the Review desktop; restore matches each desktop\u0027s own windows first, so neither claims the other.",
+      "placement": {
+        "screen": 2,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_title": "Rig // Estate Management",
+      "window_process_name": "chrome.exe",
+      "window_wait_timeout_ms": 45000
     }
   ]
 }
