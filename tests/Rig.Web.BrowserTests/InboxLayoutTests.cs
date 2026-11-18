@@ -103,6 +103,16 @@ public sealed class InboxLayoutTests(BrowserFixture fixture) : InboxTest(fixture
     }
 
     [Fact]
+    public async Task Description_renders_inline_html_like_dependabot_release_notes()
+    {
+        await Page.GotoAsync(Origin + "/triage/inbox/owner/repo/1?repo=owner%2Frepo");
+        var description = Page.Locator("#description-content");
+        await Expect(description.Locator("details > summary")).ToHaveTextAsync("Release notes");
+        await Expect(description.GetByText("<details>", new() { Exact = false })).ToHaveCountAsync(0);
+        Assert.True(await Page.EvaluateAsync<bool>("window.injected === undefined"));
+    }
+
+    [Fact]
     public async Task Review_workspace_ratios_focus_content_and_mobile_navigation()
     {
         await Page.GotoAsync(Origin + "/triage/inbox/owner/repo/1?repo=owner%2Frepo");
