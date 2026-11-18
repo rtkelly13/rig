@@ -91,7 +91,9 @@ public static class Placement
                 errors.AddRange(CommandAtLogonErrors(entry, desktop.Name));
                 if (entry.Placement is not null)
                 {
-                    errors.AddRange(ValidatePlacementSpec(entry.Placement, desktop.Name, entry.Name, monitorCount));
+                    // An entry that does not launch is still checked, but not against the screens connected now.
+                    var screens = !desktop.Disabled && IsActive(entry, plan.Features) ? monitorCount : 0;
+                    errors.AddRange(ValidatePlacementSpec(entry.Placement, desktop.Name, entry.Name, screens));
                 }
             }
         }
@@ -158,6 +160,7 @@ public static class Placement
     /// <summary>
     /// The shortfall when fewer screens are connected (<paramref name="liveScreenCount"/>) than the plan places windows
     /// on. <see langword="null"/> when the plan fits, needs one screen at most, or the live count is unknown (zero).
+    /// Only entries that launch count: a disabled entry or desktop, or one whose feature is off, needs no screen.
     /// </summary>
     public static MonitorShortfall? FindMonitorShortfall(WorkspacePlan plan, int liveScreenCount)
     {
@@ -407,8 +410,11 @@ public static class Placement
     private static bool IsActive(LaunchEntry entry, IReadOnlyDictionary<string, bool> features) =>
         !entry.Disabled && (entry.Feature is null || features.GetValueOrDefault(entry.Feature));
 
+    // The highest screen an entry that launches is placed on: a disabled desktop or entry, or one whose feature is off,
+    // needs no screen.
     private static int HighestScreen(WorkspacePlan plan) =>
-        plan.Desktops.SelectMany(desktop => desktop.Launch).Select(entry => entry.Placement).OfType<PlacementSpec>().Select(placement => placement.Screen).DefaultIfEmpty(0).Max();
+        plan.Desktops.Where(desktop => !desktop.Disabled).SelectMany(desktop => desktop.Launch).Where(entry => IsActive(entry, plan.Features))
+            .Select(entry => entry.Placement).OfType<PlacementSpec>().Select(placement => placement.Screen).DefaultIfEmpty(0).Max();
 
     private static List<string> LayoutErrors(PlacementLayout layout, string prefix)
     {

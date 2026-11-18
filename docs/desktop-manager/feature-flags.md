@@ -64,10 +64,10 @@ A desktop ref in the bundle can carry a `feature` too. For example,
 ## Flags in the machine plan
 
 - The Work desktop keeps three session layouts side by side. `orca-sessions` (on)
-  opens the Work and Personal Orca windows on screens 1 and 3. `wt-terminals` (off)
+  opens the Work and Personal Orca windows on screens 1 and 2. `wt-terminals` (off)
   holds the Windows Terminal sessions each running `claude`, and `warp-terminals`
   (off) the earlier Warp sessions. To go back to terminals on this machine:
   `rig flags disable orca-sessions` and `rig flags enable wt-terminals`.
-- Screen 2 works the same way. `work-chrome` (on) opens a work-profile Chrome
-  window. `work-fork` (off) holds the Fork window it replaced, because Fork now
+- `work-chrome` (off) holds the work-profile Chrome window that used to fill
+  screen 2, before the plan moved to two screens. `work-fork` (off) holds the Fork window it replaced, because Fork now
   lives on the Review desktop.

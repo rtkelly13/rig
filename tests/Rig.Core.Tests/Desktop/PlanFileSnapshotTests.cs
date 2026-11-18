@@ -21,7 +21,7 @@ public sealed class PlanFileSnapshotTests
     [Theory]
     [MemberData(nameof(Plans))]
     public void A_plan_file_writes_back_as_recorded(string plan) =>
-        Assert.Equal(Snapshot(plan), PlanFiles.Format(LoadPlan(plan).ToJson()));
+        AssertSnapshot(plan, PlanFiles.Format(LoadPlan(plan).ToJson()));
 
     [Theory]
     [MemberData(nameof(Desktops))]
@@ -29,7 +29,7 @@ public sealed class PlanFileSnapshotTests
     {
         var path = Path.Join(Repo, "desktop-manager", "bundles", desktop + ".json");
 
-        Assert.Equal(Snapshot("bundles-" + desktop), PlanFiles.Format(PlanFiles.ParseDesktop(File.ReadAllText(path), path).ToJson()));
+        AssertSnapshot("bundles-" + desktop, PlanFiles.Format(PlanFiles.ParseDesktop(File.ReadAllText(path), path).ToJson()));
     }
 
     [Theory]
@@ -55,7 +55,7 @@ public sealed class PlanFileSnapshotTests
 
     [Fact]
     public void A_plan_using_every_field_writes_back_as_recorded() =>
-        Assert.Equal(Snapshot("full-plan"), PlanFiles.Format(FullPlan().ToJson()));
+        AssertSnapshot("full-plan", PlanFiles.Format(FullPlan().ToJson()));
 
     [Fact]
     public void A_plan_using_every_field_survives_a_bundle_save()
@@ -86,6 +86,15 @@ public sealed class PlanFileSnapshotTests
     private static WorkspacePlan LoadPlan(string name) => PlanFiles.Load(Path.Join(Repo, "desktop-manager", name + ".json"));
 
     // A checkout may turn the snapshot's line endings into CRLF; PlanFiles.Format always writes LF.
-    private static string Snapshot(string name) =>
-        File.ReadAllText(Path.Join(Repo, "tests", "Rig.Core.Tests", "Desktop", "Snapshots", name + ".json")).ReplaceLineEndings("\n");
+    // RIG_UPDATE_SNAPSHOTS=1 rewrites the snapshot from the current writer, for a deliberate plan or writer change.
+    private static void AssertSnapshot(string name, string actual)
+    {
+        var path = Path.Join(Repo, "tests", "Rig.Core.Tests", "Desktop", "Snapshots", name + ".json");
+        if (Environment.GetEnvironmentVariable("RIG_UPDATE_SNAPSHOTS") == "1")
+        {
+            File.WriteAllText(path, actual);
+        }
+
+        Assert.Equal(File.ReadAllText(path).ReplaceLineEndings("\n"), actual);
+    }
 }

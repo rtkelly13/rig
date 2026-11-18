@@ -28,9 +28,9 @@
       "args": [
         "--user-data-dir={orca-personal-data}"
       ],
-      "summary": "Orca on a second profile (\u0060--user-data-dir\u0060), full screen 3, holding the personal repos that \u0060rig estate orca --apply\u0060 registers. Orca is one window per profile, so a second window needs a second profile. Orca\u0027s in-app update relaunches only the profile that ran it, so rig applies updates instead: restore installs a staged update while no Orca is running, and \u0060desktop-manager workspace update-orca\u0060 closes both profiles, installs and relaunches both. If an in-app update closes this one anyway, the next restore finds no orca-runtime.json pid for it and launches it.",
+      "summary": "Orca on a second profile (\u0060--user-data-dir\u0060), full screen 2, holding the personal repos that \u0060rig estate orca --apply\u0060 registers. Orca is one window per profile, so a second window needs a second profile. Orca\u0027s in-app update relaunches only the profile that ran it, so rig applies updates instead: restore installs a staged update while no Orca is running, and \u0060desktop-manager workspace update-orca\u0060 closes both profiles, installs and relaunches both. If an in-app update closes this one anyway, the next restore finds no orca-runtime.json pid for it and launches it.",
       "placement": {
-        "screen": 3,
+        "screen": 2,
         "layout": {
           "mode": "full",
           "slot": 1
