@@ -21,8 +21,8 @@ public sealed partial class DesignTokensTests
         ("styles", ".css"),
         ("web", ".css"),
         ("web", ".tsx"),
-        ("tools/image-drift/styles", ".css"),
-        ("tools/image-drift/src/image_drift/templates", ".jinja"),
+        ("src/Rig.Image/Gallery", ".src.css"),
+        ("src/Rig.Image/Gallery/templates", ".html"),
         ("src/Rig.Web/templates", ".html"),
         ("src/Rig.Web/templates", "studio.css"),
         ("src/Rig.Web/C4/static", ".html"),
@@ -56,7 +56,7 @@ public sealed partial class DesignTokensTests
     {
         var names = ScannedFiles().Select(path => Path.GetRelativePath(Repo.Root, path).Replace('\\', '/')).ToHashSet(StringComparer.Ordinal);
 
-        Assert.Subset(names, new HashSet<string>(["tools/image-drift/styles/gallery.src.css", "styles/c4.css", "web/app.src.css", "web/App.tsx"], StringComparer.Ordinal));
+        Assert.Subset(names, new HashSet<string>(["src/Rig.Image/Gallery/gallery.src.css", "styles/c4.css", "web/app.src.css", "web/App.tsx"], StringComparer.Ordinal));
     }
 
     [Fact]
