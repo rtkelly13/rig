@@ -4,6 +4,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Rig.Core.Tests/RepoTemp.cs" Link="Fakes/RepoTemp.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Oracle/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Oracle" />
     <None Include="SimplifierOracle/**" CopyToOutputDirectory="PreserveNewest" LinkBase="SimplifierOracle" />
     <None Include="PathwaysOracle/**" CopyToOutputDirectory="PreserveNewest" LinkBase="PathwaysOracle" />

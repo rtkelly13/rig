@@ -117,6 +117,26 @@ public sealed class ExplorePromoteCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Promote_keeps_the_other_variants_of_the_manifest_on_disk_rather_than_the_embedded_copy()
+    {
+        await Arrange();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var manifestFile = Path.Join(_temp.Path, "tools", "image-drift", "src", "image_drift", "builder_assets", "rtkelly-labs", "manifest.json");
+        var onDisk = LabsBuilder.Manifest();
+        var edited = onDisk with { Variants = onDisk.Variants.ToDictionary(v => v.Key, v => v.Key == "favicon" ? v.Value with { Sha256 = "feedface" } : v.Value) };
+        await File.WriteAllTextAsync(manifestFile, LabsBuilder.ManifestJson(edited), cancellationToken);
+        var variations = Path.Join(_temp.Path, "variations");
+        await Run("image", "explore", "--run-id", "r1", "--variations-dir", variations);
+
+        var exit = await Run("image", "promote", "--run-id", "r1", "--candidate", "1", "--confirm", "--variations-dir", variations);
+
+        Assert.Equal(0, exit);
+        var written = LabsBuilder.ParseManifest(manifestFile, await File.ReadAllTextAsync(manifestFile, cancellationToken));
+        Assert.Equal("feedface", written.Variants["favicon"].Sha256);
+        Assert.Equal("r1", written.Variants["master"].PromotedFrom!.RunId);
+    }
+
+    [Fact]
     public async Task Promote_re_runs_the_gate_and_refuses_a_candidate_that_no_longer_wins()
     {
         await Arrange();
@@ -206,7 +226,9 @@ public sealed class ExplorePromoteCommandTests : IDisposable
         var cancellationToken = TestContext.Current.CancellationToken;
         var project = Path.Join(_temp.Path, "assets", "rtkelly-labs");
         Directory.CreateDirectory(Path.Join(project, "reference"));
-        Directory.CreateDirectory(Path.Join(_temp.Path, "tools", "image-drift", "src", "image_drift", "builder_assets", "rtkelly-labs"));
+        var builderAssets = Path.Join(_temp.Path, "tools", "image-drift", "src", "image_drift", "builder_assets", "rtkelly-labs");
+        Directory.CreateDirectory(builderAssets);
+        await File.WriteAllTextAsync(Path.Join(builderAssets, "manifest.json"), LabsBuilder.ManifestJson(LabsBuilder.Manifest()), cancellationToken);
         await File.WriteAllTextAsync(Path.Join(project, "rtkelly-labs.svg"), Incumbent, cancellationToken);
         var white = new byte[8 * 8 * 4];
         Array.Fill(white, (byte)255);

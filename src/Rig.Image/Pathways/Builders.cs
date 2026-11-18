@@ -60,8 +60,13 @@ public static class LabsBuilder
     /// <summary>The manifest: per-variant file, digest, gating and provenance.</summary>
     public static VariantManifest Manifest()
     {
-        const string Source = "rtkelly-labs/manifest.json";
-        var document = StrictJson.Parse(Source, BuilderAssets.Read(Project, "manifest.json"));
+        return ParseManifest("rtkelly-labs/manifest.json", BuilderAssets.Read(Project, "manifest.json"));
+    }
+
+    /// <summary>Parses manifest text; <paramref name="source"/> names it in an error. Promote reads the checkout's file this way, not the copy embedded at build time.</summary>
+    public static VariantManifest ParseManifest(string source, string json)
+    {
+        var document = StrictJson.Parse(source, json);
         var variants = document.Property("variants");
         return new VariantManifest(
             document.Property("project").AsString(),

@@ -132,7 +132,11 @@ internal sealed class PromoteCommand(ImageHost host, TextWriter output, TextWrit
         }
 
         var assets = Path.Join(host.RepoRoot, BuilderAssetsFolder);
-        var masterFile = Path.Join(assets, LabsBuilder.Manifest().Variants[LabsBuilder.DefaultVariant].File);
+        var manifestFile = Path.Join(assets, "manifest.json");
+
+        // The manifest on disk is current (an earlier promote or hand edit may have changed it since this build embedded its copy).
+        var manifest = LabsBuilder.ParseManifest(manifestFile, await File.ReadAllTextAsync(manifestFile, cancellationToken).ConfigureAwait(false));
+        var masterFile = Path.Join(assets, manifest.Variants[LabsBuilder.DefaultVariant].File);
         if (!Confirm)
         {
             text.AppendLine(CultureInfo.InvariantCulture, $"Dry run. Would replace:\n  {masterFile}\n  {project.Svg}\nRe-run with --confirm to write.");
@@ -147,7 +151,6 @@ internal sealed class PromoteCommand(ImageHost host, TextWriter output, TextWrit
         var master = candidateSvg.ReplaceLineEndings("\n");
         await File.WriteAllTextAsync(masterFile, master, utf8, cancellationToken).ConfigureAwait(false);
 
-        var manifest = LabsBuilder.Manifest();
         var promoted = manifest.Variants[LabsBuilder.DefaultVariant] with
         {
             Sha256 = Convert.ToHexStringLower(SHA256.HashData(await File.ReadAllBytesAsync(masterFile, cancellationToken).ConfigureAwait(false))),
@@ -155,7 +158,7 @@ internal sealed class PromoteCommand(ImageHost host, TextWriter output, TextWrit
         };
         var variants = manifest.Variants.ToDictionary(v => v.Key, v => v.Value);
         variants[LabsBuilder.DefaultVariant] = promoted;
-        await File.WriteAllTextAsync(Path.Join(assets, "manifest.json"), LabsBuilder.ManifestJson(manifest with { Variants = variants }), utf8, cancellationToken).ConfigureAwait(false);
+        await File.WriteAllTextAsync(manifestFile, LabsBuilder.ManifestJson(manifest with { Variants = variants }), utf8, cancellationToken).ConfigureAwait(false);
 
         // The committed asset is the packaged master, written from the same bytes.
         await File.WriteAllTextAsync(project.Svg, master, utf8, cancellationToken).ConfigureAwait(false);

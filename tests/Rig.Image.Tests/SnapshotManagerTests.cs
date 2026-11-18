@@ -1,10 +1,11 @@
+using Rig.Core.Tests;
 using Rig.Image.Pathways;
 
 namespace Rig.Image.Tests;
 
 public sealed class SnapshotManagerTests : IDisposable
 {
-    private readonly string _root = Path.Join(Path.GetTempPath(), "rig-tests", Guid.NewGuid().ToString("N"));
+    private readonly string _root = RepoTemp.NewPath("snapshot-manager");
 
     public void Dispose()
     {
