@@ -579,12 +579,15 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-dotnet-linux-${{ hashFiles('Directory.Packages.props') }}
+      # upload-artifact drops file modes, and the install below runs this node driver, so restore its bit first.
+      - name: Restore the Playwright driver's execute bit
+        run: chmod +x "${{ runner.temp }}/rig-cli/.playwright/node/linux-x64/node"
+      # shell: pwsh runs with $ErrorActionPreference = 'stop', so a failed install fails the step instead of the cross-check.
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pwsh "${{ runner.temp }}/rig-cli/playwright.ps1" install --with-deps chromium
-      - name: Restore the Playwright driver's execute bit
-        # upload-artifact drops file modes.
-        run: chmod +x "${{ runner.temp }}/rig-cli/.playwright/node/linux-x64/node"
+        shell: pwsh
+        run: |
+          & "${{ runner.temp }}/rig-cli/playwright.ps1" install --with-deps chromium
       - name: Cross-check the renderers
         run: >-
           dotnet "${{ runner.temp }}/rig-cli/rig.dll" image cross-check
