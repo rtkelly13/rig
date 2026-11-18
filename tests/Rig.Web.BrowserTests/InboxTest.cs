@@ -17,7 +17,7 @@ public abstract class InboxTest(BrowserFixture fixture) : BrowserTest(fixture)
         await base.InitializeAsync();
         Save(
             new QueueItem("owner/repo", 1, "pr", "Fix the first issue", "OPEN", "2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z", new string('a', 40), 1, 0, 6,
-                Body: "## Why this change\n\nRestore the first workflow.\n\n- Keep the context\n- Preserve drafts\n\n<script>window.injected = true</script>"),
+                Body: "## Why this change\n\nRestore the first workflow.\n\n- Keep the context\n- Preserve drafts\n\n<details>\n<summary>Release notes</summary>\n<blockquote><p>Sourced from upstream.</p></blockquote>\n</details>\n\n<img src=\"x\" onerror=\"window.injected = true\">\n\n> [!WARNING]\n> Breaking change.\n\n- [x] Migrated\n\nSee the note[^1].\n\n```mermaid\ngraph TD; A-->B\n```\n\n[^1]: The footnote.\n\n<script>window.injected = true</script>"),
             new QueueItem("owner/repo", 2, "pr", "<script> must stay text", "OPEN", "2026-01-02T00:00:00Z", "2026-01-02T00:00:00Z", new string('b', 40), 2, 1, 40),
             new QueueItem("owner/other", 3, "issue", "Triage the bug", "OPEN", "2026-01-03T00:00:00Z", "2026-01-03T00:00:00Z"));
         await CannedGitHubAsync();

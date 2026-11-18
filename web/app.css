@@ -1755,6 +1755,133 @@ button:disabled {
 .triage-prose p:first-child {
   margin-top: 0;
 }
+/* Prose's `prose-*` classes need @tailwindcss/typography, which this bundle does
+   not compile, so the plain Markdown elements get a baseline here. */
+.triage-prose ul,
+.triage-prose ol {
+  padding-left: 1.5em;
+}
+.triage-prose ul {
+  list-style: square;
+}
+.triage-prose ol {
+  list-style: decimal;
+}
+.triage-prose li + li,
+.triage-prose li > ul,
+.triage-prose li > ol {
+  margin-top: 4px;
+}
+.triage-prose blockquote {
+  margin: 10px 0;
+  padding: 4px 14px;
+  border-left: 4px solid var(--ds-border-strong);
+  background: var(--ds-surface-raised);
+  color: var(--ds-text-secondary);
+}
+.triage-prose code {
+  padding: 1px 5px;
+  border: 1px solid var(--ds-border-default);
+  background: var(--ds-surface-raised);
+  font: 0.9em var(--ds-font-mono);
+}
+.triage-prose pre {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ds-border-default);
+  background: var(--ds-surface-sunken);
+}
+.triage-prose pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.triage-prose hr {
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px dashed var(--ds-border-default);
+}
+.triage-prose th,
+.triage-prose td {
+  padding: 4px 8px;
+  border: 1px solid var(--ds-border-default);
+  text-align: left;
+}
+/* GitHub-flavoured extras (web/githubMarkdown.tsx): collapsible sections, task
+   lists, alerts, footnotes and Mermaid diagrams. */
+.triage-prose details {
+  margin: 10px 0;
+  padding: 6px 12px;
+  border: 1px solid var(--ds-border-default);
+}
+.triage-prose details[open] {
+  padding-bottom: 10px;
+}
+.triage-prose summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.triage-prose details[open] > summary {
+  margin-bottom: 8px;
+}
+.triage-prose .contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+.triage-prose .task-list-item input {
+  margin: 0 6px 0 0;
+  vertical-align: middle;
+}
+.triage-prose .markdown-alert {
+  --alert-color: var(--ds-intent-info);
+  margin: 16px 0;
+  padding: 8px 16px;
+  border-left: 4px solid var(--alert-color);
+  background: var(--ds-surface-raised);
+}
+.triage-prose .markdown-alert-tip {
+  --alert-color: var(--ds-intent-success);
+}
+.triage-prose .markdown-alert-important {
+  --alert-color: var(--ds-accent-secondary);
+}
+.triage-prose .markdown-alert-warning {
+  --alert-color: var(--ds-intent-warning);
+}
+.triage-prose .markdown-alert-caution {
+  --alert-color: var(--ds-intent-danger);
+}
+.triage-prose .markdown-alert-title {
+  margin: 0 0 4px;
+  color: var(--alert-color);
+  font-weight: 700;
+}
+.triage-prose .footnotes {
+  margin-top: 20px;
+  border-top: 1px solid var(--ds-border-subtle);
+  font-size: 13px;
+}
+.triage-prose .footnotes .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.triage-prose .mermaid-diagram {
+  margin: 16px 0;
+}
+.triage-prose .mermaid-diagram img {
+  max-width: 100%;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--ds-border-default);
+}
+.triage-prose .mermaid-error {
+  color: var(--ds-intent-danger);
+  font-size: 13px;
+}
 .triage-page .review-callout {
   margin: 20px 0;
   padding: 12px;

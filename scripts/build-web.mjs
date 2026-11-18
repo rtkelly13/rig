@@ -55,6 +55,9 @@ const assets = [
   ['@rtkelly-labs/design-system/LICENSE', 'design-system.LICENSE.txt'],
   ['react-markdown/license', 'react-markdown.LICENSE.txt'],
   ['remark-gfm/license', 'remark-gfm.LICENSE.txt'],
+  ['rehype-raw/license', 'rehype-raw.LICENSE.txt'],
+  ['rehype-sanitize/license', 'rehype-sanitize.LICENSE.txt'],
+  ['remark-gemoji/license', 'remark-gemoji.LICENSE.txt'],
 ];
 for (const [source, name] of assets)
   await copyFile(path.join(root, 'node_modules', source), path.join(outputFor(appAssets), name));

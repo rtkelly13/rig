@@ -134,7 +134,8 @@ public sealed partial class InboxAttentionTests(BrowserFixture fixture) : InboxT
         var description = Page.GetByRole(AriaRole.Region, new() { Name = "PR description", Exact = true });
         await Expect(description.Link("Related issue")).ToHaveAttributeAsync("href", "https://github.com/owner/repo/issues/2");
         await Expect(description.Link("Diagram")).ToHaveAttributeAsync("href", "https://github.com/owner/repo/raw/main/a.png");
-        await Expect(description.Link("Unsafe")).ToHaveAttributeAsync("href", "");
+        await Expect(description.GetByText("Unsafe", new() { Exact = true })).ToBeVisibleAsync();
+        await Expect(description.Link("Unsafe")).ToHaveCountAsync(0);
         var feed = Page.GetByRole(AriaRole.Region, new() { Name = "PR feed 2", Exact = true });
         await Expect(feed.Locator(".event-header > strong")).ToHaveTextAsync(["reviewer-one", "reviewer-two"]);
         await Expect(feed.Link("Context")).ToHaveAttributeAsync("href", "https://github.com/owner/repo/pull/1#discussion_r123");
