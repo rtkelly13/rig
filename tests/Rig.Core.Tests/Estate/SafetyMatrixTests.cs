@@ -193,7 +193,7 @@ public sealed class SafetyMatrixTests : IDisposable
 
         public List<string> Busy { get; } = [];
 
-        public List<string> Repos { get; set; } = [];
+        public List<string> Repos { get; } = [];
 
         /// <summary>The head commit the merged PR recorded, as GitHub reports headRefOid.</summary>
         public string PrHead { get; set; } = string.Empty;
@@ -254,7 +254,8 @@ public sealed class SafetyMatrixTests : IDisposable
         var tree = Path.Join(clone, "temp", Branch);
         _ = await Repos.GitAsync(clone, ["worktree", "add", "-q", .. relative ? RelativePaths : [], "-b", Branch, tree]);
         var world = new World(root, origin, clone, tree);
-        world.Repos = [.. world.Repos, clone, origin];
+        world.Repos.Add(clone);
+        world.Repos.Add(origin);
         var work = await world.PlantAsync("work.md");
         _ = await Repos.GitAsync(tree, "add", ".");
         _ = await Repos.GitAsync(tree, "commit", "-qm", "spike work");
@@ -442,13 +443,16 @@ public sealed class SafetyMatrixTests : IDisposable
         var git = GitFor(world);
         var tidy = new Tidy(git, new TreeRemoval(Repos.Proc));
         var merged = MergedPr(world);
-        var outcomes = new List<TidyOutcome>();
-        for (var pass = 0; pass < 2; pass++)
-        {
-            var report = await new RepoChecks(git, TimeProvider.System).InspectAsync(world.Clone, merged);
-            var actions = await tidy.CleanRepoAsync(report, apply: true, force: true, mergedHeads: merged, busy: new Busy([.. world.Busy]), cancellationToken: Token);
-            outcomes = [.. outcomes, .. actions.Where(action => Same(action.Subject, world.Tree)).Select(action => action.Outcome)];
-        }
+        var perPass = await Enumerable.Range(0, 2)
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<List<TidyOutcome>> (_, token) =>
+            {
+                var report = await new RepoChecks(git, TimeProvider.System).InspectAsync(world.Clone, merged);
+                var actions = await tidy.CleanRepoAsync(report, apply: true, force: true, mergedHeads: merged, busy: new Busy([.. world.Busy]), cancellationToken: token);
+                return [.. actions.Where(action => Same(action.Subject, world.Tree)).Select(action => action.Outcome)];
+            })
+            .ToListAsync(Token);
+        List<TidyOutcome> outcomes = [.. perPass.SelectMany(passOutcomes => passOutcomes)];
 
         return outcomes.Contains(TidyOutcome.Cleaned) ? Layer.Kept : outcomes.Contains(TidyOutcome.Failed) ? Layer.Git : Layer.Tool;
     }

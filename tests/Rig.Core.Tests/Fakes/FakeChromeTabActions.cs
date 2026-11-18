@@ -9,7 +9,7 @@ internal sealed class FakeChromeTabActions : IChromeTabActions
     public string? FailWith { get; set; }
 
     /// <summary>Every call, as (action, window, tab index); a restore logs index -1 per window.</summary>
-    public List<(string Action, long Window, int Index)> Log { get; private set; } = [];
+    public List<(string Action, long Window, int Index)> Log { get; } = [];
 
     /// <summary>The tabs closed, in order.</summary>
     public List<ChromeTab> Closed { get; } = [];
@@ -35,7 +35,7 @@ internal sealed class FakeChromeTabActions : IChromeTabActions
     {
         var handles = before.Select(window => window.Handle).ToList();
         Restored.Add((handles, fallbacks?.ToDictionary()));
-        Log = [.. Log, .. handles.Select(handle => ("restore", handle, -1))];
+        Log.InsertRange(Log.Count, handles.Select(handle => ("restore", handle, -1)));
         return handles.ToDictionary(handle => handle, _ => (ChromeTab?)null);
     }
 }

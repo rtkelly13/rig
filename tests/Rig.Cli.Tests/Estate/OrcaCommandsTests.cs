@@ -352,9 +352,12 @@ public sealed class OrcaCommandsTests : IDisposable
     // Starts a fake as the Orca of the profile in folder: its runtime file names its own endpoint.
     private FakeOrca Running(string folder, FakeOrca template)
     {
-        var fake = new FakeOrca { Listening = new(OrcaTransport.Unix, Endpoint(folder)) };
-        fake.Repos = [.. fake.Repos, .. template.Repos.Select(r => r.DeepClone().AsObject())];
-        fake.Groups = [.. fake.Groups, .. template.Groups.Select(g => g.DeepClone().AsObject())];
+        var fake = new FakeOrca
+        {
+            Listening = new(OrcaTransport.Unix, Endpoint(folder)),
+            Repos = [.. template.Repos.Select(r => r.DeepClone().AsObject())],
+            Groups = [.. template.Groups.Select(g => g.DeepClone().AsObject())],
+        };
         _ = Directory.CreateDirectory(folder);
         File.WriteAllText(Path.Join(folder, OrcaLocations.RuntimeFile), fake.Metadata);
         _profiles.ByEndpoint[fake.Listening.Endpoint] = fake;

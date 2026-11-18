@@ -20,12 +20,8 @@ public sealed class FrontmatterOracleTests
     [Fact]
     public void Reads_every_recorded_note_as_recorded()
     {
-        var cases = Load(Path.Combine(AppContext.BaseDirectory, "Vault", "frontmatter-oracle.json")).ToList();
         var extra = Environment.GetEnvironmentVariable(ExtraFixtureVariable);
-        if (!string.IsNullOrEmpty(extra))
-        {
-            cases = [.. cases, .. Load(extra)];
-        }
+        List<OracleCase> cases = [.. Load(Path.Combine(AppContext.BaseDirectory, "Vault", "frontmatter-oracle.json")), .. string.IsNullOrEmpty(extra) ? [] : Load(extra)];
 
         var mismatches = cases
             .Select(c => (Case: c, Actual: Describe(Frontmatter.Read(c.Raw))))

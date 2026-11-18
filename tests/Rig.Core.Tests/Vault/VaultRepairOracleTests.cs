@@ -20,26 +20,24 @@ public sealed partial class VaultRepairOracleTests
     [Fact]
     public void Repairs_every_recorded_vault_as_recorded()
     {
-        var mismatches = new List<string>();
-        foreach (var node in JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Vault", "writers-oracle.json")))!.AsArray())
-        {
-            var oracle = node!.AsObject();
-            if (oracle["posix_only"]!.GetValue<bool>() && OperatingSystem.IsWindows())
-            {
-                continue;
-            }
-
-            var files = oracle["files"]!.AsArray();
-            var originals = files
-                .Select(f => f!.AsObject())
-                .Where(f => f["b64"] is not null)
-                .ToDictionary(f => f["path"]!.GetValue<string>(), f => Convert.FromBase64String(f["b64"]!.GetValue<string>()), StringComparer.Ordinal);
-            foreach (var run in oracle["runs"]!.AsArray().Select(r => r!.AsObject()))
-            {
-                var label = $"{oracle["name"]} {run["op"]} {(run["apply"]!.GetValue<bool>() ? "apply" : "dry")}";
-                mismatches = [.. mismatches, .. Run(label, files, originals, run)];
-            }
-        }
+        List<string> mismatches =
+        [
+            .. JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Vault", "writers-oracle.json")))!
+                .AsArray()
+                .Select(node => node!.AsObject())
+                .Where(oracle => !(oracle["posix_only"]!.GetValue<bool>() && OperatingSystem.IsWindows()))
+                .SelectMany(oracle =>
+                {
+                    var files = oracle["files"]!.AsArray();
+                    var originals = files
+                        .Select(f => f!.AsObject())
+                        .Where(f => f["b64"] is not null)
+                        .ToDictionary(f => f["path"]!.GetValue<string>(), f => Convert.FromBase64String(f["b64"]!.GetValue<string>()), StringComparer.Ordinal);
+                    return oracle["runs"]!.AsArray()
+                        .Select(r => r!.AsObject())
+                        .SelectMany(run => Run($"{oracle["name"]} {run["op"]} {(run["apply"]!.GetValue<bool>() ? "apply" : "dry")}", files, originals, run));
+                }),
+        ];
 
         Assert.True(mismatches.Count == 0, $"{mismatches.Count} difference(s) from the recording:\n{string.Join('\n', mismatches.Take(60))}");
     }
