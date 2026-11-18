@@ -88,8 +88,8 @@ jobs:
         run: dotnet restore rig.slnx
       # Only the two artifacts other jobs consume, not every test project. `dotnet` still
       # builds the full solution for its tests in parallel. Analyzers stay off here: this
-      # job only has to produce runnable output, and the two `dotnet` shards run them on
-      # the same projects. Cutting them takes this build from ~1m50 to ~1m.
+      # job only has to produce runnable output, and `analyze` runs them over the whole
+      # solution. Cutting them takes this build from ~1m50 to ~1m.
       - name: Build rig CLI
         run: >-
           dotnet build src/Rig.Cli -c Release -o "${{ runner.temp }}/rig-cli" --no-restore
@@ -330,13 +330,13 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
       - name: Restore
         run: dotnet restore rig.slnx
-      # Warnings are errors, and the analyzers run here, so a shard fails the PR on a
-      # diagnostic in anything it compiles, product projects included.
+      # Analyzers are two thirds of compile time and `analyze` runs them once over the whole
+      # solution, so the shards skip them rather than each re-analyzing Rig.Core.
       - name: Build
         run: |
           set -euo pipefail
           for project in $PROJECTS; do
-            dotnet build "$project" --no-restore -c Release
+            dotnet build "$project" --no-restore -c Release -p:RunAnalyzers=false
           done
       # Cache Playwright's browser binaries to avoid the download on every run; the version pin lives in
       # Directory.Packages.props, so the key follows it.
@@ -375,6 +375,36 @@ jobs:
           name: dotnet-trx-${{ matrix.shard }}
           path: TestResults/*.trx
           retention-days: 14
+
+  # Warnings are errors with every analyzer on (ADR 0022). One build of the whole solution here
+  # enforces them for every project, so `build` and the `dotnet` shards compile without them.
+  analyze:
+    name: analyze
+    needs: changes
+    if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+      - name: Restore
+        run: dotnet restore rig.slnx
+      - name: Build with analyzers
+        run: dotnet build rig.slnx --no-restore -c Release
 
   # A ratchet: the floor never falls, must follow coverage up to 95%. It reads
   # every shard's report, so the split above cannot lower the measured number.
@@ -682,7 +712,7 @@ jobs:
   ci:
     name: ci
     if: always()
-    needs: [changes, build, format, lint, docs-audit, image-drift, image-drift-windows, dotnet, dotnet-coverage, dotnet-windows, command-ownership]
+    needs: [changes, build, format, lint, docs-audit, image-drift, image-drift-windows, analyze, dotnet, dotnet-coverage, dotnet-windows, command-ownership]
     runs-on: ubuntu-latest
     permissions:
       contents: read
