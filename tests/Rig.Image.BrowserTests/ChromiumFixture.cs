@@ -1,3 +1,5 @@
+using Rig.Image.Tests;
+
 namespace Rig.Image.BrowserTests;
 
 /// <summary>One Chromium for the whole class, started once.</summary>
@@ -11,7 +13,7 @@ public sealed class ChromiumFixture : IAsyncLifetime
     /// <inheritdoc />
     public async ValueTask InitializeAsync()
     {
-        _scratch = Path.Combine(Path.GetTempPath(), "rig-tests", Guid.NewGuid().ToString("N"));
+        _scratch = Path.Combine(OracleFixture.RepoRoot, "temp", "tests", $"chromium-{Guid.NewGuid():N}");
         Renderer = await ChromiumRenderer.LaunchAsync(null, _scratch);
     }
 
