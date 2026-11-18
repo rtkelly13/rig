@@ -92,11 +92,12 @@ public sealed record JxaSnapshot(int Pid, bool Frontmost, IReadOnlyList<JxaWindo
 /// <param name="GaiaName">The signed-in account's full name.</param>
 /// <param name="GaiaGivenName">The signed-in account's given name.</param>
 /// <param name="UserName">The signed-in account's address.</param>
-public sealed record ProfileInfo(string? Name = null, string? GaiaName = null, string? GaiaGivenName = null, string? UserName = null)
+/// <param name="EnterpriseLabel">The organisation label a managed profile's avatar shows in place of its name.</param>
+public sealed record ProfileInfo(string? Name = null, string? GaiaName = null, string? GaiaGivenName = null, string? UserName = null, string? EnterpriseLabel = null)
 {
-    /// <summary>The display name and account names this profile's avatar may show.</summary>
+    /// <summary>The display name, account names and organisation label this profile's avatar may show.</summary>
     public IReadOnlySet<string> Aliases() =>
-        new HashSet<string>(new[] { Name, GaiaName, GaiaGivenName, UserName }.OfType<string>().Where(alias => alias.Length > 0), StringComparer.Ordinal);
+        new HashSet<string>(new[] { Name, GaiaName, GaiaGivenName, UserName, EnterpriseLabel }.OfType<string>().Where(alias => alias.Length > 0), StringComparer.Ordinal);
 }
 
 /// <summary>The scripting ids an action on a tab names.</summary>

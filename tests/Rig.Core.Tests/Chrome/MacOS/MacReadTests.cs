@@ -360,6 +360,20 @@ public sealed class MacReadTests
     }
 
     [Fact]
+    public void A_managed_avatar_shows_its_organisation_label()
+    {
+        // A managed profile's avatar reads the organisation label, not the profile's name.
+        var profiles = new Dictionary<string, ProfileInfo>(SharedAccount) { ["Profile 1"] = new ProfileInfo("Work", GaiaGivenName: "Ryan", EnterpriseLabel: "example-org") };
+        var toolbar = new AxNode(Role: "AXToolbar", Children:
+        [
+            new AxNode(Role: "AXButton", Title: "example-org"),
+            new AxNode(Role: "AXPopUpButton", Title: "Chrome"),
+        ]);
+        var node = AxWindow() with { Children = [toolbar, AxWindow().Children[1]] };
+        Assert.Equal("Profile 1", One(Snapshot(Raw()), [node], profiles).ProfileDir);
+    }
+
+    [Fact]
     public void A_shared_account_name_alone_is_ambiguous()
     {
         var node = AxWindow(name: "Ryan");
