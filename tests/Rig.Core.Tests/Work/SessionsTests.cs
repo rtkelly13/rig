@@ -112,7 +112,7 @@ public sealed class SessionsTests
     [Fact]
     public async Task A_transcript_that_cannot_be_read_is_skipped_and_not_counted()
     {
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindows() || Environment.IsPrivilegedProcess)
         {
             // A Windows directory named like a transcript is never offered as a file, and mode bits do not lock one.
             return;
@@ -139,7 +139,7 @@ public sealed class SessionsTests
     [Fact]
     public async Task A_project_folder_that_cannot_be_read_does_not_hide_the_other_projects()
     {
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindows() || Environment.IsPrivilegedProcess)
         {
             // Mode bits do not lock a Windows folder.
             return;
@@ -166,7 +166,7 @@ public sealed class SessionsTests
     [Fact]
     public async Task A_registry_file_that_cannot_be_read_says_nothing()
     {
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindows() || Environment.IsPrivilegedProcess)
         {
             return;
         }

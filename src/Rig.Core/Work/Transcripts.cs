@@ -100,7 +100,17 @@ internal static class Transcripts
     public static async Task<SessionRecord> ReadAsync(string path, CancellationToken cancellationToken = default)
     {
         var summary = new Summary();
-        await foreach (var line in File.ReadLinesAsync(path, Encoding.UTF8, cancellationToken).ConfigureAwait(false))
+
+        // Claude appends to a live transcript while rig reads it; sharing writes and deletes keeps Windows from refusing the open.
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.Open,
+            Access = FileAccess.Read,
+            Share = FileShare.ReadWrite | FileShare.Delete,
+            Options = FileOptions.Asynchronous | FileOptions.SequentialScan,
+        };
+        using var reader = new StreamReader(path, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, options);
+        while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
         {
             summary.Add(line);
         }
