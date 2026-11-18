@@ -173,29 +173,34 @@ public static class OrcaSync
         }
 
         var byName = OrcaDoctor.ByName(snapshot.Repos);
-        List<SyncAction> actions = [];
-        foreach (var (name, want) in policy.Repos.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-        {
-            if (targetRepo is not null && name != targetRepo)
+        var perRepo = await policy.Repos
+            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Where(pair => targetRepo is null || pair.Key == targetRepo)
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<IReadOnlyList<SyncAction>> (pair, token) =>
             {
-                continue;
-            }
+                var (name, want) = pair;
+                if (byName.GetValueOrDefault(name) is not { } repo)
+                {
+                    return
+                    [
+                        retired.Contains(name)
+                            ? new(name, "manual", "registered", "unregistered", "", false, "retired; drop it from orca.json")
+                            : await RegisterAsync(name, want.Path is not null ? paths.RepoPath(want.Path) : OrcaPaths.Posix(Path.Join(paths.EstateRoot, name)), apply, cli, token).ConfigureAwait(false),
+                    ];
+                }
 
-            if (byName.GetValueOrDefault(name) is not { } repo)
-            {
-                actions.Add(retired.Contains(name)
-                    ? new(name, "manual", "registered", "unregistered", "", false, "retired; drop it from orca.json")
-                    : await RegisterAsync(name, want.Path is not null ? paths.RepoPath(want.Path) : OrcaPaths.Posix(Path.Join(paths.EstateRoot, name)), apply, cli, cancellationToken).ConfigureAwait(false));
-                continue;
-            }
-
-            var context = new Context(name, repo, apply, cli, live, cancellationToken);
-            actions = [.. actions, .. await SyncScriptsAsync(context, want).ConfigureAwait(false)];
-            actions = [.. actions, .. await SyncCliFieldsAsync(context, want).ConfigureAwait(false)];
-            actions = [.. actions, .. await SyncBadgeAsync(context, want).ConfigureAwait(false)];
-        }
-
-        return actions;
+                var context = new Context(name, repo, apply, cli, live, token);
+                return
+                [
+                    .. await SyncScriptsAsync(context, want).ConfigureAwait(false),
+                    .. await SyncCliFieldsAsync(context, want).ConfigureAwait(false),
+                    .. await SyncBadgeAsync(context, want).ConfigureAwait(false),
+                ];
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return [.. perRepo.SelectMany(actions => actions)];
     }
 
     private static SyncAction Launch(string agent, IReadOnlyDictionary<string, string> have, string line, bool applied, string detail) =>
