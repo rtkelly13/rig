@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.RegularExpressions;
 
 namespace Rig.Core.Text;
 
@@ -37,6 +39,19 @@ public static partial class JsonProblem
     /// <summary>What an int64 read from a proto3 JSON string or number is called.</summary>
     internal const string WholeOrDigits = "a whole number or a string of digits";
 
+    /// <summary>
+    /// Rejects a format version below 1 or above the <paramref name="newest"/> this build reads. A format rig owns carries its
+    /// version as an integer <c>version</c> member that reads as 1 when absent.
+    /// </summary>
+    /// <exception cref="JsonInputException">The version is outside 1 to <paramref name="newest"/>.</exception>
+    public static void RequireVersion(int found, int newest)
+    {
+        if (found < 1 || found > newest)
+        {
+            throw Expected("$.version", $"a version from 1 to {newest.ToString(CultureInfo.InvariantCulture)}", $"the number {found.ToString(CultureInfo.InvariantCulture)}");
+        }
+    }
+
     /// <summary>Reads <paramref name="text"/> as a <typeparamref name="T"/>, the record <paramref name="info"/> describes.</summary>
     /// <exception cref="JsonInputException">The text is not JSON, or its shape is not the record's.</exception>
     public static T Read<T>(string text, JsonTypeInfo<T> info)
@@ -48,7 +63,7 @@ public static partial class JsonProblem
         {
             return JsonSerializer.Deserialize(text, info) ?? throw Expected("$", TypePhrase(info), "null");
         }
-        catch (JsonException e)
+        catch (Exception e) when (e is JsonException or NotSupportedException)
         {
             throw Translate(e, text, info);
         }
@@ -64,7 +79,7 @@ public static partial class JsonProblem
         {
             return element.Deserialize(info) ?? throw Expected("$", TypePhrase(info), "null");
         }
-        catch (JsonException e)
+        catch (Exception e) when (e is JsonException or NotSupportedException)
         {
             throw Translate(e, element, info);
         }
@@ -72,7 +87,7 @@ public static partial class JsonProblem
 
     // The failure is re-read as a document: if that fails the text was never JSON, otherwise the document is where the
     // offending value is found.
-    private static JsonInputException Translate(JsonException failure, string text, JsonTypeInfo info)
+    private static JsonInputException Translate(Exception failure, string text, JsonTypeInfo info)
     {
         try
         {
@@ -85,47 +100,57 @@ public static partial class JsonProblem
         }
     }
 
-    private static JsonInputException Translate(JsonException failure, JsonElement root, JsonTypeInfo info)
+    private static JsonInputException Translate(Exception failure, JsonElement root, JsonTypeInfo info)
     {
-        var steps = Steps(failure.Path ?? "$").ToList();
-        var message = failure.Message;
-        if (message.StartsWith("The JSON property '", StringComparison.Ordinal) && message.Contains("could not be mapped", StringComparison.Ordinal) && steps.Count > 0)
+        if (Violation(root, info, "$") is { } structural)
         {
-            var spot = Locate(root, info, steps);
-            return Expected(spot.Path, "a known field", spot.Value is { } member ? Describe(member) : "nothing");
+            return structural;
         }
 
-        if (message.StartsWith("Duplicate property '", StringComparison.Ordinal))
-        {
-            return Expected(Locate(root, info, steps).Path, "a field that appears once", "it repeated");
-        }
-
-        var required = message.IndexOf(MissingMarker, StringComparison.Ordinal);
-        if (required >= 0)
-        {
-            return Missing(Locate(root, info, steps), FirstQuoted(message[(required + MissingMarker.Length)..]));
-        }
-
-        var at = Locate(root, info, steps);
-        return at.Type is null
-            ? new JsonInputException(at.Path, Trimmed(message), null, failure)
+        var at = Locate(root, info, Steps((failure as JsonException)?.Path ?? "$"));
+        return at.Type is null || failure is not JsonException
+            ? new JsonInputException(at.Path, Trimmed(failure.Message), null, failure)
             : Expected(at.Path, Expectation(at), at.Value is { } found ? Describe(found) : "nothing");
     }
 
-    private const string MissingMarker = "was missing required properties including: ";
-
-    private static JsonInputException Missing(Spot parent, string name)
+    // The structure rig checks itself, from the metadata and the document alone, so no message of the runtime is read: a
+    // repeated member, an unknown one where the type disallows them, a required one that is absent, a polymorphic object
+    // whose discriminator is absent or unknown. The first found, or null.
+    private static JsonInputException? Violation(JsonElement value, JsonTypeInfo? info, string path)
     {
-        var property = parent.Type?.Properties.FirstOrDefault(candidate => candidate.Name == name);
-        return Expected(Child(parent.Path, name), property is null ? "a value" : PropertyPhrase(property), "nothing");
+        var members = value.ValueKind == JsonValueKind.Object ? value.EnumerateObject().ToList() : [];
+        var tag = info?.PolymorphismOptions?.TypeDiscriminatorPropertyName;
+        var shape = tag is null ? info : members.Where(member => member.Name == tag).Select(member => Derived(info!, member.Value)).FirstOrDefault();
+        return (value.ValueKind, shape) switch
+        {
+            (JsonValueKind.Array, { } list) when ElementOf(list) is { } element => value.EnumerateArray()
+                .Select((item, index) => Violation(item, element, Item(path, index)))
+                .FirstOrDefault(found => found is not null),
+            (JsonValueKind.Object, { } known) => Members(members, known, tag, path),
+            (JsonValueKind.Object, null) when tag is not null => Expected(Child(path, tag), "a known type", members.Where(member => member.Name == tag).Select(member => Describe(member.Value)).FirstOrDefault() ?? "nothing"),
+            _ => null,
+        };
     }
 
-    private static string FirstQuoted(string text)
+    private static JsonInputException? Members(List<JsonProperty> members, JsonTypeInfo info, string? tag, string path)
     {
-        var open = text.IndexOf('\'', StringComparison.Ordinal);
-        var close = open < 0 ? -1 : text.IndexOf('\'', open + 1);
-        return close < 0 ? string.Empty : text[(open + 1)..close];
+        var properties = info.Kind == JsonTypeInfoKind.Object ? info.Properties : [];
+        var unknown = (info.UnmappedMemberHandling ?? info.Options.UnmappedMemberHandling) == JsonUnmappedMemberHandling.Disallow && info.Kind == JsonTypeInfoKind.Object;
+        return members.GroupBy(member => member.Name).Where(group => group.Count() > 1 && !info.Options.AllowDuplicateProperties)
+                .Select(group => Expected(Child(path, group.Key), "a field that appears once", "it repeated")).FirstOrDefault()
+            ?? members.Where(member => unknown && member.Name != tag && properties.All(property => property.Name != member.Name))
+                .Select(member => Expected(Child(path, member.Name), "a known field", Describe(member.Value))).FirstOrDefault()
+            ?? properties.Where(property => property.IsRequired && members.All(member => member.Name != property.Name))
+                .Select(property => Expected(Child(path, property.Name), PropertyPhrase(property), "nothing")).FirstOrDefault()
+            ?? members.Select(member => Violation(member.Value, Member(new Spot(info, null, null, path), member.Name).Type, Child(path, member.Name)))
+                .FirstOrDefault(found => found is not null);
     }
+
+    private static JsonTypeInfo? Derived(JsonTypeInfo declared, JsonElement tag) =>
+        declared.PolymorphismOptions!.DerivedTypes
+            .Where(derived => derived.TypeDiscriminator?.ToString() == tag.ToString())
+            .Select(derived => Info(declared.Options, derived.DerivedType))
+            .FirstOrDefault();
 
     // A path step: a member name, or (Name null) a list index.
     private readonly record struct Step(string? Name, int Index);
@@ -187,40 +212,11 @@ public static partial class JsonProblem
     };
 
     // System.Text.Json writes a path as $.name, $['odd name'] and [3]; the same steps are rendered again with Child and Item.
-    private static IEnumerable<Step> Steps(string path)
-    {
-        var at = 1;
-        while (at < path.Length)
-        {
-            if (path[at] == '.')
-            {
-                var end = path.IndexOfAny(['.', '['], at + 1);
-                end = end < 0 ? path.Length : end;
-                yield return new Step(path[(at + 1)..end], 0);
-                at = end;
-            }
-            else if (at + 1 < path.Length && path[at + 1] == '\'')
-            {
-                var end = path.IndexOf("']", at + 2, StringComparison.Ordinal);
-                if (end < 0)
-                {
-                    yield break;
-                }
+    private static IEnumerable<Step> Steps(string path) =>
+        PathStep().Matches(path).Select(step => step.Groups["index"].Success
+            ? new Step(null, int.Parse(step.Groups["index"].Value, CultureInfo.InvariantCulture))
+            : new Step(step.Groups["plain"].Success ? step.Groups["plain"].Value : step.Groups["quoted"].Value, 0));
 
-                yield return new Step(path[(at + 2)..end], 0);
-                at = end + 2;
-            }
-            else
-            {
-                var end = path.IndexOf(']', at);
-                if (end < 0 || !int.TryParse(path[(at + 1)..end], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var index))
-                {
-                    yield break;
-                }
-
-                yield return new Step(null, index);
-                at = end + 1;
-            }
-        }
-    }
+    [GeneratedRegex(@"\.(?<plain>[^.\[]+)|\['(?<quoted>.*?)'\]|\[(?<index>\d+)\]", RegexOptions.CultureInvariant)]
+    private static partial Regex PathStep();
 }

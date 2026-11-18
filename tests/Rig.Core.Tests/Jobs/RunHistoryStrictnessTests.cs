@@ -14,7 +14,6 @@ public sealed class RunHistoryStrictnessTests : IDisposable
     public void Dispose() => _temp.Dispose();
 
     [Theory]
-    [InlineData("\"extra\":1", "$.extra: expected a known field, found the number 1")]
     [InlineData("\"job\":\"again\"", "$.job: expected a field that appears once, found it repeated")]
     [InlineData("\"returncode\":\"12\"", "$.returncode: expected a whole number, found the string \"12\"")]
     [InlineData("\"returncode\":12.0", "$.returncode: expected a whole number, found the number 12.0")]
@@ -30,11 +29,60 @@ public sealed class RunHistoryStrictnessTests : IDisposable
     }
 
     [Fact]
-    public void The_run_history_context_is_strict_about_what_it_does_not_define()
+    public void The_run_history_context_ignores_what_it_does_not_define_and_refuses_a_repeat()
     {
         var options = RunHistoryJsonContext.Default.Options;
 
-        Assert.Equal((JsonUnmappedMemberHandling.Disallow, false, true, true), (options.UnmappedMemberHandling, options.AllowDuplicateProperties, options.RespectNullableAnnotations, options.RespectRequiredConstructorParameters));
+        Assert.Equal((JsonUnmappedMemberHandling.Skip, false, true, true), (options.UnmappedMemberHandling, options.AllowDuplicateProperties, options.RespectNullableAnnotations, options.RespectRequiredConstructorParameters));
+    }
+
+    [Fact]
+    public void A_line_with_a_member_the_history_does_not_define_still_reads()
+    {
+        File.WriteAllText(Path.Join(_temp.Path, RunHistory.HistoryName), "{" + Required + ",\"extra\":{\"x\":[1]}}\n");
+
+        Assert.Equal("tick", Assert.Single(RunHistory.ReadRuns(_temp.Path)).Job);
+    }
+
+    [Fact]
+    public void A_line_with_no_version_reads_as_version_one()
+    {
+        File.WriteAllText(Path.Join(_temp.Path, RunHistory.HistoryName), "{" + Required + "}\n");
+
+        Assert.Single(RunHistory.ReadRuns(_temp.Path));
+    }
+
+    [Theory]
+    [InlineData(2, "the number 2")]
+    [InlineData(0, "the number 0")]
+    public void A_line_with_a_version_this_build_does_not_read_is_skipped_naming_version(int version, string found)
+    {
+        File.WriteAllText(Path.Join(_temp.Path, RunHistory.HistoryName), "{\"version\":" + version + "," + Required + "}\n");
+        List<string> reported = [];
+
+        Assert.Empty(RunHistory.ReadRuns(_temp.Path, problem: reported.Add));
+
+        Assert.Equal([$"{Path.Join(_temp.Path, RunHistory.HistoryName)}:1: $.version: expected a version from 1 to 1, found {found}"], reported);
+    }
+
+    [Fact]
+    public void A_version_of_the_wrong_type_is_skipped_as_a_type_error()
+    {
+        File.WriteAllText(Path.Join(_temp.Path, RunHistory.HistoryName), "{\"version\":\"1\"," + Required + "}\n");
+        List<string> reported = [];
+
+        Assert.Empty(RunHistory.ReadRuns(_temp.Path, problem: reported.Add));
+
+        Assert.EndsWith("$.version: expected a whole number, found the string \"1\"", Assert.Single(reported), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_line_written_by_the_history_reads_back_unchanged()
+    {
+        var run = new JobRun("tick", "tick-20261011-080201", "2026-10-11T08:02:01Z", 1.5, 0, "timer", null, "", "", "");
+        RunHistory.Append(_temp.Path, run);
+
+        Assert.Equal(run, Assert.Single(RunHistory.ReadRuns(_temp.Path)));
     }
 
     [Fact]
