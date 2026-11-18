@@ -357,7 +357,7 @@ public static partial class MacRead
             return [new TabSlot(item, null)];
         }
 
-        List<TabSlot> result = [];
+        List<List<TabSlot>> parts = [];
         var index = 0;
         while (index < item.Children.Count)
         {
@@ -369,8 +369,7 @@ public static partial class MacRead
                     return null;
                 }
 
-                result = [.. result, .. nested];
-
+                parts.Add(nested);
                 index++;
                 continue;
             }
@@ -401,11 +400,11 @@ public static partial class MacRead
             }
 
             var group = new TabGroup(GroupId(windowId, child.Identity), title);
-            result = [.. result, .. members.Select(member => new TabSlot(member, group))];
+            parts.Add([.. members.Select(member => new TabSlot(member, group))]);
             index += count + 1;
         }
 
-        return result;
+        return [.. parts.SelectMany(part => part)];
     }
 
     private static bool Agrees(IReadOnlyList<TabSlot> slots, JxaWindow raw) =>

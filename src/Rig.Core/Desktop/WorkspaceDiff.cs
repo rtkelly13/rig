@@ -203,15 +203,7 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
     /// <summary>The diff as people read it.</summary>
     public string Render()
     {
-        var lines = new List<string> { "Workspace Diff" };
-        foreach (var desktop in Desktops)
-        {
-            lines.Add(string.Empty);
-            lines.Add(desktop.Name);
-            lines = [.. lines, .. desktop.Screens.SelectMany(screen => screen.RenderLines())];
-        }
-
-        return string.Join('\n', lines);
+        return string.Join('\n', (string[])["Workspace Diff", .. Desktops.SelectMany(desktop => (string[])[string.Empty, desktop.Name, .. desktop.Screens.SelectMany(screen => screen.RenderLines())])]);
     }
 
     /// <inheritdoc/>

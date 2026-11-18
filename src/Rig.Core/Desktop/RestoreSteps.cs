@@ -219,7 +219,6 @@ public static class RestoreSteps
 
     private static List<LaunchEntry> ExecuteDesktop(RestoreRun run, PlannedDesktopExecution desktop)
     {
-        var pending = new List<LaunchEntry>();
         run.Log.Log($"Processing desktop {desktop.DesktopIndex}: {desktop.Desktop.Name}");
         if (desktop.CloseExisting)
         {
@@ -228,12 +227,12 @@ public static class RestoreSteps
             run.Port.Sleep(TimeSpan.FromSeconds(0.5));
         }
 
-        foreach (var step in desktop.EntrySteps)
+        var results = desktop.EntrySteps.Select(step =>
         {
             if (step.Action == EntryAction.Satisfied)
             {
                 run.Log.Log($"Skipping {step.Entry.Name}: already verified in its planned slot");
-                continue;
+                return new List<LaunchEntry>();
             }
 
             var confirmed = run.Port.EnsureCurrentDesktop(step.DesktopIndex, TimeSpan.FromSeconds(0.1));
@@ -262,8 +261,9 @@ public static class RestoreSteps
             }
 
             span?.SetTag("entry.deferred_second_pass", entryPending.Count > 0);
-            pending = [.. pending, .. entryPending];
-        }
+            return entryPending;
+        }).ToList();
+        List<LaunchEntry> pending = [.. results.SelectMany(result => result)];
 
         run.Log.Log(pending.Count > 0
             ? $"Desktop {desktop.DesktopIndex} first pass incomplete; {pending.Count} entry(s) queued for second pass"

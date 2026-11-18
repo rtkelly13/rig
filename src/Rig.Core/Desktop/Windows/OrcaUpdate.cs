@@ -330,8 +330,7 @@ public static class OrcaUpdate
                 result.Add($"  - would run {state.Staged.Installer} --updated /S");
             }
 
-            result = [.. result, .. entries.Select(item => $"  - would relaunch `{item.Entry.Name}` on {item.Desktop.Name}")];
-            return new(result);
+            return new([.. result, .. entries.Select(item => $"  - would relaunch `{item.Entry.Name}` on {item.Desktop.Name}")]);
         }
 
         result.Add($"  - {CloseAll(inventory, actions, timeout, log.Log)}");
