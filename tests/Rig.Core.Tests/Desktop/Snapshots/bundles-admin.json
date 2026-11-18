@@ -2,7 +2,7 @@
   "name": "Admin",
   "launch": [
     {
-      "name": "Admin Browser - Work Profile",
+      "name": "Google - Work Profile",
       "type": "app",
       "delay_ms": 1400,
       "path": "{chrome-path}",
@@ -10,38 +10,16 @@
         "--user-data-dir={chrome-user-data}",
         "--profile-directory={chrome-profile-work}",
         "--new-window",
-        "https://mail.google.com/"
-      ],
-      "summary": "Opens Gmail in a dedicated Chrome window with the work profile, on the left half of screen 1.",
-      "placement": {
-        "screen": 1,
-        "layout": {
-          "mode": "halves",
-          "slot": 1,
-          "orientation": "vertical"
-        }
-      },
-      "window_process_name": "chrome.exe"
-    },
-    {
-      "name": "Google Meet \u002B Calendar - Work Profile",
-      "type": "app",
-      "delay_ms": 1400,
-      "path": "{chrome-path}",
-      "args": [
-        "--user-data-dir={chrome-user-data}",
-        "--profile-directory={chrome-profile-work}",
-        "--new-window",
+        "https://mail.google.com/",
         "https://meet.google.com/",
         "https://calendar.google.com/"
       ],
-      "summary": "Opens Chrome with the work profile, with Google Meet and Calendar tabs, on the right half of screen 1.",
+      "summary": "Opens one Chrome window with the work profile, with Gmail, Google Meet and Calendar tabs, filling screen 1.",
       "placement": {
         "screen": 1,
         "layout": {
-          "mode": "halves",
-          "slot": 2,
-          "orientation": "vertical"
+          "mode": "full",
+          "slot": 1
         }
       },
       "window_process_name": "chrome.exe"
