@@ -80,7 +80,7 @@ public static class PackageBindings
             var specs = Items(entry["packages"], $"{where}.packages").Select((spec, i) => Spec(spec, $"{where}.packages[{i}]")).ToList();
             if (enabled)
             {
-                bindings.AddRange(specs.Select(spec => new PackageBinding(name, repo, spec)));
+                bindings = [.. bindings, .. specs.Select(spec => new PackageBinding(name, repo, spec))];
             }
         }
 

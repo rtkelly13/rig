@@ -45,7 +45,7 @@ public static class GovernancePlan
         {
             foreach (var plan in planned)
             {
-                errors.AddRange(await plan.Apply(cancellationToken).ConfigureAwait(false));
+                errors = [.. errors, .. await plan.Apply(cancellationToken).ConfigureAwait(false)];
             }
         }
 

@@ -281,31 +281,30 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     /// </summary>
     public IReadOnlyList<IUiaElement> PopupElements(int pid, UiaControlType type)
     {
-        var found = new List<IUiaElement>();
-        foreach (var handle in _win32.TopLevelWindows())
+        IEnumerable<IUiaElement> Found(long handle)
         {
             var ours = _win32.IsVisible(handle) && _win32.ProcessIdOf(handle) == pid;
             var browser = _win32.ClassName(handle) == ChromeUiaReader.WindowClass
                 && UnicodeText.Strip(_win32.Title(handle) ?? string.Empty).Length > 0;
             if (!ours || browser)
             {
-                continue;
+                return [];
             }
 
             try
             {
-                if (_uia.ElementFromHandle(handle) is { } root)
-                {
-                    found.AddRange(root.FindAll(UiaScope.Subtree, new UiaCondition(type)));
-                }
+                return _uia.ElementFromHandle(handle) is { } root
+                    ? root.FindAll(UiaScope.Subtree, new UiaCondition(type))
+                    : [];
             }
             catch (UiaException)
             {
                 // The popup closed while it was read.
+                return [];
             }
         }
 
-        return found;
+        return [.. _win32.TopLevelWindows().SelectMany(Found)];
     }
 
     /// <summary>The first open menu item whose stripped, lower-cased name is non-empty and matches.</summary>

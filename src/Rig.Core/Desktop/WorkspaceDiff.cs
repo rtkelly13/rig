@@ -208,10 +208,7 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
         {
             lines.Add(string.Empty);
             lines.Add(desktop.Name);
-            foreach (var screen in desktop.Screens)
-            {
-                lines.AddRange(screen.RenderLines());
-            }
+            lines = [.. lines, .. desktop.Screens.SelectMany(screen => screen.RenderLines())];
         }
 
         return string.Join('\n', lines);

@@ -39,7 +39,7 @@ public static class MailCoverage
         var sample = new List<SampleMessage>();
         foreach (var path in paths)
         {
-            sample.AddRange(ReadPage(File.ReadAllText(path, Encoding.UTF8), path.Replace('\\', '/')));
+            sample = [.. sample, .. ReadPage(File.ReadAllText(path, Encoding.UTF8), path.Replace('\\', '/'))];
         }
 
         return sample;

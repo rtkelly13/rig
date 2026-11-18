@@ -262,7 +262,7 @@ public static class RestoreSteps
             }
 
             span?.SetTag("entry.deferred_second_pass", entryPending.Count > 0);
-            pending.AddRange(entryPending);
+            pending = [.. pending, .. entryPending];
         }
 
         run.Log.Log(pending.Count > 0

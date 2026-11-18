@@ -104,7 +104,7 @@ public sealed class RemoteAgentFiles(IProc proc)
                     continue;
                 }
 
-                findings.AddRange(FindRedundant(paths).Select(path => new RemoteAgentFile(repo.NameWithOwner, path, repo.IsArchived)));
+                findings = [.. findings, .. FindRedundant(paths).Select(path => new RemoteAgentFile(repo.NameWithOwner, path, repo.IsArchived))];
             }
         }
 

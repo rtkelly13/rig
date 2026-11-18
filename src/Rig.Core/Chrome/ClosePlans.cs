@@ -172,7 +172,7 @@ public static class ClosePlans
                 activity?.SetTag("close.closed", results.Count(result => result.Closed));
             }
 
-            applied.AddRange(results);
+            applied = [.. applied, .. results];
             afterWindow?.Invoke(window, results);
         }
 

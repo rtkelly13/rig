@@ -393,13 +393,13 @@ public static partial class VaultYaml
                 switch (value)
                 {
                     case MappingNode mapping:
-                        merge.AddRange(Flatten(mapping));
+                        merge = [.. merge, .. Flatten(mapping)];
                         break;
                     case SequenceNode sequence:
-                        merge.AddRange(sequence.Items
+                        merge = [.. merge, .. sequence.Items
                             .Select(item => item is MappingNode part ? Flatten(part) : throw new VaultYamlException("expected a mapping for merging"))
                             .Reverse()
-                            .SelectMany(part => part));
+                            .SelectMany(part => part)];
                         break;
                     default:
                         throw new VaultYamlException("expected a mapping or list of mappings for merging");

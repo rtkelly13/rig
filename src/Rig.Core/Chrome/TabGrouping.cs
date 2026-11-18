@@ -274,9 +274,9 @@ public static partial class TabGrouping
 
             var hosts = options.Hosts?.GetValueOrDefault(profile.Key) ?? NoHosts;
             var result = PlanProfile([.. profile], eligible, hosts, context);
-            moves.AddRange(result.Moves);
-            ungroups.AddRange(result.Ungroups);
-            blocked.AddRange(result.Blocked);
+            moves = [.. moves, .. result.Moves];
+            ungroups = [.. ungroups, .. result.Ungroups];
+            blocked = [.. blocked, .. result.Blocked];
             already += result.AlreadyGrouped;
             elsewhere += result.Elsewhere;
         }
@@ -356,10 +356,10 @@ public static partial class TabGrouping
                 .OrderBy(found => found.Number)
                 .ThenBy(found => found.Tab.Index)
                 .ToList();
-            ungroups.AddRange(duplicates.Select(members => new Ungroup(members[0].Tab.Group!, [.. members.Select(found => found.Tab)], members[0].Number, profile)));
+            ungroups = [.. ungroups, .. duplicates.Select(members => new Ungroup(members[0].Tab.Group!, [.. members.Select(found => found.Tab)], members[0].Number, profile))];
             if (home is not null)
             {
-                moves.AddRange(joiners.Select(found => Move(found, spec, profile, home[0], isNew: false)));
+                moves = [.. moves, .. joiners.Select(found => Move(found, spec, profile, home[0], isNew: false))];
                 continue;
             }
 
@@ -370,8 +370,7 @@ public static partial class TabGrouping
             }
 
             var creator = joiners.FirstOrDefault(found => found.Window.Handle == target.Window.Handle) ?? joiners[0];
-            moves.Add(Move(creator, spec, profile, target, isNew: true));
-            moves.AddRange(joiners.Where(found => !ReferenceEquals(found, creator)).Select(found => Move(found, spec, profile, target, isNew: false)));
+            moves = [.. moves, Move(creator, spec, profile, target, isNew: true), .. joiners.Where(found => !ReferenceEquals(found, creator)).Select(found => Move(found, spec, profile, target, isNew: false))];
         }
 
         return new GroupPlan(moves, [], already, elsewhere, ungroups, blocked);

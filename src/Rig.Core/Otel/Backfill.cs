@@ -129,7 +129,7 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
 
         if (Directory.Exists(runtime))
         {
-            roots.AddRange(Directory.EnumerateDirectories(runtime).Order(UnicodeText.CodePointOrder).Select(copy => Path.Join(copy, "temp", "traces", "sdk")));
+            roots = [.. roots, .. Directory.EnumerateDirectories(runtime).Order(UnicodeText.CodePointOrder).Select(copy => Path.Join(copy, "temp", "traces", "sdk"))];
         }
 
         roots.Add(Path.Join(baseDir, "chrome-tabs", "traces"));
@@ -151,11 +151,11 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         {
             if (Directory.Exists(root))
             {
-                candidates.AddRange(Directory.EnumerateFiles(root, "*.ndjson", recurse).Order(UnicodeText.CodePointOrder));
+                candidates = [.. candidates, .. Directory.EnumerateFiles(root, "*.ndjson", recurse).Order(UnicodeText.CodePointOrder)];
             }
         }
 
-        candidates.AddRange(extra.Where(File.Exists));
+        candidates = [.. candidates, .. extra.Where(File.Exists)];
         var seen = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var path in candidates)
         {

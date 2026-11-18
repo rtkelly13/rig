@@ -144,10 +144,10 @@ public static partial class VercelProjects
         }
 
         var present = owned.Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
-        findings.AddRange(
+        findings = [.. findings, .. 
             declared.OrderBy(pair => pair.Key, StringComparer.Ordinal)
                 .Where(pair => !present.Contains(pair.Key))
-                .Select(pair => new OwnershipFinding(pair.Key, "error", "missing", "declared, but there is no such Vercel project", pair.Value.Project)));
+                .Select(pair => new OwnershipFinding(pair.Key, "error", "missing", "declared, but there is no such Vercel project", pair.Value.Project))];
         return findings;
     }
 

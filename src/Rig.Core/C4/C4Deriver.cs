@@ -303,25 +303,27 @@ public sealed partial class C4Deriver
     {
         var found = ParentNeighbours(root, parent);
         var name = found.Label ?? System.IO.Path.GetFileName(_repo);
-        var lines = new List<string> { "C4Container", $"title {name}: projects" };
         var derivedRels = _scans.Values.SelectMany(ContainerRels).ToList();
         var copiedRels = found.Lines.Where(line => line.StartsWith("Rel", StringComparison.Ordinal) || line.StartsWith("BiRel", StringComparison.Ordinal)).ToList();
         var copiedRelSet = copiedRels.ToHashSet(StringComparer.Ordinal);
-        lines.AddRange(found.Lines.Where(line => !copiedRelSet.Contains(line)));
         var refined = derivedRels.SelectMany(Endpoints).ToHashSet(StringComparer.Ordinal);
         copiedRels = [.. copiedRels.Where(rel => !refined.Overlaps(Endpoints(rel)))];
         var declared = found.Lines.Any(line => AfterOpenParen(line).StartsWith(Compiler + ",", StringComparison.Ordinal));
-        if (!declared && _scans.Values.Any(scan => scan.Project.IsAnalyzer))
-        {
-            lines.Add($"System_Ext({Compiler}, \"C# compiler\", \"Roslyn, in the consumer's build\")");
-        }
-
         var boundary = parent?.Alias ?? $"repo_{MermaidGenerator.Slug(name)}";
-        lines.Add($"System_Boundary({boundary}, \"{name}\") {{");
-        lines.AddRange(_scans.Values.Select(scan => $"  {ContainerLine(scan, link: true)}"));
-        lines.Add("}");
-        lines.AddRange(copiedRels);
-        lines.AddRange(derivedRels);
+        List<string> lines =
+        [
+            "C4Container",
+            $"title {name}: projects",
+            .. found.Lines.Where(line => !copiedRelSet.Contains(line)),
+            .. !declared && _scans.Values.Any(scan => scan.Project.IsAnalyzer)
+                ? [$"System_Ext({Compiler}, \"C# compiler\", \"Roslyn, in the consumer's build\")"]
+                : Array.Empty<string>(),
+            $"System_Boundary({boundary}, \"{name}\") {{",
+            .. _scans.Values.Select(scan => $"  {ContainerLine(scan, link: true)}"),
+            "}",
+            .. copiedRels,
+            .. derivedRels,
+        ];
         var notes = _scans.Values.Select(scan => ContainerNote(scan));
         var head = MermaidGenerator.Frontmatter("C4 Container", $"{name} — projects",
             "Every project under src/ and what it references, read from the .csproj files.", _origin);
@@ -349,23 +351,26 @@ public sealed partial class C4Deriver
         var refs = DotnetScan.ReferenceEdges(owned, DotnetScan.TypeIndex(owners));
         var calls = Calls(scan, neighbours);
         var me = _aliases[project.Path];
-        var lines = new List<string> { "C4Component", $"title {project.Name}: namespaces" };
-        if (project.IsAnalyzer)
-        {
-            lines.Add($"System_Ext({Compiler}, \"C# compiler\", \"Roslyn\")");
-        }
-
-        lines.AddRange(neighbours.Select(neighbour => ContainerLine(neighbour, link: false, external: true)));
-        lines.Add($"Container_Boundary({me}, \"{project.Name}\") {{");
-        lines.AddRange(scan.Parts.Select(part => $"  {MermaidGenerator.Component(PartAlias(part), Label(part), part.Types, CodeId(part))}"));
-        lines.Add("}");
-        lines.AddRange(scan.Parts.Where(IsEntry).Select(part => MermaidGenerator.Relationship(Compiler, PartAlias(part), "runs")));
-        lines.AddRange(EdgeRels(refs, calls));
+        List<string> lines =
+        [
+            "C4Component",
+            $"title {project.Name}: namespaces",
+            .. project.IsAnalyzer ? [$"System_Ext({Compiler}, \"C# compiler\", \"Roslyn\")"] : Array.Empty<string>(),
+            .. neighbours.Select(neighbour => ContainerLine(neighbour, link: false, external: true)),
+            $"Container_Boundary({me}, \"{project.Name}\") {{",
+            .. scan.Parts.Select(part => $"  {MermaidGenerator.Component(PartAlias(part), Label(part), part.Types, CodeId(part))}"),
+            "}",
+            .. scan.Parts.Where(IsEntry).Select(part => MermaidGenerator.Relationship(Compiler, PartAlias(part), "runs")),
+            .. EdgeRels(refs, calls),
+        ];
         var scored = Score(refs, calls);
-        var notes = scan.Parts.Select(part => ComponentNote(part)).ToList();
-        notes.AddRange(neighbours.Where(neighbour => neighbour.Parts.Count > 0)
-            .Select(neighbour => $"## {_aliases[neighbour.Project.Path]}\n\nSee [its namespaces](/components/{_aliases[neighbour.Project.Path]}.md).\n"));
-        notes.Add(DerivationNote(scored, callsKnown: _callgraph is not null));
+        List<string> notes =
+        [
+            .. scan.Parts.Select(part => ComponentNote(part)),
+            .. neighbours.Where(neighbour => neighbour.Parts.Count > 0)
+                .Select(neighbour => $"## {_aliases[neighbour.Project.Path]}\n\nSee [its namespaces](/components/{_aliases[neighbour.Project.Path]}.md).\n"),
+            DerivationNote(scored, callsKnown: _callgraph is not null),
+        ];
         var head = MermaidGenerator.Frontmatter("C4 Component", $"{project.Name} — namespaces",
             "Namespaces as components; relationships from type references, checked against the call graph.", _origin);
         return new ComponentView(head + MermaidGenerator.Diagram(lines) + "\n" + string.Join('\n', notes),
@@ -423,15 +428,12 @@ public sealed partial class C4Deriver
             .OrderBy(edge => edge.Source, StringComparer.Ordinal)
             .ThenBy(edge => edge.Target, StringComparer.Ordinal)
             .ToList();
-        var links = new List<(string Type, string Url)>();
-        foreach (var file in part.Files)
-        {
-            var url = _origin.Blob(_repo, file.Path);
-            if (url is not null)
-            {
-                links.AddRange(file.Declares.Select(declaration => (declaration, url)));
-            }
-        }
+        List<(string Type, string Url)> links =
+        [
+            .. part.Files.SelectMany(file => _origin.Blob(_repo, file.Path) is { } url
+                ? file.Declares.Select(declaration => (declaration, url))
+                : []),
+        ];
 
         var notes = declared.Select(pair => TypeNote(pair.Type, pair.File, _origin.Blob(_repo, pair.File.Path)));
         var head = MermaidGenerator.Frontmatter("C4 Code", $"{(part.Namespace.Length == 0 ? "global" : part.Namespace)} — types",
@@ -504,21 +506,18 @@ public sealed partial class C4Deriver
 
     private static List<string> EdgeRels(Dictionary<CodeEdge, int> refs, Dictionary<CodeEdge, int>? calls)
     {
-        var rels = new List<string>();
-        foreach (var (edge, count) in refs.OrderBy(pair => pair.Key.Source, StringComparer.Ordinal).ThenBy(pair => pair.Key.Target, StringComparer.Ordinal))
-        {
-            var called = calls?.GetValueOrDefault(edge) ?? 0;
-            var technology = N(count, "type") + (called > 0 ? $", {N(called, "call")}" : string.Empty);
-            rels.Add(MermaidGenerator.Relationship(edge.Source, edge.Target, "uses", technology));
-        }
-
-        if (calls is not null)
-        {
-            rels.AddRange(calls.Where(pair => !refs.ContainsKey(pair.Key)).OrderBy(pair => pair.Key.Source, StringComparer.Ordinal).ThenBy(pair => pair.Key.Target, StringComparer.Ordinal)
-                .Select(pair => MermaidGenerator.Relationship(pair.Key.Source, pair.Key.Target, "calls", $"{N(pair.Value, "call")}, no type named")));
-        }
-
-        return rels;
+        return
+        [
+            .. refs.OrderBy(pair => pair.Key.Source, StringComparer.Ordinal).ThenBy(pair => pair.Key.Target, StringComparer.Ordinal)
+                .Select(pair =>
+                {
+                    var called = calls?.GetValueOrDefault(pair.Key) ?? 0;
+                    var technology = N(pair.Value, "type") + (called > 0 ? $", {N(called, "call")}" : string.Empty);
+                    return MermaidGenerator.Relationship(pair.Key.Source, pair.Key.Target, "uses", technology);
+                }),
+            .. calls?.Where(pair => !refs.ContainsKey(pair.Key)).OrderBy(pair => pair.Key.Source, StringComparer.Ordinal).ThenBy(pair => pair.Key.Target, StringComparer.Ordinal)
+                .Select(pair => MermaidGenerator.Relationship(pair.Key.Source, pair.Key.Target, "calls", $"{N(pair.Value, "call")}, no type named")) ?? [],
+        ];
     }
 
     private static Scored Score(Dictionary<CodeEdge, int> refs, Dictionary<CodeEdge, int>? calls)

@@ -51,7 +51,7 @@ public static class TraceSpans
         {
             if (UnicodeText.Strip(line).Length > 0 && Envelope(line) is { } envelope)
             {
-                spans.AddRange(envelope);
+                spans = [.. spans, .. envelope];
             }
         }
 
@@ -158,7 +158,7 @@ public static class TraceSpans
                 }
 
                 var scopeNode = Node(LaxJson.Field(scope, "scope"));
-                spans.AddRange(raws.Select(raw => View(raw, resourceNode, scopeNode)).OfType<FileSpan>());
+                spans = [.. spans, .. raws.Select(raw => View(raw, resourceNode, scopeNode)).OfType<FileSpan>()];
             }
         }
 

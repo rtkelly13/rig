@@ -207,21 +207,21 @@ public static partial class C4Composer
     {
         ArgumentNullException.ThrowIfNull(bundle);
         var links = CollectLinks(bundle);
-        var findings = new List<Finding>();
-        foreach (var concept in bundle.Concepts.Values)
-        {
-            findings.AddRange(OkfFindings(concept));
-            findings.AddRange(DiagramFindings(concept));
-            if (concept.IsC4 && concept.Verified is null)
-            {
-                findings.Add(new Finding("unverified", Severity.Info, concept.Id, "no `verified` — nobody has checked it"));
-            }
-        }
-
-        findings.AddRange(ZoomFindings(bundle, links));
-        findings.AddRange(ReachabilityFindings(bundle, links));
-        findings.AddRange(RefinementFindings(bundle, links));
-        findings.AddRange(IdentityFindings(Build(bundle, links)));
+        List<Finding> findings =
+        [
+            .. bundle.Concepts.Values.SelectMany(concept => (List<Finding>)
+            [
+                .. OkfFindings(concept),
+                .. DiagramFindings(concept),
+                .. concept.IsC4 && concept.Verified is null
+                    ? [new Finding("unverified", Severity.Info, concept.Id, "no `verified` — nobody has checked it")]
+                    : Array.Empty<Finding>(),
+            ]),
+            .. ZoomFindings(bundle, links),
+            .. ReachabilityFindings(bundle, links),
+            .. RefinementFindings(bundle, links),
+            .. IdentityFindings(Build(bundle, links)),
+        ];
         return [.. findings.OrderBy(finding => finding.Severity).ThenBy(finding => finding.Concept, StringComparer.Ordinal).ThenBy(finding => finding.Code, StringComparer.Ordinal)];
     }
 
@@ -510,22 +510,22 @@ public static partial class C4Composer
         var lines = OkfBundle.SplitLines(parentDiagram.Source);
         var relAt = parentDiagram.Relationships.ToDictionary(rel => rel.Line);
         var elementBlock = Block(lines, element.Line).ToHashSet();
-        var output = new List<string>();
-        for (var index = 0; index < lines.Length; index++)
+        IEnumerable<string> Expanded(string line, int index)
         {
-            var line = lines[index];
             if (index == element.Line)
             {
                 var indent = line[..(line.Length - line.TrimStart().Length)];
-                output.Add($"{indent}System_Boundary({alias}, \"{element.Label}\") {{");
-                output.AddRange(body.Select(inner => $"{indent}  {Rebase(inner.Trim(), child.Id)}"));
-                output.Add($"{indent}}}");
-                continue;
+                return
+                [
+                    $"{indent}System_Boundary({alias}, \"{element.Label}\") {{",
+                    .. body.Select(inner => $"{indent}  {Rebase(inner.Trim(), child.Id)}"),
+                    $"{indent}}}",
+                ];
             }
 
             if (elementBlock.Contains(index))
             {
-                continue;
+                return [];
             }
 
             if (relAt.TryGetValue(index, out var rel) && (rel.Source == alias || rel.Target == alias))
@@ -533,22 +533,23 @@ public static partial class C4Composer
                 var other = rel.Source == alias ? rel.Target : rel.Source;
                 if (refined.Contains(other))
                 {
-                    continue;
+                    return [];
                 }
             }
 
-            output.Add(line);
+            return [line];
         }
 
         // A relationship the child wrote inside a boundary already came across with the body; emit it once.
         var inBody = copied.ToHashSet();
-        foreach (var rel in child.Diagram.Relationships.Where(rel => !inBody.Contains(rel.Line)))
-        {
-            if (known.Contains(rel.Source) && known.Contains(rel.Target) && (inside.Contains(rel.Source) || inside.Contains(rel.Target)))
-            {
-                output.Add($"  {Rebase(childLines[rel.Line].Trim(), child.Id)}");
-            }
-        }
+        List<string> output =
+        [
+            .. lines.SelectMany(Expanded),
+            .. child.Diagram.Relationships
+                .Where(rel => !inBody.Contains(rel.Line))
+                .Where(rel => known.Contains(rel.Source) && known.Contains(rel.Target) && (inside.Contains(rel.Source) || inside.Contains(rel.Target)))
+                .Select(rel => $"  {Rebase(childLines[rel.Line].Trim(), child.Id)}"),
+        ];
 
         return string.Join('\n', output) + "\n";
     }

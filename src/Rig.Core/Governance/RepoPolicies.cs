@@ -228,12 +228,12 @@ public sealed class RepoPolicies
         try
         {
             var children = Directory.EnumerateFileSystemEntries(repoPath).ToList();
-            candidates.AddRange(children.Select(Path.GetFileName).OfType<string>().Where(name => !name.StartsWith(".git", StringComparison.Ordinal)));
+            candidates = [.. candidates, .. children.Select(Path.GetFileName).OfType<string>().Where(name => !name.StartsWith(".git", StringComparison.Ordinal))];
             foreach (var child in children.Where(child => Directory.Exists(child) && !SkippedDirPrefixes.Any(Path.GetFileName(child).StartsWith)))
             {
                 try
                 {
-                    candidates.AddRange(Directory.EnumerateFileSystemEntries(child).Select(Path.GetFileName).OfType<string>());
+                    candidates = [.. candidates, .. Directory.EnumerateFileSystemEntries(child).Select(Path.GetFileName).OfType<string>()];
                 }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException)
                 {
@@ -357,8 +357,8 @@ public sealed class RepoPolicies
                 continue;
             }
 
-            allowed.AddRange(preset.ScriptExtensions.Where(ext => !allowed.Contains(ext)).Distinct());
-            banned.AddRange(preset.BannedScriptExtensions.Where(ext => !banned.Contains(ext)).Distinct());
+            allowed = [.. allowed, .. preset.ScriptExtensions.Where(ext => !allowed.Contains(ext)).Distinct()];
+            banned = [.. banned, .. preset.BannedScriptExtensions.Where(ext => !banned.Contains(ext)).Distinct()];
         }
 
         if (hasPython)
@@ -395,7 +395,7 @@ public sealed class RepoPolicies
         {
             if (layer.ExpectedOwner is { Length: > 0 } owner && string.Equals(owner, org, StringComparison.OrdinalIgnoreCase))
             {
-                repos.AddRange(names);
+                repos = [.. repos, .. names];
             }
         }
 

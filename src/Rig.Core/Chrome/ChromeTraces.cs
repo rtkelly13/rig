@@ -279,19 +279,19 @@ public static partial class ChromeTraces
     public static IReadOnlyList<TraceSpan> LoadSpans(string directory, DateOnly today, int? days = null)
     {
         var since = days is { } window ? today.AddDays(-window) : DateOnly.MinValue;
-        List<string> lines = [];
-        foreach (var file in TraceFiles(directory).Where(file => file.Day >= since))
-        {
-            try
-            {
-                lines.AddRange(UnicodeText.SplitLines(File.ReadAllText(file.Path, Encoding.UTF8)));
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-            }
-        }
+        return ParseLines([.. TraceFiles(directory).Where(file => file.Day >= since).SelectMany(file => ReadLines(file.Path))]);
+    }
 
-        return ParseLines(lines);
+    private static IEnumerable<string> ReadLines(string path)
+    {
+        try
+        {
+            return UnicodeText.SplitLines(File.ReadAllText(path, Encoding.UTF8));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
     }
 
     /// <summary>Organise runs, oldest first, each with its descendant spans.</summary>
@@ -447,7 +447,7 @@ public static partial class ChromeTraces
         ArgumentNullException.ThrowIfNull(summary);
         var rate = summary.SuccessRate is { } success ? $"{NumberText.Fixed(success * 100, 0)}%" : "-";
         var grouping = string.Join(", ", summary.Grouping.OrderByDescending(pair => pair.Value).Select(pair => $"{pair.Key} {pair.Value}"));
-        List<string> lines =
+        return
         [
             $"Last {days} days: {summary.Runs} runs, {summary.Completed} completed, {summary.Incomplete} incomplete",
             $"  success rate        {rate} ({summary.Ok}/{summary.Completed})",
@@ -456,14 +456,14 @@ public static partial class ChromeTraces
             $"p90 {Duration(Quantile(summary.Waits, 0.9))}",
             $"  run duration        median {Duration(Median(summary.Durations))}, p90 {Duration(Quantile(summary.Durations, 0.9))}",
             string.Create(CultureInfo.InvariantCulture, $"  tabs closed         {summary.Closed}"),
+            .. summary.Blocks.Count > 0
+                ? (List<string>)
+                [
+                    "  commonest blocks",
+                    .. summary.Blocks.Select(block => $"    {block.Count,4}  {block.Reason}"),
+                ]
+                : [],
         ];
-        if (summary.Blocks.Count > 0)
-        {
-            lines.Add("  commonest blocks");
-            lines.AddRange(summary.Blocks.Select(block => $"    {block.Count,4}  {block.Reason}"));
-        }
-
-        return lines;
     }
 
     internal static string? Str(IReadOnlyDictionary<string, object?> attributes, string key) =>

@@ -414,7 +414,7 @@ public static partial class RepoHygiene
         if (banned.Count > 0)
         {
             lines.Add("  \"**\":");
-            lines.AddRange(banned.Select(ext => $"    {ext}: exists:0"));
+            lines = [.. lines, .. banned.Select(ext => $"    {ext}: exists:0")];
         }
 
         if (allowedScriptExtensions.Count > 0 || bannedScriptExtensions.Count > 0)
@@ -422,15 +422,16 @@ public static partial class RepoHygiene
             foreach (var scope in new[] { "scripts", "\"scripts/**\"" })
             {
                 lines.Add($"  {scope}:");
-                lines.AddRange(CommonScriptSupportExtensions.Select(ext => $"    {ext}: regex:.*"));
-                lines.AddRange(allowedScriptExtensions.Select(Dotted).Where(ext => !CommonScriptSupportExtensions.Contains(ext)).Select(ext => $"    {ext}: regex:.*"));
-                lines.AddRange(bannedScriptExtensions.Select(ext => $"    {Dotted(ext)}: exists:0"));
+                lines = [.. lines, .. CommonScriptSupportExtensions.Select(ext => $"    {ext}: regex:.*")];
+                lines = [.. lines, .. allowedScriptExtensions.Select(Dotted).Where(ext => !CommonScriptSupportExtensions.Contains(ext)).Select(ext => $"    {ext}: regex:.*")];
+                lines = [.. lines, .. bannedScriptExtensions.Select(ext => $"    {Dotted(ext)}: exists:0")];
                 lines.Add("    .*: exists:0");
             }
         }
 
-        lines.AddRange(
+        lines =
         [
+            .. lines,
             string.Empty,
             "ignore:",
             "  - .git",
@@ -446,11 +447,11 @@ public static partial class RepoHygiene
             "  - obj",
             "  - dist",
             "  - build",
-        ]);
+        ];
         if (allowedExceptions.Count > 0)
         {
             lines.Add("  # Explicit repository exceptions:");
-            lines.AddRange(allowedExceptions.Select(exception => $"  - {exception}"));
+            lines = [.. lines, .. allowedExceptions.Select(exception => $"  - {exception}")];
         }
 
         lines.Add(string.Empty);

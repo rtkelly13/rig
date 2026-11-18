@@ -25,9 +25,9 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
         var clones = new List<string>();
         foreach (var parent in scopes.RepoParentDirs(personalDir).Where(DocsTree.IsDir))
         {
-            clones.AddRange(DocsTree.List(parent)
+            clones = [.. clones, .. DocsTree.List(parent)
                 .Order(DocsTree.Order)
-                .Where(child => DocsTree.IsDir(child) && DocsTree.Exists(Path.Join(child, ".git"))));
+                .Where(child => DocsTree.IsDir(child) && DocsTree.Exists(Path.Join(child, ".git")))];
         }
 
         return clones;
@@ -140,7 +140,7 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
             cancellationToken).ConfigureAwait(false);
         if (listed.Ok && GitHubCalls.Parse(listed.Out) is JsonArray rows)
         {
-            repos.AddRange(rows.Select(row => GitHubCalls.Str(row, "nameWithOwner")).OfType<string>());
+            repos = [.. repos, .. rows.Select(row => GitHubCalls.Str(row, "nameWithOwner")).OfType<string>()];
         }
 
         if (repos.Count > 0)
@@ -148,7 +148,7 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
             return repos;
         }
 
-        repos.AddRange(policies.ReposForOrg(org).Select(name => name.Contains('/', StringComparison.Ordinal) ? name : $"{org}/{name}"));
+        repos = [.. repos, .. policies.ReposForOrg(org).Select(name => name.Contains('/', StringComparison.Ordinal) ? name : $"{org}/{name}")];
         foreach (var clone in EstateClones(personalDir))
         {
             var name = Path.GetFileName(clone);

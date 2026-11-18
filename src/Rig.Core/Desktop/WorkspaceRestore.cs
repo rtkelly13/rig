@@ -109,7 +109,7 @@ public static class WorkspaceRestore
         }
 
         var actions = RetireActions(plan);
-        actions.AddRange(execution.RenderActions());
+        actions = [.. actions, .. execution.RenderActions()];
         if (options.DryRun)
         {
             return actions;
@@ -163,7 +163,7 @@ public static class WorkspaceRestore
         {
             using (steps.Step("restore.missing_path_fallbacks"))
             {
-                actions.AddRange(port.OpenMissingPathFallbacks(run.Fallbacks, log));
+                actions = [.. actions, .. port.OpenMissingPathFallbacks(run.Fallbacks, log)];
             }
         }
 
@@ -172,7 +172,7 @@ public static class WorkspaceRestore
             var count = secondPass.Values.Sum(entries => entries.Count);
             using (steps.Step("restore.second_pass", tags: [new("entry.count", count)]))
             {
-                actions.AddRange(SecondPass(run, secondPass, count, targetIndex));
+                actions = [.. actions, .. SecondPass(run, secondPass, count, targetIndex)];
             }
         }
         else

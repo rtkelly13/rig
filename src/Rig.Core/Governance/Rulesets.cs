@@ -265,7 +265,7 @@ public sealed record RulesetShape(
             }
         }
 
-        drift.AddRange(live.Rules.Where(r => !declared.Contains(r.Key)).Select(r => $"undeclared rule {r.Key}"));
+        drift = [.. drift, .. live.Rules.Where(r => !declared.Contains(r.Key)).Select(r => $"undeclared rule {r.Key}")];
         return drift;
     }
 

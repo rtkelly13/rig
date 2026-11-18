@@ -190,9 +190,9 @@ public static class OrcaSync
             }
 
             var context = new Context(name, repo, apply, cli, live, cancellationToken);
-            actions.AddRange(await SyncScriptsAsync(context, want).ConfigureAwait(false));
-            actions.AddRange(await SyncCliFieldsAsync(context, want).ConfigureAwait(false));
-            actions.AddRange(await SyncBadgeAsync(context, want).ConfigureAwait(false));
+            actions = [.. actions, .. await SyncScriptsAsync(context, want).ConfigureAwait(false)];
+            actions = [.. actions, .. await SyncCliFieldsAsync(context, want).ConfigureAwait(false)];
+            actions = [.. actions, .. await SyncBadgeAsync(context, want).ConfigureAwait(false)];
         }
 
         return actions;

@@ -36,56 +36,46 @@ public static class TabPlanText
     public static IReadOnlyList<string> Prune(PrunePlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        List<string> lines = [];
-        foreach (var (kind, heading) in CloseHeadings)
-        {
-            var closes = plan.Closes.Where(close => close.Kind == kind).ToList();
-            Section(lines, heading, closes.Select(close => PlanLine(close.Item, close.Reason)), closes.Count);
-        }
-
-        foreach (var (kind, heading) in ReportHeadings)
-        {
-            var reports = plan.Reports.Where(report => report.Kind == kind).ToList();
-            Section(lines, heading, reports.Select(report => PlanLine(report.Item, report.Detail)), reports.Count);
-        }
-
-        lines.Add(
-            $"{plan.Closes.Count} to close, {plan.Kept.Count} PR tabs kept, {plan.Reports.Count} reported, {plan.Prs.Count} PRs seen");
-        return lines;
+        return
+        [
+            .. CloseHeadings.SelectMany(heading => Section(
+                heading.Heading,
+                [.. plan.Closes.Where(close => close.Kind == heading.Kind).Select(close => PlanLine(close.Item, close.Reason))])),
+            .. ReportHeadings.SelectMany(heading => Section(
+                heading.Heading,
+                [.. plan.Reports.Where(report => report.Kind == heading.Kind).Select(report => PlanLine(report.Item, report.Detail))])),
+            $"{plan.Closes.Count} to close, {plan.Kept.Count} PR tabs kept, {plan.Reports.Count} reported, {plan.Prs.Count} PRs seen",
+        ];
     }
 
     /// <summary>The site-dedupe plan: closes, then reports by kind, then a summary.</summary>
     public static IReadOnlyList<string> Dedupe(DedupePlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        List<string> lines = [];
-        Section(lines, "Close: duplicate pages", plan.Closes.Select(close => PlanLine(close.Item, close.Reason)), plan.Closes.Count);
-        foreach (var (kind, heading) in SiteReportHeadings)
-        {
-            var reports = plan.Reports.Where(report => report.Kind == kind).ToList();
-            Section(lines, heading, reports.Select(report => PlanLine(report.Item, report.Detail)), reports.Count);
-        }
-
-        lines.Add($"{plan.Closes.Count} to close, {plan.Kept.Count} duplicated pages kept, {plan.Reports.Count} reported");
-        return lines;
+        return
+        [
+            .. Section("Close: duplicate pages", [.. plan.Closes.Select(close => PlanLine(close.Item, close.Reason))]),
+            .. SiteReportHeadings.SelectMany(heading => Section(
+                heading.Heading,
+                [.. plan.Reports.Where(report => report.Kind == heading.Kind).Select(report => PlanLine(report.Item, report.Detail))])),
+            $"{plan.Closes.Count} to close, {plan.Kept.Count} duplicated pages kept, {plan.Reports.Count} reported",
+        ];
     }
 
     /// <summary>The memory-budget plan: its closes, then the memory before and after against the budget.</summary>
     public static IReadOnlyList<string> Memory(MemoryPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        List<string> lines = [];
-        Section(
-            lines,
-            $"Close: over the {TabRank.FormatSize(plan.LimitMb)} memory budget",
-            plan.Closes.Select(close => PlanLine(close.Item, close.Reason)),
-            plan.Closes.Count);
         var verdict = plan.OverBudget
             ? "still over budget: every remaining tab is protected or held for review"
             : "within budget";
-        lines.Add(
-            $"Memory: {TabRank.FormatSize(plan.BeforeMb)} -> {TabRank.FormatSize(plan.AfterMb)} of {TabRank.FormatSize(plan.LimitMb)}, {verdict}");
-        return lines;
+        return
+        [
+            .. Section(
+                $"Close: over the {TabRank.FormatSize(plan.LimitMb)} memory budget",
+                [.. plan.Closes.Select(close => PlanLine(close.Item, close.Reason))]),
+            $"Memory: {TabRank.FormatSize(plan.BeforeMb)} -> {TabRank.FormatSize(plan.AfterMb)} of {TabRank.FormatSize(plan.LimitMb)}, {verdict}",
+        ];
     }
 
     /// <summary>One line per tab, keep-worthiest first: rank, score or protection, memory, key, title, reasons.</summary>
@@ -111,29 +101,33 @@ public static class TabPlanText
     public static IReadOnlyList<string> Groups(GroupPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        List<string> lines = [];
-        if (plan.Ungroups.Count > 0)
-        {
-            lines.Add(Invariant($"Ungroup first ({plan.Ungroups.Count})"));
-            lines.AddRange(plan.Ungroups.Select(ungroup =>
-                Invariant($"  {"ungroup",-9} {ungroup.Group.Title,-24} {ungroup.Tabs.Count} tabs in window {ungroup.WindowNumber}")));
-        }
-
-        foreach (var number in plan.WindowNumbers())
-        {
-            var moves = plan.Moves.Where(move => move.WindowNumber == number).ToList();
-            lines.Add(Invariant($"Window {number} [{moves[0].Profile}] ({moves.Count})"));
-            lines.AddRange(moves.Select(move =>
-                Invariant($"  {Verb(move),-9} {move.Title,-24} tab {move.Tab.Index + 1,3}  | {Clip(move.Tab.Title)}")));
-        }
-
-        lines.AddRange(plan.Skipped.Select(skip => Invariant($"  Skipped window {skip.WindowNumber} [{skip.Profile}]: {skip.Reason}")));
-        lines.AddRange(plan.Blocked.Select(block => $"  Left {block.Title} [{block.Profile}]: {block.Reason}"));
         var created = plan.Moves.Count(move => move.New);
         var crossing = plan.Moves.Count(move => move.Crosses);
-        lines.Add(Invariant(
-            $"{plan.Moves.Count} tabs to move ({crossing} across windows), {created} new groups, {plan.Ungroups.Count} duplicates merged, {plan.AlreadyGrouped} already grouped, {plan.Elsewhere} left in other groups"));
-        return lines;
+        return
+        [
+            .. plan.Ungroups.Count > 0
+                ? (List<string>)
+                [
+                    Invariant($"Ungroup first ({plan.Ungroups.Count})"),
+                    .. plan.Ungroups.Select(ungroup =>
+                        Invariant($"  {"ungroup",-9} {ungroup.Group.Title,-24} {ungroup.Tabs.Count} tabs in window {ungroup.WindowNumber}")),
+                ]
+                : [],
+            .. plan.WindowNumbers().SelectMany(number =>
+            {
+                var moves = plan.Moves.Where(move => move.WindowNumber == number).ToList();
+                return (List<string>)
+                [
+                    Invariant($"Window {number} [{moves[0].Profile}] ({moves.Count})"),
+                    .. moves.Select(move =>
+                        Invariant($"  {Verb(move),-9} {move.Title,-24} tab {move.Tab.Index + 1,3}  | {Clip(move.Tab.Title)}")),
+                ];
+            }),
+            .. plan.Skipped.Select(skip => Invariant($"  Skipped window {skip.WindowNumber} [{skip.Profile}]: {skip.Reason}")),
+            .. plan.Blocked.Select(block => $"  Left {block.Title} [{block.Profile}]: {block.Reason}"),
+            Invariant(
+                $"{plan.Moves.Count} tabs to move ({crossing} across windows), {created} new groups, {plan.Ungroups.Count} duplicates merged, {plan.AlreadyGrouped} already grouped, {plan.Elsewhere} left in other groups"),
+        ];
     }
 
     private static string Verb(GroupMove move) => move switch
@@ -150,29 +144,33 @@ public static class TabPlanText
     public static IReadOnlyList<string> SavedGroups(ConsolidationPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        List<string> lines = [];
-        foreach (var profile in plan.Groups.Select(group => group.Profile).Distinct())
-        {
-            var groups = plan.Groups.Where(group => group.Profile == profile).ToList();
-            lines.Add($"Saved groups [{profile}] ({groups.Count})");
-            lines.AddRange(groups.Select(group =>
-                string.Create(CultureInfo.InvariantCulture, $"  {group.Position + 1,3}  {(group.Opened ? "open" : "closed"),-6}  {group.Title}")));
-        }
-
-        if (plan.Deletes.Count > 0)
-        {
-            lines.Add($"Delete: closed duplicates ({plan.Total})");
-            lines.AddRange(plan.Deletes.Select(delete =>
+        return
+        [
+            .. plan.Groups.Select(group => group.Profile).Distinct().SelectMany(profile =>
             {
-                var kept = delete.OpenCopies > 0 ? "the open copy" : "the leftmost closed copy";
-                return $"  {delete.Count} x {delete.Title,-24} [{delete.Profile}] of {delete.OpenCopies + delete.ClosedCopies} saved, keeping {kept}";
-            }));
-        }
-
-        lines.AddRange(plan.OpenDuplicates.Select(duplicate =>
-            $"  Report only: {duplicate.Title} [{duplicate.Profile}] is open {duplicate.Count} times (never deleted)"));
-        lines.Add($"{plan.Total} saved groups to delete, {plan.Groups.Count} seen");
-        return lines;
+                var groups = plan.Groups.Where(group => group.Profile == profile).ToList();
+                return (List<string>)
+                [
+                    $"Saved groups [{profile}] ({groups.Count})",
+                    .. groups.Select(group =>
+                        string.Create(CultureInfo.InvariantCulture, $"  {group.Position + 1,3}  {(group.Opened ? "open" : "closed"),-6}  {group.Title}")),
+                ];
+            }),
+            .. plan.Deletes.Count > 0
+                ? (List<string>)
+                [
+                    $"Delete: closed duplicates ({plan.Total})",
+                    .. plan.Deletes.Select(delete =>
+                    {
+                        var kept = delete.OpenCopies > 0 ? "the open copy" : "the leftmost closed copy";
+                        return $"  {delete.Count} x {delete.Title,-24} [{delete.Profile}] of {delete.OpenCopies + delete.ClosedCopies} saved, keeping {kept}";
+                    }),
+                ]
+                : [],
+            .. plan.OpenDuplicates.Select(duplicate =>
+                $"  Report only: {duplicate.Title} [{duplicate.Profile}] is open {duplicate.Count} times (never deleted)"),
+            $"{plan.Total} saved groups to delete, {plan.Groups.Count} seen",
+        ];
     }
 
     /// <summary>One planned tab: its label, where it sits, why, and its title cut to fit.</summary>
@@ -202,12 +200,6 @@ public static class TabPlanText
         return cut.Append('…').ToString();
     }
 
-    private static void Section(List<string> lines, string heading, IEnumerable<string> body, int count)
-    {
-        if (count > 0)
-        {
-            lines.Add($"{heading} ({count})");
-            lines.AddRange(body);
-        }
-    }
+    private static IEnumerable<string> Section(string heading, IReadOnlyCollection<string> body) =>
+        body.Count > 0 ? [$"{heading} ({body.Count})", .. body] : [];
 }

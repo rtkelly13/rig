@@ -58,8 +58,8 @@ public static class ReleaseEnvironments
         }
 
         var declared = desired.Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
-        actions.AddRange(current.Keys.Where(name => !declared.Contains(name)).Order(StringComparer.Ordinal)
-            .Select(name => new EnvironmentAction("undeclared", name, "exists on GitHub but no profile declares it")));
+        actions = [.. actions, .. current.Keys.Where(name => !declared.Contains(name)).Order(StringComparer.Ordinal)
+            .Select(name => new EnvironmentAction("undeclared", name, "exists on GitHub but no profile declares it"))];
         return actions;
     }
 

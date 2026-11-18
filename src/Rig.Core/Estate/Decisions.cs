@@ -127,7 +127,7 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
         var found = new List<Decision>();
         foreach (var root in roots.Where(Directory.Exists))
         {
-            found.AddRange(await CollectAsync(root, idleDays, cancellationToken).ConfigureAwait(false));
+            found = [.. found, .. await CollectAsync(root, idleDays, cancellationToken).ConfigureAwait(false)];
         }
 
         return Ordered(Unique(found, windows));
@@ -152,7 +152,7 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
         var found = new List<Decision>();
         foreach (var clone in CloneDiscovery.Scan(root))
         {
-            found.AddRange(await CloneDecisionsAsync(clone, idleDays, cancellationToken).ConfigureAwait(false));
+            found = [.. found, .. await CloneDecisionsAsync(clone, idleDays, cancellationToken).ConfigureAwait(false)];
         }
 
         return Ordered(found);
@@ -182,10 +182,10 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
         if (heads is not null)
         {
             var pulls = await MapAsync(quiet, tree => Task.FromResult(PullRequestDecision(repo, clone, tree, heads, idleDays)), cancellationToken).ConfigureAwait(false);
-            found.AddRange(pulls.Where(item => item is not null).Select(item => item!));
+            found = [.. found, .. pulls.Where(item => item is not null).Select(item => item!)];
         }
 
-        found.AddRange(await MapAsync(LeftBehind(clone), path => Task.FromResult(Locked(repo, path)), cancellationToken).ConfigureAwait(false));
+        found = [.. found, .. await MapAsync(LeftBehind(clone), path => Task.FromResult(Locked(repo, path)), cancellationToken).ConfigureAwait(false)];
         return found;
     }
 

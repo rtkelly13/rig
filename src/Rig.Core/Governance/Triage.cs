@@ -307,7 +307,7 @@ public sealed class Triage(IProc proc)
         List<string> argv = ["gh", "issue", "list", "--repo", repo, "--state", "open", "--limit", "100", "--json", IssueFields];
         if (!string.IsNullOrEmpty(label))
         {
-            argv.AddRange(["--label", label]);
+            argv = [.. argv, "--label", label];
         }
 
         return await ReadRowsAsync(argv, row => new IssueItem(

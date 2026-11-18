@@ -87,11 +87,11 @@ public static class Placement
                     errors.Add($"{desktop.Name}: duplicate launch entry `{entry.Name}`");
                 }
 
-                errors.AddRange(EntryErrors(entry, desktop.Name, substitutions, paths));
-                errors.AddRange(CommandAtLogonErrors(entry, desktop.Name));
+                errors = [.. errors, .. EntryErrors(entry, desktop.Name, substitutions, paths)];
+                errors = [.. errors, .. CommandAtLogonErrors(entry, desktop.Name)];
                 if (entry.Placement is not null)
                 {
-                    errors.AddRange(ValidatePlacementSpec(entry.Placement, desktop.Name, entry.Name, monitorCount));
+                    errors = [.. errors, .. ValidatePlacementSpec(entry.Placement, desktop.Name, entry.Name, monitorCount)];
                 }
             }
         }
@@ -128,7 +128,7 @@ public static class Placement
             var referenced = placed.Select(item => item.Screen).Distinct().Order().ToList();
             if (screenCount > 0)
             {
-                issues.AddRange(Enumerable.Range(1, screenCount).Except(referenced).Select(screen => $"{desktop.Name}: screen {screen} is empty"));
+                issues = [.. issues, .. Enumerable.Range(1, screenCount).Except(referenced).Select(screen => $"{desktop.Name}: screen {screen} is empty")];
             }
 
             foreach (var screen in referenced)
@@ -182,10 +182,10 @@ public static class Placement
             errors.Add($"{prefix}: placement screen {placement.Screen} exceeds detected monitor count {monitorCount}");
         }
 
-        errors.AddRange(LayoutErrors(placement.Layout, prefix));
+        errors = [.. errors, .. LayoutErrors(placement.Layout, prefix)];
         if (placement.Subdivide is not null)
         {
-            errors.AddRange(LayoutErrors(placement.Subdivide, prefix));
+            errors = [.. errors, .. LayoutErrors(placement.Subdivide, prefix)];
             if (placement.Subdivide.Mode == "columns")
             {
                 errors.Add($"{prefix}: columns applies to the screen, not a subdivide");
@@ -291,7 +291,7 @@ public static class Placement
                 }
                 else if (paths is not null)
                 {
-                    errors.AddRange(FolderErrors(entry.Cwd, substitutions, where, paths));
+                    errors = [.. errors, .. FolderErrors(entry.Cwd, substitutions, where, paths)];
                 }
 
                 return errors;
@@ -362,7 +362,7 @@ public static class Placement
             }
         }
 
-        errors.AddRange(localArgs.Where(arg => !paths.Exists(arg) && !LooksLikeObsidianVault(path, arg)).Select(arg => $"{where}: arg does not exist: {arg}"));
+        errors = [.. errors, .. localArgs.Where(arg => !paths.Exists(arg) && !LooksLikeObsidianVault(path, arg)).Select(arg => $"{where}: arg does not exist: {arg}")];
         return errors;
     }
 

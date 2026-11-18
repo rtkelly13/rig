@@ -178,13 +178,14 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             var inventory = Directory.Exists(local) ? await Manifests.ReadAsync(git, local, identity, cancellationToken).ConfigureAwait(false) : null;
             if (inventory is not null)
             {
-                publications.AddRange(inventory.Publications);
-                consumptions.AddRange(inventory.Consumptions);
+                publications = [.. publications, .. inventory.Publications];
+                consumptions = [.. consumptions, .. inventory.Consumptions];
                 foreach (var reference in inventory.ProjectRefs)
                 {
-                    dependencies.AddRange(roots
+                    dependencies =
+                        [.. dependencies, .. roots
                         .Where(upstream => upstream.Key != identity && PathResolution.IsUnder(reference.Target, PathResolution.Resolve(upstream.Value)))
-                        .Select(upstream => new Dependency(upstream.Key, identity, "project", Path.GetFileName(reference.Target), "project reference", "runtime", reference.Evidence)));
+                        .Select(upstream => new Dependency(upstream.Key, identity, "project", Path.GetFileName(reference.Target), "project reference", "runtime", reference.Evidence))];
                 }
             }
 
@@ -207,7 +208,8 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             .Select(group => (group.Key, Repos: group.Select(p => p.Repo).Distinct().Order(StringComparer.Ordinal).ToList()))
             .ToList();
         var providers = publishers.Where(p => p.Repos.Count == 1).ToDictionary(p => p.Key, p => p.Repos[0]);
-        dependencies.AddRange(consumptions
+        dependencies =
+            [.. dependencies, .. consumptions
             .Where(c => providers.TryGetValue((c.Registry, c.Package), out var provider) && provider != c.Repo)
             .Select(c => new Dependency(providers[(c.Registry, c.Package)], c.Repo, c.Registry, c.Package, c.Requirement, c.Scope, c.Evidence))
             .Distinct()
@@ -217,7 +219,7 @@ public sealed class EstateGraph(Git git, TimeProvider time)
             .ThenBy(d => d.Package, StringComparer.Ordinal)
             .ThenBy(d => d.Scope, StringComparer.Ordinal)
             .ThenBy(d => d.Evidence, StringComparer.Ordinal)
-            .ThenBy(d => d.Requirement, StringComparer.Ordinal));
+            .ThenBy(d => d.Requirement, StringComparer.Ordinal)];
         var warnings = publishers
             .Where(p => p.Repos.Count > 1)
             .OrderBy(p => p.Key.Registry, StringComparer.Ordinal)

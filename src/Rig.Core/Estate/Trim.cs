@@ -216,7 +216,7 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
         var found = new List<Trimmable>();
         foreach (var worktree in await IdleWorktreesAsync(clone, idleDays).ConfigureAwait(false))
         {
-            found.AddRange(await JudgeAsync(worktree, Candidates(worktree), floor).ConfigureAwait(false));
+            found = [.. found, .. await JudgeAsync(worktree, Candidates(worktree), floor).ConfigureAwait(false)];
         }
 
         return [.. found.OrderByDescending(item => item.Size.Freeable)];

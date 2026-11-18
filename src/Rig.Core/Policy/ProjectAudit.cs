@@ -43,15 +43,15 @@ public static partial class ProjectAudit
             var package = Path.Join(project, "package.json");
             if (File.Exists(package))
             {
-                results.AddRange(PackageScripts(File.ReadAllText(package))
-                    .Select(s => new ProjectCommand(name, package, s.Name, $"pnpm {s.Name}", Risk(s.Name, s.Source), s.Source)));
+                results = [.. results, .. PackageScripts(File.ReadAllText(package))
+                    .Select(s => new ProjectCommand(name, package, s.Name, $"pnpm {s.Name}", Risk(s.Name, s.Source), s.Source))];
             }
 
             var pyproject = Path.Join(project, "pyproject.toml");
             if (File.Exists(pyproject))
             {
-                results.AddRange(ProjectScripts(File.ReadAllText(pyproject))
-                    .Select(s => new ProjectCommand(name, pyproject, s.Name, $"uv run {s.Name}", Risk(s.Name, s.Source), s.Source)));
+                results = [.. results, .. ProjectScripts(File.ReadAllText(pyproject))
+                    .Select(s => new ProjectCommand(name, pyproject, s.Name, $"uv run {s.Name}", Risk(s.Name, s.Source), s.Source))];
             }
         }
 

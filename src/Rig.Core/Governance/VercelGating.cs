@@ -119,7 +119,7 @@ public sealed class VercelGating(IVercelApi api, Git git)
         }
 
         // 3. Production freshness: the served build is behind the branch it should serve.
-        findings.AddRange(Freshness(facts, recent));
+        findings = [.. findings, .. Freshness(facts, recent)];
         return findings;
     }
 

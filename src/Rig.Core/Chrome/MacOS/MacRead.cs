@@ -114,8 +114,7 @@ public static partial class MacRead
     public static IReadOnlyList<TabSlot> TabSlots(AxNode node, long windowId)
     {
         ArgumentNullException.ThrowIfNull(node);
-        var result = new List<TabSlot>();
-        if (!Visit(node, windowId, result))
+        if (Visit(node, windowId) is not { } result)
         {
             return [];
         }
@@ -346,29 +345,31 @@ public static partial class MacRead
     private static bool ShowsClose(AxNode node) =>
         Walk(node).Any(child => child.Role == "AXButton" && CloseNames.Contains(child.Name, StringComparer.Ordinal));
 
-    private static bool Visit(AxNode item, long windowId, List<TabSlot> result)
+    private static List<TabSlot>? Visit(AxNode item, long windowId)
     {
         if (AxReader.SkippedRoles.Contains(item.Role))
         {
-            return true;
+            return [];
         }
 
         if (IsTab(item))
         {
-            result.Add(new TabSlot(item, null));
-            return true;
+            return [new TabSlot(item, null)];
         }
 
+        List<TabSlot> result = [];
         var index = 0;
         while (index < item.Children.Count)
         {
             var child = item.Children[index];
             if (TabNames.ParseGroupHeader(child.Name) is not { } title)
             {
-                if (!Visit(child, windowId, result))
+                if (Visit(child, windowId) is not { } nested)
                 {
-                    return false;
+                    return null;
                 }
+
+                result = [.. result, .. nested];
 
                 index++;
                 continue;
@@ -384,27 +385,27 @@ public static partial class MacRead
                 || !expanded
                 || counts.Count != 1)
             {
-                return false;
+                return null;
             }
 
             // A count too large for an int cannot be followed by that many tabs, so it fails as a short run does.
             if (!int.TryParse(counts[0].Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var count))
             {
-                return false;
+                return null;
             }
 
             var members = item.Children.Skip(index + 1).Take(count).ToList();
             if (count == 0 || members.Count != count || !members.All(IsTab))
             {
-                return false;
+                return null;
             }
 
             var group = new TabGroup(GroupId(windowId, child.Identity), title);
-            result.AddRange(members.Select(member => new TabSlot(member, group)));
+            result = [.. result, .. members.Select(member => new TabSlot(member, group))];
             index += count + 1;
         }
 
-        return true;
+        return result;
     }
 
     private static bool Agrees(IReadOnlyList<TabSlot> slots, JxaWindow raw) =>

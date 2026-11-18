@@ -39,7 +39,7 @@ public static class ToolCatalog
         {
             if (Directory.Exists(folder))
             {
-                texts.AddRange(Directory.EnumerateFiles(folder, "*.json").Order(StringComparer.Ordinal).Select(f => (f, File.ReadAllText(f))));
+                texts = [.. texts, .. Directory.EnumerateFiles(folder, "*.json").Order(StringComparer.Ordinal).Select(f => (f, File.ReadAllText(f)))];
             }
         }
 

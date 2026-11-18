@@ -207,7 +207,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
         ];
         if (rules.CheckPaths)
         {
-            raw.AddRange(CheckPathLiveness(repo, text));
+            raw = [.. raw, .. CheckPathLiveness(repo, text)];
         }
 
         var waivers = LoadWaivers(repo);
@@ -215,7 +215,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
         var active = waivers.Where(w => Strip(w.Reason).Length > 0 && !w.ExpiredOn(today)).Select(w => w.Key).ToHashSet(StringComparer.Ordinal);
         var findings = raw.Where(f => !active.Contains(f.Key)).ToList();
         var suppressed = raw.Where(f => active.Contains(f.Key)).ToList();
-        findings.AddRange(WaiverFindings(repo, waivers, raw.Select(f => f.Key).ToHashSet(StringComparer.Ordinal), today));
+        findings = [.. findings, .. WaiverFindings(repo, waivers, raw.Select(f => f.Key).ToHashSet(StringComparer.Ordinal), today)];
         return new(name, findings, suppressed, CollectMetrics(text));
     }
 
@@ -552,7 +552,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     {
         var listed = DocsTree.List(folder).ToList();
         var entries = listed.Where(p => DocsTree.IsMarkdownName(Path.GetFileName(p)) && DocsTree.IsFile(p) && !IsIndex(p)).ToList();
-        entries.AddRange(listed.Where(d => DocsTree.IsDir(d) && DocsTree.Walk(d).Any(p => DocsTree.IsMarkdownName(Path.GetFileName(p)))));
+        entries = [.. entries, .. listed.Where(d => DocsTree.IsDir(d) && DocsTree.Walk(d).Any(p => DocsTree.IsMarkdownName(Path.GetFileName(p))))];
         entries.Sort(DocsTree.Order);
         return entries;
     }
@@ -681,7 +681,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
         var docsDir = Path.Join(repo, "docs");
         if (DocsTree.IsDir(docsDir))
         {
-            found.AddRange(DocsTree.Walk(docsDir).Where(p => DocsTree.IsMarkdownName(Path.GetFileName(p)) && DocsTree.IsFile(p)).Order(DocsTree.Order));
+            found = [.. found, .. DocsTree.Walk(docsDir).Where(p => DocsTree.IsMarkdownName(Path.GetFileName(p)) && DocsTree.IsFile(p)).Order(DocsTree.Order)];
         }
 
         return found;

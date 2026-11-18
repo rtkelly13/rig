@@ -355,7 +355,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
         var ordered = new List<KeyValuePair<string, string>>();
         foreach (var effect in new[] { "allow", "ask", "deny" })
         {
-            ordered.AddRange(effects.Where(entry => entry.Value == effect).Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value)));
+            ordered = [.. ordered, .. effects.Where(entry => entry.Value == effect).Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value))];
         }
 
         foreach (var shell in shells)

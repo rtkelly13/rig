@@ -69,13 +69,13 @@ public static class OrcaDoctor
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(managedProjects);
         List<OrcaFinding> findings = [.. SettingsFindings(policy, snapshot.Settings, snapshot.ProfileDir, paths, now)];
-        findings.AddRange(AgentChecks(policy, snapshot).Select(Finding));
+        findings = [.. findings, .. AgentChecks(policy, snapshot).Select(Finding)];
         if (policy.AgentPermissions is not null && snapshot.LaunchArgs is null)
         {
             findings.Add(new("agents", "launch args", CheckStatus.Skip, "Orca is not running to ask"));
         }
 
-        findings.AddRange(RepoFindings(policy, snapshot.Repos, paths, managedProjects));
+        findings = [.. findings, .. RepoFindings(policy, snapshot.Repos, paths, managedProjects)];
         return findings;
     }
 
@@ -94,12 +94,12 @@ public static class OrcaDoctor
         if (stored is not null)
         {
             var overrides = stored.PermissionOverrides ?? new Dictionary<string, string>();
-            checks.AddRange(AgentPermissions.PermissionChecks(want, overrides.Keys, stored.PermissionDefault, overrides));
+            checks = [.. checks, .. AgentPermissions.PermissionChecks(want, overrides.Keys, stored.PermissionDefault, overrides)];
         }
 
         if (snapshot.LaunchArgs is not null)
         {
-            checks.AddRange(AgentPermissions.LaunchChecks(want, policy.AgentArgs, snapshot.LaunchArgs));
+            checks = [.. checks, .. AgentPermissions.LaunchChecks(want, policy.AgentArgs, snapshot.LaunchArgs)];
         }
 
         return checks;
@@ -178,7 +178,7 @@ public static class OrcaDoctor
         {
             if (byName.GetValueOrDefault(name) is { } repo)
             {
-                findings.AddRange(RepoPolicyFindings(name, repo, want));
+                findings = [.. findings, .. RepoPolicyFindings(name, repo, want)];
                 continue;
             }
 

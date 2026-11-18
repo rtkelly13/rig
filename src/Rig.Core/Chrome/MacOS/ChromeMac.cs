@@ -912,13 +912,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
             return [];
         }
 
-        var menus = new List<AxNode>();
-        foreach (var child in tree.Children)
-        {
-            menus.AddRange(Menus(child));
-        }
-
-        return menus;
+        return [.. tree.Children.SelectMany(Menus)];
     }
 
     private AxNode Entry(MacUi ui, int pid, IReadOnlyList<string> names, TimeSpan timeout) =>

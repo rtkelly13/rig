@@ -76,19 +76,13 @@ public static partial class DotnetScan
     public static IReadOnlyList<Project> Discover(string repo, IReadOnlyList<string>? roots = null)
     {
         ArgumentNullException.ThrowIfNull(repo);
-        var pending = new List<string>();
-        foreach (var root in roots ?? ["src"])
-        {
-            var directory = System.IO.Path.Combine(repo, root);
-            if (!Directory.Exists(directory))
-            {
-                continue;
-            }
-
-            pending.AddRange(SortedCsproj(directory).Where(path => !Skipped(path, repo)));
-        }
-
-        return ReadClosure(pending);
+        return ReadClosure(
+        [
+            .. (roots ?? ["src"])
+                .Select(root => System.IO.Path.Combine(repo, root))
+                .Where(Directory.Exists)
+                .SelectMany(directory => SortedCsproj(directory).Where(path => !Skipped(path, repo))),
+        ]);
     }
 
     /// <summary>The project at <paramref name="csproj"/> plus everything it references, transitively. Sorted by name.</summary>
@@ -118,7 +112,7 @@ public static partial class DotnetScan
 
             var project = ReadProject(path);
             found[path] = project;
-            pending.AddRange(project.Refs.Select(reference => reference.Target));
+            pending = [.. pending, .. project.Refs.Select(reference => reference.Target)];
         }
 
         return [.. found.Values.OrderBy(project => project.Name, StringComparer.Ordinal)];

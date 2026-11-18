@@ -632,7 +632,7 @@ public static class Wrapup
         List<string> parts = [rigExecutable, "estate", "wrapup", "report"];
         if (!string.IsNullOrEmpty(askId))
         {
-            parts.AddRange(["--ask", askId]);
+            parts = [.. parts, "--ask", askId];
         }
 
         return string.Join(' ', parts.Select(WrapupText.ShellQuote));
@@ -667,7 +667,7 @@ public static class Wrapup
                 pending += finished ? 0 : 1;
             }
 
-            stack.AddRange(byParent.GetValueOrDefault(id, []));
+            stack = [.. stack, .. byParent.GetValueOrDefault(id, [])];
         }
 
         return pending;

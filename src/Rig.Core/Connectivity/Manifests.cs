@@ -26,7 +26,7 @@ public sealed class Inventory
     /// <summary>The packages it consumes.</summary>
     public IReadOnlyList<Consumption> Consumptions => ConsumptionsFound;
 
-    internal List<Consumption> ConsumptionsFound { get; } = [];
+    internal List<Consumption> ConsumptionsFound { get; set; } = [];
 
     /// <summary>Its MSBuild project references.</summary>
     public IReadOnlyList<ProjectLink> ProjectRefs => ProjectRefsFound;
@@ -36,7 +36,7 @@ public sealed class Inventory
     /// <summary>The manifests found, relative to the repo with forward slashes.</summary>
     public IReadOnlyList<string> Paths => PathsFound;
 
-    internal List<string> PathsFound { get; } = [];
+    internal List<string> PathsFound { get; set; } = [];
 
     /// <summary>What could not be read.</summary>
     public IReadOnlyList<string> Warnings => WarningsFound;
@@ -136,7 +136,7 @@ public static partial class Manifests
         var inventory = new Inventory();
         try
         {
-            inventory.PathsFound.AddRange(await ListAsync(git, root, cancellationToken).ConfigureAwait(false));
+            inventory.PathsFound = [.. inventory.PathsFound, .. await ListAsync(git, root, cancellationToken).ConfigureAwait(false)];
         }
         catch (Exception e) when (e is InvalidOperationException or InvalidDataException or IOException or UnauthorizedAccessException)
         {
@@ -232,22 +232,21 @@ public static partial class Manifests
         var package = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false }) as JsonObject
             ?? throw new InvalidDataException("expected a JSON object");
         var name = OptionalString(package, "name");
-        var consumptions = new List<Consumption>();
-        foreach (var (scope, key) in new[] { ("runtime", "dependencies"), ("development", "devDependencies"), ("peer", "peerDependencies"), ("optional", "optionalDependencies") })
-        {
-            foreach (var (dependency, version) in StringMap(package, key))
+        var consumptions = new[] { ("runtime", "dependencies"), ("development", "devDependencies"), ("peer", "peerDependencies"), ("optional", "optionalDependencies") }
+            .SelectMany(kind => StringMap(package, kind.Item2).Select(entry => (Scope: kind.Item1, entry.Name, entry.Version)))
+            .Select(item =>
             {
-                var alias = NpmAlias().Match(version);
-                consumptions.Add(new Consumption("npm", Canonical("npm", alias.Success ? alias.Groups[1].Value : dependency), repo, version, scope, evidence));
-            }
-        }
+                var alias = NpmAlias().Match(item.Version);
+                return new Consumption("npm", Canonical("npm", alias.Success ? alias.Groups[1].Value : item.Name), repo, item.Version, item.Scope, evidence);
+            })
+            .ToList();
 
         if (name.Length > 0)
         {
             inventory.PublicationsFound.Add(new Publication("npm", Canonical("npm", name), repo, evidence));
         }
 
-        inventory.ConsumptionsFound.AddRange(consumptions);
+        inventory.ConsumptionsFound = [.. inventory.ConsumptionsFound, .. consumptions];
     }
 
     private static void ReadPython(Inventory inventory, string text, string repo, string evidence)
@@ -265,10 +264,7 @@ public static partial class Manifests
         if (project.TryGetValue("optional-dependencies", out var optional))
         {
             var extras = optional as TomlTable ?? throw new InvalidDataException("project.optional-dependencies: expected a table");
-            foreach (var (extra, _) in extras)
-            {
-                requirements.AddRange(Strings(extras, extra, $"project.optional-dependencies.{extra}").Select(requirement => ($"optional:{extra}", requirement)));
-            }
+            requirements = [.. requirements, .. extras.SelectMany(extra => Strings(extras, extra.Key, $"project.optional-dependencies.{extra.Key}").Select(requirement => ($"optional:{extra.Key}", requirement)))];
         }
 
         if (name.Length > 0)
@@ -303,7 +299,7 @@ public static partial class Manifests
             }
         }
 
-        inventory.ConsumptionsFound.AddRange(NuGetReferences(text, repo, evidence, versions));
+        inventory.ConsumptionsFound = [.. inventory.ConsumptionsFound, .. NuGetReferences(text, repo, evidence, versions)];
         foreach (Match reference in ProjectReferenceTag().Matches(text))
         {
             var target = Attribute(reference.Value, "Include");

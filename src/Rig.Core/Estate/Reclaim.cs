@@ -147,7 +147,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
                 {
                     if (category.MayHoldWorktrees)
                     {
-                        entries.AddRange(await ExplodeTempAsync(match, worktrees, category, floor, cancellationToken).ConfigureAwait(false));
+                        entries = [.. entries, .. await ExplodeTempAsync(match, worktrees, category, floor, cancellationToken).ConfigureAwait(false)];
                         continue;
                     }
 
@@ -436,7 +436,7 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
             if (!isTree && worktrees.Any(tree => PathResolution.IsUnder(tree, resolved)))
             {
                 // A folder of worktrees (temp/rig/<name>) goes one worktree at a time, each with its own guards.
-                found.AddRange(await ExplodeTempAsync(child, worktrees, category, floor, cancellationToken).ConfigureAwait(false));
+                found = [.. found, .. await ExplodeTempAsync(child, worktrees, category, floor, cancellationToken).ConfigureAwait(false)];
                 continue;
             }
 

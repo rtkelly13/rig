@@ -472,10 +472,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         var candidates = new List<string> { worktree };
         if (gitDir.Length > 0)
         {
-            candidates.AddRange([System.IO.Path.Join(gitDir, "index"), System.IO.Path.Join(gitDir, "HEAD"), System.IO.Path.Join(gitDir, "logs", "HEAD")]);
+            candidates = [.. candidates, System.IO.Path.Join(gitDir, "index"), System.IO.Path.Join(gitDir, "HEAD"), System.IO.Path.Join(gitDir, "logs", "HEAD")];
         }
 
-        candidates.AddRange(status.Changed.Concat(status.Untracked).Take(2000).Select(entry => System.IO.Path.Join(worktree, entry)));
+        candidates = [.. candidates, .. status.Changed.Concat(status.Untracked).Take(2000).Select(entry => System.IO.Path.Join(worktree, entry))];
         DateTime? newest = null;
         foreach (var candidate in candidates)
         {
@@ -678,7 +678,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         }).ToList();
         if (options.IncludeIgnored)
         {
-            big.AddRange(keptFiles.Where(file => file.Size > BigFile).Select(file => System.IO.Path.GetRelativePath(path, file.Path)));
+            big = [.. big, .. keptFiles.Where(file => file.Size > BigFile).Select(file => System.IO.Path.GetRelativePath(path, file.Path))];
         }
 
         if (big.Count > 0)

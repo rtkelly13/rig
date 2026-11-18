@@ -99,7 +99,7 @@ public static class ClaudeBaseline
             changes.Add($"+ mcpServers.{name}");
         }
 
-        changes.AddRange(SessionLedger.Merge(merged, sessionEndCommand));
+        changes = [.. changes, .. SessionLedger.Merge(merged, sessionEndCommand)];
         return new SettingsMerge(merged, changes);
     }
 

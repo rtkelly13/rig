@@ -381,7 +381,7 @@ public static class WrapupRun
             stack.RemoveAt(stack.Count - 1);
             if (found.Add(id))
             {
-                stack.AddRange(children.GetValueOrDefault(id, []));
+                stack = [.. stack, .. children.GetValueOrDefault(id, [])];
             }
         }
 

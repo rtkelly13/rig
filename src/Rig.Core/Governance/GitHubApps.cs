@@ -269,7 +269,7 @@ public sealed class GitHubApps(IGitHubApi api, RepoPolicies policies, Func<strin
             var paged = string.Create(CultureInfo.InvariantCulture, $"{route}?per_page={PageSize}&page={number}");
             var page = (await GitHubCalls.ReadJsonAsync(api, paged, cancellationToken).ConfigureAwait(false))[key] as JsonArray
                 ?? throw new GitHubReadException($"GET {paged}: no {key} list");
-            entries.AddRange(page);
+            entries = [.. entries, .. page];
             if (page.Count < PageSize)
             {
                 return entries;

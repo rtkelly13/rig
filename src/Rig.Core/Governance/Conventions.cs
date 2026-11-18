@@ -125,7 +125,7 @@ public sealed record ConventionsReport(
         }
 
         // Shape is advisory: a compliant repo can still carry a name that breaks the next time CI is touched.
-        lines.AddRange(Names.Warnings.Select(pair => $"   · check name {QuotedText.Str(pair.Key)}: {string.Join("; ", pair.Value)}"));
+        lines = [.. lines, .. Names.Warnings.Select(pair => $"   · check name {QuotedText.Str(pair.Key)}: {string.Join("; ", pair.Value)}")];
         return lines;
 
         void Detail(bool drifted, string line)

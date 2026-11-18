@@ -140,7 +140,7 @@ public sealed class ObsidianPlugins(HttpClient http)
                 break;
             case JsonArray listed:
                 var enabled = listed.Select(Text).ToList();
-                turnedOn.AddRange(ids.Where(id => !enabled.Contains(id, StringComparer.Ordinal)));
+                turnedOn = [.. turnedOn, .. ids.Where(id => !enabled.Contains(id, StringComparer.Ordinal))];
                 payload = new JsonArray([.. enabled.Concat(turnedOn).Select(e => (JsonNode)JsonValue.Create(e))]);
                 break;
             default:

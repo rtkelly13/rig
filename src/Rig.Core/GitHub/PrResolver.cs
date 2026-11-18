@@ -48,8 +48,8 @@ public static class PrResolver
             parts.Add($"open: pullRequests(states: OPEN, first: 100, after: $after) {{ {OpenFields} }}");
         }
 
-        parts.AddRange(numbers.Select(number => string.Create(
-            CultureInfo.InvariantCulture, $"pr{number}: pullRequest(number: {number}) {{ {LookupFields} }}")));
+        parts = [.. parts, .. numbers.Select(number => string.Create(
+            CultureInfo.InvariantCulture, $"pr{number}: pullRequest(number: {number}) {{ {LookupFields} }}"))];
         var declared = openList ? "$owner: String!, $name: String!, $after: String" : "$owner: String!, $name: String!";
         var query = $"query({declared}) {{ repository(owner: $owner, name: $name) {{ {string.Join(' ', parts)} }} }}";
         var variables = new Dictionary<string, object?>
@@ -106,7 +106,7 @@ public static class PrResolver
             }
 
             var wanted = repo.Numbers.ToHashSet();
-            chains.AddRange(result.Chains.Where(chain => chain.Members.Any(wanted.Contains)).Select(chain => RepoChain.Of(repo.Owner, repo.Repo, chain)));
+            chains = [.. chains, .. result.Chains.Where(chain => chain.Members.Any(wanted.Contains)).Select(chain => RepoChain.Of(repo.Owner, repo.Repo, chain))];
         }
 
         return new Resolution(states, chains, failed, (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds);
@@ -146,7 +146,7 @@ public static class PrResolver
                 }
 
                 var listing = OpenList(answer);
-                openPrs.AddRange(listing.Prs);
+                openPrs = [.. openPrs, .. listing.Prs];
                 complete = !listing.HasNextPage;
                 cursor = listing.EndCursor ?? string.Empty;
             }

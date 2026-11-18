@@ -136,12 +136,12 @@ public sealed record SkillPlaces(string Checkout, string Home, string WorkingDir
         var vendors = Path.Join(Home, ".config", "devenv", "vendors");
         if (Directory.Exists(vendors))
         {
-            sources.AddRange(Directory.EnumerateDirectories(vendors)
+            sources = [.. sources, .. Directory.EnumerateDirectories(vendors)
                 .Select(Path.GetFileName)
                 .OfType<string>()
                 .Where(name => !name.StartsWith('.'))
                 .Order(UnicodeText.CodePointOrder)
-                .Select(name => new SkillSource(name, Path.Join(vendors, name))));
+                .Select(name => new SkillSource(name, Path.Join(vendors, name)))];
         }
 
         return sources;

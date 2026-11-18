@@ -67,30 +67,30 @@ public static partial class MermaidGenerator
         ArgumentNullException.ThrowIfNull(types);
         ArgumentNullException.ThrowIfNull(edges);
         ArgumentNullException.ThrowIfNull(links);
-        var lines = new List<string> { "classDiagram", "direction LR" };
-        foreach (var (type, _) in types)
+        List<string> lines =
+        [
+            "classDiagram",
+            "direction LR",
+            .. types.SelectMany(declared => ClassDeclaration(declared.Type)),
+            .. edges.Select(edge => $"{edge.Source} --> {edge.Target}"),
+            .. links.Select(link => $"click {link.Type} href \"{link.Url}\""),
+        ];
+        return Diagram(lines);
+    }
+
+    private static IEnumerable<string> ClassDeclaration(TypeInfo type)
+    {
+        List<string> body =
+        [
+            .. type.Kind != "class" ? [$"  <<{type.Kind}>>"] : Array.Empty<string>(),
+            .. type.Members.Select(member => $"  +{member}"),
+        ];
+        if (body.Count == 0)
         {
-            var body = new List<string>();
-            if (type.Kind != "class")
-            {
-                body.Add($"  <<{type.Kind}>>");
-            }
-
-            body.AddRange(type.Members.Select(member => $"  +{member}"));
-            if (body.Count == 0)
-            {
-                lines.Add($"class {type.Name}");
-                continue;
-            }
-
-            lines.Add($"class {type.Name} {{");
-            lines.AddRange(body);
-            lines.Add("}");
+            return [$"class {type.Name}"];
         }
 
-        lines.AddRange(edges.Select(edge => $"{edge.Source} --> {edge.Target}"));
-        lines.AddRange(links.Select(link => $"click {link.Type} href \"{link.Url}\""));
-        return Diagram(lines);
+        return [$"class {type.Name} {{", .. body, "}"];
     }
 
     /// <summary>The frontmatter rig's derivation writes: deterministic provenance and the <c>derived</c> tag.</summary>
