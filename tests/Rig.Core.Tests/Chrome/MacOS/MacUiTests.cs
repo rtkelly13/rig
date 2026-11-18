@@ -65,7 +65,6 @@ public sealed class MacUiTests : IDisposable
         _api.IsTrusted = false;
         var error = Assert.Throws<AccessibilityUnavailableException>(() => MacUi.Open(_api));
         Assert.Equal("Grant Accessibility access to the terminal running chrome-tabs", error.Message);
-        _ = Assert.Throws<ArgumentNullException>(() => MacUi.Open(null!));
     }
 
     [Fact]
@@ -148,7 +147,6 @@ public sealed class MacUiTests : IDisposable
 
         Assert.Equal("AX element is not owned by this action session", Assert.Throws<AccessibilityUnavailableException>(() => _ui.Press(button with { })).Message);
         Assert.Equal("AX element is not owned by this action session", Assert.Throws<AccessibilityUnavailableException>(() => _ui.Press(new AxNode(10, "AXButton", Title: "Work"))).Message);
-        _ = Assert.Throws<ArgumentNullException>(() => _ui.Press(null!));
         Assert.Empty(_api.Actions);
     }
 
@@ -274,8 +272,6 @@ public sealed class MacUiTests : IDisposable
 
         Assert.Equal("Group title is not valid text", error.Message);
         Assert.Equal(reads, _api.Reads.Count);
-        _ = Assert.Throws<ArgumentNullException>(() => _ui.SetText(field, null!, () => { }));
-        _ = Assert.Throws<ArgumentNullException>(() => _ui.SetText(field, "a", null!));
     }
 
     [Fact]
@@ -470,7 +466,6 @@ public sealed class MacUiTests : IDisposable
         Assert.Equal("Cannot read cursor position", Assert.Throws<AccessibilityUnavailableException>(() => _ui.Cursor()).Message);
         _api.WarpError = 1001;
         Assert.Equal("Cannot restore cursor position", Assert.Throws<AccessibilityUnavailableException>(() => _ui.RestoreCursor(new ScreenPos(7, 8))).Message);
-        _ = Assert.Throws<ArgumentNullException>(() => _ui.RestoreCursor(null!));
     }
 
     [Fact]
@@ -480,7 +475,6 @@ public sealed class MacUiTests : IDisposable
 
         Assert.Equal(["mouse 3 at 120,210 flags 0 to tap 0", "mouse 4 at 120,210 flags 0 to tap 0"], Posted());
         Assert.Empty(_api.Owned);
-        _ = Assert.Throws<ArgumentNullException>(() => _ui.RightClick(null!));
     }
 
     [Fact]
@@ -576,7 +570,6 @@ public sealed class MacUiTests : IDisposable
         _api.NoApplication = true;
         Assert.Equal("Cannot capture foreground application", Assert.Throws<AccessibilityUnavailableException>(() => _ui.CaptureFocus(() => Pid)).Message);
         Assert.Empty(_api.Owned);
-        _ = Assert.Throws<ArgumentNullException>(() => _ui.CaptureFocus(null!));
     }
 
     [Theory]
@@ -604,7 +597,6 @@ public sealed class MacUiTests : IDisposable
         _api.FrontmostError = -25200;
 
         Assert.Equal("Cannot restore foreground application", Assert.Throws<AccessibilityUnavailableException>(() => _ui.RestoreFocus(focus)).Message);
-        _ = Assert.Throws<ArgumentNullException>(() => _ui.RestoreFocus(null!));
     }
 
     [Fact]

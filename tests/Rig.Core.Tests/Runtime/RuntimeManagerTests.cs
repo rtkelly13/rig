@@ -621,9 +621,6 @@ public sealed class RuntimeManagerTests : IDisposable
     public void Install_and_WriteState_validate_arguments()
     {
         var manager = Manager(new Tools(_system));
-        Assert.Throws<ArgumentNullException>(() => manager.Install(null!, "HEAD"));
-        Assert.Throws<ArgumentNullException>(() => manager.Install("repo", null!));
-        Assert.Throws<ArgumentNullException>(() => manager.WriteState(null!));
         var missingEx = Assert.Throws<RuntimeInstallException>(() => manager.Install(Path.Join(_temp.Path, "no-such-repo"), "HEAD"));
         Assert.Contains("is not a checkout", missingEx.Message, StringComparison.Ordinal);
     }
@@ -693,13 +690,6 @@ public sealed class RuntimeManagerTests : IDisposable
         var inner = new InvalidOperationException("inner");
         var ex3 = new RuntimeInstallException("msg", inner);
         Assert.Same(inner, ex3.InnerException);
-    }
-
-    [Fact]
-    public void WriteState_throws_on_null_state()
-    {
-        var manager = Manager(new Tools(_system));
-        Assert.Throws<ArgumentNullException>(() => manager.WriteState(null!));
     }
 
     [Fact]

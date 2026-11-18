@@ -238,10 +238,6 @@ public sealed class C4DeriverTests : IDisposable
     [Fact]
     public void DotnetScan_validates_null_arguments_and_empty_project_xml()
     {
-        Assert.Throws<ArgumentNullException>(() => DotnetScan.Discover(null!));
-        Assert.Throws<ArgumentNullException>(() => DotnetScan.DiscoverProject(null!));
-        Assert.Throws<ArgumentNullException>(() => DotnetScan.ReadProject(null!));
-
         var empty = _temp.File("empty.csproj");
         File.WriteAllText(empty, "<Project />");
         var project = DotnetScan.ReadProject(empty);

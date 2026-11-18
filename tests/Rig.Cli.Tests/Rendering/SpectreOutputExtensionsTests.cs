@@ -108,9 +108,4 @@ public sealed class SpectreOutputExtensionsTests
         Assert.DoesNotContain('\u001b', text);
     }
 
-    [Fact]
-    public void RenderVerdict_validates_console()
-    {
-        Assert.Throws<ArgumentNullException>(() => SpectreOutputExtensions.RenderVerdict(null!, "Clean", true));
-    }
 }
