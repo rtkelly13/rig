@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Processes;
+using Rig.Core.Storage;
 using Rig.Core.Text;
 
 namespace Rig.Cli.Agent;
@@ -353,14 +354,7 @@ internal sealed partial class AgentLauncher(IProc proc, AgentHost host, TextWrit
 
     private AgentSettings LoadSettings()
     {
-        try
-        {
-            return File.Exists(host.ConfigPath) ? AgentSettings.Parse(File.ReadAllText(host.ConfigPath)) : new AgentSettings();
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return new AgentSettings();
-        }
+        return FileGuard.Try(() => File.Exists(host.ConfigPath) ? AgentSettings.Parse(File.ReadAllText(host.ConfigPath)) : new AgentSettings(), new AgentSettings());
     }
 
     [GeneratedRegex("^([a-zA-Z]):/(.*)")]

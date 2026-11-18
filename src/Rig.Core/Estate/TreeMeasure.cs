@@ -1,3 +1,4 @@
+using Rig.Core.Storage;
 namespace Rig.Core.Estate;
 
 /// <summary>What deleting a tree would free, and whether it may be deleted at all.</summary>
@@ -135,14 +136,7 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
     /// <summary>One folder's entries, hidden ones included; null when it cannot be listed.</summary>
     internal static List<FileSystemInfo>? Entries(string folder)
     {
-        try
-        {
-            return [.. new DirectoryInfo(folder).EnumerateFileSystemInfos("*", ListOne)];
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        return FileGuard.Try<List<FileSystemInfo>?>(() => [.. new DirectoryInfo(folder).EnumerateFileSystemInfos("*", ListOne)], null);
     }
 
     // The defaults skip Hidden and System, and on Unix a dot-name is Hidden: `.git` and `.venv` would vanish. An

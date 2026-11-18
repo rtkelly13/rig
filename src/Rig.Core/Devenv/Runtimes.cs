@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Rig.Core.Storage;
 
 namespace Rig.Core.Devenv;
 
@@ -30,14 +31,7 @@ public static partial class Runtimes
 
     private static string? Read(string path)
     {
-        try
-        {
-            return File.Exists(path) ? File.ReadAllText(path) : null;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        return FileGuard.Try(() => File.Exists(path) ? File.ReadAllText(path) : null, null);
     }
 
     [GeneratedRegex("""requires-python\s*=\s*["']([^"']+)["']""")]

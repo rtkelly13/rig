@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Storage;
 using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
@@ -202,14 +203,7 @@ public static class WorktreeState
     /// <summary>The feature's file, or null when it is missing or unreadable.</summary>
     public static string? ReadText(string worktree, string feature)
     {
-        try
-        {
-            return File.ReadAllText(StateFile(worktree, feature), Encoding.UTF8);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        return FileGuard.Try(() => File.ReadAllText(StateFile(worktree, feature), Encoding.UTF8), null);
     }
 
     /// <summary>Whether git ignores each of <paramref name="names"/> in the state folder: <c>yes</c>, <c>no</c> or <c>not-a-repo</c>.</summary>
