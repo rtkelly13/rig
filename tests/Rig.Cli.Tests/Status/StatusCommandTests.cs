@@ -34,7 +34,7 @@ public sealed class StatusCommandTests : IDisposable
         new StatusCommand(_proc, new Git(_proc, "/code"), Here, _out).Build().Parse(args)
             .InvokeAsync(new InvocationConfiguration { Output = _out, Error = _err }, TestContext.Current.CancellationToken);
 
-    private ProcRequest[] Gates() => [.. _proc.Requests.Where(r => r.Argv[0] == "uv")];
+    private ProcRequest[] Dotnet() => [.. _proc.Requests.Where(r => r.Argv[0] == "dotnet")];
 
     [Fact]
     public async Task A_clean_synced_repo_with_passing_gates_is_healthy()
@@ -43,19 +43,18 @@ public sealed class StatusCommandTests : IDisposable
 
         var text = _out.ToString();
         Assert.Contains("PASS  Healthy", text, StringComparison.Ordinal);
-        Assert.Contains("11 checks passed", text, StringComparison.Ordinal);
+        Assert.Contains("3 checks passed", text, StringComparison.Ordinal);
         Assert.Contains("│ OK │ Branch", text, StringComparison.Ordinal);
-        Assert.Contains("│ OK │ Security", text, StringComparison.Ordinal);
+        Assert.Contains("│ OK │ Remote sync", text, StringComparison.Ordinal);
         Assert.DoesNotContain('\u001b', text);
     }
 
     [Fact]
-    public async Task Every_gate_and_git_command_runs_at_the_repo_root()
+    public async Task Git_commands_run_where_asked_and_nothing_else_runs_without_tests()
     {
         _ = await Run("status");
 
-        Assert.Equal(StatusCommand.Gates.Select(g => g.Argv), Gates().Select(r => r.Argv));
-        Assert.All(Gates(), r => Assert.Equal(Root, r.WorkingDirectory));
+        Assert.Empty(Dotnet());
         var git = _proc.Requests.Where(r => r.Argv[0] == "git").ToList();
         Assert.Equal(Here, git[0].WorkingDirectory);
         Assert.All(git.Skip(1), r => Assert.Equal(Root, r.WorkingDirectory));
@@ -66,29 +65,26 @@ public sealed class StatusCommandTests : IDisposable
     {
         _ = _proc.Answer(new Ran(128, string.Empty, "fatal: not a git repository"), "git", "rev-parse", "--show-toplevel");
 
-        _ = await Run("status");
+        _ = await Run("status", "--tests");
 
-        Assert.All(Gates(), r => Assert.Equal(Here, r.WorkingDirectory));
+        Assert.All(Dotnet(), r => Assert.Equal(Here, r.WorkingDirectory));
     }
 
     [Fact]
     public async Task A_dirty_worktree_unsynced_branch_and_failing_gate_are_issues()
     {
-        _ = _proc.Answer(new Ran(0, " M src/a.py\n?? b.txt\n", string.Empty), "git", "status", "--porcelain")
-            .Answer(new Ran(0, "2\t1\n", string.Empty), "git", "rev-list")
-            .Answer(new Ran(1, "src/a.py:1: E501\n", "Found 3 errors.\n\n"), "uv", "run", "ruff", "check");
+        _ = _proc.Answer(new Ran(0, " M src/a.cs\n?? b.txt\n", string.Empty), "git", "status", "--porcelain")
+            .Answer(new Ran(0, "2\t1\n", string.Empty), "git", "rev-list");
 
         Assert.Equal(1, await Run("status"));
 
         var text = _out.ToString();
         Assert.Contains("FAIL  Issues Found", text, StringComparison.Ordinal);
         Assert.Contains("│ !! │ Clean worktree", text, StringComparison.Ordinal);
-        Assert.Contains("M src/a.py", text, StringComparison.Ordinal);
+        Assert.Contains("M src/a.cs", text, StringComparison.Ordinal);
         Assert.Contains("│ !! │ Remote sync", text, StringComparison.Ordinal);
         Assert.Contains("+2/-1", text, StringComparison.Ordinal);
-        Assert.Contains("│ !! │ Lint", text, StringComparison.Ordinal);
-        Assert.Contains("Found 3 errors.", text, StringComparison.Ordinal);
-        Assert.Contains("│ OK │ Format", text, StringComparison.Ordinal);
+        Assert.Contains("│ OK │ Branch", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -102,41 +98,34 @@ public sealed class StatusCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task A_missing_tool_fails_its_gate_with_what_it_said()
+    public async Task A_missing_tool_fails_the_tests_check_with_what_it_said()
     {
-        _ = _proc.Answer(new Ran(Ran.NotFound, string.Empty, "uv: not found"), "uv");
+        _ = _proc.Answer(new Ran(Ran.NotFound, string.Empty, "dotnet: not found"), "dotnet");
 
-        Assert.Equal(1, await Run("status"));
+        Assert.Equal(1, await Run("status", "--tests"));
 
-        Assert.Contains("uv: not found", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("dotnet: not found", _out.ToString(), StringComparison.Ordinal);
         Assert.Contains("FAIL  Issues Found", _out.ToString(), StringComparison.Ordinal);
     }
 
     [Theory]
-    [InlineData(new[] { "status" }, null)]
-    [InlineData(new[] { "status", "--tests" }, new[] { "uv", "run", "pytest", "-q", "--tb=no" })]
-    [InlineData(new[] { "status", "-t" }, new[] { "uv", "run", "pytest", "-q", "--tb=no" })]
-    [InlineData(new[] { "status", "--ci" }, new[] { "uv", "run", "pytest", "-q", "--tb=no", "-m", "ci" })]
-    [InlineData(new[] { "status", "-t", "--ci" }, new[] { "uv", "run", "pytest", "-q", "--tb=no", "-m", "ci" })]
-    public async Task Tests_run_only_when_asked(string[] args, string[]? pytest)
+    [InlineData("--tests")]
+    [InlineData("-t")]
+    public async Task Tests_run_when_asked(string flag)
     {
-        _ = _proc.Answer(new Ran(0, "....\n412 passed in 3.1s\n", string.Empty), "uv", "run", "pytest");
+        _ = _proc.Answer(new Ran(0, "Passed! - Failed: 0, Passed: 412\n", string.Empty), "dotnet", "test");
 
-        _ = await Run(args);
+        _ = await Run("status", flag);
 
-        var ran = _proc.Requests.Where(r => r.Argv.Contains("pytest")).Select(r => r.Argv).SingleOrDefault();
-        Assert.Equal(pytest, ran);
-        if (pytest is not null)
-        {
-            Assert.Contains("│ OK │ Tests", _out.ToString(), StringComparison.Ordinal);
-            Assert.Contains("412 passed in 3.1s", _out.ToString(), StringComparison.Ordinal);
-        }
+        Assert.Equal(["dotnet", "test", "--solution", "rig.slnx"], Assert.Single(Dotnet()).Argv);
+        Assert.Contains("│ OK │ Tests", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Passed: 412", _out.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task Failing_tests_are_an_issue()
     {
-        _ = _proc.Answer(new Ran(1, "F.\n1 failed, 1 passed\n", string.Empty), "uv", "run", "pytest");
+        _ = _proc.Answer(new Ran(1, "F.\n1 failed, 1 passed\n", string.Empty), "dotnet", "test");
 
         Assert.Equal(1, await Run("status", "--tests"));
 
@@ -150,12 +139,12 @@ public sealed class StatusCommandTests : IDisposable
         var text = StatusCommand.Render(
         [
             new StatusResult("Branch", true, "main"),
-            new StatusResult("Lint", false, "src/a.py:1: E501"),
+            new StatusResult("Tests", false, "1 failed"),
         ]);
 
         Assert.StartsWith("Issues Found\n", text, StringComparison.Ordinal);
         Assert.Contains("Branch", text, StringComparison.Ordinal);
-        Assert.Contains("E501", text, StringComparison.Ordinal);
+        Assert.Contains("1 failed", text, StringComparison.Ordinal);
         Assert.DoesNotContain('\u001b', text);
     }
 

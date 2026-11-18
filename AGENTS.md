@@ -8,14 +8,10 @@ Shared development utilities — desktop workspace management, general tooling, 
 ## Commands
 
 ```bash
-uv sync                          # install
-dotnet run --project src/Rig.Cli -- status          # git state, lint, types, security (no tests)
-dotnet run --project src/Rig.Cli -- status --tests  # the same plus the test suite
-uv run pytest tests/test_file.py -k "test_name"
-uv run ruff check src/ && uv run ruff format src/
-uv run basedpyright && uv run ty check src packages/type-ratchet/src
-uv run ratchet                   # type-soup ratchet; see docs/python-types.md
-uv run lint-imports              # import contracts (layers, cycles, independence)
+dotnet run --project src/Rig.Cli -- status          # git state
+dotnet run --project src/Rig.Cli -- status --tests  # the same plus the C# test suite
+dotnet test --project tests/Rig.Core.Tests -- --filter-class "*SomeTests"  # one test class
+(cd tools/image-drift && uv sync && uv run ruff check . && uv run pytest)  # the Python brand pipeline
 pnpm dlx @ls-lint/ls-lint        # filename and script-language lint (bans .sh and .ps1)
 dotnet build rig.slnx -m:2       # C# side (ADR 0022); keep -m:2 locally
 dotnet test --solution rig.slnx  # C# tests (xUnit v3 on Microsoft.Testing.Platform)

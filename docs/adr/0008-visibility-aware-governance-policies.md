@@ -16,4 +16,4 @@ Implement a visibility-aware policy templating engine in `shared_utilities.gover
 - Centralized policy enforcement with zero manual GitHub UI configuration.
 
 ## References
-- [`src/shared_utilities/repo_governance`](../../src/rig/repo_governance)
+- `src/shared_utilities/repo_governance` (deleted; governance is C#, `rig repo-governance`)

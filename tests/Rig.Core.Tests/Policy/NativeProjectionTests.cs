@@ -45,14 +45,14 @@ public sealed class NativeProjectionTests : IDisposable
         Assert.All(first, r => Assert.Equal(ProjectionStatus.Applied, r.Status));
         var claude = File.ReadAllText(Claude);
         Assert.Contains("\"model\": \"custom\"", claude, StringComparison.Ordinal);
-        Assert.Contains("Bash(uv run pytest:*)", claude, StringComparison.Ordinal);
+        Assert.Contains("Bash(dotnet test:*)", claude, StringComparison.Ordinal);
         var opencode = File.ReadAllText(Opencode);
         Assert.Contains("\"api\": \"keep\"", opencode, StringComparison.Ordinal);
         Assert.Contains("\"shell\"", opencode, StringComparison.Ordinal);
         Assert.Contains("\"bash\"", opencode, StringComparison.Ordinal);
         Assert.Contains("\"external_directory\"", opencode, StringComparison.Ordinal);
         Assert.Contains("\"~/code/**\": \"allow\"", opencode, StringComparison.Ordinal);
-        Assert.Contains("\"uv run pytest *\": \"allow\"", opencode, StringComparison.Ordinal);
+        Assert.Contains("\"dotnet test *\": \"allow\"", opencode, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Join(Path.GetDirectoryName(Opencode), "plugins", "estate-guard.ts")));
         var codex = File.ReadAllText(Codex);
         Assert.Contains("pattern=[\"custom\"]", codex, StringComparison.Ordinal);
