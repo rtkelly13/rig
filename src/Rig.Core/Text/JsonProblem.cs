@@ -54,6 +54,9 @@ public sealed class JsonInputException : Exception
     /// <summary>This rejection, naming <paramref name="source"/>.</summary>
     public JsonInputException Within(string source) => new(Path, Detail, source, InnerException);
 
+    /// <summary>This rejection with its path placed under <paramref name="prefix"/>, still unnamed.</summary>
+    public JsonInputException Under(string prefix) => new(prefix + Path[1..], Detail, Input, InnerException);
+
     /// <summary>This rejection with its path placed under <paramref name="prefix"/> (a path such as <c>$.spans[3]</c>) and named <paramref name="source"/>.</summary>
     public JsonInputException Under(string source, string prefix) => new(prefix + Path[1..], Detail, source, InnerException);
 }
@@ -63,7 +66,7 @@ public sealed class JsonInputException : Exception
 /// <see cref="Expected(string, string, string)"/> where a value has the wrong type; the one place that knows the source
 /// calls <see cref="Run{T}"/> or <see cref="Parse"/>, which also turn the parser's <see cref="JsonException"/> into the same shape.
 /// </summary>
-public static class JsonProblem
+public static partial class JsonProblem
 {
     private const int QuotedLimit = 40;
 
