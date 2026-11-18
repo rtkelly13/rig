@@ -88,7 +88,7 @@ public static class OrcaProfile
     {
         ArgumentNullException.ThrowIfNull(path);
         var posix = path.Replace('\\', '/');
-        var rooted = posix.StartsWith('/') ? posix : "/" + posix;
+        var rooted = posix.StartsWith('/', StringComparison.Ordinal) ? posix : "/" + posix;
         return rooted.Replace("%", "%25", StringComparison.Ordinal).Replace("?", "%3f", StringComparison.Ordinal).Replace("#", "%23", StringComparison.Ordinal);
     }
 }

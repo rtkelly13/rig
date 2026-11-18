@@ -183,7 +183,7 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
             var code = await root.Parse(line).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, cancellationToken).ConfigureAwait(false);
             if (code != 0)
             {
-                failures.Add($"rig {string.Join(' ', line.TakeWhile(word => !word.StartsWith('-')))} exited {code}");
+                failures.Add($"rig {string.Join(' ', line.TakeWhile(word => !word.StartsWith('-', StringComparison.Ordinal)))} exited {code}");
             }
         }
 
@@ -194,6 +194,6 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
     {
         await output.WriteAsync($"{question} [{(fallback ? "Y/n" : "y/N")}]: ").ConfigureAwait(false);
         var answer = (await Input.ReadLineAsync().ConfigureAwait(false))?.Trim();
-        return string.IsNullOrEmpty(answer) ? fallback : answer.StartsWith('y') || answer.StartsWith('Y');
+        return string.IsNullOrEmpty(answer) ? fallback : answer.StartsWith('y', StringComparison.Ordinal) || answer.StartsWith('Y', StringComparison.Ordinal);
     }
 }

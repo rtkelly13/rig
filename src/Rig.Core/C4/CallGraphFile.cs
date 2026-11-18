@@ -21,10 +21,10 @@ public sealed record CallEdge(MemberKey Source, MemberKey Target);
 public sealed record TypeDecl(string Id, string Kind, string Access, string Path, int Line)
 {
     /// <summary>Its namespace, or an empty string in the global namespace.</summary>
-    public string Namespace => Id.Contains('.', StringComparison.Ordinal) ? Id[..Id.LastIndexOf('.')] : string.Empty;
+    public string Namespace => Id.Contains('.', StringComparison.Ordinal) ? Id[..Id.LastIndexOf('.', StringComparison.Ordinal)] : string.Empty;
 
     /// <summary>Its name without its namespace.</summary>
-    public string Name => Id[(Id.LastIndexOf('.') + 1)..];
+    public string Name => Id[(Id.LastIndexOf('.', StringComparison.Ordinal) + 1)..];
 }
 
 /// <summary>One declared member and the signature it was written with.</summary>
@@ -127,7 +127,7 @@ public sealed class CallGraphFile
         }
 
         var where = fields[3];
-        var colon = where.LastIndexOf(':');
+        var colon = where.LastIndexOf(':', StringComparison.Ordinal);
         if (colon < 0 || !int.TryParse(where[(colon + 1)..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var line))
         {
             return;
@@ -211,7 +211,7 @@ public sealed class CallGraphFile
             return new MemberKey(head[..^"..cctor".Length], "static new");
         }
 
-        var index = head.LastIndexOf('.');
+        var index = head.LastIndexOf('.', StringComparison.Ordinal);
         return index < 0 ? new MemberKey(string.Empty, head) : new MemberKey(head[..index], head[(index + 1)..]);
     }
 

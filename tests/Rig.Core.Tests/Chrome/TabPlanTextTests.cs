@@ -9,7 +9,7 @@ namespace Rig.Core.Tests.Chrome;
 public sealed class TabPlanTextTests
 {
     private static List<string> Headings(IEnumerable<string> lines) =>
-        [.. lines.Where(line => !line.StartsWith(' ')).Select(line => line.Split(" (")[0])];
+        [.. lines.Where(line => !line.StartsWith(' ', StringComparison.Ordinal)).Select(line => line.Split(" (")[0])];
 
     [Fact]
     public void Site_plan_lists_closes_then_reports()

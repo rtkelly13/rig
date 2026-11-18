@@ -79,7 +79,7 @@ public sealed class PolicyFiles(IProc proc, Git git)
             ["supported_runtimes"] = meta.SupportedRuntimes,
         };
         var filled = OssTemplates.Fill("policy", template, values);
-        return filled.EndsWith('\n') ? filled[..^1] : filled;
+        return filled.EndsWith('\n', StringComparison.Ordinal) ? filled[..^1] : filled;
     }
 
     /// <summary>Writes AI_POLICY.md, unless <paramref name="dryRun"/>.</summary>

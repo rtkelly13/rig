@@ -425,7 +425,7 @@ internal readonly record struct SvgLength(double Value, LengthUnit Declared)
         var unsigned = trimmed.TrimStart('+', '-');
         if (unsigned.Equals("inf", StringComparison.OrdinalIgnoreCase) || unsigned.Equals("infinity", StringComparison.OrdinalIgnoreCase))
         {
-            value = trimmed.StartsWith('-') ? double.NegativeInfinity : double.PositiveInfinity;
+            value = trimmed.StartsWith('-', StringComparison.Ordinal) ? double.NegativeInfinity : double.PositiveInfinity;
             return true;
         }
 

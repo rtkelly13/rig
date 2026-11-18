@@ -124,7 +124,7 @@ public sealed class CollectorRuntime(OtelPaths paths, IProc proc, IDetachedStart
         }
 
         var output = await RunAsync(cancellationToken, "tasklist", "/FI", $"PID eq {Text(pid)}", "/FO", "CSV", "/NH").ConfigureAwait(false);
-        return output.StartsWith('"') ? output.Split(',')[0].Trim('"') : string.Empty;
+        return output.StartsWith('"', StringComparison.Ordinal) ? output.Split(',')[0].Trim('"') : string.Empty;
     }
 
     /// <summary>Whether <paramref name="record"/>'s pid is still the collector it launched, not a later process given the same pid.</summary>

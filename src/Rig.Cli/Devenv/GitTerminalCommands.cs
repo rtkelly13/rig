@@ -226,7 +226,7 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
     {
         await output.WriteAsync($"{question} [{(fallback ? "Y/n" : "y/N")}]: ").ConfigureAwait(false);
         var answer = (await Input.ReadLineAsync().ConfigureAwait(false))?.Trim();
-        return string.IsNullOrEmpty(answer) ? fallback : answer.StartsWith('y') || answer.StartsWith('Y');
+        return string.IsNullOrEmpty(answer) ? fallback : answer.StartsWith('y', StringComparison.Ordinal) || answer.StartsWith('Y', StringComparison.Ordinal);
     }
 
     private string? TerminalSettings(string home) =>

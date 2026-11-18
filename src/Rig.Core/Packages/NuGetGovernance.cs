@@ -123,7 +123,7 @@ public static partial class NuGetGovernance
         var lowered = ids.Select(id => id.ToLowerInvariant()).ToList();
         var prefix = lowered.Count == 0 ? string.Empty : lowered.Aggregate(CommonPrefix);
         var whole = ids.FirstOrDefault(id => string.Equals(id, prefix, StringComparison.OrdinalIgnoreCase));
-        prefix = whole ?? prefix[..(prefix.LastIndexOf('.') + 1)];
+        prefix = whole ?? prefix[..(prefix.LastIndexOf('.', StringComparison.Ordinal) + 1)];
         return prefix.TrimEnd('.').Length < 4 ? string.Join(", ", ids) : ids[0][..prefix.Length] + "*";
     }
 
@@ -131,7 +131,7 @@ public static partial class NuGetGovernance
     internal static string FileName(string path)
     {
         var trimmed = path.TrimEnd('/');
-        return trimmed[(trimmed.LastIndexOf('/') + 1)..];
+        return trimmed[(trimmed.LastIndexOf('/', StringComparison.Ordinal) + 1)..];
     }
 
     private static string CommonPrefix(string left, string right)

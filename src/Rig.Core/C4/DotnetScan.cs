@@ -178,9 +178,9 @@ public static partial class DotnetScan
     {
         var normalised = raw.Replace('\\', '/');
         var parts = normalised.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        var rooted = normalised.StartsWith('/') || (parts.Length > 0 && parts[0].EndsWith(':'));
+        var rooted = normalised.StartsWith('/', StringComparison.Ordinal) || (parts.Length > 0 && parts[0].EndsWith(':', StringComparison.Ordinal));
         var joined = rooted
-            ? (normalised.StartsWith('/') ? "/" + string.Join('/', parts) : string.Join(System.IO.Path.DirectorySeparatorChar, parts))
+            ? (normalised.StartsWith('/', StringComparison.Ordinal) ? "/" + string.Join('/', parts) : string.Join(System.IO.Path.DirectorySeparatorChar, parts))
             : System.IO.Path.Combine(new[] { basePath }.Concat(parts).ToArray());
         return System.IO.Path.GetFullPath(joined);
     }
@@ -408,7 +408,7 @@ public static partial class DotnetScan
     {
         ArgumentNullException.ThrowIfNull(member);
         var head = member.Split('/', 2)[0];
-        var index = head.LastIndexOf('.');
+        var index = head.LastIndexOf('.', StringComparison.Ordinal);
         return index < 0 ? head : head[..index];
     }
 
@@ -422,7 +422,7 @@ public static partial class DotnetScan
         }
 
         var count = text.Count(character => character == '\n');
-        return text.EndsWith('\n') ? count : count + 1;
+        return text.EndsWith('\n', StringComparison.Ordinal) ? count : count + 1;
     }
 
     /// <summary>The first sentence of a <c>&lt;summary&gt;</c>, with crefs read as type names and other tags dropped.</summary>

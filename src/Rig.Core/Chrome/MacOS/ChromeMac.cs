@@ -1005,7 +1005,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
 
         var label = suffix.Length > 0 ? name[..^suffix.Length] : name;
         var title = active.Title.Replace("\n", string.Empty, StringComparison.Ordinal);
-        return label == title || (label.EndsWith('…') && label.Length > 4 && title.StartsWith(label[..^1], StringComparison.Ordinal));
+        return label == title || (label.EndsWith('…', StringComparison.Ordinal) && label.Length > 4 && title.StartsWith(label[..^1], StringComparison.Ordinal));
     }
 
     [GeneratedRegex(@" – \d+ tabs?\b")]

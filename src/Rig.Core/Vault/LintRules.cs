@@ -78,7 +78,7 @@ public static partial class LintRules
         ArgumentNullException.ThrowIfNull(path);
         foreach (var part in path.Parts)
         {
-            if (WindowsReservedChars().IsMatch(part) || part.EndsWith(' ') || part.EndsWith('.'))
+            if (WindowsReservedChars().IsMatch(part) || part.EndsWith(' ', StringComparison.Ordinal) || part.EndsWith('.', StringComparison.Ordinal))
             {
                 return NotPortable;
             }
@@ -131,7 +131,7 @@ public static partial class LintRules
             found.Add(new(LintCodes.FilenameStrayDots, "filename includes stray dots", Warning));
         }
 
-        if (stem.StartsWith('@'))
+        if (stem.StartsWith('@', StringComparison.Ordinal))
         {
             found.Add(new(LintCodes.FilenameHandlePrefix, "filename includes handle-style prefix", Warning));
         }
@@ -162,7 +162,7 @@ public static partial class LintRules
             || VaultText.RepeatedHyphens().IsMatch(stem)
             || stem.Contains('.', StringComparison.Ordinal)
             || DomainToken().IsMatch(lower)
-            || stem.StartsWith('@')
+            || stem.StartsWith('@', StringComparison.Ordinal)
             || (path is not null && WindowsPortabilityIssueReason(path) is not null);
     }
 

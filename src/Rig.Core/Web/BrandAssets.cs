@@ -61,7 +61,7 @@ public static class BrandAssets
             foreach (var file in Directory.EnumerateFiles(folder).Order(StringComparer.Ordinal))
             {
                 var name = Path.GetFileName(file);
-                if (name.StartsWith('.'))
+                if (name.StartsWith('.', StringComparison.Ordinal))
                 {
                     continue;
                 }

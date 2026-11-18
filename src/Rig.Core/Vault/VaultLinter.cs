@@ -399,7 +399,7 @@ public sealed partial class VaultLinter
             foreach (var name in Directory.EnumerateFileSystemEntries(root).Select(Path.GetFileName).OfType<string>().Order(UnicodeText.CodePointOrder))
             {
                 var folder = Path.Join(root, name);
-                if (name.StartsWith('.') || !Directory.Exists(folder))
+                if (name.StartsWith('.', StringComparison.Ordinal) || !Directory.Exists(folder))
                 {
                     continue;
                 }
@@ -656,7 +656,7 @@ public sealed record LintReport(
             }
         }
 
-        static string Name(string path) => path[(path.LastIndexOf('/') + 1)..];
+        static string Name(string path) => path[(path.LastIndexOf('/', StringComparison.Ordinal) + 1)..];
     }
 }
 

@@ -109,7 +109,7 @@ public static class GitSetup
                 continue;
             }
 
-            if (!text.EndsWith('\n'))
+            if (!text.EndsWith('\n', StringComparison.Ordinal))
             {
                 text += "\n";
             }

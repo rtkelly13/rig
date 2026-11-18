@@ -42,7 +42,7 @@ public sealed record OrcaPaths(string EstateRoot, string CodeRoot, string Home)
     {
         ArgumentNullException.ThrowIfNull(path);
         var unified = path.Replace('\\', '/');
-        var rooted = unified.StartsWith('/');
+        var rooted = unified.StartsWith('/', StringComparison.Ordinal);
         var joined = string.Join('/', Parts(unified));
         return rooted ? "/" + joined : joined.Length == 0 ? "." : joined;
     }

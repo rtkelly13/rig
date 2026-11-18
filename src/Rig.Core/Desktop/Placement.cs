@@ -388,7 +388,7 @@ public static class Placement
     {
         var cleaned = arg.Trim().Trim('"');
         if (cleaned.Length == 0 || cleaned.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-            || cleaned.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || cleaned.StartsWith('-'))
+            || cleaned.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || cleaned.StartsWith('-', StringComparison.Ordinal))
         {
             return null;
         }

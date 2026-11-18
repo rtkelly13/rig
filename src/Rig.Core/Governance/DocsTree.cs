@@ -75,7 +75,7 @@ internal static class DocsTree
     public static bool IsRelativeTo(string path, string folder)
     {
         var trimmed = Trim(folder);
-        return Same(path, trimmed) || path.StartsWith(trimmed.EndsWith(Path.DirectorySeparatorChar) ? trimmed : trimmed + Path.DirectorySeparatorChar, Comparison);
+        return Same(path, trimmed) || path.StartsWith(trimmed.EndsWith(Path.DirectorySeparatorChar, StringComparison.Ordinal) ? trimmed : trimmed + Path.DirectorySeparatorChar, Comparison);
     }
 
     /// <summary><paramref name="path"/> relative to <paramref name="root"/>, with forward slashes. Both share a prefix.</summary>

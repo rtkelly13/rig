@@ -139,7 +139,7 @@ public static partial class OkfBundle
     };
 
     internal static bool IsExternalOrAnchor(string href) =>
-        href.Length == 0 || href.StartsWith('#') || External().IsMatch(href);
+        href.Length == 0 || href.StartsWith('#', StringComparison.Ordinal) || External().IsMatch(href);
 
     /// <summary>
     /// OKF link to concept id: <c>/x.md</c> is bundle-absolute, anything else is relative to the linking file.
@@ -155,7 +155,7 @@ public static partial class OkfBundle
         }
 
         var path = href.Split('#')[0];
-        var joined = path.StartsWith('/')
+        var joined = path.StartsWith('/', StringComparison.Ordinal)
             ? path.TrimStart('/')
             : PosixJoin(PosixDirName(fromId), path);
         var normalised = PosixNormalise(joined);
@@ -194,7 +194,7 @@ public static partial class OkfBundle
         {
             var relative = Path.GetRelativePath(resolved, path).Replace(Path.DirectorySeparatorChar, '/');
             var parts = relative.Split('/');
-            if (Reserved.Contains(parts[^1]) || parts.Any(part => part.StartsWith('.')))
+            if (Reserved.Contains(parts[^1]) || parts.Any(part => part.StartsWith('.', StringComparison.Ordinal)))
             {
                 continue;
             }
@@ -281,7 +281,7 @@ public static partial class OkfBundle
         }
 
         var lines = text.Split('\n');
-        return text.EndsWith('\n') ? lines[..^1] : lines;
+        return text.EndsWith('\n', StringComparison.Ordinal) ? lines[..^1] : lines;
     }
 
     /// <summary>The lines of text already normalised to <c>\n</c>, each keeping its newline.</summary>
@@ -392,12 +392,12 @@ public static partial class OkfBundle
 
     private static string PosixDirName(string path)
     {
-        var index = path.LastIndexOf('/');
+        var index = path.LastIndexOf('/', StringComparison.Ordinal);
         return index < 0 ? string.Empty : path[..index];
     }
 
     private static string PosixJoin(string left, string right) =>
-        left.Length == 0 ? right.TrimStart('/') : right.StartsWith('/') ? left + right : left + "/" + right;
+        left.Length == 0 ? right.TrimStart('/') : right.StartsWith('/', StringComparison.Ordinal) ? left + right : left + "/" + right;
 
     internal static string PosixNormalise(string path)
     {

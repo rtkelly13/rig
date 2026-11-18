@@ -261,7 +261,7 @@ public static class TabMenus
 
         var head = entry[..(entry.Length - suffix.Length)];
         var title = UnicodeText.Lower(UnicodeText.Strip(activeTitle));
-        if (head.EndsWith('…'))
+        if (head.EndsWith('…', StringComparison.Ordinal))
         {
             return head.Length > 1 && title.StartsWith(head[..^1], StringComparison.Ordinal);
         }

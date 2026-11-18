@@ -222,7 +222,7 @@ public sealed class GitHubApps(IGitHubApi api, RepoPolicies policies, Func<strin
 
         foreach (var full in await discover(account, cancellationToken).ConfigureAwait(false))
         {
-            var slash = full.LastIndexOf('/');
+            var slash = full.LastIndexOf('/', StringComparison.Ordinal);
             var (owner, bare) = slash < 0 ? (string.Empty, full) : (full[..slash], full[(slash + 1)..]);
             if ((owner.Length == 0 || string.Equals(owner, account, StringComparison.OrdinalIgnoreCase)) && !names.Contains(bare))
             {

@@ -253,7 +253,7 @@ public static partial class VercelProjects
             : new(project.Name, "ok", "ok", $"{owner}, confirmed by {via}", owner);
     }
 
-    private static string RepoName(string slug) => slug[(slug.LastIndexOf('/') + 1)..];
+    private static string RepoName(string slug) => slug[(slug.LastIndexOf('/', StringComparison.Ordinal) + 1)..];
 
     private sealed record Entry(string Name, string Repo, bool Enabled, IReadOnlyList<string> Vercel);
 

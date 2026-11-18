@@ -325,7 +325,7 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
     private static string WindowsStem(string path)
     {
         var name = WindowReuse.WindowsFileName(path);
-        var dot = name.LastIndexOf('.');
+        var dot = name.LastIndexOf('.', StringComparison.Ordinal);
         return dot > 0 && dot < name.Length - 1 ? name[..dot] : name;
     }
 }
