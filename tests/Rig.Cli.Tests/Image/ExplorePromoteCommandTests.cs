@@ -175,6 +175,32 @@ public sealed class ExplorePromoteCommandTests : IDisposable
         Assert.Contains("Chromium is required to re-run the gate (no browser)", _err.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Explore_and_promote_report_an_io_failure_while_scoring_and_exit_two()
+    {
+        await Arrange();
+        var variations = Path.Join(_temp.Path, "variations");
+        await Run("image", "explore", "--run-id", "r1", "--variations-dir", variations);
+        _launch = _ => throw new IOException("disk gone");
+
+        var explore = await Run("image", "explore", "--variations-dir", variations);
+        var promote = await Run("image", "promote", "--run-id", "r1", "--candidate", "1", "--variations-dir", variations);
+
+        Assert.Equal([2, 2], [explore, promote]);
+        Assert.Equal(2, _err.ToString().Split("Error: disk gone").Length - 1);
+    }
+
+    [Fact]
+    public async Task Promote_rejects_a_project_that_is_not_a_labs_project()
+    {
+        await Arrange();
+
+        var exit = await Run("image", "promote", "--project", "parquet", "--run-id", "r1");
+
+        Assert.Equal(2, exit);
+        Assert.Contains("Error:", _err.ToString(), StringComparison.Ordinal);
+    }
+
     private async Task Arrange()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
