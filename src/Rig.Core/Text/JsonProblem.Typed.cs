@@ -102,7 +102,7 @@ public static partial class JsonProblem
 
     private static JsonInputException Translate(Exception failure, JsonElement root, JsonTypeInfo info)
     {
-        if (Violation(root, info, "$") is { } structural)
+        if (Violation(root, info, "$", (failure as JsonException)?.Path) is { } structural)
         {
             return structural;
         }
@@ -113,10 +113,12 @@ public static partial class JsonProblem
             : Expected(at.Path, Expectation(at), at.Value is { } found ? Describe(found) : "nothing");
     }
 
+    // A required member is only reported when it is the failure STJ reported (it checks at the end of an object, after any
+    // type error inside it), so failedAt, the failure's path, gates that one check.
     // The structure rig checks itself, from the metadata and the document alone, so no message of the runtime is read: a
     // repeated member, an unknown one where the type disallows them, a required one that is absent, a polymorphic object
     // whose discriminator is absent or unknown. The first found, or null.
-    private static JsonInputException? Violation(JsonElement value, JsonTypeInfo? info, string path)
+    private static JsonInputException? Violation(JsonElement value, JsonTypeInfo? info, string path, string? failedAt)
     {
         var members = value.ValueKind == JsonValueKind.Object ? value.EnumerateObject().ToList() : [];
         var tag = info?.PolymorphismOptions?.TypeDiscriminatorPropertyName;
@@ -124,15 +126,15 @@ public static partial class JsonProblem
         return (value.ValueKind, shape) switch
         {
             (JsonValueKind.Array, { } list) when ElementOf(list) is { } element => value.EnumerateArray()
-                .Select((item, index) => Violation(item, element, Item(path, index)))
+                .Select((item, index) => Violation(item, element, Item(path, index), failedAt))
                 .FirstOrDefault(found => found is not null),
-            (JsonValueKind.Object, { } known) => Members(members, known, tag, path),
+            (JsonValueKind.Object, { } known) => Members(members, known, tag, path, failedAt),
             (JsonValueKind.Object, null) when tag is not null => Expected(Child(path, tag), "a known type", members.Where(member => member.Name == tag).Select(member => Describe(member.Value)).FirstOrDefault() ?? "nothing"),
             _ => null,
         };
     }
 
-    private static JsonInputException? Members(List<JsonProperty> members, JsonTypeInfo info, string? tag, string path)
+    private static JsonInputException? Members(List<JsonProperty> members, JsonTypeInfo info, string? tag, string path, string? failedAt)
     {
         var properties = info.Kind == JsonTypeInfoKind.Object ? info.Properties : [];
         var unknown = (info.UnmappedMemberHandling ?? info.Options.UnmappedMemberHandling) == JsonUnmappedMemberHandling.Disallow && info.Kind == JsonTypeInfoKind.Object;
@@ -140,9 +142,9 @@ public static partial class JsonProblem
                 .Select(group => Expected(Child(path, group.Key), "a field that appears once", "it repeated")).FirstOrDefault()
             ?? members.Where(member => unknown && member.Name != tag && properties.All(property => property.Name != member.Name))
                 .Select(member => Expected(Child(path, member.Name), "a known field", Describe(member.Value))).FirstOrDefault()
-            ?? properties.Where(property => property.IsRequired && members.All(member => member.Name != property.Name))
+            ?? properties.Where(property => property.IsRequired && (failedAt is null || failedAt == path) && members.All(member => member.Name != property.Name))
                 .Select(property => Expected(Child(path, property.Name), PropertyPhrase(property), "nothing")).FirstOrDefault()
-            ?? members.Select(member => Violation(member.Value, Member(new Spot(info, null, null, path), member.Name).Type, Child(path, member.Name)))
+            ?? members.Select(member => Violation(member.Value, Member(new Spot(info, null, null, path), member.Name).Type, Child(path, member.Name), failedAt))
                 .FirstOrDefault(found => found is not null);
     }
 
