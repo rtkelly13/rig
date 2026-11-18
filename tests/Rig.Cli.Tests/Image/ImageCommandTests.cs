@@ -57,6 +57,30 @@ public sealed class ImageCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Divergence_below_the_gated_sizes_is_reported_but_does_not_fail()
+    {
+        _fast = () => new ScriptedRenderer("Svg.Skia", (_, size) => Solid(size, size < DivergenceThresholds.GatedFromSize ? (byte)100 : (byte)200));
+
+        var exit = await Run("image", "cross-check");
+
+        Assert.Equal(0, exit);
+        var text = _out.ToString();
+        Assert.DoesNotContain("BREACH", text, StringComparison.Ordinal);
+        Assert.Contains("Within thresholds.", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Differing_pixels_are_gated_from_500px_and_the_other_thresholds_from_180px()
+    {
+        _fast = () => new ScriptedRenderer("Svg.Skia", (_, size) => Solid(size, size < DivergenceThresholds.DifferingPixelsGatedFromSize ? (byte)199 : (byte)200));
+
+        var exit = await Run("image", "cross-check", "--report", Path.Combine(_temp.Path, "report.json"));
+
+        Assert.Equal(0, exit);
+        Assert.DoesNotContain("BREACH differing pixels", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_renderer_that_will_not_start_exits_2_with_the_reason()
     {
         _authoritative = _ => throw new RendererUnavailableException("expected Chromium to start, it did not: no browser installed");
