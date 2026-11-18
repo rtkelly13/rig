@@ -124,10 +124,16 @@ public static partial class VaultYaml
             }
 
             _ = parser.MoveNext();
+            var valueAt = parser.Current?.Start ?? default;
             var value = Build(parser, anchors);
             if (key == new YamlString("<<"))
             {
-                merged.AddRange(value switch { YamlMap map => [map], YamlList list => list.Items.OfType<YamlMap>(), _ => [] });
+                merged.AddRange(value switch
+                {
+                    YamlMap map => [map],
+                    YamlList list when list.Items.All(item => item is YamlMap) => list.Items.Cast<YamlMap>(),
+                    _ => throw new VaultYamlException($"merge key '<<' needs a mapping or a sequence of mappings at {Where(valueAt)}"),
+                });
                 continue;
             }
 

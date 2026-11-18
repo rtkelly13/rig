@@ -6775,13 +6775,13 @@ null
 {
 "b64": "LS0tCjw8OiAxMgotLS0KTWVyZ2Ugc2NhbGFyCg==",
 "expect": {
-"fields": {}
+"error": true
 }
 },
 {
 "b64": "LS0tCjw8OiBbMTJdCi0tLQpNZXJnZSBsaXN0IG9mIHNjYWxhcgo=",
 "expect": {
-"fields": {}
+"error": true
 }
 },
 {

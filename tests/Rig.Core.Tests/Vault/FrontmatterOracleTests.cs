@@ -116,6 +116,27 @@ public sealed class FrontmatterOracleTests
         Assert.Equal([new(new YamlString("b"), new YamlScalar("3")), new(new YamlString("a"), new YamlScalar("1"))], use.Entries);
     }
 
+    [Theory]
+    [InlineData("<<: 12", 1, 5)]
+    [InlineData("<<: [12]", 1, 5)]
+    [InlineData("a: 1\n<<: [{b: 2}, 12]", 2, 5)]
+    public void A_merge_key_that_names_anything_but_mappings_is_refused_with_its_position(string text, int line, int column)
+    {
+        var refused = Assert.Throws<VaultYamlException>(() => VaultYaml.Load(text));
+
+        Assert.Contains($"line {line}, column {column}", refused.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_merge_key_naming_a_sequence_of_mappings_still_merges_them_in_order()
+    {
+        var loaded = Assert.IsType<YamlMap>(VaultYaml.Load("<<: [{a: 1}, {a: 2, b: 3}]\nc: 4\n"));
+
+        Assert.Equal(
+            [new(new YamlString("c"), new YamlScalar("4")), new(new YamlString("a"), new YamlScalar("1")), new(new YamlString("b"), new YamlScalar("3"))],
+            loaded.Entries);
+    }
+
     [Fact]
     public void A_repeated_key_keeps_its_place_and_its_last_value()
     {
