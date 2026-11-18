@@ -1,6 +1,6 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Text.Json.Nodes;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
 using Rig.Core.Text;
@@ -15,22 +15,28 @@ namespace Rig.Cli.Estate;
 /// <param name="folder">The Downloads folder.</param>
 /// <param name="cloudRoots">The Google Drive folders a copy may already be in.</param>
 /// <param name="output">Where the table or the JSON goes.</param>
+[CliCommand(Name = "downloads", Description = "Audit ~/Downloads directory, categorizing large files and checking for Google Drive duplicates.")]
 internal sealed class DownloadsCommand(Downloads downloads, string folder, Func<IReadOnlyList<string>> cloudRoots, TextWriter output)
 {
-    /// <summary>The <c>downloads</c> subcommand.</summary>
-    public Command Build()
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal DownloadsCommand()
+        : this(null!, string.Empty, static () => [], TextWriter.Null)
     {
-        var min = new Option<string>("--min") { Description = "Ignore files smaller than this", DefaultValueFactory = _ => "20MB" };
-        var json = new Option<bool>("--json") { Description = "Emit for a machine" };
-        var command = new Command(
-            "downloads",
-            "Audit ~/Downloads directory, categorizing large files and checking for Google Drive duplicates.")
-        {
-            min, json,
-        };
-        command.SetAction((parsed, cancellationToken) => RunAsync(parsed.GetValue(min)!, parsed.GetValue(json), cancellationToken));
-        return command;
     }
+
+    /// <summary>Ignore files smaller than this.</summary>
+    [CliOption(Name = "--min", Description = "Ignore files smaller than this")]
+    public string Min { get; set; } = "20MB";
+
+    /// <summary>Emit for a machine.</summary>
+    [CliOption(Name = "--json", Description = "Emit for a machine")]
+    public bool Json { get; set; }
+
+    /// <summary>The <c>downloads</c> subcommand.</summary>
+    public Command Build() => DeclarativeCommand.Build(this);
+
+    /// <summary>The handler: the large downloads.</summary>
+    public Task<int> RunAsync(CliContext context) => RunAsync(Min, Json, context.CancellationToken);
 
     private async Task<int> RunAsync(string min, bool json, CancellationToken cancellationToken)
     {

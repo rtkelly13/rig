@@ -1,6 +1,6 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Text.Json;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Text;
 
@@ -12,19 +12,36 @@ namespace Rig.Cli.Models;
 /// </summary>
 /// <param name="discovery">Finds the models.</param>
 /// <param name="output">Where the list goes.</param>
+[CliCommand(Name = "models", Description = "Enumerate AI models supported across coding agent CLIs in rig.")]
 internal sealed class ModelsCommand(ModelDiscovery discovery, TextWriter output)
 {
-    /// <summary>The <c>models</c> command, named <paramref name="name"/>.</summary>
-    public Command Build(string name = "models")
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal ModelsCommand()
+        : this(null!, TextWriter.Null)
     {
-        var agent = new Option<string?>("--agent", "-a") { Description = "Filter by agent CLI: codex, opencode, antigravity (agy), claude-code (claude), or copilot." };
-        var provider = new Option<string?>("--provider", "-p") { Description = "Filter by upstream model provider: openai, anthropic, google, deepseek, github-copilot, etc." };
-        var all = new Option<bool>("--all") { Description = "Enumerate all discovered models across provider CLIs and caches instead of evaluated models only." };
-        var json = new Option<bool>("--json") { Description = "Output models list as formatted JSON." };
-        var models = new Command(name, "Enumerate AI models supported across coding agent CLIs in rig.") { agent, provider, all, json };
-        models.SetAction((parsed, ct) => RunAsync(parsed.GetValue(agent), parsed.GetValue(provider), parsed.GetValue(all), parsed.GetValue(json), ct));
-        return models;
     }
+
+    /// <summary>Filter by agent CLI.</summary>
+    [CliOption(Name = "--agent", Aliases = ["-a"], Required = false, Description = "Filter by agent CLI: codex, opencode, antigravity (agy), claude-code (claude), or copilot.")]
+    public string? Agent { get; set; }
+
+    /// <summary>Filter by upstream model provider.</summary>
+    [CliOption(Name = "--provider", Aliases = ["-p"], Required = false, Description = "Filter by upstream model provider: openai, anthropic, google, deepseek, github-copilot, etc.")]
+    public string? Provider { get; set; }
+
+    /// <summary>Enumerate every discovered model.</summary>
+    [CliOption(Name = "--all", Description = "Enumerate all discovered models across provider CLIs and caches instead of evaluated models only.")]
+    public bool All { get; set; }
+
+    /// <summary>Output the list as JSON.</summary>
+    [CliOption(Name = "--json", Description = "Output models list as formatted JSON.")]
+    public bool Json { get; set; }
+
+    /// <summary>The <c>models</c> command.</summary>
+    public Command Build() => DeclarativeCommand.Build(this);
+
+    /// <summary>The handler: the models, filtered.</summary>
+    public Task<int> RunAsync(CliContext context) => RunAsync(Agent, Provider, All, Json, context.CancellationToken);
 
     /// <summary>The models as a titled plain-text table.</summary>
     public static string Render(IReadOnlyList<DiscoveredModel> models, bool all)
