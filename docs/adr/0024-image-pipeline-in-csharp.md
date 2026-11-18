@@ -18,7 +18,7 @@ Control rows run the C# metrics over the Python-rendered PNGs, which isolates im
 error.
 
 Already decided and not re-evaluated: vectorising runs a pinned vtracer CLI as a process, and ImageSharp's Six
-Labors Split License is acceptable.
+Labors Split License is acceptable (moot after the Decision's amended item 2, which drops ImageSharp).
 
 ## Results
 
@@ -72,9 +72,12 @@ The owner decided to support **both** renderers and use each to cross-check the 
    straight-alpha RGBA at a given size. One implementation drives Chromium through Microsoft.Playwright (stack 1's
    renderer); the other draws with Svg.Skia (stacks 2 and 3's renderer). Renderers are interchangeable behind the
    port.
-2. **ImageSharp does all raster work on both**: decode, the `load_normalised` resize, metrics input, PNG encode and
-   ICO. Stack 3 beat stack 2 on parity with Pillow (composite error 0.042 vs 0.46), so SkiaSharp is used only
-   inside Svg.Skia and never for resizing or metrics.
+2. **SkiaSharp does all raster work on both** (amended; this item first chose ImageSharp): decode, PNG encode and
+   ICO through SkiaSharp, and the `load_normalised` resize through `PillowResize`, a port of Pillow's separable
+   resampling filters over SkiaSharp pixel buffers. Stack 2 lost to stack 3 only because SkiaSharp's own cubic and
+   mipmap filters are not Pillow's (composite error 0.46 against 0.042); a Pillow-exact resize removes that gap, so
+   SkiaSharp, already required by Svg.Skia, replaces ImageSharp and the pipeline carries one raster library with an
+   MIT licence instead of two.
 3. **Chromium is authoritative** for promotion and for production cuts, because it is the only renderer that keeps
    byte-identity with today's output (0 differing pixels on all 23 renders). It needs a pinned Chromium revision
    in CI.
@@ -95,10 +98,16 @@ The owner decided to support **both** renderers and use each to cross-check the 
 
 This supersedes item 7 of [ADR 0022](0022-csharp-is-rigs-primary-language.md): `image_drift` moves to C#.
 
-### Divergence thresholds (Svg.Skia against Chromium, both through ImageSharp)
+### Divergence thresholds (Svg.Skia against Chromium, both through the same raster code)
 
 Set from the measured worst cases (stack 3 rows, 23 renders, 2 projects) with headroom. Exceeding any one is a
 reported divergence; the verdict-flip row is a hard failure.
+
+**Split by size (amended).** The pixel thresholds apply to cuts of 180 px and up. At 16 and 32 px (the favicon
+entries) one anti-aliased edge is a large share of the image, so the two renderers routinely differ on more than
+20% of pixels and by more than 1.0 mean abs (parquet favicon.16 measured 1.43) without any visible fault. Those
+sizes are reported with every value but fail only on a changed promote/reject decision. Cuts between 32 and 180 px
+are gated as large cuts.
 
 | Quantity | Measured worst | Threshold |
 |---|---:|---:|
