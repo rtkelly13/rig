@@ -12,30 +12,6 @@ namespace Rig.Core.Otel;
 /// </summary>
 internal static class OtlpJson
 {
-    private const string Whole = "a whole number or a string of digits";
-
-    /// <summary>The last value under <paramref name="key"/>; the last of a repeated key wins; null when absent.</summary>
-    public static JsonElement? Field(JsonElement element, string key)
-    {
-        JsonElement? found = null;
-        foreach (var property in element.EnumerateObject())
-        {
-            found = property.NameEquals(key) ? property.Value : found;
-        }
-
-        return found;
-    }
-
-    /// <summary>An int64 at <paramref name="path"/>; null when absent or null.</summary>
-    /// <exception cref="JsonInputException">It is not a whole number or a string of digits.</exception>
-    public static long? Int64(JsonElement? value, string path) => value switch
-    {
-        null or { ValueKind: JsonValueKind.Null } => null,
-        { ValueKind: JsonValueKind.Number } number when number.TryGetInt64(out var whole) => whole,
-        { ValueKind: JsonValueKind.String } text when Digits(text.GetString()!, out var parsed) => parsed,
-        { } other => throw JsonProblem.Expected(path, Whole, JsonProblem.Describe(other)),
-    };
-
     /// <summary>An int64 node; null when absent or null.</summary>
     /// <exception cref="JsonInputException">It is not a whole number or a string of digits.</exception>
     public static long? Int64(JsonNode? node) => node switch
@@ -43,17 +19,7 @@ internal static class OtlpJson
         null => null,
         JsonValue value when value.GetValueKind() == JsonValueKind.Number && value.TryGetValue<long>(out var whole) => whole,
         JsonValue value when value.GetValueKind() == JsonValueKind.String && Digits(value.GetValue<string>(), out var parsed) => parsed,
-        _ => throw JsonProblem.Expected(node, Whole),
-    };
-
-    /// <summary>A bool at <paramref name="path"/>; null when absent or null.</summary>
-    /// <exception cref="JsonInputException">It is not true or false.</exception>
-    public static bool? Bool(JsonElement? value, string path) => value switch
-    {
-        null or { ValueKind: JsonValueKind.Null } => null,
-        { ValueKind: JsonValueKind.True } => true,
-        { ValueKind: JsonValueKind.False } => false,
-        { } other => throw JsonProblem.Expected(path, "true or false", JsonProblem.Describe(other)),
+        _ => throw JsonProblem.Expected(node, JsonProblem.WholeOrDigits),
     };
 
     /// <summary>

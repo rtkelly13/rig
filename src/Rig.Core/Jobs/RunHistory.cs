@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Rig.Core.Roots;
 using Rig.Core.Storage;
@@ -215,44 +214,8 @@ public static partial class RunHistory
     }
 
     // A stored run: job, run_id, started, seconds and trigger must be there and typed; returncode, error, output and the trace ids may
-    // be absent or null, and are otherwise a whole number or a string. Fields nothing reads are ignored.
-    private static JobRun ReadRun(string line)
-    {
-        using var document = JsonDocument.Parse(line);
-        var stored = document.RootElement;
-        if (stored.ValueKind != JsonValueKind.Object)
-        {
-            throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(stored));
-        }
-
-        return new JobRun(
-            RequiredText(stored, "job"),
-            RequiredText(stored, "run_id"),
-            RequiredText(stored, "started"),
-            Seconds(stored),
-            Present(stored, "returncode") is null ? null : JsonProblem.WholeNumber(stored, "returncode", "$"),
-            RequiredText(stored, "trigger"),
-            Present(stored, "error") is null ? null : JsonProblem.OptionalString(stored, "error", "$"),
-            OptionalText(stored, "output") ?? string.Empty)
-        {
-            TraceId = OptionalText(stored, "trace_id") ?? string.Empty,
-            SpanId = OptionalText(stored, "span_id") ?? string.Empty,
-        };
-    }
-
-    private static JsonElement? Present(JsonElement stored, string key) =>
-        stored.TryGetProperty(key, out var value) && value.ValueKind != JsonValueKind.Null ? value : null;
-
-    private static string RequiredText(JsonElement stored, string key) =>
-        JsonProblem.OptionalString(stored, key, "$") ?? throw JsonProblem.Expected(JsonProblem.Child("$", key), "a string", "nothing");
-
-    private static string? OptionalText(JsonElement stored, string key) =>
-        Present(stored, key) is null ? null : JsonProblem.OptionalString(stored, key, "$");
-
-    private static double Seconds(JsonElement stored) =>
-        Present(stored, "seconds") is { ValueKind: JsonValueKind.Number } value && value.TryGetDouble(out var seconds)
-            ? seconds
-            : throw JsonProblem.Expected(JsonProblem.Child("$", "seconds"), "a number", stored.TryGetProperty("seconds", out var found) ? JsonProblem.Describe(found) : "nothing");
+    // be absent or null, and are otherwise a whole number or a string. A field the history does not define is rejected.
+    private static JobRun ReadRun(string line) => JsonProblem.Read(line, RunHistoryJsonContext.Default.StoredRun).ToRun();
 
     // serde_json's escaping: the quote, the backslash and control characters; everything else as itself.
     private static string Quote(string value)

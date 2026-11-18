@@ -32,6 +32,7 @@ and findings are in each CLI's `--help`; these guides hold what `--help` can't.
 | [github-api.md](github-api.md) | The fluent REST and GraphQL GitHub client API, query building, and typed deserialization |
 | [testing.md](testing.md) | Choosing BDD, property or example tests, and the C# coverage floor |
 | [test-quality.md](test-quality.md) | What the research says about measuring test quality, and the scorecard for each type of test |
+| [research/stj-evaluation.md](research/stj-evaluation.md) | Typed System.Text.Json versus hand-walked readers: capabilities, exception table, measurements, migration order |
 | [feature-flags.md](feature-flags.md) | Switching a feature on or off across rig tools: `rig flags`, defaults and overrides in `rig.db` |
 | [web-routes.md](web-routes.md) | Serving JSON or a page from `rig web`: the `Route` protocol, error envelope, write guard and composition root |
 | [observability.md](observability.md) | Adding or reading traces from the CLI tools |
