@@ -139,4 +139,41 @@ public sealed class ManifestsTests : IDisposable
         Assert.Empty(inventory.Publications);
         Assert.Empty(inventory.Consumptions);
     }
+
+    [Fact]
+    public async Task Paket_references_take_their_versions_from_the_nearest_paket_dependencies()
+    {
+        var root = await _estate.CheckoutAsync("paket", new Dictionary<string, string>
+        {
+            ["paket.dependencies"] = "source https://api.nuget.org/v3/index.json\nstorage: none\n\n// nuget Commented == 9\nnuget Managed.Lib == 1.0 // pinned\nnuget Ranged ~> 2.0\nnuget Bare\nnuget Equals = 3.0\n",
+            ["src/app/paket.references"] = "Managed.Lib\nRanged copy_local: false\nBare\nEquals\nUnlisted\n// Commented\nFile: shared.fs\ngroup Build\n",
+            ["nested/paket.dependencies"] = "nuget Managed.Lib == 2.0\n",
+            ["nested/app/paket.references"] = "managed.lib\n",
+        });
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/paket", EstateFixture.ListTimeout, Token);
+
+        Assert.Empty(inventory.Warnings);
+        Assert.Equal(
+            [
+                ("managed.lib", "1.0", "src/app/paket.references"),
+                ("ranged", "~> 2.0", "src/app/paket.references"),
+                ("bare", "unconstrained", "src/app/paket.references"),
+                ("equals", "3.0", "src/app/paket.references"),
+                ("unlisted", "centrally resolved", "src/app/paket.references"),
+                ("managed.lib", "2.0", "nested/app/paket.references"),
+            ],
+            inventory.Consumptions.Select(c => (c.Package, c.Requirement, c.Evidence)).OrderBy(c => c.Evidence == "src/app/paket.references" ? 0 : 1));
+        Assert.All(inventory.Consumptions, c => Assert.Equal("nuget", c.Registry));
+    }
+
+    [Fact]
+    public async Task An_unreadable_paket_dependencies_is_a_warning()
+    {
+        var root = await _estate.CheckoutAsync("paketbig", new Dictionary<string, string> { ["paket.dependencies"] = new string(' ', (int)Manifests.MaxBytes + 1) });
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/paketbig", EstateFixture.ListTimeout, Token);
+
+        Assert.StartsWith("paket.dependencies:", Assert.Single(inventory.Warnings), StringComparison.Ordinal);
+    }
 }

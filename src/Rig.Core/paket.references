@@ -1,0 +1,5 @@
+Microsoft.CodeAnalysis.BannedApiAnalyzers
+YamlDotNet
+Tomlyn
+Microsoft.Data.Sqlite
+Microsoft.Windows.CsWin32

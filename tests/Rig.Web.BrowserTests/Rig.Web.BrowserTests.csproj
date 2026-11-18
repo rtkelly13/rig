@@ -1,10 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- The SPA driven in a real browser. Its own project so launching Chromium never slows Rig.Web.Tests. -->
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Web/Rig.Web.csproj" />
-    <PackageReference Include="Microsoft.Playwright" />
   </ItemGroup>
   <ItemGroup Label="Shared doubles">
     <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="TempDir.cs" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

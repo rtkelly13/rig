@@ -1,0 +1,19 @@
+<Project>
+  <!-- Paket's paket.references has no PrivateAssets flag, and PaketRestore adds the PackageReference items while restore
+       runs, so an item set at evaluation time cannot reach them. Set the flag right after it runs.
+       Private: the analyzer, and CsWin32 with the Win32 metadata and docs packages Paket lists as direct references. CsWin32
+       is a build-time source generator; without the flag its generator and those packages flow through every project that
+       references Rig.Core.
+       Everything else flows to consumers, as it did under Central Package Management. Paket would make every package of a
+       PackAsTool project (Rig.Cli) private, and the test projects that reference Rig.Cli need Spectre.Console, DotMake and
+       System.CommandLine at compile time and at run time. -->
+  <PropertyGroup>
+    <RigPrivatePackages>;Microsoft.CodeAnalysis.BannedApiAnalyzers;Microsoft.Windows.CsWin32;Microsoft.Windows.SDK.Win32Docs;Microsoft.Windows.SDK.Win32Metadata;Microsoft.Windows.WDK.Win32Metadata;</RigPrivatePackages>
+  </PropertyGroup>
+  <Target Name="RigPaketPrivateAssets" AfterTargets="PaketRestore">
+    <ItemGroup>
+      <PackageReference Condition="$(RigPrivatePackages.Contains(';%(Identity);'))" PrivateAssets="all" />
+      <PackageReference Condition="!$(RigPrivatePackages.Contains(';%(Identity);'))" PrivateAssets="" />
+    </ItemGroup>
+  </Target>
+</Project>

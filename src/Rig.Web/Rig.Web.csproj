@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- The rig web host (#85 s25): one ASP.NET minimal-API server for the SPA in web/ and every JSON route. -->
   <PropertyGroup>
@@ -7,13 +8,10 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Markdig" />
-    <PackageReference Include="ModelContextProtocol.AspNetCore" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="../Rig.Core/Rig.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Rig.Web.Tests" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
