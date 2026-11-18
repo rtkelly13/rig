@@ -24,7 +24,7 @@ public sealed record PromotionRecord(string RunId, int Candidate, string Notes);
 /// <param name="Variants">Each variant's entry, in file order.</param>
 public sealed record VariantManifest(string Project, IReadOnlyDictionary<string, VariantEntry> Variants);
 
-/// <summary>The hand-tuned master and favicon SVGs of a project, embedded from image_drift's <c>builder_assets</c>.</summary>
+/// <summary>The hand-tuned master and favicon SVGs of a project, embedded from <c>builder-assets/</c>.</summary>
 internal static class BuilderAssets
 {
     /// <summary>Reads one embedded asset as text.</summary>

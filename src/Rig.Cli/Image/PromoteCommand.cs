@@ -19,7 +19,7 @@ namespace Rig.Cli.Image;
 [CliCommand(Name = "promote", Description = "Replace the governed master with an explored candidate that beats it, re-scored live under Chromium.")]
 internal sealed class PromoteCommand(ImageHost host, TextWriter output, TextWriter error)
 {
-    private const string BuilderAssetsFolder = "tools/image-drift/src/image_drift/builder_assets/rtkelly-labs";
+    private const string BuilderAssetsFolder = "src/Rig.Image/builder-assets/rtkelly-labs";
 
     /// <summary>The instance DotMake binds onto; rig always builds the wired one instead.</summary>
     internal PromoteCommand()

@@ -107,7 +107,7 @@ public sealed class ExplorePromoteCommandTests : IDisposable
         var cancellationToken = TestContext.Current.CancellationToken;
         var expected = await File.ReadAllTextAsync(candidate.SvgPath!, cancellationToken);
         Assert.Equal(expected, await File.ReadAllTextAsync(Path.Join(_temp.Path, "assets", "rtkelly-labs", "rtkelly-labs.svg"), cancellationToken));
-        var assets = Path.Join(_temp.Path, "tools", "image-drift", "src", "image_drift", "builder_assets", "rtkelly-labs");
+        var assets = Path.Join(_temp.Path, "src", "Rig.Image", "builder-assets", "rtkelly-labs");
         Assert.Equal(expected, await File.ReadAllTextAsync(Path.Join(assets, "master.svg"), cancellationToken));
         Assert.Equal(Incumbent, await File.ReadAllTextAsync(Path.Join(variations, "rtkelly-labs", "r1", "incumbent-backup.svg"), cancellationToken));
         var manifest = await File.ReadAllTextAsync(Path.Join(assets, "manifest.json"), cancellationToken);
@@ -206,7 +206,7 @@ public sealed class ExplorePromoteCommandTests : IDisposable
         var cancellationToken = TestContext.Current.CancellationToken;
         var project = Path.Join(_temp.Path, "assets", "rtkelly-labs");
         Directory.CreateDirectory(Path.Join(project, "reference"));
-        Directory.CreateDirectory(Path.Join(_temp.Path, "tools", "image-drift", "src", "image_drift", "builder_assets", "rtkelly-labs"));
+        Directory.CreateDirectory(Path.Join(_temp.Path, "src", "Rig.Image", "builder-assets", "rtkelly-labs"));
         await File.WriteAllTextAsync(Path.Join(project, "rtkelly-labs.svg"), Incumbent, cancellationToken);
         var white = new byte[8 * 8 * 4];
         Array.Fill(white, (byte)255);
