@@ -1,6 +1,6 @@
 # ADR 0022: C# on .NET 10 Is rig's Primary Language
 
-- **Status:** Accepted
+- **Status:** Accepted; item 7 (`image_drift` stays Python) is superseded by [ADR 0024](0024-image-pipeline-in-csharp.md)
 - **Applies to:** all of rig except the brand-asset pipeline (`image_drift`)
 - **Supersedes:** [0002](0002-uv-for-python-packaging.md), [0003](0003-pyright-strict-type-checking.md) and
   [0004](0004-ruff-for-linting-and-formatting.md) for everything except `image_drift`. Amends
