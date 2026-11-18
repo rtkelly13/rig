@@ -88,13 +88,7 @@ public static class GitHubFunctions
     public static async Task<Ran> EnsureSuccessAsync(IGitHubApi api, RestRequestSpec spec, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(spec);
-        var ran = await SendAsync(api, spec, cancellationToken).ConfigureAwait(false);
-        if (!ran.Ok)
-        {
-            throw CreateException(ran, spec.Description, spec.Method, spec.Route);
-        }
-
-        return ran;
+        return Checked(await SendAsync(api, spec, cancellationToken).ConfigureAwait(false), spec.Description, spec.Method, spec.Route);
     }
 
     /// <summary>Executes an <see cref="ApiRequest"/> and throws <see cref="GitHubApiException"/> if the call failed.</summary>
@@ -105,14 +99,11 @@ public static class GitHubFunctions
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var ran = await SendAsync(api, request, cancellationToken).ConfigureAwait(false);
-        if (!ran.Ok)
-        {
-            throw CreateException(ran, description, request.Method, request.Route);
-        }
-
-        return ran;
+        return Checked(await SendAsync(api, request, cancellationToken).ConfigureAwait(false), description, request.Method, request.Route);
     }
+
+    private static Ran Checked(Ran ran, string? description, string? method, string? route) =>
+        ran.Ok ? ran : throw CreateException(ran, description, method, route);
 
     /// <summary>Executes a REST request, asserts success, and returns the response body as plain text.</summary>
     public static async Task<string> ReadTextAsync(IGitHubApi api, RestRequestSpec spec, CancellationToken cancellationToken = default)
@@ -156,11 +147,7 @@ public static class GitHubFunctions
             return null;
         }
 
-        if (!ran.Ok)
-        {
-            throw CreateException(ran, spec.Description, spec.Method, spec.Route);
-        }
-
+        _ = Checked(ran, spec.Description, spec.Method, spec.Route);
         try
         {
             return JsonSerializer.Deserialize<T>(ran.Out, options ?? GitHubSerializerDefaults.Options);
@@ -202,11 +189,7 @@ public static class GitHubFunctions
             return null;
         }
 
-        if (!ran.Ok)
-        {
-            throw CreateException(ran, spec.Description, spec.Method, spec.Route);
-        }
-
+        _ = Checked(ran, spec.Description, spec.Method, spec.Route);
         try
         {
             return JsonNode.Parse(ran.Out);
@@ -242,7 +225,37 @@ public static class GitHubFunctions
         ArgumentNullException.ThrowIfNull(spec);
         var ran = await ExecuteGraphQLRawAsync(api, spec, cancellationToken).ConfigureAwait(false);
         var what = spec.Description ?? "GraphQL query";
-        var envelope = string.IsNullOrWhiteSpace(ran.Out) ? null : DecodeGraphQLEnvelope(ran.Out);
+        var envelope = DecodeGraphQLEnvelope(ran.Out);
+        ThrowOnFailure(ran, what, envelope);
+        if (envelope?.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined } dataElement)
+        {
+            try
+            {
+                var decoded = JsonSerializer.Deserialize<TData>(dataElement.GetRawText(), options ?? GitHubSerializerDefaults.Options);
+                if (decoded is not null)
+                {
+                    return decoded;
+                }
+            }
+            catch (JsonException ex)
+            {
+                throw Unreadable(ran, what, ex);
+            }
+        }
+
+        throw Unreadable(ran, what);
+    }
+
+    private static GitHubApiException Unreadable(Ran ran, string what, JsonException? inner = null) =>
+        new($"{what}: unreadable response from GitHub", inner!)
+        {
+            ExitCode = ran.Code,
+            ErrorOutput = ran.Err,
+        };
+
+    // A GraphQL error list wins over the process outcome: it names what GitHub refused.
+    private static void ThrowOnFailure(Ran ran, string what, WireGraphQLEnvelope? envelope)
+    {
         var messages = envelope?.Errors?.Select(static error => error.Message).Where(static message => !string.IsNullOrEmpty(message)).ToList() ?? [];
         if (messages.Count > 0)
         {
@@ -263,32 +276,6 @@ public static class GitHubFunctions
                 ErrorOutput = err,
             };
         }
-
-        if (envelope?.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined } dataElement)
-        {
-            try
-            {
-                var decoded = JsonSerializer.Deserialize<TData>(dataElement.GetRawText(), options ?? GitHubSerializerDefaults.Options);
-                if (decoded is not null)
-                {
-                    return decoded;
-                }
-            }
-            catch (JsonException ex)
-            {
-                throw new GitHubApiException($"{what}: unreadable response from GitHub", ex)
-                {
-                    ExitCode = ran.Code,
-                    ErrorOutput = ran.Err,
-                };
-            }
-        }
-
-        throw new GitHubApiException($"{what}: unreadable response from GitHub")
-        {
-            ExitCode = ran.Code,
-            ErrorOutput = ran.Err,
-        };
     }
 
     /// <summary>Convenience overload to execute a GraphQL document with variables.</summary>
@@ -326,41 +313,16 @@ public static class GitHubFunctions
         }
 
         var what = spec.Description ?? "GraphQL query";
-        var envelope = string.IsNullOrWhiteSpace(ran.Out) ? null : DecodeGraphQLEnvelope(ran.Out);
-
+        var envelope = DecodeGraphQLEnvelope(ran.Out);
         if (IsGraphQLNotFound(envelope?.Errors))
         {
             return null;
         }
 
-        var messages = envelope?.Errors?.Select(static error => error.Message).Where(static message => !string.IsNullOrEmpty(message)).ToList() ?? [];
-        if (messages.Count > 0)
-        {
-            throw new GitHubApiException($"{what}: {string.Join("; ", messages)}")
-            {
-                ExitCode = ran.Code,
-                Errors = messages,
-                ErrorOutput = ran.Err,
-            };
-        }
-
-        if (!ran.Ok)
-        {
-            var err = ran.Err.Trim();
-            throw new GitHubApiException($"{what}: {(err.Length > 0 ? err : $"gh exited {ran.Code}")}")
-            {
-                ExitCode = ran.Code,
-                ErrorOutput = err,
-            };
-        }
-
+        ThrowOnFailure(ran, what, envelope);
         if (envelope is null)
         {
-            throw new GitHubApiException($"{what}: unreadable response from GitHub")
-            {
-                ExitCode = ran.Code,
-                ErrorOutput = ran.Err,
-            };
+            throw Unreadable(ran, what);
         }
 
         if (envelope.Data is null or { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined })
@@ -374,11 +336,7 @@ public static class GitHubFunctions
         }
         catch (JsonException ex)
         {
-            throw new GitHubApiException($"{what}: unreadable response from GitHub", ex)
-            {
-                ExitCode = ran.Code,
-                ErrorOutput = ran.Err,
-            };
+            throw Unreadable(ran, what, ex);
         }
     }
 
@@ -443,6 +401,11 @@ public static class GitHubFunctions
 
     private static WireGraphQLEnvelope? DecodeGraphQLEnvelope(string json)
     {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
         try
         {
             return JsonSerializer.Deserialize<WireGraphQLEnvelope>(json, GitHubSerializerDefaults.Options);
@@ -455,14 +418,10 @@ public static class GitHubFunctions
 
     private static bool IsGraphQLNotFound(IReadOnlyList<WireError>? errors)
     {
-        if (errors is null || errors.Count == 0)
-        {
-            return false;
-        }
-
-        return errors.All(static e =>
-            string.Equals(e.Type, "NOT_FOUND", StringComparison.OrdinalIgnoreCase) ||
-            e.Message.Contains("Could not resolve to a", StringComparison.OrdinalIgnoreCase));
+        return errors is { Count: > 0 }
+            && errors.All(static e =>
+                string.Equals(e.Type, "NOT_FOUND", StringComparison.OrdinalIgnoreCase) ||
+                e.Message.Contains("Could not resolve to a", StringComparison.OrdinalIgnoreCase));
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by System.Text.Json.")]

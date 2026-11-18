@@ -62,6 +62,9 @@ public static partial class Manifests
     /// <summary>The largest manifest read, in bytes.</summary>
     public const long MaxBytes = 2_000_000;
 
+    private static readonly (string Scope, string Key)[] NpmScopes =
+        [("runtime", "dependencies"), ("development", "devDependencies"), ("peer", "peerDependencies"), ("optional", "optionalDependencies")];
+
     /// <summary>How long <c>git ls-files</c> may take before a checkout is reported unavailable.</summary>
     public static readonly TimeSpan ListTimeout = TimeSpan.FromSeconds(10);
 
@@ -100,27 +103,10 @@ public static partial class Manifests
         }
 
         var resolvedRoot = PathResolution.Resolve(root);
-        var paths = new List<string>();
-        foreach (var name in listed.Out.Split('\0').Order(StringComparer.Ordinal))
-        {
-            var parts = name.Split('/');
-            if (name.Length == 0 || parts.Any(Skipped.Contains))
-            {
-                continue;
-            }
-
-            var file = parts[^1];
-            if (!ManifestNames.Contains(file) && !file.EndsWith(".csproj", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var candidate = Path.Join(root, name);
-            if (File.Exists(candidate) && PathResolution.IsUnder(PathResolution.Resolve(candidate), resolvedRoot))
-            {
-                paths.Add(name);
-            }
-        }
+        var paths = listed.Out.Split('\0').Order(StringComparer.Ordinal)
+            .Where(name => name.Length > 0 && !name.Split('/').Any(Skipped.Contains) && IsManifest(name.Split('/')[^1]))
+            .Where(name => File.Exists(Path.Join(root, name)) && PathResolution.IsUnder(PathResolution.Resolve(Path.Join(root, name)), resolvedRoot))
+            .ToList();
 
         return paths.Count > MaxManifests
             ? throw new InvalidDataException($"More than {MaxManifests} tracked package manifests; narrow the scan before indexing")
@@ -154,13 +140,7 @@ public static partial class Manifests
             {
                 try
                 {
-                    if (new FileInfo(full).Length > MaxBytes)
-                    {
-                        throw new InvalidDataException("Manifest exceeds 2 MB");
-                    }
-
-                    var bytes = await File.ReadAllBytesAsync(full, cancellationToken).ConfigureAwait(false);
-                    var text = XmlComment().Replace(StrictUtf8.GetString(bytes), string.Empty);
+                    var text = XmlComment().Replace(await ReadBoundedAsync(full, cancellationToken).ConfigureAwait(false), string.Empty);
                     var versions = Folder(central, Path.GetDirectoryName(full)!);
                     foreach (Match tag in PackageVersionTag().Matches(text))
                     {
@@ -182,13 +162,7 @@ public static partial class Manifests
         {
             try
             {
-                if (new FileInfo(full).Length > MaxBytes)
-                {
-                    throw new InvalidDataException("Manifest exceeds 2 MB");
-                }
-
-                var bytes = await File.ReadAllBytesAsync(full, cancellationToken).ConfigureAwait(false);
-                var text = StrictUtf8.GetString(bytes);
+                var text = await ReadBoundedAsync(full, cancellationToken).ConfigureAwait(false);
                 if (full.EndsWith(".csproj", StringComparison.Ordinal) || full.EndsWith(".props", StringComparison.Ordinal))
                 {
                     text = XmlComment().Replace(text, string.Empty);
@@ -216,12 +190,18 @@ public static partial class Manifests
         return inventory;
     }
 
+    private static bool IsManifest(string file) => ManifestNames.Contains(file) || file.EndsWith(".csproj", StringComparison.Ordinal);
+
+    private static async Task<string> ReadBoundedAsync(string full, CancellationToken cancellationToken) =>
+        new FileInfo(full).Length > MaxBytes
+            ? throw new InvalidDataException("Manifest exceeds 2 MB")
+            : StrictUtf8.GetString(await File.ReadAllBytesAsync(full, cancellationToken).ConfigureAwait(false));
+
     private static Dictionary<string, string> Folder(Dictionary<string, Dictionary<string, string>> central, string folder)
     {
         if (!central.TryGetValue(folder, out var versions))
         {
-            versions = new Dictionary<string, string>(StringComparer.Ordinal);
-            central[folder] = versions;
+            central[folder] = versions = new Dictionary<string, string>(StringComparer.Ordinal);
         }
 
         return versions;
@@ -233,15 +213,11 @@ public static partial class Manifests
         var package = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false }) as JsonObject
             ?? throw new InvalidDataException("expected a JSON object");
         var name = OptionalString(package, "name");
-        var consumptions = new List<Consumption>();
-        foreach (var (scope, key) in new[] { ("runtime", "dependencies"), ("development", "devDependencies"), ("peer", "peerDependencies"), ("optional", "optionalDependencies") })
-        {
-            foreach (var (dependency, version) in StringMap(package, key))
-            {
-                var alias = NpmAlias().Match(version);
-                consumptions.Add(new Consumption("npm", Canonical("npm", alias.Success ? alias.Groups[1].Value : dependency), repo, version, scope, evidence));
-            }
-        }
+        var consumptions = NpmScopes
+            .SelectMany(scope => StringMap(package, scope.Key).Select(dependency => (scope.Scope, dependency.Name, dependency.Version)))
+            .Select(d => (d, alias: NpmAlias().Match(d.Version)))
+            .Select(x => new Consumption("npm", Canonical("npm", x.alias.Success ? x.alias.Groups[1].Value : x.d.Name), repo, x.d.Version, x.d.Scope, evidence))
+            .ToList();
 
         if (name.Length > 0)
         {
@@ -262,13 +238,13 @@ public static partial class Manifests
         var project = value as TomlTable ?? throw new InvalidDataException("project: expected a table");
         // As for npm, nothing counts until the whole project table has validated.
         var name = project.TryGetValue("name", out var named) ? named as string ?? throw new InvalidDataException("project.name: expected a string") : string.Empty;
-        var requirements = Strings(project, "dependencies", "project.dependencies").Select(requirement => ("runtime", requirement)).ToList();
+        var requirements = Strings(project, "dependencies", "project.dependencies").Select(requirement => (scope: "runtime", requirement)).ToList();
         if (project.TryGetValue("optional-dependencies", out var optional))
         {
             var extras = optional as TomlTable ?? throw new InvalidDataException("project.optional-dependencies: expected a table");
             foreach (var (extra, _) in extras)
             {
-                requirements.AddRange(Strings(extras, extra, $"project.optional-dependencies.{extra}").Select(requirement => ($"optional:{extra}", requirement)));
+                requirements.AddRange(Strings(extras, extra, $"project.optional-dependencies.{extra}").Select(requirement => (scope: $"optional:{extra}", requirement)));
             }
         }
 
@@ -277,13 +253,10 @@ public static partial class Manifests
             inventory.PublicationsFound.Add(new Publication("pypi", Canonical("pypi", name), repo, evidence));
         }
 
-        foreach (var (scope, requirement) in requirements)
-        {
-            if (PythonName().Match(requirement) is { Success: true } match)
-            {
-                inventory.ConsumptionsFound.Add(new Consumption("pypi", Canonical("pypi", match.Value), repo, requirement, scope, evidence));
-            }
-        }
+        inventory.ConsumptionsFound.AddRange(requirements
+            .Select(r => (r.scope, r.requirement, match: PythonName().Match(r.requirement)))
+            .Where(r => r.match.Success)
+            .Select(r => new Consumption("pypi", Canonical("pypi", r.match.Value), repo, r.requirement, r.scope, evidence)));
     }
 
     private static void ReadMsBuild(Inventory inventory, string text, string repo, string evidence, string full, Dictionary<string, Dictionary<string, string>> central)

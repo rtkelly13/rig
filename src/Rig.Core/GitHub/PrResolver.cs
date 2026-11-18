@@ -186,19 +186,9 @@ public static class PrResolver
         // gh exits 1 when any alias fails (a PR number that does not exist) but still prints the data.
         var ran = await github.CallAsync(request, cancellationToken).ConfigureAwait(false);
         var body = ran.Out.Trim().Length > 0 ? ParseBody(ran.Out) : null;
-        var aliasErrors = new Dictionary<string, string>(StringComparer.Ordinal);
-        var messages = new List<string>();
-        foreach (var (path, message) in body?.Errors ?? [])
-        {
-            if (path.Count >= 2)
-            {
-                aliasErrors[path[1]] = message;
-            }
-            else
-            {
-                messages.Add(message);
-            }
-        }
+        var errors = body?.Errors ?? [];
+        var aliasErrors = errors.Where(e => e.Path.Count >= 2).GroupBy(e => e.Path[1], StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Last().Message, StringComparer.Ordinal);
+        var messages = errors.Where(e => e.Path.Count < 2).Select(e => e.Message).ToList();
 
         if (body?.Repository is not { } repository)
         {
@@ -250,12 +240,7 @@ public static class PrResolver
         }
 
         var details = lookup.Details;
-        if (lookup.Merged == true)
-        {
-            return new PrState(PrStatus.Merged, Details: details);
-        }
-
-        return lookup.State switch
+        return lookup.Merged == true ? new PrState(PrStatus.Merged, Details: details) : lookup.State switch
         {
             "OPEN" => new PrState(PrStatus.Open, Details: details),
             "MERGED" => new PrState(PrStatus.Merged, Details: details),
@@ -291,18 +276,14 @@ public static class PrResolver
         var labels = JsonShape.OptionalObject(node, "labels") is { } labelNodes
             ? JsonShape.Items(labelNodes, "nodes").Select(label => JsonShape.String(label, "name").ToLowerInvariant()).ToHashSet(StringComparer.Ordinal)
             : new HashSet<string>(StringComparer.Ordinal);
-        var labeledAt = new Dictionary<string, string>(StringComparer.Ordinal);
         var events = JsonShape.OptionalObject(node, "timelineItems") is { } timeline ? JsonShape.Items(timeline, "nodes") : [];
-        foreach (var labelEvent in events)
-        {
-            var label = JsonShape.OptionalObject(labelEvent, "label");
-            var name = label is null ? string.Empty : JsonShape.String(label, "name").ToLowerInvariant();
-            var when = JsonShape.String(labelEvent, "createdAt");
-            if (name.Length > 0 && string.CompareOrdinal(when, labeledAt.GetValueOrDefault(name) ?? string.Empty) > 0)
-            {
-                labeledAt[name] = when;
-            }
-        }
+        var labeledAt = events
+            .Select(labelEvent => (
+                Name: JsonShape.OptionalObject(labelEvent, "label") is { } label ? JsonShape.String(label, "name").ToLowerInvariant() : string.Empty,
+                When: JsonShape.String(labelEvent, "createdAt")))
+            .Where(e => e.Name.Length > 0 && string.CompareOrdinal(e.When, string.Empty) > 0)
+            .GroupBy(e => e.Name, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.When).Order(StringComparer.Ordinal).Last(), StringComparer.Ordinal);
 
         var queue = JsonShape.OptionalObject(node, "mergeQueueEntry");
         return new OpenPr(
@@ -333,7 +314,7 @@ public static class PrResolver
             var requested = JsonShape.OptionalObject(node, "reviewRequests") is { } requests
                 && JsonShape.Items(requests, "nodes").Any(request =>
                     JsonShape.OptionalObject(request, "requestedReviewer") is { } reviewer && JsonShape.Bool(reviewer, "isViewer"));
-            var head = JsonShape.OptionalObject(node, "commits") is { } commits ? JsonShape.ItemsWithNulls(commits, "nodes") is { Count: > 0 } heads ? heads[0] : null : null;
+            var head = JsonShape.OptionalObject(node, "commits") is { } commits ? (JsonShape.ItemsWithNulls(commits, "nodes") is { Count: > 0 } heads ? heads[0] : null) : null;
             var commit = head is null ? null : JsonShape.OptionalObject(head, "commit");
             var rollup = commit is null ? null : JsonShape.OptionalObject(commit, "statusCheckRollup");
             var details = new PrDetails(
