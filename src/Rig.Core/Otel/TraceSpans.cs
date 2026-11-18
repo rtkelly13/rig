@@ -148,7 +148,7 @@ public static class TraceSpans
 
     private static List<FileSpan> Decode(string line, string origin, Action<string>? skipped) =>
     [
-        .. JsonProblem.Read(line, OtlpJsonContext.Default.OtlpLine).ResourceSpans
+        .. JsonProblem.ReadLastWins(line, OtlpJsonContext.Default.OtlpLine).ResourceSpans
             .Select((resource, resourceIndex) => (Resource: Node(resource.Resource), Path: JsonProblem.Item("$.resourceSpans", resourceIndex), resource.ScopeSpans))
             .SelectMany(resource => resource.ScopeSpans
                 .Select((scope, scopeIndex) => (Scope: Node(scope.Scope), Path: JsonProblem.Item(resource.Path + ".scopeSpans", scopeIndex), scope.Spans))
@@ -161,7 +161,7 @@ public static class TraceSpans
     {
         try
         {
-            var span = JsonProblem.Read(raw, OtlpJsonContext.Default.OtlpSpan);
+            var span = JsonProblem.ReadLastWins(raw, OtlpJsonContext.Default.OtlpSpan);
             return new FileSpan(span.TraceId, span.SpanId, resource?.DeepClone(), scope?.DeepClone(), (JsonObject)Node(raw)!, span.EndNs, Incomplete(span), origin, path);
         }
         catch (JsonInputException e)
