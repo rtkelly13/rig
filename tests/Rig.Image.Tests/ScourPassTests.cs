@@ -31,6 +31,18 @@ public sealed class ScourPassTests
         Assert.Contains("translate(8)", result, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("translate(1 1) translate(-1 -1) rotate(30)")]
+    [InlineData("translate(1 1) translate(-1 -1) scale(2)")]
+    public void An_identity_translation_at_the_front_follows_Pythons_negative_indexing_instead_of_throwing(string transform)
+    {
+        // Python indexes transform[-1] after removing the identity, which merges the last entry into itself and drops it;
+        // the oracle pins that output, so the port must neither throw nor keep the transform.
+        var result = Scour($"<g transform=\"{transform}\"><rect width=\"1\" height=\"1\"/></g>");
+
+        Assert.DoesNotContain("transform", result, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Opposite_one_number_translations_cancel_out()
     {
