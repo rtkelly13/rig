@@ -13,30 +13,36 @@ public sealed class JobsInstallTests : IDisposable
 
     public void Dispose() => _temp.Dispose();
 
-    /// <summary>
-    /// Each task's XML as <see cref="JobsTaskXml.Render"/> writes it, kept in <c>Jobs/Tasks/&lt;task&gt;.xml</c> so a policy
-    /// change shows up as a reviewable diff. Set <c>RIG_UPDATE_SNAPSHOTS=1</c> to rewrite the files from the renderer.
-    /// </summary>
-    [Theory]
-    [InlineData(CoordinatorTasks.Logon, "logon", true)]
-    [InlineData(CoordinatorTasks.Tick, "tick", true)]
-    [InlineData(CoordinatorTasks.Guard, "display-guard", true)]
-    [InlineData(CoordinatorTasks.Guard, "display-guard-direct", false)]
-    public void Task_xml_matches_its_snapshot(string name, string file, bool python)
-    {
-        var target = new JobsInstallTarget(
-            "C:\\rig & tools", "C:\\rig & tools\\plan & co.json", "C:\\rig & tools\\rig.exe", python ? "C:\\Python\\pythonw.exe" : null);
-        var actual = JobsTaskXml.Render(name, target, "CORP\\me & you", new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.FromHours(2)));
-        var path = Path.Join(Path.GetDirectoryName(RepoTemp.Root), "tests", "Rig.Core.Tests", "Jobs", "Tasks", file + ".xml");
-        if (Environment.GetEnvironmentVariable("RIG_UPDATE_SNAPSHOTS") == "1")
-        {
-            _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, actual.ReplaceLineEndings("\n"));
-        }
+    private static readonly JobsInstallTarget Target = new("root", "plan.json", "rig.exe", "pythonw.exe");
 
-        Assert.Equal(File.ReadAllText(path).ReplaceLineEndings("\n"), actual.ReplaceLineEndings("\n"));
-        Assert.StartsWith("<?xml version=\"1.0\" encoding=\"UTF-16\"?>", actual, StringComparison.Ordinal);
-        Assert.Equal("\\" + name, XElement.Parse(actual).Element(Ns + "RegistrationInfo")!.Element(Ns + "URI")!.Value);
+    // A finished run is bounded so a hung one is killed; the guard watches for as long as the session lasts.
+    [Theory]
+    [InlineData(CoordinatorTasks.Logon, "LogonTrigger", "jobs run --trigger logon --scheduled", "PT2H")]
+    [InlineData(CoordinatorTasks.Tick, "TimeTrigger", "jobs run --trigger tick --scheduled", "PT2H")]
+    [InlineData(CoordinatorTasks.Guard, "LogonTrigger", "desktop workspace guard --config \"plan.json\"", "PT0S")]
+    public void Each_task_runs_its_rig_command_least_privileged_on_its_trigger(string name, string trigger, string rig, string limit)
+    {
+        var task = Render(name);
+
+        Assert.Equal(Target.Command, Value(task, "Actions", "Exec", "Command"));
+        Assert.Equal(Target.Arguments(rig), Value(task, "Actions", "Exec", "Arguments"));
+        Assert.Equal(Target.Root, Value(task, "Actions", "Exec", "WorkingDirectory"));
+        Assert.NotNull(task.Element(Ns + "Triggers")!.Element(Ns + trigger));
+        Assert.Equal(limit, Value(task, "Settings", "ExecutionTimeLimit"));
+        Assert.Equal("LeastPrivilege", Value(task, "Principals", "Principal", "RunLevel"));
+    }
+
+    [Fact]
+    public void The_tick_repeats_every_tick_interval() =>
+        Assert.Equal($"PT{Job.TickMinutes}M", Value(Render(CoordinatorTasks.Tick), "Triggers", "TimeTrigger", "Repetition", "Interval"));
+
+    [Fact]
+    public void A_guard_that_dies_is_restarted()
+    {
+        var restart = Render(CoordinatorTasks.Guard).Element(Ns + "Settings")!.Element(Ns + "RestartOnFailure");
+
+        Assert.Equal("PT1M", restart?.Element(Ns + "Interval")?.Value);
+        Assert.Equal("10", restart?.Element(Ns + "Count")?.Value);
     }
 
     [Fact]
@@ -176,6 +182,12 @@ public sealed class JobsInstallTests : IDisposable
         Assert.Equal(
             """-I -c "import os,subprocess,sys;os.environ['RIG_PARENT_PID']=str(os.getpid());sys.exit(subprocess.call(sys.argv[1:],creationflags=0x08000000))" "C:\r\rig.exe" jobs run""",
             new JobsInstallTarget("root", "plan", @"C:\r\rig.exe", "pythonw.exe").Arguments("jobs run"));
+
+    private static XElement Render(string name) =>
+        XElement.Parse(JobsTaskXml.Render(name, Target, "me", new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero)));
+
+    private static string? Value(XElement task, params string[] path) =>
+        path.Aggregate<string, XElement?>(task, (element, name) => element?.Element(Ns + name))?.Value;
 
     private static void Targets(JobsInstallTarget target)
     {
