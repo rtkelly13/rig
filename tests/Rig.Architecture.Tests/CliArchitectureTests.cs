@@ -113,8 +113,15 @@ public sealed class CliArchitectureTests
 
         private static bool IsGroup(Mono.Cecil.TypeDefinition type)
         {
-            return type.NestedTypes.Any(nested => nested.CustomAttributes.Any(a =>
-                a.AttributeType.FullName == typeof(CliCommandAttribute).FullName));
+            // Subcommands are declared inside their top-level command, so a nested group sits beside its members.
+            var scope = type.DeclaringType ?? type;
+            return scope.NestedTypes.Any(nested => nested != type && IsCommand(nested));
+        }
+
+        private static bool IsCommand(Mono.Cecil.TypeDefinition type)
+        {
+            return type.CustomAttributes.Any(a =>
+                a.AttributeType.FullName == typeof(CliCommandAttribute).FullName);
         }
 
         private static bool HasHandler(Mono.Cecil.TypeDefinition type)
