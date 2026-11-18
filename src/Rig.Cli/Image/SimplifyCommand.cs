@@ -91,6 +91,16 @@ internal sealed class SimplifyCommand(ImageHost host, TextWriter output, TextWri
             await error.WriteLineAsync($"Error: could not simplify {input}: {exception.Message}").ConfigureAwait(false);
             return (int)ExitCode.Error;
         }
+        catch (FormatException exception)
+        {
+            await error.WriteLineAsync($"Error: could not simplify {input}: {exception.Message}").ConfigureAwait(false);
+            return (int)ExitCode.Error;
+        }
+        catch (InvalidDataException exception)
+        {
+            await error.WriteLineAsync($"Error: {exception.Message}").ConfigureAwait(false);
+            return (int)ExitCode.Error;
+        }
 
         await output.WriteAsync(Format(gated)).ConfigureAwait(false);
         return gated.Report.GatePassed ? (int)ExitCode.Clean : (int)ExitCode.Drift;
