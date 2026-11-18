@@ -81,11 +81,40 @@ public sealed class PlanLoadingTests : IDisposable
             new WorkspacePlan { Desktops = [new("Work") { Launch = [new("Notes") { Path = "/notes", Placement = new(1, new("full")) }] }] },
             path);
 
-        var plan = PlanLoading.BuildMachinePlan(path, "/code/workspace", "/code/personal");
+        var plan = PlanLoading.BuildMachinePlan(path, "/code/workspace", [], "/code/personal");
 
         Assert.Equal("/code/workspace", plan.Workspace);
         Assert.Equal("/code/personal", plan.PersonalWorkspace);
         Assert.Equal("Work", Assert.Single(plan.Desktops).Name);
+    }
+
+    [Fact]
+    public void A_machine_plan_is_verified_with_its_flags_and_saved_with_its_feature_tags()
+    {
+        var path = Path.Join(_temp.Path, "plan.bundle.json");
+        PlanFiles.SaveBundle(
+            new WorkspacePlan
+            {
+                Desktops =
+                [
+                    new("Work")
+                    {
+                        Launch =
+                        [
+                            new("Orca") { Path = "/orca", Feature = "orca", Placement = new(1, new("full")) },
+                            new("Notes") { Path = "/notes", Placement = new(2, new("full")) },
+                        ],
+                    },
+                    new("Lab") { Feature = "lab", Launch = [new("Lab") { Path = "/lab", Placement = new(3, new("full")) }] },
+                ],
+            },
+            path);
+
+        var plan = PlanLoading.BuildMachinePlan(path, "/code/workspace", [new("orca", Default: true), new("lab", Default: false)]);
+
+        Assert.Equal(["Work", "Lab"], plan.Desktops.Select(desktop => desktop.Name));
+        Assert.Equal("orca", plan.Desktops[0].Launch[0].Feature);
+        Assert.Throws<InvalidPlanException>(() => PlanLoading.BuildMachinePlan(path, "/code/workspace", [new("orca", Default: true), new("lab", Default: true)]));
     }
 
     [Fact]

@@ -482,7 +482,7 @@ internal sealed partial class DesktopWorkspaceCommand
         var template = Path.Join(host.Checkout, "desktop-manager", "workspace-plan.bundle.json");
         try
         {
-            var plan = PlanLoading.BuildMachinePlan(template, workspace, personalWorkspace);
+            var plan = PlanLoading.BuildMachinePlan(template, workspace, host.Flags(), personalWorkspace);
             PlanFiles.SaveBundle(plan, path);
             await host.Output.WriteLineAsync($"Saved workspace plan: {path}").ConfigureAwait(false);
             await host.Output.WriteLineAsync($"Workspace: {workspace}").ConfigureAwait(false);

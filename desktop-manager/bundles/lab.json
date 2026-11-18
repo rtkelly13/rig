@@ -18,34 +18,16 @@
       "window_wait_timeout_ms": 20000
     },
     {
-      "name": "Lab Fork",
-      "type": "app",
-      "path": "{fork-path}",
-      "args": [
-        "{workspace-root}"
-      ],
-      "summary": "Fork on the workspace repo for inspecting the branches and diffs T3 Code produces.",
-      "delay_ms": 1200,
-      "placement": {
-        "screen": 2,
-        "layout": {
-          "mode": "full",
-          "slot": 1
-        }
-      },
-      "window_process_name": "Fork.exe"
-    },
-    {
       "name": "Lab Terminal",
       "type": "terminal",
       "shell": "wt-pwsh",
       "cwd": "{workspace-root}",
       "command": "claude",
-      "summary": "A plain Claude Code session beside T3 Code, for running the same task each way.",
+      "summary": "A plain Claude Code session beside T3 Code, for running the same task each way. Fork is not on this desktop: it keeps one window, which the first desktop already places.",
       "delay_ms": 1200,
       "window_title": "Lab Terminal",
       "placement": {
-        "screen": 3,
+        "screen": 2,
         "layout": {
           "mode": "full",
           "slot": 1

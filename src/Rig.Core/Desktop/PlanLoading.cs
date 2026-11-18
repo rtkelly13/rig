@@ -101,14 +101,19 @@ public static class PlanLoading
 
     /// <summary>
     /// The machine plan from the repository's bundle template, with <paramref name="workspace"/> and
-    /// <paramref name="personalWorkspace"/> filled in and verified.
+    /// <paramref name="personalWorkspace"/> filled in. It is verified as <see cref="Load"/> would run it, with
+    /// <paramref name="flags"/> applied, so entries behind a switched-off flag don't count; the plan returned keeps
+    /// its feature tags, so a later <c>rig flags enable|disable</c> still takes effect.
     /// </summary>
     /// <exception cref="InvalidPlanException">The template is not a valid plan.</exception>
-    public static WorkspacePlan BuildMachinePlan(string templatePath, string workspace, string? personalWorkspace = null)
+    public static WorkspacePlan BuildMachinePlan(string templatePath, string workspace, IEnumerable<PlanFlag> flags, string? personalWorkspace = null)
     {
         ArgumentNullException.ThrowIfNull(templatePath);
         ArgumentNullException.ThrowIfNull(workspace);
+        ArgumentNullException.ThrowIfNull(flags);
         var plan = PlanFiles.Load(templatePath) with { Workspace = workspace, PersonalWorkspace = personalWorkspace };
-        return Verify(plan, templatePath, plan.Substitutions(new Dictionary<string, string>(), new Dictionary<string, string>()));
+        var effective = PlanFeatures.Apply(PlanFeatures.WithFlags(plan, flags));
+        _ = Verify(effective, templatePath, effective.Substitutions(new Dictionary<string, string>(), new Dictionary<string, string>()));
+        return plan;
     }
 }

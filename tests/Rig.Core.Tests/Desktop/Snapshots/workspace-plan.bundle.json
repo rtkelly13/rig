@@ -434,8 +434,9 @@
           "placement": {
             "screen": 2,
             "layout": {
-              "mode": "full",
-              "slot": 1
+              "mode": "halves",
+              "slot": 1,
+              "orientation": "vertical"
             }
           },
           "window_title": "rig",
@@ -474,29 +475,14 @@
           ],
           "summary": "Opens the rig repo folder in its own VS Code window. Deliberately opens the folder rather than rig.code-workspace: the Review desktop owns that multi-root workspace file, and VS Code focuses the already-open workspace window instead of opening a second one, so two desktops opening the same .code-workspace collide onto one window. A plain folder window is a distinct VS Code window.",
           "placement": {
-            "screen": 3,
-            "layout": {
-              "mode": "halves",
-              "slot": 1,
-              "orientation": "vertical"
-            }
-          },
-          "window_process_name": "Code.exe"
-        },
-        {
-          "name": "Fork",
-          "type": "app",
-          "delay_ms": 1200,
-          "path": "{fork-path}",
-          "placement": {
-            "screen": 3,
+            "screen": 2,
             "layout": {
               "mode": "halves",
               "slot": 2,
               "orientation": "vertical"
             }
           },
-          "window_process_name": "Fork.exe"
+          "window_process_name": "Code.exe"
         }
       ],
       "feature": "personal-desktop"
@@ -521,33 +507,15 @@
           "window_wait_timeout_ms": 20000
         },
         {
-          "name": "Lab Fork",
-          "type": "app",
-          "delay_ms": 1200,
-          "path": "{fork-path}",
-          "args": [
-            "{workspace-root}"
-          ],
-          "summary": "Fork on the workspace repo for inspecting the branches and diffs T3 Code produces.",
-          "placement": {
-            "screen": 2,
-            "layout": {
-              "mode": "full",
-              "slot": 1
-            }
-          },
-          "window_process_name": "Fork.exe"
-        },
-        {
           "name": "Lab Terminal",
           "type": "terminal",
           "delay_ms": 1200,
           "shell": "wt-pwsh",
           "command": "claude",
           "cwd": "{workspace-root}",
-          "summary": "A plain Claude Code session beside T3 Code, for running the same task each way.",
+          "summary": "A plain Claude Code session beside T3 Code, for running the same task each way. Fork is not on this desktop: it keeps one window, which the first desktop already places.",
           "placement": {
-            "screen": 3,
+            "screen": 2,
             "layout": {
               "mode": "full",
               "slot": 1
