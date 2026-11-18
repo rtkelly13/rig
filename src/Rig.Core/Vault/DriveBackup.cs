@@ -4,8 +4,10 @@ namespace Rig.Core.Vault;
 
 /// <summary>What a Drive backup would hold, measured against the remote's <c>main</c>.</summary>
 /// <param name="Base">The commit of <c>origin/main</c> the Drive copy was compared against.</param>
+/// <param name="Shared">How many notes are on both sides and were compared.</param>
 /// <param name="Differ">Notes, relative to the vault, whose Drive copy differs from <c>main</c>'s.</param>
-public sealed record DriveBackupPlan(string Base, IReadOnlyList<string> Differ);
+/// <param name="Unreadable">Notes on both sides whose Drive copy lists but will not open: skipped, never backed up.</param>
+public sealed record DriveBackupPlan(string Base, int Shared, IReadOnlyList<string> Differ, IReadOnlyList<string> Unreadable);
 
 /// <summary>A pushed backup.</summary>
 /// <param name="Branch">The branch it was pushed to.</param>
@@ -75,9 +77,16 @@ public sealed class DriveBackup(Git git, string vault, string drive)
             }
         }
 
-        var shared = DriveNotes().Where(blobs.ContainsKey).ToList();
+        // A dangling symlink or an un-materialised cloud file lists but will not open; git would abort on it.
+        var shared = new List<string>();
+        var unreadable = new List<string>();
+        foreach (var note in DriveNotes().Where(blobs.ContainsKey))
+        {
+            (Readable(note) ? shared : unreadable).Add(note);
+        }
+
         var hashes = await HashAsync(shared, write: false, cancellationToken).ConfigureAwait(false);
-        return new DriveBackupPlan(head, [.. shared.Where((note, i) => hashes[i] != blobs[note])]);
+        return new DriveBackupPlan(head, shared.Count, [.. shared.Where((note, i) => hashes[i] != blobs[note])], unreadable);
     }
 
     /// <summary>Commits the Drive copies <paramref name="plan"/> found onto its base and pushes them as <paramref name="branch"/>.</summary>
@@ -110,8 +119,24 @@ public sealed class DriveBackup(Git git, string vault, string drive)
         return Directory.EnumerateFiles(root, "*.md", SearchOption.AllDirectories)
             .Select(path => Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/'))
             .Where(note => !note.Split('/').Any(SkippedFolders.Contains) && !note.Contains('\n', StringComparison.Ordinal))
-            .Where(note => File.Exists(Path.Join(root, note)))
             .Order(StringComparer.Ordinal);
+    }
+
+    private bool Readable(string note)
+    {
+        try
+        {
+            using var stream = File.OpenRead(Path.Join(Path.GetFullPath(drive), note));
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     // Raw bytes, no filters: the vault's notes have no clean filter, so this is the id git stores for the same content.
@@ -138,6 +163,8 @@ public sealed class DriveBackup(Git git, string vault, string drive)
         CancellationToken cancellationToken = default)
     {
         var ran = await git.RunAsync(Repo, args, timeout, environment, stdin, cancellationToken).ConfigureAwait(false);
-        return ran.Ok ? ran.Out : throw new DriveBackupException($"{step} failed: {ran.Err.Trim()}");
+        // git names the files it fails on, and the Drive folder's name is an account address: never pass it on.
+        var said = ran.Err.Trim().Replace(Path.GetFullPath(drive), "<drive>", StringComparison.Ordinal);
+        return ran.Ok ? ran.Out : throw new DriveBackupException($"{step} failed: {said}");
     }
 }

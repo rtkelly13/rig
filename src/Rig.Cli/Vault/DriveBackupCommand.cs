@@ -47,10 +47,15 @@ internal sealed class DriveBackupCommand(Git git, VaultHost host, TimeProvider c
         try
         {
             var plan = await backup.PlanAsync().ConfigureAwait(false);
-            await output.WriteLineAsync($"{plan.Differ.Count} note(s) on Drive differ from main ({plan.Base[..12]})").ConfigureAwait(false);
+            await output.WriteLineAsync($"{plan.Differ.Count} of {plan.Shared} shared note(s) on Drive differ from main ({plan.Base[..12]})").ConfigureAwait(false);
             foreach (var note in plan.Differ)
             {
                 await output.WriteLineAsync($"  {note}").ConfigureAwait(false);
+            }
+
+            foreach (var note in plan.Unreadable)
+            {
+                await output.WriteLineAsync($"  unreadable, skipped: {note}").ConfigureAwait(false);
             }
 
             if (plan.Differ.Count == 0)
