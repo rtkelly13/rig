@@ -114,7 +114,7 @@ shrink. Every value is reported at every size.
 |---|---|
 | 500 px and up | every threshold below |
 | 33 to 499 px (the 180 px avatar and apple-touch icon) | mean abs, RMSE, SSIM, composite and the promotion verdict; differing pixels reported, not gated |
-| 16 and 32 px (favicon entries) | nothing; every value reported (no promotion verdict takes these cuts as input) |
+| 16 and 32 px (favicon entries) | the promotion verdict only |
 
 The measurements behind the split: the macOS report in `results/results.md` has parquet favicon.16 at 0.5977 mean
 abs and 13.67% differing pixels, inside the thresholds below, so the favicon exception is a policy choice for small
@@ -123,8 +123,8 @@ cuts rather than a threshold breach measured there. A 1.43 mean abs figure for p
 `results.md`. At 180 px on Linux and Windows parquet differs on 24.1% of pixels with mean abs inside its limit.
 Neither is a visible fault, and neither flips a verdict.
 
-No promotion verdict takes a favicon cut as input (the gate scores master and candidate pairs), so at 16 and 32 px
-the cut is reported and cannot fail the gate; a divergence there is a finding for review.
+At 16 and 32 px the cross-check fails only when the two renderers reach a different promote or reject decision for
+the master and candidate the cut comes from; every pixel metric there is reported, not gated.
 
 | Quantity | Measured worst | Threshold |
 |---|---:|---:|
