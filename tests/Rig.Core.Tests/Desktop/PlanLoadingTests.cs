@@ -118,6 +118,25 @@ public sealed class PlanLoadingTests : IDisposable
     }
 
     [Fact]
+    public void A_machine_plan_rejects_a_duplicate_entry_on_a_desktop_its_flags_switch_off()
+    {
+        var path = Path.Join(_temp.Path, "plan.bundle.json");
+        PlanFiles.SaveBundle(
+            new WorkspacePlan
+            {
+                Desktops =
+                [
+                    new("Work") { Launch = [new("Notes") { Path = "/notes", Placement = new(1, new("full")) }] },
+                    new("Lab") { Feature = "lab", Launch = [new("Lab") { Path = "/lab" }, new("Lab") { Path = "/lab2" }] },
+                ],
+            },
+            path);
+
+        var error = Assert.Throws<InvalidPlanException>(() => PlanLoading.BuildMachinePlan(path, "/code/workspace", [new("lab", Default: false)]));
+        Assert.Contains("duplicate launch entry `Lab`", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_plan_with_no_desktops_is_refused()
     {
         var error = Assert.Throws<InvalidPlanException>(() =>
