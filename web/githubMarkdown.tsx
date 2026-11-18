@@ -118,6 +118,31 @@ function loadPele() {
   return peleLoading;
 }
 
+// Pele's palette variables and the design-system tokens that stand in for them.
+const PELE_TOKENS: Record<string, string> = {
+  bg: '--ds-surface-base',
+  fg: '--ds-text-primary',
+  muted: '--ds-text-muted',
+  line: '--ds-text-secondary',
+  surface: '--ds-surface-raised',
+  'surface-alt': '--ds-surface-sunken',
+  border: '--ds-border-strong',
+  accent: '--ds-accent-primary',
+};
+
+/**
+ * An SVG shown as an image cannot read the page's CSS variables, so Pele's
+ * `var(--pele-*, fallback)` colours are resolved to the current theme's tokens
+ * before encoding. Anything unmapped keeps Pele's own fallback.
+ */
+function themed(svg: string) {
+  const style = getComputedStyle(document.body);
+  return svg.replace(/var\(--pele-([a-z0-9-]+),([^)]*)\)/g, (_, name: string, fallback: string) => {
+    const token = PELE_TOKENS[name];
+    return (token && style.getPropertyValue(token).trim()) || fallback;
+  });
+}
+
 /**
  * Draws a Mermaid fence. The SVG comes from untrusted text, so it is shown as an
  * image: nothing inside an <img> SVG can run script or fetch anything. System
@@ -130,7 +155,7 @@ export function MermaidDiagram({ source, fallback }: { source: string; fallback:
     loadPele()
       .then((pele) => {
         const { svg } = pele.render(source, { fontFamily: 'system-ui, sans-serif' });
-        if (current) setState({ src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}` });
+        if (current) setState({ src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(themed(svg))}` });
       })
       .catch((error: unknown) => {
         if (current) setState({ error: error instanceof Error ? error.message : String(error) });

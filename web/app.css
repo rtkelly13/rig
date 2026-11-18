@@ -1877,8 +1877,6 @@ button:disabled {
   margin: 0;
   padding: 12px;
   border: 1px solid var(--ds-border-default);
-  /* Shown as an image, the SVG cannot read the page theme, so it keeps Pele's light palette. */
-  background: #fff;
 }
 .triage-prose .mermaid-error {
   color: var(--ds-intent-danger);
