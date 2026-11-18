@@ -3,6 +3,7 @@
     <Project Path="src/Rig.Cli/Rig.Cli.csproj" />
     <Project Path="src/Rig.Core/Rig.Core.csproj" />
     <Project Path="src/Rig.Image/Rig.Image.csproj" />
+    <Project Path="src/Rig.Image.Simplifier/Rig.Image.Simplifier.csproj" />
     <Project Path="src/Rig.Launcher/Rig.Launcher.csproj" />
     <Project Path="src/Rig.Web/Rig.Web.csproj" />
   </Folder>
