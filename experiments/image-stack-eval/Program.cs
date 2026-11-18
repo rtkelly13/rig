@@ -83,10 +83,17 @@ public static class Program
                 psi.ArgumentList.Add(a);
             }
 
+            File.Delete(output);
             sw.Restart();
             using var p = Process.Start(psi)!;
             await p.WaitForExitAsync();
             double seconds = sw.Elapsed.TotalSeconds;
+            if (p.ExitCode != 0)
+            {
+                Console.WriteLine($"{project}: vtracer exit {p.ExitCode}");
+                return p.ExitCode;
+            }
+
             string binding = Path.Combine(reference, "vtracer", $"{project}.binding.svg");
             bool exact = File.ReadAllBytes(binding).AsSpan().SequenceEqual(File.ReadAllBytes(output));
             static string[] Body(string path) => File.ReadAllLines(path).Where(l => !l.Contains("Generator:", StringComparison.Ordinal)).ToArray();
@@ -106,7 +113,7 @@ public static class Program
         string svg = Path.Combine(o["repo"], "assets", "rtkelly-labs", "rtkelly-labs.svg");
         var sw = Stopwatch.StartNew();
         await using ISvgRenderer r = o["stack"] == "1"
-            ? await PlaywrightRenderer.LaunchAsync(o["chromium"], Path.Combine(Path.GetTempPath(), "image-stack-eval-cold"))
+            ? await PlaywrightRenderer.LaunchAsync(o["chromium"], Path.Combine(o["repo"], "temp", "image-stack-eval-cold"))
             : new SvgSkiaRenderer();
         Raster raster = await r.RenderAsync(svg, 500);
         IRasterLibrary lib = o["stack"] == "2" ? new SkiaSharpLibrary(new SKSamplingOptions(SKCubicResampler.CatmullRom), "SkiaSharp") : new ImageSharpLibrary();

@@ -45,9 +45,9 @@ Measured on macOS arm64, .NET 10, the same Chromium (headless shell rev 1248) fo
 
 The SkiaSharp row also has a mipmap-resize variant (2b). Metric deltas in the table are the cubic variant unless
 stated. Every row's metrics are compared with Python's own float values: the control rows (C# metrics over Python
-PNGs) bound the error that is not the renderer: at most 0.014 RMSE percentage points and 0.00018 SSIM. That residual
-is the sum of the metric port, the resize and the JPEG decode of the second reference file; the harness does not
-separate them.
+PNGs) bound the error that is not the renderer, per raster library. ImageSharp: at most 0.014 RMSE percentage points
+and 0.00018 SSIM. SkiaSharp cubic: 0.288 and 0.00544. SkiaSharp mipmap: 0.062 and 0.00069. That residual is the sum
+of the metric port, the resize and the JPEG decode of the second reference file; the harness does not separate them.
 
 ### vtracer
 
@@ -75,9 +75,12 @@ The owner decided to support **both** renderers and use each to cross-check the 
 2. **SkiaSharp does all raster work on both** (amended; this item first chose ImageSharp): decode, PNG encode and
    ICO through SkiaSharp, and the `load_normalised` resize through `PillowResize`, a port of Pillow's separable
    resampling filters over SkiaSharp pixel buffers. Stack 2 lost to stack 3 only because SkiaSharp's own cubic and
-   mipmap filters are not Pillow's (composite error 0.46 against 0.042); a Pillow-exact resize removes that gap, so
-   SkiaSharp, already required by Svg.Skia, replaces ImageSharp and the pipeline carries one raster library with an
-   MIT licence instead of two.
+   mipmap filters are not Pillow's (composite error 0.46 against 0.042); a Pillow-exact resize is expected to remove
+   that gap, so SkiaSharp, already required by Svg.Skia, replaces ImageSharp and the pipeline carries one raster
+   library with an MIT licence instead of two. The controls measure decode, resize and metric-port error together,
+   so the gap counts as closed only once a parity run with `PillowResize` shows it; that run is a validation
+   criterion of the port's raster slice. ICO output: SkiaSharp encodes each entry's PNG (its ICO `Encode` returns
+   null) and `IcoFile.Write` assembles the multi-entry container with the 48, 32 and 16 px entries.
 3. **Chromium is authoritative** for promotion and for production cuts, because it is the only renderer that keeps
    byte-identity with today's output (0 differing pixels on all 23 renders). It needs a pinned Chromium revision
    in CI.
@@ -93,7 +96,8 @@ The owner decided to support **both** renderers and use each to cross-check the 
 6. **The experiment folder is deleted by the port's final slice.** `experiments/image-stack-eval/` is the
    measurement record and the seed code (`Metrics.cs`, `Stacks.cs`, `IcoFile.cs`); once the port has absorbed it,
    git is the record and the folder goes (see [ADR 0022](0022-csharp-is-rigs-primary-language.md) policy of deleting
-   replaced code).
+   replaced code). The slice first moves `results/results.md` to `docs/adr/0024-image-stack-results.md` and repoints
+   this ADR's two evidence links to it, so the evidence outlives the folder.
 7. **vtracer stays a pinned process**, release 0.6.4 (checksums above).
 
 This supersedes item 7 of [ADR 0022](0022-csharp-is-rigs-primary-language.md): `image_drift` moves to C#.
@@ -110,11 +114,17 @@ shrink. Every value is reported at every size.
 |---|---|
 | 500 px and up | every threshold below |
 | 33 to 499 px (the 180 px avatar and apple-touch icon) | mean abs, RMSE, SSIM, composite and the promotion verdict; differing pixels reported, not gated |
-| 16 and 32 px (favicon entries) | the promotion verdict only |
+| 16 and 32 px (favicon entries) | nothing; every value reported (no promotion verdict takes these cuts as input) |
 
-The measurements behind the split: at 16 and 32 px the renderers differ on more than 20% of pixels and by more
-than 1.0 mean abs (parquet favicon.16: 1.43). At 180 px on Linux and Windows parquet differs on 24.1% of pixels
-with mean abs inside its limit. Neither is a visible fault, and neither flips a verdict.
+The measurements behind the split: the macOS report in `results/results.md` has parquet favicon.16 at 0.5977 mean
+abs and 13.67% differing pixels, inside the thresholds below, so the favicon exception is a policy choice for small
+cuts rather than a threshold breach measured there. A 1.43 mean abs figure for parquet favicon.16 (with more than
+20% differing pixels at 16 and 32 px) was quoted from Linux and Windows runs that are not recorded in
+`results.md`. At 180 px on Linux and Windows parquet differs on 24.1% of pixels with mean abs inside its limit.
+Neither is a visible fault, and neither flips a verdict.
+
+No promotion verdict takes a favicon cut as input (the gate scores master and candidate pairs), so at 16 and 32 px
+the cut is reported and cannot fail the gate; a divergence there is a finding for review.
 
 | Quantity | Measured worst | Threshold |
 |---|---:|---:|
@@ -140,8 +150,9 @@ pixel-identical stack. The reasons stand and are why Chromium is authoritative.
 - It is the only stack that is pixel-identical to Python: 0 differing pixels on all 23 renders, because the
   renderer is the same Chromium. That covers the render path. The ICO path is not yet bit-exact: ImageSharp's
   Lanczos3 resize is within 2 levels of Pillow's, so `favicon.ico` entries below 48 px would change by a
-  rounding step unless the resize is matched exactly. [ADR 0009](0009-deterministic-svg-render-pipeline.md)'s
-  byte-identical guarantee is therefore met for renders and not yet for the 32 and 16 px icon entries.
+  rounding step unless the resize is matched exactly. The harness compares decoded RGBA pixels, not encoded PNG
+  bytes, so [ADR 0009](0009-deterministic-svg-render-pipeline.md)'s byte-identical guarantee is not yet shown for
+  renders or for the 32 and 16 px icon entries.
 - Svg.Skia is a different renderer. It differs on 3 to 14% of pixels (up to 76 levels at 180 px) and reproduces
   none of the committed cuts. No promotion verdict flips, so it would pass the current gate, but every production
   cut would change, which is the cost ADR 0022 named.

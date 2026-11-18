@@ -151,7 +151,14 @@ def main() -> int:
         def render(render_id: str, svg: Path, size: int) -> Path:
             png = out / "render" / f"{render_id}.png"
             seconds = _render(browser, svg, png, size, scratch)
-            renders.append({"id": render_id, "svg": str(svg.relative_to(ROOT)), "size": size, "seconds": seconds})
+            renders.append(
+                {
+                    "id": render_id,
+                    "svg": str(svg.relative_to(ROOT) if svg.is_relative_to(ROOT) else svg),
+                    "size": size,
+                    "seconds": seconds,
+                }
+            )
             return png
 
         for project, info in PROJECTS.items():

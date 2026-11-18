@@ -10,7 +10,7 @@ This directory houses technical, visual, and architectural experiments directly 
 |---|---|---|
 | **[C4 as OKF](c4-okf/README.md)** | C4 diagrams kept as an Open Knowledge Format bundle: zoom-in across documents, composition (fan-in, merged model, expand), level and refinement checks; rendered by vendored Pele. | `rig c4 check` · `rig web` → sidebar **C4 architecture**, or `/c4/` |
 | **Asset Drift Reconciler** | Deterministic vectorization, SSIM / PSNR / RMSE scoring, and decomposed luminance vs chrominance drift diagnostics. | `uv run --project tools/image-drift image-reconcile serve` |
-| **[C# image stack evaluation](image-stack-eval/README.md)** | ImageSharp, SkiaSharp, Svg.Skia and Playwright measured against image_drift (issue #317, ADR 0024). Not in `rig.slnx` or CI. | `dotnet run -p:OutputType=Exe --project experiments/image-stack-eval -- run` |
+| **[C# image stack evaluation](image-stack-eval/README.md)** | ImageSharp, SkiaSharp, Svg.Skia and Playwright measured against image_drift (issue #317, ADR 0024). Not in `rig.slnx` or CI. | Two steps (Python reference dump, then `run`); see [its README](image-stack-eval/README.md#run) |
 
 ---
 
