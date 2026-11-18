@@ -442,6 +442,52 @@ public sealed class OrcaLayoutTests : IDisposable
         Assert.Null((string?)_fake.Repos.Single(r => (string?)r["id"] == "r-Iceberg.NET")["projectGroupId"]);
     }
 
+    // ---------------------------------------------------------------- forks, whose remote in Orca is their upstream
+
+    [Fact]
+    public async Task A_registered_fork_is_matched_by_its_clone_and_moved_into_its_group()
+    {
+        _ = Directory.CreateDirectory(Path.Join(_code, "rtkelly-labs", "parquet-dotnet"));
+        _fake.Repos.Add(Repo("rtkelly-labs/parquet-dotnet", "aloneguid", null));
+        IReadOnlyList<DeclaredProject> declared = [.. Layout, Declared("parquet-dotnet", "rtkelly-labs", "rtkelly-labs")];
+        var log = new List<string>();
+
+        Assert.Contains((OrcaLayout.WrongGroup, "parquet-dotnet"), Kinds(await AuditAsync(declared)));
+        _ = await ApplyAsync(declared, log);
+
+        Assert.Contains("moved parquet-dotnet to rtkelly-labs", log);
+        Assert.DoesNotContain(log, line => line.StartsWith("registered parquet-dotnet", StringComparison.Ordinal));
+        Assert.Empty(await AuditAsync(declared));
+    }
+
+    [Fact]
+    public async Task Apply_registers_a_fork_once_and_places_it_in_the_same_run()
+    {
+        _ = Directory.CreateDirectory(Path.Join(_code, "rtkelly-labs", "parquet-dotnet"));
+        _fake.AddedOwner = "aloneguid";
+        IReadOnlyList<DeclaredProject> declared = [.. Layout, Declared("parquet-dotnet", "rtkelly-labs", "rtkelly-labs")];
+        var log = new List<string>();
+
+        _ = await ApplyAsync(declared, log);
+        var before = _fake.Calls.Count;
+        _ = await ApplyAsync(declared);
+
+        Assert.Contains("registered parquet-dotnet (Orca knows it as aloneguid/parquet-dotnet, so it is matched by path)", log);
+        Assert.Contains("moved parquet-dotnet to rtkelly-labs", log);
+        Assert.DoesNotContain(_fake.Calls.Skip(before), c => c.Method == "repo.add");
+        Assert.Empty(await AuditAsync(declared));
+    }
+
+    [Fact]
+    public async Task A_clone_registered_under_another_declared_remote_is_not_taken_by_path()
+    {
+        _ = Directory.CreateDirectory(Path.Join(_code, "rtkelly-labs", "parquet-dotnet"));
+        _fake.Repos.Add(FakeOrca.Project("r-pq", Posix("rtkelly-labs/parquet-dotnet"), "Diffra", "g-labs", "rtkelly-labs"));
+        IReadOnlyList<DeclaredProject> declared = [.. Layout, Declared("parquet-dotnet", "rtkelly-labs", "rtkelly-labs")];
+
+        Assert.Contains((OrcaLayout.Unregistered, "parquet-dotnet"), Kinds(await AuditAsync(declared)));
+    }
+
     private string Write(string name, string content)
     {
         var path = Path.Join(_temp.Path, name);
