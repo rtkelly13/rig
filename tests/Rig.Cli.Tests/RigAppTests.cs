@@ -1,5 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Rig.Cli.Agent;
 using Rig.Core;
 using Rig.Core.GitHub;
