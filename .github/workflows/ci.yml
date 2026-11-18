@@ -356,7 +356,7 @@ jobs:
         run: |
           set -euo pipefail
           for project in $PROJECTS; do
-            dotnet test --project "$project" --no-build -c Release --coverlet --coverlet-output-format json \
+            dotnet test --project "$project" --no-build -c Release --report-trx --coverlet --coverlet-output-format json \
               --coverlet-exclude-by-file "**/Microsoft.Interop.ComInterfaceGenerator/**" \
               --coverlet-exclude-by-file "**/Microsoft.Windows.CsWin32/**"
           done
@@ -367,6 +367,14 @@ jobs:
           name: dotnet-coverage-${{ matrix.shard }}
           path: TestResults/coverage.*.json
           retention-days: 1
+      # One TRX per test project: per-test durations, so a slow run names its slow tests.
+      - name: Upload test results
+        if: always() && hashFiles('TestResults/*.trx') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dotnet-trx-${{ matrix.shard }}
+          path: TestResults/*.trx
+          retention-days: 14
 
   # A ratchet: the floor never falls, must follow coverage up to 95%. It reads
   # every shard's report, so the split above cannot lower the measured number.
