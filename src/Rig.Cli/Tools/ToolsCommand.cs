@@ -42,9 +42,18 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         };
         var installPreview = PreviewOption();
         var installPort = PortOption();
-        var install = new Command("install", "Register and start a background service: a LaunchAgent, a logon task or a systemd user unit.") { target, installPreview, installPort };
+        var installLauncher = LauncherOption();
+        var installPythonw = PythonwOption();
+        var install = new Command("install", "Register and start a background service: a LaunchAgent, a logon task or a systemd user unit.")
+        {
+            target, installPreview, installPort, installLauncher, installPythonw,
+        };
         install.SetAction((parsed, cancellationToken) => InstallAsync(
-            parsed.GetRequiredValue(target), parsed.GetValue(installPreview), parsed.GetValue(installPort), cancellationToken));
+            parsed.GetRequiredValue(target),
+            parsed.GetValue(installPreview),
+            parsed.GetValue(installPort),
+            Launching(parsed.GetRequiredValue(installLauncher), parsed.GetValue(installPythonw)),
+            cancellationToken));
 
         var ensureTarget = new Argument<string>("target")
         {
@@ -52,9 +61,18 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         };
         var ensurePort = PortOption();
         var ensureTimeout = TimeoutOption();
-        var ensure = new Command("ensure", "Start a service only when its port is not answering, then wait until it is.") { ensureTarget, ensurePort, ensureTimeout };
+        var ensureLauncher = LauncherOption();
+        var ensurePythonw = PythonwOption();
+        var ensure = new Command("ensure", "Start a service only when its port is not answering, then wait until it is.")
+        {
+            ensureTarget, ensurePort, ensureTimeout, ensureLauncher, ensurePythonw,
+        };
         ensure.SetAction((parsed, cancellationToken) => EnsureAsync(
-            parsed.GetRequiredValue(ensureTarget), parsed.GetValue(ensurePort), parsed.GetValue(ensureTimeout), cancellationToken));
+            parsed.GetRequiredValue(ensureTarget),
+            parsed.GetValue(ensurePort),
+            parsed.GetValue(ensureTimeout),
+            Launching(parsed.GetRequiredValue(ensureLauncher), parsed.GetValue(ensurePythonw)),
+            cancellationToken));
 
         var uninstallTarget = new Argument<string>("target")
         {
@@ -88,15 +106,33 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     {
         var installPreview = PreviewOption();
         var installPort = PortOption();
-        var install = new Command("install", "Register and start the web dashboard (alias for `rig tools install web`).") { installPreview, installPort };
+        var installLauncher = LauncherOption();
+        var installPythonw = PythonwOption();
+        var install = new Command("install", "Register and start the web dashboard (alias for `rig tools install web`).")
+        {
+            installPreview, installPort, installLauncher, installPythonw,
+        };
         install.SetAction((parsed, cancellationToken) => InstallFixedAsync(
-            ServiceTarget.Web, parsed.GetValue(installPreview), parsed.GetValue(installPort), cancellationToken));
+            ServiceTarget.Web,
+            parsed.GetValue(installPreview),
+            parsed.GetValue(installPort),
+            Launching(parsed.GetRequiredValue(installLauncher), parsed.GetValue(installPythonw)),
+            cancellationToken));
 
         var ensurePort = PortOption();
         var ensureTimeout = TimeoutOption();
-        var ensure = new Command("ensure", "Start the web dashboard only when nothing answers, then wait (alias for `rig tools ensure web`).") { ensurePort, ensureTimeout };
+        var ensureLauncher = LauncherOption();
+        var ensurePythonw = PythonwOption();
+        var ensure = new Command("ensure", "Start the web dashboard only when nothing answers, then wait (alias for `rig tools ensure web`).")
+        {
+            ensurePort, ensureTimeout, ensureLauncher, ensurePythonw,
+        };
         ensure.SetAction((parsed, cancellationToken) => EnsureFixedAsync(
-            ServiceTarget.Web, parsed.GetValue(ensurePort), parsed.GetValue(ensureTimeout), cancellationToken));
+            ServiceTarget.Web,
+            parsed.GetValue(ensurePort),
+            parsed.GetValue(ensureTimeout),
+            Launching(parsed.GetRequiredValue(ensureLauncher), parsed.GetValue(ensurePythonw)),
+            cancellationToken));
 
         var uninstallPreview = PreviewOption();
         var uninstall = new Command("uninstall", "Unload and remove the web dashboard service (alias for `rig tools uninstall web`).") { uninstallPreview };
@@ -136,27 +172,46 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     private static Option<int?> PortOption() =>
         new("--port", "-p") { Description = "Port override for the service." };
 
+    private static Option<string> LauncherOption()
+    {
+        var option = new Option<string>("--launcher")
+        {
+            Description = "Windows: how the logon task starts rig. pythonw opens no window; direct needs no Python but flashes a console briefly.",
+            DefaultValueFactory = _ => "pythonw",
+        };
+        option.AcceptOnlyFromAmong("pythonw", "direct");
+        return option;
+    }
+
+    private static Option<string?> PythonwOption() =>
+        new("--pythonw") { Description = "Windows: the pythonw.exe that starts rig. Default: uv's managed Python." };
+
+    // The services as this install starts them: through the named pythonw, uv's (the host's default), or rig directly.
+    private ServiceHost Launching(string launcher, string? pythonw) => launcher == "direct"
+        ? services with { Pythonw = null }
+        : pythonw is null ? services : services with { Pythonw = _ => Task.FromResult<string?>(pythonw) };
+
     private static Option<double> TimeoutOption() =>
         new("--timeout") { Description = "Seconds to wait for the service to answer.", DefaultValueFactory = _ => DefaultTimeout.TotalSeconds };
 
-    private async Task<int> InstallAsync(string name, bool preview, int? port, CancellationToken cancellationToken)
+    private async Task<int> InstallAsync(string name, bool preview, int? port, ServiceHost launching, CancellationToken cancellationToken)
     {
         if (Target(name) is not { } target)
         {
             return Unknown(name);
         }
 
-        return await InstallFixedAsync(target, preview, port, cancellationToken).ConfigureAwait(false);
+        return await InstallFixedAsync(target, preview, port, launching, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<int> EnsureAsync(string name, int? port, double timeout, CancellationToken cancellationToken)
+    private async Task<int> EnsureAsync(string name, int? port, double timeout, ServiceHost launching, CancellationToken cancellationToken)
     {
         if (Target(name) is not { } target)
         {
             return Unknown(name);
         }
 
-        return await EnsureFixedAsync(target, port, timeout, cancellationToken).ConfigureAwait(false);
+        return await EnsureFixedAsync(target, port, timeout, launching, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<int> UninstallAsync(string name, bool preview, CancellationToken cancellationToken)
@@ -169,11 +224,11 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         return await UninstallFixedAsync(target, preview, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<int> InstallFixedAsync(ServiceTarget target, bool preview, int? port, CancellationToken cancellationToken)
+    private async Task<int> InstallFixedAsync(ServiceTarget target, bool preview, int? port, ServiceHost launching, CancellationToken cancellationToken)
     {
         try
         {
-            var result = await new ServiceManager(services).InstallAsync(target, preview, port, cancellationToken).ConfigureAwait(false);
+            var result = await new ServiceManager(launching).InstallAsync(target, preview, port, cancellationToken).ConfigureAwait(false);
             await output.WriteLineAsync(result.Message).ConfigureAwait(false);
             return 0;
         }
@@ -184,12 +239,12 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         }
     }
 
-    private async Task<int> EnsureFixedAsync(ServiceTarget target, int? port, double timeout, CancellationToken cancellationToken)
+    private async Task<int> EnsureFixedAsync(ServiceTarget target, int? port, double timeout, ServiceHost launching, CancellationToken cancellationToken)
     {
         var wait = TimeSpan.FromSeconds(timeout);
         try
         {
-            var answering = await new ServiceManager(services).EnsureAsync(target, port, wait, cancellationToken).ConfigureAwait(false);
+            var answering = await new ServiceManager(launching).EnsureAsync(target, port, wait, cancellationToken).ConfigureAwait(false);
             var effectivePort = target.Port(preview: false, port);
             if (!answering)
             {

@@ -84,15 +84,20 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
             return new(root, plan, rig);
         }
 
-        pythonw ??= await ManagedPythonw(proc, appData, cancellationToken).ConfigureAwait(false);
+        pythonw ??= await ManagedPythonwAsync(proc, appData, cancellationToken).ConfigureAwait(false);
         return File.Exists(pythonw)
             ? new(root, plan, rig, Path.GetFullPath(pythonw))
             : throw new InvalidOperationException($"pythonw is missing: {pythonw}. Pass --pythonw <path>, or --launcher direct to run without Python.");
     }
 
-    // uv's default managed Python, outside any project; its minor-version folder survives patch upgrades.
-    private static async Task<string> ManagedPythonw(IProc proc, string appData, CancellationToken cancellationToken)
+    /// <summary>
+    /// The <c>pythonw</c> beside uv's default managed Python, found outside any project from <paramref name="appData"/>;
+    /// its minor-version folder survives patch upgrades.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">uv has no managed Python.</exception>
+    public static async Task<string> ManagedPythonwAsync(IProc proc, string appData, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(proc);
         var found = await proc.RunAsync(new ProcRequest(["uv", "python", "find", "--managed-python", "--no-project"]) { WorkingDirectory = appData }, cancellationToken).ConfigureAwait(false);
         return found.OutOrEmpty.Length > 0 && Path.GetDirectoryName(found.OutOrEmpty) is { } folder
             ? Path.Join(folder, "pythonw.exe")

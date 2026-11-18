@@ -72,7 +72,8 @@ ships with rig. It starts rig with `CREATE_NO_WINDOW`, passes rig's exit code ba
 rig exits when the wrapper does: Task Scheduler stops only the process it started, so without it, stopping or
 reinstalling the Display Guard would leave the old guard running. `--pythonw <path>` picks the interpreter;
 otherwise `uv python find --managed-python --no-project` names it, whose minor-version folder outlives patch
-upgrades. `--detach-console` must come first; rig frees its console before anything else runs.
+upgrades. `--detach-console` must come first; rig frees its console before anything else runs. `rig tools install`
+takes the same two options for the dashboard's and the collector's logon tasks.
 
 There is no separate windowless executable. The earlier `rigw.exe` (rig built as a Windows app) was quarantined
 by CrowdStrike Falcon on every Release build, so it was removed.

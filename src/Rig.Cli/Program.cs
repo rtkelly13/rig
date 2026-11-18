@@ -138,7 +138,10 @@ internal static class Program
                 TimeProvider.System,
                 Task.Delay,
                 async ct => Launchd.GuiDomain(await KnowledgeServerCommand.UserIdAsync(proc, ct).ConfigureAwait(false)),
-                Environment.GetEnvironmentVariable("PATH")),
+                Environment.GetEnvironmentVariable("PATH"),
+                WindowsUserId(),
+                Path.Join(JobState.JobsDir(AppData.Current()), "temp"),
+                async ct => await JobsInstallTarget.ManagedPythonwAsync(proc, AppData.Current(), ct).ConfigureAwait(false)),
             new DatabaseToolHost(Path.Join(AppData.Current(), "rig.db"), Path.Join(AppData.Current(), "backups"), TimeProvider.System),
             Console.Out,
             Console.Error);
@@ -390,6 +393,10 @@ internal static class Program
     private static void OpenBrowser(Uri page) =>
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(page.AbsoluteUri) { UseShellExecute = true })?.Dispose();
 
+    // The user a scheduled task runs as: DOMAIN\user when the domain is known.
+    private static string WindowsUserId() =>
+        string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USERDOMAIN")) ? Environment.UserName : $"{Environment.GetEnvironmentVariable("USERDOMAIN")}\\{Environment.UserName}";
+
     // How to start this same rig again, for the background wrap-up follower.
     private static string[] SelfArgv()
     {
@@ -449,7 +456,7 @@ internal static class Program
             ShellWindow.WaitFor,
             Path.Join(AppData.Current(), "traces"),
             (launcher, pythonw, ct) => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, launcher, pythonw, ct),
-            () => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USERDOMAIN")) ? Environment.UserName : $"{Environment.GetEnvironmentVariable("USERDOMAIN")}\\{Environment.UserName}",
+            WindowsUserId,
             () => File.Exists(environment.Script("rig")) ? null : environment.Script("rig"));
     }
 }

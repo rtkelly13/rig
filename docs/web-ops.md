@@ -22,6 +22,12 @@ dashboard replaced the old `prs-to-review.md` checklist. `rig web install|ensure
 remain as aliases. `rig tools install mcp` runs the same host on port 8092 for its HTTP MCP transport,
 while `rig web mcp` keeps serving the tools over stdio for a local client.
 
+On Windows the logon task is registered from XML (`ServiceTaskXml`) and starts rig the way the jobs tasks do, with
+the same `--launcher pythonw|direct` and `--pythonw` options on `install` and `ensure` ([Launchers](desktop-manager/jobs.md#launchers)), so no
+console window stays open for the dashboard. A long-lived service (web, mcp) has no time limit and is restarted
+a minute after it fails, up to ten times; desktop and collector run once at sign-in. Install from the runtime copy
+(`rig` on PATH): the task runs the rig that installed it, in the folder it was installed from.
+
 ## How the pieces fit
 
 - Telemetry, the decisions feed, disk usage, trimming and the jobs coordinator are C# routes
