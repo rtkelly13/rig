@@ -18,7 +18,7 @@ public sealed class DecisionsTests : IDisposable
     private readonly TempDir _temp = new();
 
     // Eight days on, so every worktree made by the test is idle unless touched.
-    private readonly ManualClock _clock = new(DateTimeOffset.UtcNow.AddDays(8));
+    private readonly ManualClock _clock = new(TimeProvider.System.GetUtcNow().AddDays(8));
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 

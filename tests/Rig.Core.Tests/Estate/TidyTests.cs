@@ -23,7 +23,7 @@ public sealed class TidyTests : IDisposable
     private Tidy Tidy => new(Git, new TreeRemoval(Repos.Proc));
 
     private Task<RepoReport> InspectAsync(string repo, IReadOnlyDictionary<string, PullRequest>? heads = null, DateTimeOffset? now = null) =>
-        new RepoChecks(Git, new ManualClock(now ?? DateTimeOffset.UtcNow)).InspectAsync(repo, heads);
+        new RepoChecks(Git, new ManualClock(now ?? TimeProvider.System.GetUtcNow())).InspectAsync(repo, heads);
 
     private static RepoReport Only(string repo, params Finding[] findings) => new(repo, findings, 0, 0, 0);
 
@@ -187,7 +187,7 @@ public sealed class TidyTests : IDisposable
         var stale = Path.Join(repo, "temp", "old");
         _ = Directory.CreateDirectory(stale);
         await File.WriteAllTextAsync(Path.Join(stale, "f.txt"), "x", Token);
-        var report = await InspectAsync(repo, now: DateTimeOffset.UtcNow.AddDays(30));
+        var report = await InspectAsync(repo, now: TimeProvider.System.GetUtcNow().AddDays(30));
 
         var dry = await Tidy.CleanRepoAsync(report, cancellationToken: Token);
         var existedAfterDryRun = Directory.Exists(stale);

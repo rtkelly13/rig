@@ -129,7 +129,7 @@ public sealed class Telemetry : IDisposable
             query => ClickHouse(clickhouse, query),
             query => Files(roots, query),
             explorers.StatusAsync,
-            () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0,
+            () => TimeProvider.System.GetUtcNow().ToUnixTimeMilliseconds() / 1000.0,
             new Combined(clickhouseHttp, probeHttp));
     }
 
@@ -226,7 +226,7 @@ public sealed class Telemetry : IDisposable
 
     internal static IReadOnlyList<TraceView> Files(IReadOnlyList<string> roots, TraceQuery query)
     {
-        var cutoff = DateTimeOffset.UtcNow.AddDays(-query.Days);
+        var cutoff = TimeProvider.System.GetUtcNow().AddDays(-query.Days);
         var cutoffNs = (cutoff.UtcTicks - DateTime.UnixEpoch.Ticks) * 100;
         var spans = new Dictionary<(string TraceId, string SpanId), TraceSpanInfo>();
         foreach (var root in roots)

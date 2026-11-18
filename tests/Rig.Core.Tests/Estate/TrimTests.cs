@@ -209,7 +209,7 @@ public sealed class TrimTests : IDisposable
     [Fact]
     public void Unreadable_bookkeeping_counts_as_now()
     {
-        var clock = new ManualClock(DateTimeOffset.UtcNow.AddDays(30));
+        var clock = new ManualClock(TimeProvider.System.GetUtcNow().AddDays(30));
         var trim = new Trim(new Git(Repos.Proc, _temp.Path), clock);
 
         Assert.Equal(clock.Now, trim.LastActivity(_temp.Folder("no-git")));
@@ -252,7 +252,7 @@ public sealed class TrimTests : IDisposable
     {
         var (clone, worktree) = await CloneWithWorktreeAsync();
 
-        Assert.Empty(await new Trim(new Git(Repos.Proc, _temp.Path), new ManualClock(DateTimeOffset.UtcNow)).IdleWorktreesAsync(clone));
+        Assert.Empty(await new Trim(new Git(Repos.Proc, _temp.Path), new ManualClock(TimeProvider.System.GetUtcNow())).IdleWorktreesAsync(clone));
         _ = Assert.Single(await Idle().IdleWorktreesAsync(clone));
 
         _ = await Repos.GitAsync(clone, "worktree", "lock", worktree);
@@ -267,7 +267,7 @@ public sealed class TrimTests : IDisposable
         var item = Assert.Single(await Idle().ScanAsync(clone, floor: 1));
 
         Assert.Equal(string.Empty, await Idle().RecheckAsync(item));
-        Assert.Equal("worktree is in use again", await new Trim(new Git(Repos.Proc, _temp.Path), new ManualClock(DateTimeOffset.UtcNow)).RecheckAsync(item));
+        Assert.Equal("worktree is in use again", await new Trim(new Git(Repos.Proc, _temp.Path), new ManualClock(TimeProvider.System.GetUtcNow())).RecheckAsync(item));
         Assert.Equal("no longer regenerable output", await Idle().RecheckAsync(item with { Category = "tool caches" }));
 
         _ = Write("wt/node_modules/nested/.git", 1);
@@ -502,7 +502,7 @@ public sealed class TrimTests : IDisposable
 
     private static TreeRemoval Removal() => new(Repos.Proc);
 
-    private Trim Idle() => new(new Git(Repos.Proc, _temp.Path), new ManualClock(DateTimeOffset.UtcNow.AddDays(30)));
+    private Trim Idle() => new(new Git(Repos.Proc, _temp.Path), new ManualClock(TimeProvider.System.GetUtcNow().AddDays(30)));
 
     private async Task<(string Clone, string Worktree)> CloneWithWorktreeAsync()
     {

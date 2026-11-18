@@ -325,7 +325,7 @@ public sealed class McpTests
     public void File_traces_summarise_traces_filter_and_order_them()
     {
         using var dir = new TempDir();
-        var now = DateTimeOffset.UtcNow;
+        var now = TimeProvider.System.GetUtcNow();
         var start = (now.ToUnixTimeMilliseconds() * 1_000_000) - 1_000_000;
         var day = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         var path = Directory.CreateDirectory(Path.Join(dir.Path, "rig.proc")).FullName;

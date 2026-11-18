@@ -164,7 +164,7 @@ public sealed class TrimCache : IDisposable
             },
             (item, _) => trim.RecheckAsync(item),
             (item, cancellationToken) => Trim.RemoveAsync(item, removal, cancellationToken),
-            () => DateTimeOffset.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture));
+            () => TimeProvider.System.GetUtcNow().ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture));
 
     private bool Running()
     {

@@ -16,7 +16,7 @@ public sealed class BackfillReplayTests : IDisposable
     private readonly FakeClickHouse clickhouse = new();
     private readonly HttpClient http;
     private readonly FakeSender sender = new();
-    private readonly ManualClock clock = new(DateTimeOffset.UtcNow.AddHours(1));
+    private readonly ManualClock clock = new(TimeProvider.System.GetUtcNow().AddHours(1));
     private readonly Backfill backfill;
     private readonly string marks;
 
