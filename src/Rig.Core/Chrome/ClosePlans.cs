@@ -69,28 +69,9 @@ public static class ClosePlans
 {
     private static readonly ActivitySource Source = new("Rig.Chrome");
 
-    /// <summary>Orders the tab to keep first: the active tab, then a loaded one, then the leftmost in the oldest window.</summary>
-    public static IComparer<IPlacedTab> KeeperOrder { get; } = Comparer<IPlacedTab>.Create((left, right) =>
-    {
-        var bySelected = right.Tab.Selected.CompareTo(left.Tab.Selected);
-        if (bySelected != 0)
-        {
-            return bySelected;
-        }
-
-        var byLoaded = right.Tab.Loaded.CompareTo(left.Tab.Loaded);
-        if (byLoaded != 0)
-        {
-            return byLoaded;
-        }
-
-        var byAge = left.WindowAge.CompareTo(right.WindowAge);
-        return byAge != 0 ? byAge : left.Tab.Index.CompareTo(right.Tab.Index);
-    });
-
-    /// <summary>The first tab to keep of <paramref name="items"/>, by <see cref="KeeperOrder"/>.</summary>
+    /// <summary>The tab to keep of <paramref name="items"/>: the active tab, then a loaded one, then the leftmost in the oldest window.</summary>
     public static T Keeper<T>(IEnumerable<T> items)
-        where T : IPlacedTab => items.MinBy(item => (IPlacedTab)item, KeeperOrder)!;
+        where T : IPlacedTab => items.MinBy(item => (!item.Tab.Selected, !item.Tab.Loaded, item.WindowAge, item.Tab.Index))!;
 
     /// <summary><c>"2 in window 1"</c>: the tab's 1-based position and its window's number.</summary>
     public static string Describe(IPlacedTab item)
@@ -103,16 +84,11 @@ public static class ClosePlans
     public static IReadOnlyDictionary<long, ChromeTab> Activations(IEnumerable<IPlannedTabClose> closes)
     {
         ArgumentNullException.ThrowIfNull(closes);
-        var chosen = new Dictionary<long, ChromeTab>();
-        foreach (var close in closes)
-        {
-            if (close.Item.Tab.Selected && close.Keeper is { } keeper && keeper.WindowHandle == close.Item.Tab.WindowHandle)
-            {
-                chosen.TryAdd(keeper.WindowHandle, keeper);
-            }
-        }
-
-        return chosen;
+        return closes
+            .Where(close => close.Item.Tab.Selected && close.Keeper is { } keeper && keeper.WindowHandle == close.Item.Tab.WindowHandle)
+            .Select(close => close.Keeper!)
+            .DistinctBy(keeper => keeper.WindowHandle)
+            .ToDictionary(keeper => keeper.WindowHandle);
     }
 
     /// <summary>
@@ -137,23 +113,11 @@ public static class ClosePlans
         ArgumentNullException.ThrowIfNull(actions);
         var byWindow = plans.SelectMany(plan => plan.Closes).GroupBy(close => close.Item.Tab.WindowHandle)
             .ToDictionary(group => group.Key, group => group.ToList());
-        var known = new Dictionary<long, ChromeWindow>();
-        var handles = new List<long>();
-        foreach (var window in windows)
-        {
-            if (known.TryAdd(window.Handle, window))
-            {
-                handles.Add(window.Handle);
-            }
-            else
-            {
-                known[window.Handle] = window;
-            }
-        }
-
+        var all = windows.ToList();
+        var known = all.GroupBy(window => window.Handle).ToDictionary(group => group.Key, group => group.Last());
         var first = (order ?? []).Where(known.ContainsKey).Distinct().ToList();
         var applied = new List<AppliedClose>();
-        foreach (var handle in first.Concat(handles.Where(handle => !first.Contains(handle))))
+        foreach (var handle in first.Concat(all.Select(window => window.Handle).Distinct().Except(first)))
         {
             var window = known[handle];
             var results = new List<AppliedClose>();
@@ -187,14 +151,8 @@ public static class ClosePlans
     public static HeldPlan HoldUnattended(IEnumerable<IClosePlan> plans, long? foregroundHandle)
     {
         ArgumentNullException.ThrowIfNull(plans);
-        var kept = new List<IPlannedTabClose>();
-        var held = new List<IPlannedTabClose>();
-        foreach (var close in plans.SelectMany(plan => plan.Closes))
-        {
-            var tab = close.Item.Tab;
-            (tab.Selected || tab.WindowHandle == foregroundHandle ? held : kept).Add(close);
-        }
-
-        return new HeldPlan(kept, held);
+        var split = plans.SelectMany(plan => plan.Closes)
+            .ToLookup(close => close.Item.Tab.Selected || close.Item.Tab.WindowHandle == foregroundHandle);
+        return new HeldPlan([.. split[false]], [.. split[true]]);
     }
 }

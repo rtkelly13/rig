@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Rig.Core.Text;
@@ -129,7 +130,10 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
                 return Outcome(false, $"close refused: {reply}");
             }
 
-            var gone = WaitForRemoval(tab);
+            var gone = TryPoll(
+                () => _jxa.Snapshot().Windows.SelectMany(window => window.Tabs).Any(raw => raw.Id == tab.RuntimeId.Parts[0]) ? null : "gone",
+                StepTimeout,
+                out _);
             return Outcome(gone, gone ? "closed" : "invoked close but the tab is still present; a prompt may be open");
         }
         catch (ChromeMacException error)
@@ -277,19 +281,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
             return false;
         }
 
-        var started = _time.GetTimestamp();
-        while (ForegroundWindow() != handle)
-        {
-            var remaining = timeout - _time.GetElapsedTime(started);
-            if (remaining <= TimeSpan.Zero)
-            {
-                return false;
-            }
-
-            _sleep(remaining < PollInterval ? remaining : PollInterval);
-        }
-
-        return true;
+        return TryPoll(() => ForegroundWindow() == handle ? "front" : null, timeout, out _);
     }
 
     /// <inheritdoc/>
@@ -427,18 +419,13 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
                 }
 
                 // One header can be reached through several paths of the AX graph.
-                var headers = new Dictionary<long, AxNode>();
-                foreach (var node in MacRead.Walk(live.WindowNode))
-                {
-                    if (node.Role == "AXTabGroup"
-                        && TabNames.ParseGroupHeader(node.Name) == title
-                        && node.Identity == HeaderIdentity(tab.Group))
-                    {
-                        _ = headers.TryAdd(node.Identity, node);
-                    }
-                }
-
-                var header = Unique([.. headers.Values], "Native group header missing or ambiguous");
+                var header = Unique(
+                    [.. MacRead.Walk(live.WindowNode)
+                        .Where(node => node.Role == "AXTabGroup"
+                            && TabNames.ParseGroupHeader(node.Name) == title
+                            && node.Identity == HeaderIdentity(tab.Group))
+                        .DistinctBy(node => node.Identity)],
+                    "Native group header missing or ambiguous");
                 action.Open(header);
                 var bubble = Bubble(action.Ui, live.Pid, wait);
                 var chosen = Unique([.. MacRead.Walk(bubble).Where(node => node.Role == "AXButton" && node.Name == "Ungroup")], "Group editor Ungroup button missing or ambiguous");
@@ -446,7 +433,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
                 action.Press(chosen);
                 var confirmed = false;
 
-                bool? Finished()
+                string? Finished()
                 {
                     var windows = ListWindows();
                     var window = Window(windows, tab.WindowHandle);
@@ -479,7 +466,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
 
                     if (remaining.Count == 0)
                     {
-                        return true;
+                        return "ungrouped";
                     }
 
                     if (remaining.Count != members.Count
@@ -504,7 +491,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
                     return null;
                 }
 
-                _ = PollTrue(Finished, wait);
+                _ = Poll(Finished, wait);
                 return true;
             })
                 ? Outcome(true, "ungrouped")
@@ -912,13 +899,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
             return [];
         }
 
-        var menus = new List<AxNode>();
-        foreach (var child in tree.Children)
-        {
-            menus.AddRange(Menus(child));
-        }
-
-        return menus;
+        return [.. tree.Children.SelectMany(Menus)];
     }
 
     private AxNode Entry(MacUi ui, int pid, IReadOnlyList<string> names, TimeSpan timeout) =>
@@ -960,72 +941,40 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
         Poll(
             () =>
             {
-                var found = new Dictionary<long, AxNode>();
-                foreach (var node in MacRead.Walk(ui.ApplicationTree(pid)))
-                {
-                    if (node.Children.Any(child => child.Role == "AXTextField" && TitleFieldNames.Contains(child.Name, StringComparer.Ordinal)))
-                    {
-                        _ = found.TryAdd(node.Identity, node);
-                    }
-                }
-
-                return found.Count > 0 ? Unique([.. found.Values], "Group editor is ambiguous") : null;
+                var found = MacRead.Walk(ui.ApplicationTree(pid))
+                    .Where(node => node.Children.Any(child => child.Role == "AXTextField" && TitleFieldNames.Contains(child.Name, StringComparer.Ordinal)))
+                    .DistinctBy(node => node.Identity)
+                    .ToList();
+                return found.Count > 0 ? Unique(found, "Group editor is ambiguous") : null;
             },
             timeout);
 
     private T Poll<T>(Func<T?> query, TimeSpan timeout)
+        where T : class =>
+        TryPoll(query, timeout, out var found) ? found : throw new ChromeMacException(Failed);
+
+    private bool TryPoll<T>(Func<T?> query, TimeSpan timeout, [NotNullWhen(true)] out T? found)
         where T : class
     {
         var started = _time.GetTimestamp();
-        while (true)
+        while ((found = query()) is null)
         {
-            if (query() is { } found)
-            {
-                return found;
-            }
-
             var remaining = timeout - _time.GetElapsedTime(started);
             if (remaining <= TimeSpan.Zero)
             {
-                throw new ChromeMacException(Failed);
+                return false;
             }
 
             _sleep(remaining < PollInterval ? remaining : PollInterval);
         }
-    }
 
-    private bool PollTrue(Func<bool?> query, TimeSpan timeout)
-    {
-        var started = _time.GetTimestamp();
-        while (true)
-        {
-            if (query() is { } found)
-            {
-                return found;
-            }
-
-            var remaining = timeout - _time.GetElapsedTime(started);
-            if (remaining <= TimeSpan.Zero)
-            {
-                throw new ChromeMacException(Failed);
-            }
-
-            _sleep(remaining < PollInterval ? remaining : PollInterval);
-        }
+        return true;
     }
 
     private static List<AxNode> Innermost(IEnumerable<AxNode> nodes)
     {
-        var found = new Dictionary<long, AxNode>();
-        foreach (var node in nodes)
-        {
-            _ = found.TryAdd(node.Identity, node);
-        }
-
-        return
-        [
-            .. found.Values.Where(node => !MacRead.Walk(node).Any(inner => inner.Identity != node.Identity && found.ContainsKey(inner.Identity))),
-        ];
+        var found = nodes.DistinctBy(node => node.Identity).ToDictionary(node => node.Identity);
+        return [.. found.Values.Where(node => !MacRead.Walk(node).Any(inner => inner.Identity != node.Identity && found.ContainsKey(inner.Identity)))];
     }
 
     private static bool Dialog(AxNode node) =>
@@ -1057,27 +1006,6 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
         var label = suffix.Length > 0 ? name[..^suffix.Length] : name;
         var title = active.Title.Replace("\n", string.Empty, StringComparison.Ordinal);
         return label == title || (label.EndsWith('…') && label.Length > 4 && title.StartsWith(label[..^1], StringComparison.Ordinal));
-    }
-
-    private bool WaitForRemoval(ChromeTab tab)
-    {
-        var started = _time.GetTimestamp();
-        while (true)
-        {
-            var present = _jxa.Snapshot().Windows.SelectMany(window => window.Tabs).Any(raw => raw.Id == tab.RuntimeId.Parts[0]);
-            if (!present)
-            {
-                return true;
-            }
-
-            var remaining = StepTimeout - _time.GetElapsedTime(started);
-            if (remaining <= TimeSpan.Zero)
-            {
-                return false;
-            }
-
-            _sleep(remaining < PollInterval ? remaining : PollInterval);
-        }
     }
 
     [GeneratedRegex(@" – \d+ tabs?\b")]

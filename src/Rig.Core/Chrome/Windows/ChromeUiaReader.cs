@@ -113,45 +113,23 @@ public sealed class ChromeUiaReader
     /// <summary>Top-level Chrome browser-process windows with a title, on every desktop, in z-order.</summary>
     public IReadOnlyList<long> BrowserWindows()
     {
-        var names = new Dictionary<int, string?>();
-        var handles = new List<long>();
-        foreach (var handle in _win32.TopLevelWindows())
-        {
-            if (_win32.ClassName(handle) != WindowClass || UnicodeText.Strip(_win32.Title(handle) ?? string.Empty).Length == 0)
-            {
-                continue;
-            }
-
-            var pid = _win32.ProcessIdOf(handle);
-            if (!names.TryGetValue(pid, out var name))
-            {
-                name = _inventory.ProcessDetailsOf(pid).Name;
-                names[pid] = name;
-            }
-
-            if (string.Equals(name, ProcessName, StringComparison.OrdinalIgnoreCase))
-            {
-                handles.Add(handle);
-            }
-        }
-
-        return handles;
+        var titled = _win32.TopLevelWindows()
+            .Where(handle => _win32.ClassName(handle) == WindowClass && UnicodeText.Strip(_win32.Title(handle) ?? string.Empty).Length > 0)
+            .ToList();
+        var chromePids = titled
+            .Select(_win32.ProcessIdOf)
+            .Distinct()
+            .Where(pid => string.Equals(_inventory.ProcessDetailsOf(pid).Name, ProcessName, StringComparison.OrdinalIgnoreCase))
+            .ToHashSet();
+        return [.. titled.Where(handle => chromePids.Contains(_win32.ProcessIdOf(handle)))];
     }
 
     /// <summary>Every Chrome browser window with its tabs, oldest first.</summary>
-    public IReadOnlyList<ChromeWindow> ListWindows()
-    {
-        var windows = new List<ChromeWindow>();
-        foreach (var (handle, index) in BrowserWindows().Select((handle, index) => (handle, index)))
-        {
-            if (ReadWindow(handle, index) is { } window)
-            {
-                windows.Add(window);
-            }
-        }
-
-        return [.. windows.OrderBy(window => window.AgeRank).ThenBy(window => window.Handle)];
-    }
+    public IReadOnlyList<ChromeWindow> ListWindows() =>
+        [.. BrowserWindows()
+            .Select((handle, index) => ReadWindow(handle, index))
+            .OfType<ChromeWindow>()
+            .OrderBy(window => window.AgeRank).ThenBy(window => window.Handle)];
 
     /// <summary>
     /// One window afresh, as <see cref="ListWindows"/> reads it (its age rank aside); null when it has gone or will not
@@ -225,21 +203,12 @@ public sealed class ChromeUiaReader
     public static (IUiaElement View, IUiaElement Header)? GroupHeader(IUiaElement tab)
     {
         ArgumentNullException.ThrowIfNull(tab);
-        var parent = tab.Parent(UiaView.Raw);
-        if (parent is null || parent.ClassName != GroupViewClass)
+        if (tab.Parent(UiaView.Raw) is not { ClassName: GroupViewClass } parent)
         {
             return null;
         }
 
-        for (var child = parent.FirstChild(UiaView.Raw); child is not null; child = child.NextSibling(UiaView.Raw))
-        {
-            if (child.ClassName == GroupHeaderClass)
-            {
-                return (parent, child);
-            }
-        }
-
-        return null;
+        return ChildrenOf(parent, UiaView.Raw).FirstOrDefault(child => child.ClassName == GroupHeaderClass) is { } header ? (parent, header) : null;
     }
 
     private ChromeWindow? ReadWindow(long handle, int enumIndex) =>
@@ -276,14 +245,12 @@ public sealed class ChromeUiaReader
     private static WindowRect? ToWindowRect(Rect? rect) =>
         rect is null ? null : new WindowRect(rect.Left, rect.Top, rect.Left + rect.Width, rect.Top + rect.Height);
 
-    private static List<ChromeTab> ReadTabs(long handle, IUiaElement strip)
-    {
-        var tabs = new List<ChromeTab>();
-        foreach (var (element, index) in strip.FindAll(UiaScope.Descendants, TabCondition).Select((element, index) => (element, index)))
+    private static List<ChromeTab> ReadTabs(long handle, IUiaElement strip) =>
+        [.. strip.FindAll(UiaScope.Descendants, TabCondition).Select((element, index) =>
         {
             var name = element.Name;
             var parsed = TabNames.Parse(name);
-            tabs.Add(new ChromeTab(
+            return new ChromeTab(
                 new RuntimeId(element.RuntimeId),
                 handle,
                 index,
@@ -297,10 +264,15 @@ public sealed class ChromeUiaReader
                 Alerts = parsed.Alerts,
                 MemoryMb = parsed.MemoryMb,
                 Group = GroupOf(element),
-            });
-        }
+            };
+        })];
 
-        return tabs;
+    private static IEnumerable<IUiaElement> ChildrenOf(IUiaElement parent, UiaView view = UiaView.Control)
+    {
+        for (var child = parent.FirstChild(view); child is not null; child = child.NextSibling(view))
+        {
+            yield return child;
+        }
     }
 
     /// <summary>Breadth-first search for a browser view by class that never descends into web content.</summary>
@@ -339,15 +311,8 @@ public sealed class ChromeUiaReader
     /// </summary>
     private static long AgeRank(IUiaElement root, int enumIndex)
     {
-        for (var child = root.FirstChild(); child is not null; child = child.NextSibling())
-        {
-            if (child.ClassName == RootViewClass && child.RuntimeId is { Count: > 0 } id)
-            {
-                return id[^1];
-            }
-        }
-
-        return UnrankedAge + enumIndex;
+        var ids = ChildrenOf(root).Where(child => child.ClassName == RootViewClass).Select(child => child.RuntimeId);
+        return ids.FirstOrDefault(id => id.Count > 0) is { } found ? found[^1] : UnrankedAge + enumIndex;
     }
 
     /// <summary>Pinned tabs sit in a <c>PinnedTabContainerView</c> (vertical strip) between the tab and the strip.</summary>

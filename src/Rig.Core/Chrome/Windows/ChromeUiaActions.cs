@@ -25,7 +25,13 @@ namespace Rig.Core.Chrome.Windows;
 /// invoked: that reopens the group with its old tabs.
 /// </para>
 /// </remarks>
-public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGroupActions
+public sealed partial class ChromeUiaActions(
+    ChromeUiaReader reader,
+    IUiAutomation uia,
+    IWin32Windows win32,
+    IWin32Actions input,
+    TimeProvider? clock = null,
+    Action<TimeSpan>? sleep = null) : IChromeTabActions, IChromeSavedGroupActions
 {
     /// <summary>The accessible names Chrome gives a tab's close button. English only.</summary>
     public static readonly IReadOnlySet<string> CloseButtonNames = new HashSet<string>(StringComparer.Ordinal) { "Close" };
@@ -42,29 +48,8 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     private static readonly UiaCondition CloseButtonCondition = new(UiaControlType.Button, CloseButtonClass);
     private static readonly HashSet<string> SavedConfirmNames = new(StringComparer.Ordinal) { "delete group", "delete" };
 
-    private readonly ChromeUiaReader _reader;
-    private readonly IUiAutomation _uia;
-    private readonly IWin32Windows _win32;
-    private readonly IWin32Actions _input;
-    private readonly TimeProvider _clock;
-    private readonly Action<TimeSpan> _sleep;
-
-    /// <summary>Creates the actions over a reader of the same session: one per command.</summary>
-    public ChromeUiaActions(
-        ChromeUiaReader reader,
-        IUiAutomation uia,
-        IWin32Windows win32,
-        IWin32Actions input,
-        TimeProvider? clock = null,
-        Action<TimeSpan>? sleep = null)
-    {
-        _reader = reader;
-        _uia = uia;
-        _win32 = win32;
-        _input = input;
-        _clock = clock ?? TimeProvider.System;
-        _sleep = sleep ?? Thread.Sleep;
-    }
+    private readonly TimeProvider _clock = clock ?? TimeProvider.System;
+    private readonly Action<TimeSpan> _sleep = sleep ?? Thread.Sleep;
 
     /// <summary>The pause between probes while waiting on Chrome.</summary>
     public static TimeSpan PollInterval { get; } = TimeSpan.FromMilliseconds(50);
@@ -81,7 +66,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     /// <summary>Selects the tab; false when it has gone.</summary>
     public bool SelectTab(ChromeTab tab)
     {
-        if (_reader.FindTabElement(tab) is not { } element)
+        if (reader.FindTabElement(tab) is not { } element)
         {
             return false;
         }
@@ -105,7 +90,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         var started = _clock.GetTimestamp();
         CloseOutcome Outcome(bool closed, string detail) => new(closed, detail, _clock.GetElapsedTime(started));
 
-        if (_reader.FindTabElement(tab) is not { } element)
+        if (reader.FindTabElement(tab) is not { } element)
         {
             return Outcome(false, "tab no longer present");
         }
@@ -137,7 +122,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         var gone = PollUntil(
             () =>
             {
-                if (_reader.FindTabElement(tab) is null)
+                if (reader.FindTabElement(tab) is null)
                 {
                     return true;
                 }
@@ -205,7 +190,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
             return Outcome(false, $"the only saved copy of {QuotedText.Str(title)}; kept");
         }
 
-        var pid = _win32.ProcessIdOf(handle);
+        var pid = win32.ProcessIdOf(handle);
         if (!MenusClosed(pid, wait))
         {
             return Outcome(false, "a menu from the previous step is still open");
@@ -228,17 +213,34 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         }
 
         found.Invoke();
+        if (PollConfirming(() => Copies().Count < before.Count, () => ConfirmButton(handle, SavedConfirmNames), SavedDeleteTimeout))
+        {
+            return Outcome(true, "deleted");
+        }
+
+        if (PopupElements(pid, UiaControlType.MenuItem).Count > 0)
+        {
+            PressEscape();
+        }
+
+        return Outcome(false, $"saved group {QuotedText.Str(title)} is still on the bar");
+    }
+
+    // Chrome ignores a dialog's buttons for a moment after it appears, and treats presses closer together than a
+    // double-click as accidental, so the confirm is pressed only once the dialog has settled, and retried no faster.
+    private bool PollConfirming(Func<bool> done, Func<IUiaElement?> confirmButton, TimeSpan timeout)
+    {
         long? seenAt = null;
         long? pressedAt = null;
-        var gone = PollUntil(
+        return PollUntil(
             () =>
             {
-                if (Copies().Count < before.Count)
+                if (done())
                 {
                     return true;
                 }
 
-                if (ConfirmButton(handle, SavedConfirmNames) is not { } confirm)
+                if (confirmButton() is not { } confirm)
                 {
                     return false;
                 }
@@ -255,24 +257,13 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
                     }
                     catch (UiaException)
                     {
-                        // The dialog went as it was pressed; the next probe sees whether the chip went with it.
+                        // The dialog went as it was pressed; the next probe sees whether the target went with it.
                     }
                 }
 
                 return false;
             },
-            SavedDeleteTimeout);
-        if (!gone)
-        {
-            if (PopupElements(pid, UiaControlType.MenuItem).Count > 0)
-            {
-                PressEscape();
-            }
-
-            return Outcome(false, $"saved group {QuotedText.Str(title)} is still on the bar");
-        }
-
-        return Outcome(true, "deleted");
+            timeout);
     }
 
     /// <summary>
@@ -282,11 +273,11 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     public IReadOnlyList<IUiaElement> PopupElements(int pid, UiaControlType type)
     {
         var found = new List<IUiaElement>();
-        foreach (var handle in _win32.TopLevelWindows())
+        foreach (var handle in win32.TopLevelWindows())
         {
-            var ours = _win32.IsVisible(handle) && _win32.ProcessIdOf(handle) == pid;
-            var browser = _win32.ClassName(handle) == ChromeUiaReader.WindowClass
-                && UnicodeText.Strip(_win32.Title(handle) ?? string.Empty).Length > 0;
+            var ours = win32.IsVisible(handle) && win32.ProcessIdOf(handle) == pid;
+            var browser = win32.ClassName(handle) == ChromeUiaReader.WindowClass
+                && UnicodeText.Strip(win32.Title(handle) ?? string.Empty).Length > 0;
             if (!ours || browser)
             {
                 continue;
@@ -294,7 +285,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
 
             try
             {
-                if (_uia.ElementFromHandle(handle) is { } root)
+                if (uia.ElementFromHandle(handle) is { } root)
                 {
                     found.AddRange(root.FindAll(UiaScope.Subtree, new UiaCondition(type)));
                 }
@@ -326,11 +317,11 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     public IUiaElement? ConfirmButton(long handle, IReadOnlySet<string> names)
     {
         ArgumentNullException.ThrowIfNull(names);
-        foreach (var host in (IEnumerable<long>)[handle, .. _win32.ChildWindows(handle)])
+        foreach (var host in (IEnumerable<long>)[handle, .. win32.ChildWindows(handle)])
         {
             try
             {
-                if (_uia.ElementFromHandle(host)?.FindFirst(UiaScope.Descendants, new UiaCondition(UiaControlType.Window)) is not { } dialog)
+                if (uia.ElementFromHandle(host)?.FindFirst(UiaScope.Descendants, new UiaCondition(UiaControlType.Window)) is not { } dialog)
                 {
                     continue;
                 }
@@ -356,7 +347,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         PollUntil(() => PopupElements(pid, UiaControlType.MenuItem).Count == 0, timeout);
 
     /// <summary>Presses Escape, which closes an open menu or bubble.</summary>
-    public void PressEscape() => _ = _input.SendKeys(KeyEvent.Tap(EscapeKey));
+    public void PressEscape() => _ = input.SendKeys(KeyEvent.Tap(EscapeKey));
 
     /// <summary><paramref name="probe"/> until it answers, or null once <paramref name="timeout"/> has passed.</summary>
     public T? Poll<T>(Func<T?> probe, TimeSpan timeout)
@@ -399,11 +390,11 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     /// <summary>Closing a group's last tab asks first, in a bubble of its own; the group would be left empty, so confirm.</summary>
     private void ConfirmGroupDelete(long handle)
     {
-        foreach (var host in _win32.ChildWindows(handle))
+        foreach (var host in win32.ChildWindows(handle))
         {
             try
             {
-                if (_uia.ElementFromHandle(host)?.FindFirst(UiaScope.Children, new UiaCondition(ClassName: DialogRootClass)) is not { } dialog)
+                if (uia.ElementFromHandle(host)?.FindFirst(UiaScope.Children, new UiaCondition(ClassName: DialogRootClass)) is not { } dialog)
                 {
                     continue;
                 }
@@ -428,7 +419,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         IUiaElement? bar;
         try
         {
-            bar = _uia.ElementFromHandle(handle) is { } root ? ChromeUiaReader.FindView(root, SavedBarClass) : null;
+            bar = uia.ElementFromHandle(handle) is { } root ? ChromeUiaReader.FindView(root, SavedBarClass) : null;
         }
         catch (UiaException)
         {
