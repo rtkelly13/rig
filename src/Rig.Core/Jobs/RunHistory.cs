@@ -61,14 +61,16 @@ public static partial class RunHistory
 
     /// <summary>
     /// The newest <paramref name="limit"/> runs recorded under <paramref name="directory"/>, newest first, optionally of
-    /// one job. A line that is not a complete record is skipped.
+    /// one job. A line that is not a complete, correctly typed record is skipped, and <paramref name="problem"/> hears
+    /// <c>path:line: $.json.path: expected X, found Y</c> for it.
     /// </summary>
-    public static IReadOnlyList<JobRun> ReadRuns(string directory, string? job = null, int limit = 200)
+    public static IReadOnlyList<JobRun> ReadRuns(string directory, string? job = null, int limit = 200, Action<string>? problem = null)
     {
+        var file = Path.Join(directory, HistoryName);
         string text;
         try
         {
-            text = File.ReadAllText(Path.Join(directory, HistoryName), Encoding.UTF8);
+            text = File.ReadAllText(file, Encoding.UTF8);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -76,9 +78,26 @@ public static partial class RunHistory
         }
 
         var found = new List<JobRun>();
-        foreach (var line in UnicodeText.SplitLines(text).Reverse())
+        var lines = UnicodeText.SplitLines(text);
+        for (var index = lines.Count - 1; index >= 0; index--)
         {
-            if (line.Trim().Length == 0 || ReadRun(line) is not { } run || (job is not null && run.Job != job))
+            if (lines[index].Trim().Length == 0)
+            {
+                continue;
+            }
+
+            JobRun run;
+            try
+            {
+                run = JsonProblem.Run($"{file}:{index + 1}", () => ReadRun(lines[index]));
+            }
+            catch (JsonInputException e)
+            {
+                problem?.Invoke(e.Message);
+                continue;
+            }
+
+            if (job is not null && run.Job != job)
             {
                 continue;
             }
@@ -175,7 +194,7 @@ public static partial class RunHistory
     }
 
     /// <summary>
-    /// <paramref name="run"/> as pydantic writes a <c>JobRun</c>: compact, fields in order, non-ASCII kept.
+    /// <paramref name="run"/> as the history keeps a <c>JobRun</c>: compact, fields in order, non-ASCII kept.
     /// </summary>
     public static string Line(JobRun run)
     {
@@ -195,36 +214,45 @@ public static partial class RunHistory
         return text.ToString();
     }
 
-    // pydantic's _StoredRun: job, run_id, started, seconds and trigger must be there and typed; the rest are Lenient.
-    private static JobRun? ReadRun(string line)
+    // A stored run: job, run_id, started, seconds and trigger must be there and typed; returncode, error, output and the trace ids may
+    // be absent or null, and are otherwise a whole number or a string. Fields nothing reads are ignored.
+    private static JobRun ReadRun(string line)
     {
-        try
+        using var document = JsonDocument.Parse(line);
+        var stored = document.RootElement;
+        if (stored.ValueKind != JsonValueKind.Object)
         {
-            using var document = JsonDocument.Parse(line);
-            var stored = document.RootElement;
-            if (stored.ValueKind != JsonValueKind.Object
-                || JsonShape.Text(stored, "job") is not { } job
-                || JsonShape.Text(stored, "run_id") is not { } runId
-                || JsonShape.Text(stored, "started") is not { } started
-                || !stored.TryGetProperty("seconds", out var seconds)
-                || seconds.ValueKind != JsonValueKind.Number
-                || !seconds.TryGetDouble(out var value)
-                || JsonShape.Text(stored, "trigger") is not { } trigger)
-            {
-                return null;
-            }
+            throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(stored));
+        }
 
-            return new JobRun(job, runId, started, value, JsonShape.StrictInteger(stored, "returncode"), trigger, JsonShape.Text(stored, "error"), JsonShape.Text(stored, "output") ?? string.Empty)
-            {
-                TraceId = JsonShape.Text(stored, "trace_id") ?? string.Empty,
-                SpanId = JsonShape.Text(stored, "span_id") ?? string.Empty,
-            };
-        }
-        catch (JsonException)
+        return new JobRun(
+            RequiredText(stored, "job"),
+            RequiredText(stored, "run_id"),
+            RequiredText(stored, "started"),
+            Seconds(stored),
+            Present(stored, "returncode") is null ? null : JsonProblem.WholeNumber(stored, "returncode", "$"),
+            RequiredText(stored, "trigger"),
+            Present(stored, "error") is null ? null : JsonProblem.OptionalString(stored, "error", "$"),
+            OptionalText(stored, "output") ?? string.Empty)
         {
-            return null;
-        }
+            TraceId = OptionalText(stored, "trace_id") ?? string.Empty,
+            SpanId = OptionalText(stored, "span_id") ?? string.Empty,
+        };
     }
+
+    private static JsonElement? Present(JsonElement stored, string key) =>
+        stored.TryGetProperty(key, out var value) && value.ValueKind != JsonValueKind.Null ? value : null;
+
+    private static string RequiredText(JsonElement stored, string key) =>
+        JsonProblem.OptionalString(stored, key, "$") ?? throw JsonProblem.Expected(JsonProblem.Child("$", key), "a string", "nothing");
+
+    private static string? OptionalText(JsonElement stored, string key) =>
+        Present(stored, key) is null ? null : JsonProblem.OptionalString(stored, key, "$");
+
+    private static double Seconds(JsonElement stored) =>
+        Present(stored, "seconds") is { ValueKind: JsonValueKind.Number } value && value.TryGetDouble(out var seconds)
+            ? seconds
+            : throw JsonProblem.Expected(JsonProblem.Child("$", "seconds"), "a number", stored.TryGetProperty("seconds", out var found) ? JsonProblem.Describe(found) : "nothing");
 
     // serde_json's escaping: the quote, the backslash and control characters; everything else as itself.
     private static string Quote(string value)

@@ -302,30 +302,27 @@
       }
     },
     {
-      "name": "truthy-flags",
+      "name": "strict-flags",
       "lines": [
-        "{\"type\": \"user\", \"message\": {\"content\": \"zero is false\"}, \"isMeta\": 0, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
-        "{\"type\": \"user\", \"message\": {\"content\": \"empty string is false\"}, \"isMeta\": \"\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
-        "{\"type\": \"user\", \"message\": {\"content\": \"empty list is false\"}, \"isMeta\": [], \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
-        "{\"type\": \"user\", \"message\": {\"content\": \"empty object is false\"}, \"isMeta\": {}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
-        "{\"type\": \"user\", \"message\": {\"content\": \"null is false\"}, \"isMeta\": null, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
-        "{\"type\": \"user\", \"message\": {\"content\": \"string is true\"}, \"isMeta\": \"yes\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
-        "{\"type\": \"user\", \"message\": {\"content\": \"number is true\"}, \"isMeta\": 2, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
-        "{\"type\": \"user\", \"message\": {\"content\": \"list is true\"}, \"isMeta\": [0], \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
-        "{\"type\": \"user\", \"message\": {\"content\": \"object is true\"}, \"isCompactSummary\": {\"a\": 1}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+        "{\"type\": \"user\", \"message\": {\"content\": \"false is a prompt\"}, \"isMeta\": false, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"true is meta\"}, \"isMeta\": true, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"zero is not a boolean\"}, \"isMeta\": 0, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"string is not a boolean\"}, \"isMeta\": \"yes\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"null is not a boolean\"}, \"isMeta\": null, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"compact summary\"}, \"isCompactSummary\": true, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
       ],
       "expected": {
-        "session_id": "truthy-flags",
+        "session_id": "strict-flags",
         "start_cwd": "/code",
         "last_cwd": "/code",
         "title": null,
-        "first_prompt": "zero is false",
-        "prompt_count": 5,
+        "first_prompt": "false is a prompt",
+        "prompt_count": 1,
         "last_activity": "2026-10-01T10:05:00.250000+00:00",
         "exit_kind": "crashed",
         "interactive": true,
         "turn_state": "unanswered",
-        "label": "zero is false"
+        "label": "false is a prompt"
       }
     },
     {
@@ -443,7 +440,7 @@
         "\"a string\"",
         "null",
         "{\"type\": \"user\", \"message\": {\"content\": \"truncated",
-        "{\"type\": 3, \"cwd\": \"/ignored-type-still-reads-cwd\"}",
+        "{\"type\": 3, \"cwd\": \"/ignored-wrong-type-line\"}",
         "{\"type\": \"user\", \"message\": \"not an object\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
         "{\"type\": \"user\", \"message\": {\"content\": 7}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
         "{\"type\": \"user\", \"message\": {\"content\": [\"not a block\", 5, null, {\"type\": 9, \"text\": 4}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
@@ -453,8 +450,8 @@
       ],
       "expected": {
         "session_id": "misshapen-lines",
-        "start_cwd": "/ignored-type-still-reads-cwd",
-        "last_cwd": "/ignored-type-still-reads-cwd",
+        "start_cwd": null,
+        "last_cwd": null,
         "title": null,
         "first_prompt": "typed ünïcode ✓",
         "prompt_count": 1,

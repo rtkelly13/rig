@@ -55,7 +55,11 @@ public interface IWorkFolderProbe
 /// <summary>The sessions a scan found, and how many transcripts it read.</summary>
 /// <param name="Sessions">The classified sessions.</param>
 /// <param name="TranscriptsRead">How many transcript files were read.</param>
-public sealed record SessionScan(IReadOnlyList<SessionFacts> Sessions, int TranscriptsRead);
+public sealed record SessionScan(IReadOnlyList<SessionFacts> Sessions, int TranscriptsRead)
+{
+    /// <summary>The transcript lines that were skipped, each as <c>path:line: $.json.path: expected X, found Y</c>.</summary>
+    public IReadOnlyList<string> Problems { get; init; } = [];
+}
 
 /// <summary>A directory probe over the real filesystem, with the session-store resolver supplied by the caller.</summary>
 /// <param name="resolveUnknown">Reads the repo and branch a directory outside the estate belongs to.</param>

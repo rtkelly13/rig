@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -76,16 +75,7 @@ public static class JobsRoutes
                 return OpsJson.Error(StatusCodes.Status400BadRequest, "A JSON request body is required");
             }
 
-            JobRunRequest request;
-            try
-            {
-                request = JsonSerializer.Deserialize<JobRunRequest>(body, OpsJson.Boundary)
-                    ?? throw new JsonException("The request body must be a JSON object");
-            }
-            catch (JsonException ex)
-            {
-                return OpsJson.Error(StatusCodes.Status400BadRequest, $"Invalid JSON request body: {ex.Message}");
-            }
+            var request = OpsJson.Read<JobRunRequest>(body);
 
             if (request.Job is { Length: 0 })
             {

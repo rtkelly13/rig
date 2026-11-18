@@ -207,7 +207,7 @@ public sealed partial class VaultGraph(string root, Action<string> say, Obsidian
     /// </summary>
     public async Task<IReadOnlyList<string>> FindOrphansAsync(CancellationToken cancellationToken = default)
     {
-        var listed = await native.ListAsync(root, cancellationToken).ConfigureAwait(false);
+        var listed = await native.ListAsync(root, null, cancellationToken).ConfigureAwait(false);
         if (listed.Count > 0)
         {
             return [.. listed.Where(o => !IsExcluded(o)).Order(UnicodeText.CodePointOrder)];

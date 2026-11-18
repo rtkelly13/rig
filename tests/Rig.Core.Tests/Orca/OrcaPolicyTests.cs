@@ -113,6 +113,15 @@ public sealed class OrcaPolicyTests
     public void A_failed_repo_list_is_null(string? output) => Assert.Null(OrcaRepo.ParseList(output));
 
     [Fact]
+    public void A_script_that_is_not_a_string_fails_the_list_instead_of_reading_as_no_scripts()
+    {
+        Assert.Null(OrcaRepo.ParseList("""{"result": {"repos": [{"path": "/r", "hookSettings": {"scripts": {"setup": 3}}}]}}"""));
+        var repos = OrcaRepo.ParseList("""{"result": {"repos": [{"path": "/r", "hookSettings": {"scripts": {"setup": "make", "unread": 3}}}]}}""");
+
+        Assert.Equal("make", Assert.Single(repos!).HookSettings!.Scripts!.Setup);
+    }
+
+    [Fact]
     public void A_repo_with_no_icon_or_settings_reads_empty()
     {
         var repos = OrcaRepo.ParseList("""{"result": {"repos": [{"path": "/r"}]}}""");

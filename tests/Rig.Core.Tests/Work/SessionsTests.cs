@@ -53,9 +53,33 @@ public sealed class SessionsTests
         var path = Path.Join(temp.Path, "0f8fad5b-d9cb-469f-a165-70867728950e.jsonl");
         await File.WriteAllTextAsync(path, string.Join(newline, lines) + newline, Utf8, Token);
 
-        var record = await Transcripts.ReadAsync(path, Token);
+        var record = await Transcripts.ReadAsync(path, null, Token);
 
         Assert.Equal(Transcripts.Summarise("0f8fad5b-d9cb-469f-a165-70867728950e", lines), record);
+    }
+
+    [Theory]
+    [InlineData("""{"type":"user","message":{"content":"x"},"isMeta":1}""", "s:1: $.isMeta: expected a boolean, found the number 1")]
+    [InlineData("""{"type":"user","message":{"content":"x"},"isCompactSummary":"true"}""", "s:1: $.isCompactSummary: expected a boolean, found the string \"true\"")]
+    [InlineData("""{"type":"user","message":{"content":"x"},"isMeta":[]}""", "s:1: $.isMeta: expected a boolean, found a list")]
+    [InlineData("""{"type":4,"message":{"content":"x"}}""", "s:1: $.type: expected a string, found the number 4")]
+    [InlineData("""[]""", "s:1: $: expected an object, found a list")]
+    public void A_line_with_a_wrongly_typed_field_is_skipped_and_reported(string line, string expected)
+    {
+        var problems = new List<string>();
+
+        var record = Transcripts.Summarise("s", [line], problems.Add);
+
+        Assert.Equal(0, record.PromptCount);
+        Assert.Equal(expected, Assert.Single(problems));
+    }
+
+    [Fact]
+    public void A_boolean_flag_is_read_as_a_boolean()
+    {
+        var record = Transcripts.Summarise("s", ["""{"type":"user","message":{"content":"x"},"isMeta":false}"""]);
+
+        Assert.Equal(1, record.PromptCount);
     }
 
     [Fact]

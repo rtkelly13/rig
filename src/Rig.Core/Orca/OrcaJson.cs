@@ -117,20 +117,6 @@ internal static class OrcaJson
         _ => throw Reject(JsonProblem.Expected(parent, key, $"one of {string.Join(", ", allowed)}", parent[key])),
     };
 
-    /// <summary><paramref name="read"/>'s value, or null where it throws because the field has the wrong type.</summary>
-    public static T? Lenient<T>(Func<T?> read)
-        where T : class
-    {
-        try
-        {
-            return read();
-        }
-        catch (InvalidDataException)
-        {
-            return null;
-        }
-    }
-
     private static InvalidDataException Wrong(JsonObject parent, string key, string kind) =>
         Reject(JsonProblem.Expected(parent, key, kind, JsonShape.Field(parent, key)));
 }

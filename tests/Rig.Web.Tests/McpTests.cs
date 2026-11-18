@@ -400,14 +400,19 @@ public sealed class McpTests
         File.WriteAllText(history, """{"job":"a","run_id":"tick-20261010-090000","started":"2026-10-10T09:00:00+00:00","seconds":1,"trigger":"tick"}""" + "\n");
         File.WriteAllText(history, File.ReadAllText(history) + """{"job":1}""" + "\n");
         File.WriteAllText(history, File.ReadAllText(history) + """{"job":"b","run_id":"tick-20261010-090001","started":"not a time","seconds":1,"trigger":"tick","returncode":3.0,"error":1,"output":2,"trace_id":3,"span_id":4}""" + "\n");
-        var runs = RunHistory.ReadRuns(dir.Path);
-        Assert.Equal(2, runs.Count);
-        Assert.Null(runs[0].ReturnCode);
-        Assert.Equal(string.Empty, runs[0].Output);
-        Assert.Equal(string.Empty, runs[0].TraceId);
+        var problems = new List<string>();
+        var runs = RunHistory.ReadRuns(dir.Path, problem: problems.Add);
+        var run = Assert.Single(runs);
+        Assert.Equal("a", run.Job);
+        Assert.Null(run.ReturnCode);
+        Assert.Equal(string.Empty, run.Output);
+        Assert.Equal(string.Empty, run.TraceId);
+        Assert.Equal(2, problems.Count);
+        Assert.Contains(":2: $.job: expected a string, found the number 1", problems[1], StringComparison.Ordinal);
+        Assert.Contains(":3: $.returncode: expected a whole number, found the number 3.0", problems[0], StringComparison.Ordinal);
         Assert.Empty(RunHistory.ReadRuns(Path.Join(dir.Path, "missing")));
-        Assert.Null(RunHistory.ReadOutput(dir.Path, runs[0]));
-        Assert.Equal(2, JobViews.Runs(dir.Path).Count);
+        Assert.Null(RunHistory.ReadOutput(dir.Path, run));
+        Assert.Single(JobViews.Runs(dir.Path));
     }
 
     private static string Envelope(long startNs)
