@@ -1,10 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <PackageReference Include="NetArchTest.Rules" />
-    <PackageReference Include="DotMake.CommandLine" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Core/Rig.Core.csproj" />
     <ProjectReference Include="../../src/Rig.Cli/Rig.Cli.csproj" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

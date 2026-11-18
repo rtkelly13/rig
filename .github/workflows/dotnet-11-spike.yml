@@ -37,6 +37,8 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 11.0.x
+      - name: Restore .NET tools (Paket)
+        run: dotnet tool restore
       # The SDK is the only variable under test, so the checkout's global.json is replaced for
       # the life of the job rather than committed: same shape, the test runner stays MTP.
       - name: Pin the .NET 11 SDK for this job

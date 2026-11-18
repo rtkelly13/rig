@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- SHORT-TERM: a stopgap until Diffra's line counter (rtkelly-labs/Diffra#159) replaces it. Delete with #320. -->
   <PropertyGroup>
@@ -6,4 +7,5 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Rig.LocReport.Tests" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

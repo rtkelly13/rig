@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Cli/Rig.Cli.csproj" />
@@ -33,4 +34,5 @@
     <Compile Include="../Rig.Core.Tests/Estate/ShelveFixture.cs" Link="Fakes/ShelveFixture.cs" />
     <Compile Include="../Rig.Core.Tests/Work/WorkFixtures.cs" Link="Fakes/WorkFixtures.cs" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

@@ -49,7 +49,8 @@ public sealed class Inventory
 
 /// <summary>
 /// Reads package declarations and consumption from a repo's tracked, bounded manifests: <c>package.json</c>,
-/// <c>pyproject.toml</c>, <c>*.csproj</c>, <c>Directory.Packages.props</c> and <c>Directory.Build.props</c>.
+/// <c>pyproject.toml</c>, <c>*.csproj</c>, <c>Directory.Packages.props</c>, <c>Directory.Build.props</c> and, for projects
+/// managed by Paket, <c>paket.dependencies</c> with each project's <c>paket.references</c>.
 /// </summary>
 public static partial class Manifests
 {
@@ -78,7 +79,7 @@ public static partial class Manifests
 
     private static readonly HashSet<string> ManifestNames = new(StringComparer.Ordinal)
     {
-        "package.json", "pyproject.toml", "Directory.Packages.props", "Directory.Build.props",
+        "package.json", "pyproject.toml", "Directory.Packages.props", "Directory.Build.props", "paket.dependencies", "paket.references",
     };
 
     /// <summary>A package's identity: Python's names normalise <c>-_.</c> runs to <c>-</c>; every registry ignores case.</summary>
@@ -136,7 +137,22 @@ public static partial class Manifests
         foreach (var evidence in inventory.Paths)
         {
             var full = Path.GetFullPath(Path.Join(root, evidence));
-            if (Path.GetFileName(full) == "Directory.Packages.props")
+            if (Path.GetFileName(full) == "paket.dependencies")
+            {
+                try
+                {
+                    var versions = Folder(central, Path.GetDirectoryName(full)!);
+                    foreach (var (name, requirement) in PaketVersions(await ReadBoundedAsync(full, cancellationToken).ConfigureAwait(false)))
+                    {
+                        versions[name] = requirement;
+                    }
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or DecoderFallbackException)
+                {
+                    inventory.WarningsFound.Add($"{evidence}: {e.Message}");
+                }
+            }
+            else if (Path.GetFileName(full) == "Directory.Packages.props")
             {
                 try
                 {
@@ -175,6 +191,9 @@ public static partial class Manifests
                         break;
                     case "pyproject.toml":
                         ReadPython(inventory, text, repo, evidence);
+                        break;
+                    case "paket.references":
+                        inventory.ConsumptionsFound.AddRange(PaketReferences(text, repo, evidence, NearestVersions(full, central)));
                         break;
                     default:
                         ReadMsBuild(inventory, text, repo, evidence, full, central);
@@ -266,18 +285,7 @@ public static partial class Manifests
             inventory.PublicationsFound.Add(new Publication("nuget", Canonical("nuget", id.Groups[1].Value), repo, evidence));
         }
 
-        // The nearest Directory.Packages.props above the project sets its central versions.
-        IReadOnlyDictionary<string, string> versions = new Dictionary<string, string>();
-        for (var folder = Path.GetDirectoryName(full); folder is not null; folder = Path.GetDirectoryName(folder))
-        {
-            if (central.TryGetValue(folder, out var found))
-            {
-                versions = found;
-                break;
-            }
-        }
-
-        inventory.ConsumptionsFound.AddRange(NuGetReferences(text, repo, evidence, versions));
+        inventory.ConsumptionsFound.AddRange(NuGetReferences(text, repo, evidence, NearestVersions(full, central)));
         foreach (Match reference in ProjectReferenceTag().Matches(text))
         {
             var target = Attribute(reference.Value, "Include");
@@ -288,6 +296,48 @@ public static partial class Manifests
             }
         }
     }
+
+    /// <summary>The versions set by the nearest <c>Directory.Packages.props</c> or <c>paket.dependencies</c> above <paramref name="full"/>.</summary>
+    private static Dictionary<string, string> NearestVersions(string full, Dictionary<string, Dictionary<string, string>> central)
+    {
+        for (var folder = Path.GetDirectoryName(full); folder is not null; folder = Path.GetDirectoryName(folder))
+        {
+            if (central.TryGetValue(folder, out var found))
+            {
+                return found;
+            }
+        }
+
+        return new Dictionary<string, string>();
+    }
+
+    /// <summary>
+    /// The packages a <c>paket.dependencies</c> file constrains, by canonical name. Each <c>nuget Name constraint</c> line
+    /// counts; <c>==</c> and <c>=</c> are dropped so an exact pin reads as its version, and any other constraint is kept as written.
+    /// </summary>
+    private static Dictionary<string, string> PaketVersions(string text) =>
+        PaketLines(text)
+            .Select(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Where(parts => parts.Length >= 2 && parts[0] == "nuget")
+            .GroupBy(parts => Canonical("nuget", parts[1]), StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Last().Skip(2).SkipWhile(part => part is "==" or "=") is { } rest && rest.Any() ? string.Join(' ', rest) : "unconstrained",
+                StringComparer.Ordinal);
+
+    /// <summary>The packages a <c>paket.references</c> file names, versioned from the nearest <c>paket.dependencies</c>.</summary>
+    private static List<Consumption> PaketReferences(string text, string repo, string evidence, IReadOnlyDictionary<string, string> versions) =>
+        [.. PaketLines(text)
+            .Where(line => !line.StartsWith("File:", StringComparison.Ordinal) && !line.StartsWith("group ", StringComparison.Ordinal))
+            .Select(line => Canonical("nuget", line.Split(' ', 2)[0]))
+            .Select(key => new Consumption("nuget", key, repo, versions.GetValueOrDefault(key, "centrally resolved"), "runtime", evidence))];
+
+    /// <summary>The meaningful lines of a Paket file: trimmed, without blanks, <c>//</c> comments or trailing comments.</summary>
+    private static IEnumerable<string> PaketLines(string text) =>
+        text.Split('\n')
+            .Select(line => line.IndexOf(" //", StringComparison.Ordinal) is var comment and >= 0 ? line[..comment] : line)
+            .Select(line => line.Trim())
+            .Where(line => line.Length > 0 && !line.StartsWith("//", StringComparison.Ordinal));
 
     private static List<Consumption> NuGetReferences(string text, string repo, string evidence, IReadOnlyDictionary<string, string> versions)
     {

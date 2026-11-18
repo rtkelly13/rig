@@ -79,11 +79,13 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - name: Restore .NET tools (Paket)
+        run: dotnet tool restore
       - name: Cache NuGet packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '**/*.csproj', 'global.json') }}
       - name: Restore
         run: dotnet restore rig.slnx
       # Only the two artifacts other jobs consume, not every test project. `dotnet` still
@@ -323,11 +325,13 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - name: Restore .NET tools (Paket)
+        run: dotnet tool restore
       - name: Cache NuGet packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '**/*.csproj', 'global.json') }}
       - name: Restore
         run: dotnet restore rig.slnx
       # Analyzers are two thirds of compile time and `analyze` runs them once over the whole
@@ -339,14 +343,14 @@ jobs:
             dotnet build "$project" --no-restore -c Release -p:RunAnalyzers=false
           done
       # Cache Playwright's browser binaries to avoid the download on every run; the version pin lives in
-      # Directory.Packages.props, so the key follows it.
+      # paket.lock, so the key follows it.
       - name: Cache Playwright Chromium
         if: matrix.shard == 'browser'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-dotnet-linux-${{ hashFiles('Directory.Packages.props') }}
+          key: playwright-dotnet-linux-${{ hashFiles('paket.lock') }}
       - name: Install Playwright Chromium
         if: matrix.shard == 'browser' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
@@ -396,11 +400,13 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - name: Restore .NET tools (Paket)
+        run: dotnet tool restore
       - name: Cache NuGet packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '**/*.csproj', 'global.json') }}
       - name: Restore
         run: dotnet restore rig.slnx
       - name: Build with analyzers
@@ -464,11 +470,13 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - name: Restore .NET tools (Paket)
+        run: dotnet tool restore
       - name: Cache NuGet packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '**/*.csproj', 'global.json') }}
       - name: Restore
         run: dotnet restore rig.slnx
       - name: Format changed files
@@ -488,7 +496,7 @@ jobs:
             exit 0
           fi
           range="${base}...HEAD"
-          if git diff --name-only --no-renames "${range}" | grep -Eq '(^|/)(\.editorconfig|\.globalconfig|Directory\.Build\.props|Directory\.Packages\.props)$'; then
+          if git diff --name-only --no-renames "${range}" | grep -Eq '(^|/)(\.editorconfig|\.globalconfig|Directory\.Build\.props|Directory\.Build\.targets)$'; then
             full
             exit 0
           fi
@@ -526,6 +534,8 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - name: Restore .NET tools (Paket)
+        run: dotnet tool restore
       - name: Build
         run: dotnet build rig.slnx -c Release
       - name: Cache Playwright Chromium
@@ -533,7 +543,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~\AppData\Local\ms-playwright
-          key: playwright-dotnet-windows-${{ hashFiles('Directory.Packages.props') }}
+          key: playwright-dotnet-windows-${{ hashFiles('paket.lock') }}
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net10.0/playwright.ps1 install chromium
@@ -608,6 +618,8 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - name: Restore .NET tools (Paket)
+        run: dotnet tool restore
       - name: Download rig CLI
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -618,7 +630,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-dotnet-linux-${{ hashFiles('Directory.Packages.props') }}
+          key: playwright-dotnet-linux-${{ hashFiles('paket.lock') }}
       # upload-artifact drops file modes, and the install below runs this node driver, so restore its bit first.
       - name: Restore the Playwright driver's execute bit
         run: chmod +x "${{ runner.temp }}/rig-cli/.playwright/node/linux-x64/node"
@@ -658,6 +670,8 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - name: Restore .NET tools (Paket)
+        run: dotnet tool restore
       - name: Download rig CLI
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -701,6 +715,8 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - name: Restore .NET tools (Paket)
+        run: dotnet tool restore
       - name: Build the report tool
         continue-on-error: true
         run: dotnet build tools/loc-report -v q

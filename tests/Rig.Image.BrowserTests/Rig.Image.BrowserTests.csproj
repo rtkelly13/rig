@@ -1,11 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- The authoritative renderer in a real Chromium. Its own project so launching a browser never slows Rig.Image.Tests. -->
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Image/Rig.Image.csproj" />
-    <PackageReference Include="Microsoft.Playwright" />
   </ItemGroup>
   <ItemGroup Label="Shared fixtures">
     <Compile Include="../Rig.Image.Tests/OracleFixture.cs" Link="OracleFixture.cs" />
     <None Include="../Rig.Image.Tests/Oracle/**" Link="Oracle/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

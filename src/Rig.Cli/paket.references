@@ -1,0 +1,4 @@
+Microsoft.CodeAnalysis.BannedApiAnalyzers
+DotMake.CommandLine
+Spectre.Console
+System.CommandLine
