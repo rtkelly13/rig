@@ -21,7 +21,7 @@ this ADR branches from. Every package version in `Directory.Packages.props` carr
 | Question | Answer |
 | :--- | :--- |
 | net10.0 recognised, restore through `rig.slnx` | Yes. `paket install` writes `paket.lock` and `dotnet restore rig.slnx` restores every project. |
-| net11.0 recognised | `paket.dependencies` accepts `framework: net10.0, net11.0` and `paket.lock` records `RESTRICTION: \|\| (== net10.0) (== net11.0)`, so Paket 12 parses it. A real net11.0 restore needs SDK 11, which was not installed for the spike: only CI on the retarget can prove it. |
+| net11.0 recognised | `paket.dependencies` accepts `framework: net10.0, net11.0` and `paket.lock` records `RESTRICTION: \|\| (== net10.0) (== net11.0)`, so Paket 12 parses it. Re-checked with SDK 11.0.100 in a scratch copy retargeted to `net11.0`: `paket install` left `paket.lock` unchanged and `dotnet restore` restored all projects. That copy's build then failed only on SDK 11 analyzer findings in existing code (CA1307), which the retarget PR owns, not on Paket. |
 | Resolver and transitive stability | One resolution for the whole repo (`strategy: min`, `lowest_matching: true`), where NuGet resolves per project. Transitives therefore move; see the diff below. `Microsoft.Testing.Platform`, `Microsoft.Testing.Extensions.TrxReport` 2.5.2 and `System.CommandLine` under DotMake did not change in any project. |
 | Storage | `storage: none` keeps packages in `~/.nuget/packages`; Paket writes no `packages/` folder. |
 | BannedApiAnalyzers and CsWin32 asset flags | `paket.references` has no `private_assets`. A target in `Directory.Build.targets` runs after Paket's restore target and sets `PrivateAssets=all` on the analyzer, CsWin32 and its three metadata and docs packages, and clears it on everything else. RS0030 was proven by planting a banned call in `src/Rig.Cli/Gh/Pr/`: the build failed with the expected error. |
@@ -84,4 +84,4 @@ changes only one, or cannot run Paket, revert to CPM (git is the rollback) and a
 - A package bump is one line in `paket.dependencies` plus the regenerated `paket.lock`; transitive changes show in
   the lock diff.
 - `.paket/Paket.Restore.targets` is vendored by `paket install` and is regenerated, not edited, when Paket updates.
-- The retarget to .NET 11 must restore under Paket on CI before this is considered proven for net11.0.
+- The retarget to .NET 11 should restore under Paket on CI as it did in the scratch check.
