@@ -38,8 +38,8 @@
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>C:\rig &amp; tools\rigw.exe</Command>
-      <Arguments>jobs run --trigger tick --scheduled</Arguments>
+      <Command>C:\Python\pythonw.exe</Command>
+      <Arguments>-I -c "import os,subprocess,sys;os.environ['RIG_PARENT_PID']=str(os.getpid());sys.exit(subprocess.call(sys.argv[1:],creationflags=0x08000000))" "C:\rig &amp; tools\rig.exe" jobs run --trigger tick --scheduled</Arguments>
       <WorkingDirectory>C:\rig &amp; tools</WorkingDirectory>
     </Exec>
   </Actions>
