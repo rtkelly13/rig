@@ -19,6 +19,13 @@ namespace Rig.Core.Otel;
 [JsonSerializable(typeof(OtlpLine))]
 [JsonSerializable(typeof(OtlpSpan))]
 [JsonSerializable(typeof(OtlpAnyValue))]
+[JsonSerializable(typeof(ChromeSpan))]
+[JsonSerializable(typeof(AnalyticsSpan))]
+[JsonSerializable(typeof(OtlpResource))]
+[JsonSerializable(typeof(OtlpScope))]
+[JsonSerializable(typeof(Dictionary<string, ReplayEntry>))]
+[JsonSerializable(typeof(Dictionary<string, MarkEntry>))]
+[JsonSerializable(typeof(PrimaryState))]
 internal sealed partial class OtlpJsonContext : JsonSerializerContext;
 
 /// <summary>One trace file line: <c>{"resourceSpans": [...]}</c>.</summary>

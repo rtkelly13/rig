@@ -557,26 +557,19 @@ public static partial class ChromeTraces
 
     private static TraceSpan? Span(FileSpan file, Action<string>? skipped)
     {
-        var span = file.Span;
         try
         {
-            var status = span["status"] switch
-            {
-                null when !span.ContainsKey("status") => null,
-                JsonObject found => found,
-                var other => throw JsonProblem.Expected(span, "status", "an object", other),
-            };
-            var error = status is not null && IsErrorCode(status) ? Message(status) : string.Empty;
+            var span = JsonProblem.Read(file.Span.ToJsonString(), OtlpJsonContext.Default.ChromeSpan);
             return new TraceSpan(
                 file.TraceId,
                 file.SpanId,
-                OptionalString(span, "parentSpanId"),
-                OptionalString(span, "name"),
-                RequiredInt(span, "startTimeUnixNano"),
-                RequiredInt(span, "endTimeUnixNano"),
-                error,
-                OtlpJson.Attributes(span, "attributes"),
-                [.. OtlpJson.Items(span, "events").Select((item, index) => Event(item, JsonProblem.Item(JsonProblem.Child("$", "events"), index)))]);
+                span.ParentSpanId,
+                span.Name,
+                span.StartTimeUnixNano,
+                span.EndTimeUnixNano,
+                span.Status.Code == OtlpStatusError ? Message(span.Status.Message) : string.Empty,
+                OtlpAttributes.ByName(span.Attributes),
+                [.. span.Events.Select(spanEvent => new TraceEvent(spanEvent.Name, spanEvent.TimeUnixNano, OtlpAttributes.ByName(spanEvent.Attributes)))]);
         }
         catch (JsonInputException e)
         {
@@ -585,38 +578,13 @@ public static partial class ChromeTraces
         }
     }
 
-    private static TraceEvent Event(JsonNode? node, string path)
-    {
-        if (node is not JsonObject spanEvent)
+    // The message of an error status; absent or null reads as empty.
+    private static string Message(JsonElement? message) =>
+        message switch
         {
-            throw JsonProblem.Expected(path, "an object", JsonProblem.Describe(node));
-        }
-
-        return new TraceEvent(OptionalString(spanEvent, "name"), RequiredInt(spanEvent, "timeUnixNano"), OtlpJson.Attributes(spanEvent, "attributes"));
-    }
-
-    private static long RequiredInt(JsonObject owner, string key) =>
-        !owner.ContainsKey(key) ? 0 : OtlpJson.Int64(owner[key]) ?? throw JsonProblem.Expected(owner, key, "a whole number or a string of digits", null);
-
-    private static string OptionalString(JsonObject owner, string key) =>
-        !owner.ContainsKey(key) ? string.Empty
-        : owner[key] is JsonValue value && value.GetValueKind() == JsonValueKind.String ? value.GetValue<string>()
-        : throw JsonProblem.Expected(owner, key, "a string", owner[key]);
-
-    private static bool IsErrorCode(JsonObject status) =>
-        status["code"] switch
-        {
-            null => false,
-            JsonValue value when value.GetValueKind() == JsonValueKind.Number && value.TryGetValue<long>(out var number) => number == OtlpStatusError,
-            var other => throw JsonProblem.Expected(status, "code", "a whole number", other),
-        };
-
-    private static string Message(JsonObject status) =>
-        status["message"] switch
-        {
-            null => string.Empty,
-            JsonValue value when value.GetValueKind() == JsonValueKind.String => value.GetValue<string>(),
-            var other => throw JsonProblem.Expected(status, "message", "a string", other),
+            null or { ValueKind: JsonValueKind.Null } => string.Empty,
+            { ValueKind: JsonValueKind.String } text => text.GetString()!,
+            { } other => throw JsonProblem.Expected("$.status.message", "a string", JsonProblem.Describe(other)),
         };
 
     [GeneratedRegex(@"^([0-9]{4}-[0-9]{2}-[0-9]{2})\.ndjson$")]

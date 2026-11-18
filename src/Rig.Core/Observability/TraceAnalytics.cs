@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Otel;
@@ -487,26 +486,25 @@ public static partial class TraceAnalytics
 
     private static TraceSpanInfo View(FileSpan file, string fallbackTool)
     {
-        var raw = file.Span;
-        var attributes = OtlpJson.Attributes(raw, "attributes");
-        var start = OtlpJson.Int64(raw["startTimeUnixNano"]) ?? 0;
-        var end = OtlpJson.Int64(raw["endTimeUnixNano"]) ?? start;
-        var (statusCode, statusMessage) = Status(raw);
-        var tool = file.Resource is JsonObject resObj
-            ? TextValue(OtlpJson.Attributes(resObj, "attributes").GetValueOrDefault("service.name"))
+        var raw = JsonProblem.Read(file.Span.ToJsonString(), OtlpJsonContext.Default.AnalyticsSpan);
+        var attributes = OtlpAttributes.ByName(raw.Attributes);
+        var start = raw.StartTimeUnixNano ?? 0;
+        var end = raw.EndTimeUnixNano ?? start;
+        var tool = file.Resource is JsonObject resource
+            ? TextValue(OtlpAttributes.ByName(JsonProblem.Read(resource.ToJsonString(), OtlpJsonContext.Default.OtlpResource).Attributes).GetValueOrDefault("service.name"))
             : string.Empty;
-        var scope = file.Scope is JsonObject scObj ? Text(scObj, "name") : string.Empty;
+        var scope = file.Scope is JsonObject scopeNode ? JsonProblem.Read(scopeNode.ToJsonString(), OtlpJsonContext.Default.OtlpScope).Name ?? string.Empty : string.Empty;
         return new TraceSpanInfo(
             file.TraceId,
             file.SpanId,
-            Text(raw, "parentSpanId"),
+            raw.ParentSpanId ?? string.Empty,
             tool.Length > 0 ? tool : fallbackTool,
             scope,
-            Text(raw, "name"),
+            raw.Name ?? string.Empty,
             start,
             end < start ? start : end,
-            statusCode,
-            statusMessage,
+            raw.Status?.Code,
+            raw.Status?.Message ?? string.Empty,
             ExitCode(attributes, "process.exit_code") ?? ExitCode(attributes, "process.exit.code"),
             TextValue(attributes.GetValueOrDefault("process.command")) is { Length: > 0 } command
                 ? command
@@ -514,49 +512,8 @@ public static partial class TraceAnalytics
             TextValue(attributes.GetValueOrDefault("process.cwd")),
             TextValue(attributes.GetValueOrDefault("process.stderr_snippet")),
             attributes,
-            Events(raw));
+            [.. raw.Events.Select(found => new TraceSpanEvent(found.Name ?? string.Empty, found.TimeUnixNano ?? 0, OtlpAttributes.ByName(found.Attributes)))]);
     }
-
-    private static List<TraceSpanEvent> Events(JsonObject raw)
-    {
-        var items = OtlpJson.Items(raw, "events");
-        List<TraceSpanEvent> events = [];
-        for (var index = 0; index < items.Count; index++)
-        {
-            var found = items[index] as JsonObject ?? throw JsonProblem.Expected(JsonProblem.Item(items.GetPath(), index), "an object", JsonProblem.Describe(items[index]));
-            events.Add(new TraceSpanEvent(Text(found, "name"), OtlpJson.Int64(found["timeUnixNano"]) ?? 0, OtlpJson.Attributes(found, "attributes")));
-        }
-
-        return events;
-    }
-
-    // OTLP status codes are 0, 1 or 2 as numbers, or the enum's name; only an error code and its message matter here.
-    private static (int? Code, string Message) Status(JsonObject raw)
-    {
-        if (raw["status"] is not { } node)
-        {
-            return (null, string.Empty);
-        }
-
-        var status = node as JsonObject ?? throw JsonProblem.Expected(node, "an object");
-        var message = Text(status, "message");
-        return (status["code"] switch
-        {
-            null => null,
-            JsonValue word when word.GetValueKind() == JsonValueKind.String => StatusName(word),
-            JsonValue { } number when number.GetValueKind() == JsonValueKind.Number && number.TryGetValue<int>(out var code) => code,
-            var other => throw JsonProblem.Expected(other, StatusExpected),
-        }, message);
-    }
-
-    private const string StatusExpected = "a whole number or STATUS_CODE_ERROR, STATUS_CODE_OK or STATUS_CODE_UNSET";
-
-    private static int? StatusName(JsonValue name) => name.GetValue<string>() switch
-    {
-        "Error" or "STATUS_CODE_ERROR" => 2,
-        "STATUS_CODE_OK" or "STATUS_CODE_UNSET" => null,
-        _ => throw JsonProblem.Expected(name, StatusExpected),
-    };
 
     private static long? ExitCode(IReadOnlyDictionary<string, object?> attributes, string name) =>
         attributes.GetValueOrDefault(name) switch
@@ -564,15 +521,6 @@ public static partial class TraceAnalytics
             null => null,
             long code => code,
             var other => throw JsonProblem.Expected("$.attributes", $"{name} to be a whole number", JsonProblem.Describe(other)),
-        };
-
-    // A string field; absent or null reads as empty.
-    private static string Text(JsonObject owner, string key) =>
-        owner[key] switch
-        {
-            null => string.Empty,
-            JsonValue value when value.GetValueKind() == JsonValueKind.String => value.GetValue<string>(),
-            var other => throw JsonProblem.Expected(owner, key, "a string", other),
         };
 
     private static string TextValue(object? value) => value as string ?? string.Empty;

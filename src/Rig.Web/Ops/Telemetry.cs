@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Rig.Core.Observability;
 using Rig.Core.Otel;
 using Rig.Core.Roots;
@@ -203,25 +204,8 @@ public sealed class Telemetry : IDisposable
             ["limit"] = query.Limit.ToString(CultureInfo.InvariantCulture),
             ["service"] = query.Service ?? string.Empty,
         };
-        var body = await clickhouse.TextAsync(Sql + "\nFORMAT JSONEachRow", parameters).ConfigureAwait(false);
-        var views = new List<TraceView>();
-        foreach (var line in body.Split('\n').Where(line => line.Trim().Length > 0))
-        {
-            using var row = JsonDocument.Parse(line);
-            var root = row.RootElement;
-            var start = root.GetProperty("start_ns").GetInt64();
-            var end = root.GetProperty("end_ns").GetInt64();
-            views.Add(new TraceView(
-                root.GetProperty("trace_id").GetString()!,
-                root.GetProperty("service").GetString()!,
-                root.GetProperty("root").GetString()!,
-                start,
-                Math.Max(end - start, 0) / 1_000_000.0,
-                root.GetProperty("spans").GetInt32(),
-                root.GetProperty("errors").GetInt32()));
-        }
-
-        return views;
+        var rows = await clickhouse.RowsAsync(Sql, parameters, TraceRowContext.Default.TraceRow).ConfigureAwait(false);
+        return [.. rows.Select(row => new TraceView(row.TraceId, row.Service, row.Root, row.StartNs, Math.Max(row.EndNs - row.StartNs, 0) / 1_000_000.0, row.Spans, row.Errors))];
     }
 
     internal static IReadOnlyList<TraceView> Files(IReadOnlyList<string> roots, TraceQuery query)
@@ -391,3 +375,16 @@ public sealed class Telemetry : IDisposable
         }
     }
 }
+
+/// <summary>The compile-time metadata for the trace list's JSONEachRow rows: snake_case names, every member required.</summary>
+[JsonSourceGenerationOptions(
+    JsonSerializerDefaults.Strict,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
+    UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+    AllowDuplicateProperties = true,
+    RespectNullableAnnotations = true,
+    RespectRequiredConstructorParameters = true)]
+[JsonSerializable(typeof(TraceRow))]
+internal sealed partial class TraceRowContext : JsonSerializerContext;
+
+internal sealed record TraceRow(string TraceId, string Service, string Root, long StartNs, long EndNs, int Spans, int Errors);

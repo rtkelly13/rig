@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using Rig.Core.Text;
 using Rig.Core.Vault;
 
@@ -74,31 +73,14 @@ public static class ReplayOffsets
         }
     }
 
-    private static Dictionary<string, ReplayOffset> Decode(string text)
-    {
-        using var document = JsonDocument.Parse(text);
-        if (document.RootElement.ValueKind != JsonValueKind.Object)
-        {
-            throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(document.RootElement));
-        }
-
-        var offsets = new Dictionary<string, ReplayOffset>(StringComparer.Ordinal);
-        foreach (var entry in document.RootElement.EnumerateObject())
-        {
-            var path = JsonProblem.Child("$", entry.Name);
-            if (entry.Value.ValueKind != JsonValueKind.Object)
+    // Last of a repeated path wins, and members rig does not read are ignored: the file is rig's but the reader is forgiving.
+    private static Dictionary<string, ReplayOffset> Decode(string text) =>
+        JsonProblem.Read(text, OtlpJsonContext.Default.DictionaryStringReplayEntry)
+            .Aggregate(new Dictionary<string, ReplayOffset>(StringComparer.Ordinal), (offsets, entry) =>
             {
-                throw JsonProblem.Expected(path, "an object", JsonProblem.Describe(entry.Value));
-            }
-
-            offsets[entry.Name] = new ReplayOffset(
-                JsonProblem.UnsignedInteger(entry.Value, "inode", path),
-                JsonProblem.WholeNumber(entry.Value, "sent", path),
-                JsonProblem.OptionalString(entry.Value, "head", path) ?? string.Empty);
-        }
-
-        return offsets;
-    }
+                offsets[entry.Key] = new ReplayOffset(entry.Value.Inode, entry.Value.Sent, entry.Value.Head);
+                return offsets;
+            });
 
     /// <summary>The state file's text: sorted by key, two-space indented, ending in a newline.</summary>
     public static string Render(IReadOnlyDictionary<string, ReplayOffset> offsets)
@@ -124,4 +106,18 @@ public static class ReplayOffsets
         File.WriteAllText(temporary, Render(offsets), new UTF8Encoding(false));
         File.Move(temporary, path, overwrite: true);
     }
+}
+
+// A struct so that a null entry is rejected.
+internal record struct ReplayEntry
+{
+    public ReplayEntry()
+    {
+    }
+
+    public required ulong Inode { get; set; }
+
+    public required long Sent { get; set; }
+
+    public string Head { get; set; } = string.Empty;
 }
