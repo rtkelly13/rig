@@ -114,11 +114,14 @@ public sealed class InboxLayoutTests(BrowserFixture fixture) : InboxTest(fixture
         Assert.True(await Page.EvaluateAsync<bool>("window.injected === undefined"));
         await Expect(description.Locator(".markdown-alert-warning .markdown-alert-title")).ToHaveTextAsync("Warning");
         await Expect(description.Locator(".task-list-item input[type=checkbox]")).ToBeCheckedAsync();
-        await Expect(description.Link("1")).ToHaveAttributeAsync("href", "#user-content-fn-1");
-        await Expect(description.Locator("#user-content-fn-1")).ToContainTextAsync("The footnote.");
+        // Each body has its own id prefix, so follow the link rather than assume the id.
+        var footnoteRef = description.Link("1");
+        await Expect(footnoteRef).ToHaveAttributeAsync("href", new Regex("^#user-content-[\\w-]+-fn-1$"));
+        var target = (await footnoteRef.GetAttributeAsync("href"))![1..];
+        await Expect(description.Locator($"[id=\"{target}\"]")).ToContainTextAsync("The footnote.");
         var diagram = description.Locator(".mermaid-diagram img");
         await Expect(diagram).ToHaveAttributeAsync("src", new Regex("^data:image/svg\\+xml"));
-        Assert.True(await diagram.EvaluateAsync<bool>("img => img.complete && img.naturalWidth > 0"));
+        Assert.True(await diagram.EvaluateAsync<bool>("img => img.decode().then(() => img.naturalWidth > 0)"));
     }
 
     [Fact]

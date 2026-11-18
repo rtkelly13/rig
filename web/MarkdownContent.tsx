@@ -1,4 +1,5 @@
 import { Prose } from '@rtkelly-labs/design-system';
+import { useId, useMemo } from 'react';
 import Markdown, { defaultUrlTransform } from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
@@ -19,12 +20,16 @@ import {
  * after rehype-raw. URL sanitization stays on.
  */
 export function MarkdownContent({ children, sourceUrl }: { children: string; sourceUrl: string }) {
+  // Several bodies share the page (the description and every comment), so each
+  // gets its own id prefix or two `[^1]` footnotes would collide.
+  const prefix = `user-content-${useId().replace(/[^\w-]/g, '')}-`;
+  const schema = useMemo(() => ({ ...sanitizeSchema, clobberPrefix: prefix }), [prefix]);
   return (
     <Prose className="triage-prose">
       <Markdown
         remarkPlugins={[remarkGfm, remarkGemoji, remarkGithubAlerts]}
-        rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeUnwrapLinkedImages]}
-        // Sanitize adds the `user-content-` prefix to every id; adding it here too would double it.
+        rehypePlugins={[rehypeRaw, [rehypeSanitize, schema], rehypeUnwrapLinkedImages]}
+        // Sanitize adds the prefix to every id; adding one here too would double it.
         remarkRehypeOptions={{ clobberPrefix: '' }}
         urlTransform={(url) => {
           const safe = defaultUrlTransform(url);
@@ -41,7 +46,7 @@ export function MarkdownContent({ children, sourceUrl }: { children: string; sou
             const properties = node?.properties ?? {};
             if (href && ('dataFootnoteRef' in properties || 'dataFootnoteBackref' in properties))
               return (
-                <a id={id} href={`#user-content-${new URL(href).hash.slice(1)}`}>
+                <a id={id} href={`#${prefix}${new URL(href).hash.slice(1)}`}>
                   {children}
                 </a>
               );
