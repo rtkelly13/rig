@@ -161,6 +161,7 @@
     {"Id": "cs:help","Capability": "help","Owner": "cs:help","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:image","Capability": "image","Owner": "cs:image","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:image cross-check","Capability": "image cross-check","Owner": "cs:image cross-check","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:image simplify","Capability": "image simplify","Owner": "cs:image simplify","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:jobs","Capability": "jobs","Owner": "cs:jobs","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:jobs install","Capability": "jobs install","Owner": "cs:jobs install","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:jobs last","Capability": "jobs last","Owner": "cs:jobs last","Platforms": ["linux","macos","windows"],"AliasTo": null},
