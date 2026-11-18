@@ -1,0 +1,843 @@
+{
+  "transcripts": [
+    {
+      "name": "clean-exit",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"fix the bug\"}, \"cwd\": \"/code/acme/app\", \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+        "{\"type\": \"cost-state\"}"
+      ],
+      "expected": {
+        "session_id": "clean-exit",
+        "start_cwd": "/code/acme/app",
+        "last_cwd": "/code/acme/app",
+        "title": null,
+        "first_prompt": "fix the bug",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "exited",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "fix the bug"
+      }
+    },
+    {
+      "name": "died-mid-tool-call",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"run it\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}, {\"type\": \"tool_use\", \"name\": \"Bash\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "died-mid-tool-call",
+        "start_cwd": "/code/acme/app",
+        "last_cwd": "/code/acme/app",
+        "title": null,
+        "first_prompt": "run it",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "mid-tool",
+        "label": "run it"
+      }
+    },
+    {
+      "name": "died-on-tool-result",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"run it\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"name\": \"Bash\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"content\": \"ok\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "died-on-tool-result",
+        "start_cwd": "/code/acme/app",
+        "last_cwd": "/code/acme/app",
+        "title": null,
+        "first_prompt": "run it",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "mid-tool",
+        "label": "run it"
+      }
+    },
+    {
+      "name": "died-unanswered",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"first\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"second, never answered\"}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "died-unanswered",
+        "start_cwd": "/code/acme/app",
+        "last_cwd": "/code/acme/app",
+        "title": null,
+        "first_prompt": "first",
+        "prompt_count": 2,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "unanswered",
+        "label": "first"
+      }
+    },
+    {
+      "name": "resumed-after-exit",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"first\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"cost-state\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"again\"}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T11:00:00+02:00\"}"
+      ],
+      "expected": {
+        "session_id": "resumed-after-exit",
+        "start_cwd": "/code/acme/app",
+        "last_cwd": "/code/acme/app",
+        "title": null,
+        "first_prompt": "first",
+        "prompt_count": 2,
+        "last_activity": "2026-10-01T11:00:00+02:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "first"
+      }
+    },
+    {
+      "name": "bookkeeping-after-exit",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"first\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+        "{\"type\": \"cost-state\"}",
+        "{\"type\": \"ai-title\", \"aiTitle\": \"Named after exit\"}",
+        "{\"type\": \"last-prompt\", \"lastPrompt\": \"first\"}"
+      ],
+      "expected": {
+        "session_id": "bookkeeping-after-exit",
+        "start_cwd": "/code/acme/app",
+        "last_cwd": "/code/acme/app",
+        "title": "Named after exit",
+        "first_prompt": "first",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "exited",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "Named after exit"
+      }
+    },
+    {
+      "name": "title-custom-wins",
+      "lines": [
+        "{\"type\": \"summary\", \"summary\": \"A summary\"}",
+        "{\"type\": \"ai-title\", \"aiTitle\": \"An AI title\"}",
+        "{\"type\": \"custom-title\", \"customTitle\": \"A custom title\"}",
+        "{\"type\": \"custom-title\", \"customTitle\": \"\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"hello\"}, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}"
+      ],
+      "expected": {
+        "session_id": "title-custom-wins",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": "A custom title",
+        "first_prompt": "hello",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:00:00+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "unanswered",
+        "label": "A custom title"
+      }
+    },
+    {
+      "name": "title-ai-over-summary",
+      "lines": [
+        "{\"type\": \"summary\", \"summary\": \"A summary\"}",
+        "{\"type\": \"ai-title\", \"aiTitle\": \"First AI title\"}",
+        "{\"type\": \"ai-title\", \"aiTitle\": \"Latest AI title\"}",
+        "{\"type\": \"ai-title\", \"aiTitle\": 7}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"hello\"}, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}"
+      ],
+      "expected": {
+        "session_id": "title-ai-over-summary",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": "Latest AI title",
+        "first_prompt": "hello",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:00:00+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "unanswered",
+        "label": "Latest AI title"
+      }
+    },
+    {
+      "name": "title-summary-only",
+      "lines": [
+        "{\"type\": \"summary\", \"summary\": \"Only a summary\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"hello\"}, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}"
+      ],
+      "expected": {
+        "session_id": "title-summary-only",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": "Only a summary",
+        "first_prompt": "hello",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:00:00+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "unanswered",
+        "label": "Only a summary"
+      }
+    },
+    {
+      "name": "label-from-first-prompt",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"   a long first prompt a long first prompt a long first prompt a long first prompt a long first prompt a long first prompt \"}, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"later prompt\"}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "label-from-first-prompt",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": "   a long first prompt a long first prompt a long first prompt a long first prompt a long first prompt a long first prompt ",
+        "prompt_count": 2,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "unanswered",
+        "label": "a long first prompt a long first prompt a long first prompt "
+      }
+    },
+    {
+      "name": "label-from-session-id",
+      "lines": [
+        "{\"type\": \"system\", \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}"
+      ],
+      "expected": {
+        "session_id": "label-from-session-id",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": null,
+        "prompt_count": 0,
+        "last_activity": "2026-10-01T10:00:00+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "label-fr"
+      }
+    },
+    {
+      "name": "prompts-that-do-not-count",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"<system-reminder>not typed</system-reminder>\"}, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"meta prompt\"}, \"isMeta\": true, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"compacted\"}, \"isCompactSummary\": true, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"content\": \"ok\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"the one real prompt\"}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "prompts-that-do-not-count",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": "the one real prompt",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "the one real prompt"
+      }
+    },
+    {
+      "name": "compact-summary-last",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"real\"}, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"summary of everything\"}, \"isCompactSummary\": true, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "compact-summary-last",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": "real",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "unanswered",
+        "label": "real"
+      }
+    },
+    {
+      "name": "meta-entry-is-not-the-last-turn",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"real\"}, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"name\": \"Bash\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"caveat\"}, \"isMeta\": true, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"isMeta\": true, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "meta-entry-is-not-the-last-turn",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": "real",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "mid-tool",
+        "label": "real"
+      }
+    },
+    {
+      "name": "truthy-flags",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"zero is false\"}, \"isMeta\": 0, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"empty string is false\"}, \"isMeta\": \"\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"empty list is false\"}, \"isMeta\": [], \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"empty object is false\"}, \"isMeta\": {}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"null is false\"}, \"isMeta\": null, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"string is true\"}, \"isMeta\": \"yes\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"number is true\"}, \"isMeta\": 2, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"list is true\"}, \"isMeta\": [0], \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"object is true\"}, \"isCompactSummary\": {\"a\": 1}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "truthy-flags",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": "zero is false",
+        "prompt_count": 5,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "unanswered",
+        "label": "zero is false"
+      }
+    },
+    {
+      "name": "cwd-moves",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"start\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"name\": \"Bash\"}]}, \"cwd\": \"/code/acme/app/temp/wt\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"attachment\", \"cwd\": \"/code/other/lib\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+        "{\"type\": \"mode\", \"cwd\": 5}"
+      ],
+      "expected": {
+        "session_id": "cwd-moves",
+        "start_cwd": "/code/acme/app",
+        "last_cwd": "/code/other/lib",
+        "title": null,
+        "first_prompt": "start",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "mid-tool",
+        "label": "start"
+      }
+    },
+    {
+      "name": "print-mode",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"scripted\"}, \"cwd\": \"/code\", \"entrypoint\": \"sdk-cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "print-mode",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": "scripted",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": false,
+        "turn_state": "answered",
+        "label": "scripted"
+      }
+    },
+    {
+      "name": "entrypoint-from-first-entry-that-has-one",
+      "lines": [
+        "{\"type\": \"summary\", \"summary\": \"s\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"typed\"}, \"cwd\": \"/code\", \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"entrypoint\": \"sdk-cli\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "entrypoint-from-first-entry-that-has-one",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": "s",
+        "first_prompt": "typed",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "s"
+      }
+    },
+    {
+      "name": "timestamps",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"a\"}, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T11:00:00+02:00\"}",
+        "{\"type\": \"system\", \"timestamp\": \"not a time\"}",
+        "{\"type\": \"system\", \"timestamp\": 12345}",
+        "{\"type\": \"attachment\"}"
+      ],
+      "expected": {
+        "session_id": "timestamps",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": "a",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T11:00:00+02:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "a"
+      }
+    },
+    {
+      "name": "no-timestamps",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"a\"}, \"cwd\": \"/code\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}}"
+      ],
+      "expected": {
+        "session_id": "no-timestamps",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": "a",
+        "prompt_count": 1,
+        "last_activity": null,
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "a"
+      }
+    },
+    {
+      "name": "misshapen-lines",
+      "lines": [
+        "",
+        "not json at all",
+        "[1, 2, 3]",
+        "\"a string\"",
+        "null",
+        "{\"type\": \"user\", \"message\": {\"content\": \"truncated",
+        "{\"type\": 3, \"cwd\": \"/ignored-type-still-reads-cwd\"}",
+        "{\"type\": \"user\", \"message\": \"not an object\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": 7}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": [\"not a block\", 5, null, {\"type\": 9, \"text\": 4}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"héllo ✓\"}, \"junk\", {\"type\": \"tool_use\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+        "{\"type\": \"user\", \"message\": {\"content\": \"typed ünïcode ✓\"}, \"timestamp\": \"2026-10-01T10:05:00.250Z\", \"extra\": {\"ignored\": true}}",
+        "   "
+      ],
+      "expected": {
+        "session_id": "misshapen-lines",
+        "start_cwd": "/ignored-type-still-reads-cwd",
+        "last_cwd": "/ignored-type-still-reads-cwd",
+        "title": null,
+        "first_prompt": "typed ünïcode ✓",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "unanswered",
+        "label": "typed ünïcode ✓"
+      }
+    },
+    {
+      "name": "assistant-with-plain-string-content",
+      "lines": [
+        "{\"type\": \"user\", \"message\": {\"content\": \"a\"}, \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+        "{\"type\": \"assistant\", \"message\": {\"content\": \"plain\"}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+      ],
+      "expected": {
+        "session_id": "assistant-with-plain-string-content",
+        "start_cwd": "/code",
+        "last_cwd": "/code",
+        "title": null,
+        "first_prompt": "a",
+        "prompt_count": 1,
+        "last_activity": "2026-10-01T10:05:00.250000+00:00",
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "a"
+      }
+    },
+    {
+      "name": "empty",
+      "lines": [],
+      "expected": {
+        "session_id": "empty",
+        "start_cwd": null,
+        "last_cwd": null,
+        "title": null,
+        "first_prompt": null,
+        "prompt_count": 0,
+        "last_activity": null,
+        "exit_kind": "crashed",
+        "interactive": true,
+        "turn_state": "answered",
+        "label": "empty"
+      }
+    }
+  ],
+  "home": {
+    "since": "2026-10-01T00:00:00+00:00",
+    "transcripts": [
+      {
+        "path": "-code-acme-app/s-live-working.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"run it\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}, {\"type\": \"tool_use\", \"name\": \"Bash\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-acme-app/s-live-idle.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"first\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"user\", \"message\": {\"content\": \"second, never answered\"}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-acme-app/s-live-print-mode.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"scripted\"}, \"cwd\": \"/code\", \"entrypoint\": \"sdk-cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-acme-app/s-live-no-prompts.jsonl",
+        "lines": [
+          "{\"type\": \"system\", \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-acme-app/s-live-recycled-pid.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"fix the bug\"}, \"cwd\": \"/code/acme/app\", \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+          "{\"type\": \"cost-state\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-acme-app/s-cleared.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"fix the bug\"}, \"cwd\": \"/code/acme/app\", \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+          "{\"type\": \"cost-state\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-acme-app/s-cleared-then-resumed.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"first\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"cost-state\"}",
+          "{\"type\": \"user\", \"message\": {\"content\": \"again\"}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T11:00:00+02:00\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-acme-app/s-cleared-no-time.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"run it\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}, {\"type\": \"tool_use\", \"name\": \"Bash\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-acme-app/s-ended-other-reason.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"fix the bug\"}, \"cwd\": \"/code/acme/app\", \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+          "{\"type\": \"cost-state\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-other-lib/s-ended-clean.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"first\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+          "{\"type\": \"cost-state\"}",
+          "{\"type\": \"ai-title\", \"aiTitle\": \"Named after exit\"}",
+          "{\"type\": \"last-prompt\", \"lastPrompt\": \"first\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-other-lib/s-died-mid.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"run it\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"name\": \"Bash\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"content\": \"ok\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-other-lib/s-died-idle.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"first\"}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"cost-state\"}",
+          "{\"type\": \"user\", \"message\": {\"content\": \"again\"}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T11:00:00+02:00\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-other-lib/s-print-mode-dropped.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"scripted\"}, \"cwd\": \"/code\", \"entrypoint\": \"sdk-cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-other-lib/s-no-prompts-dropped.jsonl",
+        "lines": [
+          "{\"type\": \"system\", \"cwd\": \"/code\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-other-lib/s-live-cwd-from-registry.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"a prompt\"}, \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"timestamp\": \"2026-10-01T10:05:00.250Z\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      },
+      {
+        "path": "-code-other-lib/s-too-old.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"fix the bug\"}, \"cwd\": \"/code/acme/app\", \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+          "{\"type\": \"cost-state\"}"
+        ],
+        "modified": "2026-09-01T12:00:00+00:00"
+      },
+      {
+        "path": "-code-other-lib/s-live-working/subagents/agent-1.jsonl",
+        "lines": [
+          "{\"type\": \"user\", \"message\": {\"content\": \"fix the bug\"}, \"cwd\": \"/code/acme/app\", \"entrypoint\": \"cli\", \"timestamp\": \"2026-10-01T10:00:00.000Z\"}",
+          "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"done\"}]}, \"cwd\": \"/code/acme/app\", \"timestamp\": \"2026-10-01T10:05:00.250Z\"}",
+          "{\"type\": \"cost-state\"}"
+        ],
+        "modified": "2026-10-05T12:00:00+00:00"
+      }
+    ],
+    "registry": {
+      "4101.json": "{\"pid\": 4101, \"sessionId\": \"s-live-working\", \"procStart\": \"133000000000000000\", \"cwd\": \"/code/acme/app\", \"status\": \"busy\"}",
+      "4102.json": "{\"pid\": 4102, \"sessionId\": \"s-live-idle\", \"cwd\": \"/code/acme/app\", \"status\": \"idle\"}",
+      "4103.json": "{\"pid\": 4103, \"sessionId\": \"s-live-print-mode\", \"procStart\": \"133000000000000003\", \"status\": 5}",
+      "4104.json": "{\"pid\": 4104, \"sessionId\": \"s-live-no-prompts\", \"procStart\": \"1\", \"cwd\": \"/code/acme/app\"}",
+      "4105.json": "{\"pid\": 4105, \"sessionId\": \"s-live-recycled-pid\", \"procStart\": \"2\", \"status\": \"busy\"}",
+      "4106.json": "{\"pid\": 4106, \"sessionId\": \"s-live-cwd-from-registry\", \"cwd\": \"/code/from/registry\", \"procStart\": 9}",
+      "no-pid.json": "{\"sessionId\": \"s-ended-clean\"}",
+      "pid-is-text.json": "{\"pid\": \"4101\", \"sessionId\": \"s-ended-clean\"}",
+      "pid-is-bool.json": "{\"pid\": true, \"sessionId\": \"s-ended-clean\"}",
+      "pid-is-float.json": "{\"pid\": 4101.5, \"sessionId\": \"s-ended-clean\"}",
+      "no-session.json": "{\"pid\": 4101}",
+      "list.json": "[1]",
+      "broken.json": "{"
+    },
+    "ledger": {
+      "s-cleared.json": "{\"session_id\": \"s-cleared\", \"reason\": \"clear\", \"ended_at\": \"2026-10-01T10:05:00.250Z\"}",
+      "s-cleared-then-resumed.json": "{\"session_id\": \"s-cleared-then-resumed\", \"reason\": \"clear\", \"ended_at\": \"2026-10-01T08:00:00Z\"}",
+      "s-cleared-no-time.json": "{\"session_id\": \"s-cleared-no-time\", \"reason\": \"clear\"}",
+      "s-ended-other-reason.json": "{\"session_id\": \"s-ended-other-reason\", \"reason\": \"logout\", \"ended_at\": \"2026-10-01T12:00:00Z\"}",
+      "s-died-idle.json": "{\"session_id\": \"s-died-idle\", \"reason\": 4, \"ended_at\": \"junk\"}",
+      "named-differently.json": "{\"session_id\": \"s-ended-clean\", \"reason\": \"other\"}",
+      "no-id.json": "{\"reason\": \"clear\"}",
+      "broken.json": "{"
+    },
+    "alive": [
+      {
+        "pid": 4101,
+        "proc_start": "133000000000000000"
+      },
+      {
+        "pid": 4102,
+        "proc_start": null
+      },
+      {
+        "pid": 4103,
+        "proc_start": "133000000000000003"
+      },
+      {
+        "pid": 4104,
+        "proc_start": "1"
+      },
+      {
+        "pid": 4106,
+        "proc_start": null
+      }
+    ],
+    "expected": {
+      "transcripts_read": 15,
+      "sessions": [
+        {
+          "session_id": "s-cleared",
+          "title": "fix the bug",
+          "state": "cleared",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 1,
+          "pid": null
+        },
+        {
+          "session_id": "s-cleared-no-time",
+          "title": "run it",
+          "state": "cleared",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 1,
+          "pid": null
+        },
+        {
+          "session_id": "s-cleared-then-resumed",
+          "title": "first",
+          "state": "died-idle",
+          "last_activity": "2026-10-01T11:00:00+02:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 2,
+          "pid": null
+        },
+        {
+          "session_id": "s-died-idle",
+          "title": "first",
+          "state": "died-idle",
+          "last_activity": "2026-10-01T11:00:00+02:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 2,
+          "pid": null
+        },
+        {
+          "session_id": "s-died-mid",
+          "title": "run it",
+          "state": "died-mid-task",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 1,
+          "pid": null
+        },
+        {
+          "session_id": "s-ended-clean",
+          "title": "Named after exit",
+          "state": "ended-clean",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 1,
+          "pid": null
+        },
+        {
+          "session_id": "s-ended-other-reason",
+          "title": "fix the bug",
+          "state": "ended-clean",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 1,
+          "pid": null
+        },
+        {
+          "session_id": "s-live-cwd-from-registry",
+          "title": "a prompt",
+          "state": "live",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code/from/registry",
+          "start_cwd": null,
+          "prompt_count": 1,
+          "pid": 4106
+        },
+        {
+          "session_id": "s-live-idle",
+          "title": "first",
+          "state": "waiting-on-user",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 2,
+          "pid": 4102
+        },
+        {
+          "session_id": "s-live-no-prompts",
+          "title": "s-live-n",
+          "state": "live",
+          "last_activity": "2026-10-01T10:00:00+00:00",
+          "last_cwd": "/code",
+          "start_cwd": "/code",
+          "prompt_count": 0,
+          "pid": 4104
+        },
+        {
+          "session_id": "s-live-print-mode",
+          "title": "scripted",
+          "state": "live",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code",
+          "start_cwd": "/code",
+          "prompt_count": 1,
+          "pid": 4103
+        },
+        {
+          "session_id": "s-live-recycled-pid",
+          "title": "fix the bug",
+          "state": "ended-clean",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 1,
+          "pid": null
+        },
+        {
+          "session_id": "s-live-working",
+          "title": "run it",
+          "state": "live",
+          "last_activity": "2026-10-01T10:05:00.250000+00:00",
+          "last_cwd": "/code/acme/app",
+          "start_cwd": "/code/acme/app",
+          "prompt_count": 1,
+          "pid": 4101
+        }
+      ]
+    }
+  }
+}
