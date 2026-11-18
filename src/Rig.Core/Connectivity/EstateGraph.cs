@@ -265,15 +265,7 @@ public sealed class EstateGraph(Git git, TimeProvider time, TimeSpan? listTimeou
     // Each registry project's repo and depends_on; the registry is tracked, so a malformed one is an error to fix.
     private static List<(string Repo, IReadOnlyList<string> DependsOn)> Declared(string registryFile)
     {
-        JsonNode? root;
-        try
-        {
-            root = JsonNode.Parse(File.ReadAllText(registryFile));
-        }
-        catch (JsonException e)
-        {
-            throw new InvalidDataException($"{registryFile}: {e.Message}", e);
-        }
+        var root = JsonFile.Parse(registryFile);
 
         var projects = (JsonShape.Field(root as JsonObject, "projects") is { } declaredProjects ? JsonShape.AsArray(declaredProjects) : null)
             ?? throw new InvalidDataException($"{registryFile}: projects: expected a list");

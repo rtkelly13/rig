@@ -339,7 +339,7 @@ public static partial class ChromeTraces
             ["id"] = run.Id,
             ["trace_id"] = run.Root.TraceId,
             ["span_id"] = run.Root.SpanId,
-            ["started"] = run.Started(zone).ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture),
+            ["started"] = IsoTime.Seconds(run.Started(zone)),
             ["seconds"] = Math.Round(run.Root.Seconds, 2, MidpointRounding.ToEven),
             ["trigger"] = run.Trigger,
             ["unattended"] = run.Unattended,
@@ -397,7 +397,7 @@ public static partial class ChromeTraces
             var indent = new string(' ', 2 * depth);
             var flag = span.Incomplete ? " [incomplete]" : span.Error.Length > 0 ? $" [error: {TabPlanText.Clip(span.Error, 80)}]" : string.Empty;
             var offset = (span.StartNs - run.Root.StartNs) / 1e9;
-            lines.Add($"{indent}{span.Name}  {Duration(span.Seconds)} at +{Fixed(offset, 1)}s{flag}");
+            lines.Add($"{indent}{span.Name}  {Duration(span.Seconds)} at +{NumberText.Fixed(offset, 1)}s{flag}");
             if (AttributeText(span.Attributes, HiddenAttributes, 60) is { Length: > 0 } attributes)
             {
                 lines.Add($"{indent}    {attributes}");
@@ -407,7 +407,7 @@ public static partial class ChromeTraces
             {
                 var at = (spanEvent.AtNs - run.Root.StartNs) / 1e9;
                 var detail = AttributeText(spanEvent.Attributes, HiddenEventAttributes, 100);
-                lines.Add($"{indent}    - +{Fixed(at, 1)}s {spanEvent.Name} {detail}".TrimEnd());
+                lines.Add($"{indent}    - +{NumberText.Fixed(at, 1)}s {spanEvent.Name} {detail}".TrimEnd());
             }
 
             foreach (var child in run.Children(span))
@@ -445,7 +445,7 @@ public static partial class ChromeTraces
     public static IReadOnlyList<string> RenderSummary(TraceSummary summary, int days)
     {
         ArgumentNullException.ThrowIfNull(summary);
-        var rate = summary.SuccessRate is { } success ? $"{Fixed(success * 100, 0)}%" : "-";
+        var rate = summary.SuccessRate is { } success ? $"{NumberText.Fixed(success * 100, 0)}%" : "-";
         var grouping = string.Join(", ", summary.Grouping.OrderByDescending(pair => pair.Value).Select(pair => $"{pair.Key} {pair.Value}"));
         List<string> lines =
         [
@@ -488,16 +488,10 @@ public static partial class ChromeTraces
         seconds switch
         {
             null => "-",
-            < 1 => $"{Fixed(seconds.Value * 1000, 0)}ms",
-            < 120 => $"{Fixed(seconds.Value, 1)}s",
-            _ => $"{Fixed(seconds.Value / 60, 1)}m",
+            < 1 => $"{NumberText.Fixed(seconds.Value * 1000, 0)}ms",
+            < 120 => $"{NumberText.Fixed(seconds.Value, 1)}s",
+            _ => $"{NumberText.Fixed(seconds.Value / 60, 1)}m",
         };
-
-    // Round half to even on the exact value. F0 is exact; F1 matches outside exact ties.
-    private static string Fixed(double value, int digits) =>
-        digits == 0
-            ? Math.Round(value, MidpointRounding.ToEven).ToString("F0", CultureInfo.InvariantCulture)
-            : value.ToString($"F{digits}", CultureInfo.InvariantCulture);
 
     private static string Grouped(TraceRun run) =>
         run.Grouping is "grouped" or "stopped" && run.GroupPlanned is { } planned

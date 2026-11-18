@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Vault;
 
@@ -40,15 +41,7 @@ public sealed class ObsidianOrphans(IProc proc, string home)
     private string? OpenVault()
     {
         var registry = Path.Join(home, "Library", "Application Support", "obsidian", "obsidian.json");
-        JsonNode? root;
-        try
-        {
-            root = JsonNode.Parse(File.ReadAllText(registry));
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
-        {
-            return null;
-        }
+        var root = JsonFile.TryParse(registry);
 
         if (root is not JsonObject document || (document["vaults"] is { } vaults && vaults is not JsonObject))
         {

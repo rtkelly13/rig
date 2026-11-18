@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using Rig.Core.Jobs;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Jobs;
 
@@ -186,7 +187,7 @@ public sealed class JobRunnerTests : IDisposable
     {
         Assert.Equal("exit 3 after 2s", JobRunner.Describe(new Outcome("2026-11-12T09:00:00+00:00", 2.5, 3, "tick")));
         Assert.Equal("error after 4s: IOException: no", JobRunner.Describe(new Outcome("2026-11-12T09:00:00+00:00", 3.5, null, "tick") { Error = "IOException: no" }));
-        Assert.Equal("2026-11-12T09:00:00-05:00", JobRunner.Iso(new DateTimeOffset(2026, 11, 12, 9, 0, 0, TimeSpan.FromHours(-5))));
+        Assert.Equal("2026-11-12T09:00:00-05:00", IsoTime.Seconds(new DateTimeOffset(2026, 11, 12, 9, 0, 0, TimeSpan.FromHours(-5))));
     }
 
     private static readonly DateTimeOffset Booted = new(2026, 11, 12, 8, 0, 0, TimeSpan.Zero);

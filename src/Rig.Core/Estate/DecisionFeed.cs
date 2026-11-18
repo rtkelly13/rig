@@ -1,5 +1,5 @@
-using System.Globalization;
 using System.Text.Json;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 
@@ -34,7 +34,7 @@ public static class DecisionFeed
             return new DecisionFeedView([], string.Empty, $"No decisions feed yet: the estate-decisions job has not written {path}.");
         }
 
-        var stamp = new DateTimeOffset(written, TimeSpan.Zero).ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
+        var stamp = IsoTime.Seconds(new DateTimeOffset(written, TimeSpan.Zero));
         if (Parse(path) is not { } decisions)
         {
             return new DecisionFeedView([], stamp, $"The decisions feed {path} is not in the expected shape.");
@@ -69,15 +69,15 @@ public static class DecisionFeed
             foreach (var item in document.RootElement.EnumerateArray())
             {
                 if (item.ValueKind != JsonValueKind.Object
-                    || Text(item, "kind") is not { } kind
-                    || Text(item, "repo") is not { } repo
-                    || Text(item, "path") is not { } where
-                    || Text(item, "reason") is not { } reason
+                    || JsonShape.Text(item, "kind") is not { } kind
+                    || JsonShape.Text(item, "repo") is not { } repo
+                    || JsonShape.Text(item, "path") is not { } where
+                    || JsonShape.Text(item, "reason") is not { } reason
                     || !item.TryGetProperty("size_bytes", out var size)
                     || size.ValueKind != JsonValueKind.Number
                     || !size.TryGetInt64(out var bytes)
-                    || Text(item, "suggested_action") is not { } action
-                    || Text(item, "command") is not { } command)
+                    || JsonShape.Text(item, "suggested_action") is not { } action
+                    || JsonShape.Text(item, "command") is not { } command)
                 {
                     return null;
                 }
@@ -92,7 +92,4 @@ public static class DecisionFeed
             return null;
         }
     }
-
-    private static string? Text(JsonElement parent, string name) =>
-        parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 }

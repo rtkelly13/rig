@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Roots;
 using Rig.Core.Text;
@@ -138,17 +137,7 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
     private Dictionary<string, CachedScan> ReadCache()
     {
         var entries = new Dictionary<string, CachedScan>(StringComparer.Ordinal);
-        JsonObject? document;
-        try
-        {
-            document = File.Exists(cacheFile) ? JsonNode.Parse(File.ReadAllText(cacheFile)) as JsonObject : null;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return entries;
-        }
-
-        foreach (var (key, value) in document ?? [])
+        foreach (var (key, value) in JsonFile.TryParse(cacheFile) as JsonObject ?? [])
         {
             if (CachedScan.FromJson(value) is { } entry)
             {

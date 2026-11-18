@@ -74,7 +74,7 @@ public static class TerminalSetup
 
         var defaults = Child(Child(settings, "profiles"), "defaults");
         var fontSettings = Child(defaults, "font");
-        if (Text(fontSettings, "face") != font)
+        if (JsonShape.FieldText(fontSettings, "face") != font)
         {
             fontSettings["face"] = font;
             changes.Add($"Set font face to {font}");
@@ -86,7 +86,7 @@ public static class TerminalSetup
             changes.Add("Set font size to 10");
         }
 
-        if (Text(defaults, "startingDirectory") != startingDirectory)
+        if (JsonShape.FieldText(defaults, "startingDirectory") != startingDirectory)
         {
             defaults["startingDirectory"] = startingDirectory;
             changes.Add($"Set starting directory to {startingDirectory}");
@@ -114,5 +114,4 @@ public static class TerminalSetup
         return child;
     }
 
-    private static string? Text(JsonObject parent, string key) => JsonShape.FieldText(parent, key);
 }

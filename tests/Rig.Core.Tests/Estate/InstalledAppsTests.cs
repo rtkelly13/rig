@@ -2,6 +2,7 @@ using Rig.Core.Estate;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Estate;
 
@@ -133,8 +134,8 @@ public sealed class InstalledAppsTests : IDisposable
 
         var value = StatTime.FromStat(stamp);
 
-        Assert.Equal("2023-11-14T22:13:20.565776+00:00", StatTime.IsoFormat(value));
-        Assert.Equal("2023-11-14T22:13:20+00:00", StatTime.IsoFormat(StatTime.FromStat(DateTime.UnixEpoch.AddSeconds(1_700_000_000))));
+        Assert.Equal("2023-11-14T22:13:20.565776+00:00", IsoTime.Format(value));
+        Assert.Equal("2023-11-14T22:13:20+00:00", IsoTime.Format(StatTime.FromStat(DateTime.UnixEpoch.AddSeconds(1_700_000_000))));
     }
 
     private sealed class Listed(params UninstallEntry[] entries) : IUninstallRegistry

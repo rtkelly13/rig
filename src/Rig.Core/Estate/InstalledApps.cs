@@ -262,7 +262,7 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
     };
 }
 
-/// <summary>Timestamps as ISO 8601 text, so a ported command's JSON is unchanged.</summary>
+/// <summary>File times as the whole-process stat rounding gives them.</summary>
 public static class StatTime
 {
     /// <summary>
@@ -279,13 +279,5 @@ public static class StatTime
         var whole = Math.Floor(stamp);
         var micros = (long)Math.Round((stamp - whole) * 1e6, MidpointRounding.ToEven);
         return DateTimeOffset.UnixEpoch.AddTicks((((long)whole * 1_000_000) + micros) * 10);
-    }
-
-    /// <summary><c>datetime.isoformat()</c> of a UTC time: microseconds only when there are any, and a <c>+00:00</c> offset.</summary>
-    public static string IsoFormat(DateTimeOffset value)
-    {
-        var utc = value.ToUniversalTime();
-        var format = utc.Ticks / 10 % 1_000_000 == 0 ? "yyyy-MM-dd'T'HH:mm:ss" : "yyyy-MM-dd'T'HH:mm:ss.ffffff";
-        return utc.ToString(format, CultureInfo.InvariantCulture) + "+00:00";
     }
 }

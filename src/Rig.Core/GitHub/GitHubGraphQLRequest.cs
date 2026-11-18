@@ -50,20 +50,12 @@ public sealed record GitHubGraphQLRequest(IGitHubApi Api, GraphQLRequestSpec Spe
         return this with { Spec = Spec with { Variables = updated } };
     }
 
-    /// <summary>Sets the operation name.</summary>
-    public GitHubGraphQLRequest WithOperationName(string operationName) =>
-        this with { Spec = Spec with { OperationName = operationName } };
-
     /// <summary>Sets a human-readable description of the operation for error reporting.</summary>
     public GitHubGraphQLRequest Describing(string description) =>
         this with { Spec = Spec with { Description = description } };
 
     /// <summary>Converts this request into an <see cref="ApiRequest"/>.</summary>
     public ApiRequest ToApiRequest() => GitHubFunctions.ToApiRequest(Spec);
-
-    /// <summary>Executes the GraphQL call returning the raw <see cref="Ran"/> result without decoding.</summary>
-    public Task<Ran> ExecuteRawAsync(CancellationToken cancellationToken = default) =>
-        GitHubFunctions.ExecuteGraphQLRawAsync(Api, Spec, cancellationToken);
 
     /// <summary>
     /// Executes the GraphQL query or mutation, decoding its <c>data</c> payload.

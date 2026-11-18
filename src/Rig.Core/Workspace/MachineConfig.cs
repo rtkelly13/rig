@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Workspace;
 
@@ -33,7 +34,7 @@ public static class MachineConfig
     /// <param name="codeRoot">The code root a bare name sits in.</param>
     /// <param name="home">What a leading <c>~</c> stands for.</param>
     public static string? WorkspaceRepo(string path, string codeRoot, string home) =>
-        (Read(path) as JsonObject)?["tools"] is JsonObject tools
+        (JsonFile.TryParse(path) as JsonObject)?["tools"] is JsonObject tools
         && tools["estate"] is JsonObject estate
         && estate["workspace_repo"] is JsonValue value
         && value.GetValueKind() == JsonValueKind.String
@@ -48,7 +49,7 @@ public static class MachineConfig
     public static IReadOnlyDictionary<string, string> DesktopAliases(string path)
     {
         var aliases = new OrderedDictionary<string, string>(StringComparer.Ordinal);
-        if (Read(path) is JsonObject root
+        if (JsonFile.TryParse(path) is JsonObject root
             && root["tools"] is JsonObject tools
             && tools["desktop"] is JsonObject desktop
             && desktop["aliases"] is JsonObject map
@@ -66,19 +67,6 @@ public static class MachineConfig
         return aliases;
     }
 
-    private static JsonNode? Read(string path)
-    {
-        ArgumentNullException.ThrowIfNull(path);
-        try
-        {
-            return JsonNode.Parse(File.ReadAllText(path));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return null;
-        }
-    }
-
     private static string ExpandHome(string entry, string home) =>
         entry == "~" ? home
         : entry.StartsWith("~/", StringComparison.Ordinal) || entry.StartsWith("~\\", StringComparison.Ordinal) ? Path.Join(home, entry[2..])
@@ -87,7 +75,7 @@ public static class MachineConfig
     // A string list under tools.estate, trimmed with blanks dropped; empty when the file, the key or any item is not as expected.
     private static IEnumerable<string> EstateNames(string path, string key)
     {
-        return (Read(path) as JsonObject)?["tools"] is JsonObject tools
+        return (JsonFile.TryParse(path) as JsonObject)?["tools"] is JsonObject tools
             && tools["estate"] is JsonObject estate
             && estate[key] is JsonArray list
             && list.All(item => item?.GetValueKind() == JsonValueKind.String)

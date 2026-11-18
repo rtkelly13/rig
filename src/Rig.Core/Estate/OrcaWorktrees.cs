@@ -229,8 +229,8 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         }
 
         return facts.IdleDays < idleDays
-            ? new(Recent, $"already in the default branch, but active {Fixed(facts.IdleDays, 1)} day(s) ago")
-            : new(Landed, $"already in the default branch; idle {Fixed(facts.IdleDays, 0)} day(s)");
+            ? new(Recent, $"already in the default branch, but active {NumberText.Fixed(facts.IdleDays, 1)} day(s) ago")
+            : new(Landed, $"already in the default branch; idle {NumberText.Fixed(facts.IdleDays, 0)} day(s)");
     }
 
     /// <summary>The branch name without <c>refs/heads/</c>; empty for a detached HEAD.</summary>
@@ -563,12 +563,6 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         var outer = Comparable(root);
         return inner == outer || inner.StartsWith(outer.TrimEnd('\\', '/') + Path.DirectorySeparatorChar, StringComparison.Ordinal);
     }
-
-    // Round half to even on the exact value. F0 is exact; F1 matches outside exact ties.
-    private static string Fixed(double value, int digits) =>
-        digits == 0
-            ? Math.Round(value, MidpointRounding.ToEven).ToString("F0", CultureInfo.InvariantCulture)
-            : value.ToString($"F{digits}", CultureInfo.InvariantCulture);
 
     private static string ExpandUser(string path, string home) =>
         path == "~" ? home

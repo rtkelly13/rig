@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 using Rig.Core.WorkItems;
 
 namespace Rig.Core.Tests.WorkItems;

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using Rig.Core.Text;
 
 namespace Rig.Core.Jobs;
 
@@ -99,7 +100,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
         var state = new Dictionary<string, Outcome>(JobState.ReadState(statePath), StringComparer.Ordinal);
         var decisions = new List<Decision>();
         void Save(DateTimeOffset? finished) =>
-            JobState.WriteRun(recordPath, new RunRecord(runId, JobWords.Wire(trigger), Iso(started), finished is { } end ? Iso(end) : null, [.. decisions]));
+            JobState.WriteRun(recordPath, new RunRecord(runId, JobWords.Wire(trigger), IsoTime.Seconds(started), finished is { } end ? IsoTime.Seconds(end) : null, [.. decisions]));
 
         foreach (var item in JobPlan.Plan(jobs, trigger, state, started, booted, flags, only: only, force: force))
         {
@@ -131,9 +132,6 @@ public sealed class JobRunner(JobRunnerSeams seams)
         Save(seams.Clock.GetLocalNow());
         return decisions.Any(item => item.Outcome is { Ok: false }) ? 1 : 0;
     }
-
-    /// <summary>An aware time as ISO 8601 to the second.</summary>
-    public static string Iso(DateTimeOffset time) => time.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
 
     /// <summary>How <c>jobs run</c> reports an outcome: <c>exit 0 after 3s: summary</c> or <c>error after 0s: why</c>.</summary>
     public static string Describe(Outcome outcome)
@@ -196,7 +194,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
         var seconds = Math.Round(seams.Clock.GetElapsedTime(begun).TotalSeconds, 1, MidpointRounding.ToEven);
         var printed = JobLog.RunOutput(log, runId);
         var failed = returnCode != 0 || error is not null;
-        var outcome = new Outcome(Iso(started), seconds, returnCode, JobWords.Wire(trigger))
+        var outcome = new Outcome(IsoTime.Seconds(started), seconds, returnCode, JobWords.Wire(trigger))
         {
             Error = error,
             RunId = runId,

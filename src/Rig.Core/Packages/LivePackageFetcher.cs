@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Packages;
 
@@ -32,7 +33,7 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     {
         var ran = await github.CallAsync(ApiRequest.Get($"repos/{slug}"), cancellationToken).ConfigureAwait(false);
         var repo = ran.Ok ? Parse(ran.Out) : null;
-        return Str(repo.Field("full_name")) is { } name && Long(repo.Field("id")) is { } id && Long(repo.Field("owner").Field("id")) is { } owner
+        return JsonShape.AsText(repo.Field("full_name")) is { } name && Long(repo.Field("id")) is { } id && Long(repo.Field("owner").Field("id")) is { } owner
             ? new RepoIdentity(name, id, owner)
             : null;
     }
@@ -55,7 +56,7 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
             return null;
         }
 
-        return [.. runs.Select(run => Str(run.Field("conclusion"))).OfType<string>().Where(c => c.Length > 0)];
+        return [.. runs.Select(run => JsonShape.AsText(run.Field("conclusion"))).OfType<string>().Where(c => c.Length > 0)];
     }
 
     /// <inheritdoc/>
@@ -95,8 +96,8 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
 
         foreach (var attestation in attestations)
         {
-            var payload = Str(attestation.Field("bundle").Field("dsseEnvelope").Field("payload"));
-            if (payload is null || !(Str(attestation.Field("predicateType")) ?? string.Empty).Contains("slsa.dev/provenance", StringComparison.Ordinal))
+            var payload = JsonShape.AsText(attestation.Field("bundle").Field("dsseEnvelope").Field("payload"));
+            if (payload is null || !(JsonShape.AsText(attestation.Field("predicateType")) ?? string.Empty).Contains("slsa.dev/provenance", StringComparison.Ordinal))
             {
                 continue;
             }
@@ -109,8 +110,8 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
 
             var gh = build.Field("internalParameters").Field("github");
             return new(
-                Str(workflow.Field("repository")) ?? string.Empty,
-                Str(workflow.Field("path")) ?? string.Empty,
+                JsonShape.AsText(workflow.Field("repository")) ?? string.Empty,
+                JsonShape.AsText(workflow.Field("path")) ?? string.Empty,
                 Long(gh.Field("repository_id")),
                 Long(gh.Field("repository_owner_id")));
         }
@@ -138,11 +139,11 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
             {
                 if (entry.Field("claims") is JsonObject claims)
                 {
-                    configs.Add(new(Str(claims.Field("repository")) ?? string.Empty, Str(claims.Field("workflow_ref").Field("file")) ?? string.Empty, Str(claims.Field("environment"))));
+                    configs.Add(new(JsonShape.AsText(claims.Field("repository")) ?? string.Empty, JsonShape.AsText(claims.Field("workflow_ref").Field("file")) ?? string.Empty, JsonShape.AsText(claims.Field("environment"))));
                 }
-                else if (Str(entry.Field("repository")) is { } repository)
+                else if (JsonShape.AsText(entry.Field("repository")) is { } repository)
                 {
-                    configs.Add(new(repository, Str(entry.Field("file")) ?? string.Empty, Str(entry.Field("environment"))));
+                    configs.Add(new(repository, JsonShape.AsText(entry.Field("file")) ?? string.Empty, JsonShape.AsText(entry.Field("environment"))));
                 }
             }
         }
@@ -204,7 +205,7 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         var versions = packument.Field("versions") as JsonObject;
         var times = packument.Field("time") as JsonObject;
         var all = versions?.Select(pair => pair.Key).ToList() ?? [];
-        var distLatest = Str(packument.Field("dist-tags").Field("latest"));
+        var distLatest = JsonShape.AsText(packument.Field("dist-tags").Field("latest"));
         if (distLatest is not null && !all.Contains(distLatest))
         {
             all.Add(distLatest);
@@ -220,7 +221,7 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         var stable = stables.Count == 0 ? null : stables.Aggregate(Newer);
         var meta = versions?[latest] as JsonObject ?? (distLatest is null ? null : versions?[distLatest] as JsonObject);
         var user = meta.Field("_npmUser") as JsonObject;
-        var attestations = Str(meta.Field("dist").Field("attestations").Field("url"));
+        var attestations = JsonShape.AsText(meta.Field("dist").Field("attestations").Field("url"));
         return new(latest, Time(times?[latest]))
         {
             TrustedPublisher = user is null ? null : user.Field("trustedPublisher") is JsonObject,
@@ -236,8 +237,8 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         {
             // The first resource of exactly each type: nuget.org lists each search host twice.
             string? Find(string type) => (index.Field("resources") as JsonArray)?
-                .FirstOrDefault(resource => Str(resource.Field("@type")) == type && Str(resource.Field("@id")) is not null) is { } found
-                ? Str(found.Field("@id"))
+                .FirstOrDefault(resource => JsonShape.AsText(resource.Field("@type")) == type && JsonShape.AsText(resource.Field("@id")) is not null) is { } found
+                ? JsonShape.AsText(found.Field("@id"))
                 : null;
             if (Find("RegistrationsBaseUrl/3.6.0") is { } registrations && Find("PackageBaseAddress/3.0.0") is { } flat
                 && Find("SearchQueryService/3.5.0") is { } search)
@@ -252,11 +253,11 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     private async Task<IReadOnlyList<string>?> NuGetOwnersAsync(string search, string name, CancellationToken cancellationToken)
     {
         var found = await GetAsync($"{search}?q=packageid:{name}&prerelease=true&semVerLevel=2.0.0", cancellationToken).ConfigureAwait(false);
-        var hit = (found.Field("data") as JsonArray)?.FirstOrDefault(h => string.Equals(Str(h.Field("id")), name, StringComparison.OrdinalIgnoreCase));
+        var hit = (found.Field("data") as JsonArray)?.FirstOrDefault(h => string.Equals(JsonShape.AsText(h.Field("id")), name, StringComparison.OrdinalIgnoreCase));
         return hit.Field("owners") switch
         {
-            JsonArray owners => [.. owners.Select(Str).OfType<string>()],
-            JsonValue one when Str(one) is { } owner => [owner],
+            JsonArray owners => [.. owners.Select(JsonShape.AsText).OfType<string>()],
+            JsonValue one when JsonShape.AsText(one) is { } owner => [owner],
             _ => null,
         };
     }
@@ -270,7 +271,7 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
 
         var id = name.ToLowerInvariant();
         var flat = await GetAsync($"{endpoints.Flat}{id}/index.json", cancellationToken).ConfigureAwait(false);
-        var versions = (flat.Field("versions") as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
+        var versions = (flat.Field("versions") as JsonArray)?.Select(JsonShape.AsText).OfType<string>().ToList() ?? [];
         if (versions.Count == 0)
         {
             return null;
@@ -286,19 +287,19 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         foreach (var page in ((index.Field("items") as JsonArray) ?? []).Reverse())
         {
             var leaves = page.Field("items") as JsonArray;
-            if (leaves is null && Str(page.Field("@id")) is { } pageUrl)
+            if (leaves is null && JsonShape.AsText(page.Field("@id")) is { } pageUrl)
             {
                 leaves = (await GetAsync(pageUrl, cancellationToken).ConfigureAwait(false)).Field("items") as JsonArray;
             }
 
             var listed = (leaves ?? []).Select(leaf => leaf.Field("catalogEntry") as JsonObject)
                 .OfType<JsonObject>()
-                .Where(entry => Str(entry.Field("version")) is not null && Str(entry.Field("@id")) is not null && entry.Field("listed")?.GetValueKind() != JsonValueKind.False)
+                .Where(entry => JsonShape.AsText(entry.Field("version")) is not null && JsonShape.AsText(entry.Field("@id")) is not null && entry.Field("listed")?.GetValueKind() != JsonValueKind.False)
                 .Reverse();
             foreach (var entry in listed)
             {
                 latest ??= entry;
-                if (stable is null && PackageVersions.IsStable(Str(entry.Field("version"))!))
+                if (stable is null && PackageVersions.IsStable(JsonShape.AsText(entry.Field("version"))!))
                 {
                     stable = entry;
                 }
@@ -321,11 +322,11 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
             return new(versions.Aggregate(Newer), null) { Listed = false, Owners = owners };
         }
 
-        var leafDoc = await GetAsync(Str(latest.Field("@id"))!, cancellationToken).ConfigureAwait(false);
-        return new(Str(latest.Field("version"))!, Time(latest.Field("published")))
+        var leafDoc = await GetAsync(JsonShape.AsText(latest.Field("@id"))!, cancellationToken).ConfigureAwait(false);
+        return new(JsonShape.AsText(latest.Field("version"))!, Time(latest.Field("published")))
         {
-            SourceRepoUrl = Str(leafDoc.Field("repository").Field("url")),
-            StableVersion = stable is null ? null : Str(stable.Field("version")),
+            SourceRepoUrl = JsonShape.AsText(leafDoc.Field("repository").Field("url")),
+            StableVersion = stable is null ? null : JsonShape.AsText(stable.Field("version")),
             StablePublished = stable is null ? null : Time(stable.Field("published")),
             Owners = owners,
             Deprecation = latest.Field("deprecation") is JsonObject deprecation ? DeprecationSummary(deprecation) : null,
@@ -337,17 +338,17 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
 
     private static string DeprecationSummary(JsonObject deprecation)
     {
-        var reasons = (deprecation.Field("reasons") as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
-        var message = Str(deprecation.Field("message")) is { Length: > 0 } text ? $" ({text})" : string.Empty;
-        var alternate = Str(deprecation.Field("alternatePackage").Field("id")) is { Length: > 0 } other ? $"; use {other}" : string.Empty;
+        var reasons = (deprecation.Field("reasons") as JsonArray)?.Select(JsonShape.AsText).OfType<string>().ToList() ?? [];
+        var message = JsonShape.AsText(deprecation.Field("message")) is { Length: > 0 } text ? $" ({text})" : string.Empty;
+        var alternate = JsonShape.AsText(deprecation.Field("alternatePackage").Field("id")) is { Length: > 0 } other ? $"; use {other}" : string.Empty;
         return $"{(reasons.Count == 0 ? "no reason given" : string.Join(", ", reasons))}{message}{alternate}";
     }
 
     private static string VulnerabilitySummary(JsonObject vulnerability)
     {
-        var level = int.TryParse(Str(vulnerability.Field("severity")), NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) ? parsed : -1;
+        var level = int.TryParse(JsonShape.AsText(vulnerability.Field("severity")), NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) ? parsed : -1;
         var name = level >= 0 && level < Severities.Length ? Severities[level] : "unknown";
-        return $"{name} {Str(vulnerability.Field("advisoryUrl"))}".Trim();
+        return $"{name} {JsonShape.AsText(vulnerability.Field("advisoryUrl"))}".Trim();
     }
 
     private static string Newer(string left, string right) => PackageVersions.Compare(right, left) > 0 ? right : left;
@@ -376,8 +377,6 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
         }
     }
 
-    private static string? Str(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
-
     // GitHub sends ids as numbers; npm's provenance carries them as strings.
     private static long? Long(JsonNode? node) => node switch
     {
@@ -388,7 +387,7 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     };
 
     private static DateTimeOffset? Time(JsonNode? node) =>
-        Str(node) is { } text && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var instant)
+        JsonShape.AsText(node) is { } text && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var instant)
             ? instant
             : null;
 

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Packages;
 
@@ -91,7 +92,7 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
             return unread;
         }
 
-        var versions = (flat.Field("versions") as JsonArray)?.Select(Str).OfType<string>().ToList() ?? [];
+        var versions = (flat.Field("versions") as JsonArray)?.Select(JsonShape.AsText).OfType<string>().ToList() ?? [];
         if (versions.Count == 0)
         {
             return RegistryInfo.NotPublished;
@@ -107,7 +108,7 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
         foreach (var page in ((index.Field("items") as JsonArray) ?? []).Reverse())
         {
             var leaves = page.Field("items") as JsonArray;
-            if (leaves is null && Str(page.Field("@id")) is { } pageUrl)
+            if (leaves is null && JsonShape.AsText(page.Field("@id")) is { } pageUrl)
             {
                 var (pageStatus, pageBody) = await GetAsync(pageUrl, cancellationToken).ConfigureAwait(false);
                 failed |= Unread(pageStatus, pageBody) == RegistryInfo.LookupFailed;
@@ -130,7 +131,7 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
             Failed = failed,
         };
 
-        bool IsLatest(JsonObject entry) => string.Equals(Str(entry.Field("version")), latest, StringComparison.OrdinalIgnoreCase);
+        bool IsLatest(JsonObject entry) => string.Equals(JsonShape.AsText(entry.Field("version")), latest, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<RegistryInfo> NpmAsync(string name, CancellationToken cancellationToken)
@@ -147,12 +148,11 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
         }
 
         var all = versions.Select(pair => pair.Key).ToList();
-        var latest = Str(packument.Field("dist-tags").Field("latest")) is { } tagged && all.Contains(tagged)
+        var latest = JsonShape.AsText(packument.Field("dist-tags").Field("latest")) is { } tagged && all.Contains(tagged)
             ? tagged
             : all.Aggregate((a, b) => PackageVersions.Compare(b, a) > 0 ? b : a);
-        var deprecated = Str(versions[latest].Field("deprecated"));
+        var deprecated = JsonShape.AsText(versions[latest].Field("deprecated"));
         return new(latest) { AllVersions = all, Deprecated = !string.IsNullOrEmpty(deprecated) };
     }
 
-    private static string? Str(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 }
