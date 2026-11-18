@@ -167,28 +167,8 @@ internal sealed partial class DesktopWorkspaceCommand
         int checksAfterSuccess,
         CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace restore").ConfigureAwait(false);
-        if (denied != 0)
+        if (await Open("workspace restore", config, enable, disable).ConfigureAwait(false) is not Opened(var machine, var path, var plan))
         {
-            return denied;
-        }
-
-        var path = ConfigPath(config);
-        if (!File.Exists(path))
-        {
-            await host.Output.WriteLineAsync($"Config not found: {path}").ConfigureAwait(false);
-            return 1;
-        }
-
-        WorkspacePlan plan;
-        try
-        {
-            plan = Load(path, enable, disable);
-        }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
-        {
-            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return 1;
         }
 
@@ -204,7 +184,6 @@ internal sealed partial class DesktopWorkspaceCommand
             return 2;
         }
 
-        var machine = native!;
         var liveScreens = machine.Win32.Monitors().Count;
         if (!dryRun && desktop is null && screen is null
             && Placement.FindMonitorShortfall(plan, liveScreens) is { } shortfall)
@@ -244,7 +223,7 @@ internal sealed partial class DesktopWorkspaceCommand
         }
 
         var log = dryRun ? null : new FileRunLog(host.LogsDirectory(path), host.Time);
-        var port = new NativeDesktopPort(machine.Win32, machine.Actions, machine.Desktops, machine.Launching, host.Time);
+        var port = machine.Port(host.Time);
         var options = new RestoreOptions(host.Substitutions(plan))
         {
             DryRun = dryRun,
@@ -290,33 +269,13 @@ internal sealed partial class DesktopWorkspaceCommand
 
     private async Task<int> Audit(string? config, string? desktop, int? screen, IReadOnlyList<string> enable, IReadOnlyList<string> disable, CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace audit").ConfigureAwait(false);
-        if (denied != 0)
+        if (await Open("workspace audit", config, enable, disable).ConfigureAwait(false) is not Opened(var machine, _, var plan))
         {
-            return denied;
-        }
-
-        var path = ConfigPath(config);
-        if (!File.Exists(path))
-        {
-            await host.Output.WriteLineAsync($"Config not found: {path}").ConfigureAwait(false);
-            return 1;
-        }
-
-        WorkspacePlan plan;
-        try
-        {
-            plan = Load(path, enable, disable);
-        }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
-        {
-            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return 1;
         }
 
         var scoped = WorkspaceScope.For(plan, desktop, screen);
-        var port = new NativeDesktopPort(native!.Win32, native.Actions, native.Desktops, native.Launching, host.Time);
+        var port = machine.Port(host.Time);
         var actual = CurrentStatusForScope(port, plan, desktop, screen);
         var diff = WorkspaceDiff.Of(scoped, actual, host.Substitutions(plan));
         await host.Output.WriteLineAsync("Workspace Audit").ConfigureAwait(false);
@@ -327,15 +286,12 @@ internal sealed partial class DesktopWorkspaceCommand
 
     private async Task<int> Status(bool verbose, CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace status").ConfigureAwait(false);
-        if (denied != 0)
+        if (await WindowsOnly("workspace status").ConfigureAwait(false) is not { } machine)
         {
-            return denied;
+            return 1;
         }
 
-        var machine = native!;
-        var port = new NativeDesktopPort(machine.Win32, machine.Actions, machine.Desktops, machine.Launching, host.Time);
+        var port = machine.Port(host.Time);
         var status = port.CurrentWorkspaceStatus();
         for (var index = 0; index < status.Desktops.Count; index++)
         {
@@ -379,21 +335,8 @@ internal sealed partial class DesktopWorkspaceCommand
 
     private async Task<int> ValidatePlan(string? config, bool strict, IReadOnlyList<string> enable, IReadOnlyList<string> disable, CancellationToken cancellationToken)
     {
-        var path = ConfigPath(config);
-        if (!File.Exists(path))
+        if (await ReadPlan(config, enable, disable, verify: false).ConfigureAwait(false) is not Loaded(_, var plan))
         {
-            await host.Output.WriteLineAsync($"Config not found: {path}").ConfigureAwait(false);
-            return 1;
-        }
-
-        WorkspacePlan plan;
-        try
-        {
-            plan = LoadContext(path, enable, disable);
-        }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
-        {
-            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return 1;
         }
 
@@ -493,15 +436,12 @@ internal sealed partial class DesktopWorkspaceCommand
         string desktopDirectory,
         CancellationToken cancellationToken)
     {
-        var native = host.Windows();
-        var denied = await WindowsOnly(native, "workspace export-plan").ConfigureAwait(false);
-        if (denied != 0)
+        if (await WindowsOnly("workspace export-plan").ConfigureAwait(false) is not { } machine)
         {
-            return denied;
+            return 1;
         }
 
-        var machine = native!;
-        var inventory = new WindowInventory(machine.Win32, machine.Desktops);
+        var inventory = machine.Inventory();
         var count = desktopCount ?? machine.Desktops.Count;
         if (count < 1)
         {

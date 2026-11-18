@@ -36,21 +36,7 @@ public sealed record Rect(int Left, int Top, int Width, int Height)
 public sealed record PlacementLayout(string Mode, int Slot = 1, string? Orientation = null, int? MinWidth = null, int? Count = null)
 {
     /// <summary>The layout as a plan file holds it; <see cref="Count"/> is runtime-only and left out.</summary>
-    public JsonObject ToJson()
-    {
-        var data = new JsonObject { ["mode"] = Mode, ["slot"] = Slot };
-        if (!string.IsNullOrEmpty(Orientation))
-        {
-            data["orientation"] = Orientation;
-        }
-
-        if (MinWidth is { } minWidth)
-        {
-            data["min_width"] = minWidth;
-        }
-
-        return data;
-    }
+    public JsonObject ToJson() => new JsonObject { ["mode"] = Mode, ["slot"] = Slot }.AddText("orientation", Orientation).AddIf(MinWidth is not null, "min_width", MinWidth);
 }
 
 /// <summary>A window's planned screen and region.</summary>
@@ -60,16 +46,7 @@ public sealed record PlacementLayout(string Mode, int Slot = 1, string? Orientat
 public sealed record PlacementSpec(int Screen, PlacementLayout Layout, PlacementLayout? Subdivide = null)
 {
     /// <summary>The placement as a plan file holds it.</summary>
-    public JsonObject ToJson()
-    {
-        var data = new JsonObject { ["screen"] = Screen, ["layout"] = Layout.ToJson() };
-        if (Subdivide is not null)
-        {
-            data["subdivide"] = Subdivide.ToJson();
-        }
-
-        return data;
-    }
+    public JsonObject ToJson() => new JsonObject { ["screen"] = Screen, ["layout"] = Layout.ToJson() }.AddIf(Subdivide is not null, "subdivide", Subdivide?.ToJson());
 }
 
 /// <summary>A window as a status capture or exported plan records it.</summary>
@@ -92,34 +69,14 @@ public sealed record WindowSnapshot(
     Rect? Bounds = null)
 {
     /// <summary>The snapshot as a plan file holds it; empty fields are left out.</summary>
-    public JsonObject ToJson()
-    {
-        var data = new JsonObject { ["title"] = Title };
-        if (Pid is { } pid)
-        {
-            data["pid"] = pid;
-        }
-
-        PlanJsonWriter.AddText(data, "process_name", ProcessName);
-        PlanJsonWriter.AddText(data, "exe_path", ExePath);
-        PlanJsonWriter.AddText(data, "class_name", ClassName);
-        if (ScreenNumber is { } screen)
-        {
-            data["screen_number"] = screen;
-        }
-
-        if (InferredPlacement is not null)
-        {
-            data["inferred_placement"] = InferredPlacement.ToJson();
-        }
-
-        if (Bounds is not null)
-        {
-            data["bounds"] = Bounds.ToJson();
-        }
-
-        return data;
-    }
+    public JsonObject ToJson() => new JsonObject { ["title"] = Title }
+        .AddIf(Pid is not null, "pid", Pid)
+        .AddText("process_name", ProcessName)
+        .AddText("exe_path", ExePath)
+        .AddText("class_name", ClassName)
+        .AddIf(ScreenNumber is not null, "screen_number", ScreenNumber)
+        .AddIf(InferredPlacement is not null, "inferred_placement", InferredPlacement?.ToJson())
+        .AddIf(Bounds is not null, "bounds", Bounds?.ToJson());
 }
 
 /// <summary>One thing a desktop launches: an app or a terminal.</summary>
@@ -197,47 +154,23 @@ public sealed record LaunchEntry(string Name)
     public bool DefersCommandAtLogon => CommandAtLogon == CommandAtLogonDeferred;
 
     /// <summary>The entry as a plan file holds it; empty and default-off fields are left out.</summary>
-    public JsonObject ToJson()
-    {
-        var data = new JsonObject { ["name"] = Name, ["type"] = Type, ["delay_ms"] = DelayMs };
-        if (Disabled)
-        {
-            data["disabled"] = true;
-        }
-
-        PlanJsonWriter.AddText(data, "feature", Feature);
-        PlanJsonWriter.AddText(data, "shell", Shell);
-        PlanJsonWriter.AddText(data, "path", Path);
-        if (Args.Count > 0)
-        {
-            data["args"] = new JsonArray([.. Args.Select(arg => JsonValue.Create(arg))]);
-        }
-
-        PlanJsonWriter.AddText(data, "command", Command);
-        PlanJsonWriter.AddText(data, "command_at_logon", CommandAtLogon);
-        PlanJsonWriter.AddText(data, "cwd", Cwd);
-        PlanJsonWriter.AddText(data, "summary", Summary);
-        PlanJsonWriter.AddText(data, "notes", Notes);
-        if (Placement is not null)
-        {
-            data["placement"] = Placement.ToJson();
-        }
-
-        PlanJsonWriter.AddText(data, "window_title", WindowTitle);
-        PlanJsonWriter.AddText(data, "window_process_name", WindowProcessName);
-        if (WindowWaitTimeoutMs is { } timeout)
-        {
-            data["window_wait_timeout_ms"] = timeout;
-        }
-
-        PlanJsonWriter.AddText(data, "window_pid_file", WindowPidFile);
-        if (SingleInstance)
-        {
-            data["single_instance"] = true;
-        }
-
-        return data;
-    }
+    public JsonObject ToJson() => new JsonObject { ["name"] = Name, ["type"] = Type, ["delay_ms"] = DelayMs }
+        .AddIf(Disabled, "disabled", true)
+        .AddText("feature", Feature)
+        .AddText("shell", Shell)
+        .AddText("path", Path)
+        .AddIf(Args.Count > 0, "args", new JsonArray([.. Args.Select(arg => JsonValue.Create(arg))]))
+        .AddText("command", Command)
+        .AddText("command_at_logon", CommandAtLogon)
+        .AddText("cwd", Cwd)
+        .AddText("summary", Summary)
+        .AddText("notes", Notes)
+        .AddIf(Placement is not null, "placement", Placement?.ToJson())
+        .AddText("window_title", WindowTitle)
+        .AddText("window_process_name", WindowProcessName)
+        .AddIf(WindowWaitTimeoutMs is not null, "window_wait_timeout_ms", WindowWaitTimeoutMs)
+        .AddText("window_pid_file", WindowPidFile)
+        .AddIf(SingleInstance, "single_instance", true);
 }
 
 /// <summary>One virtual desktop: its name and what it launches.</summary>
@@ -257,39 +190,13 @@ public sealed record DesktopPlan(string Name)
     public string? Feature { get; init; }
 
     /// <summary>The desktop as a plan file holds it.</summary>
-    public JsonObject ToJson()
-    {
-        var data = new JsonObject
-        {
-            ["name"] = Name,
-            ["launch"] = new JsonArray([.. Launch.Select(JsonNode (entry) => entry.ToJson())]),
-        };
-        if (Disabled)
-        {
-            data["disabled"] = true;
-        }
-
-        PlanJsonWriter.AddText(data, "feature", Feature);
-        if (CapturedWindows.Count > 0)
-        {
-            data["captured_windows"] = new JsonArray([.. CapturedWindows.Select(JsonNode (window) => window.ToJson())]);
-        }
-
-        return data;
-    }
+    public JsonObject ToJson() => new JsonObject { ["name"] = Name, ["launch"] = new JsonArray([.. Launch.Select(JsonNode (entry) => entry.ToJson())]) }
+        .AddIf(Disabled, "disabled", true)
+        .AddText("feature", Feature)
+        .AddIf(CapturedWindows.Count > 0, "captured_windows", new JsonArray([.. CapturedWindows.Select(JsonNode (window) => window.ToJson())]));
 
     /// <summary>The entry a plan bundle lists for this desktop, whose own file sits at <paramref name="path"/>.</summary>
-    public JsonObject BundleRef(string path)
-    {
-        var data = new JsonObject { ["path"] = path };
-        PlanJsonWriter.AddText(data, "feature", Feature);
-        if (Disabled)
-        {
-            data["disabled"] = true;
-        }
-
-        return data;
-    }
+    public JsonObject BundleRef(string path) => new JsonObject { ["path"] = path }.AddText("feature", Feature).AddIf(Disabled, "disabled", true);
 }
 
 /// <summary>The whole workspace: every desktop, in order, and the plan's settings.</summary>
@@ -330,44 +237,23 @@ public sealed record WorkspacePlan
     public IReadOnlyList<string> RetiredDesktopNames { get; init; } = [];
 
     /// <summary>The plan as a single plan file holds it.</summary>
-    public JsonObject ToJson()
+    public JsonObject ToJson() => WithNotesAndAliases(new JsonObject
     {
-        var data = new JsonObject
-        {
-            ["version"] = Version,
-            ["switch_delay_ms"] = SwitchDelayMs,
-            ["desktops"] = new JsonArray([.. Desktops.Select(JsonNode (desktop) => desktop.ToJson())]),
-        };
-        if (Features.Count > 0)
-        {
-            data["features"] = PlanJsonWriter.Map(Features, flag => JsonValue.Create(flag));
-        }
-
-        PlanJsonWriter.AddText(data, "workspace", Workspace);
-        PlanJsonWriter.AddText(data, "personal-workspace", PersonalWorkspace);
-        AddNotesAndAliases(data);
-        return data;
-    }
+        ["version"] = Version,
+        ["switch_delay_ms"] = SwitchDelayMs,
+        ["desktops"] = new JsonArray([.. Desktops.Select(JsonNode (desktop) => desktop.ToJson())]),
+    }.AddIf(Features.Count > 0, "features", PlanJsonWriter.Map(Features, flag => JsonValue.Create(flag)))
+        .AddText("workspace", Workspace)
+        .AddText("personal-workspace", PersonalWorkspace));
 
     /// <summary>The root file of a plan bundle: this plan's settings, listing desktops by <see cref="DesktopPlan.BundleRef"/>.</summary>
-    public JsonObject BundleRoot(IEnumerable<JsonNode> desktopRefs)
+    public JsonObject BundleRoot(IEnumerable<JsonNode> desktopRefs) => WithNotesAndAliases(new JsonObject
     {
-        var root = new JsonObject
-        {
-            ["version"] = Version,
-            ["switch_delay_ms"] = SwitchDelayMs,
-            ["bundle"] = new JsonObject { ["desktops"] = new JsonArray([.. desktopRefs]) },
-        };
-        PlanJsonWriter.AddText(root, "workspace", Workspace);
-        PlanJsonWriter.AddText(root, "personal-workspace", PersonalWorkspace);
-        AddNotesAndAliases(root);
-        if (Features.Count > 0)
-        {
-            root["features"] = PlanJsonWriter.Map(Features, flag => JsonValue.Create(flag));
-        }
-
-        return root;
-    }
+        ["version"] = Version,
+        ["switch_delay_ms"] = SwitchDelayMs,
+        ["bundle"] = new JsonObject { ["desktops"] = new JsonArray([.. desktopRefs]) },
+    }.AddText("workspace", Workspace).AddText("personal-workspace", PersonalWorkspace))
+        .AddIf(Features.Count > 0, "features", PlanJsonWriter.Map(Features, flag => JsonValue.Create(flag)));
 
     /// <summary>
     /// Every placeholder name and its resolved value. <paramref name="environment"/> (see
@@ -402,16 +288,7 @@ public sealed record WorkspacePlan
         return Placeholders.ResolveMap(values);
     }
 
-    private void AddNotesAndAliases(JsonObject data)
-    {
-        if (Notes.Count > 0)
-        {
-            data["notes"] = new JsonArray([.. Notes.Select(note => JsonValue.Create(note))]);
-        }
-
-        if (Aliases.Count > 0)
-        {
-            data["aliases"] = PlanJsonWriter.Map(Aliases, value => JsonValue.Create(value));
-        }
-    }
+    private JsonObject WithNotesAndAliases(JsonObject data) => data
+        .AddIf(Notes.Count > 0, "notes", new JsonArray([.. Notes.Select(note => JsonValue.Create(note))]))
+        .AddIf(Aliases.Count > 0, "aliases", PlanJsonWriter.Map(Aliases, value => JsonValue.Create(value)));
 }
