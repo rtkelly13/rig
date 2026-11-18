@@ -1,3 +1,4 @@
+using Rig.Core.Files;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -133,7 +134,7 @@ public sealed class EstateGraph(Git git, TimeProvider time, TimeSpan? listTimeou
             {
                 if (File.Exists(temporary))
                 {
-                    try { File.Delete(temporary); } catch (IOException) { }
+                    _ = BestEffort.Io(() => File.Delete(temporary));
                 }
             }
             return graph;
