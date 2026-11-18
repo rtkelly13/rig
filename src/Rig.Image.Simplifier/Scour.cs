@@ -4,10 +4,11 @@ using System.Text.RegularExpressions;
 namespace Rig.Image.Simplifier;
 
 /// <summary>
-/// The scour 0.38.2 cleanup the Python simplifier runs (title, desc and metadata removed, comments stripped, no XML prolog, ids and
-/// titles untouched), ported over <c>System.Xml</c> in place of minidom. The passes whose result is a smaller but identically rendering
-/// document are ported in scour's order; the ones that rewrite geometry or restructure groups are not, and the Python-only passes are
-/// listed in the PR that introduced this class. The path data is not touched here at all: the simplifier rewrites it on its own.
+/// The scour 0.38.2 cleanup the Python simplifier runs with its options (descriptive and editor elements removed, comments stripped, no
+/// XML prolog, ids kept, <c>group_create</c> off), ported over <c>System.Xml</c> in place of minidom and run in scour's order. The path,
+/// point, transform, gradient and group passes live in the sibling <c>Scour.*.cs</c> files. Not ported: <c>createGroupsForCommonAttributes</c>
+/// (scour never reaches it with <c>group_create</c> off) and raster embedding. Where Python crashes on malformed numbers this port leaves
+/// the document alone or copes; the pull request that introduced it lists those cases.
 /// </summary>
 internal static partial class Scour
 {
@@ -43,7 +44,9 @@ internal static partial class Scour
     /// </summary>
     public static string Run(string svg)
     {
-        var root = DomParser.Parse(svg);
+        var before = new List<string>();
+        var after = new List<string>();
+        var root = DomParser.Parse(svg, before, after);
         RemoveDescriptiveElements(root);
         RemoveEditorData(root);
         if (root.GetAttribute("xmlns") != SvgNamespace)
@@ -63,19 +66,62 @@ internal static partial class Scour
         {
         }
 
+        while (CollapseSinglyReferencedGradients(root) > 0)
+        {
+        }
+
+        RemoveDuplicateGradients(root);
+        MergeSiblingGroups(root);
+
+        // The root's children are the first ones considered, whether or not anything refers to them; the root itself never takes attributes.
+        var referenced = FindReferencedElements(root);
+        foreach (var child in root.ChildElements.ToList())
+        {
+            MoveCommonAttributesToParent(child, referenced);
+        }
+
+        RemoveUnusedAttributesOnParent(root);
         while (RemoveNestedGroups(root) > 0)
         {
         }
 
-        foreach (var path in root.DescendantsNamed("path").Where(p => p.GetAttribute("d").Length == 0))
+        foreach (var polygon in root.DescendantsNamed("polygon"))
         {
-            path.Remove();
+            CleanPolygon(polygon);
+        }
+
+        foreach (var polyline in root.DescendantsNamed("polyline"))
+        {
+            CleanPolyline(polyline);
+        }
+
+        foreach (var path in root.DescendantsNamed("path"))
+        {
+            if (path.GetAttribute("d").Length == 0)
+            {
+                path.Remove();
+            }
+            else
+            {
+                try
+                {
+                    CleanPath(path);
+                }
+                catch (ArgumentOutOfRangeException e)
+                {
+                    // A command with fewer numbers than it needs: Python crashes with an IndexError, so the document is left alone.
+                    throw new FormatException("Path data has too few numbers for its command.", e);
+                }
+            }
         }
 
         ScourLengths(root);
         ReducePrecision(root);
         RemoveDefaultValues(root, []);
-        return ScourWriter.Write(root) + "\n";
+        OptimizeTransforms(root);
+
+        // The top level keeps its DOCTYPE and processing instructions, in order, around the root.
+        return string.Concat(before.Select(node => node + "\n")) + ScourWriter.Write(root) + "\n" + string.Concat(after.Select(node => node + "\n"));
     }
 
     private static void RemoveDescriptiveElements(DomElement root)
@@ -195,8 +241,21 @@ internal static partial class Scour
         return current;
     }
 
-    // scour's repairStyle also deletes properties that cannot show (stroke widths with no stroke and so on); only its last step,
-    // which turns every style property that has an attribute form into that attribute, is ported.
+    private static readonly string[] OpacityZeroUseless =
+        ["fill", "fill-opacity", "fill-rule", "stroke", "stroke-linejoin", "stroke-opacity", "stroke-miterlimit", "stroke-linecap", "stroke-dasharray", "stroke-dashoffset"];
+
+    private static readonly string[] StrokeNoneUseless =
+        ["stroke-width", "stroke-linejoin", "stroke-miterlimit", "stroke-linecap", "stroke-dasharray", "stroke-dashoffset", "stroke-opacity"];
+
+    private static readonly string[] FillOpacityZeroUseless = ["fill", "fill-rule"];
+
+    private static readonly string[] StrokeOpacityZeroUseless = ["stroke", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-dasharray", "stroke-dashoffset"];
+
+    private static readonly string[] StrokeWidthZeroUseless = ["stroke", "stroke-linejoin", "stroke-linecap", "stroke-dasharray", "stroke-dashoffset", "stroke-opacity"];
+
+    private static readonly string[] ContainerElements = ["a", "defs", "glyph", "g", "marker", "mask", "missing-glyph", "pattern", "svg", "switch", "symbol"];
+
+    // scour's repairStyle: style properties that cannot show are deleted, and the rest that have an attribute form become that attribute.
     private static void RepairStyle(DomElement root)
     {
         foreach (var element in root.SelfAndDescendants())
@@ -205,6 +264,54 @@ internal static partial class Scour
             if (styles.Count == 0)
             {
                 continue;
+            }
+
+            // A gradient followed by a black fallback colour: the fallback is never used.
+            foreach (var property in new[] { "fill", "stroke" })
+            {
+                if (styles.TryGetValue(property, out var paint))
+                {
+                    var chunk = paint.Split(") ");
+                    if (chunk.Length == 2 && chunk[1] == "rgb(0, 0, 0)"
+                        && (chunk[0].StartsWith("url(#", StringComparison.Ordinal) || chunk[0].StartsWith("url(\"#", StringComparison.Ordinal) || chunk[0].StartsWith("url('#", StringComparison.Ordinal)))
+                    {
+                        styles[property] = chunk[0] + ")";
+                    }
+                }
+            }
+
+            if (styles.TryGetValue("opacity", out var opacity) && SvgLength.ParsePythonFloat(opacity) == 0.0)
+            {
+                DeleteUnlessInherited(element, styles, OpacityZeroUseless);
+            }
+
+            if (styles.TryGetValue("stroke", out var stroke) && stroke == "none")
+            {
+                DeleteUnlessInherited(element, styles, StrokeNoneUseless);
+                if (!StyleInheritedByChild(element, "stroke") && StyleInheritedFromParent(element, "stroke") is null or "none")
+                {
+                    styles.Remove("stroke");
+                }
+            }
+
+            if (styles.TryGetValue("fill", out var fill) && fill == "none")
+            {
+                DeleteUnlessInherited(element, styles, ["fill-rule", "fill-opacity"]);
+            }
+
+            if (styles.TryGetValue("fill-opacity", out var fillOpacity) && SvgLength.ParsePythonFloat(fillOpacity) == 0.0)
+            {
+                DeleteUnlessInherited(element, styles, FillOpacityZeroUseless);
+            }
+
+            if (styles.TryGetValue("stroke-opacity", out var strokeOpacity) && SvgLength.ParsePythonFloat(strokeOpacity) == 0.0)
+            {
+                DeleteUnlessInherited(element, styles, StrokeOpacityZeroUseless);
+            }
+
+            if (styles.TryGetValue("stroke-width", out var strokeWidth) && SvgLength.Parse(strokeWidth).Value == 0.0)
+            {
+                DeleteUnlessInherited(element, styles, StrokeWidthZeroUseless);
             }
 
             if (!MayContainText(element))
@@ -228,6 +335,76 @@ internal static partial class Scour
 
             WriteStyle(element, styles);
         }
+    }
+
+    private static void DeleteUnlessInherited(DomElement element, OrderedDictionary<string, string> styles, string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (styles.ContainsKey(name) && !StyleInheritedByChild(element, name))
+            {
+                styles.Remove(name);
+            }
+        }
+    }
+
+    // The value of a property inherited from the ancestors, looking only at inline styles and presentation attributes, or null at the top.
+    private static string? StyleInheritedFromParent(DomElement node, string style)
+    {
+        var parent = node.Parent;
+        while (parent is not null)
+        {
+            var styles = ReadStyle(parent);
+            if (styles.TryGetValue(style, out var value) && value != "inherit")
+            {
+                return value;
+            }
+
+            var attribute = parent.GetAttribute(style);
+            if (attribute is not ("" or "inherit"))
+            {
+                return attribute;
+            }
+
+            parent = parent.Parent;
+        }
+
+        return null;
+    }
+
+    // Whether a descendant could inherit the property: when false it is safe to delete it from this element.
+    private static bool StyleInheritedByChild(DomNode node, string style, bool nodeIsChild = false)
+    {
+        if (node is not DomElement element)
+        {
+            return false;
+        }
+
+        if (nodeIsChild)
+        {
+            // A child that sets its own value ends the search along that branch.
+            if (element.GetAttribute(style) is not ("" or "inherit"))
+            {
+                return false;
+            }
+
+            if (ReadStyle(element).TryGetValue(style, out var value) && value != "inherit")
+            {
+                return false;
+            }
+        }
+        else if (element.Children.Count == 0)
+        {
+            return false;
+        }
+
+        if (element.Children.Any(child => StyleInheritedByChild(child, style, true)))
+        {
+            return true;
+        }
+
+        // A container's own inherited value means nothing once no child inherits it.
+        return !ContainerElements.Contains(element.QualifiedName);
     }
 
     // overflow only applies to some elements; below the root the default style sheet already hides it, and on the root visible is the initial value.
@@ -360,24 +537,8 @@ internal static partial class Scour
     private static int RemoveUnreferencedElements(DomElement root)
     {
         var count = 0;
-        var identified = new OrderedDictionary<string, DomElement>(StringComparer.Ordinal);
-        foreach (var element in root.SelfAndDescendants())
-        {
-            var id = element.GetAttribute("id");
-            if (id.Length > 0)
-            {
-                identified[id] = element;
-            }
-        }
-
-        // With a <style> element scour reads references out of its CSS, which is not ported, so nothing is judged unreferenced.
-        if (root.SelfAndDescendants().Any(e => e.LocalName == "style" && e.Namespace == SvgNamespace))
-        {
-            return 0;
-        }
-
-        var referenced = new HashSet<string>(StringComparer.Ordinal);
-        FindReferencedElements(root, referenced);
+        var identified = FindElementsWithId(root);
+        var referenced = FindReferencedElements(root);
 
         foreach (var definitions in root.DescendantsNamed("defs"))
         {
@@ -390,7 +551,7 @@ internal static partial class Scour
 
         foreach (var (id, goner) in identified)
         {
-            if (!referenced.Contains(id)
+            if (!referenced.ContainsKey(id)
                 && goner.QualifiedName is "linearGradient" or "radialGradient" or "pattern"
                 && goner.Parent is { QualifiedName: not "defs" })
             {
@@ -402,13 +563,13 @@ internal static partial class Scour
         return count;
     }
 
-    private static List<DomElement> UnusedDefinitions(DomElement definitions, HashSet<string> referenced)
+    private static List<DomElement> UnusedDefinitions(DomElement definitions, OrderedDictionary<string, HashSet<DomElement>> referenced)
     {
         var unused = new List<DomElement>();
         foreach (var element in definitions.ChildElements)
         {
             var id = element.GetAttribute("id");
-            if (id.Length > 0 && referenced.Contains(id))
+            if (id.Length > 0 && referenced.ContainsKey(id))
             {
                 continue;
             }
@@ -426,12 +587,63 @@ internal static partial class Scour
         return unused;
     }
 
-    private static void FindReferencedElements(DomElement node, HashSet<string> ids)
+    private static OrderedDictionary<string, DomElement> FindElementsWithId(DomElement root)
     {
-        var href = node.Attributes.FirstOrDefault(a => a.Namespace == XlinkNamespace && a.LocalName == "href")?.Value ?? string.Empty;
+        var identified = new OrderedDictionary<string, DomElement>(StringComparer.Ordinal);
+        foreach (var element in root.SelfAndDescendants())
+        {
+            var id = element.GetAttribute("id");
+            if (id.Length > 0)
+            {
+                identified[id] = element;
+            }
+        }
+
+        return identified;
+    }
+
+    /// <summary>Every id that something refers to (by xlink:href, a style or a presentation attribute, or a style sheet), with the elements that do.</summary>
+    private static OrderedDictionary<string, HashSet<DomElement>> FindReferencedElements(DomElement root)
+    {
+        var ids = new OrderedDictionary<string, HashSet<DomElement>>(StringComparer.Ordinal);
+        FindReferencedElements(root, ids);
+        return ids;
+    }
+
+    private static void FindReferencedElements(DomElement node, OrderedDictionary<string, HashSet<DomElement>> ids)
+    {
+        // A style element's CSS is read as one stretch of text, and its references belong to the element itself.
+        if (node.QualifiedName == "style" && node.Namespace == SvgNamespace)
+        {
+            var stylesheet = string.Concat(node.Children.OfType<DomText>().Select(t => t.Value));
+            if (stylesheet.Length > 0)
+            {
+                foreach (var rule in stylesheet.Split('}'))
+                {
+                    var bits = rule.Split('{');
+                    if (bits.Length != 2)
+                    {
+                        continue;
+                    }
+
+                    foreach (var declaration in bits[1].Trim().Split(';'))
+                    {
+                        var nibbles = declaration.Trim().Split(':');
+                        if (nibbles.Length == 2)
+                        {
+                            FindReferencingProperty(node, nibbles[0].Trim(), nibbles[1].Trim(), ids);
+                        }
+                    }
+                }
+            }
+
+            return;
+        }
+
+        var href = node.GetAttributeNS(XlinkNamespace, "href");
         if (href.Length > 1 && href[0] == '#')
         {
-            ids.Add(href[1..]);
+            AddReference(ids, href[1..], node);
         }
 
         foreach (var declaration in node.GetAttribute("style").Split(';'))
@@ -439,7 +651,7 @@ internal static partial class Scour
             var parts = declaration.Split(':');
             if (parts.Length == 2)
             {
-                FindReferencingProperty(parts[0].Trim(), parts[1].Trim(), ids);
+                FindReferencingProperty(node, parts[0].Trim(), parts[1].Trim(), ids);
             }
         }
 
@@ -448,7 +660,7 @@ internal static partial class Scour
             var value = node.GetAttribute(property).Trim();
             if (value.Length > 0)
             {
-                FindReferencingProperty(property, value, ids);
+                FindReferencingProperty(node, property, value, ids);
             }
         }
 
@@ -458,7 +670,18 @@ internal static partial class Scour
         }
     }
 
-    private static void FindReferencingProperty(string property, string value, HashSet<string> ids)
+    private static void AddReference(OrderedDictionary<string, HashSet<DomElement>> ids, string id, DomElement node)
+    {
+        if (!ids.TryGetValue(id, out var nodes))
+        {
+            nodes = [];
+            ids[id] = nodes;
+        }
+
+        nodes.Add(node);
+    }
+
+    private static void FindReferencingProperty(DomElement node, string property, string value, OrderedDictionary<string, HashSet<DomElement>> ids)
     {
         if (!ReferencingProperties.Contains(property) || value.Length == 0)
         {
@@ -467,17 +690,17 @@ internal static partial class Scour
 
         if (value.Length >= 7 && value.StartsWith("url(#", StringComparison.Ordinal))
         {
-            ids.Add(PythonSlice(value, 5, value.IndexOf(')', StringComparison.Ordinal)));
+            AddReference(ids, PythonSlice(value, 5, value.IndexOf(')', StringComparison.Ordinal)), node);
         }
         else if (value.Length >= 8)
         {
             if (value.StartsWith("url(\"#", StringComparison.Ordinal))
             {
-                ids.Add(PythonSlice(value, 6, value.IndexOf("\")", StringComparison.Ordinal)));
+                AddReference(ids, PythonSlice(value, 6, value.IndexOf("\")", StringComparison.Ordinal)), node);
             }
             else if (value.StartsWith("url('#", StringComparison.Ordinal))
             {
-                ids.Add(PythonSlice(value, 6, value.IndexOf("')", StringComparison.Ordinal)));
+                AddReference(ids, PythonSlice(value, 6, value.IndexOf("')", StringComparison.Ordinal)), node);
             }
         }
     }

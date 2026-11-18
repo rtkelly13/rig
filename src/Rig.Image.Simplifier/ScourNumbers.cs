@@ -45,9 +45,127 @@ internal enum LengthUnit
 }
 
 /// <summary>A Python <c>decimal.Decimal</c>: a signed coefficient and a power of ten, with only the operations scour's number scouring uses.</summary>
-internal readonly record struct ScourDecimal(BigInteger Coefficient, int Exponent)
+internal readonly record struct ScourDecimal(BigInteger Coefficient, int Exponent, bool NegativeZero = false)
 {
     private static readonly Regex DecimalText = new(@"^\s*([-+]?)([0-9]*)(?:\.([0-9]*))?(?:[eE]([-+]?[0-9]+))?\s*$", RegexOptions.CultureInvariant);
+
+    /// <summary>The context's working precision: Python's default, 28 significant digits.</summary>
+    public const int ContextPrecision = 28;
+
+    /// <summary>A whole number.</summary>
+    public static implicit operator ScourDecimal(int value) => new(value, 0);
+
+    /// <summary>The sum, rounded to the context's precision.</summary>
+    public static ScourDecimal operator +(ScourDecimal left, ScourDecimal right)
+    {
+        var exponent = Math.Min(left.Exponent, right.Exponent);
+        var sum = left.Scaled(exponent) + right.Scaled(exponent);
+        // A sum of two zeros keeps the sign they share; any other sum that cancels to zero is positive.
+        return new ScourDecimal(sum, exponent, sum.IsZero && left.IsZero && right.IsZero && left.SignedNegative && right.SignedNegative).Plus(ContextPrecision);
+    }
+
+    /// <summary>The difference, rounded to the context's precision.</summary>
+    public static ScourDecimal operator -(ScourDecimal left, ScourDecimal right) => left + (-right);
+
+    /// <summary>The negation.</summary>
+    public static ScourDecimal operator -(ScourDecimal value) => new(-value.Coefficient, value.Exponent);
+
+    /// <summary>The product, rounded to the context's precision.</summary>
+    public static ScourDecimal operator *(ScourDecimal left, ScourDecimal right) =>
+        new ScourDecimal(left.Coefficient * right.Coefficient, left.Exponent + right.Exponent, left.IsZero | right.IsZero ? left.SignedNegative != right.SignedNegative : false).Plus(ContextPrecision);
+
+    /// <summary>The quotient rounded to the context's precision. Division by zero is an <see cref="DivideByZeroException"/>, Python's ArithmeticError.</summary>
+    public static ScourDecimal operator /(ScourDecimal left, ScourDecimal right)
+    {
+        if (right.Coefficient.IsZero)
+        {
+            throw new DivideByZeroException("Decimal division by zero.");
+        }
+
+        if (left.Coefficient.IsZero)
+        {
+            return new ScourDecimal(BigInteger.Zero, 0, left.SignedNegative != right.SignedNegative);
+        }
+
+        // Enough digits that the context's rounding sees the true remainder, and a sticky digit when the division is not exact.
+        var shift = Math.Max(0, ContextPrecision + 2 - left.DigitCount + right.DigitCount);
+        var quotient = BigInteger.DivRem(left.Coefficient * BigInteger.Pow(10, shift), right.Coefficient, out var remainder);
+        var exponent = left.Exponent - right.Exponent - shift;
+        if (remainder.IsZero)
+        {
+            // An exact quotient takes the ideal exponent, as Python gives 1/2 as 0.5.
+            var ideal = left.Exponent - right.Exponent;
+            while (exponent < ideal && (quotient % 10).IsZero)
+            {
+                quotient /= 10;
+                exponent++;
+            }
+        }
+        else
+        {
+            quotient = (quotient * 10) + (quotient.Sign < 0 ? -1 : 1);
+            exponent--;
+        }
+
+        return new ScourDecimal(quotient, exponent).Plus(ContextPrecision);
+    }
+
+    /// <summary>The remainder, which takes the sign of the dividend as Python's <c>Decimal.__mod__</c> does.</summary>
+    public static ScourDecimal operator %(ScourDecimal left, ScourDecimal right)
+    {
+        if (right.Coefficient.IsZero)
+        {
+            throw new DivideByZeroException("Decimal division by zero.");
+        }
+
+        var exponent = Math.Min(left.Exponent, right.Exponent);
+        var remainder = BigInteger.Remainder(left.Scaled(exponent), right.Scaled(exponent));
+        return new ScourDecimal(remainder, exponent, remainder.IsZero && left.SignedNegative);
+    }
+
+    /// <summary>Compares the numbers, not their spellings.</summary>
+    public static bool operator <(ScourDecimal left, ScourDecimal right) => left.CompareTo(right) < 0;
+
+    /// <summary>Compares the numbers, not their spellings.</summary>
+    public static bool operator >(ScourDecimal left, ScourDecimal right) => left.CompareTo(right) > 0;
+
+    /// <summary>Compares the numbers, not their spellings.</summary>
+    public static bool operator <=(ScourDecimal left, ScourDecimal right) => left.CompareTo(right) <= 0;
+
+    /// <summary>Compares the numbers, not their spellings.</summary>
+    public static bool operator >=(ScourDecimal left, ScourDecimal right) => left.CompareTo(right) >= 0;
+
+    /// <summary>True for zero in any spelling.</summary>
+    public bool IsZero => Coefficient.IsZero;
+
+    /// <summary>True when below zero.</summary>
+    public bool IsNegative => Coefficient.Sign < 0;
+
+    /// <summary>True when the sign bit is set: below zero, or the negative zero Python keeps.</summary>
+    public bool SignedNegative => Coefficient.Sign < 0 || NegativeZero;
+
+    /// <summary>The magnitude.</summary>
+    public ScourDecimal Abs() => new(BigInteger.Abs(Coefficient), Exponent);
+
+    /// <summary>Orders by numeric value.</summary>
+    public int CompareTo(ScourDecimal other)
+    {
+        var exponent = Math.Min(Exponent, other.Exponent);
+        return Scaled(exponent).CompareTo(other.Scaled(exponent));
+    }
+
+    /// <summary>Python's <c>Decimal.__eq__</c>: 1.0 equals 1.</summary>
+    public bool Equals(ScourDecimal other) => CompareTo(other) == 0;
+
+    /// <inheritdoc />
+    public override int GetHashCode() => Normalize().GetHashCodeCore();
+
+    /// <summary>The Python decimal for a float, spelled the way <c>str(float)</c> spells it.</summary>
+    public static ScourDecimal FromDouble(double value) => Parse(value.ToString("R", CultureInfo.InvariantCulture));
+
+    private int GetHashCodeCore() => HashCode.Combine(Coefficient, Exponent);
+
+    private BigInteger Scaled(int exponent) => Coefficient * BigInteger.Pow(10, Exponent - exponent);
 
     /// <summary>The number of digits in the coefficient (1 for zero).</summary>
     public int DigitCount => BigInteger.Abs(Coefficient).ToString(CultureInfo.InvariantCulture).Length;
@@ -72,7 +190,8 @@ internal readonly record struct ScourDecimal(BigInteger Coefficient, int Exponen
             exponent += int.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture);
         }
 
-        return new ScourDecimal(match.Groups[1].Value == "-" ? -coefficient : coefficient, exponent);
+        var negative = match.Groups[1].Value == "-";
+        return new ScourDecimal(negative ? -coefficient : coefficient, exponent, negative && coefficient.IsZero);
     }
 
     /// <summary>The number Python's <c>str(value)</c> spells for a length: an int when it is whole, the shortest repr otherwise.</summary>
@@ -89,18 +208,29 @@ internal readonly record struct ScourDecimal(BigInteger Coefficient, int Exponen
     /// <summary>The context's <c>plus()</c>: rounds to this many significant digits, half to even.</summary>
     public ScourDecimal Plus(int precision)
     {
+        // The default context holds exponents between -999999 and 999999: above that Python raises Overflow, and far below it rounds to zero.
+        if (Adjusted > 999_999 && !Coefficient.IsZero)
+        {
+            throw new OverflowException("The decimal exceeds the context's largest exponent.");
+        }
+
+        if (Adjusted < -999_999 && !Coefficient.IsZero)
+        {
+            return new ScourDecimal(BigInteger.Zero, -1_000_026, SignedNegative);
+        }
+
         var excess = DigitCount - precision;
         if (excess <= 0)
         {
             return this;
         }
 
-        var rounded = new ScourDecimal(DivideHalfEven(Coefficient, BigInteger.Pow(10, excess)), Exponent + excess);
+        var rounded = new ScourDecimal(DivideHalfEven(Coefficient, BigInteger.Pow(10, excess)), Exponent + excess, Coefficient.Sign < 0);
         return rounded.DigitCount > precision ? new ScourDecimal(rounded.Coefficient / 10, rounded.Exponent + 1) : rounded;
     }
 
     /// <summary><c>to_integral_value()</c>: whole numbers are returned as they are, otherwise rounded half to even to the units place.</summary>
-    public ScourDecimal ToIntegral() => Exponent >= 0 ? this : new ScourDecimal(DivideHalfEven(Coefficient, BigInteger.Pow(10, -Exponent)), 0);
+    public ScourDecimal ToIntegral() => Exponent >= 0 ? this : new ScourDecimal(DivideHalfEven(Coefficient, BigInteger.Pow(10, -Exponent)), 0, SignedNegative);
 
     /// <summary>True when the value has no fractional part.</summary>
     public bool IsWhole => Exponent >= 0 || (Coefficient % BigInteger.Pow(10, -Exponent)).IsZero;
@@ -110,7 +240,7 @@ internal readonly record struct ScourDecimal(BigInteger Coefficient, int Exponen
     {
         if (Coefficient.IsZero)
         {
-            return new ScourDecimal(BigInteger.Zero, 0);
+            return new ScourDecimal(BigInteger.Zero, 0, NegativeZero);
         }
 
         var coefficient = Coefficient;
@@ -127,12 +257,12 @@ internal readonly record struct ScourDecimal(BigInteger Coefficient, int Exponen
     /// <summary><c>quantize()</c> to the exponent of another number, rounding half to even.</summary>
     public ScourDecimal Quantize(int exponent)
     {
-        if (Exponent >= exponent)
-        {
-            return new ScourDecimal(Coefficient * BigInteger.Pow(10, Exponent - exponent), exponent);
-        }
+        var quantized = Exponent >= exponent
+            ? new ScourDecimal(Coefficient * BigInteger.Pow(10, Exponent - exponent), exponent, NegativeZero)
+            : new ScourDecimal(DivideHalfEven(Coefficient, BigInteger.Pow(10, exponent - Exponent)), exponent, SignedNegative);
 
-        return new ScourDecimal(DivideHalfEven(Coefficient, BigInteger.Pow(10, exponent - Exponent)), exponent);
+        // Python's quantize signals InvalidOperation, an ArithmeticError, when the result needs more digits than the context holds.
+        return quantized.DigitCount > ContextPrecision ? throw new OverflowException("The quantized value needs more than 28 digits.") : quantized;
     }
 
     /// <summary>Python's <c>'{:f}'.format(value)</c>: positional notation, never an exponent.</summary>
@@ -153,7 +283,7 @@ internal readonly record struct ScourDecimal(BigInteger Coefficient, int Exponen
             body = "0." + new string('0', -Exponent - digits.Length) + digits;
         }
 
-        return Coefficient.Sign < 0 ? "-" + body : body;
+        return SignedNegative ? "-" + body : body;
     }
 
     private static BigInteger DivideHalfEven(BigInteger value, BigInteger divisor)
@@ -266,6 +396,22 @@ internal readonly record struct SvgLength(double Value, LengthUnit Declared)
         }
     }
 
+    /// <summary>Python's <c>float(text)</c>. Throws <see cref="FormatException"/> where Python raises ValueError.</summary>
+    public static double ParsePythonFloat(string text)
+    {
+        if (TryPythonFloat(text, out var value))
+        {
+            return value;
+        }
+
+        if (text.Trim().TrimStart('+', '-').Equals("nan", StringComparison.OrdinalIgnoreCase))
+        {
+            return double.NaN;
+        }
+
+        throw new FormatException($"could not convert string to float: '{text}'");
+    }
+
     /// <summary>Python's <c>float(text)</c> for the spellings a length can take; "nan" is a ValueError there once converted to an int, so it does not count.</summary>
     private static bool TryPythonFloat(string text, out double value)
     {
@@ -304,8 +450,11 @@ internal static class ScourNumbers
     /// <summary><c>scourUnitlessLength</c> given the number's text (the viewBox path, where scour hands over the string untouched).</summary>
     public static string Unitless(string text) => Unitless(ScourDecimal.Parse(text));
 
-    /// <summary><c>scourUnitlessLength</c>.</summary>
-    public static string Unitless(ScourDecimal initial)
+    /// <summary>
+    /// <c>scourUnitlessLength</c>. With <paramref name="rendererWorkaround"/> (what path and point data use) a leading zero stays, so a
+    /// dot never follows a command letter.
+    /// </summary>
+    public static string Unitless(ScourDecimal initial, bool rendererWorkaround = false)
     {
         var created = initial.Plus(28);
         var length = created.Plus(Digits);
@@ -313,13 +462,9 @@ internal static class ScourNumbers
 
         // Re-quantize from the initial value so 123.4 becomes 123 rather than 120.
         var nonScientific = created.Quantize(Math.Min(length.Exponent, 0)).ToPlainString();
-        if (nonScientific.Length > 2 && nonScientific.StartsWith("0.", StringComparison.Ordinal))
+        if (!rendererWorkaround)
         {
-            nonScientific = nonScientific[1..];
-        }
-        else if (nonScientific.Length > 3 && nonScientific.StartsWith("-0.", StringComparison.Ordinal))
-        {
-            nonScientific = "-" + nonScientific[2..];
+            nonScientific = TrimLeadingZero(nonScientific);
         }
 
         if (nonScientific.Length <= 3)
@@ -331,5 +476,15 @@ internal static class ScourNumbers
         var shifted = new ScourDecimal(length.Coefficient, length.Exponent - exponent).Normalize();
         var scientific = shifted.ToPlainString() + "e" + exponent.ToString(CultureInfo.InvariantCulture);
         return scientific.Length < nonScientific.Length ? scientific : nonScientific;
+    }
+
+    private static string TrimLeadingZero(string text)
+    {
+        if (text.Length > 2 && text.StartsWith("0.", StringComparison.Ordinal))
+        {
+            return text[1..];
+        }
+
+        return text.Length > 3 && text.StartsWith("-0.", StringComparison.Ordinal) ? "-" + text[2..] : text;
     }
 }

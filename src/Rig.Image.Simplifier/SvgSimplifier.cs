@@ -162,8 +162,9 @@ public static class SvgSimplifier
         {
             return svg;
         }
-        catch (OverflowException)
+        catch (ArithmeticException)
         {
+            // Python's ArithmeticError: an overflow, or a division by zero in the path arithmetic.
             return svg;
         }
     }
