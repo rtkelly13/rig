@@ -215,7 +215,7 @@ public sealed class TraceAnalyticsTests : IDisposable
             "2026-03-04",
             TraceFixtures.Span("status", "s1", status: 2, message: "the command failed"),
             TraceFixtures.Span("exit", "s2", attributes: [("process.exit_code", 7)]),
-            TraceFixtures.Span("alternate-exit", "s3", attributes: [("process.exit.code", "3")]),
+            TraceFixtures.Span("alternate-exit", "s3", attributes: [("process.exit.code", 3)]),
             TraceFixtures.Span("passed", "s4"),
             TraceFixtures.Span("unset", "s5", status: null));
 
@@ -494,19 +494,63 @@ public sealed class TraceAnalyticsTests : IDisposable
         Assert.Equal(["kept", "also kept"], spans);
     }
 
-    [Fact]
-    public void Malformed_attributes_and_events_read_as_absent()
+    [Theory]
+    [InlineData("attributes", """{"not": "a list"}""", "$.attributes: expected a list, found an object")]
+    [InlineData("events", """["not an object"]""", "$.events[0]: expected an object, found the string \"not an object\"")]
+    [InlineData("events", """{"not": "a list"}""", "$.events: expected a list, found an object")]
+    [InlineData("events", """[{"name": 5}]""", "$.events[0].name: expected a string, found the number 5")]
+    [InlineData("name", "7", "$.name: expected a string, found the number 7")]
+    [InlineData("attributes", """[{"key": 1, "value": {"stringValue": "x"}}]""", "$.attributes[0].key: expected a string, found the number 1")]
+    [InlineData("attributes", """[{"key": "bad", "value": "not an object"}]""", "$.attributes[0].value: expected an AnyValue object, found the string \"not an object\"")]
+    [InlineData("startTimeUnixNano", "true", "$.startTimeUnixNano: expected a whole number or a string of digits, found true")]
+    [InlineData("endTimeUnixNano", "2.5", "$.endTimeUnixNano: expected a whole number or a string of digits, found the number 2.5")]
+    public void A_span_with_a_field_of_the_wrong_type_is_skipped_and_says_where(string field, string json, string problem)
     {
-        var raw = TraceFixtures.Span("sync", "span");
-        raw["attributes"] = new JsonObject { ["not"] = "a list" };
-        raw["events"] = new JsonArray("not an object");
-        TraceFixtures.Write(Root, "estate", "2026-03-04", raw);
+        var bad = TraceFixtures.Span("bad", "s1");
+        bad[field] = JsonNode.Parse(json);
+        TraceFixtures.Write(Root, "estate", "2026-03-04", bad, TraceFixtures.Span("good", "s2"));
+        List<string> skipped = [];
 
-        var span = Assert.Single(TraceAnalytics.Load(Root).Spans);
+        var spans = TraceAnalytics.Load(Root, skipped: skipped.Add).Spans;
 
-        Assert.Empty(span.Attributes);
-        Assert.Empty(span.Events);
-        Assert.Null(span.ExitCode);
+        Assert.Equal(["good"], spans.Select(span => span.Name));
+        var message = Assert.Single(skipped);
+        Assert.Contains("2026-03-04.ndjson line 1: $.resourceSpans[0].scopeSpans[0].spans[0]", message, StringComparison.Ordinal);
+        Assert.EndsWith(problem[1..], message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("""{"code": 2.0}""", "status.code: expected a whole number or STATUS_CODE_ERROR, STATUS_CODE_OK or STATUS_CODE_UNSET, found the number 2.0")]
+    [InlineData("""{"code": true}""", "status.code: expected a whole number or STATUS_CODE_ERROR, STATUS_CODE_OK or STATUS_CODE_UNSET, found true")]
+    [InlineData("""{"code": {"not": "a number"}}""", "status.code: expected a whole number or STATUS_CODE_ERROR, STATUS_CODE_OK or STATUS_CODE_UNSET, found an object")]
+    [InlineData("""{"code": "2"}""", "status.code: expected a whole number or STATUS_CODE_ERROR, STATUS_CODE_OK or STATUS_CODE_UNSET, found the string \"2\"")]
+    [InlineData("""{"code": "Failed"}""", "status.code: expected a whole number or STATUS_CODE_ERROR, STATUS_CODE_OK or STATUS_CODE_UNSET, found the string \"Failed\"")]
+    [InlineData("""{"message": 3}""", "status.message: expected a string, found the number 3")]
+    [InlineData("\"bad\"", "status: expected an object, found the string \"bad\"")]
+    public void A_status_of_the_wrong_type_skips_the_span_and_says_why(string status, string problem)
+    {
+        var bad = TraceFixtures.Span("bad", "s1");
+        bad["status"] = JsonNode.Parse(status);
+        TraceFixtures.Write(Root, "estate", "2026-03-04", bad);
+        List<string> skipped = [];
+
+        Assert.Empty(TraceAnalytics.Load(Root, skipped: skipped.Add).Spans);
+
+        Assert.EndsWith("spans[0]." + problem, Assert.Single(skipped), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(true, "found true")]
+    [InlineData("3", "found the string \"3\"")]
+    [InlineData(2.5, "found the number 2.5")]
+    public void An_exit_code_that_is_not_a_whole_number_skips_the_span_and_says_why(object code, string found)
+    {
+        TraceFixtures.Write(Root, "estate", "2026-03-04", TraceFixtures.Span("bad-exit", "s1", attributes: [("process.exit_code", code)]));
+        List<string> skipped = [];
+
+        Assert.Empty(TraceAnalytics.Load(Root, skipped: skipped.Add).Spans);
+
+        Assert.EndsWith($"spans[0].attributes: expected process.exit_code to be a whole number, {found}", Assert.Single(skipped), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -529,8 +573,6 @@ public sealed class TraceAnalyticsTests : IDisposable
                     },
                 },
             },
-            new JsonObject { ["key"] = 1, ["value"] = new JsonObject { ["stringValue"] = "ignored" } },
-            new JsonObject { ["key"] = "bad", ["value"] = "not an object" },
             new JsonObject { ["key"] = "other", ["value"] = new JsonObject() });
         TraceFixtures.Write(Root, "estate", "2026-03-04", raw);
 
@@ -541,45 +583,35 @@ public sealed class TraceAnalyticsTests : IDisposable
         Assert.Equal(42L, attributes["whole"]);
         Assert.Equal(1.5, attributes["real"]);
         Assert.Equal(new List<object?> { "one" }, Assert.IsAssignableFrom<List<object?>>(attributes["list"]));
-        Assert.False(attributes.ContainsKey("1"));
-        Assert.Null(attributes["bad"]);
         Assert.Null(attributes["other"]);
     }
 
     [Fact]
-    public void Lax_numeric_fields_accept_numbers_bools_and_strings()
+    public void Numeric_fields_are_whole_numbers_or_the_digit_strings_proto3_json_writes()
     {
-        // OTLP-JSON writers disagree on number encodings: pydantic and both rig writers may send a string, and a
-        // foreign collector may send a bool or a double. Each reads as the whole number it means, or as absent.
-        var doubleStatus = TraceFixtures.Span("double-status", "s1", status: null);
-        doubleStatus["status"] = new JsonObject { ["code"] = 2.0 };
-        var trueStatus = TraceFixtures.Span("true-status", "s2", status: null);
-        trueStatus["status"] = new JsonObject { ["code"] = true };
-        var falseStatus = TraceFixtures.Span("false-status", "s3", status: null);
-        falseStatus["status"] = new JsonObject { ["code"] = false };
-        var unknownStatus = TraceFixtures.Span("unknown-status", "s4", status: null);
-        unknownStatus["status"] = new JsonObject { ["code"] = new JsonObject { ["not"] = "a number" } };
+        // rig's own writer sends an int64 as a string of digits, so that reads as the number it means; nothing else does.
+        var named = TraceFixtures.Span("named-status", "s1", status: null);
+        named["status"] = new JsonObject { ["code"] = "STATUS_CODE_ERROR" };
+        var unset = TraceFixtures.Span("unset-status", "s2", status: null);
+        unset["status"] = new JsonObject { ["code"] = "STATUS_CODE_UNSET" };
+        var digits = TraceFixtures.Span("digit-times", "s3");
+        digits["startTimeUnixNano"] = "1000000";
+        digits["endTimeUnixNano"] = "3000000";
         TraceFixtures.Write(
             Root,
             "estate",
             "2026-03-04",
-            doubleStatus,
-            trueStatus,
-            falseStatus,
-            unknownStatus,
-            TraceFixtures.Span("bool-exit", "s5", attributes: [("process.exit_code", true)]),
-            TraceFixtures.Span("false-exit", "s6", attributes: [("process.exit_code", false)]),
-            TraceFixtures.Span("double-exit", "s7", attributes: [("process.exit_code", 2.0)]),
-            TraceFixtures.Span("fractional-exit", "s8", attributes: [("process.exit_code", 2.5)]),
-            TraceFixtures.Span("spaced-exit", "s9", attributes: [("process.exit_code", " 3 ")]),
-            TraceFixtures.Span("text-exit", "s10", attributes: [("process.exit_code", "nope")]));
+            named,
+            unset,
+            digits,
+            TraceFixtures.Span("number-status", "s4", status: 2),
+            TraceFixtures.Span("whole-exit", "s5", attributes: [("process.exit_code", 3L)]));
 
         var spans = TraceAnalytics.Load(Root).Spans;
 
-        Assert.Equal(new int?[] { 2, 1, 0, null }, [.. spans.Take(4).Select(span => span.StatusCode)]);
-        Assert.Equal([true, false, true, false], [.. spans.Take(4).Select(span => span.Failed)]);
-        Assert.Equal(new long?[] { 1, 0, 2, null, 3, null }, [.. spans.Skip(4).Select(span => span.ExitCode)]);
-        Assert.Equal([true, false, true, false, true, false], [.. spans.Skip(4).Select(span => span.Failed)]);
+        Assert.Equal(new int?[] { 2, null, 1, 2, 1 }, [.. spans.Select(span => span.StatusCode)]);
+        Assert.Equal(2.0, spans[2].DurationMs);
+        Assert.Equal(3, spans[4].ExitCode);
     }
 
     // -- the window text and root ---------------------------------------------------------------------------------

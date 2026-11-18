@@ -1,5 +1,5 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 
 namespace Rig.Core.Orca;
 
@@ -47,7 +47,7 @@ public sealed record OrcaActivity(string WorktreeId, IReadOnlyList<string?> Agen
 
 /// <summary>
 /// The project, group and worktree methods of Orca's runtime. A
-/// field of the wrong type in a required place shows up as <see cref="OrcaUnavailableException"/>, never as a guess.
+/// field of the wrong type shows up as <see cref="OrcaUnavailableException"/> naming the JSON path, never as a guess.
 /// </summary>
 public static class OrcaProjects
 {
@@ -64,21 +64,21 @@ public static class OrcaProjects
         Read(
             await Call(runtime, "folderWorkspace.list", null, cancellationToken).ConfigureAwait(false),
             "folderWorkspace.list",
-            result => OptionalList(result, "folderWorkspaces", raw => new OrcaFolderWorkspace(Required(raw, "id"), LenientString(raw, "projectGroupId"))));
+            result => OptionalList(result, "folderWorkspaces", raw => new OrcaFolderWorkspace(Required(raw, "id"), OrcaJson.String(raw, "projectGroupId"))));
 
     /// <summary>Registers the checkout at <paramref name="path"/>.</summary>
     public static async Task<OrcaProject> AddProjectAsync(this OrcaRuntime runtime, string path, CancellationToken cancellationToken = default) =>
         Read(
             await Call(runtime, "repo.add", new JsonObject { ["path"] = path }, cancellationToken).ConfigureAwait(false),
             "repo.add",
-            result => Project(OrcaJson.Object(result, "repo") ?? throw new InvalidDataException("repo: missing")));
+            result => Project(OrcaJson.Object(result, "repo") ?? throw OrcaJson.Reject(JsonProblem.Missing(result, "repo", "an object"))));
 
     /// <summary>Creates a group named <paramref name="name"/> inside <paramref name="parentId"/>, or at the top level for null.</summary>
     public static async Task<OrcaGroup> CreateGroupAsync(this OrcaRuntime runtime, string name, string? parentId, CancellationToken cancellationToken = default) =>
         Read(
             await Call(runtime, "projectGroup.create", new JsonObject { ["name"] = name, ["parentGroupId"] = parentId }, cancellationToken).ConfigureAwait(false),
             "projectGroup.create",
-            result => Group(OrcaJson.Object(result, "group") ?? throw new InvalidDataException("group: missing")));
+            result => Group(OrcaJson.Object(result, "group") ?? throw OrcaJson.Reject(JsonProblem.Missing(result, "group", "an object"))));
 
     /// <summary>Unregisters a project. Orca stops its terminals and deletes no files.</summary>
     public static async Task RemoveProjectAsync(this OrcaRuntime runtime, string projectId, CancellationToken cancellationToken = default) =>
@@ -99,7 +99,7 @@ public static class OrcaProjects
         Read(
             await Call(runtime, "projectGroup.moveProject", new JsonObject { ["repo"] = $"id:{projectId}", ["groupId"] = groupId }, cancellationToken).ConfigureAwait(false),
             "projectGroup.moveProject",
-            result => Project(OrcaJson.Object(result, "repo") ?? throw new InvalidDataException("repo: missing")));
+            result => Project(OrcaJson.Object(result, "repo") ?? throw OrcaJson.Reject(JsonProblem.Missing(result, "repo", "an object"))));
 
     /// <summary>Every worktree of every project, main checkouts included.</summary>
     public static async Task<IReadOnlyList<OrcaWorktree>> WorktreesAsync(this OrcaRuntime runtime, CancellationToken cancellationToken = default) =>
@@ -109,7 +109,7 @@ public static class OrcaProjects
     public static async Task<IReadOnlyList<OrcaActivity>> ActivityAsync(this OrcaRuntime runtime, CancellationToken cancellationToken = default)
     {
         var result = await Call(runtime, "worktree.ps", new JsonObject(), cancellationToken).ConfigureAwait(false);
-        var (truncated, activity) = Read(result, "worktree.ps", reply => (LenientBool(reply, "truncated"), List(reply, "worktrees", Activity)));
+        var (truncated, activity) = Read(result, "worktree.ps", reply => (OrcaJson.Bool(reply, "truncated"), List(reply, "worktrees", Activity)));
         return truncated == true
             ? throw new OrcaUnavailableException("Orca truncated worktree.ps; refusing to judge worktrees it did not report")
             : activity;
@@ -136,7 +136,7 @@ public static class OrcaProjects
     {
         try
         {
-            return decode(result as JsonObject ?? throw new InvalidDataException("expected an object"));
+            return decode(result as JsonObject ?? throw OrcaJson.Reject(JsonProblem.Expected("$", "an object", JsonProblem.Describe(result))));
         }
         catch (Exception e) when (e is InvalidDataException or InvalidOperationException or FormatException)
         {
@@ -146,8 +146,7 @@ public static class OrcaProjects
 
     // A missing list is a shape rig does not know, not an empty one: an empty worktree.ps would read every worktree as idle.
     private static List<T> List<T>(JsonObject parent, string key, Func<JsonObject, T> item) =>
-        [.. (OrcaJson.Array(parent, key) ?? throw new InvalidDataException($"{key}: missing"))
-            .Select(raw => item(raw as JsonObject ?? throw new InvalidDataException($"{key}: expected objects")))];
+        [.. OrcaJson.Objects(OrcaJson.Array(parent, key) ?? throw OrcaJson.Reject(JsonProblem.Missing(parent, key, "a list"))).Select(item)];
 
     // Project groups and folder workspaces, which an older Orca may not report at all.
     private static List<T> OptionalList<T>(JsonObject parent, string key, Func<JsonObject, T> item) =>
@@ -157,19 +156,19 @@ public static class OrcaProjects
         Required(raw, "id"),
         Required(raw, "path"),
         OrcaJson.String(raw, "displayName") ?? string.Empty,
-        LenientString(raw, "projectGroupId"),
-        OrcaJson.Lenient(() => OrcaJson.Object(raw, "gitRemoteIdentity")) is { } remote ? LenientString(remote, "canonicalKey") : null);
+        OrcaJson.String(raw, "projectGroupId"),
+        OrcaJson.Object(raw, "gitRemoteIdentity") is { } remote ? OrcaJson.String(remote, "canonicalKey") : null);
 
-    private static OrcaGroup Group(JsonObject raw) => new(Required(raw, "id"), Required(raw, "name"), LenientString(raw, "parentGroupId"), LenientString(raw, "parentPath"));
+    private static OrcaGroup Group(JsonObject raw) => new(Required(raw, "id"), Required(raw, "name"), OrcaJson.String(raw, "parentGroupId"), OrcaJson.String(raw, "parentPath"));
 
     private static OrcaWorktree Worktree(JsonObject raw) => new(
         Required(raw, "id"),
         Required(raw, "path"),
         OrcaJson.String(raw, "repoId") ?? string.Empty,
-        LenientString(raw, "branch"),
-        LenientBool(raw, "isMainWorktree") ?? false,
-        LenientString(raw, "displayName"),
-        raw["lastActivityAt"] is JsonValue value && value.GetValueKind() == JsonValueKind.Number && value.TryGetValue<double>(out var ms) ? ms : null);
+        OrcaJson.String(raw, "branch"),
+        OrcaJson.Bool(raw, "isMainWorktree") ?? false,
+        OrcaJson.String(raw, "displayName"),
+        OrcaJson.Number(raw, "lastActivityAt"));
 
     private static OrcaActivity Activity(JsonObject raw)
     {
@@ -177,23 +176,9 @@ public static class OrcaProjects
         var agents = OrcaJson.Array(raw, "agents");
         IReadOnlyList<string?> states = agents is null
             ? []
-            : [.. agents.Select(agent => LenientString(agent as JsonObject ?? throw new InvalidDataException("agents: expected objects"), "state"))];
+            : [.. OrcaJson.Objects(agents).Select(agent => OrcaJson.String(agent, "state"))];
         return new OrcaActivity(Required(raw, "worktreeId"), states);
     }
 
-    private static string Required(JsonObject raw, string key) => OrcaJson.String(raw, key) ?? throw new InvalidDataException($"{key}: missing");
-
-    private static string? LenientString(JsonObject raw, string key) => OrcaJson.Lenient(() => OrcaJson.String(raw, key));
-
-    private static bool? LenientBool(JsonObject raw, string key)
-    {
-        try
-        {
-            return OrcaJson.Bool(raw, key);
-        }
-        catch (InvalidDataException)
-        {
-            return null;
-        }
-    }
+    private static string Required(JsonObject raw, string key) => OrcaJson.Required(raw, key);
 }

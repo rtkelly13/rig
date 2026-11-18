@@ -22,7 +22,7 @@ public sealed record OrcaSettings(
     {
         try
         {
-            var json = OrcaJson.Object(payload);
+            var json = OrcaJson.Object(payload, "Orca settings");
             return new(
                 OrcaJson.StringMap(json, "agentDefaultArgs"),
                 OrcaJson.String(json, "workspaceDir"),
@@ -170,12 +170,12 @@ public sealed record OrcaRepo(
 
         try
         {
-            if (OrcaJson.Object(OrcaJson.Object(output), "result") is not { } result)
+            if (OrcaJson.Object(OrcaJson.Object(output, "orca repo list"), "result") is not { } result)
             {
                 return null;
             }
 
-            return [.. (OrcaJson.Array(result, "repos") ?? []).Select(node => node is JsonObject repo ? FromJson(repo) : throw new InvalidDataException("repos: expected objects"))];
+            return [.. OrcaJson.Objects(OrcaJson.Array(result, "repos") ?? []).Select(FromJson)];
         }
         catch (InvalidDataException)
         {
@@ -184,7 +184,7 @@ public sealed record OrcaRepo(
     }
 
     private static OrcaRepo FromJson(JsonObject json) => new(
-        OrcaJson.String(json, "path") ?? throw new InvalidDataException("path: required"),
+        OrcaJson.Required(json, "path"),
         OrcaJson.String(json, "displayName") ?? "",
         OrcaJson.Object(json, "hookSettings") is { } hooks ? HookSettings.FromJson(hooks) : null,
         OrcaJson.String(json, "externalWorktreeVisibility"),

@@ -33,8 +33,8 @@ public sealed class Replay(IOtlpSender sender)
     /// <param name="cancellationToken">Cancels the run.</param>
     public async Task<IReadOnlyList<ReplayResult>> RunAsync(string folder, string statePath, bool dryRun = false, CancellationToken cancellationToken = default)
     {
-        var offsets = ReplayOffsets.Read(statePath);
         List<ReplayResult> results = [];
+        var offsets = ReplayOffsets.Read(statePath, message => results.Add(new ReplayResult(statePath, 0, message)));
         var present = new HashSet<string>(StringComparer.Ordinal);
         foreach (var signal in Signals)
         {

@@ -116,12 +116,39 @@ public sealed class OtelCoreTests : IDisposable
     public void A_malformed_offsets_file_reads_as_none(string text) => Assert.Empty(ReplayOffsets.Parse(text));
 
     [Fact]
-    public void Offsets_coerce_as_pydantic_did()
+    public void Offsets_are_read_as_written()
     {
-        var offsets = ReplayOffsets.Parse("""{"1": {"inode": " 7 ", "sent": true, "head": "h"}, "2": {"inode": 2.0, "sent": false}}""");
+        var offsets = ReplayOffsets.Parse("""{"1": {"inode": 7, "sent": 1, "head": "h", "extra": "ignored"}, "2": {"inode": 2, "sent": 0}}""");
 
         Assert.Equal(new ReplayOffset(7, 1, "h"), offsets["1"]);
         Assert.Equal(new ReplayOffset(2, 0), offsets["2"]);
+    }
+
+    [Theory]
+    [InlineData("""{"1": {"inode": " 7 ", "sent": 1}}""", "state.json: $.1.inode: expected a non-negative whole number, found the string \" 7 \"")]
+    [InlineData("""{"1": {"inode": 2.0, "sent": 0}}""", "state.json: $.1.inode: expected a non-negative whole number, found the number 2.0")]
+    [InlineData("""{"1": {"inode": 1, "sent": true}}""", "state.json: $.1.sent: expected a whole number, found true")]
+    [InlineData("""{"1": {"inode": 1, "sent": 2}, "2": {"inode": 1}}""", "state.json: $.2.sent: expected a whole number, found nothing")]
+    [InlineData("""{"1": {"inode": 1, "sent": 2, "head": 5}}""", "state.json: $.1.head: expected a string, found the number 5")]
+    [InlineData("""{"1": 3}""", "state.json: $.1: expected an object, found the number 3")]
+    [InlineData("""[]""", "state.json: $: expected an object, found a list")]
+    public void A_malformed_offsets_file_reports_what_is_wrong_where(string text, string problem)
+    {
+        List<string> problems = [];
+
+        Assert.Empty(ReplayOffsets.Parse(text, problems.Add, "state.json"));
+
+        Assert.Equal([problem], problems);
+    }
+
+    [Fact]
+    public void An_offsets_file_that_is_not_json_is_reported()
+    {
+        List<string> problems = [];
+
+        Assert.Empty(ReplayOffsets.Parse("{\"torn\": ", problems.Add, "state.json"));
+
+        Assert.StartsWith("state.json: $: not valid JSON: ", Assert.Single(problems), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -141,7 +168,7 @@ public sealed class OtelCoreTests : IDisposable
     public void Spans_read_from_a_file_and_not_from_a_missing_one()
     {
         var path = temp.File("traces.jsonl");
-        File.WriteAllText(path, """{"resourceSpans": [{"scopeSpans": [{"spans": [{"traceId": "t", "spanId": "s", "endTimeUnixNano": 1.0}]}]}]}""");
+        File.WriteAllText(path, """{"resourceSpans": [{"scopeSpans": [{"spans": [{"traceId": "t", "spanId": "s", "endTimeUnixNano": 1}]}]}]}""");
 
         var span = Assert.Single(TraceSpans.Read(path));
 
@@ -150,21 +177,46 @@ public sealed class OtelCoreTests : IDisposable
     }
 
     [Theory]
+    [InlineData("""{"traceId": "t", "spanId": "s", "endTimeUnixNano": 1.0}""", "$.resourceSpans[0].scopeSpans[0].spans[0].endTimeUnixNano: expected a whole number or a string of digits, found the number 1.0")]
+    [InlineData("""{"traceId": "t", "spanId": "s", "startTimeUnixNano": true}""", "$.resourceSpans[0].scopeSpans[0].spans[0].startTimeUnixNano: expected a whole number or a string of digits, found true")]
+    [InlineData("""{"traceId": "t", "spanId": "s", "endTimeUnixNano": "x"}""", "$.resourceSpans[0].scopeSpans[0].spans[0].endTimeUnixNano: expected a whole number or a string of digits, found the string \"x\"")]
+    [InlineData("""{"traceId": 5, "spanId": "s"}""", "$.resourceSpans[0].scopeSpans[0].spans[0].traceId: expected a non-empty string, found the number 5")]
+    [InlineData("""{"traceId": "t"}""", "$.resourceSpans[0].scopeSpans[0].spans[0].spanId: expected a non-empty string, found nothing")]
+    [InlineData("""{"traceId": "t", "spanId": "s", "attributes": "nope"}""", "$.resourceSpans[0].scopeSpans[0].spans[0].attributes: expected a list, found the string \"nope\"")]
+    public void A_span_of_the_wrong_type_is_skipped_and_reported_with_its_line(string span, string problem)
+    {
+        var path = temp.File("traces.jsonl");
+        File.WriteAllText(path, """{"other": 1}""" + "\n" + $$"""{"resourceSpans": [{"scopeSpans": [{"spans": [{{span}}]}]}]}""" + "\n");
+        List<string> skipped = [];
+
+        Assert.Empty(TraceSpans.Read(path, skipped.Add));
+
+        Assert.Equal([$"{path} line 2: {problem}"], skipped);
+    }
+
+    [Theory]
     [InlineData("true", true)]
-    [InlineData("1", true)]
-    [InlineData("\"yes\"", true)]
-    [InlineData("\"On\"", true)]
     [InlineData("false", false)]
-    [InlineData("0", false)]
-    [InlineData("\"no\"", false)]
-    [InlineData("2", false)]
-    [InlineData("\"maybe\"", false)]
     [InlineData("null", false)]
-    public void Incomplete_reads_the_flag_as_pydantic_did(string flag, bool incomplete)
+    public void Incomplete_reads_the_flag(string flag, bool incomplete)
     {
         var line = $$$"""{"resourceSpans": [{"scopeSpans": [{"spans": [{"traceId": "t", "spanId": "s", "attributes": [{"key": "span.incomplete", "value": {"boolValue": {{{flag}}}}}]}]}]}]}""";
 
         Assert.Equal(incomplete, Assert.Single(TraceSpans.Parse(line)).Incomplete);
+    }
+
+    [Theory]
+    [InlineData("1", "found the number 1")]
+    [InlineData("0", "found the number 0")]
+    [InlineData("\"yes\"", "found the string \"yes\"")]
+    public void A_flag_that_is_not_a_bool_skips_the_span_and_says_why(string flag, string found)
+    {
+        var line = $$$"""{"resourceSpans": [{"scopeSpans": [{"spans": [{"traceId": "t", "spanId": "s", "attributes": [{"key": "span.incomplete", "value": {"boolValue": {{{flag}}}}}]}]}]}]}""";
+        List<string> skipped = [];
+
+        Assert.Empty(TraceSpans.Parse(line, skipped.Add, "traces.jsonl"));
+
+        Assert.Equal([$"traces.jsonl line 1: $.resourceSpans[0].scopeSpans[0].spans[0].attributes[0].value.boolValue: expected true or false, {found}"], skipped);
     }
 
     [Fact]

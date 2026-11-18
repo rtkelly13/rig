@@ -152,6 +152,44 @@ public sealed class OrcaRuntimeTests : IDisposable
         _ = await Assert.ThrowsAsync<OrcaUnavailableException>(() =>
             Runtime(new ScriptedExchange(Answer($$"""{"worktrees": [{"worktreeId": "w", "agents": {{agents}}}]}"""))).ActivityAsync(Token));
 
+    [Theory]
+    [InlineData("""{"repos": [{"id": "r", "path": "/p", "projectGroupId": 5}]}""", "$.repos[0].projectGroupId: expected a string, found the number 5")]
+    [InlineData("""{"repos": [{"id": "r", "path": "/p", "gitRemoteIdentity": 1}]}""", "$.repos[0].gitRemoteIdentity: expected an object, found the number 1")]
+    [InlineData("""{"repos": [{"id": "r", "path": 7}]}""", "$.repos[0].path: expected a string, found the number 7")]
+    [InlineData("""{"repos": [{"id": "r"}]}""", "$.repos[0].path: expected a string, found nothing")]
+    [InlineData("""{"repos": [3]}""", "$.repos[0]: expected an object, found the number 3")]
+    [InlineData("""{"repos": {}}""", "$.repos: expected a list, found an object")]
+    public async Task A_repo_of_the_wrong_type_names_the_json_path(string result, string problem)
+    {
+        var failure = await Assert.ThrowsAsync<OrcaUnavailableException>(() => Runtime(new ScriptedExchange(Answer(result))).ProjectsAsync(Token));
+
+        Assert.StartsWith("Orca answered repo.list in a shape rig does not know: ", failure.Message, StringComparison.Ordinal);
+        Assert.EndsWith(problem, failure.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("""{"isMainWorktree": "yes"}""", "isMainWorktree: expected a boolean, found the string \"yes\"")]
+    [InlineData("""{"branch": false}""", "branch: expected a string, found false")]
+    [InlineData("""{"lastActivityAt": "soon"}""", "lastActivityAt: expected a number, found the string \"soon\"")]
+    public async Task A_worktree_of_the_wrong_type_names_the_json_path(string fields, string problem)
+    {
+        var worktree = JsonNode.Parse(fields)!.AsObject();
+        worktree["id"] = "w";
+        worktree["path"] = "/p";
+        var result = new JsonObject { ["worktrees"] = new JsonArray(worktree) }.ToJsonString();
+
+        var failure = await Assert.ThrowsAsync<OrcaUnavailableException>(() => Runtime(new ScriptedExchange(Answer(result))).WorktreesAsync(Token));
+
+        Assert.EndsWith("$.worktrees[0]." + problem, failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_count_with_a_fraction_is_not_a_whole_number()
+    {
+        Assert.Null(OrcaSettings.Parse("""{"agentHibernationIdleMs": 5.0}"""));
+        Assert.Equal(5, OrcaSettings.Parse("""{"agentHibernationIdleMs": 5}""")!.AgentSleepIdleMs);
+    }
+
     [Fact]
     public async Task Live_reports_success_and_failure_without_throwing()
     {

@@ -79,7 +79,7 @@ internal sealed class TracesCommand(
             from = time.GetUtcNow() - window.Span;
         }
 
-        var dataset = TraceAnalytics.Load(Root, from, tool);
+        var dataset = TraceAnalytics.Load(Root, from, tool, Skipped);
         var found = dataset.Runs.Where(run => !errorsOnly || run.Failed).ToList();
         var shown = found.Skip(Math.Max(found.Count - limit, 0)).Reverse().ToList();
         if (shown.Count == 0)
@@ -147,7 +147,7 @@ internal sealed class TracesCommand(
         }
 
         var from = time.GetUtcNow() - window.Span;
-        var dataset = TraceAnalytics.Load(Root, from);
+        var dataset = TraceAnalytics.Load(Root, from, skipped: Skipped);
         var summary = TraceAnalytics.Summarize(dataset);
         if (json)
         {
@@ -267,6 +267,8 @@ internal sealed class TracesCommand(
             ["spans"] = row.Spans,
             ["failures"] = row.Failures,
         })]);
+
+    private void Skipped(string problem) => error.Write($"rig: skipped {problem}\n");
 
     private bool TryWindow(string text, out TraceWindow window)
     {

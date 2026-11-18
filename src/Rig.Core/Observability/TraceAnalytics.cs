@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Otel;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Observability;
@@ -262,7 +264,7 @@ public static partial class TraceAnalytics
     /// modified inside the window. A missing or unreadable folder gives an empty dataset. When <paramref name="tool"/>
     /// is given only that tool's spans are kept.
     /// </summary>
-    public static TraceDataset Load(string root, DateTimeOffset? since = null, string? tool = null)
+    public static TraceDataset Load(string root, DateTimeOffset? since = null, string? tool = null, Action<string>? skipped = null)
     {
         ArgumentNullException.ThrowIfNull(root);
         var files = Files(root, since);
@@ -271,9 +273,9 @@ public static partial class TraceAnalytics
         foreach (var path in files)
         {
             var fallbackTool = ToolFromPath(path, root);
-            foreach (var file in TraceSpans.Read(path))
+            foreach (var file in TraceSpans.Read(path, skipped))
             {
-                if (View(file, fallbackTool) is not { } span)
+                if (View(file, fallbackTool, skipped) is not { } span)
                 {
                     continue;
                 }
@@ -469,167 +471,111 @@ public static partial class TraceAnalytics
             : relative.Replace('\\', '/').Split('/')[0];
     }
 
-    private static TraceSpanInfo? View(FileSpan file, string fallbackTool)
+    // A span with a field of the wrong type is skipped and reported, naming the file, line and JSON path.
+    private static TraceSpanInfo? View(FileSpan file, string fallbackTool, Action<string>? skipped)
+    {
+        try
+        {
+            return View(file, fallbackTool);
+        }
+        catch (JsonInputException e)
+        {
+            skipped?.Invoke(e.Under(file.Origin, file.SpanPath).Message);
+            return null;
+        }
+    }
+
+    private static TraceSpanInfo View(FileSpan file, string fallbackTool)
     {
         var raw = file.Span;
-        var attributes = Attributes(raw["attributes"]);
-        var start = LaxLong(raw["startTimeUnixNano"]) ?? 0;
-        var end = LaxLong(raw["endTimeUnixNano"]) ?? start;
-        var (statusCode, statusMessage) = Status(raw["status"]);
+        var attributes = OtlpJson.Attributes(raw, "attributes");
+        var start = OtlpJson.Int64(raw["startTimeUnixNano"]) ?? 0;
+        var end = OtlpJson.Int64(raw["endTimeUnixNano"]) ?? start;
+        var (statusCode, statusMessage) = Status(raw);
         var tool = file.Resource is JsonObject resObj
-            ? TextValue(Attributes(resObj["attributes"]).GetValueOrDefault("service.name"))
+            ? TextValue(OtlpJson.Attributes(resObj, "attributes").GetValueOrDefault("service.name"))
             : string.Empty;
-        var scope = file.Scope is JsonObject scObj
-            ? TextValue(scObj["name"])
-            : string.Empty;
+        var scope = file.Scope is JsonObject scObj ? Text(scObj, "name") : string.Empty;
         return new TraceSpanInfo(
             file.TraceId,
             file.SpanId,
-            TextValue(raw["parentSpanId"]),
+            Text(raw, "parentSpanId"),
             tool.Length > 0 ? tool : fallbackTool,
             scope,
-            TextValue(raw["name"]),
+            Text(raw, "name"),
             start,
             end < start ? start : end,
             statusCode,
             statusMessage,
-            LaxLong(attributes.GetValueOrDefault("process.exit_code")) ?? LaxLong(attributes.GetValueOrDefault("process.exit.code")),
+            ExitCode(attributes, "process.exit_code") ?? ExitCode(attributes, "process.exit.code"),
             TextValue(attributes.GetValueOrDefault("process.command")) is { Length: > 0 } command
                 ? command
                 : TextValue(attributes.GetValueOrDefault("process.command_args")),
             TextValue(attributes.GetValueOrDefault("process.cwd")),
             TextValue(attributes.GetValueOrDefault("process.stderr_snippet")),
             attributes,
-            Events(raw["events"]));
+            Events(raw));
     }
 
-    private static List<TraceSpanEvent> Events(JsonNode? node)
+    private static List<TraceSpanEvent> Events(JsonObject raw)
     {
+        var items = OtlpJson.Items(raw, "events");
         List<TraceSpanEvent> events = [];
-        if (node is not JsonArray items)
+        for (var index = 0; index < items.Count; index++)
         {
-            return events;
-        }
-
-        foreach (var item in items)
-        {
-            if (item is JsonObject found)
-            {
-                events.Add(new TraceSpanEvent(TextValue(found["name"]), LaxLong(found["timeUnixNano"]) ?? 0, Attributes(found["attributes"])));
-            }
+            var found = items[index] as JsonObject ?? throw JsonProblem.Expected(JsonProblem.Item(items.GetPath(), index), "an object", JsonProblem.Describe(items[index]));
+            events.Add(new TraceSpanEvent(Text(found, "name"), OtlpJson.Int64(found["timeUnixNano"]) ?? 0, OtlpJson.Attributes(found, "attributes")));
         }
 
         return events;
     }
 
-    private static Dictionary<string, object?> Attributes(JsonNode? node)
+    // OTLP status codes are 0, 1 or 2 as numbers, or the enum's name; only an error code and its message matter here.
+    private static (int? Code, string Message) Status(JsonObject raw)
     {
-        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        if (node is not JsonArray items)
-        {
-            return attributes;
-        }
-
-        foreach (var item in items)
-        {
-            if (item is JsonObject attribute
-                && attribute["key"] is JsonValue key
-                && key.GetValueKind() == System.Text.Json.JsonValueKind.String)
-            {
-                attributes[key.GetValue<string>()] = AnyValue(attribute["value"]);
-            }
-        }
-
-        return attributes;
-    }
-
-    // Lenient: a value of the wrong shape reads as null rather than dropping the span.
-    private static object? AnyValue(JsonNode? node)
-    {
-        if (node is not JsonObject value)
-        {
-            return null;
-        }
-
-        if (value["arrayValue"] is JsonObject array && array["values"] is JsonArray items)
-        {
-            return items.Select(AnyValue).ToList();
-        }
-
-        if (value["stringValue"] is JsonValue text && text.GetValueKind() == System.Text.Json.JsonValueKind.String)
-        {
-            return text.GetValue<string>();
-        }
-
-        if (value["boolValue"] is JsonValue flag && flag.GetValueKind() is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False)
-        {
-            return flag.GetValue<bool>();
-        }
-
-        if (LaxLong(value["intValue"]) is { } whole)
-        {
-            return whole;
-        }
-
-        return value["doubleValue"] is JsonValue real
-            && real.GetValueKind() == System.Text.Json.JsonValueKind.Number
-            && real.TryGetValue<double>(out var parsed)
-            ? parsed
-            : null;
-    }
-
-    private static (int? Code, string Message) Status(JsonNode? node)
-    {
-        if (node is not JsonObject status)
+        if (raw["status"] is not { } node)
         {
             return (null, string.Empty);
         }
 
-        var message = TextValue(status["message"]);
-        if (LaxLong(status["code"]) is { } code && code is >= int.MinValue and <= int.MaxValue)
+        var status = node as JsonObject ?? throw JsonProblem.Expected(node, "an object");
+        var message = Text(status, "message");
+        return (status["code"] switch
         {
-            return ((int)code, message);
-        }
-
-        var textCode = TextValue(status["code"]);
-        if (textCode is "Error" or "STATUS_CODE_ERROR" or "2")
-        {
-            return (2, message);
-        }
-
-        return (null, message);
+            null => null,
+            JsonValue word when word.GetValueKind() == JsonValueKind.String => StatusName(word),
+            JsonValue { } number when number.GetValueKind() == JsonValueKind.Number && number.TryGetValue<int>(out var code) => code,
+            var other => throw JsonProblem.Expected(other, StatusExpected),
+        }, message);
     }
 
-    private static string TextValue(JsonNode? node) =>
-        node is JsonValue value && value.GetValueKind() == System.Text.Json.JsonValueKind.String ? value.GetValue<string>() : string.Empty;
+    private const string StatusExpected = "a whole number or STATUS_CODE_ERROR, STATUS_CODE_OK or STATUS_CODE_UNSET";
+
+    private static int? StatusName(JsonValue name) => name.GetValue<string>() switch
+    {
+        "Error" or "STATUS_CODE_ERROR" => 2,
+        "STATUS_CODE_OK" or "STATUS_CODE_UNSET" => null,
+        _ => throw JsonProblem.Expected(name, StatusExpected),
+    };
+
+    private static long? ExitCode(IReadOnlyDictionary<string, object?> attributes, string name) =>
+        attributes.GetValueOrDefault(name) switch
+        {
+            null => null,
+            long code => code,
+            var other => throw JsonProblem.Expected("$.attributes", $"{name} to be a whole number", JsonProblem.Describe(other)),
+        };
+
+    // A string field; absent or null reads as empty.
+    private static string Text(JsonObject owner, string key) =>
+        owner[key] switch
+        {
+            null => string.Empty,
+            JsonValue value when value.GetValueKind() == JsonValueKind.String => value.GetValue<string>(),
+            var other => throw JsonProblem.Expected(owner, key, "a string", other),
+        };
 
     private static string TextValue(object? value) => value as string ?? string.Empty;
-
-    // pydantic's lax int: a whole number, a bool, or a string holding a whole number.
-    private static long? LaxLong(JsonNode? node) =>
-        node is JsonValue value
-            ? value.GetValueKind() switch
-            {
-                System.Text.Json.JsonValueKind.Number when value.TryGetValue<long>(out var whole) => whole,
-                System.Text.Json.JsonValueKind.Number when value.TryGetValue<double>(out var real) && real == Math.Floor(real) && Math.Abs(real) < 9e18 => (long)real,
-                System.Text.Json.JsonValueKind.String when value.TryGetValue<string>(out var text)
-                    && long.TryParse(UnicodeText.Strip(text), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed) => parsed,
-                System.Text.Json.JsonValueKind.True => 1,
-                System.Text.Json.JsonValueKind.False => 0,
-                _ => null,
-            }
-            : null;
-
-    private static long? LaxLong(object? value) =>
-        value switch
-        {
-            long whole => whole,
-            int whole => whole,
-            double real when real == Math.Floor(real) && Math.Abs(real) < 9e18 => (long)real,
-            bool flag => flag ? 1 : 0,
-            string text when long.TryParse(UnicodeText.Strip(text), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed) => parsed,
-            _ => null,
-        };
 
     [GeneratedRegex(@"^([0-9]{4}-[0-9]{2}-[0-9]{2})\.ndjson$", RegexOptions.CultureInvariant)]
     private static partial Regex DayFile();
