@@ -151,7 +151,7 @@ internal sealed class PathwaysCommand(ImageHost host, TextWriter output, TextWri
         }
 
         text.AppendLine("\nNothing promoted. Higher conformance is cleaner geometry; higher SSIM is closer to the reference.");
-        await output.WriteAsync(text.ToString()).ConfigureAwait(false);
+        await output.WriteAsync(text.ToString(), CancellationToken.None).ConfigureAwait(false);
         return (int)ExitCode.Clean;
     }
 }

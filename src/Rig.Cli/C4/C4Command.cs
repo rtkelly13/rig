@@ -204,7 +204,7 @@ internal sealed class C4Command(C4Host host, TextWriter output, TextWriter error
         {
             if (!Directory.Exists(repo))
             {
-                await error.WriteAsync($"Repository directory does not exist: {repo}\n").ConfigureAwait(false);
+                await error.WriteAsync($"Repository directory does not exist: {repo}\n", CancellationToken.None).ConfigureAwait(false);
                 return 1;
             }
 
@@ -222,21 +222,21 @@ internal sealed class C4Command(C4Host host, TextWriter output, TextWriter error
             {
                 var verb = check ? "stale" : derived.Files.ContainsKey(name) ? "wrote" : "removed";
                 var orphaned = check && !derived.Files.ContainsKey(name) ? " (orphaned)" : string.Empty;
-                await output.WriteAsync($"{verb} {name}{orphaned}\n").ConfigureAwait(false);
+                await output.WriteAsync($"{verb} {name}{orphaned}\n", CancellationToken.None).ConfigureAwait(false);
             }
 
             foreach (var (alias, score) in derived.Pathways.OrderBy(pair => pair.Key, StringComparer.Ordinal))
             {
-                await output.WriteAsync($"{alias}: {score.Both} relationships on both pathways · {score.OnlyRefs} references only · {score.OnlyCalls} calls only\n").ConfigureAwait(false);
+                await output.WriteAsync($"{alias}: {score.Both} relationships on both pathways · {score.OnlyRefs} references only · {score.OnlyCalls} calls only\n", CancellationToken.None).ConfigureAwait(false);
             }
 
-            await output.WriteAsync($"{derived.Files.Count} derived concepts · {changed.Count} {(check ? "stale" : "changed")}\n").ConfigureAwait(false);
+            await output.WriteAsync($"{derived.Files.Count} derived concepts · {changed.Count} {(check ? "stale" : "changed")}\n", CancellationToken.None).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             return check && changed.Count > 0 ? 1 : 0;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or System.Xml.XmlException)
         {
-            await error.WriteAsync($"{exception.Message}\n").ConfigureAwait(false);
+            await error.WriteAsync($"{exception.Message}\n", CancellationToken.None).ConfigureAwait(false);
             return 1;
         }
     }

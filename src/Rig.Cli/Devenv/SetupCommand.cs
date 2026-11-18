@@ -126,7 +126,7 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
         var failures = await RunStepAsync(root, Steps[0].Lines(run), cancellationToken).ConfigureAwait(false);
         if (failures.Count > 0)
         {
-            await error.WriteLineAsync($"✗ {string.Join("; ", failures)}").ConfigureAwait(false);
+            await error.WriteLineAsync($"✗ {string.Join("; ", failures)}", CancellationToken.None).ConfigureAwait(false);
         }
 
         return failures.Count > 0 ? 1 : 0;
@@ -135,27 +135,27 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
     private async Task<int> SetupAsync(Command root, SetupRun run, int start, CancellationToken cancellationToken)
     {
         var platform = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : "linux";
-        await output.WriteLineAsync($"Starting Development Environment Setup ({platform} - {run.Mode} mode)").ConfigureAwait(false);
+        await output.WriteLineAsync($"Starting Development Environment Setup ({platform} - {run.Mode} mode)", CancellationToken.None).ConfigureAwait(false);
         var failed = false;
         for (var number = Math.Max(start, 1); number <= Steps.Count; number++)
         {
             var step = Steps[number - 1];
-            await output.WriteLineAsync($"\n── Step {number}/{Steps.Count}: {step.Name} ──\n   {step.Description}").ConfigureAwait(false);
+            await output.WriteLineAsync($"\n── Step {number}/{Steps.Count}: {step.Name} ──\n   {step.Description}", CancellationToken.None).ConfigureAwait(false);
             if (!await ShouldRunAsync(step, run.Mode).ConfigureAwait(false))
             {
-                await output.WriteLineAsync($"Skipped: {step.Name}").ConfigureAwait(false);
+                await output.WriteLineAsync($"Skipped: {step.Name}", CancellationToken.None).ConfigureAwait(false);
                 continue;
             }
 
             var failures = await RunStepAsync(root, step.Lines(run), cancellationToken).ConfigureAwait(false);
             if (failures.Count == 0)
             {
-                await output.WriteLineAsync($"✓ Completed: {step.Name}").ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ Completed: {step.Name}", CancellationToken.None).ConfigureAwait(false);
                 continue;
             }
 
             failed = true;
-            await error.WriteLineAsync($"✗ Step '{step.Name}' failed: {string.Join("; ", failures)}").ConfigureAwait(false);
+            await error.WriteLineAsync($"✗ Step '{step.Name}' failed: {string.Join("; ", failures)}", CancellationToken.None).ConfigureAwait(false);
             // Agent mode has no one to answer: record the failure and carry on.
             if (run.Mode != "agent" && !await ConfirmAsync("Continue with remaining steps?", true).ConfigureAwait(false))
             {
@@ -163,7 +163,7 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
             }
         }
 
-        await output.WriteLineAsync(failed ? "\n! Setup finished with failed steps." : "\n✓ Setup sequence complete!").ConfigureAwait(false);
+        await output.WriteLineAsync(failed ? "\n! Setup finished with failed steps." : "\n✓ Setup sequence complete!", CancellationToken.None).ConfigureAwait(false);
         return failed ? 1 : 0;
     }
 

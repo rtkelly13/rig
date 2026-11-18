@@ -34,7 +34,7 @@ internal sealed partial class GovernanceCommand
         var audit = options.Audit || !options.Enforce;
         var org = options.Org;
         var mode = options.Enforce ? options.DryRun ? "ENFORCE (DRY-RUN)" : "ENFORCE (SYNC)" : "AUDIT";
-        await output.WriteAsync(Panel($"GitHub Apps Governance ({org}): {mode}")).ConfigureAwait(false);
+        await output.WriteAsync(Panel($"GitHub Apps Governance ({org}): {mode}"), CancellationToken.None).ConfigureAwait(false);
         var (policies, repos) = Governed();
         var apps = new GitHubApps(Api, policies, (account, ct) => repos.DiscoverOrgReposAsync(account, host.PersonalDir, ct));
         IReadOnlyList<AppAudit> results;
@@ -44,13 +44,13 @@ internal sealed partial class GovernanceCommand
         }
         catch (GitHubReadException e)
         {
-            await output.WriteLineAsync($"✗ GitHub lookup failed for '{org}': {e.Message}").ConfigureAwait(false);
+            await output.WriteLineAsync($"✗ GitHub lookup failed for '{org}': {e.Message}", CancellationToken.None).ConfigureAwait(false);
             return 1;
         }
 
         if (results.Count == 0)
         {
-            await output.WriteLineAsync($"No GitHub Apps declared for account/organization '{org}' in repo_policies.json.").ConfigureAwait(false);
+            await output.WriteLineAsync($"No GitHub Apps declared for account/organization '{org}' in repo_policies.json.", CancellationToken.None).ConfigureAwait(false);
             return 0;
         }
 
@@ -69,30 +69,30 @@ internal sealed partial class GovernanceCommand
             _ = table.Add(result.AppName, result.AppSlug, result.Installed ? "✓ Yes" : "✗ No", result.Selection, connected, result.IsAligned ? "ALIGNED" : drifted ? "DRIFTED" : "UNINSTALLED");
         }
 
-        await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
         foreach (var result in results)
         {
             if (!result.Installed)
             {
-                await output.WriteLineAsync($"\n⚠ {result.AppName} ({result.AppSlug}) is not installed on @{org}:").ConfigureAwait(false);
-                await output.WriteLineAsync($"   Install link: {result.InstallPage}").ConfigureAwait(false);
-                await output.WriteLineAsync("   GitHub security requires an organization admin to authorize third-party apps.").ConfigureAwait(false);
+                await output.WriteLineAsync($"\n⚠ {result.AppName} ({result.AppSlug}) is not installed on @{org}:", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"   Install link: {result.InstallPage}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync("   GitHub security requires an organization admin to authorize third-party apps.", CancellationToken.None).ConfigureAwait(false);
             }
             else if (result.MissingRepos.Count > 0)
             {
-                await output.WriteLineAsync($"\n⚠ {result.AppName} is missing connections to: {string.Join(", ", result.MissingRepos)}").ConfigureAwait(false);
+                await output.WriteLineAsync($"\n⚠ {result.AppName} is missing connections to: {string.Join(", ", result.MissingRepos)}", CancellationToken.None).ConfigureAwait(false);
             }
         }
 
         var syncFailures = 0;
         if (options.Enforce)
         {
-            await output.WriteLineAsync("\nSyncing GitHub App repository connections...").ConfigureAwait(false);
+            await output.WriteLineAsync("\nSyncing GitHub App repository connections...", CancellationToken.None).ConfigureAwait(false);
             foreach (var result in results)
             {
                 if (!result.Installed)
                 {
-                    await output.WriteLineAsync($"Skipping {result.AppSlug}: install manually before connecting repos.").ConfigureAwait(false);
+                    await output.WriteLineAsync($"Skipping {result.AppSlug}: install manually before connecting repos.", CancellationToken.None).ConfigureAwait(false);
                     continue;
                 }
 
@@ -100,7 +100,7 @@ internal sealed partial class GovernanceCommand
                 syncFailures += sync.Ok ? 0 : 1;
                 foreach (var message in sync.Messages)
                 {
-                    await output.WriteLineAsync($"   · {message}").ConfigureAwait(false);
+                    await output.WriteLineAsync($"   · {message}", CancellationToken.None).ConfigureAwait(false);
                 }
             }
         }
@@ -112,7 +112,7 @@ internal sealed partial class GovernanceCommand
 
         if (options.Enforce && syncFailures > 0)
         {
-            await output.WriteLineAsync($"\nFAILED: {syncFailures} GitHub App sync(s) failed on @{org}.").ConfigureAwait(false);
+            await output.WriteLineAsync($"\nFAILED: {syncFailures} GitHub App sync(s) failed on @{org}.", CancellationToken.None).ConfigureAwait(false);
             return 1;
         }
 
@@ -123,11 +123,11 @@ internal sealed partial class GovernanceCommand
 
         if (failures > 0)
         {
-            await output.WriteLineAsync($"\nFAILED: {failures} required GitHub App(s) drifted on @{org}.").ConfigureAwait(false);
+            await output.WriteLineAsync($"\nFAILED: {failures} required GitHub App(s) drifted on @{org}.", CancellationToken.None).ConfigureAwait(false);
             return 1;
         }
 
-        await output.WriteLineAsync("\nSUCCESS: all declared GitHub Apps conform to policy.").ConfigureAwait(false);
+        await output.WriteLineAsync("\nSUCCESS: all declared GitHub Apps conform to policy.", CancellationToken.None).ConfigureAwait(false);
         return 0;
     }
 
@@ -139,11 +139,11 @@ internal sealed partial class GovernanceCommand
             : await repos.ResolveTargetsAsync(null, true, host.PersonalDir, host.Cwd, options.Org, cancellationToken).ConfigureAwait(false);
         if (options.CodeRabbit)
         {
-            await output.WriteLineAsync("\nAuditing/Enforcing .coderabbit.yaml configurations...").ConfigureAwait(false);
+            await output.WriteLineAsync("\nAuditing/Enforcing .coderabbit.yaml configurations...", CancellationToken.None).ConfigureAwait(false);
             foreach (var target in targets)
             {
                 var line = options.Enforce ? ReviewToolConfigs.AlignCodeRabbit(target, options.DryRun).Message : ReviewToolConfigs.InspectCodeRabbit(target).Status;
-                await output.WriteLineAsync($"   · {FolderName(target)}: {line}").ConfigureAwait(false);
+                await output.WriteLineAsync($"   · {FolderName(target)}: {line}", CancellationToken.None).ConfigureAwait(false);
             }
         }
 
@@ -152,16 +152,16 @@ internal sealed partial class GovernanceCommand
             return;
         }
 
-        await output.WriteLineAsync("\nAuditing/Enforcing code review tool configurations (.coderabbit.yaml, codecov.yml)...").ConfigureAwait(false);
+        await output.WriteLineAsync("\nAuditing/Enforcing code review tool configurations (.coderabbit.yaml, codecov.yml)...", CancellationToken.None).ConfigureAwait(false);
         foreach (var target in targets)
         {
-            await output.WriteLineAsync($" {FolderName(target)}:").ConfigureAwait(false);
+            await output.WriteLineAsync($" {FolderName(target)}:", CancellationToken.None).ConfigureAwait(false);
             IEnumerable<string> lines = options.Enforce
                 ? ReviewToolConfigs.Align(target, options.Org, policies, options.DryRun).Select(tool => $"{tool.Tool}: {tool.Message}")
                 : ReviewToolConfigs.Inspect(target).Select(row => $"{row.Tool}: {row.Status.Status}");
             foreach (var line in lines)
             {
-                await output.WriteLineAsync($"   · {line}").ConfigureAwait(false);
+                await output.WriteLineAsync($"   · {line}", CancellationToken.None).ConfigureAwait(false);
             }
         }
     }

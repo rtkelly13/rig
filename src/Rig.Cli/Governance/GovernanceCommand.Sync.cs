@@ -52,7 +52,7 @@ internal sealed partial class GovernanceCommand
 
         if (json)
         {
-            await output.WriteLineAsync(QuotedText.Json(new JsonArray([.. plans.Select(JsonNode (p) => p.ToJson())]))).ConfigureAwait(false);
+            await output.WriteLineAsync(QuotedText.Json(new JsonArray([.. plans.Select(JsonNode (p) => p.ToJson())])), CancellationToken.None).ConfigureAwait(false);
         }
         else
         {
@@ -73,7 +73,7 @@ internal sealed partial class GovernanceCommand
                 }
             }
 
-            await output.WriteAsync(rows > 0 ? table.Render() : "Every repo matches its policy.\n").ConfigureAwait(false);
+            await output.WriteAsync(rows > 0 ? table.Render() : "Every repo matches its policy.\n", CancellationToken.None).ConfigureAwait(false);
         }
 
         return GovernancePlan.ExitCode(plans, apply);
@@ -93,7 +93,7 @@ internal sealed partial class GovernanceCommand
         audit = audit || !apply;
         var (policies, repos) = Governed();
         var targets = await ReposToSyncAsync(repos, path, all, org, cancellationToken).ConfigureAwait(false);
-        await output.WriteAsync(Panel("GitHub Label Taxonomy Governance")).ConfigureAwait(false);
+        await output.WriteAsync(Panel("GitHub Label Taxonomy Governance"), CancellationToken.None).ConfigureAwait(false);
         var api = Api;
         var (failures, unreadable) = (0, 0);
         foreach (var (repo, display) in targets)
@@ -120,15 +120,15 @@ internal sealed partial class GovernanceCommand
             var result = LabelTaxonomy.Inspect(taxonomy, labels);
             if (result.IsFullyAligned)
             {
-                await output.WriteLineAsync($"✓ {display} ({repo}): all {result.TotalStandard} labels aligned").ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ {display} ({repo}): all {result.TotalStandard} labels aligned", CancellationToken.None).ConfigureAwait(false);
                 continue;
             }
 
             failures++;
-            await output.WriteLineAsync($"! {display} ({repo}): {result.Missing.Count} missing, {result.Mismatched.Count} mismatched").ConfigureAwait(false);
+            await output.WriteLineAsync($"! {display} ({repo}): {result.Missing.Count} missing, {result.Mismatched.Count} mismatched", CancellationToken.None).ConfigureAwait(false);
             foreach (var difference in result.Differences)
             {
-                await output.WriteLineAsync($"   - {difference.LabelName} ({difference.Action}: {difference.Details})").ConfigureAwait(false);
+                await output.WriteLineAsync($"   - {difference.LabelName} ({difference.Action}: {difference.Details})", CancellationToken.None).ConfigureAwait(false);
             }
         }
 
@@ -161,7 +161,7 @@ internal sealed partial class GovernanceCommand
         audit = audit || !apply;
         var (policies, repos) = Governed();
         var targets = await ReposToSyncAsync(repos, path, all, org, cancellationToken).ConfigureAwait(false);
-        await output.WriteAsync(Panel("GitHub Deployment Environment Governance")).ConfigureAwait(false);
+        await output.WriteAsync(Panel("GitHub Deployment Environment Governance"), CancellationToken.None).ConfigureAwait(false);
         var api = Api;
         var (failures, unreadable) = (0, 0);
         foreach (var (repo, display) in targets)
@@ -169,7 +169,7 @@ internal sealed partial class GovernanceCommand
             var desired = policies.Environments(repo);
             if (desired.Count == 0)
             {
-                await output.WriteLineAsync($"· {display} ({repo}): declares no environments, skipped").ConfigureAwait(false);
+                await output.WriteLineAsync($"· {display} ({repo}): declares no environments, skipped", CancellationToken.None).ConfigureAwait(false);
                 continue;
             }
 
@@ -195,12 +195,12 @@ internal sealed partial class GovernanceCommand
             if (missing.Count > 0)
             {
                 failures++;
-                await output.WriteLineAsync($"! {display} ({repo}): missing {string.Join(", ", missing)}").ConfigureAwait(false);
+                await output.WriteLineAsync($"! {display} ({repo}): missing {string.Join(", ", missing)}", CancellationToken.None).ConfigureAwait(false);
             }
             else
             {
                 var present = desired.Select(e => e.Name).Distinct().Order(StringComparer.Ordinal);
-                await output.WriteLineAsync($"✓ {display} ({repo}): {string.Join(", ", present)} present").ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ {display} ({repo}): {string.Join(", ", present)} present", CancellationToken.None).ConfigureAwait(false);
             }
         }
 
@@ -231,7 +231,7 @@ internal sealed partial class GovernanceCommand
         audit = audit || !apply;
         var (policies, repos) = Governed();
         var targets = await repos.ResolveTargetsAsync(path, all, host.PersonalDir, host.Cwd, cancellationToken: cancellationToken).ConfigureAwait(false);
-        await output.WriteAsync(Panel("GitHub Pages Governance")).ConfigureAwait(false);
+        await output.WriteAsync(Panel("GitHub Pages Governance"), CancellationToken.None).ConfigureAwait(false);
         var api = Api;
         var (failures, unreadable) = (0, 0);
         foreach (var target in targets)
@@ -240,14 +240,14 @@ internal sealed partial class GovernanceCommand
             var repo = await repos.GhRepoNameAsync(target, cancellationToken).ConfigureAwait(false);
             if (string.IsNullOrEmpty(repo))
             {
-                await output.WriteLineAsync($"? {name}: no GitHub remote, skipped").ConfigureAwait(false);
+                await output.WriteLineAsync($"? {name}: no GitHub remote, skipped", CancellationToken.None).ConfigureAwait(false);
                 continue;
             }
 
             var policy = policies.Pages(repo);
             if (!policy.Enabled)
             {
-                await output.WriteLineAsync($"· {name} ({repo}): Pages not enabled in profile, skipped").ConfigureAwait(false);
+                await output.WriteLineAsync($"· {name} ({repo}): Pages not enabled in profile, skipped", CancellationToken.None).ConfigureAwait(false);
                 continue;
             }
 
@@ -262,7 +262,7 @@ internal sealed partial class GovernanceCommand
                     _ => $"✗ {name} ({repo}): failed to align Pages ({result.Error ?? "None"})",
                 };
                 failures += result.Status is "aligned" or "dry_run" or "success" ? 0 : 1;
-                await output.WriteLineAsync(line).ConfigureAwait(false);
+                await output.WriteLineAsync(line, CancellationToken.None).ConfigureAwait(false);
                 continue;
             }
 
@@ -270,17 +270,17 @@ internal sealed partial class GovernanceCommand
             if (current.Error is { } error)
             {
                 unreadable++;
-                await output.WriteLineAsync($"✗ {name} ({repo}): cannot read Pages ({error})").ConfigureAwait(false);
+                await output.WriteLineAsync($"✗ {name} ({repo}): cannot read Pages ({error})", CancellationToken.None).ConfigureAwait(false);
             }
             else if (current.IsAligned)
             {
-                await output.WriteLineAsync($"✓ {name} ({repo}): Pages aligned ({OrDefaultDomain(current.Cname)})").ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ {name} ({repo}): Pages aligned ({OrDefaultDomain(current.Cname)})", CancellationToken.None).ConfigureAwait(false);
             }
             else
             {
                 failures++;
                 var reasons = current.DriftReasons.Count > 0 ? string.Join(", ", current.DriftReasons) : "not aligned";
-                await output.WriteLineAsync($"! {name} ({repo}): Pages drift detected: {reasons}").ConfigureAwait(false);
+                await output.WriteLineAsync($"! {name} ({repo}): Pages drift detected: {reasons}", CancellationToken.None).ConfigureAwait(false);
             }
         }
 

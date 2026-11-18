@@ -151,7 +151,7 @@ internal sealed partial class PrCommand(
     {
         if (ParseDuration(args.Timeout) is not { } timeout || ParseDuration(args.Settle) is not { } settle)
         {
-            await error.WriteLineAsync("Expected a duration such as 45m, 2h or 90s for --timeout and --settle.").ConfigureAwait(false);
+            await error.WriteLineAsync("Expected a duration such as 45m, 2h or 90s for --timeout and --settle.", CancellationToken.None).ConfigureAwait(false);
             return (int)Outcome.Error;
         }
 
@@ -184,7 +184,7 @@ internal sealed partial class PrCommand(
         var report = Report.Of(repo, args.Pr, result);
         if (args.Json)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(report, JsonOutputOptions.SnakeCaseIndented)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(report, JsonOutputOptions.SnakeCaseIndented), CancellationToken.None).ConfigureAwait(false);
         }
         else
         {
@@ -204,7 +204,7 @@ internal sealed partial class PrCommand(
         }
         catch (GitHubException problem)
         {
-            await error.WriteLineAsync(problem.Message).ConfigureAwait(false);
+            await error.WriteLineAsync(problem.Message, CancellationToken.None).ConfigureAwait(false);
             return false;
         }
 
@@ -217,11 +217,11 @@ internal sealed partial class PrCommand(
         if (!ran.Ok)
         {
             var err = ran.Err.Trim();
-            await error.WriteLineAsync($"Could not queue auto-merge: {(err.Length > 0 ? err : $"gh exited {ran.Code}")}").ConfigureAwait(false);
+            await error.WriteLineAsync($"Could not queue auto-merge: {(err.Length > 0 ? err : $"gh exited {ran.Code}")}", CancellationToken.None).ConfigureAwait(false);
             return false;
         }
 
-        await error.WriteLineAsync($"{label}: queued squash auto-merge").ConfigureAwait(false);
+        await error.WriteLineAsync($"{label}: queued squash auto-merge", CancellationToken.None).ConfigureAwait(false);
         return true;
     }
 

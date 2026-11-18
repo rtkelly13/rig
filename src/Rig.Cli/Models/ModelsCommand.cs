@@ -57,15 +57,15 @@ internal sealed class ModelsCommand(ModelDiscovery discovery, TextWriter output)
 
         if (json)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(models, JsonOutputOptions.SnakeCaseIndented)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(models, JsonOutputOptions.SnakeCaseIndented), CancellationToken.None).ConfigureAwait(false);
         }
         else if (models.Count == 0)
         {
-            await output.WriteLineAsync("No models found matching the specified filters.").ConfigureAwait(false);
+            await output.WriteLineAsync("No models found matching the specified filters.", CancellationToken.None).ConfigureAwait(false);
         }
         else
         {
-            await output.WriteAsync(Render(models, all)).ConfigureAwait(false);
+            await output.WriteAsync(Render(models, all), CancellationToken.None).ConfigureAwait(false);
         }
 
         return 0;

@@ -137,14 +137,14 @@ internal sealed partial class GovernanceCommand(
                 ["report_only_checks"] = new JsonArray([.. AgentsMdAudit.ReportOnlyChecks.Select(name => (JsonNode?)name)]),
                 ["rubric"] = Rubric,
             };
-            await output.WriteLineAsync(JsonOutput.Format(payload)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(payload), CancellationToken.None).ConfigureAwait(false);
         }
         else
         {
-            await output.WriteAsync(RenderAudit(results)).ConfigureAwait(false);
+            await output.WriteAsync(RenderAudit(results), CancellationToken.None).ConfigureAwait(false);
             if (options.Remote)
             {
-                await output.WriteAsync(RenderRemote(sweep)).ConfigureAwait(false);
+                await output.WriteAsync(RenderRemote(sweep), CancellationToken.None).ConfigureAwait(false);
             }
         }
 
@@ -157,7 +157,7 @@ internal sealed partial class GovernanceCommand(
                 {
                     await output.WriteLineAsync(
                         $"{Path.GetFileName(Path.TrimEndingDirectorySeparator(targets[i]))}: wrote {written} stub(s) to {AgentsMdAudit.WaiverFileName} — "
-                        + "fill in each `reason` or the audit stays red.").ConfigureAwait(false);
+                        + "fill in each `reason` or the audit stays red.", CancellationToken.None).ConfigureAwait(false);
                 }
             }
         }

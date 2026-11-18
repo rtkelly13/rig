@@ -34,9 +34,9 @@ internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider ti
     {
         var platform = host.Windows ? "windows" : host.MacOS ? "macos" : "linux";
         var issues = 0;
-        await output.WriteLineAsync($"\n=== Development Environment Doctor ({platform}) ===\n").ConfigureAwait(false);
+        await output.WriteLineAsync($"\n=== Development Environment Doctor ({platform}) ===\n", CancellationToken.None).ConfigureAwait(false);
 
-        await output.WriteLineAsync("1. Tools & Utilities").ConfigureAwait(false);
+        await output.WriteLineAsync("1. Tools & Utilities", CancellationToken.None).ConfigureAwait(false);
         // tools --check exits 1 when a required tool is missing; terminal --check when snapToGrid risks jitter.
         issues += await FailsAsync(root, ["devenv", "tools", "--check"], cancellationToken).ConfigureAwait(false);
         if (host.Windows)
@@ -44,17 +44,17 @@ internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider ti
             issues += await FailsAsync(root, ["devenv", "terminal", "--check"], cancellationToken).ConfigureAwait(false);
         }
 
-        await output.WriteLineAsync("\n2. Toolchain").ConfigureAwait(false);
+        await output.WriteLineAsync("\n2. Toolchain", CancellationToken.None).ConfigureAwait(false);
         foreach (var (label, program) in Toolchain)
         {
-            await output.WriteLineAsync(await ToolchainRowAsync(label, program, cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
+            await output.WriteLineAsync(await ToolchainRowAsync(label, program, cancellationToken).ConfigureAwait(false), CancellationToken.None).ConfigureAwait(false);
         }
 
-        await output.WriteLineAsync("\n3. Git & SSH Configuration").ConfigureAwait(false);
+        await output.WriteLineAsync("\n3. Git & SSH Configuration", CancellationToken.None).ConfigureAwait(false);
         issues += await FailsAsync(root, ["devenv", "git", "--check"], cancellationToken).ConfigureAwait(false);
         var resolver = new RepoResolver(new GhApi(proc), RepoResolver.DefaultCacheFile(host.Home), time);
         var folder = await RepoFolderCheck.CheckAsync(new Git(proc, host.CodeRoot), resolver, host.WorkingDirectory ?? host.Home, cancellationToken).ConfigureAwait(false);
-        await output.WriteLineAsync($"  {"Repository Folder",-20} {FolderRow(folder)}").ConfigureAwait(false);
+        await output.WriteLineAsync($"  {"Repository Folder",-20} {FolderRow(folder)}", CancellationToken.None).ConfigureAwait(false);
         if (folder.Status is RepoFolderStatus.FolderRenamed or RepoFolderStatus.FolderMismatch or RepoFolderStatus.RemoteOutdated)
         {
             issues++;
@@ -62,20 +62,20 @@ internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider ti
 
         if (await FailsAsync(root, ["devenv", "gh", "--check"], cancellationToken).ConfigureAwait(false) > 0)
         {
-            await output.WriteLineAsync("  Run 'rig devenv gh' to install it.").ConfigureAwait(false);
+            await output.WriteLineAsync("  Run 'rig devenv gh' to install it.", CancellationToken.None).ConfigureAwait(false);
             issues++;
         }
 
         // Informational: a missing font is reported but is not an issue.
-        await output.WriteLineAsync("\n4. Developer Fonts").ConfigureAwait(false);
+        await output.WriteLineAsync("\n4. Developer Fonts", CancellationToken.None).ConfigureAwait(false);
         _ = await FailsAsync(root, ["devenv", "fonts", "--check"], cancellationToken).ConfigureAwait(false);
 
-        await output.WriteLineAsync("\n5. AI Assistants & Config").ConfigureAwait(false);
+        await output.WriteLineAsync("\n5. AI Assistants & Config", CancellationToken.None).ConfigureAwait(false);
         var seeded = File.Exists(Path.Join(host.Home, ".claude", "settings.json"));
-        await output.WriteLineAsync($"  {"Claude Code Settings",-20} {(seeded ? "✓ Configured" : "- Not seeded")}").ConfigureAwait(false);
+        await output.WriteLineAsync($"  {"Claude Code Settings",-20} {(seeded ? "✓ Configured" : "- Not seeded")}", CancellationToken.None).ConfigureAwait(false);
         if (await FailsAsync(root, ["devenv", "claude", "--check"], cancellationToken).ConfigureAwait(false) > 0)
         {
-            await output.WriteLineAsync("  Run 'rig devenv claude' to install the session-ledger hook.").ConfigureAwait(false);
+            await output.WriteLineAsync("  Run 'rig devenv claude' to install the session-ledger hook.", CancellationToken.None).ConfigureAwait(false);
             issues++;
         }
 
@@ -83,11 +83,11 @@ internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider ti
 
         if (issues == 0)
         {
-            await output.WriteLineAsync("\n✓ All required development components are healthy!").ConfigureAwait(false);
+            await output.WriteLineAsync("\n✓ All required development components are healthy!", CancellationToken.None).ConfigureAwait(false);
             return 0;
         }
 
-        await output.WriteLineAsync($"\n! Found {issues} missing required component(s). Run 'rig devenv setup' to resolve.").ConfigureAwait(false);
+        await output.WriteLineAsync($"\n! Found {issues} missing required component(s). Run 'rig devenv setup' to resolve.", CancellationToken.None).ConfigureAwait(false);
         return 1;
     }
 

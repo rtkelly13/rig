@@ -229,12 +229,12 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         try
         {
             var result = await new ServiceManager(launching).InstallAsync(target, preview, port, cancellationToken).ConfigureAwait(false);
-            await output.WriteLineAsync(result.Message).ConfigureAwait(false);
+            await output.WriteLineAsync(result.Message, CancellationToken.None).ConfigureAwait(false);
             return 0;
         }
         catch (Exception e) when (e is ProcException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            await error.WriteLineAsync($"rig tools install {target.Name}: {e.Message}").ConfigureAwait(false);
+            await error.WriteLineAsync($"rig tools install {target.Name}: {e.Message}", CancellationToken.None).ConfigureAwait(false);
             return FailureExit;
         }
     }
@@ -249,19 +249,19 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
             if (!answering)
             {
                 await error.WriteLineAsync(
-                    $"{target.DisplayName} did not answer on port {effectivePort?.ToString(CultureInfo.InvariantCulture) ?? "?"} within {timeout.ToString("g", CultureInfo.InvariantCulture)}s.")
+                    $"{target.DisplayName} did not answer on port {effectivePort?.ToString(CultureInfo.InvariantCulture) ?? "?"} within {timeout.ToString("g", CultureInfo.InvariantCulture)}s.", CancellationToken.None)
                     .ConfigureAwait(false);
                 return FailureExit;
             }
 
             await output.WriteLineAsync(effectivePort is { } listening
                 ? $"{target.DisplayName} answering on http://127.0.0.1:{listening.ToString(CultureInfo.InvariantCulture)}"
-                : $"{target.DisplayName} started.").ConfigureAwait(false);
+                : $"{target.DisplayName} started.", CancellationToken.None).ConfigureAwait(false);
             return 0;
         }
         catch (Exception e) when (e is ProcException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            await error.WriteLineAsync($"rig tools ensure {target.Name}: {e.Message}").ConfigureAwait(false);
+            await error.WriteLineAsync($"rig tools ensure {target.Name}: {e.Message}", CancellationToken.None).ConfigureAwait(false);
             return FailureExit;
         }
     }
@@ -271,12 +271,12 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         try
         {
             var result = await new ServiceManager(services).UninstallAsync(target, preview, cancellationToken).ConfigureAwait(false);
-            await output.WriteLineAsync(result.Message).ConfigureAwait(false);
+            await output.WriteLineAsync(result.Message, CancellationToken.None).ConfigureAwait(false);
             return 0;
         }
         catch (Exception e) when (e is ProcException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            await error.WriteLineAsync($"rig tools uninstall {target.Name}: {e.Message}").ConfigureAwait(false);
+            await error.WriteLineAsync($"rig tools uninstall {target.Name}: {e.Message}", CancellationToken.None).ConfigureAwait(false);
             return FailureExit;
         }
     }
@@ -310,11 +310,11 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
                         ? $", listening on {status.Port?.ToString(CultureInfo.InvariantCulture)}"
                         : $", not listening on {status.Port?.ToString(CultureInfo.InvariantCulture)}"
                     : string.Empty;
-                await output.WriteLineAsync($"{target.Name}: {installed}, {running}{listening}").ConfigureAwait(false);
+                await output.WriteLineAsync($"{target.Name}: {installed}, {running}{listening}", CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception e) when (e is ProcException or IOException or UnauthorizedAccessException or InvalidOperationException)
             {
-                await error.WriteLineAsync($"rig tools status {target.Name}: {e.Message}").ConfigureAwait(false);
+                await error.WriteLineAsync($"rig tools status {target.Name}: {e.Message}", CancellationToken.None).ConfigureAwait(false);
                 return FailureExit;
             }
         }
@@ -328,29 +328,29 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         try
         {
             var state = RigDatabase.Inspect(database.DbPath);
-            await output.WriteLineAsync($"Database Path: {database.DbPath}").ConfigureAwait(false);
-            await output.WriteLineAsync($"Current Schema Version: {state.Version.ToString(CultureInfo.InvariantCulture)}").ConfigureAwait(false);
+            await output.WriteLineAsync($"Database Path: {database.DbPath}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"Current Schema Version: {state.Version.ToString(CultureInfo.InvariantCulture)}", CancellationToken.None).ConfigureAwait(false);
             if (state.Applied.Count == 0)
             {
-                await output.WriteLineAsync("No migrations have been recorded yet.").ConfigureAwait(false);
+                await output.WriteLineAsync("No migrations have been recorded yet.", CancellationToken.None).ConfigureAwait(false);
                 return 0;
             }
 
-            await output.WriteLineAsync("Applied Schema Migrations").ConfigureAwait(false);
+            await output.WriteLineAsync("Applied Schema Migrations", CancellationToken.None).ConfigureAwait(false);
             var rows = state.Applied.Select(m => (Version: m.Version.ToString(CultureInfo.InvariantCulture), m.Name, m.AppliedAt)).ToArray();
             var versionWidth = Math.Max("Version".Length, rows.Max(r => r.Version.Length));
             var nameWidth = Math.Max("Name".Length, rows.Max(r => r.Name.Length));
-            await output.WriteLineAsync($"{Pad("Version", versionWidth)}  {Pad("Name", nameWidth)}  Applied At").ConfigureAwait(false);
+            await output.WriteLineAsync($"{Pad("Version", versionWidth)}  {Pad("Name", nameWidth)}  Applied At", CancellationToken.None).ConfigureAwait(false);
             foreach (var (version, migrationName, appliedAt) in rows)
             {
-                await output.WriteLineAsync($"{Pad(version, versionWidth)}  {Pad(migrationName, nameWidth)}  {appliedAt}").ConfigureAwait(false);
+                await output.WriteLineAsync($"{Pad(version, versionWidth)}  {Pad(migrationName, nameWidth)}  {appliedAt}", CancellationToken.None).ConfigureAwait(false);
             }
 
             return 0;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or SqliteException)
         {
-            await error.WriteLineAsync($"rig tools db status: {e.Message}").ConfigureAwait(false);
+            await error.WriteLineAsync($"rig tools db status: {e.Message}", CancellationToken.None).ConfigureAwait(false);
             return FailureExit;
         }
     }
@@ -361,12 +361,12 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         try
         {
             var applied = RigDatabase.Migrate(database.DbPath, database.Clock);
-            await output.WriteLineAsync($"Migrations applied: {applied.ToString(CultureInfo.InvariantCulture)} on {database.DbPath}").ConfigureAwait(false);
+            await output.WriteLineAsync($"Migrations applied: {applied.ToString(CultureInfo.InvariantCulture)} on {database.DbPath}", CancellationToken.None).ConfigureAwait(false);
             return 0;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or SqliteException)
         {
-            await error.WriteLineAsync($"rig tools db migrate: {e.Message}").ConfigureAwait(false);
+            await error.WriteLineAsync($"rig tools db migrate: {e.Message}", CancellationToken.None).ConfigureAwait(false);
             return FailureExit;
         }
     }
@@ -377,12 +377,12 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         try
         {
             var path = RigDatabase.Backup(database.DbPath, database.BackupDir, database.Clock);
-            await output.WriteLineAsync($"Database backup created: {path}").ConfigureAwait(false);
+            await output.WriteLineAsync($"Database backup created: {path}", CancellationToken.None).ConfigureAwait(false);
             return 0;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or SqliteException)
         {
-            await error.WriteLineAsync($"rig tools db backup: {e.Message}").ConfigureAwait(false);
+            await error.WriteLineAsync($"rig tools db backup: {e.Message}", CancellationToken.None).ConfigureAwait(false);
             return FailureExit;
         }
     }
