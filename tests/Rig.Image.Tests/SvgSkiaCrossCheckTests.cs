@@ -5,7 +5,7 @@ public sealed class SvgSkiaCrossCheckTests
     [Fact]
     public async Task SvgSkiaStaysWithinTheAdrThresholdsOfTheFrozenChromiumRenders()
     {
-        var files = CrossCheck.Files().Where(file => file.Size <= 500).ToList();
+        var files = CrossCheck.Files(OracleFixture.RepoRoot).Where(file => file.Size <= 500).ToList();
         await using var skia = new SvgSkiaRenderer();
         await using var chromium = new FrozenRenderer();
 

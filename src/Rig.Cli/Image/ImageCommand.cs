@@ -82,7 +82,7 @@ internal sealed class ImageCommand(ImageHost host, TextWriter output, TextWriter
                     var fast = host.CreateFast();
                     await using (fast.ConfigureAwait(false))
                     {
-                        report = await CrossCheck.RunAsync(authoritative, fast, host.RepoRoot, CrossCheck.Files(), Candidates, DivergenceThresholds.Adr, cancellationToken).ConfigureAwait(false);
+                        report = await CrossCheck.RunAsync(authoritative, fast, host.RepoRoot, CrossCheck.Files(host.RepoRoot), Candidates, DivergenceThresholds.Adr, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }

@@ -1,0 +1,557 @@
+{
+  "projects": {
+    "parquet-source-generator": {
+      "master_svg": "parquet-source-generator/production-cuts/parquet-diamond.svg",
+      "master_png": "parquet-source-generator/production-cuts/parquet-diamond-1000x1000.png",
+      "references": [
+        [
+          1,
+          "01-original-wood-tile.jpg",
+          "Initial generative concept featuring parquet floor tile textures, organic wood grain, and git tree forks"
+        ],
+        [
+          2,
+          "02-simplified-cad-baseline.jpg",
+          "Approved simplified CAD baseline regularizing the diamond silhouette and establishing crisp branch vectors"
+        ],
+        [
+          3,
+          "parquet-diamond.png",
+          "1024x1024 lossless raster baseline used for quantitative calibration"
+        ]
+      ],
+      "cuts": [
+        [
+          "cut_2000",
+          "parquet-diamond-2000x2000.png",
+          544644,
+          2000,
+          2000,
+          "png",
+          "Ultra High-Res Cut",
+          "Master 2000px high-resolution raster cut"
+        ],
+        [
+          "master_png",
+          "parquet-diamond-1000x1000.png",
+          234838,
+          1000,
+          1000,
+          "png",
+          "Master 1000px Cut",
+          "Master 1000px production cut"
+        ],
+        [
+          "master_svg",
+          "parquet-diamond.svg",
+          72773,
+          1024,
+          1024,
+          "svg",
+          "Canonical Vector",
+          "Resolution-independent master vector logo"
+        ],
+        [
+          "avatar",
+          "avatar-180x180.png",
+          24881,
+          180,
+          180,
+          "png",
+          "Web Profile",
+          "180x180 mobile and web touch profile"
+        ],
+        [
+          "avatar",
+          "avatar-500x500.png",
+          126297,
+          500,
+          500,
+          "png",
+          "GitHub Profile Avatar",
+          "Primary 500x500 project avatar"
+        ],
+        [
+          "apple_touch",
+          "apple-touch-icon.png",
+          24881,
+          180,
+          180,
+          "png",
+          "iOS Touch Icon",
+          "Apple iOS Safari home screen touch icon"
+        ],
+        [
+          "favicon_svg",
+          "favicon.svg",
+          4921,
+          32,
+          32,
+          "svg",
+          "High-Contrast Favicon Vector",
+          "Simplified high-contrast vector cut for small displays"
+        ],
+        [
+          "favicon",
+          "favicon-16.png",
+          718,
+          16,
+          16,
+          "png",
+          "Web Favicon",
+          "Desktop browser tab favicon (16px)"
+        ],
+        [
+          "favicon",
+          "favicon-32.png",
+          1687,
+          32,
+          32,
+          "png",
+          "Web Favicon",
+          "Desktop browser tab favicon (32px)"
+        ],
+        [
+          "favicon",
+          "favicon-48.png",
+          2680,
+          48,
+          48,
+          "png",
+          "Web Favicon",
+          "Desktop browser tab favicon (48px)"
+        ],
+        [
+          "favicon",
+          "favicon-512.png",
+          42469,
+          512,
+          512,
+          "png",
+          "PWA Manifest Icon",
+          "Web app manifest 512x512 icon"
+        ],
+        [
+          "favicon",
+          "favicon.ico",
+          5139,
+          48,
+          48,
+          "ico",
+          "Legacy Favicon Bundle",
+          "Multi-resolution legacy browser favicon bundle (48/32/16)"
+        ]
+      ]
+    },
+    "rtkelly-labs": {
+      "master_svg": "rtkelly-labs/production-cuts/rtkelly-labs.svg",
+      "master_png": "rtkelly-labs/production-cuts/rtkelly-labs-logo-1000x1000.png",
+      "references": [
+        [
+          1,
+          "01-original-concept.jpg",
+          "Initial generative Concept 2 ('Isometric Architecture Glyph') with dividing seams"
+        ],
+        [
+          2,
+          "02-smooth-crossover-baseline.jpg",
+          "Approved baseline photo with continuous diagonal crossover beams (eliminates longitudinal dividing seams)"
+        ],
+        [
+          3,
+          "rtkelly-labs.png",
+          "1024x1024 lossless raster baseline used for quantitative image drift and calibration"
+        ]
+      ],
+      "cuts": [
+        [
+          "cut_2000",
+          "rtkelly-labs-logo-2000x2000.png",
+          597162,
+          2000,
+          2000,
+          "png",
+          "Ultra High-Res Cut",
+          "Master 2000px high-resolution raster cut"
+        ],
+        [
+          "master_png",
+          "rtkelly-labs-logo-1000x1000.png",
+          188324,
+          1000,
+          1000,
+          "png",
+          "Master 1000px Cut",
+          "Master 1000px production cut"
+        ],
+        [
+          "master_svg",
+          "rtkelly-labs.svg",
+          11377,
+          1024,
+          1024,
+          "svg",
+          "Canonical Vector",
+          "Resolution-independent master vector logo"
+        ],
+        [
+          "avatar",
+          "avatar-180x180.png",
+          14658,
+          180,
+          180,
+          "png",
+          "Web Profile",
+          "180x180 mobile and web touch profile"
+        ],
+        [
+          "avatar",
+          "avatar-500x500.png",
+          63368,
+          500,
+          500,
+          "png",
+          "GitHub Org Avatar",
+          "Primary 500x500 organization profile avatar"
+        ],
+        [
+          "apple_touch",
+          "apple-touch-icon.png",
+          14658,
+          180,
+          180,
+          "png",
+          "iOS Touch Icon",
+          "Apple iOS Safari home screen touch icon"
+        ],
+        [
+          "favicon_svg",
+          "favicon.svg",
+          3462,
+          1024,
+          1024,
+          "svg",
+          "High-Contrast Favicon Vector",
+          "Simplified high-contrast vector cut for small displays"
+        ],
+        [
+          "favicon",
+          "favicon-16.png",
+          473,
+          16,
+          16,
+          "png",
+          "Web Favicon",
+          "Desktop browser tab favicon (16px)"
+        ],
+        [
+          "favicon",
+          "favicon-32.png",
+          1120,
+          32,
+          32,
+          "png",
+          "Web Favicon",
+          "Desktop browser tab favicon (32px)"
+        ],
+        [
+          "favicon",
+          "favicon-48.png",
+          1807,
+          48,
+          48,
+          "png",
+          "Web Favicon",
+          "Desktop browser tab favicon (48px)"
+        ],
+        [
+          "favicon",
+          "favicon-512.png",
+          65626,
+          512,
+          512,
+          "png",
+          "PWA Manifest Icon",
+          "Web app manifest 512x512 icon"
+        ],
+        [
+          "favicon",
+          "favicon.ico",
+          3789,
+          48,
+          48,
+          "ico",
+          "Legacy Favicon Bundle",
+          "Multi-resolution legacy browser favicon bundle (48/32/16)"
+        ]
+      ]
+    }
+  },
+  "cut_specs": {
+    "parquet-source-generator": [
+      {
+        "filename": "parquet-diamond-2000x2000.png",
+        "cut_type": "cut_2000",
+        "width": 2000,
+        "height": 2000,
+        "format": "png"
+      },
+      {
+        "filename": "parquet-diamond-1000x1000.png",
+        "cut_type": "master_png",
+        "width": 1000,
+        "height": 1000,
+        "format": "png"
+      },
+      {
+        "filename": "parquet-diamond.svg",
+        "cut_type": "master_svg",
+        "width": 1024,
+        "height": 1024,
+        "format": "svg"
+      },
+      {
+        "filename": "avatar-500x500.png",
+        "cut_type": "avatar",
+        "width": 500,
+        "height": 500,
+        "format": "png"
+      },
+      {
+        "filename": "avatar-180x180.png",
+        "cut_type": "avatar",
+        "width": 180,
+        "height": 180,
+        "format": "png"
+      },
+      {
+        "filename": "apple-touch-icon.png",
+        "cut_type": "apple_touch",
+        "width": 180,
+        "height": 180,
+        "format": "png"
+      },
+      {
+        "filename": "favicon.svg",
+        "cut_type": "favicon_svg",
+        "width": 32,
+        "height": 32,
+        "format": "svg"
+      },
+      {
+        "filename": "favicon-512.png",
+        "cut_type": "favicon",
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "filename": "favicon-48.png",
+        "cut_type": "favicon",
+        "width": 48,
+        "height": 48,
+        "format": "png"
+      },
+      {
+        "filename": "favicon-32.png",
+        "cut_type": "favicon",
+        "width": 32,
+        "height": 32,
+        "format": "png"
+      },
+      {
+        "filename": "favicon-16.png",
+        "cut_type": "favicon",
+        "width": 16,
+        "height": 16,
+        "format": "png"
+      },
+      {
+        "filename": "favicon.ico",
+        "cut_type": "favicon",
+        "width": 48,
+        "height": 48,
+        "format": "ico"
+      }
+    ],
+    "rtkelly-labs": [
+      {
+        "filename": "rtkelly-labs-logo-2000x2000.png",
+        "cut_type": "cut_2000",
+        "width": 2000,
+        "height": 2000,
+        "format": "png"
+      },
+      {
+        "filename": "rtkelly-labs-logo-1000x1000.png",
+        "cut_type": "master_png",
+        "width": 1000,
+        "height": 1000,
+        "format": "png"
+      },
+      {
+        "filename": "rtkelly-labs.svg",
+        "cut_type": "master_svg",
+        "width": 1024,
+        "height": 1024,
+        "format": "svg"
+      },
+      {
+        "filename": "avatar-500x500.png",
+        "cut_type": "avatar",
+        "width": 500,
+        "height": 500,
+        "format": "png"
+      },
+      {
+        "filename": "avatar-180x180.png",
+        "cut_type": "avatar",
+        "width": 180,
+        "height": 180,
+        "format": "png"
+      },
+      {
+        "filename": "apple-touch-icon.png",
+        "cut_type": "apple_touch",
+        "width": 180,
+        "height": 180,
+        "format": "png"
+      },
+      {
+        "filename": "favicon.svg",
+        "cut_type": "favicon_svg",
+        "width": 1024,
+        "height": 1024,
+        "format": "svg"
+      },
+      {
+        "filename": "favicon-512.png",
+        "cut_type": "favicon",
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "filename": "favicon-48.png",
+        "cut_type": "favicon",
+        "width": 48,
+        "height": 48,
+        "format": "png"
+      },
+      {
+        "filename": "favicon-32.png",
+        "cut_type": "favicon",
+        "width": 32,
+        "height": 32,
+        "format": "png"
+      },
+      {
+        "filename": "favicon-16.png",
+        "cut_type": "favicon",
+        "width": 16,
+        "height": 16,
+        "format": "png"
+      },
+      {
+        "filename": "favicon.ico",
+        "cut_type": "favicon",
+        "width": 48,
+        "height": 48,
+        "format": "ico"
+      }
+    ]
+  },
+  "guidance": [
+    {
+      "args": [
+        4.0,
+        0.9,
+        1.0,
+        3.0,
+        95.0,
+        0.0,
+        []
+      ],
+      "recommendations": [
+        "Color/Palette Drift Dominates (Chrominance: 3.00% vs Luminance: 1.00%): The geometric silhouette is structurally accurate. Focus on tuning <linearGradient> stop colors, lighting specular highlights, or fill opacity in the .py builder."
+      ]
+    },
+    {
+      "args": [
+        4.0,
+        0.9,
+        3.0,
+        1.0,
+        95.0,
+        0.2,
+        [
+          "GEOMETRY_EDGE"
+        ]
+      ],
+      "recommendations": [
+        "Geometric / Edge Displacement Dominates (Luminance: 3.00% vs Chrominance: 1.00%): Color shades match well, but path contours or vertex positions drift from the raster. Inspect polyline knots and curve tangents around the top spatial hotspots.",
+        "Positive Boundary Dilation (+0.20): Rendered vector features extend slightly beyond ground-truth boundaries. Consider decreasing stroke-width by ~0.5px or slightly contracting coordinates.",
+        "Primary Hotspot #1 at [X:10..30, Y:20..40] (3.5% error, GEOMETRY_EDGE): Edge / contour misalignment dominates error in this block. Cross-reference this coordinate box with your generator's path definitions."
+      ]
+    },
+    {
+      "args": [
+        4.0,
+        0.9,
+        1.0,
+        1.0,
+        80.0,
+        -0.2,
+        [
+          "CHROMATIC_COLOR"
+        ]
+      ],
+      "recommendations": [
+        "Negative Boundary Erosion (-0.20): Rendered vector features are slightly thinner than the source raster. Consider increasing stroke-width by ~0.5px or expanding coordinate bounds.",
+        "Edge Correlation Warning (80.0%): Gradient contours deviate from source raster. Verify Bézier tangent smoothness and facet intersections.",
+        "Primary Hotspot #1 at [X:10..30, Y:20..40] (3.5% error, CHROMATIC_COLOR): Color gradient or fill shade drift dominates error in this block. Cross-reference this coordinate box with your generator's path definitions."
+      ]
+    },
+    {
+      "args": [
+        0.5,
+        0.99,
+        0.5,
+        0.5,
+        99.0,
+        0.0,
+        []
+      ],
+      "recommendations": [
+        "Superb Fidelity (SSIM: 99.00%, RMSE: 0.50%): Rendered SVG and Source PNG match within tight sub-pixel tolerance across both geometric and chromatic channels."
+      ]
+    },
+    {
+      "args": [
+        2.0,
+        0.95,
+        0.9,
+        0.9,
+        92.0,
+        0.05,
+        [
+          "MIXED"
+        ]
+      ],
+      "recommendations": [
+        "Primary Hotspot #1 at [X:10..30, Y:20..40] (3.5% error, MIXED): Combined geometric boundary and shading mismatch. Cross-reference this coordinate box with your generator's path definitions."
+      ]
+    }
+  ],
+  "listed": [
+    "Diffra",
+    "FluentAssertions.Resultful",
+    "Resultful",
+    "blobflags",
+    "blog",
+    "design-system",
+    "parquet-source-generator",
+    "rig",
+    "rtkelly-labs"
+  ]
+}

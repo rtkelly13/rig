@@ -54,14 +54,14 @@ public sealed class ChromiumRendererTests(ChromiumFixture chromium) : IClassFixt
             chromium.Renderer,
             skia,
             OracleFixture.RepoRoot,
-            CrossCheck.Files(),
+            CrossCheck.Files(OracleFixture.RepoRoot),
             OracleFixture.PathOf("candidates"),
             OracleFixture.ThresholdsForThisPlatform(),
             TestContext.Current.CancellationToken);
 
         Assert.All(report.Files, file => Assert.True(file.Breaches.Count == 0, $"{file.File.Id}: {string.Join("; ", file.Breaches)}"));
         Assert.All(report.Verdicts, verdict => Assert.False(verdict.Flipped, $"{verdict.Project}.{verdict.Candidate} flipped"));
-        Assert.Equal(CrossCheck.Files().Count, report.Files.Count);
+        Assert.Equal(CrossCheck.Files(OracleFixture.RepoRoot).Count, report.Files.Count);
         Assert.Equal(5, report.Verdicts.Count);
         Assert.True(report.Passed);
     }

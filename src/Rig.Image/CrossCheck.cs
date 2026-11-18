@@ -92,20 +92,39 @@ public sealed record CrossCheckReport(
 public static class CrossCheck
 {
     private static readonly string[] Projects = ["rtkelly-labs", "parquet-source-generator"];
-    private static readonly int[] MasterSizes = [500, 180, 1000, 2000];
-    private static readonly int[] FaviconSizes = [500, 512, 48, 32, 16];
 
-    /// <summary>The file set the Python oracle covers: each project's master and favicon at the sizes production cuts use.</summary>
-    public static IReadOnlyList<CrossCheckFile> Files()
+    /// <summary>
+    /// The files to cross-check: each project's raster cuts as its <c>production-cuts.csv</c> declares them (AGENTS.md rule 4), one per source and size.
+    /// A master cut is drawn from the row typed <c>master_svg</c>, a <c>favicon*</c> cut from the one typed <c>favicon_svg</c>.
+    /// </summary>
+    /// <param name="repoRoot">The checkout holding <c>assets/</c>.</param>
+    public static IReadOnlyList<CrossCheckFile> Files(string repoRoot)
     {
         var files = new List<CrossCheckFile>();
         foreach (var project in Projects)
         {
-            files.AddRange(MasterSizes.Select(size => new CrossCheckFile($"{project}.master.{size}", project, MasterSvg(project), size)));
-            files.AddRange(FaviconSizes.Select(size => new CrossCheckFile($"{project}.favicon.{size}", project, $"assets/{project}/production-cuts/favicon.svg", size)));
+            var folder = $"assets/{project}/production-cuts";
+            var cuts = ProductionCuts.Read(Path.Combine(repoRoot, folder, ProductionCuts.CsvName));
+            var master = SourceSvg(project, cuts, "master_svg");
+            var favicon = SourceSvg(project, cuts, "favicon_svg");
+            foreach (var cut in cuts.Where(ProductionCuts.IsRaster))
+            {
+                var (variant, svg) = cut.FromFaviconVariant ? ("favicon", favicon) : ("master", master);
+                var id = $"{project}.{variant}.{cut.Width}";
+                if (files.All(file => file.Id != id))
+                {
+                    files.Add(new CrossCheckFile(id, project, $"{folder}/{svg}", cut.Width));
+                }
+            }
         }
 
         return files;
+    }
+
+    private static string SourceSvg(string project, IReadOnlyList<CutSpec> cuts, string cutType)
+    {
+        var row = cuts.FirstOrDefault(cut => cut.CutType == cutType);
+        return row?.Filename ?? throw new InvalidDataException($"assets/{project}/production-cuts/{ProductionCuts.CsvName}: expected a row of cut type '{cutType}', found none");
     }
 
     /// <summary>Repository-relative path of a project's master SVG.</summary>
