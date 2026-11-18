@@ -303,6 +303,7 @@ jobs:
               tests/Rig.Architecture.Tests/Rig.Architecture.Tests.csproj
               tests/Rig.Cli.Tests/Rig.Cli.Tests.csproj
               tests/Rig.CommandOwnership.Tests/Rig.CommandOwnership.Tests.csproj
+              tests/Rig.LocReport.Tests/Rig.LocReport.Tests.csproj
               tests/Rig.Specs/Rig.Specs.csproj
               tests/Rig.Web.Tests/Rig.Web.Tests.csproj
           # The SPA tests drive headless Chromium through Playwright.
@@ -579,6 +580,33 @@ jobs:
         run: |
           current_main="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq .object.sha)"
           git merge-base --is-ancestor "$current_main" HEAD
+
+  # Report only: never a gate, and `ci` does not need it. Its failure cannot block a merge.
+  # SHORT-TERM: replaced by `diffra record --name loc` once rtkelly-labs/Diffra#159 ships; delete with #320.
+  loc-report:
+    name: loc-report
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Build the report tool
+        continue-on-error: true
+        run: dotnet build tools/loc-report -v q
+      # tee: the table lands in the job summary and in the log, so the numbers can be read back.
+      - name: Report C# lines per area and Python carry-overs
+        continue-on-error: true
+        run: dotnet run --project tools/loc-report --no-build -- . --markdown | tee -a "$GITHUB_STEP_SUMMARY"
 
   ci:
     name: ci
