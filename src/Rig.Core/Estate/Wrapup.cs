@@ -759,16 +759,31 @@ internal static class WrapupWire
     /// <summary>What a <c>terminal send</c> receipt says; <c>Decoded</c> is false when it is not a receipt, which a send that exited 0 survives.</summary>
     public static (bool Decoded, bool Ok, string? Message) Receipt(string text)
     {
+        JsonObject root;
+        bool ok;
         try
         {
-            var root = OrcaJson.Object(text, "orca receipt");
-            var ok = OrcaJson.Bool(root, "ok") ?? false;
-            var error = OrcaJson.Object(root, "error");
-            return (true, ok, error is null ? null : OrcaJson.String(error, "message"));
+            root = OrcaJson.Object(text, "orca receipt");
+            ok = OrcaJson.Bool(root, "ok") ?? false;
         }
         catch (InvalidDataException)
         {
             return (false, false, null);
+        }
+
+        return (true, ok, ErrorMessage(root));
+    }
+
+    // A malformed error detail costs only the message: the receipt still decoded, so an explicit "ok": false stays a failure.
+    private static string? ErrorMessage(JsonObject root)
+    {
+        try
+        {
+            return OrcaJson.Object(root, "error") is { } error ? OrcaJson.String(error, "message") : null;
+        }
+        catch (InvalidDataException)
+        {
+            return null;
         }
     }
 

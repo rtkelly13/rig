@@ -262,6 +262,7 @@ public sealed class WrapupTests
     [Theory]
     [InlineData(1, """{"ok": false, "error": {"message": "pane gone"}}""", "", "pane gone")]
     [InlineData(0, """{"ok": false}""", "", "{\"ok\": false}")]
+    [InlineData(0, """{"ok": false, "error": {"message": 42}}""", "", "{\"ok\": false, \"error\": {\"message\": 42}}")]
     [InlineData(2, "", "boom\nmore", "boom")]
     [InlineData(4, "", "", "exit 4")]
     public async Task A_refused_send_says_why(int code, string output, string error, string note)
