@@ -1,5 +1,6 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Processes;
 using Rig.Core.Skills;
@@ -24,93 +25,54 @@ internal sealed record SkillsHost(string Checkout, string Home, string WorkingDi
 /// <param name="linker">Makes directory links.</param>
 /// <param name="output">Where reports go.</param>
 /// <param name="error">Where failures are reported.</param>
+[CliCommand(Name = "skills", Description = "Manage global AI agent skill symlinks across OpenCode, Claude, Codex, and Antigravity.")]
 internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker linker, TextWriter output, TextWriter error)
 {
-    private readonly Option<string> home = new("--home")
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+    internal SkillsCommand()
+        : this(null!, null!, null!, TextWriter.Null, TextWriter.Null)
     {
-        Description = "Home folder holding the agents' skills folders (default: yours).",
-        Recursive = true,
-    };
+    }
+
+    /// <summary>The home folder to use instead of the host's; every subcommand reads it.</summary>
+    [CliOption(Name = "--home", Recursive = true, Required = false, Description = "Home folder holding the agents' skills folders (default: yours).")]
+    public string? Home { get; set; }
 
     /// <summary>The <c>skills</c> command.</summary>
     public Command Build()
     {
-        var command = new Command("skills", "Manage global AI agent skill symlinks across OpenCode, Claude, Codex, and Antigravity.")
-        {
-            Status(), Sync(), Activate(), Deactivate(), Prune(), Update(), List(),
-        };
-        command.Options.Add(home);
+        var command = DeclarativeCommand.BuildGroup(this);
+        command.Add(DeclarativeCommand.Build(new StatusCommand(this)));
+        command.Add(DeclarativeCommand.Build(new SyncCommand(this)));
+        command.Add(DeclarativeCommand.Build(new ActivateCommand(this)));
+        command.Add(DeclarativeCommand.Build(new DeactivateCommand(this)));
+        command.Add(DeclarativeCommand.Build(new PruneCommand(this)));
+        command.Add(DeclarativeCommand.Build(new UpdateCommand(this)));
+        command.Add(DeclarativeCommand.Build(new ListCommand(this)));
         return command;
     }
 
-    private static Option<string[]> Systems(string description) =>
-        new("--system", "-s") { Description = description, AllowMultipleArgumentsPerToken = false };
+    // The group's recursive --home, read from whichever subcommand was run.
+    private static string? HomeOf(CliContext context) => context.Result.ParseResult.GetValue<string>("--home");
 
-    private static Option<bool> Flag(string name, string description) => new(name) { Description = description };
-
-    private static Option<string[]> Only(string description) => new("--only") { Description = description };
-
-    private Command Status()
-    {
-        var system = Systems("Filter audit to specific CLI systems (opencode, claude, codex, antigravity, agents, all).");
-        var command = new Command("status", "Audit the current symlink state across AI agent CLI systems.") { system };
-        command.SetAction(parsed => Guarded(parsed, places => WithSystems(parsed.GetValue(system), systems => Status(places, systems))));
-        return command;
-    }
-
-    private Command Sync()
-    {
-        var system = Systems("Specific CLI systems to sync (opencode, claude, codex, antigravity, agents, all).");
-        var prune = Flag("--prune", "Remove links outside the catalog (the default).");
-        var noPrune = Flag("--no-prune", "Keep links outside the catalog.");
-        var dryRun = Flag("--dry-run", "Preview links without modifying disk.");
-        var all = Flag("--all", "Temporarily include every discovered skill; does not change the permanent allowlist.");
-        var only = Only("Temporarily provision named skills; repeat the option for multiple skills.");
-        var command = new Command("sync", "Synchronize skill symlinks across supported agent CLIs.") { system, prune, noPrune, dryRun, all, only };
-        command.SetAction(parsed => Guarded(parsed, places => WithSystems(
-            parsed.GetValue(system),
-            systems => Sync(places, systems, parsed.GetValue(only) ?? [], parsed.GetValue(all), !parsed.GetValue(noPrune), parsed.GetValue(dryRun)))));
-        return command;
-    }
-
-    private Command Activate()
-    {
-        var (system, only, all, dryRun) = OverlayOptions("Skill names to expose; repeat for multiple skills.", "Expose every discovered skill.", "Preview links without changing disk.");
-        var command = new Command("activate", "Activate a temporary skill overlay that can later be deactivated.") { system, only, all, dryRun };
-        command.SetAction(parsed => Guarded(parsed, places => Overlay(parsed.GetValue(only) ?? [], parsed.GetValue(all), () =>
-            WithSystems(parsed.GetValue(system), systems => Activated(places, systems, parsed.GetValue(only) ?? [], parsed.GetValue(all), parsed.GetValue(dryRun), announce: false)))));
-        return command;
-    }
-
-    private Command Deactivate()
-    {
-        var (system, only, all, dryRun) = OverlayOptions("Overlay names to remove; repeat for multiple skills.", "Remove every recorded overlay.", "Preview removals without changing disk.");
-        var command = new Command("deactivate", "Remove temporary skill links and restore the curated catalog.") { system, only, all, dryRun };
-        command.SetAction(parsed => Guarded(parsed, places => Overlay(parsed.GetValue(only) ?? [], parsed.GetValue(all), () =>
-            WithSystems(parsed.GetValue(system), systems =>
+    private int Deactivate(string? homeOverride, string[] only, bool all, string[] names, bool dryRun) =>
+        Guarded(homeOverride, places => Overlay(only, all, () =>
+            WithSystems(names, systems =>
             {
                 var links = new SkillLinks(places, linker);
-                foreach (var (target, count) in links.Deactivate(SkillCatalog.At(places), parsed.GetValue(only) ?? [], parsed.GetValue(all), systems, parsed.GetValue(dryRun)))
+                foreach (var (target, count) in links.Deactivate(SkillCatalog.At(places), only, all, systems, dryRun))
                 {
                     output.WriteLine($"{SkillSystems.DisplayName(target)}: removed {count} link(s)");
                 }
 
                 return 0;
-            }))));
-        return command;
-    }
+            })));
 
-    private static (Option<string[]> System, Option<string[]> Only, Option<bool> All, Option<bool> DryRun) OverlayOptions(string only, string all, string dryRun) =>
-        (Systems("Target CLI systems."), Only(only), Flag("--all", all), Flag("--dry-run", dryRun));
-
-    private Command Prune()
-    {
-        var system = Systems("Specific CLI systems to prune (opencode, claude, codex, antigravity, agents, all).");
-        var dryRun = Flag("--dry-run", "Preview links without removing them.");
-        var command = new Command("prune", "Prune broken or dangling symlinks across AI agent CLI systems.") { system, dryRun };
-        command.SetAction(parsed => Guarded(parsed, places => WithSystems(parsed.GetValue(system), systems =>
+    private int Prune(string? homeOverride, string[] names, bool dryRun) =>
+        Guarded(homeOverride, places => WithSystems(names, systems =>
         {
-            var pruned = new SkillLinks(places, linker).PruneBroken(systems, parsed.GetValue(dryRun));
+            var pruned = new SkillLinks(places, linker).PruneBroken(systems, dryRun);
             var total = pruned.Sum(p => p.Count);
             if (total == 0)
             {
@@ -120,51 +82,38 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
 
             foreach (var (target, count) in pruned)
             {
-                output.WriteLine($"  • {SkillSystems.DisplayName(target)}: {(parsed.GetValue(dryRun) ? "Would prune" : "Pruned")} {count} broken symlink(s)");
+                output.WriteLine($"  • {SkillSystems.DisplayName(target)}: {(dryRun ? "Would prune" : "Pruned")} {count} broken symlink(s)");
             }
 
             output.WriteLine();
             output.WriteLine($"✓ Done ({total} broken symlink(s) handled).");
             return 0;
-        })));
-        return command;
-    }
+        }));
 
-    private Command Update()
+    private async Task<int> Update(string? homeOverride, string[] names, string? vendor, bool sync, CancellationToken ct)
     {
-        var system = Systems("Specific CLI systems to sync (opencode, claude, codex, antigravity, agents, all).");
-        var vendor = new Option<string>("--vendor", "-v") { Description = "Update only this upstream vendor." };
-        var noSync = Flag("--no-sync", "Leave the systems' links alone after updating vendored skills.");
-        var command = new Command("update", "Fetch or update vendored upstream skills, then sync the links.") { system, vendor, noSync };
-        command.SetAction(async (parsed, ct) =>
+        var places = Places(homeOverride);
+        if (SkillSystems.Resolve(names, out var unknown) is not { } systems)
         {
-            var places = Places(parsed);
-            if (SkillSystems.Resolve(parsed.GetValue(system) ?? [], out var unknown) is not { } systems)
-            {
-                return UnknownSystem(unknown);
-            }
+            return UnknownSystem(unknown);
+        }
 
-            try
-            {
-                return await UpdateAsync(places, systems, parsed.GetValue(vendor), !parsed.GetValue(noSync), ct).ConfigureAwait(false);
-            }
-            catch (Exception e) when (IsReported(e))
-            {
-                await error.WriteLineAsync($"rig skills: {e.Message}").ConfigureAwait(false);
-                return 1;
-            }
-        });
-        return command;
+        try
+        {
+            return await UpdateAsync(places, systems, vendor, sync, ct).ConfigureAwait(false);
+        }
+        catch (Exception e) when (IsReported(e))
+        {
+            await error.WriteLineAsync($"rig skills: {e.Message}").ConfigureAwait(false);
+            return 1;
+        }
     }
 
-    private Command List()
-    {
-        var query = new Option<string>("--query", "-q") { Description = "Show only skills whose name or description contains this." };
-        var command = new Command("list", "List the curated skills discovered in the repository, personal overrides and vendors.") { query };
-        command.SetAction(parsed => Guarded(parsed, places =>
+    private int List(string? homeOverride, string? query) =>
+        Guarded(homeOverride, places =>
         {
             var skills = SkillCatalog.At(places).Curated();
-            if (parsed.GetValue(query) is { Length: > 0 } text)
+            if (query is { Length: > 0 } text)
             {
                 var q = UnicodeText.Lower(text);
                 skills = [.. skills.Where(s => UnicodeText.Lower(s.Name).Contains(q, StringComparison.Ordinal) || UnicodeText.Lower(s.Description).Contains(q, StringComparison.Ordinal))];
@@ -179,9 +128,10 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
 
             output.Write(table.Render());
             return 0;
-        }));
-        return command;
-    }
+        });
+
+    internal int Status(string? homeOverride, string[] names) =>
+        Guarded(homeOverride, places => WithSystems(names, systems => Status(places, systems)));
 
     private int Status(SkillPlaces places, IReadOnlyList<string> systems)
     {
@@ -230,6 +180,9 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
             (audit.Collisions.Count, "non-symlink collision"),
         }.Where(i => i.Count > 0).Select(i => $"{i.Count} {i.Label}"));
 
+    internal int Sync(string? homeOverride, string[] names, string[] only, bool all, bool prune, bool dryRun) =>
+        Guarded(homeOverride, places => WithSystems(names, systems => Sync(places, systems, only, all, prune, dryRun)));
+
     private int Sync(SkillPlaces places, IReadOnlyList<string> systems, string[] only, bool all, bool prune, bool dryRun)
     {
         if (all && only.Length > 0)
@@ -270,6 +223,10 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
 
         return 0;
     }
+
+    internal int Activate(string? homeOverride, string[] names, string[] only, bool all, bool dryRun) =>
+        Guarded(homeOverride, places => Overlay(only, all, () =>
+            WithSystems(names, systems => Activated(places, systems, only, all, dryRun, announce: false))));
 
     private int Activated(SkillPlaces places, IReadOnlyList<string> systems, IReadOnlyList<string> only, bool all, bool dryRun, bool announce)
     {
@@ -348,8 +305,8 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
         return run();
     }
 
-    private int WithSystems(string[]? names, Func<IReadOnlyList<string>, int> run) =>
-        SkillSystems.Resolve(names ?? [], out var unknown) is { } systems ? run(systems) : UnknownSystem(unknown);
+    private int WithSystems(string[] names, Func<IReadOnlyList<string>, int> run) =>
+        SkillSystems.Resolve(names, out var unknown) is { } systems ? run(systems) : UnknownSystem(unknown);
 
     private int UnknownSystem(string? name)
     {
@@ -357,15 +314,15 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
         return 1;
     }
 
-    private SkillPlaces Places(ParseResult parsed) =>
-        new(host.Checkout, parsed.GetValue(home) ?? host.Home, host.WorkingDirectory, host.Windows);
+    private SkillPlaces Places(string? homeOverride) =>
+        new(host.Checkout, homeOverride ?? host.Home, host.WorkingDirectory, host.Windows);
 
     // A filesystem or registry failure is reported, not thrown.
-    private int Guarded(ParseResult parsed, Func<SkillPlaces, int> run)
+    private int Guarded(string? homeOverride, Func<SkillPlaces, int> run)
     {
         try
         {
-            return run(Places(parsed));
+            return run(Places(homeOverride));
         }
         catch (Exception e) when (IsReported(e))
         {
@@ -375,4 +332,193 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     }
 
     private static bool IsReported(Exception e) => e is IOException or UnauthorizedAccessException or InvalidDataException;
+
+    /// <summary><c>rig skills status</c>.</summary>
+    [CliCommand(Name = "status", Description = "Audit the current symlink state across AI agent CLI systems.")]
+    internal sealed class StatusCommand(SkillsCommand skills)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal StatusCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The systems to act on; none is all of them.</summary>
+        [CliOption(Name = "--system", Aliases = ["-s"], Required = false, AllowMultipleArgumentsPerToken = false, Description = "Filter audit to specific CLI systems (opencode, claude, codex, antigravity, agents, all).")]
+        public string[] Systems { get; set; } = [];
+
+        /// <summary>The handler.</summary>
+        public int Run(CliContext context) => skills.Status(HomeOf(context), Systems);
+    }
+
+    /// <summary><c>rig skills sync</c>.</summary>
+    [CliCommand(Name = "sync", Description = "Synchronize skill symlinks across supported agent CLIs.")]
+    internal sealed class SyncCommand(SkillsCommand skills)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal SyncCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The systems to act on; none is all of them.</summary>
+        [CliOption(Name = "--system", Aliases = ["-s"], Required = false, AllowMultipleArgumentsPerToken = false, Description = "Specific CLI systems to sync (opencode, claude, codex, antigravity, agents, all).")]
+        public string[] Systems { get; set; } = [];
+
+        /// <summary>Accepted for symmetry; pruning is the default.</summary>
+        [CliOption(Name = "--prune", Description = "Remove links outside the catalog (the default).")]
+        public bool Prune { get; set; }
+
+        /// <summary>Keeps links outside the catalog.</summary>
+        [CliOption(Name = "--no-prune", Description = "Keep links outside the catalog.")]
+        public bool NoPrune { get; set; }
+
+        /// <summary>Previews without writing.</summary>
+        [CliOption(Name = "--dry-run", Description = "Preview links without modifying disk.")]
+        public bool DryRun { get; set; }
+
+        /// <summary>Includes every discovered skill.</summary>
+        [CliOption(Name = "--all", Description = "Temporarily include every discovered skill; does not change the permanent allowlist.")]
+        public bool All { get; set; }
+
+        /// <summary>Skill names.</summary>
+        [CliOption(Name = "--only", Required = false, Description = "Temporarily provision named skills; repeat the option for multiple skills.")]
+        public string[] Only { get; set; } = [];
+
+        /// <summary>The handler.</summary>
+        public int Run(CliContext context) => skills.Sync(HomeOf(context), Systems, Only, All, !NoPrune, DryRun);
+    }
+
+    /// <summary><c>rig skills activate</c>.</summary>
+    [CliCommand(Name = "activate", Description = "Activate a temporary skill overlay that can later be deactivated.")]
+    internal sealed class ActivateCommand(SkillsCommand skills)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal ActivateCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The systems to act on; none is all of them.</summary>
+        [CliOption(Name = "--system", Aliases = ["-s"], Required = false, AllowMultipleArgumentsPerToken = false, Description = "Target CLI systems.")]
+        public string[] Systems { get; set; } = [];
+
+        /// <summary>Skill names.</summary>
+        [CliOption(Name = "--only", Required = false, Description = "Skill names to expose; repeat for multiple skills.")]
+        public string[] Only { get; set; } = [];
+
+        /// <summary>Exposes every discovered skill.</summary>
+        [CliOption(Name = "--all", Description = "Expose every discovered skill.")]
+        public bool All { get; set; }
+
+        /// <summary>Previews without writing.</summary>
+        [CliOption(Name = "--dry-run", Description = "Preview links without changing disk.")]
+        public bool DryRun { get; set; }
+
+        /// <summary>The handler.</summary>
+        public int Run(CliContext context) => skills.Activate(HomeOf(context), Systems, Only, All, DryRun);
+    }
+
+    /// <summary><c>rig skills deactivate</c>.</summary>
+    [CliCommand(Name = "deactivate", Description = "Remove temporary skill links and restore the curated catalog.")]
+    internal sealed class DeactivateCommand(SkillsCommand skills)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal DeactivateCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The systems to act on; none is all of them.</summary>
+        [CliOption(Name = "--system", Aliases = ["-s"], Required = false, AllowMultipleArgumentsPerToken = false, Description = "Target CLI systems.")]
+        public string[] Systems { get; set; } = [];
+
+        /// <summary>Skill names.</summary>
+        [CliOption(Name = "--only", Required = false, Description = "Overlay names to remove; repeat for multiple skills.")]
+        public string[] Only { get; set; } = [];
+
+        /// <summary>Removes every overlay.</summary>
+        [CliOption(Name = "--all", Description = "Remove every recorded overlay.")]
+        public bool All { get; set; }
+
+        /// <summary>Previews without writing.</summary>
+        [CliOption(Name = "--dry-run", Description = "Preview removals without changing disk.")]
+        public bool DryRun { get; set; }
+
+        /// <summary>The handler.</summary>
+        public int Run(CliContext context) => skills.Deactivate(HomeOf(context), Only, All, Systems, DryRun);
+    }
+
+    /// <summary><c>rig skills prune</c>.</summary>
+    [CliCommand(Name = "prune", Description = "Prune broken or dangling symlinks across AI agent CLI systems.")]
+    internal sealed class PruneCommand(SkillsCommand skills)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal PruneCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The systems to act on; none is all of them.</summary>
+        [CliOption(Name = "--system", Aliases = ["-s"], Required = false, AllowMultipleArgumentsPerToken = false, Description = "Specific CLI systems to prune (opencode, claude, codex, antigravity, agents, all).")]
+        public string[] Systems { get; set; } = [];
+
+        /// <summary>Previews without writing.</summary>
+        [CliOption(Name = "--dry-run", Description = "Preview links without removing them.")]
+        public bool DryRun { get; set; }
+
+        /// <summary>The handler.</summary>
+        public int Run(CliContext context) => skills.Prune(HomeOf(context), Systems, DryRun);
+    }
+
+    /// <summary><c>rig skills update</c>.</summary>
+    [CliCommand(Name = "update", Description = "Fetch or update vendored upstream skills, then sync the links.")]
+    internal sealed class UpdateCommand(SkillsCommand skills)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal UpdateCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The systems to act on; none is all of them.</summary>
+        [CliOption(Name = "--system", Aliases = ["-s"], Required = false, AllowMultipleArgumentsPerToken = false, Description = "Specific CLI systems to sync (opencode, claude, codex, antigravity, agents, all).")]
+        public string[] Systems { get; set; } = [];
+
+        /// <summary>Limits the update to one vendor.</summary>
+        [CliOption(Name = "--vendor", Aliases = ["-v"], Required = false, Description = "Update only this upstream vendor.")]
+        public string? Vendor { get; set; }
+
+        /// <summary>Skips the link sync.</summary>
+        [CliOption(Name = "--no-sync", Description = "Leave the systems' links alone after updating vendored skills.")]
+        public bool NoSync { get; set; }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => skills.Update(HomeOf(context), Systems, Vendor, !NoSync, context.CancellationToken);
+    }
+
+    /// <summary><c>rig skills list</c>.</summary>
+    [CliCommand(Name = "list", Description = "List the curated skills discovered in the repository, personal overrides and vendors.")]
+    internal sealed class ListCommand(SkillsCommand skills)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal ListCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Filters by name or description.</summary>
+        [CliOption(Name = "--query", Aliases = ["-q"], Required = false, Description = "Show only skills whose name or description contains this.")]
+        public string? Query { get; set; }
+
+        /// <summary>The handler.</summary>
+        public int Run(CliContext context) => skills.List(HomeOf(context), Query);
+    }
 }

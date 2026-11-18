@@ -1,6 +1,7 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using DotMake.CommandLine;
 using Microsoft.Data.Sqlite;
 using Rig.Core.Processes;
 using Rig.Core.Storage;
@@ -23,121 +24,66 @@ internal sealed record DatabaseToolHost(string DbPath, string BackupDir, TimePro
 /// <param name="database">Where the shared database and its backups live.</param>
 /// <param name="output">Where reports go.</param>
 /// <param name="error">Where failures go.</param>
+[CliCommand(Name = "tools", Description = "Background service lifecycle and shared SQLite database maintenance.")]
 internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost database, TextWriter output, TextWriter error)
 {
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+    internal ToolsCommand()
+        : this(null!, null!, TextWriter.Null, TextWriter.Null)
+    {
+    }
+
     /// <summary>An unknown target or an unusable option exits with this.</summary>
     public const int UsageExit = 2;
 
     /// <summary>A failed install, ensure, uninstall or database operation exits with this.</summary>
     public const int FailureExit = 1;
 
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
+    internal const double DefaultTimeoutSeconds = 30;
 
     /// <summary>The <c>tools</c> command.</summary>
     public Command Build()
     {
-        var target = new Argument<string>("target")
-        {
-            Description = $"Service to act on: {Targets}.",
-        };
-        var installPreview = PreviewOption();
-        var installPort = PortOption();
-        var install = new Command("install", "Register and start a background service: a LaunchAgent, a logon task or a systemd user unit.") { target, installPreview, installPort };
-        install.SetAction((parsed, cancellationToken) => InstallAsync(
-            parsed.GetRequiredValue(target), parsed.GetValue(installPreview), parsed.GetValue(installPort), cancellationToken));
-
-        var ensureTarget = new Argument<string>("target")
-        {
-            Description = $"Service to leave answering: {Targets}.",
-        };
-        var ensurePort = PortOption();
-        var ensureTimeout = TimeoutOption();
-        var ensure = new Command("ensure", "Start a service only when its port is not answering, then wait until it is.") { ensureTarget, ensurePort, ensureTimeout };
-        ensure.SetAction((parsed, cancellationToken) => EnsureAsync(
-            parsed.GetRequiredValue(ensureTarget), parsed.GetValue(ensurePort), parsed.GetValue(ensureTimeout), cancellationToken));
-
-        var uninstallTarget = new Argument<string>("target")
-        {
-            Description = $"Service to remove: {Targets}.",
-        };
-        var uninstallPreview = PreviewOption();
-        var uninstall = new Command("uninstall", "Unload and remove a service's plist, task or systemd unit.") { uninstallTarget, uninstallPreview };
-        uninstall.SetAction((parsed, cancellationToken) => UninstallAsync(
-            parsed.GetRequiredValue(uninstallTarget), parsed.GetValue(uninstallPreview), cancellationToken));
-
-        var statusTarget = new Argument<string?>("target")
-        {
-            Description = "Service to inspect. Default: every service.",
-            Arity = ArgumentArity.ZeroOrOne,
-        };
-        var status = new Command("status", "Whether each service is installed, running and listening on its port.") { statusTarget };
-        status.SetAction((parsed, cancellationToken) => StatusAsync(parsed.GetValue(statusTarget), cancellationToken));
-
-        return new Command("tools", "Background service lifecycle and shared SQLite database maintenance.")
-        {
-            install,
-            ensure,
-            uninstall,
-            status,
-            Database(),
-        };
+        var tools = DeclarativeCommand.BuildGroup(this);
+        tools.Add(Targeted(new InstallCommand(this), $"Service to act on: {Targets}."));
+        tools.Add(Targeted(new EnsureCommand(this), $"Service to leave answering: {Targets}."));
+        tools.Add(Targeted(new UninstallCommand(this), $"Service to remove: {Targets}."));
+        tools.Add(DeclarativeCommand.Build(new StatusCommand(this)));
+        tools.Add(Database());
+        return tools;
     }
 
     /// <summary>The <c>rig web install|ensure|uninstall|backup|migrate|db-status</c> aliases.</summary>
-    public IReadOnlyList<Command> BuildWebAliases()
-    {
-        var installPreview = PreviewOption();
-        var installPort = PortOption();
-        var install = new Command("install", "Register and start the web dashboard (alias for `rig tools install web`).") { installPreview, installPort };
-        install.SetAction((parsed, cancellationToken) => InstallFixedAsync(
-            ServiceTarget.Web, parsed.GetValue(installPreview), parsed.GetValue(installPort), cancellationToken));
-
-        var ensurePort = PortOption();
-        var ensureTimeout = TimeoutOption();
-        var ensure = new Command("ensure", "Start the web dashboard only when nothing answers, then wait (alias for `rig tools ensure web`).") { ensurePort, ensureTimeout };
-        ensure.SetAction((parsed, cancellationToken) => EnsureFixedAsync(
-            ServiceTarget.Web, parsed.GetValue(ensurePort), parsed.GetValue(ensureTimeout), cancellationToken));
-
-        var uninstallPreview = PreviewOption();
-        var uninstall = new Command("uninstall", "Unload and remove the web dashboard service (alias for `rig tools uninstall web`).") { uninstallPreview };
-        uninstall.SetAction((parsed, cancellationToken) => UninstallFixedAsync(
-            ServiceTarget.Web, parsed.GetValue(uninstallPreview), cancellationToken));
-
-        var backup = new Command("backup", "Back up the shared SQLite database (alias for `rig tools db backup`).");
-        backup.SetAction((_, cancellationToken) => BackupAsync(cancellationToken));
-        var migrate = new Command("migrate", "Apply pending SQLite migrations (alias for `rig tools db migrate`).");
-        migrate.SetAction((_, cancellationToken) => MigrateAsync(cancellationToken));
-        var dbStatus = new Command("db-status", "Report the SQLite schema version and applied migrations (alias for `rig tools db status`).");
-        dbStatus.SetAction((_, cancellationToken) => DatabaseStatusAsync(cancellationToken));
-        return [install, ensure, uninstall, backup, migrate, dbStatus];
-    }
+    public IReadOnlyList<Command> BuildWebAliases() =>
+    [
+        DeclarativeCommand.Build(new WebInstallCommand(this)),
+        DeclarativeCommand.Build(new WebEnsureCommand(this)),
+        DeclarativeCommand.Build(new WebUninstallCommand(this)),
+        DeclarativeCommand.Build(new WebBackupCommand(this)),
+        DeclarativeCommand.Build(new WebMigrateCommand(this)),
+        DeclarativeCommand.Build(new WebDbStatusCommand(this)),
+    ];
 
     private Command Database()
     {
-        var status = new Command("status", "Print the database path, its schema version and every applied migration.");
-        status.SetAction((_, cancellationToken) => DatabaseStatusAsync(cancellationToken));
-        var migrate = new Command("migrate", "Apply every pending SQLite migration.");
-        migrate.SetAction((_, cancellationToken) => MigrateAsync(cancellationToken));
-        var backup = new Command("backup", "Copy the database into backups/ with an ISO-8601 timestamp.");
-        backup.SetAction((_, cancellationToken) => BackupAsync(cancellationToken));
-        return new Command("db", "The shared SQLite database: status, pending migrations, and immediate backups.")
-        {
-            status,
-            migrate,
-            backup,
-        };
+        var db = DeclarativeCommand.BuildGroup(new DbCommand());
+        db.Add(DeclarativeCommand.Build(new DbStatusCommand(this)));
+        db.Add(DeclarativeCommand.Build(new DbMigrateCommand(this)));
+        db.Add(DeclarativeCommand.Build(new DbBackupCommand(this)));
+        return db;
     }
 
     private static string Targets => string.Join(", ", ServiceTarget.All.Select(t => t.Name));
 
-    private static Option<bool> PreviewOption() =>
-        new("--preview") { Description = "Use the preview environment and its port." };
-
-    private static Option<int?> PortOption() =>
-        new("--port", "-p") { Description = "Port override for the service." };
-
-    private static Option<double> TimeoutOption() =>
-        new("--timeout") { Description = "Seconds to wait for the service to answer.", DefaultValueFactory = _ => DefaultTimeout.TotalSeconds };
+    // The service list is only known at run time, so the target argument's description is set once the command is built.
+    private static Command Targeted<T>(T definition, string description)
+        where T : class
+    {
+        var command = DeclarativeCommand.Build(definition);
+        command.Arguments.Single().Description = description;
+        return command;
+    }
 
     private async Task<int> InstallAsync(string name, bool preview, int? port, CancellationToken cancellationToken)
     {
@@ -341,4 +287,269 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     }
 
     private static string Pad(string value, int width) => value.PadRight(width, ' ');
+
+    /// <summary>Shared by every command that takes a service target.</summary>
+    private static class Text
+    {
+        public const string Preview = "Use the preview environment and its port.";
+        public const string Port = "Port override for the service.";
+        public const string Timeout = "Seconds to wait for the service to answer.";
+    }
+
+    /// <summary><c>rig tools install</c>.</summary>
+    [CliCommand(Name = "install", Description = "Register and start a background service: a LaunchAgent, a logon task or a systemd user unit.")]
+    internal sealed class InstallCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal InstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The service; described when the command is built.</summary>
+        [CliArgument(Name = "target", Description = "Service to act on.")]
+        public string Target { get; set; } = null!;
+
+        /// <summary>Uses the preview environment.</summary>
+        [CliOption(Name = "--preview", Description = Text.Preview)]
+        public bool Preview { get; set; }
+
+        /// <summary>Overrides the port.</summary>
+        [CliOption(Name = "--port", Aliases = ["-p"], Required = false, Description = Text.Port)]
+        public int? Port { get; set; }
+
+        /// <summary>Installs the service.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.InstallAsync(Target, Preview, Port, context.CancellationToken);
+    }
+
+    /// <summary><c>rig tools ensure</c>.</summary>
+    [CliCommand(Name = "ensure", Description = "Start a service only when its port is not answering, then wait until it is.")]
+    internal sealed class EnsureCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal EnsureCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The service; described when the command is built.</summary>
+        [CliArgument(Name = "target", Description = "Service to leave answering.")]
+        public string Target { get; set; } = null!;
+
+        /// <summary>Overrides the port.</summary>
+        [CliOption(Name = "--port", Aliases = ["-p"], Required = false, Description = Text.Port)]
+        public int? Port { get; set; }
+
+        /// <summary>Seconds to wait.</summary>
+        [CliOption(Name = "--timeout", Description = Text.Timeout)]
+        public double Timeout { get; set; } = DefaultTimeoutSeconds;
+
+        /// <summary>Ensures the service.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.EnsureAsync(Target, Port, Timeout, context.CancellationToken);
+    }
+
+    /// <summary><c>rig tools uninstall</c>.</summary>
+    [CliCommand(Name = "uninstall", Description = "Unload and remove a service's plist, task or systemd unit.")]
+    internal sealed class UninstallCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal UninstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The service; described when the command is built.</summary>
+        [CliArgument(Name = "target", Description = "Service to remove.")]
+        public string Target { get; set; } = null!;
+
+        /// <summary>Uses the preview environment.</summary>
+        [CliOption(Name = "--preview", Description = Text.Preview)]
+        public bool Preview { get; set; }
+
+        /// <summary>Removes the service.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.UninstallAsync(Target, Preview, context.CancellationToken);
+    }
+
+    /// <summary><c>rig tools status</c>.</summary>
+    [CliCommand(Name = "status", Description = "Whether each service is installed, running and listening on its port.")]
+    internal sealed class StatusCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal StatusCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The service to inspect; none is every service.</summary>
+        [CliArgument(Name = "target", Required = false, Arity = CliArgumentArity.ZeroOrOne, Description = "Service to inspect. Default: every service.")]
+        public string? Target { get; set; }
+
+        /// <summary>Reports the services.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.StatusAsync(Target, context.CancellationToken);
+    }
+
+    /// <summary><c>rig tools db</c>.</summary>
+    [CliCommand(Name = "db", Description = "The shared SQLite database: status, pending migrations, and immediate backups.")]
+    internal sealed class DbCommand
+    {
+    }
+
+    /// <summary><c>rig tools db status</c>.</summary>
+    [CliCommand(Name = "status", Description = "Print the database path, its schema version and every applied migration.")]
+    internal sealed class DbStatusCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal DbStatusCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Reports the schema.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.DatabaseStatusAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>rig tools db migrate</c>.</summary>
+    [CliCommand(Name = "migrate", Description = "Apply every pending SQLite migration.")]
+    internal sealed class DbMigrateCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal DbMigrateCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Applies the migrations.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.MigrateAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>rig tools db backup</c>.</summary>
+    [CliCommand(Name = "backup", Description = "Copy the database into backups/ with an ISO-8601 timestamp.")]
+    internal sealed class DbBackupCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal DbBackupCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Copies the database.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.BackupAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>rig web install</c>.</summary>
+    [CliCommand(Name = "install", Description = "Register and start the web dashboard (alias for `rig tools install web`).")]
+    internal sealed class WebInstallCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal WebInstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Uses the preview environment.</summary>
+        [CliOption(Name = "--preview", Description = Text.Preview)]
+        public bool Preview { get; set; }
+
+        /// <summary>Overrides the port.</summary>
+        [CliOption(Name = "--port", Aliases = ["-p"], Required = false, Description = Text.Port)]
+        public int? Port { get; set; }
+
+        /// <summary>Installs the dashboard.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.InstallFixedAsync(ServiceTarget.Web, Preview, Port, context.CancellationToken);
+    }
+
+    /// <summary><c>rig web ensure</c>.</summary>
+    [CliCommand(Name = "ensure", Description = "Start the web dashboard only when nothing answers, then wait (alias for `rig tools ensure web`).")]
+    internal sealed class WebEnsureCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal WebEnsureCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Overrides the port.</summary>
+        [CliOption(Name = "--port", Aliases = ["-p"], Required = false, Description = Text.Port)]
+        public int? Port { get; set; }
+
+        /// <summary>Seconds to wait.</summary>
+        [CliOption(Name = "--timeout", Description = Text.Timeout)]
+        public double Timeout { get; set; } = DefaultTimeoutSeconds;
+
+        /// <summary>Ensures the dashboard.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.EnsureFixedAsync(ServiceTarget.Web, Port, Timeout, context.CancellationToken);
+    }
+
+    /// <summary><c>rig web uninstall</c>.</summary>
+    [CliCommand(Name = "uninstall", Description = "Unload and remove the web dashboard service (alias for `rig tools uninstall web`).")]
+    internal sealed class WebUninstallCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal WebUninstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Uses the preview environment.</summary>
+        [CliOption(Name = "--preview", Description = Text.Preview)]
+        public bool Preview { get; set; }
+
+        /// <summary>Removes the dashboard.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.UninstallFixedAsync(ServiceTarget.Web, Preview, context.CancellationToken);
+    }
+
+    /// <summary><c>rig web backup</c>.</summary>
+    [CliCommand(Name = "backup", Description = "Back up the shared SQLite database (alias for `rig tools db backup`).")]
+    internal sealed class WebBackupCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal WebBackupCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Copies the database.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.BackupAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>rig web migrate</c>.</summary>
+    [CliCommand(Name = "migrate", Description = "Apply pending SQLite migrations (alias for `rig tools db migrate`).")]
+    internal sealed class WebMigrateCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal WebMigrateCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Applies the migrations.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.MigrateAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>rig web db-status</c>.</summary>
+    [CliCommand(Name = "db-status", Description = "Report the SQLite schema version and applied migrations (alias for `rig tools db status`).")]
+    internal sealed class WebDbStatusCommand(ToolsCommand tools)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal WebDbStatusCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Reports the schema.</summary>
+        public Task<int> RunAsync(CliContext context) => tools.DatabaseStatusAsync(context.CancellationToken);
+    }
 }

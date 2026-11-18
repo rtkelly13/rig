@@ -1,6 +1,7 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Jobs;
 using Rig.Core.Processes;
@@ -43,73 +44,35 @@ internal sealed record JobsHost(
 /// <summary>
 /// <c>rig jobs</c>: the coordinator's runs and task installation. The table is padded to its widest cell rather than wrapped at 80 columns.
 /// </summary>
+[CliCommand(Name = "jobs", Description = "Logon, every-15-minute and daily jobs that keep this machine aligned, run from one registry.")]
 internal sealed class JobsCommand(JobsHost host, TextWriter output)
 {
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+    internal JobsCommand()
+        : this(null!, TextWriter.Null)
+    {
+    }
+
     /// <summary>A job name that is not in the registry exits with this.</summary>
     public const int UnknownExit = 2;
 
     /// <summary>The <c>jobs</c> command, with its subcommands.</summary>
     public Command Build()
     {
-        var statusTrigger = TriggerOption("tick", "Show what a run on this trigger would do.");
-        var status = new Command("status", "Each job: when it runs, its last outcome, and whether the next run takes it.") { statusTrigger };
-        status.SetAction((parsed, cancellationToken) => Status(JobWords.Trigger(parsed.GetRequiredValue(statusTrigger)), cancellationToken));
-
-        var lastTrigger = TriggerOption("logon", "Show the latest run on this trigger.");
-        var last = new Command("last", "The latest run on a trigger: every job it ran or skipped, why, and how each went.") { lastTrigger };
-        last.SetAction(parsed => Last(parsed.GetRequiredValue(lastTrigger)));
-
-        var job = new Argument<string>("job") { Description = "Job name." };
-        var lines = new Option<int>("--lines", "-n") { Description = "How many lines from the end.", DefaultValueFactory = _ => 40 };
-        var log = new Command("log", "Show the end of a job's log.") { job, lines };
-        log.SetAction(parsed => Log(parsed.GetRequiredValue(job), parsed.GetValue(lines)));
-
-        var runTrigger = TriggerOption("tick", "Run the jobs due on this trigger.");
-        var only = new Option<string[]>("--only") { Description = "Run just this job, due or not. Repeatable.", DefaultValueFactory = _ => [] };
-        var force = new Option<bool>("--force") { Description = "Run every job on the trigger, due or not." };
-        var dryRun = new Option<bool>("--dry-run") { Description = "Say what would run, and run nothing." };
-        var scheduled = new Option<bool>("--scheduled")
-        {
-            Description = "For the scheduled tasks: narrate to coordinator.log, and on logon wait for the shell and prune old traces.",
-            Hidden = true,
-        };
-        var run = new Command("run", "Run the due jobs now, in the foreground, as the scheduled tasks do.") { runTrigger, only, force, dryRun, scheduled };
-        run.SetAction(parsed => Run(
-            JobWords.Trigger(parsed.GetRequiredValue(runTrigger)),
-            parsed.GetValue(only) ?? [],
-            parsed.GetValue(force),
-            parsed.GetValue(dryRun),
-            parsed.GetValue(scheduled)));
-
-        var uninstall = new Command("uninstall", "Remove the coordinator's scheduled tasks.");
-        uninstall.SetAction((_, cancellationToken) => Uninstall(cancellationToken));
-
-        var noStart = new Option<bool>("--no-start") { Description = "Do not start the display guard now." };
-        var start = new Option<bool>("--start") { Description = "Start the display guard now as well as at logon (the default)." };
-        var install = new Command("install", "Register the Logon, Tick and Display Guard tasks, and retire the separate tasks they replace.") { noStart, start };
-        install.SetAction((parsed, cancellationToken) => Install(!parsed.GetValue(noStart), cancellationToken));
-
-        return new Command("jobs", "Logon, every-15-minute and daily jobs that keep this machine aligned, run from one registry.")
-        {
-            status,
-            last,
-            log,
-            run,
-            uninstall,
-            install,
-        };
-    }
-
-    private static Option<string> TriggerOption(string defaultValue, string description)
-    {
-        var option = new Option<string>("--trigger") { Description = description, DefaultValueFactory = _ => defaultValue };
-        option.AcceptOnlyFromAmong([.. JobWords.Triggers]);
-        return option;
+        var jobs = DeclarativeCommand.BuildGroup(this);
+        jobs.Add(DeclarativeCommand.Build(new StatusCommand(this)).AcceptOnlyFromAmong("--trigger", JobWords.Triggers));
+        jobs.Add(DeclarativeCommand.Build(new LastCommand(this)).AcceptOnlyFromAmong("--trigger", JobWords.Triggers));
+        jobs.Add(DeclarativeCommand.Build(new LogCommand(this)));
+        jobs.Add(DeclarativeCommand.Build(new RunCommand(this)).AcceptOnlyFromAmong("--trigger", JobWords.Triggers));
+        jobs.Add(DeclarativeCommand.Build(new UninstallCommand(this)));
+        jobs.Add(DeclarativeCommand.Build(new InstallCommand(this)));
+        return jobs;
     }
 
     private string LogsDir => JobState.LogsDir(host.JobsDir);
 
-    private async Task<int> Install(bool start, CancellationToken cancellationToken)
+    internal async Task<int> Install(bool start, CancellationToken cancellationToken)
     {
         if (host.Tasks is not { } tasks)
         {
@@ -242,7 +205,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         return 0;
     }
 
-    private int Last(string trigger)
+    internal int Last(string trigger)
     {
         if (JobState.ReadRun(JobState.LastRunPath(host.JobsDir, trigger)) is not { } run)
         {
@@ -354,5 +317,139 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         {
             text.Append("  | ").Append(line).Append('\n');
         }
+    }
+
+    /// <summary><c>rig jobs status</c>.</summary>
+    [CliCommand(Name = "status", Description = "Each job: when it runs, its last outcome, and whether the next run takes it.")]
+    internal sealed class StatusCommand(JobsCommand jobs)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal StatusCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The trigger to plan for.</summary>
+        [CliOption(Name = "--trigger", Description = "Show what a run on this trigger would do.")]
+        public string Trigger { get; set; } = "tick";
+
+        /// <summary>Shows the plan.</summary>
+        public Task<int> RunAsync(CliContext context) => jobs.Status(JobWords.Trigger(Trigger), context.CancellationToken);
+    }
+
+    /// <summary><c>rig jobs last</c>.</summary>
+    [CliCommand(Name = "last", Description = "The latest run on a trigger: every job it ran or skipped, why, and how each went.")]
+    internal sealed class LastCommand(JobsCommand jobs)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal LastCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The trigger whose latest run to show.</summary>
+        [CliOption(Name = "--trigger", Description = "Show the latest run on this trigger.")]
+        public string Trigger { get; set; } = "logon";
+
+        /// <summary>Shows the run.</summary>
+        public int Run() => jobs.Last(Trigger);
+    }
+
+    /// <summary><c>rig jobs log</c>.</summary>
+    [CliCommand(Name = "log", Description = "Show the end of a job's log.")]
+    internal sealed class LogCommand(JobsCommand jobs)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal LogCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The job whose log to show.</summary>
+        [CliArgument(Name = "job", Description = "Job name.")]
+        public string Job { get; set; } = null!;
+
+        /// <summary>How many lines from the end.</summary>
+        [CliOption(Name = "--lines", Aliases = ["-n"], Description = "How many lines from the end.")]
+        public int Lines { get; set; } = 40;
+
+        /// <summary>Shows the log.</summary>
+        public int Run() => jobs.Log(Job, Lines);
+    }
+
+    /// <summary><c>rig jobs run</c>.</summary>
+    [CliCommand(Name = "run", Description = "Run the due jobs now, in the foreground, as the scheduled tasks do.")]
+    internal sealed class RunCommand(JobsCommand jobs)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal RunCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The trigger to run.</summary>
+        [CliOption(Name = "--trigger", Description = "Run the jobs due on this trigger.")]
+        public string Trigger { get; set; } = "tick";
+
+        /// <summary>Jobs to run whether due or not.</summary>
+        [CliOption(Name = "--only", Required = false, Description = "Run just this job, due or not. Repeatable.")]
+        public string[] Only { get; set; } = [];
+
+        /// <summary>Runs every job on the trigger.</summary>
+        [CliOption(Name = "--force", Description = "Run every job on the trigger, due or not.")]
+        public bool Force { get; set; }
+
+        /// <summary>Plans without running.</summary>
+        [CliOption(Name = "--dry-run", Description = "Say what would run, and run nothing.")]
+        public bool DryRun { get; set; }
+
+        /// <summary>Set by the scheduled tasks.</summary>
+        [CliOption(Name = "--scheduled", Hidden = true, Description = "For the scheduled tasks: narrate to coordinator.log, and on logon wait for the shell and prune old traces.")]
+        public bool Scheduled { get; set; }
+
+        /// <summary>Runs the jobs.</summary>
+        public int Run() => jobs.Run(JobWords.Trigger(Trigger), Only, Force, DryRun, Scheduled);
+    }
+
+    /// <summary><c>rig jobs uninstall</c>.</summary>
+    [CliCommand(Name = "uninstall", Description = "Remove the coordinator's scheduled tasks.")]
+    internal sealed class UninstallCommand(JobsCommand jobs)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal UninstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Removes the tasks.</summary>
+        public Task<int> RunAsync(CliContext context) => jobs.Uninstall(context.CancellationToken);
+    }
+
+    /// <summary><c>rig jobs install</c>.</summary>
+    [CliCommand(Name = "install", Description = "Register the Logon, Tick and Display Guard tasks, and retire the separate tasks they replace.")]
+    internal sealed class InstallCommand(JobsCommand jobs)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
+        internal InstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Leaves the display guard stopped.</summary>
+        [CliOption(Name = "--no-start", Description = "Do not start the display guard now.")]
+        public bool NoStart { get; set; }
+
+        /// <summary>The default; kept so the command line stays accepted.</summary>
+        [CliOption(Name = "--start", Description = "Start the display guard now as well as at logon (the default).")]
+        public bool Start { get; set; }
+
+        /// <summary>Registers the tasks.</summary>
+        public Task<int> RunAsync(CliContext context) => jobs.Install(!NoStart, context.CancellationToken);
     }
 }
