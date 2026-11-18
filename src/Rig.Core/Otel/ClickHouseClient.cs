@@ -2,6 +2,9 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using Rig.Core.Text;
 
 namespace Rig.Core.Otel;
 
@@ -139,11 +142,12 @@ public sealed class ClickHouseClient(HttpClient http, Uri? baseUrl = null)
     public async Task<IReadOnlyList<TableStats>> TableStatsAsync(CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>(StringComparer.Ordinal) { ["database"] = ClickHouseConfig.Database };
-        return await RowsAsync(
+        var rows = await RowsAsync(
             TableStatsSql,
             parameters,
-            row => new TableStats(row.GetProperty("table").GetString()!, row.GetProperty("rows").GetUInt64(), row.GetProperty("bytes_on_disk").GetUInt64()),
+            ClickHouseRowContext.Default.TableRow,
             cancellationToken).ConfigureAwait(false);
+        return [.. rows.Select(row => new TableStats(row.Table, row.Rows, row.BytesOnDisk))];
     }
 
     /// <summary>Which spans of <paramref name="traceIds"/> ClickHouse already holds; none before the table exists.</summary>
@@ -165,9 +169,9 @@ public sealed class ClickHouseClient(HttpClient http, Uri? baseUrl = null)
             var keys = await RowsAsync(
                 ExistingSpansSql,
                 parameters,
-                row => new SpanKey(row.GetProperty("TraceId").GetString()!, row.GetProperty("SpanId").GetString()!),
+                ClickHouseRowContext.Default.SpanRow,
                 cancellationToken).ConfigureAwait(false);
-            found.UnionWith(keys);
+            found.UnionWith(keys.Select(row => new SpanKey(row.TraceId, row.SpanId)));
         }
 
         return found;
@@ -179,17 +183,36 @@ public sealed class ClickHouseClient(HttpClient http, Uri? baseUrl = null)
         return (await TextAsync(HasTableSql, parameters, cancellationToken).ConfigureAwait(false)).Trim() == "1";
     }
 
-    // Runs `sql` (without a FORMAT clause) as JSONEachRow and reads each non-blank line with `read`.
-    private async Task<List<T>> RowsAsync<T>(string sql, IReadOnlyDictionary<string, string> parameters, Func<JsonElement, T> read, CancellationToken cancellationToken)
+    /// <summary>Runs <paramref name="sql"/> (without a FORMAT clause) as JSONEachRow and reads each non-blank line as a <typeparamref name="TRow"/>.</summary>
+    /// <exception cref="ClickHouseException">ClickHouse is unreachable, answered with an error, or returned a row that does not read as <typeparamref name="TRow"/>.</exception>
+    public async Task<List<TRow>> RowsAsync<TRow>(string sql, IReadOnlyDictionary<string, string> parameters, JsonTypeInfo<TRow> row, CancellationToken cancellationToken = default)
+        where TRow : class
     {
+        ArgumentNullException.ThrowIfNull(sql);
         var body = await TextAsync(sql.TrimEnd().TrimEnd(';') + "\nFORMAT JSONEachRow", parameters, cancellationToken).ConfigureAwait(false);
         try
         {
-            return [.. body.Split('\n').Where(line => line.Trim().Length > 0).Select(line => read(JsonElement.Parse(line)))];
+            return [.. body.Split('\n').Where(line => line.Trim().Length > 0).Select(line => JsonProblem.Read(line, row))];
         }
-        catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
+        catch (JsonInputException e)
         {
             throw new ClickHouseException($"ClickHouse returned rows that could not be read: {e.Message}", e);
         }
     }
 }
+
+/// <summary>The compile-time metadata for ClickHouse's JSONEachRow rows: snake_case names, every member read is required and typed.</summary>
+[JsonSourceGenerationOptions(
+    JsonSerializerDefaults.Strict,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
+    UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+    AllowDuplicateProperties = true,
+    RespectNullableAnnotations = true,
+    RespectRequiredConstructorParameters = true)]
+[JsonSerializable(typeof(TableRow))]
+[JsonSerializable(typeof(SpanRow))]
+internal sealed partial class ClickHouseRowContext : JsonSerializerContext;
+
+internal sealed record TableRow(string Table, ulong Rows, ulong BytesOnDisk);
+
+internal sealed record SpanRow([property: JsonPropertyName("TraceId")] string TraceId, [property: JsonPropertyName("SpanId")] string SpanId);

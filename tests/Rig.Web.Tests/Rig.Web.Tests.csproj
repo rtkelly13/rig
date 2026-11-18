@@ -4,6 +4,7 @@
   </ItemGroup>
   <ItemGroup Label="Shared doubles">
     <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="Fakes/TempDir.cs" />
+    <Compile Include="../Rig.Core.Tests/Fakes/StubHandler.cs" Link="Fakes/StubHandler.cs" />
     <Compile Include="../Rig.Web.BrowserTests/Repo.cs" Link="Fakes/Repo.cs" />
   </ItemGroup>
   <ItemGroup Label="Recorded responses, the frozen parity baseline">

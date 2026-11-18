@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Rig.Core.Text;
 using Rig.Core.Vault;
 
@@ -185,25 +185,13 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         }
     }
 
-    private static Dictionary<string, FileMark> Marks(string text)
-    {
-        using var document = JsonDocument.Parse(text);
-        if (document.RootElement.ValueKind != JsonValueKind.Object)
-        {
-            throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(document.RootElement));
-        }
-
-        var marks = new Dictionary<string, FileMark>(StringComparer.Ordinal);
-        foreach (var entry in document.RootElement.EnumerateObject())
-        {
-            var path = JsonProblem.Child("$", entry.Name);
-            marks[entry.Name] = entry.Value.ValueKind == JsonValueKind.Object
-                ? new FileMark(JsonProblem.WholeNumber(entry.Value, "size", path), JsonProblem.WholeNumber(entry.Value, "mtime_ns", path))
-                : throw JsonProblem.Expected(path, "an object", JsonProblem.Describe(entry.Value));
-        }
-
-        return marks;
-    }
+    private static Dictionary<string, FileMark> Marks(string text) =>
+        JsonProblem.Read(text, OtlpJsonContext.Default.DictionaryStringMarkEntry)
+            .Aggregate(new Dictionary<string, FileMark>(StringComparer.Ordinal), (marks, entry) =>
+            {
+                marks[entry.Key] = new FileMark(entry.Value.Size, entry.Value.MtimeNs);
+                return marks;
+            });
 
     /// <summary>Writes <paramref name="marks"/> sorted, two-space indented, through a temporary file.</summary>
     public static void WriteMarks(string path, IReadOnlyDictionary<string, FileMark> marks)
@@ -303,18 +291,14 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
 
     private static long MtimeNs(FileInfo info) => (info.LastWriteTimeUtc.Ticks - DateTime.UnixEpoch.Ticks) * 100;
 
+    // Anything but a string repo in a JSON object reads as none.
     private static string? PrimaryRepo(string state)
     {
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(state, Encoding.UTF8));
-            return document.RootElement.ValueKind == JsonValueKind.Object
-                && document.RootElement.TryGetProperty("repo", out var repo)
-                && repo.ValueKind == JsonValueKind.String
-                ? repo.GetString()
-                : null;
+            return JsonProblem.Read(File.ReadAllText(state, Encoding.UTF8), OtlpJsonContext.Default.PrimaryState).Repo;
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonInputException)
         {
             return null;
         }
@@ -389,4 +373,18 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
     // json.dumps of the envelope: compact separators would differ from the ", " and ": " written before, but the collector
     // parses either; what matters is the same spans in the same envelope.
     private static string Render(JsonObject body) => body.ToJsonString();
+}
+
+// A struct so that a null entry is rejected.
+internal record struct MarkEntry
+{
+    public required long Size { get; set; }
+
+    [JsonPropertyName("mtime_ns")]
+    public required long MtimeNs { get; set; }
+}
+
+internal sealed record PrimaryState
+{
+    public string? Repo { get; set; }
 }

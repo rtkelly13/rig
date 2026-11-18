@@ -31,6 +31,21 @@ public sealed class NonEmptyStringConverter : JsonConverter<string>, IJsonPhrase
     }
 }
 
+/// <summary>
+/// A converter's rejection of something inside the value it reads, such as the third item of an AnyValue's list.
+/// <see cref="Relative"/> is the path below the converted value (<c>$.arrayValue.values[2]</c>), which the translator places
+/// under the path of the property that holds it.
+/// </summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1032:Implement standard exception constructors", Justification = "Only the converters throw it, always with a path.")]
+internal sealed class JsonNestedException(string relative, string expected, string found) : JsonException($"{relative}: expected {expected}, found {found}")
+{
+    public string Relative { get; } = relative;
+
+    public string Expected { get; } = expected;
+
+    public string Found { get; } = found;
+}
+
 // The typed side of the boundary: System.Text.Json reads the value into a record whose context is strict, and any
 // rejection is turned into the same `$.path: expected X, found Y` a hand-written reader throws. The translation runs
 // only after a failure, so a good read pays nothing for it.
@@ -102,6 +117,11 @@ public static partial class JsonProblem
 
     private static JsonInputException Translate(Exception failure, JsonElement root, JsonTypeInfo info)
     {
+        if (failure is JsonNestedException nested)
+        {
+            return Expected(Locate(root, info, Steps(nested.Path ?? "$")).Path + nested.Relative[1..], nested.Expected, nested.Found);
+        }
+
         if (Violation(root, info, "$", (failure as JsonException)?.Path) is { } structural)
         {
             return structural;
