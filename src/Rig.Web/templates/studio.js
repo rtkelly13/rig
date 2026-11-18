@@ -6,10 +6,8 @@
 (function () {
   'use strict';
 
-  // Asset Studio's API and media come from `image-reconcile serve` (tools/image-drift), a separate
-  // server on its own port. Set window.RIG_ASSET_STUDIO_URL before this script loads to point elsewhere.
-  const ASSET_STUDIO = (window.RIG_ASSET_STUDIO_URL || 'http://127.0.0.1:8092').replace(/\/$/, '');
-  const studioUrl = (path) => `${ASSET_STUDIO}${path}`;
+  // The Asset Studio's API and media are served by `rig web` itself, so every request is same-origin.
+  const studioUrl = (path) => path;
 
   // Application State
   const state = {
@@ -343,7 +341,7 @@
       }
     } catch (err) {
       console.error('Failed to load projects:', err);
-      setStatus(`[ ASSET STUDIO OFFLINE at ${ASSET_STUDIO}: run \`uv run --project tools/image-drift image-reconcile serve\` ]`, true);
+      setStatus(`[ ASSET STUDIO OFFLINE: is \`rig web\` running? ]`, true);
     }
   }
 

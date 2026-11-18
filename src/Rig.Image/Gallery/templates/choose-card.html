@@ -1,0 +1,17 @@
+    <article class="panel relative flex flex-wrap items-start gap-6.5 p-5.5{{current_class}}">
+{{ribbon_html}}
+      <img class="size-60 rounded-2xl object-contain" src="{{hero}}" alt="{{name}}">
+      <div class="min-w-75 flex-1">
+        <h3 class="m-0 mb-1.5 text-lead text-content-primary">{{name}}</h3>
+        <p class="m-0 mb-4 text-caption leading-relaxed text-content-secondary">{{description}}</p>
+
+        <div class="mb-4 flex flex-wrap items-end gap-3.5">
+{{sizes_html}}
+        </div>
+
+        <div class="flex flex-col gap-1.5 rounded-xl border border-dashed border-accent-primary bg-surface-sunken px-3.5 py-3">
+          <span class="text-caption uppercase tracking-wide text-accent-primary">Adopt this base</span>
+          <code class="break-all font-mono text-caption text-palette-bright-cyan">rig image build --variant {{key}}</code>
+        </div>
+      </div>
+    </article>

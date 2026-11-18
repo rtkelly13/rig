@@ -1,4 +1,6 @@
 using Rig.Image;
+using Rig.Image.Gallery;
+using Rig.Image.Pathways;
 
 namespace Rig.Cli.Image;
 
@@ -10,6 +12,35 @@ internal sealed record ImageProject(string Name, string Svg, string Reference)
 {
     /// <summary>The feature boxes this project's drift score weights.</summary>
     public IReadOnlyList<FeatureBox> Regions => FeatureRegions.For(Name);
+
+    /// <summary>The builder's declared variants, in display order.</summary>
+    public IReadOnlyDictionary<string, Variant> Variants => IsLabs ? LabsBuilder.Variants : DiamondParquetBuilder.Variants;
+
+    /// <summary>The variant the builder produces when none is named.</summary>
+    public string DefaultVariant => IsLabs ? LabsBuilder.DefaultVariant : DiamondParquetBuilder.DefaultVariant;
+
+    /// <summary>The regions with the names the gallery shows.</summary>
+    public IReadOnlyList<GalleryRegion> LabelledRegions => [.. Regions.Select(box => new GalleryRegion(box.Key, RegionLabels.GetValueOrDefault(box.Key, box.Key), box))];
+
+    private static readonly Dictionary<string, string> RegionLabels = new(StringComparer.Ordinal)
+    {
+        ["crossover_core"] = "Crossover Core",
+        ["top_left_loop"] = "Top-Left Loop",
+        ["top_right_loop"] = "Top-Right Loop",
+        ["bottom_left_loop"] = "Bottom-Left Loop",
+        ["bottom_right_loop"] = "Bottom-Right Loop",
+        ["diamond_tile"] = "Diamond Tile",
+        ["root_node"] = "Root Node",
+        ["center_trunk"] = "Center Trunk",
+        ["left_branch"] = "Left Branch",
+        ["right_branch"] = "Right Branch",
+    };
+
+    private bool IsLabs => Name == "rtkelly-labs";
+
+    /// <summary>The SVG text of a variant; an unknown key throws <see cref="UnknownVariantException"/>.</summary>
+    /// <param name="variant">The variant key, or null for the default.</param>
+    public string GenerateSvg(string? variant) => IsLabs ? LabsBuilder.GenerateSvg(variant) : DiamondParquetBuilder.GenerateSvg(variant);
 }
 
 /// <summary>Resolves project keys and aliases the way image_drift's <c>resolve_project</c> does.</summary>

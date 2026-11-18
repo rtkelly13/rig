@@ -1,8 +1,8 @@
 /* Tailwind source for the image-drift preview gallery.
  *
- * `pnpm css:build` compiles it to src/image_drift/templates/gallery.css.
- * That output is committed, because the Python CLI inlines it into a
- * self-contained preview.html and must work without Node installed.
+ * `pnpm css:build` compiles it to gallery.css beside it. That output is
+ * committed and embedded in Rig.Image, which inlines it into a self-contained
+ * preview.html, so `rig image build-preview` works without Node installed.
  *
  * Every colour, type size, radius and shadow comes from
  * @rtkelly-labs/design-system: no hand-written values here or in the templates
@@ -20,20 +20,21 @@
 @source "../../../node_modules/@rtkelly-labs/design-system/dist/**/*.js";
 
 /* Automatic content detection skips files it cannot classify, so point it at
- * the Jinja templates explicitly. Without this the utility classes used in the
+ * the HTML templates explicitly. Without this the utility classes used in the
  * markup are never emitted. */
-@source "../src/image_drift/templates/**/*.jinja";
+@source "templates/**/*.html";
 
-/* `_badge_class()` picks `badge-good`/`badge-warn`/`badge-bad` at runtime and
+/* `GalleryBuilder.BadgeClass` picks `badge-good`/`badge-warn`/`badge-bad` at runtime and
  * passes the result to the template as `badge_class`, so those names appear
  * nowhere in the markup and Tailwind cannot learn them by scanning.
  *
- * Safelist them by name rather than scanning cli.py. Scanning a Python module
- * for class names means its *prose* feeds the stylesheet: a docstring that
+ * Safelist them by name rather than scanning the C# source. Scanning code
+ * for class names means its *prose* feeds the stylesheet: a comment that
  * happens to contain a word like "fixed" or "table" silently adds a utility to
  * this committed, byte-compared artifact and turns CI red for an unrelated
- * edit. Naming the three classes is precise and cannot drift. */
-@source inline("badge-good badge-warn badge-bad");
+ * edit. Naming the classes is precise and cannot drift. The chosen and current
+ * borders are picked at runtime too, so they are named here as well. */
+@source inline("badge-good badge-warn badge-bad border-2 border-accent-primary border-intent-success");
 
 /* Components. Each is used many times across the templates, so composing them
  * once here keeps the markup readable — utilities are used directly for

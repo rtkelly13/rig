@@ -16,6 +16,7 @@ namespace Rig.Web;
 /// <param name="TracesDir">This checkout's own <c>temp/traces/sdk</c>, one of the roots telemetry reads.</param>
 /// <param name="C4StaticDir">The C4 viewer's page and static files (<c>/c4/</c>).</param>
 /// <param name="C4SampleBundle">The sample C4 bundle the viewer opens first; its siblings are offered too. Empty when the checkout has no <c>experiments/</c>.</param>
+/// <param name="VariationsRoot">The git-ignored folder variation snapshots are written to and served from (<c>/media/variations/</c>); empty means <c>temp/variations</c>.</param>
 public sealed record WebHostSettings(
     string Host,
     int Port,
@@ -31,8 +32,12 @@ public sealed record WebHostSettings(
     string TracesDir,
     string CodeRoot = "",
     string C4StaticDir = "",
-    string C4SampleBundle = "")
+    string C4SampleBundle = "",
+    string VariationsRoot = "")
 {
+    /// <summary>Where the Asset Studio keeps variation snapshots, falling back to <c>temp/variations</c> under the working directory.</summary>
+    public string EffectiveVariationsRoot => string.IsNullOrEmpty(VariationsRoot) ? Path.Join(WorkingDirectory, "temp", "variations") : VariationsRoot;
+
     /// <summary>The code root, falling back to the parent of EstateRoot if empty.</summary>
     public string EffectiveCodeRoot => string.IsNullOrEmpty(CodeRoot) ? (Path.GetDirectoryName(EstateRoot) ?? "") : CodeRoot;
     /// <summary>The production dashboard's port.</summary>

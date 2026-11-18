@@ -27,6 +27,9 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
     /// <summary>The brand images served under <c>/media/assets/</c>.</summary>
     public string AssetsRoot => Path.Join(Checkout, "assets");
 
+    /// <summary>The Asset Studio's variation snapshots, git-ignored.</summary>
+    public string VariationsRoot => Path.Join(Checkout, "temp", "variations");
+
     /// <summary>This checkout's own trace files, one of the roots telemetry reads.</summary>
     public string TracesDir => Path.Join(Checkout, "temp", "traces", "sdk");
 
@@ -103,7 +106,8 @@ internal sealed class WebCommand(
             places.TracesDir,
             places.CodeRoot,
             places.C4StaticDir,
-            places.C4SampleBundle);
+            places.C4SampleBundle,
+            places.VariationsRoot);
         var server = await RigWebHost.CreateAsync(settings, _ops.Value, cancellationToken: cancellationToken).ConfigureAwait(false);
         await using (server.ConfigureAwait(false))
         {

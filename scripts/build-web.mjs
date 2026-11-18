@@ -1,5 +1,5 @@
 // Builds every committed web asset: the SPA bundle and fonts, and each Tailwind
-// entry. The outputs are committed because the Python CLI and server serve them
+// entry. The outputs are committed because the host and the image gallery serve them
 // without Node. `--check` builds into temp/ and fails if any committed file
 // differs, so a source edit or a design-system bump that changes output is caught.
 import { build } from 'esbuild';
@@ -19,7 +19,7 @@ const outputFor = (committed) => (checking ? path.join(scratch, committed) : pat
 // its tokens from @rtkelly-labs/design-system.
 const stylesheets = [
   ['web/app.src.css', 'src/Rig.Web/templates/app_assets/app.css'],
-  ['tools/image-drift/styles/gallery.src.css', 'tools/image-drift/src/image_drift/templates/gallery.css'],
+  ['src/Rig.Image/Gallery/gallery.src.css', 'src/Rig.Image/Gallery/gallery.css'],
   ['styles/c4.src.css', 'src/Rig.Web/C4/static/c4.css'],
 ];
 

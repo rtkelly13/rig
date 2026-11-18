@@ -91,6 +91,23 @@ public sealed class ChromiumRenderer : ISvgRenderer
         }
     }
 
+    /// <summary>Screenshots a local HTML page, full page, as a PNG at <paramref name="outputPng"/> (the gallery's <c>--screenshot</c>).</summary>
+    public async Task ScreenshotPageAsync(string htmlPath, string outputPng, int width, int height, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPng))!);
+        var page = await _browser.NewPageAsync(new BrowserNewPageOptions { ViewportSize = new ViewportSize { Width = width, Height = height } }).ConfigureAwait(false);
+        try
+        {
+            await page.GotoAsync(new Uri(Path.GetFullPath(htmlPath)).AbsoluteUri, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle }).ConfigureAwait(false);
+            await page.ScreenshotAsync(new PageScreenshotOptions { Path = outputPng, FullPage = true }).ConfigureAwait(false);
+        }
+        finally
+        {
+            await page.CloseAsync().ConfigureAwait(false);
+        }
+    }
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {

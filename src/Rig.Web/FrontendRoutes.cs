@@ -157,7 +157,7 @@ internal static class FrontendRoutes
             .WithHeader("Cache-Control", "no-store");
     }
 
-    private static IResult File(string root, string relative, string what)
+    internal static IResult File(string root, string relative, string what)
     {
         if (Under(root, relative) is not { } file)
         {

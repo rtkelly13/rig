@@ -15,8 +15,11 @@ internal sealed record StudioResponse(int Status, string Body);
 /// </summary>
 internal sealed class StudioApi(string assetsRoot, string variationsRoot)
 {
-    private const string AssetsPrefix = "/media/assets/";
-    private const string VariationsPrefix = "/media/variations/";
+    /// <summary>Where the brand assets are served.</summary>
+    public const string AssetsPrefix = "/media/assets/";
+
+    /// <summary>Where variation snapshots are served.</summary>
+    public const string VariationsPrefix = "/media/variations/";
 
     private static readonly JsonWriterOptions Options = new() { Indented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
@@ -43,16 +46,16 @@ internal sealed class StudioApi(string assetsRoot, string variationsRoot)
         });
     }
 
-    /// <summary><c>GET /api/diff</c>: the drift of a candidate image against a reference, from the two media URLs or paths.</summary>
-    public StudioResponse Diff(string? reference, string? candidate)
+    /// <summary><c>GET /api/diff</c>: the drift of a candidate image against a reference. <paramref name="resolve"/> turns each media URL or path the caller sent into a file, or null when there is none.</summary>
+    public static StudioResponse Diff(string? reference, string? candidate, Func<string, string?> resolve)
     {
         if (string.IsNullOrEmpty(reference) || string.IsNullOrEmpty(candidate))
         {
             return Error(400, "Missing 'ref' or 'cand' query parameter");
         }
 
-        var referencePath = Resolve(reference);
-        var candidatePath = Resolve(candidate);
+        var referencePath = resolve(reference);
+        var candidatePath = resolve(candidate);
         if (referencePath is null || candidatePath is null)
         {
             return Write(404, writer =>
@@ -296,30 +299,6 @@ internal sealed class StudioApi(string assetsRoot, string variationsRoot)
     }
 
     private static void WriteUrl(Utf8JsonWriter writer, string name, string? relative) => writer.WriteString(name, relative is null ? null : AssetsPrefix + relative);
-
-    // A media URL or a path relative to either root; anything that resolves outside both roots is not found.
-    private string? Resolve(string raw)
-    {
-        var decoded = Uri.UnescapeDataString(raw.Trim());
-        if (decoded.StartsWith(AssetsPrefix, StringComparison.Ordinal))
-        {
-            return Under(_assets, decoded[AssetsPrefix.Length..]);
-        }
-
-        if (decoded.StartsWith(VariationsPrefix, StringComparison.Ordinal))
-        {
-            return Under(_variations, decoded[VariationsPrefix.Length..]);
-        }
-
-        return Under(_assets, decoded) ?? Under(_variations, decoded);
-    }
-
-    private static string? Under(string root, string relative)
-    {
-        var candidate = Path.GetFullPath(Path.Join(root, relative));
-        var inside = candidate.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.Ordinal);
-        return inside && File.Exists(candidate) ? candidate : null;
-    }
 
     // An SVG is compared through its companion PNG; a candidate without one falls back to a 1000 or 2000 px cut beside it.
     private static string CompanionRaster(string path, bool fallbacks)

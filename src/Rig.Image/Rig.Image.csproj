@@ -15,7 +15,10 @@
     <ProjectReference Include="../Rig.Image.Simplifier/Rig.Image.Simplifier.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Frozen from image_drift's labs_builder and diamond_parquet_builder by tools/image-drift/oracle/dump_oracle.py. -->
+    <!-- Frozen from the Python image_drift builders before they were retired (ADR 0024). -->
+    <!-- The gallery page: one HTML fragment per piece of markup and the compiled Tailwind stylesheet, rebuilt by `pnpm css:build`. -->
+    <EmbeddedResource Include="Gallery/gallery.css" LogicalName="Rig.Image.gallery.gallery.css" />
+    <EmbeddedResource Include="Gallery/templates/*.html" LogicalName="Rig.Image.gallery.templates.%(Filename)%(Extension)" />
     <EmbeddedResource Include="feature-regions.json" LogicalName="Rig.Image.feature-regions.json" />
     <!-- The hand-tuned master and favicon SVGs and the labs manifest, embedded from builder-assets/. -->
     <EmbeddedResource Include="builder-assets/rtkelly-labs/manifest.json" LogicalName="Rig.Image.builder_assets.rtkelly-labs.manifest.json" />
@@ -29,5 +32,7 @@
     <InternalsVisibleTo Include="Rig.Image.BrowserTests" />
     <InternalsVisibleTo Include="Rig.Cli.Tests" />
     <InternalsVisibleTo Include="rig" />
+    <InternalsVisibleTo Include="Rig.Web" />
+    <InternalsVisibleTo Include="Rig.Web.Tests" />
   </ItemGroup>
 </Project>
