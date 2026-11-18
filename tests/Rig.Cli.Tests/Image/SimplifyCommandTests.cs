@@ -111,6 +111,30 @@ public sealed class SimplifyCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task A_bad_view_box_exits_2()
+    {
+        var input = Path.Join(_temp.Path, "box.svg");
+        await File.WriteAllTextAsync(input, "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 x 4\"><rect width=\"1\" height=\"1\"/></svg>", TestContext.Current.CancellationToken);
+
+        var exit = await Run("image", "simplify", input);
+
+        Assert.Equal(2, exit);
+        Assert.Contains("could not simplify", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_file_the_renderer_cannot_load_exits_2()
+    {
+        var input = Write("logo.svg");
+        _fast = () => new Scripted("Svg.Skia", _ => throw new InvalidDataException("expected an SVG Svg.Skia can load, found one it cannot"));
+
+        var exit = await Run("image", "simplify", input);
+
+        Assert.Equal(2, exit);
+        Assert.Contains("Error: expected an SVG", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Asking_for_chromium_uses_the_authoritative_renderer_with_the_executable()
     {
         var input = Write("logo.svg");
