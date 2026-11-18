@@ -98,24 +98,6 @@ def forbid_real_virtual_desktop_changes(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 @pytest.fixture(autouse=True)
-def forbid_real_chrome(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Fail any test that reaches the developer's own Chrome.
-
-    On macOS the real driver closes and groups tabs in the live browser: an
-    organise test that faked only the Windows driver closed three real tabs. A
-    test that needs a driver patches ``backend.get_driver`` (or ``run_jxa``) itself.
-    """
-    from desktop_manager.chrome import backend
-    from desktop_manager.chrome.drivers import macos_jxa
-
-    def _fail(*_args, **_kwargs):
-        pytest.fail("test reached the real Chrome driver; patch backend.get_driver or macos_jxa.run_jxa")
-
-    monkeypatch.setattr(backend, "get_driver", _fail)
-    monkeypatch.setattr(macos_jxa, "run_jxa", _fail)
-
-
-@pytest.fixture(autouse=True)
 def isolate_trace_output(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
     """Send spans to a temp directory, never the repo's ``temp/traces``.
 

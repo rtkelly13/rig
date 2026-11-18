@@ -163,7 +163,7 @@ public sealed class RuntimeManagerTests : IDisposable
         var sha = Commit(repo, new Dictionary<string, string> { ["desktop-manager/workspace-plan.bundle.json"] = "{}" });
         var tools = new Tools(_system)
         {
-            // The real `desktop-manager` keeps only chrome-tabs, runtime, work and jobs; the plan
+            // The real `desktop-manager` keeps only its help, runtime and jobs; the plan
             // check must go through the published `rig desktop workspace validate-plan` instead.
             Fails = request => Path.GetFileName(request.Argv[0]).StartsWith("desktop-manager", StringComparison.Ordinal)
                 && request.Argv.Skip(1).Take(1).SequenceEqual(["workspace"]),

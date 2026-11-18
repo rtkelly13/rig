@@ -168,13 +168,11 @@ in the same pull request:
 | 3 | moved out: `image_drift` is its own project (`tools/image-drift`) with its own floor | — | — |
 | 4 | `rig/estate` remainder, `rig/devenv/steps`, `rig/workspace` | 2,230 | 88 |
 | 5 | `rig/skills` (`rig/otel_stack` and `rig/obsidian` moved to C#); `desktop_manager` `work`, `jobs`, `handlers` | 2,000 | 92 |
-| 6 | `desktop_manager/chrome` and `win32` | 1,310 | 95 |
+| 6 | `win32` (`desktop_manager/chrome` moved to C#, #85) | — | 95 |
 
-Wave 6 is the hard one. Much of it is macOS Accessibility and UI-scripting drivers
-(`chrome/drivers/macos_ax.py`, `macos_ui.py`), which the Linux job cannot drive any more than
-the Win32 adapters. Each driver either gets its logic moved behind a fake-able seam and tested,
-or joins the omit list under the same rule as the Win32 adapters. Decide driver by driver.
-Moving the target is not one of the options.
+Wave 6 was the hard one until the Chrome drivers moved to C# with `organise` (#85); what is
+left is the Win32 adapters, which are already on the omit list. Moving the target is not one of
+the options.
 
 ### The C# floor starts at 95%
 

@@ -51,7 +51,9 @@ def test_a_local_command_factory_is_refused_instead_of_silently_omitted(tmp_path
 def test_a_thin_alias_is_discovered_but_added_business_logic_is_an_owner(tmp_path: Path) -> None:
     root = _fixture(
         tmp_path,
-        "import typer\nfrom rig import csharp_cli\nfrom desktop_manager.chrome.trace_forward import forward\n"
+        "import typer\nfrom rig import csharp_cli\n"
+        "def forward(ctx: typer.Context):\n"
+        '    raise typer.Exit(code=csharp_cli.run(["chrome-tabs", "traces", *ctx.args]))\n'
         'app = typer.Typer(name="compat")\napp.command(name="alias")(forward)\n'
         '@app.command(name="independent")\ndef independent(ctx: typer.Context):\n'
         "    if ctx.args:\n        return\n"
@@ -69,7 +71,9 @@ def test_a_thin_alias_is_discovered_but_added_business_logic_is_an_owner(tmp_pat
 def test_a_decorated_dispatcher_is_not_a_thin_alias(tmp_path: Path) -> None:
     root = _fixture(
         tmp_path,
-        "import typer\nfrom functools import wraps\nfrom desktop_manager.chrome.trace_forward import forward\n"
+        "import typer\nfrom functools import wraps\nfrom rig import csharp_cli\n"
+        "def forward(ctx: typer.Context):\n"
+        '    raise typer.Exit(code=csharp_cli.run(["chrome-tabs", "traces", *ctx.args]))\n'
         "def decorate(fn):\n    @wraps(fn)\n    def wrapped(ctx):\n"
         '        raise RuntimeError("extra behavior")\n    return wrapped\n'
         'app = typer.Typer(name="compat")\napp.command(name="wrapped")(decorate(forward))\n',

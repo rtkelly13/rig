@@ -1,19 +1,12 @@
-"""The rig scripts, which start the C# rig CLI, and the Python commands it forwards back."""
+"""The rig scripts, which start the C# rig CLI."""
 
 from __future__ import annotations
 
-import importlib
-import re
 from pathlib import Path
 
 import pytest
-import typer
-from typer.testing import CliRunner
 
-from desktop_manager.cli import app as desktop_manager_app
 from rig import csharp_cli
-
-FORWARDED = Path(__file__).resolve().parents[1] / "src" / "Rig.Cli" / "Forwarding" / "Forwarded.cs"
 
 
 def _project(tmp_path: Path) -> Path:
@@ -105,36 +98,3 @@ def test_the_rig_script_hands_its_line_over_as_typed(script: str) -> None:
         csharp_cli.entry([script, "gh", "threads", "list", "7"], handover)
 
     assert handed == [["gh", "threads", "list", "7"]]
-
-
-def _launches() -> list[tuple[str, list[str]]]:
-    rows = re.findall(r'\("(?P<name>[\w-]+)", "[^"]*", \[(?P<launch>[^\]]*)\]\)', FORWARDED.read_text(encoding="utf-8"))
-    return [(name, re.findall(r'"([^"]+)"', launch)) for name, launch in rows]
-
-
-def test_the_forwarded_table_is_read() -> None:
-    names = {name for name, _ in _launches()}
-    # Web moved fully to C#: its service and database subcommands are aliases for `rig tools`.
-    assert "web" not in names
-    # Triage's CLI runs in C#; only its web inbox stays inside the Python package.
-    assert "triage" not in names
-    # C4's CLI runs in C#; its web viewer stays inside the Python package.
-    assert "c4" not in names
-
-
-@pytest.mark.parametrize(("name", "launch"), _launches(), ids=[name for name, _ in _launches()])
-def test_every_forwarded_command_reaches_a_python_program(name: str, launch: list[str]) -> None:
-    # The C# CLI starts `uv run … <launch> <args>`: a desktop-manager command, or a module run with python -m.
-    if launch[:2] == ["python", "-m"]:
-        module = importlib.import_module(launch[2])
-        source = Path(module.__file__ or "").read_text(encoding="utf-8")
-        assert 'if __name__ == "__main__":' in source, f"{launch[2]} has no __main__ block"
-        app: typer.Typer = module.app
-        args = launch[3:]
-    else:
-        assert launch[0] == "desktop-manager", f"rig {name} launches {launch[0]}: not python -m or desktop-manager"
-        app, args = desktop_manager_app, launch[1:]
-
-    result = CliRunner().invoke(app, [*args, "--help"], prog_name=f"rig {name}")
-
-    assert result.exit_code == 0, result.output

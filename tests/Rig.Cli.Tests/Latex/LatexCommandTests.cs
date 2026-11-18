@@ -1,5 +1,4 @@
 using System.CommandLine;
-using Rig.Cli.Forwarding;
 using Rig.Cli.Latex;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
@@ -243,7 +242,7 @@ public sealed class LatexCommandTests : IDisposable
     {
         OnPath("xelatex", "tlmgr");
         var app = new RigApp(
-            new PythonRig(_proc, "/rig"), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), _out, _err, [Command().Build]);
+            new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), _out, _err, [Command().Build]);
 
         Assert.Equal(0, await app.RunAsync(["latex", "doctor"], TestContext.Current.CancellationToken));
 

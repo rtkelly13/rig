@@ -1,4 +1,4 @@
-"""CLI entry point for the desktop-manager windows, tabs and web tools.
+"""CLI entry point for the desktop-manager runtime and jobs tools.
 
 The workspace layout manager and display guard moved to C# as ``rig desktop workspace ...``
 (issue #243), and the Claude session commands were retired in #224; this CLI keeps the
@@ -12,7 +12,6 @@ import sys
 import typer
 from typer.core import TyperGroup, TyperOption
 
-from desktop_manager.chrome.cli import chrome_tabs_app
 from desktop_manager.cli_common import console
 from desktop_manager.jobs.cli import jobs_app
 from desktop_manager.runtime_cli import runtime_app
@@ -20,7 +19,6 @@ from rig import tracing
 
 app = typer.Typer(name="desktop-manager", no_args_is_help=True, add_completion=False)
 
-app.add_typer(chrome_tabs_app)
 app.add_typer(runtime_app)
 app.add_typer(jobs_app)
 
@@ -56,12 +54,6 @@ def help_cmd() -> None:
 
             console.print()
 
-    # --- chrome tab commands ---
-    console.rule("[bold]Chrome tab commands[/bold]", style="dim")
-    console.print()
-    _render_group(chrome_tabs_app, "chrome-tabs")
-    console.print("  Trace reports: rig chrome-tabs traces --help\n")
-
     # --- machine jobs ---
     console.rule("[bold]Machine jobs[/bold]", style="dim")
     console.print()
@@ -69,6 +61,7 @@ def help_cmd() -> None:
 
     # --- usage hint ---
     console.print("[dim]Workspace layouts and the display guard:[/dim] rig desktop workspace --help")
+    console.print("[dim]Chrome tabs:[/dim] rig chrome-tabs --help")
     console.print("[dim]Run[/dim] desktop-manager <group> <command> --help [dim]for full details.[/dim]")
     console.print()
 

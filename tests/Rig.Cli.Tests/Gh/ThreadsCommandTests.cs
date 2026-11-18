@@ -1,5 +1,4 @@
 using System.Text.Json.Nodes;
-using Rig.Cli.Forwarding;
 using Rig.Cli.Gh.Threads;
 using Rig.Cli.Tests.Fakes;
 using Rig.Core.GitHub;
@@ -48,7 +47,7 @@ public sealed class ThreadsCommandTests
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
-        var app = new RigApp(new PythonRig(new FakeProc(), "/rig"), github, _ => Task.FromResult(origin), output, error);
+        var app = new RigApp(github, _ => Task.FromResult(origin), output, error);
         var code = await app.RunAsync(["gh", "threads", .. args], TestContext.Current.CancellationToken);
         return new Result(code, output.ToString(), error.ToString());
     }

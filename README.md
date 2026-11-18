@@ -91,7 +91,6 @@ regenerate it with `uv run python -m rig.platform_table --write`.
 
 | Command | Platforms |
 | --- | --- |
-| `desktop-manager chrome-tabs organise` | Windows/macOS |
 
 <!-- platform-table:end -->
 

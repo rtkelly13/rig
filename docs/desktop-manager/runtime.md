@@ -25,7 +25,7 @@ the whole line to `rig runtime`.
     current                      junction to the copy in use
     state.json                   current and previous copy, source repo
   workspace-restore\logs\        restore logs, kept across updates
-  chrome-tabs\                   organise.log and traces, kept across updates
+  chrome-tabs\                   traces, kept across updates
 ```
 
 A copy keeps the repo's layout, so the workspace plan (`desktop-manager/`) and

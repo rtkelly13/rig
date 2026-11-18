@@ -57,8 +57,6 @@ class Job:
     idle_minutes: int = 0
     #: Exit codes meaning "could not run yet": a tick reruns the job until it exits otherwise, once per boot.
     retry_exit_codes: frozenset[int] = frozenset()
-    #: The `--- `-headed log the job writes its own narrative to, when that is not stdout.
-    detail_log: Path | None = None
     #: The rig flag that must be on for the job to run; naming the job in `--only` runs it anyway.
     feature: str | None = None
 
@@ -116,11 +114,8 @@ class Environment:
 
 def default_jobs(env: Environment) -> tuple[Job, ...]:
     """The jobs, in the order a run takes them."""
-    from desktop_manager.chrome.install_location import LOG_NAME, install_root
-
     # The C# front door: `rig estate …` and the rest run on it (#85).
     rig = env.script("rig")
-    python = str(env.scripts / ("python.exe" if os.name == "nt" else "python"))
     both = frozenset({Trigger.LOGON, Trigger.TICK})
     return (
         Job(
@@ -136,11 +131,20 @@ def default_jobs(env: Environment) -> tuple[Job, ...]:
         Job(
             name="chrome-organise",
             description="Close merged, duplicate and superseded Chrome tabs, and group the rest, once idle.",
-            argv=(python, "-m", "desktop_manager.chrome.scheduled", "--wait-minutes", str(TICK_MINUTES - 5)),
+            argv=(
+                rig,
+                "chrome-tabs",
+                "organise",
+                "--unattended",
+                "--consolidate-saved",
+                "--trigger",
+                "scheduled",
+                "--wait-minutes",
+                str(TICK_MINUTES - 5),
+            ),
             triggers=frozenset({Trigger.TICK}),
             cadence=Cadence.EVERY_RUN,
             timeout_minutes=TICK_MINUTES + 5,
-            detail_log=install_root() / LOG_NAME,
         ),
         Job(
             name="align",

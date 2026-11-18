@@ -1,5 +1,4 @@
 using System.CommandLine;
-using Rig.Cli.Forwarding;
 using Rig.Cli.Vault;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
@@ -117,7 +116,7 @@ public sealed class MdLintCommandTests : IDisposable
     {
         _proc.Answer(new Ran(0, string.Empty, string.Empty), "uv");
         var app = new RigApp(
-            new PythonRig(_proc, Checkout), new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), _out, _err, [Command().Build]);
+            new FakeGitHub(), _ => Task.FromResult<RepoSlug?>(null), _out, _err, [Command().Build]);
 
         Assert.Equal(0, await app.RunAsync(["md-lint", "note.md"], TestContext.Current.CancellationToken));
 

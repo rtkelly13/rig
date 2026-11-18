@@ -110,7 +110,7 @@ def test_a_copy_that_fails_its_checks_never_becomes_current(repo: Path, tmp_path
     bad = _commit(repo, {"app.txt": "bad\n"})
 
     with pytest.raises(runtime.InstallError, match="current is unchanged"):
-        runtime.install(repo, "HEAD", root=root, fetch=False, runner=FakeTools(failing="chrome-tabs --help"))
+        runtime.install(repo, "HEAD", root=root, fetch=False, runner=FakeTools(failing="chrome-tabs organise --help"))
 
     assert runtime.read_state(root).current == good[: runtime.SHORT_SHA]
     assert (runtime.current_link(root) / "app.txt").read_text(encoding="utf-8") == "good\n"

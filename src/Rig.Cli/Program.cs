@@ -50,7 +50,7 @@ using Rig.Web.Mcp;
 namespace Rig.Cli;
 
 /// <summary>The composition root: real processes, the real console and this machine's rig checkout.</summary>
-[ExcludeFromCodeCoverage(Justification = "Wiring only; RigApp and PythonRig carry the behaviour and are tested.")]
+[ExcludeFromCodeCoverage(Justification = "Wiring only; RigApp carries the behaviour and is tested.")]
 internal static class Program
 {
     internal static async Task<int> Main(string[] args)
@@ -119,7 +119,7 @@ internal static class Program
             Environment.CurrentDirectory,
             Environment.GetEnvironmentVariable("LOCALAPPDATA"),
             Console.In);
-        var python = new PythonRig(proc, checkout);
+        var python = new PythonRig(checkout);
         var github = new GhApi(proc);
         Gh.OriginReader origin = async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false));
         var servicePlatform = exportWindowsTree || (!exportTree && OperatingSystem.IsWindows())
@@ -144,7 +144,6 @@ internal static class Program
             ?? Rig.Cli.Runtime.RuntimeCommand.FindCheckout(Environment.CurrentDirectory)
             ?? checkout;
         var app = new RigApp(
-            python,
             github,
             origin,
             Console.Out,
@@ -359,15 +358,13 @@ internal static class Program
             ]);
         if (exportTree || exportWindowsTree)
         {
-            var probeIndex = Array.IndexOf(args, "--probes");
-            var probes = probeIndex < 0 ? [] : System.Text.Json.JsonSerializer.Deserialize<string[][]>(await File.ReadAllTextAsync(args[probeIndex + 1]).ConfigureAwait(false)) ?? [];
-            await Console.Out.WriteLineAsync(CommandTree.Export(app.BuildRoot(), probes, exportWindowsTree)).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync(CommandTree.Export(app.BuildRoot(), exportWindowsTree)).ConfigureAwait(false);
             return 0;
         }
 
         if (app.HandsOver(args))
         {
-            // The Python CLI or the agent shares this console and handles Ctrl+C itself; rig waits for it and returns its code.
+            // The agent shares this console and handles Ctrl+C itself; rig waits for it and returns its code.
             Console.CancelKeyPress += (_, e) => e.Cancel = true;
         }
 
@@ -432,7 +429,6 @@ internal static class Program
             MachineConfig.WorkDirs(machineConfig, codeRoot, home),
             Decisions.DefaultFeedPath(localAppData, home),
             OrcaLocations.Current.EstateUserData(),
-            JobRegistry.ChromeTabsLog(localAppData, home),
             windows);
         return new JobsHost(
             JobState.JobsDir(AppData.Current()),

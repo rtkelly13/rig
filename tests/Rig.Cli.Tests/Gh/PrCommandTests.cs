@@ -1,5 +1,4 @@
 using System.Text.Json.Nodes;
-using Rig.Cli.Forwarding;
 using Rig.Cli.Gh.Pr;
 using Rig.Cli.Gh.Threads;
 using Rig.Cli.Tests.Fakes;
@@ -60,7 +59,7 @@ public sealed class PrCommandTests
             new LandingWait(_time, _time.SleepAsync),
             output,
             error);
-        var app = new RigApp(new PythonRig(new FakeProc(), "/rig"), github, _ => Task.FromResult(origin), output, error, gh: [command.Build]);
+        var app = new RigApp(github, _ => Task.FromResult(origin), output, error, gh: [command.Build]);
         var code = await app.RunAsync(["gh", "pr", .. args], TestContext.Current.CancellationToken);
         return new Result(code, output.ToString().ReplaceLineEndings("\n"), error.ToString().ReplaceLineEndings("\n"));
     }

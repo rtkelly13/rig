@@ -68,40 +68,23 @@ public sealed class DiscoveryTests
     }
 
     [Fact]
-    public void Runtime_aliases_and_disjoint_partial_ports_pass_but_a_stale_fallback_fails()
+    public void Runtime_aliases_and_python_aliases_resolve_to_their_csharp_owner()
     {
         var python = new Discovery.PythonTree(
             [new("py:trace", "desktop-manager chrome-tabs traces", "old", ["macos", "windows"], "chrome-tabs traces")], []);
-        var command = new Discovery.CsCommand("chrome-tabs traces", true, ["reports"], false);
-        var tree = new Discovery.CsTree([command], [], [], [], []);
+        var command = new Discovery.CsCommand("chrome-tabs traces", true, ["reports"]);
+        var tree = new Discovery.CsTree([command], []);
         var rows = Discovery.Commands(python, new Dictionary<string, Discovery.CsTree> { ["macos"] = tree, ["windows"] = tree }).ToArray();
         Assert.Equal(3, rows.Length);
         Assert.Empty(OwnershipRules.Check(rows.Select(r => r.Id).ToArray(), new OwnershipLedger(rows, [], [], [])));
-
-        var broken = tree with
-        {
-            Forwarding = [new("chrome-tabs", ["desktop-manager", "chrome-tabs"])],
-            Dispatch = [new("chrome-tabs traces", true)],
-        };
-        Assert.Throws<InvalidOperationException>(() => Discovery.Commands(python, new Dictionary<string, Discovery.CsTree> { ["macos"] = broken }).ToArray());
     }
 
     [Fact]
-    public void Every_real_fallback_is_expanded_and_unknown_or_empty_routes_are_refused()
+    public void Every_job_is_a_surface_and_python_paths_are_canonical()
     {
-        var python = new Discovery.PythonTree([new("py:one", "triage verify", "py:verify", ["linux"], null)], []);
-        var tree = new Discovery.CsTree([], [new("triage", ["python", "-m", "rig.triage.cli"])], [], [new("triage verify", true)], ["job=rig triage verify"]);
-        var rows = Discovery.Commands(python, new Dictionary<string, Discovery.CsTree> { ["linux"] = tree }).ToArray();
-        Assert.Contains(rows, r => r.Id == "fallback:linux:triage verify=py:verify");
+        var tree = new Discovery.CsTree([], ["job=rig triage verify"]);
+        var rows = Discovery.Commands(new Discovery.PythonTree([], []), new Dictionary<string, Discovery.CsTree> { ["linux"] = tree }).ToArray();
         Assert.Contains(rows, r => r.Id == "cs-job:linux:job=rig triage verify");
-        Assert.Throws<InvalidOperationException>(() => Discovery.Commands(python, new Dictionary<string, Discovery.CsTree>
-        {
-            ["linux"] = tree with { Forwarding = [new("triage", ["unknown"])] },
-        }).ToArray());
-        Assert.Throws<InvalidOperationException>(() => Discovery.Commands(python, new Dictionary<string, Discovery.CsTree>
-        {
-            ["linux"] = tree with { Forwarding = [new("retired", ["python", "-m", "rig.retired.cli"])] },
-        }).ToArray());
         Assert.Equal("align", Discovery.Canonical("desktop-manager workspace align"));
         Assert.Equal("desktop workspace name-desktops", Discovery.Canonical("desktop-manager workspace ensure-desktops"));
         Assert.Equal("desktop workspace name-desktops", Discovery.Canonical("desktop-manager workspace sync-desktops"));
@@ -112,8 +95,8 @@ public sealed class DiscoveryTests
     [Fact]
     public void Two_runtime_csharp_commands_with_the_same_path_are_refused()
     {
-        var command = new Discovery.CsCommand("new", true, [], false);
-        var tree = new Discovery.CsTree([command, command], [], [], [], []);
+        var command = new Discovery.CsCommand("new", true, []);
+        var tree = new Discovery.CsTree([command, command], []);
         Assert.Throws<InvalidOperationException>(() => Discovery.Commands(new Discovery.PythonTree([], []), new Dictionary<string, Discovery.CsTree> { ["linux"] = tree }).ToArray());
     }
 
@@ -123,7 +106,7 @@ public sealed class DiscoveryTests
         using var temp = new TempDir();
         const string project = "src/Rig.Cli/Rig.Cli.csproj";
         File.WriteAllText(temp.File(project), "<Project Sdk=\"Microsoft.NET.Sdk\" />");
-        var tree = new Discovery.CsTree([new("one", true, [], false)], [], [], [], [])
+        var tree = new Discovery.CsTree([new("one", true, [])], [])
         {
             RawAliases = [new("--one", "one")],
             AgentTargets = ["external=outside"],
@@ -137,7 +120,6 @@ public sealed class DiscoveryTests
         var rows = Discovery.Read(temp.Path, "rig.dll", proc);
         Assert.Equal(6, rows.Length);
         Assert.Contains(rows, row => row.Id == $"executable-project:{project}:Exe");
-        Assert.True(File.Exists(Path.Join(temp.Path, "temp", "command-ownership-probes.json")));
         Assert.Contains(proc.Requests, request => request.Argv.Contains("macos", StringComparer.Ordinal));
         proc.Answer(new Ran(0, "Library", ""), "dotnet", "msbuild");
         Assert.Equal(5, Discovery.Read(temp.Path, "rig.dll", proc).Length);
@@ -166,7 +148,7 @@ public sealed class DiscoveryTests
     public void A_migrated_align_cannot_coexist_with_its_legacy_desktop_spelling()
     {
         var python = new Discovery.PythonTree([new("py:align", "desktop-manager workspace align", "py:align", ["windows"], null)], []);
-        var tree = new Discovery.CsTree([new("align", true, [], false)], [], [], [], []);
+        var tree = new Discovery.CsTree([new("align", true, [])], []);
         var rows = Discovery.Commands(python, new Dictionary<string, Discovery.CsTree> { ["windows"] = tree }).ToArray();
         Assert.Contains(OwnershipRules.Check(rows.Select(row => row.Id).ToArray(), new OwnershipLedger(rows, [], [], [])), error => error.StartsWith("Overlapping implementations: align|windows", StringComparison.Ordinal));
     }

@@ -3,14 +3,13 @@ namespace Rig.Core.Jobs;
 /// <summary>
 /// Where the jobs' commands and files live on one machine. Ported from <c>desktop_manager.jobs.registry.Environment</c>.
 /// </summary>
-/// <param name="Scripts">The rig environment's scripts folder: <c>desktop-manager</c>, <c>rig</c> and <c>python</c>.</param>
+/// <param name="Scripts">The rig environment's scripts folder: <c>rig</c> and its <c>python</c>.</param>
 /// <param name="Plan">The workspace plan restore and align read.</param>
 /// <param name="WorkspaceRoot">The work workspace checkout (<c>tools.estate.workspace_repo</c>); null leaves its jobs out.</param>
 /// <param name="PersonalRoot">The folder holding the personal clones; its parent is the code root every estate job scans.</param>
 /// <param name="WorkRoots">This machine's work folders; <c>estate decisions</c> skips any that are absent.</param>
 /// <param name="DecisionsFeed">Where <c>estate decisions</c> writes its feed.</param>
 /// <param name="OrcaUserData">The Orca instance that holds the personal estate.</param>
-/// <param name="ChromeTabsLog">The log the scheduled Chrome tab organise writes its own narrative to.</param>
 /// <param name="Windows">Whether the scripts carry <c>.exe</c> and paths compare without case.</param>
 public sealed record JobsEnvironment(
     string Scripts,
@@ -20,7 +19,6 @@ public sealed record JobsEnvironment(
     IReadOnlyList<string> WorkRoots,
     string DecisionsFeed,
     string OrcaUserData,
-    string ChromeTabsLog,
     bool Windows)
 {
     /// <summary>The folder holding <c>personal</c> and the org and work folders beside it.</summary>
@@ -67,6 +65,9 @@ public static class JobRegistry
     /// <summary><c>workspace restore</c> found fewer screens than the plan places windows on and opened nothing.</summary>
     public const int RestoreDeferred = 4;
 
+    /// <summary>When <c>chrome-organise</c> is killed: five minutes after its idle wait, which ends five before the next tick.</summary>
+    public const int ChromeOrganiseLimitMinutes = Job.TickMinutes + 5;
+
     /// <summary>An Orca command found no running Orca to talk to.</summary>
     public const int OrcaUnavailable = 3;
 
@@ -89,17 +90,11 @@ public static class JobRegistry
             ? Path.Join(appData, "workspace-manager", "windows-workspace.json")
             : Path.Join(home, ".config", "workspace-manager", "windows-workspace.json");
 
-    /// <summary>Where the scheduled Chrome tab organise logs, as <c>desktop_manager.chrome.install_location</c> puts it.</summary>
-    public static string ChromeTabsLog(string? localAppData, string home) =>
-        Path.Join(string.IsNullOrEmpty(localAppData) ? Path.Join(home, "AppData", "Local") : localAppData, "shared-utilities", "chrome-tabs", "organise.log");
-
     /// <summary>Every job for <paramref name="env"/>, in run order; the workspace ones only when it names a workspace repo.</summary>
     public static IReadOnlyList<Job> Default(JobsEnvironment env)
     {
         ArgumentNullException.ThrowIfNull(env);
-        var desktopManager = env.Script("desktop-manager");
         var rig = env.Script("rig");
-        var python = Path.Join(env.Scripts, env.Windows ? "python.exe" : "python");
         var plan = env.Plan;
         var code = env.CodeRoot;
         List<Job> jobs =
@@ -111,11 +106,8 @@ public static class JobRegistry
                 RetryExitCodes = new HashSet<int> { RestoreDeferred },
             },
             new("chrome-organise", "Close merged, duplicate and superseded Chrome tabs, and group the rest, once idle.",
-                [python, "-m", "desktop_manager.chrome.scheduled", "--wait-minutes", $"{Job.TickMinutes - 5}"], Tick, JobCadence.EveryRun,
-                Job.TickMinutes + 5)
-            {
-                DetailLog = env.ChromeTabsLog,
-            },
+                [rig, "chrome-tabs", "organise", "--unattended", "--consolidate-saved", "--trigger", "scheduled", "--wait-minutes", $"{Job.TickMinutes - 5}"],
+                Tick, JobCadence.EveryRun, ChromeOrganiseLimitMinutes),
             new("align", "Put open plan windows back on their desktop and slot, launching nothing.",
                 [rig, "desktop", "workspace", "align", "--config", plan], Tick, JobCadence.EveryRun, 5)
             {

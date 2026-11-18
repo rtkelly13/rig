@@ -170,8 +170,6 @@ public sealed class JobRunner(JobRunnerSeams seams)
         var offset = JobLog.Size(log);
         var started = seams.Clock.GetLocalNow();
         var begun = seams.Clock.GetTimestamp();
-        var before = JobLog.Stamp(job.DetailLog);
-        var detailOffset = JobLog.Size(job.DetailLog);
         long? returnCode;
         string? error = null;
         using var span = Source.StartActivity($"job {job.Name}");
@@ -198,17 +196,6 @@ public sealed class JobRunner(JobRunnerSeams seams)
 
         var seconds = Math.Round(seams.Clock.GetElapsedTime(begun).TotalSeconds, 1, MidpointRounding.ToEven);
         var printed = JobLog.RunOutput(log, runId);
-        var changed = job.DetailLog is { } own && JobLog.Stamp(own) != before;
-
-        // Its own log's last section explains this run only if this run wrote to it.
-        if (printed.Count == 0 && changed)
-        {
-            printed = JobLog.RunOutput(job.DetailLog!);
-        }
-
-        // A job that redirects its stdout (chrome-organise) leaves only markers in the coordinator log, so the saved
-        // output carries what this run added to its own log too. A log that shrank was rewritten, so all of it is new.
-        var detail = changed ? JobLog.ReadFrom(job.DetailLog!, JobLog.Size(job.DetailLog) >= detailOffset ? detailOffset : 0) : [];
         var failed = returnCode != 0 || error is not null;
         var outcome = new Outcome(Iso(started), seconds, returnCode, JobWords.Wire(trigger))
         {
@@ -217,7 +204,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
             Summary = printed.Count > 0 ? Truncate(printed[^1], SummaryChars) : null,
             Detail = failed ? [.. printed.TakeLast(DetailLines)] : [],
         };
-        var output = RunHistory.SaveOutput(directory, job.Name, runId, [.. JobLog.ReadFrom(log, offset), .. detail]);
+        var output = RunHistory.SaveOutput(directory, job.Name, runId, JobLog.ReadFrom(log, offset));
         RunHistory.Append(
             directory,
             new JobRun(
