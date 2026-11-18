@@ -114,12 +114,9 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
             }
 
             var state = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
-            findings = [.. OrcaLayout.Audit(declared, state, root, isEstateOwner, archived: archived, skipped: skipped)];
-            findings = [.. findings, .. carried.Where(c => !findings.Contains(c))];
-            if (only is not null)
-            {
-                findings = [.. OrcaLayout.Scoped(findings, declared, only)];
-            }
+            List<LayoutFinding> audited = [.. OrcaLayout.Audit(declared, state, root, isEstateOwner, archived: archived, skipped: skipped)];
+            List<LayoutFinding> combined = [.. audited, .. carried.Where(c => !audited.Contains(c))];
+            findings = only is not null ? [.. OrcaLayout.Scoped(combined, declared, only)] : combined;
         }
         catch (OrcaUnavailableException e)
         {
@@ -132,27 +129,30 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
             return 2;
         }
 
-        if (args.Repos.Length == 0 && workDir is not null && !PathResolution.Same(PathResolution.Resolve(workDir), PathResolution.Resolve(estateDir)))
-        {
-            findings = [.. findings, .. await WorkProfileAsync(workDir, args.Apply, isEstateOwner, log, cancellationToken).ConfigureAwait(false)];
-        }
+        List<LayoutFinding> reported =
+        [
+            .. findings,
+            .. args.Repos.Length == 0 && workDir is not null && !PathResolution.Same(PathResolution.Resolve(workDir), PathResolution.Resolve(estateDir))
+                ? await WorkProfileAsync(workDir, args.Apply, isEstateOwner, log, cancellationToken).ConfigureAwait(false)
+                : [],
+        ];
 
         if (args.Json)
         {
-            await output.WriteLineAsync(Dump(findings).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(Dump(reported).AsMemory(), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
-        if (findings.Count == 0)
+        if (reported.Count == 0)
         {
             await output.WriteLineAsync("Orca matches managed-projects.json".AsMemory(), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
         var table = new TextTable(
-            $"{findings.Count} difference(s) from the declared Orca layout",
+            $"{reported.Count} difference(s) from the declared Orca layout",
             [("kind", false), ("repo", false), ("path", false), ("reason", false), ("action", false), ("command", false)]);
-        foreach (var f in findings)
+        foreach (var f in reported)
         {
             _ = table.Add(f.Kind, f.Repo, f.Path, f.Reason, f.SuggestedAction, f.Command);
         }

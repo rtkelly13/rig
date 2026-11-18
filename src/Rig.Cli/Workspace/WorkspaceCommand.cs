@@ -406,16 +406,15 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
     // A --repo matches a project's name exactly or any part of its remote, ignoring case.
     private async Task<int> CiAuditAsync(string? repo, int limit, string? config, CancellationToken cancellationToken)
     {
-        var specs = Specs(config);
-        if (!string.IsNullOrEmpty(repo))
-        {
-            specs = [.. specs.Where(spec => string.Equals(spec.Name, repo, StringComparison.OrdinalIgnoreCase)
+        var configured = Specs(config);
+        var specs = string.IsNullOrEmpty(repo)
+            ? configured
+            : [.. configured.Where(spec => string.Equals(spec.Name, repo, StringComparison.OrdinalIgnoreCase)
                 || spec.Repo.Contains(repo, StringComparison.OrdinalIgnoreCase))];
-            if (specs.Count == 0)
-            {
-                await output.WriteLineAsync($"Error: repository '{repo}' not found in managed projects.").ConfigureAwait(false);
-                return 1;
-            }
+        if (!string.IsNullOrEmpty(repo) && specs.Count == 0)
+        {
+            await output.WriteLineAsync($"Error: repository '{repo}' not found in managed projects.").ConfigureAwait(false);
+            return 1;
         }
 
         var telemetry = new CiTelemetry(new GhApi(proc));

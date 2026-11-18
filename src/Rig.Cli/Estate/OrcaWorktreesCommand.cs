@@ -133,7 +133,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
 
         var nowMs = (double)time.GetUtcNow().ToUnixTimeMilliseconds();
         var finished = new OrcaWorktrees(git, proc);
-        var rows = new List<WorktreeRow>();
+        var reviewed = new List<IReadOnlyList<WorktreeRow>>();
         var profileFailed = false;
         for (var i = 0; i < live.Count; i++)
         {
@@ -146,12 +146,12 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             try
             {
                 var found = await finished.ReviewAsync(runtime, name, host.WorkingDirectory, nowMs, args.IdleDays, scopes[i], cancellationToken).ConfigureAwait(false);
-                rows = [.. rows, .. args.Apply ? await finished.ApplyAsync(runtime, found, cancellationToken).ConfigureAwait(false) : found];
+                reviewed.Add(args.Apply ? await finished.ApplyAsync(runtime, found, cancellationToken).ConfigureAwait(false) : found);
             }
             catch (OrcaUnavailableException e)
             {
                 await error.WriteLineAsync($"{name} Orca profile failed: {e.Message}".AsMemory(), cancellationToken).ConfigureAwait(false);
-                if (i == 0 && rows.Count == 0)
+                if (i == 0)
                 {
                     return 2;
                 }
@@ -161,6 +161,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             }
         }
 
+        List<WorktreeRow> rows = [.. reviewed.SelectMany(profile => profile)];
         await ReportAsync(rows, args, cancellationToken).ConfigureAwait(false);
         return (args.Apply && rows.Any(r => r.Failed)) || profileFailed ? 1 : 0;
     }
@@ -210,7 +211,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
     // projects in one profile, rather than a silent empty run.
     private async Task<IReadOnlySet<string>[]?> ScopesAsync(List<(string Name, OrcaRuntime Runtime)> live, string[] wanted, CancellationToken cancellationToken)
     {
-        var scopes = live.Select(_ => (IReadOnlySet<string>)new HashSet<string>(StringComparer.Ordinal)).ToArray();
+        var perName = new List<List<IReadOnlySet<string>>>();
         foreach (var name in wanted)
         {
             var hits = new List<IReadOnlySet<string>>();
@@ -246,10 +247,10 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
                 return null;
             }
 
-            scopes = [.. scopes.Zip(hits, (scope, hit) => (IReadOnlySet<string>)scope.Union(hit).ToHashSet(StringComparer.Ordinal))];
+            perName.Add(hits);
         }
 
-        return scopes;
+        return [.. live.Select((_, index) => (IReadOnlySet<string>)perName.SelectMany(hits => hits[index]).ToHashSet(StringComparer.Ordinal))];
     }
 
     private async Task ReportAsync(List<WorktreeRow> rows, Args args, CancellationToken cancellationToken)

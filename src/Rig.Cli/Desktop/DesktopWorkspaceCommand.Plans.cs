@@ -463,14 +463,15 @@ internal sealed partial class DesktopWorkspaceCommand
             }
         }
 
-        var unowned = plan.Desktops
-            .SelectMany(desktop => desktop.Launch
+        List<string> unowned =
+        [
+            .. plan.Desktops.SelectMany(desktop => desktop.Launch
                 .Where(entry => entry.Feature is not null && !plan.Features.ContainsKey(entry.Feature))
-                .Select(entry => $"{desktop.Name}/{entry.Name}"))
-            .ToList();
-        unowned = [.. unowned, .. plan.Desktops
-            .Where(desktop => desktop.Feature is not null && !plan.Features.ContainsKey(desktop.Feature))
-            .Select(desktop => $"{desktop.Name} (whole desktop)")];
+                .Select(entry => $"{desktop.Name}/{entry.Name}")),
+            .. plan.Desktops
+                .Where(desktop => desktop.Feature is not null && !plan.Features.ContainsKey(desktop.Feature))
+                .Select(desktop => $"{desktop.Name} (whole desktop)"),
+        ];
         if (unowned.Count > 0)
         {
             await host.Output.WriteLineAsync("\nReferencing undeclared features (treated as off):").ConfigureAwait(false);

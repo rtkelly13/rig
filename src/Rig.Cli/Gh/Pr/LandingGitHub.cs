@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rig.Cli.Gh.Threads;
@@ -66,20 +67,8 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
     {
         ArgumentNullException.ThrowIfNull(repo);
         var pr = await LandingPageAsync(repo, number, null, cancellationToken).ConfigureAwait(false);
-        var contexts = ContextsOf(pr);
-        IReadOnlyList<WireContext> nodes = [.. contexts.Nodes];
-        HashSet<string> seen = new(StringComparer.Ordinal);
-        while (contexts.PageInfo.HasNextPage)
-        {
-            var cursor = contexts.PageInfo.EndCursor;
-            if (string.IsNullOrEmpty(cursor) || seen.Count >= MaxCheckPages || !seen.Add(cursor))
-            {
-                throw new GitHubException($"checks of {repo}#{number}: GitHub repeated a page cursor; the list is incomplete");
-            }
-
-            contexts = ContextsOf(await LandingPageAsync(repo, number, cursor, cancellationToken).ConfigureAwait(false));
-            nodes = [.. nodes, .. contexts.Nodes];
-        }
+        var pages = await ContextPagesAsync(repo, number, pr, cancellationToken).ToListAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<WireContext> nodes = [.. pages.SelectMany(page => page.Nodes)];
 
         var protection = pr.BaseRef?.BranchProtectionRule;
         return new Snapshot(
@@ -98,6 +87,26 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
             ClassicThreadResolution = protection?.RequiresConversationResolution ?? false,
             ClassicRequiredChecks = protection?.RequiredStatusCheckContexts ?? [],
         };
+    }
+
+    // The check contexts of the PR's head commit, one page at a time, following the cursor until GitHub runs out.
+    private async IAsyncEnumerable<WireContexts> ContextPagesAsync(
+        RepoSlug repo, int number, WirePullRequest pr, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var contexts = ContextsOf(pr);
+        yield return contexts;
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        while (contexts.PageInfo.HasNextPage)
+        {
+            var cursor = contexts.PageInfo.EndCursor;
+            if (string.IsNullOrEmpty(cursor) || seen.Count >= MaxCheckPages || !seen.Add(cursor))
+            {
+                throw new GitHubException($"checks of {repo}#{number}: GitHub repeated a page cursor; the list is incomplete");
+            }
+
+            contexts = ContextsOf(await LandingPageAsync(repo, number, cursor, cancellationToken).ConfigureAwait(false));
+            yield return contexts;
+        }
     }
 
     /// <summary>The active ruleset rules on <paramref name="baseBranch"/>. Never throws: unreadable rules come back with <see cref="Rules.ThreadResolution"/> null.</summary>

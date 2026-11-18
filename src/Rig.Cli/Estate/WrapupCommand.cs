@@ -425,27 +425,24 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
     /// <summary>The targeting flags, handed to the background follower unchanged.</summary>
     internal static IReadOnlyList<string> FollowerArgs(Args args, string templateFile)
     {
-        List<string> argv = [args.Personal ? "--personal" : "--work"];
-        argv = [.. argv, .. args.Repos.SelectMany(r => new[] { "--repo", r })];
-        if (args.All)
-        {
-            argv.Add("--all");
-        }
-
-        argv = [.. argv, .. args.Worktrees.SelectMany(w => new[] { "--worktree", w })];
-        if (args.Children)
-        {
-            argv.Add("--children");
-        }
-
-        argv = [.. argv, "--idle", args.Idle, "--max", args.Max.ToString(CultureInfo.InvariantCulture), "--wait", args.Wait];
-        if (args.IncludeSettled)
-        {
-            argv.Add("--include-settled");
-        }
-
-        argv = [.. argv, "--template", Path.GetFullPath(templateFile), "--apply"];
-        return argv;
+        return
+        [
+            args.Personal ? "--personal" : "--work",
+            .. args.Repos.SelectMany(r => new[] { "--repo", r }),
+            .. args.All ? new[] { "--all" } : [],
+            .. args.Worktrees.SelectMany(w => new[] { "--worktree", w }),
+            .. args.Children ? new[] { "--children" } : [],
+            "--idle",
+            args.Idle,
+            "--max",
+            args.Max.ToString(CultureInfo.InvariantCulture),
+            "--wait",
+            args.Wait,
+            .. args.IncludeSettled ? new[] { "--include-settled" } : [],
+            "--template",
+            Path.GetFullPath(templateFile),
+            "--apply",
+        ];
     }
 
     /// <summary>The parsed flags of one run.</summary>

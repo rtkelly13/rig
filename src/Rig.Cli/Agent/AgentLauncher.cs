@@ -260,50 +260,18 @@ internal sealed partial class AgentLauncher(IProc proc, AgentHost host, TextWrit
         var rest = parsed.Passthrough;
         var (dangerFlag, equivalents) = DangerFlags[id];
         var addDanger = (parsed.Danger || settings.Danger) && !rest.Any(equivalents.Contains);
-        List<string> command = [executable];
-
-        switch (id)
+        string[] danger = addDanger ? [dangerFlag] : [];
+        string[] remote = (parsed.RemoteControl || settings.ClaudeRemoteControl) && !rest.Contains("--remote-control") ? ["--remote-control"] : [];
+        string[] model = HasOption(rest, "--model") ? [] : ["--model", string.IsNullOrEmpty(settings.ClaudeModel) ? "opus" : settings.ClaudeModel];
+        string[] mode = HasOption(rest, "--mode") ? [] : ["--mode", "auto"];
+        IReadOnlyList<string> options = id switch
         {
-            case "claude-code":
-                if ((parsed.RemoteControl || settings.ClaudeRemoteControl) && !rest.Contains("--remote-control"))
-                {
-                    command.Add("--remote-control");
-                }
+            "claude-code" => [.. remote, .. danger, .. model],
+            "agywsl" => ["-d", "Ubuntu", "--cd", WslPath(workingDirectory), "agy", .. mode, .. danger],
+            _ => danger,
+        };
 
-                if (addDanger)
-                {
-                    command.Add(dangerFlag);
-                }
-
-                if (!HasOption(rest, "--model"))
-                {
-                    command = [.. command, "--model", string.IsNullOrEmpty(settings.ClaudeModel) ? "opus" : settings.ClaudeModel];
-                }
-
-                break;
-            case "agywsl":
-                command = [.. command, "-d", "Ubuntu", "--cd", WslPath(workingDirectory), "agy"];
-                if (!HasOption(rest, "--mode"))
-                {
-                    command = [.. command, "--mode", "auto"];
-                }
-
-                if (addDanger)
-                {
-                    command.Add(dangerFlag);
-                }
-
-                break;
-            default:
-                if (addDanger)
-                {
-                    command.Add(dangerFlag);
-                }
-
-                break;
-        }
-
-        return new AgentLaunch(id, name, executable, [.. command, .. rest]);
+        return new AgentLaunch(id, name, executable, [executable, .. options, .. rest]);
     }
 
     /// <summary>Runs one launcher line (without <c>agent</c>) and returns its exit code.</summary>
