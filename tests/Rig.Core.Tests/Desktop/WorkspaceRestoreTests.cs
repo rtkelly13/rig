@@ -53,8 +53,7 @@ public sealed class WorkspaceRestoreTests
 
     private static void Names(FakeDesktop machine, params string[] names)
     {
-        machine.DesktopNames.Clear();
-        machine.DesktopNames.AddRange(names);
+        machine.DesktopNames = [.. names];
     }
 
     [Fact]

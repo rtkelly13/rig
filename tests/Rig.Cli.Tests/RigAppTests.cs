@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using Rig.Cli.Agent;
 using Rig.Core;
@@ -13,6 +14,7 @@ public sealed class RigAppTests : IDisposable
     private readonly StringWriter _out = new();
     private readonly StringWriter _err = new();
 
+    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "RigApp takes command factories and this test injects a throwaway System.CommandLine group to check overview text; a DotMake class would have to be a named production type.")]
     private Task<int> Run(params string[] args) =>
         new RigApp(
             new FakeGitHub(),

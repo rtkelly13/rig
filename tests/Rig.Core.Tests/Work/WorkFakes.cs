@@ -16,7 +16,7 @@ internal sealed class FakeWorkGitFacts : IWorkGitFacts
 
     public int ProbeCalls { get; private set; }
 
-    public List<string> SlugRepos { get; } = [];
+    public List<string> SlugRepos { get; private set; } = [];
 
     public string? Root { get; private set; }
 
@@ -39,7 +39,7 @@ internal sealed class FakeWorkGitFacts : IWorkGitFacts
 
     public Task<IReadOnlyDictionary<string, string>> ReadSlugsAsync(IReadOnlyList<string> repos, CancellationToken cancellationToken = default)
     {
-        SlugRepos.AddRange(repos);
+        SlugRepos = [.. SlugRepos, .. repos];
         return Task.FromResult(Slugs);
     }
 }
@@ -49,7 +49,7 @@ internal sealed class FakeWorkPrSource : IWorkPrSource
 {
     public PrResults Results { get; init; } = PrResults.None();
 
-    public List<PrRequest> Requests { get; } = [];
+    public List<PrRequest> Requests { get; private set; } = [];
 
     public bool Refresh { get; private set; }
 
@@ -61,7 +61,7 @@ internal sealed class FakeWorkPrSource : IWorkPrSource
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
     {
-        Requests.AddRange(requests);
+        Requests = [.. Requests, .. requests];
         Refresh = refresh;
         Now = now;
         return Task.FromResult(Results);

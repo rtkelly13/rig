@@ -37,7 +37,7 @@ public sealed partial class VaultRepairOracleTests
             foreach (var run in oracle["runs"]!.AsArray().Select(r => r!.AsObject()))
             {
                 var label = $"{oracle["name"]} {run["op"]} {(run["apply"]!.GetValue<bool>() ? "apply" : "dry")}";
-                mismatches.AddRange(Run(label, files, originals, run));
+                mismatches = [.. mismatches, .. Run(label, files, originals, run)];
             }
         }
 

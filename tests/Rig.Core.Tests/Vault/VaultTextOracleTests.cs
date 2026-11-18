@@ -132,7 +132,7 @@ public sealed class VaultTextOracleTests
         var extra = Environment.GetEnvironmentVariable(ExtraFixtureVariable);
         if (!string.IsNullOrEmpty(extra))
         {
-            cases.AddRange(Load(extra));
+            cases = [.. cases, .. Load(extra)];
         }
 
         return cases;

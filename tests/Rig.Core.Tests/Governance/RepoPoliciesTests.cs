@@ -169,8 +169,8 @@ public sealed class RepoPoliciesTests : IDisposable
     {
         var file = JsonNode.Parse(File.ReadAllText(Path.Join(Checkout, "config", RepoPolicies.FileName)))!.AsObject();
         var layers = new List<(string Where, JsonNode? Layer)> { ("defaults", file["defaults"]) };
-        layers.AddRange(file["profiles"]!.AsObject().Select(p => ($"profile {p.Key}", p.Value)));
-        layers.AddRange(file["repo_overrides"]!.AsObject().Select(p => ($"override {p.Key}", p.Value)));
+        layers = [.. layers, .. file["profiles"]!.AsObject().Select(p => ($"profile {p.Key}", p.Value))];
+        layers = [.. layers, .. file["repo_overrides"]!.AsObject().Select(p => ($"override {p.Key}", p.Value))];
 
         foreach (var (where, layer) in layers)
         {

@@ -22,7 +22,7 @@ public sealed class GitHubAppsTests
     private const string RenovateRepos = "user/installations/7/repositories?per_page=100&page=1";
 
     private readonly FakeGitHub _api = new();
-    private readonly List<string> _discovered = [];
+    private List<string> _discovered = [];
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -68,7 +68,7 @@ public sealed class GitHubAppsTests
     [Fact]
     public async Task Audit_reports_missing_partial_and_all_repo_installations()
     {
-        _discovered.AddRange(["labs/d", "elsewhere/e"]);
+        _discovered = [.. _discovered, "labs/d", "elsewhere/e"];
         var apps = Installed("selected", "a");
 
         var audits = await apps.AuditAsync("labs", Token);

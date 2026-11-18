@@ -35,7 +35,7 @@ public sealed class VaultGraphOracleTests
                 .ToDictionary(f => f["path"]!.GetValue<string>(), f => Convert.FromBase64String(f["b64"]!.GetValue<string>()), StringComparer.Ordinal);
             foreach (var run in oracle["runs"]!.AsArray().Select(r => r!.AsObject()))
             {
-                mismatches.AddRange(await Run($"{oracle["name"]} {run["op"]}", files, originals, run));
+                mismatches = [.. mismatches, .. await Run($"{oracle["name"]} {run["op"]}", files, originals, run)];
             }
         }
 
@@ -66,9 +66,9 @@ public sealed class VaultGraphOracleTests
                     _ => await graph.RootHubsAsync() is var h ? new JsonObject { ["hubs_created"] = h.HubsCreated, ["links_added"] = h.LinksAdded } : null,
                 };
 
-                differences.AddRange(Result(at, result, expected["result"]));
-                differences.AddRange(Multiset($"{at} log", said, [.. expected["log"]!.AsArray().Select(l => Unmarked(l!.GetValue<string>()))]));
-                differences.AddRange(After(at, root, originals, expected["after"]!.AsObject(), lineEndingsKept: op == "links-fix"));
+                differences = [.. differences, .. Result(at, result, expected["result"])];
+                differences = [.. differences, .. Multiset($"{at} log", said, [.. expected["log"]!.AsArray().Select(l => Unmarked(l!.GetValue<string>()))])];
+                differences = [.. differences, .. After(at, root, originals, expected["after"]!.AsObject(), lineEndingsKept: op == "links-fix")];
             }
 
             return differences;

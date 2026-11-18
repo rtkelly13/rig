@@ -50,7 +50,7 @@ try
         }
     }
 
-    errors.AddRange(ledger.RetiredFiles.Where(f => File.Exists(Path.Join(root, f))).Select(f => $"Retired source resurrected: {f}"));
+    errors = [.. errors, .. ledger.RetiredFiles.Where(f => File.Exists(Path.Join(root, f))).Select(f => $"Retired source resurrected: {f}")];
     foreach (var error in errors)
     {
         Console.Error.WriteLine(error);

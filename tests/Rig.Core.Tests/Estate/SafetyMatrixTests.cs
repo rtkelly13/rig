@@ -193,7 +193,7 @@ public sealed class SafetyMatrixTests : IDisposable
 
         public List<string> Busy { get; } = [];
 
-        public List<string> Repos { get; } = [];
+        public List<string> Repos { get; set; } = [];
 
         /// <summary>The head commit the merged PR recorded, as GitHub reports headRefOid.</summary>
         public string PrHead { get; set; } = string.Empty;
@@ -254,7 +254,7 @@ public sealed class SafetyMatrixTests : IDisposable
         var tree = Path.Join(clone, "temp", Branch);
         _ = await Repos.GitAsync(clone, ["worktree", "add", "-q", .. relative ? RelativePaths : [], "-b", Branch, tree]);
         var world = new World(root, origin, clone, tree);
-        world.Repos.AddRange([clone, origin]);
+        world.Repos = [.. world.Repos, clone, origin];
         var work = await world.PlantAsync("work.md");
         _ = await Repos.GitAsync(tree, "add", ".");
         _ = await Repos.GitAsync(tree, "commit", "-qm", "spike work");
@@ -447,7 +447,7 @@ public sealed class SafetyMatrixTests : IDisposable
         {
             var report = await new RepoChecks(git, TimeProvider.System).InspectAsync(world.Clone, merged);
             var actions = await tidy.CleanRepoAsync(report, apply: true, force: true, mergedHeads: merged, busy: new Busy([.. world.Busy]), cancellationToken: Token);
-            outcomes.AddRange(actions.Where(action => Same(action.Subject, world.Tree)).Select(action => action.Outcome));
+            outcomes = [.. outcomes, .. actions.Where(action => Same(action.Subject, world.Tree)).Select(action => action.Outcome)];
         }
 
         return outcomes.Contains(TidyOutcome.Cleaned) ? Layer.Kept : outcomes.Contains(TidyOutcome.Failed) ? Layer.Git : Layer.Tool;

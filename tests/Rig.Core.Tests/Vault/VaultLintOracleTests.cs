@@ -21,7 +21,7 @@ public sealed class VaultLintOracleTests
         var extra = Environment.GetEnvironmentVariable(ExtraFixtureVariable);
         if (!string.IsNullOrEmpty(extra))
         {
-            cases.AddRange(Load(extra));
+            cases = [.. cases, .. Load(extra)];
         }
 
         var mismatches = new List<string>();
@@ -29,7 +29,7 @@ public sealed class VaultLintOracleTests
         {
             if (oracle.Vault is { } vault)
             {
-                mismatches.AddRange(Compare(oracle, vault));
+                mismatches = [.. mismatches, .. Compare(oracle, vault)];
                 continue;
             }
 
@@ -37,7 +37,7 @@ public sealed class VaultLintOracleTests
             try
             {
                 Materialize(root, oracle.Files);
-                mismatches.AddRange(Compare(oracle, root));
+                mismatches = [.. mismatches, .. Compare(oracle, root)];
             }
             finally
             {

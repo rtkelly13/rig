@@ -49,7 +49,7 @@ internal static class Discovery
         trees.Add("windows", Decode<CsTree>(Capture(proc, root, "dotnet", dll, "--export-command-tree", "windows")));
         var rows = Commands(trees).ToList();
         var files = Capture(proc, root, "git", "ls-files", "--cached", "--others", "--exclude-standard", "-z").Split('\0', StringSplitOptions.RemoveEmptyEntries);
-        rows.AddRange(Sources(root, files));
+        rows = [.. rows, .. Sources(root, files)];
         var index = Capture(proc, root, "git", "ls-files", "--stage", "-z");
         foreach (var executable in index.Split('\0', StringSplitOptions.RemoveEmptyEntries).Where(entry => entry.StartsWith("100755 ", StringComparison.Ordinal)))
         {

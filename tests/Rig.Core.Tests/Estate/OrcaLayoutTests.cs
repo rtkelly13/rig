@@ -31,13 +31,14 @@ public sealed class OrcaLayoutTests : IDisposable
             _ = Directory.CreateDirectory(Path.Join(_code, clone));
         }
 
-        _fake.Repos.AddRange([Repo("personal/rig", "rtkelly13", "g-tooling"), Repo("personal/blobflags", "rtkelly13", "g-tooling"), Repo("rtkelly-labs/Iceberg.NET", "rtkelly-labs", null)]);
-        _fake.Groups.AddRange(
+        _fake.Repos = [.. _fake.Repos, Repo("personal/rig", "rtkelly13", "g-tooling"), Repo("personal/blobflags", "rtkelly13", "g-tooling"), Repo("rtkelly-labs/Iceberg.NET", "rtkelly-labs", null)];
+        _fake.Groups =
         [
+            .. _fake.Groups,
             FakeOrca.Group("g-personal", "personal", parentPath: Posix("personal")),
             FakeOrca.Group("g-tooling", "tooling", "g-personal"),
             FakeOrca.Group("g-labs", "rtkelly-labs", parentPath: Posix("rtkelly-labs")),
-        ]);
+        ];
     }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -325,7 +326,7 @@ public sealed class OrcaLayoutTests : IDisposable
     [Fact]
     public async Task An_undeclared_group_with_nothing_in_it_is_reported_once_at_its_outermost()
     {
-        _fake.Groups.AddRange([FakeOrca.Group("g-old", "old", "g-personal"), FakeOrca.Group("g-older", "older", "g-old")]);
+        _fake.Groups = [.. _fake.Groups, FakeOrca.Group("g-old", "old", "g-personal"), FakeOrca.Group("g-older", "older", "g-old")];
 
         var findings = await AuditAsync(Layout);
 
@@ -335,7 +336,7 @@ public sealed class OrcaLayoutTests : IDisposable
     [Fact]
     public async Task A_declared_group_a_folder_workspace_group_and_an_occupied_group_are_kept()
     {
-        _fake.Groups.AddRange([FakeOrca.Group("g-apps", "apps", "g-personal"), FakeOrca.Group("g-notes", "notes"), FakeOrca.Group("g-hand", "hand")]);
+        _fake.Groups = [.. _fake.Groups, FakeOrca.Group("g-apps", "apps", "g-personal"), FakeOrca.Group("g-notes", "notes"), FakeOrca.Group("g-hand", "hand")];
         _fake.FolderWorkspaces.Add(new() { ["id"] = "w-1", ["projectGroupId"] = "g-notes", ["name"] = "notes" });
         _fake.Repos.Add(Repo("acme/platform", "acme-corp", "g-hand"));
 
@@ -363,22 +364,24 @@ public sealed class OrcaLayoutTests : IDisposable
     private FakeOrca Work()
     {
         var work = new FakeOrca();
-        work.Repos.AddRange(
+        work.Repos =
         [
+            .. work.Repos,
             Repo("rtkelly-labs/Diffra", "rtkelly-labs", "g-labs-deep"),
             Repo("personal/rig", "rtkelly13", null),
             Repo("acme/platform", "acme-corp", "g-acme"),
             Repo("acme/data", "acme-corp", "g-mixed"),
             Repo("personal/blobflags", "rtkelly13", "g-mixed"),
-        ]);
-        work.Groups.AddRange(
+        ];
+        work.Groups =
         [
+            .. work.Groups,
             FakeOrca.Group("g-labs", "rtkelly-labs"),
             FakeOrca.Group("g-labs-deep", "parquet", "g-labs"),
             FakeOrca.Group("g-acme", "acme"),
             FakeOrca.Group("g-mixed", "mixed"),
             FakeOrca.Group("g-spare", "spare"),
-        ]);
+        ];
         return work;
     }
 
