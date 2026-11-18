@@ -1,5 +1,6 @@
 using System.Net;
 using Rig.Core.Otel;
+using Rig.Core.Tests.Otel;
 using Rig.Web.Ops;
 
 namespace Rig.Web.Tests;
@@ -17,7 +18,7 @@ public sealed class TraceRowTests
     [InlineData("""{"service":"s","root":"r","start_ns":1,"end_ns":2,"spans":3,"errors":4}""", "$.trace_id: expected a string, found nothing")]
     public async Task A_row_that_is_not_a_trace_is_a_clickhouse_error(string row, string problem)
     {
-        using var answer = new Answer(row);
+        using var answer = Answer(row);
         using var http = new HttpClient(answer);
 
         var error = await Assert.ThrowsAsync<ClickHouseException>(() => Telemetry.ClickHouse(new ClickHouseClient(http), new TraceQuery()));
@@ -28,7 +29,7 @@ public sealed class TraceRowTests
     [Fact]
     public async Task A_repeated_member_keeps_its_last_value_and_the_ones_not_read_are_ignored()
     {
-        using var answer = new Answer(Row.Replace("\"service\":\"s\"", "\"service\":\"a\",\"service\":\"b\",\"extra\":[1]", StringComparison.Ordinal));
+        using var answer = Answer(Row.Replace("\"service\":\"s\"", "\"service\":\"a\",\"service\":\"b\",\"extra\":[1]", StringComparison.Ordinal));
         using var http = new HttpClient(answer);
 
         var trace = Assert.Single(await Telemetry.ClickHouse(new ClickHouseClient(http), new TraceQuery()));
@@ -36,9 +37,6 @@ public sealed class TraceRowTests
         Assert.Equal("b", trace.Service);
     }
 
-    private sealed class Answer(string body) : HttpMessageHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) });
-    }
+    private static StubHandler Answer(string body) =>
+        new(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) }));
 }

@@ -122,12 +122,6 @@ internal sealed class FakeClickHouse : HttpMessageHandler
     }
 }
 
-/// <summary>An HTTP handler that answers every request with <paramref name="send"/>.</summary>
-internal sealed class StubHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> send) : HttpMessageHandler
-{
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => send(request);
-}
-
 /// <summary>An OTLP sender that records each body; trace spans it accepts land in <see cref="Lands"/> when set.</summary>
 internal sealed class FakeSender : IOtlpSender
 {
