@@ -15,6 +15,7 @@ public sealed partial class JsonProblemTypedTests
     [InlineData("""{"name": "a", "tags": [{"label": "x", "nope": true}]}""", "$.tags[0].nope: expected a known field, found true")]
     [InlineData("""{"name": "a", "name": "b"}""", "$.name: expected a field that appears once, found it repeated")]
     [InlineData("""{}""", "$.name: expected a string, found nothing")]
+    [InlineData("""{"name": "a", "map": {"k": 1, "k": 2}}""", "$.map.k: expected a field that appears once, found it repeated")]
     [InlineData("""{"name": null}""", "$.name: expected a string, found null")]
     [InlineData("""{"name": 7}""", "$.name: expected a string, found the number 7")]
     [InlineData("""{"name": "a", "plain": "12"}""", "$.plain: expected a whole number, found the string \"12\"")]
@@ -42,6 +43,19 @@ public sealed partial class JsonProblemTypedTests
         var thrown = Assert.Throws<JsonInputException>(() => JsonProblem.Read(json, Fixtures.Default.Strict));
 
         Assert.Equal(problem, thrown.Message);
+    }
+
+    [Theory]
+    [InlineData("""{"kind": "cat", "name": "x"}""", null)]
+    [InlineData("""{"name": "x"}""", "$.kind: expected a known type, found nothing")]
+    [InlineData("""{"kind": "bird"}""", "$.kind: expected a known type, found the string \"bird\"")]
+    [InlineData("""{"kind": "dog", "name": "x"}""", "$.name: expected a known field, found the string \"x\"")]
+    [InlineData("""{"kind": "dog"}""", "$.age: expected a whole number, found nothing")]
+    public void A_polymorphic_read_names_a_missing_or_unknown_discriminator_without_the_runtime_s_words(string json, string? problem)
+    {
+        var thrown = Record.Exception(() => JsonProblem.Read(json, Fixtures.Default.Pet));
+
+        Assert.Equal(problem, (thrown as JsonInputException)?.Message);
     }
 
     [Fact]
@@ -140,6 +154,15 @@ public sealed partial class JsonProblemTypedTests
         public string? Label { get; set; }
     }
 
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+    [JsonDerivedType(typeof(Cat), "cat")]
+    [JsonDerivedType(typeof(Dog), "dog")]
+    internal abstract record Pet;
+
+    internal sealed record Cat(string Name) : Pet;
+
+    internal sealed record Dog(int Age) : Pet;
+
     internal sealed record Foreign
     {
         public required string Name { get; init; }
@@ -170,6 +193,7 @@ public sealed partial class JsonProblemTypedTests
         RespectRequiredConstructorParameters = true)]
     [JsonSerializable(typeof(Strict))]
     [JsonSerializable(typeof(Odd))]
+    [JsonSerializable(typeof(Pet))]
     internal sealed partial class Fixtures : JsonSerializerContext;
 
     [JsonSourceGenerationOptions(

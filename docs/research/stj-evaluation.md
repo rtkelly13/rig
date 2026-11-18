@@ -6,11 +6,12 @@ tables was measured by compiling and running source-generated contexts, not read
 ## What was built
 
 One shared strict boundary, `Rig.Core.Text.JsonProblem.Read<T>(text|element, JsonTypeInfo<T>)`, plus a translator that turns
-a `JsonException` into the existing `JsonInputException` (`source: $.path: expected X, found Y`). Two kinds of
+a failure into the existing `JsonInputException` (`source: $.path: expected X, found Y`). Two kinds of
 `JsonSerializerContext` sit on it:
 
-- Rig-owned: `Strict` defaults, `UnmappedMemberHandling = Disallow`, `AllowDuplicateProperties = false`, respect nullable
-  annotations and required constructor parameters. See `RunHistoryJsonContext`.
+- Rig-owned: `Strict` defaults, `UnmappedMemberHandling = Skip` (a newer rig may add fields), `AllowDuplicateProperties = false`,
+  respect nullable annotations and required constructor parameters, and an integer `version` member (see Format version).
+  See `RunHistoryJsonContext`.
 - Foreign: the same, but `Skip` and `AllowDuplicateProperties = true` (last wins). Fields rig reads are still strictly
   typed. See `OtlpJsonContext`.
 
@@ -46,11 +47,11 @@ reader code; read hits are the better sizing guide.
 
 | Behaviour | STJ under source generation | Needs |
 |---|---|---|
-| Reject unknown member (rig-owned) | Yes, `UnmappedMemberHandling.Disallow` | none |
+| Reject unknown member (where a type chooses `Disallow`) | Yes, `UnmappedMemberHandling.Disallow` | rig's own pre-pass names the member (no message read) |
 | Ignore unknown member (foreign) | Yes, `Skip` | none |
 | Reject duplicate member | Yes, `AllowDuplicateProperties = false` | none |
 | Last duplicate wins (foreign) | Yes, `AllowDuplicateProperties = true` for typed members and `JsonElement` | `JsonObject` throws `ArgumentException` on duplicate keys, so the last-wins node builder stays |
-| Missing required member | Yes (`required` / ctor params) | name only in message text |
+| Missing required member | Yes (`required` / ctor params) | rig's pre-pass reads `JsonPropertyInfo.IsRequired` and names it |
 | Null into non-nullable | Yes for properties and ctor params with `RespectNullableAnnotations` | **Hole**: null elements of collections of classes are accepted. Struct DTO elements reject null |
 | Wrong token type | Yes, `JsonException` with `Path` at the value | translator names expected/found |
 | No coercion (`"12"`, `12.0`, `true` into int) | Yes with `Strict` | none |
@@ -65,7 +66,7 @@ reader code; read hits are the better sizing guide.
 | JSON schema for what rig writes | Yes, `JsonSerializerOptions.GetJsonSchemaAsNode(type)` works against a source-generated context: `{"type":["object","null"],"properties":{"port":{"type":"integer"}},"required":["port"],"additionalProperties":false}`; polymorphic types give `anyOf` with a `const` discriminator | schema carries no ranges |
 | Syntax errors | `JsonException` without a typed path | translator re-parses with `JsonDocument` to tell syntax from shape |
 | Range and cross-field rules (`port` 1-65535, start before end) | No: `{"port":99999999}` and `{"port":-5}` both deserialize; the schema has no `minimum`/`maximum` | validate after deserialising, on the record (see Output validation) |
-| Locale-independent messages | No, English text | translator needs prefixes for three kinds only (below) |
+| Locale-independent messages | No, English text | not needed: the three structural checks (unknown, duplicate, missing) are done by a typed pre-pass over the `JsonTypeInfo` metadata, so no .NET wording is matched |
 
 ## Exception table (raw STJ output)
 
@@ -80,10 +81,13 @@ reader code; read hits are the better sizing guide.
 | Missing polymorphic discriminator | `NotSupportedException`: `The JSON payload for polymorphic interface or abstract type 'Pet' must specify a type discriminator.` | none (not a `JsonException`) |
 | Unknown discriminator | `Read unrecognized type discriminator id 'bird'.` | the type |
 
-Only the first three need message matching in the translator; everything else is derived from `Path` plus the metadata
-(`JsonTypeInfo.Properties`, `Kind`, converters, `NumberHandling`) and the offending `JsonElement`. If a message prefix
-changes in a future runtime the fallback is `source: $.path: <parser's words>`, never a crash, and
-`JsonProblemTypedTests` fails first.
+No message is matched. When STJ throws (a `JsonException` or the `NotSupportedException` of a missing discriminator) the
+text is re-parsed as a `JsonDocument` and a small pre-pass, driven by the source-generated `JsonTypeInfo` (`Properties`,
+`IsRequired`, names, `PolymorphismOptions`, `UnmappedMemberHandling`, `Options.AllowDuplicateProperties`), finds a repeated
+member, an unknown member where `Disallow` applies, a missing required member, or a missing or unknown discriminator. If
+it finds none, `JsonException.Path` plus the metadata and the offending `JsonElement` give the type mismatch. A syntax
+failure is `not valid JSON: ...`. The only runtime wording that can ever appear is the fallback `source: $.path: <parser's
+words>`, never a crash.
 
 ## Prototype LOC
 
@@ -92,11 +96,11 @@ changes in a future runtime the fallback is `source: $.path: <parser's words>`, 
 | `Jobs/RunHistory.cs` | 290 | 253 | -37 |
 | `Otel/OtlpJson.cs` | 149 | 115 | -34 |
 | `Otel/TraceSpans.cs` | 306 | 258 | -48 |
-| New: `JsonProblem.Typed.cs` (226), `OtlpJsonContext.cs` (94), `RunHistoryJsonContext.cs` (35) | 0 | 355 | +355 (translator is the shared cost) |
+| New: `JsonProblem.Typed.cs` (209), `OtlpJsonContext.cs` (94), `RunHistoryJsonContext.cs` (35) | 0 | 338 | +338 (translator is the shared cost) |
 | New tests (184 + 80) | 0 | 264 | +264 |
 
 Net `git diff --shortstat origin/322-strict-json-vault-ops` is in the PR body. The three reader files shrink by 119 lines. The new code is larger than what it removed (+355 source, +264 test): the translator
-(226 lines) is paid once and each further reader should delete far more than the context it adds, which is the case to test in
+(209 lines, down from 226 once message matching was replaced by the pre-pass) is paid once and each further reader should delete far more than the context it adds, which is the case to test in
 slice 1.
 
 ## Changed messages and behaviour
@@ -104,11 +108,11 @@ slice 1.
 All existing assertions and fixtures pass unmodified (Otel, Jobs, Text, Chrome, Observability namespaces, Web
 `JobsRoutesTests`/`McpTests`). Differences found by snapshotting old and new on a corpus of good and bad lines:
 
-1. `RunHistory` rejects a line with an unknown field (`$.unknown: expected a known field, found the number 1`) or a
-   duplicate (`$.job: expected a field that appears once, found it repeated`). The old reader accepted both. This is the
-   forward-compatibility cost of `Disallow` on a rig-owned file: a newer rig writing a new field makes older rigs skip
-   those lines. Either choose `Skip` for history files (recommended while the format is still growing) or version the
-   field set. Decision for the controller.
+1. `RunHistory` now rejects a line with a repeated member (`$.job: expected a field that appears once, found it repeated`);
+   the old reader accepted it. Unknown fields are ignored, as the old reader did (decision: rig-owned formats use `Skip`, so
+   a newer rig's extra field does not make older rigs skip lines). A line with no `version` reads as 1; a `version` above
+   the build's `RunHistory.FormatVersion` (or below 1) is skipped as `$.version: expected a version from 1 to N, found the
+   number M`; a non-integer `version` is a type error. These version rules are new.
 2. OTLP: `{"spans":[good, 5]}` now keeps the good span and reports `spans[1]: expected an object, found the number 5`; the
    old code dropped the whole line.
 3. An early prototype typed every attribute and widened strictness to attributes other than `span.incomplete`; that broke
@@ -157,8 +161,9 @@ ids to empty strings in `StoredRun.ToRun()`.
 
 - Position recovery: one bad element aborts the whole read. Per-element recovery needs `List<JsonElement>` and a second
   parse (the 1.5x above) or a hand reader.
-- Messages are English and only partly structured. Three kinds need text matching; missing-required names exist only in
-  the message. Not locale-safe, not guaranteed stable across runtimes.
+- Messages are English and only partly structured, so rig does not read them: unknown, duplicate and missing-required
+  are found by the metadata pre-pass. The pre-pass is extra code (it replaced the prefix matching and is smaller), and it
+  walks the document a second time, but only on a failure.
 - The nullable-collection-of-class hole forces struct element DTOs, which is an odd shape to explain to the next reader.
 - `init`-only optional members silently become null; `{ get; set; }` is required for optional members, which is the
   opposite of the usual immutability habit and easy to get wrong.
@@ -175,6 +180,26 @@ declared once per format kind, and the error contract is preserved by one transl
 raw exception table above. Do not migrate dynamic or write-only code. Gate each slice on: existing tests unmodified, new
 strictness tests for each read field, and a snapshot diff of old versus new messages listed in the PR.
 
+## Decisions
+
+1. **Unknown fields and format version.** Rig-owned formats such as `RunHistory` use `UnmappedMemberHandling.Skip` and carry
+   an integer `version` member. A missing `version` reads as 1, so existing files load. A version above the build's maximum
+   (or below 1) is rejected with a `JsonInputException` at `$.version`, naming the expected range and the value found.
+   Wrong types and missing required members stay errors, and duplicate keys are still rejected. Format version for
+   RunHistory: `version` is the first member of each JSONL line, held in `StoredRun.Version` (default 1) and checked by
+   `JsonProblem.RequireVersion`. The writer emits it only when `RunHistory.FormatVersion` is above 1: the existing exact-line
+   tests and `jobs-oracle.json` pin the version-1 bytes, and a missing version already means 1, so version 1 stays
+   byte-identical and the member appears from the first format change.
+2. **No English-message matching.** The three structural checks are rig's own, in a pre-pass over the `JsonTypeInfo`
+   metadata; a missing polymorphic discriminator (`NotSupportedException`) is translated too.
+
+### Format version convention (boundary for later slices)
+
+Each rig-owned record or file carries an integer `version`, placed first in a JSONL line and at the top level of a JSON
+document, with the DTO default `Version = 1` so absence reads as 1. The reader calls `JsonProblem.RequireVersion(stored.Version, Format.Newest)`
+before using the record; the writer emits `version` once the format's version is above 1. A format changes version only for
+a change an older reader cannot ignore (additions are covered by Skip). Foreign formats (OTLP) have no `version`.
+
 ## Migration order
 
 Slices are PR-sized by read hits (hits are the sizing guide; whole-file line counts are in parentheses and overstate the
@@ -182,7 +207,7 @@ reader code). Slices 6, 11 and 12 have more than a dozen files: split them by di
 union shapes (AnyValue-style) before starting; those stay hand-decoded. Each slice deletes the hand reader it replaces in the
 same PR, and finishes with the old-versus-new snapshot diff listed in the PR body. Slice 1 also moves
 `OtlpJson.AnyValue` onto a typed union converter and is the first real test that a reader deletes more than its context adds.
-Slice 2 needs the Skip-versus-Disallow decision for history files first.
+Rig-owned formats follow the decisions below (Skip plus a version), so slice 2 needs no further decision.
 
 1. **OTLP and trace readers left**: 7 files, 63 read hits, 2630 whole-file lines
    - `Core/Chrome/ChromeTraces.cs` (627 lines, 17 hits, reader/foreign)

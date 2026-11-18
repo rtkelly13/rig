@@ -37,6 +37,9 @@ public sealed record JobRun(
 /// </summary>
 public static partial class RunHistory
 {
+    /// <summary>The newest line format this build reads. A line carries it as <c>version</c>, its first member, only when it is above 1; a line without one is version 1.</summary>
+    public const int FormatVersion = 1;
+
     /// <summary>The history file's name in the jobs folder.</summary>
     public const string HistoryName = "runs.ndjson";
 
@@ -199,7 +202,8 @@ public static partial class RunHistory
     {
         ArgumentNullException.ThrowIfNull(run);
         var text = new StringBuilder("{");
-        text.Append("\"job\":").Append(Quote(run.Job))
+        text.Append(FormatVersion > 1 ? $"\"version\":{FormatVersion.ToString(CultureInfo.InvariantCulture)}," : string.Empty)
+            .Append("\"job\":").Append(Quote(run.Job))
             .Append(",\"run_id\":").Append(Quote(run.RunId))
             .Append(",\"started\":").Append(Quote(run.Started))
             .Append(",\"seconds\":").Append(JsonOutput.Number(run.Seconds))
@@ -214,8 +218,13 @@ public static partial class RunHistory
     }
 
     // A stored run: job, run_id, started, seconds and trigger must be there and typed; returncode, error, output and the trace ids may
-    // be absent or null, and are otherwise a whole number or a string. A field the history does not define is rejected.
-    private static JobRun ReadRun(string line) => JsonProblem.Read(line, RunHistoryJsonContext.Default.StoredRun).ToRun();
+    // be absent or null, and are otherwise a whole number or a string. A field the history does not define is ignored; a repeated one and a version above FormatVersion are rejected.
+    private static JobRun ReadRun(string line)
+    {
+        var stored = JsonProblem.Read(line, RunHistoryJsonContext.Default.StoredRun);
+        JsonProblem.RequireVersion(stored.Version, FormatVersion);
+        return stored.ToRun();
+    }
 
     // serde_json's escaping: the quote, the backslash and control characters; everything else as itself.
     private static string Quote(string value)
