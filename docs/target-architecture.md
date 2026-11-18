@@ -68,9 +68,8 @@ The rules that follow from this:
 Imports point down this stack and never up or sideways:
 
 1. **Composition roots**: `src/Rig.Cli/Program.cs` for `rig`; Python has no CLI of its own any more. These are the only modules that mount other
-   packages' commands. `desktop_manager/web_upstream.py` is the web equivalent: features expose a `rig.web_routes.Route`
-   and it hands them to `StudioServer(routes=...)`, so the server imports no feature to serve its JSON.
-2. **Features**: `rig.repo_governance`, `rig.c4_okf`, `rig.image_drift`,
+   packages' commands. `Rig.Web.RigWebHost` is the web equivalent: each route group is a static `Map` it calls, so the host serves JSON without Python.
+2. **Features**: `rig.repo_governance`, `rig.image_drift`,
    and the `desktop_manager` jobs adapter.
    Features are independent of each other. When two features need the same thing, it moves down a layer.
 3. **Adapters**: UIA and the process runner (`tracing.run`). They translate the outside world into typed
@@ -81,7 +80,7 @@ Imports point down this stack and never up or sideways:
 `rig` sits below `desktop_manager` as a whole. `desktop_manager` may import `rig`, never the reverse.
 
 The package graph is acyclic at every depth. That includes the top level (`rig` ↔ `desktop_manager`) and
-sibling packages (`rig.c4_okf` ↔ `rig.repo_governance`), not just individual modules. A cycle almost always means a
+sibling packages (`rig.estate` ↔ `rig.repo_governance`), not just individual modules. A cycle almost always means a
 shared concept is living inside one feature; the fix is to move it down, not to add a lazy import.
 
 ## Data

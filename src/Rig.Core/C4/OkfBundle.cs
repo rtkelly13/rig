@@ -164,13 +164,33 @@ public static partial class OkfBundle
             : normalised.EndsWith(".md", StringComparison.Ordinal) ? normalised[..^3] : normalised;
     }
 
+    /// <summary>
+    /// Paths compared one folder name at a time, as Python's <c>Path</c> ordering did: <c>a/b.md</c> before <c>a-b.md</c>,
+    /// where comparing whole strings would put <c>a-b.md</c> first because <c>-</c> sorts below <c>/</c>.
+    /// </summary>
+    private static readonly Comparer<string> FolderByFolder = Comparer<string>.Create((left, right) =>
+    {
+        var one = left.Split(Path.DirectorySeparatorChar);
+        var two = right.Split(Path.DirectorySeparatorChar);
+        for (var index = 0; index < Math.Min(one.Length, two.Length); index++)
+        {
+            var order = string.CompareOrdinal(one[index], two[index]);
+            if (order != 0)
+            {
+                return order;
+            }
+        }
+
+        return one.Length.CompareTo(two.Length);
+    });
+
     /// <summary>Every concept under <paramref name="root"/>, keyed by concept id. Hidden directories are skipped.</summary>
     public static Bundle Load(string root)
     {
         ArgumentNullException.ThrowIfNull(root);
         var resolved = Path.GetFullPath(root);
         var concepts = new Dictionary<string, Concept>(StringComparer.Ordinal);
-        foreach (var path in Directory.EnumerateFiles(resolved, "*.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+        foreach (var path in Directory.EnumerateFiles(resolved, "*.md", SearchOption.AllDirectories).Order(FolderByFolder))
         {
             var relative = Path.GetRelativePath(resolved, path).Replace(Path.DirectorySeparatorChar, '/');
             var parts = relative.Split('/');

@@ -7,7 +7,7 @@
 // The floor, target and slack are RigCoverageFloor, RigCoverageTarget and RigCoverageSlack in
 // Directory.Build.props. Coverage is line and branch together, as the Python ratchet measures it, read from coverlet's
 // json reports (--coverlet-output-format json), which keep each branch's identity so reports merge exactly.
-// Rules, the same three as rig.repo_governance.coverage_floor:
+// Rules:
 //   - coverage may not drop below the floor;
 //   - a pull request may not lower the floor (compared with the base branch's props file);
 //   - once coverage is more than the slack above the floor, the floor must be raised, up to the target.

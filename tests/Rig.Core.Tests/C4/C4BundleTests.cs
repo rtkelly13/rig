@@ -243,6 +243,47 @@ public sealed class C4BundleTests : IDisposable
     }
 
     [Fact]
+    public void Expand_replaces_the_whole_block_of_a_boundary_that_zooms()
+    {
+        // The Python server replaced only the first line of the block, so its answer kept `Container(web, "Web")`
+        // and a stray `}` after the new boundary: Mermaid that does not parse. The C# answer drops the whole block.
+        var root = Write(_temp.Folder("block"), new Dictionary<string, string>
+        {
+            ["ctx.md"] = "---\ntype: C4 Container\ntitle: Ctx\n---\n\n```mermaid\nC4Container\nPerson(user, \"User\")\n"
+                + "Container_Boundary(shop, \"Shop\", $link=\"sub/cont.md\") {\n    Container(web, \"Web\")\n}\n"
+                + "Rel(user, shop, \"Uses\")\n```\n",
+            ["sub/cont.md"] = "---\ntype: C4 Container\ntitle: Cont\n---\n\n```mermaid\nC4Container\nPerson(user, \"User\")\n"
+                + "Container(api, \"Api\")\nRel(user, api, \"Calls\")\n```\n",
+        });
+        var composed = C4Composer.Expand(OkfBundle.Load(root), "ctx", "shop");
+        Assert.Equal(
+            "C4Container\nPerson(user, \"User\")\nSystem_Boundary(shop, \"Shop\") {\n  Container(api, \"Api\")\n}\n  Rel(user, api, \"Calls\")\n",
+            composed);
+    }
+
+    [Fact]
+    public void Check_words_a_malformed_frontmatter_as_the_YAML_library_does()
+    {
+        // The Python server quoted PyYAML's multi-line parser error, mark and all; the C# message is YamlDotNet's one line.
+        var root = Write(_temp.Folder("yaml"), new Dictionary<string, string> { ["bad2.md"] = "---\ntype: [unclosed\n---\nbody\n" });
+        var finding = Assert.Single(C4Composer.Check(OkfBundle.Load(root)), found => found.Code == "okf-frontmatter");
+        Assert.Equal("frontmatter is not valid YAML: While parsing a flow sequence, did not find expected ',' or ']'.", finding.Message);
+    }
+
+    [Fact]
+    public void Concepts_load_folder_by_folder_not_by_whole_path_string()
+    {
+        // `-` sorts below `/`, so a whole-string sort would list a-b before a/b. The Python server's Path order did not.
+        var root = Write(_temp.Folder("order"), new Dictionary<string, string>
+        {
+            ["a-b.md"] = "---\ntype: note\n---\n",
+            ["a/b.md"] = "---\ntype: note\n---\n",
+            ["a.md"] = "---\ntype: note\n---\n",
+        });
+        Assert.Equal(["a/b", "a-b", "a"], OkfBundle.Load(root).Concepts.Keys);
+    }
+
+    [Fact]
     public void Json_is_deterministic_snake_case_and_lf()
     {
         var model = C4Composer.Build(OkfBundle.Load(Shop()));

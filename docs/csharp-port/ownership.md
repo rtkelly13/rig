@@ -36,12 +36,11 @@ The inspector combines:
   Node `bin`/package scripts and standalone Node scripts, tracked executable modes, and checked-in
   command/shell/PowerShell/LaunchAgent launchers. Launcher contents are fingerprinted.
 - Both composed job registries, including the optional workspace jobs, using inert fixture paths. They are
-  callers, not independent implementations. No job is run. The MCP server's actual C# tool attributes and the Python web
-  child's mounted route callables are inspected without serving requests. Legacy web callables are fingerprinted
-  as opaque dispatch units; this is not proof of individual HTTP endpoint parity.
+  callers, not independent implementations. No job is run. The MCP server's actual C# tool attributes are inspected
+  without serving requests.
 
 The Python probe is a development inspection adapter for the legacy runtime, not new rig product behavior.
-The ownership rules, source inspection and gate runner are C#. Remove the probe with the last core Python routes.
+The ownership rules, source inspection and gate runner are C#. The Python web child is gone, so the probe no longer inspects any web route.
 
 `Id` identifies the observed registration. `Capability` is its normalized command path; `Owner` is the canonical
 implementation. A Python wrapper counts as an alias only when its inspected AST is exactly a whole-line dispatch
@@ -59,10 +58,10 @@ cannot conceal an independent implementation.
 | `desktop workspace` | C# `rig desktop workspace` (restore, audit, status, validation, features, export, wire, align, name-desktops, guard and the per-entry commands) | CLI and native adapters switched in #243; the Python Typer workspace group and its `cli_align`/`cli_apps`/`cli_machine`/`align`/`display_guard_windows` modules retired. `align` is C#. Windows desktop acceptance remains the `WIN-DESKTOP` procedure |
 | `runtime`, `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
 | `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand`, `Rig.Web.TriageRoutes` and `Rig.Core.ReviewQueue.AgentSignals` | CLI, web inbox and agent-signal consumers switched; Python CLI, six platform fallback routes, `rig.triage.web` and `rig.triage.agents` retired. The remaining `src/rig/triage` models, store, service, GitHub and Markdown modules and their tests are retired too; the browser tests seed the C# inbox through `tests/triage_seed.py`, and no Python triage module has a production caller |
-| `c4` | C# `Rig.Cli.C4.C4Command` over `Rig.Core.C4` | CLI, checks, composition, derivation and the Roslyn call-graph reader switched; the Python CLI, derive scanner and 21 registrations retired. The `rig.c4_okf` web viewer and the bundle reader it mounts stay explicitly owned until that route is switched |
+| `c4` | C# `Rig.Cli.C4.C4Command` over `Rig.Core.C4` | CLI, checks, composition, derivation and the Roslyn call-graph reader switched; the Python CLI, derive scanner and 21 registrations retired. The web viewer is C# (`Rig.Web.C4`) and the Python `rig.c4_okf` package is deleted |
 | `jobs` | C# status/last/log/run/install/uninstall | The `desktop-manager jobs` spellings are retired; #209 owns runtime progression and Windows acceptance |
 | `runtime` | C# status/install/rollback; Python `runtime.py` still serves paths and state to scheduled Python callers | The `desktop-manager runtime` spellings, `runtime_cli`, `rig_shim` and the Python install path are retired. `runtime.py` stays for jobs path and state consumers; #227 owns native acceptance |
-| `web`, `tools` | C# public host, C# MCP server (`/api/mcp` and stdio), and C# service/database lifecycle (`rig tools`); the legacy `rig web` service and database subcommands are aliases | Triage, estate, telemetry and database-backup routes are C# (`Rig.Web.TriageRoutes`, `EstateOpsRoutes`, `TelemetryRoutes`, `HostRoutes`); `Python service_installer` and `rig.db` retired with their tests; the jobs coordinator, C4 and the estate graph stay in the Python child (`desktop_manager.web_upstream`) |
+| `web`, `tools` | C# public host, C# MCP server (`/api/mcp` and stdio), and C# service/database lifecycle (`rig tools`); the legacy `rig web` service and database subcommands are aliases | Triage, estate, telemetry and database-backup routes are C# (`Rig.Web.TriageRoutes`, `EstateOpsRoutes`, `TelemetryRoutes`, `HostRoutes`); `Python service_installer` and `rig.db` retired with their tests; the jobs coordinator, C4 and the estate graph are C# too (`JobsRoutes`, `C4Routes`, `ConnectivityRoutes`); the Python child, `StudioServer` and `desktop_manager.web_upstream` are deleted and tombstoned |
 | `web mcp` | C# `Rig.Web.Mcp.RigOpsTools` over `Rig.Core`, served by `rig web mcp` (stdio) and `app.MapMcp("/api/mcp")` | `desktop_manager.web_mcp` and its Python CLI command are retired; the eleven tools are inspected from their `[McpServerTool]` attributes |
 | `chrome-tabs` | C# only: traces everywhere; native `list`, `rank`, `prune`, `group` and `organise` on Windows and macOS; `saved-groups`, `install` and `uninstall` on Windows | macOS `group`, `list`, `prune` and `rank` registrations retired in #226 with the native `ChromeMac` driver. `organise`, its scheduled entry and its trace writer moved to C# in #277; the Python `desktop_manager.chrome` package is deleted and tombstoned |
 | `chrome-tabs traces runs/show/summary/prune` | C# only | Legacy report CLI and 462 lines of reader/report code deleted; the writer and daily retention moved to C# with `organise` (#277) |

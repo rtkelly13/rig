@@ -171,9 +171,7 @@ Restore still logs to `workspace-restore\logs`. Chrome organise writes its trace
 
 ## In `rig web`
 
-`src/desktop_manager/jobs/web.py` mounts four endpoints into the rig
-web server (`mounted_routes()` in `web_upstream.py`): three reads and one write. It is the last route group
-still served by the Python child.
+`Rig.Web.JobsRoutes` serves four endpoints from the rig web host: three reads and one write.
 
 | Endpoint | Answers |
 |:---------|:--------|

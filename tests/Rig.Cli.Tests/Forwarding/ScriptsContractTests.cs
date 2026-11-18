@@ -92,10 +92,7 @@ public sealed partial class ScriptsContractTests
                 new GovernanceCommand(new GovernanceHost("/", "/", "/"), new FakeProc(), TimeProvider.System, TextWriter.Null).Build,
                 new WebCommand(
                     new WebPlaces("/rig", "/none.json", "/", "/rig.db", "/code"),
-                    _ => throw new InvalidOperationException("nothing may start"),
-                    new FakeProbe(),
                     _ => throw new InvalidOperationException("nothing may open"),
-                    (_, _) => Task.CompletedTask,
                     TextWriter.Null,
                     TextWriter.Null).Build,
             ],

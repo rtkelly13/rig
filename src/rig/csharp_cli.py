@@ -16,7 +16,7 @@ from pathlib import Path
 
 from rig import tracing
 
-#: The rig checkout the C# CLI runs Python tools from (mdformat, the web upstream): set to this one, so both
+#: The rig checkout the C# CLI runs Python tools from (mdformat): set to this one, so both
 #: halves and their uv environment come from the same tree.
 HOME_VARIABLE = "RIG_HOME"
 

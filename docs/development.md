@@ -23,7 +23,7 @@ committed because the Python CLI and server must work without Node:
 |---|---|
 | `web/app.src.css` | `src/rig/web_host/templates/app_assets/app.css` (with the SPA bundle) |
 | `tools/image-drift/styles/gallery.src.css` | `tools/image-drift/src/image_drift/templates/gallery.css`, inlined into preview pages |
-| `styles/c4.src.css` | `src/rig/c4_okf/static/c4.css` |
+| `styles/c4.src.css` | `src/Rig.Web/C4/static/c4.css` |
 
 Rebuild after touching a template, an entry or a design-system bump. Colours, type sizes and
 spacing come from design-system tokens only: `DesignTokensTests` in `tests/Rig.Web.Tests` fails on raw hex/`rgb()`
@@ -44,7 +44,7 @@ runs this checkout's code, so it is the form for developing rig and for CI. The 
 (`uv run status`, `uv run workspace …`) still work while callers outside rig move over (#85 s29b).
 
 C# parses every command itself; nothing is forwarded to Python. The Python modules C# still starts (the
-web upstream, the job runner's helpers, mdformat) run from `RIG_HOME` when it is set, else
+job runner's helpers, mdformat) run from `RIG_HOME` when it is set, else
 `<code root>/personal/rig`.
 
 The [command ownership gate](csharp-port/ownership.md) inspects actual C#/Python registrations and forwarding,

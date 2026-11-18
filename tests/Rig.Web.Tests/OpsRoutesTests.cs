@@ -290,7 +290,6 @@ public sealed class OpsRoutesTests : IAsyncLifetime
     private sealed class Harness : IAsyncDisposable
     {
         private readonly TempDir _dir = new();
-        private readonly HttpClient _forwarding = new(new Upstream());
         private RigWebHost _host = null!;
         private OpsRoutes _ops = null!;
 
@@ -337,7 +336,7 @@ public sealed class OpsRoutesTests : IAsyncLifetime
                 () => 0);
             Triage = new TriageInbox(DbPath, Source, QueuePath, signals);
             _ops = new OpsRoutes(Triage, new EstateOps(Root, Feed, Trims), Telemetry);
-            _host = await RigWebHost.CreateAsync(Settings, _forwarding, () => null, routes: _ops);
+            _host = await RigWebHost.CreateAsync(Settings, routes: _ops);
         }
 
         public RecordingSource Source { get; } = new();
@@ -390,7 +389,6 @@ public sealed class OpsRoutesTests : IAsyncLifetime
         {
             await _host.DisposeAsync();
             _ops.Dispose();
-            _forwarding.Dispose();
             _dir.Dispose();
         }
 

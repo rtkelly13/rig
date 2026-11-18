@@ -1,0 +1,2 @@
+{"path": "/api/c4/expand?id=sub/cont&alias=api", "status": 200}
+{"id":"sub/cont","alias":"api","diagram":"C4Container\nPerson(user, \"User\")\nSystem_Ext(pay, \"Payments\")\nSystem_Boundary(shop, \"Shop\") {\n  System_Boundary(api, \"API\") {\n  }\n  ContainerDb(db, \"DB\", \"Postgres\")\n}\nRel(user, api, \"Calls\")\nRel(api, db, \"Reads\")\nRel(api, pay, \"Charges\")\n"}

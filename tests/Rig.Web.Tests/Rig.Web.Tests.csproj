@@ -7,6 +7,6 @@
     <Compile Include="../Rig.Web.BrowserTests/Repo.cs" Link="Fakes/Repo.cs" />
   </ItemGroup>
   <ItemGroup Label="Responses recorded from the Python StudioServer, the parity baseline">
-    <None Include="Recorded/*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Recorded/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

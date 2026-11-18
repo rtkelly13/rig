@@ -221,9 +221,8 @@ omit = [
 ]
 
 [tool.coverage.report]
-# The floor. A ratchet (rig.repo_governance.coverage_floor, run in CI) stops it falling and
-# makes it follow coverage up to [tool.rig.coverage_ratchet] target. See docs/testing.md.
-fail_under = 90
+# The floor pytest-cov enforces. No longer a ratchet: the port deletes covered Python (#285).
+fail_under = 84
 show_missing = true
 skip_covered = true
 exclude_lines = [
@@ -233,10 +232,6 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
 ]
-
-[tool.rig.coverage_ratchet]
-target = 95  # the hard floor this ratchets towards
-slack = 2  # points coverage may sit above the floor before the floor must rise
 
 # Mutation testing: `uv run --with mutmut mutmut run`, then `... mutmut results`. Scoped to
 # pure, invariant-rich modules whose tests run in seconds; widen one module at a time and keep
@@ -261,12 +256,10 @@ disable = ["fake-location", "patching"]
 # shrink: move a fake into tests/fakes/, or replace a patch with a fake passed through a seam.
 fake-location-allow = [
     "tests/desktop_manager/test_runtime.py",
-    "tests/test_c4_okf.py",
 ]
 patching-allow = [
     "tests/conftest.py",
     "tests/desktop_manager/test_runtime.py",
-    "tests/test_c4_okf.py",
 ]
 pyright-pragma-allow = []
 boundary-modules = [

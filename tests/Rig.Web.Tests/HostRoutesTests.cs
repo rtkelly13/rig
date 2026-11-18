@@ -8,13 +8,12 @@ namespace Rig.Web.Tests;
 public sealed class HostRoutesTests : IAsyncLifetime
 {
     private readonly EstateTree _tree = new();
-    private readonly HttpClient _forwarding = new(new Upstream());
     private RigWebHost? _host;
     private HttpClient _client = null!;
 
     public async ValueTask InitializeAsync()
     {
-        _host = await RigWebHost.CreateAsync(_tree.Settings(), _forwarding, () => null);
+        _host = await RigWebHost.CreateAsync(_tree.Settings());
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client = new HttpClient { BaseAddress = _host.Address };
     }
@@ -22,7 +21,6 @@ public sealed class HostRoutesTests : IAsyncLifetime
     public async ValueTask DisposeAsync()
     {
         _client.Dispose();
-        _forwarding.Dispose();
         if (_host is not null)
         {
             await _host.DisposeAsync();
@@ -86,13 +84,11 @@ public sealed class HostRoutesTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_path_nobody_owns_is_a_404_envelope_while_the_python_routes_are_down()
+    public async Task A_path_nobody_owns_is_a_404()
     {
         using var response = await _client.GetAsync(new Uri("/api/nothing", UriKind.Relative), TestContext.Current.CancellationToken);
 
-        var body = JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken))!;
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("Endpoint not found: /api/nothing", (string?)body["error"]);
     }
 
     [Fact]

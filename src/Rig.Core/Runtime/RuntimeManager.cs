@@ -409,7 +409,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             [Published(copy, "rig", windows), "chrome-tabs", "organise", "--help"],
             [Published(copy, "rig", windows), "jobs", "run", "--help"],
             [Published(copy, "rig", windows), "jobs", "install", "--help"],
-            [python, "-c", "import desktop_manager.web_upstream"],
+            [python, "-c", "import rig.csharp_cli"],
         ];
         var plan = Path.Join(copy, "desktop-manager", "workspace-plan.bundle.json");
         if (File.Exists(plan))

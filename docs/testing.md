@@ -136,18 +136,12 @@ How to read the numbers:
 - **High covered, few unique, many such tests in one file:** each test pays for the same setup
   repeatedly. One shared fixture plus focused assertions usually does the same job for less.
 
-### The coverage floor is a ratchet towards 95%
+### The Python coverage floor
 
-`[tool.coverage.report] fail_under` in `pyproject.toml` is the floor. pytest-cov fails any
-`--cov` run below it. In CI, `rig.repo_governance.coverage_floor` adds two rules:
-
-- **It never falls.** A pull request whose floor is below its base branch's floor fails.
-- **It follows coverage up.** Once coverage is more than `slack` (2) points above the floor,
-  the check fails and names the new floor to set. It stops at `target` (95), the hard limit
-  the ratchet works towards.
-
-So a pull request that adds tests usually raises the floor in the same change, and no later
-change can give that coverage back. Win32 and UI Automation adapters are left out of the
+`[tool.coverage.report] fail_under` in `pyproject.toml` is the floor, and pytest-cov fails any
+`--cov` run below it. It used to be a ratchet that could only rise; that was retired because
+every port PR deletes covered Python (#85, #285). The C# floor in `Directory.Build.props` is
+still a ratchet towards 95% (`scripts/coverage-floor.cs`). Win32 and UI Automation adapters are left out of the
 measurement (`[tool.coverage.run] omit`): the Linux job cannot run them. Keep logic out of
 them. Code that can be tested belongs in a module that stays measured.
 
