@@ -96,11 +96,11 @@ words>`, never a crash.
 | `Jobs/RunHistory.cs` | 290 | 253 | -37 |
 | `Otel/OtlpJson.cs` | 149 | 115 | -34 |
 | `Otel/TraceSpans.cs` | 306 | 258 | -48 |
-| New: `JsonProblem.Typed.cs` (209), `OtlpJsonContext.cs` (94), `RunHistoryJsonContext.cs` (35) | 0 | 338 | +338 (translator is the shared cost) |
+| New: `JsonProblem.Typed.cs` (224), `OtlpJsonContext.cs` (94), `RunHistoryJsonContext.cs` (35) | 0 | 353 | +353 (translator is the shared cost) |
 | New tests (184 + 80) | 0 | 264 | +264 |
 
 Net `git diff --shortstat origin/322-strict-json-vault-ops` is in the PR body. The three reader files shrink by 119 lines. The new code is larger than what it removed (+355 source, +264 test): the translator
-(209 lines, down from 226 once message matching was replaced by the pre-pass) is paid once and each further reader should delete far more than the context it adds, which is the case to test in
+(224 lines, 166 of code, down from 226 and 176 once message matching was replaced by the pre-pass) is paid once and each further reader should delete far more than the context it adds, which is the case to test in
 slice 1.
 
 ## Changed messages and behaviour
