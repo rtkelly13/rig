@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Rig.Core.Chrome;
 
 namespace Rig.Core.Tests.Fakes;
@@ -29,13 +30,14 @@ internal sealed class FakeChromeTabActions : IChromeTabActions
         return new CloseOutcome(true, "closed", TimeSpan.Zero);
     }
 
+    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "Log records calls in order and tests append to it directly; a recording fake is the one place a list grows by appending.")]
     public IReadOnlyDictionary<long, ChromeTab?> RestoreSelection(
         IEnumerable<ChromeWindow> before,
         IReadOnlyDictionary<long, ChromeTab>? fallbacks = null)
     {
         var handles = before.Select(window => window.Handle).ToList();
         Restored.Add((handles, fallbacks?.ToDictionary()));
-        Log.InsertRange(Log.Count, handles.Select(handle => ("restore", handle, -1)));
+        Log.AddRange(handles.Select(handle => ("restore", handle, -1)));
         return handles.ToDictionary(handle => handle, _ => (ChromeTab?)null);
     }
 }
