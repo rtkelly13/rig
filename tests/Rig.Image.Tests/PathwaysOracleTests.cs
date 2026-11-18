@@ -101,8 +101,8 @@ public sealed class PathwaysOracleTests
         Compare(mismatches, "totalEdges", synthetic.Property("report").Property("totalEdges").AsInteger(), report.TotalEdges);
         Compare(mismatches, "conformance", synthetic.Property("report").Property("conformancePct").AsNumber(), report.AxisConformancePct);
         CompareDefects(mismatches, "synthetic", synthetic.Property("report").Property("defects"), report);
-        Compare(mismatches, "regularized", synthetic.Property("regularized").AsString(), EdgeRegularity.RegularizeSvg(text));
-        Compare(mismatches, "regularized precision 0", synthetic.Property("regularizedPrecision0").AsString(), EdgeRegularity.RegularizeSvg(text, precision: 0));
+        Compare(mismatches, "regularized", SignedZeroOffFrozenPlatform(synthetic.Property("regularized").AsString()), SignedZeroOffFrozenPlatform(EdgeRegularity.RegularizeSvg(text)));
+        Compare(mismatches, "regularized precision 0", SignedZeroOffFrozenPlatform(synthetic.Property("regularizedPrecision0").AsString()), SignedZeroOffFrozenPlatform(EdgeRegularity.RegularizeSvg(text, precision: 0)));
         Assert.True(mismatches.Count == 0, string.Join("\n", mismatches));
     }
 
@@ -350,6 +350,10 @@ public sealed class PathwaysOracleTests
     private static double HashLoss(string svg) => BinaryPrimitives_ReadUInt32BigEndian(SHA256.HashData(Encoding.UTF8.GetBytes(svg))) % 8;
 
     private static uint BinaryPrimitives_ReadUInt32BigEndian(byte[] bytes) => System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes);
+
+    /// <summary>Off the platform the oracle was frozen on, a coordinate that rounds to zero may print as -0 or 0 (Windows prints the latter); the sign of zero is not a geometric difference.</summary>
+    private static string SignedZeroOffFrozenPlatform(string svg) =>
+        OracleFixture.FrozenOnThisPlatform() ? svg : System.Text.RegularExpressions.Regex.Replace(svg, @"-(0(?:\.0+)?)(?![\d.])", "$1", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(5));
 
     private static void AssertCoordinatesWithin(string expected, string actual, double tolerance)
     {
