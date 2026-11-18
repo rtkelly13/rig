@@ -3,7 +3,7 @@
 Each builder previously handled an undeclared variant its own way: rhombille
 fell back to its default, diamond branched on one hardcoded key, and labs
 accepted the argument and discarded it. These tests pin the shipped builders to
-one rule; the rhombille explorer in `experiments/logo-explorers/` tests its own.
+one rule.
 """
 
 from __future__ import annotations

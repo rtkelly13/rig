@@ -31,8 +31,8 @@ candidate to a traced master runs through the promotion gate, and the explorer i
 left out of the project registry so no routine command can route to it.
 
 Explorers that nothing scores — no promote gate, pathway or test compares them against a
-reference — do not ship in the package. The rhombille hexagon and interlocking-columns marks
-live in [`experiments/logo-explorers/`](../../experiments/logo-explorers/README.md).
+reference — do not ship in the package. The unscored rhombille hexagon and interlocking-columns
+marks were deleted; git history keeps them.
 
 ### Layout
 

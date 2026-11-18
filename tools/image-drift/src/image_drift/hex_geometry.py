@@ -2,8 +2,7 @@
 
 `Point` is shared by the edge regulariser, the geometric simplifier and the
 parametric labs builder; `hexagon_vertices` is the hexagon `labs_parametric`
-scores against. The measured frame, tiling and circuit geometry of the
-unscored hexagon explorers lives in `experiments/logo-explorers/hex_shapes.py`.
+scores against.
 """
 
 from __future__ import annotations
