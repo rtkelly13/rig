@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Rig.Launcher</RootNamespace>
+    <BannedSymbolSets>Console</BannedSymbolSets>
     <AssemblyName>rigw</AssemblyName>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

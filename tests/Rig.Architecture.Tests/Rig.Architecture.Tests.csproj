@@ -3,6 +3,9 @@
     <PackageReference Include="NetArchTest.Rules" />
     <PackageReference Include="DotMake.CommandLine" />
   </ItemGroup>
+  <ItemGroup Label="Shared doubles">
+    <Compile Include="../Rig.Core.Tests/RepoTemp.cs" Link="Fakes/RepoTemp.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Core/Rig.Core.csproj" />
     <ProjectReference Include="../../src/Rig.Cli/Rig.Cli.csproj" />

@@ -120,7 +120,33 @@ Windows-safe tests (the Windows jobs catch these, but write them right first tim
   `tests/Rig.Architecture.Tests`, and the coverage floor ([testing.md](testing.md#the-c-coverage-floor)).
 - **Ownership gate**: `tools/command-ownership` checks `config/command-ownership.json` against the C# command tree
   (see [The C# front door](#the-c-front-door)).
+- **Banned symbols**: see [Banned-symbol sets](#banned-symbol-sets).
 - **Repo gates**: `ls-lint` for filenames and script languages, `zizmor` for workflows, and
   `rig repo-governance agents-audit . --strict` for AGENTS.md pointers.
 - **image-drift**: `cd tools/image-drift && uv sync && uv run ruff check . && uv run ty check && uv run pytest`;
   CI runs the same, plus basedpyright and bandit, in the `image-drift` jobs.
+
+## Banned-symbol sets
+
+`BannedSymbols.txt` is the universal list, wired for every project in `Directory.Build.props`: legacy collections,
+`List.AddRange` and `Task.Run`. Themed lists are `BannedSymbols.<Set>.txt` beside it. A project opts in with
+`<BannedSymbolSets>Console;CommandLine</BannedSymbolSets>` in its csproj, and `Directory.Build.targets` adds one
+AdditionalFiles item per name (it is a targets file because props are evaluated before the csproj sets the property).
+BannedApiAnalyzers merges them all. A name with no file fails the build with `RIGBAN001`, naming the set and the
+project; `tests/Rig.Architecture.Tests/BannedSymbolSetsTests.cs` proves that.
+
+| Set | File | Bans | Projects |
+|---|---|---|---|
+| (universal) | `BannedSymbols.txt` | `ArrayList`, `Hashtable`, `List<T>.AddRange`, `Task.Run`, `Task.Factory`, `TaskFactory` | every project, scripts included |
+| `Console` | `BannedSymbols.Console.txt` | raw `Console.Write(string)` and `Console.WriteLine(string)` | `Rig.Core`, `Rig.Cli`, `Rig.Web`, `Rig.Launcher`, and every test project (the default below) |
+| `CommandLine` | `BannedSymbols.CommandLine.txt` | `new Command(...)`, `new Option<T>(...)`, `new Argument<T>(...)` | `Rig.Cli` |
+
+- **Test projects** (`IsTestProject`, set in `tests/Directory.Build.props`) that name no sets get
+  `DefaultTestBannedSymbolSets` (`Console`). A test project that sets its own `BannedSymbolSets` replaces the default.
+- **No sets** means the universal list only: `tools/command-ownership` (its job is to write to stdout) and the
+  file-based apps in `scripts/*.cs`, which therefore call `Console.WriteLine` directly.
+- **Adding a set**: create `BannedSymbols.<Set>.txt` (`<DocumentationId>;<message>` per line), then name it in the
+  `BannedSymbolSets` of each project that should take it, and add a row above. Check each id binds by adding a
+  deliberate violation, seeing RS0030 fire, and removing it. Bans are per compilation, so banning a symbol in
+  `Rig.Core` does not stop `Rig.Cli` calling it.
+- **Exceptions** stay as per-member `SuppressMessage` with a justification; no folder-wide relaxation.

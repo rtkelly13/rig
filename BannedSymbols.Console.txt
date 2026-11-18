@@ -1,0 +1,5 @@
+# Banned APIs: the Console set (BannedSymbolSets=Console). Format: <DocumentationId>;<Description>
+
+# Ban raw console writes in favour of Spectre.Console (IAnsiConsole) or structured telemetry
+M:System.Console.WriteLine(System.String);Use Spectre.Console (IAnsiConsole) or structured logging instead of Console.WriteLine.
+M:System.Console.Write(System.String);Use Spectre.Console (IAnsiConsole) instead of Console.Write.
