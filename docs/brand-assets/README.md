@@ -393,4 +393,12 @@ slice lives in `src/Rig.Image` and does not replace the Python yet; slice 4 dele
   masters and the `fitted` coordinate-descent walk (including its loss ties) match exactly; the one tolerance is a
   defect's length, which can differ by an ulp (`math.hypot` against `sqrt(dx*dx+dy*dy)`).
 
-Not yet ported: promotion and the snapshot manager, the recommendation text, and parsing `production-cuts.csv` (the cross-check's file set is the fixed set the oracle covers).
+- **`rig image explore`** and **`rig image promote`** port `cli_explore` and the snapshot manager (`SnapshotManager`, with
+  `simplify --snapshot/-s --project/-p --variations-dir`). Chromium decides and writes: there is no `--fast` on either, and
+  `promote` re-runs the gate live against the current master, backs the incumbent up beside the run, then rewrites
+  `master.svg`, the manifest digest and `promoted_from` in `tools/image-drift/.../builder_assets/rtkelly-labs/` (the manifest
+  writer reproduces the committed file byte for byte) and the committed asset. `PromotionVerdictTests` (browser) scores the
+  C#-generated regularized and parametric candidates, and the frozen autotraced ones, under Chromium and requires the oracle's
+  verdicts. Exit codes are 0 / 1 / 2 (promoted or winner / no winner or dry run / error); Python exited 1 for errors.
+
+Not yet ported: the recommendation text, and parsing `production-cuts.csv` (the cross-check's file set is the fixed set the oracle covers).
