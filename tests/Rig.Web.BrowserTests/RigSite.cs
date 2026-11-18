@@ -64,7 +64,8 @@ public sealed class RigSite : IAsyncDisposable
             Path.Join(dir.Path, "decisions.json"),
             Path.Join(dir.Path, "temp", "triage", "queue.md"),
             Path.Join(dir.Path, "temp", "traces", "sdk"),
-            codeRoot);
+            codeRoot,
+            C4StaticDir: Repo.C4Static);
         var host = await RigWebHost.CreateAsync(settings, cancellationToken: cancellationToken);
         var site = new RigSite(dir, host);
         try

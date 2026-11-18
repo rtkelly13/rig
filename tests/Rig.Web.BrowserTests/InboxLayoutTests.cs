@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 using static Microsoft.Playwright.Assertions;
 
@@ -103,13 +104,21 @@ public sealed class InboxLayoutTests(BrowserFixture fixture) : InboxTest(fixture
     }
 
     [Fact]
-    public async Task Description_renders_inline_html_like_dependabot_release_notes()
+    public async Task Description_renders_github_flavoured_markdown()
     {
         await Page.GotoAsync(Origin + "/triage/inbox/owner/repo/1?repo=owner%2Frepo");
         var description = Page.Locator("#description-content");
-        await Expect(description.Locator("details > summary")).ToHaveTextAsync("Release notes");
+        // Dependabot's release notes are inline HTML.
+        await Expect(description.Locator("details > summary").First).ToHaveTextAsync("Release notes");
         await Expect(description.GetByText("<details>", new() { Exact = false })).ToHaveCountAsync(0);
         Assert.True(await Page.EvaluateAsync<bool>("window.injected === undefined"));
+        await Expect(description.Locator(".markdown-alert-warning .markdown-alert-title")).ToHaveTextAsync("Warning");
+        await Expect(description.Locator(".task-list-item input[type=checkbox]")).ToBeCheckedAsync();
+        await Expect(description.Link("1")).ToHaveAttributeAsync("href", "#user-content-fn-1");
+        await Expect(description.Locator("#user-content-fn-1")).ToContainTextAsync("The footnote.");
+        var diagram = description.Locator(".mermaid-diagram img");
+        await Expect(diagram).ToHaveAttributeAsync("src", new Regex("^data:image/svg\\+xml"));
+        Assert.True(await diagram.EvaluateAsync<bool>("img => img.complete && img.naturalWidth > 0"));
     }
 
     [Fact]

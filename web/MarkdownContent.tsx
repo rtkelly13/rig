@@ -2,7 +2,15 @@ import { Prose } from '@rtkelly-labs/design-system';
 import Markdown, { defaultUrlTransform } from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
+import remarkGemoji from 'remark-gemoji';
 import remarkGfm from 'remark-gfm';
+import {
+  MermaidDiagram,
+  mermaidSource,
+  rehypeUnwrapLinkedImages,
+  remarkGithubAlerts,
+  sanitizeSchema,
+} from './githubMarkdown';
 
 /**
  * GitHub text is untrusted. Bodies such as Dependabot's are mostly inline HTML
@@ -14,8 +22,10 @@ export function MarkdownContent({ children, sourceUrl }: { children: string; sou
   return (
     <Prose className="triage-prose">
       <Markdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeSanitize]}
+        remarkPlugins={[remarkGfm, remarkGemoji, remarkGithubAlerts]}
+        rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeUnwrapLinkedImages]}
+        // Sanitize adds the `user-content-` prefix to every id; adding it here too would double it.
+        remarkRehypeOptions={{ clobberPrefix: '' }}
         urlTransform={(url) => {
           const safe = defaultUrlTransform(url);
           if (!safe) return '';
@@ -26,11 +36,21 @@ export function MarkdownContent({ children, sourceUrl }: { children: string; sou
           }
         }}
         components={{
-          a: ({ children, href }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer">
-              {children}
-            </a>
-          ),
+          a: ({ children, href, id, node }) => {
+            // Footnote links point into this page, at the ids sanitize prefixed, not at github.com.
+            const properties = node?.properties ?? {};
+            if (href && ('dataFootnoteRef' in properties || 'dataFootnoteBackref' in properties))
+              return (
+                <a id={id} href={`#user-content-${new URL(href).hash.slice(1)}`}>
+                  {children}
+                </a>
+              );
+            return (
+              <a href={href} target="_blank" rel="noopener noreferrer">
+                {children}
+              </a>
+            );
+          },
           img: ({ alt, src }) => (
             <a
               href={typeof src === 'string' ? src : undefined}
@@ -40,6 +60,11 @@ export function MarkdownContent({ children, sourceUrl }: { children: string; sou
               {alt || 'View attached image'}
             </a>
           ),
+          pre: ({ children, node }) => {
+            const block = <pre>{children}</pre>;
+            const source = mermaidSource(node);
+            return source == null ? block : <MermaidDiagram source={source} fallback={block} />;
+          },
         }}
       >
         {children}

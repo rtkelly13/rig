@@ -230,6 +230,9 @@ importers:
       rehype-sanitize:
         specifier: ^6.0.0
         version: 6.0.0
+      remark-gemoji:
+        specifier: ^8.0.0
+        version: 8.0.0
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -1245,6 +1248,9 @@ packages:
   extend@3.0.2:
     resolution: {integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==}
 
+  gemoji@8.1.0:
+    resolution: {integrity: sha512-HA4Gx59dw2+tn+UAa7XEV4ufUKI4fH1KgcbenVA9YKSj1QJTT0xh5Mwv5HMFNN3l2OtUe3ZIfuRwSyZS5pLIWw==}
+
   get-caller-file@2.0.5:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
     engines: {node: 6.* || 8.* || >= 10.*}
@@ -1685,6 +1691,9 @@ packages:
 
   rehype-sanitize@6.0.0:
     resolution: {integrity: sha512-CsnhKNsyI8Tub6L4sm5ZFsme4puGfc6pYylvXo1AeqaGbjOYyzNv3qZPwvs0oMJ39eryyeOdmxwUIo94IpEhqg==}
+
+  remark-gemoji@8.0.0:
+    resolution: {integrity: sha512-/fL9rc72FYwFGtOKcT+QeQdx9Q9t5v4N6KLXSDOTEgaedzK85I9judBqB2eqz+g4b0ERMejlwSOuPK+wket6aA==}
 
   remark-gfm@4.0.1:
     resolution: {integrity: sha512-1quofZ2RQ9EWdeN34S79+KExV1764+wCUGop5CPL1WGdD0ocPpu91lzPGbwWMECpEpd42kJGQwzRfyov9j4yNg==}
@@ -2794,6 +2803,8 @@ snapshots:
 
   extend@3.0.2: {}
 
+  gemoji@8.1.0: {}
+
   get-caller-file@2.0.5: {}
 
   get-stream@6.0.1: {}
@@ -3472,6 +3483,12 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.5
       hast-util-sanitize: 5.0.2
+
+  remark-gemoji@8.0.0:
+    dependencies:
+      '@types/mdast': 4.0.4
+      gemoji: 8.1.0
+      mdast-util-find-and-replace: 3.0.4
 
   remark-gfm@4.0.1:
     dependencies:
