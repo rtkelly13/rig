@@ -154,7 +154,8 @@ internal static class Program
                         checkout,
                         Path.Join(checkout, "temp", "image"),
                         async executable => await ChromiumRenderer.LaunchAsync(executable, Path.Join(checkout, "temp", "image")).ConfigureAwait(false),
-                        () => new SvgSkiaRenderer()),
+                        () => new SvgSkiaRenderer(),
+                        new VtracerTool(proc, Path.Join(checkout, "temp", "tools"), VtracerTool.Fetch)),
                     Console.Out,
                     Console.Error).Build,
                 new LatexCommand(

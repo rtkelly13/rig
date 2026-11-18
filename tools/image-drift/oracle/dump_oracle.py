@@ -13,6 +13,13 @@ With `--simplifier-out <dir>` it instead freezes the SVG simplifier's outputs (r
     cd tools/image-drift && uv run --locked python -I oracle/dump_oracle.py \\
         --simplifier-out ../../tests/Rig.Image.Tests/SimplifierOracle
 
+With `--pathways-out <dir>` it freezes the pathways, edge-regularity, parametric-builder and builder outputs
+(rig issue #326) as `pathways-oracle.json` plus the larger SVGs beside it. It needs no Chromium and no vtracer, and
+touches none of the other oracle files:
+
+    cd tools/image-drift && uv run --locked python -I oracle/dump_oracle.py \\
+        --pathways-out ../../tests/Rig.Image.Tests/PathwaysOracle
+
 Without it, the generator renders every brand master and cut with image_drift's own HTML wrapper, scores them
 with image_drift's own metrics and promotion gate, builds the ICO the way production_cuts.py does,
 and writes the numbers as
@@ -1149,8 +1156,285 @@ def _simplifier_oracle(out: Path) -> None:
     target.write_text(json.dumps(document, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="")
 
 
+PATHWAYS_EDGE_DOCUMENTS: list[tuple[str, str]] = [
+    ("rtkelly-labs.master", "assets/rtkelly-labs/rtkelly-labs.svg"),
+    ("parquet-source-generator.master", "assets/parquet-source-generator/parquet-diamond.svg"),
+    ("rtkelly-labs.autotraced", "tests/Rig.Image.Tests/Oracle/candidates/rtkelly-labs.autotraced.svg"),
+    (
+        "parquet-source-generator.autotraced",
+        "tests/Rig.Image.Tests/Oracle/candidates/parquet-source-generator.autotraced.svg",
+    ),
+    ("rtkelly-labs.regularized", "tests/Rig.Image.Tests/Oracle/candidates/rtkelly-labs.regularized.svg"),
+    ("rtkelly-labs.parametric", "tests/Rig.Image.Tests/Oracle/candidates/rtkelly-labs.parametric.svg"),
+]
+
+PATHWAYS_VIEWBOX_INPUTS: list[str] = [
+    '<?xml version="1.0" encoding="UTF-8"?>\n<!-- Generator: visioncortex VTracer 0.6.4 -->\n'
+    '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">\n<path d="M0,0 Z"/>\n</svg>\n',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="12.5" height="30" viewBox="0 0 1 1"><g/></svg>',
+    '<svg width="10"><g/></svg>',
+    '<svg height="10"><g/></svg>',
+    '<svg width="10" height="20"></svg><svg width="1" height="2"></svg>',
+    '<svg\nwidth="7"\nheight="9">\n<g/></svg>',
+    "<g/>",
+]
+
+
+def _py_describe(report: Any) -> dict[str, Any]:
+    """The defects: how many, a digest of every line, and the first few in full."""
+    lines = [d.describe() for d in report.defects]
+    return {
+        "count": len(lines),
+        "linesSha256": hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest(),
+        "first": _py_defects(report.defects[:40]),
+    }
+
+
+def _py_defects(defects: Any) -> list[dict[str, Any]]:
+    return [
+        {
+            "kind": d.kind,
+            "pathIndex": d.path_index,
+            "segmentIndex": d.segment_index,
+            "length": d.length,
+            "angle": d.angle,
+            "deviation": d.deviation,
+            "describe": d.describe(),
+        }
+        for d in defects
+    ]
+
+
+def _fit_loss(svg_text: str) -> float:
+    """A loss with only eight levels, taken from the SVG's SHA-256 so it is the same in every language and run."""
+    return float(int.from_bytes(hashlib.sha256(svg_text.encode("utf-8")).digest()[:4], "big") % 8)
+
+
+def _fit_trace(ctx_params: Any, loss: Any, fields: Any = None, steps: Any = None) -> dict[str, Any]:
+    import dataclasses
+
+    evaluations: list[dict[str, Any]] = []
+    best: list[float] = []
+
+    def recording(svg_text: str) -> float:
+        value = loss(svg_text)
+        accepted = not best or value < best[0]
+        tie = bool(best) and value == best[0]
+        if accepted:
+            best[:] = [value]
+        evaluations.append(
+            {"loss": value, "accepted": accepted, "tie": tie, "sha256": hashlib.sha256(svg_text.encode()).hexdigest()}
+        )
+        return value
+
+    ctx = pathways.PathwayContext(master_svg="", reference_path=Path("unused"), params=ctx_params, score=recording)
+    kwargs: dict[str, Any] = {}
+    if fields is not None:
+        kwargs["fields"] = fields
+    if steps is not None:
+        kwargs["steps"] = steps
+    result = pathways.fit_parameters(ctx, **kwargs)
+    return {
+        "evaluations": evaluations,
+        "finalLoss": result.loss,
+        "params": {
+            f.name: (
+                {"x": getattr(result.params, f.name).x, "y": getattr(result.params, f.name).y}
+                if f.name in {"center", "loop_center"}
+                else getattr(result.params, f.name)
+            )
+            for f in dataclasses.fields(result.params)
+            if f.name != "lighting"
+        },
+        "svgSha256": hashlib.sha256(labs_parametric.generate_svg(params=result.params).encode()).hexdigest(),
+    }
+
+
+def _pathways_oracle(out: Path) -> None:
+    from image_drift import diamond_parquet_builder
+    from image_drift.edge_regularity import ISOMETRIC_AXES, analyze_edges
+    from image_drift.hex_geometry import Point, hexagon_vertices
+    from image_drift.labs_parametric import IsoLoopParams
+    from image_drift.variants import UnknownVariantError
+
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    files = out / "svg"
+    files.mkdir()
+
+    def sha(text: str) -> str:
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+    def write(name: str, text: str) -> str:
+        (files / name).write_text(text, encoding="utf-8", newline="")
+        return name
+
+    hexagons = [
+        {
+            "radius": r,
+            "center": {"x": c.x, "y": c.y},
+            "vertices": [{"x": v.x, "y": v.y} for v in hexagon_vertices(r, c)],
+        }
+        for r, c in [
+            (158.0, Point(440.0, 440.0)),
+            (114.0, Point(584.0, 584.0)),
+            (72.0, Point(250.0, 250.0)),
+            (33.3, Point(12.345, 98.765)),
+            (1.0, Point(0.0, 0.0)),
+        ]
+    ]
+
+    viewboxes: list[dict[str, Any]] = []
+    for text in PATHWAYS_VIEWBOX_INPUTS:
+        try:
+            viewboxes.append({"input": text, "output": pathways._with_viewbox(text)})
+        except ValueError as exc:
+            viewboxes.append({"input": text, "error": str(exc)})
+
+    edges: list[dict[str, Any]] = []
+    for name, rel in PATHWAYS_EDGE_DOCUMENTS:
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        entry: dict[str, Any] = {"id": name, "file": rel}
+        for label, axes in (("hex", None), ("iso", ISOMETRIC_AXES)):
+            kw: dict[str, Any] = {} if axes is None else {"axes": axes}
+            report = analyze_edges(text, **kw)
+            regularized = regularize_svg(text, **kw)
+            entry[label] = {
+                "totalEdges": report.total_edges,
+                "totalLength": report.total_length,
+                "conformingLength": report.conforming_length,
+                "axisConformancePct": report.axis_conformance_pct,
+                "summary": report.summary,
+                "defects": _py_describe(report),
+                "regularizedSha256": sha(regularized),
+                "afterConformancePct": analyze_edges(regularized, **kw).axis_conformance_pct,
+            }
+        edges.append(entry)
+    custom = analyze_edges(
+        (ROOT / PATHWAYS_EDGE_DOCUMENTS[0][1]).read_text(encoding="utf-8"),
+        exact_tol=1.0,
+        angle_tol=3.0,
+        min_segment=12.0,
+    )
+    edge_options = {
+        "exactTol": 1.0,
+        "angleTol": 3.0,
+        "minSegment": 12.0,
+        "totalEdges": custom.total_edges,
+        "axisConformancePct": custom.axis_conformance_pct,
+        "defects": len(custom.defects),
+    }
+
+    synthetic = (
+        '<svg><polygon points="0,0 100,3 100,100 0,100" />'
+        '<path d="M 0,0 L 10,0 L 10,10 Z M 20,20 L 40,20.2 L 40,40 L 20,40 Z" />'
+        '<path d="M0,0 C 1,1 2,2 3,3" /><polygon points="1,1 2,2" /></svg>'
+    )
+    synthetic_case = {
+        "svg": synthetic,
+        "report": {
+            "totalEdges": analyze_edges(synthetic).total_edges,
+            "defects": _py_describe(analyze_edges(synthetic)),
+            "conformancePct": analyze_edges(synthetic).axis_conformance_pct,
+        },
+        "regularized": regularize_svg(synthetic),
+        "regularizedPrecision0": regularize_svg(synthetic, precision=0),
+    }
+
+    parametric: dict[str, Any] = {"presets": {}}
+    for preset in labs_parametric.PRESETS:
+        text = labs_parametric.generate_svg(preset)
+        parametric["presets"][preset] = {"sha256": sha(text), "file": write(f"parametric.{preset}.svg", text)}
+    parametric["variants"] = {
+        k: {"name": v.name, "description": v.description} for k, v in labs_parametric.VARIANTS.items()
+    }
+    overrides = {
+        "r_outer": "150",
+        "center": "500, 520",
+        "loop_center": "430.5,441",
+        "canvas": "900",
+        "background": "#000000",
+        "gap": "7.25",
+    }
+    overridden = labs_parametric.PRESETS["baseline"].with_overrides(overrides)
+    text = labs_parametric.generate_svg(params=overridden)
+    parametric["overrides"] = {
+        "values": overrides,
+        "sha256": sha(text),
+        "file": write("parametric.overrides.svg", text),
+    }
+    try:
+        labs_parametric.PRESETS["baseline"].with_overrides({"nope": "1"})
+    except KeyError as exc:
+        parametric["unknownParameter"] = exc.args[0]
+    try:
+        labs_parametric.generate_svg("nope")
+    except UnknownVariantError as exc:
+        parametric["unknownVariant"] = str(exc)
+    try:
+        labs_parametric.PRESETS["baseline"].with_overrides({"r_outer": "wide"})
+    except ValueError:
+        parametric["badNumber"] = True
+
+    builders = {
+        "labs": {
+            "master": sha(labs_builder.generate_svg("master")),
+            "favicon": sha(labs_builder.generate_svg("favicon")),
+            "default": sha(labs_builder.generate_svg()),
+            "variants": {k: {"name": v.name, "description": v.description} for k, v in labs_builder.VARIANTS.items()},
+            "manifest": labs_builder.manifest().to_json(),
+        },
+        "parquet": {
+            "master": sha(diamond_parquet_builder.generate_svg("master")),
+            "favicon": sha(diamond_parquet_builder.generate_svg("favicon")),
+            "variants": {
+                k: {"name": v.name, "description": v.description} for k, v in diamond_parquet_builder.VARIANTS.items()
+            },
+        },
+    }
+    try:
+        labs_builder.generate_svg("nope")
+    except UnknownVariantError as exc:
+        builders["unknownVariant"] = str(exc)
+
+    fit_fields = [f.name for f in pathways.FIT_FIELDS]
+    fit = {
+        "fields": fit_fields,
+        "steps": list(pathways.FIT_STEPS),
+        "hashLoss": _fit_trace(None, _fit_loss),
+        "hashLossFromChunky": _fit_trace(labs_parametric.PRESETS["chunky"], _fit_loss),
+        "constantLoss": _fit_trace(None, lambda _svg: 5.0),
+        "skipsSmallValues": _fit_trace(
+            IsoLoopParams(r_inner=3.0, r_mid=40.0), lambda _svg: 5.0, fields=pathways.FIT_FIELDS[:3], steps=(2.0, 1.0)
+        ),
+    }
+
+    document = {
+        "provenance": {
+            "generator": "tools/image-drift/oracle/dump_oracle.py --pathways-out",
+            "python": platform.python_version(),
+            "image_drift": metadata.version("image-drift"),
+        },
+        "hexagons": hexagons,
+        "viewBoxes": viewboxes,
+        "edges": edges,
+        "edgeOptions": edge_options,
+        "syntheticEdges": synthetic_case,
+        "parametric": parametric,
+        "builders": builders,
+        "fit": fit,
+    }
+    (out / "pathways-oracle.json").write_text(
+        json.dumps(document, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline=""
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--pathways-out", type=Path, help="Freeze only the pathways, edge-regularity and builder outputs here."
+    )
     parser.add_argument("--simplifier-out", type=Path, help="Freeze only the SVG simplifier's outputs here.")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--regions-out", type=Path)
@@ -1159,6 +1443,9 @@ def main() -> int:
     args = parser.parse_args()
     if args.simplifier_out is not None:
         _simplifier_oracle(args.simplifier_out.resolve())
+        return 0
+    if args.pathways_out is not None:
+        _pathways_oracle(args.pathways_out.resolve())
         return 0
     if args.out is None or args.regions_out is None or args.chromium is None:
         parser.error("--out, --regions-out and --chromium are required unless --simplifier-out is given")
