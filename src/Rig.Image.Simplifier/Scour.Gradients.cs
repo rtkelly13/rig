@@ -228,5 +228,11 @@ internal static partial class Scour
         }
 
         WriteStyle(element, styles);
+
+        // A style element refers to the gradient from its text, not from attributes.
+        foreach (var text in element.Children.OfType<DomText>())
+        {
+            text.Value = pattern.Replace(text.Value, _ => replacement);
+        }
     }
 }

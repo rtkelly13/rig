@@ -217,8 +217,12 @@ internal static partial class Scour
         }
     }
 
-    // Python indexes a list from the end when the index goes negative: removing an identity at i = 1 leaves i at 0, and transform[i - 1] is then the last entry, not an error.
-    private static int PyIndex(List<ScourTransformFunction> transform, int i) => i < 0 ? i + transform.Count : i;
+    // The merged entry at i - 1 is an identity: drop it. What followed it now sits at i - 1, and the next comparison needs a predecessor, so the index never goes below 1.
+    private static void RemoveIdentityBefore(List<ScourTransformFunction> transform, ref int i)
+    {
+        transform.RemoveAt(i - 1);
+        i = Math.Max(i - 1, 1);
+    }
 
     // Runs of the same translate, rotate (about the origin) or scale are safe to combine.
     private static void CoalesceRuns(List<ScourTransformFunction> transform)
@@ -226,8 +230,8 @@ internal static partial class Scour
         var i = 1;
         while (i < transform.Count)
         {
-            var (currType, currArgs) = (transform[PyIndex(transform, i)].Type, transform[PyIndex(transform, i)].Args);
-            var (prevType, prevArgs) = (transform[PyIndex(transform, i - 1)].Type, transform[PyIndex(transform, i - 1)].Args);
+            var (currType, currArgs) = (transform[i].Type, transform[i].Args);
+            var (prevType, prevArgs) = (transform[i - 1].Type, transform[i - 1].Args);
             if (currType == prevType && currType == "translate")
             {
                 prevArgs[0] += currArgs[0];
@@ -243,22 +247,22 @@ internal static partial class Scour
                     }
                 }
 
-                transform.RemoveAt(PyIndex(transform, i));
+                transform.RemoveAt(i);
 
                 // Python indexes prevArgs[1] here, which raises for a one-number translation: it is not an identity unless that is zero too.
                 if (prevArgs[0].IsZero && (prevArgs.Count < 2 || prevArgs[1].IsZero))
                 {
-                    i--;
-                    transform.RemoveAt(PyIndex(transform, i));
+                    RemoveIdentityBefore(transform, ref i);
                 }
             }
             else if (currType == prevType && currType == "rotate" && prevArgs.Count == 1 && currArgs.Count == 1)
             {
                 prevArgs[0] = OptimizeAngle(prevArgs[0] + currArgs[0]);
-                transform.RemoveAt(PyIndex(transform, i));
+                transform.RemoveAt(i);
             }
             else if (currType == prevType && currType == "scale")
             {
+                var previousX = prevArgs[0];
                 prevArgs[0] *= currArgs[0];
                 if (prevArgs.Count == 2 && currArgs.Count == 2)
                 {
@@ -266,18 +270,17 @@ internal static partial class Scour
                 }
                 else if (prevArgs.Count == 1 && currArgs.Count == 2)
                 {
-                    prevArgs.Add(prevArgs[0] * currArgs[1]);
+                    prevArgs.Add(previousX * currArgs[1]);
                 }
                 else if (prevArgs.Count == 2 && currArgs.Count == 1)
                 {
                     prevArgs[1] *= currArgs[0];
                 }
 
-                transform.RemoveAt(PyIndex(transform, i));
+                transform.RemoveAt(i);
                 if (prevArgs[0] == 1 && (prevArgs.Count == 1 || prevArgs[1] == 1))
                 {
-                    i--;
-                    transform.RemoveAt(PyIndex(transform, i));
+                    RemoveIdentityBefore(transform, ref i);
                 }
             }
             else

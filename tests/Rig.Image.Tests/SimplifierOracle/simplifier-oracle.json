@@ -5062,7 +5062,7 @@
    "scour": {
     "sha256": "81db839bcfaefa8ea388d6d7235a02c46859f6b24bce4fbb8a2e4f67e1fcfe34",
     "length": 132,
-    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"scale(60 288)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"scale(60 96)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
    },
    "quantize": {
     "sha256": "76eb4022c6b965bf9b298b907688a06744475599efbcf1c76283c8221d755d5b",
@@ -5077,7 +5077,7 @@
    "final": {
     "sha256": "f80aa8d82936c9fe79a9796048567c21ccda05f3841dffe19d988f6d777fb308",
     "length": 132,
-    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"scale(60 288)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"scale(60 96)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
    },
    "geometricOnly": {
     "sha256": "76eb4022c6b965bf9b298b907688a06744475599efbcf1c76283c8221d755d5b",

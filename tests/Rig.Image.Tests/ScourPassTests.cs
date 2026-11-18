@@ -32,15 +32,35 @@ public sealed class ScourPassTests
     }
 
     [Theory]
-    [InlineData("translate(1 1) translate(-1 -1) rotate(30)")]
-    [InlineData("translate(1 1) translate(-1 -1) scale(2)")]
-    public void An_identity_translation_at_the_front_follows_Pythons_negative_indexing_instead_of_throwing(string transform)
+    [InlineData("translate(1 1) translate(-1 -1) rotate(30)", "transform=\"rotate(30)\"")]
+    [InlineData("translate(1 1) translate(-1 -1) scale(2)", "transform=\"scale(2)\"")]
+    public void An_identity_translation_at_the_front_is_dropped_and_the_rest_of_the_transform_survives(string transform, string expected)
     {
-        // Python indexes transform[-1] after removing the identity, which merges the last entry into itself and drops it;
-        // the oracle pins that output, so the port must neither throw nor keep the transform.
         var result = Scour($"<g transform=\"{transform}\"><rect width=\"1\" height=\"1\"/></g>");
 
-        Assert.DoesNotContain("transform", result, StringComparison.Ordinal);
+        Assert.Contains(expected, result, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Merging_a_uniform_scale_into_a_two_number_scale_multiplies_y_by_the_original_factor()
+    {
+        var result = Scour("<g transform=\"scale(2) scale(3 5)\"><rect width=\"1\" height=\"1\"/></g>");
+
+        Assert.Contains("transform=\"scale(6 10)\"", result, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_duplicate_gradient_referenced_from_a_style_element_is_rewritten_to_the_kept_one()
+    {
+        var result = Scour(
+            "<style>.a{fill:url(#dup)}</style>"
+            + "<defs><linearGradient id=\"keep\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient>"
+            + "<linearGradient id=\"dup\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient></defs>"
+            + "<rect class=\"a\" width=\"1\" height=\"1\"/><rect fill=\"url(#keep)\" width=\"1\" height=\"1\"/>");
+
+        Assert.DoesNotContain("dup", result, StringComparison.Ordinal);
+        Assert.Contains("url(#keep)", result, StringComparison.Ordinal);
+        Assert.Contains(".a{fill:url(#keep)}", result, StringComparison.Ordinal);
     }
 
     [Fact]
