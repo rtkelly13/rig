@@ -67,7 +67,7 @@
       "args": [
         "{rig-root}"
       ],
-      "summary": "Opens the rig repo folder in its own VS Code window. Deliberately opens the folder rather than rig.code-workspace: the Review desktop owns that multi-root workspace file, and VS Code focuses the already-open workspace window instead of opening a second one, so two desktops opening the same .code-workspace collide onto one window. A plain folder window is a distinct VS Code window.",
+      "summary": "Opens the rig repo folder in its own VS Code window. Deliberately opens the folder rather than rig.code-workspace: the IDE desktop owns that multi-root workspace file, and VS Code focuses the already-open workspace window instead of opening a second one, so two desktops opening the same .code-workspace collide onto one window. A plain folder window is a distinct VS Code window.",
       "delay_ms": 1200,
       "placement": {
         "screen": 2,

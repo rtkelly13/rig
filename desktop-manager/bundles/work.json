@@ -24,7 +24,7 @@
       "type": "command",
       "command": "rig tools ensure web && \"{chrome-path}\" --user-data-dir=\"{chrome-user-data}\" --profile-directory=\"{chrome-profile-personal}\" --app=http://127.0.0.1:8090/triage/inbox",
       "cwd": "{rig-root}",
-      "summary": "The rig triage queue (`rig triage`) as a Chrome app window, full screen 2, beside Orca: starts the rig web dashboard if it is not already answering, then opens its triage inbox. It shares the dashboard's window title with Rig Web on the Review desktop; restore matches each desktop's own windows first, so neither claims the other.",
+      "summary": "The rig triage queue (`rig triage`) as a Chrome app window, full screen 2, beside Orca: starts the rig web dashboard if it is not already answering, then opens its triage inbox. The triage window also gives the rest of the dashboard.",
       "delay_ms": 2200,
       "placement": {
         "screen": 2,
