@@ -140,34 +140,15 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     public static string MatchQuery(MailMatch match)
     {
         ArgumentNullException.ThrowIfNull(match);
-        var parts = new List<string>();
-        if (match.Senders.Count > 0)
+        // Gmail renders a filter's "Doesn't have" field as -{...}; match that exactly.
+        return string.Join(' ', new (bool Present, string Term)[]
         {
-            parts.Add(AnyOf("from", match.Senders));
-        }
-
-        if (match.To.Count > 0)
-        {
-            parts.Add(AnyOf("to", match.To));
-        }
-
-        if (match.Subject.Count > 0)
-        {
-            parts.Add(AnyOf("subject", match.Subject));
-        }
-
-        if (match.Query.Length > 0)
-        {
-            parts.Add($"({match.Query})");
-        }
-
-        if (match.Exclude.Length > 0)
-        {
-            // Gmail renders a filter's "Doesn't have" field as -{...}; match that exactly.
-            parts.Add($"-{{{match.Exclude}}}");
-        }
-
-        return string.Join(' ', parts);
+            (match.Senders.Count > 0, AnyOf("from", match.Senders)),
+            (match.To.Count > 0, AnyOf("to", match.To)),
+            (match.Subject.Count > 0, AnyOf("subject", match.Subject)),
+            (match.Query.Length > 0, $"({match.Query})"),
+            (match.Exclude.Length > 0, $"-{{{match.Exclude}}}"),
+        }.Where(p => p.Present).Select(p => p.Term));
     }
 
     /// <summary>
@@ -230,22 +211,13 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     // Gmail terms that each match mail still missing one of the actions; OR them to find work.
     private static List<string> UnmetTerms(MailActions actions)
     {
-        var terms = new List<string>();
+        List<string> terms = [];
         if (!string.IsNullOrEmpty(actions.Label))
         {
             terms.Add($"-label:{SearchLabel(actions.Label)}");
         }
 
-        if (actions.Star)
-        {
-            terms.Add("-is:starred");
-        }
-
-        if (actions.MarkRead)
-        {
-            terms.Add("is:unread");
-        }
-
+        terms.AddRange(new (bool Unmet, string Term)[] { (actions.Star, "-is:starred"), (actions.MarkRead, "is:unread") }.Where(t => t.Unmet).Select(t => t.Term));
         if (actions.Important is { } important)
         {
             terms.Add(important ? "-is:important" : "is:important");
@@ -268,24 +240,14 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
         foreach (var rule in ruleset.Rules)
         {
             var prefix = $"{where}: rule `{rule.Name}`";
-            if (!seen.Add(rule.Name))
+            var problem = !seen.Add(rule.Name) ? " is defined twice"
+                : rule.Match.IsEmpty ? " matches everything; give it from, to, subject or query"
+                : rule.Actions.IsEmpty ? " has no actions"
+                : rule.OlderThan is { } age && !Duration().IsMatch(age) ? $": older_than must look like 3d, 2m or 1y, not {QuotedText.Str(age)}"
+                : null;
+            if (problem is not null)
             {
-                throw new RulesException($"{prefix} is defined twice");
-            }
-
-            if (rule.Match.IsEmpty)
-            {
-                throw new RulesException($"{prefix} matches everything; give it from, to, subject or query");
-            }
-
-            if (rule.Actions.IsEmpty)
-            {
-                throw new RulesException($"{prefix} has no actions");
-            }
-
-            if (rule.OlderThan is { } age && !Duration().IsMatch(age))
-            {
-                throw new RulesException($"{prefix}: older_than must look like 3d, 2m or 1y, not {QuotedText.Str(age)}");
+                throw new RulesException(prefix + problem);
             }
         }
     }

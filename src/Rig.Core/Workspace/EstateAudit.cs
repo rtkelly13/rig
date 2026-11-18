@@ -107,28 +107,15 @@ public sealed class EstateAudit(Git git, EstateScopes scopes)
         }
 
         var cleaned = remote.Trim();
-        if (cleaned.EndsWith(".git", StringComparison.Ordinal))
+        cleaned = cleaned.EndsWith(".git", StringComparison.Ordinal) ? cleaned[..^4] : cleaned;
+        cleaned = cleaned switch
         {
-            cleaned = cleaned[..^4];
-        }
-
-        if (cleaned.StartsWith("git@", StringComparison.Ordinal))
-        {
-            cleaned = ReplaceFirstColon(cleaned[4..]);
-        }
-        else if (cleaned.StartsWith("https://", StringComparison.Ordinal))
-        {
-            cleaned = cleaned[8..];
-        }
-        else if (cleaned.StartsWith("http://", StringComparison.Ordinal))
-        {
-            cleaned = cleaned[7..];
-        }
-        else if (cleaned.StartsWith("ssh://git@", StringComparison.Ordinal))
-        {
-            cleaned = ReplaceFirstColon(cleaned[10..]);
-        }
-
+            _ when cleaned.StartsWith("git@", StringComparison.Ordinal) => ReplaceFirstColon(cleaned[4..]),
+            _ when cleaned.StartsWith("https://", StringComparison.Ordinal) => cleaned[8..],
+            _ when cleaned.StartsWith("http://", StringComparison.Ordinal) => cleaned[7..],
+            _ when cleaned.StartsWith("ssh://git@", StringComparison.Ordinal) => ReplaceFirstColon(cleaned[10..]),
+            _ => cleaned,
+        };
         return cleaned.ToLowerInvariant().Trim('/');
     }
 
@@ -321,8 +308,7 @@ public sealed class EstateAudit(Git git, EstateScopes scopes)
             return false;
         }
 
-        var local = NormalizeRemote(remote);
-        var declared = NormalizeRemote(spec.Repo);
+        var (local, declared) = (NormalizeRemote(remote), NormalizeRemote(spec.Repo));
         return !string.IsNullOrEmpty(local) && !string.IsNullOrEmpty(declared) && local != declared;
     }
 
