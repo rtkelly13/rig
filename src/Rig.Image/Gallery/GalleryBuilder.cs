@@ -27,13 +27,13 @@ internal sealed record GalleryInput(
     string DefaultVariant,
     Func<string, string> Generate);
 
-/// <summary>A built page and the progress lines image_drift printed while building it.</summary>
+/// <summary>A built page and the progress lines the original printed while building it.</summary>
 /// <param name="Html">The self-contained page.</param>
 /// <param name="Lines">What to tell the person.</param>
 internal sealed record GalleryRun(string Html, IReadOnlyList<string> Lines);
 
 /// <summary>
-/// The preview galleries of image_drift's <c>build-preview</c>: a selection page with no scores, the scored wave page, and the single-target page.
+/// The preview galleries of the original <c>build-preview</c>: a selection page with no scores, the scored wave page, and the single-target page.
 /// Every candidate is rendered by the authoritative renderer and scored against the reference; the gallery never writes the master.
 /// </summary>
 internal static class GalleryBuilder

@@ -35,7 +35,7 @@ public sealed record SnapshotStep(
 /// <param name="Steps">The steps in index order.</param>
 public sealed record VariationRun(string RunId, string Project, IReadOnlyList<SnapshotStep> Steps);
 
-/// <summary>Writes and reads step snapshots under a git-ignored variations root (image_drift's <c>SnapshotManager</c>).</summary>
+/// <summary>Writes and reads step snapshots under a git-ignored variations root (the original <c>SnapshotManager</c>).</summary>
 /// <param name="variationsRoot">The folder holding <c>&lt;project&gt;/&lt;run&gt;/</c> directories.</param>
 public sealed partial class SnapshotManager(string variationsRoot)
 {

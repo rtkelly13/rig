@@ -18,7 +18,7 @@ public sealed record GridCell(int Row, int Column, double Error);
 /// <param name="Mode"><c>GEOMETRY_EDGE</c>, <c>CHROMATIC_COLOR</c> or <c>MIXED</c>.</param>
 public sealed record Hotspot(int Rank, int X0, int Y0, int X1, int Y1, double ErrorPct, string Mode);
 
-/// <summary>Everything image_drift's compute_drift and analyze_decomposed_drift report for one reference and render pair.</summary>
+/// <summary>Everything the original compute_drift and analyze_decomposed_drift report for one reference and render pair.</summary>
 public sealed record DriftNumbers(
     double RmsePct,
     double Ssim,
@@ -37,7 +37,7 @@ public sealed record DriftNumbers(
 /// <param name="PerFeaturePct">RMSE over each feature crop, keyed by region.</param>
 public sealed record Score(double CompositePct, double FullFramePct, IReadOnlyDictionary<string, double> PerFeaturePct);
 
-/// <summary>A port of image_drift's metrics.py, diagnostics.py and numeric.py over two images on the same canvas.</summary>
+/// <summary>A port of the original metrics.py, diagnostics.py and numeric.py over two images on the same canvas.</summary>
 public static class DriftMetrics
 {
     /// <summary>How much of a composite is the full frame.</summary>
@@ -108,7 +108,7 @@ public static class DriftMetrics
         return Rms(abs) / 255.0 * 100.0;
     }
 
-    /// <summary>The structural similarity of two images, as image_drift's compute_ssim.</summary>
+    /// <summary>The structural similarity of two images, as the original compute_ssim.</summary>
     public static double Ssim(RgbImage reference, RgbImage render)
     {
         EnsureSameSize(reference, render);

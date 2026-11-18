@@ -12,7 +12,7 @@ public enum ResizeFilter
 
 /// <summary>
 /// Pillow's resampler, bit for bit: fixed-point coefficients at 22 bits, a horizontal pass then a vertical pass with an 8-bit
-/// result between them, and premultiplied alpha for RGBA. image_drift's scores depend on these pixels, so a general-purpose
+/// result between them, and premultiplied alpha for RGBA. the original scores depend on these pixels, so a general-purpose
 /// resampler that is only close would move every metric.
 /// </summary>
 public static class PillowResize

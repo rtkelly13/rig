@@ -13,7 +13,7 @@ baseline, and the named acceptance procedures. This ledger points at those proce
 restating them.
 
 **Source port: complete (#285).** Every row is `switched`, `legacy deleted` or retired: the Python runtime, its
-tests and tooling are deleted, and `tools/image-drift` is the one intentional Python project (ADR 0022). Native
+tests and tooling are deleted, the image pipeline included (ADR 0024). Native
 acceptance is the open part: no row records a native run, so every native cell is `pending` with its procedure, or
 `not applicable` with its reason. #222 and #248 are internal work inside already switched surfaces,
 so they update a row rather than add one.

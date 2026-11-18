@@ -80,7 +80,7 @@ public sealed class ParameterOverrideException : ArgumentException
     }
 }
 
-/// <summary>Named geometry for the interlocking isometric loops and crossover beams (image_drift's <c>IsoLoopParams</c>).</summary>
+/// <summary>Named geometry for the interlocking isometric loops and crossover beams (the original <c>IsoLoopParams</c>).</summary>
 public sealed record IsoLoopParams
 {
     /// <summary>The default colour ramps.</summary>
@@ -178,7 +178,7 @@ public sealed record IsoLoopParams
     }
 }
 
-/// <summary>The parametric labs builder (image_drift's <c>labs_parametric</c>): the mark as named geometry, with per-facet lighting.</summary>
+/// <summary>The parametric labs builder (the original <c>labs_parametric</c>): the mark as named geometry, with per-facet lighting.</summary>
 public static class IsoLoopBuilder
 {
     /// <summary>The variant used when none is named.</summary>

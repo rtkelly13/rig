@@ -10,7 +10,7 @@ namespace Rig.Image;
 internal sealed record StudioResponse(int Status, string Body);
 
 /// <summary>
-/// The Asset Studio's JSON API (image_drift's <c>serve</c>): project catalogs, drift diffs against companion rasters and snapshot capture. The web host
+/// The Asset Studio's JSON API (the original <c>serve</c>): project catalogs, drift diffs against companion rasters and snapshot capture. The web host
 /// maps routes onto these; nothing here renders SVG, so no browser is needed.
 /// </summary>
 internal sealed class StudioApi(string assetsRoot, string variationsRoot)

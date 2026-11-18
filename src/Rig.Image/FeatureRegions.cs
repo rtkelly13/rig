@@ -8,7 +8,7 @@ namespace Rig.Image;
 /// <param name="Y1">Bottom edge.</param>
 public sealed record FeatureBox(string Key, int X0, int Y0, int X1, int Y1);
 
-/// <summary>The feature regions each project's candidates are scored on, frozen from image_drift's builders.</summary>
+/// <summary>The feature regions each project's candidates are scored on, frozen from the original builders.</summary>
 public static class FeatureRegions
 {
     private const string Resource = "Rig.Image.feature-regions.json";

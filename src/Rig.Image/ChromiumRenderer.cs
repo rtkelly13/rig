@@ -3,7 +3,7 @@ using Microsoft.Playwright;
 namespace Rig.Image;
 
 /// <summary>
-/// The authoritative renderer: headless Chromium through Microsoft.Playwright, in image_drift's exact HTML wrapper. The
+/// The authoritative renderer: headless Chromium through Microsoft.Playwright, in the original exact HTML wrapper. The
 /// Microsoft.Playwright package version pins the Chromium revision, so a developer and CI install the same browser.
 /// </summary>
 public sealed class ChromiumRenderer : ISvgRenderer

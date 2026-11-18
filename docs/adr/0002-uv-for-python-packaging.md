@@ -1,6 +1,6 @@
 # ADR 0002: uv for Python Packaging and Execution
 
-- **Status:** Superseded by [0022](0022-csharp-is-rigs-primary-language.md), except for `image_drift`
+- **Status:** Superseded by [0022](0022-csharp-is-rigs-primary-language.md) (its `image_drift` exception ended when the pipeline moved to C#, ADR 0024)
 - **Applies to:** all Python modules, CLI utilities, and scripts
 
 ## Context

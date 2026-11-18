@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Rig.Image.Pathways;
 
-/// <summary>VTracer settings for the <c>autotraced</c> pathway; the defaults are image_drift's.</summary>
+/// <summary>VTracer settings for the <c>autotraced</c> pathway; the defaults are the original's.</summary>
 public sealed record VtracerConfig
 {
     /// <summary>The colour mode.</summary>

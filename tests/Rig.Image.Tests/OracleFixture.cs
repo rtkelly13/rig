@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 namespace Rig.Image.Tests;
 
-/// <summary>The frozen Python score oracle (tools/image-drift/oracle/dump_oracle.py) and the repository assets it was taken from.</summary>
+/// <summary>The frozen Python score oracle (dumped from the original implementation before it was retired) and the repository assets it was taken from.</summary>
 internal static class OracleFixture
 {
     private static readonly string Folder = Path.Combine(AppContext.BaseDirectory, "Oracle");

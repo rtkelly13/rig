@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Rig.Image.Simplifier;
 
-/// <summary>The SVG path <c>d</c> tokenizer, parser and subpath splitter, with image_drift's quirks kept.</summary>
+/// <summary>The SVG path <c>d</c> tokenizer, parser and subpath splitter, with the original quirks kept.</summary>
 public static partial class PathData
 {
     private static readonly Dictionary<char, int> Arity = new()

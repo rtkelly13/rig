@@ -5,12 +5,7 @@ interlocking-columns design is in `svg_builder.py`; this one is the earlier
 direction -- a rhombille (or herringbone) tiling inside a glowing hexagon frame,
 with a seam-locked circuit network, a notched socket dot and etched emblems.
 
-Drive it through the CLI's builder-module hook, which is the supported way to run
-a structurally different mark:
-
-    PYTHONPATH=experiments/logo-explorers uv run --project tools/image-drift --with svgwrite image-reconcile build \\
-        -B experiments/logo-explorers/rhombille_builder.py \\
-        --variant rhombille_reference --svg /tmp/hex.svg
+This module is a frozen reference; the image pipeline that ran it is C# now (see README.md).
 
 Every geometry helper comes from `hex_shapes` and every gradient and glow
 definition from `svg_builder`, so fixes to the shared parts -- the arc-sweep convention, the

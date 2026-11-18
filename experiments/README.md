@@ -8,9 +8,9 @@ This directory houses technical, visual, and architectural experiments directly 
 
 | Experiment | Focus & Technologies | Location / Launch |
 |---|---|---|
-| **Logo explorers** | Unscored rhombille-hexagon and interlocking-columns marks, moved out of `rig.image_drift`. Not type-checked, ratcheted or run in CI. | [`logo-explorers/`](logo-explorers/README.md) |
+| **Logo explorers** | Unscored rhombille-hexagon and interlocking-columns marks, kept as a frozen reference. Not runnable, type-checked or run in CI. | [`logo-explorers/`](logo-explorers/README.md) |
 | **[C4 as OKF](c4-okf/README.md)** | C4 diagrams kept as an Open Knowledge Format bundle: zoom-in across documents, composition (fan-in, merged model, expand), level and refinement checks; rendered by vendored Pele. | `rig c4 check` · `rig web` → sidebar **C4 architecture**, or `/c4/` |
-| **Asset Drift Reconciler** | Deterministic vectorization, SSIM / PSNR / RMSE scoring, and decomposed luminance vs chrominance drift diagnostics. | `uv run --project tools/image-drift image-reconcile serve` |
+| **Asset Drift Reconciler** | Deterministic vectorization, SSIM / PSNR / RMSE scoring, and decomposed luminance vs chrominance drift diagnostics. | `rig web` → `/studio`, or `rig image compare`, `diagnose`, `vectorize` |
 
 ---
 

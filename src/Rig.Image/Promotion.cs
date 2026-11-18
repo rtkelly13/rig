@@ -4,7 +4,7 @@ namespace Rig.Image;
 
 /// <summary>Whether a candidate may replace the incumbent master, and why not.</summary>
 /// <param name="Promotable">True when every gate passed.</param>
-/// <param name="Reasons">One line per failed gate, worded like image_drift's.</param>
+/// <param name="Reasons">One line per failed gate, worded like the original.</param>
 /// <param name="CompositeDelta">Incumbent composite minus candidate composite; positive means better.</param>
 /// <param name="SsimDelta">Candidate SSIM minus incumbent SSIM; positive means better.</param>
 /// <param name="WorstFeatureDelta">The largest per-region regression; positive means a region got worse.</param>
@@ -17,7 +17,7 @@ public sealed record PromotionVerdict(
     double WorstFeatureDelta,
     string? WorstFeatureKey);
 
-/// <summary>image_drift's promotion gate, over scores already computed in one scoring pass.</summary>
+/// <summary>the original promotion gate, over scores already computed in one scoring pass.</summary>
 public static class PromotionGate
 {
     /// <summary>A composite must beat the incumbent by more than this many percentage points; less is a tie.</summary>

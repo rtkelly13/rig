@@ -3,7 +3,7 @@ using Rig.Image.Pathways;
 
 namespace Rig.Image;
 
-/// <summary>Plain-language guidance and the diff heatmap for a reference and render pair: the diagnostic half of image_drift's drift report.</summary>
+/// <summary>Plain-language guidance and the diff heatmap for a reference and render pair: the diagnostic half of the original drift report.</summary>
 internal static class DriftReport
 {
     /// <summary>What one hotspot's dominant error mode means.</summary>

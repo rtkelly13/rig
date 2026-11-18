@@ -1,4 +1,4 @@
-/* Tailwind source for the image-drift preview gallery.
+/* Tailwind source for the image preview gallery.
  *
  * `pnpm css:build` compiles it to gallery.css beside it. That output is
  * committed and embedded in Rig.Image, which inlines it into a self-contained

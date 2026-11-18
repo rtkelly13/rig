@@ -10,7 +10,7 @@ namespace Rig.Image;
 internal sealed record SheetPanel(RgbImage Image, string Label = "", bool Highlight = false);
 
 /// <summary>
-/// The contact and comparison sheets of image_drift's imaging module, composed on the same layout. Panels are nearest-neighbour resized so pixel
+/// The contact and comparison sheets of the original imaging module, composed on the same layout. Panels are nearest-neighbour resized so pixel
 /// boundaries stay legible. Captions use SkiaSharp's default typeface where the Python used Pillow's bitmap font, so glyph pixels differ.
 /// </summary>
 internal static class Sheets

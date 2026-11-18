@@ -28,8 +28,7 @@ The inspector combines:
 - Every C# `Main`, top-level C# file app, C# command root and project (Roslyn syntax, project XML and evaluated
   MSBuild output types); C# root discovery includes target-typed `new()` and type aliases through Roslyn's
   semantic model. Node `bin`/package scripts and standalone Node scripts, tracked executable modes, and
-  checked-in command/shell/PowerShell/LaunchAgent launchers. Launcher contents are fingerprinted. No Python
-  is inspected: `tools/image-drift` is the only Python project and no rig command reaches it.
+  checked-in command/shell/PowerShell/LaunchAgent launchers. Launcher contents are fingerprinted.   is inspected: no rig command reaches Python.
 - The composed C# job registry, including the optional workspace jobs, using inert fixture paths. They are
   callers, not independent implementations. No job is run. The MCP server's actual C# tool attributes are inspected
   without serving requests.
@@ -61,7 +60,7 @@ cannot conceal an independent implementation.
 | `claude-sessions` | Retired without a C# port (#224) | Eight Python leaves and fourteen modules deleted; the `work` list keeps its own transcript, live-session and ledger reader in `work/session_store.py`. Orca and direct CLI/IDE workflows replaced the window-focused orchestration |
 | Core Python modules, development file apps, Node scripts and launchers | `module:`, `python-file:`, `main:`, `file-app:`, `node:`, `launcher:` rows | Development tooling is inventoried separately from product CLI behavior |
 | Web/MCP and jobs | `web-child:`, `mcp:`, `python-job:`, `cs-job:` rows | The `mcp:` tool set is now C#; `desktop_manager.web_mcp`, the triage, estate and telemetry web children, and the jobs coordinator are retired. No `web-child:` rows remain, and job callers remain Python where named until their slices switch them |
-| Brand pipeline | `tools/image-drift` | Intentional Python exception, its own project/gates (ADR 0022) |
+| Brand pipeline | `src/Rig.Image` | C# (#327, ADR 0024); the Python exception in ADR 0022 is superseded |
 
 There are 13 current console scripts, rather than the issue's original 15, and all of them start the C# CLI. The ledger
 follows actual registrations. `desktop-manager`, and its `help`, are retired.
@@ -236,5 +235,4 @@ tombstones keep a deleted surface from coming back. Tombstones are permanent by 
 the lists only grow; collapsing them would mean changing that rule, which is a separate decision.
 
 What remains of the port is evidence, not code: the named native acceptance procedures above and the estate rollout
-records stay `pending` in [acceptance.md](acceptance.md) until someone records a run. ADR 0022's isolated
-`tools/image-drift` exception stays Python.
+records stay `pending` in [acceptance.md](acceptance.md) until someone records a run. ADR 0022's Python exception for the image pipeline ended with #327 (ADR 0024).

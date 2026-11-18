@@ -5,7 +5,7 @@
       "file": "master.svg",
       "sha256": "ed950a4fe75e38a2a7d100c2e827b813ba020e621cde912a3c0c0b33f945af80",
       "gated": true,
-      "provenance": "Traced from reference/02-smooth-crossover-baseline.jpg (Antigravity session 09c871e1). Not recomputable -- edit only via `image-reconcile promote`."
+      "provenance": "Traced from reference/02-smooth-crossover-baseline.jpg (Antigravity session 09c871e1). Not recomputable -- edit only via `rig image promote`."
     },
     "favicon": {
       "file": "favicon.svg",

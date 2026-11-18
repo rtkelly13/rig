@@ -9,7 +9,7 @@ internal sealed record ReferenceAsset(int SequenceNumber, string Filename, strin
 /// <summary>A project's assets as the Asset Studio shows them: master, references and production cuts, the cuts exactly as its CSV declares them.</summary>
 internal sealed record ProjectCatalog(string Name, string? MasterSvg, string? MasterPng, IReadOnlyList<ReferenceAsset> References, IReadOnlyList<CutSpec> Cuts, IReadOnlyList<VariationRun> Runs);
 
-/// <summary>Indexes the assets folder and the git-ignored variations tree into project catalogs (image_drift's AssetIndexer).</summary>
+/// <summary>Indexes the assets folder and the git-ignored variations tree into project catalogs (the original AssetIndexer).</summary>
 internal sealed partial class AssetCatalog(string assetsRoot, string variationsRoot)
 {
     private static readonly Dictionary<string, int> CutOrder = new(StringComparer.Ordinal)

@@ -43,7 +43,7 @@ internal sealed record ImageProject(string Name, string Svg, string Reference)
     public string GenerateSvg(string? variant) => IsLabs ? LabsBuilder.GenerateSvg(variant) : DiamondParquetBuilder.GenerateSvg(variant);
 }
 
-/// <summary>Resolves project keys and aliases the way image_drift's <c>resolve_project</c> does.</summary>
+/// <summary>Resolves project keys and aliases the way the original <c>resolve_project</c> does.</summary>
 internal static class ImageProjects
 {
     /// <summary>The project used when none is named.</summary>

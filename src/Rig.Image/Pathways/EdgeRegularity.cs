@@ -31,7 +31,7 @@ public enum DefectKind
 /// <param name="Deviation">Degrees away from the nearest canonical axis.</param>
 public sealed record EdgeDefect(DefectKind Kind, int PathIndex, int SegmentIndex, Point Start, Point End, double Length, double Angle, double Deviation)
 {
-    /// <summary>The defect as one line, worded like image_drift's.</summary>
+    /// <summary>The defect as one line, worded like the original.</summary>
     public string Describe() =>
         $"path {PathIndex} seg {SegmentIndex}: {EdgeRegularity.KindName(Kind)} "
         + $"({PythonNumber.FormatFixed(Start.X, 0)},{PythonNumber.FormatFixed(Start.Y, 0)})->({PythonNumber.FormatFixed(End.X, 0)},{PythonNumber.FormatFixed(End.Y, 0)}) "
@@ -67,7 +67,7 @@ public sealed class EdgeReport
     public int Count(DefectKind kind) => Defects.Count(d => d.Kind == kind);
 }
 
-/// <summary>Detects and repairs jagged edges in an axis-constrained vector mark (image_drift's <c>edge_regularity</c>).</summary>
+/// <summary>Detects and repairs jagged edges in an axis-constrained vector mark (the original <c>edge_regularity</c>).</summary>
 public static partial class EdgeRegularity
 {
     /// <summary>The three isometric projection axes.</summary>
@@ -91,7 +91,7 @@ public static partial class EdgeRegularity
     /// <summary>Decimal places the regularized coordinates are written with.</summary>
     public const int DefaultPrecision = 2;
 
-    /// <summary>The kind as image_drift names it.</summary>
+    /// <summary>The kind as the original names it.</summary>
     public static string KindName(DefectKind kind) => kind switch
     {
         DefectKind.MicroSegment => "micro_segment",

@@ -1,4 +1,4 @@
-# Brand Assets & the Image-Drift Harness
+# Brand Assets & the Image Harness
 
 The authoritative description of how managed brand marks are stored, generated, scored, and
 changed. Where another document states a threshold or a path that disagrees with this one,
@@ -23,7 +23,7 @@ A brand master is either **traced** or **computed**, and the two are governed di
 | Source of truth | a committed SVG file | named parameters in Python |
 | Can be recomputed? | **no** | yes |
 | Registered in `cli.PROJECTS`? | yes | **no** |
-| How it changes | `image-reconcile promote`, after winning the gate | freely — it proposes, it does not decide |
+| How it changes | `rig image promote`, after winning the gate | freely — it proposes, it does not decide |
 
 A traced master is a one-way door: it is a trace of an approved reference raster, and nothing
 can reconstruct it if a worse drawing overwrites it. So the only path from a computed
@@ -37,7 +37,7 @@ live in [`experiments/logo-explorers/`](../../experiments/logo-explorers/README.
 ### Layout
 
 ```
-tools/image-drift/src/image_drift/builder_assets/<project>/
+src/Rig.Image/builder-assets/<project>/
     master.svg      AUTHORITATIVE — written only by `promote`
     favicon.svg     AUTHORITATIVE — hand-authored small-size cut
     manifest.json   per-variant sha256, `gated` flag, provenance
@@ -68,11 +68,11 @@ an installed wheel, where `assets/` does not exist.
 5. **Intermediates are ephemeral.** Simplifier output, candidate renders, and preview HTML go
    to the gitignored `temp/`. Nothing regenerable is committed.
 6. **Dual co-refinement.** Simplification is guided by decomposed diagnostics
-   (`image-reconcile diagnose`), attributing drift orthogonally between luminance
+   (`rig image diagnose`), attributing drift orthogonally between luminance
    (geometry/edges) and chrominance (palette/tint).
 
-All six are enforced by `tools/image-drift/tests/test_brand_asset_governance.py` and
-`tools/image-drift/tests/test_image_drift_labs.py`.
+All six are enforced by the tests in `tests/Rig.Image.Tests`, `tests/Rig.Cli.Tests/Image`
+and `tests/Rig.Web.Tests`.
 
 ### `production-cuts.csv` schema
 
@@ -88,11 +88,11 @@ All six are enforced by `tools/image-drift/tests/test_brand_asset_governance.py`
 | `favicon_svg` | High-contrast small-size vector cut |
 | `favicon` | Favicon raster or `.ico` bundle |
 
-`image-reconcile export-avatar -p <project>` writes one file per row and nothing else
-(`tools/image-drift/src/image_drift/production_cuts.py`). `svg` rows are copies, `png` rows are Chromium
+`rig image export-avatar -p <project>` writes one file per row and nothing else
+(`Rig.Image.ProductionCuts`). `svg` rows are copies, `png` rows are Chromium
 renders at the row's size, and `ico` rows bundle 48/32/16px up to the row's width. `favicon*`
 cut types come from the builder's `favicon` variant; every other cut comes from the canonical
-master. `tools/image-drift/tests/test_production_cuts.py` checks the export against each CSV.
+master. the CLI tests check the export against each CSV.
 
 ---
 
@@ -145,9 +145,9 @@ The 81.2% figure independently corroborates the **81.6%** edge correlation that
 same defect.
 
 ```bash
-uv run --project tools/image-drift image-reconcile edges -p rtkelly-labs                    # report
-uv run --project tools/image-drift image-reconcile edges -p rtkelly-labs --min-conformance 36   # CI ratchet
-uv run --project tools/image-drift image-reconcile edges -p rtkelly-labs --fix out.svg      # repair + score
+rig image edges -p rtkelly-labs                    # report
+rig image edges -p rtkelly-labs --min-conformance 36   # CI ratchet
+rig image edges -p rtkelly-labs --fix out.svg      # repair + score
 ```
 
 ### Why it works as a gate
@@ -156,7 +156,7 @@ Unlike SSIM, this needs no renderer — it is arithmetic over parsed path data, 
 it runs everywhere the test suite runs. (The drift test is
 `skipif(not chromium_available())` and therefore *silently skips* wherever
 Playwright is absent; the conformance test never does.) It is pinned by
-`tools/image-drift/tests/test_edge_regularity.py` to be:
+the edge tests in `tests/Rig.Image.Tests` to be:
 
 - **deterministic** — bit-identical across runs and processes;
 - **invariant** to path order, whitespace, and translation. Float summation is
@@ -203,7 +203,7 @@ both axes. Measured on `rtkelly-labs`:
 | **Fitted** — constructed, dimensions fitted to the reference | **100.0%** | **148** | **0** | 0.6365 | 25.866% |
 
 ```bash
-uv run --project tools/image-drift image-reconcile pathways -p rtkelly-labs --out-dir temp/pathways
+rig image pathways -p rtkelly-labs --out-dir temp/pathways
 ```
 
 ### What the numbers say
@@ -238,7 +238,7 @@ for 0.004 SSIM. It is visibly the same mark with crisper edges.
 Every pathway is deterministic — same inputs, byte-identical output — and the
 fitter especially so: fixed field order, fixed step schedule, no randomness, and
 ties broken toward the incumbent so the walk cannot oscillate between
-equal-scoring neighbours. `tools/image-drift/tests/test_pathways.py` pins this.
+equal-scoring neighbours. `PathwaysOracleTests` pins this.
 
 None of them promotes anything. Pathways propose; `promote` disposes.
 
@@ -256,12 +256,12 @@ A candidate replaces the incumbent master only if **all three** hold:
 PSNR is reported but not gated: it tracks SSIM closely and gating it only over-constrains.
 
 ```bash
-# Propose. Read-only w.r.t. assets/ and builder_assets/; snapshots to temp/variations/.
-uv run --project tools/image-drift image-reconcile explore -p rtkelly-labs --sweep r_outer=150,158,166
+# Propose. Read-only w.r.t. assets/ and builder-assets/; snapshots to temp/variations/.
+rig image explore -p rtkelly-labs --sweep r_outer=150,158,166
 #   exit 0 = a candidate won   exit 2 = none did   exit 1 = error
 
 # Inspect, then promote. Without --confirm this is a dry run.
-uv run --project tools/image-drift image-reconcile promote -p rtkelly-labs --run-id <id> --candidate <N> --confirm
+rig image promote -p rtkelly-labs --run-id <id> --candidate <N> --confirm
 ```
 
 `promote` backs the incumbent up beside the run before writing, updates the manifest digest and
@@ -275,7 +275,7 @@ Every builder declares `VARIANTS` and `DEFAULT_VARIANT`. **An undeclared variant
 `UnknownVariantError`; nothing falls back silently.**
 
 This rule exists because the opposite shipped: `labs_builder.generate_svg` accepted `variant`
-and discarded it, so `image-reconcile favicon` emitted the full master and every favicon raster
+and discarded it, so `rig image favicon` emitted the full master and every favicon raster
 was the whole logo scaled down — while the command's own docstring said that must not happen.
 A silent fallback is a wrong answer wearing the shape of a right one.
 
@@ -296,7 +296,6 @@ rejects.
 | `explore` | Propose parametric candidates and score them against the incumbent. |
 | `promote` | Replace the master with a candidate that wins the gate. |
 | `export-avatar` | Write every cut declared in `production-cuts.csv`, and nothing else. |
-| `favicon` | Write the small-size cut plus its raster set. |
 | `simplify` | Multi-pass simplification behind a drift gate. Exits non-zero if the budget is missed. |
 | `vectorize` | Raster → SVG via VTracer. |
 | `pathways` | Build the mark by every pathway (including a fresh VTracer trace) and score each against the reference. |
@@ -304,7 +303,6 @@ rejects.
 | `contact-sheet` | Reference-vs-candidates comparison strip. |
 | `build-preview` | Render every variant, score, emit a self-contained gallery. |
 | `snapshot` | Capture a pipeline step into the variations tree. |
-| `serve` | Launch the Asset Studio workbench (default <http://127.0.0.1:8092>). |
 
 ---
 
@@ -320,7 +318,7 @@ Learned the hard way while establishing the rtkelly-labs mark; both are still li
    it puts a raw VTracer trace in the same table as the governed master.
 2. **Flat code-drafted CAD polygons.** Emitting unshaded polygons with basic two-stop gradients
    strips out the 3D lighting, ambient occlusion and edge bevels, leaving the mark flat and
-   lifeless. `labs_parametric.FaceLighting` is the countermeasure: every facet gets its own
+   lifeless. `IsoLoopBuilder` face lighting is the countermeasure: every facet gets its own
    `userSpaceOnUse` gradient whose vector is projected from that facet's own extent along the
    light direction, with the ramp chosen by facet orientation — derived rather than hand-placed.
 
@@ -330,75 +328,51 @@ place the asset in the vault and use `![[filename.png]]`.
 
 ---
 
-## 8. The C# image stack (port in progress)
+## 8. The C# image stack
 
-The image pipeline is moving from `tools/image-drift` to C# in slices, designed in ADR 0024 (#321). The first
-slice lives in `src/Rig.Image` and does not replace the Python yet; slice 4 deletes the Python.
+The image pipeline is C#, designed in ADR 0024. The Python `image_drift` package is gone; its scoring, simplifier,
+pathways and promotion behaviour live on as frozen oracles that the C# is tested against.
 
 - **Two renderers behind `ISvgRenderer`.** Chromium through `Microsoft.Playwright` is authoritative (the package
   version pins the browser revision, so developers and CI run the same Chromium). `Svg.Skia` is the fast renderer.
+  Chromium decides every write and every promotion; `--fast` only previews.
 - **`rig image cross-check`** renders each project's master and favicon at the production sizes with both, and
   reports the divergence per file against the ADR thresholds: mean absolute difference 1.0, differing pixels 20%,
-  RMSE 0.1pp, SSIM 0.001, composite 0.1pp, and any promotion verdict flip fails. `--candidates <folder>` adds the
-  verdict comparison for candidate SVGs named `<project>.<candidate>.svg`; `--report <file>` writes JSON. CI runs it
-  report-only in the `image-cross-check` job; the thresholds are enforced by the tests in `Rig.Image.BrowserTests`.
-- **Raster and metrics** (`Rig.Image`) reproduce image_drift's numbers: a Pillow-exact resampler
-  (`PillowResize`), `DriftMetrics` and `PromotionGate`. SkiaSharp supplies only the PNG and JPEG codecs.
-  SixLabors.ImageSharp is not used: from 3.2 its builds fail without a commercial license key, and the last
-  free version carries known vulnerabilities.
-- **The Python score oracle is frozen**, so ordinary CI needs no Python. `tools/image-drift/oracle/dump_oracle.py`
-  writes `tests/Rig.Image.Tests/Oracle/` (renders, normalised-reference hashes, metrics, verdicts, the ICO) and
-  `src/Rig.Image/feature-regions.json`. Regenerate it only when image_drift's scoring changes:
-
-  ```bash
-  cd tools/image-drift && uv run --locked python -I oracle/dump_oracle.py \
-      --out ../../tests/Rig.Image.Tests/Oracle --regions-out ../../src/Rig.Image/feature-regions.json \
-      --chromium <path to the chrome-headless-shell of the pinned Playwright revision>
-  ```
-
-- **`rig image simplify <svg>`** (`Rig.Image.Simplifier` and `DriftGate`) ports `image_drift.simplifier`: geometric
-  decimation (NetTopologySuite for the shapely geometry), a scour-style scrubbing pass, viewBox-aware quantisation,
-  then a loop that renders the original and each candidate at 1000 px, scores them with `DriftMetrics` and halves the
-  tolerance until `--min-ssim` and `--max-rmse` are met (exit 1 when they are not). It renders with Chromium (authoritative, ADR 0024); `--fast` renders with Svg.Skia for previews and cannot be combined with `--in-place` or `--chromium`;
-  `--chromium <exe>` picks the browser executable. The output is `<name>.optimized.svg`
-  unless `--output` or `--in-place` says otherwise, and a missed budget never overwrites the input. The Python's
-  `--snapshot`, `--project` and `--variations-dir` options are not ported with the Asset Studio snapshot manager.
-  The simplifier's expected outputs are frozen in `tests/Rig.Image.Tests/SimplifierOracle/` and regenerated with:
-
-  ```bash
-  cd tools/image-drift && uv run --locked python -I oracle/dump_oracle.py \
-      --simplifier-out ../../tests/Rig.Image.Tests/SimplifierOracle
-  ```
-
-  The C# output is checked for exact text (or SHA-256) equality with the frozen Python output at every stage: scour,
-  quantisation, geometric, final, and each tolerance, over the real documents and the synthetic cases. Scour is ported
-  whole except `createGroupsForCommonAttributes` (unreachable with `group_create` off) and raster embedding. Python
-  crashes on a few malformed inputs (for example `translate(5) translate(3)` or a path with too few numbers); the C#
-  copes or leaves the document alone, and `ScourPassTests` checks that.
-
-- **`rig image edges`** and **`rig image pathways`** (`Rig.Image/Pathways`) port `edge_regularity`, `pathways`, the
-  builders (`LabsBuilder`, `DiamondParquetBuilder`, the parametric `IsoLoopBuilder`) and the variant manifest.
-  `edges` reports axis conformance and lists defects (`--fix <path>` writes a regularized copy and, when Chromium is
-  available, scores it; `--min-conformance` is a CI ratchet). `pathways` builds `traced`, `autotraced`, `regularized`,
-  `parametric` and `fitted` and tabulates edge quality, plus SSIM and composite drift when Chromium launches; `fitted`
-  needs the renderer and is skipped without it. Neither promotes anything and Chromium scores everything.
+  RMSE 0.1pp, SSIM 0.001, composite 0.1pp, and any promotion verdict flip fails. The file set comes from each
+  project's `production-cuts.csv`. `--candidates <folder>` adds the verdict comparison for candidate SVGs named
+  `<project>.<candidate>.svg`; `--report <file>` writes JSON. CI runs it report-only in the `image-cross-check` job;
+  the thresholds are enforced by the tests in `Rig.Image.BrowserTests`.
+- **Raster and metrics** (`Rig.Image`): a Pillow-exact resampler (`PillowResize`), `DriftMetrics` and
+  `PromotionGate`. SkiaSharp supplies only the PNG and JPEG codecs. SixLabors.ImageSharp is not used: from 3.2 its
+  builds fail without a commercial license key, and the last free version carries known vulnerabilities.
+- **The oracles are frozen.** `tests/Rig.Image.Tests/Oracle/`, `SimplifierOracle/` and `PathwaysOracle/` hold the
+  expected renders, metrics, verdicts, simplifier stages and pathway numbers the Python produced, and
+  `src/Rig.Image/feature-regions.json` holds the feature boxes. The generator is retired with the Python; the files
+  stay byte-identical and change only when a deliberate scoring change is reviewed on its own. The C# is checked for
+  exact equality (SHA-256 for large documents), with one tolerance: a defect's length, which can differ by an ulp
+  (`math.hypot` against `sqrt(dx*dx+dy*dy)`).
+- **`rig image simplify <svg>`** (`Rig.Image.Simplifier` and `DriftGate`): geometric decimation (NetTopologySuite),
+  a scour-style scrubbing pass, viewBox-aware quantisation, then a loop that renders the original and each candidate
+  at 1000 px, scores them and halves the tolerance until `--min-ssim` and `--max-rmse` are met (exit 1 when they are
+  not). `--fast` renders with Svg.Skia for previews and cannot be combined with `--in-place` or `--chromium`;
+  `--chromium <exe>` picks the browser executable. The output is `<name>.optimized.svg` unless `--output` or
+  `--in-place` says otherwise, and a missed budget never overwrites the input. `--snapshot`, `--project` and
+  `--variations-dir` record the run for the Asset Studio.
+- **`rig image edges`** and **`rig image pathways`** (`Rig.Image/Pathways`): axis conformance, defects and the
+  builders (`LabsBuilder`, `DiamondParquetBuilder`, the parametric `IsoLoopBuilder`). `edges --fix <path>` writes a
+  regularized copy; `--min-conformance` is a CI ratchet. `pathways` builds `traced`, `autotraced`, `regularized`,
+  `parametric` and `fitted` and tabulates edge quality, plus SSIM and composite drift when Chromium launches. Neither
+  promotes anything.
 - **VTracer is the pinned 0.6.4 CLI, run as a process** (`VtracerTool`). The release archive is downloaded once into
   `temp/tools/`, checked against its SHA-256 in `Vtracer.Pins`, the binary inside is checked against its own, and the
-  binary is checked again before every run. The CLI's output equals the Python binding's apart from the XML prolog and
-  `Generator` comment and the missing `viewBox`, which `Vtracer.WithViewBox` handles; `VtracerRealBinaryTests` pins
-  that against the frozen autotraced candidates.
-- **The pathways oracle is frozen** in `tests/Rig.Image.Tests/PathwaysOracle/` and regenerated with
-  `uv run --locked python -I oracle/dump_oracle.py --pathways-out ../../tests/Rig.Image.Tests/PathwaysOracle`.
-  Hexagon geometry, edge reports, regularized SVGs (by SHA-256), every parametric preset and override, the builders'
-  masters and the `fitted` coordinate-descent walk (including its loss ties) match exactly; the one tolerance is a
-  defect's length, which can differ by an ulp (`math.hypot` against `sqrt(dx*dx+dy*dy)`).
-
-- **`rig image explore`** and **`rig image promote`** port `cli_explore` and the snapshot manager (`SnapshotManager`, with
-  `simplify --snapshot/-s --project/-p --variations-dir`). Chromium decides and writes: there is no `--fast` on either, and
-  `promote` re-runs the gate live against the current master, backs the incumbent up beside the run, then rewrites
-  `master.svg`, the manifest digest and `promoted_from` in `tools/image-drift/.../builder_assets/rtkelly-labs/` (the manifest
-  writer reproduces the committed file byte for byte) and the committed asset. `PromotionVerdictTests` (browser) scores the
-  C#-generated regularized and parametric candidates, and the frozen autotraced ones, under Chromium and requires the oracle's
-  verdicts. Exit codes are 0 / 1 / 2 (promoted or winner / no winner or dry run / error); Python exited 1 for errors.
-
-Not yet ported: the recommendation text, and parsing `production-cuts.csv` (the cross-check's file set is the fixed set the oracle covers).
+  binary is checked again before every run.
+- **`rig image explore`** and **`rig image promote`**: `promote` re-runs the gate live against the current master,
+  backs the incumbent up beside the run, then rewrites `master.svg`, the manifest digest and `promoted_from` in
+  `src/Rig.Image/builder-assets/rtkelly-labs/` and the committed asset. Exit codes are 0 / 1 / 2 (promoted or winner /
+  no winner or dry run / error). `PromotionVerdictTests` (browser) scores the candidates under Chromium and requires
+  the oracle's verdicts.
+- **Tools**: `build` and `extract-feature` (builders), `compare` and `diagnose` (decomposed drift; `--render` takes a
+  path to a prerendered image), `export-avatar` (one file per `production-cuts.csv` row), `snapshot`, `vectorize`,
+  `contact-sheet` and `build-preview`.
+- **The Asset Studio** is served by `rig web` on its usual port: `/api/projects`, `/api/diff`, `/api/snapshot` and
+  `/media/variations/**`, with the gallery assets under `src/Rig.Image/Gallery/`.

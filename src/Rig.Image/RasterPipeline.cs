@@ -9,7 +9,7 @@ namespace Rig.Image;
 /// </summary>
 public static class RasterPipeline
 {
-    /// <summary>The square canvas image_drift compares on.</summary>
+    /// <summary>The square canvas the pipeline compares on.</summary>
     public const int NormalisedSize = 500;
 
     /// <summary>Decodes a PNG or JPEG to straight (not premultiplied) RGBA, without resizing.</summary>

@@ -2,7 +2,7 @@ using Rig.Image.Simplifier;
 
 namespace Rig.Image.Pathways;
 
-/// <summary>A position, or a displacement, on the 500x500 canvas (image_drift's <c>hex_geometry.Point</c>).</summary>
+/// <summary>A position, or a displacement, on the 500x500 canvas (the original <c>hex_geometry.Point</c>).</summary>
 /// <param name="X">Horizontal coordinate.</param>
 /// <param name="Y">Vertical coordinate.</param>
 public readonly record struct Point(double X, double Y)

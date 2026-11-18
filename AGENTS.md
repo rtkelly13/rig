@@ -11,7 +11,6 @@ Shared development utilities — desktop workspace management, general tooling, 
 dotnet run --project src/Rig.Cli -- status          # git state
 dotnet run --project src/Rig.Cli -- status --tests  # the same plus the C# test suite
 dotnet test --project tests/Rig.Core.Tests -- --filter-class "*SomeTests"  # one test class
-(cd tools/image-drift && uv sync && uv run ruff check . && uv run pytest)  # the Python brand pipeline
 pnpm dlx @ls-lint/ls-lint        # filename and script-language lint (bans .sh and .ps1)
 dotnet build rig.slnx -m:2       # C# side (ADR 0022); keep -m:2 locally
 dotnet test --solution rig.slnx  # C# tests (xUnit v3 on Microsoft.Testing.Platform)
@@ -60,7 +59,7 @@ every quality gate, and the Tailwind gallery build. Read it before writing tests
   and changes only through PRs. Workers never grade themselves or edit policy;
   [evaluations.md](docs/project-reviews/evaluations.md) is the operator's process.
 - **Brand assets**: [docs/brand-assets/README.md](docs/brand-assets/README.md) is authoritative.
-  The traced master changes only through `image-reconcile promote`, and cuts derive only from
+  The traced master changes only through `rig image promote`, and cuts derive only from
   `production-cuts.csv`.
 - **Vercel infra**: [infra/vercel/README.md](infra/vercel/README.md). `sites.ts` is the registry,
   and anything already serving traffic is `adopt`, never `manage`.

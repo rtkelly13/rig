@@ -15,7 +15,7 @@
     <ProjectReference Include="../Rig.Image.Simplifier/Rig.Image.Simplifier.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Frozen from the Python image_drift builders before they were retired (ADR 0024). -->
+    <!-- Frozen from the Python builders before they were retired (ADR 0024). -->
     <!-- The gallery page: one HTML fragment per piece of markup and the compiled Tailwind stylesheet, rebuilt by `pnpm css:build`. -->
     <EmbeddedResource Include="Gallery/gallery.css" LogicalName="Rig.Image.gallery.gallery.css" />
     <EmbeddedResource Include="Gallery/templates/*.html" LogicalName="Rig.Image.gallery.templates.%(Filename)%(Extension)" />
