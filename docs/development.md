@@ -95,7 +95,7 @@ coverage floor. The brand pipeline `tools/image-drift` is the one Python project
   real desktop is left to the Windows runner: skip it elsewhere with `Assert.SkipUnless(OperatingSystem.IsWindows(), ...)`.
 - The browser tests are Playwright tests in `tests/Rig.Web.BrowserTests`, driving an in-process `RigWebHost`
   ([web-routes.md](web-routes.md#testing)). Install Chromium once after a build:
-  `pwsh tests/Rig.Web.BrowserTests/bin/Debug/net10.0/playwright.ps1 install chromium`.
+  `pwsh tests/Rig.Web.BrowserTests/bin/Debug/net11.0/playwright.ps1 install chromium`.
 
 Windows-safe tests (the Windows jobs catch these, but write them right first time):
 
