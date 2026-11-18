@@ -305,10 +305,12 @@ jobs:
               tests/Rig.Architecture.Tests/Rig.Architecture.Tests.csproj
               tests/Rig.Cli.Tests/Rig.Cli.Tests.csproj
               tests/Rig.CommandOwnership.Tests/Rig.CommandOwnership.Tests.csproj
-              tests/Rig.Image.Tests/Rig.Image.Tests.csproj
               tests/Rig.LocReport.Tests/Rig.LocReport.Tests.csproj
               tests/Rig.Specs/Rig.Specs.csproj
               tests/Rig.Web.Tests/Rig.Web.Tests.csproj
+          # The image oracle tests take ~2m under coverage, as long as Rig.Cli.Tests; serial in app they pushed it to ~8m of a 10m timeout.
+          - shard: image
+            projects: tests/Rig.Image.Tests/Rig.Image.Tests.csproj
           # The SPA tests and the image renderer's tests drive headless Chromium through Playwright.
           - shard: browser
             projects: >-
