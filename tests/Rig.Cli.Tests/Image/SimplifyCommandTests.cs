@@ -66,7 +66,7 @@ public sealed class SimplifyCommandTests : IDisposable
     public async Task A_missed_budget_with_an_output_writes_the_candidate_and_exits_1()
     {
         var input = Write("logo.svg");
-        _fast = () => new Scripted("Svg.Skia", path => Path.GetFileName(path).StartsWith("candidate_", StringComparison.Ordinal) ? 0 : 255);
+        _authoritative = _ => Task.FromResult<ISvgRenderer>(new Scripted("Chromium", path => Path.GetFileName(path).StartsWith("candidate_", StringComparison.Ordinal) ? 0 : 255));
 
         var exit = await Run("image", "simplify", input);
 
@@ -80,7 +80,7 @@ public sealed class SimplifyCommandTests : IDisposable
     public async Task A_missed_budget_in_place_exits_1_and_leaves_the_input()
     {
         var input = Write("logo.svg");
-        _fast = () => new Scripted("Svg.Skia", path => Path.GetFileName(path).StartsWith("candidate_", StringComparison.Ordinal) ? 0 : 255);
+        _authoritative = _ => Task.FromResult<ISvgRenderer>(new Scripted("Chromium", path => Path.GetFileName(path).StartsWith("candidate_", StringComparison.Ordinal) ? 0 : 255));
 
         var exit = await Run("image", "simplify", input, "-i");
 
@@ -126,7 +126,7 @@ public sealed class SimplifyCommandTests : IDisposable
     public async Task A_file_the_renderer_cannot_load_exits_2()
     {
         var input = Write("logo.svg");
-        _fast = () => new Scripted("Svg.Skia", _ => throw new InvalidDataException("expected an SVG Svg.Skia can load, found one it cannot"));
+        _authoritative = _ => Task.FromResult<ISvgRenderer>(new Scripted("Chromium", _ => throw new InvalidDataException("expected an SVG Chromium can load, found one it cannot")));
 
         var exit = await Run("image", "simplify", input);
 
@@ -153,7 +153,7 @@ public sealed class SimplifyCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task The_authoritative_flag_uses_the_bundled_browser()
+    public async Task Chromium_is_the_default_and_uses_the_bundled_browser()
     {
         var input = Write("logo.svg");
         var launched = false;
@@ -163,7 +163,7 @@ public sealed class SimplifyCommandTests : IDisposable
             return Task.FromResult<ISvgRenderer>(new Scripted("Chromium", _ => 200));
         };
 
-        var exit = await Run("image", "simplify", input, "--authoritative");
+        var exit = await Run("image", "simplify", input);
 
         Assert.Equal(0, exit);
         Assert.True(launched);
@@ -175,10 +175,37 @@ public sealed class SimplifyCommandTests : IDisposable
         var input = Write("logo.svg");
         _authoritative = _ => throw new RendererUnavailableException("Chromium is not installed");
 
-        var exit = await Run("image", "simplify", input, "--authoritative");
+        var exit = await Run("image", "simplify", input);
 
         Assert.Equal(2, exit);
         Assert.Contains("Error: Chromium is not installed", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Fast_renders_with_svg_skia_for_a_preview()
+    {
+        var input = Write("logo.svg");
+        _authoritative = _ => throw new InvalidOperationException("Chromium must not be used");
+
+        var exit = await Run("image", "simplify", input, "--fast");
+
+        Assert.Equal(0, exit);
+        Assert.True(File.Exists(Path.Join(_temp.Path, "logo.optimized.svg")));
+    }
+
+    [Theory]
+    [InlineData("--in-place")]
+    [InlineData("--chromium")]
+    public async Task Fast_cannot_be_combined_with_the_authoritative_options(string option)
+    {
+        var input = Write("logo.svg");
+        string[] args = option == "--chromium" ? ["image", "simplify", input, "--fast", "--chromium", "/opt/chrome"] : ["image", "simplify", input, "--fast", option];
+
+        var exit = await Run(args);
+
+        Assert.Equal(2, exit);
+        Assert.Contains($"cannot be combined with {option}", _err.ToString(), StringComparison.Ordinal);
+        Assert.Equal(Svg, await File.ReadAllTextAsync(input, TestContext.Current.CancellationToken));
     }
 
     private string Write(string name)
