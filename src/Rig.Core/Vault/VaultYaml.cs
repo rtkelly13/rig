@@ -142,6 +142,8 @@ public static partial class VaultYaml
         return entries;
     }
 
+    private static string Where(Mark at) => $"line {at.Line}, column {at.Column}";
+
     private static void Put(List<KeyValuePair<YamlValue, YamlValue>> entries, YamlValue key, YamlValue value, bool replace)
     {
         var at = entries.FindIndex(entry => entry.Key.Equals(key));
@@ -185,7 +187,9 @@ public static partial class VaultYaml
 
         if (Real().IsMatch(text))
         {
-            return new YamlScalar(YamlFloat.Repr(double.Parse(text.Replace("_", string.Empty, StringComparison.Ordinal), CultureInfo.InvariantCulture)));
+            return double.TryParse(text.Replace("_", string.Empty, StringComparison.Ordinal), NumberStyles.Float, CultureInfo.InvariantCulture, out var real)
+                ? new YamlScalar(YamlFloat.Repr(real))
+                : throw new VaultYamlException($"malformed number '{text}' at {Where(scalar.Start)}");
         }
 
         if (Infinity().IsMatch(text))
