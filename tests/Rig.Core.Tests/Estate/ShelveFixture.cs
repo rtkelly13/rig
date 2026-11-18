@@ -50,21 +50,28 @@ internal sealed class ShelveFixture : IDisposable
     /// <summary>Builds the origin and the clone.</summary>
     public async Task<ShelveFixture> InitAsync()
     {
-        _ = await Repos.GitAsync(Root, "init", "-q", "--bare", "-b", "main", Origin);
-        _ = Directory.CreateDirectory(Clone);
-        _ = await Repos.GitAsync(Clone, "init", "-q", "-b", "main");
-        _ = await Repos.GitAsync(Clone, "config", "user.email", "t.user@example.com");
-        _ = await Repos.GitAsync(Clone, "config", "user.name", "T");
-        _ = await Repos.GitAsync(Clone, "config", "commit.gpgsign", "false");
-        _ = await Repos.GitAsync(Clone, "config", "core.autocrlf", "false");
-        _ = await Repos.GitAsync(Clone, "remote", "add", "origin", Origin);
-        await File.WriteAllTextAsync(Path.Join(Clone, ".gitignore"), ".env\nnode_modules/\n", Token);
-        await File.WriteAllTextAsync(Path.Join(Clone, "README.md"), "hi\n", Token);
-        await File.WriteAllTextAsync(Path.Join(Clone, "gone.txt"), "delete me\n", Token);
-        _ = await Repos.GitAsync(Clone, "add", ".");
-        _ = await Repos.GitAsync(Clone, "commit", "-qm", "first");
-        _ = await Repos.GitAsync(Clone, "push", "-q", "-u", "origin", "main");
+        await GitTemplates.CopyAsync(nameof(ShelveFixture), BuildAsync, Root);
         return this;
+    }
+
+    private static async Task BuildAsync(string root)
+    {
+        var clone = Path.Join(root, "clone");
+        var origin = Path.Join(root, "origin.git");
+        _ = await Repos.GitAsync(root, "init", "-q", "--bare", "-b", "main", origin);
+        _ = Directory.CreateDirectory(clone);
+        _ = await Repos.GitAsync(clone, "init", "-q", "-b", "main");
+        _ = await Repos.GitAsync(clone, "config", "user.email", "t.user@example.com");
+        _ = await Repos.GitAsync(clone, "config", "user.name", "T");
+        _ = await Repos.GitAsync(clone, "config", "commit.gpgsign", "false");
+        _ = await Repos.GitAsync(clone, "config", "core.autocrlf", "false");
+        _ = await Repos.GitAsync(clone, "remote", "add", "origin", origin);
+        await File.WriteAllTextAsync(Path.Join(clone, ".gitignore"), ".env\nnode_modules/\n", Token);
+        await File.WriteAllTextAsync(Path.Join(clone, "README.md"), "hi\n", Token);
+        await File.WriteAllTextAsync(Path.Join(clone, "gone.txt"), "delete me\n", Token);
+        _ = await Repos.GitAsync(clone, "add", ".");
+        _ = await Repos.GitAsync(clone, "commit", "-qm", "first");
+        _ = await Repos.GitAsync(clone, "push", "-q", "-u", "origin", "main");
     }
 
     /// <summary>A shelver over real git with a fixed clock and no ledger, unless given others.</summary>
