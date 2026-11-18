@@ -33,10 +33,10 @@ public sealed class FakeOrca : IOrcaExchange
     }.ToJsonString();
 
     /// <summary><c>repo.list</c>.</summary>
-    public List<JsonObject> Repos { get; set; } = [];
+    public List<JsonObject> Repos { get; internal set; } = [];
 
     /// <summary><c>projectGroup.list</c>.</summary>
-    public List<JsonObject> Groups { get; set; } = [];
+    public List<JsonObject> Groups { get; internal set; } = [];
 
     /// <summary><c>folderWorkspace.list</c>.</summary>
     public List<JsonObject> FolderWorkspaces { get; } = [];

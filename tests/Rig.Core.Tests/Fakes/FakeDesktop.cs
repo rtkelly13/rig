@@ -49,7 +49,7 @@ public sealed class FakeDesktop : IDesktopPort
     private long _nextHandle = 1000;
 
     /// <summary>The desktops' names, in position order.</summary>
-    public List<string> DesktopNames { get; set; } = ["Desktop 1"];
+    public List<string> DesktopNames { get; internal set; } = ["Desktop 1"];
 
     /// <summary>The current desktop, from 1.</summary>
     public int Current { get; set; } = 1;
