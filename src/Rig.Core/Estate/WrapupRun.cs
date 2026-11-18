@@ -365,28 +365,7 @@ public static class WrapupRun
     private static bool AnsweredSince(WrapupState state, AnswerRecord answer) =>
         answer.AskedAt is not null && state.Answers.Any(a => a.AskedAt == answer.AskedAt && a.Pane == answer.Pane);
 
-    private static HashSet<string> Descendants(WrapupRow row, List<WrapupRow> rows)
-    {
-        var children = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-        foreach (var r in rows)
-        {
-            _ = children.TryAdd(r.WorktreeId, r.Children);
-        }
-
-        var found = new HashSet<string>(StringComparer.Ordinal);
-        var stack = new List<string>(row.Children);
-        while (stack.Count > 0)
-        {
-            var id = stack[^1];
-            stack.RemoveAt(stack.Count - 1);
-            if (found.Add(id))
-            {
-                stack = [.. stack, .. children.GetValueOrDefault(id, [])];
-            }
-        }
-
-        return found;
-    }
+    private static HashSet<string> Descendants(WrapupRow row, List<WrapupRow> rows) => Wrapup.DescendantIds(row.Children, rows);
 
     /// <summary>The first queued ask none of whose subtasks is still queued or outstanding.</summary>
     private static int? Next(List<int> queue, IEnumerable<int> flights, List<WrapupRow> rows)

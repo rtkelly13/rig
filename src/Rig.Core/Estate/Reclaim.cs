@@ -138,46 +138,38 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
     {
         var trees = (await Worktree.ListAsync(git, repo, cancellationToken).ConfigureAwait(false)).Where(tree => !tree.IsMain).ToList();
         var worktrees = trees.Select(tree => PathResolution.Resolve(tree.Path)).ToHashSet(PathResolution.Comparer);
-        var entries = new List<Reclaimable>();
-        foreach (var category in Categories)
-        {
-            foreach (var name in category.Names)
+        var matched = await Categories
+            .SelectMany(category => category.Names.SelectMany(name => Matches(repo, name).Select(match => (Category: category, Match: match))))
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<IReadOnlyList<Reclaimable>> (item, token) =>
             {
-                foreach (var match in Matches(repo, name))
+                if (item.Category.MayHoldWorktrees)
                 {
-                    if (category.MayHoldWorktrees)
-                    {
-                        entries = [.. entries, .. await ExplodeTempAsync(match, worktrees, category, floor, cancellationToken).ConfigureAwait(false)];
-                        continue;
-                    }
-
-                    var size = await disk.SizeAsync(match, cancellationToken).ConfigureAwait(false);
-                    if (size >= floor)
-                    {
-                        entries.Add(new Reclaimable(match, category.Name, size, category.Regenerate));
-                    }
+                    return await ExplodeTempAsync(item.Match, worktrees, item.Category, floor, token).ConfigureAwait(false);
                 }
-            }
-        }
+
+                var size = await disk.SizeAsync(item.Match, token).ConfigureAwait(false);
+                return size >= floor ? [new Reclaimable(item.Match, item.Category.Name, size, item.Category.Regenerate)] : [];
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
         // Registered worktrees outside the clone (an estate-level temp/, say) hold disk the clone answers for.
         var root = PathResolution.Resolve(repo);
-        foreach (var tree in trees)
-        {
-            var resolved = PathResolution.Resolve(tree.Path);
-            if (PathResolution.IsUnder(resolved, root) || !Directory.Exists(resolved))
-            {
-                continue;
-            }
-
-            var size = await disk.SizeAsync(resolved, cancellationToken).ConfigureAwait(false);
-            if (size >= floor)
-            {
-                entries.Add(new Reclaimable(tree.Path, "external worktree", size, "git worktree add", IsWorktree: true));
-            }
-        }
-
-        return new RepoReclaim(repo, [.. entries.OrderByDescending(entry => entry.Bytes)]);
+        var external = await trees
+            .Select(tree => (tree.Path, Resolved: PathResolution.Resolve(tree.Path)))
+            .Where(tree => !PathResolution.IsUnder(tree.Resolved, root) && Directory.Exists(tree.Resolved))
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<(string Path, long Size)> (tree, token) => (tree.Path, await disk.SizeAsync(tree.Resolved, token).ConfigureAwait(false)))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return new RepoReclaim(
+            repo,
+            [
+                .. matched.SelectMany(entries => entries)
+                    .Concat(external.Where(item => item.Size >= floor).Select(item => new Reclaimable(item.Path, "external worktree", item.Size, "git worktree add", IsWorktree: true)))
+                    .OrderByDescending(entry => entry.Bytes),
+            ]);
     }
 
     /// <summary>Scans the clone into a typed plan, carrying the removal policy the apply step needs.</summary>
@@ -410,39 +402,36 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
     }
 
     // temp/ per child rather than one lump: some of it is live worktrees, some scratch, and each needs its own decision.
-    private async Task<List<Reclaimable>> ExplodeTempAsync(
+    private async Task<IReadOnlyList<Reclaimable>> ExplodeTempAsync(
         string temp,
         HashSet<string> worktrees,
         ReclaimCategory category,
         long floor,
         CancellationToken cancellationToken)
     {
-        var found = new List<Reclaimable>();
-        foreach (var child in Children(temp, directoriesOnly: false))
-        {
-            if (new FileInfo(child).LinkTarget is not null)
+        var perChild = await Children(temp, directoriesOnly: false)
+            .Where(child => new FileInfo(child).LinkTarget is null)
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<IReadOnlyList<Reclaimable>> (child, token) =>
             {
-                continue;
-            }
+                var size = await disk.SizeAsync(child, token).ConfigureAwait(false);
+                if (size < floor)
+                {
+                    return [];
+                }
 
-            var size = await disk.SizeAsync(child, cancellationToken).ConfigureAwait(false);
-            if (size < floor)
-            {
-                continue;
-            }
+                var resolved = PathResolution.Resolve(child);
+                var isTree = worktrees.Contains(resolved);
+                if (!isTree && worktrees.Any(tree => PathResolution.IsUnder(tree, resolved)))
+                {
+                    // A folder of worktrees (temp/rig/<name>) goes one worktree at a time, each with its own guards.
+                    return await ExplodeTempAsync(child, worktrees, category, floor, token).ConfigureAwait(false);
+                }
 
-            var resolved = PathResolution.Resolve(child);
-            var isTree = worktrees.Contains(resolved);
-            if (!isTree && worktrees.Any(tree => PathResolution.IsUnder(tree, resolved)))
-            {
-                // A folder of worktrees (temp/rig/<name>) goes one worktree at a time, each with its own guards.
-                found = [.. found, .. await ExplodeTempAsync(child, worktrees, category, floor, cancellationToken).ConfigureAwait(false)];
-                continue;
-            }
-
-            found.Add(new Reclaimable(child, category.Name, size, isTree ? "git worktree add" : category.Regenerate, isTree));
-        }
-
-        return found;
+                return [new Reclaimable(child, category.Name, size, isTree ? "git worktree add" : category.Regenerate, isTree)];
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return [.. perChild.SelectMany(found => found)];
     }
 }

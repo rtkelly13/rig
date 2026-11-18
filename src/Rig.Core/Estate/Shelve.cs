@@ -469,13 +469,14 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     {
         ArgumentNullException.ThrowIfNull(status);
         var gitDir = await _store.OutAsync(worktree, "rev-parse", "--absolute-git-dir").ConfigureAwait(false);
-        var candidates = new List<string> { worktree };
-        if (gitDir.Length > 0)
-        {
-            candidates = [.. candidates, System.IO.Path.Join(gitDir, "index"), System.IO.Path.Join(gitDir, "HEAD"), System.IO.Path.Join(gitDir, "logs", "HEAD")];
-        }
-
-        candidates = [.. candidates, .. status.Changed.Concat(status.Untracked).Take(2000).Select(entry => System.IO.Path.Join(worktree, entry))];
+        List<string> candidates =
+        [
+            worktree,
+            .. (gitDir.Length > 0
+                ? new[] { System.IO.Path.Join(gitDir, "index"), System.IO.Path.Join(gitDir, "HEAD"), System.IO.Path.Join(gitDir, "logs", "HEAD") }
+                : []),
+            .. status.Changed.Concat(status.Untracked).Take(2000).Select(entry => System.IO.Path.Join(worktree, entry)),
+        ];
         DateTime? newest = null;
         foreach (var candidate in candidates)
         {
@@ -671,15 +672,15 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             }
         }
 
-        var big = status.Untracked.Where(entry =>
-        {
-            var file = new FileInfo(System.IO.Path.Join(path, entry));
-            return file.Exists && file.Length > BigFile;
-        }).ToList();
-        if (options.IncludeIgnored)
-        {
-            big = [.. big, .. keptFiles.Where(file => file.Size > BigFile).Select(file => System.IO.Path.GetRelativePath(path, file.Path))];
-        }
+        List<string> big =
+        [
+            .. status.Untracked.Where(entry =>
+            {
+                var file = new FileInfo(System.IO.Path.Join(path, entry));
+                return file.Exists && file.Length > BigFile;
+            }),
+            .. (options.IncludeIgnored ? keptFiles.Where(file => file.Size > BigFile).Select(file => System.IO.Path.GetRelativePath(path, file.Path)) : []),
+        ];
 
         if (big.Count > 0)
         {

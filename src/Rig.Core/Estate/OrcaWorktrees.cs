@@ -469,8 +469,8 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     {
         ArgumentNullException.ThrowIfNull(wanted);
         var repos = await runtime.ProjectsAsync(cancellationToken).ConfigureAwait(false);
-        var roots = repos.Select(r => (r.Id, r.Path)).ToList();
-        roots = [.. roots, .. (await runtime.WorktreesAsync(cancellationToken).ConfigureAwait(false)).Select(w => (w.RepoId, w.Path))];
+        var worktrees = await runtime.WorktreesAsync(cancellationToken).ConfigureAwait(false);
+        List<(string Id, string Path)> roots = [.. repos.Select(r => (r.Id, r.Path)), .. worktrees.Select(w => (w.RepoId, w.Path))];
         var candidate = ExpandUser(wanted, home);
         if (Directory.Exists(candidate) || File.Exists(candidate))
         {

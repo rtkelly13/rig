@@ -213,13 +213,12 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     /// <summary>Regenerable folders inside <paramref name="clone"/>'s idle worktrees, the most freeable first.</summary>
     public async Task<IReadOnlyList<Trimmable>> ScanAsync(string clone, int idleDays = DefaultIdleDays, long floor = DefaultFloor)
     {
-        var found = new List<Trimmable>();
-        foreach (var worktree in await IdleWorktreesAsync(clone, idleDays).ConfigureAwait(false))
-        {
-            found = [.. found, .. await JudgeAsync(worktree, Candidates(worktree), floor).ConfigureAwait(false)];
-        }
-
-        return [.. found.OrderByDescending(item => item.Size.Freeable)];
+        var judged = await (await IdleWorktreesAsync(clone, idleDays).ConfigureAwait(false))
+            .ToAsyncEnumerable()
+            .Select(async ValueTask<IReadOnlyList<Trimmable>> (string worktree, CancellationToken _) => await JudgeAsync(worktree, Candidates(worktree), floor).ConfigureAwait(false))
+            .ToListAsync()
+            .ConfigureAwait(false);
+        return [.. judged.SelectMany(found => found).OrderByDescending(item => item.Size.Freeable)];
     }
 
     /// <summary>Scans idle worktrees into a typed plan, carrying the removal port the apply step needs.</summary>

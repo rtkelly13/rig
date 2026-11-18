@@ -114,26 +114,17 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
     public static IReadOnlyList<string> DefaultRoots(string baseDir, string checkoutTraces, string? overrideDir)
     {
         var runtime = Path.Join(baseDir, "runtime");
-        List<string> roots = [];
-        if (!string.IsNullOrEmpty(overrideDir))
-        {
-            roots.Add(overrideDir);
-        }
-
-        roots.Add(Path.Join(baseDir, "traces"));
-        roots.Add(checkoutTraces);
-        if (PrimaryRepo(Path.Join(runtime, "state.json")) is { Length: > 0 } repo)
-        {
-            roots.Add(Path.Join(repo, "temp", "traces", "sdk"));
-        }
-
-        if (Directory.Exists(runtime))
-        {
-            roots = [.. roots, .. Directory.EnumerateDirectories(runtime).Order(UnicodeText.CodePointOrder).Select(copy => Path.Join(copy, "temp", "traces", "sdk"))];
-        }
-
-        roots.Add(Path.Join(baseDir, "chrome-tabs", "traces"));
-        return roots;
+        return
+        [
+            .. (!string.IsNullOrEmpty(overrideDir) ? new[] { overrideDir } : []),
+            Path.Join(baseDir, "traces"),
+            checkoutTraces,
+            .. (PrimaryRepo(Path.Join(runtime, "state.json")) is { Length: > 0 } repo ? new[] { Path.Join(repo, "temp", "traces", "sdk") } : []),
+            .. (Directory.Exists(runtime)
+                ? Directory.EnumerateDirectories(runtime).Order(UnicodeText.CodePointOrder).Select(copy => Path.Join(copy, "temp", "traces", "sdk"))
+                : []),
+            Path.Join(baseDir, "chrome-tabs", "traces"),
+        ];
     }
 
     /// <summary>The always-on collector's trace files: the active <c>traces.jsonl</c> and its rotated copies.</summary>
@@ -146,24 +137,16 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         ArgumentNullException.ThrowIfNull(roots);
         ArgumentNullException.ThrowIfNull(extra);
         var recurse = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = 0, IgnoreInaccessible = true };
-        List<string> candidates = [];
-        foreach (var root in roots)
-        {
-            if (Directory.Exists(root))
-            {
-                candidates = [.. candidates, .. Directory.EnumerateFiles(root, "*.ndjson", recurse).Order(UnicodeText.CodePointOrder)];
-            }
-        }
-
-        candidates = [.. candidates, .. extra.Where(File.Exists)];
-        var seen = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var path in candidates)
-        {
-            var resolved = ObsidianOrphans.RealPath(path);
-            _ = seen.TryAdd(NormCase(resolved), resolved);
-        }
-
-        return [.. seen.Values.Order(UnicodeText.CodePointOrder)];
+        List<string> candidates =
+        [
+            .. roots.Where(Directory.Exists).SelectMany(root => Directory.EnumerateFiles(root, "*.ndjson", recurse).Order(UnicodeText.CodePointOrder)),
+            .. extra.Where(File.Exists),
+        ];
+        return [.. candidates
+            .Select(ObsidianOrphans.RealPath)
+            .GroupBy(NormCase, StringComparer.Ordinal)
+            .Select(group => group.First())
+            .Order(UnicodeText.CodePointOrder)];
     }
 
     /// <summary>The marks in <paramref name="path"/>; none when it is missing, unreadable or malformed.</summary>

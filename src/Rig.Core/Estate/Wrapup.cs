@@ -629,11 +629,7 @@ public static class Wrapup
     /// <summary>The command line the prompt hands the agent, shell-quoted (the runtime copy's path has a space).</summary>
     public static string ReportCommand(string askId, string rigExecutable)
     {
-        List<string> parts = [rigExecutable, "estate", "wrapup", "report"];
-        if (!string.IsNullOrEmpty(askId))
-        {
-            parts = [.. parts, "--ask", askId];
-        }
+        List<string> parts = [rigExecutable, "estate", "wrapup", "report", .. (string.IsNullOrEmpty(askId) ? [] : new[] { "--ask", askId })];
 
         return string.Join(' ', parts.Select(WrapupText.ShellQuote));
     }
@@ -643,34 +639,30 @@ public static class Wrapup
     {
         ArgumentNullException.ThrowIfNull(row);
         ArgumentNullException.ThrowIfNull(rows);
-        var byParent = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-        foreach (var r in rows)
+        var descendants = DescendantIds(row.Children, rows);
+        return rows
+            .Where(r => descendants.Contains(r.WorktreeId))
+            .Count(r => !(r.Status == WrapupStatus.Settled || r.Verdict is { Done: true }));
+    }
+
+    /// <summary>Every id reachable from <paramref name="start"/> through the rows' children, each once; a cycle ends the walk.</summary>
+    internal static HashSet<string> DescendantIds(IReadOnlyList<string> start, IEnumerable<WrapupRow> rows)
+    {
+        var children = rows
+            .GroupBy(r => r.WorktreeId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Children, StringComparer.Ordinal);
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        Visit(start);
+        return found;
+
+        // A layer at a time: the ids not met before, then their children.
+        void Visit(IReadOnlyList<string> layer)
         {
-            _ = byParent.TryAdd(r.WorktreeId, r.Children);
-        }
-
-        var pending = 0;
-        var stack = new List<string>(row.Children);
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        while (stack.Count > 0)
-        {
-            var id = stack[^1];
-            stack.RemoveAt(stack.Count - 1);
-            if (!seen.Add(id))
+            if (layer.Count > 0)
             {
-                continue;
+                Visit([.. layer.Where(found.Add).SelectMany(id => children.GetValueOrDefault(id, []))]);
             }
-
-            foreach (var r in rows.Where(r => r.WorktreeId == id))
-            {
-                var finished = r.Status == WrapupStatus.Settled || r.Verdict is { Done: true };
-                pending += finished ? 0 : 1;
-            }
-
-            stack = [.. stack, .. byParent.GetValueOrDefault(id, [])];
         }
-
-        return pending;
     }
 
     /// <summary>What a waiting agent is waiting on.</summary>
