@@ -370,9 +370,11 @@ slice lives in `src/Rig.Image` and does not replace the Python yet; slice 4 dele
       --simplifier-out ../../tests/Rig.Image.Tests/SimplifierOracle
   ```
 
-  The C# is exact on the geometric and quantisation stages and on the synthetic scour cases. The scour passes that
-  rewrite path data (`cleanPath`), polygon points, transforms, gradients and group merging are not ported, so for
-  documents that need them the C# final is checked for render equivalence with the Python final, not for equal text.
+  The C# output is checked for exact text (or SHA-256) equality with the frozen Python output at every stage: scour,
+  quantisation, geometric, final, and each tolerance, over the real documents and the synthetic cases. Scour is ported
+  whole except `createGroupsForCommonAttributes` (unreachable with `group_create` off) and raster embedding. Python
+  crashes on a few malformed inputs (for example `translate(5) translate(3)` or a path with too few numbers); the C#
+  copes or leaves the document alone, and `ScourPassTests` checks that.
 
 Not yet ported: the candidate-generating pathways (vtracer and friends, so candidates are frozen SVGs), the
 recommendation text, and parsing `production-cuts.csv` (the cross-check's file set is the fixed set the oracle covers).
