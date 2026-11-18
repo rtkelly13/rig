@@ -55,6 +55,9 @@ that `rigw.exe`; Display Guard runs `rig desktop workspace guard` with the user 
 The installer validates the launcher and plan before registering any tasks, then
 registers all three before retiring the old tasks. `--no-start` skips starting the guard immediately.
 Runtime installations always register paths through `current` and use its bundled plan.
+`jobs install` also refuses, changing no tasks, when the published `rig` the tasks run (`<checkout>/rig/rig`) is
+missing, as it is under `dotnet run` or a dev `RIG_HOME`; run `rig runtime install`. `jobs status` reports the same
+as a finding without failing.
 
 Source tests pin task policy against `tests/Rig.Core.Tests/Jobs/task-xml-oracle.json`. Native
 `WIN-JOBS` acceptance and estate rollout remain pending separate Windows evidence; these source

@@ -22,6 +22,7 @@ namespace Rig.Cli.Jobs;
 /// <param name="TracesDir">The shared traces folder a <c>--scheduled</c> logon run prunes.</param>
 /// <param name="InstallTarget">Resolves and validates the stable task targets before registration.</param>
 /// <param name="UserId">The interactive identity used by the tasks.</param>
+/// <param name="MissingRig">The published <c>rig</c> the tasks would point at when it does not exist, else null.</param>
 internal sealed record JobsHost(
     string JobsDir,
     Func<IReadOnlyList<Job>> Jobs,
@@ -36,7 +37,8 @@ internal sealed record JobsHost(
     Func<TimeSpan, bool> WaitForShell,
     string TracesDir,
     Func<CancellationToken, Task<JobsInstallTarget>> InstallTarget,
-    Func<string> UserId);
+    Func<string> UserId,
+    Func<string?> MissingRig);
 
 /// <summary>
 /// <c>rig jobs</c>: the coordinator's runs and task installation. The table is padded to its widest cell rather than wrapped at 80 columns.
@@ -115,6 +117,12 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             return 1;
         }
 
+        if (host.MissingRig() is { } missingRig)
+        {
+            await output.WriteLineAsync(MissingRigMessage(missingRig, refuse: true)).ConfigureAwait(false);
+            return 1;
+        }
+
         try
         {
             var target = await host.InstallTarget(cancellationToken).ConfigureAwait(false);
@@ -154,6 +162,11 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             return 1;
         }
     }
+
+    // The published rig the tasks would run is not there; `runtime install` puts it there.
+    private static string MissingRigMessage(string path, bool refuse) =>
+        (refuse ? "jobs install refuses: " : "Finding: ") + $"the published rig is missing: {path}. The tasks would point at it. Run `rig runtime install`."
+        + (refuse ? " No tasks were changed." : string.Empty);
 
     private async Task<int> Uninstall(CancellationToken cancellationToken)
     {
@@ -217,6 +230,11 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             {
                 text.Append("Not registered: ").AppendJoin(", ", missing).Append(". Run `rig jobs install`.\n");
             }
+        }
+
+        if (host.MissingRig() is { } missingRig)
+        {
+            text.Append(MissingRigMessage(missingRig, refuse: false)).Append('\n');
         }
 
         text.Append("Logs: ").Append(LogsDir).Append('\n');

@@ -436,6 +436,7 @@ internal static class Program
             ShellWindow.WaitFor,
             Path.Join(AppData.Current(), "traces"),
             ct => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, ct),
-            () => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USERDOMAIN")) ? Environment.UserName : $"{Environment.GetEnvironmentVariable("USERDOMAIN")}\\{Environment.UserName}");
+            () => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USERDOMAIN")) ? Environment.UserName : $"{Environment.GetEnvironmentVariable("USERDOMAIN")}\\{Environment.UserName}",
+            () => File.Exists(environment.Script("rig")) ? null : environment.Script("rig"));
     }
 }
