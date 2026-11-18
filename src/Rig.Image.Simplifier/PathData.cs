@@ -8,8 +8,26 @@ public static partial class PathData
 {
     private static readonly Dictionary<char, int> Arity = new()
     {
-        ['M'] = 2, ['m'] = 2, ['L'] = 2, ['l'] = 2, ['H'] = 1, ['h'] = 1, ['V'] = 1, ['v'] = 1, ['C'] = 6, ['c'] = 6,
-        ['S'] = 4, ['s'] = 4, ['Q'] = 4, ['q'] = 4, ['T'] = 2, ['t'] = 2, ['A'] = 7, ['a'] = 7, ['Z'] = 0, ['z'] = 0,
+        ['M'] = 2,
+        ['m'] = 2,
+        ['L'] = 2,
+        ['l'] = 2,
+        ['H'] = 1,
+        ['h'] = 1,
+        ['V'] = 1,
+        ['v'] = 1,
+        ['C'] = 6,
+        ['c'] = 6,
+        ['S'] = 4,
+        ['s'] = 4,
+        ['Q'] = 4,
+        ['q'] = 4,
+        ['T'] = 2,
+        ['t'] = 2,
+        ['A'] = 7,
+        ['a'] = 7,
+        ['Z'] = 0,
+        ['z'] = 0,
     };
 
     /// <summary>Parses raw path data. Characters that are neither a command nor a number are skipped, a leading number means M, repeated M pairs become L, and an incomplete argument group is dropped.</summary>

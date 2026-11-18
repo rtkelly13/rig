@@ -13,8 +13,9 @@ With `--simplifier-out <dir>` it instead freezes the SVG simplifier's outputs (r
     cd tools/image-drift && uv run --locked python -I oracle/dump_oracle.py \\
         --simplifier-out ../../tests/Rig.Image.Tests/SimplifierOracle
 
-Without it, the generator renders every brand master and cut with image_drift's own HTML wrapper, scores them with image_drift's own
-metrics and promotion gate, builds the ICO the way production_cuts.py does, and writes the numbers as
+Without it, the generator renders every brand master and cut with image_drift's own HTML wrapper, scores them
+with image_drift's own metrics and promotion gate, builds the ICO the way production_cuts.py does,
+and writes the numbers as
 `score-oracle.json` beside the PNGs and candidate SVGs they came from. The C# tests read those files and never
 call Python. The output is deterministic for a given machine, so a second run diffs clean.
 """
@@ -187,15 +188,56 @@ SIMPLIFIER_TOLERANCES = (0.5, 0.25, 0.125, 0.0625)
 # Documents longer than this are recorded by hash and length; the rest are stored as text.
 SIMPLIFIER_TEXT_LIMIT = 20000
 SIMPLIFIER_NUMBERS = (
-    0.0, -0.0, 0.125, 0.375, 0.625, 2.5, 10.25, -0.04, -0.05, 0.005, 0.015, 2.675, 1e-7, 100.0, 1234.5678,
-    0.1, 0.35, 1.005, -1.5, 3.0, 12.34567, 1e21, 0.995, 999.995,
+    0.0,
+    -0.0,
+    0.125,
+    0.375,
+    0.625,
+    2.5,
+    10.25,
+    -0.04,
+    -0.05,
+    0.005,
+    0.015,
+    2.675,
+    1e-7,
+    100.0,
+    1234.5678,
+    0.1,
+    0.35,
+    1.005,
+    -1.5,
+    3.0,
+    12.34567,
+    1e21,
+    0.995,
+    999.995,
 )
 SIMPLIFIER_PATHS = (
-    "", "   ", "M 0 0 L 10 10", "M0 0L10 0 10 10 0 10z", "m 1 2 3 4 5 6", "10 20 30 40", "M10-20.5L.5.25e2Z",
-    "M 0 0 c 10 0 20 0 30 0", "M 0 0 C 10 0 20 0 30 0", "M0 0 L1", "M0 0 L1 2 3", "H5V6h-1v-2", "z",
-    "M1 1 Z L5 5", "a1 1 0 011 1", "M0 0 A 5 5 0 1 1 10 0", "M0 0 a5 5 45 0 0 10 0", "M0 0 Q 5 5 10 0 T 20 0",
-    "M0 0 S 1 2 3 4", "M1.23456 2.5e1 L-0.001 0.004", "x M 3 4 y L 5 6", "M 0 0 L 1,2,3,4",
-    "M +1 +2 L -.5 -.5", "M 5 5 m 1 1 l 2 2 L 3 3 Z m 1 1",
+    "",
+    "   ",
+    "M 0 0 L 10 10",
+    "M0 0L10 0 10 10 0 10z",
+    "m 1 2 3 4 5 6",
+    "10 20 30 40",
+    "M10-20.5L.5.25e2Z",
+    "M 0 0 c 10 0 20 0 30 0",
+    "M 0 0 C 10 0 20 0 30 0",
+    "M0 0 L1",
+    "M0 0 L1 2 3",
+    "H5V6h-1v-2",
+    "z",
+    "M1 1 Z L5 5",
+    "a1 1 0 011 1",
+    "M0 0 A 5 5 0 1 1 10 0",
+    "M0 0 a5 5 45 0 0 10 0",
+    "M0 0 Q 5 5 10 0 T 20 0",
+    "M0 0 S 1 2 3 4",
+    "M1.23456 2.5e1 L-0.001 0.004",
+    "x M 3 4 y L 5 6",
+    "M 0 0 L 1,2,3,4",
+    "M +1 +2 L -.5 -.5",
+    "M 5 5 m 1 1 l 2 2 L 3 3 Z m 1 1",
 )
 SIMPLIFIER_GEOMETRY = (
     ("M 0 0 L 10 0 L 10 10 L 0 10 Z", "square"),
@@ -238,54 +280,303 @@ def _text_or_hash(text: str) -> dict[str, Any]:
 def _synthetic_documents() -> list[tuple[str, str]]:
     ns = 'xmlns="http://www.w3.org/2000/svg"'
     return [
-        ("title-desc-metadata", f'<svg {ns} viewBox="0 0 24 24"><title>t</title><desc>d</desc><metadata>m</metadata><rect width="4" height="4"/></svg>'),
+        (
+            "title-desc-metadata",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><title>t</title><desc>d</desc><metadata>m</metadata>'
+                f'<rect width="4" height="4"/></svg>'
+            ),
+        ),
         ("comments", f'<svg {ns} viewBox="0 0 24 24"><!-- one --><rect width="4" height="4"/><!-- two --></svg>'),
-        ("prolog", f'<?xml version="1.0" encoding="UTF-8"?>\n<svg {ns} viewBox="0 0 24 24"><rect width="4" height="4"/></svg>'),
-        ("editor-namespaces", f'<svg {ns} xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" viewBox="0 0 24 24" inkscape:version="1.0"><sodipodi:namedview id="nv"/><rect width="4" height="4" inkscape:label="r"/></svg>'),
-        ("unused-xlink", f'<svg {ns} xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><rect width="4" height="4"/></svg>'),
-        ("used-xlink", f'<svg {ns} xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><defs><rect id="a" width="4" height="4"/></defs><use xlink:href="#a"/></svg>'),
-        ("colors", f'<svg {ns} viewBox="0 0 24 24"><rect width="4" height="4" fill="#ffffff" stroke="rgb(255,0,0)"/><circle r="2" fill="RED" stroke="#00ff00"/><rect width="1" height="1" fill="rgb(100%,0%,0%)" stroke="#aabbcc"/></svg>'),
-        ("unreferenced-defs", f'<svg {ns} viewBox="0 0 24 24"><defs><linearGradient id="g1"><stop offset="0" stop-color="#000"/></linearGradient><linearGradient id="g2"><stop offset="0" stop-color="#fff"/></linearGradient></defs><rect width="4" height="4" fill="url(#g2)"/></svg>'),
+        (
+            "prolog",
+            (
+                f'<?xml version="1.0" encoding="UTF-8"?>\n<svg {ns} viewBox="0 0 24 24">'
+                f'<rect width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "editor-namespaces",
+            (
+                f'<svg {ns} xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
+                f'xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" viewBox="0 0 24 '
+                f'24" inkscape:version="1.0">'
+                f'<sodipodi:namedview id="nv"/><rect width="4" height="4" inkscape:label="r"/></svg>'
+            ),
+        ),
+        (
+            "unused-xlink",
+            (
+                f'<svg {ns} xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">'
+                f'<rect width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "used-xlink",
+            (
+                f'<svg {ns} xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><defs>'
+                f'<rect id="a" width="4" height="4"/></defs><use xlink:href="#a"/></svg>'
+            ),
+        ),
+        (
+            "colors",
+            (
+                f'<svg {ns} viewBox="0 0 24 24">'
+                f'<rect width="4" height="4" fill="#ffffff" stroke="rgb(255,0,0)"/>'
+                f'<circle r="2" fill="RED" stroke="#00ff00"/>'
+                f'<rect width="1" height="1" fill="rgb(100%,0%,0%)" stroke="#aabbcc"/></svg>'
+            ),
+        ),
+        (
+            "unreferenced-defs",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs><linearGradient id="g1">'
+                f'<stop offset="0" stop-color="#000"/></linearGradient><linearGradient id="g2">'
+                f'<stop offset="0" stop-color="#fff"/></linearGradient></defs>'
+                f'<rect width="4" height="4" fill="url(#g2)"/></svg>'
+            ),
+        ),
         ("empty-containers", f'<svg {ns} viewBox="0 0 24 24"><defs/><g/><g><g/></g><rect width="4" height="4"/></svg>'),
-        ("lengths", f'<svg {ns} width="100.0px" height="100.00" viewBox="0.0 0 24.000 24"><rect x="1.0" y="2.50" width="4.000" height="4.12345678" rx="0.5"/><circle cx="10.0" cy="10.0" r="3.0"/></svg>'),
-        ("default-attributes", f'<svg {ns} viewBox="0 0 24 24"><rect x="0" y="0" width="4" height="4"/><circle cx="0" cy="0" r="2"/></svg>'),
-        ("attribute-order", f'<svg {ns} viewBox="0 0 24 24"><rect stroke="#000" fill="#fff" height="4" width="4" y="1" x="1" id="r" class="c" transform="translate(1 2)"/></svg>'),
+        (
+            "lengths",
+            (
+                f'<svg {ns} width="100.0px" height="100.00" viewBox="0.0 0 24.000 24">'
+                f'<rect x="1.0" y="2.50" width="4.000" height="4.12345678" rx="0.5"/>'
+                f'<circle cx="10.0" cy="10.0" r="3.0"/></svg>'
+            ),
+        ),
+        (
+            "default-attributes",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><rect x="0" y="0" width="4" height="4"/>'
+                f'<circle cx="0" cy="0" r="2"/></svg>'
+            ),
+        ),
+        (
+            "attribute-order",
+            (
+                f'<svg {ns} viewBox="0 0 24 24">'
+                f'<rect stroke="#000" fill="#fff" height="4" width="4" y="1" x="1" id="r" class="c" '
+                f'transform="translate(1 2)"/>'
+                f"</svg>"
+            ),
+        ),
         ("quotes", f'<svg {ns} viewBox="0 0 24 24"><text x="1" y="1" font-family=\'Foo "Bar"\'>hi</text></svg>'),
         ("text-whitespace", f'<svg {ns} viewBox="0 0 24 24"><text x="1" y="1">  hello   world  </text></svg>'),
-        ("nested-children", f'<svg {ns} viewBox="0 0 24 24"><g id="a"><rect id="b" width="4" height="4"/><circle id="c" r="2" cx="3" cy="3"/></g></svg>'),
-        ("gradient-defaults", f'<svg {ns} viewBox="0 0 24 24"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="objectBoundingBox"><stop offset="50%" stop-color="#000"/><stop offset="100%" stop-color="#fff"/></linearGradient></defs><rect width="4" height="4" fill="url(#g)"/></svg>'),
+        (
+            "nested-children",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g id="a"><rect id="b" width="4" height="4"/>'
+                f'<circle id="c" r="2" cx="3" cy="3"/></g></svg>'
+            ),
+        ),
+        (
+            "gradient-defaults",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs>'
+                f'<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="objectBoundingBox">'
+                f'<stop offset="50%" stop-color="#000"/><stop offset="100%" stop-color="#fff"/>'
+                f'</linearGradient></defs><rect width="4" height="4" fill="url(#g)"/></svg>'
+            ),
+        ),
         ("no-namespace-root", '<svg viewBox="0 0 24 24"><rect width="4" height="4"/></svg>'),
         ("malformed", "<svg><unclosed></svg>"),
         ("not-xml", "plain text"),
         ("path-only", f'<svg {ns} viewBox="0 0 24 24"><path d="M 1.234 2.345 L 3 4"/></svg>'),
-        ("style-attribute", f'<svg {ns} viewBox="0 0 24 24"><rect width="4" height="4" style="fill:red;stroke:#ff0000;opacity:1.00000;stroke-width:2.0;bogus"/></svg>'),
-        ("style-empty-after-defaults", f'<svg {ns} viewBox="0 0 24 24"><rect width="4" height="4" style="opacity:1;display:inline"/></svg>'),
-        ("colors-more", f'<svg {ns} viewBox="0 0 24 24"><defs><linearGradient id="g"><stop offset="0" stop-color="RGB(10%,20%,30%)"/><stop offset="1" stop-color="rgb( 1, 2, 3 )"/></linearGradient></defs><a><rect width="4" height="4" fill="url(#g)" stroke="#FFFFFF"/></a><ellipse rx="1" ry="1" fill="none" stroke="blue"/><g fill="  #AABBCC "/><line x1="1" x2="2" stroke="rgb(300,0,0)"/><rect width="1" height="1" fill="#abcdef" stroke="darkslategray"/></svg>'),
-        ("prefixed-svg-namespace", '<svg:svg xmlns:svg="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><svg:rect width="4" height="4"/></svg:svg>'),
-        ("url-forms", f'<svg {ns} xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><defs><linearGradient id="a"/><linearGradient id="b"><stop offset="1"/></linearGradient><filter id="c"/><clipPath id="d"/><mask id="e"/><marker id="f"/><linearGradient id="unused"/><font id="keep"/><g id="grp"><rect id="inner"/></g><g><rect id="inner2"/></g><symbol id="s"/></defs><rect width="4" height="4" fill="url(\'#a\')" stroke=\'url("#b")\' style="filter:url(#c)" clip-path="url(#d)" mask="url(#e)" marker-end="url(#f)"/><use xlink:href="#s"/></svg>'),
-        ("url-edge", f'<svg {ns} viewBox="0 0 24 24"><defs><linearGradient id="a"/><linearGradient id="b"/></defs><rect width="4" height="4" fill="url(#a" stroke="url(#b)x"/></svg>'),
-        ("unreferenced-outside-defs", f'<svg {ns} viewBox="0 0 24 24"><linearGradient id="u1"/><radialGradient id="u2"/><pattern id="u3"/><linearGradient id="u4"/><rect width="4" height="4" fill="url(#u4)"/></svg>'),
-        ("nested-groups", f'<svg {ns} viewBox="0 0 24 24"><g><rect width="4" height="4"/></g><g id="k"><g><circle r="1"/></g></g><switch><g><rect width="1" height="1"/></g></switch><g><title>t</title><rect width="2" height="2"/></g><g><desc/><rect width="3" height="3"/></g></svg>'),
-        ("default-properties", f'<svg {ns} viewBox="0 0 24 24"><g opacity=".5"><rect opacity="1" width="4" height="4"/></g><rect opacity="1" style="visibility:visible;display:inline;fill:red" width="1" height="1" stroke-linecap="butt"/><g marker-start="url(#m)"><rect marker-end="none" marker="none" width="2" height="2"/></g><g marker="url(#m)"><rect marker-start="none" width="2" height="2"/></g><g style="stroke-width:3"><rect style="stroke-width:1" width="2" height="2"/></g></svg>'),
-        ("default-attributes-more", f'<svg {ns} width="100%" height="100%" version="1.1" baseProfile="none" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet"><defs><filter id="f" x="-10%" y="-10%" width="120%" height="120%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="0"/></filter><filter id="f2" x="-0.1" width="1.2" height="1.2" y="-.1"/><filter id="f3" gradientUnits="userSpaceOnUse" x="-0.1"/><radialGradient id="r" cx="50%" cy="50%" fx="50%" fy="50%" r="50%" spreadMethod="pad"/><radialGradient id="r2" cx="0.5" cy="0.5" fx="0.5" fy="0.4" r="0.5" gradientUnits="userSpaceOnUse"/><linearGradient id="l" x1="0" x2="100%" x2b="1" y2="0"/><linearGradient id="l2" x2="1"/><linearGradient id="l3" x2="1" gradientUnits="userSpaceOnUse"/><marker id="m" markerUnits="strokeWidth" refX="0" refY="0" markerWidth="3" markerHeight="3" orient="0"/></defs><rect fill="url(#r)" filter="url(#f)" mask="url(#f2)" stroke="url(#f3)" clip-path="url(#r2)" marker-start="url(#m)" marker-mid="url(#l)" marker-end="url(#l2)" width="4" height="4" x="0px" y="0em"/><use xlink:href="#l3" x="0" y="0"/><feX/></svg>'),
-        ("lengths-more", f'<svg {ns} viewBox="0,0,24.50,24"><rect width="4.5em" height="2e1" x="1e-2" y="5%" rx="abc" ry="+3"/><rect width=".5" height="0.0" x="-0.5" y="1.50000" rx="100000" ry="0.0001"/><circle r="1E3" cx="12345.6789" cy="1.0e+3"/><ellipse rx="1e-7" ry="-0"/></svg>'),
+        (
+            "style-attribute",
+            (
+                f'<svg {ns} viewBox="0 0 24 24">'
+                f'<rect width="4" height="4" style="fill:red;stroke:#ff0000;opacity:1.00000;stroke-width:2.0;bogus"/>'
+                f"</svg>"
+            ),
+        ),
+        (
+            "style-empty-after-defaults",
+            (f'<svg {ns} viewBox="0 0 24 24"><rect width="4" height="4" style="opacity:1;display:inline"/></svg>'),
+        ),
+        (
+            "colors-more",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs><linearGradient id="g">'
+                f'<stop offset="0" stop-color="RGB(10%,20%,30%)"/>'
+                f'<stop offset="1" stop-color="rgb( 1, 2, 3 )"/></linearGradient></defs><a>'
+                f'<rect width="4" height="4" fill="url(#g)" stroke="#FFFFFF"/></a>'
+                f'<ellipse rx="1" ry="1" fill="none" stroke="blue"/><g fill="  #AABBCC "/>'
+                f'<line x1="1" x2="2" stroke="rgb(300,0,0)"/>'
+                f'<rect width="1" height="1" fill="#abcdef" stroke="darkslategray"/></svg>'
+            ),
+        ),
+        (
+            "prefixed-svg-namespace",
+            (
+                '<svg:svg xmlns:svg="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+                '<svg:rect width="4" height="4"/></svg:svg>'
+            ),
+        ),
+        (
+            "url-forms",
+            (
+                f'<svg {ns} xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><defs>'
+                f'<linearGradient id="a"/><linearGradient id="b"><stop offset="1"/></linearGradient>'
+                f'<filter id="c"/><clipPath id="d"/><mask id="e"/><marker id="f"/>'
+                f'<linearGradient id="unused"/><font id="keep"/><g id="grp"><rect id="inner"/></g><g>'
+                f'<rect id="inner2"/></g><symbol id="s"/></defs>'
+                f'<rect width="4" height="4" fill="url(\'#a\')" stroke=\'url("#b")\' '
+                f'style="filter:url(#c)" clip-path="url(#d)" mask="url(#e)" marker-end="url(#f)"/>'
+                f'<use xlink:href="#s"/></svg>'
+            ),
+        ),
+        (
+            "url-edge",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs><linearGradient id="a"/><linearGradient id="b"/>'
+                f'</defs><rect width="4" height="4" fill="url(#a" stroke="url(#b)x"/></svg>'
+            ),
+        ),
+        (
+            "unreferenced-outside-defs",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><linearGradient id="u1"/><radialGradient id="u2"/>'
+                f'<pattern id="u3"/><linearGradient id="u4"/>'
+                f'<rect width="4" height="4" fill="url(#u4)"/></svg>'
+            ),
+        ),
+        (
+            "nested-groups",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g><rect width="4" height="4"/></g><g id="k"><g>'
+                f'<circle r="1"/></g></g><switch><g><rect width="1" height="1"/></g></switch><g>'
+                f'<title>t</title><rect width="2" height="2"/></g><g><desc/>'
+                f'<rect width="3" height="3"/></g></svg>'
+            ),
+        ),
+        (
+            "default-properties",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g opacity=".5">'
+                f'<rect opacity="1" width="4" height="4"/></g>'
+                f'<rect opacity="1" style="visibility:visible;display:inline;fill:red" width="1" '
+                f'height="1" stroke-linecap="butt"/>'
+                f'<g marker-start="url(#m)">'
+                f'<rect marker-end="none" marker="none" width="2" height="2"/></g><g marker="url(#m)">'
+                f'<rect marker-start="none" width="2" height="2"/></g><g style="stroke-width:3">'
+                f'<rect style="stroke-width:1" width="2" height="2"/></g></svg>'
+            ),
+        ),
+        (
+            "default-attributes-more",
+            (
+                f'<svg {ns} width="100%" height="100%" version="1.1" baseProfile="none" viewBox="0 0 '
+                f'24 24" preserveAspectRatio="xMidYMid meet">'
+                f"<defs>"
+                f'<filter id="f" x="-10%" y="-10%" width="120%" height="120%" '
+                f'filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse">'
+                f'<feGaussianBlur stdDeviation="0"/></filter>'
+                f'<filter id="f2" x="-0.1" width="1.2" height="1.2" y="-.1"/>'
+                f'<filter id="f3" gradientUnits="userSpaceOnUse" x="-0.1"/>'
+                f'<radialGradient id="r" cx="50%" cy="50%" fx="50%" fy="50%" r="50%" spreadMethod="pad"/>'
+                f'<radialGradient id="r2" cx="0.5" cy="0.5" fx="0.5" fy="0.4" r="0.5" gradientUnits="userSpaceOnUse"/>'
+                f'<linearGradient id="l" x1="0" x2="100%" x2b="1" y2="0"/>'
+                f'<linearGradient id="l2" x2="1"/>'
+                f'<linearGradient id="l3" x2="1" gradientUnits="userSpaceOnUse"/>'
+                f'<marker id="m" markerUnits="strokeWidth" refX="0" refY="0" markerWidth="3" '
+                f'markerHeight="3" orient="0"/>'
+                f"</defs>"
+                f'<rect fill="url(#r)" filter="url(#f)" mask="url(#f2)" stroke="url(#f3)" '
+                f'clip-path="url(#r2)" marker-start="url(#m)" marker-mid="url(#l)" '
+                f'marker-end="url(#l2)" width="4" height="4" x="0px" y="0em"/>'
+                f'<use xlink:href="#l3" x="0" y="0"/><feX/></svg>'
+            ),
+        ),
+        (
+            "lengths-more",
+            (
+                f'<svg {ns} viewBox="0,0,24.50,24">'
+                f'<rect width="4.5em" height="2e1" x="1e-2" y="5%" rx="abc" ry="+3"/>'
+                f'<rect width=".5" height="0.0" x="-0.5" y="1.50000" rx="100000" ry="0.0001"/>'
+                f'<circle r="1E3" cx="12345.6789" cy="1.0e+3"/><ellipse rx="1e-7" ry="-0"/></svg>'
+            ),
+        ),
         ("viewbox-short", f'<svg {ns} viewBox="0 0 24"><rect width="4" height="4"/></svg>'),
         ("viewbox-padded", f'<svg {ns} viewBox="  0  0 24.0  24.0 "><rect width="4" height="4"/></svg>'),
-        ("precision-attributes", f'<svg {ns} viewBox="0 0 24 24"><rect width="4" height="4" opacity="0.50000" stroke-width="2.000px" font-size="12.0pt" stroke-miterlimit="4.00" fill-opacity="bad" letter-spacing="1.0em" stroke-dashoffset="0.0"/><rect width="1" height="1" style="opacity:0.5000;stroke-width:3.00;font-size:abc;stroke-opacity:.50"/></svg>'),
-        ("cdata-and-preserve", f'<svg {ns} viewBox="0 0 24 24"><style><![CDATA[a>b{{fill:red}}]]></style><text xml:space="preserve">  a  <tspan> b </tspan> </text><text xml:space="default"> c </text><script><![CDATA[x<y]]></script></svg>'),
-        ("entities", f'<svg {ns} viewBox="0 0 24 24"><text>a &amp; b &lt; c &gt; d</text><rect width="4" height="4" aria-label="a &amp; b" data-q="it\'s &quot;q&quot;" data-d="say &quot;hi&quot;"/><rect width="1" height="1" data-m="a\'b&quot;c&quot;&quot;"/></svg>'),
+        (
+            "precision-attributes",
+            (
+                f'<svg {ns} viewBox="0 0 24 24">'
+                f'<rect width="4" height="4" opacity="0.50000" stroke-width="2.000px" '
+                f'font-size="12.0pt" stroke-miterlimit="4.00" fill-opacity="bad" '
+                f'letter-spacing="1.0em" stroke-dashoffset="0.0"/>'
+                f'<rect width="1" height="1" '
+                f'style="opacity:0.5000;stroke-width:3.00;font-size:abc;stroke-opacity:.50"/>'
+                f"</svg>"
+            ),
+        ),
+        (
+            "cdata-and-preserve",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><style><![CDATA[a>b{{fill:red}}]]></style>'
+                f'<text xml:space="preserve">  a  <tspan> b </tspan> </text>'
+                f'<text xml:space="default"> c </text><script><![CDATA[x<y]]></script></svg>'
+            ),
+        ),
+        (
+            "entities",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><text>a &amp; b &lt; c &gt; d</text>'
+                f'<rect width="4" height="4" aria-label="a &amp; b" data-q="it\'s &quot;q&quot;" '
+                f'data-d="say &quot;hi&quot;"/>'
+                f'<rect width="1" height="1" data-m="a\'b&quot;c&quot;&quot;"/></svg>'
+            ),
+        ),
         ("empty-path-elements", f'<svg {ns} viewBox="0 0 24 24"><path/><path d=""/><rect width="4" height="4"/></svg>'),
-        ("gradient-stops-more", f'<svg {ns} viewBox="0 0 24 24"><defs><linearGradient id="g"><stop stop-color="red"/><stop offset="0%" stop-color="red"/><stop offset="0.5" stop-color="blue"/><stop offset="50%" stop-color="green"/><stop offset="50%" stop-color="green" stop-opacity=".5"/><stop offset="1e-5"/><stop offset="10px"/></linearGradient><radialGradient id="h"><stop offset="25%"/><stop offset="25%"/></radialGradient></defs><rect width="4" height="4" fill="url(#g)" stroke="url(#h)"/></svg>'),
-        ("mixed-content", f'<svg {ns} viewBox="0 0 24 24"><text>a<tspan>b</tspan>c <tspan>d</tspan> e</text><g>x<rect width="1" height="1"/>y</g><text>\n\t tabbed\n text \n</text></svg>'),
+        (
+            "gradient-stops-more",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs><linearGradient id="g"><stop stop-color="red"/>'
+                f'<stop offset="0%" stop-color="red"/><stop offset="0.5" stop-color="blue"/>'
+                f'<stop offset="50%" stop-color="green"/>'
+                f'<stop offset="50%" stop-color="green" stop-opacity=".5"/><stop offset="1e-5"/>'
+                f'<stop offset="10px"/></linearGradient><radialGradient id="h"><stop offset="25%"/>'
+                f'<stop offset="25%"/></radialGradient></defs>'
+                f'<rect width="4" height="4" fill="url(#g)" stroke="url(#h)"/></svg>'
+            ),
+        ),
+        (
+            "mixed-content",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><text>a<tspan>b</tspan>c <tspan>d</tspan> e</text>'
+                f'<g>x<rect width="1" height="1"/>y</g><text>\n\t tabbed\n text \n</text></svg>'
+            ),
+        ),
         ("size-small", f'<svg {ns} width="20" height="20"><path d="M 1.23456 2.34567 L 3.45678 4.56789"/></svg>'),
-        ("size-medium", f'<svg {ns} width="100px" height="100px"><path d="M 1.23456 2.34567 L 3.45678 4.56789"/></svg>'),
+        (
+            "size-medium",
+            (f'<svg {ns} width="100px" height="100px"><path d="M 1.23456 2.34567 L 3.45678 4.56789"/></svg>'),
+        ),
         ("size-large", f'<svg {ns} width="400" height="300"><path d="M 1.23456 2.34567 L 3.45678 4.56789"/></svg>'),
-        ("size-unparsable", f'<svg {ns} width="abc" height="def"><path d="M 1.23456 2.34567 L 3.45678 4.56789"/></svg>'),
+        (
+            "size-unparsable",
+            (f'<svg {ns} width="abc" height="def"><path d="M 1.23456 2.34567 L 3.45678 4.56789"/></svg>'),
+        ),
         ("size-missing", f'<svg {ns}><path d="M 1.23456 2.34567 L 3.45678 4.56789"/></svg>'),
         ("size-percent", f'<svg {ns} width="100%" height="50%"><path d="M 1.23456 2.34567 L 3.45678 4.56789"/></svg>'),
-        ("namespaced-attributes", f'<svg {ns} xmlns:x="urn:example" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><rect width="4" height="4" x:flag="1"/><a xlink:href="#r" xlink:title="t"/><rect id="r" width="1" height="1"/></svg>'),
+        (
+            "namespaced-attributes",
+            (
+                f'<svg {ns} xmlns:x="urn:example" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">'
+                f'<rect width="4" height="4" x:flag="1"/><a xlink:href="#r" xlink:title="t"/>'
+                f'<rect id="r" width="1" height="1"/></svg>'
+            ),
+        ),
         ("xml-lang", f'<svg {ns} xml:lang="en" viewBox="0 0 24 24"><text xml:space="preserve"> a </text></svg>'),
-        ("unused-prefix-prefix-match", f'<svg {ns} xmlns:a="urn:a" xmlns:ab="urn:b" viewBox="0 0 24 24"><rect width="4" height="4" ab:x="1"/></svg>'),
+        (
+            "unused-prefix-prefix-match",
+            (
+                f'<svg {ns} xmlns:a="urn:a" xmlns:ab="urn:b" viewBox="0 0 24 24">'
+                f'<rect width="4" height="4" ab:x="1"/></svg>'
+            ),
+        ),
     ]
 
 
@@ -297,9 +588,7 @@ def _simplifier_documents(inputs: list[tuple[str, str]]) -> list[dict[str, Any]]
         entry["quantize"] = _text_or_hash(quantize_svg_coordinates(text))
         entry["quantize3"] = _text_or_hash(quantize_svg_coordinates(text, precision=3))
         entry["final"] = _text_or_hash(simplify_svg_document(text))
-        entry["geometricOnly"] = _text_or_hash(
-            simplify_svg_document(text, use_scour=False, precision=2)
-        )
+        entry["geometricOnly"] = _text_or_hash(simplify_svg_document(text, use_scour=False, precision=2))
         documents.append(entry)
     return documents
 
