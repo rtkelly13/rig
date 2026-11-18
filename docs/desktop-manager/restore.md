@@ -37,7 +37,7 @@ rig desktop workspace restore --desktop Work   # restore one desktop in place
   runs over 15 seconds (90 for a desktop) is logged as `Slow step:` when it ends. A
   closing `Step timings:` line lists every phase.
 - Before inventorying windows, restore applies or waits out a staged Warp update.
-  A plan that launches no Warp window, for example with `warp-terminals` off, skips
+  A plan that launches no Warp window, such as the machine plan while `personal-desktop` is off, skips
   the check.
 - The same phase installs a staged Orca update while no Orca is running, so the
   restore then launches both Orca profiles on the new build. With Orca running it

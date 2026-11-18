@@ -16,10 +16,10 @@ A plan resolves each flag in this order, the later winning:
 
 ```json
 {
-  "name": "Warp Workspace 1",
+  "name": "Personal Orca",
   "type": "app",
-  "path": "{warp-path}",
-  "feature": "warp-terminals"
+  "path": "{orca-path}",
+  "feature": "orca-sessions"
 }
 ```
 
@@ -37,11 +37,11 @@ A plan resolves each flag in this order, the later winning:
 # What is on, what is paused, and which entries belong to each
 rig desktop workspace features
 
-# Swap the active terminal variant for one restore
-rig desktop workspace restore --enable warp-terminals --disable wt-terminals
+# Try the Lab desktop for one restore without the Orca windows
+rig desktop workspace restore --enable experimental-desktop --disable orca-sessions
 
 # Both flags are repeatable and also work on audit and validate-plan
-rig desktop workspace audit --enable warp-terminals
+rig desktop workspace audit --enable experimental-desktop
 ```
 
 The command fails, rather than restoring the wrong layout, when you name an
@@ -63,11 +63,9 @@ A desktop ref in the bundle can carry a `feature` too. For example,
 
 ## Flags in the machine plan
 
-- The Work desktop keeps three session layouts side by side. `orca-sessions` (on)
-  opens the Work and Personal Orca windows on screens 1 and 2. `wt-terminals` (off)
-  holds the Windows Terminal sessions each running `claude`, and `warp-terminals`
-  (off) the earlier Warp sessions. To go back to terminals on this machine:
-  `rig flags disable orca-sessions` and `rig flags enable wt-terminals`.
-- `work-chrome` (off) holds the work-profile Chrome window that used to fill
-  screen 2, before the plan moved to two screens. `work-fork` (off) holds the Fork window it replaced, because Fork now
-  lives on the Review desktop.
+- `orca-sessions` (on) opens the Work and Personal Orca windows on screens 1 and 2
+  of the Work desktop. The earlier Windows Terminal, Warp, work-Chrome and Fork
+  variants were deleted when the plan moved to two screens; git history keeps them.
+- `personal-desktop` and `experimental-desktop` (both off) keep the Personal and
+  Lab desktops as opt-ins, and while off they retire any leftover desktop of that
+  name.
