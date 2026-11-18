@@ -45,8 +45,6 @@ public sealed class NativePresence : IPresence
     /// </summary>
     public static IReadOnlyList<string> DevicesInUse(RegistryKey currentUser, string executable)
     {
-        ArgumentNullException.ThrowIfNull(currentUser);
-        ArgumentNullException.ThrowIfNull(executable);
         var suffix = "#" + executable.ToLowerInvariant();
         List<string> inUse = [];
         foreach (var (store, device) in Devices)

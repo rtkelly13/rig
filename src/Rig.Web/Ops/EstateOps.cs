@@ -26,7 +26,6 @@ public sealed class EstateOps : IDisposable
     {
         ArgumentException.ThrowIfNullOrEmpty(root);
         ArgumentException.ThrowIfNullOrEmpty(feedPath);
-        ArgumentNullException.ThrowIfNull(trims);
         _root = root;
         _feedPath = feedPath;
         Trims = trims;
@@ -53,14 +52,12 @@ public sealed class EstateOps : IDisposable
     /// <summary>Deletes caches the last finished scan offered; each is rechecked first and refused if it changed.</summary>
     public async Task<IReadOnlyList<TrimResult>> ApplyAsync(IReadOnlyList<string> paths, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(paths);
         return await Trims.ApplyAsync(paths, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The real sources for a host serving <paramref name="settings"/>' estate.</summary>
     public static EstateOps ForSettings(WebHostSettings settings)
     {
-        ArgumentNullException.ThrowIfNull(settings);
         var proc = new SystemProc();
         var git = new Git(proc, settings.EstateRoot);
         var trim = new Trim(git, TimeProvider.System);

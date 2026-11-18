@@ -121,7 +121,6 @@ public sealed class ShelfStore(Git git)
     /// <summary>Reads the <c>Shelved-*</c> trailers from a commit message. Pure.</summary>
     public static ShelfTrailers ParseTrailers(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var found = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var line in text.ReplaceLineEndings("\n").Split('\n'))
         {
@@ -196,8 +195,6 @@ public sealed class ShelfStore(Git git)
     /// </summary>
     public async Task<string> PrunableAsync(Shelf shelf, IReadOnlyDictionary<int, string> mergedPrs, string defaultBranch = "main")
     {
-        ArgumentNullException.ThrowIfNull(shelf);
-        ArgumentNullException.ThrowIfNull(mergedPrs);
         if (!shelf.Subject.StartsWith(Prefix, StringComparison.Ordinal) || shelf.Snapshot)
         {
             return string.Empty;
@@ -225,7 +222,6 @@ public sealed class ShelfStore(Git git)
     /// <summary>Deletes a shelf from the remote, only if it still points where it was read.</summary>
     public Task<ShelfStep> DropAsync(Shelf shelf)
     {
-        ArgumentNullException.ThrowIfNull(shelf);
         return RunAsync(shelf.Repo, ["push", "-q", $"--force-with-lease={shelf.Ref}:{shelf.Sha}", Remote, $":{shelf.Ref}"]);
     }
 
@@ -235,7 +231,6 @@ public sealed class ShelfStore(Git git)
     /// </summary>
     public async Task<ShelfStep> UnshelveAsync(Shelf shelf, string? path = null)
     {
-        ArgumentNullException.ThrowIfNull(shelf);
         var clone = shelf.Repo;
         if (!shelf.Subject.StartsWith(Prefix, StringComparison.Ordinal))
         {

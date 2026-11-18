@@ -24,8 +24,6 @@ public sealed class Launchd(IProc proc, string agentsDir, string domain)
     /// <exception cref="ProcException"><c>launchctl bootstrap</c> failed.</exception>
     public async Task LoadAsync(string path, byte[] plist, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(path);
-        ArgumentNullException.ThrowIfNull(plist);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         await UnloadAsync(path, cancellationToken).ConfigureAwait(false);
         await File.WriteAllBytesAsync(path, plist, cancellationToken).ConfigureAwait(false);

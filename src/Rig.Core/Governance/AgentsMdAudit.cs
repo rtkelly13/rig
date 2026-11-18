@@ -138,7 +138,6 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     /// <summary>An ISO calendar date (<c>YYYY-MM-DD</c> or <c>YYYYMMDD</c>), or null when it is not one.</summary>
     public static DateOnly? ParseIsoDate(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var match = IsoDate().Match(text);
         if (!match.Success)
         {
@@ -180,7 +179,6 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     /// <summary>Runs every deterministic check over <paramref name="repoPath"/> under <paramref name="rules"/> and applies its waivers.</summary>
     public async Task<AgentsMdAuditResult> AuditAsync(string repoPath, AgentsMdRules rules, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(rules);
         var repo = PathResolution.Resolve(repoPath);
         var name = Path.GetFileName(repo.TrimEnd(Path.DirectorySeparatorChar));
         var agents = Path.Join(repo, AgentsFileName);
@@ -222,7 +220,6 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     /// <summary>The report-only numbers: list items, forcing words, and the longest run of lines under one heading.</summary>
     public static IReadOnlyList<KeyValuePair<string, int>> CollectMetrics(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var lines = UnicodeText.SplitLines(text);
         var sections = new List<int>();
         var current = 0;
@@ -251,7 +248,6 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     /// <summary>The text with fenced blocks and inline code spans blanked: a link in code is an example, not a pointer.</summary>
     public static string StripCode(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var kept = new List<string>();
         var inFence = false;
         foreach (var line in UnicodeText.SplitLines(text))

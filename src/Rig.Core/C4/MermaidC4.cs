@@ -99,7 +99,6 @@ public static partial class MermaidReader
     /// <summary>Read a Mermaid block. C4 macros give full structure; other diagrams only <c>click</c> links and classes.</summary>
     public static Diagram Parse(string source)
     {
-        ArgumentNullException.ThrowIfNull(source);
         var lines = OkfBundle.SplitLines(source);
         var first = lines.Select(line => line.Trim())
             .FirstOrDefault(line => line.Length > 0 && !line.StartsWith("%%", StringComparison.Ordinal));

@@ -9,7 +9,6 @@ public static class WorkspaceScope
     /// <summary>Only the desktop named <paramref name="desktop"/>, ignoring case; every desktop when null.</summary>
     public static WorkspacePlan ToDesktop(WorkspacePlan plan, string? desktop)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         if (desktop is null)
         {
             return plan;
@@ -25,7 +24,6 @@ public static class WorkspaceScope
     /// <summary>Only the entries placed on <paramref name="screen"/>, and the windows captured on it.</summary>
     public static WorkspacePlan ToScreen(WorkspacePlan plan, int? screen)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         if (screen is not { } number)
         {
             return plan;

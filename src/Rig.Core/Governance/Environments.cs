@@ -35,8 +35,6 @@ public static class ReleaseEnvironments
     /// <summary>Decides what to do. Pure: every fact is supplied by the caller.</summary>
     public static IReadOnlyList<EnvironmentAction> PlanActions(IReadOnlyList<EnvironmentPolicy> desired, IReadOnlyDictionary<string, CurrentEnvironment> current)
     {
-        ArgumentNullException.ThrowIfNull(desired);
-        ArgumentNullException.ThrowIfNull(current);
         var actions = new List<EnvironmentAction>();
         foreach (var policy in desired.OrderBy(p => p.Name, StringComparer.Ordinal))
         {
@@ -98,7 +96,6 @@ public static class ReleaseEnvironments
     /// </summary>
     public static async Task<EnvironmentSync> SyncAsync(IGitHubApi api, string repo, IReadOnlyList<EnvironmentPolicy> desired, bool dryRun, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(desired);
         var actions = PlanActions(desired, await ReadAsync(api, repo, cancellationToken).ConfigureAwait(false));
         var log = new List<string>();
         foreach (var action in actions.Where(a => !a.Mutates || dryRun))
@@ -215,15 +212,12 @@ public sealed class EnvironmentsResource : Resource<IReadOnlyList<EnvironmentPol
     /// <inheritdoc />
     public override IReadOnlyList<EnvironmentPolicy>? Desired(RepoPolicies policies, Target target)
     {
-        ArgumentNullException.ThrowIfNull(policies);
-        ArgumentNullException.ThrowIfNull(target);
         return policies.Environments(target.Slug) is { Count: > 0 } environments ? environments : null;
     }
 
     /// <inheritdoc />
     public override Task<IReadOnlyDictionary<string, CurrentEnvironment>> ReadAsync(IGitHubApi api, Target target, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
         return ReleaseEnvironments.ReadAsync(api, target.Slug, cancellationToken);
     }
 
@@ -235,9 +229,6 @@ public sealed class EnvironmentsResource : Resource<IReadOnlyList<EnvironmentPol
     public override async Task<IReadOnlyList<string>> ApplyAsync(
         IGitHubApi api, Target target, IReadOnlyList<EnvironmentPolicy> desired, IReadOnlyList<Change> changes, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(desired);
-        ArgumentNullException.ThrowIfNull(changes);
         var failures = new List<string>();
         foreach (var group in changes.Where(c => c.Kind == Change.Apply).GroupBy(c => c.Subject, StringComparer.Ordinal))
         {

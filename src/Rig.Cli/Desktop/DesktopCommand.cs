@@ -59,7 +59,6 @@ internal sealed record DesktopHost(
     /// <summary>The plan's placeholders resolved from the environment, the plan and this machine.</summary>
     public IReadOnlyDictionary<string, string> Substitutions(WorkspacePlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         return plan.Substitutions(Placeholders.EnvironmentAliases(Environment), MachineAliases());
     }
 
@@ -91,7 +90,6 @@ internal sealed class DesktopCommand(DesktopHost host)
     /// <summary>The rig flags shaped as plan flags.</summary>
     public static IReadOnlyList<PlanFlag> PlanFlagsFrom(IReadOnlyList<FlagState> states)
     {
-        ArgumentNullException.ThrowIfNull(states);
         return [.. states.Select(state => new PlanFlag(state.Flag.Name, state.Flag.Default, state.Override))];
     }
 }

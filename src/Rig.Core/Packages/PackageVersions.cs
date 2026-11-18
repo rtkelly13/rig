@@ -13,7 +13,6 @@ public static partial class PackageVersions
     /// <summary>Whether <paramref name="version"/> has no prerelease identifier: <c>1.0.0</c> and <c>1.0.0+build1</c> are stable.</summary>
     public static bool IsStable(string version)
     {
-        ArgumentNullException.ThrowIfNull(version);
         var plus = version.IndexOf('+', StringComparison.Ordinal);
         return !(plus < 0 ? version : version[..plus]).Contains('-', StringComparison.Ordinal);
     }
@@ -44,7 +43,6 @@ public static partial class PackageVersions
     // The core is everything before the first '-'; a part that is not all digits counts as 0, so 1.2.3+x is 1.2.0.
     private static (List<BigInteger> Core, string? Pre) Split(string version)
     {
-        ArgumentNullException.ThrowIfNull(version);
         var dash = version.IndexOf('-', StringComparison.Ordinal);
         var core = dash < 0 ? version : version[..dash];
         var pre = dash < 0 ? null : version[(dash + 1)..];

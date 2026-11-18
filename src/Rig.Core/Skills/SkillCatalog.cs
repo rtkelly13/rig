@@ -44,7 +44,6 @@ public static class SkillSystems
     /// </summary>
     public static IReadOnlyList<string>? Resolve(IReadOnlyList<string> names, out string? unknown)
     {
-        ArgumentNullException.ThrowIfNull(names);
         unknown = null;
         if (names.Count == 0)
         {
@@ -172,7 +171,6 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
     /// <summary>The catalog at <paramref name="places"/>, with its estate allowlist.</summary>
     public static SkillCatalog At(SkillPlaces places)
     {
-        ArgumentNullException.ThrowIfNull(places);
         return new(places.Sources(), LoadNames(places.Allowlist), places.Windows);
     }
 
@@ -258,7 +256,6 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
     /// <summary>A <c>SKILL.md</c>'s declared name and description, else its folder's name and a stock description.</summary>
     public static (string Name, string Description) ReadFrontmatter(string skillMd)
     {
-        ArgumentNullException.ThrowIfNull(skillMd);
         var fallback = (Path.GetFileName(Path.GetDirectoryName(skillMd)) ?? string.Empty, DefaultDescription);
         if (!File.Exists(skillMd))
         {

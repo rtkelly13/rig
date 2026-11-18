@@ -51,7 +51,6 @@ public static partial class VaultUrl
     /// URL delimiters.</exception>
     public static UrlParts Split(string url)
     {
-        ArgumentNullException.ThrowIfNull(url);
         var start = 0;
         while (start < url.Length && url[start] <= ' ')
         {
@@ -169,7 +168,6 @@ public static partial class VaultUrl
     /// <summary>Joins <paramref name="parts"/> back into a URL as <c>urlunsplit</c> does.</summary>
     public static string Unsplit(UrlParts parts)
     {
-        ArgumentNullException.ThrowIfNull(parts);
         var url = parts.Path;
         if (parts.Netloc.Length > 0)
         {
@@ -213,7 +211,6 @@ public static partial class VaultUrl
     /// </summary>
     public static IEnumerable<IGrouping<string, string>> ParseQuery(string query)
     {
-        ArgumentNullException.ThrowIfNull(query);
         return query.Split('&')
             .Select(field => (Eq: field.IndexOf('=', StringComparison.Ordinal), Field: field))
             .Where(f => f.Eq >= 0 && f.Eq < f.Field.Length - 1)
@@ -223,7 +220,6 @@ public static partial class VaultUrl
     /// <summary>Each value as its own <c>name=value</c>, both quoted by <see cref="QuotePlus"/>.</summary>
     public static string Encode(IEnumerable<IGrouping<string, string>> fields)
     {
-        ArgumentNullException.ThrowIfNull(fields);
         return string.Join('&', fields.SelectMany(field => field.Select(value => QuotePlus(field.Key) + "=" + QuotePlus(value))));
     }
 
@@ -233,7 +229,6 @@ public static partial class VaultUrl
     /// </summary>
     private static string QuotePlus(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var builder = new StringBuilder(text.Length);
         foreach (var b in Encoding.UTF8.GetBytes(text))
         {
@@ -260,7 +255,6 @@ public static partial class VaultUrl
     /// </summary>
     public static string Unquote(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         if (!text.Contains('%', StringComparison.Ordinal))
         {
             return text;

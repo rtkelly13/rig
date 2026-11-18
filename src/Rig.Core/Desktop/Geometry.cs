@@ -74,7 +74,6 @@ public static class Geometry
     /// <exception cref="ArgumentException">The placement names an unknown mode, orientation or slot.</exception>
     public static UnitRect NormalizedPlacementRect(PlacementSpec placement)
     {
-        ArgumentNullException.ThrowIfNull(placement);
         var rect = UnitLayout(UnitRect.Full, placement.Layout);
         return placement.Subdivide is null ? rect : UnitLayout(rect, placement.Subdivide);
     }
@@ -82,7 +81,6 @@ public static class Geometry
     /// <summary>How much of the unit screen <paramref name="rects"/> leave empty, and how much two or more of them share.</summary>
     public static Coverage CoverageSummary(IReadOnlyCollection<UnitRect> rects)
     {
-        ArgumentNullException.ThrowIfNull(rects);
         var xs = new SortedSet<Fraction> { Fraction.Zero, Fraction.One };
         var ys = new SortedSet<Fraction> { Fraction.Zero, Fraction.One };
         foreach (var rect in rects)
@@ -119,7 +117,6 @@ public static class Geometry
     /// <exception cref="ArgumentException">The placement names an unknown mode, orientation or slot.</exception>
     public static Rect PlacementRectIn(Rect screen, PlacementSpec placement)
     {
-        ArgumentNullException.ThrowIfNull(placement);
         var rect = LayoutRect(screen, placement.Layout);
         return placement.Subdivide is null ? rect : LayoutRect(rect, placement.Subdivide);
     }
@@ -131,8 +128,6 @@ public static class Geometry
     /// <exception cref="ArgumentException">The layout names an unknown mode, orientation or slot.</exception>
     public static Rect LayoutRect(Rect parent, PlacementLayout layout)
     {
-        ArgumentNullException.ThrowIfNull(parent);
-        ArgumentNullException.ThrowIfNull(layout);
         switch (layout.Mode)
         {
             case "full":
@@ -165,8 +160,6 @@ public static class Geometry
     /// </summary>
     public static PlacementSpec? InferPlacement(Rect rect, IEnumerable<DisplayArea> screens)
     {
-        ArgumentNullException.ThrowIfNull(rect);
-        ArgumentNullException.ThrowIfNull(screens);
         PlacementSpec? best = null;
         var bestScore = 0.0;
         foreach (var screen in screens)
@@ -202,8 +195,6 @@ public static class Geometry
     /// </summary>
     public static double RectSimilarity(Rect left, Rect right)
     {
-        ArgumentNullException.ThrowIfNull(left);
-        ArgumentNullException.ThrowIfNull(right);
         long interLeft = Math.Max(left.Left, right.Left);
         long interTop = Math.Max(left.Top, right.Top);
         long interRight = Math.Min(left.Right, right.Right);

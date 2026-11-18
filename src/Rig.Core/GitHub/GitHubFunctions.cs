@@ -11,7 +11,6 @@ public static class GitHubFunctions
     /// <summary>Builds a full route including URL-encoded query parameters.</summary>
     public static string BuildRoute(string route, IReadOnlyDictionary<string, string>? queryParameters)
     {
-        ArgumentNullException.ThrowIfNull(route);
         if (queryParameters is null || queryParameters.Count == 0)
         {
             return route;
@@ -28,7 +27,6 @@ public static class GitHubFunctions
     /// <summary>Converts a <see cref="RestRequestSpec"/> into an <see cref="ApiRequest"/>.</summary>
     public static ApiRequest ToApiRequest(RestRequestSpec spec)
     {
-        ArgumentNullException.ThrowIfNull(spec);
         return new ApiRequest(spec.Method, BuildRoute(spec.Route, spec.QueryParameters), spec.Body)
         {
             Headers = spec.Headers,
@@ -38,7 +36,6 @@ public static class GitHubFunctions
     /// <summary>Converts a <see cref="GraphQLRequestSpec"/> into an <see cref="ApiRequest"/>.</summary>
     public static ApiRequest ToApiRequest(GraphQLRequestSpec spec)
     {
-        ArgumentNullException.ThrowIfNull(spec);
         return GraphQLRequest(spec.Query, spec.Variables, spec.OperationName);
     }
 
@@ -48,7 +45,6 @@ public static class GitHubFunctions
         IReadOnlyDictionary<string, object?>? variables = null,
         string? operationName = null)
     {
-        ArgumentNullException.ThrowIfNull(query);
         var present = variables?
             .Where(static pair => pair.Value is not null)
             .ToDictionary(static pair => pair.Key, static pair => pair.Value)
@@ -71,23 +67,18 @@ public static class GitHubFunctions
     /// <summary>Executes a REST request via <paramref name="api"/> without asserting success.</summary>
     public static Task<Ran> SendAsync(IGitHubApi api, RestRequestSpec spec, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(spec);
         return api.CallAsync(ToApiRequest(spec), cancellationToken);
     }
 
     /// <summary>Executes an <see cref="ApiRequest"/> via <paramref name="api"/> without asserting success.</summary>
     public static Task<Ran> SendAsync(IGitHubApi api, ApiRequest request, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(request);
         return api.CallAsync(request, cancellationToken);
     }
 
     /// <summary>Executes a REST request and throws <see cref="GitHubApiException"/> if the process or HTTP call failed.</summary>
     public static async Task<Ran> EnsureSuccessAsync(IGitHubApi api, RestRequestSpec spec, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(spec);
         var ran = await SendAsync(api, spec, cancellationToken).ConfigureAwait(false);
         if (!ran.Ok)
         {
@@ -104,7 +95,6 @@ public static class GitHubFunctions
         string? description = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
         var ran = await SendAsync(api, request, cancellationToken).ConfigureAwait(false);
         if (!ran.Ok)
         {
@@ -128,7 +118,6 @@ public static class GitHubFunctions
         JsonSerializerOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(spec);
         var ran = await EnsureSuccessAsync(api, spec, cancellationToken).ConfigureAwait(false);
         try
         {
@@ -149,7 +138,6 @@ public static class GitHubFunctions
         CancellationToken cancellationToken = default)
         where T : class
     {
-        ArgumentNullException.ThrowIfNull(spec);
         var ran = await SendAsync(api, spec, cancellationToken).ConfigureAwait(false);
         if (IsNotFound(ran))
         {
@@ -177,7 +165,6 @@ public static class GitHubFunctions
         RestRequestSpec spec,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(spec);
         var ran = await EnsureSuccessAsync(api, spec, cancellationToken).ConfigureAwait(false);
         try
         {
@@ -195,7 +182,6 @@ public static class GitHubFunctions
         RestRequestSpec spec,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(spec);
         var ran = await SendAsync(api, spec, cancellationToken).ConfigureAwait(false);
         if (IsNotFound(ran))
         {
@@ -223,8 +209,6 @@ public static class GitHubFunctions
         GraphQLRequestSpec spec,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(spec);
         return api.CallAsync(ToApiRequest(spec), cancellationToken);
     }
 
@@ -239,7 +223,6 @@ public static class GitHubFunctions
         CancellationToken cancellationToken = default)
         where TData : class
     {
-        ArgumentNullException.ThrowIfNull(spec);
         var ran = await ExecuteGraphQLRawAsync(api, spec, cancellationToken).ConfigureAwait(false);
         var what = spec.Description ?? "GraphQL query";
         var envelope = string.IsNullOrWhiteSpace(ran.Out) ? null : DecodeGraphQLEnvelope(ran.Out);
@@ -318,7 +301,6 @@ public static class GitHubFunctions
         CancellationToken cancellationToken = default)
         where TData : class
     {
-        ArgumentNullException.ThrowIfNull(spec);
         var ran = await ExecuteGraphQLRawAsync(api, spec, cancellationToken).ConfigureAwait(false);
         if (IsNotFound(ran))
         {
@@ -401,14 +383,12 @@ public static class GitHubFunctions
     /// <summary>Determines whether <paramref name="ran"/> represents a 404 Not Found response.</summary>
     public static bool IsNotFound(Ran ran)
     {
-        ArgumentNullException.ThrowIfNull(ran);
         return !ran.Ok && ran.Err.Contains("HTTP 404", StringComparison.Ordinal);
     }
 
     /// <summary>Returns a trimmed error message from <paramref name="ran"/>, or exit code description if empty.</summary>
     public static string Reason(Ran ran)
     {
-        ArgumentNullException.ThrowIfNull(ran);
         return ran.Err.Trim() is { Length: > 0 } err ? err : $"exit {ran.Code}";
     }
 
@@ -419,7 +399,6 @@ public static class GitHubFunctions
         string? method = null,
         string? route = null)
     {
-        ArgumentNullException.ThrowIfNull(ran);
         var err = ran.Err.Trim();
         var message = description is { Length: > 0 } desc
             ? $"{desc}: {(err.Length > 0 ? err : $"gh exited {ran.Code}")}"

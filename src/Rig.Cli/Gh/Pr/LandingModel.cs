@@ -144,7 +144,6 @@ internal static class LandingModel
     /// </summary>
     public static Verdict Assess(Observation seen, bool wasQueued = false)
     {
-        ArgumentNullException.ThrowIfNull(seen);
         var pr = seen.Snapshot;
         if (pr.State == "MERGED")
         {

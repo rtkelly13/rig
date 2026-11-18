@@ -13,7 +13,6 @@ public static class QuotedText
     /// <summary><c>repr(text)</c>: single quotes, or double when the text holds a single quote and no double one.</summary>
     public static string Str(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var quote = text.Contains('\'', StringComparison.Ordinal) && !text.Contains('"', StringComparison.Ordinal) ? '"' : '\'';
         var built = new StringBuilder().Append(quote);
         foreach (var c in text)
@@ -49,7 +48,6 @@ public static class QuotedText
     /// <summary>Compact JSON: no spaces, non-ASCII kept as itself.</summary>
     public static string Json(JsonNode node)
     {
-        ArgumentNullException.ThrowIfNull(node);
         return node.ToJsonString(JsonOutputOptions.CompactUnicode);
     }
 }

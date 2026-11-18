@@ -22,7 +22,6 @@ public static class RigMcp
     public static IMcpServerBuilder AddRigMcp(this IServiceCollection services, RigOps ops)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(ops);
         _ = services.AddSingleton(ops);
         return services
             .AddMcpServer(options =>
@@ -39,8 +38,6 @@ public static class RigMcp
     /// </summary>
     public static async Task<int> RunStdioAsync(RigOps ops, TextWriter error, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(ops);
-        ArgumentNullException.ThrowIfNull(error);
         var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { Args = [] });
         _ = builder.Logging.ClearProviders();
         _ = builder.Services.AddRigMcp(ops).WithStdioServerTransport();

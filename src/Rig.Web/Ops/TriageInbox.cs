@@ -36,9 +36,7 @@ public sealed class TriageInbox : IDisposable
         AgentSignals signals)
     {
         ArgumentException.ThrowIfNullOrEmpty(dbPath);
-        ArgumentNullException.ThrowIfNull(source);
         ArgumentException.ThrowIfNullOrEmpty(queuePath);
-        ArgumentNullException.ThrowIfNull(signals);
         QueuePath = queuePath;
         _store = new QueueStore(dbPath);
         _service = new QueueService(_store, source, queuePath);
@@ -124,8 +122,6 @@ public sealed class TriageInbox : IDisposable
     /// <summary>Decodes a watch request, refusing an item number that cannot name one.</summary>
     public static TriageWatch Watch(string body, JsonSerializerOptions options)
     {
-        ArgumentNullException.ThrowIfNull(body);
-        ArgumentNullException.ThrowIfNull(options);
         var request = JsonSerializer.Deserialize<TriageWatch>(body, options) ?? throw new ArgumentException("Invalid triage watch request");
         return request.Number > 0 ? request : throw new ArgumentException("Invalid triage watch request");
     }

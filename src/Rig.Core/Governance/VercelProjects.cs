@@ -108,9 +108,6 @@ public static partial class VercelProjects
     public static IReadOnlyList<OwnershipFinding> PlanFindings(
         IReadOnlyList<Ownership> owned, IReadOnlyList<VercelClaim> claims, IReadOnlyList<KeyValuePair<string, string>> repos)
     {
-        ArgumentNullException.ThrowIfNull(owned);
-        ArgumentNullException.ThrowIfNull(claims);
-        ArgumentNullException.ThrowIfNull(repos);
         var bySlug = new Dictionary<string, string>(StringComparer.Ordinal);
         var byRepoName = new Dictionary<string, string>(StringComparer.Ordinal);
         var slugOf = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -159,8 +156,6 @@ public static partial class VercelProjects
         Func<string, string, CancellationToken, Task<bool>> contains,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(repos);
-        ArgumentNullException.ThrowIfNull(contains);
         var firstSlug = first is null ? null : repos.FirstOrDefault(pair => pair.Key == first).Value;
         foreach (var slug in repos.Select(pair => pair.Value).OrderBy(slug => slug != firstSlug))
         {
@@ -176,7 +171,6 @@ public static partial class VercelProjects
     /// <summary>Whether GitHub's <paramref name="slug"/> has commit <paramref name="sha"/>.</summary>
     public static async Task<bool> HasCommitAsync(IGitHubApi gitHub, string slug, string sha, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(gitHub);
         var ran = await gitHub.CallAsync(ApiRequest.Get($"repos/{slug}/commits/{sha}"), cancellationToken).ConfigureAwait(false);
         return ran.Ok && GitHubCalls.Parse(ran.Out) is JsonObject commit && commit["sha"] is JsonValue found
             && found.GetValueKind() == JsonValueKind.String && found.GetValue<string>() == sha;
@@ -191,8 +185,6 @@ public static partial class VercelProjects
         IReadOnlyList<KeyValuePair<string, string>> repos,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(gating);
-        ArgumentNullException.ThrowIfNull(claims);
         var declared = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var claim in claims)
         {

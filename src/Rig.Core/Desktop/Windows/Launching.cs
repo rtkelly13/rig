@@ -44,8 +44,6 @@ public sealed class Launching(Func<string, string?>? getVariable = null, string?
     /// <exception cref="DesktopException">The entry's path or command is missing, or does not exist.</exception>
     public int? Launch(LaunchEntry entry, IReadOnlyDictionary<string, string> substitutions, string? restoreToken = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(substitutions);
         if (entry.Type == LaunchEntry.Terminal)
         {
             var command = BuildTerminalCommand(entry, substitutions, restoreToken);
@@ -103,8 +101,6 @@ public sealed class Launching(Func<string, string?>? getVariable = null, string?
         IReadOnlyDictionary<string, string> substitutions,
         string? restoreToken = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(substitutions);
         var cwd = Placeholders.Substitute(entry.Cwd, substitutions);
         var command = Placeholders.Substitute(entry.Command, substitutions) ?? string.Empty;
 
@@ -222,7 +218,6 @@ public sealed class Launching(Func<string, string?>? getVariable = null, string?
 
     private static int? Start(IReadOnlyList<string> command, string? workingDirectory, bool detached)
     {
-        ArgumentNullException.ThrowIfNull(command);
         var start = new ProcessStartInfo(command[0])
         {
             UseShellExecute = false,

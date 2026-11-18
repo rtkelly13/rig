@@ -227,7 +227,6 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     /// <param name="ct">Stops the scan.</param>
     public async Task<TrimPlan> PlanAsync(TrimTarget target, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(target);
         ct.ThrowIfCancellationRequested();
         return new TrimPlan
         {
@@ -241,7 +240,6 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     /// <param name="ct">Stops between removals.</param>
     public async Task<IReadOnlyList<string>> ApplyAsync(TrimPlan plan, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         if (plan.Target.Removal is not { } removal)
         {
             return ["trim requires a removal port to apply"];
@@ -329,7 +327,6 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     /// </summary>
     public async Task<string> RecheckAsync(Trimmable item, int idleDays = DefaultIdleDays)
     {
-        ArgumentNullException.ThrowIfNull(item);
         var folder = new DirectoryInfo(item.Path);
         if (folder.LinkTarget is not null)
         {
@@ -389,8 +386,6 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
     /// <summary>Deletes one candidate: <c>removed</c>, <c>refused</c>, or <c>failed: reason</c>.</summary>
     public static async Task<string> RemoveAsync(Trimmable item, TreeRemoval removal, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(item);
-        ArgumentNullException.ThrowIfNull(removal);
         if (item.Refused.Length > 0)
         {
             return "refused";

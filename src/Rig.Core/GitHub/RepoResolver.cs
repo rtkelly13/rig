@@ -43,7 +43,6 @@ public sealed class RepoResolver(IGitHubApi github, string cacheFile, TimeProvid
     /// </summary>
     public async Task<IReadOnlyDictionary<RepoSlug, CanonicalRepo?>> ResolveAsync(IReadOnlyList<RepoSlug> slugs, bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(slugs);
         var now = time.GetUtcNow();
         var cache = forceRefresh ? [] : await ReadCacheAsync(cacheFile, cancellationToken).ConfigureAwait(false);
         var resolved = new Dictionary<RepoSlug, CanonicalRepo?>();
@@ -89,7 +88,6 @@ public sealed class RepoResolver(IGitHubApi github, string cacheFile, TimeProvid
     /// <summary>One GraphQL query asking for every slug, aliased <c>r0</c>, <c>r1</c>, … with the names as variables.</summary>
     public static ApiRequest BatchQuery(IReadOnlyList<RepoSlug> slugs)
     {
-        ArgumentNullException.ThrowIfNull(slugs);
         var variables = new Dictionary<string, object?>(StringComparer.Ordinal);
         var declarations = new StringBuilder();
         var lookups = new StringBuilder();
@@ -107,7 +105,6 @@ public sealed class RepoResolver(IGitHubApi github, string cacheFile, TimeProvid
     /// <summary>The repositories a <see cref="BatchQuery"/> answer names; a slug GitHub did not find is left out.</summary>
     public static IReadOnlyDictionary<RepoSlug, CanonicalRepo> ParseBatch(string json, IReadOnlyList<RepoSlug> slugs)
     {
-        ArgumentNullException.ThrowIfNull(slugs);
         var found = new Dictionary<RepoSlug, CanonicalRepo>();
         if (Parse(json)?["data"] is not JsonObject data)
         {

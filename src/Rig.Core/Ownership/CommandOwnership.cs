@@ -19,8 +19,6 @@ public static class CommandOwnership
     /// <summary>Reject unreviewed surfaces, independent duplicates, retired implementations and baseline expansion.</summary>
     public static string[] Check(IReadOnlyCollection<string> discovered, OwnershipLedger ledger, OwnershipLedger? previous = null)
     {
-        ArgumentNullException.ThrowIfNull(discovered);
-        ArgumentNullException.ThrowIfNull(ledger);
         var errors = new List<string>();
         var ids = discovered.ToHashSet(StringComparer.Ordinal);
         var rows = ledger.Commands.GroupBy(c => c.Id, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.Ordinal);

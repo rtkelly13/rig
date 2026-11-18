@@ -11,7 +11,6 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rigw)
     /// <summary>Resolves the install paths, refuses linked worktrees and validates every target before changing tasks.</summary>
     public static async Task<JobsInstallTarget> ResolveAsync(string checkout, string appData, string userPlan, IProc proc, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(proc);
         checkout = Path.GetFullPath(checkout);
         JobsInstallTarget target;
         if (JobsSite.CopyOf(Path.Join(checkout, JobsSite.PublishFolder), appData) is not null)

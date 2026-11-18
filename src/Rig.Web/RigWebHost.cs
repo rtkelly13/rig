@@ -58,7 +58,6 @@ public sealed class RigWebHost : IAsyncDisposable
         OpsRoutes? routes = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(settings);
         var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions());
         builder.WebHost.UseKestrelCore().ConfigureKestrel(kestrel =>
         {

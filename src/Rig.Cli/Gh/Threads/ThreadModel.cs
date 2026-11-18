@@ -61,7 +61,6 @@ internal static partial class ThreadModel
     /// </summary>
     public static string Summarise(string body)
     {
-        ArgumentNullException.ThrowIfNull(body);
         var text = Details().Replace(HtmlComment().Replace(body, string.Empty), string.Empty);
         text = Image().Replace(text, Badge);
         text = Tag().Replace(text, string.Empty);
@@ -98,7 +97,6 @@ internal static partial class ThreadModel
     public static ResolveDecision PlanResolve(
         string threadId, string sha, string? note, IReadOnlyList<ObservedThread> threads, PullRequestCommits pr)
     {
-        ArgumentNullException.ThrowIfNull(threads);
         var observed = threads.FirstOrDefault(item => item.Thread.Id == threadId);
         if (observed is null)
         {
@@ -120,8 +118,6 @@ internal static partial class ThreadModel
     /// <summary>The full SHA of the PR commit <paramref name="sha"/> names (a full SHA or a unique prefix), or why there is none.</summary>
     public static ResolveDecision MatchCommit(string sha, PullRequestCommits pr)
     {
-        ArgumentNullException.ThrowIfNull(sha);
-        ArgumentNullException.ThrowIfNull(pr);
         var wanted = sha.Trim().ToLowerInvariant();
         if (wanted.Length < MinShaLength || !Hex().IsMatch(wanted))
         {

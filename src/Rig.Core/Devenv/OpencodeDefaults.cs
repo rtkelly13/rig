@@ -44,7 +44,6 @@ public static class OpencodeDefaults
     /// </summary>
     public static JsonObject? Merge(JsonObject existing)
     {
-        ArgumentNullException.ThrowIfNull(existing);
         var merged = (JsonObject)existing.DeepClone();
         return AddMissing(merged, DefaultsFor(existing)) ? merged : null;
     }

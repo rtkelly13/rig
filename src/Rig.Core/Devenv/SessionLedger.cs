@@ -63,7 +63,6 @@ public static class SessionLedger
     /// <summary>The hook command line: forward slashes, so Git Bash and PowerShell agree.</summary>
     public static string Command(string hookPath)
     {
-        ArgumentNullException.ThrowIfNull(hookPath);
         return $"node \"{hookPath.Replace('\\', '/')}\"";
     }
 
@@ -87,7 +86,6 @@ public static class SessionLedger
     /// </summary>
     public static bool RunsLedger(string command)
     {
-        ArgumentNullException.ThrowIfNull(command);
         IReadOnlyList<string> tokens;
         try
         {
@@ -116,7 +114,6 @@ public static class SessionLedger
     /// </summary>
     public static IReadOnlyList<string> Merge(JsonObject settings, string command)
     {
-        ArgumentNullException.ThrowIfNull(settings);
         var hooks = settings.ContainsKey("hooks") ? settings["hooks"] as JsonObject : [];
         var groups = hooks is null ? null : hooks.ContainsKey("SessionEnd") ? hooks["SessionEnd"] as JsonArray : [];
         if (hooks is null || groups is null || HasHook(groups))
@@ -136,7 +133,6 @@ public static class SessionLedger
     /// <summary>Whether the hook is wired into <paramref name="settings"/> and the script at <paramref name="hookPath"/> is current.</summary>
     public static LedgerHookState State(JsonObject settings, string hookPath)
     {
-        ArgumentNullException.ThrowIfNull(settings);
         var groups = settings["hooks"] is JsonObject hooks && hooks["SessionEnd"] is JsonArray found ? found : null;
         if (groups is null || !HasHook(groups))
         {
@@ -160,7 +156,6 @@ public static class SessionLedger
     /// <summary>Whether any hook group in <paramref name="groups"/> already runs the session ledger.</summary>
     public static bool HasHook(JsonArray groups)
     {
-        ArgumentNullException.ThrowIfNull(groups);
         return groups
             .OfType<JsonObject>()
             .Select(group => group["hooks"])

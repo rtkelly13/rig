@@ -45,8 +45,6 @@ public sealed record LocalBranch(string Name, string Upstream = "", bool Upstrea
     /// <summary>Parses <c>for-each-ref</c> lines of refname, upstream and upstream track state, tab-separated.</summary>
     public static IReadOnlyList<LocalBranch> Parse(string forEachRef, string current, IReadOnlySet<string> worktreeBranches)
     {
-        ArgumentNullException.ThrowIfNull(forEachRef);
-        ArgumentNullException.ThrowIfNull(worktreeBranches);
         var found = new List<LocalBranch>();
         foreach (var line in forEachRef.ReplaceLineEndings("\n").Split('\n'))
         {
@@ -309,7 +307,6 @@ public sealed class RepoChecks(Git git, TimeProvider time)
     /// <summary>Whether <c>temp/</c> is ignored, and which of <paramref name="entries"/> have gone stale.</summary>
     public async Task<IReadOnlyList<Finding>> CheckTempAsync(string repo, IReadOnlyList<TempEntry> entries, TimeSpan staleAfter)
     {
-        ArgumentNullException.ThrowIfNull(entries);
         var temp = Path.Join(repo, "temp");
         var findings = new List<Finding>();
         if (!Directory.Exists(temp))

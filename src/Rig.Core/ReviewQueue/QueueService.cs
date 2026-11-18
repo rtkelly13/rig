@@ -100,7 +100,6 @@ public sealed class QueueService(QueueStore store, IQueueSource source, string o
     /// <summary>Reviews first observe and project the live head. A stale decision is refused after retaining that observation.</summary>
     public async Task RecordAsync(QueueInteraction request, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
         request.Validate();
         await _serial.WaitAsync(cancellationToken).ConfigureAwait(false);
         try

@@ -51,8 +51,6 @@ public sealed class RepoSettingsResource : Resource<RepoSettings, LiveRepoSettin
     /// </summary>
     public static IReadOnlyList<string> Drift(RepoSettings desired, LiveRepoSettings live)
     {
-        ArgumentNullException.ThrowIfNull(desired);
-        ArgumentNullException.ThrowIfNull(live);
         var drift = new List<string>();
         var liveBranch = live.DefaultBranch is { Length: > 0 } branch ? branch : "main";
         if (liveBranch != desired.DefaultBranch)
@@ -83,15 +81,12 @@ public sealed class RepoSettingsResource : Resource<RepoSettings, LiveRepoSettin
     /// <inheritdoc />
     public override RepoSettings? Desired(RepoPolicies policies, Target target)
     {
-        ArgumentNullException.ThrowIfNull(policies);
-        ArgumentNullException.ThrowIfNull(target);
         return new(policies.ExpectedBaseBranch(target.Slug), policies.RepoSettings(target.Slug));
     }
 
     /// <inheritdoc />
     public override async Task<LiveRepoSettings> ReadAsync(IGitHubApi api, Target target, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
         var route = $"repos/{target.Slug}";
         return await GitHubCalls.ReadJsonAsync(api, route, cancellationToken).ConfigureAwait(false) is JsonObject repo
             ? new(
@@ -112,9 +107,6 @@ public sealed class RepoSettingsResource : Resource<RepoSettings, LiveRepoSettin
     /// <inheritdoc />
     public override async Task<IReadOnlyList<string>> ApplyAsync(IGitHubApi api, Target target, RepoSettings desired, IReadOnlyList<Change> changes, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(desired);
-        ArgumentNullException.ThrowIfNull(changes);
         if (!changes.Any(c => c.Kind == Change.Apply))
         {
             return [];
@@ -229,7 +221,6 @@ public sealed record RulesetShape(
     /// <summary>Where <paramref name="live"/> differs from this declared shape, one line each.</summary>
     public IReadOnlyList<string> DriftOf(RulesetShape live)
     {
-        ArgumentNullException.ThrowIfNull(live);
         var drift = new List<string>();
         if (live.Enforcement != "active")
         {
@@ -342,7 +333,6 @@ public sealed class RulesetResource : Resource<DeclaredRuleset, LiveRuleset>
     /// </summary>
     public static JsonObject Payload(RepoPolicies policies, string repo)
     {
-        ArgumentNullException.ThrowIfNull(policies);
         var isFork = policies.Fork(repo) is not null;
         var rules = new JsonArray { new JsonObject { ["type"] = "deletion" } };
         if (!isFork)
@@ -404,7 +394,6 @@ public sealed class RulesetResource : Resource<DeclaredRuleset, LiveRuleset>
     /// </summary>
     public static string? CheckNameRefusal(string repoPath, string repo, RepoPolicies policies)
     {
-        ArgumentNullException.ThrowIfNull(policies);
         var required = policies.RequiredChecks(repo);
         if (required.Count == 0)
         {
@@ -426,7 +415,6 @@ public sealed class RulesetResource : Resource<DeclaredRuleset, LiveRuleset>
     /// <summary>Reads the managed ruleset; throws <see cref="GitHubReadException"/> when GitHub cannot be read.</summary>
     public static async Task<LiveRuleset> ReadRulesetAsync(IGitHubApi api, string repo, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(api);
         var route = $"repos/{repo}/rulesets";
         var listed = await api.CallAsync(ApiRequest.Get(route), cancellationToken).ConfigureAwait(false);
         if (!listed.Ok)
@@ -458,7 +446,6 @@ public sealed class RulesetResource : Resource<DeclaredRuleset, LiveRuleset>
     /// <inheritdoc />
     public override DeclaredRuleset? Desired(RepoPolicies policies, Target target)
     {
-        ArgumentNullException.ThrowIfNull(target);
         var payload = JsonOutput.Line(Payload(policies, target.Slug));
 
         // Read back from the text, as the live ruleset is: a built node holds its numbers as int, not as JSON.
@@ -468,15 +455,12 @@ public sealed class RulesetResource : Resource<DeclaredRuleset, LiveRuleset>
     /// <inheritdoc />
     public override Task<LiveRuleset> ReadAsync(IGitHubApi api, Target target, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
         return ReadRulesetAsync(api, target.Slug, cancellationToken);
     }
 
     /// <inheritdoc />
     public override IReadOnlyList<Change> Diff(DeclaredRuleset desired, LiveRuleset observed)
     {
-        ArgumentNullException.ThrowIfNull(desired);
-        ArgumentNullException.ThrowIfNull(observed);
         if (!observed.Served)
         {
             return [new(Name, "unserved", "rulesets are not served for this private repo's plan", Change.Note)];
@@ -500,9 +484,6 @@ public sealed class RulesetResource : Resource<DeclaredRuleset, LiveRuleset>
     /// <inheritdoc />
     public override async Task<IReadOnlyList<string>> ApplyAsync(IGitHubApi api, Target target, DeclaredRuleset desired, IReadOnlyList<Change> changes, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(desired);
-        ArgumentNullException.ThrowIfNull(changes);
         var failures = new List<string>();
         foreach (var change in changes.Where(c => c.Kind == Change.Apply))
         {

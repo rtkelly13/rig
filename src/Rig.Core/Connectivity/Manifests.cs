@@ -80,7 +80,6 @@ public static partial class Manifests
     /// <summary>A package's identity: Python's names normalise <c>-_.</c> runs to <c>-</c>; every registry ignores case.</summary>
     public static string Canonical(string registry, string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         return registry == "pypi" ? PythonSeparators().Replace(name, "-").ToLowerInvariant() : name.ToLowerInvariant();
     }
 
@@ -90,7 +89,6 @@ public static partial class Manifests
     /// </summary>
     public static async Task<IReadOnlyList<string>> ListAsync(Git git, string root, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(git);
         var listed = await git.RunAsync(root, ["ls-files", "-z"], ListTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!listed.Ok)
         {
@@ -132,7 +130,6 @@ public static partial class Manifests
     /// </summary>
     public static async Task<Inventory> ReadAsync(Git git, string root, string repo, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(root);
         var inventory = new Inventory();
         try
         {

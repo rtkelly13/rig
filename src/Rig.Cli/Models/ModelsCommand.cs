@@ -29,7 +29,6 @@ internal sealed class ModelsCommand(ModelDiscovery discovery, TextWriter output)
     /// <summary>The models as a titled plain-text table.</summary>
     public static string Render(IReadOnlyList<DiscoveredModel> models, bool all)
     {
-        ArgumentNullException.ThrowIfNull(models);
         var table = new TextTable(
             all ? $"All Discovered AI Coding Models ({models.Count} models)" : $"AI Coding Models Evaluated in Rig ({models.Count} models)",
             [("Agent / CLI", false), ("Model ID", false), ("Display Name", false), ("Provider", false), ("Effort / Levels", false)]);

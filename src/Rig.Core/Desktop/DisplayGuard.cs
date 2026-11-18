@@ -299,8 +299,6 @@ public sealed class DisplayGuard(IDisplayGuardPorts ports, DisplayGuardSettings?
     /// <summary>Whether <paramref name="expected"/> and <paramref name="actual"/> differ beyond the placement tolerance.</summary>
     public static bool PlacementDiffers(WindowPlacementRecord expected, WindowPlacementRecord actual)
     {
-        ArgumentNullException.ThrowIfNull(expected);
-        ArgumentNullException.ThrowIfNull(actual);
         if (expected.ShowState != actual.ShowState)
         {
             return true;
@@ -318,8 +316,6 @@ public sealed class DisplayGuard(IDisplayGuardPorts ports, DisplayGuardSettings?
     /// <summary>The one-line account of a window the guard put back.</summary>
     public static string DescribeMove(WindowPlacementRecord expected, WindowPlacementRecord actual)
     {
-        ArgumentNullException.ThrowIfNull(expected);
-        ArgumentNullException.ThrowIfNull(actual);
         var label = expected.ProcessName ?? "?";
         var title = expected.Title.Length <= 60 ? expected.Title : expected.Title[..57] + "...";
         return $"{label} [{expected.Hwnd}] '{title}': {Wire(actual.ShowState)} {RectLabel(actual.WindowRect)} -> "
@@ -329,8 +325,6 @@ public sealed class DisplayGuard(IDisplayGuardPorts ports, DisplayGuardSettings?
     /// <summary>Run <paramref name="guard"/> until <paramref name="shouldStop"/> says to, sleeping between steps.</summary>
     public static void Run(DisplayGuard guard, double pollSeconds, Action<double> sleep, Func<bool>? shouldStop = null)
     {
-        ArgumentNullException.ThrowIfNull(guard);
-        ArgumentNullException.ThrowIfNull(sleep);
         while (!(shouldStop?.Invoke() ?? false))
         {
             guard.Step();
@@ -462,7 +456,6 @@ public static class DisplayGuardLocks
     /// <summary>Whether another process currently holds the lock at <paramref name="path"/>.</summary>
     public static bool IsHeld(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         if (!File.Exists(path))
         {
             return false;

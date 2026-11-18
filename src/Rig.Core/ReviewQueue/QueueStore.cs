@@ -25,7 +25,6 @@ public sealed class QueueStore(string path, TimeProvider? clock = null)
     /// <summary>Run an update under the database's writer lock; any exception rolls back the entire update.</summary>
     public void Update(Action<QueueWriter> update)
     {
-        ArgumentNullException.ThrowIfNull(update);
         using var connection = RigDatabase.Open(path, _clock);
         using var transaction = connection.BeginTransaction(deferred: false);
         update(new QueueWriter(connection, transaction, _clock));
@@ -35,7 +34,6 @@ public sealed class QueueStore(string path, TimeProvider? clock = null)
     /// <summary>PRs precede the issue queue; inactive items retain their database history.</summary>
     public static IReadOnlyList<QueueEntry> Active(IEnumerable<QueueEntry> entries)
     {
-        ArgumentNullException.ThrowIfNull(entries);
         var active = entries.Where(entry => entry.Active).ToDictionary(entry => entry.Item.Reference, StringComparer.Ordinal);
         return [.. Kinds.SelectMany(kind => QueueOrder.Sort(active.Values.Where(entry => entry.Item.Kind == kind).Select(entry => entry.Item))
             .Select(item => active[item.Reference]))];
@@ -75,7 +73,6 @@ public sealed class QueueWriter
     /// <summary>Record an observation only when its snapshot changes; never deletes history.</summary>
     public void Save(IEnumerable<QueueItem> items)
     {
-        ArgumentNullException.ThrowIfNull(items);
         foreach (var item in items)
         {
             var payload = QueueJson.EncodeItem(item);
@@ -95,7 +92,6 @@ public sealed class QueueWriter
     /// <summary>Reject stale heads and reviews of closed items before appending a local decision.</summary>
     public void Interact(QueueInteraction request)
     {
-        ArgumentNullException.ThrowIfNull(request);
         request.Validate();
         var payload = Payload(request.Repo, request.Number) ?? throw new ArgumentException("Item is not in the triage database; refresh first");
         var item = QueueJson.DecodeItem(payload);
@@ -115,8 +111,6 @@ public sealed class QueueWriter
     /// <summary>Deduplicate remote discussion versions across polls.</summary>
     public void ImportActivity(QueueItem item, IEnumerable<QueueActivity> activity)
     {
-        ArgumentNullException.ThrowIfNull(item);
-        ArgumentNullException.ThrowIfNull(activity);
         foreach (var e in activity)
         {
             AddEvent(item.Repo, item.Number, e.At, e.Action, e.Head, e.Note, e.Actor, e.Key);

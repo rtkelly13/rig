@@ -109,7 +109,6 @@ public sealed class SystemProc : IProc
     /// </summary>
     public static string? BatchLine(IReadOnlyList<string> argv, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(argv);
         var program = argv[0];
         if (!windows || !(program.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) || program.EndsWith(".bat", StringComparison.OrdinalIgnoreCase)))
         {
@@ -186,7 +185,6 @@ public sealed class SystemProc : IProc
 
         public static Launch Start(ProcRequest request)
         {
-            ArgumentNullException.ThrowIfNull(request);
             if ((request.Attached || request.ConsoleInput) && request.StdinText is not null)
             {
                 throw new ArgumentException("A process reading this console's input cannot be given text.", nameof(request));

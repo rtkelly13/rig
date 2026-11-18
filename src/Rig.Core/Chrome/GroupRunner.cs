@@ -55,8 +55,6 @@ public sealed class GroupRunner(
         UrlOwners owners,
         string phase = "plan")
     {
-        ArgumentNullException.ThrowIfNull(windows);
-        ArgumentNullException.ThrowIfNull(hostsByTitle);
         using var activity = Source.StartActivity("chrome_tabs.plan_grouping");
         activity?.SetTag("group.phase", phase);
         Dictionary<string, HashSet<string>> unkeyed = new(StringComparer.Ordinal);
@@ -89,7 +87,6 @@ public sealed class GroupRunner(
     /// </summary>
     public GroupRun Run(GroupPlan plan, Func<string?>? interrupted = null)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         using var activity = Source.StartActivity("chrome_tabs.group");
         activity?.SetTag("group.moves", plan.Moves.Count);
         activity?.SetTag("group.ungroups", plan.Ungroups.Count);

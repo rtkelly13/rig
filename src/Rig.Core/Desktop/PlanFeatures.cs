@@ -42,7 +42,6 @@ public static class PlanFeatures
     /// </summary>
     public static OrderedDictionary<string, bool> Resolve(WorkspacePlan plan, IReadOnlyCollection<string>? enable = null, IReadOnlyCollection<string>? disable = null)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         enable ??= [];
         disable ??= [];
         var resolved = new OrderedDictionary<string, bool>(plan.Features, StringComparer.Ordinal);
@@ -110,8 +109,6 @@ public static class PlanFeatures
     /// </summary>
     public static WorkspacePlan WithFlags(WorkspacePlan plan, IEnumerable<PlanFlag> flags)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(flags);
         var states = flags.ToList();
         var features = new OrderedDictionary<string, bool>(StringComparer.Ordinal);
         foreach (var flag in states)
@@ -138,7 +135,6 @@ public static class PlanFeatures
     /// <summary>Enabled terminal entries whose command waits for <c>claude-sessions startup</c> at logon, in plan order.</summary>
     public static IReadOnlyList<LaunchEntry> DeferredLogonTerminals(WorkspacePlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         return [.. plan.Desktops.Where(desktop => !desktop.Disabled).SelectMany(desktop => desktop.Launch).Where(entry => !entry.Disabled && entry.DefersCommandAtLogon)];
     }
 
@@ -149,7 +145,6 @@ public static class PlanFeatures
     /// </summary>
     public static WorkspacePlan DeferLogonCommands(WorkspacePlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         return plan with
         {
             Desktops = [.. plan.Desktops.Select(desktop => desktop with { Launch = [.. desktop.Launch.Select(entry => entry.DefersCommandAtLogon ? entry with { Command = null } : entry)] })],

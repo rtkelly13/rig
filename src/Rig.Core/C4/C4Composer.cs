@@ -130,7 +130,6 @@ public static partial class C4Composer
     /// <summary>Classify and collect every link in <paramref name="bundle"/>.</summary>
     public static Links CollectLinks(Bundle bundle)
     {
-        ArgumentNullException.ThrowIfNull(bundle);
         var edges = new List<Edge>();
         var broken = new List<BrokenLink>();
         foreach (var concept in bundle.Concepts.Values)
@@ -191,7 +190,6 @@ public static partial class C4Composer
     /// <summary>Entry points: context-level concepts, then any diagram nothing zooms into.</summary>
     public static IReadOnlyList<string> Roots(Bundle bundle, Links? links = null)
     {
-        ArgumentNullException.ThrowIfNull(bundle);
         var collected = links ?? CollectLinks(bundle);
         var zoomed = collected.Edges.Where(edge => edge.Kind == EdgeKind.Zoom).Select(edge => edge.Target).ToHashSet(StringComparer.Ordinal);
         var context = bundle.Concepts.Values.Where(concept => concept.Level == 1).Select(concept => concept.Id).Order(StringComparer.Ordinal);
@@ -205,7 +203,6 @@ public static partial class C4Composer
     /// <summary>Check OKF conformance, zoom links, level descent, orphans, fan-in and cross-view consistency.</summary>
     public static IReadOnlyList<Finding> Check(Bundle bundle)
     {
-        ArgumentNullException.ThrowIfNull(bundle);
         var links = CollectLinks(bundle);
         var findings = new List<Finding>();
         foreach (var concept in bundle.Concepts.Values)
@@ -370,7 +367,6 @@ public static partial class C4Composer
     /// <summary>The merged model: every alias and relationship across every view.</summary>
     public static C4Model Build(Bundle bundle, Links? links = null)
     {
-        ArgumentNullException.ThrowIfNull(bundle);
         var collected = links ?? CollectLinks(bundle);
         var zooms = collected.Edges
             .Where(edge => edge.Kind == EdgeKind.Zoom && edge.Alias is not null)
@@ -433,7 +429,6 @@ public static partial class C4Composer
     /// <summary>The zoom hierarchy from each root view. A concept reached twice is shown once, then marked.</summary>
     public static IReadOnlyList<TreeNode> ZoomTree(Bundle bundle, Links? links = null)
     {
-        ArgumentNullException.ThrowIfNull(bundle);
         var collected = links ?? CollectLinks(bundle);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         TreeNode Walk(string conceptId, string? via, HashSet<string> path)
@@ -458,7 +453,6 @@ public static partial class C4Composer
     /// </summary>
     public static string Expand(Bundle bundle, string conceptId, string alias)
     {
-        ArgumentNullException.ThrowIfNull(bundle);
         var parent = bundle.Get(conceptId);
         if (parent?.Diagram is null)
         {

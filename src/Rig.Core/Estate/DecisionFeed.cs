@@ -18,7 +18,6 @@ public static class DecisionFeed
     /// <summary>The feed at <paramref name="path"/>, or an empty one saying why there is nothing to show.</summary>
     public static DecisionFeedView Read(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         DateTime written;
         try
         {

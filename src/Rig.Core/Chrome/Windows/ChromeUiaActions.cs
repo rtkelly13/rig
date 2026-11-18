@@ -100,7 +100,6 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     /// </summary>
     public CloseOutcome CloseTab(ChromeTab tab, TimeSpan? timeout = null)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         var wait = timeout ?? StepTimeout;
         var started = _clock.GetTimestamp();
         CloseOutcome Outcome(bool closed, string detail) => new(closed, detail, _clock.GetElapsedTime(started));
@@ -161,7 +160,6 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         IEnumerable<ChromeWindow> before,
         IReadOnlyDictionary<long, ChromeTab>? fallbacks = null)
     {
-        ArgumentNullException.ThrowIfNull(before);
         var restored = new Dictionary<long, ChromeTab?>();
         foreach (var window in before)
         {
@@ -311,7 +309,6 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     /// <summary>The first open menu item whose stripped, lower-cased name is non-empty and matches.</summary>
     public IUiaElement? MenuItem(int pid, Func<string, bool> matches)
     {
-        ArgumentNullException.ThrowIfNull(matches);
         return PopupElements(pid, UiaControlType.MenuItem).FirstOrDefault(item =>
         {
             var name = UnicodeText.Lower(UnicodeText.Strip(item.Name));
@@ -325,7 +322,6 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     /// </summary>
     public IUiaElement? ConfirmButton(long handle, IReadOnlySet<string> names)
     {
-        ArgumentNullException.ThrowIfNull(names);
         foreach (var host in (IEnumerable<long>)[handle, .. _win32.ChildWindows(handle)])
         {
             try
@@ -362,7 +358,6 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
     public T? Poll<T>(Func<T?> probe, TimeSpan timeout)
         where T : class
     {
-        ArgumentNullException.ThrowIfNull(probe);
         var started = _clock.GetTimestamp();
         while (true)
         {

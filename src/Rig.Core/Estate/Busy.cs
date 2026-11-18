@@ -37,7 +37,6 @@ public sealed record Busy(IReadOnlyList<string>? Dirs) : ILivenessPort
     /// <param name="cancellationToken">Stops the call.</param>
     public static async Task<Busy> SnapshotAsync(IProc proc, bool windows, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(proc);
         if (windows)
         {
             return Unknown;
@@ -80,7 +79,6 @@ public sealed record Busy(IReadOnlyList<string>? Dirs) : ILivenessPort
     /// <summary>Whether any of <paramref name="dirs"/> is <paramref name="path"/>, links resolved, or lies below it.</summary>
     public static bool InUse(string path, IEnumerable<string> dirs)
     {
-        ArgumentNullException.ThrowIfNull(dirs);
         var target = PathResolution.Resolve(path);
         return dirs.Any(cwd => PathResolution.IsUnder(cwd, target));
     }

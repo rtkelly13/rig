@@ -95,8 +95,6 @@ internal static class FrontendRoutes
     /// </summary>
     public static string? Under(string root, string relative)
     {
-        ArgumentNullException.ThrowIfNull(root);
-        ArgumentNullException.ThrowIfNull(relative);
         if (relative.Contains('\0', StringComparison.Ordinal) || Path.IsPathRooted(relative))
         {
             return null;

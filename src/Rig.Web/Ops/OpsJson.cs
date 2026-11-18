@@ -96,7 +96,6 @@ public static class OpsJson
     /// </summary>
     public static async Task<IResult> Run(Func<Task<IResult>> produce)
     {
-        ArgumentNullException.ThrowIfNull(produce);
         try
         {
             return await produce().ConfigureAwait(false);

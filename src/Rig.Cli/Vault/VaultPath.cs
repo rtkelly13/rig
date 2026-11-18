@@ -13,7 +13,6 @@ internal static class VaultPath
     /// <summary>The git copy: the first override that is set, else <c>~/code/personal/obsidian-vault/Vault</c>.</summary>
     public static string Resolve(Func<string, string?> environment, string home)
     {
-        ArgumentNullException.ThrowIfNull(environment);
         foreach (var variable in Variables)
         {
             var value = environment(variable);
@@ -35,7 +34,6 @@ internal static class VaultPath
     /// </summary>
     public static string ResolveDrive(Func<string, string?> environment, string home)
     {
-        ArgumentNullException.ThrowIfNull(environment);
         var value = environment(DriveVariable);
         return string.IsNullOrEmpty(value) ? Path.Combine(home, "Google Drive", "My Drive", "Obsidian", "Vault") : ExpandHome(value, home);
     }
@@ -43,7 +41,6 @@ internal static class VaultPath
     /// <summary>Expands a leading <c>~</c> to <paramref name="home"/>.</summary>
     public static string ExpandHome(string path, string home)
     {
-        ArgumentNullException.ThrowIfNull(path);
         if (path == "~")
         {
             return home;

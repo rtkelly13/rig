@@ -11,7 +11,6 @@ public static class YamlInt
     /// <exception cref="VaultYamlException">The text is not a number in that base.</exception>
     public static BigInteger Parse(string text, int radix)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var value = UnicodeText.Strip(text);
         var negative = value.StartsWith('-');
         if (value.Length > 0 && value[0] is '+' or '-')
@@ -65,7 +64,6 @@ public static partial class YamlFloat
     /// <exception cref="VaultYamlException">The text is not a number in that base.</exception>
     public static double Parse(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var value = UnicodeText.Strip(text);
         var unsigned = value.Length > 0 && value[0] is '+' or '-' ? value[1..] : value;
         var sign = value.StartsWith('-') ? -1.0 : 1.0;

@@ -136,7 +136,6 @@ public sealed class JobRunner(JobRunnerSeams seams)
     /// <summary>How <c>jobs run</c> reports an outcome: <c>exit 0 after 3s: summary</c> or <c>error after 0s: why</c>.</summary>
     public static string Describe(Outcome outcome)
     {
-        ArgumentNullException.ThrowIfNull(outcome);
         if (outcome.Error is { Length: > 0 } error)
         {
             return $"error after {outcome.WholeSeconds}s: {error}";

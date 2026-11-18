@@ -112,7 +112,6 @@ public static class ReviewToolConfigs
     /// </summary>
     public static IReadOnlyList<ToolChange> Align(string repoPath, string org, RepoPolicies policies, bool dryRun)
     {
-        ArgumentNullException.ThrowIfNull(policies);
         var repo = Path.GetFileName(Path.TrimEndingDirectorySeparator(repoPath));
         var results = new List<ToolChange>();
         const string CodeRabbit = "CodeRabbit (.coderabbit.yaml)";

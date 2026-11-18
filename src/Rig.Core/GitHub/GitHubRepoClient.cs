@@ -43,7 +43,6 @@ public sealed class GitHubRepoClient(IGitHubApi api, RepoSlug repo)
 
     private static string Normalize(string subroute)
     {
-        ArgumentNullException.ThrowIfNull(subroute);
         return subroute.TrimStart('/');
     }
 }

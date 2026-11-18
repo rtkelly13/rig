@@ -20,8 +20,6 @@ public sealed class ProcException : Exception
 
     private static string Describe(IReadOnlyList<string> argv, Ran ran)
     {
-        ArgumentNullException.ThrowIfNull(argv);
-        ArgumentNullException.ThrowIfNull(ran);
         var detail = ran.Err.Trim() is { Length: > 0 } err ? err : ran.Out.Trim();
         var message = $"{string.Join(' ', argv)} exited {ran.Code}";
         return detail.Length > 0 ? $"{message}: {detail}" : message;

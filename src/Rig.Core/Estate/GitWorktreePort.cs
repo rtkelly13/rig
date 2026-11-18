@@ -20,7 +20,6 @@ public sealed class GitWorktreePort(Git git) : IGitWorktreePort
     /// <inheritdoc />
     public async Task<WorktreeFacts> ReadAsync(string clone, Worktree tree, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(tree);
         var common = await git.OutAsync(clone, "rev-parse", "--path-format=absolute", "--git-common-dir").ConfigureAwait(false);
         var foreign = common.Length > 0 && RepoChecks.ForeignAdminDir(tree.Path, Path.Join(common, "worktrees")) is not null;
         var status = await git.RunAsync(tree.Path, ["status", "--porcelain"], cancellationToken: cancellationToken).ConfigureAwait(false);

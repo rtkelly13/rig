@@ -28,7 +28,6 @@ public sealed class SavedConsolidation(IChromeSavedGroupActions actions, IChrome
     /// <summary>The consolidation plan over every profile's fullest bookmarks bar, with the window showing it.</summary>
     public SavedGroupsPlan Plan(IEnumerable<ChromeWindow> windows)
     {
-        ArgumentNullException.ThrowIfNull(windows);
         var bars = windows
             .Select(window => (window.ProfileKey, Bar: (Handle: window.Handle, Groups: actions.SavedGroups(window.Handle, window.ProfileKey))))
             .GroupBy(seen => seen.ProfileKey, seen => seen.Bar, StringComparer.Ordinal)
@@ -47,7 +46,6 @@ public sealed class SavedConsolidation(IChromeSavedGroupActions actions, IChrome
     /// </summary>
     public Consolidation Consolidate(SavedGroupsPlan planned)
     {
-        ArgumentNullException.ThrowIfNull(planned);
         var start = desktops.Current();
         try
         {
@@ -84,7 +82,6 @@ public sealed class SavedConsolidation(IChromeSavedGroupActions actions, IChrome
     /// <summary>Writes <paramref name="profiles"/> to the marker, sorted, one a line; removes it when there are none.</summary>
     public static void SetPendingProfiles(string marker, IEnumerable<string> profiles)
     {
-        ArgumentNullException.ThrowIfNull(profiles);
         var sorted = profiles.Distinct(StringComparer.Ordinal).Order(UnicodeText.CodePointOrder).ToList();
         if (sorted.Count == 0)
         {

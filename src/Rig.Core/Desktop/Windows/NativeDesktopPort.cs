@@ -25,10 +25,6 @@ public sealed class NativeDesktopPort : IDesktopPort
         Launching launching,
         TimeProvider? time = null)
     {
-        ArgumentNullException.ThrowIfNull(win32);
-        ArgumentNullException.ThrowIfNull(actions);
-        ArgumentNullException.ThrowIfNull(desktops);
-        ArgumentNullException.ThrowIfNull(launching);
         _desktops = desktops;
         _launching = launching;
         _inventory = new WindowInventory(win32, desktops);
@@ -91,7 +87,6 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public bool IsWindowTargetConfirmed(long handle, int desktopIndex, LaunchEntry entry)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         if (_desktops.DesktopNumberOf(handle) is { } current && current != desktopIndex)
         {
             return false;
@@ -105,7 +100,6 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public bool IsEntryTargetConfirmed(LaunchEntry entry, int desktopIndex, TimeSpan timeout)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         var match = _entryWindows.WaitForEntry(entry, timeout, currentDesktopOnly: false, targetDesktop: desktopIndex);
         return match.Handle is { } handle && IsWindowTargetConfirmed(handle, desktopIndex, entry);
     }
@@ -113,9 +107,6 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public WindowMatch WaitForWindowForEntry(LaunchEntry entry, WindowWait wait, IRunLog log)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(wait);
-        ArgumentNullException.ThrowIfNull(log);
         return _entryWindows.WaitForEntry(
             entry,
             wait.Timeout,
@@ -130,7 +121,6 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public string? WaitForWindowTitleChange(long handle, string title, TimeSpan timeout, IRunLog log)
     {
-        ArgumentNullException.ThrowIfNull(log);
         return _entryWindows.WaitForTitleChange(handle, title, timeout, log.Log);
     }
 
@@ -146,8 +136,6 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public bool SettleAppUpdates(WorkspacePlan plan, IRunLog log)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(log);
         if (!OperatingSystem.IsWindows())
         {
             return false;
@@ -234,15 +222,12 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public int CloseCurrentDesktopWindows(IReadOnlySet<long> preserved)
     {
-        ArgumentNullException.ThrowIfNull(preserved);
         return _windowActions.CloseCurrentDesktopWindows(preserved);
     }
 
     /// <inheritdoc/>
     public WindowMove MoveExistingWindowToEntry(LiveWindow window, int desktopIndex, LaunchEntry entry)
     {
-        ArgumentNullException.ThrowIfNull(window);
-        ArgumentNullException.ThrowIfNull(entry);
         var movedToDesktop = false;
         if (_desktops.DesktopNumberOf(window.Handle) != desktopIndex)
         {
@@ -262,17 +247,12 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public int? Launch(LaunchEntry entry, IReadOnlyDictionary<string, string> substitutions, string? restoreToken = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(substitutions);
         return _launching.Launch(entry, substitutions, restoreToken);
     }
 
     /// <inheritdoc/>
     public PlacementOutcome ApplyWindowPlacement(LaunchEntry entry, WindowWait wait, IRunLog log, long? handle = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(wait);
-        ArgumentNullException.ThrowIfNull(log);
         return entry.Placement is null
             ? new(false)
             : _entryWindows.ApplyPlacement(entry, wait.Timeout, wait.TargetDesktop, wait.Excluded, handle, log.Log);
@@ -281,7 +261,6 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public int BringProcessWindowsToFront(IReadOnlySet<string> processNames)
     {
-        ArgumentNullException.ThrowIfNull(processNames);
         var raised = 0;
         foreach (var name in processNames)
         {
@@ -298,8 +277,6 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public IReadOnlyList<string> OpenMissingPathFallbacks(RestoreFailureFallbacks fallbacks, IRunLog log)
     {
-        ArgumentNullException.ThrowIfNull(fallbacks);
-        ArgumentNullException.ThrowIfNull(log);
         return [];
     }
 
@@ -309,9 +286,6 @@ public sealed class NativeDesktopPort : IDesktopPort
         IReadOnlyDictionary<int, IReadOnlyList<LaunchEntry>> entriesByDesktop,
         IRunLog log)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(entriesByDesktop);
-        ArgumentNullException.ThrowIfNull(log);
         var actions = new List<string>();
         SwitchLeftmost(plan.Desktops.Count + 2);
         Sleep(TimeSpan.FromMilliseconds(plan.SwitchDelayMs));
@@ -396,7 +370,6 @@ public sealed class NativeDesktopPort : IDesktopPort
     /// <inheritdoc/>
     public Rect PlacementRect(PlacementSpec placement)
     {
-        ArgumentNullException.ThrowIfNull(placement);
         return _windowActions.PlacementRectFor(placement);
     }
 }

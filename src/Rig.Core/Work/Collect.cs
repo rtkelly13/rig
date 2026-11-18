@@ -45,8 +45,6 @@ public sealed class WorkTimings
     /// <param name="work">The work to measure.</param>
     public T Measure<T>(string name, Func<T> work)
     {
-        ArgumentNullException.ThrowIfNull(name);
-        ArgumentNullException.ThrowIfNull(work);
         var started = Stopwatch.GetTimestamp();
         try
         {
@@ -63,8 +61,6 @@ public sealed class WorkTimings
     /// <param name="work">The work to measure.</param>
     public async Task<T> MeasureAsync<T>(string name, Func<Task<T>> work)
     {
-        ArgumentNullException.ThrowIfNull(name);
-        ArgumentNullException.ThrowIfNull(work);
         var started = Stopwatch.GetTimestamp();
         try
         {
@@ -113,8 +109,6 @@ public sealed class WorkCollector(
         IReadOnlyList<RepoFacts> repos,
         IReadOnlyDictionary<string, IReadOnlySet<string>> extra)
     {
-        ArgumentNullException.ThrowIfNull(repos);
-        ArgumentNullException.ThrowIfNull(extra);
         var wanted = new Dictionary<string, IReadOnlyList<string>>(WorkPaths.Comparer);
         foreach (var repo in repos)
         {
@@ -140,7 +134,6 @@ public sealed class WorkCollector(
     /// <param name="cancellationToken">Stops the collection.</param>
     public async Task<Collected> CollectAsync(WorkCollectOptions options, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(options);
         var started = Stopwatch.GetTimestamp();
         var moment = time.GetUtcNow();
         var timings = new WorkTimings();

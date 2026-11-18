@@ -72,8 +72,6 @@ public sealed class CallGraphFile
     /// <param name="projects">The project names to read.</param>
     public static CallGraphFile? Load(string directory, IEnumerable<string> projects)
     {
-        ArgumentNullException.ThrowIfNull(directory);
-        ArgumentNullException.ThrowIfNull(projects);
         var graph = new CallGraphFile();
         var found = false;
         foreach (var name in projects.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
@@ -94,7 +92,6 @@ public sealed class CallGraphFile
     /// <summary>Read the records of one callgraph file.</summary>
     public void Read(IEnumerable<string> lines)
     {
-        ArgumentNullException.ThrowIfNull(lines);
         foreach (var line in lines)
         {
             var separator = line.IndexOf(':', StringComparison.Ordinal);
@@ -175,14 +172,12 @@ public sealed class CallGraphFile
     /// <summary>Whether the member is drawn as a callable node.</summary>
     public bool IsCallable(MemberKey key)
     {
-        ArgumentNullException.ThrowIfNull(key);
         return Members.TryGetValue(key, out var declarations) && declarations.Any(declaration => Callable.Contains(declaration.Kind));
     }
 
     /// <summary>Every member declared on <paramref name="typeId"/>, sorted.</summary>
     public IReadOnlyList<MemberKey> OfType(string typeId)
     {
-        ArgumentNullException.ThrowIfNull(typeId);
         return [.. Members.Keys.Where(key => key.Type == typeId).OrderBy(key => key.Type, StringComparer.Ordinal).ThenBy(key => key.Name, StringComparer.Ordinal)];
     }
 
@@ -191,7 +186,6 @@ public sealed class CallGraphFile
     /// <summary><c>Run()</c> for something called, <c>Count</c> for a property or field.</summary>
     public string Label(MemberKey key)
     {
-        ArgumentNullException.ThrowIfNull(key);
         var kinds = Members.TryGetValue(key, out var declarations) ? declarations.Select(declaration => declaration.Kind).ToHashSet(StringComparer.Ordinal) : [];
         return key.Name + (kinds.Overlaps(Called) || kinds.Count == 0 ? "()" : string.Empty);
     }
@@ -199,7 +193,6 @@ public sealed class CallGraphFile
     /// <summary><c>A.B.Type.Run/(int)</c> is <c>Run</c> on <c>A.B.Type</c>; <c>A.B.Type..ctor/()</c> is <c>new</c>.</summary>
     public static MemberKey Key(string identifier)
     {
-        ArgumentNullException.ThrowIfNull(identifier);
         var head = identifier.Split('/', 2)[0];
         if (head.EndsWith("..ctor", StringComparison.Ordinal))
         {

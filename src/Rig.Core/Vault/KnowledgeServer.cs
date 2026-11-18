@@ -209,7 +209,6 @@ public sealed class KnowledgeServer(IProc proc, Launchd launchd, KnowledgeServer
     /// </summary>
     public static Registration ReadRegistration(byte[] text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         if (Field(Field(Parse(text), "mcpServers"), ServerName) is not { ValueKind: JsonValueKind.Object } entry)
         {
             return Registration.Absent;
@@ -232,7 +231,6 @@ public sealed class KnowledgeServer(IProc proc, Launchd launchd, KnowledgeServer
     /// </summary>
     public static IReadOnlyList<IReadOnlyList<string>> ConnectCommands(Registration have, string claude = "claude")
     {
-        ArgumentNullException.ThrowIfNull(have);
         if (have.Shared)
         {
             return [];

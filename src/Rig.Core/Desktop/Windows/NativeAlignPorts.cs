@@ -17,9 +17,6 @@ public sealed class NativeAlignPorts : IAlignPorts
     /// <summary>The machine over <paramref name="win32"/> and <paramref name="actions"/>.</summary>
     public NativeAlignPorts(IWin32Windows win32, IWin32Actions actions, IVirtualDesktops desktops)
     {
-        ArgumentNullException.ThrowIfNull(win32);
-        ArgumentNullException.ThrowIfNull(actions);
-        ArgumentNullException.ThrowIfNull(desktops);
         _desktops = desktops;
         _inventory = new WindowInventory(win32, desktops);
         _windowActions = new WindowActions(actions, _inventory);
@@ -84,7 +81,6 @@ public sealed class NativeAlignPorts : IAlignPorts
     /// <inheritdoc/>
     public bool RestoreView(int? desktop, long? foreground, IReadOnlySet<long> movedHwnds)
     {
-        ArgumentNullException.ThrowIfNull(movedHwnds);
         var restored = false;
         if (desktop is { } starting && _desktops.CurrentNumber != starting)
         {

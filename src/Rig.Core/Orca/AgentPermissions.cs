@@ -85,8 +85,6 @@ public static class AgentPermissions
     public static IReadOnlyList<AgentCheck> PermissionChecks(
         AgentPermissionsPolicy policy, IEnumerable<string> agents, string? storedDefault, IReadOnlyDictionary<string, string>? overrides)
     {
-        ArgumentNullException.ThrowIfNull(policy);
-        ArgumentNullException.ThrowIfNull(agents);
         var fallback = storedDefault ?? "own";
         List<AgentCheck> checks =
         [
@@ -109,7 +107,6 @@ public static class AgentPermissions
     public static IReadOnlyList<AgentCheck> LaunchChecks(
         AgentPermissionsPolicy policy, IReadOnlyDictionary<string, string> customArgs, IReadOnlyDictionary<string, string> launch)
     {
-        ArgumentNullException.ThrowIfNull(launch);
         return [.. WantedLines(policy, customArgs).OrderBy(pair => pair.Key, StringComparer.Ordinal).Select(pair => new AgentCheck(
             $"agent {pair.Key}",
             "launch args",
@@ -139,8 +136,6 @@ public static class AgentPermissions
 
     private static Dictionary<string, string> WantedLines(AgentPermissionsPolicy policy, IReadOnlyDictionary<string, string> customArgs)
     {
-        ArgumentNullException.ThrowIfNull(policy);
-        ArgumentNullException.ThrowIfNull(customArgs);
         var lines = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var agent in customArgs.Keys.Concat(policy.Agents.Keys).Distinct(StringComparer.Ordinal))
         {

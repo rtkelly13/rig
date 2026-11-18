@@ -66,7 +66,6 @@ public sealed record WrapupState(string Schema, string WorktreeId, string Branch
     /// <summary>The newest answer recorded for <paramref name="ask"/>, from either source.</summary>
     public AnswerRecord? AnswerTo(AskRecord ask)
     {
-        ArgumentNullException.ThrowIfNull(ask);
         return Answers.LastOrDefault(a => a.AskedAt == ask.At && a.Pane == ask.Pane);
     }
 
@@ -181,7 +180,6 @@ public sealed class FileWrapupStore(Git git) : IWrapupStore
     /// <inheritdoc/>
     public Task<string?> WriteAsync(string worktree, WrapupState state, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(state);
         return WorktreeState.WriteTextAsync(git, worktree, WrapupState.Feature, state.Encode() + "\n", cancellationToken);
     }
 }
@@ -209,8 +207,6 @@ public static class WorktreeState
     /// <summary>Whether git ignores each of <paramref name="names"/> in the state folder: <c>yes</c>, <c>no</c> or <c>not-a-repo</c>.</summary>
     public static async Task<string> IgnoredAsync(Git git, string worktree, IReadOnlyList<string> names, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(git);
-        ArgumentNullException.ThrowIfNull(names);
         if (!Directory.Exists(worktree))
         {
             return "not-a-repo";

@@ -52,7 +52,6 @@ internal sealed class ShelveCommand(
     /// </summary>
     public static TimeSpan? ParseDuration(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var value = text.Trim().ToLowerInvariant();
         if (value is "" or "0")
         {

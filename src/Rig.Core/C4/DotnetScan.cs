@@ -75,7 +75,6 @@ public static partial class DotnetScan
     /// <summary>Every project under <paramref name="roots"/>, plus whatever they reference, transitively. Sorted by name.</summary>
     public static IReadOnlyList<Project> Discover(string repo, IReadOnlyList<string>? roots = null)
     {
-        ArgumentNullException.ThrowIfNull(repo);
         var pending = new List<string>();
         foreach (var root in roots ?? ["src"])
         {
@@ -94,7 +93,6 @@ public static partial class DotnetScan
     /// <summary>The project at <paramref name="csproj"/> plus everything it references, transitively. Sorted by name.</summary>
     public static IReadOnlyList<Project> DiscoverProject(string csproj)
     {
-        ArgumentNullException.ThrowIfNull(csproj);
         var fullPath = System.IO.Path.GetFullPath(csproj);
         if (!File.Exists(fullPath))
         {
@@ -137,7 +135,6 @@ public static partial class DotnetScan
     /// <summary>Read one project file.</summary>
     public static Project ReadProject(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var root = XDocument.Load(path).Root ?? throw new InvalidOperationException($"{path}: empty project file");
         var frameworks = Text(root, "TargetFrameworks") is { Length: > 0 } multiple
             ? multiple
@@ -255,7 +252,6 @@ public static partial class DotnetScan
     /// <summary>The project's own <c>.cs</c> files plus any it compiles in by <c>&lt;Compile Include=… Link=…&gt;</c>.</summary>
     public static IReadOnlyList<SourceFile> Sources(Project project)
     {
-        ArgumentNullException.ThrowIfNull(project);
         var paths = new HashSet<string>(StringComparer.Ordinal);
         if (Directory.Exists(project.Directory))
         {
@@ -280,7 +276,6 @@ public static partial class DotnetScan
     /// <summary>Read one source file into the names and types the C4 scan needs.</summary>
     public static SourceFile ReadSource(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var raw = OkfBundle.NormaliseNewlines(File.ReadAllText(path));
         var code = Noise().Replace(raw, " ");
         var namespaceMatch = Namespace().Match(code);
@@ -310,8 +305,6 @@ public static partial class DotnetScan
     /// <summary><c>Parquet.SourceGenerator.Emitter.Compound</c> in a project rooted at <c>Parquet.SourceGenerator</c> is <c>Emitter.Compound</c>.</summary>
     public static string ComponentKey(Project project, string @namespace)
     {
-        ArgumentNullException.ThrowIfNull(project);
-        ArgumentNullException.ThrowIfNull(@namespace);
         if (@namespace == project.RootNamespace)
         {
             return string.Empty;
@@ -324,8 +317,6 @@ public static partial class DotnetScan
     /// <summary>Group the files into the project's namespaces, skipping polyfills.</summary>
     public static IReadOnlyList<Component> Components(Project project, IReadOnlyList<SourceFile> files)
     {
-        ArgumentNullException.ThrowIfNull(project);
-        ArgumentNullException.ThrowIfNull(files);
         return [.. files
             .Where(file => file.Declares.Count > 0 && !Polyfill.Any(prefix => file.Namespace.StartsWith(prefix, StringComparison.Ordinal)))
             .GroupBy(file => file.Namespace, StringComparer.Ordinal)
@@ -336,7 +327,6 @@ public static partial class DotnetScan
     /// <summary>Type name to the owner key that declares it. A name declared in two owners is dropped: it is ambiguous.</summary>
     public static IReadOnlyDictionary<string, string> TypeIndex(IReadOnlyDictionary<string, IReadOnlyList<string>> owners)
     {
-        ArgumentNullException.ThrowIfNull(owners);
         var seen = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
         foreach (var (owner, types) in owners)
         {
@@ -360,8 +350,6 @@ public static partial class DotnetScan
         IReadOnlyDictionary<string, IReadOnlyList<SourceFile>> owned,
         IReadOnlyDictionary<string, string> index)
     {
-        ArgumentNullException.ThrowIfNull(owned);
-        ArgumentNullException.ThrowIfNull(index);
         var edges = new Dictionary<CodeEdge, int>();
         foreach (var (owner, files) in owned)
         {
@@ -382,8 +370,6 @@ public static partial class DotnetScan
     /// <summary>Pathway 2. <paramref name="ownerOf"/> maps a fully qualified type to its owner; calls inside one owner are dropped.</summary>
     public static Dictionary<CodeEdge, int> CallEdges(string path, IReadOnlyDictionary<string, string> ownerOf)
     {
-        ArgumentNullException.ThrowIfNull(path);
-        ArgumentNullException.ThrowIfNull(ownerOf);
         if (!File.Exists(path))
         {
             return [];
@@ -406,7 +392,6 @@ public static partial class DotnetScan
     /// <summary><c>A.B.Type.Method/(args)</c> is declared on <c>A.B.Type</c>.</summary>
     public static string TypeOf(string member)
     {
-        ArgumentNullException.ThrowIfNull(member);
         var head = member.Split('/', 2)[0];
         var index = head.LastIndexOf('.');
         return index < 0 ? head : head[..index];
@@ -415,7 +400,6 @@ public static partial class DotnetScan
     /// <summary>The number of lines in normalised text: a trailing newline adds none.</summary>
     internal static int LineCount(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         if (text.Length == 0)
         {
             return 0;

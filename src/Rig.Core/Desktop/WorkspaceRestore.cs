@@ -26,10 +26,6 @@ public static class WorkspaceRestore
     /// <summary>Restore <paramref name="plan"/>; the actions taken, or for a dry run the ones that would be.</summary>
     public static IReadOnlyList<string> Run(WorkspacePlan plan, RestoreOptions options, IDesktopPort port, IRunLog log)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(port);
-        ArgumentNullException.ThrowIfNull(log);
         using var span = StepTimer.Source.StartActivity("workspace.restore");
         span?.SetTag("scope", RestoreSteps.Scope);
         span?.SetTag("restore.dry_run", options.DryRun);

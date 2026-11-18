@@ -24,7 +24,6 @@ public static class Shlex
 
     private static List<string> Tokens(string text, bool shell)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var tokens = new List<string>();
         var token = new StringBuilder();
         var state = ' ';

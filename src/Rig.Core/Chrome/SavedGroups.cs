@@ -52,7 +52,6 @@ public static partial class SavedGroups
     /// <summary><c>" Google group – Opened"</c> is <c>ChipName("Google", true)</c>; null for anything else on the bar.</summary>
     public static ChipName? ParseChipName(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var match = ChipPattern().Match(name);
         return match.Success ? new ChipName(match.Groups["title"].Value, match.Groups["state"].Value == "Opened") : null;
     }
@@ -63,7 +62,6 @@ public static partial class SavedGroups
     /// </summary>
     public static IReadOnlyList<SavedGroup> UnionOfBars(IEnumerable<IReadOnlyList<SavedGroup>> bars)
     {
-        ArgumentNullException.ThrowIfNull(bars);
         IReadOnlyList<SavedGroup> widest = [];
         foreach (var bar in bars)
         {
@@ -79,7 +77,6 @@ public static partial class SavedGroups
     /// <summary>What to delete so each title keeps one saved copy: the open one, else the leftmost closed one.</summary>
     public static ConsolidationPlan PlanConsolidation(IEnumerable<SavedGroup> groups)
     {
-        ArgumentNullException.ThrowIfNull(groups);
         var ordered = groups.OrderBy(group => group.Profile, UnicodeText.CodePointOrder).ThenBy(group => group.Position).ToList();
         var deletes = new List<SavedGroupDelete>();
         var openDuplicates = new List<OpenDuplicate>();

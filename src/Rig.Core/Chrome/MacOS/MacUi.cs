@@ -126,7 +126,6 @@ public sealed class MacUi : AxReader, IDisposable
     /// <summary>A session over <paramref name="api"/>; throws <see cref="AccessibilityUnavailableException"/> without permission.</summary>
     public static MacUi Open(IMacUiApi api, TimeProvider? time = null, Action<TimeSpan>? sleep = null)
     {
-        ArgumentNullException.ThrowIfNull(api);
         return api.Trusted()
             ? new MacUi(api, time, sleep)
             : throw new AccessibilityUnavailableException("Grant Accessibility access to the terminal running chrome-tabs");
@@ -234,8 +233,6 @@ public sealed class MacUi : AxReader, IDisposable
     /// </summary>
     public void SetText(AxNode node, string text, Action guard)
     {
-        ArgumentNullException.ThrowIfNull(text);
-        ArgumentNullException.ThrowIfNull(guard);
         var chunks = Chunks(text);
         var pointer = Handle(node);
         if (Text(pointer, "AXValue").Length != 0)
@@ -337,7 +334,6 @@ public sealed class MacUi : AxReader, IDisposable
     /// <summary>Puts the cursor back at <paramref name="point"/>.</summary>
     public void RestoreCursor(ScreenPos point)
     {
-        ArgumentNullException.ThrowIfNull(point);
         if (_ui.Warp(point.X, point.Y) != 0)
         {
             throw new AccessibilityUnavailableException("Cannot restore cursor position");
@@ -347,7 +343,6 @@ public sealed class MacUi : AxReader, IDisposable
     /// <summary>A right click at <paramref name="point"/>: button down, then up.</summary>
     public void RightClick(ScreenPos point)
     {
-        ArgumentNullException.ThrowIfNull(point);
         foreach (var kind in RightMouse)
         {
             Post(_ui.MouseEvent(kind, point.X, point.Y));
@@ -394,7 +389,6 @@ public sealed class MacUi : AxReader, IDisposable
     /// </summary>
     public Focus CaptureFocus(Func<int?> frontmostPid)
     {
-        ArgumentNullException.ThrowIfNull(frontmostPid);
         var application = FocusedApplication(frontmostPid);
         _owned.Add(application);
         nint window;
@@ -419,7 +413,6 @@ public sealed class MacUi : AxReader, IDisposable
     /// <summary>Raises the captured window, if it still exists, and always brings its application back to the front.</summary>
     public void RestoreFocus(Focus focus)
     {
-        ArgumentNullException.ThrowIfNull(focus);
         try
         {
             if (focus.Window is { } window)
@@ -490,7 +483,6 @@ public sealed class MacUi : AxReader, IDisposable
     // The element behind a node this session decoded, provided it still has the node's role and name.
     private nint Handle(AxNode node)
     {
-        ArgumentNullException.ThrowIfNull(node);
         if (!_handles.TryGetValue(node, out var pointer))
         {
             throw new AccessibilityUnavailableException("AX element is not owned by this action session");

@@ -64,7 +64,6 @@ public static class TerminalSetup
     /// </summary>
     public static IReadOnlyList<string> Apply(JsonObject settings, string font, string startingDirectory)
     {
-        ArgumentNullException.ThrowIfNull(settings);
         var changes = new List<string>();
         if (settings["snapToGridOnResize"] is not JsonValue snap || !snap.TryGetValue<bool>(out var on) || on)
         {

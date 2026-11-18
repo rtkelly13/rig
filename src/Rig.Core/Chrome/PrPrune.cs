@@ -103,7 +103,6 @@ public static partial class PrPrune
     /// </summary>
     public static PrRef? RefFromTitle(string title)
     {
-        ArgumentNullException.ThrowIfNull(title);
         var matches = PrTitle().Matches(title);
         if (matches.Count == 0)
         {
@@ -119,7 +118,6 @@ public static partial class PrPrune
     /// <summary>Windows oldest first, each with its 1-based number within its profile.</summary>
     public static IEnumerable<(ChromeWindow Window, int Number)> NumberedWindows(IEnumerable<ChromeWindow> windows)
     {
-        ArgumentNullException.ThrowIfNull(windows);
         var numbering = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var window in windows.OrderBy(window => window.AgeRank).ThenBy(window => window.Handle))
         {
@@ -141,7 +139,6 @@ public static partial class PrPrune
     /// <summary>Applies the PR rules to every profile's tabs. Pure; nothing is closed here.</summary>
     public static PrunePlan Plan(IEnumerable<ChromeWindow> windows, Resolution resolution)
     {
-        ArgumentNullException.ThrowIfNull(resolution);
         var items = PrTabs(windows);
         var chains = resolution.Chains.Where(chain => !resolution.FailedRepos.ContainsKey(chain.Slug)).ToList();
 

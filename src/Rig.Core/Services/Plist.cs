@@ -18,7 +18,6 @@ public static class Plist
     /// <exception cref="ArgumentException">A value is of a kind not handled here, or a string holds a control character XML cannot carry.</exception>
     public static byte[] Render(IReadOnlyDictionary<string, object> entries)
     {
-        ArgumentNullException.ThrowIfNull(entries);
         var xml = new StringBuilder(Header).Append("<dict>\n");
         foreach (var (key, value) in entries.OrderBy(e => e.Key, StringComparer.Ordinal))
         {

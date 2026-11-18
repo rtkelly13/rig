@@ -13,14 +13,12 @@ public static partial class MermaidGenerator
     /// <summary>A Mermaid block holding <paramref name="lines"/>, ending with a newline.</summary>
     public static string Diagram(IEnumerable<string> lines)
     {
-        ArgumentNullException.ThrowIfNull(lines);
         return "```mermaid\n" + string.Join('\n', lines) + "\n```\n";
     }
 
     /// <summary>A double-quoted Mermaid label with its quotes replaced.</summary>
     public static string Quote(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         return text.Replace("\"", "'", StringComparison.Ordinal);
     }
 
@@ -40,7 +38,6 @@ public static partial class MermaidGenerator
     /// <summary>A component macro line pointing at its code view.</summary>
     public static string Component(string alias, string label, IReadOnlyList<string> types, string codeId)
     {
-        ArgumentNullException.ThrowIfNull(types);
         var shown = string.Join(", ", types.Take(4)) + (types.Count > 4 ? " …" : string.Empty);
         var count = $"{types.Count.ToString(CultureInfo.InvariantCulture)} type{(types.Count == 1 ? string.Empty : "s")}";
         return $"Component({alias}, \"{Quote(label)}\", \"{count}\", \"{Quote(shown)}\", $link=\"/{codeId}.md\")";
@@ -64,9 +61,6 @@ public static partial class MermaidGenerator
         IReadOnlyList<(string Source, string Target)> edges,
         IReadOnlyList<(string Type, string Url)> links)
     {
-        ArgumentNullException.ThrowIfNull(types);
-        ArgumentNullException.ThrowIfNull(edges);
-        ArgumentNullException.ThrowIfNull(links);
         var lines = new List<string> { "classDiagram", "direction LR" };
         foreach (var (type, _) in types)
         {
@@ -96,7 +90,6 @@ public static partial class MermaidGenerator
     /// <summary>The frontmatter rig's derivation writes: deterministic provenance and the <c>derived</c> tag.</summary>
     public static string Frontmatter(string kind, string title, string description, Origin origin, string? resource = null)
     {
-        ArgumentNullException.ThrowIfNull(origin);
         return string.Join('\n',
         [
             "---",
@@ -114,7 +107,6 @@ public static partial class MermaidGenerator
     /// <summary>A slug made of lower-case letters, digits and underscores.</summary>
     public static string Slug(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var slug = NonSlug().Replace(text.ToLowerInvariant(), "_").Trim('_');
         return slug.Length == 0 ? "root" : slug;
     }

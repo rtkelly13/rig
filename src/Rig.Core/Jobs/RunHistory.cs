@@ -103,7 +103,6 @@ public static partial class RunHistory
     /// </summary>
     public static string? ReadOutput(string directory, JobRun record)
     {
-        ArgumentNullException.ThrowIfNull(record);
         if (record.Output.Length == 0)
         {
             return null;
@@ -125,7 +124,6 @@ public static partial class RunHistory
     /// </summary>
     public static string SaveOutput(string directory, string job, string runId, byte[] data)
     {
-        ArgumentNullException.ThrowIfNull(data);
         if (data.Length == 0 || !RunIdPattern().IsMatch(runId))
         {
             return string.Empty;
@@ -154,7 +152,6 @@ public static partial class RunHistory
     /// <summary>Appends <paramref name="run"/>, trimming to the newest <see cref="KeepRuns"/> once past the slack.</summary>
     public static void Append(string directory, JobRun run)
     {
-        ArgumentNullException.ThrowIfNull(run);
         var path = Path.Join(directory, HistoryName);
         try
         {
@@ -179,7 +176,6 @@ public static partial class RunHistory
     /// </summary>
     public static string Line(JobRun run)
     {
-        ArgumentNullException.ThrowIfNull(run);
         var text = new StringBuilder("{");
         text.Append("\"job\":").Append(Quote(run.Job))
             .Append(",\"run_id\":").Append(Quote(run.RunId))

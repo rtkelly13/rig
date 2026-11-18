@@ -93,7 +93,6 @@ public static class JobRegistry
     /// <summary>Every job for <paramref name="env"/>, in run order; the workspace ones only when it names a workspace repo.</summary>
     public static IReadOnlyList<Job> Default(JobsEnvironment env)
     {
-        ArgumentNullException.ThrowIfNull(env);
         var rig = env.Script("rig");
         var plan = env.Plan;
         var code = env.CodeRoot;

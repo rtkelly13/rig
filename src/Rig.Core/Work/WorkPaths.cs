@@ -15,7 +15,6 @@ internal static class WorkPaths
     /// <summary><paramref name="path"/> in the form used for prefix comparison.</summary>
     public static string Normalise(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var separator = Path.DirectorySeparatorChar;
         var replaced = separator == '/' ? path : path.Replace('/', separator);
         var rooted = replaced.Length > 0 && replaced[0] == separator;

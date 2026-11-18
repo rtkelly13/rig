@@ -61,7 +61,6 @@ public sealed class CiTelemetry(IGitHubApi github)
     /// <summary>The runner a job named <paramref name="jobName"/> ran on.</summary>
     public static RunnerOs InferRunner(string jobName)
     {
-        ArgumentNullException.ThrowIfNull(jobName);
         var name = jobName.ToLowerInvariant();
         if (name.Contains("windows", StringComparison.Ordinal) || name.Contains("win32", StringComparison.Ordinal))
         {
@@ -89,7 +88,6 @@ public sealed class CiTelemetry(IGitHubApi github)
     /// <summary>A job from its <c>actions/runs/{id}/jobs</c> record.</summary>
     public static JobTelemetry Job(JsonObject job)
     {
-        ArgumentNullException.ThrowIfNull(job);
         var name = JsonShape.FieldText(job, "name") ?? "unknown";
         return new(Number(job, "id"), name, InferRunner(name), Seconds(JsonShape.FieldText(job, "started_at"), JsonShape.FieldText(job, "completed_at")));
     }
@@ -97,7 +95,6 @@ public sealed class CiTelemetry(IGitHubApi github)
     /// <summary>A run from its <c>actions/runs</c> record and its jobs' records.</summary>
     public static RunTelemetry Run(string repo, JsonObject run, IEnumerable<JsonObject> jobs)
     {
-        ArgumentNullException.ThrowIfNull(run);
         var started = JsonShape.FieldText(run, "run_started_at") is { Length: > 0 } runStarted ? runStarted : JsonShape.FieldText(run, "created_at");
         return new(
             repo,

@@ -14,9 +14,6 @@ public static class PolicyKeys
     /// </summary>
     public static async Task<string> OfAsync(Git git, EstateScopes scopes, string repoPath, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(git);
-        ArgumentNullException.ThrowIfNull(scopes);
-        ArgumentNullException.ThrowIfNull(repoPath);
         string? origin = null;
         if (Path.Exists(Path.Join(repoPath, ".git")))
         {
@@ -30,8 +27,6 @@ public static class PolicyKeys
     /// <summary>The key for <paramref name="repoPath"/> given its origin remote (null or empty when it has none).</summary>
     public static string From(EstateScopes scopes, string repoPath, string? origin)
     {
-        ArgumentNullException.ThrowIfNull(scopes);
-        ArgumentNullException.ThrowIfNull(repoPath);
         if (RepoSlug.FromRemote(origin) is { } slug)
         {
             return slug.FullName;

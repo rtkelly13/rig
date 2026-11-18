@@ -9,8 +9,6 @@ public sealed partial record PrRef : IComparable<PrRef>
     /// <summary>Lowercases <paramref name="owner"/> and <paramref name="repo"/>.</summary>
     public PrRef(string owner, string repo, int number)
     {
-        ArgumentNullException.ThrowIfNull(owner);
-        ArgumentNullException.ThrowIfNull(repo);
         Owner = owner.ToLowerInvariant();
         Repo = repo.ToLowerInvariant();
         Number = number;
@@ -35,7 +33,6 @@ public sealed partial record PrRef : IComparable<PrRef>
     /// <summary><c>owner/repo#n</c>, lowercased; null for anything else, so nothing unvalidated reaches a query.</summary>
     public static PrRef? TryParse(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var match = RefPattern().Match(text.Trim().ToLowerInvariant());
         return match.Success
             ? new PrRef(match.Groups[1].Value, match.Groups[2].Value, int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture))
@@ -185,7 +182,6 @@ public sealed record RepoChain(ChainKind Kind, string Slug, string Base, IReadOn
     /// <summary><paramref name="chain"/> in <paramref name="owner"/>/<paramref name="repo"/>.</summary>
     public static RepoChain Of(string owner, string repo, Chain chain)
     {
-        ArgumentNullException.ThrowIfNull(chain);
         var members = chain.Members.Select(number => new PrRef(owner, repo, number)).ToList();
         return new RepoChain(chain.Kind, $"{owner}/{repo}".ToLowerInvariant(), chain.Base, members);
     }

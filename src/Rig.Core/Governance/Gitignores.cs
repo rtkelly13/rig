@@ -179,7 +179,6 @@ public sealed class Gitignores(Git git, EstateScopes scopes, RepoPolicies polici
     private async Task<(IReadOnlyList<string> Languages, IReadOnlyList<GitignoreEntry> Entries, string File)> RequiredAsync(
         string repoPath, IReadOnlyList<string>? languages, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(repoPath);
         var key = await PolicyKeyAsync(repoPath, cancellationToken).ConfigureAwait(false);
         var resolved = policies.ResolveLanguages(key, repoPath, languages);
         return (resolved, RequiredEntries(key, repoPath, resolved), Path.Join(repoPath, ".gitignore"));

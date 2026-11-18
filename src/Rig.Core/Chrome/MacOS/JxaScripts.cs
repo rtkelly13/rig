@@ -104,7 +104,6 @@ public static class JxaScripts
     /// </summary>
     public static string TabAction(ChromeTab tab, string action)
     {
-        ArgumentNullException.ThrowIfNull(action);
         var ids = ActionIds.Of(tab);
 
         // The numeric placeholders go in before the action: page content can hold any placeholder token and must stay

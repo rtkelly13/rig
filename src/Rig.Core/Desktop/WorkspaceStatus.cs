@@ -22,7 +22,6 @@ public static class WorkspaceStatus
     /// <summary>What is open on the first <paramref name="desktopCount"/> desktops, named <c>Desktop N</c>.</summary>
     public static WorkspacePlan Current(WindowInventory inventory, int desktopCount)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
         if (desktopCount < 1)
         {
             throw new ArgumentException("Desktop count must be at least 1.", nameof(desktopCount));
@@ -45,8 +44,6 @@ public static class WorkspaceStatus
     /// <summary>What is open on the desktops numbered in <paramref name="desktopIndexes"/>, in that order.</summary>
     public static WorkspacePlan CurrentForDesktopIndexes(WindowInventory inventory, IReadOnlyList<int> desktopIndexes)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
-        ArgumentNullException.ThrowIfNull(desktopIndexes);
         if (desktopIndexes.Count == 0)
         {
             return new() { Desktops = [] };
@@ -73,7 +70,6 @@ public static class WorkspaceStatus
     /// <summary>The windows on the current desktop, named <paramref name="desktopName"/> or "Current Desktop".</summary>
     public static DesktopPlan CurrentDesktop(WindowInventory inventory, string? desktopName = null)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
         return new(desktopName ?? "Current Desktop") { CapturedWindows = inventory.CurrentDesktopWindows() };
     }
 
@@ -83,7 +79,6 @@ public static class WorkspaceStatus
     /// </summary>
     public static WorkspacePlan Capture(WindowInventory inventory, int desktopCount, string? workspace = null)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
         if (desktopCount < 1)
         {
             throw new ArgumentException("Desktop count must be at least 1.", nameof(desktopCount));
@@ -119,7 +114,6 @@ public static class WorkspaceStatus
     /// </summary>
     public static IReadOnlyList<LaunchEntry> LaunchEntriesFor(IReadOnlyList<WindowSnapshot> windows, int desktopNumber, string? workspace)
     {
-        ArgumentNullException.ThrowIfNull(windows);
         var entries = new List<LaunchEntry>();
         var terminalIndex = 0;
         foreach (var window in windows)

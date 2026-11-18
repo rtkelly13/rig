@@ -133,7 +133,6 @@ public sealed class GovernedRepos(IProc proc, Git git, EstateScopes scopes, Repo
     /// </summary>
     public async Task<IReadOnlyList<string>> DiscoverOrgReposAsync(string org, string personalDir, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(org);
         var repos = new List<string>();
         var listed = await proc.RunAsync(
             new ProcRequest(["gh", "repo", "list", org, "--no-archived", "--limit", "100", "--json", "nameWithOwner"]) { Timeout = IdentityTimeout },

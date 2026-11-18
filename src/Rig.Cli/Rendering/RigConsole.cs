@@ -29,7 +29,6 @@ internal static class RigConsole
     /// </param>
     public static IAnsiConsole Create(TextWriter writer, bool? interactive = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
         var live = interactive ?? IsInteractive(writer, Environment.GetEnvironmentVariable);
         return AnsiConsole.Create(new AnsiConsoleSettings
         {
@@ -47,9 +46,6 @@ internal static class RigConsole
     /// <param name="environment">Reads an environment variable; <see cref="Environment.GetEnvironmentVariable(string)"/> normally.</param>
     public static bool IsInteractive(TextWriter writer, Func<string, string?> environment)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(environment);
-
         if (IsSet(environment(RigConsole.HeadlessVariable))
             || environment(NoColorVariable) is not null
             || IsSet(environment(CiVariable))

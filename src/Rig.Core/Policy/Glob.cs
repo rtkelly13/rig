@@ -13,8 +13,6 @@ public static class Glob
     /// <summary>Whether <paramref name="name"/> matches <paramref name="pattern"/>.</summary>
     public static bool Matches(string name, string pattern, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(name);
-        ArgumentNullException.ThrowIfNull(pattern);
         return windows
             ? Compile(NormCase(pattern)).IsMatch(NormCase(name))
             : Compile(pattern).IsMatch(name);
@@ -23,7 +21,6 @@ public static class Glob
     /// <summary><paramref name="pattern"/> as an anchored regular expression, translated as <c>fnmatch.translate</c> does.</summary>
     public static Regex Compile(string pattern)
     {
-        ArgumentNullException.ThrowIfNull(pattern);
         var regex = new StringBuilder(@"\A(?:");
         for (var i = 0; i < pattern.Length; i++)
         {

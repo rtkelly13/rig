@@ -23,7 +23,6 @@ public sealed class ClaudeWorkSessions(string home, string ledgerDirectory, Func
     /// <param name="userHome">The user's home folder.</param>
     public static string Home(Func<string, string?> environment, string userHome)
     {
-        ArgumentNullException.ThrowIfNull(environment);
         return environment("CLAUDE_CONFIG_DIR") is { Length: > 0 } configured ? configured : Path.Join(userHome, ".claude");
     }
 
@@ -32,7 +31,6 @@ public sealed class ClaudeWorkSessions(string home, string ledgerDirectory, Func
     /// <param name="home">The Claude config directory.</param>
     public static string LedgerDirectory(Func<string, string?> environment, string home)
     {
-        ArgumentNullException.ThrowIfNull(environment);
         return environment("CLAUDE_SESSION_LEDGER_DIR") is { Length: > 0 } configured ? configured : Path.Join(home, "session-ends");
     }
 
@@ -236,7 +234,6 @@ public static class SessionFolders
     /// <param name="cwd">A session's working directory.</param>
     public static Attribution? Resolve(Git git, string cwd)
     {
-        ArgumentNullException.ThrowIfNull(git);
         if (!Directory.Exists(cwd))
         {
             return null;

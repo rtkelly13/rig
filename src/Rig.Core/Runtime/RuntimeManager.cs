@@ -135,7 +135,6 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     /// <param name="state">The state to record.</param>
     public void WriteState(RuntimeState state)
     {
-        ArgumentNullException.ThrowIfNull(state);
         _ = Directory.CreateDirectory(root);
         WriteJson(
             Path.Join(root, StateName),
@@ -187,8 +186,6 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     /// <param name="progress">Reports each step.</param>
     public RuntimeInstallResult Install(string repo, string refName, bool fetch = true, Action<string>? progress = null)
     {
-        ArgumentNullException.ThrowIfNull(repo);
-        ArgumentNullException.ThrowIfNull(refName);
         _ = Directory.CreateDirectory(root);
         if (!Directory.Exists(repo))
         {
@@ -439,7 +436,6 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
 
     private static void WriteInstalled(string copy, InstalledInfo installed)
     {
-        ArgumentNullException.ThrowIfNull(installed);
         WriteJson(
             Path.Join(copy, InstalledName),
             new JsonObject

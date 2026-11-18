@@ -195,7 +195,6 @@ public sealed unsafe partial class NativeAxApi : IMacUiApi
     /// <inheritdoc/>
     public void SetUnicode(nint inputEvent, string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         fixed (char* units = text)
         {
             CGEventKeyboardSetUnicodeString(inputEvent, (nuint)text.Length, units);

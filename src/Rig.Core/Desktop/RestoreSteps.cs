@@ -50,8 +50,6 @@ public static class RestoreSteps
     /// </summary>
     public static void RefreshPlan(RestoreRun run, PlannedDesktopExecution desktop, bool diffExisting)
     {
-        ArgumentNullException.ThrowIfNull(run);
-        ArgumentNullException.ThrowIfNull(desktop);
         desktop.OrphanWindows = [];
         var entries = desktop.Desktop.Launch.Where(entry => !entry.Disabled).ToList();
         if (!diffExisting || desktop.CloseExisting)
@@ -111,8 +109,6 @@ public static class RestoreSteps
     /// </summary>
     public static IReadOnlyList<LaunchEntry> ExecuteWithRetries(RestoreRun run, PlannedDesktopExecution desktop)
     {
-        ArgumentNullException.ThrowIfNull(run);
-        ArgumentNullException.ThrowIfNull(desktop);
         IReadOnlyList<LaunchEntry> pending = [];
         for (var attempt = 1; attempt <= MaxDesktopAttempts; attempt++)
         {
@@ -168,9 +164,6 @@ public static class RestoreSteps
     /// </summary>
     public static IReadOnlySet<long> SiblingOwnedHandles(RestoreRun run, PlannedDesktopExecution sibling, LaunchEntry entry)
     {
-        ArgumentNullException.ThrowIfNull(run);
-        ArgumentNullException.ThrowIfNull(sibling);
-        ArgumentNullException.ThrowIfNull(entry);
         var none = new HashSet<long>();
         if (string.IsNullOrEmpty(entry.WindowProcessName))
         {

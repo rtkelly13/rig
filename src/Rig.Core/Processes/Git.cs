@@ -73,7 +73,6 @@ public sealed class Git(IProc proc, string codeRoot)
         IReadOnlyDictionary<string, string>? environment,
         string? stdinText)
     {
-        ArgumentNullException.ThrowIfNull(args);
         var untrusted = IsUntrusted(workingDirectory);
         var env = new Dictionary<string, string>(environment ?? new Dictionary<string, string>());
         if (untrusted)

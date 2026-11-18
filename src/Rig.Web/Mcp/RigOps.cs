@@ -60,11 +60,6 @@ public sealed class RigOps : IDisposable
         TrimCache trims,
         Func<Telemetry> makeTelemetry)
     {
-        ArgumentNullException.ThrowIfNull(jobs);
-        ArgumentNullException.ThrowIfNull(start);
-        ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(trims);
-        ArgumentNullException.ThrowIfNull(makeTelemetry);
         _jobs = jobs;
         _directory = directory;
         _start = start;
@@ -78,7 +73,6 @@ public sealed class RigOps : IDisposable
     /// <summary>The real sources for a rig at <paramref name="checkout"/>.</summary>
     public static RigOps ForCheckout(string checkout)
     {
-        ArgumentNullException.ThrowIfNull(checkout);
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var windows = OperatingSystem.IsWindows();
         var appData = AppData.Current();
@@ -175,7 +169,6 @@ public sealed class RigOps : IDisposable
     /// <summary>Deletes caches the last finished scan offered; each is rechecked first and refused if it changed.</summary>
     public async Task<string> ApplyTrimAsync(IReadOnlyList<string> paths)
     {
-        ArgumentNullException.ThrowIfNull(paths);
         return OpsJson.Serialize(await _trims.ApplyAsync(paths).ConfigureAwait(false));
     }
 

@@ -17,7 +17,6 @@ internal sealed class NotedCommand(string name, string description, string notes
     /// <summary>Makes <paramref name="root"/>'s help print the notes of the command it was asked about.</summary>
     public static void AddToHelp(RootCommand root)
     {
-        ArgumentNullException.ThrowIfNull(root);
         var help = root.Options.OfType<HelpOption>().Single();
         help.Action = new HelpWithNotes((HelpAction)help.Action!);
     }

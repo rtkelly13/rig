@@ -38,7 +38,6 @@ public sealed partial record RepoSlug(string Owner, string Name)
     /// <summary>Parses <c>owner/name</c>; an optional <c>.git</c> and surrounding slashes are ignored.</summary>
     public static RepoSlug? FromPath(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var bare = path.Trim('/');
         if (bare.EndsWith(".git", StringComparison.Ordinal))
         {

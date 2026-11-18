@@ -36,7 +36,6 @@ public sealed class EstateSync(EstateScopes scopes)
     /// <summary>The router's Markdown table: one row per enabled project, linking its folder and its AGENTS.md.</summary>
     public string ProjectsTable(IEnumerable<ManagedRepoSpec> specs)
     {
-        ArgumentNullException.ThrowIfNull(specs);
         List<string> lines =
         [
             "| Repository | Domain | Tech Stack | Description | Scope Guide |",
@@ -75,7 +74,6 @@ public sealed class EstateSync(EstateScopes scopes)
     /// </summary>
     public async Task<string> SyncRouterAsync(string estateDir, IEnumerable<ManagedRepoSpec> specs, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(estateDir);
         var agents = Path.Join(estateDir, "AGENTS.md");
         await File.WriteAllTextAsync(agents, RootAgentsMd(specs), cancellationToken).ConfigureAwait(false);
         var claude = new FileInfo(Path.Join(estateDir, "CLAUDE.md"));
@@ -93,8 +91,6 @@ public sealed class EstateSync(EstateScopes scopes)
     /// </summary>
     public async Task<string> SyncCodeWorkspaceAsync(string estateDir, IEnumerable<ManagedRepoSpec> specs, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(estateDir);
-        ArgumentNullException.ThrowIfNull(specs);
         var file = Path.Join(estateDir, CodeWorkspaceName);
         var folders = new JsonArray();
         foreach (var spec in specs.Where(spec => spec.Enabled).OrderBy(spec => spec.Name.ToLowerInvariant(), StringComparer.Ordinal))

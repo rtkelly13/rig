@@ -77,8 +77,6 @@ public static class LabelTaxonomy
     /// <summary>What it takes to bring <paramref name="labels"/> up to <paramref name="taxonomy"/>.</summary>
     public static IReadOnlyList<LabelDifference> Differences(IReadOnlyList<LabelSpec> taxonomy, IReadOnlyDictionary<string, RepoLabel> labels)
     {
-        ArgumentNullException.ThrowIfNull(taxonomy);
-        ArgumentNullException.ThrowIfNull(labels);
         var differences = new List<LabelDifference>();
         foreach (var std in taxonomy)
         {
@@ -186,15 +184,12 @@ public sealed class LabelsResource : Resource<IReadOnlyList<LabelSpec>, IReadOnl
     /// <inheritdoc />
     public override IReadOnlyList<LabelSpec>? Desired(RepoPolicies policies, Target target)
     {
-        ArgumentNullException.ThrowIfNull(policies);
-        ArgumentNullException.ThrowIfNull(target);
         return policies.Labels(target.Slug) is { Count: > 0 } labels ? labels : null;
     }
 
     /// <inheritdoc />
     public override Task<IReadOnlyDictionary<string, RepoLabel>> ReadAsync(IGitHubApi api, Target target, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
         return LabelTaxonomy.ReadAsync(api, target.Slug, cancellationToken);
     }
 
@@ -205,9 +200,6 @@ public sealed class LabelsResource : Resource<IReadOnlyList<LabelSpec>, IReadOnl
     /// <inheritdoc />
     public override async Task<IReadOnlyList<string>> ApplyAsync(IGitHubApi api, Target target, IReadOnlyList<LabelSpec> desired, IReadOnlyList<Change> changes, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(desired);
-        ArgumentNullException.ThrowIfNull(changes);
         var wanted = desired.ToDictionary(label => label.Name, StringComparer.Ordinal);
         var failures = new List<string>();
         foreach (var change in changes)

@@ -52,7 +52,6 @@ public sealed class EstateGraph(Git git, TimeProvider time)
     /// <summary>A repo's identity: <c>owner/name</c> in lower case for a GitHub remote, else the value lower-cased without <c>.git</c>.</summary>
     public static string Slug(string value)
     {
-        ArgumentNullException.ThrowIfNull(value);
         if (RepoSlug.FromRemote(value) is { } slug)
         {
             return slug.Key;
@@ -108,7 +107,6 @@ public sealed class EstateGraph(Git git, TimeProvider time)
     /// <exception cref="IOException">The registry is missing or the snapshot could not be written.</exception>
     public async Task<ConnectivityGraph> BuildAsync(string registryFile, string estateDir, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(registryFile);
         await Building.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {

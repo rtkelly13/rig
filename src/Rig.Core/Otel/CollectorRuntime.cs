@@ -130,7 +130,6 @@ public sealed class CollectorRuntime(OtelPaths paths, IProc proc, IDetachedStart
     /// <summary>Whether <paramref name="record"/>'s pid is still the collector it launched, not a later process given the same pid.</summary>
     public async Task<bool> StillOursAsync(Launched record, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(record);
         var command = await CommandOfAsync(record.Pid, cancellationToken).ConfigureAwait(false);
         if (command.Length == 0)
         {

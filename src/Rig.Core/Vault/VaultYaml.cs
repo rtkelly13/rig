@@ -46,7 +46,6 @@ public static partial class VaultYaml
     /// <exception cref="VaultYamlException">The text is not a loadable YAML document.</exception>
     public static YamlValue? Load(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         RejectUnprintable(text);
         Node? root;
         try

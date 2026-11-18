@@ -21,8 +21,6 @@ public static class FrontmatterEditor
     /// <param name="changes">Top-level keys and the strings to set them to; a key set twice takes its last value.</param>
     public static FrontmatterEdit Set(string text, IReadOnlyList<KeyValuePair<string, string>> changes)
     {
-        ArgumentNullException.ThrowIfNull(text);
-        ArgumentNullException.ThrowIfNull(changes);
         var before = Frontmatter.Parse(text);
         if (before.Error is { } error)
         {
@@ -70,16 +68,12 @@ public static class FrontmatterEditor
     /// </summary>
     public static string Scalar(string key, string value)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(value);
         return key != "source" && ReadsBackPlain(value) ? value : Quote(value);
     }
 
     /// <summary>Whether two loaded metadata mappings hold the same keys and values.</summary>
     public static bool SameMetadata(IReadOnlyDictionary<string, YamlValue> left, IReadOnlyDictionary<string, YamlValue> right)
     {
-        ArgumentNullException.ThrowIfNull(left);
-        ArgumentNullException.ThrowIfNull(right);
         return left.Count == right.Count && left.All(pair => right.TryGetValue(pair.Key, out var other) && Same(pair.Value, other));
     }
 

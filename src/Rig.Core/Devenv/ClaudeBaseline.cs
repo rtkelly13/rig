@@ -82,7 +82,6 @@ public static class ClaudeBaseline
     /// </summary>
     public static SettingsMerge Merge(JsonObject existing, string sessionEndCommand)
     {
-        ArgumentNullException.ThrowIfNull(existing);
         var merged = (JsonObject)existing.DeepClone();
         var changes = new List<string>();
 
@@ -106,7 +105,6 @@ public static class ClaudeBaseline
     /// <summary>A baseline value quoted, as the change lines show it: <c>'text'</c>, <c>True</c>, <c>3</c>.</summary>
     public static string Repr(JsonValue value)
     {
-        ArgumentNullException.ThrowIfNull(value);
         return value.GetValueKind() switch
         {
             JsonValueKind.String => Quote(value.GetValue<string>()),

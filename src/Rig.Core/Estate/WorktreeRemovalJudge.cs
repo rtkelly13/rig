@@ -62,8 +62,6 @@ public static class WorktreeRemovalJudge
     /// <param name="policy">What the calling command allows.</param>
     public static RemovalDecision Judge(WorktreeFacts facts, RemovalPolicy policy)
     {
-        ArgumentNullException.ThrowIfNull(facts);
-        ArgumentNullException.ThrowIfNull(policy);
         var reasons = new List<RemovalRefusalReason>();
         if (facts.InUse)
         {

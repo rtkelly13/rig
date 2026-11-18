@@ -35,7 +35,6 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     /// <summary>The projection for <paramref name="system"/> under <paramref name="home"/>; only opencode's looks at disk.</summary>
     public static NativeProjection For(string system, string home, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(system);
         var path = system switch
         {
             "claude" => IOPath.Join(home, ".claude", "settings.json"),
@@ -54,7 +53,6 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     /// <summary>Writes <paramref name="policy"/> into the native file, or says what it would do when <paramref name="dryRun"/>.</summary>
     public ProjectionResult Apply(CommandPolicy policy, bool dryRun)
     {
-        ArgumentNullException.ThrowIfNull(policy);
         if (Path is null)
         {
             return new ProjectionResult(System, null, ProjectionStatus.Unsupported, "No persistent command permission file is exposed by this CLI.");
@@ -94,7 +92,6 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     /// </summary>
     public static CommandPrefix? Prefix(string pattern)
     {
-        ArgumentNullException.ThrowIfNull(pattern);
         var trimmed = pattern.TrimEnd();
         var wildcard = trimmed.EndsWith('*');
         var text = wildcard ? trimmed[..^1].TrimEnd() : pattern.Trim();
@@ -121,7 +118,6 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     /// </summary>
     public static string? ClaudeRule(string pattern)
     {
-        ArgumentNullException.ThrowIfNull(pattern);
         if (Prefix(pattern) is { } prefix)
         {
             return prefix.Wildcard ? $"Bash({prefix.Command}:*)" : $"Bash({prefix.Command})";

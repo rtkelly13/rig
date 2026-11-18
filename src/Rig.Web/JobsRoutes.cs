@@ -38,7 +38,6 @@ public static class JobsRoutes
     public static void Map(IEndpointRouteBuilder routes, RigOps ops)
     {
         ArgumentNullException.ThrowIfNull(routes);
-        ArgumentNullException.ThrowIfNull(ops);
 
         routes.MapGet(JobsPath, Handler(context => OpsJson.Run(() =>
             Task.FromResult(JsonContent(context, ops.ListJobs())))));

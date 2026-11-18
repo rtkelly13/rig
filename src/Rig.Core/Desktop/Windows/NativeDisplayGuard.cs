@@ -55,10 +55,6 @@ public sealed class NativeDisplayGuardPorts : IDisplayGuardPorts
         Action<string> log,
         DisplayEventListener? events = null)
     {
-        ArgumentNullException.ThrowIfNull(win32);
-        ArgumentNullException.ThrowIfNull(desktops);
-        ArgumentNullException.ThrowIfNull(restoreLockPath);
-        ArgumentNullException.ThrowIfNull(log);
         _win32 = win32;
         _desktops = desktops;
         _inventory = new WindowInventory(win32, desktops);
@@ -155,7 +151,6 @@ public sealed class NativeDisplayGuardPorts : IDisplayGuardPorts
     /// <inheritdoc/>
     public IReadOnlyList<long> ApplyPlacements(IReadOnlyList<WindowPlacementRecord> records)
     {
-        ArgumentNullException.ThrowIfNull(records);
         var foreground = _inventory.ForegroundWindow();
         var startingDesktop = _desktops.CurrentNumber;
         var placed = new List<long>();
@@ -303,7 +298,6 @@ public sealed class DisplayEventListener : IDisposable
     /// <summary>A listener for <paramref name="log"/>; nothing runs until <see cref="Start"/>.</summary>
     public DisplayEventListener(Action<string> log)
     {
-        ArgumentNullException.ThrowIfNull(log);
         _log = log;
         _thread = new Thread(Run) { Name = "display-guard-events", IsBackground = true };
     }

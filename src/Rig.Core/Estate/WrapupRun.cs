@@ -50,7 +50,6 @@ public static class WrapupRun
     /// <summary>The record of sending the prompt to <paramref name="row"/> at <paramref name="at"/>, under the id the prompt carried.</summary>
     public static AskRecord AskFor(WrapupRow row, string at, string? template)
     {
-        ArgumentNullException.ThrowIfNull(row);
         var sha = template is null ? "" : Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(template)))[..12];
         return new AskRecord(at, row.Pane, row.Session, row.Facts?.Head ?? "", Wrapup.DescribeFacts(row.Facts, row.Pr), sha, row.AskId);
     }
@@ -59,8 +58,6 @@ public static class WrapupRun
     public static async Task<IReadOnlyList<WrapupRow>> RecordAsync(
         IReadOnlyList<WrapupRow> rows, DateTimeOffset now, string? template, IWrapupStore store, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(rows);
-        ArgumentNullException.ThrowIfNull(store);
         var at = WrapupStamps.Timestamp(now);
         var output = rows.ToList();
         var byPath = new Dictionary<string, List<int>>(StringComparer.Ordinal);
@@ -135,9 +132,6 @@ public static class WrapupRun
         string rigExecutable,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(rows);
-        ArgumentNullException.ThrowIfNull(orca);
-        ArgumentNullException.ThrowIfNull(newAskId);
         var output = rows.ToList();
         foreach (var i in Wrapup.SendOrder(output))
         {
@@ -167,8 +161,6 @@ public static class WrapupRun
         Action<WrapupRow, string>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(rows);
-        ArgumentNullException.ThrowIfNull(rolling);
         progress ??= static (_, _) => { };
         var clock = rolling.Clock;
         var output = rows.ToList();
@@ -279,7 +271,6 @@ public static class WrapupRun
     /// <summary>The top-level folder of the git worktree holding <paramref name="directory"/>, or null outside one.</summary>
     public static async Task<string?> WorktreeRootAsync(Git git, string directory)
     {
-        ArgumentNullException.ThrowIfNull(git);
         var top = await git.OutAsync(directory, "rev-parse", "--show-toplevel").ConfigureAwait(false);
         return top.Length > 0 ? top : null;
     }
@@ -288,10 +279,6 @@ public static class WrapupRun
     public static async Task<WrapupReported> ReportAsync(
         string worktree, string askId, bool done, string pending, IReadOnlyList<string> todo, DateTimeOffset now, Func<Task<string>> head, IWrapupStore store, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(head);
-        ArgumentNullException.ThrowIfNull(pending);
-        ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(todo);
         var state = store.Read(worktree);
         if (state is null || state.Asks.Count == 0)
         {
@@ -527,7 +514,6 @@ public sealed class WrapupFollower(string appData, IDetachedStart detached, IRea
     /// <inheritdoc />
     public async Task<string> StartAsync(IReadOnlyList<string> args, DateTimeOffset now, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(args);
         _ = Directory.CreateDirectory(LogDir);
         var log = Path.Join(LogDir, $"follow-{now.ToUniversalTime():yyyyMMdd'T'HHmmss'Z'}.log");
         _ = await detached.StartAsync([.. self, "estate", "wrapup", .. args, "--follow"], log, cancellationToken: cancellationToken).ConfigureAwait(false);

@@ -185,7 +185,6 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
     /// <param name="ct">Stops the scan.</param>
     public async Task<RepoReclaim> PlanAsync(ReclaimTarget target, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(target);
         var scan = await ScanRepoAsync(target.Repo, target.Floor, ct).ConfigureAwait(false);
         return scan with { Force = target.Force, Removal = target.Removal, Busy = target.Busy };
     }
@@ -195,7 +194,6 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
     /// <param name="ct">Stops between removals.</param>
     public async Task<IReadOnlyList<string>> ApplyAsync(RepoReclaim plan, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         if (plan.Removal is not { } removal)
         {
             return ["reclaim requires a removal port to apply"];
@@ -249,8 +247,6 @@ public sealed class Reclaim(Git git, IDiskUsage disk) : IReconciler<ReclaimTarge
         Busy? busy = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(removal);
         if (entry.IsWorktree)
         {
             // git deletes a worktree's ignored files with it, and a worktree nested in its temp/ is one of them.

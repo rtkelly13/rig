@@ -218,8 +218,6 @@ internal sealed class TracesCommand(
     /// <summary>The <c>summary --json</c> payload; the schema is documented in <c>docs/observability.md</c>.</summary>
     internal static JsonObject Json(TraceSummary summary, TraceWindow window, DateTimeOffset since, string root)
     {
-        ArgumentNullException.ThrowIfNull(summary);
-        ArgumentNullException.ThrowIfNull(window);
         return new JsonObject
         {
             ["root"] = root,

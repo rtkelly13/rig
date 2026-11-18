@@ -13,8 +13,6 @@ public static class Unattended
     /// </summary>
     public static Block? GroupBlock(IPresence presence, Func<IEnumerable<ChromeWindow>> readWindows, double idleMinutes)
     {
-        ArgumentNullException.ThrowIfNull(presence);
-        ArgumentNullException.ThrowIfNull(readWindows);
         if (presence.SessionLocked())
         {
             return new Block("the session is locked");
@@ -39,8 +37,6 @@ public static class Unattended
     /// </summary>
     public static string? LiveCall(IPresence presence, IEnumerable<ChromeWindow> windows)
     {
-        ArgumentNullException.ThrowIfNull(presence);
-        ArgumentNullException.ThrowIfNull(windows);
         foreach (var tab in windows.SelectMany(window => window.Tabs))
         {
             if (tab.Alerts.FirstOrDefault(TabNames.LiveAlerts.Contains) is { } alert)

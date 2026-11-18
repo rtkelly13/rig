@@ -80,7 +80,6 @@ internal static partial class C4Viewer
     /// </summary>
     public static string RenderMarkdown(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var document = Markdig.Markdown.Parse(text, Markdown);
         foreach (var link in document.Descendants<LinkInline>().Where(link => !IsSafe(link.Url)).ToList())
         {
@@ -149,8 +148,6 @@ internal static partial class C4Viewer
     /// <summary>The list, tree and findings of <paramref name="bundle"/>.</summary>
     public static BundleView View(Bundle bundle, IReadOnlyDictionary<string, string> known)
     {
-        ArgumentNullException.ThrowIfNull(bundle);
-        ArgumentNullException.ThrowIfNull(known);
         var links = C4Composer.CollectLinks(bundle);
         var findings = C4Composer.Check(bundle);
         var name = Path.GetFileName(bundle.Root);
@@ -169,8 +166,6 @@ internal static partial class C4Viewer
     /// <summary>One concept with its notes rendered, the zooms leaving it, the links arriving and its findings.</summary>
     public static ConceptView View(Bundle bundle, Concept concept)
     {
-        ArgumentNullException.ThrowIfNull(bundle);
-        ArgumentNullException.ThrowIfNull(concept);
         var links = C4Composer.CollectLinks(bundle);
         var zooms = links.Edges
             .Where(e => e.Source == concept.Id && e.Kind != EdgeKind.Mention)

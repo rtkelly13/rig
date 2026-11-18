@@ -114,7 +114,6 @@ public static partial class NuGetGovernance
     /// </summary>
     public static string PackageGlob(IReadOnlyList<string> ids)
     {
-        ArgumentNullException.ThrowIfNull(ids);
         if (ids.Count == 1)
         {
             return ids[0];

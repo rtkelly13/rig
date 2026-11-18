@@ -69,7 +69,6 @@ public sealed partial class VaultLinter
     /// <param name="log">Told about each note a check had to pass over,.</param>
     public VaultLinter(string vaultPath, Action<string>? log = null)
     {
-        ArgumentNullException.ThrowIfNull(vaultPath);
         VaultPath = vaultPath;
         vaultName = Path.GetFileName(Path.TrimEndingDirectorySeparator(Path.GetFullPath(vaultPath)));
         this.log = log;
@@ -390,7 +389,6 @@ public sealed partial class VaultLinter
     /// </summary>
     public static IReadOnlyList<KeyValuePair<string, int>> VaultStats(string vaultPath)
     {
-        ArgumentNullException.ThrowIfNull(vaultPath);
         var inner = Path.Join(vaultPath, "Vault");
         var root = File.Exists(inner) || Directory.Exists(inner) ? inner : vaultPath;
         var stats = new List<KeyValuePair<string, int>>();
@@ -670,15 +668,12 @@ internal sealed class IndentedJsonWriter
     /// <summary>Writes an object whose members <paramref name="members"/> writes.</summary>
     public IndentedJsonWriter Object(Action members)
     {
-        ArgumentNullException.ThrowIfNull(members);
         return Container('{', '}', members);
     }
 
     /// <summary>Writes an array of <paramref name="items"/>, each written by <paramref name="write"/>.</summary>
     public IndentedJsonWriter Array<T>(IEnumerable<T> items, Action<T> write)
     {
-        ArgumentNullException.ThrowIfNull(items);
-        ArgumentNullException.ThrowIfNull(write);
         return Container('[', ']', () =>
         {
             foreach (var item in items)
@@ -691,7 +686,6 @@ internal sealed class IndentedJsonWriter
     /// <summary>Writes an object member's key; its value comes next.</summary>
     public IndentedJsonWriter Key(string key)
     {
-        ArgumentNullException.ThrowIfNull(key);
         Separate();
         Quote(key);
         text.Append(": ");
@@ -702,7 +696,6 @@ internal sealed class IndentedJsonWriter
     /// <summary>Writes a string.</summary>
     public IndentedJsonWriter String(string value)
     {
-        ArgumentNullException.ThrowIfNull(value);
         Separate();
         Quote(value);
         return this;

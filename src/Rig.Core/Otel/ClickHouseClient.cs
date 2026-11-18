@@ -67,7 +67,6 @@ public sealed class ClickHouseClient(HttpClient http, Uri? baseUrl = null)
     /// <summary>A ClickHouse string literal, for the elements of an array parameter.</summary>
     public static string Quote(string value)
     {
-        ArgumentNullException.ThrowIfNull(value);
         return "'" + value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("'", "\\'", StringComparison.Ordinal) + "'";
     }
 
@@ -75,7 +74,6 @@ public sealed class ClickHouseClient(HttpClient http, Uri? baseUrl = null)
     /// <exception cref="ClickHouseException">ClickHouse is unreachable or answered with an error.</exception>
     public async Task<string> TextAsync(string sql, IReadOnlyDictionary<string, string>? parameters = null, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(sql);
         var query = new StringBuilder("?output_format_json_quote_64bit_integers=0&date_time_output_format=iso");
         foreach (var (name, value) in parameters ?? new Dictionary<string, string>())
         {

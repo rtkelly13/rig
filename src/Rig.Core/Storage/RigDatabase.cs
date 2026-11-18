@@ -110,7 +110,6 @@ public static class RigDatabase
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
         ArgumentException.ThrowIfNullOrEmpty(backupDirectory);
-        ArgumentNullException.ThrowIfNull(clock);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxBackups);
         if (!File.Exists(path))
         {

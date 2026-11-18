@@ -73,7 +73,6 @@ public sealed class ComVirtualDesktops : IVirtualDesktops
     /// <inheritdoc/>
     public void Rename(int number, string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         Call(() =>
         {
             var desktop = Desktop(number);

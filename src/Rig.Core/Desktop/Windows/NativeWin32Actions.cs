@@ -35,14 +35,12 @@ public sealed unsafe partial class NativeWin32Actions : IWin32Actions
     /// <inheritdoc/>
     public bool MoveWindow(long handle, Rect rect)
     {
-        ArgumentNullException.ThrowIfNull(rect);
         return MoveWindowNative((nint)handle, rect.Left, rect.Top, rect.Width, rect.Height, true);
     }
 
     /// <inheritdoc/>
     public bool Reposition(long handle, Rect rect)
     {
-        ArgumentNullException.ThrowIfNull(rect);
         return SetWindowPos((nint)handle, 0, rect.Left, rect.Top, rect.Width, rect.Height, NoActivate | NoZOrder | NoOwnerZOrder);
     }
 
@@ -82,7 +80,6 @@ public sealed unsafe partial class NativeWin32Actions : IWin32Actions
     /// <inheritdoc/>
     public int SendKeys(IReadOnlyList<KeyEvent> events)
     {
-        ArgumentNullException.ThrowIfNull(events);
         var inputs = new Input[events.Count];
         for (var i = 0; i < events.Count; i++)
         {

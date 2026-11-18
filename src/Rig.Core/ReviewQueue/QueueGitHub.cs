@@ -85,7 +85,6 @@ public sealed class QueueGitHub(IGitHubApi github) : IQueueSource
     /// <inheritdoc/>
     public async Task<QueueItem> ObserveAsync(QueueItem item, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(item);
         ValidateKind(item.Kind);
         var reference = PrRef.Parse(item.Reference);
         var field = item.Kind == "pr" ? "pullRequest" : "issue";
@@ -100,7 +99,6 @@ public sealed class QueueGitHub(IGitHubApi github) : IQueueSource
     /// <inheritdoc/>
     public async Task<IReadOnlyList<QueueActivity>> ActivityAsync(QueueItem item, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(item);
         ValidateKind(item.Kind);
         var reference = PrRef.Parse(item.Reference);
         var number = reference.Number.ToString(CultureInfo.InvariantCulture);

@@ -68,8 +68,6 @@ public static class PrResolver
         int lookupsPerQuery = LookupsPerQuery,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(github);
-        ArgumentNullException.ThrowIfNull(refs);
         var started = Stopwatch.GetTimestamp();
         var byRepo = refs.GroupBy(pr => (pr.Owner, pr.Repo))
             .OrderBy(group => group.Key.Owner, StringComparer.Ordinal)
@@ -126,7 +124,6 @@ public static class PrResolver
         int lookupsPerQuery = LookupsPerQuery,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(github);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(lookupsPerQuery);
         var wanted = numbers.Distinct().Order().ToList();
         List<int[]> chunks = wanted.Count > 0 ? [.. wanted.Chunk(lookupsPerQuery)] : [[]];

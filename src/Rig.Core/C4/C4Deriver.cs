@@ -95,8 +95,6 @@ public sealed partial class C4Deriver
     /// <param name="git">Runs git in that repository and returns its trimmed output, or null when it fails.</param>
     public static async Task<Origin> ReadOriginAsync(string repo, Func<IReadOnlyList<string>, Task<string>> git)
     {
-        ArgumentNullException.ThrowIfNull(repo);
-        ArgumentNullException.ThrowIfNull(git);
         var remote = await git(["remote", "get-url", "origin"]).ConfigureAwait(false);
         var match = GitHubRemote().Match(remote);
         var commit = await git(["rev-parse", "--short=12", "HEAD"]).ConfigureAwait(false);
@@ -116,9 +114,6 @@ public sealed partial class C4Deriver
     /// <param name="project">One project file to derive instead of every project under <c>src/</c>, or null.</param>
     public static Derived Derive(Origin origin, string repo, string root, Parent? parent = null, string? callgraph = null, string? project = null)
     {
-        ArgumentNullException.ThrowIfNull(origin);
-        ArgumentNullException.ThrowIfNull(repo);
-        ArgumentNullException.ThrowIfNull(root);
         var resolved = System.IO.Path.GetFullPath(repo);
         var projects = project is null
             ? DotnetScan.Discover(resolved)
@@ -153,8 +148,6 @@ public sealed partial class C4Deriver
     /// </summary>
     public static IReadOnlyList<string> Orphans(string root, IReadOnlyDictionary<string, string> files)
     {
-        ArgumentNullException.ThrowIfNull(root);
-        ArgumentNullException.ThrowIfNull(files);
         if (!Directory.Exists(root))
         {
             return [];
@@ -171,8 +164,6 @@ public sealed partial class C4Deriver
     /// <summary>Derived paths whose file on disk is missing or differs from a fresh derivation, plus orphans.</summary>
     public static IReadOnlyList<string> Stale(string root, IReadOnlyDictionary<string, string> files)
     {
-        ArgumentNullException.ThrowIfNull(root);
-        ArgumentNullException.ThrowIfNull(files);
         var changed = files
             .Where(pair => !File.Exists(System.IO.Path.Combine(root, pair.Key))
                 || OkfBundle.NormaliseNewlines(File.ReadAllText(System.IO.Path.Combine(root, pair.Key))) != pair.Value)
@@ -183,8 +174,6 @@ public sealed partial class C4Deriver
     /// <summary>Write every stale derived file and delete orphans; returns the paths written or removed.</summary>
     public static IReadOnlyList<string> Write(string root, IReadOnlyDictionary<string, string> files)
     {
-        ArgumentNullException.ThrowIfNull(root);
-        ArgumentNullException.ThrowIfNull(files);
         var changed = Stale(root, files);
         foreach (var name in changed)
         {

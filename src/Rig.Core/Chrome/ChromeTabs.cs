@@ -100,7 +100,6 @@ public static partial class TabNames
     /// <summary>Strip Chrome's memory, pinned, group and alert suffixes off a tab's accessible name.</summary>
     public static TabName Parse(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var text = InactiveSuffix().Replace(RStrip(name), string.Empty);
         var loaded = false;
         double? memoryMb = null;
@@ -153,7 +152,6 @@ public static partial class TabNames
     /// <summary>A tab group's title from its header's accessible name; "" for an unnamed group, null if unrecognised.</summary>
     public static string? ParseGroupHeader(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var match = GroupHeader().Match(name);
         return match.Success ? match.Groups["title"].Value : null;
     }
@@ -293,7 +291,6 @@ public sealed record ChromeWindow(
     /// </summary>
     public static IReadOnlyList<ChromeWindow> ScreenOrder(IEnumerable<ChromeWindow> windows, int? currentDesktop)
     {
-        ArgumentNullException.ThrowIfNull(windows);
         const int far = 1 << 30;
         return
         [

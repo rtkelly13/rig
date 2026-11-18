@@ -32,7 +32,6 @@ public sealed class PolicyFiles(IProc proc, Git git)
     /// <summary>What gh and the files at <paramref name="repoPath"/>'s root say, with the contact address from <paramref name="policies"/>.</summary>
     public async Task<RepoMetadata> DetectAsync(string repoPath, RepoPolicies policies, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(policies);
         var repoName = Path.GetFileName(Path.TrimEndingDirectorySeparator(repoPath));
         var isPublic = false;
         var license = "MIT";
@@ -70,7 +69,6 @@ public sealed class PolicyFiles(IProc proc, Git git)
     /// </summary>
     public static string Render(string template, RepoMetadata meta)
     {
-        ArgumentNullException.ThrowIfNull(meta);
         var values = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["repo_name"] = meta.RepoName,

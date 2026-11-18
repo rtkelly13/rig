@@ -63,9 +63,6 @@ internal sealed class LandingWait(TimeProvider time, Sleeper sleep)
     /// </summary>
     public async Task<WaitResult> RunAsync(Observer observe, Pace pace, Func<Tick, Task> report, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(observe);
-        ArgumentNullException.ThrowIfNull(pace);
-        ArgumentNullException.ThrowIfNull(report);
         var start = time.GetTimestamp();
         var delay = pace.FirstPoll;
         var (polls, errors, wasQueued) = (0, 0, false);

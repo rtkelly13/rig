@@ -15,7 +15,6 @@ public static class PathResolution
     /// </summary>
     public static string Resolve(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var absolute = OperatingSystem.IsWindows() ? Path.GetFullPath(path) : Path.Combine(Environment.CurrentDirectory, path);
         return Resolve(absolute, MaxLinkHops);
     }
@@ -32,16 +31,12 @@ public static class PathResolution
     /// <summary>Whether two resolved paths name the same place, trailing separators aside.</summary>
     public static bool Same(string path, string other)
     {
-        ArgumentNullException.ThrowIfNull(path);
-        ArgumentNullException.ThrowIfNull(other);
         return path.TrimEnd(Path.DirectorySeparatorChar).Equals(other.TrimEnd(Path.DirectorySeparatorChar), Comparison);
     }
 
     /// <summary>Whether <paramref name="path"/> is <paramref name="folder"/> or lies inside it. Both must be resolved.</summary>
     public static bool IsUnder(string path, string folder)
     {
-        ArgumentNullException.ThrowIfNull(path);
-        ArgumentNullException.ThrowIfNull(folder);
         var comparison = Comparison;
         var trimmed = folder.TrimEnd(Path.DirectorySeparatorChar);
         return path.Equals(trimmed, comparison)

@@ -28,8 +28,6 @@ public sealed partial class VaultRepair
     /// <param name="time">The clock and local time zone; the system's when omitted.</param>
     public VaultRepair(string vaultPath, Action<string> say, Action<string>? log = null, TimeProvider? time = null)
     {
-        ArgumentNullException.ThrowIfNull(vaultPath);
-        ArgumentNullException.ThrowIfNull(say);
         vault = vaultPath;
         this.say = say;
         this.log = log;
@@ -254,7 +252,6 @@ public sealed partial class VaultRepair
     /// <summary>The words in <paramref name="text"/>: runs of letters, numbers and underscores.</summary>
     public static int Words(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var count = 0;
         var inWord = false;
         foreach (var rune in text.EnumerateRunes())
@@ -274,9 +271,6 @@ public sealed partial class VaultRepair
     /// </summary>
     public static string RewriteWikilinks(string content, NotePath from, NotePath to)
     {
-        ArgumentNullException.ThrowIfNull(content);
-        ArgumentNullException.ThrowIfNull(from);
-        ArgumentNullException.ThrowIfNull(to);
         var oldRel = from.ToString();
         var newRel = to.ToString();
         var oldRelNoExt = oldRel[..^Suffix(from).Length];

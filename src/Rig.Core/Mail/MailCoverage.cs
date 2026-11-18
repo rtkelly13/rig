@@ -35,7 +35,6 @@ public static class MailCoverage
     /// <exception cref="InvalidDataException">A page is not JSON, or not an object.</exception>
     public static IReadOnlyList<SampleMessage> ReadSample(IEnumerable<string> paths)
     {
-        ArgumentNullException.ThrowIfNull(paths);
         var sample = new List<SampleMessage>();
         foreach (var path in paths)
         {
@@ -48,8 +47,6 @@ public static class MailCoverage
     /// <summary>Whether <paramref name="match"/> would select <paramref name="message"/>, judged on from, to and subject alone.</summary>
     public static bool Claims(MailMatch match, SampleMessage message)
     {
-        ArgumentNullException.ThrowIfNull(match);
-        ArgumentNullException.ThrowIfNull(message);
         if (match.Senders.Count > 0 && !Contains(message.Sender, match.Senders))
         {
             return false;
@@ -71,8 +68,6 @@ public static class MailCoverage
     /// <summary>Senders by thread count, busiest first (ties in order of appearance); each message goes to the first rule claiming it.</summary>
     public static IReadOnlyList<SenderRow> Coverage(MailRuleSet ruleset, IReadOnlyList<SampleMessage> sample)
     {
-        ArgumentNullException.ThrowIfNull(ruleset);
-        ArgumentNullException.ThrowIfNull(sample);
         return
         [
             .. sample.GroupBy(message => message.Sender, StringComparer.Ordinal)

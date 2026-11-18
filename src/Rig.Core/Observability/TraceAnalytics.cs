@@ -149,7 +149,6 @@ public sealed record TraceError(
     /// <summary>When it ended, in <paramref name="zone"/>.</summary>
     public DateTimeOffset Ended(TimeZoneInfo zone)
     {
-        ArgumentNullException.ThrowIfNull(zone);
         return TimeZoneInfo.ConvertTime(DateTimeOffset.UnixEpoch.AddTicks(EndNs / 100), zone);
     }
 }
@@ -198,7 +197,6 @@ public sealed partial record TraceWindow(string Text, TimeSpan Span)
     /// </summary>
     public static TraceWindow Parse(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var match = Shape().Match(text.Trim());
         if (!match.Success
             || !long.TryParse(match.Groups["count"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var count)
@@ -244,8 +242,6 @@ public static partial class TraceAnalytics
     /// </summary>
     public static string Root(string defaultRoot, Func<string, string?> environment)
     {
-        ArgumentNullException.ThrowIfNull(defaultRoot);
-        ArgumentNullException.ThrowIfNull(environment);
         var over = environment(DirVariable);
         if (!string.IsNullOrWhiteSpace(over))
         {
@@ -264,7 +260,6 @@ public static partial class TraceAnalytics
     /// </summary>
     public static TraceDataset Load(string root, DateTimeOffset? since = null, string? tool = null)
     {
-        ArgumentNullException.ThrowIfNull(root);
         var files = Files(root, since);
         var sinceNs = since is { } start ? (start.UtcDateTime - DateTime.UnixEpoch).Ticks * 100 : (long?)null;
         var chosen = new OrderedDictionary<(string TraceId, string SpanId), TraceSpanInfo>();
@@ -296,7 +291,6 @@ public static partial class TraceAnalytics
     /// <summary>Aggregates a dataset: totals, failure rate, duration percentiles, breakdowns and recent errors.</summary>
     public static TraceSummary Summarize(TraceDataset dataset, int errorLimit = DefaultErrorLimit)
     {
-        ArgumentNullException.ThrowIfNull(dataset);
         ArgumentOutOfRangeException.ThrowIfNegative(errorLimit);
         var failures = dataset.Spans.Count(span => span.Failed);
         return new TraceSummary(
@@ -314,7 +308,6 @@ public static partial class TraceAnalytics
     /// <summary>The <paramref name="limit"/> newest failed spans, newest first.</summary>
     public static IReadOnlyList<TraceError> Errors(IEnumerable<TraceSpanInfo> spans, int limit = DefaultErrorLimit)
     {
-        ArgumentNullException.ThrowIfNull(spans);
         ArgumentOutOfRangeException.ThrowIfNegative(limit);
         return
         [
@@ -343,14 +336,12 @@ public static partial class TraceAnalytics
     /// <summary>The command a span ran: its process command, else its name, else <c>unknown</c>.</summary>
     public static string Command(TraceSpanInfo span)
     {
-        ArgumentNullException.ThrowIfNull(span);
         return span.Command.Length > 0 ? span.Command : span.Name.Length > 0 ? span.Name : "unknown";
     }
 
     /// <summary>Nearest-rank percentiles of <paramref name="values"/>; all zero when empty.</summary>
     public static TracePercentiles Percentiles(IEnumerable<double> values)
     {
-        ArgumentNullException.ThrowIfNull(values);
         var ordered = values.Order().ToList();
         return ordered.Count == 0 ? new TracePercentiles(0, 0, 0) : new TracePercentiles(Rank(ordered, 0.50), Rank(ordered, 0.90), Rank(ordered, 0.99));
 

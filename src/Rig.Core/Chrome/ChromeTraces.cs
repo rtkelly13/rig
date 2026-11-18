@@ -111,7 +111,6 @@ public sealed record TraceRun(TraceSpan Root, IReadOnlyList<TraceSpan> Spans)
     /// <summary>The spans directly beneath <paramref name="parent"/>, by start.</summary>
     public IReadOnlyList<TraceSpan> Children(TraceSpan parent)
     {
-        ArgumentNullException.ThrowIfNull(parent);
         return [.. Spans.Where(span => span.ParentId == parent.SpanId).OrderBy(span => span.StartNs)];
     }
 }
@@ -252,7 +251,6 @@ public static partial class ChromeTraces
     /// <summary>Spans from OTLP/JSON lines. A complete span replaces an earlier incomplete copy; bad lines and spans are skipped.</summary>
     public static IReadOnlyList<TraceSpan> ParseLines(IEnumerable<string> lines)
     {
-        ArgumentNullException.ThrowIfNull(lines);
         var spans = new List<TraceSpan>();
         foreach (var file in TraceSpans.Parse(string.Join("\n", lines)))
         {
@@ -297,7 +295,6 @@ public static partial class ChromeTraces
     /// <summary>Organise runs, oldest first, each with its descendant spans.</summary>
     public static IReadOnlyList<TraceRun> Runs(IReadOnlyList<TraceSpan> spans)
     {
-        ArgumentNullException.ThrowIfNull(spans);
         var byParent = new Dictionary<(string, string), List<TraceSpan>>();
         foreach (var span in spans)
         {
@@ -333,7 +330,6 @@ public static partial class ChromeTraces
     /// <summary>A run's headline facts, for <c>--json</c>.</summary>
     public static JsonObject RunJson(TraceRun run, TimeZoneInfo zone)
     {
-        ArgumentNullException.ThrowIfNull(run);
         return new JsonObject
         {
             ["id"] = run.Id,
@@ -359,7 +355,6 @@ public static partial class ChromeTraces
     /// <summary>The latest run whose span id starts with <paramref name="wanted"/>, or the latest run when null.</summary>
     public static TraceRun? FindRun(IReadOnlyList<TraceRun> found, string? wanted)
     {
-        ArgumentNullException.ThrowIfNull(found);
         return wanted is null
             ? found.Count > 0 ? found[^1] : null
             : found.Reverse().FirstOrDefault(run => run.Root.SpanId.StartsWith(UnicodeText.Lower(wanted), StringComparison.Ordinal));
@@ -373,7 +368,6 @@ public static partial class ChromeTraces
     /// <summary>One line per run, newest first.</summary>
     public static IReadOnlyList<string> RenderRuns(IReadOnlyList<TraceRun> found, TimeZoneInfo zone)
     {
-        ArgumentNullException.ThrowIfNull(found);
         return
         [
             .. found.Reverse().Select(run =>
@@ -390,7 +384,6 @@ public static partial class ChromeTraces
     /// <summary>The run's spans as an indented tree, with durations, attributes and events.</summary>
     public static IReadOnlyList<string> RenderTree(TraceRun run)
     {
-        ArgumentNullException.ThrowIfNull(run);
         List<string> lines = [];
         void Visit(TraceSpan span, int depth)
         {
@@ -423,7 +416,6 @@ public static partial class ChromeTraces
     /// <summary>Aggregates runs: outcomes, grouping verdicts, waits, closes and the commonest block reasons.</summary>
     public static TraceSummary Summarise(IReadOnlyList<TraceRun> found)
     {
-        ArgumentNullException.ThrowIfNull(found);
         var completed = found.Where(run => run.Outcome != "incomplete").ToList();
         List<double> waits = [.. found.Where(run => run.Checks != 0 && run.WaitedSeconds is not null).Select(run => run.WaitedSeconds!.Value)];
 
@@ -444,7 +436,6 @@ public static partial class ChromeTraces
     /// <summary>The summary as lines, headed by the window of <paramref name="days"/> it covers.</summary>
     public static IReadOnlyList<string> RenderSummary(TraceSummary summary, int days)
     {
-        ArgumentNullException.ThrowIfNull(summary);
         var rate = summary.SuccessRate is { } success ? $"{NumberText.Fixed(success * 100, 0)}%" : "-";
         var grouping = string.Join(", ", summary.Grouping.OrderByDescending(pair => pair.Value).Select(pair => $"{pair.Key} {pair.Value}"));
         List<string> lines =

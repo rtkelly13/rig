@@ -60,7 +60,6 @@ internal static class DeclarativeCommand
     /// <returns><see cref="ExitCode.Error"/>.</returns>
     internal static int RequireSubcommand(TextWriter error)
     {
-        ArgumentNullException.ThrowIfNull(error);
         error.WriteLine("rig: Required command was not provided.");
         error.WriteLine("Run 'rig --help' for the commands.");
         return (int)ExitCode.Error;

@@ -35,7 +35,6 @@ public static class SettingsFile
     /// </summary>
     public static void Save(string path, JsonObject settings, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(settings);
         var full = Path.GetFullPath(path);
         if (new FileInfo(full).LinkTarget is not null)
         {

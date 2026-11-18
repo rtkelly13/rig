@@ -23,7 +23,6 @@ public sealed record ApiRequest(string Method, string Route, string? Body = null
     /// <param name="variables">The variables; a null value is left out.</param>
     public static ApiRequest GraphQL(string query, IReadOnlyDictionary<string, object?> variables)
     {
-        ArgumentNullException.ThrowIfNull(variables);
         var present = variables.Where(pair => pair.Value is not null).ToDictionary(pair => pair.Key, pair => pair.Value);
         var body = new Dictionary<string, object?> { ["query"] = query, ["variables"] = present };
         return new("POST", "graphql", JsonSerializer.Serialize(body));
@@ -50,7 +49,6 @@ public sealed class GhApi(IProc proc) : IGitHubApi
     /// <inheritdoc />
     public Task<Ran> CallAsync(ApiRequest request, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
         IReadOnlyList<string> baseArgs = request.Method == "GET"
             ? ["gh", "api", request.Route]
             : ["gh", "api", "-X", request.Method, request.Route];

@@ -23,7 +23,6 @@ public static class Bytes
     /// </summary>
     public static long ParseSize(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var raw = text.Trim().ToUpperInvariant();
         foreach (var (suffix, factor) in Suffixes)
         {

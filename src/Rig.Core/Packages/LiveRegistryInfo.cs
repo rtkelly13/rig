@@ -27,7 +27,6 @@ public sealed class LiveRegistryInfo(HttpClient http) : IRegistryInfo
     /// <inheritdoc/>
     public async Task<RegistryInfo> InfoAsync(string registry, string name, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var key = $"{registry}:{name.ToUpperInvariant()}";
         if (!_cache.TryGetValue(key, out var info))
         {

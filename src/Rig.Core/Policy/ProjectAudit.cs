@@ -33,7 +33,6 @@ public static partial class ProjectAudit
     /// </summary>
     public static IReadOnlyList<ProjectCommand> Commands(string root)
     {
-        ArgumentNullException.ThrowIfNull(root);
         var projects = new[] { root }.Concat(
             new DirectoryInfo(root).EnumerateDirectories().Where(d => !d.Name.StartsWith('.')).Select(d => d.FullName).Order(StringComparer.Ordinal));
         var results = new List<ProjectCommand>();
@@ -113,7 +112,6 @@ public static partial class ProjectAudit
     /// </summary>
     public static IReadOnlyList<(string Name, string Source)> ProjectScripts(string toml)
     {
-        ArgumentNullException.ThrowIfNull(toml);
         var scripts = new List<(string, string)>();
         var inTable = false;
         foreach (var raw in toml.ReplaceLineEndings("\n").Split('\n'))

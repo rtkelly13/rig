@@ -116,7 +116,6 @@ public sealed class RestoreExecutionPlan
     /// <exception cref="ArgumentException">No desktop has that name.</exception>
     public static int? ResolveTargetDesktopIndex(WorkspacePlan plan, string? targetDesktop)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         if (targetDesktop is null)
         {
             return null;

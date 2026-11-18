@@ -18,8 +18,6 @@ public sealed class FileRunLog : IRunLog
     /// <summary>A log for a run starting now in <paramref name="directory"/>.</summary>
     public FileRunLog(string directory, TimeProvider time)
     {
-        ArgumentNullException.ThrowIfNull(directory);
-        ArgumentNullException.ThrowIfNull(time);
         _time = time;
         var stamp = time.GetLocalNow().ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
         RunPath = Path.Combine(directory, $"workspace-restore-{stamp}.log");
@@ -48,7 +46,6 @@ public sealed class FileRunLog : IRunLog
     /// <inheritdoc/>
     public void LogFailure(string message, Exception failure)
     {
-        ArgumentNullException.ThrowIfNull(failure);
         Log($"{message}\n{failure.ToString().TrimEnd()}");
     }
 }

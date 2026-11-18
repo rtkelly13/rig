@@ -94,10 +94,6 @@ public static class DesktopReconcile
         IReadOnlyList<string> retiredNames,
         IReadOnlyList<string> currentNames)
     {
-        ArgumentNullException.ThrowIfNull(targetDesktops);
-        ArgumentNullException.ThrowIfNull(retiredNames);
-        ArgumentNullException.ThrowIfNull(currentNames);
-
         var targets = targetDesktops.ToList();
         var retired = retiredNames.Where(name => name.Length > 0).Select(UnicodeText.CaseFold).ToHashSet(StringComparer.Ordinal);
         var current = currentNames.ToList();
@@ -176,10 +172,6 @@ public static class DesktopReconcile
         TimeSpan switchDelay,
         bool dryRun = false)
     {
-        ArgumentNullException.ThrowIfNull(targetDesktops);
-        ArgumentNullException.ThrowIfNull(desktops);
-        ArgumentNullException.ThrowIfNull(retiredNames);
-
         var targets = targetDesktops.ToList();
         var plan = Plan(targets, retiredNames, desktops.Names());
         if (dryRun)

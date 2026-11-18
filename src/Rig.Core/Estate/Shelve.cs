@@ -250,7 +250,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// <summary>Makes one path segment a legal ref component.</summary>
     public static string RefComponent(string part)
     {
-        ArgumentNullException.ThrowIfNull(part);
         var cleaned = IllegalRefChars().Replace(part, "-").Replace("..", "-", StringComparison.Ordinal).Replace("@{", "-", StringComparison.Ordinal).Trim('.');
         if (cleaned.EndsWith(".lock", StringComparison.Ordinal))
         {
@@ -267,8 +266,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// </summary>
     public static string ShelfName(string clone, string path)
     {
-        ArgumentNullException.ThrowIfNull(clone);
-        ArgumentNullException.ThrowIfNull(path);
         var resolved = PathResolution.Resolve(path);
         var root = PathResolution.Resolve(clone);
         IEnumerable<string> parts = PathResolution.IsUnder(resolved, root)
@@ -289,8 +286,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// <summary>The marker commit's message. The subject prefix is the contract.</summary>
     public static string Message(string repo, string name, string branch, string baseSha, string path, int? pr, DateTimeOffset at)
     {
-        ArgumentNullException.ThrowIfNull(branch);
-        ArgumentNullException.ThrowIfNull(baseSha);
         var where = branch.Length > 0 ? branch : $"detached@{Head(baseSha, 7)}";
         var lines = new List<string>
         {
@@ -325,7 +320,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// </summary>
     public static Porcelain ParseStatus(string porcelainZ)
     {
-        ArgumentNullException.ThrowIfNull(porcelainZ);
         var changed = new List<string>();
         var untracked = new List<string>();
         var fields = porcelainZ.Split('\0');
@@ -362,7 +356,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// </summary>
     public static bool IsRegenerable(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var normal = path.Replace('\\', '/');
         var parts = normal.Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
@@ -414,7 +407,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// </summary>
     public async Task<IReadOnlyList<string>> NestedReposAsync(string clone, string path, IEnumerable<string> tops)
     {
-        ArgumentNullException.ThrowIfNull(tops);
         var own = PathResolution.Resolve(path);
         var found = new List<string>();
         foreach (var tree in await Worktree.ListAsync(git, clone).ConfigureAwait(false))
@@ -467,7 +459,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// </summary>
     public async Task<DateTimeOffset?> LastActivityAsync(string worktree, ShelveStatus status)
     {
-        ArgumentNullException.ThrowIfNull(status);
         var gitDir = await _store.OutAsync(worktree, "rev-parse", "--absolute-git-dir").ConfigureAwait(false);
         var candidates = new List<string> { worktree };
         if (gitDir.Length > 0)
@@ -502,7 +493,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// <param name="ct">Stops before reading.</param>
     public Task<ShelvePlan> PlanAsync(ShelveTarget target, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(target);
         ct.ThrowIfCancellationRequested();
         return PlanAsync(target.Repo, target.Tree, target.User, target.Shelves, target.Prs, target.Options, target.Busy);
     }
@@ -524,10 +514,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         ShelveOptions options,
         Busy? busy = null)
     {
-        ArgumentNullException.ThrowIfNull(tree);
-        ArgumentNullException.ThrowIfNull(shelves);
-        ArgumentNullException.ThrowIfNull(prs);
-        ArgumentNullException.ThrowIfNull(options);
         var now = clock.GetUtcNow();
         var path = tree.Path;
         var name = ShelfName(clone, path);
@@ -763,7 +749,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// </summary>
     public async Task<string> DriftedAsync(ShelvePlan plan, string sha)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         var status = await ReadStatusAsync(plan.Path).ConfigureAwait(false);
         if (await MovedAsync(plan, status).ConfigureAwait(false) is { Length: > 0 } moved)
         {
@@ -789,8 +774,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// <summary>Writes the working tree as a tree object via a throwaway index; the worktree's own index is never touched.</summary>
     public async Task<ShelfStep> SnapshotTreeAsync(string path, IReadOnlyList<string> carryIgnored)
     {
-        ArgumentNullException.ThrowIfNull(carryIgnored);
-
         // The scratch index starts from HEAD, so `add -A` skips a file the real index tracks but .gitignore matches
         // (`git add -f .env`, never committed). Force-add those too.
         var tracked = await git.RunAsync(path, ["ls-files", "-z", "--cached", "--ignored", "--exclude-standard"]).ConfigureAwait(false);
@@ -840,7 +823,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// <summary>Creates the <c>TEMP-SHELVED:</c> commit on top of HEAD; the detail is its SHA, or why it failed.</summary>
     public async Task<ShelfStep> MarkerAsync(ShelvePlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         string tree;
         if (plan.Action == Snapshot)
         {
@@ -870,7 +852,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// <summary>The proof required before deleting anything: origin holds <paramref name="sha"/> at <paramref name="reference"/>.</summary>
     public async Task<bool> OnRemoteAsync(string clone, string reference, string sha)
     {
-        ArgumentNullException.ThrowIfNull(reference);
         var listed = await _store.RunAsync(clone, ["ls-remote", ShelfStore.Remote, reference]).ConfigureAwait(false);
         if (!listed.Ok || listed.Detail.Split('\t', 2)[0] != sha)
         {
@@ -945,7 +926,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// </summary>
     public async Task<bool> AbandonedPartWayAsync(ShelvePlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         var trees = await Worktree.ListAsync(git, plan.Clone).ConfigureAwait(false);
         if (!trees.Any(tree => tree.IsMain))
         {
@@ -959,7 +939,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// <summary>Carries out one plan. Refuses anything with <see cref="ShelvePlan.DecisionNeeded"/>.</summary>
     public async Task<ShelveResult> ApplyAsync(ShelvePlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         var result = await ApplyCoreAsync(plan).ConfigureAwait(false);
         plan.Result = result;
         return result;
@@ -1095,8 +1074,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     // tree, or empty when they differ.
     private async Task<ShelfStep> HeldAsync(ShelvePlan plan, string sha, ShelveStatus status)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(status);
         var parent = await _store.OutAsync(plan.Path, "rev-parse", "--verify", "-q", $"{sha}^").ConfigureAwait(false);
         if (parent != plan.Head)
         {

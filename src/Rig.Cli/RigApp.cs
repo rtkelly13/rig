@@ -70,7 +70,6 @@ internal sealed class RigApp(
     /// <summary>Runs one command line and returns its exit code, under a root span naming the command.</summary>
     public async Task<int> RunAsync(IReadOnlyList<string> args, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(args);
         using var activity = Source.StartActivity($"rig {CommandName(args)}".Trim());
         activity?.SetTag("cli.argv", args.ToArray());
         activity?.SetTag("cli.cwd", Environment.CurrentDirectory);

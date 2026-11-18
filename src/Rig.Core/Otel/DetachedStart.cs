@@ -52,7 +52,6 @@ public sealed class UnixDetachedStart(IProc proc) : IDetachedStart
         IReadOnlyDictionary<string, string>? environment = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(argv);
         ArgumentOutOfRangeException.ThrowIfZero(argv.Count);
         if (!File.Exists(argv[0]))
         {
@@ -88,7 +87,6 @@ public sealed class WindowsDetachedStart : IDetachedStart
         IReadOnlyDictionary<string, string>? environment = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(argv);
         ArgumentOutOfRangeException.ThrowIfZero(argv.Count);
         if (environment is { Count: > 0 })
         {
@@ -113,7 +111,6 @@ public static class WindowsCommandLine
     /// </summary>
     public static string Join(IEnumerable<string> argv)
     {
-        ArgumentNullException.ThrowIfNull(argv);
         var line = new StringBuilder();
         foreach (var arg in argv)
         {

@@ -93,8 +93,6 @@ public static class OrcaSync
     /// </summary>
     public static IReadOnlyList<SyncAction> SettingsManualActions(OrcaPolicy policy, OrcaSnapshot snapshot)
     {
-        ArgumentNullException.ThrowIfNull(policy);
-        ArgumentNullException.ThrowIfNull(snapshot);
         if (policy.AgentSleep is null || snapshot.Settings is null)
         {
             return [];
@@ -113,8 +111,6 @@ public static class OrcaSync
     public static async Task<IReadOnlyList<SyncAction>> SyncAgentLaunchAsync(
         OrcaPolicy policy, OrcaSnapshot snapshot, bool apply, IOrcaLive? live, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(policy);
-        ArgumentNullException.ThrowIfNull(snapshot);
         if (policy.AgentPermissions is not { } want || snapshot.LaunchArgs is not { } have)
         {
             return [];
@@ -161,12 +157,6 @@ public static class OrcaSync
         IReadOnlySet<string> retired,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(policy);
-        ArgumentNullException.ThrowIfNull(snapshot);
-        ArgumentNullException.ThrowIfNull(paths);
-        ArgumentNullException.ThrowIfNull(retired);
-        ArgumentNullException.ThrowIfNull(cli);
-        ArgumentNullException.ThrowIfNull(live);
         if (snapshot.Repos is null)
         {
             return [new("all", "error", "repos", "", "", false, "Orca repos could not be listed (run `orca open` first)")];

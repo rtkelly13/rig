@@ -8,9 +8,6 @@ public static class GitHubApiExtensions
     /// <summary>Creates a REST request with method <paramref name="method"/> and route <paramref name="route"/>.</summary>
     public static GitHubRestRequest Rest(this IGitHubApi api, string method, string route)
     {
-        ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(method);
-        ArgumentNullException.ThrowIfNull(route);
         return new GitHubRestRequest(api, method, route);
     }
 
@@ -37,25 +34,18 @@ public static class GitHubApiExtensions
     /// <summary>Creates a GraphQL request with query document <paramref name="query"/>.</summary>
     public static GitHubGraphQLRequest GraphQL(this IGitHubApi api, string query)
     {
-        ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(query);
         return new GitHubGraphQLRequest(api, query);
     }
 
     /// <summary>Creates a scoped repository client for <paramref name="repo"/>.</summary>
     public static GitHubRepoClient ForRepo(this IGitHubApi api, RepoSlug repo)
     {
-        ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(repo);
         return new GitHubRepoClient(api, repo);
     }
 
     /// <summary>Creates a scoped repository client for <paramref name="owner"/>/<paramref name="name"/>.</summary>
     public static GitHubRepoClient ForRepo(this IGitHubApi api, string owner, string name)
     {
-        ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(owner);
-        ArgumentNullException.ThrowIfNull(name);
         return new GitHubRepoClient(api, new RepoSlug(owner, name));
     }
 }

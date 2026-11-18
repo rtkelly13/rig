@@ -57,8 +57,6 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
     /// <summary>Each of <paramref name="systems"/>' folders against <paramref name="catalog"/>.</summary>
     public IReadOnlyList<SystemSkillsAudit> Audit(IReadOnlyList<Skill> catalog, IReadOnlyList<string> systems)
     {
-        ArgumentNullException.ThrowIfNull(catalog);
-        ArgumentNullException.ThrowIfNull(systems);
         var byName = catalog.ToDictionary(s => s.Name, StringComparer.Ordinal);
         var audits = new List<SystemSkillsAudit>();
         foreach (var system in systems)
@@ -128,8 +126,6 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
     /// </summary>
     public IReadOnlyList<SystemCount> Sync(IReadOnlyList<Skill> catalog, IReadOnlyList<string> systems, bool prune, bool dryRun)
     {
-        ArgumentNullException.ThrowIfNull(catalog);
-        ArgumentNullException.ThrowIfNull(systems);
         var active = catalog.Select(s => s.Name).ToHashSet(StringComparer.Ordinal);
         var counts = new List<SystemCount>();
         foreach (var system in systems)
@@ -164,7 +160,6 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
     /// <summary>Removes each system's links that lead nowhere; a dry run only counts them.</summary>
     public IReadOnlyList<SystemCount> PruneBroken(IReadOnlyList<string> systems, bool dryRun)
     {
-        ArgumentNullException.ThrowIfNull(systems);
         var counts = new List<SystemCount>();
         foreach (var system in systems)
         {
@@ -194,7 +189,6 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
     /// <exception cref="ArgumentException">A name is not a skill in <paramref name="catalog"/>.</exception>
     public IReadOnlyList<SystemCount> Activate(SkillCatalog catalog, IReadOnlyList<string> names, bool all, IReadOnlyList<string> systems, bool dryRun)
     {
-        ArgumentNullException.ThrowIfNull(catalog);
         var known = catalog.Everything().Select(s => s.Name).ToHashSet(StringComparer.Ordinal);
         var selected = all ? [.. known.Order(UnicodeText.CodePointOrder)] : Selected(names);
         var unknown = selected.Where(n => !known.Contains(n)).ToList();
@@ -218,8 +212,6 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
     /// </summary>
     public IReadOnlyList<SystemCount> Deactivate(SkillCatalog catalog, IReadOnlyList<string> names, bool all, IReadOnlyList<string> systems, bool dryRun)
     {
-        ArgumentNullException.ThrowIfNull(catalog);
-        ArgumentNullException.ThrowIfNull(systems);
         var activated = Activated();
         var selected = (all ? activated : Selected(names)).Where(activated.Contains).ToList();
         var folders = catalog.Everything().ToDictionary(s => s.Name, s => s.Folder, StringComparer.Ordinal);

@@ -84,7 +84,6 @@ internal sealed class ThreadsGitHub(IGitHubApi api)
     /// <summary>Every review thread on the PR, resolved or not, across all pages.</summary>
     public async Task<IReadOnlyList<ObservedThread>> FetchThreadsAsync(RepoSlug repo, int number, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(repo);
         var what = $"review threads of {repo}#{number}";
         var nodes = await PagesAsync(
             async cursor =>
@@ -101,7 +100,6 @@ internal sealed class ThreadsGitHub(IGitHubApi api)
     /// <summary>The PR's head branch and all of its commits.</summary>
     public async Task<PullRequestCommits> FetchPullRequestAsync(RepoSlug repo, int number, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(repo);
         var what = $"commits of {repo}#{number}";
         WirePullRequest? head = null;
         var nodes = await PagesAsync(

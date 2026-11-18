@@ -37,7 +37,6 @@ public static class QueueOrder
     /// <summary>Sorts one kind of item; callers place the PR queue before the issue queue.</summary>
     public static IOrderedEnumerable<QueueItem> Sort(IEnumerable<QueueItem> items)
     {
-        ArgumentNullException.ThrowIfNull(items);
         return items.OrderBy(item => item.Priority)
             .ThenBy(item => item.Readiness)
             .ThenBy(item => item.Lines)

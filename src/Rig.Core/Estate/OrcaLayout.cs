@@ -33,7 +33,6 @@ public sealed record Registration(string Id, string Name, string Path, string? S
     /// <summary>The registration Orca's <paramref name="project"/> describes.</summary>
     public static Registration Of(OrcaProject project)
     {
-        ArgumentNullException.ThrowIfNull(project);
         return new(
             project.Id,
             project.DisplayName is { Length: > 0 } shown ? shown : OrcaLayout.FileName(project.Path),
@@ -207,7 +206,6 @@ public static class OrcaLayout
     /// <exception cref="InvalidDataException">A file is malformed.</exception>
     public static IReadOnlyList<DeclaredProject> LoadDeclared(string config)
     {
-        ArgumentNullException.ThrowIfNull(config);
         var declared = new List<DeclaredProject>();
         foreach (var entry in Projects(config))
         {
@@ -250,8 +248,6 @@ public static class OrcaLayout
     /// <remarks>A top-level project has no group folder, so the first code-root folder holding a clone of that name wins, or the code root itself.</remarks>
     public static string ExpectedClone(DeclaredProject project, GroupTree groups, string codeRoot)
     {
-        ArgumentNullException.ThrowIfNull(project);
-        ArgumentNullException.ThrowIfNull(groups);
         var name = project.Slug.Split('/', 2)[^1];
         var top = (project.Group ?? string.Empty).Split('/', 2)[0];
         if (top.Length > 0)
@@ -276,7 +272,6 @@ public static class OrcaLayout
         IEnumerable<string>? gone = null,
         IEnumerable<string>? within = null)
     {
-        ArgumentNullException.ThrowIfNull(state);
         var groups = state.Groups;
         var removed = (gone ?? []).ToHashSet(StringComparer.Ordinal);
         var occupied = new HashSet<string>(StringComparer.Ordinal);
@@ -316,9 +311,6 @@ public static class OrcaLayout
         IReadOnlySet<string>? archived = null,
         IReadOnlySet<string>? skipped = null)
     {
-        ArgumentNullException.ThrowIfNull(declared);
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(isEstateOwner);
         archived ??= new HashSet<string>();
         skipped ??= new HashSet<string>();
         var bySlug = BySlug(state);
@@ -382,7 +374,6 @@ public static class OrcaLayout
     /// <summary>The findings about the projects named in <paramref name="only"/>, and any group they are declared in that Orca lacks.</summary>
     public static IReadOnlyList<LayoutFinding> Scoped(IEnumerable<LayoutFinding> findings, IEnumerable<DeclaredProject> declared, IReadOnlySet<string> only)
     {
-        ArgumentNullException.ThrowIfNull(only);
         var groups = declared.Where(p => only.Contains(p.Name) && !string.IsNullOrEmpty(p.Group)).Select(p => p.Group!).ToHashSet(StringComparer.Ordinal);
         return [.. findings.Where(f => only.Contains(f.Repo) || (f.Kind == MissingGroup && groups.Contains(f.Repo)))];
     }
@@ -408,9 +399,6 @@ public static class OrcaLayout
         IReadOnlySet<string>? only = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(declared);
-        ArgumentNullException.ThrowIfNull(inUse);
-        ArgumentNullException.ThrowIfNull(log);
         exists ??= Directory.Exists;
         archived ??= new HashSet<string>();
         skipped ??= new HashSet<string>();
@@ -504,7 +492,6 @@ public static class OrcaLayout
     /// <summary>Estate repos in the work Orca profile, and the groups that would be left empty without them.</summary>
     public static IReadOnlyList<LayoutFinding> AuditWork(LayoutSnapshot state, Func<string, bool> isEstateOwner)
     {
-        ArgumentNullException.ThrowIfNull(state);
         var (evicted, emptied) = WorkPlan(state, isEstateOwner);
         var findings = evicted.Select(r => new LayoutFinding(
             InWorkProfile,
@@ -529,7 +516,6 @@ public static class OrcaLayout
     /// <exception cref="OrcaUnavailableException">Orca could not be reached or refused a change.</exception>
     public static async Task ApplyWorkAsync(OrcaRuntime runtime, Func<string, bool> isEstateOwner, Action<string> log, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(log);
         var state = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
         var (evicted, emptied) = WorkPlan(state, isEstateOwner);
         foreach (var found in evicted)
@@ -601,7 +587,6 @@ public static class OrcaLayout
 
     private static (List<Registration> Evicted, IReadOnlyList<OrcaGroup> Emptied) WorkPlan(LayoutSnapshot state, Func<string, bool> isEstateOwner)
     {
-        ArgumentNullException.ThrowIfNull(isEstateOwner);
         var evicted = state.Registrations.Where(r => !string.IsNullOrEmpty(r.Slug) && isEstateOwner(r.Slug.Split('/', 2)[0])).ToList();
         var touched = evicted.SelectMany(r => state.Groups.Lineage(r.GroupId)).ToHashSet(StringComparer.Ordinal);
         return (evicted, EmptyGroups(state, gone: evicted.Select(r => r.Id), within: touched));
