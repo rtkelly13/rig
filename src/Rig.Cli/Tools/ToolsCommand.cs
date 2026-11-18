@@ -61,9 +61,18 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         };
         var ensurePort = PortOption();
         var ensureTimeout = TimeoutOption();
-        var ensure = new Command("ensure", "Start a service only when its port is not answering, then wait until it is.") { ensureTarget, ensurePort, ensureTimeout };
+        var ensureLauncher = LauncherOption();
+        var ensurePythonw = PythonwOption();
+        var ensure = new Command("ensure", "Start a service only when its port is not answering, then wait until it is.")
+        {
+            ensureTarget, ensurePort, ensureTimeout, ensureLauncher, ensurePythonw,
+        };
         ensure.SetAction((parsed, cancellationToken) => EnsureAsync(
-            parsed.GetRequiredValue(ensureTarget), parsed.GetValue(ensurePort), parsed.GetValue(ensureTimeout), cancellationToken));
+            parsed.GetRequiredValue(ensureTarget),
+            parsed.GetValue(ensurePort),
+            parsed.GetValue(ensureTimeout),
+            Launching(parsed.GetRequiredValue(ensureLauncher), parsed.GetValue(ensurePythonw)),
+            cancellationToken));
 
         var uninstallTarget = new Argument<string>("target")
         {
@@ -112,9 +121,18 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
 
         var ensurePort = PortOption();
         var ensureTimeout = TimeoutOption();
-        var ensure = new Command("ensure", "Start the web dashboard only when nothing answers, then wait (alias for `rig tools ensure web`).") { ensurePort, ensureTimeout };
+        var ensureLauncher = LauncherOption();
+        var ensurePythonw = PythonwOption();
+        var ensure = new Command("ensure", "Start the web dashboard only when nothing answers, then wait (alias for `rig tools ensure web`).")
+        {
+            ensurePort, ensureTimeout, ensureLauncher, ensurePythonw,
+        };
         ensure.SetAction((parsed, cancellationToken) => EnsureFixedAsync(
-            ServiceTarget.Web, parsed.GetValue(ensurePort), parsed.GetValue(ensureTimeout), cancellationToken));
+            ServiceTarget.Web,
+            parsed.GetValue(ensurePort),
+            parsed.GetValue(ensureTimeout),
+            Launching(parsed.GetRequiredValue(ensureLauncher), parsed.GetValue(ensurePythonw)),
+            cancellationToken));
 
         var uninstallPreview = PreviewOption();
         var uninstall = new Command("uninstall", "Unload and remove the web dashboard service (alias for `rig tools uninstall web`).") { uninstallPreview };
@@ -186,14 +204,14 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         return await InstallFixedAsync(target, preview, port, launching, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<int> EnsureAsync(string name, int? port, double timeout, CancellationToken cancellationToken)
+    private async Task<int> EnsureAsync(string name, int? port, double timeout, ServiceHost launching, CancellationToken cancellationToken)
     {
         if (Target(name) is not { } target)
         {
             return Unknown(name);
         }
 
-        return await EnsureFixedAsync(target, port, timeout, cancellationToken).ConfigureAwait(false);
+        return await EnsureFixedAsync(target, port, timeout, launching, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<int> UninstallAsync(string name, bool preview, CancellationToken cancellationToken)
@@ -221,12 +239,12 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
         }
     }
 
-    private async Task<int> EnsureFixedAsync(ServiceTarget target, int? port, double timeout, CancellationToken cancellationToken)
+    private async Task<int> EnsureFixedAsync(ServiceTarget target, int? port, double timeout, ServiceHost launching, CancellationToken cancellationToken)
     {
         var wait = TimeSpan.FromSeconds(timeout);
         try
         {
-            var answering = await new ServiceManager(services).EnsureAsync(target, port, wait, cancellationToken).ConfigureAwait(false);
+            var answering = await new ServiceManager(launching).EnsureAsync(target, port, wait, cancellationToken).ConfigureAwait(false);
             var effectivePort = target.Port(preview: false, port);
             if (!answering)
             {

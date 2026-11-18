@@ -348,6 +348,18 @@ public sealed class ToolsCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Windows_ensure_restarts_with_the_launcher_it_is_given()
+    {
+        var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
+
+        var exit = await Run(WebRoot(WindowsHost(proc)), "web", "ensure", "--launcher", "direct", "--timeout", "0");
+
+        Assert.Equal(["schtasks", "/Create", "/TN", "Rig\\Web Dashboard", "/XML"], proc.Requests[0].Argv.Take(5));
+        Assert.DoesNotContain("No pythonw found", _error.ToString(), StringComparison.Ordinal);
+        Assert.Equal(ToolsCommand.FailureExit, exit);
+    }
+
+    [Fact]
     public async Task Windows_install_uses_the_named_pythonw()
     {
         var proc = new FakeProc().Answer(new Ran(0, string.Empty, string.Empty), "schtasks");
