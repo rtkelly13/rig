@@ -398,7 +398,6 @@ internal static class Program
         return Path.GetFileNameWithoutExtension(process).Equals("dotnet", StringComparison.OrdinalIgnoreCase) && entry.Length > 0 ? [process, entry] : [process];
     }
 
-    // The registry as the checkout's `desktop-manager jobs` built it: this checkout's scripts and the per-user plan.
     // The work list's real sources: git over the estate, gh for pull requests, and Claude's own session files.
     private static WorkCollector WorkCollectorFor(Git git, IProc proc, string home)
     {
@@ -411,6 +410,7 @@ internal static class Program
             TimeProvider.System);
     }
 
+    // The jobs registry for this checkout: its scripts and the per-user plan.
     private static JobsHost JobsHostFor(string codeRoot, string checkout, string home, IProc proc)
     {
         var windows = OperatingSystem.IsWindows();

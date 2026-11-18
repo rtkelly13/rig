@@ -71,7 +71,7 @@ The rules that follow from this:
 
 Imports point down this stack and never up or sideways:
 
-1. **Composition roots**: `src/Rig.Cli/Program.cs` for `rig`, `desktop_manager/cli.py` for Python. These are the only modules that mount other
+1. **Composition roots**: `src/Rig.Cli/Program.cs` for `rig`; Python has no CLI of its own any more. These are the only modules that mount other
    packages' commands. `desktop_manager/web_upstream.py` is the web equivalent: features expose a `rig.web_routes.Route`
    and it hands them to `StudioServer(routes=...)`, so the server imports no feature to serve its JSON.
 2. **Features**: `rig.estate`, `rig.workspace`, `rig.repo_governance`, `rig.image_drift`,
@@ -146,8 +146,7 @@ Where rig guards an irreversible or shared outcome, no path bypasses the gate:
 - **Drive the public surface.** Tests run a command (or the plan function behind it) with fakes for its ports,
   then assert on the emitted plan or JSON, the files written, and the fake's final state.
 - **No patching.** Module-attribute monkeypatching is a sign that a port is missing; add the port instead.
-- **Adapter tests stay separate.** Each Win32/UIA adapter keeps its own tests, using the `as_windows` doubles
-  on Linux CI.
+- **Adapter tests stay separate.** Each Win32/UIA adapter keeps its own tests, against fakes on Linux CI.
 - **Pure logic gets table tests.** Planners, parsers and scorers are covered by small table-driven tests. They
   are cheap and need no fakes.
 - **Every test can fail.** A test that cannot fail, or that greps source text, is deleted.

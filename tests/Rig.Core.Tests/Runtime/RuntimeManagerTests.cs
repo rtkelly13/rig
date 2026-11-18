@@ -157,26 +157,6 @@ public sealed class RuntimeManagerTests : IDisposable
     }
 
     [Fact]
-    public void A_good_copy_with_a_plan_bundle_installs_when_desktop_manager_has_no_workspace_group()
-    {
-        var repo = NewRepo();
-        var sha = Commit(repo, new Dictionary<string, string> { ["desktop-manager/workspace-plan.bundle.json"] = "{}" });
-        var tools = new Tools(_system)
-        {
-            // The real `desktop-manager` keeps only its help, runtime and jobs; the plan
-            // check must go through the published `rig desktop workspace validate-plan` instead.
-            Fails = request => Path.GetFileName(request.Argv[0]).StartsWith("desktop-manager", StringComparison.Ordinal)
-                && request.Argv.Skip(1).Take(1).SequenceEqual(["workspace"]),
-        };
-        var manager = Manager(tools);
-
-        var result = manager.Install(repo, "HEAD", fetch: false);
-
-        Assert.True(result.Changed);
-        Assert.Equal(sha[..RuntimeManager.ShortShaLength], manager.ReadState().Current);
-    }
-
-    [Fact]
     public void Installing_the_current_commit_again_changes_nothing()
     {
         var repo = NewRepo();

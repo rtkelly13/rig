@@ -1,4 +1,4 @@
-# Machine jobs (`desktop-manager jobs`)
+# Machine jobs (`rig jobs`)
 
 Everything that keeps this machine aligned runs from one registry
 (`src/Rig.Core/Jobs/JobRegistry.cs`). Two scheduled tasks drive it, so there
@@ -17,8 +17,7 @@ rig jobs install                       # register the tasks (run from the runtim
 ```
 
 All `rig jobs` subcommands run in C# (`src/Rig.Cli/Jobs`, over `src/Rig.Core/Jobs`).
-Every `desktop-manager jobs` spelling dispatches the whole line to its C# owner, including help and
-unknown arguments. New Logon and Tick tasks start `rigw` directly. The old
+The `desktop-manager jobs` spelling is gone. New Logon and Tick tasks start `rigw` directly. The old
 `desktop_manager.jobs.scheduled` module delegates to the published `rigw` for task registrations
 that have not been refreshed; it no longer runs the Python coordinator.
 The C# runner preserves `state.json`, `last-<trigger>.json`, `runs.ndjson` and the `run.lock` byte.

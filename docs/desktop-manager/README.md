@@ -10,7 +10,7 @@ places it on the right monitor.
 rig desktop workspace wire-machine --workspace C:/code/workspace --personal-workspace C:/code/personal/rig
 rig desktop workspace validate-plan
 rig desktop workspace restore
-uv run desktop-manager jobs install
+rig jobs install
 ```
 
 `rig desktop workspace --help` lists every command and flag.

@@ -11,8 +11,9 @@ uv run rig runtime status             # current, previous, commits behind origin
 uv run rig runtime rollback           # back to the previous copy
 ```
 
-`desktop-manager runtime install|status|rollback` remains as a compatibility spelling that forwards
-the whole line to `rig runtime`.
+The `desktop-manager runtime` spelling is gone. Install with the C# from the commit you are installing,
+or a newer one: an older checkout's `rig runtime install` still checks for `desktop-manager --help` in the
+copy, and refuses any commit after its removal.
 
 ## Layout
 
@@ -45,7 +46,7 @@ Copies are plain directories, not git worktrees, so they never hold a branch and
    the commit already current does nothing.
 1. Extract the commit to `<sha12>.partial`, rename it to `<sha12>`, build its `.venv`
    and publish its `rig`.
-1. Check it runs: `desktop-manager --help`, `chrome-tabs --help`, `rig jobs run --help`, `rig jobs install --help`, importing the
+1. Check it runs: `rig chrome-tabs organise --help`, `rig jobs run --help`, `rig jobs install --help`, importing the
    scheduled entry points, and `workspace validate-plan` on the copy's plan.
    A failure leaves `current` where it was and removes the new copy.
 1. Write `installed.json`, repoint `current`, record the old copy as previous and
@@ -64,7 +65,7 @@ move the tasks without registering them again:
 
 ```bash
 "%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe" jobs install
-"%LOCALAPPDATA%\shared-utilities\runtime\current\.venv\Scripts\desktop-manager.exe" chrome-tabs install
+"%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe" chrome-tabs install
 ```
 
 `jobs install` registers the Logon, Tick and Display Guard tasks that run every

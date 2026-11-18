@@ -119,14 +119,11 @@ def cli_factories(tree, imports):
 def walk(command, path):
     if command.callback is not None:
         callback = command.callback
-        from rig.platforms import supported_platforms
-
-        platforms = supported_platforms(callback)
         yield {
             "Id": f"py:{path}|{callback_id(callback)}",
             "Path": path,
             "Owner": f"py:{callback_id(callback)}",
-            "Platforms": sorted(p.name.lower() for p in platforms) if platforms else ["linux", "macos", "windows"],
+            "Platforms": ["linux", "macos", "windows"],
             "Alias": thin_alias(callback),
         }
     if isinstance(command, click.Group):
@@ -208,7 +205,7 @@ def discover(root):
     if project["project"].get("gui-scripts") or project["project"].get("entry-points"):
         raise RuntimeError("Unsupported GUI/plugin entry points; add a runtime discovery adapter")
     for name, target in project["project"]["scripts"].items():
-        if target not in {"rig.csharp_cli:entry", "desktop_manager.cli:main"}:
+        if target != "rig.csharp_cli:entry":
             raise RuntimeError(f"Unsupported console entry point: {name}={target}; add a runtime discovery adapter")
         surfaces.append(f"script:{name}={target}")
         module_name, _, function = target.partition(":")

@@ -32,26 +32,20 @@ added upstream in rtkelly-labs/design-system, not hard-coded here.
 
 ## The C# front door
 
-`rig` is moving to C# (ADR 0022, #85). `src/Rig.Cli` is the front door. Every script in `[project.scripts]` except
-`desktop-manager` is `rig.csharp_cli:entry`, which runs `dotnet run --project src/Rig.Cli -- …`: `uv run rig gh …`
+`rig` is moving to C# (ADR 0022, #85). `src/Rig.Cli` is the front door. Every script in `[project.scripts]` is
+`rig.csharp_cli:entry`, which runs `dotnet run --project src/Rig.Cli -- …`: `uv run rig gh …`
 as typed, `uv run latex build` as `rig latex build`, and `uv run help` as `rig help`, the overview.
-`desktop-manager` alone is still Python (`desktop_manager.cli:main`), and it keeps only what has not
-moved: `jobs`, `chrome-tabs organise` and the compatibility spellings.
+The `desktop-manager` script is gone; its commands are `rig desktop`, `rig jobs`, `rig runtime` and
+`rig chrome-tabs`.
 
 The docs write commands two ways. `rig <command>` is the installed front door on PATH (the runtime
 copy's shim) and is the form for operating the estate. `dotnet run --project src/Rig.Cli -- <command>`
 runs this checkout's code, so it is the form for developing rig and for CI. The per-tool scripts
 (`uv run status`, `uv run workspace …`) still work while callers outside rig move over (#85 s29b).
 
-C# parses help, version, the agent launcher and every ported command itself. A command still written in Python has
-a row in `src/Rig.Cli/Forwarding/Forwarded.cs` naming the Python program that runs it (a `desktop-manager`
-command, or a module with a `__main__` block), and the whole line goes to it as
-`uv run --no-sync --project <rig checkout> <program> …` attached to the same console. A row never launches `rig`,
-which is C# itself. Prompts, colour, Ctrl+C and exit codes behave as before.
-
-Python runs from `RIG_HOME` when it is set, else `<code root>/personal/rig`. Porting a command means registering it in
-C# and deleting its row from `Forwarded.Commands`. `ForwardedContractTests` checks every script names a command C#
-owns and nothing forwards back to `rig`; `tests/test_csharp_cli.py` checks every row's program answers `--help`.
+C# parses every command itself; nothing is forwarded to Python. The Python modules C# still starts (the
+web upstream, the job runner's helpers, mdformat) run from `RIG_HOME` when it is set, else
+`<code root>/personal/rig`.
 
 The [command ownership gate](csharp-port/ownership.md) inspects actual C#/Python registrations and forwarding,
 then checks `config/command-ownership.json`. Update the ledger and retire the superseded implementation in the
@@ -106,7 +100,7 @@ CI runs the suite on Ubuntu (`test`, with coverage and Windows portability lint 
 - On pull requests whose branch or title contains `windows` or `win32` (or with label `ci:windows`; adding the label to an open PR starts a run)
 - On manual `workflow_dispatch`
 
-Pure Windows unit tests, path semantics, and mock wrappers execute on Linux CI via `as_windows` test doubles; only tests actually requiring live win32 APIs or native Windows subsystem behavior are deferred to `test-windows`. Anything that drives a real desktop, window or UI Automation tree must carry `integration`, or it will run on the Windows runner.
+Pure Windows unit tests, path semantics, and mock wrappers execute on Linux CI against fakes; only tests actually requiring live win32 APIs or native Windows subsystem behavior are deferred to `test-windows`. Anything that drives a real desktop, window or UI Automation tree must carry `integration`, or it will run on the Windows runner.
 
 Test isolation guards (autouse, so new tests get them for free):
 

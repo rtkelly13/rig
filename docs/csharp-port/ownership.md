@@ -35,8 +35,6 @@ The inspector combines:
   C# root discovery includes target-typed `new()` and type aliases through Roslyn's semantic model.
   Node `bin`/package scripts and standalone Node scripts, tracked executable modes, and checked-in
   command/shell/PowerShell/LaunchAgent launchers. Launcher contents are fingerprinted.
-- Each actual `Forwarded.Commands` route expanded into the inspected Python leaves. Probe arguments go back
-  through **`Forwarded.Owns` itself**. A migrated action that still dispatches to Python fails discovery.
 - Both composed job registries, including the optional workspace jobs, using inert fixture paths. They are
   callers, not independent implementations. No job is run. The MCP server's actual C# tool attributes and the Python web
   child's mounted route callables are inspected without serving requests. Legacy web callables are fingerprinted
@@ -57,13 +55,13 @@ cannot conceal an independent implementation.
 
 | Capability/surface | Canonical implementation and callers | Source state / remaining condition |
 | --- | --- | --- |
-| C# registrations (`cs:` rows) | `rig`, plus 13 Python console-script compatibility spellings | Switched in source; shared tests/CI evidence does not establish native acceptance or deployment |
+| C# registrations (`cs:` rows) | `rig`, plus 12 Python console-script compatibility spellings | Switched in source; shared tests/CI evidence does not establish native acceptance or deployment |
 | `desktop workspace` | C# `rig desktop workspace` (restore, audit, status, validation, features, export, wire, align, name-desktops, guard and the per-entry commands) | CLI and native adapters switched in #243; the Python Typer workspace group and its `cli_align`/`cli_apps`/`cli_machine`/`align`/`display_guard_windows` modules retired. `align` is C#. Windows desktop acceptance remains the `WIN-DESKTOP` procedure |
 | `runtime`, `work` | Inspected Python leaves in the ledger | Not ported unless separately recorded; keep their exact caller and removal condition visible during each cutover |
 | `triage refresh/verify` | C# `Rig.Cli.ReviewQueue.TriageCommand`, `Rig.Web.TriageRoutes` and `Rig.Core.ReviewQueue.AgentSignals` | CLI, web inbox and agent-signal consumers switched; Python CLI, six platform fallback routes, `rig.triage.web` and `rig.triage.agents` retired. The remaining `src/rig/triage` models, store, service, GitHub and Markdown modules and their tests are retired too; the browser tests seed the C# inbox through `tests/triage_seed.py`, and no Python triage module has a production caller |
 | `c4` | C# `Rig.Cli.C4.C4Command` over `Rig.Core.C4` | CLI, checks, composition, derivation and the Roslyn call-graph reader switched; the Python CLI, derive scanner and 21 registrations retired. The `rig.c4_okf` web viewer and the bundle reader it mounts stay explicitly owned until that route is switched |
-| `jobs` | C# status/last/log/run/install/uninstall | All legacy spellings dispatch whole-line to C#; #209 owns runtime progression and Windows acceptance |
-| `runtime` | C# status/install/rollback; Python `runtime.py` still serves paths and state to scheduled Python callers | Legacy spellings dispatch whole-line to C#; `runtime_cli` execution and `rig_shim` retired. `runtime.py` stays for jobs path and state consumers; #227 owns native acceptance |
+| `jobs` | C# status/last/log/run/install/uninstall | The `desktop-manager jobs` spellings are retired; #209 owns runtime progression and Windows acceptance |
+| `runtime` | C# status/install/rollback; Python `runtime.py` still serves paths and state to scheduled Python callers | The `desktop-manager runtime` spellings, `runtime_cli`, `rig_shim` and the Python install path are retired. `runtime.py` stays for jobs path and state consumers; #227 owns native acceptance |
 | `web`, `tools` | C# public host, C# MCP server (`/api/mcp` and stdio), and C# service/database lifecycle (`rig tools`); the legacy `rig web` service and database subcommands are aliases | Triage, estate, telemetry and database-backup routes are C# (`Rig.Web.TriageRoutes`, `EstateOpsRoutes`, `TelemetryRoutes`, `HostRoutes`); `Python service_installer` and `rig.db` retired with their tests; the jobs coordinator, C4 and the estate graph stay in the Python child (`desktop_manager.web_upstream`) |
 | `web mcp` | C# `Rig.Web.Mcp.RigOpsTools` over `Rig.Core`, served by `rig web mcp` (stdio) and `app.MapMcp("/api/mcp")` | `desktop_manager.web_mcp` and its Python CLI command are retired; the eleven tools are inspected from their `[McpServerTool]` attributes |
 | `chrome-tabs` | C# only: traces everywhere; native `list`, `rank`, `prune`, `group` and `organise` on Windows and macOS; `saved-groups`, `install` and `uninstall` on Windows | macOS `group`, `list`, `prune` and `rank` registrations retired in #226 with the native `ChromeMac` driver. `organise`, its scheduled entry and its trace writer moved to C# in #277; the Python `desktop_manager.chrome` package is deleted and tombstoned |
@@ -74,11 +72,9 @@ cannot conceal an independent implementation.
 | Web/MCP and jobs | `web-child:`, `mcp:`, `python-job:`, `cs-job:` rows | The `mcp:` tool set is now C#; `desktop_manager.web_mcp`, the triage, estate and telemetry web children, and the jobs coordinator are retired. No `web-child:` rows remain, and job callers remain Python where named until their slices switch them |
 | Brand pipeline | `tools/image-drift` | Intentional Python exception, its own project/gates (ADR 0022) |
 
-There are 14 current console scripts, rather than the issue's original 15. The ledger follows actual registrations.
-`desktop-manager help` describes the desktop CLI, so it is a separate capability from `rig help`.
+There are 13 current console scripts, rather than the issue's original 15, and all of them start the C# CLI. The ledger
+follows actual registrations. `desktop-manager`, and its `help`, are retired.
 `rig desktop workspace` controls desktop plans; `rig workspace` manages development configuration.
-The legacy `workspace align` spelling maps to the `align` capability, and `ensure-desktops`/`sync-desktops`
-map to `name-desktops`, so those alternate spellings cannot conceal an independent ported implementation.
 
 ## Refusal rules
 
@@ -97,8 +93,8 @@ obsolete Python registrations in the same PR rather than add macOS baseline allo
 The jobs progression (#85, #30 G5) adds `rigw`, a windowless entry point into the same production CLI.
 Its discovery adapter verifies that the launcher's only member passes the original argument array directly to
 `Cli.Program.Main`; extra behavior or rewritten arguments fail discovery. Its executable project and entry point
-are registered separately without introducing another command owner. `jobs uninstall` now has one C# owner;
-the Python spelling delegates help and unknown options unchanged through `desktop_manager.jobs.forward`.
+are registered separately without introducing another command owner. `jobs uninstall` now has one C# owner,
+and its Python spelling is retired.
 The old Python callback and its three fallback routes are tombstoned. Installer/task XML now run in C#; Logon and Tick target `rigw` directly. The legacy scheduled
 module delegates to that published launcher, while Display Guard and Python web consumers retain
 their existing implementations. `WIN-JOBS` acceptance and rollout remain pending separate evidence.
@@ -210,8 +206,7 @@ Organise orchestration core validation on macOS, 2026-11-16: `dotnet build rig.s
 passed with zero warnings and errors. `OrganiseRunnerTests` passed 23/23 over the shared fakes; the
 Chrome suites passed 792/796 (4 platform skips) in Core and 63/63 in the CLI. The full solution run
 passed 5,626 of 5,656 with 30 skips and zero failures. The ownership gate against `origin/main` passed with
-398 inspected surfaces, zero pre-existing overlaps and zero violations. `dotnet format
---verify-no-changes` was clean, and `uv run status` passed every check except the expected dirty
+398 inspected surfaces, zero pre-existing overlaps and zero violations. `dotnet format --verify-no-changes` was clean, and `uv run status` passed every check except the expected dirty
 worktree. The Python `test_chrome_organise.py` oracle passed 19/19, so the surface is unchanged; the
 orchestration core is `implemented`, not switched.
 
@@ -235,8 +230,7 @@ evidence only, recorded under `WIN-NONINTERACTIVE`. These procedures remain pend
 recorded. Do not close #85 on this PR.
 
 **#217 acceptance/caller gaps.** Removing the seven losing Windows Chrome registrations is a source-ownership
-change only. No native `WIN-CHROME` run is recorded from this Mac, so `rig chrome-tabs
-group|list|prune|rank|saved-groups|install|uninstall` is now the sole Windows path while the real UI
+change only. No native `WIN-CHROME` run is recorded from this Mac, so `rig chrome-tabs group|list|prune|rank|saved-groups|install|uninstall` is now the sole Windows path while the real UI
 effects, focus restoration and cleanup remain to be accepted. Any caller still spelling
 `desktop-manager chrome-tabs ...` on Windows must migrate to the `rig` spelling; this PR updates the
 repository's own callers and the ledger, not installed runtimes, tasks or other machines. The `WIN-CHROME`
