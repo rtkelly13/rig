@@ -391,7 +391,7 @@ internal sealed class ShelveCommand(
         var rows = new List<ShelvedRow>();
         foreach (var clone in chosen)
         {
-            rows.AddRange(await RowsAsync(clone, prune, apply, cancellationToken).ConfigureAwait(false));
+            rows = [.. rows, .. await RowsAsync(clone, prune, apply, cancellationToken).ConfigureAwait(false)];
         }
 
         var code = rows.Any(row => row.Pruned == false) ? 1 : 0; // a drop that was asked for and failed

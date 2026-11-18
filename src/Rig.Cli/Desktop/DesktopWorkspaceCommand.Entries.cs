@@ -484,9 +484,9 @@ internal sealed partial class DesktopWorkspaceCommand
                 continue;
             }
 
-            entries.AddRange(item.Launch
+            entries = [.. entries, .. item.Launch
                 .Where(entry => wantedName is null || UnicodeText.CaseFold(entry.Name) == wantedName)
-                .Select(entry => new EntryLocation(index + 1, item, entry)));
+                .Select(entry => new EntryLocation(index + 1, item, entry))];
         }
 
         return entries;

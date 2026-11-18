@@ -277,15 +277,15 @@ internal sealed partial class AgentLauncher(IProc proc, AgentHost host, TextWrit
 
                 if (!HasOption(rest, "--model"))
                 {
-                    command.AddRange(["--model", string.IsNullOrEmpty(settings.ClaudeModel) ? "opus" : settings.ClaudeModel]);
+                    command = [.. command, "--model", string.IsNullOrEmpty(settings.ClaudeModel) ? "opus" : settings.ClaudeModel];
                 }
 
                 break;
             case "agywsl":
-                command.AddRange(["-d", "Ubuntu", "--cd", WslPath(workingDirectory), "agy"]);
+                command = [.. command, "-d", "Ubuntu", "--cd", WslPath(workingDirectory), "agy"];
                 if (!HasOption(rest, "--mode"))
                 {
-                    command.AddRange(["--mode", "auto"]);
+                    command = [.. command, "--mode", "auto"];
                 }
 
                 if (addDanger)

@@ -157,7 +157,7 @@ public sealed class TrimCache : IDisposable
                 foreach (var clone in clones())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    found.AddRange(await trim.ScanAsync(clone).ConfigureAwait(false));
+                    found = [.. found, .. await trim.ScanAsync(clone).ConfigureAwait(false)];
                 }
 
                 return [.. found.OrderByDescending(item => item.Size.Freeable)];

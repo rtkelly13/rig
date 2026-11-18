@@ -468,9 +468,9 @@ internal sealed partial class DesktopWorkspaceCommand
                 .Where(entry => entry.Feature is not null && !plan.Features.ContainsKey(entry.Feature))
                 .Select(entry => $"{desktop.Name}/{entry.Name}"))
             .ToList();
-        unowned.AddRange(plan.Desktops
+        unowned = [.. unowned, .. plan.Desktops
             .Where(desktop => desktop.Feature is not null && !plan.Features.ContainsKey(desktop.Feature))
-            .Select(desktop => $"{desktop.Name} (whole desktop)"));
+            .Select(desktop => $"{desktop.Name} (whole desktop)")];
         if (unowned.Count > 0)
         {
             await host.Output.WriteLineAsync("\nReferencing undeclared features (treated as off):").ConfigureAwait(false);

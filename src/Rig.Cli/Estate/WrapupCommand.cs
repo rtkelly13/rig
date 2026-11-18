@@ -426,25 +426,25 @@ internal sealed partial class WrapupCommand(EstateHost host, Git git, IProc proc
     internal static IReadOnlyList<string> FollowerArgs(Args args, string templateFile)
     {
         List<string> argv = [args.Personal ? "--personal" : "--work"];
-        argv.AddRange(args.Repos.SelectMany(r => new[] { "--repo", r }));
+        argv = [.. argv, .. args.Repos.SelectMany(r => new[] { "--repo", r })];
         if (args.All)
         {
             argv.Add("--all");
         }
 
-        argv.AddRange(args.Worktrees.SelectMany(w => new[] { "--worktree", w }));
+        argv = [.. argv, .. args.Worktrees.SelectMany(w => new[] { "--worktree", w })];
         if (args.Children)
         {
             argv.Add("--children");
         }
 
-        argv.AddRange(["--idle", args.Idle, "--max", args.Max.ToString(CultureInfo.InvariantCulture), "--wait", args.Wait]);
+        argv = [.. argv, "--idle", args.Idle, "--max", args.Max.ToString(CultureInfo.InvariantCulture), "--wait", args.Wait];
         if (args.IncludeSettled)
         {
             argv.Add("--include-settled");
         }
 
-        argv.AddRange(["--template", Path.GetFullPath(templateFile), "--apply"]);
+        argv = [.. argv, "--template", Path.GetFullPath(templateFile), "--apply"];
         return argv;
     }
 

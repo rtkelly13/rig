@@ -112,7 +112,7 @@ internal sealed partial class GovernanceCommand
         var issues = new List<IssueItem>();
         foreach (var repo in repos)
         {
-            issues.AddRange(await triage.IssuesAsync(repo, label, cancellationToken).ConfigureAwait(false));
+            issues = [.. issues, .. await triage.IssuesAsync(repo, label, cancellationToken).ConfigureAwait(false)];
         }
 
         var dashboard = Triage.Dashboard(issues, time.GetUtcNow());
@@ -149,7 +149,7 @@ internal sealed partial class GovernanceCommand
         foreach (var repo in repos)
         {
             var required = policies.RequiredChecks(repo) is { Count: > 0 } registered ? registered : Triage.LegacyRequiredChecks;
-            prs.AddRange(await triage.PullRequestsAsync(repo, required, cancellationToken).ConfigureAwait(false));
+            prs = [.. prs, .. await triage.PullRequestsAsync(repo, required, cancellationToken).ConfigureAwait(false)];
         }
 
         var dashboard = Triage.Dashboard(prs, time.GetUtcNow());
@@ -263,7 +263,7 @@ internal sealed partial class GovernanceCommand
 
         if (!string.IsNullOrEmpty(scope.Org) && found.Count == 0)
         {
-            found.AddRange(await repos.DiscoverOrgReposAsync(scope.Org, host.PersonalDir, cancellationToken).ConfigureAwait(false));
+            found = [.. found, .. await repos.DiscoverOrgReposAsync(scope.Org, host.PersonalDir, cancellationToken).ConfigureAwait(false)];
         }
 
         return found;

@@ -607,7 +607,7 @@ internal sealed class EstateCommand(
         if (exposure.LocalOnlyCommits > 0)
         {
             lines.Add($"  {exposure.LocalOnlyCommits} commit(s) on no remote");
-            lines.AddRange(exposure.Branches.Take(Shown).Select(branch => $"      cd {exposure.Repo} && git push -u origin {branch}"));
+            lines = [.. lines, .. exposure.Branches.Take(Shown).Select(branch => $"      cd {exposure.Repo} && git push -u origin {branch}")];
             if (exposure.Branches.Count > Shown)
             {
                 lines.Add($"      … and {exposure.Branches.Count - Shown} more branches");

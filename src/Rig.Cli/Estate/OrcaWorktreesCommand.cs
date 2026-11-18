@@ -146,7 +146,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             try
             {
                 var found = await finished.ReviewAsync(runtime, name, host.WorkingDirectory, nowMs, args.IdleDays, scopes[i], cancellationToken).ConfigureAwait(false);
-                rows.AddRange(args.Apply ? await finished.ApplyAsync(runtime, found, cancellationToken).ConfigureAwait(false) : found);
+                rows = [.. rows, .. args.Apply ? await finished.ApplyAsync(runtime, found, cancellationToken).ConfigureAwait(false) : found];
             }
             catch (OrcaUnavailableException e)
             {

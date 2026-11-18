@@ -115,7 +115,7 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
 
             var state = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
             findings = [.. OrcaLayout.Audit(declared, state, root, isEstateOwner, archived: archived, skipped: skipped)];
-            findings.AddRange(carried.Where(c => !findings.Contains(c)).ToList());
+            findings = [.. findings, .. carried.Where(c => !findings.Contains(c))];
             if (only is not null)
             {
                 findings = [.. OrcaLayout.Scoped(findings, declared, only)];
@@ -134,7 +134,7 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
 
         if (args.Repos.Length == 0 && workDir is not null && !PathResolution.Same(PathResolution.Resolve(workDir), PathResolution.Resolve(estateDir)))
         {
-            findings.AddRange(await WorkProfileAsync(workDir, args.Apply, isEstateOwner, log, cancellationToken).ConfigureAwait(false));
+            findings = [.. findings, .. await WorkProfileAsync(workDir, args.Apply, isEstateOwner, log, cancellationToken).ConfigureAwait(false)];
         }
 
         if (args.Json)

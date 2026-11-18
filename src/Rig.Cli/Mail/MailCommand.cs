@@ -112,9 +112,9 @@ internal sealed class MailCommand(MailHost host, TextWriter output, TextWriter e
                     names.Add($"label:{acts.Label}");
                 }
 
-                names.AddRange(new[] { ("archive", acts.Archive), ("read", acts.MarkRead), ("star", acts.Star), ("trash", acts.Trash) }
+                names = [.. names, .. new[] { ("archive", acts.Archive), ("read", acts.MarkRead), ("star", acts.Star), ("trash", acts.Trash) }
                     .Where(flag => flag.Item2)
-                    .Select(flag => flag.Item1));
+                    .Select(flag => flag.Item1)];
                 if (acts.Important is { } important)
                 {
                     names.Add(important ? "important" : "not-important");
