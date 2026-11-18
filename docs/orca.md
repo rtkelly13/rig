@@ -104,7 +104,7 @@ scripts:
     set -e
     mkdir -p temp
     [ -e TODO.md ] || printf '# TODO: %s\n\n- [ ] Local tasks and notes (gitignored)\n' "$(git branch --show-current)" > TODO.md
-    uv sync && pnpm install
+    pnpm install
 ```
 
 Each managed repo's setup starts with `set -e`, so the first failure fails the setup,
