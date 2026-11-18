@@ -3,6 +3,7 @@ using System.Formats.Tar;
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
+using Rig.Core.Files;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Storage;
@@ -335,11 +336,18 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     {
         if (backup is not null && !Path.Exists(link) && Directory.Exists(backup))
         {
-            try { Directory.Move(backup, link); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            _ = BestEffort.Io(() => Directory.Move(backup, link));
         }
         else if (old is not null && !Path.Exists(link))
         {
-            try { MakeLink(link, old); } catch (RuntimeInstallException) { } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            try
+            {
+                _ = BestEffort.Io(() => MakeLink(link, old));
+            }
+            catch (RuntimeInstallException)
+            {
+                // The caller rethrows the install failure; a link that cannot be restored must not replace it.
+            }
         }
     }
 
@@ -348,7 +356,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     {
         if (current is not null && Directory.Exists(Path.Join(root, current)))
         {
-            try { PointCurrent(Path.Join(root, current)); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            _ = BestEffort.Io(() => PointCurrent(Path.Join(root, current)));
         }
     }
 

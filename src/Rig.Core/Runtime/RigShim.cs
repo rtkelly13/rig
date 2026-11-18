@@ -1,4 +1,5 @@
 using System.Text;
+using Rig.Core.Files;
 
 namespace Rig.Core.Runtime;
 
@@ -92,7 +93,7 @@ public static class RigShim
         {
             if (File.Exists(temp))
             {
-                try { File.Delete(temp); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+                _ = BestEffort.Io(() => File.Delete(temp));
             }
         }
     }
