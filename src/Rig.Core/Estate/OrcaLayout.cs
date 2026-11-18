@@ -321,14 +321,15 @@ public static class OrcaLayout
         ArgumentNullException.ThrowIfNull(isEstateOwner);
         archived ??= new HashSet<string>();
         skipped ??= new HashSet<string>();
-        var bySlug = BySlug(state);
+        var lookup = new Lookup(state, declared, codeRoot);
+        var bySlug = lookup.BySlug;
         var run = new AuditRun(state.Groups, codeRoot, exists ?? Directory.Exists);
         var known = new HashSet<string>(StringComparer.Ordinal);
         foreach (var project in declared)
         {
             var slug = project.Slug.ToLowerInvariant();
             _ = known.Add(slug);
-            var found = bySlug.GetValueOrDefault(slug);
+            var found = lookup.Find(project);
             if (skipped.Contains(project.Name))
             {
                 run.Skipped(project, found);
@@ -343,7 +344,7 @@ public static class OrcaLayout
             }
         }
 
-        foreach (var (slug, found) in bySlug.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        foreach (var (slug, found) in bySlug.Where(pair => !lookup.MatchedByPath(pair.Value)).OrderBy(pair => pair.Key, StringComparer.Ordinal))
         {
             if (!known.Contains(slug) && archived.Contains(slug))
             {
@@ -433,8 +434,11 @@ public static class OrcaLayout
 
             if (finding.Kind == Unregistered)
             {
-                _ = await runtime.AddProjectAsync(Native(finding.Path), cancellationToken).ConfigureAwait(false);
-                log($"registered {finding.Repo}");
+                var added = Registration.Of(await runtime.AddProjectAsync(Native(finding.Path), cancellationToken).ConfigureAwait(false));
+                var expected = declared.FirstOrDefault(p => p.Name == finding.Repo)?.Slug.ToLowerInvariant();
+                log(added.Slug is { } remote && expected is not null && remote != expected
+                    ? $"registered {finding.Repo} (Orca knows it as {remote}, so it is matched by path)"
+                    : $"registered {finding.Repo}");
             }
             else if (finding.Kind == Archived && byPath.GetValueOrDefault(finding.Path) is { } found)
             {
@@ -469,11 +473,14 @@ public static class OrcaLayout
             groups = await EnsureGroupAsync(runtime, groups, group, log, cancellationToken).ConfigureAwait(false);
         }
 
-        var bySlug = BySlug(state);
-        var placed = scope.Where(p => Live(p, archived) && p.Group is not null && bySlug.ContainsKey(p.Slug.ToLowerInvariant()));
-        foreach (var project in placed.OrderBy(p => p.Group is { Length: 0 }))
+        var lookup = new Lookup(state, declared, codeRoot);
+        var placed = scope
+            .Where(p => Live(p, archived) && p.Group is not null)
+            .Select(p => (Project: p, Found: lookup.Find(p)))
+            .Where(pair => pair.Found is not null)
+            .Select(pair => (pair.Project, Found: pair.Found!));
+        foreach (var (project, found) in placed.OrderBy(pair => pair.Project.Group is { Length: 0 }).ToList())
         {
-            var found = bySlug[project.Slug.ToLowerInvariant()];
             var target = project.Group ?? string.Empty;
             if (!exists(found.Path) || (groups.PathOf(found.GroupId) ?? string.Empty) == target)
             {
@@ -578,6 +585,43 @@ public static class OrcaLayout
         }
 
         return bySlug;
+    }
+
+    /// <summary>
+    /// A declared project's registration: by its remote, else by its expected clone. A fork's canonical remote is its
+    /// upstream (<c>aloneguid/parquet-dotnet</c> for <c>rtkelly-labs/parquet-dotnet</c>), so only its path matches.
+    /// </summary>
+    private sealed class Lookup(LayoutSnapshot state, IEnumerable<DeclaredProject> declared, string codeRoot)
+    {
+        private static readonly StringComparer PathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
+        private readonly HashSet<string> _declaredSlugs = declared.Select(p => p.Slug.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
+
+        private readonly HashSet<string> _byPathIds = new(StringComparer.Ordinal);
+
+        public Dictionary<string, Registration> BySlug { get; } = OrcaLayout.BySlug(state);
+
+        /// <summary>Whether a registration was matched by path, so its own slug says nothing about the estate.</summary>
+        public bool MatchedByPath(Registration registration) => _byPathIds.Contains(registration.Id);
+
+        public Registration? Find(DeclaredProject project)
+        {
+            if (BySlug.GetValueOrDefault(project.Slug.ToLowerInvariant()) is { } found)
+            {
+                return found;
+            }
+
+            // Never take a registration another declared project owns by remote.
+            var clone = Posix(ExpectedClone(project, state.Groups, codeRoot));
+            var byPath = state.Registrations.FirstOrDefault(r =>
+                PathComparer.Equals(Posix(r.Path), clone) && !(r.Slug is not null && _declaredSlugs.Contains(r.Slug)));
+            if (byPath is not null)
+            {
+                _ = _byPathIds.Add(byPath.Id);
+            }
+
+            return byPath;
+        }
     }
 
     private static List<DeclaredProject> Unskipped(IEnumerable<DeclaredProject> projects, IReadOnlySet<string> skipped) =>

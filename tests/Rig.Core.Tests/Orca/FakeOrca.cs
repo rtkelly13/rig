@@ -35,6 +35,9 @@ public sealed class FakeOrca : IOrcaExchange
     /// <summary><c>repo.list</c>.</summary>
     public List<JsonObject> Repos { get; } = [];
 
+    /// <summary>The owner <c>repo.add</c> reports for a new registration; a fork reports its upstream's.</summary>
+    public string AddedOwner { get; set; } = "rtkelly-labs";
+
     /// <summary><c>projectGroup.list</c>.</summary>
     public List<JsonObject> Groups { get; } = [];
 
@@ -146,7 +149,7 @@ public sealed class FakeOrca : IOrcaExchange
                 {
                     var path = (string)parameters["path"]!;
                     var name = Path.GetFileName(path.TrimEnd('/', '\\'));
-                    var repo = Project($"r-{name}", path, name, owner: "rtkelly-labs");
+                    var repo = Project($"r-{name}", path, name, owner: AddedOwner);
                     Repos.Add(repo);
                     return new() { ["repo"] = repo.DeepClone() };
                 }
