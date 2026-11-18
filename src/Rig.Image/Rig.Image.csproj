@@ -12,6 +12,9 @@
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../Rig.Image.Simplifier/Rig.Image.Simplifier.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Frozen from image_drift's labs_builder and diamond_parquet_builder by tools/image-drift/oracle/dump_oracle.py. -->
     <EmbeddedResource Include="feature-regions.json" LogicalName="Rig.Image.feature-regions.json" />
   </ItemGroup>
