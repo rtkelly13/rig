@@ -95,10 +95,10 @@ public sealed class ImageCommandTests : IDisposable
         Assert.True(json.RootElement.GetProperty("passed").GetBoolean());
         Assert.False(json.RootElement.GetProperty("verdictsEvaluated").GetBoolean());
         Assert.Equal("Chromium", json.RootElement.GetProperty("authoritative").GetString());
-        Assert.Equal(18, json.RootElement.GetProperty("files").GetArrayLength());
+        Assert.Equal(16, json.RootElement.GetProperty("files").GetArrayLength());
         Assert.Equal(1.0, json.RootElement.GetProperty("thresholds").GetProperty("meanAbsDifference").GetDouble());
         var master = json.RootElement.GetProperty("files")[0];
-        Assert.Equal("rtkelly-labs.master.500", master.GetProperty("id").GetString());
+        Assert.Equal("rtkelly-labs.master.2000", master.GetProperty("id").GetString());
         Assert.Equal(JsonValueKind.Object, master.GetProperty("metrics").ValueKind);
         Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("files")[1].GetProperty("metrics").ValueKind);
     }
