@@ -5,7 +5,7 @@ using Rig.Core.Tests.Policy;
 
 namespace Rig.Cli.Tests.Policy;
 
-/// <summary><c>rig policy</c>'s output and exit codes; ported from the Python <c>rig.policy.cli</c>. Homes are always temp folders.</summary>
+/// <summary><c>rig policy</c>'s output and exit codes. Homes are always temp folders.</summary>
 public sealed class PolicyCommandTests : IDisposable
 {
     private readonly TempDir _dir = new();

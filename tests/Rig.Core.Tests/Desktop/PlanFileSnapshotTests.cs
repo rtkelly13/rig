@@ -20,12 +20,12 @@ public sealed class PlanFileSnapshotTests
 
     [Theory]
     [MemberData(nameof(Plans))]
-    public void A_plan_file_writes_back_as_python_writes_it(string plan) =>
+    public void A_plan_file_writes_back_as_recorded(string plan) =>
         Assert.Equal(Snapshot(plan), PlanFiles.Format(LoadPlan(plan).ToJson()));
 
     [Theory]
     [MemberData(nameof(Desktops))]
-    public void A_desktop_file_writes_back_as_python_writes_it(string desktop)
+    public void A_desktop_file_writes_back_as_recorded(string desktop)
     {
         var path = Path.Join(Repo, "desktop-manager", "bundles", desktop + ".json");
 
@@ -54,7 +54,7 @@ public sealed class PlanFileSnapshotTests
     }
 
     [Fact]
-    public void A_plan_using_every_field_in_lax_spellings_writes_back_as_python_writes_it() =>
+    public void A_plan_using_every_field_in_lax_spellings_writes_back_as_recorded() =>
         Assert.Equal(Snapshot("full-plan"), PlanFiles.Format(FullPlan().ToJson()));
 
     [Fact]

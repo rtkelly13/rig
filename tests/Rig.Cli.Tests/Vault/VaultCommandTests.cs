@@ -8,7 +8,7 @@ using Rig.Core.Tests.Fakes;
 namespace Rig.Cli.Tests.Vault;
 
 /// <summary>
-/// <c>rig vault</c> through its command line, ported from the Python <c>tests/obsidian/test_graph_*.py</c> scenarios. Each
+/// <c>rig vault</c> through its command line. Each
 /// runs against a throwaway PARA vault named by <c>VAULT_PATH</c>; the home is a temp folder, so the desktop app's orphan
 /// list is never asked for.
 /// </summary>
@@ -179,9 +179,9 @@ public sealed class VaultCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task Lint_prints_every_kind_of_finding_as_the_python_did_and_still_exits_0()
+    public async Task Lint_prints_every_kind_of_finding_as_recorded_and_still_exits_0()
     {
-        // Recorded from `uv run vault graph lint` (Python, COLUMNS=200) on this vault before the Python was deleted.
+        // Recorded from `uv run vault graph lint` (COLUMNS=200) on this vault before the old implementation was deleted.
         Note("Resources/No Type.md", "# No Type\n\nplain body\n");
         Resource("Resources/One.md", "Same One", "https://example.com/dup");
         Resource("Resources/Two.md", "Same Two", "https://example.com/dup");
@@ -323,7 +323,7 @@ public sealed class VaultCommandTests : IDisposable
 
         Assert.StartsWith("Vault Health by Folder\nFolder ", Output, StringComparison.Ordinal);
         Assert.Matches(@"\nProjects +1  Healthy\n", Output);
-        Assert.DoesNotContain("Areas", Output, StringComparison.Ordinal); // empty folders are left out, as in the Python
+        Assert.DoesNotContain("Areas", Output, StringComparison.Ordinal); // empty folders are left out
     }
 
     [Theory]
@@ -333,7 +333,7 @@ public sealed class VaultCommandTests : IDisposable
     [InlineData(51, "Dense")]
     [InlineData(100, "Dense")]
     [InlineData(101, "Overcrowded")]
-    public void Density_bands_match_the_python(int count, string status)
+    public void Density_bands_match_the_recording(int count, string status)
     {
         Assert.Equal(status, VaultCommand.Density(count));
     }

@@ -3,7 +3,7 @@ using Rig.Core.Governance;
 
 namespace Rig.Core.Tests.Governance;
 
-/// <summary><see cref="CheckNames"/>: the lexicon pinned to cases generated from the Python it was ported from, and drift over temp repos.</summary>
+/// <summary><see cref="CheckNames"/>: the lexicon pinned to recorded cases, and drift over temp repos.</summary>
 public sealed class CheckNamesTests : IDisposable
 {
     private readonly TempDir _root = new();
@@ -62,7 +62,7 @@ public sealed class CheckNamesTests : IDisposable
     [InlineData("deps!", "deps", "not snake_case — separators/punctuation '!' | not in the preferred lexicon — did you mean 'deps'?")]
     [InlineData("migrate db", "migrate", "not snake_case — separators/punctuation ' ' | not in the preferred lexicon — did you mean 'migrate'?")]
     [InlineData("\"q\"", null, "not snake_case — separators/punctuation '\"'")]
-    public void Names_lint_and_suggest_as_python_does(string name, string? suggestion, string warnings)
+    public void Names_lint_and_suggest_as_recorded(string name, string? suggestion, string warnings)
     {
         Assert.Equal(suggestion, CheckNames.SuggestPreferredName(name));
         Assert.Equal(warnings, string.Join(" | ", CheckNames.LintCheckName(name)));

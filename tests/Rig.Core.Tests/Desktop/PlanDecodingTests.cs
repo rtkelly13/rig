@@ -4,8 +4,7 @@ using Rig.Core.Desktop;
 namespace Rig.Core.Tests.Desktop;
 
 /// <summary>
-/// Hand-edited plan values read the way the Python reader's lax (pydantic) decoding reads them. Each expectation was
-/// taken from running the Python model on the same input.
+/// Hand-edited plan values read through the lax decoding the plan files were recorded with. Each expectation is a recorded result for the same input.
 /// </summary>
 public sealed class PlanDecodingTests
 {
@@ -64,13 +63,13 @@ public sealed class PlanDecodingTests
     [InlineData("true", "True")]
     [InlineData("1e20", "1E+20")]
     [InlineData("100000000000000000000", "100000000000000000000")]
-    public void A_number_or_boolean_where_text_belongs_reads_as_python_prints_it(string json, string expected) =>
+    public void A_number_or_boolean_where_text_belongs_reads_as_recorded(string json, string expected) =>
         Assert.Equal(expected, Entry($$"""{"name": "n", "path": {{json}}}""").Path);
 
     [Theory]
     [InlineData("""{"name": "n", "path": false}""", "False")]
     [InlineData("""{"name": "n", "delay_ms": false}""", "0")]
-    public void False_reads_as_python_prints_it(string json, string expected)
+    public void False_reads_as_recorded(string json, string expected)
     {
         var entry = Entry(json);
 
@@ -187,7 +186,7 @@ public sealed class PlanDecodingTests
     }
 
     [Fact]
-    public void Rect_edges_and_centres_floor_like_python()
+    public void Rect_edges_and_centres_floor()
     {
         var rect = new Rect(-10, 5, 7, 9);
 
@@ -197,7 +196,7 @@ public sealed class PlanDecodingTests
     private static LaunchEntry Entry(string json) =>
         PlanFiles.Parse($$"""{"desktops": [{"name": "d", "launch": [{{json}}]}]}""").Desktops[0].Launch[0];
 
-    // Python's json.dumps without indent: ", " and ": " separators.
+    // The recorded writer's separators, no indent: ", " and ": " separators.
     private static string Compact(JsonNode node) => node switch
     {
         JsonObject map => "{" + string.Join(", ", map.Select(item => $"\"{item.Key}\": {Compact(item.Value!)}")) + "}",

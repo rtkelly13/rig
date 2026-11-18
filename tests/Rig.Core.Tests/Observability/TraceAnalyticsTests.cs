@@ -270,7 +270,7 @@ public sealed class TraceAnalyticsTests : IDisposable
     [Fact]
     public void Historical_python_and_csharp_spans_normalise_to_the_same_facts()
     {
-        // rig.tracing (Python) writes process.exit_code; the C# root span (#215) writes process.exit.code. Both are
+        // Historical spans write process.exit_code; the C# root span (#215) writes process.exit.code. Both are
         // read the same way, so a report can mix the two languages' files.
         TraceFixtures.Write(
             Root,

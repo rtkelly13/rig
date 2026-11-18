@@ -11,7 +11,7 @@ public sealed class GeometryTests
     private static readonly DisplayArea LeftScreen = new(1, new Rect(0, 0, 300, 120));
     private static readonly DisplayArea RightScreen = new(2, new Rect(300, 0, 400, 200));
 
-    /// <summary>A placement in each mode and the share of the screen Python gives it.</summary>
+    /// <summary>A placement in each mode and the share of the screen it takes.</summary>
     public static TheoryData<PlacementSpec, UnitRect> UnitSlots => new()
     {
         { Spec(new("full")), U(0, 1, 0, 1, 1, 1, 1, 1) },
@@ -32,7 +32,7 @@ public sealed class GeometryTests
         { Spec(new("halves", 1, "vertical"), new("halves", 2, "vertical")), U(1, 4, 0, 1, 1, 4, 1, 1) },
     };
 
-    /// <summary>A placement on the right screen and the pixels Python gives it.</summary>
+    /// <summary>A placement on the right screen and the pixels it takes.</summary>
     public static TheoryData<PlacementSpec, Rect> PixelSlots => new()
     {
         { Spec(new("full"), screen: 2), new(300, 0, 400, 200) },
@@ -44,7 +44,7 @@ public sealed class GeometryTests
         { Spec(new("quarters", 4)), new(300, 100, 200, 100) },
     };
 
-    /// <summary>A placement with a slot its mode does not have, and Python's error.</summary>
+    /// <summary>A placement with a slot its mode does not have, and the error.</summary>
     public static TheoryData<PlacementLayout, string> BadSlots => new()
     {
         { new("thirds", 4), "Horizontal fraction index out of range: 4/3" },
@@ -83,7 +83,7 @@ public sealed class GeometryTests
     }
 
     [Fact]
-    public void A_parent_narrower_than_one_pixel_a_slot_gives_the_last_slot_a_negative_width_as_python_does() =>
+    public void A_parent_narrower_than_one_pixel_a_slot_gives_the_last_slot_a_negative_width_as_recorded() =>
         Assert.Equal(-1, Geometry.LayoutRect(new(0, 0, 1, 1), new("thirds", 3)).Width);
 
     [Fact]

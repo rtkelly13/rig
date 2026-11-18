@@ -3,7 +3,7 @@ using Rig.Core.Tests;
 namespace Rig.Web.Tests.Fakes;
 
 /// <summary>
-/// The temp tree the Python <c>StudioServer</c> answered from when <c>Recorded/estate.json</c> was recorded: a registry,
+/// The temp tree the recorded server answered from when <c>Recorded/estate.json</c> was recorded: a registry,
 /// a retired list, Orca badges and an assets folder exercising every logo rank and the banner patterns.
 /// </summary>
 internal sealed class EstateTree : IDisposable

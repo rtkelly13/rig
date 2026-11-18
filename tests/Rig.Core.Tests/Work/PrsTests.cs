@@ -30,7 +30,7 @@ public sealed class PrsTests : IDisposable
     }
 
     [Fact]
-    public void BuildQuery_escapes_non_ascii_as_python_json_dumps_does()
+    public void BuildQuery_escapes_non_ascii_as_recorded()
     {
         Assert.Contains("headRefName: \"caf\\u00e9\"", WorkPrSource.BuildQuery("o/n", ["café"]), StringComparison.Ordinal);
         Assert.Contains("repository(owner: \"o\", name: \"\")", WorkPrSource.BuildQuery("o", ["a"]), StringComparison.Ordinal);
@@ -234,7 +234,7 @@ public sealed class PrsTests : IDisposable
     }
 
     [Fact]
-    public async Task Fetch_writes_the_python_cache_shape_and_reads_it_back()
+    public async Task Fetch_writes_the_recorded_cache_shape_and_reads_it_back()
     {
         var cache = Path.Join(_temp.Path, "prs.json");
         var api = new FakePrApi(_ => new Ran(0, Response(new Dictionary<string, string>

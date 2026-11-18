@@ -5,7 +5,7 @@ namespace Rig.Core.Tests.Desktop;
 /// <summary>
 /// Choosing an open window to reuse for a launch entry. Replaces <c>tests/desktop_manager/test_reusable_window_matching.py</c>
 /// (apart from the Win32 move test, which belongs to the s08–s12 port) and the describe_launch half of
-/// <c>test_restore_pure_helpers.py</c>. Identity scores were checked against the Python with <c>PureWindowsPath</c>, as it runs on Windows.
+/// <c>test_restore_pure_helpers.py</c>. Identity scores are recorded results using <c>PureWindowsPath</c> semantics, as on Windows.
 /// </summary>
 public sealed class WindowReuseTests
 {
@@ -206,7 +206,7 @@ public sealed class WindowReuseTests
         Assert.True(with > without);
     }
 
-    /// <summary>An entry, the window's title and process, and the identity score Python gives them.</summary>
+    /// <summary>An entry, the window's title and process, and the identity score.</summary>
     public static TheoryData<string, LaunchEntry, string, string?, int> Identities => new()
     {
         { "meet hint", Chrome("Meet", "https://meet.google.com/abc"), "Meet - abc", "chrome.exe", 270 },
@@ -237,7 +237,7 @@ public sealed class WindowReuseTests
 
     [Theory]
     [MemberData(nameof(Identities))]
-    public void Identity_scores_match_python(string label, LaunchEntry entry, string title, string? process, int score)
+    public void Identity_scores_match_recorded(string label, LaunchEntry entry, string title, string? process, int score)
     {
         Assert.NotEmpty(label);
         Assert.Equal(score, WindowReuse.WindowIdentityMatchScore(entry, title, process, NoSubs));
@@ -283,7 +283,7 @@ public sealed class WindowReuseTests
         Assert.Null(WindowReuse.ExpectedProcessName(new("x"), NoSubs));
     }
 
-    /// <summary>An entry, the placeholders, and how Python describes launching it.</summary>
+    /// <summary>An entry, the placeholders, and how launching it is described.</summary>
     public static TheoryData<LaunchEntry, string> Launches => new()
     {
         { new("Chrome") { Path = @"C:\chrome.exe" }, @"app `Chrome` -> C:\chrome.exe" },
@@ -302,7 +302,7 @@ public sealed class WindowReuseTests
 
     [Theory]
     [MemberData(nameof(Launches))]
-    public void A_launch_is_described_as_python_does(LaunchEntry entry, string description) =>
+    public void A_launch_is_described_as_recorded(LaunchEntry entry, string description) =>
         Assert.Equal(description, WindowReuse.DescribeLaunch(entry, Subs));
 
     private static LaunchEntry Chrome(string name, string url) => new(name) { Path = ChromePath, Args = [url] };

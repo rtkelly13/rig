@@ -234,7 +234,7 @@ public sealed class DecisionsTests : IDisposable
     }
 
     [Fact]
-    public void The_feed_round_trips_as_python_writes_it()
+    public void The_feed_round_trips_as_recorded()
     {
         var feed = Path.Join(_temp.Path, "jobs", "decisions.json");
         var item = new Decision("no-pr-worktree", "app", @"C:\code\app\.worktrees\x+y", "why", 12, "do it", "git status");

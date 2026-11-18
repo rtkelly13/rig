@@ -54,7 +54,7 @@ public sealed class GitignoreEntryTests
     [InlineData("\f")]
     [InlineData("\u2028")]
     [InlineData("\x85")]
-    public void Lines_split_where_python_split_them(string separator) =>
+    public void Lines_split_as_recorded(string separator) =>
         Assert.Empty(All("a/", "b/").MissingLines($"a/{separator}b/"));
 
     [Fact]

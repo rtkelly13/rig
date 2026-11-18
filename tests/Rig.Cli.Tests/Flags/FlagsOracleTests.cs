@@ -9,10 +9,7 @@ using Rig.Core.Tests;
 namespace Rig.Cli.Tests.Flags;
 
 /// <summary>
-/// <c>rig flags</c> replayed against <c>flags-oracle.json</c>, recorded from Python's <c>rig.flags.cli</c> on a fresh
-/// <c>rig.db</c>: the same declared flags, the same table and the same messages and exit codes, step by step. The
-/// Python test <c>test_the_csharp_oracle_records_this_registry</c> holds Python's own registry to the same file while
-/// <c>desktop_manager</c> still reads it.
+/// <c>rig flags</c> replayed against <c>flags-oracle.json</c>, a frozen recorded baseline whose generator is gone: the declared flags, the table, the messages and the exit codes, step by step.
 /// </summary>
 public sealed partial class FlagsOracleTests : IDisposable
 {
@@ -43,7 +40,7 @@ public sealed partial class FlagsOracleTests : IDisposable
     }
 
     [Fact]
-    public void The_table_is_the_one_python_migrates()
+    public void The_table_is_the_recorded_one()
     {
         new FlagStore(Db).States();
 
@@ -51,7 +48,7 @@ public sealed partial class FlagsOracleTests : IDisposable
     }
 
     [Fact]
-    public async Task Every_recorded_step_prints_and_exits_as_python_did()
+    public async Task Every_recorded_step_prints_and_exits_as_recorded()
     {
         foreach (var step in Oracle.GetProperty("steps").EnumerateArray())
         {

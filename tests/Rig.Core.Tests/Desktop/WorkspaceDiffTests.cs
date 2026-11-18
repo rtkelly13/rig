@@ -137,7 +137,7 @@ public sealed class WorkspaceDiffTests
     }
 
     [Fact]
-    public void Of_reports_every_kind_of_drift_as_the_python_does()
+    public void Of_reports_every_kind_of_drift_as_recorded()
     {
         var (plan, actual) = MixedDrift();
 

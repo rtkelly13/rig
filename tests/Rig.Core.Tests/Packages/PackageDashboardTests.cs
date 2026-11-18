@@ -193,7 +193,7 @@ public sealed class PackageDashboardTests : IDisposable
     }
 
     [Fact]
-    public void A_row_serialises_with_the_python_field_names()
+    public void A_row_serialises_with_the_recorded_field_names()
     {
         var row = new PackageStatusRow("P", "Pkg", "nuget", "m", "1.0.0", "v1.0.0", "1.0.0", true, false, false, false, [], "synced");
 

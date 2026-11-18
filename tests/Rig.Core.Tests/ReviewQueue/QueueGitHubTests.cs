@@ -12,7 +12,7 @@ public sealed class QueueGitHubTests : IDisposable
     public void Dispose() => _temp.Dispose();
 
     [Fact]
-    public async Task Selected_snapshots_match_python_including_unknown_partial_and_native_stack_metadata()
+    public async Task Selected_snapshots_match_recorded_including_unknown_partial_and_native_stack_metadata()
     {
         using var oracle = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Join(AppContext.BaseDirectory, "ReviewQueue", "queue-github-oracle.json"), TestContext.Current.CancellationToken));
         foreach (var example in oracle.RootElement.EnumerateArray())

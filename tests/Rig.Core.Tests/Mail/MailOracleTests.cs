@@ -4,7 +4,7 @@ using Rig.Core.Mail;
 namespace Rig.Core.Tests.Mail;
 
 /// <summary>
-/// Holds <c>Rig.Core.Mail</c> to <c>rig.mail</c>. <c>mail-oracle.json</c> records, for two placeholder rules files, every
+/// A frozen recorded baseline whose generator is gone; it holds <c>Rig.Core.Mail</c> to the recording. <c>mail-oracle.json</c> records, for two placeholder rules files, every
 /// rule's match and sweep query, the filter XML (stamped 2026-11-04T09:30:05Z), the sweep plan and API filters JSON, the
 /// whole Apps Script byte for byte, and the coverage of a saved sample page, plus the search form of a few label names.
 /// </summary>
@@ -23,7 +23,7 @@ public sealed class MailOracleTests : IDisposable
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public void Queries_match_the_python(int index)
+    public void Queries_match_the_recording(int index)
     {
         var (ruleset, expected) = Case(index);
 
@@ -40,7 +40,7 @@ public sealed class MailOracleTests : IDisposable
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public void Exports_match_the_python(int index)
+    public void Exports_match_the_recording(int index)
     {
         var (ruleset, expected) = Case(index);
 
@@ -52,7 +52,7 @@ public sealed class MailOracleTests : IDisposable
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public void Coverage_matches_the_python(int index)
+    public void Coverage_matches_the_recording(int index)
     {
         var (ruleset, expected) = Case(index);
         var page = temp.File("page.json");
@@ -64,7 +64,7 @@ public sealed class MailOracleTests : IDisposable
     }
 
     [Fact]
-    public void Search_labels_match_the_python()
+    public void Search_labels_match_the_recording()
     {
         foreach (var (name, label) in Oracle["labels"]!.AsObject())
         {

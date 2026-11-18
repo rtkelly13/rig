@@ -7,7 +7,7 @@ namespace Rig.Core.Tests.WorkItems;
 public sealed class SerializationTests
 {
     [Fact]
-    public void The_report_matches_the_python_implementation_byte_for_byte()
+    public void The_report_matches_the_recorded_report_byte_for_byte()
     {
         var report = WorkFixtures.Report();
 
@@ -15,7 +15,7 @@ public sealed class SerializationTests
 
         Assert.True(
             JsonNode.DeepEquals(WorkFixtures.FixtureJson(), rendered),
-            $"C# output differs from the Python fixture:\n{WorkJson.Render(report, report.Items)}");
+            $"C# output differs from the recorded report:\n{WorkJson.Render(report, report.Items)}");
         Assert.Equal(NormaliseFixture(File.ReadAllText(FixturePath())), NormaliseFixture(WorkJson.Render(report, report.Items)));
     }
 
@@ -67,7 +67,7 @@ public sealed class SerializationTests
     }
 
     [Fact]
-    public void IsoTime_matches_python_datetime_isoformat()
+    public void IsoTime_matches_recorded_datetime_isoformat()
     {
         Assert.Equal("2026-10-10T12:00:00+00:00", IsoTime.Format(WorkFixtures.Now));
         Assert.Equal(

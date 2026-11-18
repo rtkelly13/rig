@@ -128,7 +128,7 @@ public sealed class InstalledAppsTests : IDisposable
     }
 
     [Fact]
-    public void A_file_time_rounds_to_the_microsecond_as_python_does()
+    public void A_file_time_rounds_to_the_microsecond_as_recorded()
     {
         var stamp = DateTime.UnixEpoch.AddTicks((1_700_000_000L * TimeSpan.TicksPerSecond) + 5_657_755);
 

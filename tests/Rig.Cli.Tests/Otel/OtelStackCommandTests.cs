@@ -11,7 +11,7 @@ using Rig.Core.Tests.Otel;
 namespace Rig.Cli.Tests.Otel;
 
 /// <summary>
-/// <c>rig otel-stack</c> through its command line, ported from the Python <c>tests/test_otel_stack.py</c>. Every path is
+/// <c>rig otel-stack</c> through its command line. Every path is
 /// a temp folder, binaries are seeded as already verified so nothing downloads, and launchctl, ps, lsof, the ports,
 /// ClickHouse and the OTLP sender are all fakes: nothing here reaches the live stack.
 /// </summary>

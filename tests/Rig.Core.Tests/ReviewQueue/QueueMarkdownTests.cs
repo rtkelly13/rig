@@ -8,7 +8,7 @@ public sealed class QueueMarkdownTests
     private static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
 
     [Fact]
-    public void Projection_matches_recorded_python_bytes()
+    public void Projection_matches_recorded_bytes()
     {
         using var oracle = JsonDocument.Parse(File.ReadAllText(Path.Join(AppContext.BaseDirectory, "ReviewQueue", "queue-markdown-oracle.json")));
         foreach (var example in oracle.RootElement.EnumerateArray())

@@ -2,7 +2,7 @@ using Rig.Core.Policy;
 
 namespace Rig.Core.Tests.Policy;
 
-/// <summary>Ported from the audit cases of the Python <c>tests/test_policy.py</c>.</summary>
+/// <summary>Project manifest audit.</summary>
 public sealed class ProjectAuditTests : IDisposable
 {
     private readonly TempDir _dir = new();

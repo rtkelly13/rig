@@ -4,8 +4,8 @@ using Rig.Core.Text;
 namespace Rig.Core.Tests.Text;
 
 /// <summary>
-/// Python's <c>repr()</c> of a string, so messages that quoted a value with <c>!r</c> read the same from C#. The
-/// expected values are what Python prints for each input.
+/// The recorded <c>repr()</c> of a string, so messages that quoted a value with <c>!r</c> read the same from C#. The
+/// expected values are what was recorded for each input.
 /// </summary>
 public sealed class QuotedTextTests
 {
@@ -19,10 +19,10 @@ public sealed class QuotedTextTests
     [InlineData("bell\a del\x7f", "'bell\\x07 del\\x7f'")]
     [InlineData("👍 é", "'👍 é'")]
     [InlineData("", "''")]
-    public void Matches_python_repr(string text, string expected) => Assert.Equal(expected, QuotedText.Str(text));
+    public void Matches_the_recorded_repr(string text, string expected) => Assert.Equal(expected, QuotedText.Str(text));
 
     [Fact]
-    public void Quote_selection_follows_python()
+    public void Quote_selection_follows_the_recorded_repr()
     {
         // A single quote alone switches to double quotes; both kinds stay inside single quotes.
         Assert.Equal("'plain'", QuotedText.Str("plain"));
@@ -32,7 +32,7 @@ public sealed class QuotedTextTests
     }
 
     [Fact]
-    public void List_is_python_repr_of_a_list_of_strings() =>
+    public void List_is_the_recorded_repr_of_a_list_of_strings() =>
         Assert.Equal("['a', \"b'c\"]", QuotedText.List(["a", "b'c"]));
 
     [Theory]
@@ -40,7 +40,7 @@ public sealed class QuotedTextTests
     [InlineData(true, "True")]
     [InlineData(false, "False")]
     [InlineData(7, "7")]
-    public void Value_is_python_str(object? value, string expected) => Assert.Equal(expected, QuotedText.Value(value));
+    public void Value_is_the_recorded_str(object? value, string expected) => Assert.Equal(expected, QuotedText.Value(value));
 
     [Fact]
     public void Json_is_compact_with_unicode_kept()

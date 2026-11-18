@@ -60,7 +60,7 @@ public sealed class ChromeProfilesTests : IDisposable
     }
 
     [Fact]
-    public void A_name_with_a_lone_surrogate_reads_as_python_reads_it()
+    public void A_name_with_a_lone_surrogate_reads_as_recorded()
     {
         Write("""{"profile": {"info_cache": {"Default": {"name": "a\ud83db"}}}}""");
         Assert.Equal("a\ud83db", ChromeProfiles.Read(_home)["Default"].Name);

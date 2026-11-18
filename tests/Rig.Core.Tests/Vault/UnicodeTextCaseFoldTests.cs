@@ -3,7 +3,7 @@ using Rig.Core.Vault;
 
 namespace Rig.Core.Tests.Vault;
 
-/// <summary><see cref="UnicodeText.CaseFold"/> agrees with Python's <c>str.casefold</c> on the folds that differ from lower-casing.</summary>
+/// <summary><see cref="UnicodeText.CaseFold"/> agrees with the recorded <c>str.casefold</c> on the folds that differ from lower-casing.</summary>
 public sealed class UnicodeTextCaseFoldTests
 {
     [Theory]
@@ -27,7 +27,7 @@ public sealed class UnicodeTextCaseFoldTests
     [InlineData("ﬆ", "st")]
     [InlineData("ﬀ", "ff")]
     [InlineData("Plain ASCII", "plain ascii")]
-    public void Text_folds_as_python_does(string text, string folded) => Assert.Equal(folded, UnicodeText.CaseFold(text));
+    public void Text_folds_as_recorded(string text, string folded) => Assert.Equal(folded, UnicodeText.CaseFold(text));
 
     [Fact]
     public void Repr_quotes_and_escapes()
@@ -74,7 +74,7 @@ public sealed class UnicodeTextCaseFoldTests
     }
 
     [Fact]
-    public void SplitLines_splits_on_python_line_boundaries()
+    public void SplitLines_splits_on_the_recorded_line_boundaries()
     {
         var text = "line1\r\nline2\nline3\vline4\fline5\x1cline6\x1dline7\x1eline8\x85line9\u2028line10\u2029line11\n";
         var lines = UnicodeText.SplitLines(text);

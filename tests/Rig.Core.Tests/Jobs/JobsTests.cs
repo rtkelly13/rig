@@ -20,7 +20,7 @@ public sealed class JobsTests : IDisposable
     [InlineData("2026-11-12T093015+0130", "2026-11-12T09:30:15.0000000+01:30")]
     [InlineData("2026-11-12T09:30:15.1234567-05:00", "2026-11-12T09:30:15.1234560-05:00")]
     [InlineData("2026-11-12T09:30:15,5+00", "2026-11-12T09:30:15.5000000+00:00")]
-    public void An_iso_time_reads_as_python_s_fromisoformat_reads_it(string text, string expected)
+    public void An_iso_time_reads_as_recorded(string text, string expected)
     {
         var parsed = IsoStamp.Parse(text);
 

@@ -264,7 +264,7 @@ public sealed class C4BundleTests : IDisposable
     [Fact]
     public void Check_words_a_malformed_frontmatter_as_the_YAML_library_does()
     {
-        // The Python server quoted PyYAML's multi-line parser error, mark and all; the C# message is YamlDotNet's one line.
+        // The recorded server quoted PyYAML's multi-line parser error, mark and all; the C# message is YamlDotNet's one line.
         var root = Write(_temp.Folder("yaml"), new Dictionary<string, string> { ["bad2.md"] = "---\ntype: [unclosed\n---\nbody\n" });
         var finding = Assert.Single(C4Composer.Check(OkfBundle.Load(root)), found => found.Code == "okf-frontmatter");
         Assert.Equal("frontmatter is not valid YAML: While parsing a flow sequence, did not find expected ',' or ']'.", finding.Message);
@@ -273,7 +273,7 @@ public sealed class C4BundleTests : IDisposable
     [Fact]
     public void Concepts_load_folder_by_folder_not_by_whole_path_string()
     {
-        // `-` sorts below `/`, so a whole-string sort would list a-b before a/b. The Python server's Path order did not.
+        // `-` sorts below `/`, so a whole-string sort would list a-b before a/b. The recorded server's Path order did not.
         var root = Write(_temp.Folder("order"), new Dictionary<string, string>
         {
             ["a-b.md"] = "---\ntype: note\n---\n",

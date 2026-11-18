@@ -10,7 +10,7 @@ internal sealed class FixedClock(DateTimeOffset now) : TimeProvider
     public override DateTimeOffset GetUtcNow() => now;
 }
 
-/// <summary>The Python implementation's exact report, rebuilt as C# values.</summary>
+/// <summary>The recorded exact report, rebuilt as C# values.</summary>
 internal static class WorkFixtures
 {
     public static readonly DateTimeOffset Now = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);

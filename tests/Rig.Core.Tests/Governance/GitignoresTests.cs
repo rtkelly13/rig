@@ -12,7 +12,7 @@ namespace Rig.Core.Tests.Governance;
 /// </summary>
 public sealed class GitignoresTests : IDisposable
 {
-    // Temp and TODO by default, Python's bytecode by language, and no bespoke files unless a test asks for them.
+    // Temp and TODO by default, bytecode by language, and no bespoke files unless a test asks for them.
     private const string Policy = """
         {
           "defaults": {

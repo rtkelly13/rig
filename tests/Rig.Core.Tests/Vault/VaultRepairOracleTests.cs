@@ -6,11 +6,11 @@ using Rig.Core.Vault;
 namespace Rig.Core.Tests.Vault;
 
 /// <summary>
-/// Holds <see cref="VaultRepair"/> to <c>rig.obsidian.lint_manager.VaultLinter</c>'s repairs. <c>writers-oracle.json</c>
+/// A frozen recorded baseline whose generator is gone; it holds <see cref="VaultRepair"/> to the recorded repairs. <c>writers-oracle.json</c>
 /// records, for lint's synthetic vaults and one built for the writers, every repair run dry and applied on a fresh copy:
-/// the lines printed, the errors logged (cut at the first <c>": "</c>) and every file afterwards. The Python visited notes in
-/// directory order, so lines and logs are compared as multisets. A file is compared by what python-frontmatter reads
-/// from it, its keys' kinds and its stripped body, since the Python re-dumped the frontmatter the C# edits in place.
+/// the lines printed, the errors logged (cut at the first <c>": "</c>) and every file afterwards. The recording visited notes in
+/// directory order, so lines and logs are compared as multisets. A file is compared by what a frontmatter reader reads
+/// from it, its keys' kinds and its stripped body, since the recording re-dumped the frontmatter the C# edits in place.
 /// </summary>
 public sealed partial class VaultRepairOracleTests
 {
@@ -18,7 +18,7 @@ public sealed partial class VaultRepairOracleTests
     private const string FixedCreated = "2023-11-14 22:13";
 
     [Fact]
-    public void Repairs_every_recorded_vault_as_python_did()
+    public void Repairs_every_recorded_vault_as_recorded()
     {
         var mismatches = new List<string>();
         foreach (var node in JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Vault", "writers-oracle.json")))!.AsArray())
@@ -41,7 +41,7 @@ public sealed partial class VaultRepairOracleTests
             }
         }
 
-        Assert.True(mismatches.Count == 0, $"{mismatches.Count} difference(s) from the Python:\n{string.Join('\n', mismatches.Take(60))}");
+        Assert.True(mismatches.Count == 0, $"{mismatches.Count} difference(s) from the recording:\n{string.Join('\n', mismatches.Take(60))}");
     }
 
     private static List<string> Run(string label, JsonArray files, Dictionary<string, byte[]> originals, JsonObject run)
@@ -115,12 +115,12 @@ public sealed partial class VaultRepairOracleTests
             {
                 if (!File.ReadAllBytes(Path.Join(root, path)).AsSpan().SequenceEqual(originals[path]))
                 {
-                    yield return $"{label}: {path} changed, Python left it as it was";
+                    yield return $"{label}: {path} changed, the recording left it as it was";
                 }
             }
             else if (!JsonNode.DeepEquals(got, value))
             {
-                yield return $"{label}: {path} is {got?.ToJsonString()}, Python left {value.ToJsonString()}";
+                yield return $"{label}: {path} is {got?.ToJsonString()}, recording left {value.ToJsonString()}";
             }
         }
 
@@ -158,7 +158,7 @@ public sealed partial class VaultRepairOracleTests
         return files;
     }
 
-    // What the oracle records of a file the Python changed: its frontmatter keys' kinds and stripped body, or its bytes.
+    // What the oracle records of a file the recording changed: its frontmatter keys' kinds and stripped body, or its bytes.
     private static JsonObject Describe(byte[] data)
     {
         string text;
@@ -216,7 +216,7 @@ public sealed partial class VaultRepairOracleTests
             var (got, want) = (left.GetValueOrDefault(key), right.GetValueOrDefault(key));
             if (got != want)
             {
-                yield return $"{label}: {key.ReplaceLineEndings("⏎")} x{got}, Python x{want}";
+                yield return $"{label}: {key.ReplaceLineEndings("⏎")} x{got}, recorded x{want}";
             }
         }
     }

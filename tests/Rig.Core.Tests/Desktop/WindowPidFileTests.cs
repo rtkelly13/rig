@@ -42,7 +42,7 @@ public sealed class WindowPidFileTests : IDisposable
         Assert.Null(WindowPidFile.RecordedPid(_temp.Path));
     }
 
-    /// <summary>A pid file's text and the pid Python reads from it.</summary>
+    /// <summary>A pid file's text and the pid read from it.</summary>
     public static TheoryData<string, int?> PidFiles => new()
     {
         { """{"pid": 1.0}""", null },

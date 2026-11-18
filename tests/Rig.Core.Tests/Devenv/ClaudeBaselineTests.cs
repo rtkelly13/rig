@@ -14,7 +14,7 @@ public sealed class ClaudeBaselineTests : IDisposable
     private static SettingsMerge Merge(string json) => ClaudeBaseline.Merge(JsonNode.Parse(json)!.AsObject(), Hook);
 
     [Fact]
-    public void An_empty_file_gets_the_whole_baseline_in_python_order()
+    public void An_empty_file_gets_the_whole_baseline_in_the_recorded_order()
     {
         var merge = Merge("{}");
 
@@ -141,7 +141,7 @@ public sealed class ClaudeBaselineTests : IDisposable
     [Theory]
     [InlineData(false, "\n")]
     [InlineData(true, "\r\n")]
-    public void Save_writes_python_json_and_leaves_no_staging_file(bool windows, string newline)
+    public void Save_writes_the_recorded_json_and_leaves_no_staging_file(bool windows, string newline)
     {
         var path = Path.Join(_dir.Path, ".claude", "settings.json");
 
@@ -186,6 +186,6 @@ public sealed class ClaudeBaselineTests : IDisposable
     [InlineData("\"both ' and \\\"\"", "'both \\' and \"'")]
     [InlineData("\"a\\\\b\"", "'a\\\\b'")]
     [InlineData("7", "7")]
-    public void Repr_is_python_repr(string json, string expected) =>
+    public void Repr_is_the_recorded_repr(string json, string expected) =>
         Assert.Equal(expected, ClaudeBaseline.Repr(JsonNode.Parse(json)!.AsValue()));
 }

@@ -7,7 +7,7 @@ using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.Vault;
 
-/// <summary>Ported from the Python <c>md-lint</c> entry point, which had only an import smoke test.</summary>
+/// <summary><c>rig vault md-lint</c> through its command line.</summary>
 public sealed class MdLintCommandTests : IDisposable
 {
     private readonly TempDir _home = new();
@@ -57,7 +57,7 @@ public sealed class MdLintCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task Fix_after_a_double_dash_still_fixes_as_the_python_did()
+    public async Task Fix_after_a_double_dash_still_fixes_as_recorded()
     {
         _proc.Answer(new Ran(0, string.Empty, string.Empty), "uvx");
 

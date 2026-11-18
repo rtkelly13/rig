@@ -2,7 +2,7 @@ using Rig.Core.Runtime;
 
 namespace Rig.Core.Tests.Runtime;
 
-/// <summary>The <c>rig</c> shim written on PATH: same text as the Python's, and never overwriting a foreign file.</summary>
+/// <summary>The <c>rig</c> shim written on PATH: the recorded text, and never overwriting a foreign file.</summary>
 public sealed class RigShimTests : IDisposable
 {
     private readonly TempDir _temp = new();

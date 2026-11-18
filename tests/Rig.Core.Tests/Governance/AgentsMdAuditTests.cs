@@ -467,7 +467,7 @@ public sealed class AgentsMdAuditTests : IDisposable
     [InlineData("2026-06-15\n", null)]
     [InlineData("2026-6-15", null)]
     [InlineData("0000-01-01", null)]
-    public void Iso_dates_parse_as_python_reads_them(string text, string? expected) =>
+    public void Iso_dates_parse_as_recorded(string text, string? expected) =>
         Assert.Equal(expected, AgentsMdAudit.ParseIsoDate(text)?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
 
     [Fact]
@@ -482,7 +482,7 @@ public sealed class AgentsMdAuditTests : IDisposable
     }
 
     [Fact]
-    public void Split_lines_breaks_where_python_does()
+    public void Split_lines_breaks_as_recorded()
     {
         Assert.Equal(["a", "b", "c", "d", "", "e"], UnicodeText.SplitLines("a\r\nb\rc\u2028d\n\u000ce"));
         Assert.Empty(UnicodeText.SplitLines(string.Empty));

@@ -24,7 +24,7 @@ public sealed class TriageCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task Refresh_and_verify_run_from_the_csharp_front_door_without_python()
+    public async Task Refresh_and_verify_run_from_the_csharp_front_door()
     {
         _source.Items.Add(Item());
         Assert.Equal(0, await Run("triage", "refresh"));

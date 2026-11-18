@@ -123,7 +123,7 @@ public sealed class RigDatabaseTests : IDisposable
     }
 
     [Fact]
-    public void A_migrated_database_records_the_columns_python_wrote()
+    public void A_migrated_database_records_the_recorded_columns()
     {
         using var connection = RigDatabase.Open(Db);
         using var command = connection.CreateCommand();

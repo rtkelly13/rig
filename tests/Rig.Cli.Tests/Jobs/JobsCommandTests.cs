@@ -211,7 +211,7 @@ public sealed class JobsCommandTests : IDisposable
     [InlineData("0", "one\ntwo\nthree\n")]
     [InlineData("-1", "two\nthree\n")]
     [InlineData("9", "one\ntwo\nthree\n")]
-    public async Task Log_counts_lines_as_a_python_slice_does(string lines, string expected)
+    public async Task Log_counts_lines_as_recorded(string lines, string expected)
     {
         Directory.CreateDirectory(Path.Join(_temp.Path, "logs"));
         await File.WriteAllTextAsync(Path.Join(_temp.Path, "logs", "every.log"), "one\ntwo\nthree", TestContext.Current.CancellationToken);

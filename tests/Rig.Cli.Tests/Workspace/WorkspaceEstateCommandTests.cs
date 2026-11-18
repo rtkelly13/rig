@@ -147,7 +147,7 @@ public sealed class WorkspaceEstateCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task The_json_audit_keeps_the_python_fields_in_order()
+    public async Task The_json_audit_keeps_the_recorded_fields_in_order()
     {
         Estate();
 

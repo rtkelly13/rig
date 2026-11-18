@@ -6,7 +6,7 @@ namespace Rig.Core.Tests.Estate;
 
 /// <summary>
 /// Every command that removes worktrees, run against every worktree shape that has bitten the estate or that git
-/// documents as holding state a removal drops. Ported from the Python matrix of #141; the gaps it found are #99.
+/// documents as holding state a removal drops. The gaps it found are #99.
 /// </summary>
 /// <remarks>
 /// <para>

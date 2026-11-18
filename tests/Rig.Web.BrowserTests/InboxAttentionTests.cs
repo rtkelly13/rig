@@ -11,7 +11,7 @@ public sealed partial class InboxAttentionTests(BrowserFixture fixture) : InboxT
     [Fact]
     public async Task The_browser_talks_to_the_csharp_host()
     {
-        // /api/status is answered only by the C# host (the Python routes have no such route), on the port it bound.
+        // /api/status is answered only by the C# host (the recorded routes have no such route), on the port it bound.
         var status = await Page.APIRequest.GetAsync(Origin + "/api/status");
 
         Assert.True(status.Ok);
