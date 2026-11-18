@@ -65,7 +65,7 @@ public sealed class DriftGate(ISvgRenderer renderer, string scratch)
     private const int RenderSize = 1000;
 
     /// <summary>
-    /// Optimises <paramref name="svgPath"/>. The best candidate seen (highest SSIM, the latest on a tie) is written to
+    /// Optimises <paramref name="svgPath"/>. The first candidate that meets the budget, else the best seen (highest SSIM, the latest on a tie), is written to
     /// <paramref name="outputPath"/>, or over the input when none is given; a missed budget never overwrites the input.
     /// </summary>
     public async Task<GatedOutput> OptimizeAsync(
@@ -104,8 +104,11 @@ public sealed class DriftGate(ISvgRenderer renderer, string scratch)
                 var render = await RenderAsync(candidatePath, cancellationToken).ConfigureAwait(false);
                 var drift = DriftMetrics.Drift(baseline, render);
 
-                // The highest-fidelity candidate wins, not the last: backing off does not improve fidelity monotonically.
-                if (drift.Ssim >= bestSsim)
+                // A candidate that passes both thresholds always wins, and the first one does: the loop stops at the first
+                // good-enough simplification. Otherwise the highest-fidelity candidate (the latest on a tie) is the fallback,
+                // since backing off does not improve fidelity monotonically.
+                var passes = drift.Ssim >= minSsim && drift.RmsePct <= maxRmse;
+                if (passes || drift.Ssim >= bestSsim)
                 {
                     bestSvg = candidate;
                     bestSsim = drift.Ssim;
@@ -114,7 +117,7 @@ public sealed class DriftGate(ISvgRenderer renderer, string scratch)
                     bestTolerance = currentTolerance;
                 }
 
-                if (drift.Ssim >= minSsim && drift.RmsePct <= maxRmse)
+                if (passes)
                 {
                     gatePassed = true;
                     break;

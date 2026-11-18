@@ -6,6 +6,9 @@ public sealed class DriftGateTests : IDisposable
 {
     private const string Svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 5 0.01 L 10 0 L 10 10 Z\" fill=\"#ff0000\"/></svg>";
 
+    private const double MinSsim = 0.1;
+    private const double MaxRmse = 10.0;
+
     private readonly string _dir = Path.Join(Path.GetTempPath(), $"rig-gate-{Guid.NewGuid():N}");
 
     public DriftGateTests()
@@ -53,6 +56,51 @@ public sealed class DriftGateTests : IDisposable
         Assert.Equal(0.0625, gated.Report.Tolerance);
         Assert.Equal(5, renderer.Renders);
         Assert.True(File.Exists(output));
+    }
+
+    [Fact]
+    public async Task A_passing_candidate_wins_over_an_earlier_higher_ssim_candidate_that_failed_rmse()
+    {
+        var input = Write("in.svg");
+        var output = Path.Join(_dir, "out.svg");
+
+        // Baseline is white. Candidate 0 is almost white but with a black patch (high SSIM, RMSE over budget);
+        // candidate 1 is faintly striped (much lower SSIM, RMSE within budget).
+        await using var renderer = new PixelRenderer(
+            (path, size) =>
+            {
+                var name = Path.GetFileName(path);
+                var pixels = new byte[size * size * 4];
+                Array.Fill(pixels, (byte)255);
+                if (name == "candidate_0.svg")
+                {
+                    for (var i = 0; i < size * size / 40; i++)
+                    {
+                        pixels[i * 4] = 0;
+                        pixels[(i * 4) + 1] = 0;
+                        pixels[(i * 4) + 2] = 0;
+                    }
+                }
+                else if (name == "candidate_1.svg")
+                {
+                    for (var i = 0; i < pixels.Length; i += 4)
+                    {
+                        var value = (byte)(255 - ((i / 4 % size / 2 % 2 == 0) ? 0 : 30));
+                        pixels[i] = value;
+                        pixels[i + 1] = value;
+                        pixels[i + 2] = value;
+                        pixels[i + 3] = 255;
+                    }
+                }
+
+                return pixels;
+            });
+        var gated = await new DriftGate(renderer, _dir).OptimizeAsync(input, output, 0.5, MinSsim, MaxRmse, TestContext.Current.CancellationToken);
+
+        Assert.True(gated.Report.GatePassed);
+        Assert.Equal(0.25, gated.Report.Tolerance);
+        Assert.True(gated.Report.Ssim >= MinSsim);
+        Assert.True(gated.Report.RmsePct <= MaxRmse);
     }
 
     [Fact]
@@ -122,6 +170,16 @@ public sealed class DriftGateTests : IDisposable
 
         Assert.Equal(0.0, gated.Report.SizeReductionPct);
         Assert.Equal(0.0, gated.Report.NodeReductionPct);
+    }
+
+    private sealed class PixelRenderer(Func<string, int, byte[]> pixels) : ISvgRenderer
+    {
+        public string Name => "pixels";
+
+        public Task<Raster> RenderAsync(string svgPath, int size, CancellationToken cancellationToken) =>
+            Task.FromResult(new Raster(size, size, pixels(svgPath, size)));
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     private string Write(string name)
