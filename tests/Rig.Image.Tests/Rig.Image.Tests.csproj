@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/Rig.Image/Rig.Image.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Oracle/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Oracle" />
+  </ItemGroup>
+</Project>

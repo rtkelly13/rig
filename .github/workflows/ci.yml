@@ -104,6 +104,8 @@ jobs:
           name: rig-cli
           path: ${{ runner.temp }}/rig-cli
           retention-days: 1
+          # The Playwright driver sits in the hidden .playwright folder; image-cross-check installs Chromium from it.
+          include-hidden-files: true
       - name: Upload ownership tool
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -303,12 +305,15 @@ jobs:
               tests/Rig.Architecture.Tests/Rig.Architecture.Tests.csproj
               tests/Rig.Cli.Tests/Rig.Cli.Tests.csproj
               tests/Rig.CommandOwnership.Tests/Rig.CommandOwnership.Tests.csproj
+              tests/Rig.Image.Tests/Rig.Image.Tests.csproj
               tests/Rig.LocReport.Tests/Rig.LocReport.Tests.csproj
               tests/Rig.Specs/Rig.Specs.csproj
               tests/Rig.Web.Tests/Rig.Web.Tests.csproj
-          # The SPA tests drive headless Chromium through Playwright.
+          # The SPA tests and the image renderer's tests drive headless Chromium through Playwright.
           - shard: browser
-            projects: tests/Rig.Web.BrowserTests/Rig.Web.BrowserTests.csproj
+            projects: >-
+              tests/Rig.Web.BrowserTests/Rig.Web.BrowserTests.csproj
+              tests/Rig.Image.BrowserTests/Rig.Image.BrowserTests.csproj
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -541,6 +546,59 @@ jobs:
 
   # Always inspect GitHub's merged result, even for a docs-only PR: a concurrent
   # port must not leave two owners after each branch's individual tests passed.
+  # Report only (ADR 0024, #321): renders the masters with Chromium and Svg.Skia and reports how far they diverge.
+  # Not in `ci`'s needs, so it never blocks a PR; the Chromium-dependent tests that do block run in the browser shard.
+  image-cross-check:
+    name: image-cross-check
+    needs: build
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+      RIG_HOME: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Download rig CLI
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: rig-cli
+          path: ${{ runner.temp }}/rig-cli
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-dotnet-linux-${{ hashFiles('Directory.Packages.props') }}
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pwsh "${{ runner.temp }}/rig-cli/playwright.ps1" install --with-deps chromium
+      - name: Restore the Playwright driver's execute bit
+        # upload-artifact drops file modes.
+        run: chmod +x "${{ runner.temp }}/rig-cli/.playwright/node/linux-x64/node"
+      - name: Cross-check the renderers
+        run: >-
+          dotnet "${{ runner.temp }}/rig-cli/rig.dll" image cross-check
+          --candidates tests/Rig.Image.Tests/Oracle/candidates
+          --report "${{ runner.temp }}/cross-check.json"
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-cross-check
+          path: ${{ runner.temp }}/cross-check.json
+          if-no-files-found: ignore
+          retention-days: 14
+
   command-ownership:
     name: command-ownership
     needs: build

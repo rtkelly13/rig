@@ -327,3 +327,34 @@ Learned the hard way while establishing the rtkelly-labs mark; both are still li
 A third, non-obvious one: **Obsidian treats a leading `/` as vault-relative**, not OS-root
 relative, so absolute image paths in vault notes fail to resolve. Embed base64 data URIs or
 place the asset in the vault and use `![[filename.png]]`.
+
+---
+
+## 8. The C# image stack (port in progress)
+
+The image pipeline is moving from `tools/image-drift` to C# in slices, designed in ADR 0024 (#321). The first
+slice lives in `src/Rig.Image` and does not replace the Python yet; slice 4 deletes the Python.
+
+- **Two renderers behind `ISvgRenderer`.** Chromium through `Microsoft.Playwright` is authoritative (the package
+  version pins the browser revision, so developers and CI run the same Chromium). `Svg.Skia` is the fast renderer.
+- **`rig image cross-check`** renders each project's master and favicon at the production sizes with both, and
+  reports the divergence per file against the ADR thresholds: mean absolute difference 1.0, differing pixels 20%,
+  RMSE 0.1pp, SSIM 0.001, composite 0.1pp, and any promotion verdict flip fails. `--candidates <folder>` adds the
+  verdict comparison for candidate SVGs named `<project>.<candidate>.svg`; `--report <file>` writes JSON. CI runs it
+  report-only in the `image-cross-check` job; the thresholds are enforced by the tests in `Rig.Image.BrowserTests`.
+- **Raster and metrics** (`Rig.Image`) reproduce image_drift's numbers: a Pillow-exact resampler
+  (`PillowResize`), `DriftMetrics` and `PromotionGate`. SkiaSharp supplies only the PNG and JPEG codecs.
+  SixLabors.ImageSharp is not used: from 3.2 its builds fail without a commercial license key, and the last
+  free version carries known vulnerabilities.
+- **The Python score oracle is frozen**, so ordinary CI needs no Python. `tools/image-drift/oracle/dump_oracle.py`
+  writes `tests/Rig.Image.Tests/Oracle/` (renders, normalised-reference hashes, metrics, verdicts, the ICO) and
+  `src/Rig.Image/feature-regions.json`. Regenerate it only when image_drift's scoring changes:
+
+  ```bash
+  cd tools/image-drift && uv run --locked python -I oracle/dump_oracle.py \
+      --out ../../tests/Rig.Image.Tests/Oracle --regions-out ../../src/Rig.Image/feature-regions.json \
+      --chromium <path to the chrome-headless-shell of the pinned Playwright revision>
+  ```
+
+Not yet ported: the candidate-generating pathways (vtracer and friends, so candidates are frozen SVGs), the
+recommendation text, and parsing `production-cuts.csv` (the cross-check's file set is the fixed set the oracle covers).

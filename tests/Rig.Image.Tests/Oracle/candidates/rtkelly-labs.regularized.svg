@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="grad-1" x1="582" y1="240" x2="772" y2="511" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#04ebc7" />
+<stop offset="25%" stop-color="#14b6c3" />
+<stop offset="50%" stop-color="#198ec3" />
+<stop offset="75%" stop-color="#1e6dc1" />
+<stop offset="100%" stop-color="#2864c1" />
+</linearGradient>
+<linearGradient id="grad-2" x1="561" y1="606" x2="214" y2="732" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#0edbbf" />
+<stop offset="25%" stop-color="#11cdc1" />
+<stop offset="50%" stop-color="#11aec0" />
+<stop offset="75%" stop-color="#119ac5" />
+<stop offset="100%" stop-color="#1499d3" />
+</linearGradient>
+<linearGradient id="grad-3" x1="749" y1="481" x2="660" y2="811" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#13d1c2" />
+<stop offset="25%" stop-color="#14acbd" />
+<stop offset="50%" stop-color="#1a7bbc" />
+<stop offset="75%" stop-color="#205fbc" />
+<stop offset="100%" stop-color="#265bbe" />
+</linearGradient>
+<linearGradient id="grad-4" x1="365" y1="552" x2="281" y2="238" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#2969bd" />
+<stop offset="25%" stop-color="#2277c5" />
+<stop offset="50%" stop-color="#1b7cc3" />
+<stop offset="75%" stop-color="#169eca" />
+<stop offset="100%" stop-color="#02f0e6" />
+</linearGradient>
+<linearGradient id="grad-5" x1="551" y1="453" x2="470" y2="569" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#4fdce0" />
+<stop offset="25%" stop-color="#4edfe5" />
+<stop offset="50%" stop-color="#38c7e1" />
+<stop offset="75%" stop-color="#2790cb" />
+<stop offset="100%" stop-color="#245cb2" />
+</linearGradient>
+<linearGradient id="grad-6" x1="590" y1="286" x2="759" y2="488" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#10a4b9" />
+<stop offset="25%" stop-color="#148eb1" />
+<stop offset="50%" stop-color="#1869aa" />
+<stop offset="75%" stop-color="#1c54ac" />
+<stop offset="100%" stop-color="#2053af" />
+</linearGradient>
+<linearGradient id="grad-7" x1="719" y1="511" x2="655" y2="750" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#0fa6b4" />
+<stop offset="25%" stop-color="#1391b1" />
+<stop offset="50%" stop-color="#166dad" />
+<stop offset="75%" stop-color="#1a4ea8" />
+<stop offset="100%" stop-color="#1a48ac" />
+</linearGradient>
+<linearGradient id="grad-8" x1="249" y1="580" x2="462" y2="729" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#1458a7" />
+<stop offset="25%" stop-color="#1465aa" />
+<stop offset="50%" stop-color="#0f86b3" />
+<stop offset="75%" stop-color="#0ba9b8" />
+<stop offset="100%" stop-color="#0bbebc" />
+</linearGradient>
+<linearGradient id="grad-9" x1="390" y1="541" x2="441" y2="650" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#58e3e7" />
+<stop offset="25%" stop-color="#4adae7" />
+<stop offset="50%" stop-color="#2d97d1" />
+<stop offset="75%" stop-color="#2268bc" />
+<stop offset="100%" stop-color="#2456aa" />
+</linearGradient>
+<linearGradient id="grad-10" x1="572" y1="382" x2="646" y2="471" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#58e7ea" />
+<stop offset="25%" stop-color="#52e6ea" />
+<stop offset="50%" stop-color="#35b8dc" />
+<stop offset="75%" stop-color="#1f81cb" />
+<stop offset="100%" stop-color="#216fb5" />
+</linearGradient>
+<linearGradient id="grad-11" x1="636" y1="553" x2="582" y2="647" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#1e83bb" />
+<stop offset="25%" stop-color="#1c85c8" />
+<stop offset="50%" stop-color="#207bc0" />
+<stop offset="75%" stop-color="#2266bf" />
+<stop offset="100%" stop-color="#2457ae" />
+</linearGradient>
+<linearGradient id="grad-12" x1="576" y1="379" x2="630" y2="433" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#5de7e9" />
+<stop offset="25%" stop-color="#56e7ea" />
+<stop offset="50%" stop-color="#51e8eb" />
+<stop offset="75%" stop-color="#4de0ea" />
+<stop offset="100%" stop-color="#48cae1" />
+</linearGradient>
+<linearGradient id="grad-13" x1="401" y1="539" x2="430" y2="589" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#5fe2e5" />
+<stop offset="25%" stop-color="#53e9ec" />
+<stop offset="50%" stop-color="#51e9ec" />
+<stop offset="75%" stop-color="#51e7ec" />
+<stop offset="100%" stop-color="#4ad0e4" />
+</linearGradient>
+<linearGradient id="grad-14" x1="758" y1="473" x2="591" y2="274" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#2e8ad9" />
+<stop offset="25%" stop-color="#299bd3" />
+<stop offset="50%" stop-color="#2bacc7" />
+<stop offset="75%" stop-color="#35d1dc" />
+<stop offset="100%" stop-color="#47e7e2" />
+</linearGradient>
+<filter id="crossover-shadow" x="-20%" y="-20%" width="140%" height="140%">
+<feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#080e18" flood-opacity="0.65" />
+</filter>
+<linearGradient id="grad-tl-inner" x1="266" y1="332" x2="443" y2="357" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#147eb6" />
+<stop offset="30%" stop-color="#1b6ab8" />
+<stop offset="70%" stop-color="#1f58b8" />
+<stop offset="100%" stop-color="#244aa4" />
+</linearGradient>
+</defs>
+<path d="M -0.00,0.00 L 1024.00,0.00 L 1024.00,1024.00 L 0.00,1024.00 Z" fill="#101923" />
+<path d="M 660.94,216.50 L 675.00,224.00 L 803.00,299.00 L 812.37,304.81 L 817.47,313.64 L 819.00,319.00 L 819.00,469.00 L 816.00,479.00 L 807.78,487.22 L 785.64,500.00 L 778.00,500.00 L 775.00,496.00 L 763.07,491.36 L 711.71,461.71 L 705.00,455.00 L 700.00,454.00 L 719.00,440.00 L 723.50,434.60 L 723.50,362.10 L 721.40,361.68 L 687.74,342.25 L 685.65,341.55 L 675.00,335.00 L 655.97,324.00 L 645.61,324.00 L 571.08,367.03 L 558.50,378.35 L 558.50,418.33 L 503.74,449.95 L 501.17,449.43 L 462.00,426.82 L 462.00,339.00 L 463.93,330.32 L 469.78,320.19 L 481.14,310.45 L 643.87,216.50 Z" fill="url(#grad-1)" />
+<path d="M 240.26,521.05 L 243.03,521.61 L 284.00,546.00 L 296.60,552.60 L 301.00,557.00 L 310.00,561.00 L 314.97,566.96 L 321.95,570.99 L 319.29,575.60 L 312.45,579.55 L 308.00,584.00 L 303.00,585.00 L 299.00,589.00 L 299.00,658.48 L 306.00,663.00 L 368.54,700.00 L 374.30,700.00 L 454.07,653.94 L 461.50,641.07 L 461.50,618.42 L 530.58,578.54 L 557.00,593.79 L 557.00,690.00 L 553.00,700.00 L 545.76,709.65 L 526.00,722.00 L 381.19,807.27 L 376.00,809.00 L 363.60,809.00 L 358.00,806.00 L 219.00,724.00 L 212.63,720.05 L 206.45,709.35 L 205.00,705.00 L 205.00,550.93 L 213.24,536.66 Z" fill="url(#grad-2)" />
+<path d="M 677.00,465.00 L 686.00,465.00 L 691.39,466.80 L 805.92,532.92 L 815.00,542.00 L 819.00,551.00 L 819.00,706.21 L 809.97,721.85 L 728.00,770.00 L 717.46,775.91 L 712.00,777.00 L 700.67,785.66 L 674.00,800.00 L 661.94,807.50 L 642.43,807.50 L 628.00,800.00 L 611.36,790.30 L 606.53,786.28 L 569.00,765.00 L 523.72,737.77 L 556.11,719.06 L 568.00,699.00 L 572.00,691.54 L 572.00,657.21 L 603.60,675.45 L 599.86,672.65 L 617.00,682.00 L 637.97,694.99 L 636.93,694.57 L 646.33,700.00 L 657.80,700.00 L 669.00,694.00 L 686.00,684.00 L 717.55,664.81 L 723.00,658.00 L 723.00,590.00 L 706.26,575.65 L 595.52,511.72 L 675.39,465.60 Z" fill="url(#grad-3)" />
+<path d="M 379.38,216.50 L 382.81,217.75 L 499.49,285.11 L 469.67,302.33 L 456.00,316.00 L 445.00,312.00 L 452.00,318.00 L 447.50,337.12 L 447.50,361.12 L 439.00,359.00 L 434.38,355.53 L 399.14,335.19 L 396.00,331.00 L 380.00,324.00 L 366.56,322.08 L 357.53,327.29 L 351.00,336.00 L 337.32,341.98 L 325.88,348.59 L 317.34,354.99 L 304.12,362.63 L 300.50,363.83 L 300.50,435.86 L 316.34,445.01 L 330.70,455.77 L 401.00,497.00 L 419.62,508.50 L 423.00,510.00 L 404.05,524.21 L 358.00,552.00 L 346.30,558.00 L 332.16,558.00 L 314.00,548.00 L 240.00,503.00 L 229.00,498.00 L 216.70,489.94 L 208.00,480.00 L 205.00,473.00 L 205.00,316.20 L 210.79,306.16 L 220.04,298.97 L 362.88,216.50 Z" fill="url(#grad-4)" />
+<path d="M 366.69,274.00 L 380.06,274.00 L 439.00,308.00 L 449.00,313.39 L 449.00,361.00 L 441.36,361.00 L 416.00,345.00 L 370.17,321.47 L 324.00,350.00 L 300.50,363.64 L 300.50,436.50 L 260.00,436.50 L 260.00,335.60 Z" fill="url(#grad-tl-inner)" />
+<path d="M 396.34,352.07 L 399.85,352.77 L 448.50,380.86 L 448.50,439.10 L 678.00,571.61 L 678.00,640.57 L 627.36,669.80 L 614.64,665.89 L 605.65,660.70 L 600.05,655.90 L 571.50,639.42 L 571.50,582.24 L 351.35,455.14 L 343.00,444.00 L 343.00,383.57 L 390.00,356.00 Z" fill="url(#grad-5)" filter="url(#crossover-shadow)" />
+<path d="M 649.00,273.00 L 656.00,273.00 L 663.07,275.83 L 756.00,330.00 L 761.74,333.58 L 765.99,340.94 L 769.00,355.00 L 769.00,448.00 L 767.00,454.00 L 758.00,466.00 L 753.65,467.45 L 742.92,473.64 L 751.73,478.73 L 757.00,484.00 L 759.18,489.46 L 737.00,477.00 L 727.00,470.00 L 715.00,463.00 L 709.63,459.63 L 705.00,455.00 L 700.00,454.00 L 719.00,440.00 L 723.50,434.60 L 723.50,362.10 L 721.40,361.68 L 687.74,342.25 L 685.65,341.55 L 675.00,335.00 L 655.97,324.00 L 645.61,324.00 L 571.08,367.03 L 558.50,378.35 L 558.50,417.69 L 526.00,436.00 L 513.00,443.75 L 513.00,360.00 L 517.56,347.45 L 537.00,335.00 L 638.08,276.22 L 644.00,274.00 Z" fill="url(#grad-6)" />
+<path d="M 636.40,489.88 L 639.87,490.57 L 753.40,556.12 L 760.74,562.00 L 767.00,572.83 L 767.00,673.00 L 764.00,682.00 L 755.20,692.06 L 667.00,744.00 L 659.54,748.00 L 648.00,748.00 L 641.30,746.33 L 566.78,703.30 L 570.00,699.00 L 572.00,691.00 L 572.00,657.21 L 603.60,675.45 L 599.86,672.65 L 617.00,682.00 L 637.97,694.99 L 636.93,694.57 L 646.33,700.00 L 657.80,700.00 L 669.00,694.00 L 686.00,684.00 L 717.55,664.81 L 723.00,658.00 L 723.00,590.00 L 710.22,579.05 L 635.00,534.00 L 629.35,530.47 L 625.22,524.95 L 610.40,516.40 L 605.00,511.00 L 611.08,504.92 L 625.00,496.00 Z" fill="url(#grad-7)" />
+<path d="M 295.00,551.00 L 301.00,557.00 L 310.00,561.00 L 314.97,566.96 L 321.95,570.99 L 319.29,575.60 L 312.45,579.55 L 308.00,584.00 L 303.00,585.00 L 299.00,589.00 L 299.00,658.48 L 306.00,663.00 L 368.54,700.00 L 374.30,700.00 L 454.07,653.94 L 461.50,641.07 L 461.50,618.78 L 507.00,592.51 L 507.00,660.00 L 503.00,671.00 L 496.11,677.89 L 456.69,700.65 L 450.00,706.00 L 439.36,710.56 L 429.00,716.00 L 402.09,732.93 L 389.67,742.25 L 384.80,745.06 L 376.67,747.50 L 366.96,747.50 L 266.02,689.22 L 260.00,682.00 L 257.00,675.00 L 257.00,572.56 L 263.21,561.81 L 285.56,548.90 Z" fill="url(#grad-8)" />
+<path d="M 436.40,521.34 L 437.23,521.46 L 517.92,568.05 L 448.50,608.13 L 448.50,639.83 L 394.95,670.75 L 350.00,644.00 L 343.00,639.48 L 343.00,575.27 Z" fill="url(#grad-9)" />
+<path d="M 627.89,354.50 L 678.00,383.43 L 678.00,444.00 L 670.91,451.09 L 584.86,500.77 L 584.69,500.74 L 516.14,461.16 L 571.00,429.49 L 571.00,382.86 L 620.11,354.50 Z" fill="url(#grad-10)" />
+<path d="M 436.00,497.00 L 439.00,501.00 L 443.04,496.96 L 445.94,501.99 L 445.96,501.99 L 628.23,607.23 L 678.00,578.49 L 678.00,640.57 L 627.36,669.80 L 614.64,665.89 L 605.65,660.70 L 600.05,655.90 L 571.50,639.42 L 571.50,583.36 L 421.92,497.00 Z" fill="url(#grad-11)" />
+<path d="M 627.39,354.50 L 680.41,385.12 L 533.61,469.87 L 532.33,469.44 L 517.06,460.63 L 571.00,429.49 L 571.00,382.86 L 620.11,354.50 Z" fill="url(#grad-12)" />
+<path d="M 437.79,521.54 L 438.85,521.69 L 490.99,551.79 L 394.63,607.43 L 341.83,576.95 Z" fill="url(#grad-13)" />
+<path d="M 660.67,265.50 L 671.00,271.00 L 758.00,323.00 L 767.75,329.25 L 773.12,338.54 L 775.00,347.00 L 775.00,452.71 L 766.61,467.24 L 748.28,477.82 L 741.00,476.00 L 762.96,459.03 L 766.99,452.05 L 768.00,444.00 L 768.00,355.00 L 767.00,346.00 L 761.84,333.62 L 664.38,277.35 L 656.00,274.00 L 649.00,274.00 L 635.65,277.64 L 613.00,290.00 L 523.14,343.32 L 517.00,351.00 L 513.00,363.00 L 513.00,440.19 L 505.50,444.52 L 505.50,353.75 L 507.00,347.00 L 515.00,339.00 L 519.98,335.02 L 545.99,320.00 L 551.00,319.00 L 558.00,313.00 L 562.09,311.83 L 642.34,265.50 Z" fill="url(#grad-14)" />
+</svg>
