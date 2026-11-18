@@ -53,7 +53,7 @@ internal sealed class KnowledgeServerCommand(
             OnMacOs("restart", "Restart the server, for example after the vault's .ok/config.yml changes.", async (ks, ct) =>
             {
                 await ks.RestartAsync(ct).ConfigureAwait(false);
-                await output.WriteLineAsync("restarted").ConfigureAwait(false);
+                await output.WriteLineAsync("restarted", CancellationToken.None).ConfigureAwait(false);
                 return 0;
             }),
             OnMacOs(
@@ -62,7 +62,7 @@ internal sealed class KnowledgeServerCommand(
                 async (ks, ct) =>
                 {
                     var removed = await ks.UninstallServiceAsync(ct).ConfigureAwait(false);
-                    await output.WriteLineAsync(removed ? "removed" : "no LaunchAgent installed").ConfigureAwait(false);
+                    await output.WriteLineAsync(removed ? "removed" : "no LaunchAgent installed", CancellationToken.None).ConfigureAwait(false);
                     return 0;
                 }),
             connect,
@@ -85,7 +85,7 @@ internal sealed class KnowledgeServerCommand(
         {
             if (!macOs)
             {
-                await output.WriteLineAsync("the shared server runs as a macOS LaunchAgent; nothing to do here").ConfigureAwait(false);
+                await output.WriteLineAsync("the shared server runs as a macOS LaunchAgent; nothing to do here", CancellationToken.None).ConfigureAwait(false);
                 return NotMacOsExit;
             }
 
@@ -95,7 +95,7 @@ internal sealed class KnowledgeServerCommand(
             }
             catch (Exception e) when (e is FileNotFoundException or ProcException)
             {
-                await error.WriteLineAsync($"rig vault knowledge-server {name}: {e.Message}").ConfigureAwait(false);
+                await error.WriteLineAsync($"rig vault knowledge-server {name}: {e.Message}", CancellationToken.None).ConfigureAwait(false);
                 return 1;
             }
         });
