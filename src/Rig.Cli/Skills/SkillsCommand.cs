@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Processes;
@@ -28,6 +29,7 @@ internal sealed record SkillsHost(string Checkout, string Home, string WorkingDi
 internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker linker, TextWriter output, TextWriter error)
 {
     /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
     internal SkillsCommand()
         : this(null!, null!, null!, TextWriter.Null, TextWriter.Null)
     {
@@ -336,6 +338,7 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     internal sealed class StatusCommand(SkillsCommand skills)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal StatusCommand()
             : this(null!)
         {
@@ -354,6 +357,7 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     internal sealed class SyncCommand(SkillsCommand skills)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal SyncCommand()
             : this(null!)
         {
@@ -392,6 +396,7 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     internal sealed class ActivateCommand(SkillsCommand skills)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal ActivateCommand()
             : this(null!)
         {
@@ -422,6 +427,7 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     internal sealed class DeactivateCommand(SkillsCommand skills)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal DeactivateCommand()
             : this(null!)
         {
@@ -452,6 +458,7 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     internal sealed class PruneCommand(SkillsCommand skills)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal PruneCommand()
             : this(null!)
         {
@@ -474,6 +481,7 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     internal sealed class UpdateCommand(SkillsCommand skills)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal UpdateCommand()
             : this(null!)
         {
@@ -500,6 +508,7 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
     internal sealed class ListCommand(SkillsCommand skills)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal ListCommand()
             : this(null!)
         {

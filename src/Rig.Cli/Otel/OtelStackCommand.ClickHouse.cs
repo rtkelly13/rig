@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using DotMake.CommandLine;
@@ -190,6 +191,7 @@ internal sealed partial class OtelStackCommand
     internal sealed class ClickHouseInstallCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal ClickHouseInstallCommand()
             : this(null!)
         {
@@ -204,6 +206,7 @@ internal sealed partial class OtelStackCommand
     internal sealed class UpCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal UpCommand()
             : this(null!)
         {
@@ -218,6 +221,7 @@ internal sealed partial class OtelStackCommand
     internal sealed class DownCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal DownCommand()
             : this(null!)
         {
@@ -232,6 +236,7 @@ internal sealed partial class OtelStackCommand
     internal sealed class ClickHouseStatusCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal ClickHouseStatusCommand()
             : this(null!)
         {
@@ -246,6 +251,7 @@ internal sealed partial class OtelStackCommand
     internal sealed class QueryCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal QueryCommand()
             : this(null!)
         {
@@ -268,6 +274,7 @@ internal sealed partial class OtelStackCommand
     internal sealed class BackfillCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal BackfillCommand()
             : this(null!)
         {

@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using DotMake.CommandLine;
 using Rig.Cli.Rendering;
@@ -47,6 +48,7 @@ internal sealed record JobsHost(
 internal sealed class JobsCommand(JobsHost host, TextWriter output)
 {
     /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
     internal JobsCommand()
         : this(null!, TextWriter.Null)
     {
@@ -322,6 +324,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     internal sealed class StatusCommand(JobsCommand jobs)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal StatusCommand()
             : this(null!)
         {
@@ -340,6 +343,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     internal sealed class LastCommand(JobsCommand jobs)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal LastCommand()
             : this(null!)
         {
@@ -358,6 +362,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     internal sealed class LogCommand(JobsCommand jobs)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal LogCommand()
             : this(null!)
         {
@@ -380,6 +385,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     internal sealed class RunCommand(JobsCommand jobs)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal RunCommand()
             : this(null!)
         {
@@ -414,6 +420,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     internal sealed class UninstallCommand(JobsCommand jobs)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal UninstallCommand()
             : this(null!)
         {
@@ -428,6 +435,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     internal sealed class InstallCommand(JobsCommand jobs)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal InstallCommand()
             : this(null!)
         {

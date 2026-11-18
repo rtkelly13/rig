@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using DotMake.CommandLine;
 using Rig.Core.Otel;
@@ -46,6 +47,7 @@ internal sealed record OtelParts(
 internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, TextWriter output, TextWriter error)
 {
     /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
     internal OtelStackCommand()
         : this(null!, null!, TextWriter.Null, TextWriter.Null)
     {
@@ -371,6 +373,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class CollectorInstallCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal CollectorInstallCommand()
             : this(null!)
         {
@@ -385,6 +388,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class CollectorConfigCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal CollectorConfigCommand()
             : this(null!)
         {
@@ -403,6 +407,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class CollectorStartCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal CollectorStartCommand()
             : this(null!)
         {
@@ -417,6 +422,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class CollectorStopCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal CollectorStopCommand()
             : this(null!)
         {
@@ -431,6 +437,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class CollectorEnsureCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal CollectorEnsureCommand()
             : this(null!)
         {
@@ -445,6 +452,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class CollectorStatusCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal CollectorStatusCommand()
             : this(null!)
         {
@@ -465,6 +473,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class ServiceInstallCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal ServiceInstallCommand()
             : this(null!)
         {
@@ -479,6 +488,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class ServiceUninstallCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal ServiceUninstallCommand()
             : this(null!)
         {
@@ -499,6 +509,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class ForwardSetCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal ForwardSetCommand()
             : this(null!)
         {
@@ -517,6 +528,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class ForwardOffCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal ForwardOffCommand()
             : this(null!)
         {
@@ -531,6 +543,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     internal sealed class ForwardShowCommand(OtelStackCommand stack)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal ForwardShowCommand()
             : this(null!)
         {

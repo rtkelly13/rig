@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using DotMake.CommandLine;
 using Microsoft.Data.Sqlite;
@@ -27,6 +28,7 @@ internal sealed record DatabaseToolHost(string DbPath, string BackupDir, TimePro
 internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost database, TextWriter output, TextWriter error)
 {
     /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
     internal ToolsCommand()
         : this(null!, null!, TextWriter.Null, TextWriter.Null)
     {
@@ -299,6 +301,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class InstallCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal InstallCommand()
             : this(null!)
         {
@@ -325,6 +328,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class EnsureCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal EnsureCommand()
             : this(null!)
         {
@@ -351,6 +355,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class UninstallCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal UninstallCommand()
             : this(null!)
         {
@@ -373,6 +378,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class StatusCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal StatusCommand()
             : this(null!)
         {
@@ -397,6 +403,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class DbStatusCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal DbStatusCommand()
             : this(null!)
         {
@@ -411,6 +418,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class DbMigrateCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal DbMigrateCommand()
             : this(null!)
         {
@@ -425,6 +433,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class DbBackupCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal DbBackupCommand()
             : this(null!)
         {
@@ -439,6 +448,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class WebInstallCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal WebInstallCommand()
             : this(null!)
         {
@@ -461,6 +471,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class WebEnsureCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal WebEnsureCommand()
             : this(null!)
         {
@@ -483,6 +494,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class WebUninstallCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal WebUninstallCommand()
             : this(null!)
         {
@@ -501,6 +513,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class WebBackupCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal WebBackupCommand()
             : this(null!)
         {
@@ -515,6 +528,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class WebMigrateCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal WebMigrateCommand()
             : this(null!)
         {
@@ -529,6 +543,7 @@ internal sealed class ToolsCommand(ServiceHost services, DatabaseToolHost databa
     internal sealed class WebDbStatusCommand(ToolsCommand tools)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal WebDbStatusCommand()
             : this(null!)
         {

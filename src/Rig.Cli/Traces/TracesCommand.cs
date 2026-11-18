@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -31,6 +32,7 @@ internal sealed class TracesCommand(
     TextWriter error)
 {
     /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
     internal TracesCommand()
         : this(string.Empty, static _ => null, TimeProvider.System, TimeZoneInfo.Utc, TextWriter.Null, TextWriter.Null)
     {
@@ -307,6 +309,7 @@ internal sealed class TracesCommand(
     internal sealed class RunsCommand(TracesCommand traces)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal RunsCommand()
             : this(null!)
         {
@@ -337,6 +340,7 @@ internal sealed class TracesCommand(
     internal sealed class SummaryCommand(TracesCommand traces)
     {
         /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        [ExcludeFromCodeCoverage(Justification = "DotMake binds onto this instance; rig builds the wired one.")]
         internal SummaryCommand()
             : this(null!)
         {
