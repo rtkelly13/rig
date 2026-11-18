@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Desktop;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Desktop;
 
@@ -12,12 +13,12 @@ public sealed class PlanBundleTests : IDisposable
     public void A_ref_overrides_the_files_name_feature_and_disabled()
     {
         var text = Bundle(
-            """{"bundle": {"desktops": [{"path": "desktops/a.json", "name": 7, "feature": 3, "disabled": "no"}]}}""",
+            """{"bundle": {"desktops": [{"path": "desktops/a.json", "name": "Ref", "feature": "ref-feature", "disabled": true}]}}""",
             ("a.json", """{"name": "File", "feature": "file-feature", "disabled": false}"""));
 
         var desktop = PlanFiles.Parse(text, baseDirectory: _temp.Path).Desktops[0];
 
-        Assert.Equal(("7", "3", true), (desktop.Name, desktop.Feature, desktop.Disabled));
+        Assert.Equal(("Ref", "ref-feature", true), (desktop.Name, desktop.Feature, desktop.Disabled));
     }
 
     [Fact]
@@ -47,20 +48,20 @@ public sealed class PlanBundleTests : IDisposable
     }
 
     [Fact]
-    public void Bundle_aliases_win_over_root_aliases_and_every_value_reads_as_text()
+    public void Bundle_aliases_win_over_root_aliases_and_every_value_is_text()
     {
         var text = Bundle(
-            """{"aliases": {"a": "root", "b": null}, "bundle": {"aliases": {"a": "bundle", "c": 3, "d": true}, "desktops": [{"path": "desktops/a.json"}]}}""",
+            """{"aliases": {"a": "root", "b": "kept"}, "bundle": {"aliases": {"a": "bundle", "c": "3", "d": "x"}, "desktops": [{"path": "desktops/a.json"}]}}""",
             ("a.json", """{"name": "A"}"""));
 
-        Assert.Equal([new("a", "bundle"), new("b", "None"), new("c", "3"), new("d", "True")], PlanFiles.Parse(text, baseDirectory: _temp.Path).Aliases.ToList());
+        Assert.Equal([new("a", "bundle"), new("b", "kept"), new("c", "3"), new("d", "x")], PlanFiles.Parse(text, baseDirectory: _temp.Path).Aliases.ToList());
     }
 
     [Fact]
     public void Root_settings_are_kept()
     {
         var text = Bundle(
-            """{"version": 1, "workspace": "C:/ws", "personal-workspace": "C:/personal", "switch_delay_ms": 10, "notes": ["n"], "features": {"lab": "off"}, "bundle": {"desktops": [{"path": "desktops/a.json"}]}}""",
+            """{"version": 1, "workspace": "C:/ws", "personal-workspace": "C:/personal", "switch_delay_ms": 10, "notes": ["n"], "features": {"lab": false}, "bundle": {"desktops": [{"path": "desktops/a.json"}]}}""",
             ("a.json", """{"name": "A"}"""));
 
         var plan = PlanFiles.Parse(text, baseDirectory: _temp.Path);
@@ -83,15 +84,19 @@ public sealed class PlanBundleTests : IDisposable
     }
 
     [Theory]
-    [InlineData("""{"bundle": "nope"}""", "JSON objects")]
-    [InlineData("""{"bundle": {"aliases": []}}""", "JSON objects")]
-    [InlineData("""{"bundle": {"desktops": "nope"}}""", "must be a list")]
-    [InlineData("""{"bundle": {"desktops": ["nope"]}}""", "JSON objects")]
-    [InlineData("""{"bundle": {"desktops": [{}]}}""", "relative path")]
-    [InlineData("""{"bundle": {"desktops": [{"path": "  "}]}}""", "relative path")]
-    [InlineData("""{"bundle": {"desktops": [{"path": 5}]}}""", "relative path")]
+    [InlineData("""{"bundle": "nope"}""", "$.bundle: expected an object, found the string \"nope\"")]
+    [InlineData("""{"bundle": {"aliases": []}}""", "$.bundle.aliases: expected an object, found a list")]
+    [InlineData("""{"bundle": {"aliases": {"a": null}}}""", "$.bundle.aliases.a: expected a string, found null")]
+    [InlineData("""{"aliases": {"a": 3}, "bundle": {}}""", "$.aliases.a: expected a string, found the number 3")]
+    [InlineData("""{"bundle": {"desktops": "nope"}}""", "$.bundle.desktops: expected a list, found the string \"nope\"")]
+    [InlineData("""{"bundle": {"desktops": ["nope"]}}""", "$.bundle.desktops[0]: expected an object, found the string \"nope\"")]
+    [InlineData("""{"bundle": {"desktops": [{}]}}""", "$.bundle.desktops[0].path: expected a string, found nothing")]
+    [InlineData("""{"bundle": {"desktops": [{"path": "  "}]}}""", "$.bundle.desktops[0].path: expected a relative path, found the string \"  \"")]
+    [InlineData("""{"bundle": {"desktops": [{"path": 5}]}}""", "$.bundle.desktops[0].path: expected a string, found the number 5")]
+    [InlineData("""{"bundle": {"desktops": [{"path": "a.json", "disabled": "no"}]}}""", "$.bundle.desktops[0].disabled: expected true or false, found the string \"no\"")]
+    [InlineData("""{"bundle": {"desktops": [{"path": "a.json", "extra": 1}]}}""", "$.bundle.desktops[0].extra: expected a known field")]
     public void Malformed_bundles_say_what_is_wrong(string root, string message) =>
-        Assert.Contains(message, Assert.Throws<InvalidPlanException>(() => PlanFiles.Parse(root, baseDirectory: _temp.Path)).Message, StringComparison.Ordinal);
+        Assert.StartsWith("<memory>: " + message, Assert.Throws<JsonInputException>(() => PlanFiles.Parse(root, baseDirectory: _temp.Path)).Message, StringComparison.Ordinal);
 
     [Fact]
     public void A_bundle_read_from_memory_has_nowhere_to_find_its_desktops() =>
@@ -102,7 +107,10 @@ public sealed class PlanBundleTests : IDisposable
     {
         var text = Bundle("""{"bundle": {"desktops": [{"path": "desktops/a.json"}]}}""", ("a.json", "[1]"));
 
-        Assert.Contains("JSON objects", Assert.Throws<InvalidPlanException>(() => PlanFiles.Parse(text, baseDirectory: _temp.Path)).Message, StringComparison.Ordinal);
+        var error = Assert.Throws<JsonInputException>(() => PlanFiles.Parse(text, baseDirectory: _temp.Path));
+
+        Assert.EndsWith("a.json: $: expected an object, found a list", error.Message, StringComparison.Ordinal);
+        Assert.Equal(Path.Join(_temp.Path, "desktops", "a.json"), error.Input);
     }
 
     [Fact]

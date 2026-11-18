@@ -12,8 +12,7 @@
         "screen": 1,
         "layout": {
           "mode": "full",
-          "slot": 1,
-          "orientation": null
+          "slot": 1
         }
       },
       "window_process_name": "Orca.exe",
@@ -34,8 +33,7 @@
         "screen": 3,
         "layout": {
           "mode": "full",
-          "slot": 1,
-          "orientation": null
+          "slot": 1
         }
       },
       "window_process_name": "Orca.exe",
@@ -122,8 +120,7 @@
         "screen": 2,
         "layout": {
           "mode": "full",
-          "slot": 1,
-          "orientation": null
+          "slot": 1
         }
       },
       "window_process_name": "chrome.exe"
@@ -139,8 +136,7 @@
         "screen": 2,
         "layout": {
           "mode": "full",
-          "slot": 1,
-          "orientation": null
+          "slot": 1
         }
       },
       "window_process_name": "Fork.exe"
@@ -238,8 +234,7 @@
         "screen": 3,
         "layout": {
           "mode": "full",
-          "slot": 1,
-          "orientation": null
+          "slot": 1
         }
       },
       "window_process_name": "warp.exe"

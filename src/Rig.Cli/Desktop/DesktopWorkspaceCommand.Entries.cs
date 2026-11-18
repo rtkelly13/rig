@@ -2,6 +2,7 @@
 using System.CommandLine;
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Cli.Desktop;
@@ -128,7 +129,7 @@ internal sealed partial class DesktopWorkspaceCommand
             entry = PlanFiles.ParseLaunchEntry(await File.ReadAllTextAsync(entryFile, cancellationToken).ConfigureAwait(false), entryFile) with { Placement = null };
             plan = config is not null ? Load(config, [], []) : new WorkspacePlan();
         }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
+        catch (Exception error) when (error is InvalidPlanException or JsonInputException or UnknownFeatureException or IOException)
         {
             await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return 1;
@@ -336,7 +337,7 @@ internal sealed partial class DesktopWorkspaceCommand
         {
             plan = Load(path, [], []);
         }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
+        catch (Exception error) when (error is InvalidPlanException or JsonInputException or UnknownFeatureException or IOException)
         {
             await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return 1;

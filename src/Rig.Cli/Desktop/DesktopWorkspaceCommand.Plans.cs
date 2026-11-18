@@ -2,6 +2,7 @@
 using System.CommandLine;
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Desktop;
 
@@ -381,7 +382,7 @@ internal sealed partial class DesktopWorkspaceCommand
             plan = PlanFeatures.WithFlags(parsed, states);
             overridden = [.. states.Where(state => state.Override is not null).Select(state => state.Name)];
         }
-        catch (Exception error) when (error is InvalidPlanException or IOException)
+        catch (Exception error) when (error is InvalidPlanException or JsonInputException or IOException)
         {
             await host.Output.WriteLineAsync($"Feature error: {error.Message}").ConfigureAwait(false);
             return 1;
@@ -492,7 +493,7 @@ internal sealed partial class DesktopWorkspaceCommand
 
             return 0;
         }
-        catch (Exception error) when (error is InvalidPlanException or IOException)
+        catch (Exception error) when (error is InvalidPlanException or JsonInputException or IOException)
         {
             await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return 1;
