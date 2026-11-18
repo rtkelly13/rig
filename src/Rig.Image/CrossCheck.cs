@@ -93,6 +93,9 @@ public static class CrossCheck
 {
     private static readonly string[] Projects = ["rtkelly-labs", "parquet-source-generator"];
 
+    /// <summary>Thresholds apply from this size up; smaller cuts (16px and 32px favicons) fail only on a changed promote or reject decision (ADR 0024).</summary>
+    public const int ThresholdMinSize = 180;
+
     /// <summary>
     /// The files to cross-check: each project's raster cuts as its <c>production-cuts.csv</c> declares them (AGENTS.md rule 4), one per source and size.
     /// A master cut is drawn from the row typed <c>master_svg</c>, a <c>favicon*</c> cut from the one typed <c>favicon_svg</c>.
@@ -233,6 +236,11 @@ public static class CrossCheck
 
         var meanAbs = (double)total / a.Length;
         var fraction = (double)differing / (a.Length / 4);
+        if (file.Size < ThresholdMinSize)
+        {
+            return new FileDivergence(file, meanAbs, fraction, maxAbs, metrics, breaches);
+        }
+
         if (meanAbs > thresholds.MeanAbsDifference)
         {
             breaches.Add($"mean abs difference {Number(meanAbs)} exceeds {Number(thresholds.MeanAbsDifference)}");

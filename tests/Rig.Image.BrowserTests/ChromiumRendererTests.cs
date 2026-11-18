@@ -56,7 +56,7 @@ public sealed class ChromiumRendererTests(ChromiumFixture chromium) : IClassFixt
             OracleFixture.RepoRoot,
             CrossCheck.Files(OracleFixture.RepoRoot),
             OracleFixture.PathOf("candidates"),
-            OracleFixture.ThresholdsForThisPlatform(),
+            DivergenceThresholds.Adr,
             TestContext.Current.CancellationToken);
 
         Assert.All(report.Files, file => Assert.True(file.Breaches.Count == 0, $"{file.File.Id}: {string.Join("; ", file.Breaches)}"));

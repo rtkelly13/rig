@@ -26,7 +26,7 @@ public sealed class PromotionVerdictTests(ChromiumFixture chromium) : IClassFixt
             await File.WriteAllTextAsync(Path.Combine(folder, "rtkelly-labs.parametric.svg"), IsoLoopBuilder.GenerateSvg(), cancellationToken);
             await using var skia = new SvgSkiaRenderer();
 
-            var report = await CrossCheck.RunAsync(chromium.Renderer, skia, OracleFixture.RepoRoot, [], folder, OracleFixture.ThresholdsForThisPlatform(), cancellationToken);
+            var report = await CrossCheck.RunAsync(chromium.Renderer, skia, OracleFixture.RepoRoot, [], folder, DivergenceThresholds.Adr, cancellationToken);
 
             var expected = OracleFixture.Document.Property("promotion").Items().ToDictionary(
                 entry => $"{entry.Property("project").AsString()}.{entry.Property("candidate").AsString()}",
