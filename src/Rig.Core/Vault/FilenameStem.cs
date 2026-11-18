@@ -3,8 +3,7 @@ using System.Text.RegularExpressions;
 namespace Rig.Core.Vault;
 
 /// <summary>
-/// Suggests a clean filename stem for a note from its current stem, title, source URL and related article, ported from
-/// <c>suggest_clean_filename_stem</c>. Each source gives a candidate, the candidates are scored, and the best one that does
+/// Suggests a clean filename stem for a note from its current stem, title, source URL and related article. Each source gives a candidate, the candidates are scored, and the best one that does
 /// not look like a URL wins, the earliest on a tie.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054", Justification = "URLs are kept as written; System.Uri normalizes them.")]
@@ -54,14 +53,14 @@ public static partial class FilenameStem
     /// A cleaner stem for <paramref name="currentStem"/>, keeping a <c>-social</c> suffix and a four-hex-digit collision
     /// suffix such as <c>-a1b2</c>.
     /// </summary>
-    /// <exception cref="FormatException"><paramref name="sourceUrl"/> has a malformed netloc (see <see cref="PyUrl.Split"/>).</exception>
+    /// <exception cref="FormatException"><paramref name="sourceUrl"/> has a malformed netloc (see <see cref="VaultUrl.Split"/>).</exception>
     public static string Suggest(string? currentStem, string title = "", string sourceUrl = "", string relatedArticle = "", int maxLength = 80)
     {
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(sourceUrl);
-        var stem = PyText.Strip(currentStem ?? string.Empty);
+        var stem = UnicodeText.Strip(currentStem ?? string.Empty);
         var social = string.Empty;
-        if (PyText.Lower(stem).EndsWith(SocialSuffix, StringComparison.Ordinal))
+        if (UnicodeText.Lower(stem).EndsWith(SocialSuffix, StringComparison.Ordinal))
         {
             social = SocialSuffix;
             stem = stem[..^SocialSuffix.Length];
@@ -85,7 +84,7 @@ public static partial class FilenameStem
         var cleanTitle = VaultText.CleanWhitespace(title);
         if (cleanTitle.Length > 0)
         {
-            cleanTitle = PyText.Strip(SocialDraftLead().Replace(cleanTitle, string.Empty, 1));
+            cleanTitle = UnicodeText.Strip(SocialDraftLead().Replace(cleanTitle, string.Empty, 1));
             cleanTitle = StripSourceHostPrefix(cleanTitle, sourceUrl);
             cleanTitle = StripHostBrandSuffix(cleanTitle, sourceUrl);
             cleanTitle = ExpandCommonTerms(cleanTitle);
@@ -133,12 +132,12 @@ public static partial class FilenameStem
         }
 
         var raw = match.Groups[1].Value.Split('/')[^1];
-        return PyText.Strip(raw.EndsWith(".md", StringComparison.Ordinal) ? raw[..^3] : raw);
+        return UnicodeText.Strip(raw.EndsWith(".md", StringComparison.Ordinal) ? raw[..^3] : raw);
     }
 
     private static string Host(string url)
     {
-        var host = PyText.Lower(PyUrl.Split(url).Hostname);
+        var host = UnicodeText.Lower(VaultUrl.Split(url).Hostname);
         return host.StartsWith("www.", StringComparison.Ordinal) ? host[4..] : host;
     }
 
@@ -150,8 +149,8 @@ public static partial class FilenameStem
             return "untitled";
         }
 
-        var split = PyUrl.Split(cleaned);
-        var host = PyText.Lower(split.Hostname);
+        var split = VaultUrl.Split(cleaned);
+        var host = UnicodeText.Lower(split.Hostname);
         if (host.StartsWith("www.", StringComparison.Ordinal))
         {
             host = host[4..];
@@ -159,16 +158,16 @@ public static partial class FilenameStem
 
         var parts = split.Path.Split('/')
             .Where(part => part.Length > 0)
-            .Select(part => FileExtension().Replace(PyUrl.Unquote(part), string.Empty))
+            .Select(part => FileExtension().Replace(VaultUrl.Unquote(part), string.Empty))
             .ToList();
         if (host is "x.com" or "twitter.com")
         {
-            if (parts.Count >= 3 && string.Equals(PyText.Lower(parts[1]), "status", StringComparison.Ordinal))
+            if (parts.Count >= 3 && string.Equals(UnicodeText.Lower(parts[1]), "status", StringComparison.Ordinal))
             {
                 return VaultText.SlugifyNoteStem($"{parts[0]} {parts[2]}");
             }
 
-            if (parts.Count > 0 && !string.Equals(PyText.Lower(parts[0]), "i", StringComparison.Ordinal))
+            if (parts.Count > 0 && !string.Equals(UnicodeText.Lower(parts[0]), "i", StringComparison.Ordinal))
             {
                 return VaultText.SlugifyNoteStem(parts[0]);
             }
@@ -176,7 +175,7 @@ public static partial class FilenameStem
 
         foreach (var part in Enumerable.Reverse(parts))
         {
-            if (!IndexSegments.Contains(PyText.Lower(part)))
+            if (!IndexSegments.Contains(UnicodeText.Lower(part)))
             {
                 return VaultText.SlugifyNoteStem(part);
             }
@@ -241,8 +240,8 @@ public static partial class FilenameStem
 
         foreach (var prefix in prefixes)
         {
-            var pattern = new Regex($"^{Regex.Escape(prefix)}[.\\-:{PyText.Space}]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
-            var updated = PyText.Strip(pattern.Replace(cleaned, string.Empty));
+            var pattern = new Regex($"^{Regex.Escape(prefix)}[.\\-:{UnicodeText.Space}]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
+            var updated = UnicodeText.Strip(pattern.Replace(cleaned, string.Empty));
             if (!string.Equals(updated, cleaned, StringComparison.Ordinal))
             {
                 return updated;
@@ -270,10 +269,10 @@ public static partial class FilenameStem
         var suffixes = new List<string> { host, labels[0] };
         suffixes.AddRange(labels.Where(label => !Tlds.Contains(label)));
         var updated = cleaned;
-        foreach (var suffix in suffixes.Select(PyText.Strip).Where(suffix => suffix.Length > 0))
+        foreach (var suffix in suffixes.Select(UnicodeText.Strip).Where(suffix => suffix.Length > 0))
         {
-            var pattern = new Regex($"[{PyText.Space}\\-:|()]+{Regex.Escape(suffix)}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
-            var candidate = PyText.Strip(pattern.Replace(updated, string.Empty));
+            var pattern = new Regex($"[{UnicodeText.Space}\\-:|()]+{Regex.Escape(suffix)}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
+            var candidate = UnicodeText.Strip(pattern.Replace(updated, string.Empty));
             if (candidate.Length > 0 && !string.Equals(candidate, updated, StringComparison.Ordinal))
             {
                 updated = candidate;
@@ -285,7 +284,7 @@ public static partial class FilenameStem
 
     private static string ExpandCommonTerms(string text)
     {
-        var lowered = PyText.Lower(VaultText.CleanWhitespace(text));
+        var lowered = UnicodeText.Lower(VaultText.CleanWhitespace(text));
         foreach (var (old, replacement) in StemTerms)
         {
             lowered = lowered.Replace(old, replacement, StringComparison.Ordinal);
@@ -296,26 +295,26 @@ public static partial class FilenameStem
 
     private static string RemoveDomainLikeLead(string value)
     {
-        var updated = PyText.Strip(DomainLead().Replace(VaultText.CleanWhitespace(value), string.Empty));
-        return PyText.Strip(SpacedDomainLead().Replace(updated, string.Empty));
+        var updated = UnicodeText.Strip(DomainLead().Replace(VaultText.CleanWhitespace(value), string.Empty));
+        return UnicodeText.Strip(SpacedDomainLead().Replace(updated, string.Empty));
     }
 
     private static string StemFromUrlishStem(string stem)
     {
-        var normalized = PyText.Strip(VaultText.CleanWhitespace(stem), "-_. ");
+        var normalized = UnicodeText.Strip(VaultText.CleanWhitespace(stem), "-_. ");
         if (normalized.Length == 0)
         {
             return string.Empty;
         }
 
         var social = string.Empty;
-        if (PyText.Lower(normalized).EndsWith(SocialSuffix, StringComparison.Ordinal))
+        if (UnicodeText.Lower(normalized).EndsWith(SocialSuffix, StringComparison.Ordinal))
         {
             social = SocialSuffix;
             normalized = normalized[..^SocialSuffix.Length].TrimEnd('-', '_', '.', ' ');
         }
 
-        var tokenized = PyText.Lower(PyText.Strip(DotsAndUnderscores().Replace(normalized, "-"), "-"));
+        var tokenized = UnicodeText.Lower(UnicodeText.Strip(DotsAndUnderscores().Replace(normalized, "-"), "-"));
         if (tokenized.Length == 0 || !VaultText.LooksLikeUrlishStem(normalized))
         {
             return string.Empty;
@@ -352,7 +351,7 @@ public static partial class FilenameStem
     [GeneratedRegex("-([a-f0-9]{4})$")]
     private static partial Regex CollisionSuffix();
 
-    [GeneratedRegex($"^social draft for[{PyText.Space}]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex($"^social draft for[{UnicodeText.Space}]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex SocialDraftLead();
 
     [GeneratedRegex(@"\[\[([^\]|]+)")]
@@ -370,10 +369,10 @@ public static partial class FilenameStem
     [GeneratedRegex("[a-z]{4,}")]
     private static partial Regex FourLetters();
 
-    [GeneratedRegex($@"^(?:[a-z0-9-]+(?:\.[a-z0-9-]+)+)[.\-:{PyText.Space}]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex($@"^(?:[a-z0-9-]+(?:\.[a-z0-9-]+)+)[.\-:{UnicodeText.Space}]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex DomainLead();
 
-    [GeneratedRegex($@"^(?:[a-z0-9-]+[{PyText.Space}]+)+(?:com|org|net|io|dev|ai|app|co|uk|eu|fm|me|tv|ly|sh|rs)[.\-:{PyText.Space}]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex($@"^(?:[a-z0-9-]+[{UnicodeText.Space}]+)+(?:com|org|net|io|dev|ai|app|co|uk|eu|fm|me|tv|ly|sh|rs)[.\-:{UnicodeText.Space}]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex SpacedDomainLead();
 
     [GeneratedRegex("[_.]+")]

@@ -91,7 +91,7 @@ public sealed class GovernancePlanTests : IDisposable
 
         var plan = await PlanAsync(policies, api);
 
-        Assert.Equal("""{"repo":"acme/widget","changes":[],"errors":[]}""", PyRepr.Json(plan.ToJson()));
+        Assert.Equal("""{"repo":"acme/widget","changes":[],"errors":[]}""", QuotedText.Json(plan.ToJson()));
         Assert.Equal(0, GovernancePlan.ExitCode([plan], applied: false));
         Assert.Empty(Writes(api));
     }

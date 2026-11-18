@@ -52,7 +52,7 @@ internal sealed partial class GovernanceCommand
 
         if (json)
         {
-            await output.WriteLineAsync(PyRepr.Json(new JsonArray([.. plans.Select(JsonNode (p) => p.ToJson())]))).ConfigureAwait(false);
+            await output.WriteLineAsync(QuotedText.Json(new JsonArray([.. plans.Select(JsonNode (p) => p.ToJson())]))).ConfigureAwait(false);
         }
         else
         {
@@ -257,8 +257,8 @@ internal sealed partial class GovernanceCommand
                 var line = result.Status switch
                 {
                     "aligned" => $"· {name} ({repo}): Pages up to date ({OrDefaultDomain(policy.Cname)})",
-                    "dry_run" => $"~ {name} ({repo}): would configure Pages: {PyRepr.List(result.Actions)}",
-                    "success" => $"✓ {name} ({repo}): Pages configured: {PyRepr.List(result.Actions)}",
+                    "dry_run" => $"~ {name} ({repo}): would configure Pages: {QuotedText.List(result.Actions)}",
+                    "success" => $"✓ {name} ({repo}): Pages configured: {QuotedText.List(result.Actions)}",
                     _ => $"✗ {name} ({repo}): failed to align Pages ({result.Error ?? "None"})",
                 };
                 failures += result.Status is "aligned" or "dry_run" or "success" ? 0 : 1;

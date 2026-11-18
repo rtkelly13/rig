@@ -415,7 +415,7 @@ public static partial class TraceAnalytics
             }
         }
 
-        return [.. kept.Order(PyText.CodePointOrder)];
+        return [.. kept.Order(UnicodeText.CodePointOrder)];
     }
 
     private static IReadOnlyList<TraceRunInfo> Runs(IReadOnlyList<TraceSpanInfo> spans)
@@ -613,7 +613,7 @@ public static partial class TraceAnalytics
                 System.Text.Json.JsonValueKind.Number when value.TryGetValue<long>(out var whole) => whole,
                 System.Text.Json.JsonValueKind.Number when value.TryGetValue<double>(out var real) && real == Math.Floor(real) && Math.Abs(real) < 9e18 => (long)real,
                 System.Text.Json.JsonValueKind.String when value.TryGetValue<string>(out var text)
-                    && long.TryParse(PyText.Strip(text), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed) => parsed,
+                    && long.TryParse(UnicodeText.Strip(text), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed) => parsed,
                 System.Text.Json.JsonValueKind.True => 1,
                 System.Text.Json.JsonValueKind.False => 0,
                 _ => null,
@@ -627,7 +627,7 @@ public static partial class TraceAnalytics
             int whole => whole,
             double real when real == Math.Floor(real) && Math.Abs(real) < 9e18 => (long)real,
             bool flag => flag ? 1 : 0,
-            string text when long.TryParse(PyText.Strip(text), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed) => parsed,
+            string text when long.TryParse(UnicodeText.Strip(text), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed) => parsed,
             _ => null,
         };
 

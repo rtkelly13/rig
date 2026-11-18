@@ -52,7 +52,7 @@ public static partial class QueueMarkdown
     {
         ArgumentNullException.ThrowIfNull(text);
         var block = Block(text);
-        var rows = PyText.SplitLines(block);
+        var rows = UnicodeText.SplitLines(block);
         if (!rows.Take(3).SequenceEqual([Begin, Header, Divider]))
         {
             throw new FormatException("Invalid triage table header");
@@ -62,7 +62,7 @@ public static partial class QueueMarkdown
         var refs = new HashSet<PrRef>();
         foreach (var line in rows.Skip(3).SkipLast(1))
         {
-            var cells = line.Split('|').Select(PyText.Strip).ToArray();
+            var cells = line.Split('|').Select(UnicodeText.Strip).ToArray();
             if (cells.Length != 11 || cells[0].Length != 0 || cells[^1].Length != 0)
             {
                 throw new FormatException("Each triage row must have nine columns");
@@ -176,7 +176,7 @@ public static partial class QueueMarkdown
     private static bool AwareTimestamp(string text) => Offset().IsMatch(text)
         && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 
-    [GeneratedRegex("[" + PyText.Space + "]+")]
+    [GeneratedRegex("[" + UnicodeText.Space + "]+")]
     private static partial Regex Spaces();
 
     [GeneratedRegex(@"\A\[([^\]]+)\]\(([^)]+)\)\z")]

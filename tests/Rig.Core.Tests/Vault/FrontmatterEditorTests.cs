@@ -78,8 +78,8 @@ public sealed class FrontmatterEditorTests
     [Fact]
     public void Metadata_differing_in_a_values_kind_is_not_the_same()
     {
-        Dictionary<string, PyValue> left = new() { ["a"] = new PyStr("x") };
-        Dictionary<string, PyValue> right = new() { ["a"] = PyNone.Value };
+        Dictionary<string, YamlValue> left = new() { ["a"] = new YamlString("x") };
+        Dictionary<string, YamlValue> right = new() { ["a"] = YamlNull.Value };
 
         Assert.False(FrontmatterEditor.SameMetadata(left, right));
     }

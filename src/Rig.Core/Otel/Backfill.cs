@@ -129,7 +129,7 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
 
         if (Directory.Exists(runtime))
         {
-            roots.AddRange(Directory.EnumerateDirectories(runtime).Order(PyText.CodePointOrder).Select(copy => Path.Join(copy, "temp", "traces", "sdk")));
+            roots.AddRange(Directory.EnumerateDirectories(runtime).Order(UnicodeText.CodePointOrder).Select(copy => Path.Join(copy, "temp", "traces", "sdk")));
         }
 
         roots.Add(Path.Join(baseDir, "chrome-tabs", "traces"));
@@ -138,7 +138,7 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
 
     /// <summary>The always-on collector's trace files: the active <c>traces.jsonl</c> and its rotated copies.</summary>
     public static IReadOnlyList<string> CollectorTraceFiles(string folder) =>
-        Directory.Exists(folder) ? [.. Directory.EnumerateFiles(folder, "traces*.jsonl").Order(PyText.CodePointOrder)] : [];
+        Directory.Exists(folder) ? [.. Directory.EnumerateFiles(folder, "traces*.jsonl").Order(UnicodeText.CodePointOrder)] : [];
 
     /// <summary>The NDJSON files under <paramref name="roots"/> plus <paramref name="extra"/> files, each once (links and repeats collapse).</summary>
     public static IReadOnlyList<string> Discover(IEnumerable<string> roots, IEnumerable<string> extra)
@@ -151,7 +151,7 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         {
             if (Directory.Exists(root))
             {
-                candidates.AddRange(Directory.EnumerateFiles(root, "*.ndjson", recurse).Order(PyText.CodePointOrder));
+                candidates.AddRange(Directory.EnumerateFiles(root, "*.ndjson", recurse).Order(UnicodeText.CodePointOrder));
             }
         }
 
@@ -163,7 +163,7 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
             _ = seen.TryAdd(NormCase(resolved), resolved);
         }
 
-        return [.. seen.Values.Order(PyText.CodePointOrder)];
+        return [.. seen.Values.Order(UnicodeText.CodePointOrder)];
     }
 
     /// <summary>The marks in <paramref name="path"/>; none when it is missing, unreadable or malformed.</summary>
@@ -202,10 +202,10 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
     public static void WriteMarks(string path, IReadOnlyDictionary<string, FileMark> marks)
     {
         ArgumentNullException.ThrowIfNull(marks);
-        var w = new PyJsonWriter();
+        var w = new IndentedJsonWriter();
         _ = w.Object(() =>
         {
-            foreach (var key in marks.Keys.Order(PyText.CodePointOrder))
+            foreach (var key in marks.Keys.Order(UnicodeText.CodePointOrder))
             {
                 _ = w.Key(key).Object(() => w.Key("size").Number(marks[key].Size).Key("mtime_ns").Number(marks[key].MtimeNs));
             }

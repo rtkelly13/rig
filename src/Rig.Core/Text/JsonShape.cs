@@ -8,7 +8,7 @@ namespace Rig.Core.Text;
 /// <summary>
 /// Reads fields out of a <see cref="JsonNode"/> tree once, so no module hand-walks a payload. Two policies live here:
 /// the strict accessors (<see cref="String"/>, <see cref="Int"/>, …) throw <see cref="FormatException"/> for a misshapen
-/// field, as the Python's pydantic decode did for GraphQL; the <c>As*</c> and <c>Field*</c> accessors never throw and
+/// field, as GraphQL decoding expects; the <c>As*</c> and <c>Field*</c> accessors never throw and
 /// answer null instead, for payloads another tool owns. A module picks one and keeps its own exception and wording —
 /// <see cref="TryRead{T}"/> turns a strict miss into null for the enclosing object.
 /// </summary>

@@ -49,9 +49,9 @@ public static class TraceSpans
     {
         ArgumentNullException.ThrowIfNull(text);
         var spans = new List<FileSpan>();
-        foreach (var line in PyText.SplitLines(text))
+        foreach (var line in UnicodeText.SplitLines(text))
         {
-            if (PyText.Strip(line).Length > 0 && Envelope(line) is { } envelope)
+            if (UnicodeText.Strip(line).Length > 0 && Envelope(line) is { } envelope)
             {
                 spans.AddRange(envelope);
             }
@@ -237,7 +237,7 @@ public static class TraceSpans
                     break;
                 case JsonObject obj:
                     text.Append('{');
-                    foreach (var (key, member) in obj.OrderBy(pair => pair.Key, PyText.CodePointOrder))
+                    foreach (var (key, member) in obj.OrderBy(pair => pair.Key, UnicodeText.CodePointOrder))
                     {
                         text.Append(JsonSerializer.Serialize(key)).Append(':');
                         Write(member);

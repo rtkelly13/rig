@@ -68,17 +68,17 @@ public static partial class NuGetGovernance
     /// <summary>The login jobs of the workflow in <paramref name="text"/>; null when it is not a workflow.</summary>
     public static PublishWorkflow? ReadPublishWorkflow(string text)
     {
-        PyValue? loaded;
+        YamlValue? loaded;
         try
         {
-            loaded = PyYaml.Load(text);
+            loaded = VaultYaml.Load(text);
         }
-        catch (PyYamlException)
+        catch (VaultYamlException)
         {
             return null;
         }
 
-        if (loaded is not PyDict workflow || Get(workflow, "jobs") is not PyDict jobs)
+        if (loaded is not YamlMap workflow || Get(workflow, "jobs") is not YamlMap jobs)
         {
             return null;
         }
@@ -88,7 +88,7 @@ public static partial class NuGetGovernance
         var called = new List<string>();
         foreach (var (key, value) in jobs.Entries)
         {
-            if (value is not PyDict job)
+            if (value is not YamlMap job)
             {
                 continue;
             }
@@ -145,19 +145,19 @@ public static partial class NuGetGovernance
         return left[..length];
     }
 
-    private static LoginJob? Login(string name, PyDict job, bool? inherited)
+    private static LoginJob? Login(string name, YamlMap job, bool? inherited)
     {
-        var steps = Get(job, "steps") is PyList list ? list.Items.OfType<PyDict>().ToList() : [];
+        var steps = Get(job, "steps") is YamlList list ? list.Items.OfType<YamlMap>().ToList() : [];
         var at = steps.FindIndex(step => (Str(Get(step, "uses")) ?? string.Empty).StartsWith("nuget/login", StringComparison.OrdinalIgnoreCase));
         if (at < 0)
         {
             return null;
         }
 
-        var userInput = Get(steps[at], "with") is PyDict inputs ? Str(Get(inputs, "user")) : null;
+        var userInput = Get(steps[at], "with") is YamlMap inputs ? Str(Get(inputs, "user")) : null;
         var pushes = steps.Skip(at + 1).Where(step => PushPattern().IsMatch(Str(Get(step, "run")) ?? string.Empty)).ToList();
         var texts = pushes.Select(step => Str(Get(step, "run")) ?? string.Empty)
-            .Concat(pushes.SelectMany(step => Get(step, "env") is PyDict env ? env.Entries.Select(e => Str(e.Value) ?? string.Empty) : []));
+            .Concat(pushes.SelectMany(step => Get(step, "env") is YamlMap env ? env.Entries.Select(e => Str(e.Value) ?? string.Empty) : []));
         var secrets = texts.SelectMany(text => NuGetSecretPattern().Matches(text).Select(m => m.Groups[1].Value))
             .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         var own = IdTokenWrite(Get(job, "permissions"));
@@ -168,7 +168,7 @@ public static partial class NuGetGovernance
             ResolveUser(userInput),
             Get(job, "environment") switch
             {
-                PyDict environment => Str(Get(environment, "name")),
+                YamlMap environment => Str(Get(environment, "name")),
                 var other => Str(other),
             },
             pushes.Count > 0,
@@ -177,10 +177,10 @@ public static partial class NuGetGovernance
     }
 
     // Null when nothing is declared, so a job can fall back to the workflow's permissions.
-    private static bool? IdTokenWrite(PyValue? permissions) => permissions switch
+    private static bool? IdTokenWrite(YamlValue? permissions) => permissions switch
     {
-        PyStr text => text.Text == "write-all",
-        PyDict map => Str(Get(map, "id-token")) == "write",
+        YamlString text => text.Text == "write-all",
+        YamlMap map => Str(Get(map, "id-token")) == "write",
         _ => null,
     };
 
@@ -202,17 +202,17 @@ public static partial class NuGetGovernance
         return value.Contains("${{", StringComparison.Ordinal) ? null : value.Trim();
     }
 
-    private static PyValue? Get(PyDict map, string key) =>
-        map.Entries.LastOrDefault(entry => entry.Key is PyStr text && text.Text == key).Value;
+    private static YamlValue? Get(YamlMap map, string key) =>
+        map.Entries.LastOrDefault(entry => entry.Key is YamlString text && text.Text == key).Value;
 
-    private static string? Str(PyValue? value) => value is PyStr text ? text.Text : null;
+    private static string? Str(YamlValue? value) => value is YamlString text ? text.Text : null;
 
     // A job id as GitHub reads it: Python's str() of the key.
-    private static string KeyText(PyValue key) => key switch
+    private static string KeyText(YamlValue key) => key switch
     {
-        PyStr text => text.Text,
-        PyScalar scalar => scalar.Rendered,
-        PyNone => "None",
+        YamlString text => text.Text,
+        YamlScalar scalar => scalar.Rendered,
+        YamlNull => "None",
         _ => string.Empty,
     };
 

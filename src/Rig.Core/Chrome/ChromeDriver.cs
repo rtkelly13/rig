@@ -229,7 +229,7 @@ public sealed partial record WindowProfile(string? Directory, string? Name)
             return null;
         }
 
-        var name = PyText.Strip(RemoveSuffix(RemoveSuffix(displayName, " - Chrome"), " - Google Chrome"));
+        var name = UnicodeText.Strip(RemoveSuffix(RemoveSuffix(displayName, " - Chrome"), " - Google Chrome"));
         return name.Length == 0 ? null : name;
     }
 
@@ -260,7 +260,7 @@ public static class TabMenus
         }
 
         var head = entry[..(entry.Length - suffix.Length)];
-        var title = PyText.Lower(PyText.Strip(activeTitle));
+        var title = UnicodeText.Lower(UnicodeText.Strip(activeTitle));
         if (head.EndsWith('…'))
         {
             return head.Length > 1 && title.StartsWith(head[..^1], StringComparison.Ordinal);

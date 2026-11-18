@@ -6,33 +6,32 @@ using YamlDotNet.Core.Events;
 
 namespace Rig.Core.Vault;
 
-/// <summary>A document PyYAML's safe loader would refuse; <see cref="Exception.Message"/> says why, in rig's words.</summary>
-public sealed class PyYamlException : Exception
+/// <summary>A document the loader refuses; <see cref="Exception.Message"/> says why, in rig's words.</summary>
+public sealed class VaultYamlException : Exception
 {
     /// <summary>A refusal with no reason given.</summary>
-    public PyYamlException()
+    public VaultYamlException()
     {
     }
 
     /// <summary>A refusal for <paramref name="message"/>.</summary>
-    public PyYamlException(string message)
+    public VaultYamlException(string message)
         : base(message)
     {
     }
 
     /// <summary>A refusal for <paramref name="message"/>, caused by <paramref name="innerException"/>.</summary>
-    public PyYamlException(string message, Exception innerException)
+    public VaultYamlException(string message, Exception innerException)
         : base(message, innerException)
     {
     }
 }
 
 /// <summary>
-/// <c>yaml.load(text, Loader=CSafeLoader)</c> as PyYAML 6 does it. YamlDotNet only parses; composing, YAML 1.1 implicit
-/// tag resolution, merge keys and the safe constructors follow PyYAML's <c>composer</c>, <c>resolver</c> and
-/// <c>constructor</c> modules, so a note's frontmatter reads the same here as in the Python tools it replaces.
+/// Loads YAML 1.1 with the safe schema. YamlDotNet only parses; composing, implicit tag resolution, merge keys and the safe
+/// constructors are done here, so frontmatter written for the vault keeps its meaning.
 /// </summary>
-public static partial class PyYaml
+public static partial class VaultYaml
 {
     private const string Prefix = "tag:yaml.org,2002:";
     private const string StrTag = Prefix + "str";
@@ -44,8 +43,8 @@ public static partial class PyYaml
     /// <summary>
     /// The value of the single YAML document in <paramref name="text"/>, or <see langword="null"/> when it holds none.
     /// </summary>
-    /// <exception cref="PyYamlException">PyYAML would raise on this text.</exception>
-    public static PyValue? Load(string text)
+    /// <exception cref="VaultYamlException">The text is not a loadable YAML document.</exception>
+    public static YamlValue? Load(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
         RejectUnprintable(text);
@@ -56,7 +55,7 @@ public static partial class PyYaml
         }
         catch (YamlException exception)
         {
-            throw new PyYamlException(exception.Message, exception);
+            throw new VaultYamlException(exception.Message, exception);
         }
 
         return root is null ? null : new Constructor().Construct(root);
@@ -75,7 +74,7 @@ public static partial class PyYaml
                 || value is >= 0x10000 and <= 0x10FFFF;
             if (!printable)
             {
-                throw new PyYamlException($"special characters are not allowed (U+{value:X4})");
+                throw new VaultYamlException($"special characters are not allowed (U+{value:X4})");
             }
         }
     }
@@ -95,7 +94,7 @@ public static partial class PyYaml
         Expect<DocumentEnd>(parser);
         if (parser.Current is not StreamEnd)
         {
-            throw new PyYamlException("expected a single document in the stream");
+            throw new VaultYamlException("expected a single document in the stream");
         }
 
         return node;
@@ -106,7 +105,7 @@ public static partial class PyYaml
     {
         if (parser.Current is not T)
         {
-            throw new PyYamlException($"expected {typeof(T).Name}, found {parser.Current?.GetType().Name}");
+            throw new VaultYamlException($"expected {typeof(T).Name}, found {parser.Current?.GetType().Name}");
         }
 
         _ = parser.MoveNext();
@@ -138,13 +137,13 @@ public static partial class PyYaml
 
         public Node ComposeNode()
         {
-            var current = parser.Current ?? throw new PyYamlException("unexpected end of stream");
+            var current = parser.Current ?? throw new VaultYamlException("unexpected end of stream");
             if (current is AnchorAlias alias)
             {
                 _ = parser.MoveNext();
                 return _anchors.TryGetValue(alias.Value.Value, out var target)
                     ? target
-                    : throw new PyYamlException($"found undefined alias {alias.Value.Value}");
+                    : throw new VaultYamlException($"found undefined alias {alias.Value.Value}");
             }
 
             return current switch
@@ -152,7 +151,7 @@ public static partial class PyYaml
                 Scalar scalar => ComposeScalar(scalar),
                 SequenceStart start => ComposeSequence(start),
                 MappingStart start => ComposeMapping(start),
-                _ => throw new PyYamlException($"unexpected {current.GetType().Name}"),
+                _ => throw new VaultYamlException($"unexpected {current.GetType().Name}"),
             };
         }
 
@@ -165,7 +164,7 @@ public static partial class PyYaml
 
             if (!_anchors.TryAdd(anchor.Value, node))
             {
-                throw new PyYamlException($"found duplicate anchor {anchor.Value}");
+                throw new VaultYamlException($"found duplicate anchor {anchor.Value}");
             }
         }
 
@@ -211,7 +210,7 @@ public static partial class PyYaml
         }
     }
 
-    // PyYAML's Resolver: YAML 1.1's implicit types, tried in the order PyYAML registers them.
+    // YAML 1.1's implicit types, tried in a fixed order.
     private static string Resolve(string value, bool plain)
     {
         if (!plain)
@@ -245,7 +244,7 @@ public static partial class PyYaml
         return StrTag;
     }
 
-    // Python's `$` also matches before a final newline, which .NET's `\z` does not: `\n?\z` keeps that.
+    // `$` here also matches before a final newline, which .NET's `\z` does not: `\n?\z` keeps that.
     [GeneratedRegex(@"^(?:yes|Yes|YES|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF)\n?\z")]
     private static partial Regex BoolPattern();
 
@@ -270,14 +269,14 @@ public static partial class PyYaml
     [GeneratedRegex(@"^(?<year>[0-9][0-9][0-9][0-9])-(?<month>[0-9][0-9]?)-(?<day>[0-9][0-9]?)(?:(?:[Tt]|[ \t]+)(?<hour>[0-9][0-9]?):(?<minute>[0-9][0-9]):(?<second>[0-9][0-9])(?:\.(?<fraction>[0-9]*))?(?:[ \t]*(?<tz>Z|(?<sign>[-+])(?<tzhour>[0-9][0-9]?)(?::(?<tzminute>[0-9][0-9]))?))?)?\n?\z")]
     private static partial Regex TimestampParts();
 
-    // PyYAML's SafeConstructor. A node reached twice through an alias builds one value; a collection that holds itself is
-    // legal, since PyYAML hands out the collection before filling it, and here reads as an empty one.
+    // The safe constructors. A node reached twice through an alias builds one value; a collection that holds itself is
+    // legal, and here reads as an empty one.
     private sealed class Constructor
     {
-        private readonly Dictionary<Node, PyValue> _built = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<Node, YamlValue> _built = new(ReferenceEqualityComparer.Instance);
         private readonly HashSet<Node> _building = new(ReferenceEqualityComparer.Instance);
 
-        public PyValue Construct(Node node)
+        public YamlValue Construct(Node node)
         {
             if (_built.TryGetValue(node, out var value))
             {
@@ -286,7 +285,7 @@ public static partial class PyYaml
 
             if (!_building.Add(node))
             {
-                return node is MappingNode { Tag: MapTag } ? new PyDict([]) : node is MappingNode ? PyOther.Value : new PyList([]);
+                return node is MappingNode { Tag: MapTag } ? new YamlMap([]) : node is MappingNode ? YamlOther.Value : new YamlList([]);
             }
 
             value = node switch
@@ -294,64 +293,64 @@ public static partial class PyYaml
                 ScalarNode scalar => ConstructScalar(scalar),
                 SequenceNode sequence => ConstructSequence(sequence),
                 MappingNode mapping => ConstructMapping(mapping),
-                _ => throw new PyYamlException("unknown node"),
+                _ => throw new VaultYamlException("unknown node"),
             };
             _ = _building.Remove(node);
             _built[node] = value;
             return value;
         }
 
-        private static PyValue ConstructScalar(ScalarNode node) => node.Tag switch
+        private static YamlValue ConstructScalar(ScalarNode node) => node.Tag switch
         {
-            Prefix + "null" => PyNone.Value,
-            Prefix + "bool" => new PyScalar(ConstructBool(node.Value)),
-            Prefix + "int" => new PyScalar(ConstructInt(node.Value).ToString(CultureInfo.InvariantCulture)),
-            Prefix + "float" => new PyScalar(PyFloat.Repr(ConstructFloat(node.Value))),
+            Prefix + "null" => YamlNull.Value,
+            Prefix + "bool" => new YamlScalar(ConstructBool(node.Value)),
+            Prefix + "int" => new YamlScalar(ConstructInt(node.Value).ToString(CultureInfo.InvariantCulture)),
+            Prefix + "float" => new YamlScalar(YamlFloat.Repr(ConstructFloat(node.Value))),
             Prefix + "binary" => ConstructBinary(node.Value),
-            Prefix + "timestamp" => new PyScalar(ConstructTimestamp(node.Value)),
-            StrTag => new PyStr(node.Value),
-            _ => throw new PyYamlException($"could not determine a constructor for the tag {node.Tag}"),
+            Prefix + "timestamp" => new YamlScalar(ConstructTimestamp(node.Value)),
+            StrTag => new YamlString(node.Value),
+            _ => throw new VaultYamlException($"could not determine a constructor for the tag {node.Tag}"),
         };
 
-        private PyList ConstructSequence(SequenceNode node) => node.Tag switch
+        private YamlList ConstructSequence(SequenceNode node) => node.Tag switch
         {
-            SeqTag => new PyList([.. node.Items.Select(Construct)]),
+            SeqTag => new YamlList([.. node.Items.Select(Construct)]),
             Prefix + "omap" or Prefix + "pairs" => ConstructPairs(node),
-            _ => throw new PyYamlException($"could not construct {node.Tag} from a sequence"),
+            _ => throw new VaultYamlException($"could not construct {node.Tag} from a sequence"),
         };
 
         // !!omap and !!pairs: a list of one-entry mappings, built as a list of tuples.
-        private PyList ConstructPairs(SequenceNode node)
+        private YamlList ConstructPairs(SequenceNode node)
         {
             foreach (var item in node.Items)
             {
                 if (item is not MappingNode { Pairs.Count: 1 } pair)
                 {
-                    throw new PyYamlException("expected a mapping of length 1");
+                    throw new VaultYamlException("expected a mapping of length 1");
                 }
 
                 _ = Construct(pair.Pairs[0].Key);
                 _ = Construct(pair.Pairs[0].Value);
             }
 
-            return new PyList([.. node.Items.Select(_ => (PyValue)PyOther.Value)]);
+            return new YamlList([.. node.Items.Select(_ => (YamlValue)YamlOther.Value)]);
         }
 
-        private PyValue ConstructMapping(MappingNode node)
+        private YamlValue ConstructMapping(MappingNode node)
         {
             if (node.Tag is not (MapTag or Prefix + "set"))
             {
-                throw new PyYamlException($"could not construct {node.Tag} from a mapping");
+                throw new VaultYamlException($"could not construct {node.Tag} from a mapping");
             }
 
-            var entries = new List<KeyValuePair<PyValue, PyValue>>();
-            var index = new Dictionary<PyValue, int>();
+            var entries = new List<KeyValuePair<YamlValue, YamlValue>>();
+            var index = new Dictionary<YamlValue, int>();
             foreach (var (keyNode, valueNode) in Flatten(node))
             {
                 var key = Construct(keyNode);
                 if (keyNode is not ScalarNode)
                 {
-                    throw new PyYamlException("found unhashable key");
+                    throw new VaultYamlException("found unhashable key");
                 }
 
                 var value = Construct(valueNode);
@@ -366,10 +365,10 @@ public static partial class PyYaml
                 }
             }
 
-            return node.Tag == MapTag ? new PyDict(entries) : PyOther.Value;
+            return node.Tag == MapTag ? new YamlMap(entries) : YamlOther.Value;
         }
 
-        // SafeConstructor.flatten_mapping, in place as PyYAML does it: each merge pair is removed before its value is
+        // Merge keys, flattened in place: each merge pair is removed before its value is
         // flattened, so a mapping that merges itself (`&a {<<: *a}`) ends rather than recursing, and merged entries go
         // first so the mapping's own keys win.
         private static List<KeyValuePair<Node, Node>> Flatten(MappingNode node)
@@ -397,19 +396,13 @@ public static partial class PyYaml
                         merge.AddRange(Flatten(mapping));
                         break;
                     case SequenceNode sequence:
-                        var parts = new List<List<KeyValuePair<Node, Node>>>();
-                        foreach (var item in sequence.Items)
-                        {
-                            parts.Add(item is MappingNode part
-                                ? Flatten(part)
-                                : throw new PyYamlException("expected a mapping for merging"));
-                        }
-
-                        parts.Reverse();
-                        merge.AddRange(parts.SelectMany(part => part));
+                        merge.AddRange(sequence.Items
+                            .Select(item => item is MappingNode part ? Flatten(part) : throw new VaultYamlException("expected a mapping for merging"))
+                            .Reverse()
+                            .SelectMany(part => part));
                         break;
                     default:
-                        throw new PyYamlException("expected a mapping or list of mappings for merging");
+                        throw new VaultYamlException("expected a mapping or list of mappings for merging");
                 }
             }
 
@@ -421,7 +414,7 @@ public static partial class PyYaml
         {
             "yes" or "true" or "on" => "True",
             "no" or "false" or "off" => "False",
-            _ => throw new PyYamlException($"not a bool: {value}"),
+            _ => throw new VaultYamlException($"not a bool: {value}"),
         };
 
         private static BigInteger ConstructInt(string text)
@@ -429,7 +422,7 @@ public static partial class PyYaml
             var value = text.Replace("_", string.Empty, StringComparison.Ordinal);
             if (value.Length == 0)
             {
-                throw new PyYamlException("empty int");
+                throw new VaultYamlException("empty int");
             }
 
             var sign = value[0] == '-' ? BigInteger.MinusOne : BigInteger.One;
@@ -445,25 +438,25 @@ public static partial class PyYaml
 
             if (value.StartsWith("0b", StringComparison.Ordinal))
             {
-                return sign * PyInt.Parse(value[2..], 2);
+                return sign * YamlInt.Parse(value[2..], 2);
             }
 
             if (value.StartsWith("0x", StringComparison.Ordinal))
             {
-                return sign * PyInt.Parse(value[2..], 16);
+                return sign * YamlInt.Parse(value[2..], 16);
             }
 
             if (value.StartsWith('0'))
             {
-                return sign * PyInt.Parse(value, 8);
+                return sign * YamlInt.Parse(value, 8);
             }
 
             if (value.Contains(':', StringComparison.Ordinal))
             {
-                return sign * Sexagesimal(value.Split(':').Select(part => PyInt.Parse(part, 10)));
+                return sign * Sexagesimal(value.Split(':').Select(part => YamlInt.Parse(part, 10)));
             }
 
-            return sign * PyInt.Parse(value, 10);
+            return sign * YamlInt.Parse(value, 10);
         }
 
         private static BigInteger Sexagesimal(IEnumerable<BigInteger> digits) =>
@@ -474,7 +467,7 @@ public static partial class PyYaml
             var value = text.Replace("_", string.Empty, StringComparison.Ordinal).ToLowerInvariant();
             if (value.Length == 0)
             {
-                throw new PyYamlException("empty float");
+                throw new VaultYamlException("empty float");
             }
 
             var sign = value[0] == '-' ? -1.0 : 1.0;
@@ -495,17 +488,17 @@ public static partial class PyYaml
 
             if (value.Contains(':', StringComparison.Ordinal))
             {
-                return sign * value.Split(':').Select(PyFloat.Parse).Aggregate(0.0, (total, digit) => (total * 60) + digit);
+                return sign * value.Split(':').Select(YamlFloat.Parse).Aggregate(0.0, (total, digit) => (total * 60) + digit);
             }
 
-            return sign * PyFloat.Parse(value);
+            return sign * YamlFloat.Parse(value);
         }
 
-        private static PyOther ConstructBinary(string value)
+        private static YamlOther ConstructBinary(string value)
         {
             if (!value.All(char.IsAscii))
             {
-                throw new PyYamlException("failed to convert base64 data into ascii");
+                throw new VaultYamlException("failed to convert base64 data into ascii");
             }
 
             // base64.decodebytes skips anything outside the alphabet, then needs whole quads.
@@ -516,10 +509,10 @@ public static partial class PyYaml
             }
             catch (FormatException exception)
             {
-                throw new PyYamlException("failed to decode base64 data", exception);
+                throw new VaultYamlException("failed to decode base64 data", exception);
             }
 
-            return PyOther.Value;
+            return YamlOther.Value;
         }
 
         private static string ConstructTimestamp(string value)
@@ -527,7 +520,7 @@ public static partial class PyYaml
             var match = TimestampParts().Match(value);
             if (!match.Success)
             {
-                throw new PyYamlException($"not a timestamp: {value}");
+                throw new VaultYamlException($"not a timestamp: {value}");
             }
 
             int Part(string name) => int.Parse(match.Groups[name].Value, CultureInfo.InvariantCulture);
@@ -538,7 +531,7 @@ public static partial class PyYaml
             }
             catch (ArgumentOutOfRangeException exception)
             {
-                throw new PyYamlException("day is out of range for month", exception);
+                throw new VaultYamlException("day is out of range for month", exception);
             }
 
             var day = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -550,7 +543,7 @@ public static partial class PyYaml
             var (hour, minute, second) = (Part("hour"), Part("minute"), Part("second"));
             if (hour > 23 || minute > 59 || second > 59)
             {
-                throw new PyYamlException("time is out of range");
+                throw new VaultYamlException("time is out of range");
             }
 
             var fraction = match.Groups["fraction"].Value;
@@ -562,7 +555,7 @@ public static partial class PyYaml
                 var offset = (Part("tzhour") * 60) + (match.Groups["tzminute"].Success ? Part("tzminute") : 0);
                 if (offset >= 24 * 60)
                 {
-                    throw new PyYamlException("offset must be a timedelta strictly between -timedelta(hours=24) and timedelta(hours=24)");
+                    throw new VaultYamlException("offset must be a timedelta strictly between -timedelta(hours=24) and timedelta(hours=24)");
                 }
 
                 var sign = offset == 0 || match.Groups["sign"].Value == "+" ? '+' : '-';

@@ -565,7 +565,7 @@ internal sealed partial class DesktopWorkspaceCommand
         if (desktop is not null)
         {
             var indexes = Enumerable.Range(1, plan.Desktops.Count)
-                .Where(index => Rig.Core.Vault.PyText.CaseFold(plan.Desktops[index - 1].Name) == Rig.Core.Vault.PyText.CaseFold(desktop))
+                .Where(index => Rig.Core.Vault.UnicodeText.CaseFold(plan.Desktops[index - 1].Name) == Rig.Core.Vault.UnicodeText.CaseFold(desktop))
                 .ToList();
             actual = port.CurrentWorkspaceStatus(indexes);
         }

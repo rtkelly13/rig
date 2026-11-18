@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Orca;
 
@@ -141,7 +141,7 @@ public static class OrcaSync
         {
             var now = served.GetValueOrDefault(pair.Key, "");
             var taken = Tokens(now) == Tokens(pair.Value);
-            return Launch(pair.Key, have, pair.Value, taken, taken ? "" : $"Orca serves {PyText.Repr(now)}; set this agent in Orca Settings → Agents");
+            return Launch(pair.Key, have, pair.Value, taken, taken ? "" : $"Orca serves {QuotedText.Str(now)}; set this agent in Orca Settings → Agents");
         })];
     }
 

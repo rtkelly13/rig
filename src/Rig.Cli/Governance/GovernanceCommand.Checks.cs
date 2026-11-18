@@ -94,10 +94,10 @@ internal sealed partial class GovernanceCommand
                 await output.WriteLineAsync($"✗ {name} ({repo})").ConfigureAwait(false);
                 foreach (var missing in result.Missing)
                 {
-                    await output.WriteLineAsync($"   required check {PyRepr.Str(missing)} is declared by no pull_request job").ConfigureAwait(false);
+                    await output.WriteLineAsync($"   required check {QuotedText.Str(missing)} is declared by no pull_request job").ConfigureAwait(false);
                 }
 
-                var declared = PyRepr.List(result.Declared.Keys.Order(StringComparer.Ordinal));
+                var declared = QuotedText.List(result.Declared.Keys.Order(StringComparer.Ordinal));
                 await output.WriteLineAsync($"   declared: {declared}").ConfigureAwait(false);
                 await output.WriteLineAsync($"   suggested required_checks: {declared}").ConfigureAwait(false);
             }
@@ -107,14 +107,14 @@ internal sealed partial class GovernanceCommand
             }
             else
             {
-                await output.WriteLineAsync($"✓ {name} ({repo}): {PyRepr.List(result.Required)}").ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ {name} ({repo}): {QuotedText.List(result.Required)}").ConfigureAwait(false);
             }
 
             foreach (var (check, warnings) in result.Warnings)
             {
                 _ = warned.Add(repo);
                 var where = result.Declared.GetValueOrDefault(check) is { Length: > 0 } at ? $" [{at}]" : string.Empty;
-                await output.WriteLineAsync($"   {PyRepr.Str(check)}{where}").ConfigureAwait(false);
+                await output.WriteLineAsync($"   {QuotedText.Str(check)}{where}").ConfigureAwait(false);
                 foreach (var warning in warnings)
                 {
                     await output.WriteLineAsync($"      - {warning}").ConfigureAwait(false);

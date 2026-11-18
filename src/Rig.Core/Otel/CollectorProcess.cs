@@ -49,7 +49,7 @@ public static partial class CollectorProcess
     {
         ArgumentNullException.ThrowIfNull(endpoint);
         var text = endpoint.Trim();
-        var shape = new FormatException($"forward endpoint must look like http://127.0.0.1:24318, got {PyRepr.Str(endpoint)}");
+        var shape = new FormatException($"forward endpoint must look like http://127.0.0.1:24318, got {QuotedText.Str(endpoint)}");
         var colon = text.IndexOf(':', StringComparison.Ordinal);
         var scheme = colon > 0 ? text[..colon].ToLowerInvariant() : string.Empty;
         if (scheme is not ("http" or "https") || !text[(colon + 1)..].StartsWith("//", StringComparison.Ordinal))
@@ -75,7 +75,7 @@ public static partial class CollectorProcess
         var path = mark < 0 ? beforeHash : beforeHash[..mark];
         if (path is not ("" or "/") || query.Length > 0 || fragment.Length > 0)
         {
-            throw new FormatException($"forward endpoint is a base URL; the collector appends /v1/<signal> itself, got {PyRepr.Str(endpoint)}");
+            throw new FormatException($"forward endpoint is a base URL; the collector appends /v1/<signal> itself, got {QuotedText.Str(endpoint)}");
         }
 
         return $"{scheme}://{netloc}";

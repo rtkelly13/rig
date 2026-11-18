@@ -366,7 +366,7 @@ public static class Align
         {
             var liveName = liveNames[index - 1];
             var desktop = plan.Desktops[index - 1];
-            if (liveName.Length > 0 && PyText.CaseFold(liveName) != PyText.CaseFold(desktop.Name))
+            if (liveName.Length > 0 && UnicodeText.CaseFold(liveName) != UnicodeText.CaseFold(desktop.Name))
             {
                 return $"desktop {index} is named '{liveName}' but the plan expects '{desktop.Name}'";
             }
@@ -591,8 +591,8 @@ public static class Align
 
         // A terminal's command hint ("claude" in the title) fits every agent terminal on the machine; only its
         // configured window title singles one out.
-        var ownTitle = PyText.CaseFold(PyText.Strip(entry.WindowTitle ?? string.Empty));
-        return ownTitle.Length > 0 && PyText.CaseFold(window.Title).Contains(ownTitle, StringComparison.Ordinal);
+        var ownTitle = UnicodeText.CaseFold(UnicodeText.Strip(entry.WindowTitle ?? string.Empty));
+        return ownTitle.Length > 0 && UnicodeText.CaseFold(window.Title).Contains(ownTitle, StringComparison.Ordinal);
     }
 
     private static SkipReason? SkipReasonFor(LiveWindow window, int desktopIndex, bool moveDesktop, AlignContext context)

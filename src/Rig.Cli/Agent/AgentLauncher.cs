@@ -246,7 +246,7 @@ internal sealed partial class AgentLauncher(IProc proc, AgentHost host, TextWrit
             id = CanonicalId(parsed.Agent);
             if (!Agents.Any(a => a.Id == id))
             {
-                throw new ArgumentException($"Unknown agent id {PyRepr.Str(parsed.Agent)}. Valid ids: {ValidIds}.");
+                throw new ArgumentException($"Unknown agent id {QuotedText.Str(parsed.Agent)}. Valid ids: {ValidIds}.");
             }
         }
         else

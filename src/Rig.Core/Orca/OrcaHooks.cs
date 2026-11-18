@@ -101,17 +101,17 @@ public static class OrcaHooks
             return null;
         }
 
-        PyValue? parsed;
+        YamlValue? parsed;
         try
         {
-            parsed = PyYaml.Load(text);
+            parsed = VaultYaml.Load(text);
         }
-        catch (PyYamlException)
+        catch (VaultYamlException)
         {
             return null;
         }
 
-        return parsed is PyDict document ? ScriptsOf(Get(document, "scripts")) ?? new Scripts() : null;
+        return parsed is YamlMap document ? ScriptsOf(Get(document, "scripts")) ?? new Scripts() : null;
     }
 
     /// <summary>Mirrors Orca's choice between <c>orca.yaml</c> and its local script for <paramref name="kind"/>.</summary>
@@ -134,20 +134,20 @@ public static class OrcaHooks
         _ => "shared-only",
     };
 
-    private static Scripts? ScriptsOf(PyValue? value)
+    private static Scripts? ScriptsOf(YamlValue? value)
     {
-        if (value is not PyDict scripts)
+        if (value is not YamlMap scripts)
         {
             return null;
         }
 
         var setup = Get(scripts, "setup");
         var archive = Get(scripts, "archive");
-        return setup is null or PyNone or PyStr && archive is null or PyNone or PyStr
-            ? new Scripts((setup as PyStr)?.Text ?? "", (archive as PyStr)?.Text ?? "")
+        return setup is null or YamlNull or YamlString && archive is null or YamlNull or YamlString
+            ? new Scripts((setup as YamlString)?.Text ?? "", (archive as YamlString)?.Text ?? "")
             : null;
     }
 
-    private static PyValue? Get(PyDict dict, string key) =>
-        dict.Entries.FirstOrDefault(entry => entry.Key is PyStr { } name && name.Text == key).Value;
+    private static YamlValue? Get(YamlMap dict, string key) =>
+        dict.Entries.FirstOrDefault(entry => entry.Key is YamlString { } name && name.Text == key).Value;
 }

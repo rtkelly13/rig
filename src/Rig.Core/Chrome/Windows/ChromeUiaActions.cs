@@ -1,5 +1,6 @@
 using Rig.Core.Desktop.Windows;
 using Rig.Core.Desktop.Windows.Uia;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Chrome.Windows;
@@ -113,7 +114,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         var currentTitle = TabNames.Parse(element.Name).Title;
         if (currentTitle != tab.Title)
         {
-            return Outcome(false, $"title changed to {PyText.Repr(currentTitle)}");
+            return Outcome(false, $"title changed to {QuotedText.Str(currentTitle)}");
         }
 
         element.SelectItem();
@@ -129,7 +130,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
 
         if (!CloseButtonNames.Contains(button.Name))
         {
-            return Outcome(false, $"unexpected close button name {PyText.Repr(button.Name)}");
+            return Outcome(false, $"unexpected close button name {QuotedText.Str(button.Name)}");
         }
 
         var grouped = ChromeUiaReader.GroupOf(element) is not null;
@@ -197,12 +198,12 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         var closed = before.Where(chip => !chip.Group.Opened).ToList();
         if (closed.Count == 0)
         {
-            return Outcome(false, $"no closed saved group called {PyText.Repr(title)} on the bar");
+            return Outcome(false, $"no closed saved group called {QuotedText.Str(title)} on the bar");
         }
 
         if (before.Count < 2)
         {
-            return Outcome(false, $"the only saved copy of {PyText.Repr(title)}; kept");
+            return Outcome(false, $"the only saved copy of {QuotedText.Str(title)}; kept");
         }
 
         var pid = _win32.ProcessIdOf(handle);
@@ -213,8 +214,8 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
 
         closed[^1].Element.ShowContextMenu();
         var found = Poll(() => MenuItem(pid, name => name == "delete group"), wait);
-        var items = PopupElements(pid, UiaControlType.MenuItem).Select(item => PyText.Strip(item.Name)).ToList();
-        var lowered = items.Select(PyText.Lower).ToList();
+        var items = PopupElements(pid, UiaControlType.MenuItem).Select(item => UnicodeText.Strip(item.Name)).ToList();
+        var lowered = items.Select(UnicodeText.Lower).ToList();
         var listed = lowered.IndexOf(TabsInGroupItem);
         if (listed >= 0)
         {
@@ -269,7 +270,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
                 PressEscape();
             }
 
-            return Outcome(false, $"saved group {PyText.Repr(title)} is still on the bar");
+            return Outcome(false, $"saved group {QuotedText.Str(title)} is still on the bar");
         }
 
         return Outcome(true, "deleted");
@@ -286,7 +287,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         {
             var ours = _win32.IsVisible(handle) && _win32.ProcessIdOf(handle) == pid;
             var browser = _win32.ClassName(handle) == ChromeUiaReader.WindowClass
-                && PyText.Strip(_win32.Title(handle) ?? string.Empty).Length > 0;
+                && UnicodeText.Strip(_win32.Title(handle) ?? string.Empty).Length > 0;
             if (!ours || browser)
             {
                 continue;
@@ -314,7 +315,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
         ArgumentNullException.ThrowIfNull(matches);
         return PopupElements(pid, UiaControlType.MenuItem).FirstOrDefault(item =>
         {
-            var name = PyText.Lower(PyText.Strip(item.Name));
+            var name = UnicodeText.Lower(UnicodeText.Strip(item.Name));
             return name.Length > 0 && matches(name);
         });
     }
@@ -336,7 +337,7 @@ public sealed partial class ChromeUiaActions : IChromeTabActions, IChromeSavedGr
                 }
 
                 var button = dialog.FindAll(UiaScope.Descendants, new UiaCondition(UiaControlType.Button))
-                    .FirstOrDefault(button => names.Contains(PyText.Lower(PyText.Strip(button.Name))));
+                    .FirstOrDefault(button => names.Contains(UnicodeText.Lower(UnicodeText.Strip(button.Name))));
                 if (button is not null)
                 {
                     return button;

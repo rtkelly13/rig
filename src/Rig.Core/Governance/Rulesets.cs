@@ -11,7 +11,7 @@ namespace Rig.Core.Governance;
 public sealed record RepoSettings(string DefaultBranch, MergeSettings Merge)
 {
     /// <summary>The PATCH body, in pydantic's compact form.</summary>
-    public string Body() => PyRepr.Json(new JsonObject
+    public string Body() => QuotedText.Json(new JsonObject
     {
         ["default_branch"] = DefaultBranch,
         ["delete_branch_on_merge"] = Merge.DeleteBranchOnMerge,
@@ -75,7 +75,7 @@ public sealed class RepoSettingsResource : Resource<RepoSettings, LiveRepoSettin
         {
             if (have != want)
             {
-                drift.Add($"{name} {PyRepr.Value(have)} -> {PyRepr.Value(want)}");
+                drift.Add($"{name} {QuotedText.Value(have)} -> {QuotedText.Value(want)}");
             }
         }
     }
@@ -306,7 +306,7 @@ public sealed record RulesetShape(
             }
         }
 
-        var values = new List<string> { PyRepr.List(contexts.Order(StringComparer.Ordinal)) };
+        var values = new List<string> { QuotedText.List(contexts.Order(StringComparer.Ordinal)) };
         foreach (var name in Parameters)
         {
             values.Add(declared[name] switch
@@ -314,7 +314,7 @@ public sealed record RulesetShape(
                 null => "None",
                 JsonValue v when v.GetValueKind() is JsonValueKind.True => "True",
                 JsonValue v when v.GetValueKind() is JsonValueKind.False => "False",
-                JsonValue v when v.GetValueKind() is JsonValueKind.Number && v.TryGetValue(out long n) => PyRepr.Value(n),
+                JsonValue v when v.GetValueKind() is JsonValueKind.Number && v.TryGetValue(out long n) => QuotedText.Value(n),
                 _ => "?",
             });
         }
@@ -414,12 +414,12 @@ public sealed class RulesetResource : Resource<DeclaredRuleset, LiveRuleset>
         var declared = CheckNames.DiscoverPrCheckNames(repoPath);
         if (declared.Count == 0)
         {
-            return $"required checks {PyRepr.List(required)}: no pull_request workflow exists to report them";
+            return $"required checks {QuotedText.List(required)}: no pull_request workflow exists to report them";
         }
 
         var missing = required.Where(name => !declared.ContainsKey(name)).ToList();
         return missing.Count > 0
-            ? $"required checks {PyRepr.List(missing)}: no pull_request job declares them (declared: {PyRepr.List(declared.Keys.Order(StringComparer.Ordinal))})"
+            ? $"required checks {QuotedText.List(missing)}: no pull_request job declares them (declared: {QuotedText.List(declared.Keys.Order(StringComparer.Ordinal))})"
             : null;
     }
 
@@ -493,7 +493,7 @@ public sealed class RulesetResource : Resource<DeclaredRuleset, LiveRuleset>
         }
 
         return desired.Rules.DriftOf(observed.Rules) is { Count: > 0 } drift
-            ? [new(Name, "update", string.Join("; ", drift), Subject: PyRepr.Value(observed.Id))]
+            ? [new(Name, "update", string.Join("; ", drift), Subject: QuotedText.Value(observed.Id))]
             : [];
     }
 

@@ -110,7 +110,7 @@ public sealed class VaultLintOracleTests
     public void Code_point_order_puts_supplementary_characters_after_the_private_use_area()
     {
         string[] sorted = ["b", "\uE000", "\U0001F600", null!, "a", "ab"];
-        Array.Sort(sorted, PyText.CodePointOrder);
+        Array.Sort(sorted, UnicodeText.CodePointOrder);
 
         Assert.Equal([null!, "a", "ab", "b", "\uE000", "\U0001F600"], sorted);
     }

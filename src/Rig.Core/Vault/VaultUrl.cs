@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace Rig.Core.Vault;
 
-/// <summary>A URL split into its five parts, as Python's <c>urllib.parse.urlsplit</c> returns it.</summary>
+/// <summary>A URL split into its five parts.</summary>
 /// <param name="Scheme">The scheme, lowercased, or empty.</param>
 /// <param name="Netloc">Everything between <c>//</c> and the path, as written.</param>
 /// <param name="Path">The path, as written.</param>
@@ -15,42 +15,27 @@ namespace Rig.Core.Vault;
 public sealed record UrlParts(string Scheme, string Netloc, string Path, string Query, string Fragment)
 {
     /// <summary>
-    /// The host in <see cref="Netloc"/>, lowercased up to any IPv6 zone, or empty when there is none. Python's
-    /// <c>.hostname</c> gives <c>None</c> there; every caller treats that as an empty string.
+    /// The host in <see cref="Netloc"/>, lowercased up to any IPv6 zone, or empty when there is none.
     /// </summary>
     public string Hostname
     {
         get
         {
-            var hostInfo = Netloc[(Netloc.LastIndexOf('@') + 1)..];
-            var open = hostInfo.IndexOf('[', StringComparison.Ordinal);
-            string host;
-            if (open >= 0)
-            {
-                var bracketed = hostInfo[(open + 1)..];
-                var close = bracketed.IndexOf(']', StringComparison.Ordinal);
-                host = close >= 0 ? bracketed[..close] : bracketed;
-            }
-            else
-            {
-                var colon = hostInfo.IndexOf(':', StringComparison.Ordinal);
-                host = colon >= 0 ? hostInfo[..colon] : hostInfo;
-            }
-
+            var host = VaultUrl.HostOf(Netloc);
             var zone = host.IndexOf('%', StringComparison.Ordinal);
-            return zone >= 0 ? PyText.Lower(host[..zone]) + host[zone..] : PyText.Lower(host);
+            return zone >= 0 ? UnicodeText.Lower(host[..zone]) + host[zone..] : UnicodeText.Lower(host);
         }
     }
 }
 
 /// <summary>
-/// The parts of Python's <c>urllib.parse</c> (CPython 3.13) the vault tooling relies on, ported as string operations so
-/// URLs round-trip exactly as the Python wrote them. <see cref="System.Uri"/> normalizes too much to stand in.
+/// URL splitting, joining and query handling as plain string operations, so URLs round-trip exactly as written.
+/// <see cref="System.Uri"/> normalizes too much to stand in.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054", Justification = "URLs are kept as written; System.Uri normalizes them.")]
-public static partial class PyUrl
+public static partial class VaultUrl
 {
-    // Schemes Python gives a "//" when the netloc is empty: urllib.parse.uses_netloc.
+    // Schemes that get a "//" when the netloc is empty.
     private static readonly HashSet<string> UsesNetloc = new(StringComparer.Ordinal)
     {
         string.Empty, "ftp", "http", "gopher", "nntp", "telnet", "imap", "wais", "file", "mms", "https", "shttp", "snews",
@@ -59,11 +44,11 @@ public static partial class PyUrl
     };
 
     /// <summary>
-    /// Splits <paramref name="url"/> as <c>urlsplit</c> does, leading C0 controls and spaces stripped and tabs and newlines
-    /// removed.
+    /// Splits <paramref name="url"/> into scheme, netloc, path, query and fragment, with leading C0 controls and spaces
+    /// stripped and tabs and newlines removed.
     /// </summary>
     /// <exception cref="FormatException">The netloc has unbalanced or invalid brackets, or characters that NFKC turns into
-    /// URL delimiters: where Python raises <c>ValueError</c>.</exception>
+    /// URL delimiters.</exception>
     public static UrlParts Split(string url)
     {
         ArgumentNullException.ThrowIfNull(url);
@@ -80,7 +65,7 @@ public static partial class PyUrl
         var colon = rest.IndexOf(':', StringComparison.Ordinal);
         if (colon > 0 && char.IsAsciiLetter(rest[0]) && rest[..colon].All(IsSchemeChar))
         {
-            scheme = PyText.Lower(rest[..colon]);
+            scheme = UnicodeText.Lower(rest[..colon]);
             rest = rest[(colon + 1)..];
         }
 
@@ -124,35 +109,35 @@ public static partial class PyUrl
         return new UrlParts(scheme, netloc, rest, query, fragment);
     }
 
+    // The host of a netloc: past any userinfo, inside brackets for IPv6, before any port.
+    internal static string HostOf(string netloc)
+    {
+        var hostInfo = netloc[(netloc.LastIndexOf('@') + 1)..];
+        var open = hostInfo.IndexOf('[', StringComparison.Ordinal);
+        if (open >= 0)
+        {
+            var bracketed = hostInfo[(open + 1)..];
+            var close = bracketed.IndexOf(']', StringComparison.Ordinal);
+            return close >= 0 ? bracketed[..close] : bracketed;
+        }
+
+        var colon = hostInfo.IndexOf(':', StringComparison.Ordinal);
+        return colon >= 0 ? hostInfo[..colon] : hostInfo;
+    }
+
     private static bool IsSchemeChar(char c) => char.IsAsciiLetterOrDigit(c) || c is '+' or '-' or '.';
 
     private static void CheckBracketedNetloc(string netloc)
     {
         var hostAndPort = netloc[(netloc.LastIndexOf('@') + 1)..];
         var open = hostAndPort.IndexOf('[', StringComparison.Ordinal);
-        string host;
-        if (open >= 0)
+        var close = hostAndPort.IndexOf(']', StringComparison.Ordinal);
+        if (open > 0 || (open == 0 && close >= 0 && close + 1 < hostAndPort.Length && hostAndPort[close + 1] != ':'))
         {
-            if (open > 0)
-            {
-                throw new FormatException("Invalid IPv6 URL");
-            }
-
-            var bracketed = hostAndPort[1..];
-            var close = bracketed.IndexOf(']', StringComparison.Ordinal);
-            host = close >= 0 ? bracketed[..close] : bracketed;
-            var port = close >= 0 ? bracketed[(close + 1)..] : string.Empty;
-            if (port.Length > 0 && port[0] != ':')
-            {
-                throw new FormatException("Invalid IPv6 URL");
-            }
-        }
-        else
-        {
-            var colon = hostAndPort.IndexOf(':', StringComparison.Ordinal);
-            host = colon >= 0 ? hostAndPort[..colon] : hostAndPort;
+            throw new FormatException("Invalid IPv6 URL");
         }
 
+        var host = HostOf(netloc);
         var valid = host.StartsWith('v')
             ? IpvFuture().IsMatch(host)
             : IPAddress.TryParse(host, out var address) && address.AddressFamily == AddressFamily.InterNetworkV6;
@@ -162,7 +147,7 @@ public static partial class PyUrl
         }
     }
 
-    // Python rejects a non-ASCII netloc whose NFKC form introduces a URL delimiter, such as U+2100 becoming "a/c".
+    // A non-ASCII netloc whose NFKC form introduces a URL delimiter, such as U+2100 becoming "a/c", is rejected.
     private static void CheckNetloc(string netloc)
     {
         if (netloc.All(char.IsAscii))
@@ -223,49 +208,30 @@ public static partial class PyUrl
     }
 
     /// <summary>
-    /// <c>parse_qs</c> with its defaults: fields split on <c>&amp;</c>, those with an empty value or no <c>=</c> dropped,
-    /// <c>+</c> read as a space, and each name's values grouped under its first appearance.
+    /// The query's values grouped by name, in order of first appearance: fields split on <c>&amp;</c>, those with an empty
+    /// value or no <c>=</c> dropped, and <c>+</c> read as a space.
     /// </summary>
-    public static IReadOnlyList<KeyValuePair<string, List<string>>> ParseQuery(string query)
+    public static IEnumerable<IGrouping<string, string>> ParseQuery(string query)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var fields = new List<KeyValuePair<string, List<string>>>();
-        var byName = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        foreach (var field in query.Split('&'))
-        {
-            var eq = field.IndexOf('=', StringComparison.Ordinal);
-            if (eq < 0 || eq == field.Length - 1)
-            {
-                continue;
-            }
-
-            var name = Unquote(field[..eq].Replace('+', ' '));
-            var value = Unquote(field[(eq + 1)..].Replace('+', ' '));
-            if (!byName.TryGetValue(name, out var values))
-            {
-                values = [];
-                byName[name] = values;
-                fields.Add(new(name, values));
-            }
-
-            values.Add(value);
-        }
-
-        return fields;
+        return query.Split('&')
+            .Select(field => (Eq: field.IndexOf('=', StringComparison.Ordinal), Field: field))
+            .Where(f => f.Eq >= 0 && f.Eq < f.Field.Length - 1)
+            .GroupBy(f => Unquote(f.Field[..f.Eq].Replace('+', ' ')), f => Unquote(f.Field[(f.Eq + 1)..].Replace('+', ' ')), StringComparer.Ordinal);
     }
 
-    /// <summary><c>urlencode(fields, doseq=True)</c>: each value as its own <c>name=value</c>, both quoted as by <c>quote_plus</c>.</summary>
-    public static string Encode(IEnumerable<KeyValuePair<string, List<string>>> fields)
+    /// <summary>Each value as its own <c>name=value</c>, both quoted by <see cref="QuotePlus"/>.</summary>
+    public static string Encode(IEnumerable<IGrouping<string, string>> fields)
     {
         ArgumentNullException.ThrowIfNull(fields);
-        return string.Join('&', fields.SelectMany(field => field.Value.Select(value => QuotePlus(field.Key) + "=" + QuotePlus(value))));
+        return string.Join('&', fields.SelectMany(field => field.Select(value => QuotePlus(field.Key) + "=" + QuotePlus(value))));
     }
 
     /// <summary>
-    /// <c>quote_plus</c> with no extra safe characters: UTF-8 bytes outside <c>A-Za-z0-9_.-~</c> become <c>%XX</c>, and
+    /// Form-style quoting with no extra safe characters: UTF-8 bytes outside <c>A-Za-z0-9_.-~</c> become <c>%XX</c>, and
     /// spaces become <c>+</c>.
     /// </summary>
-    public static string QuotePlus(string text)
+    private static string QuotePlus(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
         var builder = new StringBuilder(text.Length);
@@ -289,7 +255,7 @@ public static partial class PyUrl
     }
 
     /// <summary>
-    /// <c>unquote</c>: <c>%XX</c> escapes decoded as UTF-8, invalid sequences replaced. As in Python, escapes are decoded only
+    /// <c>%XX</c> escapes decoded as UTF-8, invalid sequences replaced. Escapes are decoded only
     /// within runs of ASCII, and characters outside ASCII are kept as written.
     /// </summary>
     public static string Unquote(string text)

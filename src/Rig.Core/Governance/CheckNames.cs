@@ -77,7 +77,7 @@ public static partial class CheckNames
         var stray = name.EnumerateRunes().Where(rune => !Rune.IsLetterOrDigit(rune) && rune.Value != '_').Distinct().Order().ToList();
         if (stray.Count > 0)
         {
-            warnings.Add($"not snake_case — separators/punctuation {string.Join(' ', stray.Select(rune => PyRepr.Str(rune.ToString())))}");
+            warnings.Add($"not snake_case — separators/punctuation {string.Join(' ', stray.Select(rune => QuotedText.Str(rune.ToString())))}");
         }
 
         var words = Words(name);
@@ -93,7 +93,7 @@ public static partial class CheckNames
 
         if (SuggestPreferredName(name) is { } suggestion)
         {
-            warnings.Add($"not in the preferred lexicon — did you mean {PyRepr.Str(suggestion)}?");
+            warnings.Add($"not in the preferred lexicon — did you mean {QuotedText.Str(suggestion)}?");
         }
         else if (warnings.Count == 0)
         {
@@ -245,7 +245,7 @@ public static partial class CheckNames
 
         foreach (var file in files)
         {
-            if (Load(file) is not { } workflow || Lookup(workflow, "jobs") is not PyDict jobs || !Triggers(workflow).Contains("pull_request"))
+            if (Load(file) is not { } workflow || Lookup(workflow, "jobs") is not YamlMap jobs || !Triggers(workflow).Contains("pull_request"))
             {
                 continue;
             }
@@ -254,11 +254,11 @@ public static partial class CheckNames
             foreach (var (key, job) in jobs.Entries)
             {
                 var jobId = KeyText(key);
-                var name = job is PyDict body && Lookup(body, "name") is PyStr { Text: var named } ? named : jobId;
+                var name = job is YamlMap body && Lookup(body, "name") is YamlString { Text: var named } ? named : jobId;
                 _ = found.TryAdd(name, $"{fileName} :: {jobId}");
             }
 
-            if (Lookup(workflow, "env") is PyDict env && Lookup(env, "STATUS_CONTEXT") is PyStr { Text: { Length: > 0 } status })
+            if (Lookup(workflow, "env") is YamlMap env && Lookup(env, "STATUS_CONTEXT") is YamlString { Text: { Length: > 0 } status })
             {
                 _ = found.TryAdd(status, $"{fileName} :: status");
             }
@@ -281,58 +281,58 @@ public static partial class CheckNames
     }
 
     // The workflow's top-level mapping with string keys only, PyYAML's `on: → True` folded back; null when unreadable.
-    private static PyDict? Load(string file)
+    private static YamlMap? Load(string file)
     {
-        PyValue? loaded;
+        YamlValue? loaded;
         try
         {
-            loaded = PyYaml.Load(File.ReadAllText(file));
+            loaded = VaultYaml.Load(File.ReadAllText(file));
         }
-        catch (Exception e) when (e is PyYamlException or IOException or UnauthorizedAccessException or System.Text.DecoderFallbackException)
+        catch (Exception e) when (e is VaultYamlException or IOException or UnauthorizedAccessException or System.Text.DecoderFallbackException)
         {
             return null;
         }
 
-        if (loaded is not PyDict document)
+        if (loaded is not YamlMap document)
         {
             return null;
         }
 
-        var hasOn = document.Entries.Any(e => e.Key is PyStr { Text: "on" });
-        var entries = new List<KeyValuePair<PyValue, PyValue>>();
+        var hasOn = document.Entries.Any(e => e.Key is YamlString { Text: "on" });
+        var entries = new List<KeyValuePair<YamlValue, YamlValue>>();
         foreach (var entry in document.Entries)
         {
-            if (entry.Key is PyStr)
+            if (entry.Key is YamlString)
             {
                 entries.Add(entry);
             }
-            else if (entry.Key is PyScalar { Rendered: "True" } && !hasOn)
+            else if (entry.Key is YamlScalar { Rendered: "True" } && !hasOn)
             {
-                entries.Add(new(new PyStr("on"), entry.Value));
+                entries.Add(new(new YamlString("on"), entry.Value));
             }
         }
 
-        return new PyDict(entries);
+        return new YamlMap(entries);
     }
 
     // The triggers a workflow's `on:` names: a mapping's keys, a list's items or a lone scalar.
-    private static HashSet<string> Triggers(PyDict workflow) => Lookup(workflow, "on") switch
+    private static HashSet<string> Triggers(YamlMap workflow) => Lookup(workflow, "on") switch
     {
-        PyDict events => [.. events.Entries.Select(e => KeyText(e.Key))],
-        PyList events => [.. events.Items.Select(KeyText)],
-        PyNone or null => [],
+        YamlMap events => [.. events.Entries.Select(e => KeyText(e.Key))],
+        YamlList events => [.. events.Items.Select(KeyText)],
+        YamlNull or null => [],
         var single => [KeyText(single)],
     };
 
     // The last value under string key `key`, as a Python dict holds it.
-    private static PyValue? Lookup(PyDict map, string key) =>
-        map.Entries.LastOrDefault(e => e.Key is PyStr { Text: var text } && text == key).Value;
+    private static YamlValue? Lookup(YamlMap map, string key) =>
+        map.Entries.LastOrDefault(e => e.Key is YamlString { Text: var text } && text == key).Value;
 
-    private static string KeyText(PyValue value) => value switch
+    private static string KeyText(YamlValue value) => value switch
     {
-        PyStr text => text.Text,
-        PyScalar scalar => scalar.Rendered,
-        PyNone => "None",
+        YamlString text => text.Text,
+        YamlScalar scalar => scalar.Rendered,
+        YamlNull => "None",
         _ => value.ToString() ?? string.Empty,
     };
 }

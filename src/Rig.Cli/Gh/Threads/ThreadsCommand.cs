@@ -222,7 +222,7 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
         var where = $"{plan.Thread.Id} ({plan.Thread.Location})";
         if (outcome.DryRun)
         {
-            var reply = plan.Reply is not null ? $"reply {PyRepr.Str(plan.Reply)}" : "skip the reply (already posted)";
+            var reply = plan.Reply is not null ? $"reply {QuotedText.Str(plan.Reply)}" : "skip the reply (already posted)";
             var resolve = plan.Resolve ? "resolve" : "skip resolving (already resolved)";
             return $"Dry run, {where}: would {reply} then {resolve}.";
         }

@@ -128,7 +128,7 @@ public static class VirtualDesktopOperations
     {
         ArgumentNullException.ThrowIfNull(desktops);
         ArgumentNullException.ThrowIfNull(retiredNames);
-        var wanted = retiredNames.Where(name => name.Length > 0).Select(PyText.CaseFold).ToHashSet(StringComparer.Ordinal);
+        var wanted = retiredNames.Where(name => name.Length > 0).Select(UnicodeText.CaseFold).ToHashSet(StringComparer.Ordinal);
         List<string> removed = [];
         if (wanted.Count == 0 || keepCount < 1)
         {
@@ -138,7 +138,7 @@ public static class VirtualDesktopOperations
         try
         {
             var names = desktops.Names();
-            var doomed = Enumerable.Range(1, names.Count).Where(number => wanted.Contains(PyText.CaseFold(names[number - 1]))).ToList();
+            var doomed = Enumerable.Range(1, names.Count).Where(number => wanted.Contains(UnicodeText.CaseFold(names[number - 1]))).ToList();
             var kept = Enumerable.Range(1, names.Count).Except(doomed).ToList();
             if (doomed.Count == 0 || kept.Count == 0)
             {

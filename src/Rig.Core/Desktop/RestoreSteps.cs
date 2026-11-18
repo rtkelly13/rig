@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Desktop;
@@ -123,7 +124,7 @@ public static class RestoreSteps
                 run.Log.Log($"Retrying desktop {desktop.DesktopIndex}: attempt {attempt} of {MaxDesktopAttempts}");
                 if (desktop.SatisfiedEntryNames.Count > 0)
                 {
-                    run.Log.Log($"Leaving already-placed entries alone: {PythonList(desktop.SatisfiedEntryNames.Order(StringComparer.Ordinal).Select(PyText.Repr))}");
+                    run.Log.Log($"Leaving already-placed entries alone: {PythonList(desktop.SatisfiedEntryNames.Order(StringComparer.Ordinal).Select(QuotedText.Str))}");
                 }
             }
 
@@ -177,16 +178,16 @@ public static class RestoreSteps
             return none;
         }
 
-        var process = PyText.CaseFold(entry.WindowProcessName);
+        var process = UnicodeText.CaseFold(entry.WindowProcessName);
         var titles = sibling.Desktop.Launch
             .Where(other => other.Name != entry.Name
                 && !other.Disabled
                 && !string.IsNullOrEmpty(other.WindowTitle)
                 && !string.IsNullOrEmpty(other.WindowProcessName)
-                && PyText.CaseFold(other.WindowProcessName) == process)
-            .Select(other => PyText.CaseFold(other.WindowTitle!.Trim()))
+                && UnicodeText.CaseFold(other.WindowProcessName) == process)
+            .Select(other => UnicodeText.CaseFold(other.WindowTitle!.Trim()))
             .ToHashSet(StringComparer.Ordinal);
-        titles.Remove(PyText.CaseFold((entry.WindowTitle ?? string.Empty).Trim()));
+        titles.Remove(UnicodeText.CaseFold((entry.WindowTitle ?? string.Empty).Trim()));
         if (titles.Count == 0)
         {
             return none;
@@ -203,7 +204,7 @@ public static class RestoreSteps
         }
 
         var reserved = live
-            .Where(pair => titles.Any(title => PyText.CaseFold(pair.Value).Contains(title, StringComparison.Ordinal)))
+            .Where(pair => titles.Any(title => UnicodeText.CaseFold(pair.Value).Contains(title, StringComparison.Ordinal)))
             .Select(pair => pair.Key)
             .ToHashSet();
         if (reserved.Count > 0)
@@ -275,7 +276,7 @@ public static class RestoreSteps
     {
         var entry = step.Entry;
         run.Log.Log(
-            $"Reusing window {window.Handle} for {entry.Name} pid={PidOrUnknown(window.Pid)} title={PyText.Repr(window.Title)} "
+            $"Reusing window {window.Handle} for {entry.Name} pid={PidOrUnknown(window.Pid)} title={QuotedText.Str(window.Title)} "
             + $"process={ReprOrNone(window.ProcessName)} desktop={NumberOrNone(window.DesktopNumber)}");
         try
         {
@@ -436,7 +437,7 @@ public static class RestoreSteps
         {
             var title = run.Port.WaitForWindowTitleChange(handle, entry.WindowTitle, StepTimer.EntryTitleTakeoverTimeout(entry), run.Log)
                 ?? throw new DesktopException($"Timed out waiting for UI title takeover for {entry.Name}");
-            run.Log.Log($"Confirmed UI title takeover for {entry.Name}: {PyText.Repr(title)}");
+            run.Log.Log($"Confirmed UI title takeover for {entry.Name}: {QuotedText.Str(title)}");
         }
 
         return handle;
@@ -535,7 +536,7 @@ public static class RestoreSteps
 
     private static string NumberOrNone(int? value) => value?.ToString(CultureInfo.InvariantCulture) ?? "None";
 
-    private static string ReprOrNone(string? value) => value is null ? "None" : PyText.Repr(value);
+    private static string ReprOrNone(string? value) => value is null ? "None" : QuotedText.Str(value);
 
     private static string Handles(IEnumerable<long> handles) => PythonList(handles.Order().Select(handle => handle.ToString(CultureInfo.InvariantCulture)));
 

@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace Rig.Core.Text;
 
 /// <summary>
-/// The serializer settings rig writes with: the spellings Python's <c>json.dumps</c> produced (two-space indentation or
+/// The serializer settings rig writes with: the spellings its files use (two-space indentation or
 /// one line, non-ASCII escaped or kept), and the snake_case spelling the web app reads. Every one writes LF on every
 /// platform, so a file rig writes is byte-identical on Windows and Unix (#260).
 /// </summary>
@@ -22,7 +22,7 @@ public static class JsonOutputOptions
         NewLine = "\n",
     };
 
-    /// <summary>Two-space indentation, non-ASCII kept: what pydantic's <c>model_dump_json(indent=2)</c> wrote.</summary>
+    /// <summary>Two-space indentation, non-ASCII kept: the spelling of the vault and state files.</summary>
     public static JsonSerializerOptions IndentedUnicode { get; } = new()
     {
         WriteIndented = true,
@@ -33,7 +33,7 @@ public static class JsonOutputOptions
     /// <summary>One line, non-ASCII escaped: <c>json.dumps(value)</c>.</summary>
     public static JsonSerializerOptions Compact { get; } = new() { NewLine = "\n" };
 
-    /// <summary>One line, non-ASCII kept: pydantic's <c>model_dump_json()</c>.</summary>
+    /// <summary>One line, non-ASCII kept.</summary>
     public static JsonSerializerOptions CompactUnicode { get; } = new()
     {
         NewLine = "\n",

@@ -112,7 +112,7 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
                 }
             }
 
-            foreach (var name in byName.Keys.Where(n => !present.Contains(n)).Order(PyText.CodePointOrder))
+            foreach (var name in byName.Keys.Where(n => !present.Contains(n)).Order(UnicodeText.CodePointOrder))
             {
                 audit.Missing.Add(name);
             }
@@ -185,7 +185,7 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
 
     /// <summary>The skills activated beyond the allowlist and not yet deactivated, sorted.</summary>
     public IReadOnlyList<string> Activated() =>
-        [.. (SkillCatalog.LoadNames(places.Ledger) ?? []).Distinct(StringComparer.Ordinal).Order(PyText.CodePointOrder)];
+        [.. (SkillCatalog.LoadNames(places.Ledger) ?? []).Distinct(StringComparer.Ordinal).Order(UnicodeText.CodePointOrder)];
 
     /// <summary>
     /// Links the named skills (or with <paramref name="all"/> every skill) into each system without pruning, and
@@ -196,7 +196,7 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         var known = catalog.Everything().Select(s => s.Name).ToHashSet(StringComparer.Ordinal);
-        var selected = all ? [.. known.Order(PyText.CodePointOrder)] : Selected(names);
+        var selected = all ? [.. known.Order(UnicodeText.CodePointOrder)] : Selected(names);
         var unknown = selected.Where(n => !known.Contains(n)).ToList();
         if (unknown.Count > 0)
         {
@@ -260,7 +260,7 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
         && DirectoryLinks.Same(resolved, expected, places.Windows);
 
     private static List<string> Selected(IReadOnlyList<string> names) =>
-        [.. names.Select(PyText.Strip).Where(n => n.Length > 0).Distinct(StringComparer.Ordinal).Order(PyText.CodePointOrder)];
+        [.. names.Select(UnicodeText.Strip).Where(n => n.Length > 0).Distinct(StringComparer.Ordinal).Order(UnicodeText.CodePointOrder)];
 
     private void Install(Skill skill, string destination)
     {
@@ -288,12 +288,12 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
     private void SaveLedger(IEnumerable<string> names)
     {
         _ = Directory.CreateDirectory(Path.GetDirectoryName(places.Ledger)!);
-        var sorted = names.Distinct(StringComparer.Ordinal).Order(PyText.CodePointOrder).ToArray();
+        var sorted = names.Distinct(StringComparer.Ordinal).Order(UnicodeText.CodePointOrder).ToArray();
         File.WriteAllText(places.Ledger, JsonSerializer.Serialize(sorted, JsonOutputOptions.IndentedUnicode) + "\n");
     }
 
     private static IEnumerable<string> Entries(string folder) =>
         Directory.EnumerateFileSystemEntries(folder)
             .Where(e => !Path.GetFileName(e).StartsWith('.'))
-            .Order(PyText.CodePointOrder);
+            .Order(UnicodeText.CodePointOrder);
 }

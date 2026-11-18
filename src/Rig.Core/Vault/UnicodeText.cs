@@ -4,44 +4,21 @@ using System.Text;
 namespace Rig.Core.Vault;
 
 /// <summary>
-/// Python 3 <c>str</c> semantics where .NET's differ, so text the vault's Python tooling wrote is read and rewritten the same
-/// way. Lengths and slices count code points, as Python does, not UTF-16 units.
+/// Unicode text rules where .NET's defaults differ, so vault text written by the earlier tooling is read and rewritten the
+/// same way: whitespace includes U+001C to U+001F, lengths and slices count code points rather than UTF-16 units, and
+/// ordering is by code point.
 /// </summary>
-public static class PyText
+public static class UnicodeText
 {
     /// <summary>
-    /// A regex class body matching what Python's <c>\s</c> and <c>str.isspace</c> match: .NET's <c>\s</c> plus the four
-    /// information separators U+001C to U+001F.
+    /// A regex class body for whitespace: .NET's <c>\s</c> plus the four information separators U+001C to U+001F.
     /// </summary>
     public const string Space = @"\s\x1c-\x1f";
 
-    /// <summary>Python's <c>repr()</c> of a <c>str</c>, for messages that quote one.</summary>
-    public static string Repr(string s)
-    {
-        ArgumentNullException.ThrowIfNull(s);
-        var quote = s.Contains('\'', StringComparison.Ordinal) && !s.Contains('"', StringComparison.Ordinal) ? '"' : '\'';
-        var text = new StringBuilder().Append(quote);
-        foreach (var c in s)
-        {
-            _ = c switch
-            {
-                '\\' => text.Append("\\\\"),
-                '\n' => text.Append("\\n"),
-                '\r' => text.Append("\\r"),
-                '\t' => text.Append("\\t"),
-                _ when c == quote => text.Append('\\').Append(c),
-                < ' ' or '\x7f' => text.Append("\\x").Append(((int)c).ToString("x2", CultureInfo.InvariantCulture)),
-                _ => text.Append(c),
-            };
-        }
-
-        return text.Append(quote).ToString();
-    }
-
-    /// <summary>Whether <paramref name="c"/> is whitespace to Python.</summary>
+    /// <summary>Whether <paramref name="c"/> is whitespace, including U+001C to U+001F.</summary>
     public static bool IsSpace(char c) => char.IsWhiteSpace(c) || c is >= '\x1c' and <= '\x1f';
 
-    /// <summary>Python's <c>s.strip()</c>: whitespace off both ends.</summary>
+    /// <summary><paramref name="s"/> with whitespace (see <see cref="IsSpace"/>) off both ends.</summary>
     public static string Strip(string s)
     {
         ArgumentNullException.ThrowIfNull(s);
@@ -60,7 +37,7 @@ public static class PyText
         return s[start..end];
     }
 
-    /// <summary>Python's <c>s.strip(chars)</c>: any of <paramref name="chars"/> off both ends.</summary>
+    /// <summary><paramref name="s"/> with any of <paramref name="chars"/> off both ends.</summary>
     public static string Strip(string s, string chars)
     {
         ArgumentNullException.ThrowIfNull(s);
@@ -69,8 +46,8 @@ public static class PyText
     }
 
     /// <summary>
-    /// Python's <c>s.lower()</c>: the invariant simple mapping, plus the two full mappings Python applies that .NET does not.
-    /// U+0130 becomes <c>i</c> and a combining dot, and a capital sigma ending a word becomes final sigma.
+    /// Lower case by the invariant simple mapping, plus the two full mappings .NET does not apply: U+0130 becomes <c>i</c>
+    /// and a combining dot, and a capital sigma ending a word becomes final sigma.
     /// </summary>
     public static string Lower(string s)
     {
@@ -89,7 +66,7 @@ public static class PyText
                     builder.Append(FinalSigma(runes, i) ? 'ς' : 'σ');
                     break;
                 default:
-                    // Per scalar, so a supplementary-plane capital (Deseret's 𐐀) lowers as Python's does.
+                    // Per scalar, so a supplementary-plane capital (Deseret's 𐐀) lowers correctly.
                     builder.Append(Rune.ToLowerInvariant(rune).ToString());
                     break;
             }
@@ -99,7 +76,7 @@ public static class PyText
     }
 
     /// <summary>
-    /// Python's <c>s.casefold()</c> for the text it meets here: <see cref="Lower"/> plus the full and special foldings
+    /// Case folding for the text met here: <see cref="Lower"/> plus the full and special foldings
     /// of sharp s, the Latin ligatures, final sigma, long s, micro and the Greek symbol variants. Rarer full foldings
     /// (precomposed Greek with iota, Armenian ligatures) are left as <see cref="Lower"/> gives them.
     /// </summary>
@@ -166,24 +143,15 @@ public static class PyText
         || Rune.GetUnicodeCategory(r) is UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark
             or UnicodeCategory.Format or UnicodeCategory.ModifierLetter or UnicodeCategory.ModifierSymbol;
 
-    /// <summary>Python's <c>len(s)</c>: the number of code points.</summary>
+    /// <summary>The number of code points in <paramref name="s"/>.</summary>
     public static int Length(string s)
     {
         ArgumentNullException.ThrowIfNull(s);
-        var count = 0;
-        for (var i = 0; i < s.Length; i++)
-        {
-            if (!(char.IsHighSurrogate(s[i]) && i + 1 < s.Length && char.IsLowSurrogate(s[i + 1])))
-            {
-                count++;
-            }
-        }
-
-        return count;
+        return s.EnumerateRunes().Count();
     }
 
     /// <summary>
-    /// Orders strings as Python's <c>&lt;</c> does, by code point. Ordinal comparison orders UTF-16 units, which puts a
+    /// Orders strings by code point. Ordinal comparison orders UTF-16 units, which puts a
     /// supplementary-plane character (a surrogate pair) before U+E000 to U+FFFF.
     /// </summary>
     public static IComparer<string> CodePointOrder { get; } = Comparer<string>.Create(CompareCodePoints);
@@ -216,9 +184,9 @@ public static class PyText
     };
 
     /// <summary>
-    /// Python's <c>s.splitlines()</c>: breaks at <c>\n</c>, <c>\r</c>, <c>\r\n</c> and the eight other line boundaries
-    /// Python knows (<c>\v \f \x1c \x1d \x1e \x85 \u2028 \u2029</c>); a trailing boundary ends the last line rather than
-    /// starting an empty one.
+    /// Splits at <c>\n</c>, <c>\r</c>, <c>\r\n</c> and the eight other Unicode line boundaries
+    /// (<c>\v \f \x1c \x1d \x1e \x85 \u2028 \u2029</c>); a trailing boundary ends the last line rather than starting an
+    /// empty one.
     /// </summary>
     public static IReadOnlyList<string> SplitLines(string s)
     {
@@ -247,18 +215,16 @@ public static class PyText
         return lines;
     }
 
-    /// <summary>Python's <c>s[:count]</c>: the first <paramref name="count"/> code points.</summary>
+    /// <summary>The first <paramref name="count"/> code points of <paramref name="s"/>.</summary>
     public static string Prefix(string s, int count)
     {
         ArgumentNullException.ThrowIfNull(s);
-        var taken = 0;
-        var i = 0;
-        while (i < s.Length && taken < count)
+        var length = 0;
+        foreach (var rune in s.EnumerateRunes().Take(count))
         {
-            i += char.IsHighSurrogate(s[i]) && i + 1 < s.Length && char.IsLowSurrogate(s[i + 1]) ? 2 : 1;
-            taken++;
+            length += rune.Utf16SequenceLength;
         }
 
-        return s[..i];
+        return s[..length];
     }
 }
