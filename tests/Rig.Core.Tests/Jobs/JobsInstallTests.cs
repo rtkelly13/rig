@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using System.Xml.Linq;
 using Rig.Core.Jobs;
 using Rig.Core.Processes;
@@ -14,29 +13,30 @@ public sealed class JobsInstallTests : IDisposable
 
     public void Dispose() => _temp.Dispose();
 
+    /// <summary>
+    /// Each task's XML as <see cref="JobsTaskXml.Render"/> writes it, kept in <c>Jobs/Tasks/&lt;task&gt;.xml</c> so a policy
+    /// change shows up as a reviewable diff. Set <c>RIG_UPDATE_SNAPSHOTS=1</c> to rewrite the files from the renderer.
+    /// </summary>
     [Theory]
-    [InlineData(CoordinatorTasks.Logon, "_LOGON", "logon", true)]
-    [InlineData(CoordinatorTasks.Tick, "_TICK", "tick", true)]
-    [InlineData(CoordinatorTasks.Guard, "_GUARD", null, true)]
-    [InlineData(CoordinatorTasks.Guard, "_GUARD", null, false)]
-    public void Task_policy_matches_the_legacy_oracle_with_only_the_reviewed_action_cutover(string name, string key, string? trigger, bool python)
+    [InlineData(CoordinatorTasks.Logon, "logon", true)]
+    [InlineData(CoordinatorTasks.Tick, "tick", true)]
+    [InlineData(CoordinatorTasks.Guard, "display-guard", true)]
+    [InlineData(CoordinatorTasks.Guard, "display-guard-direct", false)]
+    public void Task_xml_matches_its_snapshot(string name, string file, bool python)
     {
         var target = new JobsInstallTarget(
-            Path.Join(_temp.Path, "repo & tools"), Path.Join(_temp.Path, "plan & co.json"), Path.Join(_temp.Path, "rig.exe"), python ? Path.Join(_temp.Path, "pythonw.exe") : null);
-        using var oracle = JsonDocument.Parse(File.ReadAllText(Path.Join(AppContext.BaseDirectory, "Jobs", "task-xml-oracle.json")));
-        var expected = XElement.Parse(oracle.RootElement.GetProperty(key).GetString()!);
-        var action = expected.Element(Ns + "Actions")!.Element(Ns + "Exec")!;
-        var command = trigger is null ? $"desktop workspace guard --config \"{target.Plan}\"" : $"jobs run --trigger {trigger} --scheduled";
-        action.Element(Ns + "Command")!.Value = python ? target.Pythonw! : target.Rig;
-        action.Element(Ns + "Arguments")!.Value = python
-            ? $"-I -c \"{JobsInstallTarget.Wrapper}\" \"{target.Rig}\" {command}"
-            : $"--detach-console {command}";
-        action.SetElementValue(Ns + "WorkingDirectory", target.Root);
-
+            "C:\\rig & tools", "C:\\rig & tools\\plan & co.json", "C:\\rig & tools\\rig.exe", python ? "C:\\Python\\pythonw.exe" : null);
         var actual = JobsTaskXml.Render(name, target, "CORP\\me & you", new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.FromHours(2)));
+        var path = Path.Join(Path.GetDirectoryName(RepoTemp.Root), "tests", "Rig.Core.Tests", "Jobs", "Tasks", file + ".xml");
+        if (Environment.GetEnvironmentVariable("RIG_UPDATE_SNAPSHOTS") == "1")
+        {
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, actual.ReplaceLineEndings("\n"));
+        }
 
-        Assert.True(XNode.DeepEquals(expected, XElement.Parse(actual)), actual);
+        Assert.Equal(File.ReadAllText(path).ReplaceLineEndings("\n"), actual.ReplaceLineEndings("\n"));
         Assert.StartsWith("<?xml version=\"1.0\" encoding=\"UTF-16\"?>", actual, StringComparison.Ordinal);
+        Assert.Equal("\\" + name, XElement.Parse(actual).Element(Ns + "RegistrationInfo")!.Element(Ns + "URI")!.Value);
     }
 
     [Fact]

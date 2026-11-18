@@ -115,10 +115,10 @@ public sealed class SavedConsolidationTests
     public void The_marker_lives_beside_the_scheduled_run()
     {
         Assert.Equal(
-            Path.Join("L", "shared-utilities", "chrome-tabs", "saved-groups.pending"),
+            Path.Join("L", "rig", "chrome-tabs", "saved-groups.pending"),
             SavedConsolidation.MarkerPath(name => name == "LOCALAPPDATA" ? "L" : null, "H"));
         Assert.Equal(
-            Path.Join("H", "AppData", "Local", "shared-utilities", "chrome-tabs", "saved-groups.pending"),
+            Path.Join("H", "AppData", "Local", "rig", "chrome-tabs", "saved-groups.pending"),
             SavedConsolidation.MarkerPath(_ => string.Empty, "H"));
         Assert.Equal(SavedConsolidation.MarkerPath(_ => string.Empty, "H"), SavedConsolidation.MarkerPath(_ => null, "H"));
     }

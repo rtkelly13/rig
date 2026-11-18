@@ -2,7 +2,7 @@
 
 Flags that any rig tool can read live in one place. Each flag's name, default and
 purpose are declared in `src/Rig.Core/Flags/FeatureFlags.cs`. A stored override in the
-`feature_flags` table of `rig.db` (`%LOCALAPPDATA%\shared-utilities\rig.db`)
+`feature_flags` table of `rig.db` (`%LOCALAPPDATA%\rig\rig.db`)
 replaces the default until it is reset.
 
 ```bash

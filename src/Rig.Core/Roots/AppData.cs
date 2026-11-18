@@ -6,8 +6,14 @@ namespace Rig.Core.Roots;
 /// </summary>
 public static class AppData
 {
-    /// <summary>The folder's name, kept from before the rename so existing state is found.</summary>
-    public const string Name = "shared-utilities";
+    /// <summary>The folder's name.</summary>
+    public const string Name = "rig";
+
+    /// <summary>
+    /// The folder's name before the repo was renamed. <c>rig runtime install</c> copies state out of a folder with this
+    /// name beside the current one (<see cref="AppDataMigration"/>).
+    /// </summary>
+    public const string LegacyName = "shared-utilities";
 
     /// <summary>
     /// <c>LOCALAPPDATA</c> wins on every platform, not only Windows, so tests can point it at a temp folder. Otherwise

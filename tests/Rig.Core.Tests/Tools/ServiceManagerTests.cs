@@ -106,11 +106,11 @@ public sealed class ServiceManagerTests : IDisposable
 
         var result = await new ServiceManager(Host(ServicePlatform.Windows, proc)).InstallAsync(ServiceTarget.Web, preview: true, port: null, Token);
 
-        Assert.Equal("Registered and started Windows scheduled task [Shared Utilities\\Web Dashboard Preview] on port 8091.", result.Message);
+        Assert.Equal("Registered and started Windows scheduled task [Rig\\Web Dashboard Preview] on port 8091.", result.Message);
         Assert.Equal(
-            ["schtasks", "/Create", "/TN", "Shared Utilities\\Web Dashboard Preview", "/TR", "/rig web --port 8091 --no-open --preview", "/SC", "ONLOGON", "/F"],
+            ["schtasks", "/Create", "/TN", "Rig\\Web Dashboard Preview", "/TR", "/rig web --port 8091 --no-open --preview", "/SC", "ONLOGON", "/F"],
             proc.Requests[0].Argv);
-        Assert.Equal(["schtasks", "/Run", "/TN", "Shared Utilities\\Web Dashboard Preview"], proc.Requests[1].Argv);
+        Assert.Equal(["schtasks", "/Run", "/TN", "Rig\\Web Dashboard Preview"], proc.Requests[1].Argv);
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public sealed class ServiceManagerTests : IDisposable
 
         var result = await new ServiceManager(host).InstallAsync(ServiceTarget.Desktop, preview: false, port: null, Token);
 
-        Assert.Equal("Registered and started Windows scheduled task [Shared Utilities\\Desktop].", result.Message);
+        Assert.Equal("Registered and started Windows scheduled task [Rig\\Desktop].", result.Message);
         Assert.Equal("\"/rig folder/rig\" desktop workspace restore", proc.Requests[0].Argv[5]);
     }
 
@@ -197,8 +197,8 @@ public sealed class ServiceManagerTests : IDisposable
 
         var result = await new ServiceManager(Host(ServicePlatform.Windows, proc)).UninstallAsync(ServiceTarget.Desktop, true, Token);
 
-        Assert.Equal("Removed Windows Task Scheduler entry [Shared Utilities\\Desktop Preview].", result.Message);
-        Assert.Equal(["schtasks", "/Delete", "/TN", "Shared Utilities\\Desktop Preview", "/F"], Assert.Single(proc.Requests).Argv);
+        Assert.Equal("Removed Windows Task Scheduler entry [Rig\\Desktop Preview].", result.Message);
+        Assert.Equal(["schtasks", "/Delete", "/TN", "Rig\\Desktop Preview", "/F"], Assert.Single(proc.Requests).Argv);
     }
 
     [Fact]
@@ -313,7 +313,7 @@ public sealed class ServiceManagerTests : IDisposable
         Assert.Equal("com.rtkelly.rig.web", ServiceManager.Label(ServiceTarget.Web, false));
         Assert.Equal("com.rtkelly.rig.web.preview", ServiceManager.Label(ServiceTarget.Web, true));
         Assert.Equal(Path.Join("/home", "Library", "LaunchAgents", "com.rtkelly.rig.mcp.plist"), ServiceManager.PlistPath("/home", ServiceTarget.Mcp, false));
-        Assert.Equal("Shared Utilities\\Collector Preview", ServiceManager.TaskName(ServiceTarget.Collector, true));
+        Assert.Equal("Rig\\Collector Preview", ServiceManager.TaskName(ServiceTarget.Collector, true));
         Assert.Equal("rig-desktop.service", ServiceManager.UnitName(ServiceTarget.Desktop, false));
         Assert.Equal(Path.Join("/home", ".config", "systemd", "user", "rig-desktop.service"), ServiceManager.UnitPath("/home", ServiceTarget.Desktop, false));
     }

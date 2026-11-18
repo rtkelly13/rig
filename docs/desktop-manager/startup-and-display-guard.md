@@ -138,7 +138,7 @@ has no console window ([jobs.md](jobs.md#launchers)). While it runs, the guard:
   snapshots a half-built layout nor undoes a restore.
 - Exits straight away if another guard is already running (`display-guard.lock`).
 
-Both locks live in `%LOCALAPPDATA%\shared-utilities\workspace-restore\`, whichever
+Both locks live in `%LOCALAPPDATA%\rig\workspace-restore\`, whichever
 copy or checkout runs the restore, so the guard always sees a restore in progress.
 It logs every topology change and every window it moves to `display-guard.log` in
 the restore logs directory. To watch it without moving anything:

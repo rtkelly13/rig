@@ -923,64 +923,64 @@
    "local_app_data": null,
    "xdg_data_home": null,
    "home": "/home/someone",
-   "mac": "/home/someone/Library/Application Support/shared-utilities",
-   "linux": "/home/someone/.local/share/shared-utilities"
+   "mac": "/home/someone/Library/Application Support/rig",
+   "linux": "/home/someone/.local/share/rig"
   },
   {
    "local_app_data": "",
    "xdg_data_home": null,
    "home": "/home/someone",
-   "mac": "/home/someone/Library/Application Support/shared-utilities",
-   "linux": "/home/someone/.local/share/shared-utilities"
+   "mac": "/home/someone/Library/Application Support/rig",
+   "linux": "/home/someone/.local/share/rig"
   },
   {
    "local_app_data": "/L",
    "xdg_data_home": null,
    "home": "/home/someone",
-   "mac": "/L/shared-utilities",
-   "linux": "/L/shared-utilities"
+   "mac": "/L/rig",
+   "linux": "/L/rig"
   },
   {
    "local_app_data": "/L/",
    "xdg_data_home": "/X",
    "home": "/home/someone",
-   "mac": "/L/shared-utilities",
-   "linux": "/L/shared-utilities"
+   "mac": "/L/rig",
+   "linux": "/L/rig"
   },
   {
    "local_app_data": null,
    "xdg_data_home": "/X",
    "home": "/home/someone",
-   "mac": "/X/shared-utilities",
-   "linux": "/X/shared-utilities"
+   "mac": "/X/rig",
+   "linux": "/X/rig"
   },
   {
    "local_app_data": null,
    "xdg_data_home": "  /X  ",
    "home": "/home/someone",
-   "mac": "/X/shared-utilities",
-   "linux": "/X/shared-utilities"
+   "mac": "/X/rig",
+   "linux": "/X/rig"
   },
   {
    "local_app_data": null,
    "xdg_data_home": "   ",
    "home": "/home/someone",
-   "mac": "/home/someone/Library/Application Support/shared-utilities",
-   "linux": "/home/someone/.local/share/shared-utilities"
+   "mac": "/home/someone/Library/Application Support/rig",
+   "linux": "/home/someone/.local/share/rig"
   },
   {
    "local_app_data": null,
    "xdg_data_home": "",
    "home": "/home/someone",
-   "mac": "/home/someone/Library/Application Support/shared-utilities",
-   "linux": "/home/someone/.local/share/shared-utilities"
+   "mac": "/home/someone/Library/Application Support/rig",
+   "linux": "/home/someone/.local/share/rig"
   },
   {
    "local_app_data": "",
    "xdg_data_home": "/X",
    "home": "/home/someone",
-   "mac": "/X/shared-utilities",
-   "linux": "/X/shared-utilities"
+   "mac": "/X/rig",
+   "linux": "/X/rig"
   }
  ]
 }

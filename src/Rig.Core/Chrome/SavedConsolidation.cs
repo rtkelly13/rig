@@ -61,7 +61,7 @@ public sealed class SavedConsolidation(IChromeSavedGroupActions actions, IChrome
 
     /// <summary>
     /// The file listing the profiles an <c>organise --consolidate-saved</c> run left saved groups to look at again in:
-    /// <c>%LOCALAPPDATA%\shared-utilities\chrome-tabs\saved-groups.pending</c>.
+    /// <c>%LOCALAPPDATA%\rig\chrome-tabs\saved-groups.pending</c>.
     /// </summary>
     /// <param name="environment">Reads an environment variable.</param>
     /// <param name="home">The user's home, for when <c>LOCALAPPDATA</c> is unset.</param>

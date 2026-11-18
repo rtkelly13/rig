@@ -349,7 +349,7 @@ internal sealed class ChromeTabsCommand(
         AtLeastOne(new Option<int>("--days") { Description = "How many days of trace files to read.", DefaultValueFactory = _ => days });
 
     private static Option<string?> Dir() =>
-        new("--dir") { Description = "Traces directory. Default: %LOCALAPPDATA%/shared-utilities/chrome-tabs/traces." };
+        new("--dir") { Description = "Traces directory. Default: %LOCALAPPDATA%/rig/chrome-tabs/traces." };
 
     private static Option<T> AtLeastOne<T>(Option<T> option)
     {

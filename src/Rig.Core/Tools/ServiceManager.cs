@@ -12,7 +12,7 @@ public enum ServicePlatform
     /// <summary>A per-user LaunchAgent under <c>~/Library/LaunchAgents</c>.</summary>
     MacOS,
 
-    /// <summary>A Task Scheduler task under <c>Shared Utilities</c>.</summary>
+    /// <summary>A Task Scheduler task under <c>Rig</c>.</summary>
     Windows,
 
     /// <summary>A systemd user unit under <c>~/.config/systemd/user</c>.</summary>
@@ -201,7 +201,7 @@ public sealed class ServiceManager(ServiceHost host)
     public static string TaskName(ServiceTarget target, bool preview)
     {
         ArgumentNullException.ThrowIfNull(target);
-        return $"Shared Utilities\\{target.DisplayName}{(preview ? " Preview" : string.Empty)}";
+        return $"{Jobs.CoordinatorTasks.Folder}\\{target.DisplayName}{(preview ? " Preview" : string.Empty)}";
     }
 
     /// <summary>The systemd user unit's name.</summary>

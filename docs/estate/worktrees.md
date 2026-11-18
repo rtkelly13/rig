@@ -35,7 +35,7 @@ when it is deleted, so it does not count as freeable.
 
 The scheduled jobs pass `--root` explicitly. Left to itself, `estate` puts the
 code root beside the checkout its own code runs from. For the installed runtime
-copy that directory is `%LOCALAPPDATA%\shared-utilities\runtime`, which holds
+copy that directory is `%LOCALAPPDATA%\rig\runtime`, which holds
 no clones.
 
 `rig web` offers the same trim (`Rig.Web.EstateOpsRoutes`). `GET /api/ops/estate/trim`

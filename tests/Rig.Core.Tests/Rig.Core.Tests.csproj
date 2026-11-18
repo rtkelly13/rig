@@ -9,7 +9,6 @@
     <None Include="Mail/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Otel/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="ReviewQueue/*.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Jobs/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Connectivity/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Work/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
