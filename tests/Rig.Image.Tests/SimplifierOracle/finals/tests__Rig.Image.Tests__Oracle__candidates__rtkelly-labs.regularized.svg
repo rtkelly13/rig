@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" version="1" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="grad-1" x1="582" x2="772" y1="240" y2="511" gradientUnits="userSpaceOnUse">
+<stop stop-color="#04ebc7" offset="0" />
+<stop stop-color="#14b6c3" offset=".25" />
+<stop stop-color="#198ec3" offset=".5" />
+<stop stop-color="#1e6dc1" offset=".75" />
+<stop stop-color="#2864c1" offset="1" />
+</linearGradient>
+<linearGradient id="grad-2" x1="561" x2="214" y1="606" y2="732" gradientUnits="userSpaceOnUse">
+<stop stop-color="#0edbbf" offset="0" />
+<stop stop-color="#11cdc1" offset=".25" />
+<stop stop-color="#11aec0" offset=".5" />
+<stop stop-color="#119ac5" offset=".75" />
+<stop stop-color="#1499d3" offset="1" />
+</linearGradient>
+<linearGradient id="grad-3" x1="749" x2="660" y1="481" y2="811" gradientUnits="userSpaceOnUse">
+<stop stop-color="#13d1c2" offset="0" />
+<stop stop-color="#14acbd" offset=".25" />
+<stop stop-color="#1a7bbc" offset=".5" />
+<stop stop-color="#205fbc" offset=".75" />
+<stop stop-color="#265bbe" offset="1" />
+</linearGradient>
+<linearGradient id="grad-4" x1="365" x2="281" y1="552" y2="238" gradientUnits="userSpaceOnUse">
+<stop stop-color="#2969bd" offset="0" />
+<stop stop-color="#2277c5" offset=".25" />
+<stop stop-color="#1b7cc3" offset=".5" />
+<stop stop-color="#169eca" offset=".75" />
+<stop stop-color="#02f0e6" offset="1" />
+</linearGradient>
+<linearGradient id="grad-5" x1="551" x2="470" y1="453" y2="569" gradientUnits="userSpaceOnUse">
+<stop stop-color="#4fdce0" offset="0" />
+<stop stop-color="#4edfe5" offset=".25" />
+<stop stop-color="#38c7e1" offset=".5" />
+<stop stop-color="#2790cb" offset=".75" />
+<stop stop-color="#245cb2" offset="1" />
+</linearGradient>
+<linearGradient id="grad-6" x1="590" x2="759" y1="286" y2="488" gradientUnits="userSpaceOnUse">
+<stop stop-color="#10a4b9" offset="0" />
+<stop stop-color="#148eb1" offset=".25" />
+<stop stop-color="#1869aa" offset=".5" />
+<stop stop-color="#1c54ac" offset=".75" />
+<stop stop-color="#2053af" offset="1" />
+</linearGradient>
+<linearGradient id="grad-7" x1="719" x2="655" y1="511" y2="750" gradientUnits="userSpaceOnUse">
+<stop stop-color="#0fa6b4" offset="0" />
+<stop stop-color="#1391b1" offset=".25" />
+<stop stop-color="#166dad" offset=".5" />
+<stop stop-color="#1a4ea8" offset=".75" />
+<stop stop-color="#1a48ac" offset="1" />
+</linearGradient>
+<linearGradient id="grad-8" x1="249" x2="462" y1="580" y2="729" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1458a7" offset="0" />
+<stop stop-color="#1465aa" offset=".25" />
+<stop stop-color="#0f86b3" offset=".5" />
+<stop stop-color="#0ba9b8" offset=".75" />
+<stop stop-color="#0bbebc" offset="1" />
+</linearGradient>
+<linearGradient id="grad-9" x1="390" x2="441" y1="541" y2="650" gradientUnits="userSpaceOnUse">
+<stop stop-color="#58e3e7" offset="0" />
+<stop stop-color="#4adae7" offset=".25" />
+<stop stop-color="#2d97d1" offset=".5" />
+<stop stop-color="#2268bc" offset=".75" />
+<stop stop-color="#2456aa" offset="1" />
+</linearGradient>
+<linearGradient id="grad-10" x1="572" x2="646" y1="382" y2="471" gradientUnits="userSpaceOnUse">
+<stop stop-color="#58e7ea" offset="0" />
+<stop stop-color="#52e6ea" offset=".25" />
+<stop stop-color="#35b8dc" offset=".5" />
+<stop stop-color="#1f81cb" offset=".75" />
+<stop stop-color="#216fb5" offset="1" />
+</linearGradient>
+<linearGradient id="grad-11" x1="636" x2="582" y1="553" y2="647" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1e83bb" offset="0" />
+<stop stop-color="#1c85c8" offset=".25" />
+<stop stop-color="#207bc0" offset=".5" />
+<stop stop-color="#2266bf" offset=".75" />
+<stop stop-color="#2457ae" offset="1" />
+</linearGradient>
+<linearGradient id="grad-12" x1="576" x2="630" y1="379" y2="433" gradientUnits="userSpaceOnUse">
+<stop stop-color="#5de7e9" offset="0" />
+<stop stop-color="#56e7ea" offset=".25" />
+<stop stop-color="#51e8eb" offset=".5" />
+<stop stop-color="#4de0ea" offset=".75" />
+<stop stop-color="#48cae1" offset="1" />
+</linearGradient>
+<linearGradient id="grad-13" x1="401" x2="430" y1="539" y2="589" gradientUnits="userSpaceOnUse">
+<stop stop-color="#5fe2e5" offset="0" />
+<stop stop-color="#53e9ec" offset=".25" />
+<stop stop-color="#51e9ec" offset=".5" />
+<stop stop-color="#51e7ec" offset=".75" />
+<stop stop-color="#4ad0e4" offset="1" />
+</linearGradient>
+<linearGradient id="grad-14" x1="758" x2="591" y1="473" y2="274" gradientUnits="userSpaceOnUse">
+<stop stop-color="#2e8ad9" offset="0" />
+<stop stop-color="#299bd3" offset=".25" />
+<stop stop-color="#2bacc7" offset=".5" />
+<stop stop-color="#35d1dc" offset=".75" />
+<stop stop-color="#47e7e2" offset="1" />
+</linearGradient>
+<filter id="crossover-shadow" x="-20%" y="-20%" width="140%" height="140%">
+<feDropShadow dx="2" dy="4" flood-color="#080e18" flood-opacity=".65" stdDeviation="3" />
+</filter>
+<linearGradient id="grad-tl-inner" x1="266" x2="443" y1="332" y2="357" gradientUnits="userSpaceOnUse">
+<stop stop-color="#147eb6" offset="0" />
+<stop stop-color="#1b6ab8" offset=".3" />
+<stop stop-color="#1f58b8" offset=".7" />
+<stop stop-color="#244aa4" offset="1" />
+</linearGradient>
+</defs>
+<path d="m 0 0 h 1024 v 1024 h -1024 z" fill="#101923" />
+<path d="m 660.9 216.5 l 14.1 7.5 l 137.4 80.8 l 5.1 8.8 l 1.5 5.4 v 150 l -3 10 l -8.2 8.2 l -22.1 12.8 h -7.6 l -3 -4 l -11.9 -4.6 l -51.4 -29.6 l -6.7 -6.7 l -5 -1 l 19 -14 l 4.5 -5.4 v -72.5 l -2.1 -0.4 l -35.8 -20.1 l -29.7 -17.6 h -10.4 l -74.5 43 l -12.6 11.3 v 40 l -54.8 31.6 l -2.6 -0.5 l -39.2 -22.6 v -87.8 l 1.9 -8.7 l 5.8 -10.1 l 11.4 -9.7 l 162.7 -94 z" fill="url(#grad-1)" />
+<path d="m 240.3 521 l 2.8 0.6 l 41 24.4 l 12.6 6.6 l 4.4 4.4 l 9 4 l 5 6 l 7 4 l -2.7 4.6 l -6.8 4 l -4.5 4.5 l -5 1 l -4 4 v 69.5 l 69.5 41.5 h 5.8 l 79.8 -46.1 l 7.4 -12.9 v -22.6 l 69.1 -39.9 l 26.4 15.2 v 96.2 l -4 10 l -7.2 9.7 l -19.8 12.3 l -144.8 85.3 l -5.2 1.7 h -12.4 l -5.6 -3 l -145.4 -86 l -6.2 -10.7 l -1.4 -4.3 v -154.1 l 8.2 -14.3 z" fill="url(#grad-2)" />
+<path d="m 677 465 h 9 l 5.4 1.8 l 114.5 66.1 l 9.1 9.1 l 4 9 v 155.2 l -9 15.6 l -82 48.1 l -10.5 5.9 l -5.5 1.1 l -11.3 8.7 l -26.7 14.3 l -12.1 7.5 h -19.5 l -31.1 -17.2 l -4.8 -4 l -37.5 -21.3 l -45.3 -27.2 l 32.4 -18.7 l 15.9 -27.5 v -34.3 l 31.6 18.2 l -3.7 -2.8 l 17.1 9.3 l 29.3 18 h 11.5 l 11.2 -6 l 48.5 -29.2 l 5.5 -6.8 v -68 l -16.7 -14.3 l -110.7 -63.9 z" fill="url(#grad-3)" />
+<path d="m 379.4 216.5 l 3.4 1.2 l 116.7 67.4 l -29.8 17.2 l -13.7 13.7 l -11 -4 l 7 6 l -4.5 19.1 v 24 l -8.5 -2.1 l -4.6 -3.5 l -35.2 -20.3 l -3.1 -4.2 l -16 -7 l -13.4 -1.9 l -9 5.2 l -6.5 8.7 l -13.7 6 l -11.4 6.6 l -8.5 6.4 l -13.2 7.6 l -3.6 1.2 v 72 l 15.8 9.2 l 14.4 10.8 l 92.3 54.2 l -18.9 14.2 l -46 27.8 l -11.7 6 h -14.1 l -18.2 -10 l -74 -45 l -11 -5 l -12.3 -8.1 l -8.7 -9.9 l -3 -7 v -156.8 l 5.8 -10 l 9.2 -7.2 l 142.8 -82.5 z" fill="url(#grad-4)" />
+<path d="m 366.7 274 h 13.4 l 68.9 39.4 v 47.6 h -7.6 l -25.4 -16 l -45.8 -23.5 l -69.7 42.2 v 72.9 h -40.5 v -100.9 z" fill="url(#grad-tl-inner)" />
+<path d="m 396.3 352.1 l 3.5 0.7 l 48.6 28.1 v 58.2 l 229.5 132.5 v 69 l -50.6 29.2 l -12.7 -3.9 l -9 -5.2 l -5.6 -4.8 l -28.6 -16.5 v -57.2 l -220.2 -127.1 l -8.3 -11.1 v -60.4 z" fill="url(#grad-5)" filter="url(#crossover-shadow)" />
+<path d="m 649 273 h 7 l 7.1 2.8 l 98.7 57.8 l 4.2 7.4 l 3 14.1 v 93 l -2 6 l -9 12 l -4.3 1.4 l -10.7 6.2 l 8.8 5.1 l 5.3 5.3 l 2.2 5.5 l -22.2 -12.5 l -10 -7 l -17.4 -10.4 l -4.6 -4.6 l -5 -1 l 19 -14 l 4.5 -5.4 v -72.5 l -2.1 -0.4 l -35.8 -20.1 l -29.7 -17.6 h -10.4 l -74.5 43 l -12.6 11.3 v 39.3 l -45.5 26.1 v -83.8 l 4.6 -12.6 l 19.4 -12.4 l 101.1 -58.8 z" fill="url(#grad-6)" />
+<path d="m 636.4 489.9 l 3.5 0.7 l 113.5 65.5 l 7.3 5.9 l 6.3 10.8 v 100.2 l -3 9 l -8.8 10.1 l -95.7 55.9 h -11.5 l -6.7 -1.7 l -74.5 -43 l 3.2 -4.3 l 2 -8 v -33.8 l 31.6 18.2 l -3.7 -2.8 l 17.1 9.3 l 29.3 18 h 11.5 l 11.2 -6 l 48.5 -29.2 l 5.5 -6.8 v -68 l -12.8 -10.9 l -80.9 -48.6 l -4.1 -5.5 l -14.8 -8.6 l -5.4 -5.4 l 6.1 -6.1 l 13.9 -8.9 z" fill="url(#grad-7)" />
+<path d="m 295 551 l 6 6 l 9 4 l 5 6 l 7 4 l -2.7 4.6 l -6.8 4 l -4.5 4.5 l -5 1 l -4 4 v 69.5 l 69.5 41.5 h 5.8 l 79.8 -46.1 l 7.4 -12.9 v -22.3 l 45.5 -26.3 v 67.5 l -4 11 l -6.9 6.9 l -39.4 22.8 l -6.7 5.3 l -21 10 l -26.9 16.9 l -17.3 12.1 l -8.1 2.4 h -9.7 l -100.9 -58.3 l -6 -7.2 l -3 -7 v -102.4 l 6.2 -10.8 l 22.4 -12.9 z" fill="url(#grad-8)" />
+<path d="m 436.4 521.3 l 81.5 46.7 l -69.4 40.1 v 31.7 l -53.5 30.9 l -52 -31.3 v -64.2 z" fill="url(#grad-9)" />
+<path d="m 627.9 354.5 l 50.1 28.9 v 60.6 l -7.1 7.1 l -86 49.7 l -68.7 -39.6 l 54.9 -31.7 v -46.6 l 49.1 -28.4 z" fill="url(#grad-10)" />
+<path d="m 436 497 l 3 4 l 4 -4 l 2.9 5 l 182.3 105.2 l 49.8 -28.7 v 62.1 l -50.6 29.2 l -12.7 -3.9 l -9 -5.2 l -5.6 -4.8 l -28.6 -16.5 v -56.1 l -149.6 -86.4 z" fill="url(#grad-11)" />
+<path d="m 627.4 354.5 l 53 30.6 l -146.8 84.8 l -16.6 -9.2 l 53.9 -31.1 v -46.6 l 49.1 -28.4 z" fill="url(#grad-12)" />
+<path d="m 437.8 521.5 l 53.2 30.2 l -96.4 55.6 l -52.8 -30.5 z" fill="url(#grad-13)" />
+<path d="m 660.7 265.5 l 10.3 5.5 l 96.8 58.2 l 5.4 9.3 l 1.9 8.5 v 105.7 l -8.4 14.5 l -18.3 10.6 l -7.3 -1.8 l 22 -17 l 4 -7 l 1 -8.1 v -89 l -1 -9 l -5.2 -12.4 l -97.5 -56.3 l -8.4 -3.4 h -7 l -13.3 3.6 l -22.6 12.4 l -89.9 53.3 l -6.1 7.7 l -4 12 v 77.2 l -7.5 4.3 v -90.8 l 1.5 -6.8 l 13 -12 l 26 -15 l 5 -1 l 7 -6 l 4.1 -1.2 l 80.2 -46.3 z" fill="url(#grad-14)" />
+</svg>
