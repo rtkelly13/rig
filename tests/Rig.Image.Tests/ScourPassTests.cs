@@ -94,4 +94,29 @@ public sealed class ScourPassTests
         Assert.StartsWith(expectedStart, result, StringComparison.Ordinal);
         Assert.Contains($"<rect width=\"{scoured}\" height=\"1\"/>", result, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData("fill:url(#g) rgb(0, 0, 0)", "rgb(0, 0, 0)")]
+    [InlineData("fill:url('#g') rgb(0, 0, 0)", "rgb(0, 0, 0)")]
+    [InlineData("opacity:0;fill:red", "fill")]
+    [InlineData("stroke:none;stroke-width:3;stroke-linecap:round", "stroke-width")]
+    [InlineData("fill:none;fill-rule:evenodd;fill-opacity:0.5", "fill-rule")]
+    [InlineData("fill-opacity:0;fill:red", "fill:red")]
+    [InlineData("stroke-opacity:0;stroke:red", "stroke:red")]
+    [InlineData("stroke-width:0;stroke:red;stroke-dasharray:1", "stroke-dasharray")]
+    [InlineData("font-size:4px;font-family:serif;fill:red", "font-family")]
+    public void Style_properties_that_have_no_effect_are_dropped(string style, string dropped)
+    {
+        var result = Scour($"<defs><linearGradient id=\"g\"/></defs><rect width=\"1\" height=\"1\" style=\"{style}\"/>");
+
+        Assert.DoesNotContain(dropped, result.Split("<rect")[^1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_zero_width_stroke_that_a_child_inherits_is_kept()
+    {
+        var result = Scour("<g style=\"stroke-width:0;stroke:red\"><rect width=\"1\" height=\"1\" style=\"stroke-width:inherit\"/></g>");
+
+        Assert.Contains("stroke-width", result, StringComparison.Ordinal);
+    }
 }

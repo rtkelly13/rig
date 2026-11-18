@@ -1,0 +1,98 @@
+/* Tailwind source for the image preview gallery.
+ *
+ * `pnpm css:build` compiles it to gallery.css beside it. That output is
+ * committed and embedded in Rig.Image, which inlines it into a self-contained
+ * preview.html, so `rig image build-preview` works without Node installed.
+ *
+ * Every colour, type size, radius and shadow comes from
+ * @rtkelly-labs/design-system: no hand-written values here or in the templates
+ * (Rig.Web.Tests DesignTokensTests enforces it). A missing token is fixed upstream
+ * in rtkelly-labs/design-system, not patched in here.
+ */
+
+/* `source(none)` disables automatic content detection, so the only inputs are
+ * the @source lines below. Without it Tailwind scans the whole repo and any
+ * file that happens to contain a class-like string adds rules to the output —
+ * which, for a build artifact that is committed and checked byte-for-byte by
+ * `pnpm css:check`, means an unrelated file elsewhere in the repo turns CI red. */
+@import "tailwindcss" source(none);
+@import "@rtkelly-labs/design-system/theme.css";
+@source "../../../node_modules/@rtkelly-labs/design-system/dist/**/*.js";
+
+/* Automatic content detection skips files it cannot classify, so point it at
+ * the HTML templates explicitly. Without this the utility classes used in the
+ * markup are never emitted. */
+@source "templates/**/*.html";
+
+/* `GalleryBuilder.BadgeClass` picks `badge-good`/`badge-warn`/`badge-bad` at runtime and
+ * passes the result to the template as `badge_class`, so those names appear
+ * nowhere in the markup and Tailwind cannot learn them by scanning.
+ *
+ * Safelist them by name rather than scanning the C# source. Scanning code
+ * for class names means its *prose* feeds the stylesheet: a comment that
+ * happens to contain a word like "fixed" or "table" silently adds a utility to
+ * this committed, byte-compared artifact and turns CI red for an unrelated
+ * edit. Naming the classes is precise and cannot drift. The chosen and current
+ * borders are picked at runtime too, so they are named here as well. */
+@source inline("badge-good badge-warn badge-bad border-2 border-accent-primary border-intent-success");
+
+/* Components. Each is used many times across the templates, so composing them
+ * once here keeps the markup readable — utilities are used directly for
+ * anything that appears once. */
+
+@utility panel {
+  @apply bg-surface-raised border border-edge-subtle rounded-2xl;
+}
+
+@utility card-shadow {
+  @apply shadow-hard-md;
+}
+
+@utility section-title {
+  @apply w-full max-w-300 mx-auto mt-9 mb-5 pb-2.5 text-center text-title
+         text-accent-primary border-b border-edge-subtle;
+}
+
+@utility badge {
+  @apply mt-3 px-3 py-1 rounded-lg text-caption font-bold border;
+}
+
+@utility badge-good {
+  @apply badge text-intent-success bg-intent-success/20 border-intent-success;
+}
+
+@utility badge-warn {
+  @apply badge text-intent-warning bg-intent-warning/20 border-intent-warning;
+}
+
+@utility badge-bad {
+  @apply badge text-intent-danger bg-intent-danger/20 border-intent-danger;
+}
+
+@utility badge-ref {
+  @apply badge text-palette-bright-magenta bg-accent-tertiary/20 border-accent-tertiary;
+}
+
+/* Pill that overlaps a panel's top edge. */
+@utility ribbon {
+  @apply absolute -top-3 px-3 py-1 rounded-xl text-caption font-bold uppercase tracking-wide;
+}
+
+@utility pixelated {
+  image-rendering: pixelated;
+}
+
+@utility crop-tile {
+  @apply size-27.5 rounded-lg border-2 border-edge-subtle object-contain pixelated;
+}
+
+/* As many 60-step (15rem) columns as fit, sharing what is left over. */
+@utility grid-cols-auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--spacing) * 60), 1fr));
+}
+
+/* Wide content must scroll inside its own container rather than making the page
+ * scroll sideways. */
+@utility scroll-x {
+  @apply w-full max-w-325 overflow-x-auto;
+}

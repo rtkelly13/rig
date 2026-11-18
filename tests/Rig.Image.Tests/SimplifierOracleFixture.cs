@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Rig.Image.Tests;
 
-/// <summary>The frozen Python simplifier oracle (tools/image-drift/oracle/dump_oracle.py --simplifier-out).</summary>
+/// <summary>The frozen Python simplifier oracle (dumped from the original implementation before it was retired).</summary>
 internal static class SimplifierOracleFixture
 {
     private static readonly string Folder = Path.Combine(AppContext.BaseDirectory, "SimplifierOracle");

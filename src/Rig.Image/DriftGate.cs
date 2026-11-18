@@ -4,7 +4,7 @@ using Rig.Image.Simplifier;
 
 namespace Rig.Image;
 
-/// <summary>The consolidated report for a gated simplification (image_drift's <c>OptimizationReport</c>).</summary>
+/// <summary>The consolidated report for a gated simplification (the original <c>OptimizationReport</c>).</summary>
 /// <param name="OriginalSizeBytes">UTF-8 size of the input.</param>
 /// <param name="FinalSizeBytes">UTF-8 size of the kept candidate.</param>
 /// <param name="SizeReductionPct">Size saved, rounded to two places.</param>

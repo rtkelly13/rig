@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 namespace Rig.Image.Tests;
 
-/// <summary>The frozen Python score oracle (tools/image-drift/oracle/dump_oracle.py) and the repository assets it was taken from.</summary>
+/// <summary>The frozen Python score oracle (dumped from the original implementation before it was retired) and the repository assets it was taken from.</summary>
 internal static class OracleFixture
 {
     private static readonly string Folder = Path.Combine(AppContext.BaseDirectory, "Oracle");
@@ -29,9 +29,8 @@ internal static class OracleFixture
     }
 
     /// <summary>
-    /// The ADR thresholds were measured on the frozen platform. Skia's native build rasterises small favicons differently on other
-    /// platforms (CI's Linux run measured mean abs 1.43 and 43.8% differing pixels on a 16px favicon), so elsewhere the tests only
-    /// bound the divergence loosely and the report-only image-cross-check job records the real numbers.
+    /// Bounds for comparing a Chromium render with the frozen one. Chromium rasterises small favicons differently across platforms, so off the frozen
+    /// platform that comparison is bounded loosely. The renderer cross-check does not use this: it applies the ADR thresholds from 180px up.
     /// </summary>
     public static DivergenceThresholds ThresholdsForThisPlatform() =>
         FrozenOnThisPlatform() ? DivergenceThresholds.Adr : DivergenceThresholds.Adr with { MeanAbsDifference = 3.0, DifferingPixelFraction = 0.60 };

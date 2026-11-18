@@ -157,7 +157,7 @@ internal static class Discovery
     // Parse C# syntax instead of grep: catches new mains and top-level apps, including alternate executable projects.
     internal static IEnumerable<CommandOwner> Sources(string root, IEnumerable<string> files)
     {
-        foreach (var file in files.Where(f => !f.StartsWith("tests/", StringComparison.Ordinal) && !f.StartsWith("tools/image-drift/tests/", StringComparison.Ordinal)))
+        foreach (var file in files.Where(f => !f.StartsWith("tests/", StringComparison.Ordinal)))
         {
             var full = Path.Join(root, file);
             if (file.EndsWith(".csproj", StringComparison.Ordinal))

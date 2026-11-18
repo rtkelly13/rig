@@ -21,7 +21,7 @@ public sealed record PathCommand(char Command, IReadOnlyList<double> Args)
                 continue;
             }
 
-            // image_drift's own rstrip chain, quirk included: at precision 0 the zeros of "100" go too.
+            // the original own rstrip chain, quirk included: at precision 0 the zeros of "100" go too.
             var text = PythonNumber.FormatFixed(Args[index], precision).TrimEnd('0').TrimEnd('.');
             formatted[index] = text == "-0" ? "0" : text;
         }

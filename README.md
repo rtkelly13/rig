@@ -24,7 +24,7 @@ When that happens, this repository should keep only a short pointer to the new h
 
 ## Current Contents
 
-This repository currently contains desktop workspace management tooling, the brand-asset and image-drift harness, repository governance automation, shared assets, helper scripts, and small standalone files that support personal development workflows.
+This repository currently contains desktop workspace management tooling, the brand-asset image pipeline, repository governance automation, shared assets, helper scripts, and small standalone files that support personal development workflows.
 
 ## Installation
 
@@ -59,23 +59,23 @@ rig desktop workspace validate-plan --config desktop-manager/workspace-plan.bund
 rig desktop workspace restore --config desktop-manager/workspace-plan.bundle.json --dry-run
 ```
 
-### Image Reconcile (`image-reconcile`)
+### Image pipeline (`rig image`)
 
 Generate, score, and export the managed brand marks under [`assets/`](assets/). Drift is
 measured against a committed reference baseline, so a visual change cannot land unnoticed.
 
 ```bash
 # Regenerate a brand mark from its builder
-uv run --project tools/image-drift image-reconcile build -p rtkelly-labs
+rig image build -p rtkelly-labs
 
 # Score it against the primary baseline
-uv run --project tools/image-drift image-reconcile compare -p rtkelly-labs --render
+rig image compare -p rtkelly-labs
 
 # Export every declared production cut
-uv run --project tools/image-drift image-reconcile export-avatar -p rtkelly-labs
+rig image export-avatar -p rtkelly-labs
 
-# Browse assets, variations, and diffs in the Asset Studio workbench
-uv run --project tools/image-drift image-reconcile serve
+# Browse assets, variations, and diffs in the Asset Studio workbench (served by rig web)
+rig web   # the Asset Studio is at /studio
 ```
 
 See [`docs/brand-assets/README.md`](docs/brand-assets/README.md) for the governing model, thresholds, and the
@@ -89,7 +89,6 @@ dotnet test --solution rig.slnx   # run the tests
 dotnet format rig.slnx            # format
 ```
 
-The brand pipeline in `tools/image-drift` is Python: `cd tools/image-drift && uv sync && uv run pytest`.
 See [docs/development.md](docs/development.md) for every gate.
 
 ## License

@@ -1,0 +1,23 @@
+  <h2 class="section-title">Source Artwork</h2>
+  <div class="panel mb-2.5 flex w-full max-w-325 flex-wrap items-center gap-6 border-2 border-accent-tertiary p-5.5">
+    <img class="size-50 rounded-xl object-contain" src="{{reference_hero}}" alt="Canonical reference">
+    <div class="min-w-65 flex-1">
+      <h3 class="m-0 mb-1.5 text-body text-palette-bright-magenta">{{reference_name}}</h3>
+      <p class="m-0 mb-3.5 text-caption leading-relaxed text-content-secondary">
+        The original. Kept alongside for character reference, not as a target to converge on.
+      </p>
+      <div class="mb-4 flex flex-wrap items-end gap-3.5">
+{{reference_sizes_html}}
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Candidates</h2>
+  <div class="flex w-full max-w-325 flex-col gap-4.5">
+{{candidates_html}}
+  </div>
+
+  <h2 class="section-title">Socket Detail — Side by Side</h2>
+  <div class="panel scroll-x p-4">
+    <img class="block h-auto max-w-full pixelated" src="{{socket_sheet}}" alt="Socket ring across all candidates">
+  </div>

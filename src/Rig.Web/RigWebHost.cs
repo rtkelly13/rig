@@ -90,6 +90,7 @@ public sealed class RigWebHost : IAsyncDisposable
         ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System), Path.Join(codeRoot, "personal"));
         JobsRoutes.Map(app, ops);
         C4Routes.Map(app, settings);
+        StudioRoutes.Map(app, settings);
         return host;
     }
 

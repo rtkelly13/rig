@@ -1,7 +1,7 @@
 # ADR 0022: C# on .NET 10 Is rig's Primary Language
 
-- **Status:** Accepted
-- **Applies to:** all of rig except the brand-asset pipeline (`image_drift`)
+- **Status:** Accepted; the `image_drift` Python exception is superseded by ADR 0024
+- **Applies to:** all of rig (the brand-asset pipeline, `image_drift`, was excepted until ADR 0024 moved it to C#)
 - **Supersedes:** [0002](0002-uv-for-python-packaging.md), [0003](0003-pyright-strict-type-checking.md) and
   [0004](0004-ruff-for-linting-and-formatting.md) for everything except `image_drift`. Amends
   [0005](0005-per-language-testing-stacks.md): rig's own testing stack becomes the .NET one.
@@ -21,7 +21,7 @@ rig is about 86k lines of Python and 57k lines of tests. Three things have drive
 3. **The estate.** Most of the libraries rig governs (Lake.NET, oxbow, Diffra, Parquet.*) are .NET 10 repos
    using Central Package Management. rig already carries .NET-specific governance for them.
 
-`image_drift` is the exception. It depends on vtracer, scour, shapely and numpy, and
+`image_drift` was the exception (superseded by ADR 0024: it is C# now, with its output frozen as oracles). It depends on vtracer, scour, shapely and numpy, and
 [ADR 0009](0009-deterministic-svg-render-pipeline.md) guarantees byte-identical output from them. No .NET
 library reproduces those bytes, so porting it would change every production cut.
 
@@ -44,7 +44,7 @@ library reproduces those bytes, so porting it would change every production cut.
 6. **Migration is a strangler, not a rewrite.** A C# `rig` front door owns the command line and forwards any
    command it does not own yet to the Python entry point. A command moves in one PR, and its Python is
    deleted in the same or the next PR. No command stops working between PRs.
-7. **`image_drift` stays Python,** moved into its own uv project and called from C# through the process
+7. **`image_drift` stayed Python for a time (superseded by ADR 0024),** moved into its own uv project and called from C# through the process
    runner. ruff and pytest remain for it alone.
 8. **The target architecture is unchanged in shape.** Desired → observed → plan → apply, one port per kind of
    external state and behaviour tests through seams all carry over. Ports become C# interfaces; fakes become
@@ -54,12 +54,12 @@ The step-by-step plan, its done-when checks and progress live on the tracking is
 
 ## Consequences
 
-- Machines need the .NET 10 SDK. `uv` stays installed for `image_drift` and for other estate repos.
+- Machines need the .NET 10 SDK. `uv` stays installed for other estate repos.
 - `uv run <command>` keeps working throughout the migration through the forwarding front door. Callers in
   other repos (`AGENTS.md` files, `~/.claude/settings.json`, `config/cli-allowlists.json`) are updated once
   the Python entry points are gone.
 - `packages/type-ratchet`, basedpyright, `ty` and import-linter are deleted once no rig Python remains
-  outside `image_drift`.
-- ADRs 0002–0004 stay as the record of how rig's Python was built and still govern `image_drift`.
+  outside the orca and experiment folders.
+- ADRs 0002–0004 stay as the record of how rig's Python was built and no longer govern any shipped rig code.
 - Scripts under `scripts/` may be C# file-based apps (`dotnet run script.cs`), in line with the script
   language policy.

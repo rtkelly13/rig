@@ -9,7 +9,7 @@ namespace Rig.Image;
 /// </summary>
 public static class RasterPipeline
 {
-    /// <summary>The square canvas image_drift compares on.</summary>
+    /// <summary>The square canvas the pipeline compares on.</summary>
     public const int NormalisedSize = 500;
 
     /// <summary>Decodes a PNG or JPEG to straight (not premultiplied) RGBA, without resizing.</summary>
@@ -47,8 +47,14 @@ public static class RasterPipeline
     /// </summary>
     public static RgbImage LoadNormalised(ReadOnlySpan<byte> file) => Normalise(Decode(file));
 
+    /// <summary>The same as <see cref="LoadNormalised(ReadOnlySpan{byte})"/> on a canvas of <paramref name="size"/> pixels.</summary>
+    public static RgbImage LoadNormalised(ReadOnlySpan<byte> file, int size) => Normalise(Decode(file), size);
+
     /// <summary>The same normalisation for pixels already in memory, such as a rendered SVG.</summary>
-    public static RgbImage Normalise(Raster raster)
+    public static RgbImage Normalise(Raster raster) => Normalise(raster, NormalisedSize);
+
+    /// <summary>The same normalisation onto a canvas of <paramref name="size"/> pixels.</summary>
+    public static RgbImage Normalise(Raster raster, int size)
     {
         ArgumentNullException.ThrowIfNull(raster);
         var pixels = raster.Pixels;
@@ -60,7 +66,7 @@ public static class RasterPipeline
             rgb[(i * 3) + 2] = pixels[(i * 4) + 2];
         }
 
-        return PillowResize.Resize(new RgbImage(raster.Width, raster.Height, rgb), NormalisedSize, NormalisedSize, ResizeFilter.Bicubic);
+        return PillowResize.Resize(new RgbImage(raster.Width, raster.Height, rgb), size, size, ResizeFilter.Bicubic);
     }
 
     /// <summary>Resamples straight-alpha RGBA to a square with Lanczos, as Pillow does for each ICO entry.</summary>

@@ -1,6 +1,6 @@
 # ADR 0003: Strict Standard Type Checking with Pyright
 
-- **Status:** Superseded by [0022](0022-csharp-is-rigs-primary-language.md), except for `image_drift`
+- **Status:** Superseded by [0022](0022-csharp-is-rigs-primary-language.md) (its `image_drift` exception ended when the pipeline moved to C#, ADR 0024)
 - **Applies to:** all Python codebases and modules
 
 ## Context

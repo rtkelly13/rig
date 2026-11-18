@@ -1,6 +1,6 @@
 namespace Rig.Image.Pathways;
 
-/// <summary>One declared brand mark variant (image_drift's <c>Variant</c>, minus the wood-field knobs only retired builders used).</summary>
+/// <summary>One declared brand mark variant (the original <c>Variant</c>, minus the wood-field knobs only retired builders used).</summary>
 /// <param name="Name">The label shown in listings.</param>
 /// <param name="Description">What the variant is for.</param>
 public sealed record Variant(string Name, string Description);
@@ -29,7 +29,7 @@ public sealed class UnknownVariantException : ArgumentException
     }
 }
 
-/// <summary>image_drift's <c>resolve_variant</c>: an unknown key is an error, never a silent fallback.</summary>
+/// <summary>the original <c>resolve_variant</c>: an unknown key is an error, never a silent fallback.</summary>
 public static class VariantResolution
 {
     /// <summary>Resolves a requested key against a builder's declared variants; null takes <paramref name="fallback"/>.</summary>

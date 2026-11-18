@@ -15,6 +15,12 @@ public sealed record DivergenceThresholds(double MeanAbsDifference, double Diffe
 {
     /// <summary>The thresholds ADR 0024 sets.</summary>
     public static DivergenceThresholds Adr { get; } = new(1.0, 0.20, 0.1, 0.001, 0.1);
+
+    /// <summary>Mean abs difference, RMSE, SSIM and composite are gated from this size up; smaller cuts (16px and 32px favicons) fail only on a changed promote or reject decision.</summary>
+    public const int GatedFromSize = 180;
+
+    /// <summary>The differing-pixel fraction is gated from this size up; below it, it is reported but not gated.</summary>
+    public const int DifferingPixelsGatedFromSize = 500;
 }
 
 /// <summary>One SVG rendered at one size by both renderers.</summary>
@@ -92,20 +98,39 @@ public sealed record CrossCheckReport(
 public static class CrossCheck
 {
     private static readonly string[] Projects = ["rtkelly-labs", "parquet-source-generator"];
-    private static readonly int[] MasterSizes = [500, 180, 1000, 2000];
-    private static readonly int[] FaviconSizes = [500, 512, 48, 32, 16];
 
-    /// <summary>The file set the Python oracle covers: each project's master and favicon at the sizes production cuts use.</summary>
-    public static IReadOnlyList<CrossCheckFile> Files()
+    /// <summary>
+    /// The files to cross-check: each project's raster cuts as its <c>production-cuts.csv</c> declares them (AGENTS.md rule 4), one per source and size.
+    /// A master cut is drawn from the row typed <c>master_svg</c>, a <c>favicon*</c> cut from the one typed <c>favicon_svg</c>.
+    /// </summary>
+    /// <param name="repoRoot">The checkout holding <c>assets/</c>.</param>
+    public static IReadOnlyList<CrossCheckFile> Files(string repoRoot)
     {
         var files = new List<CrossCheckFile>();
         foreach (var project in Projects)
         {
-            files.AddRange(MasterSizes.Select(size => new CrossCheckFile($"{project}.master.{size}", project, MasterSvg(project), size)));
-            files.AddRange(FaviconSizes.Select(size => new CrossCheckFile($"{project}.favicon.{size}", project, $"assets/{project}/production-cuts/favicon.svg", size)));
+            var folder = $"assets/{project}/production-cuts";
+            var cuts = ProductionCuts.Read(Path.Combine(repoRoot, folder, ProductionCuts.CsvName));
+            var master = SourceSvg(project, cuts, "master_svg");
+            var favicon = SourceSvg(project, cuts, "favicon_svg");
+            foreach (var cut in cuts.Where(ProductionCuts.IsRaster))
+            {
+                var (variant, svg) = cut.FromFaviconVariant ? ("favicon", favicon) : ("master", master);
+                var id = $"{project}.{variant}.{cut.Width}";
+                if (files.All(file => file.Id != id))
+                {
+                    files.Add(new CrossCheckFile(id, project, $"{folder}/{svg}", cut.Width));
+                }
+            }
         }
 
         return files;
+    }
+
+    private static string SourceSvg(string project, IReadOnlyList<CutSpec> cuts, string cutType)
+    {
+        var row = cuts.FirstOrDefault(cut => cut.CutType == cutType);
+        return row?.Filename ?? throw new InvalidDataException($"assets/{project}/production-cuts/{ProductionCuts.CsvName}: expected a row of cut type '{cutType}', found none");
     }
 
     /// <summary>Repository-relative path of a project's master SVG.</summary>
@@ -214,12 +239,17 @@ public static class CrossCheck
 
         var meanAbs = (double)total / a.Length;
         var fraction = (double)differing / (a.Length / 4);
+        if (file.Size < DivergenceThresholds.GatedFromSize)
+        {
+            return new FileDivergence(file, meanAbs, fraction, maxAbs, metrics, breaches);
+        }
+
         if (meanAbs > thresholds.MeanAbsDifference)
         {
             breaches.Add($"mean abs difference {Number(meanAbs)} exceeds {Number(thresholds.MeanAbsDifference)}");
         }
 
-        if (fraction > thresholds.DifferingPixelFraction)
+        if (file.Size >= DivergenceThresholds.DifferingPixelsGatedFromSize && fraction > thresholds.DifferingPixelFraction)
         {
             breaches.Add($"differing pixels {Number(fraction * 100)}% exceeds {Number(thresholds.DifferingPixelFraction * 100)}%");
         }

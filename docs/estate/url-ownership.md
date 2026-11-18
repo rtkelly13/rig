@@ -53,7 +53,7 @@ the app moves, its tabs stay ungrouped.
 
 | project | ports | in use |
 |---|---|---|
-| rig | 8090–8099 | 8090 web dashboard, 8091 its preview, 8092 Asset Studio (`image-reconcile serve`), 8094 triage |
+| rig | 8090–8099 | 8090 web dashboard, 8091 its preview, 8092 retired (the Asset Studio is served by `rig web` on 8090), 8094 triage |
 | design-system | 8100–8109 | 8100 Storybook, 8101 site dev, 8102 site start, 8103 Playwright Storybook, 8104 serve-deploy (rtkelly-labs/design-system#435) |
 | blog | 8110–8119 | 8110 `next dev`, 8111 Storybook, 8112 `next start` and Playwright, 8113 docker-compose (rtkelly13/blog#190) |
 | docs | 8120–8129 | 8120 `next dev`, 8121 `next start` (rtkelly-labs/docs#11) |

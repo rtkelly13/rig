@@ -100,7 +100,7 @@ public sealed class SnapshotManagerTests : IDisposable
     [Fact]
     public void The_manifest_writer_reproduces_the_committed_manifest_byte_for_byte()
     {
-        var committed = File.ReadAllText(Path.Join(OracleFixture.RepoRoot, "tools", "image-drift", "src", "image_drift", "builder_assets", "rtkelly-labs", "manifest.json"));
+        var committed = File.ReadAllText(Path.Join(OracleFixture.RepoRoot, "src", "Rig.Image", "builder-assets", "rtkelly-labs", "manifest.json"));
 
         Assert.Equal(committed.ReplaceLineEndings("\n"), LabsBuilder.ManifestJson(LabsBuilder.Manifest()));
     }

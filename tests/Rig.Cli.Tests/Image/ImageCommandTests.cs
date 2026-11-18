@@ -57,6 +57,36 @@ public sealed class ImageCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Small_favicons_are_not_held_to_the_pixel_thresholds()
+    {
+        _fast = () => new ScriptedRenderer("Svg.Skia", (_, size) => Solid(size, 100));
+
+        var report = Path.Combine(_temp.Path, "small", "cross-check.json");
+
+        _ = await Run("image", "cross-check", "--report", report);
+
+        using var json = JsonDocument.Parse(await File.ReadAllTextAsync(report, TestContext.Current.CancellationToken));
+        var files = json.RootElement.GetProperty("files").EnumerateArray().ToList();
+        Assert.All(files.Where(file => file.GetProperty("id").GetString()!.EndsWith(".16", StringComparison.Ordinal) || file.GetProperty("id").GetString()!.EndsWith(".32", StringComparison.Ordinal)), file => Assert.Equal(0, file.GetProperty("breaches").GetArrayLength()));
+        Assert.Contains(files, file => file.GetProperty("breaches").GetArrayLength() > 0);
+    }
+
+    [Fact]
+    public async Task Differing_pixels_are_reported_below_500px_but_gated_from_500px_up()
+    {
+        _fast = () => new ScriptedRenderer("Svg.Skia", (_, size) => Solid(size, 100));
+        var report = Path.Combine(_temp.Path, "pixels", "cross-check.json");
+
+        _ = await Run("image", "cross-check", "--report", report);
+
+        using var json = JsonDocument.Parse(await File.ReadAllTextAsync(report, TestContext.Current.CancellationToken));
+        string[] Breaches(string id) => [.. json.RootElement.GetProperty("files").EnumerateArray().First(file => file.GetProperty("id").GetString() == id).GetProperty("breaches").EnumerateArray().Select(breach => breach.GetString()!)];
+        Assert.Contains(Breaches("rtkelly-labs.master.180"), breach => breach.StartsWith("mean abs difference", StringComparison.Ordinal));
+        Assert.DoesNotContain(Breaches("rtkelly-labs.master.180"), breach => breach.StartsWith("differing pixels", StringComparison.Ordinal));
+        Assert.Contains(Breaches("rtkelly-labs.master.500"), breach => breach.StartsWith("differing pixels", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task A_renderer_that_will_not_start_exits_2_with_the_reason()
     {
         _authoritative = _ => throw new RendererUnavailableException("expected Chromium to start, it did not: no browser installed");
@@ -95,12 +125,12 @@ public sealed class ImageCommandTests : IDisposable
         Assert.True(json.RootElement.GetProperty("passed").GetBoolean());
         Assert.False(json.RootElement.GetProperty("verdictsEvaluated").GetBoolean());
         Assert.Equal("Chromium", json.RootElement.GetProperty("authoritative").GetString());
-        Assert.Equal(18, json.RootElement.GetProperty("files").GetArrayLength());
+        Assert.Equal(16, json.RootElement.GetProperty("files").GetArrayLength());
         Assert.Equal(1.0, json.RootElement.GetProperty("thresholds").GetProperty("meanAbsDifference").GetDouble());
-        var master = json.RootElement.GetProperty("files")[0];
+        var master = json.RootElement.GetProperty("files")[2];
         Assert.Equal("rtkelly-labs.master.500", master.GetProperty("id").GetString());
         Assert.Equal(JsonValueKind.Object, master.GetProperty("metrics").ValueKind);
-        Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("files")[1].GetProperty("metrics").ValueKind);
+        Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("files")[0].GetProperty("metrics").ValueKind);
     }
 
     [Fact]

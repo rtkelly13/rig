@@ -3,7 +3,7 @@ using Microsoft.Playwright;
 namespace Rig.Image;
 
 /// <summary>
-/// The authoritative renderer: headless Chromium through Microsoft.Playwright, in image_drift's exact HTML wrapper. The
+/// The authoritative renderer: headless Chromium through Microsoft.Playwright, in the original exact HTML wrapper. The
 /// Microsoft.Playwright package version pins the Chromium revision, so a developer and CI install the same browser.
 /// </summary>
 public sealed class ChromiumRenderer : ISvgRenderer
@@ -88,6 +88,23 @@ public sealed class ChromiumRenderer : ISvgRenderer
         finally
         {
             File.Delete(html);
+        }
+    }
+
+    /// <summary>Screenshots a local HTML page, full page, as a PNG at <paramref name="outputPng"/> (the gallery's <c>--screenshot</c>).</summary>
+    public async Task ScreenshotPageAsync(string htmlPath, string outputPng, int width, int height, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPng))!);
+        var page = await _browser.NewPageAsync(new BrowserNewPageOptions { ViewportSize = new ViewportSize { Width = width, Height = height } }).ConfigureAwait(false);
+        try
+        {
+            await page.GotoAsync(new Uri(Path.GetFullPath(htmlPath)).AbsoluteUri, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle }).ConfigureAwait(false);
+            await page.ScreenshotAsync(new PageScreenshotOptions { Path = outputPng, FullPage = true }).ConfigureAwait(false);
+        }
+        finally
+        {
+            await page.CloseAsync().ConfigureAwait(false);
         }
     }
 

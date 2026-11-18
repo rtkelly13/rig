@@ -22,14 +22,14 @@ Each brand namespace has the same three-part shape:
 
 ```
 assets/<project>/
-    <project>.svg       build output — written by `image-reconcile build`, committed
+    <project>.svg       build output — written by `rig image build`, committed
     README.md
     reference/          ground truth, ordered; manifest.json names the primary
     production-cuts/    every exported cut + production-cuts.csv
 ```
 
 The **authoritative** master is not here — it lives with the code, at
-`tools/image-drift/src/image_drift/builder_assets/<project>/master.svg`, because `build` writes
+`src/Rig.Image/builder-assets/<project>/master.svg`, because `build` writes
 the file above and a builder cannot read its master from its own output. A test keeps the two
 byte-identical. See [`docs/brand-assets/README.md`](../docs/brand-assets/README.md).
 
@@ -58,22 +58,22 @@ everything larger derives from the master.
 
 ## 4. CLI Automation & Path Routing
 
-All generation, verification, and export operations are driven via the `image-reconcile` CLI with path routing support:
+All generation, verification, and export operations are driven via the `rig image` CLI with path routing support:
 
 ```bash
 # Export production cuts (routes to assets/<project>/production-cuts/)
-uv run --project tools/image-drift image-reconcile export-avatar --project rtkelly-labs
-uv run --project tools/image-drift image-reconcile export-avatar --project parquet-source-generator
+rig image export-avatar --project rtkelly-labs
+rig image export-avatar --project parquet-source-generator
 
 # Score every pathway, including a fresh VTracer trace, against the reference
-uv run --project tools/image-drift image-reconcile pathways --project rtkelly-labs
+rig image pathways --project rtkelly-labs
 
 # Pixel-by-pixel drift comparison against the primary baseline
-uv run --project tools/image-drift image-reconcile compare --project rtkelly-labs --render
-uv run --project tools/image-drift image-reconcile compare --project parquet-source-generator --render
+rig image compare --project rtkelly-labs
+rig image compare --project parquet-source-generator
 
 # Propose parametric alternatives; promotion is separate and gated
-uv run --project tools/image-drift image-reconcile explore --project rtkelly-labs --sweep r_outer=150,158,166
+rig image explore --project rtkelly-labs --sweep r_outer=150,158,166
 ```
 
 ## 5. Reference Material Convention (`assets/<project>/reference/`)

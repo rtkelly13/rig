@@ -1,7 +1,7 @@
 # ADR 0018: Brand Asset Governance and the Traced-Master Promotion Gate
 
 - **Status:** Accepted
-- **Applies to:** `shared_utilities.image_drift` / managed brand assets under `assets/`
+- **Applies to:** `Rig.Image` / managed brand assets under `assets/`
 - **Supersedes:** the operational half of [ADR 0009](./0009-deterministic-svg-render-pipeline.md), which predates per-project namespacing and states no thresholds or storage convention.
 
 ## Context
@@ -28,12 +28,12 @@ cannot be explored, swept, or reasoned about parametrically.
 bridge between them.**
 
 1. **The traced master is the source of truth**, stored as a committed SVG in
-   `src/shared_utilities/image_drift/builder_assets/<project>/`, alongside a `manifest.json`
+   `src/Rig.Image/builder-assets/<project>/`, alongside a `manifest.json`
    recording each variant's sha256, gating, and provenance. `assets/<project>/<project>.svg` is
    build output, kept byte-identical by test.
 2. **The parametric explorer (`labs_parametric`) is deliberately not registered** in
    `cli.PROJECTS`. No routine command can route to it.
-3. **`image-reconcile promote` is the only path** from a candidate to the master. It re-runs
+3. **`rig image promote` is the only path** from a candidate to the master. It re-runs
    the gate live — scores are only comparable within one scoring pass — backs up the incumbent,
    and requires `--confirm`.
 4. **The gate requires all three of:** composite beating the incumbent by more than
@@ -60,6 +60,6 @@ bridge between them.**
 
 ## References
 - [`docs/brand-assets/README.md`](../brand-assets/README.md)
-- [`src/shared_utilities/image_drift/promotion.py`](../../tools/image-drift/src/image_drift/promotion.py)
-- [`src/shared_utilities/image_drift/labs_parametric.py`](../../tools/image-drift/src/image_drift/labs_parametric.py)
-- [`tests/test_brand_asset_governance.py`](../../tools/image-drift/tests/test_brand_asset_governance.py)
+- [`src/Rig.Image/Promotion`](../../src/Rig.Image)
+- [`src/Rig.Image/builder-assets`](../../src/Rig.Image/builder-assets)
+- [`tests/Rig.Image.Tests`](../../tests/Rig.Image.Tests)

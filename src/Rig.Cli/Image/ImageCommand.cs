@@ -41,6 +41,15 @@ internal sealed class ImageCommand(ImageHost host, TextWriter output, TextWriter
         image.Add(DeclarativeCommand.Build(new PathwaysCommand(host, output, error)));
         image.Add(DeclarativeCommand.Build(new ExploreCommand(host, output, error)));
         image.Add(DeclarativeCommand.Build(new PromoteCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new BuildCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new ExtractFeatureCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new CompareCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new DiagnoseCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new ExportAvatarCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new SnapshotCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new VectorizeCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new ContactSheetCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new BuildPreviewCommand(host, output, error)));
         return image;
     }
 
@@ -82,7 +91,7 @@ internal sealed class ImageCommand(ImageHost host, TextWriter output, TextWriter
                     var fast = host.CreateFast();
                     await using (fast.ConfigureAwait(false))
                     {
-                        report = await CrossCheck.RunAsync(authoritative, fast, host.RepoRoot, CrossCheck.Files(), Candidates, DivergenceThresholds.Adr, cancellationToken).ConfigureAwait(false);
+                        report = await CrossCheck.RunAsync(authoritative, fast, host.RepoRoot, CrossCheck.Files(host.RepoRoot), Candidates, DivergenceThresholds.Adr, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }

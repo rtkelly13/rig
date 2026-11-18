@@ -5,7 +5,7 @@ namespace Rig.Image.Simplifier;
 
 /// <summary>
 /// Geometric decimation: topology-preserving Douglas-Peucker on straight-sided subpaths, and flat-curve collapse on the rest. This is
-/// image_drift's <c>simplify_path_geometry</c>, with NetTopologySuite standing in for shapely. Both are ports of the same JTS
+/// the original <c>simplify_path_geometry</c>, with NetTopologySuite standing in for shapely. Both are ports of the same JTS
 /// algorithm, so where GEOS and NTS disagree it is on which vertex a ring starts at or on the order of a result's rings, not on what is drawn.
 /// </summary>
 public static class GeometricSimplifier

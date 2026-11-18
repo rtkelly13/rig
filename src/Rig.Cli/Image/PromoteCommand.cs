@@ -19,7 +19,7 @@ namespace Rig.Cli.Image;
 [CliCommand(Name = "promote", Description = "Replace the governed master with an explored candidate that beats it, re-scored live under Chromium.")]
 internal sealed class PromoteCommand(ImageHost host, TextWriter output, TextWriter error)
 {
-    private const string BuilderAssetsFolder = "tools/image-drift/src/image_drift/builder_assets/rtkelly-labs";
+    private const string BuilderAssetsFolder = "src/Rig.Image/builder-assets/rtkelly-labs";
 
     /// <summary>The instance DotMake binds onto; rig always builds the wired one instead.</summary>
     internal PromoteCommand()
@@ -159,7 +159,7 @@ internal sealed class PromoteCommand(ImageHost host, TextWriter output, TextWrit
 
         // The committed asset is the packaged master, written from the same bytes.
         await File.WriteAllTextAsync(project.Svg, master, utf8, cancellationToken).ConfigureAwait(false);
-        text.AppendLine(CultureInfo.InvariantCulture, $"Promoted. Incumbent backed up to {backup}\nReview before committing:\n  git diff -- {masterFile} {project.Svg}\nThen regenerate cuts: image-reconcile export-avatar -p {project.Name}");
+        text.AppendLine(CultureInfo.InvariantCulture, $"Promoted. Incumbent backed up to {backup}\nReview before committing:\n  git diff -- {masterFile} {project.Svg}\nThen regenerate cuts: rig image export-avatar -p {project.Name}");
         await output.WriteAsync(text.ToString()).ConfigureAwait(false);
         return (int)ExitCode.Clean;
     }

@@ -24,7 +24,7 @@ public sealed record PromotionRecord(string RunId, int Candidate, string Notes);
 /// <param name="Variants">Each variant's entry, in file order.</param>
 public sealed record VariantManifest(string Project, IReadOnlyDictionary<string, VariantEntry> Variants);
 
-/// <summary>The hand-tuned master and favicon SVGs of a project, embedded from image_drift's <c>builder_assets</c>.</summary>
+/// <summary>The hand-tuned master and favicon SVGs of a project, embedded from <c>builder-assets/</c>.</summary>
 internal static class BuilderAssets
 {
     /// <summary>Reads one embedded asset as text.</summary>
@@ -38,7 +38,7 @@ internal static class BuilderAssets
     }
 }
 
-/// <summary>The rtkelly-labs governed master (image_drift's <c>labs_builder</c>): a trace, so the SVG itself is the artefact.</summary>
+/// <summary>The rtkelly-labs governed master (the original <c>labs_builder</c>): a trace, so the SVG itself is the artefact.</summary>
 public static class LabsBuilder
 {
     /// <summary>The variant used when none is named.</summary>
@@ -75,7 +75,7 @@ public static class LabsBuilder
         return BuilderAssets.Read(Project, Manifest().Variants[key].File);
     }
 
-    /// <summary>The manifest as committed: two-space indented, unset fields omitted, trailing newline (matches image_drift's <c>to_json</c>).</summary>
+    /// <summary>The manifest as committed: two-space indented, unset fields omitted, trailing newline (matches the original <c>to_json</c>).</summary>
     public static string ManifestJson(VariantManifest manifest)
     {
         ArgumentNullException.ThrowIfNull(manifest);
@@ -126,7 +126,7 @@ public static class LabsBuilder
     }
 }
 
-/// <summary>The Parquet.SourceGenerator diamond mark (image_drift's <c>diamond_parquet_builder</c>): one hand-tuned SVG per variant.</summary>
+/// <summary>The Parquet.SourceGenerator diamond mark (the original <c>diamond_parquet_builder</c>): one hand-tuned SVG per variant.</summary>
 public static class DiamondParquetBuilder
 {
     /// <summary>The variant used when none is named.</summary>

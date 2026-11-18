@@ -20,7 +20,7 @@ committed because the server must work without Node:
 | Entry | Output |
 |---|---|
 | `web/app.src.css` | `src/Rig.Web/templates/app_assets/app.css` (with the SPA bundle) |
-| `tools/image-drift/styles/gallery.src.css` | `tools/image-drift/src/image_drift/templates/gallery.css`, inlined into preview pages |
+| `src/Rig.Image/Gallery/gallery.src.css` | `src/Rig.Image/Gallery/gallery.css`, inlined into preview pages |
 | `styles/c4.src.css` | `src/Rig.Web/C4/static/c4.css` |
 
 Rebuild after touching a template, an entry or a design-system bump. Colours, type sizes and
@@ -83,10 +83,10 @@ gitignored, and rebuilt on every build.
 ## Tests and CI
 
 All tests are C# (xUnit v3 on Microsoft.Testing.Platform); [testing.md](testing.md) covers the styles and the
-coverage floor. The brand pipeline `tools/image-drift` is the one Python project and runs its own gates (below).
+coverage floor.
 
 - **Linux**: the `dotnet` job builds and tests `rig.slnx`; `dotnet-coverage` checks the 95% floor.
-- **Windows**: `dotnet-windows` and `image-drift-windows` run conditionally, to conserve runner minutes on private repos:
+- **Windows**: `dotnet-windows` runs conditionally, to conserve runner minutes on private repos:
   - nightly on `main` (03:43 UTC), so a break that lands on `main` surfaces the next morning;
   - on pull requests whose branch or title contains `windows` or `win32`, or with the label `ci:windows` (adding the
     label to an open PR starts a run);
@@ -111,7 +111,7 @@ Windows-safe tests (the Windows jobs catch these, but write them right first tim
 
 ## Standards and quality gates
 
-- **Package managers**: NuGet for C#, `pnpm` for the Tailwind build, `uv` for `tools/image-drift` only.
+- **Package managers**: NuGet for C#, `pnpm` for the Tailwind build.
 - **Local analytics**: DuckDB for structured ledger querying and cross-referencing large JSON feeds, to avoid
   repeating API calls.
 - **Workflow**: every change goes through a pull request, never a direct push to `main`. All required CI checks pass
@@ -122,5 +122,3 @@ Windows-safe tests (the Windows jobs catch these, but write them right first tim
   (see [The C# front door](#the-c-front-door)).
 - **Repo gates**: `ls-lint` for filenames and script languages, `zizmor` for workflows, and
   `rig repo-governance agents-audit . --strict` for AGENTS.md pointers.
-- **image-drift**: `cd tools/image-drift && uv sync && uv run ruff check . && uv run ty check && uv run pytest`;
-  CI runs the same, plus basedpyright and bandit, in the `image-drift` jobs.

@@ -39,7 +39,7 @@ public sealed record FitField(string Name, Func<IsoLoopParams, double> Read, Fun
 /// <param name="Loss">Their loss against the reference.</param>
 public sealed record FitResult(IsoLoopParams Parameters, double Loss);
 
-/// <summary>The routes by which a brand master can be produced (image_drift's <c>pathways</c>); every one is deterministic.</summary>
+/// <summary>The routes by which a brand master can be produced (the original <c>pathways</c>); every one is deterministic.</summary>
 public static class PathwayCatalog
 {
     /// <summary>The pathway used when none is named.</summary>

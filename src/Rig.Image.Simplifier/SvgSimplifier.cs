@@ -4,7 +4,7 @@ using System.Xml;
 namespace Rig.Image.Simplifier;
 
 /// <summary>
-/// The simplifier's pipeline (image_drift's <c>simplify_svg_document</c>): geometric decimation, then the scour cleanup, then
+/// The simplifier's pipeline (the original <c>simplify_svg_document</c>): geometric decimation, then the scour cleanup, then
 /// viewBox-aware coordinate quantisation. Text that is not well-formed XML is never an error here; each pass leaves it as it is.
 /// </summary>
 public static class SvgSimplifier

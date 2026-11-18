@@ -22,14 +22,14 @@ recompute it, so the SVG itself is the artefact of record:
 
 | Role | Path |
 |---|---|
-| **Authoritative master** | [`tools/image-drift/src/image_drift/builder_assets/rtkelly-labs/master.svg`](../../tools/image-drift/src/image_drift/builder_assets/rtkelly-labs/master.svg) |
-| Authoritative favicon cut | [`.../builder_assets/rtkelly-labs/favicon.svg`](../../tools/image-drift/src/image_drift/builder_assets/rtkelly-labs/favicon.svg) |
-| Digests and provenance | [`.../builder_assets/rtkelly-labs/manifest.json`](../../tools/image-drift/src/image_drift/builder_assets/rtkelly-labs/manifest.json) |
+| **Authoritative master** | [`src/Rig.Image/builder-assets/rtkelly-labs/master.svg`](../../src/Rig.Image/builder-assets/rtkelly-labs/master.svg) |
+| Authoritative favicon cut | [`.../builder-assets/rtkelly-labs/favicon.svg`](../../src/Rig.Image/builder-assets/rtkelly-labs/favicon.svg) |
+| Digests and provenance | [`.../builder-assets/rtkelly-labs/manifest.json`](../../src/Rig.Image/builder-assets/rtkelly-labs/manifest.json) |
 | Build output (committed) | [`rtkelly-labs.svg`](./rtkelly-labs.svg) |
 
-`image-reconcile build` writes `rtkelly-labs.svg` from the packaged master, and a test asserts
+`rig image build` writes `rtkelly-labs.svg` from the packaged master, and a test asserts
 the two stay byte-identical. **The only sanctioned way to change the master is
-`image-reconcile promote`**, which requires a candidate to beat the incumbent on score. A
+`rig image promote`**, which requires a candidate to beat the incumbent on score. A
 hand-edit is caught by the manifest digest test.
 
 ## Reference material
@@ -72,22 +72,22 @@ are rendered from it; everything larger comes from the master.
 
 ```bash
 # Regenerate the committed asset from the packaged master
-uv run --project tools/image-drift image-reconcile build -p rtkelly-labs
+rig image build -p rtkelly-labs
 
 # Export every declared production cut
-uv run --project tools/image-drift image-reconcile export-avatar -p rtkelly-labs
+rig image export-avatar -p rtkelly-labs
 
 # Score the master against the primary baseline
-uv run --project tools/image-drift image-reconcile compare -p rtkelly-labs --render
+rig image compare -p rtkelly-labs
 
 # Attribute drift to geometry (luminance) vs palette (chrominance)
-uv run --project tools/image-drift image-reconcile diagnose -p rtkelly-labs --render
+rig image diagnose -p rtkelly-labs
 
 # Score the master beside a fresh VTracer trace and the constructive pathways
-uv run --project tools/image-drift image-reconcile pathways -p rtkelly-labs
+rig image pathways -p rtkelly-labs
 
 # Propose parametric alternatives; promotion is a separate, gated step
-uv run --project tools/image-drift image-reconcile explore -p rtkelly-labs --sweep r_outer=150,158,166
+rig image explore -p rtkelly-labs --sweep r_outer=150,158,166
 ```
 
 See [`docs/brand-assets/README.md`](../../docs/brand-assets/README.md) for the governing model and

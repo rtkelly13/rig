@@ -37,13 +37,6 @@ We follow a strict, modern GitHub workflow across our repositories:
      dotnet test --solution rig.slnx
      dotnet format rig.slnx --verify-no-changes
      ```
-   - For Python projects (`tools/image-drift`):
-     ```bash
-     uv run ruff check .
-     uv run ruff format --check .
-     uv run basedpyright
-     uv run pytest
-     ```
    - For TypeScript/Node projects:
      ```bash
      pnpm lint

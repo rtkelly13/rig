@@ -13,7 +13,7 @@ title Web control plane — components
 Person(ryan, "Ryan")
 Container(dm, "rig", ".NET")
 ContainerDb(db, "rig.db", "SQLite", $link="../rig-db.md")
-Container_Ext(studioapi, "Asset Studio API", "image-reconcile serve, :8092", "tools/image-drift: indexes assets/ and temp/variations/")
+Container_Ext(studioapi, "Asset Studio API", "rig web, :8090", "src/Rig.Image: indexes assets/ and temp/variations/")
 
 Container_Boundary(web, "Web control plane") {
   Component(server, "RigWebHost", "ASP.NET Core", "Routes /api/* and static files", $link="request-handler.md")
