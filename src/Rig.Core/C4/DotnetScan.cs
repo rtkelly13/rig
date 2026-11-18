@@ -98,24 +98,26 @@ public static partial class DotnetScan
         return ReadClosure([fullPath]);
     }
 
-    private static IReadOnlyList<Project> ReadClosure(List<string> pending)
+    private static IReadOnlyList<Project> ReadClosure(IReadOnlyList<string> roots)
     {
         var found = new Dictionary<string, Project>(StringComparer.Ordinal);
-        while (pending.Count > 0)
-        {
-            var path = System.IO.Path.GetFullPath(pending[^1]);
-            pending.RemoveAt(pending.Count - 1);
-            if (found.ContainsKey(path) || !File.Exists(path))
-            {
-                continue;
-            }
-
-            var project = ReadProject(path);
-            found[path] = project;
-            pending = [.. pending, .. project.Refs.Select(reference => reference.Target)];
-        }
-
+        Visit(found, roots);
         return [.. found.Values.OrderBy(project => project.Name, StringComparer.Ordinal)];
+    }
+
+    // One layer of the closure: the projects not yet read, then the projects they reference.
+    private static void Visit(Dictionary<string, Project> found, IEnumerable<string> paths)
+    {
+        var layer = paths
+            .Select(System.IO.Path.GetFullPath)
+            .Distinct(StringComparer.Ordinal)
+            .Where(path => !found.ContainsKey(path) && File.Exists(path))
+            .Select(path => found[path] = ReadProject(path))
+            .ToList();
+        if (layer.Count > 0)
+        {
+            Visit(found, layer.SelectMany(project => project.Refs.Select(reference => reference.Target)));
+        }
     }
 
     private static IEnumerable<string> SortedCsproj(string directory) =>

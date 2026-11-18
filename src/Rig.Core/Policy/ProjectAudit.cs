@@ -36,24 +36,23 @@ public static partial class ProjectAudit
         ArgumentNullException.ThrowIfNull(root);
         var projects = new[] { root }.Concat(
             new DirectoryInfo(root).EnumerateDirectories().Where(d => !d.Name.StartsWith('.')).Select(d => d.FullName).Order(StringComparer.Ordinal));
-        var results = new List<ProjectCommand>();
-        foreach (var project in projects)
+        var results = projects.SelectMany(IEnumerable<ProjectCommand> (project) =>
         {
             var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(project));
             var package = Path.Join(project, "package.json");
-            if (File.Exists(package))
-            {
-                results = [.. results, .. PackageScripts(File.ReadAllText(package))
-                    .Select(s => new ProjectCommand(name, package, s.Name, $"pnpm {s.Name}", Risk(s.Name, s.Source), s.Source))];
-            }
-
             var pyproject = Path.Join(project, "pyproject.toml");
-            if (File.Exists(pyproject))
-            {
-                results = [.. results, .. ProjectScripts(File.ReadAllText(pyproject))
-                    .Select(s => new ProjectCommand(name, pyproject, s.Name, $"uv run {s.Name}", Risk(s.Name, s.Source), s.Source))];
-            }
-        }
+            return
+            [
+                .. File.Exists(package)
+                    ? PackageScripts(File.ReadAllText(package))
+                        .Select(s => new ProjectCommand(name, package, s.Name, $"pnpm {s.Name}", Risk(s.Name, s.Source), s.Source))
+                    : [],
+                .. File.Exists(pyproject)
+                    ? ProjectScripts(File.ReadAllText(pyproject))
+                        .Select(s => new ProjectCommand(name, pyproject, s.Name, $"uv run {s.Name}", Risk(s.Name, s.Source), s.Source))
+                    : [],
+            ];
+        });
 
         return [.. results.OrderBy(c => c.Project, StringComparer.Ordinal).ThenBy(c => c.Invocation, StringComparer.Ordinal)];
     }

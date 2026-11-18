@@ -125,22 +125,22 @@ public sealed class ObsidianPlugins(HttpClient http)
     {
         ArgumentNullException.ThrowIfNull(ids);
         var path = Path.Join(vault, ".obsidian", "core-plugins.json");
-        var turnedOn = new List<string>();
+        List<string> turnedOn;
         JsonNode payload;
         switch (Read(path))
         {
             case JsonObject mapping:
-                foreach (var id in ids.Where(id => mapping[id] is not JsonValue v || v.GetValueKind() != JsonValueKind.True))
+                turnedOn = [.. ids.Where(id => mapping[id] is not JsonValue v || v.GetValueKind() != JsonValueKind.True)];
+                foreach (var id in turnedOn)
                 {
                     mapping[id] = true;
-                    turnedOn.Add(id);
                 }
 
                 payload = mapping;
                 break;
             case JsonArray listed:
                 var enabled = listed.Select(Text).ToList();
-                turnedOn = [.. turnedOn, .. ids.Where(id => !enabled.Contains(id, StringComparer.Ordinal))];
+                turnedOn = [.. ids.Where(id => !enabled.Contains(id, StringComparer.Ordinal))];
                 payload = new JsonArray([.. enabled.Concat(turnedOn).Select(e => (JsonNode)JsonValue.Create(e))]);
                 break;
             default:

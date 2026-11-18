@@ -30,6 +30,8 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     private const string EndMarker = "# END shared-utilities policy";
 
     // Surfaces whose rules always match as prefixes: an exact policy command still allows anything after it.
+    private static readonly string[] EffectOrder = ["allow", "ask", "deny"];
+
     private static readonly HashSet<string> PrefixMatchOnly = new(["codex", "antigravity"], StringComparer.Ordinal);
 
     /// <summary>The projection for <paramref name="system"/> under <paramref name="home"/>; only opencode's looks at disk.</summary>
@@ -352,11 +354,9 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
             }
         }
 
-        var ordered = new List<KeyValuePair<string, string>>();
-        foreach (var effect in new[] { "allow", "ask", "deny" })
-        {
-            ordered = [.. ordered, .. effects.Where(entry => entry.Value == effect).Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value))];
-        }
+        var ordered = EffectOrder
+            .SelectMany(effect => effects.Where(entry => entry.Value == effect).Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value)))
+            .ToList();
 
         foreach (var shell in shells)
         {

@@ -67,8 +67,7 @@ public static class PackageBindings
             throw new InvalidDataException($"{path}: expected an object");
         }
 
-        var bindings = new List<PackageBinding>();
-        foreach (var (project, index) in Items(document["projects"], $"{path}: projects").Select((p, i) => (p, i)))
+        return [.. Items(document["projects"], $"{path}: projects").SelectMany((project, index) =>
         {
             var where = $"{path}: projects[{index}]";
             var entry = project as JsonObject ?? throw new InvalidDataException($"{where}: expected an object");
@@ -78,13 +77,8 @@ public static class PackageBindings
                 ? JsonShape.AsBool(flag) ?? throw new InvalidDataException($"{where}.enabled: expected true or false")
                 : true;
             var specs = Items(entry["packages"], $"{where}.packages").Select((spec, i) => Spec(spec, $"{where}.packages[{i}]")).ToList();
-            if (enabled)
-            {
-                bindings = [.. bindings, .. specs.Select(spec => new PackageBinding(name, repo, spec))];
-            }
-        }
-
-        return bindings;
+            return specs.Where(_ => enabled).Select(spec => new PackageBinding(name, repo, spec));
+        })];
     }
 
     private static PackageSpec Spec(JsonNode? node, string where)

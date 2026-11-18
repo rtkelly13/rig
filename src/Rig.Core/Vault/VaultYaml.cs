@@ -373,7 +373,7 @@ public static partial class VaultYaml
         // first so the mapping's own keys win.
         private static List<KeyValuePair<Node, Node>> Flatten(MappingNode node)
         {
-            var merge = new List<KeyValuePair<Node, Node>>();
+            var merges = new List<List<KeyValuePair<Node, Node>>>();
             var at = 0;
             while (at < node.Pairs.Count)
             {
@@ -393,20 +393,20 @@ public static partial class VaultYaml
                 switch (value)
                 {
                     case MappingNode mapping:
-                        merge = [.. merge, .. Flatten(mapping)];
+                        merges.Add(Flatten(mapping));
                         break;
                     case SequenceNode sequence:
-                        merge = [.. merge, .. sequence.Items
+                        merges.Add([.. sequence.Items
                             .Select(item => item is MappingNode part ? Flatten(part) : throw new VaultYamlException("expected a mapping for merging"))
                             .Reverse()
-                            .SelectMany(part => part)];
+                            .SelectMany(part => part)]);
                         break;
                     default:
                         throw new VaultYamlException("expected a mapping or list of mappings for merging");
                 }
             }
 
-            node.Pairs.InsertRange(0, merge);
+            node.Pairs.InsertRange(0, merges.SelectMany(merge => merge));
             return [.. node.Pairs];
         }
 

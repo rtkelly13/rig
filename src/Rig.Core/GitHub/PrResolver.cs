@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
@@ -42,14 +43,12 @@ public static class PrResolver
     /// </summary>
     public static ApiRequest BuildQuery(string owner, string repo, IEnumerable<int> numbers, bool openList, string? after = null)
     {
-        var parts = new List<string>();
-        if (openList)
-        {
-            parts.Add($"open: pullRequests(states: OPEN, first: 100, after: $after) {{ {OpenFields} }}");
-        }
-
-        parts = [.. parts, .. numbers.Select(number => string.Create(
-            CultureInfo.InvariantCulture, $"pr{number}: pullRequest(number: {number}) {{ {LookupFields} }}"))];
+        List<string> parts =
+        [
+            .. (openList ? new[] { $"open: pullRequests(states: OPEN, first: 100, after: $after) {{ {OpenFields} }}" } : []),
+            .. numbers.Select(number => string.Create(
+                CultureInfo.InvariantCulture, $"pr{number}: pullRequest(number: {number}) {{ {LookupFields} }}")),
+        ];
         var declared = openList ? "$owner: String!, $name: String!, $after: String" : "$owner: String!, $name: String!";
         var query = $"query({declared}) {{ repository(owner: $owner, name: $name) {{ {string.Join(' ', parts)} }} }}";
         var variables = new Dictionary<string, object?>
@@ -91,7 +90,6 @@ public static class PrResolver
         })).ConfigureAwait(false);
 
         var states = new Dictionary<PrRef, PrState>();
-        var chains = new List<RepoChain>();
         var failed = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var (repo, result) in byRepo.Zip(resolved))
         {
@@ -105,9 +103,13 @@ public static class PrResolver
                 states[new PrRef(repo.Owner, repo.Repo, number)] = state;
             }
 
-            var wanted = repo.Numbers.ToHashSet();
-            chains = [.. chains, .. result.Chains.Where(chain => chain.Members.Any(wanted.Contains)).Select(chain => RepoChain.Of(repo.Owner, repo.Repo, chain))];
         }
+
+        var chains = byRepo.Zip(resolved)
+            .SelectMany(pair => pair.Second.Chains
+                .Where(chain => chain.Members.Any(pair.First.Numbers.Contains))
+                .Select(chain => RepoChain.Of(pair.First.Owner, pair.First.Repo, chain)))
+            .ToList();
 
         return new Resolution(states, chains, failed, (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds);
     }
@@ -134,24 +136,9 @@ public static class PrResolver
         var openPrs = new List<OpenPr>();
         try
         {
-            string? cursor = null;
-            var complete = false;
-            for (var page = 0; page < MaxOpenPages && !complete; page++)
-            {
-                int[] lookups = page == 0 ? chunks[0] : [];
-                var answer = await RunAsync(github, BuildQuery(owner, repo, lookups, openList: true, cursor), cancellationToken).ConfigureAwait(false);
-                foreach (var number in lookups)
-                {
-                    states[number] = LookupState(answer, number);
-                }
-
-                var listing = OpenList(answer);
-                openPrs = [.. openPrs, .. listing.Prs];
-                complete = !listing.HasNextPage;
-                cursor = listing.EndCursor ?? string.Empty;
-            }
-
-            if (!complete)
+            var listings = await OpenPagesAsync(github, owner, repo, chunks[0], states, cancellationToken).ToListAsync(cancellationToken).ConfigureAwait(false);
+            openPrs = [.. listings.SelectMany(listing => listing.Prs)];
+            if (listings.Count == 0 || listings[^1].HasNextPage)
             {
                 throw new GhException(string.Create(CultureInfo.InvariantCulture, $"more than {MaxOpenPages * 100} open PRs"));
             }
@@ -180,6 +167,35 @@ public static class PrResolver
 
     /// <summary>What a PR lookup says about size, review and checks. Every field is optional; a misshapen one reads as the defaults.</summary>
     public static PrDetails ParseDetails(JsonNode? node) => JsonShape.TryRead(() => DetailsFrom(JsonShape.Object(node))) ?? new PrDetails();
+
+    private static async IAsyncEnumerable<Listing> OpenPagesAsync(
+        IGitHubApi github,
+        string owner,
+        string repo,
+        int[] lookups,
+        Dictionary<int, PrState> states,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        string? cursor = null;
+        for (var page = 0; page < MaxOpenPages; page++)
+        {
+            int[] pageLookups = page == 0 ? lookups : [];
+            var answer = await RunAsync(github, BuildQuery(owner, repo, pageLookups, openList: true, cursor), cancellationToken).ConfigureAwait(false);
+            foreach (var number in pageLookups)
+            {
+                states[number] = LookupState(answer, number);
+            }
+
+            var listing = OpenList(answer);
+            yield return listing;
+            if (!listing.HasNextPage)
+            {
+                yield break;
+            }
+
+            cursor = listing.EndCursor ?? string.Empty;
+        }
+    }
 
     private static async Task<Answer> RunAsync(IGitHubApi github, ApiRequest request, CancellationToken cancellationToken)
     {

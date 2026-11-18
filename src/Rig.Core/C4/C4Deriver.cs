@@ -304,10 +304,10 @@ public sealed partial class C4Deriver
         var found = ParentNeighbours(root, parent);
         var name = found.Label ?? System.IO.Path.GetFileName(_repo);
         var derivedRels = _scans.Values.SelectMany(ContainerRels).ToList();
-        var copiedRels = found.Lines.Where(line => line.StartsWith("Rel", StringComparison.Ordinal) || line.StartsWith("BiRel", StringComparison.Ordinal)).ToList();
-        var copiedRelSet = copiedRels.ToHashSet(StringComparer.Ordinal);
+        var allCopied = found.Lines.Where(line => line.StartsWith("Rel", StringComparison.Ordinal) || line.StartsWith("BiRel", StringComparison.Ordinal)).ToList();
+        var copiedRelSet = allCopied.ToHashSet(StringComparer.Ordinal);
         var refined = derivedRels.SelectMany(Endpoints).ToHashSet(StringComparer.Ordinal);
-        copiedRels = [.. copiedRels.Where(rel => !refined.Overlaps(Endpoints(rel)))];
+        var copiedRels = allCopied.Where(rel => !refined.Overlaps(Endpoints(rel))).ToList();
         var declared = found.Lines.Any(line => AfterOpenParen(line).StartsWith(Compiler + ",", StringComparison.Ordinal));
         var boundary = parent?.Alias ?? $"repo_{MermaidGenerator.Slug(name)}";
         List<string> lines =

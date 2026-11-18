@@ -36,13 +36,7 @@ public static class MailCoverage
     public static IReadOnlyList<SampleMessage> ReadSample(IEnumerable<string> paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
-        var sample = new List<SampleMessage>();
-        foreach (var path in paths)
-        {
-            sample = [.. sample, .. ReadPage(File.ReadAllText(path, Encoding.UTF8), path.Replace('\\', '/'))];
-        }
-
-        return sample;
+        return [.. paths.SelectMany(path => ReadPage(File.ReadAllText(path, Encoding.UTF8), path.Replace('\\', '/')))];
     }
 
     /// <summary>Whether <paramref name="match"/> would select <paramref name="message"/>, judged on from, to and subject alone.</summary>

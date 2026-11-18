@@ -34,23 +34,19 @@ public static class ToolCatalog
     /// </summary>
     public static IReadOnlyList<DevTool> Load(string home, string workingDirectory)
     {
-        var texts = new List<(string Source, string Text)> { ("the bundled catalog", BundledText) };
-        foreach (var folder in new[] { Path.Join(home, ".config", "devenv", "tools"), Path.Join(workingDirectory, ".devenv", "tools") })
-        {
-            if (Directory.Exists(folder))
-            {
-                texts = [.. texts, .. Directory.EnumerateFiles(folder, "*.json").Order(StringComparer.Ordinal).Select(f => (f, File.ReadAllText(f)))];
-            }
-        }
-
-        foreach (var custom in CustomCatalogs(home))
-        {
-            var path = custom.StartsWith('~') ? Path.Join(home, custom[1..]) : custom;
-            if (File.Exists(path))
-            {
-                texts.Add((path, File.ReadAllText(path)));
-            }
-        }
+        var folders = new[] { Path.Join(home, ".config", "devenv", "tools"), Path.Join(workingDirectory, ".devenv", "tools") };
+        List<(string Source, string Text)> texts =
+        [
+            ("the bundled catalog", BundledText),
+            .. folders
+                .Where(Directory.Exists)
+                .SelectMany(folder => Directory.EnumerateFiles(folder, "*.json").Order(StringComparer.Ordinal))
+                .Select(f => (f, File.ReadAllText(f))),
+            .. CustomCatalogs(home)
+                .Select(custom => custom.StartsWith('~') ? Path.Join(home, custom[1..]) : custom)
+                .Where(File.Exists)
+                .Select(path => (path, File.ReadAllText(path))),
+        ];
 
         var seen = new HashSet<string>(StringComparer.Ordinal);
         return [.. texts.SelectMany(t => Parse(t.Text, t.Source)).Where(tool => seen.Add(tool.Id))];
