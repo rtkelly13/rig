@@ -4098,6 +4098,2794 @@
     "length": 123,
     "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"urn:b\" viewBox=\"0 0 24 24\"><rect width=\"4\" height=\"4\" ns1:x=\"1\" /></svg>"
    }
+  },
+  {
+   "name": "path-relative",
+   "input": {
+    "sha256": "50bc86adf4b0ae90ab49128e546a5479877ad25909488408b0590bfda51d253d",
+    "length": 111,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 10 10 L 20 10 L 20 20 L 10 20 Z\"/></svg>"
+   },
+   "nodes": 5,
+   "scour": {
+    "sha256": "9ca3d0dbec8c1e1e190e67cb865a7725699fa29101fa745c8ee9c40ed36e6077",
+    "length": 98,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m10 10h10v10h-10z\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "39d7f719800e1e54939b6da470f6a8ff01a5c908aab62c9d875ac41318a2f7f8",
+    "length": 112,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 10 10 L 20 10 L 20 20 L 10 20 Z\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "39d7f719800e1e54939b6da470f6a8ff01a5c908aab62c9d875ac41318a2f7f8",
+    "length": 112,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 10 10 L 20 10 L 20 20 L 10 20 Z\" /></svg>"
+   },
+   "final": {
+    "sha256": "4d49619fa2daa87356ac44d7ff842b85c1a93d4b9d43f5acd899976a6af195dd",
+    "length": 106,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 10 10 h 10 v 10 h -10 z\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "39d7f719800e1e54939b6da470f6a8ff01a5c908aab62c9d875ac41318a2f7f8",
+    "length": 112,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 10 10 L 20 10 L 20 20 L 10 20 Z\" /></svg>"
+   }
+  },
+  {
+   "name": "path-lines",
+   "input": {
+    "sha256": "699f5d95e950609edba4de863f4c55558450537df448c3a74d14a6d7516fffda",
+    "length": 130,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M10,10 L20,10 L30,10 L30,20 L30,30 M 5 5 l 0 0 l 3 4\"/></svg>"
+   },
+   "nodes": 8,
+   "scour": {
+    "sha256": "267d7f0d88056b422108bd03b29bd0fb85266c46d92e89beba2b1aab0308fe19",
+    "length": 110,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m10 10h10 10v10 10m-25-25 3 4\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "a37ac539553c5e5c031fa5d1837f16c7d745cafa9c5a508435630544eef8f84d",
+    "length": 136,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 10 10 L 20 10 L 30 10 L 30 20 L 30 30 M 5 5 l 0 0 l 3 4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "a37ac539553c5e5c031fa5d1837f16c7d745cafa9c5a508435630544eef8f84d",
+    "length": 136,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 10 10 L 20 10 L 30 10 L 30 20 L 30 30 M 5 5 l 0 0 l 3 4\" /></svg>"
+   },
+   "final": {
+    "sha256": "103cb51bdc357a9816a854eba609eafdfca4768e09e3f790f2fcc0df480edda6",
+    "length": 114,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 10 10 h 20 v 20 m -25 -25 l 3 4\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "704982a8744cb3aa453977a02d7c084e2b9a71705a4056e99e0908c788a0c22e",
+    "length": 114,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 10 10 L 30 10 L 30 30 M 5 5 L 8 9\" /></svg>"
+   }
+  },
+  {
+   "name": "path-curves",
+   "input": {
+    "sha256": "e59a16a48eb95de0864b2a0f954def56771a467f35d1ec8d8f9e6ad5de644e32",
+    "length": 150,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 C 10 0 20 10 30 10 C 40 10 50 0 60 0 S 80 20 90 10 c 5 5 10 5 15 0\"/></svg>"
+   },
+   "nodes": 5,
+   "scour": {
+    "sha256": "8244a9a95329f54bd2dbece2057648a22d5697e5d28f97851c3f555c532e1195",
+    "length": 140,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0 0c10 0 20 10 30 10s20-10 30-10 20 20 30 10c5 5 10 5 15 0\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "713fa38b6b3742868d8a858d373568288b84b9e46cd5fd5ff3967a76d6885193",
+    "length": 151,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 C 10 0 20 10 30 10 C 40 10 50 0 60 0 S 80 20 90 10 c 5 5 10 5 15 0\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "713fa38b6b3742868d8a858d373568288b84b9e46cd5fd5ff3967a76d6885193",
+    "length": 151,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 C 10 0 20 10 30 10 C 40 10 50 0 60 0 S 80 20 90 10 c 5 5 10 5 15 0\" /></svg>"
+   },
+   "final": {
+    "sha256": "5e77fad92360ae30e3a51862fd39c6c2725dcd1899afee1f29f82cf0805cf28f",
+    "length": 151,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 0 c 10 0 20 10 30 10 s 20 -10 30 -10 s 20 20 30 10 c 5 5 10 5 15 0\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "713fa38b6b3742868d8a858d373568288b84b9e46cd5fd5ff3967a76d6885193",
+    "length": 151,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 C 10 0 20 10 30 10 C 40 10 50 0 60 0 S 80 20 90 10 c 5 5 10 5 15 0\" /></svg>"
+   }
+  },
+  {
+   "name": "path-straight-curve",
+   "input": {
+    "sha256": "d75968a47db1cd1f9a8886a4ee9566de329eaf414d494fe797ac484c30831702",
+    "length": 123,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 C 10 10 20 20 30 30 C 40 40 50 50 60 60\"/></svg>"
+   },
+   "nodes": 3,
+   "scour": {
+    "sha256": "d292455c1f41c6fff3aa99cba11bfcac524fb47e8b25a1533dbb68a8dda79004",
+    "length": 91,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0 0 60 60\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "3fb580bf2c9ed971a3500e39fe814fcaf8f969a19e7ea196f2aeda094d8f9e90",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 C 10 10 20 20 30 30 C 40 40 50 50 60 60\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "3fb580bf2c9ed971a3500e39fe814fcaf8f969a19e7ea196f2aeda094d8f9e90",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 C 10 10 20 20 30 30 C 40 40 50 50 60 60\" /></svg>"
+   },
+   "final": {
+    "sha256": "8b098a6cb5a1d3e24cf8b774f68adf74fddc20c5fc688eb90c6dca4523d6e3cb",
+    "length": 94,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 0 l 60 60\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "f223ec6ebf886f43b2f18b65556630b50f7124487b2eccd542f136e4b9e65d7a",
+    "length": 100,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 30 30 L 60 60\" /></svg>"
+   }
+  },
+  {
+   "name": "path-quadratics",
+   "input": {
+    "sha256": "26f8a3542c18a044a51381381a3bf1de58ea4557287c2aad9d7145e971e4cf36",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 Q 10 10 20 0 T 40 0 Q 50 10 60 0 q 5 5 10 0 t 10 0\"/></svg>"
+   },
+   "nodes": 6,
+   "scour": {
+    "sha256": "6b79b4fed562ce4ab99ed7e89a6b3bd7a89598b3bc8cdca9b5495b8ef6c84357",
+    "length": 126,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0 0q10 10 20 0t20 0q10 10 20 0 5 5 10 0t10 0\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "a22c34b76eb36e6f2b617da29b9b8a60c72cdb7f89dbb754d6e84c75a7a8d00f",
+    "length": 135,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 Q 10 10 20 0 T 40 0 Q 50 10 60 0 q 5 5 10 0 t 10 0\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "a22c34b76eb36e6f2b617da29b9b8a60c72cdb7f89dbb754d6e84c75a7a8d00f",
+    "length": 135,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 Q 10 10 20 0 T 40 0 Q 50 10 60 0 q 5 5 10 0 t 10 0\" /></svg>"
+   },
+   "final": {
+    "sha256": "2aa54dce1f1ba0fa020c18671c7b089ee42f6c440f84d03148fc643b37f34bc1",
+    "length": 137,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 0 q 10 10 20 0 t 20 0 q 10 10 20 0 q 5 5 10 0 t 10 0\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "a22c34b76eb36e6f2b617da29b9b8a60c72cdb7f89dbb754d6e84c75a7a8d00f",
+    "length": 135,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 Q 10 10 20 0 T 40 0 Q 50 10 60 0 q 5 5 10 0 t 10 0\" /></svg>"
+   }
+  },
+  {
+   "name": "path-arcs",
+   "input": {
+    "sha256": "4ce7a645b6d51f1391bb1979838135412af9bc2f8073df38094a8b3f69cf6d9d",
+    "length": 137,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 A 10 10 0 0 1 20 0 a 10 10 0 1 0 20 0 A5 5 0 01 60 10\"/></svg>"
+   },
+   "nodes": 3,
+   "scour": {
+    "sha256": "8d0a6eec9d7d6cdf6b8feebab6fcf41108fd4b842c5e1511256b22171c40b88d",
+    "length": 135,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0 0a10 10 0 0 1 20 0 10 10 0 1 0 20 0 5 5 0 0 1 20 10\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "bedbf2f10fee9ea98e6b128ed567046b42c1f6299f6b85ab0c9e1717fc59f9cc",
+    "length": 122,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 A 10 10 0 0 1 20 0 a 10 10 0 1 0 20 0\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "bedbf2f10fee9ea98e6b128ed567046b42c1f6299f6b85ab0c9e1717fc59f9cc",
+    "length": 122,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 A 10 10 0 0 1 20 0 a 10 10 0 1 0 20 0\" /></svg>"
+   },
+   "final": {
+    "sha256": "d7ed913d776706f5db04ec4bc5a20ef3c38d29a382ee40fc6b63374ccc63de28",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 0 a 10 10 0 0 1 20 0 a 10 10 0 1 0 20 0\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "bedbf2f10fee9ea98e6b128ed567046b42c1f6299f6b85ab0c9e1717fc59f9cc",
+    "length": 122,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 A 10 10 0 0 1 20 0 a 10 10 0 1 0 20 0\" /></svg>"
+   }
+  },
+  {
+   "name": "path-horizontal-vertical",
+   "input": {
+    "sha256": "afa90f68298b0008186f5c15d2a72686ba6b716682f0809bd0789c94d6159283",
+    "length": 121,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 H 10 H 20 V 10 V 20 h 5 h 5 v 5 v 5 z\"/></svg>"
+   },
+   "nodes": 10,
+   "scour": {
+    "sha256": "6f11a81bfc30d3daecc9b5ced86203a77b88bd678c1ef2b3f2c6330e604f3a1d",
+    "length": 98,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0 0h20v20h10v10z\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "02cfa187af5cb421a6de68dc30ed78532bfc64afa1f567d09bfb49e9b5a5e0ef",
+    "length": 122,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 H 10 H 20 V 10 V 20 h 5 h 5 v 5 v 5 z\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "02cfa187af5cb421a6de68dc30ed78532bfc64afa1f567d09bfb49e9b5a5e0ef",
+    "length": 122,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 H 10 H 20 V 10 V 20 h 5 h 5 v 5 v 5 z\" /></svg>"
+   },
+   "final": {
+    "sha256": "ccc28ce275532e703c87e57b9771a8af77122f0c75eba92a7bdc29d2e04fc7df",
+    "length": 126,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 0 l 20 20 v -20 z m 20 20 l 10 10 v -10 z\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "3095e8af8a9944d595ebdfd6b79c7f1bfe179ddceaa7f7c53be6fb534447bbaa",
+    "length": 127,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 20 20 L 20 0 Z M 20 20 L 30 30 L 30 20 Z\" /></svg>"
+   }
+  },
+  {
+   "name": "path-implicit-lineto",
+   "input": {
+    "sha256": "77884fdfeac9f029970197f4b07458aee70499b73afab34739128afef7e81eeb",
+    "length": 101,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 10 10 20 20 30 30\"/></svg>"
+   },
+   "nodes": 4,
+   "scour": {
+    "sha256": "d367e25496fa69dc2debbbc434f1ba0369534bde80e78cdec788764abad5a859",
+    "length": 91,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0 0 30 30\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "04297ac1ef64cf00d226695e09dd152769ba2f933269a58a89e2cbb5d820a261",
+    "length": 108,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 10 L 20 20 L 30 30\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "04297ac1ef64cf00d226695e09dd152769ba2f933269a58a89e2cbb5d820a261",
+    "length": 108,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 10 L 20 20 L 30 30\" /></svg>"
+   },
+   "final": {
+    "sha256": "2cd6f0742dd3122dc295f670f6197f6aabdcade044e62935dcc42f08a1b49c2e",
+    "length": 94,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 0 l 30 30\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "ea256179ef1a1fdc105fb4278a1e7a57781a180c67f5371ec5c8f70d0351f800",
+    "length": 92,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 30 30\" /></svg>"
+   }
+  },
+  {
+   "name": "path-implicit-relative",
+   "input": {
+    "sha256": "08a3cb231acd09c133d95682d1f95483560e5922e43d23652f6b2cf376906452",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"m 1 1 2 2 3 3 4 4\"/></svg>"
+   },
+   "nodes": 4,
+   "scour": {
+    "sha256": "7b8e80fa63afb5f3750dd07748929ea52ee42858d1fd6038c2eb37716298f89a",
+    "length": 89,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m1 1 9 9\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "64f014a79b69e09580a3e4c186c4aaaf6463577b1cfd21af3950c66b432a8d29",
+    "length": 102,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"m 1 1 l 2 2 l 3 3 l 4 4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "64f014a79b69e09580a3e4c186c4aaaf6463577b1cfd21af3950c66b432a8d29",
+    "length": 102,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"m 1 1 l 2 2 l 3 3 l 4 4\" /></svg>"
+   },
+   "final": {
+    "sha256": "e4d608f8537b4bc4478a46eaa741938d0b5ab910f2e63b07897d5f40c74ae59a",
+    "length": 92,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 1 1 l 9 9\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "62814c58e1151f9fb613369a7b1cacce7c6580975ff7e6f8c881d152abd599d2",
+    "length": 92,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1 1 L 10 10\" /></svg>"
+   }
+  },
+  {
+   "name": "path-multiple-subpaths",
+   "input": {
+    "sha256": "f7b69579f5b631566c8e7882040acd4e00ba69a2c10cf27f87c7ad2196f729da",
+    "length": 123,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 10 Z M 20 20 L 30 30 Z m 5 5 l 1 1\"/></svg>"
+   },
+   "nodes": 8,
+   "scour": {
+    "sha256": "a18bb8fb8aad403793112caccf4c6b74347f70c80ea65e79bb6583abe8007cdd",
+    "length": 113,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0 0 10 10zm20 20 10 10zm5 5 1 1\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "edabb55775e0eca755c41bd447bc9686f39a2ad81cfc14ca6608ddefc0fb28fa",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 10 Z M 20 20 L 30 30 Z m 5 5 l 1 1\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "edabb55775e0eca755c41bd447bc9686f39a2ad81cfc14ca6608ddefc0fb28fa",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 10 Z M 20 20 L 30 30 Z m 5 5 l 1 1\" /></svg>"
+   },
+   "final": {
+    "sha256": "e262e69d75e54a2d767979ef761ee9548d71856842935aa9a738d9c35e0a4d6b",
+    "length": 126,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 0 l 10 10 z m 20 20 l 10 10 z m 5 5 l 1 1\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "edabb55775e0eca755c41bd447bc9686f39a2ad81cfc14ca6608ddefc0fb28fa",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 10 Z M 20 20 L 30 30 Z m 5 5 l 1 1\" /></svg>"
+   }
+  },
+  {
+   "name": "path-closed-noops",
+   "input": {
+    "sha256": "4024fe11e7bb63124add01e81dd8aea46b13ab8b436ebe9c3d77037d38310205",
+    "length": 106,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 0 L 10 10 L 0 0 Z\"/></svg>"
+   },
+   "nodes": 5,
+   "scour": {
+    "sha256": "b763095e3995f4127d46ed201418191f88792281105a301ebabb3d42a0aa3969",
+    "length": 99,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0 0h10v10l-10-10z\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "80b8f078d5510a14fa26d23dd66da7b51e6ca7093d5e601025a87f7eef89857e",
+    "length": 107,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 0 L 10 10 L 0 0 Z\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "80b8f078d5510a14fa26d23dd66da7b51e6ca7093d5e601025a87f7eef89857e",
+    "length": 107,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 0 L 10 10 L 0 0 Z\" /></svg>"
+   },
+   "final": {
+    "sha256": "5a184eb5c60d841d69b6afa294e75dd994e9598b9e7638eff5eb859c4ba99e5b",
+    "length": 98,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 0 h 10 v 10 z\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "e67093dadcc652e331176a006747bd8d577c5841ae41dc8750a3149abb25d835",
+    "length": 101,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 0 L 10 10 Z\" /></svg>"
+   }
+  },
+  {
+   "name": "path-empty-segments",
+   "input": {
+    "sha256": "b92a38a221d460235d4f55caea14bac748f915c8ebda8c078563b3996c47c5f6",
+    "length": 113,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1 1 l 0 0 h 0 v 0 c 0 0 0 0 0 0 z\"/></svg>"
+   },
+   "nodes": 6,
+   "scour": {
+    "sha256": "b880f651a619a2951e7aed221052531efadb9d5ac7f50dda8d25042fcd42c64b",
+    "length": 86,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m1 1z\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "014af92ec5570b8c0156df11c0d7c568c9e2b562cdc310f32b43968ba1b15594",
+    "length": 114,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1 1 l 0 0 h 0 v 0 c 0 0 0 0 0 0 z\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "014af92ec5570b8c0156df11c0d7c568c9e2b562cdc310f32b43968ba1b15594",
+    "length": 114,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1 1 l 0 0 h 0 v 0 c 0 0 0 0 0 0 z\" /></svg>"
+   },
+   "final": {
+    "sha256": "b9059733086e521dce24c073ce603271152ca8cfe62c7ffb6da313eb9f4871a8",
+    "length": 88,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 1 1 z\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "979d4e14546859f4b3538dc5f4716a0d977f5837b21437c6db63f64c5797d42d",
+    "length": 100,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1 1 h 0 v 0 l 0 0 z\" /></svg>"
+   }
+  },
+  {
+   "name": "path-same-direction",
+   "input": {
+    "sha256": "1ece59f82e58259835468aa5dc42059360b1cf552e0effddc1af879f869de90c",
+    "length": 131,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 l 10 0 l 20 0 l -5 0 l -5 0 l 0 5 l 0 10 l 0 -3\"/></svg>"
+   },
+   "nodes": 8,
+   "scour": {
+    "sha256": "0bbc7e94251b444b01bfe42001bee1175aca49a5f49aac9b79799f36f4a5bc0b",
+    "length": 102,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0 0h10 20-5-5v5 10-3\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "aabad4dfbe7eb8a6a3b46a610463ab3de5cc75a7c50ef9652e3104af7e51e956",
+    "length": 132,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 l 10 0 l 20 0 l -5 0 l -5 0 l 0 5 l 0 10 l 0 -3\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "aabad4dfbe7eb8a6a3b46a610463ab3de5cc75a7c50ef9652e3104af7e51e956",
+    "length": 132,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 l 10 0 l 20 0 l -5 0 l -5 0 l 0 5 l 0 10 l 0 -3\" /></svg>"
+   },
+   "final": {
+    "sha256": "2abbe01f64e222595ffbf511b155a306742f1e16ecbe22e34b2e3600e27635ce",
+    "length": 120,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 0 h 10 h 20 h -5 h -5 v 5 v 10 v -3\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "d99a5617834d85a65512e24c8e05df6c059cee722ebaf097fdb38a1b49a56faf",
+    "length": 135,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 10 0 L 30 0 L 25 0 L 20 0 L 20 5 L 20 15 L 20 12\" /></svg>"
+   }
+  },
+  {
+   "name": "path-exponent",
+   "input": {
+    "sha256": "6b14764a1f661cee0a91fea94b218ecba15f9caa5337d7983efe9d0bf0620adf",
+    "length": 121,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1e2 1E-2 L 1.5e1 2.5e-1 l .5 .5 l -.5 -.5\"/></svg>"
+   },
+   "nodes": 4,
+   "scour": {
+    "sha256": "d730e2b619374d09f480711c20c66b88511b654cca79db91b16ec83594ee2267",
+    "length": 114,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m100 0.01-85 0.24 0.5 0.5-0.5-0.5\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "eae4f9081d867c7f0a4b45c065cc918501c0dc8085a328c330d2dd810097b86b",
+    "length": 121,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 100 0.01 L 15 0.25 l 0.5 0.5 l -0.5 -0.5\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "eae4f9081d867c7f0a4b45c065cc918501c0dc8085a328c330d2dd810097b86b",
+    "length": 121,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 100 0.01 L 15 0.25 l 0.5 0.5 l -0.5 -0.5\" /></svg>"
+   },
+   "final": {
+    "sha256": "14ae7b1b149858cdf63f3d7316f494f0d10e0dc6a2d84b4fd17ab42576d0f8bf",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 100 0.01 l -85 0.24 l 0.5 0.5 l -0.5 -0.5\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "b7d3e96f6189e7010254c9bbfdc379efa9dc0ac32aee96224395ef191218b3a1",
+    "length": 121,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 100 0.01 L 15 0.25 L 15.5 0.75 L 15 0.25\" /></svg>"
+   }
+  },
+  {
+   "name": "path-precision",
+   "input": {
+    "sha256": "52ab0e7e377f7d43886c75e02650295ba8ad30e05cb10355e97d12b893a9849c",
+    "length": 147,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1.23456789 2.34567891 L 3.45678912 4.56789123 l 0.00001234 100000.5\"/></svg>"
+   },
+   "nodes": 3,
+   "scour": {
+    "sha256": "c892cd3197855343a4ac32febb2ac47b54c13cffd68a94d6ddb25b366ac379c2",
+    "length": 122,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m1.2346 2.3457 2.2222 2.2222 1.234e-5 1e5\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "c698678d31c994b83f4016fe9af61a3d5d5cac5cd64d05a5458e1bde364bb8ba",
+    "length": 119,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1.235 2.346 L 3.457 4.568 l 0 100000.5\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "c698678d31c994b83f4016fe9af61a3d5d5cac5cd64d05a5458e1bde364bb8ba",
+    "length": 119,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1.235 2.346 L 3.457 4.568 l 0 100000.5\" /></svg>"
+   },
+   "final": {
+    "sha256": "c5769031441ab7ea6b7f14ca9975f505efce0daeb4c9728aea80668b30a98123",
+    "length": 113,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 1.23 2.35 l 2.23 2.22 v 100000\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "9a0d16ea6b09f9693fd8a14a375ee676a8f1d1479463eeec2b88a144031cd1b0",
+    "length": 119,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 1.23 2.35 L 3.46 4.57 L 3.46 100005.07\" /></svg>"
+   }
+  },
+  {
+   "name": "path-compact-numbers",
+   "input": {
+    "sha256": "11fee29e704ce8d26ab483a55f1919e2246c933f33fb43aacafa7671ee772ee4",
+    "length": 96,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M0-5L-1.5.5-2.5-.5\"/></svg>"
+   },
+   "nodes": 3,
+   "scour": {
+    "sha256": "ef874565a35d286598a125a0680e305edb202aaa0dc38f391609f6cf54a3b93f",
+    "length": 97,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0-5-1.5 5.5-1-1\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "479dec155b774de87a2a0721ad34d9bf69a6c3d519f36226f6f44f5c2b9f7997",
+    "length": 108,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 -5 L -1.5 0.5 L -2.5 -0.5\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "479dec155b774de87a2a0721ad34d9bf69a6c3d519f36226f6f44f5c2b9f7997",
+    "length": 108,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 -5 L -1.5 0.5 L -2.5 -0.5\" /></svg>"
+   },
+   "final": {
+    "sha256": "b4411cbbfb2548ae60f88efd7ad667d44f00999b76c2d8a6f6d76e745204cbe2",
+    "length": 106,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0 -5 l -1.5 5.5 l -1 -1\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "479dec155b774de87a2a0721ad34d9bf69a6c3d519f36226f6f44f5c2b9f7997",
+    "length": 108,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 -5 L -1.5 0.5 L -2.5 -0.5\" /></svg>"
+   }
+  },
+  {
+   "name": "path-shorter-kept",
+   "input": {
+    "sha256": "e92a4d7c74cb33ff70e2136ac905fff5bc639159434bac9f8c0a515b6b7f035d",
+    "length": 97,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0.5 0.5 L 0.5 0.5\"/></svg>"
+   },
+   "nodes": 2,
+   "scour": {
+    "sha256": "55c74d547dd5a7d6394d3364a04e7dab02b2789e20279bb26e939348547cd678",
+    "length": 89,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"m0.5 0.5\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "fde9666ed2ee3a3e797f5f70b0e1274ac75a7042b9305344812859735f3561c5",
+    "length": 98,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0.5 0.5 L 0.5 0.5\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "fde9666ed2ee3a3e797f5f70b0e1274ac75a7042b9305344812859735f3561c5",
+    "length": 98,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0.5 0.5 L 0.5 0.5\" /></svg>"
+   },
+   "final": {
+    "sha256": "e938b436b4ebf496f3d512a65f52f8891b8267664582df0fc4dd35649f8ff819",
+    "length": 90,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<path d=\"m 0.5 0.5\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "fde9666ed2ee3a3e797f5f70b0e1274ac75a7042b9305344812859735f3561c5",
+    "length": 98,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0.5 0.5 L 0.5 0.5\" /></svg>"
+   }
+  },
+  {
+   "name": "path-empty-d",
+   "input": {
+    "sha256": "90bbe93fa20fef6c92e8ca7a3fa6bdb809379248a51b73930857341a116ed4f9",
+    "length": 85,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"\"/><path/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "39df4da4595a676842533b9b8e751a7566e138bce13789bc89a0ece49d590f00",
+    "length": 62,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\"/>\n"
+   },
+   "quantize": {
+    "sha256": "726415c6308cb96c68d5511734572c1c6ccc0546e1589b411ed25aa490114602",
+    "length": 87,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"\" /><path /></svg>"
+   },
+   "quantize3": {
+    "sha256": "726415c6308cb96c68d5511734572c1c6ccc0546e1589b411ed25aa490114602",
+    "length": 87,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"\" /><path /></svg>"
+   },
+   "final": {
+    "sha256": "2ac7881cb503737e3d2c642c984386b76e007548e3be36a40b502fb8ff1512f1",
+    "length": 62,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" />"
+   },
+   "geometricOnly": {
+    "sha256": "726415c6308cb96c68d5511734572c1c6ccc0546e1589b411ed25aa490114602",
+    "length": 87,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"\" /><path /></svg>"
+   }
+  },
+  {
+   "name": "polygon-points",
+   "input": {
+    "sha256": "74c62de5fff2cce74deeb97ce92e595655d29520079cb2660885ec01eb078935",
+    "length": 111,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1,1 2.5,2.5 3,4.123456789\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "4e015e1db973d9a9eff7ea5a7bf1fab3fc2861ab73fa96b505ee8b7c16b74fd3",
+    "length": 109,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<polygon points=\"1 1 2.5 2.5 3 4.1235\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "413917670bde77480c0b87725457b3fecc991bea424376eb4b36ff8952bee159",
+    "length": 112,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1,1 2.5,2.5 3,4.123456789\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "413917670bde77480c0b87725457b3fecc991bea424376eb4b36ff8952bee159",
+    "length": 112,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1,1 2.5,2.5 3,4.123456789\" /></svg>"
+   },
+   "final": {
+    "sha256": "e97f6de5e3f5784f60946c6d9073fa1c7b9f5de03ee0c5a3a37be75c0f764611",
+    "length": 109,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<polygon points=\"1 1 2.5 2.5 3 4.1235\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "413917670bde77480c0b87725457b3fecc991bea424376eb4b36ff8952bee159",
+    "length": 112,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1,1 2.5,2.5 3,4.123456789\" /></svg>"
+   }
+  },
+  {
+   "name": "polyline-points",
+   "input": {
+    "sha256": "ecac09e30dd7970538c4a1008d4fbd7e74a1d3dab9a47d1a557eb0196809638d",
+    "length": 110,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polyline points=\"10 10 20 10 30 10.00001\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "706ed518c9dedd396334e2321694615cf18bcb8eed1b9099987873e9ff142873",
+    "length": 107,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<polyline points=\"10 10 20 10 30 10\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "3db54446e549a5f31f5c2e6ad0893569b2d04fc16a992d8f4e8a3190bd80bee1",
+    "length": 111,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polyline points=\"10 10 20 10 30 10.00001\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "3db54446e549a5f31f5c2e6ad0893569b2d04fc16a992d8f4e8a3190bd80bee1",
+    "length": 111,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polyline points=\"10 10 20 10 30 10.00001\" /></svg>"
+   },
+   "final": {
+    "sha256": "95bc31fe4ac96017b4bd0c502f348de4a975233ab92ae9d8b4c73ffc202caa55",
+    "length": 107,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<polyline points=\"10 10 20 10 30 10\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "3db54446e549a5f31f5c2e6ad0893569b2d04fc16a992d8f4e8a3190bd80bee1",
+    "length": 111,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polyline points=\"10 10 20 10 30 10.00001\" /></svg>"
+   }
+  },
+  {
+   "name": "polygon-empty",
+   "input": {
+    "sha256": "e24ed58b8554e4b3ce935ca8cd72cfa1455fa6a91e31224d2aa868ee6ae49761",
+    "length": 108,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"\"/><polyline points=\"1\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "a63207e520b2bced2c07b5361b0b435f55d53923555a89799e904ccb45f17847",
+    "length": 111,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<polygon points=\"\"/>\n<polyline points=\"\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "5c4ee5ce97085a357440b8788b394b5c07374a39b25db130b6e5829ec50fe80d",
+    "length": 110,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"\" /><polyline points=\"1\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "5c4ee5ce97085a357440b8788b394b5c07374a39b25db130b6e5829ec50fe80d",
+    "length": 110,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"\" /><polyline points=\"1\" /></svg>"
+   },
+   "final": {
+    "sha256": "e8a25684f3c7340e9af20c9981bd6ea70b063b3aea919e4c1f661d3c42271db6",
+    "length": 112,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<polygon points=\"\" />\n<polyline points=\"\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "5c4ee5ce97085a357440b8788b394b5c07374a39b25db130b6e5829ec50fe80d",
+    "length": 110,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"\" /><polyline points=\"1\" /></svg>"
+   }
+  },
+  {
+   "name": "polygon-odd-count",
+   "input": {
+    "sha256": "6454a0d9597d2958d7d93b40ef5caa9465d4fffd3f4465adfb2fe0356d001f34",
+    "length": 91,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1 2 3\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "f0f375dbca6832e5ee46d2c763fc8ba0dcfbb61ffd0b26fdd060e1892bf9a64b",
+    "length": 89,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<polygon points=\"\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "8ad9f64b74ef2b3b5b87d20309ae402a34a578b27dc4293e812bf616f80d8b49",
+    "length": 92,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1 2 3\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "8ad9f64b74ef2b3b5b87d20309ae402a34a578b27dc4293e812bf616f80d8b49",
+    "length": 92,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1 2 3\" /></svg>"
+   },
+   "final": {
+    "sha256": "2b787b72f094739840f8affab91d95b9e6dd56603fd0fd792d636185100e71d4",
+    "length": 89,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<polygon points=\"\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "8ad9f64b74ef2b3b5b87d20309ae402a34a578b27dc4293e812bf616f80d8b49",
+    "length": 92,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1 2 3\" /></svg>"
+   }
+  },
+  {
+   "name": "polygon-exponent",
+   "input": {
+    "sha256": "5aa2a5c84ab4f9628373cc12981eb47129a2a697b62b650fd7bcccf316a02b8b",
+    "length": 101,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1e1,2e-1 .5,-.5\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "871ca9d23b76a852ff16ad2d6920ea4f1052610fe55e023bd055647256f10628",
+    "length": 104,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<polygon points=\"10 0.2 0.5 -0.5\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "5f5c029b535989307526839bddf733f876ef0cc6e8e2cc0e609ca505853cce0d",
+    "length": 102,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1e1,2e-1 .5,-.5\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "5f5c029b535989307526839bddf733f876ef0cc6e8e2cc0e609ca505853cce0d",
+    "length": 102,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1e1,2e-1 .5,-.5\" /></svg>"
+   },
+   "final": {
+    "sha256": "b835e93ed74a5f1cb2a192e40d8732ac93ad933a04d83c3df67d619bb4664d89",
+    "length": 104,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<polygon points=\"10 0.2 0.5 -0.5\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "5f5c029b535989307526839bddf733f876ef0cc6e8e2cc0e609ca505853cce0d",
+    "length": 102,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><polygon points=\"1e1,2e-1 .5,-.5\" /></svg>"
+   }
+  },
+  {
+   "name": "transform-translate",
+   "input": {
+    "sha256": "92cc28ad8b4ebcbb0fe3abc23c0e33a7eb321b70d4a2e882e99f01ba913b6e50",
+    "length": 128,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(5 0)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "ddef88db63107aaea5896125f521ed85a35717a977ff45e2cc7c01e19809427f",
+    "length": 131,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"translate(5)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "59ec7e13affcdef8b17031609e8901f9ebeef5142b746c1dc756d51bd9da042c",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(5 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "59ec7e13affcdef8b17031609e8901f9ebeef5142b746c1dc756d51bd9da042c",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(5 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "2bf8698da2e77f8998e0a633f7bbb4a2c7aacec4d5b278a2f45988b4cc365b66",
+    "length": 131,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"translate(5)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "59ec7e13affcdef8b17031609e8901f9ebeef5142b746c1dc756d51bd9da042c",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(5 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-translate-run",
+   "input": {
+    "sha256": "2b1f04825a5c1a1a0deab40b0b8ee035f2b71e44e3d98c0f88938beb20d1ebc2",
+    "length": 158,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(5) translate(3 4) translate(-8 -4)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "54f2ec69c9f1a6b1f3465cffe77d5d74791024cb22fc31f74d4d8886eec1c56f",
+    "length": 106,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g>\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "0973e978a4da7c43d3bb532bea564d9fec48d425df9b0ae101d773b77fe506b0",
+    "length": 159,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(5) translate(3 4) translate(-8 -4)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "0973e978a4da7c43d3bb532bea564d9fec48d425df9b0ae101d773b77fe506b0",
+    "length": 159,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(5) translate(3 4) translate(-8 -4)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "0e361743797a148ac8d38d7d74accfeec61b9b51ef176fe17f82cd28ae71b865",
+    "length": 106,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g>\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "0973e978a4da7c43d3bb532bea564d9fec48d425df9b0ae101d773b77fe506b0",
+    "length": 159,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(5) translate(3 4) translate(-8 -4)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-identity",
+   "input": {
+    "sha256": "9fd189219d131edef7d576287a602ce89d0b7029e78145a168b758fd009bb7ea",
+    "length": 128,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(0 0)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "f6a425d0d31d55a08bbac1d6f32f6587a78b1af6064dc93efa8a9841ff8284b8",
+    "length": 131,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"translate(0)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "2d189039f38568a9792233bdc05636b7c71b80754cd00bd3881c46bb72985095",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "2d189039f38568a9792233bdc05636b7c71b80754cd00bd3881c46bb72985095",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "ec1b2fcfd5066d223a23870aa0254bae09b83b300ada0694fa964cd59816cc33",
+    "length": 131,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"translate(0)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "2d189039f38568a9792233bdc05636b7c71b80754cd00bd3881c46bb72985095",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-scale",
+   "input": {
+    "sha256": "c0dcf654b8c17dc020bf0daa4ebab9bdef8c3cc905bb4499191dcc3b9aab7a69",
+    "length": 133,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2 2) scale(3)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "bc0f0343bf2bf06684ec58413cd72ee456d9a165c35c6a70ac42a12d491ea08d",
+    "length": 127,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"scale(6)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "e6666ab1b109756c9f0e58848dc4a966edc87c93d0c93d4b543bb0e237a023d5",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2 2) scale(3)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "e6666ab1b109756c9f0e58848dc4a966edc87c93d0c93d4b543bb0e237a023d5",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2 2) scale(3)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "1ca4f99cfa6d7b7f8a178cc611b9931a4c5749dd5e31d77c1d4eecc66e5aa3ad",
+    "length": 127,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"scale(6)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "e6666ab1b109756c9f0e58848dc4a966edc87c93d0c93d4b543bb0e237a023d5",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2 2) scale(3)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-scale-identity",
+   "input": {
+    "sha256": "1c242b58acab7216265be50a74da1bc7fd226865cf025d1271427a7465bf1c4d",
+    "length": 133,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2) scale(0.5)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "54f2ec69c9f1a6b1f3465cffe77d5d74791024cb22fc31f74d4d8886eec1c56f",
+    "length": 106,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g>\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "3cdd4af015da2bcab0bff0a35116a4898cd8f157dc8afd4a66019ede0f601354",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2) scale(0.5)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "3cdd4af015da2bcab0bff0a35116a4898cd8f157dc8afd4a66019ede0f601354",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2) scale(0.5)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "0e361743797a148ac8d38d7d74accfeec61b9b51ef176fe17f82cd28ae71b865",
+    "length": 106,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g>\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "3cdd4af015da2bcab0bff0a35116a4898cd8f157dc8afd4a66019ede0f601354",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2) scale(0.5)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-scale-mixed",
+   "input": {
+    "sha256": "e685dbcad6852c4affc44c852ff34d8632bd35a27de809596cb220499566a6cf",
+    "length": 153,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2) scale(3 4) scale(5 6) scale(2)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "81db839bcfaefa8ea388d6d7235a02c46859f6b24bce4fbb8a2e4f67e1fcfe34",
+    "length": 132,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"scale(60 96)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "76eb4022c6b965bf9b298b907688a06744475599efbcf1c76283c8221d755d5b",
+    "length": 154,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2) scale(3 4) scale(5 6) scale(2)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "76eb4022c6b965bf9b298b907688a06744475599efbcf1c76283c8221d755d5b",
+    "length": 154,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2) scale(3 4) scale(5 6) scale(2)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "f80aa8d82936c9fe79a9796048567c21ccda05f3841dffe19d988f6d777fb308",
+    "length": 132,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"scale(60 96)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "76eb4022c6b965bf9b298b907688a06744475599efbcf1c76283c8221d755d5b",
+    "length": 154,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"scale(2) scale(3 4) scale(5 6) scale(2)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-rotate",
+   "input": {
+    "sha256": "3faabc85c99c6b04acb0de98626ba2ec599e3d8c3fcf8d9e02c6ab370ce2eddd",
+    "length": 151,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(30) rotate(60 0 0) rotate(400)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "ad6fffefeebec1893035db23d1e9bd57067fb4a28b1e1ac1b9cba8a2a8d4790b",
+    "length": 130,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"rotate(130)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "512be8b463dc476bf72ddc08119c92b290ac89428e074f01a3f185411a9461c1",
+    "length": 152,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(30) rotate(60 0 0) rotate(400)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "512be8b463dc476bf72ddc08119c92b290ac89428e074f01a3f185411a9461c1",
+    "length": 152,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(30) rotate(60 0 0) rotate(400)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "e3a5b285a8dbcb23305c002b61da6a89abb917ed662e572f16da8399e1a48a77",
+    "length": 130,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"rotate(130)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "512be8b463dc476bf72ddc08119c92b290ac89428e074f01a3f185411a9461c1",
+    "length": 152,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(30) rotate(60 0 0) rotate(400)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-rotate-centre",
+   "input": {
+    "sha256": "92ac0548bd5b1a72be873a1b67ca23db52f501c58c9379e9077b60b3ea57835d",
+    "length": 144,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(30 5 5) rotate(300 5 5)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "673956490c799c095ed5999e9b2f19203df1c0cbc132a2cd339bc5633dd2dcfb",
+    "length": 149,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"rotate(30 5 5) rotate(300 5 5)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "71d315af62939bb02fc17742bf783ae6f4f9a2e85ee3c29353c6c326344d4a36",
+    "length": 145,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(30 5 5) rotate(300 5 5)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "71d315af62939bb02fc17742bf783ae6f4f9a2e85ee3c29353c6c326344d4a36",
+    "length": 145,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(30 5 5) rotate(300 5 5)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "96046f838eaf92d69d41ab07ebaac284be9bedca9c4dbf297dd573dc54deb6bc",
+    "length": 149,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"rotate(30 5 5) rotate(300 5 5)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "71d315af62939bb02fc17742bf783ae6f4f9a2e85ee3c29353c6c326344d4a36",
+    "length": 145,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(30 5 5) rotate(300 5 5)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-rotate-wrap",
+   "input": {
+    "sha256": "2ef41775dd3e7dbd33fe6ef09a3c9f8f57717a18894297f496618b1776fd1a55",
+    "length": 245,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(-100)\"><rect width=\"1\" height=\"1\"/></g><g transform=\"rotate(-720)\"><rect width=\"1\" height=\"1\"/></g><g transform=\"rotate(280)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "bef4a828c3081cd6180afe38cd098a7645a4fdaf0d0fe8a9dcdf5ad23a29e589",
+    "length": 230,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"rotate(260)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n<g>\n<rect width=\"1\" height=\"1\"/>\n</g>\n<g transform=\"rotate(280)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "bbd4837fe2f0f9879e23a198ac4146fdd288a3019dbba0a745e46cdcc1fd6e97",
+    "length": 248,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(-100)\"><rect width=\"1\" height=\"1\" /></g><g transform=\"rotate(-720)\"><rect width=\"1\" height=\"1\" /></g><g transform=\"rotate(280)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "bbd4837fe2f0f9879e23a198ac4146fdd288a3019dbba0a745e46cdcc1fd6e97",
+    "length": 248,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(-100)\"><rect width=\"1\" height=\"1\" /></g><g transform=\"rotate(-720)\"><rect width=\"1\" height=\"1\" /></g><g transform=\"rotate(280)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "37a8f627ca4d8fdf586b6595a4ac4e0fe25172954fc7acf09e160f55d53726e6",
+    "length": 232,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"rotate(260)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n<g>\n<rect width=\"1\" height=\"1\" />\n</g>\n<g transform=\"rotate(280)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "bbd4837fe2f0f9879e23a198ac4146fdd288a3019dbba0a745e46cdcc1fd6e97",
+    "length": 248,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"rotate(-100)\"><rect width=\"1\" height=\"1\" /></g><g transform=\"rotate(-720)\"><rect width=\"1\" height=\"1\" /></g><g transform=\"rotate(280)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-skew-zero",
+   "input": {
+    "sha256": "b24aca6f8824b1b50d69bee4cb2b759789871d04838987da69b94aba0a62e264",
+    "length": 156,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"skewX(0) skewY(0) rotate(0) translate(1 1)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "3473a5ecfd817b7d75242bbeb23d7db1b882f3c521547cd049280f27f1a84c4a",
+    "length": 133,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"translate(1 1)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "d5f044e503fd0af264b4d955e59f80b335ca3b8c41bb128684b2337271362826",
+    "length": 157,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"skewX(0) skewY(0) rotate(0) translate(1 1)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "d5f044e503fd0af264b4d955e59f80b335ca3b8c41bb128684b2337271362826",
+    "length": 157,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"skewX(0) skewY(0) rotate(0) translate(1 1)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "c9f2c26cb63f0cfaf5b14b176f5c95480fdccc9e28b2eb45be546f17e8b14b41",
+    "length": 133,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"translate(1 1)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "d5f044e503fd0af264b4d955e59f80b335ca3b8c41bb128684b2337271362826",
+    "length": 157,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"skewX(0) skewY(0) rotate(0) translate(1 1)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-matrix-identity",
+   "input": {
+    "sha256": "78be4cb0139ddfc60139f08f506fc2a12547668a5191aef2e094ece02e5dc7d5",
+    "length": 133,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 0 0 1 0 0)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "54f2ec69c9f1a6b1f3465cffe77d5d74791024cb22fc31f74d4d8886eec1c56f",
+    "length": 106,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g>\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "010ed75194662d8cf9843028492219563fc624963722a4791990ded19382528b",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 0 0 1 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "010ed75194662d8cf9843028492219563fc624963722a4791990ded19382528b",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 0 0 1 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "0e361743797a148ac8d38d7d74accfeec61b9b51ef176fe17f82cd28ae71b865",
+    "length": 106,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g>\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "010ed75194662d8cf9843028492219563fc624963722a4791990ded19382528b",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 0 0 1 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-matrix-translate",
+   "input": {
+    "sha256": "154fff16817deb18c56d525d6af3fb94fa47b7ff858c9cf5313e4a110e7e7117",
+    "length": 135,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 0 0 1 10 20)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "7862de692c1f772996f2dfd0153da7929f2d6679518c161124fb7596b4092e06",
+    "length": 135,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"translate(10 20)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "db7589c332913000f71a01adc85b809b6463a6093db5ca6e6da964f32495df95",
+    "length": 136,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 0 0 1 10 20)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "db7589c332913000f71a01adc85b809b6463a6093db5ca6e6da964f32495df95",
+    "length": 136,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 0 0 1 10 20)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "0a84b8b55fb28cf473046e046f7ed3ab73564e584ac291d39659b8f2b6277de7",
+    "length": 135,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"translate(10 20)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "db7589c332913000f71a01adc85b809b6463a6093db5ca6e6da964f32495df95",
+    "length": 136,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 0 0 1 10 20)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-matrix-scale",
+   "input": {
+    "sha256": "a9b1682ec4aa33506f58bcaec1b628be49d7d4962d6eda0263dc9a72a62597ac",
+    "length": 133,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(2 0 0 3 0 0)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "382d521621478aeffb9a969c99429fe72886b8c751bd2b47dbc9fcf39d87ea0f",
+    "length": 129,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"scale(2 3)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "dcc2183bd3298be0bf4ab43bb230b8c383391c97c7e26f6ded6afc234ebb7858",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(2 0 0 3 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "dcc2183bd3298be0bf4ab43bb230b8c383391c97c7e26f6ded6afc234ebb7858",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(2 0 0 3 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "f3c67e0af5978caaa8b2e9ce5b3afe9fb08f51f2de337074bad11fa4b0a116eb",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"scale(2 3)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "dcc2183bd3298be0bf4ab43bb230b8c383391c97c7e26f6ded6afc234ebb7858",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(2 0 0 3 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-matrix-rotate",
+   "input": {
+    "sha256": "21e9faacaa615ce5123c1fe480418bbb0ba5d98ca2a8261570e67bcdefa0a849",
+    "length": 172,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(0.5 0.8660254037844386 -0.8660254037844386 0.5 0 0)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "6d66ffd1b0076a7ad12e322ea567202405b0c025b0168b5528bc40340b30c687",
+    "length": 129,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"rotate(60)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "caa7f27b2b0acc3f35d4f5921de0a2f0700aa3af69a09fc361d1348e740ea02a",
+    "length": 173,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(0.5 0.8660254037844386 -0.8660254037844386 0.5 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "caa7f27b2b0acc3f35d4f5921de0a2f0700aa3af69a09fc361d1348e740ea02a",
+    "length": 173,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(0.5 0.8660254037844386 -0.8660254037844386 0.5 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "e72edee056ab6d6c6624a4c65b795a969524f14b06ec1213131a40f0d6ecada3",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"rotate(60)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "caa7f27b2b0acc3f35d4f5921de0a2f0700aa3af69a09fc361d1348e740ea02a",
+    "length": 173,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(0.5 0.8660254037844386 -0.8660254037844386 0.5 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-matrix-rotate-back",
+   "input": {
+    "sha256": "e59409116adfa25aa3f3e9954a25509722fea41d95684e67c035fb7c6b97efa6",
+    "length": 174,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(-0.5 0.8660254037844386 -0.8660254037844386 -0.5 0 0)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "0c5c391da88908f5a7ca4989193e568f8cf4b26deee4d1dbbc689cc958c8a6ec",
+    "length": 130,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"rotate(120)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "a8a997fb9a2cf9ee7f9007e741bb1fe28c1151cd085de1843c7d113f1e2dd696",
+    "length": 175,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(-0.5 0.8660254037844386 -0.8660254037844386 -0.5 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "a8a997fb9a2cf9ee7f9007e741bb1fe28c1151cd085de1843c7d113f1e2dd696",
+    "length": 175,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(-0.5 0.8660254037844386 -0.8660254037844386 -0.5 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "274bd405833542e1b846a2f7c2ec79b50002b6de5e0933ea9cf7d6f255b49905",
+    "length": 130,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"rotate(120)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "a8a997fb9a2cf9ee7f9007e741bb1fe28c1151cd085de1843c7d113f1e2dd696",
+    "length": 175,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(-0.5 0.8660254037844386 -0.8660254037844386 -0.5 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-matrix-rotate-neg",
+   "input": {
+    "sha256": "f6aa1b3429288b48ff07d8ff1430757a1776e5edb2e2927751f7e64dea863766",
+    "length": 174,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(-0.5 -0.8660254037844386 0.8660254037844386 -0.5 0 0)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "cf3727a3b595513533964ec264782864df3567e5072eee3c319fa7830a305f88",
+    "length": 130,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"rotate(240)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "75781b40a8f2f20ec15a97c6ef29cbb1f8d2261c33a82fd76ff9d1015a7c0467",
+    "length": 175,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(-0.5 -0.8660254037844386 0.8660254037844386 -0.5 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "75781b40a8f2f20ec15a97c6ef29cbb1f8d2261c33a82fd76ff9d1015a7c0467",
+    "length": 175,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(-0.5 -0.8660254037844386 0.8660254037844386 -0.5 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "6ddb81fe32a0a41c37b410a6ccb0de002e7b62cce042b62fcea9322075e14346",
+    "length": 130,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"rotate(240)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "75781b40a8f2f20ec15a97c6ef29cbb1f8d2261c33a82fd76ff9d1015a7c0467",
+    "length": 175,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(-0.5 -0.8660254037844386 0.8660254037844386 -0.5 0 0)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-matrix-general",
+   "input": {
+    "sha256": "362f238a05892911f08204a2be8a05bc984b2efd11d8a2349217470120b7a453",
+    "length": 133,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 2 3 4 5 6)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "a3317cf7c8daf5210cba99a1629f028b84a494564eb18e1d20596078b38c6e51",
+    "length": 138,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"matrix(1 2 3 4 5 6)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "8453e25530c5bf3233024bca3b5c47d000e51331bceb403edef60a3aa8144fbf",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 2 3 4 5 6)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "8453e25530c5bf3233024bca3b5c47d000e51331bceb403edef60a3aa8144fbf",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 2 3 4 5 6)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "2b68b5c34edf81dc93aaa61c5aa6ea2568aabc1f6aa98999ea9a29a7a0c0daf9",
+    "length": 138,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"matrix(1 2 3 4 5 6)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "8453e25530c5bf3233024bca3b5c47d000e51331bceb403edef60a3aa8144fbf",
+    "length": 134,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"matrix(1 2 3 4 5 6)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-pattern-gradient",
+   "input": {
+    "sha256": "d023e3f5ea8ebcdb093eac5e08cd72dbd2125c38e400241b63e7b57043fbd0c8",
+    "length": 264,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><pattern id=\"p\" patternTransform=\"translate(0 0)\"/><linearGradient id=\"g\" gradientTransform=\"translate(1 2) translate(2 3)\"/></defs><rect fill=\"url(#p)\" stroke=\"url(#g)\" width=\"1\" height=\"1\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "0e0d532daa2c8ec6ce961aa87bba5beccd5f4069249bd3ee76ee8bbd6bc8393e",
+    "length": 254,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<defs>\n<pattern id=\"p\" patternTransform=\"translate(0)\"/>\n<linearGradient id=\"g\" gradientTransform=\"translate(3 5)\"/>\n</defs>\n<rect width=\"1\" height=\"1\" fill=\"url(#p)\" stroke=\"url(#g)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "52531fd2ace0f962a174a1df56c09db2e2bdc5edec82ed605a409a17b64c1a00",
+    "length": 267,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><pattern id=\"p\" patternTransform=\"translate(0 0)\" /><linearGradient id=\"g\" gradientTransform=\"translate(1 2) translate(2 3)\" /></defs><rect fill=\"url(#p)\" stroke=\"url(#g)\" width=\"1\" height=\"1\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "52531fd2ace0f962a174a1df56c09db2e2bdc5edec82ed605a409a17b64c1a00",
+    "length": 267,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><pattern id=\"p\" patternTransform=\"translate(0 0)\" /><linearGradient id=\"g\" gradientTransform=\"translate(1 2) translate(2 3)\" /></defs><rect fill=\"url(#p)\" stroke=\"url(#g)\" width=\"1\" height=\"1\" /></svg>"
+   },
+   "final": {
+    "sha256": "6878a6645867698d458bd055ef861a47cac13be48dfb74de7689065f360757ff",
+    "length": 256,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<pattern id=\"p\" patternTransform=\"translate(0)\" />\n<linearGradient id=\"g\" gradientTransform=\"translate(3 5)\" />\n</defs>\n<rect width=\"1\" height=\"1\" fill=\"url(#p)\" stroke=\"url(#g)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "52531fd2ace0f962a174a1df56c09db2e2bdc5edec82ed605a409a17b64c1a00",
+    "length": 267,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><pattern id=\"p\" patternTransform=\"translate(0 0)\" /><linearGradient id=\"g\" gradientTransform=\"translate(1 2) translate(2 3)\" /></defs><rect fill=\"url(#p)\" stroke=\"url(#g)\" width=\"1\" height=\"1\" /></svg>"
+   }
+  },
+  {
+   "name": "transform-longer-kept",
+   "input": {
+    "sha256": "e39fcf16adfa9c8914ffeb0e161a94cebcd95abbefcf3a4adf4634420f586864",
+    "length": 128,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1,2)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "1c473e80d92f297f39c8d95132db639c40dfa830e4f6addfd09b2a7786cf5458",
+    "length": 133,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"translate(1,2)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "939fd072051a45d91b5e2d9afb42522323902f54703c5f57602aec2ef654903a",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1,2)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "939fd072051a45d91b5e2d9afb42522323902f54703c5f57602aec2ef654903a",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1,2)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "d9b602357815bb25f899b77fbc04c3d2223edb8ee0d0c31cf3a88ed7aee8931f",
+    "length": 133,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"translate(1,2)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "939fd072051a45d91b5e2d9afb42522323902f54703c5f57602aec2ef654903a",
+    "length": 129,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1,2)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-nested",
+   "input": {
+    "sha256": "73cb05608484a500ea255edd39a857446d6d13a885cd4267d180875e8260f738",
+    "length": 182,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(0 0)\"><g transform=\"scale(1 1)\"><rect width=\"1\" height=\"1\" transform=\"rotate(360)\"/></g></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "a8429354495d6c16d14491b0ded598f91e4350a425d25c7a13bc4a8611d23695",
+    "length": 161,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"translate(0)\">\n<g transform=\"scale(1)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "f290665ed95f5f2f02470cbc91764ae6c92da7a26fff8e987e0b30f21df13c92",
+    "length": 183,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(0 0)\"><g transform=\"scale(1 1)\"><rect width=\"1\" height=\"1\" transform=\"rotate(360)\" /></g></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "f290665ed95f5f2f02470cbc91764ae6c92da7a26fff8e987e0b30f21df13c92",
+    "length": 183,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(0 0)\"><g transform=\"scale(1 1)\"><rect width=\"1\" height=\"1\" transform=\"rotate(360)\" /></g></g></svg>"
+   },
+   "final": {
+    "sha256": "1e7774f4db7710e74440d80b5e7fa07fabb68261bb72bb42edeab0a8ce9ab496",
+    "length": 161,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"translate(0)\">\n<g transform=\"scale(1)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "f290665ed95f5f2f02470cbc91764ae6c92da7a26fff8e987e0b30f21df13c92",
+    "length": 183,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(0 0)\"><g transform=\"scale(1 1)\"><rect width=\"1\" height=\"1\" transform=\"rotate(360)\" /></g></g></svg>"
+   }
+  },
+  {
+   "name": "transform-exponent",
+   "input": {
+    "sha256": "d82c70d894d1c3b9b4ca17306befca0bb60336a681c9df520b0f03e491ae996b",
+    "length": 143,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1e1 2e-1) scale(.5)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "a65a86b75838187dc650f5c111854f6a701b5f1ccdb81ac1ecd94d485526a5ab",
+    "length": 145,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g transform=\"translate(10 .2) scale(.5)\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "ef4ec95d001a6257c77eb98638ade1ce28fa6b555c20ffa5014c8e2e8d9b0c47",
+    "length": 144,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1e1 2e-1) scale(.5)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "ef4ec95d001a6257c77eb98638ade1ce28fa6b555c20ffa5014c8e2e8d9b0c47",
+    "length": 144,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1e1 2e-1) scale(.5)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "4bf0a5b62a6b60f7fd6d5cdbf6d5e277c44a76ab5feb41ff93f9a86338c42ee0",
+    "length": 145,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g transform=\"translate(10 .2) scale(.5)\">\n<rect width=\"1\" height=\"1\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "ef4ec95d001a6257c77eb98638ade1ce28fa6b555c20ffa5014c8e2e8d9b0c47",
+    "length": 144,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1e1 2e-1) scale(.5)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-invalid",
+   "input": {
+    "sha256": "c1f55e462abbbce52aa7a9b36e52576ef027aa25f2401d1e458b3208fc27aa1a",
+    "length": 127,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1 2\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "c1f55e462abbbce52aa7a9b36e52576ef027aa25f2401d1e458b3208fc27aa1a",
+    "length": 127,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1 2\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "quantize": {
+    "sha256": "576cc663aab4ea10e6807cf262d23433105fd1eebd19106116870258002f2161",
+    "length": 128,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1 2\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "576cc663aab4ea10e6807cf262d23433105fd1eebd19106116870258002f2161",
+    "length": 128,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1 2\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "576cc663aab4ea10e6807cf262d23433105fd1eebd19106116870258002f2161",
+    "length": 128,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1 2\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "geometricOnly": {
+    "sha256": "576cc663aab4ea10e6807cf262d23433105fd1eebd19106116870258002f2161",
+    "length": 128,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"translate(1 2\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "transform-unknown",
+   "input": {
+    "sha256": "0310286c0b72c3466b4e7acca7bbaf8cce64cb7b72c42ed67a8fbc06040dfd7f",
+    "length": 123,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"wobble(1)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "0310286c0b72c3466b4e7acca7bbaf8cce64cb7b72c42ed67a8fbc06040dfd7f",
+    "length": 123,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"wobble(1)\"><rect width=\"1\" height=\"1\"/></g></svg>"
+   },
+   "quantize": {
+    "sha256": "91f2218910901f76ae193d001f61c705b15d2211bef9d849466b3f4ab780fa41",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"wobble(1)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "91f2218910901f76ae193d001f61c705b15d2211bef9d849466b3f4ab780fa41",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"wobble(1)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "91f2218910901f76ae193d001f61c705b15d2211bef9d849466b3f4ab780fa41",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"wobble(1)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   },
+   "geometricOnly": {
+    "sha256": "91f2218910901f76ae193d001f61c705b15d2211bef9d849466b3f4ab780fa41",
+    "length": 124,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g transform=\"wobble(1)\"><rect width=\"1\" height=\"1\" /></g></svg>"
+   }
+  },
+  {
+   "name": "gradient-collapse",
+   "input": {
+    "sha256": "7d8aaa552ee3766f7717181377d4cd3781a8c2a77e3a8bb11b5cd4081f3ed0db",
+    "length": 331,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\"/><stop offset=\"1\" stop-color=\"#00f\"/></linearGradient><linearGradient id=\"b\" xlink:href=\"#a\" x1=\"0\" x2=\"1\"/></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "6601d9b7d32162c9ba74f102a7d849eacd55c65f53f9c2460975f4b263fc8713",
+    "length": 286,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<defs>\n<linearGradient id=\"b\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n<stop stop-color=\"#00f\" offset=\"1\"/>\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "d88d4280df58a36afe4158104fa2f7e6be8451518a02ebb956b207e156133db0",
+    "length": 331,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\" x1=\"0\" x2=\"1\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "d88d4280df58a36afe4158104fa2f7e6be8451518a02ebb956b207e156133db0",
+    "length": 331,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\" x1=\"0\" x2=\"1\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "179952f33fa6320c48d7e2d7ae5696d62564d8daa63cba53bdf2999897ef0ca0",
+    "length": 245,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<linearGradient id=\"b\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n<stop stop-color=\"#00f\" offset=\"1\" />\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "d88d4280df58a36afe4158104fa2f7e6be8451518a02ebb956b207e156133db0",
+    "length": 331,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\" x1=\"0\" x2=\"1\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-collapse-attributes",
+   "input": {
+    "sha256": "d464a9d91bc43be44f699672cd4ebc9c0d61d48a4bf305f16153bf3d3a68b39c",
+    "length": 440,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><radialGradient id=\"a\" cx=\"1\" cy=\"2\" r=\"3\" fx=\"1\" fy=\"2\" gradientUnits=\"userSpaceOnUse\" spreadMethod=\"reflect\" gradientTransform=\"scale(2)\"><stop offset=\"0\" stop-color=\"#f00\"/><stop offset=\"1\" stop-color=\"#00f\"/></radialGradient><radialGradient id=\"b\" xlink:href=\"#a\" r=\"9\"/></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "418d8b6b4324a2dd048c8d6d7720773b0484757bafca4b1b3c8036712252d65f",
+    "length": 389,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<defs>\n<radialGradient id=\"b\" cx=\"1\" cy=\"2\" r=\"9\" gradientTransform=\"scale(2)\" gradientUnits=\"userSpaceOnUse\" spreadMethod=\"reflect\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n<stop stop-color=\"#00f\" offset=\"1\"/>\n</radialGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "c8142be533f154a7af5b9a242ca4c285a0ca980a61d8713c0287c72e3c601157",
+    "length": 440,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><radialGradient id=\"a\" cx=\"1\" cy=\"2\" r=\"3\" fx=\"1\" fy=\"2\" gradientUnits=\"userSpaceOnUse\" spreadMethod=\"reflect\" gradientTransform=\"scale(2)\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></radialGradient><radialGradient id=\"b\" ns1:href=\"#a\" r=\"9\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "c8142be533f154a7af5b9a242ca4c285a0ca980a61d8713c0287c72e3c601157",
+    "length": 440,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><radialGradient id=\"a\" cx=\"1\" cy=\"2\" r=\"3\" fx=\"1\" fy=\"2\" gradientUnits=\"userSpaceOnUse\" spreadMethod=\"reflect\" gradientTransform=\"scale(2)\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></radialGradient><radialGradient id=\"b\" ns1:href=\"#a\" r=\"9\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "85fa4fb22322dc1349fc9f2f58930dc1a8c3a9c82db5704798e78f8c2835777b",
+    "length": 348,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<radialGradient id=\"b\" cx=\"1\" cy=\"2\" r=\"9\" gradientTransform=\"scale(2)\" gradientUnits=\"userSpaceOnUse\" spreadMethod=\"reflect\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n<stop stop-color=\"#00f\" offset=\"1\" />\n</radialGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "c8142be533f154a7af5b9a242ca4c285a0ca980a61d8713c0287c72e3c601157",
+    "length": 440,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><radialGradient id=\"a\" cx=\"1\" cy=\"2\" r=\"3\" fx=\"1\" fy=\"2\" gradientUnits=\"userSpaceOnUse\" spreadMethod=\"reflect\" gradientTransform=\"scale(2)\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></radialGradient><radialGradient id=\"b\" ns1:href=\"#a\" r=\"9\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-collapse-chain",
+   "input": {
+    "sha256": "2941b3054657b8fa83925b9314916595dcb58e37eae7b90ef284353f00bd9c9c",
+    "length": 328,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient><linearGradient id=\"b\" xlink:href=\"#a\"/><linearGradient id=\"c\" xlink:href=\"#b\" x1=\"1\"/></defs><rect fill=\"url(#c)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "ff3ae2c26ed53cb6b9b4ac55df8f9c51d41853f960059335ca9cecb29466e5c8",
+    "length": 256,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<defs>\n<linearGradient id=\"c\" x1=\"1\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#c)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "80347ca623f6d359fb90c0b67e38b1739398b2af50493e21e5fe809341fb63a9",
+    "length": 326,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\" /><linearGradient id=\"c\" ns1:href=\"#b\" x1=\"1\" /></defs><rect fill=\"url(#c)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "80347ca623f6d359fb90c0b67e38b1739398b2af50493e21e5fe809341fb63a9",
+    "length": 326,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\" /><linearGradient id=\"c\" ns1:href=\"#b\" x1=\"1\" /></defs><rect fill=\"url(#c)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "dd43168f8e516befa90b71b091eb32df752670623b4108800899834c6d277505",
+    "length": 214,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<linearGradient id=\"c\" x1=\"1\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#c)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "80347ca623f6d359fb90c0b67e38b1739398b2af50493e21e5fe809341fb63a9",
+    "length": 326,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\" /><linearGradient id=\"c\" ns1:href=\"#b\" x1=\"1\" /></defs><rect fill=\"url(#c)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-collapse-kind-mismatch",
+   "input": {
+    "sha256": "74cea1bf87189b3cc37df322164a2f04e89a950d2687bba549eac1b6ec617642",
+    "length": 295,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\" x1=\"1\" cx=\"5\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient><radialGradient id=\"b\" xlink:href=\"#a\"/></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "3fe2c91180fd364fb89e51ad5d3d2c666a0066c27af0641bc4a6486b8a382a4a",
+    "length": 249,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<defs>\n<radialGradient id=\"b\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n</radialGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "6f2705eed11d36c419fd999fba00567c62f8fb280f96db37544dd65f61542294",
+    "length": 294,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\" x1=\"1\" cx=\"5\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><radialGradient id=\"b\" ns1:href=\"#a\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "6f2705eed11d36c419fd999fba00567c62f8fb280f96db37544dd65f61542294",
+    "length": 294,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\" x1=\"1\" cx=\"5\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><radialGradient id=\"b\" ns1:href=\"#a\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "99fb9e3280b88a3b230290857608134a0fac1c86f3b66be2c42b46fba827b338",
+    "length": 207,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<radialGradient id=\"b\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n</radialGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "6f2705eed11d36c419fd999fba00567c62f8fb280f96db37544dd65f61542294",
+    "length": 294,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\" x1=\"1\" cx=\"5\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><radialGradient id=\"b\" ns1:href=\"#a\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-collapse-own-stops",
+   "input": {
+    "sha256": "ff1b1d2aba3205724de4cc686ad4f2a2360ba1a9c0a56871788fec49cd5e30a0",
+    "length": 333,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient><linearGradient id=\"b\" xlink:href=\"#a\"><stop offset=\"1\" stop-color=\"#0f0\"/></linearGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "ca2e20e5d5aeb45fac0eed3b4d0eaa69e6b82d3c6de6bb9f62ca577df9a6e455",
+    "length": 249,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<defs>\n<linearGradient id=\"b\">\n<stop stop-color=\"#0f0\" offset=\"1\"/>\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "03a4f1225aad82771183c2ff3a94d363af8adf95b6f2057f697c9a8c7951cd08",
+    "length": 332,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\"><stop offset=\"1\" stop-color=\"#0f0\" /></linearGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "03a4f1225aad82771183c2ff3a94d363af8adf95b6f2057f697c9a8c7951cd08",
+    "length": 332,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\"><stop offset=\"1\" stop-color=\"#0f0\" /></linearGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "91153637f745edd574b89041e444e6c565abce8dad6a3c63b97b0d013e6758c7",
+    "length": 207,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<linearGradient id=\"b\">\n<stop stop-color=\"#0f0\" offset=\"1\" />\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "03a4f1225aad82771183c2ff3a94d363af8adf95b6f2057f697c9a8c7951cd08",
+    "length": 332,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\"><stop offset=\"1\" stop-color=\"#0f0\" /></linearGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-collapse-no-href",
+   "input": {
+    "sha256": "0a9af9bf900243c8bc99ddbe8a2856ddae9f7feb67dc5fe399df67d9576a89f2",
+    "length": 281,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient><linearGradient id=\"b\" xlink:href=\"#a\"/></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "cf7da3e2037f0da2fcb0ed12306279a9d0f6d90cfa8efc739b0a66e476957cd1",
+    "length": 249,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<defs>\n<linearGradient id=\"b\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "b84ad3d8a009fad43dd6ce76222b80cf22017ca8f4f31a91f89d3791653f2b6c",
+    "length": 280,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "b84ad3d8a009fad43dd6ce76222b80cf22017ca8f4f31a91f89d3791653f2b6c",
+    "length": 280,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "292c10a87aac2aef145a36797c7dd9b8d530655ea22d9669de11561809da0987",
+    "length": 207,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<linearGradient id=\"b\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "b84ad3d8a009fad43dd6ce76222b80cf22017ca8f4f31a91f89d3791653f2b6c",
+    "length": 280,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\" ns1:href=\"#a\" /></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-collapse-forwarded-href",
+   "input": {
+    "sha256": "c4413555e81025d7ac5dfc109079f84f5ef790f2fc06867d01038bb84ddec581",
+    "length": 392,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient><linearGradient id=\"m\" xlink:href=\"#a\"/><linearGradient id=\"b\" xlink:href=\"#m\" x1=\"1\"/><linearGradient id=\"c\" xlink:href=\"#m\" x1=\"2\"/></defs><rect fill=\"url(#b)\" stroke=\"url(#c)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "8c8f58c0f5bb9a2d58ab438c0b925b496614e4647d6206cea28319c166d9f969",
+    "length": 362,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<defs>\n<linearGradient id=\"m\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n</linearGradient>\n<linearGradient id=\"b\" x1=\"1\" xlink:href=\"#m\"/>\n<linearGradient id=\"c\" x1=\"2\" xlink:href=\"#m\"/>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\" stroke=\"url(#c)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "ad35956797540d0227ea7c6bf1ec8246c15dd2bdb8a35fd7b2e0037267b685c9",
+    "length": 389,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"m\" ns1:href=\"#a\" /><linearGradient id=\"b\" ns1:href=\"#m\" x1=\"1\" /><linearGradient id=\"c\" ns1:href=\"#m\" x1=\"2\" /></defs><rect fill=\"url(#b)\" stroke=\"url(#c)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "ad35956797540d0227ea7c6bf1ec8246c15dd2bdb8a35fd7b2e0037267b685c9",
+    "length": 389,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"m\" ns1:href=\"#a\" /><linearGradient id=\"b\" ns1:href=\"#m\" x1=\"1\" /><linearGradient id=\"c\" ns1:href=\"#m\" x1=\"2\" /></defs><rect fill=\"url(#b)\" stroke=\"url(#c)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "000f938d5a134d40663a49642da13d536b9b070435aae4713d5b19111146a4ee",
+    "length": 359,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\">\n<defs>\n<linearGradient id=\"m\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n</linearGradient>\n<linearGradient id=\"b\" x1=\"1\" ns1:href=\"#m\" />\n<linearGradient id=\"c\" x1=\"2\" ns1:href=\"#m\" />\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\" stroke=\"url(#c)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "ad35956797540d0227ea7c6bf1ec8246c15dd2bdb8a35fd7b2e0037267b685c9",
+    "length": 389,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"m\" ns1:href=\"#a\" /><linearGradient id=\"b\" ns1:href=\"#m\" x1=\"1\" /><linearGradient id=\"c\" ns1:href=\"#m\" x1=\"2\" /></defs><rect fill=\"url(#b)\" stroke=\"url(#c)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-dedupe",
+   "input": {
+    "sha256": "e4a4e72fc5e2693a19ddf34e37d08e848ffa1e56fb39d0939773c5277bb61335",
+    "length": 638,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\"/><stop offset=\"1\" stop-color=\"#00f\"/></linearGradient><linearGradient id=\"b\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\"/><stop offset=\"1\" stop-color=\"#00f\"/></linearGradient><linearGradient id=\"c\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\"/><stop offset=\"1\" stop-color=\"#00f\"/></linearGradient></defs><rect fill=\"url(#a)\" width=\"4\" height=\"4\"/><rect fill=\"url(#b)\" stroke=\"url('#c')\" width=\"4\" height=\"4\"/><rect style=\"fill:url(&quot;#c&quot;);stroke:url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "72de6108b8c5778a3a770869599db927a468521225b7de01fd56cb757e9515b7",
+    "length": 365,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<defs>\n<linearGradient id=\"a\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n<stop stop-color=\"#00f\" offset=\"1\"/>\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\"/>\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\" stroke=\"url(#a)\"/>\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\" stroke=\"url(#a)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "f7038a7951cf83df5cc77e3c439c72411f0b4ab05cf581586390a75cdfe5deb6",
+    "length": 647,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient><linearGradient id=\"b\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient><linearGradient id=\"c\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient></defs><rect fill=\"url(#a)\" width=\"4\" height=\"4\" /><rect fill=\"url(#b)\" stroke=\"url('#c')\" width=\"4\" height=\"4\" /><rect style=\"fill:url(&quot;#c&quot;);stroke:url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "f7038a7951cf83df5cc77e3c439c72411f0b4ab05cf581586390a75cdfe5deb6",
+    "length": 647,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient><linearGradient id=\"b\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient><linearGradient id=\"c\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient></defs><rect fill=\"url(#a)\" width=\"4\" height=\"4\" /><rect fill=\"url(#b)\" stroke=\"url('#c')\" width=\"4\" height=\"4\" /><rect style=\"fill:url(&quot;#c&quot;);stroke:url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "d4a10267318c38b7c4025c6940d607090fdd88fa39cb719e5ea95ffe98a5321c",
+    "length": 369,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<linearGradient id=\"a\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n<stop stop-color=\"#00f\" offset=\"1\" />\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\" />\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\" stroke=\"url(#a)\" />\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\" stroke=\"url(#a)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "f7038a7951cf83df5cc77e3c439c72411f0b4ab05cf581586390a75cdfe5deb6",
+    "length": 647,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient><linearGradient id=\"b\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient><linearGradient id=\"c\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /><stop offset=\"1\" stop-color=\"#00f\" /></linearGradient></defs><rect fill=\"url(#a)\" width=\"4\" height=\"4\" /><rect fill=\"url(#b)\" stroke=\"url('#c')\" width=\"4\" height=\"4\" /><rect style=\"fill:url(&quot;#c&quot;);stroke:url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-dedupe-radial",
+   "input": {
+    "sha256": "52e8fe64f699a35a7da9e44c2cc580cc154f9be40f66c6704d7c2087780594c0",
+    "length": 288,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><radialGradient id=\"a\" cx=\"1\"><stop offset=\"0\" stop-color=\"#f00\"/></radialGradient><radialGradient id=\"b\" cx=\"1\"><stop offset=\"0\" stop-color=\"#f00\"/></radialGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "58d41f93116470acb1116757c0aeb382ca8b4005b8f93b8bc77aa8ec9f039f22",
+    "length": 213,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<defs>\n<radialGradient id=\"b\" cx=\"1\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n</radialGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "b2748da0f3ec1c93c9c5e113db18c401b72c372ee60cf4724bda91bdef559b91",
+    "length": 291,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><radialGradient id=\"a\" cx=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /></radialGradient><radialGradient id=\"b\" cx=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /></radialGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "b2748da0f3ec1c93c9c5e113db18c401b72c372ee60cf4724bda91bdef559b91",
+    "length": 291,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><radialGradient id=\"a\" cx=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /></radialGradient><radialGradient id=\"b\" cx=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /></radialGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "db36b0207417c62c19fa619ac628a592564495b58c71ec086846e4dcd451bd9f",
+    "length": 214,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<radialGradient id=\"b\" cx=\"1\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n</radialGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "b2748da0f3ec1c93c9c5e113db18c401b72c372ee60cf4724bda91bdef559b91",
+    "length": 291,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><radialGradient id=\"a\" cx=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /></radialGradient><radialGradient id=\"b\" cx=\"1\"><stop offset=\"0\" stop-color=\"#f00\" /></radialGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-dedupe-master-no-id",
+   "input": {
+    "sha256": "2b0da47f700fcbd81ea94da2ee835c83c48b36c25159fbd3dd57f18bdd6397f7",
+    "length": 267,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient><linearGradient id=\"b\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "f17178515de626947b96afe74a7312656392ac8274f4e8bf00e0211c9ddb7093",
+    "length": 206,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<defs>\n<linearGradient id=\"b\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "98a711ddfbc9bb0516034f29e9f0d45ffd609b810b2fc13576a6eb28426df62f",
+    "length": 270,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "98a711ddfbc9bb0516034f29e9f0d45ffd609b810b2fc13576a6eb28426df62f",
+    "length": 270,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "292c10a87aac2aef145a36797c7dd9b8d530655ea22d9669de11561809da0987",
+    "length": 207,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<linearGradient id=\"b\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#b)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "98a711ddfbc9bb0516034f29e9f0d45ffd609b810b2fc13576a6eb28426df62f",
+    "length": 270,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-dedupe-href",
+   "input": {
+    "sha256": "44fdb4678e9c429876178f810e942674b858375c8d45155eb3d78b00af74053c",
+    "length": 501,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"base\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient><linearGradient id=\"a\" xlink:href=\"#base\" x1=\"1\"/><linearGradient id=\"b\" xlink:href=\"#base\" x1=\"1\"/><linearGradient id=\"c\" xlink:href=\"#a\"/><linearGradient id=\"d\" xlink:href=\"#b\"/></defs><rect fill=\"url(#c)\" stroke=\"url(#d)\" width=\"4\" height=\"4\"/><rect fill=\"url(#a)\" stroke=\"url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "cb6070f831a8e849769b5bf34b549f3cddfe352ff0965d7a15a09d3b51824a19",
+    "length": 422,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<defs>\n<linearGradient id=\"base\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n</linearGradient>\n<linearGradient id=\"a\" x1=\"1\" xlink:href=\"#base\"/>\n<linearGradient id=\"c\" xlink:href=\"#a\"/>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#c)\" stroke=\"url(#c)\"/>\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\" stroke=\"url(#a)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "c0fd150f1e219cce2824eec7400a8279937eb94b903640c5ac12a5a8976d8392",
+    "length": 498,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"base\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"a\" ns1:href=\"#base\" x1=\"1\" /><linearGradient id=\"b\" ns1:href=\"#base\" x1=\"1\" /><linearGradient id=\"c\" ns1:href=\"#a\" /><linearGradient id=\"d\" ns1:href=\"#b\" /></defs><rect fill=\"url(#c)\" stroke=\"url(#d)\" width=\"4\" height=\"4\" /><rect fill=\"url(#a)\" stroke=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "c0fd150f1e219cce2824eec7400a8279937eb94b903640c5ac12a5a8976d8392",
+    "length": 498,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"base\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"a\" ns1:href=\"#base\" x1=\"1\" /><linearGradient id=\"b\" ns1:href=\"#base\" x1=\"1\" /><linearGradient id=\"c\" ns1:href=\"#a\" /><linearGradient id=\"d\" ns1:href=\"#b\" /></defs><rect fill=\"url(#c)\" stroke=\"url(#d)\" width=\"4\" height=\"4\" /><rect fill=\"url(#a)\" stroke=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "8f9605beff664c5cb04ac0052d7a9472fe1101f885c7040b69fff6cadf645079",
+    "length": 420,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\">\n<defs>\n<linearGradient id=\"base\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n</linearGradient>\n<linearGradient id=\"a\" x1=\"1\" ns1:href=\"#base\" />\n<linearGradient id=\"c\" ns1:href=\"#a\" />\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#c)\" stroke=\"url(#c)\" />\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\" stroke=\"url(#a)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "c0fd150f1e219cce2824eec7400a8279937eb94b903640c5ac12a5a8976d8392",
+    "length": 498,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ns1=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"base\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"a\" ns1:href=\"#base\" x1=\"1\" /><linearGradient id=\"b\" ns1:href=\"#base\" x1=\"1\" /><linearGradient id=\"c\" ns1:href=\"#a\" /><linearGradient id=\"d\" ns1:href=\"#b\" /></defs><rect fill=\"url(#c)\" stroke=\"url(#d)\" width=\"4\" height=\"4\" /><rect fill=\"url(#a)\" stroke=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "gradient-different-kept",
+   "input": {
+    "sha256": "38d8c1fbf7981fa24896ef74f24a04662b0c8ab64c3438a5c6a63488c89f43a5",
+    "length": 291,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient><linearGradient id=\"b\"><stop offset=\"0\" stop-color=\"#00f\"/></linearGradient></defs><rect fill=\"url(#a)\" stroke=\"url(#b)\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "d4993ca10593f606448dc6b259975ed73d6b3fe1bb22e95734d33e7a9803549e",
+    "length": 302,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<defs>\n<linearGradient id=\"a\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n</linearGradient>\n<linearGradient id=\"b\">\n<stop stop-color=\"#00f\" offset=\"0\"/>\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\" stroke=\"url(#b)\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "e8886758864b32a01e4432892b4f8e4a921b37fcf3212a1ad7c3733aeecfd533",
+    "length": 294,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\"><stop offset=\"0\" stop-color=\"#00f\" /></linearGradient></defs><rect fill=\"url(#a)\" stroke=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "e8886758864b32a01e4432892b4f8e4a921b37fcf3212a1ad7c3733aeecfd533",
+    "length": 294,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\"><stop offset=\"0\" stop-color=\"#00f\" /></linearGradient></defs><rect fill=\"url(#a)\" stroke=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "0919c35a62af847623e73be7065b9dbef405bde7c8ce8062d39ca8a392d1df0f",
+    "length": 304,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<defs>\n<linearGradient id=\"a\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n</linearGradient>\n<linearGradient id=\"b\">\n<stop stop-color=\"#00f\" offset=\"0\" />\n</linearGradient>\n</defs>\n<rect width=\"4\" height=\"4\" fill=\"url(#a)\" stroke=\"url(#b)\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "e8886758864b32a01e4432892b4f8e4a921b37fcf3212a1ad7c3733aeecfd533",
+    "length": 294,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><linearGradient id=\"b\"><stop offset=\"0\" stop-color=\"#00f\" /></linearGradient></defs><rect fill=\"url(#a)\" stroke=\"url(#b)\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "group-merge",
+   "input": {
+    "sha256": "9388cc3cd3159241c13e7e74967229a3f19998ed8efc8b5ce98f5f3196b6e853",
+    "length": 204,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\"/></g><g fill=\"red\"><rect width=\"2\" height=\"2\"/></g><g fill=\"red\"><rect width=\"3\" height=\"3\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "54921dd55b6ea0d9b3d68dfcc5e0f3801a9fa67dba1b77220c1a170b89f020bf",
+    "length": 175,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\"/>\n<rect width=\"2\" height=\"2\"/>\n<rect width=\"3\" height=\"3\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "eb309af3246c429d27b2896ebe9f83a3df0d4fc27add947b59b9553db5efa2a5",
+    "length": 207,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"red\"><rect width=\"2\" height=\"2\" /></g><g fill=\"red\"><rect width=\"3\" height=\"3\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "eb309af3246c429d27b2896ebe9f83a3df0d4fc27add947b59b9553db5efa2a5",
+    "length": 207,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"red\"><rect width=\"2\" height=\"2\" /></g><g fill=\"red\"><rect width=\"3\" height=\"3\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "75c4e0f8aa8beb3fa2a1a319aadb25086a5ec186948b78ba8fff5ea685737430",
+    "length": 177,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" />\n<rect width=\"2\" height=\"2\" />\n<rect width=\"3\" height=\"3\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "eb309af3246c429d27b2896ebe9f83a3df0d4fc27add947b59b9553db5efa2a5",
+    "length": 207,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"red\"><rect width=\"2\" height=\"2\" /></g><g fill=\"red\"><rect width=\"3\" height=\"3\" /></g></svg>"
+   }
+  },
+  {
+   "name": "group-merge-text-between",
+   "input": {
+    "sha256": "d412a6b2f70ec337a3587d1f7d44847747777c4c9e4a9f5c880d3e8c0ca43dd9",
+    "length": 164,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\"/></g> text <g fill=\"red\"><rect width=\"2\" height=\"2\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "4e4a7ed241217d35e57a013f3c7af369b1d6e70b9b33136a9c1db56b43a716d0",
+    "length": 150,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\"/>text\n<rect width=\"2\" height=\"2\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "d904be73fb19325b08ce851fa296b763252053fe1f7e7fc53d2c3a69a7c16c2d",
+    "length": 166,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g> text <g fill=\"red\"><rect width=\"2\" height=\"2\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "d904be73fb19325b08ce851fa296b763252053fe1f7e7fc53d2c3a69a7c16c2d",
+    "length": 166,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g> text <g fill=\"red\"><rect width=\"2\" height=\"2\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "e6a81b5cb760b597915dbde789311b8b14649ef750c2dd0740e55994d44f49d3",
+    "length": 151,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" />text\n<rect width=\"2\" height=\"2\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "d904be73fb19325b08ce851fa296b763252053fe1f7e7fc53d2c3a69a7c16c2d",
+    "length": 166,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g> text <g fill=\"red\"><rect width=\"2\" height=\"2\" /></g></svg>"
+   }
+  },
+  {
+   "name": "group-merge-different",
+   "input": {
+    "sha256": "7d600f80105b3c20037c2a2e29220e2c78f024513a26b2eef19456d3f05a6cea",
+    "length": 206,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\"/></g><g fill=\"blue\"><rect width=\"2\" height=\"2\"/></g><g fill=\"blue\"><rect width=\"3\" height=\"3\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "6b6581b33a8f4196917b248dc84b4755192459b882b317a43501a36d62628a29",
+    "length": 196,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n<g fill=\"blue\">\n<rect width=\"2\" height=\"2\"/>\n<rect width=\"3\" height=\"3\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "513d65d433474c4faf0cbe7b06ce0d36da4fc5be7fb512ca050ac245d7b968d1",
+    "length": 209,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"blue\"><rect width=\"2\" height=\"2\" /></g><g fill=\"blue\"><rect width=\"3\" height=\"3\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "513d65d433474c4faf0cbe7b06ce0d36da4fc5be7fb512ca050ac245d7b968d1",
+    "length": 209,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"blue\"><rect width=\"2\" height=\"2\" /></g><g fill=\"blue\"><rect width=\"3\" height=\"3\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "0e24db0f726d3f391841f26a6ce4447eeaf139c90a3dd2ca45429fbb84884d2d",
+    "length": 198,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" />\n</g>\n<g fill=\"blue\">\n<rect width=\"2\" height=\"2\" />\n<rect width=\"3\" height=\"3\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "513d65d433474c4faf0cbe7b06ce0d36da4fc5be7fb512ca050ac245d7b968d1",
+    "length": 209,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"blue\"><rect width=\"2\" height=\"2\" /></g><g fill=\"blue\"><rect width=\"3\" height=\"3\" /></g></svg>"
+   }
+  },
+  {
+   "name": "group-merge-title",
+   "input": {
+    "sha256": "c57059521cc0a720b80e2047d134b1ffbb0921f01695208ef941458fb527732e",
+    "length": 174,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\"/></g><g fill=\"red\"><title>t</title><rect width=\"2\" height=\"2\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "3bce339bddb4c2cc3b254ad87f4a3c4613174cb4411afb1e4e55f70259ce8083",
+    "length": 146,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\"/>\n<rect width=\"2\" height=\"2\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "03285526c4ca174f043a9ed75edd1f9a6070e8e1099f8e81ab018c13221bd9e3",
+    "length": 176,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"red\"><title>t</title><rect width=\"2\" height=\"2\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "03285526c4ca174f043a9ed75edd1f9a6070e8e1099f8e81ab018c13221bd9e3",
+    "length": 176,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"red\"><title>t</title><rect width=\"2\" height=\"2\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "5849cf76fcd363e3c025362202eef49f0a6b130fe333125a354711895536b318",
+    "length": 147,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" />\n<rect width=\"2\" height=\"2\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "03285526c4ca174f043a9ed75edd1f9a6070e8e1099f8e81ab018c13221bd9e3",
+    "length": 176,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"red\"><title>t</title><rect width=\"2\" height=\"2\" /></g></svg>"
+   }
+  },
+  {
+   "name": "group-merge-no-attributes",
+   "input": {
+    "sha256": "fd9346d4733ce289ef439248d5b5be26be721fcbbd395aef541ad7b3991fc6de",
+    "length": 136,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\"/></g><g><rect width=\"2\" height=\"2\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "30c099ae4d01802d0ce8ef00727daee7718d79d5f29ffd15059ea4553f61c303",
+    "length": 126,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect width=\"1\" height=\"1\"/>\n<rect width=\"2\" height=\"2\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "0aac45b612e262eb161d62bf9f29e86a857673386b1c79586bf6310e5733e6f4",
+    "length": 138,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" /></g><g><rect width=\"2\" height=\"2\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "0aac45b612e262eb161d62bf9f29e86a857673386b1c79586bf6310e5733e6f4",
+    "length": 138,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" /></g><g><rect width=\"2\" height=\"2\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "2ecbcb23b852962e101efc021d3217bee3c8854b4e3ca9cff2ec2ccfa9e7385a",
+    "length": 127,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<rect width=\"1\" height=\"1\" />\n<rect width=\"2\" height=\"2\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "0aac45b612e262eb161d62bf9f29e86a857673386b1c79586bf6310e5733e6f4",
+    "length": 138,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" /></g><g><rect width=\"2\" height=\"2\" /></g></svg>"
+   }
+  },
+  {
+   "name": "group-merge-nested",
+   "input": {
+    "sha256": "6421d5b4d0b93b45f708979f81703ee8e8896cbb52838ba5b37061a098bb6f56",
+    "length": 172,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g id=\"o\"><g fill=\"red\"><rect width=\"1\" height=\"1\"/></g><g fill=\"red\"><rect width=\"2\" height=\"2\"/></g></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "fd4f764c99ece06c67784c5a164f58385de1002fc30072f3ed31573ca0f3c94a",
+    "length": 162,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g id=\"o\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\"/>\n<rect width=\"2\" height=\"2\"/>\n</g>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "d5f410c2cdca5a9cefd91d961944ba788ce86a47b8ab2df2005cb9d1690e776e",
+    "length": 174,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g id=\"o\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"red\"><rect width=\"2\" height=\"2\" /></g></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "d5f410c2cdca5a9cefd91d961944ba788ce86a47b8ab2df2005cb9d1690e776e",
+    "length": 174,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g id=\"o\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"red\"><rect width=\"2\" height=\"2\" /></g></g></svg>"
+   },
+   "final": {
+    "sha256": "69ed6c61998d281d1a416883d58c1d5fd88dce47117eb87fe94965944f395a94",
+    "length": 163,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g id=\"o\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" />\n<rect width=\"2\" height=\"2\" />\n</g>\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "d5f410c2cdca5a9cefd91d961944ba788ce86a47b8ab2df2005cb9d1690e776e",
+    "length": 174,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g id=\"o\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><g fill=\"red\"><rect width=\"2\" height=\"2\" /></g></g></svg>"
+   }
+  },
+  {
+   "name": "group-merge-interrupted",
+   "input": {
+    "sha256": "5d80277c3f0cdb135d2399f2210b67aedfc2e3560262ba4d9dcc83e090e6bd1e",
+    "length": 232,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\"/></g><rect width=\"5\" height=\"5\"/><g fill=\"red\"><rect width=\"2\" height=\"2\"/></g><g fill=\"red\"><rect width=\"3\" height=\"3\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "314100f0502a6b7829616e798ae509e5e6e8b2a5842145b51c266c1aeafa45e0",
+    "length": 224,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\"/>\n</g>\n<rect width=\"5\" height=\"5\"/>\n<g fill=\"red\">\n<rect width=\"2\" height=\"2\"/>\n<rect width=\"3\" height=\"3\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "cdaa6288aff2774f0923c290fbfa314b8a2dce621c559d887b58efdfde94447c",
+    "length": 236,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><rect width=\"5\" height=\"5\" /><g fill=\"red\"><rect width=\"2\" height=\"2\" /></g><g fill=\"red\"><rect width=\"3\" height=\"3\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "cdaa6288aff2774f0923c290fbfa314b8a2dce621c559d887b58efdfde94447c",
+    "length": 236,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><rect width=\"5\" height=\"5\" /><g fill=\"red\"><rect width=\"2\" height=\"2\" /></g><g fill=\"red\"><rect width=\"3\" height=\"3\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "5ae4102c10706fd0a0190897fc0e612c2c713fa942520260b71d91ddec7bde63",
+    "length": 227,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" />\n</g>\n<rect width=\"5\" height=\"5\" />\n<g fill=\"red\">\n<rect width=\"2\" height=\"2\" />\n<rect width=\"3\" height=\"3\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "cdaa6288aff2774f0923c290fbfa314b8a2dce621c559d887b58efdfde94447c",
+    "length": 236,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\"><rect width=\"1\" height=\"1\" /></g><rect width=\"5\" height=\"5\" /><g fill=\"red\"><rect width=\"2\" height=\"2\" /></g><g fill=\"red\"><rect width=\"3\" height=\"3\" /></g></svg>"
+   }
+  },
+  {
+   "name": "common-attributes",
+   "input": {
+    "sha256": "610efec29666e8104300a2e2532be940e590769cf78cb4dabfd5f55b92ff25fb",
+    "length": 220,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" fill=\"red\" stroke=\"blue\"/><rect width=\"2\" height=\"2\" fill=\"red\" stroke=\"green\"/><circle r=\"3\" fill=\"red\" stroke=\"blue\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "8c7b12b184cc5f688569f371ec9bc7432ddb4e51a554a7c6100ccbd31e8f1f5c",
+    "length": 205,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" stroke=\"blue\"/>\n<rect width=\"2\" height=\"2\" stroke=\"green\"/>\n<circle r=\"3\" stroke=\"blue\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "3b69553713b1f3b0caba43cfc2d92ee552faef86628892ce9acc1c4dea71954c",
+    "length": 223,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" fill=\"red\" stroke=\"blue\" /><rect width=\"2\" height=\"2\" fill=\"red\" stroke=\"green\" /><circle r=\"3\" fill=\"red\" stroke=\"blue\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "3b69553713b1f3b0caba43cfc2d92ee552faef86628892ce9acc1c4dea71954c",
+    "length": 223,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" fill=\"red\" stroke=\"blue\" /><rect width=\"2\" height=\"2\" fill=\"red\" stroke=\"green\" /><circle r=\"3\" fill=\"red\" stroke=\"blue\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "a865f739b2872d9b984e6340e939c5f7aae22d558fb07ddc64501f17a6832aed",
+    "length": 207,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" stroke=\"blue\" />\n<rect width=\"2\" height=\"2\" stroke=\"green\" />\n<circle r=\"3\" stroke=\"blue\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "3b69553713b1f3b0caba43cfc2d92ee552faef86628892ce9acc1c4dea71954c",
+    "length": 223,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" fill=\"red\" stroke=\"blue\" /><rect width=\"2\" height=\"2\" fill=\"red\" stroke=\"green\" /><circle r=\"3\" fill=\"red\" stroke=\"blue\" /></g></svg>"
+   }
+  },
+  {
+   "name": "common-attributes-referenced-child",
+   "input": {
+    "sha256": "445faff846c4b1c091a498ad94409a22bf2478738645841905b657010d354d7f",
+    "length": 237,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><rect id=\"r\" width=\"1\" height=\"1\" fill=\"red\"/></defs><g><use href=\"#r\" fill=\"red\"/><rect width=\"2\" height=\"2\" fill=\"red\"/><rect width=\"3\" height=\"3\" fill=\"red\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "560db1d9c32cd3646ca657e1746fb1815a8562a44e50420307d16d05985b061f",
+    "length": 163,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\">\n<use href=\"#r\"/>\n<rect width=\"2\" height=\"2\"/>\n<rect width=\"3\" height=\"3\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "d1814571fa2eef2c4ebc43a6ed102e5b980c3ed14905731b0ffa2b1a84a377be",
+    "length": 241,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><rect id=\"r\" width=\"1\" height=\"1\" fill=\"red\" /></defs><g><use href=\"#r\" fill=\"red\" /><rect width=\"2\" height=\"2\" fill=\"red\" /><rect width=\"3\" height=\"3\" fill=\"red\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "d1814571fa2eef2c4ebc43a6ed102e5b980c3ed14905731b0ffa2b1a84a377be",
+    "length": 241,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><rect id=\"r\" width=\"1\" height=\"1\" fill=\"red\" /></defs><g><use href=\"#r\" fill=\"red\" /><rect width=\"2\" height=\"2\" fill=\"red\" /><rect width=\"3\" height=\"3\" fill=\"red\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "339e8645f1f8891e66ec333fe1e4824b6308279bfd0396884510e6e1c9f4c8ff",
+    "length": 165,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\">\n<use href=\"#r\" />\n<rect width=\"2\" height=\"2\" />\n<rect width=\"3\" height=\"3\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "d1814571fa2eef2c4ebc43a6ed102e5b980c3ed14905731b0ffa2b1a84a377be",
+    "length": 241,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><rect id=\"r\" width=\"1\" height=\"1\" fill=\"red\" /></defs><g><use href=\"#r\" fill=\"red\" /><rect width=\"2\" height=\"2\" fill=\"red\" /><rect width=\"3\" height=\"3\" fill=\"red\" /></g></svg>"
+   }
+  },
+  {
+   "name": "common-attributes-text",
+   "input": {
+    "sha256": "5f42d8b9f6cc4d6d3ceebc4b98ec406c1686ada22cc512b5301b4ea5a5f35dde",
+    "length": 154,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g> x <rect width=\"1\" height=\"1\" fill=\"red\"/><rect width=\"2\" height=\"2\" fill=\"red\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "6e9bcacc6b50cab3711878815e2c9ff0e2c5fb1cb4a3caf98093de7d61815347",
+    "length": 149,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">x\n<rect width=\"1\" height=\"1\" fill=\"red\"/>\n<rect width=\"2\" height=\"2\" fill=\"red\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "327a8406c576dbd5a20ea0b2c5c594de4416f8eaf16509de842dacfd573d2fe2",
+    "length": 156,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g> x <rect width=\"1\" height=\"1\" fill=\"red\" /><rect width=\"2\" height=\"2\" fill=\"red\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "327a8406c576dbd5a20ea0b2c5c594de4416f8eaf16509de842dacfd573d2fe2",
+    "length": 156,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g> x <rect width=\"1\" height=\"1\" fill=\"red\" /><rect width=\"2\" height=\"2\" fill=\"red\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "80d50bb564f349b77bbf4b7f14915af5b8406e262edd8af6520a20598c71c065",
+    "length": 150,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">x\n<rect width=\"1\" height=\"1\" fill=\"red\" />\n<rect width=\"2\" height=\"2\" fill=\"red\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "327a8406c576dbd5a20ea0b2c5c594de4416f8eaf16509de842dacfd573d2fe2",
+    "length": 156,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g> x <rect width=\"1\" height=\"1\" fill=\"red\" /><rect width=\"2\" height=\"2\" fill=\"red\" /></g></svg>"
+   }
+  },
+  {
+   "name": "common-attributes-animation",
+   "input": {
+    "sha256": "fc3617acb467bb3a370bb72106ca15004e3004858113479b12dabc80380a5036",
+    "length": 193,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" fill=\"red\"/><animate attributeName=\"x\" fill=\"freeze\"/><rect width=\"2\" height=\"2\" fill=\"red\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "30635696986667c83ed785fa30a16cd270fbf038d23ce6eb13f7f57fbf5bc7a3",
+    "length": 175,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\"/>\n<animate attributeName=\"x\"/>\n<rect width=\"2\" height=\"2\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "80cfee3c45136380695f08f30607af6d313f4cad1212f2837b3a00283e7ba7c2",
+    "length": 196,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" fill=\"red\" /><animate attributeName=\"x\" fill=\"freeze\" /><rect width=\"2\" height=\"2\" fill=\"red\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "80cfee3c45136380695f08f30607af6d313f4cad1212f2837b3a00283e7ba7c2",
+    "length": 196,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" fill=\"red\" /><animate attributeName=\"x\" fill=\"freeze\" /><rect width=\"2\" height=\"2\" fill=\"red\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "bf4f7508846db925c879a95407e9a09baf4bd5389ba9fd2a60a36f5b8e320f6e",
+    "length": 177,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" />\n<animate attributeName=\"x\" />\n<rect width=\"2\" height=\"2\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "80cfee3c45136380695f08f30607af6d313f4cad1212f2837b3a00283e7ba7c2",
+    "length": 196,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g><rect width=\"1\" height=\"1\" fill=\"red\" /><animate attributeName=\"x\" fill=\"freeze\" /><rect width=\"2\" height=\"2\" fill=\"red\" /></g></svg>"
+   }
+  },
+  {
+   "name": "unused-parent-attributes",
+   "input": {
+    "sha256": "7cf775a2465363df886f3a557e9866648071b4e754e2847abef35454e3ccdeb2",
+    "length": 196,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\" stroke=\"blue\" opacity=\"0.5\"><rect width=\"1\" height=\"1\" fill=\"green\"/><rect width=\"2\" height=\"2\" fill=\"inherit\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "fd3e56392207ea851940448418e11239b186ceb0a1f03d0073de417c9621402f",
+    "length": 201,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\" opacity=\".5\" stroke=\"blue\">\n<rect width=\"1\" height=\"1\" fill=\"green\"/>\n<rect width=\"2\" height=\"2\" fill=\"inherit\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "80b138a7c79b552079212483c4e3f7c3cd0b1c2c0c1274212fa0c0ddba472bde",
+    "length": 198,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\" stroke=\"blue\" opacity=\"0.5\"><rect width=\"1\" height=\"1\" fill=\"green\" /><rect width=\"2\" height=\"2\" fill=\"inherit\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "80b138a7c79b552079212483c4e3f7c3cd0b1c2c0c1274212fa0c0ddba472bde",
+    "length": 198,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\" stroke=\"blue\" opacity=\"0.5\"><rect width=\"1\" height=\"1\" fill=\"green\" /><rect width=\"2\" height=\"2\" fill=\"inherit\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "8e6afcc052ea03ccd634a4875030cef1b3f0ec0d2085a81d3383e4d0540c6fef",
+    "length": 202,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\" opacity=\".5\" stroke=\"blue\">\n<rect width=\"1\" height=\"1\" fill=\"green\" />\n<rect width=\"2\" height=\"2\" fill=\"inherit\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "80b138a7c79b552079212483c4e3f7c3cd0b1c2c0c1274212fa0c0ddba472bde",
+    "length": 198,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g fill=\"red\" stroke=\"blue\" opacity=\"0.5\"><rect width=\"1\" height=\"1\" fill=\"green\" /><rect width=\"2\" height=\"2\" fill=\"inherit\" /></g></svg>"
+   }
+  },
+  {
+   "name": "style-repair-inherited",
+   "input": {
+    "sha256": "ab5052544d9c6918e4e42d9d781307d4f83eea99efb04cd85d8834172b62e23e",
+    "length": 160,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red;stroke:blue\"><rect width=\"1\" height=\"1\" style=\"fill:red;stroke:green\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "95163ee9dc58f0628fa9f4d01e939396c094013e2e536cd9a23861788ba17a19",
+    "length": 157,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\" stroke=\"blue\">\n<rect width=\"1\" height=\"1\" fill=\"red\" stroke=\"green\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "afc29e4daf546906b2003899620e2ba0ae9c30cc9f6059bc75905621f95b381b",
+    "length": 161,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red;stroke:blue\"><rect width=\"1\" height=\"1\" style=\"fill:red;stroke:green\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "afc29e4daf546906b2003899620e2ba0ae9c30cc9f6059bc75905621f95b381b",
+    "length": 161,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red;stroke:blue\"><rect width=\"1\" height=\"1\" style=\"fill:red;stroke:green\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "02d419986cb3e8a99f6786aa8c700bee95bf55c0d629a878801e647ab2f16543",
+    "length": 157,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\" stroke=\"blue\">\n<rect width=\"1\" height=\"1\" fill=\"red\" stroke=\"green\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "afc29e4daf546906b2003899620e2ba0ae9c30cc9f6059bc75905621f95b381b",
+    "length": 161,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red;stroke:blue\"><rect width=\"1\" height=\"1\" style=\"fill:red;stroke:green\" /></g></svg>"
+   }
+  },
+  {
+   "name": "style-repair-defaults",
+   "input": {
+    "sha256": "f51dadee3cdc994f880a89a118ba369aad84bab83af42e8c6e8bee18ec9a1f39",
+    "length": 173,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red\"><g style=\"fill:red;opacity:1\"><rect width=\"1\" height=\"1\" style=\"fill:inherit\"/></g></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "6fff37763250fd40a5c51a96f2719c2c77e0c4222f379566f37db1d8e113ca59",
+    "length": 152,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g fill=\"red\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" fill=\"inherit\"/>\n</g>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "7c450a4afaf086859d17679aa558a5b492dfc1f63c07cab672d2f215b2d0f71c",
+    "length": 174,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red\"><g style=\"fill:red;opacity:1\"><rect width=\"1\" height=\"1\" style=\"fill:inherit\" /></g></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "7c450a4afaf086859d17679aa558a5b492dfc1f63c07cab672d2f215b2d0f71c",
+    "length": 174,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red\"><g style=\"fill:red;opacity:1\"><rect width=\"1\" height=\"1\" style=\"fill:inherit\" /></g></g></svg>"
+   },
+   "final": {
+    "sha256": "d37ea2c94590fc9918c30911c9878226a307f968194c9df73cf1a92a7dbfedf5",
+    "length": 152,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g fill=\"red\">\n<g fill=\"red\">\n<rect width=\"1\" height=\"1\" fill=\"inherit\" />\n</g>\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "7c450a4afaf086859d17679aa558a5b492dfc1f63c07cab672d2f215b2d0f71c",
+    "length": 174,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red\"><g style=\"fill:red;opacity:1\"><rect width=\"1\" height=\"1\" style=\"fill:inherit\" /></g></g></svg>"
+   }
+  },
+  {
+   "name": "style-repair-child-overrides",
+   "input": {
+    "sha256": "9194e5159616f8cca9caf19670eabc47274c9b19198ec567eba3889abaf27359",
+    "length": 183,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red\"><rect width=\"1\" height=\"1\" style=\"fill:blue\"/><rect width=\"2\" height=\"2\" style=\"fill:green\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "b3900120bc94652f609904825b27b221a877790f2c736a64ac3b03cd829e73bf",
+    "length": 151,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect width=\"1\" height=\"1\" fill=\"blue\"/>\n<rect width=\"2\" height=\"2\" fill=\"green\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "67afea15143dfb0d457f2109398474ab18b82ad21ed39496180d61209174985f",
+    "length": 185,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red\"><rect width=\"1\" height=\"1\" style=\"fill:blue\" /><rect width=\"2\" height=\"2\" style=\"fill:green\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "67afea15143dfb0d457f2109398474ab18b82ad21ed39496180d61209174985f",
+    "length": 185,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red\"><rect width=\"1\" height=\"1\" style=\"fill:blue\" /><rect width=\"2\" height=\"2\" style=\"fill:green\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "5b47b611680264ce699a19e13dcc09c9a2184568757fa4b0202835db63c5ba64",
+    "length": 152,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<rect width=\"1\" height=\"1\" fill=\"blue\" />\n<rect width=\"2\" height=\"2\" fill=\"green\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "67afea15143dfb0d457f2109398474ab18b82ad21ed39496180d61209174985f",
+    "length": 185,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"fill:red\"><rect width=\"1\" height=\"1\" style=\"fill:blue\" /><rect width=\"2\" height=\"2\" style=\"fill:green\" /></g></svg>"
+   }
+  },
+  {
+   "name": "style-repair-non-inherited",
+   "input": {
+    "sha256": "f4db63da405d11773a8c390e137889829f3b8d9657413ef75bd6728e020497e7",
+    "length": 167,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"opacity:0.5;display:none\"><rect width=\"1\" height=\"1\" style=\"opacity:0.5;display:none\"/></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "444a15ba640ec8ca8baa0ac38ccddf45a8acab5d8221c869f15f69eefb191f96",
+    "length": 162,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g display=\"none\" opacity=\".5\">\n<rect width=\"1\" height=\"1\" display=\"none\" opacity=\".5\"/>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "eef50799228c14d291415189cdf2e2346149558c736f1155253a8f7dd9b70841",
+    "length": 168,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"opacity:0.5;display:none\"><rect width=\"1\" height=\"1\" style=\"opacity:0.5;display:none\" /></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "eef50799228c14d291415189cdf2e2346149558c736f1155253a8f7dd9b70841",
+    "length": 168,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"opacity:0.5;display:none\"><rect width=\"1\" height=\"1\" style=\"opacity:0.5;display:none\" /></g></svg>"
+   },
+   "final": {
+    "sha256": "2f81cd5b8500ab554e13dd57418e6ca2dcf840528c0fc9a27e7ffe77854bba41",
+    "length": 162,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g display=\"none\" opacity=\".5\">\n<rect width=\"1\" height=\"1\" display=\"none\" opacity=\".5\" />\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "eef50799228c14d291415189cdf2e2346149558c736f1155253a8f7dd9b70841",
+    "length": 168,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"opacity:0.5;display:none\"><rect width=\"1\" height=\"1\" style=\"opacity:0.5;display:none\" /></g></svg>"
+   }
+  },
+  {
+   "name": "style-repair-text",
+   "input": {
+    "sha256": "0d5f489bf17813cb534a09760391b707225256b0efc6241f1e5012386b585a73",
+    "length": 181,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"font-size:12px\"><text style=\"font-size:12px;fill:red\">a<tspan style=\"font-size:12px\">b</tspan></text></g></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "8269069dccaacd4afb3c58143afdcf8e1f3da6288cfb4ef6ad9b8526f3f99b43",
+    "length": 170,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<g font-size=\"12px\">\n<text fill=\"red\" font-size=\"12px\">a<tspan font-size=\"12px\">b</tspan></text>\n</g>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "0d5f489bf17813cb534a09760391b707225256b0efc6241f1e5012386b585a73",
+    "length": 181,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"font-size:12px\"><text style=\"font-size:12px;fill:red\">a<tspan style=\"font-size:12px\">b</tspan></text></g></svg>"
+   },
+   "quantize3": {
+    "sha256": "0d5f489bf17813cb534a09760391b707225256b0efc6241f1e5012386b585a73",
+    "length": 181,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"font-size:12px\"><text style=\"font-size:12px;fill:red\">a<tspan style=\"font-size:12px\">b</tspan></text></g></svg>"
+   },
+   "final": {
+    "sha256": "28ec492a16169699b92c605176fe65f8321d856746cf5a59c99b36747e78f488",
+    "length": 169,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<g font-size=\"12px\">\n<text fill=\"red\" font-size=\"12px\">a<tspan font-size=\"12px\">b</tspan></text>\n</g>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "0d5f489bf17813cb534a09760391b707225256b0efc6241f1e5012386b585a73",
+    "length": 181,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><g style=\"font-size:12px\"><text style=\"font-size:12px;fill:red\">a<tspan style=\"font-size:12px\">b</tspan></text></g></svg>"
+   }
+  },
+  {
+   "name": "doctype-public",
+   "input": {
+    "sha256": "dbb20a7032515c7d500f5c5593d6618717845234407cc5799368bd804fdb3e5f",
+    "length": 215,
+    "text": "<?xml version=\"1.0\"?>\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "65e9922771696020d71228cbc391a0bf1ef7ef0cdb1fa2409c18394f63b13967",
+    "length": 198,
+    "text": "<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>\n<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect width=\"1\" height=\"1\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   },
+   "final": {
+    "sha256": "22367f1003f17ad8246c5a8fb80ec5574fe60583b4d179c1c8396f384202efad",
+    "length": 97,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<rect width=\"1\" height=\"1\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   }
+  },
+  {
+   "name": "doctype-system",
+   "input": {
+    "sha256": "339ae70e1e03e961904fbb24ed7a46f73bf06204b7c2d846e0a0436bc95dc337",
+    "length": 123,
+    "text": "<!DOCTYPE svg SYSTEM \"x.dtd\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "f4970356f9fdd1d88703ec06ab44cc8207bd960bf79673bacdaa97f378461277",
+    "length": 128,
+    "text": "<!DOCTYPE svg  SYSTEM 'x.dtd'>\n<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect width=\"1\" height=\"1\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   },
+   "final": {
+    "sha256": "22367f1003f17ad8246c5a8fb80ec5574fe60583b4d179c1c8396f384202efad",
+    "length": 97,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<rect width=\"1\" height=\"1\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   }
+  },
+  {
+   "name": "doctype-plain",
+   "input": {
+    "sha256": "e76e9b4f7e05f85f61423066fb16dd5602029d0615e9015fcd73499d01a800a4",
+    "length": 108,
+    "text": "<!DOCTYPE svg><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "d4dd2e52c6289310678f24c75e9e2b8f4ec9c9b8c129741a48e3ea2ff387acb8",
+    "length": 112,
+    "text": "<!DOCTYPE svg>\n<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect width=\"1\" height=\"1\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   },
+   "final": {
+    "sha256": "22367f1003f17ad8246c5a8fb80ec5574fe60583b4d179c1c8396f384202efad",
+    "length": 97,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<rect width=\"1\" height=\"1\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   }
+  },
+  {
+   "name": "processing-instructions",
+   "input": {
+    "sha256": "cba8c0e4c6f5eee84df22c1d1414014c222700c5b9dc780ddffb0e0edd0263b4",
+    "length": 139,
+    "text": "<?xml-stylesheet href=\"a.css\"?><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\"/></svg><?after data?>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "9dde8dffaab739793aefe3ba019cdb5e3f1dd8a30c9c985a5e0e9da2506f8063",
+    "length": 144,
+    "text": "<?xml-stylesheet href=\"a.css\"?>\n<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect width=\"1\" height=\"1\"/>\n</svg>\n<?after data?>\n"
+   },
+   "quantize": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   },
+   "final": {
+    "sha256": "22367f1003f17ad8246c5a8fb80ec5574fe60583b4d179c1c8396f384202efad",
+    "length": 97,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<rect width=\"1\" height=\"1\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "6da756d155f4cbf3cdd2fc8a027015f040ce807e82cf07278a1038e42064744f",
+    "length": 95,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect width=\"1\" height=\"1\" /></svg>"
+   }
+  },
+  {
+   "name": "style-element-references",
+   "input": {
+    "sha256": "95f0d311cf229a3e7c25913c46aab4b2d5eea2acecdecc9b580cb2d3cd85481a",
+    "length": 385,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><style>.a { fill: url(#g); clip-path: url(#c) }</style><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient><clipPath id=\"c\"><rect width=\"1\" height=\"1\"/></clipPath><linearGradient id=\"unused\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient></defs><rect class=\"a\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "8dcc32853f4c9837bf23e843f8cce0f50c7a51d88f84a6bb8a32068c738f67ec",
+    "length": 316,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<style>.a { fill: url(#g); clip-path: url(#c) }</style>\n<defs>\n<linearGradient id=\"g\">\n<stop stop-color=\"#f00\" offset=\"0\"/>\n</linearGradient>\n<clipPath id=\"c\">\n<rect width=\"1\" height=\"1\"/>\n</clipPath>\n</defs>\n<rect class=\"a\" width=\"4\" height=\"4\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "2554f8b42f973f7321627ea4b3ad471facfe171a0ade2d5c392d3815515977b1",
+    "length": 389,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><style>.a { fill: url(#g); clip-path: url(#c) }</style><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><clipPath id=\"c\"><rect width=\"1\" height=\"1\" /></clipPath><linearGradient id=\"unused\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient></defs><rect class=\"a\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "2554f8b42f973f7321627ea4b3ad471facfe171a0ade2d5c392d3815515977b1",
+    "length": 389,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><style>.a { fill: url(#g); clip-path: url(#c) }</style><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><clipPath id=\"c\"><rect width=\"1\" height=\"1\" /></clipPath><linearGradient id=\"unused\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient></defs><rect class=\"a\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "6dbeaed2ea163c5c2b8c69c03d7821cfcc4f16c27a677572398c0425cd6dfb61",
+    "length": 318,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<style>.a { fill: url(#g); clip-path: url(#c) }</style>\n<defs>\n<linearGradient id=\"g\">\n<stop stop-color=\"#f00\" offset=\"0\" />\n</linearGradient>\n<clipPath id=\"c\">\n<rect width=\"1\" height=\"1\" />\n</clipPath>\n</defs>\n<rect class=\"a\" width=\"4\" height=\"4\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "2554f8b42f973f7321627ea4b3ad471facfe171a0ade2d5c392d3815515977b1",
+    "length": 389,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><style>.a { fill: url(#g); clip-path: url(#c) }</style><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient><clipPath id=\"c\"><rect width=\"1\" height=\"1\" /></clipPath><linearGradient id=\"unused\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient></defs><rect class=\"a\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "style-element-unreferenced",
+   "input": {
+    "sha256": "6083cf03e40f1ed4e185e34381fad39b7261b42b1fa4d2e9740c562b25d8e2f8",
+    "length": 186,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><style>.a { fill: red }</style><defs><rect id=\"gone\" width=\"1\" height=\"1\"/></defs><rect class=\"a\" width=\"4\" height=\"4\"/></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "25f4947a604f622633b82596241dc773a5c076a773824e835498481fbfcbca5d",
+    "length": 139,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<style>.a { fill: red }</style>\n<rect class=\"a\" width=\"4\" height=\"4\"/>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "a96677af7475922dd4ffe9dbd9c8a191ced6db7577c4288b990f4d1877869d77",
+    "length": 188,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><style>.a { fill: red }</style><defs><rect id=\"gone\" width=\"1\" height=\"1\" /></defs><rect class=\"a\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "quantize3": {
+    "sha256": "a96677af7475922dd4ffe9dbd9c8a191ced6db7577c4288b990f4d1877869d77",
+    "length": 188,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><style>.a { fill: red }</style><defs><rect id=\"gone\" width=\"1\" height=\"1\" /></defs><rect class=\"a\" width=\"4\" height=\"4\" /></svg>"
+   },
+   "final": {
+    "sha256": "7aba1d47318ddddd9655bdaa3d4cd68e64b856a19240a9d6662a1d34ad6184c7",
+    "length": 139,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<style>.a { fill: red }</style>\n<rect class=\"a\" width=\"4\" height=\"4\" />\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "a96677af7475922dd4ffe9dbd9c8a191ced6db7577c4288b990f4d1877869d77",
+    "length": 188,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><style>.a { fill: red }</style><defs><rect id=\"gone\" width=\"1\" height=\"1\" /></defs><rect class=\"a\" width=\"4\" height=\"4\" /></svg>"
+   }
+  },
+  {
+   "name": "references-animation",
+   "input": {
+    "sha256": "70de5f904bce32e12352207011bd3440fbad56ffbed534b584b57950599d0700",
+    "length": 300,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient></defs><rect width=\"1\" height=\"1\"><animate attributeName=\"fill\" values=\"url(#g);red\" begin=\"a.begin\"/></rect></svg>"
+   },
+   "nodes": 0,
+   "scour": {
+    "sha256": "71ee905cdd35bacd1efcc266e84c5d502943d7d64196b41bbcfa584cee9ea4f8",
+    "length": 173,
+    "text": "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect width=\"1\" height=\"1\">\n<animate attributeName=\"fill\" begin=\"a.begin\" values=\"url(#g);red\"/>\n</rect>\n</svg>\n"
+   },
+   "quantize": {
+    "sha256": "31bded332198e34a7a1cc2b8322368d59a8ee1d15293569d92c4c5cbacbf207d",
+    "length": 259,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient></defs><rect width=\"1\" height=\"1\"><animate attributeName=\"fill\" values=\"url(#g);red\" begin=\"a.begin\" /></rect></svg>"
+   },
+   "quantize3": {
+    "sha256": "31bded332198e34a7a1cc2b8322368d59a8ee1d15293569d92c4c5cbacbf207d",
+    "length": 259,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient></defs><rect width=\"1\" height=\"1\"><animate attributeName=\"fill\" values=\"url(#g);red\" begin=\"a.begin\" /></rect></svg>"
+   },
+   "final": {
+    "sha256": "460dd7bfc9fbb1c58f2945a6b4f0b80be5d38dc7fbc0b5b6d1d30864a60abfb0",
+    "length": 173,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">\n<rect width=\"1\" height=\"1\">\n<animate attributeName=\"fill\" begin=\"a.begin\" values=\"url(#g);red\" />\n</rect>\n</svg>"
+   },
+   "geometricOnly": {
+    "sha256": "31bded332198e34a7a1cc2b8322368d59a8ee1d15293569d92c4c5cbacbf207d",
+    "length": 259,
+    "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"#f00\" /></linearGradient></defs><rect width=\"1\" height=\"1\"><animate attributeName=\"fill\" values=\"url(#g);red\" begin=\"a.begin\" /></rect></svg>"
+   }
   }
  ]
 }

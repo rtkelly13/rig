@@ -577,7 +577,478 @@ def _synthetic_documents() -> list[tuple[str, str]]:
                 f'<rect width="4" height="4" ab:x="1"/></svg>'
             ),
         ),
+        *_scour_path_documents(ns),
     ]
+
+
+def _scour_path_documents(ns: str) -> list[tuple[str, str]]:
+    """Documents for the scour passes that rewrite path data, points, transforms, gradients and groups."""
+    xl = 'xmlns:xlink="http://www.w3.org/1999/xlink"'
+    paths = {
+        "path-relative": "M 10 10 L 20 10 L 20 20 L 10 20 Z",
+        "path-lines": "M10,10 L20,10 L30,10 L30,20 L30,30 M 5 5 l 0 0 l 3 4",
+        "path-curves": "M 0 0 C 10 0 20 10 30 10 C 40 10 50 0 60 0 S 80 20 90 10 c 5 5 10 5 15 0",
+        "path-straight-curve": "M 0 0 C 10 10 20 20 30 30 C 40 40 50 50 60 60",
+        "path-quadratics": "M 0 0 Q 10 10 20 0 T 40 0 Q 50 10 60 0 q 5 5 10 0 t 10 0",
+        "path-arcs": "M 0 0 A 10 10 0 0 1 20 0 a 10 10 0 1 0 20 0 A5 5 0 01 60 10",
+        "path-horizontal-vertical": "M 0 0 H 10 H 20 V 10 V 20 h 5 h 5 v 5 v 5 z",
+        "path-implicit-lineto": "M 0 0 10 10 20 20 30 30",
+        "path-implicit-relative": "m 1 1 2 2 3 3 4 4",
+        "path-multiple-subpaths": "M 0 0 L 10 10 Z M 20 20 L 30 30 Z m 5 5 l 1 1",
+        "path-closed-noops": "M 0 0 L 10 0 L 10 10 L 0 0 Z",
+        "path-empty-segments": "M 1 1 l 0 0 h 0 v 0 c 0 0 0 0 0 0 z",
+        "path-same-direction": "M 0 0 l 10 0 l 20 0 l -5 0 l -5 0 l 0 5 l 0 10 l 0 -3",
+        "path-exponent": "M 1e2 1E-2 L 1.5e1 2.5e-1 l .5 .5 l -.5 -.5",
+        "path-precision": "M 1.23456789 2.34567891 L 3.45678912 4.56789123 l 0.00001234 100000.5",
+        "path-compact-numbers": "M0-5L-1.5.5-2.5-.5",
+        "path-shorter-kept": "M 0.5 0.5 L 0.5 0.5",
+    }
+    documents = [(name, f'<svg {ns} viewBox="0 0 24 24"><path d="{d}"/></svg>') for name, d in paths.items()]
+    documents += [
+        ("path-empty-d", f'<svg {ns} viewBox="0 0 24 24"><path d=""/><path/></svg>'),
+        ("polygon-points", f'<svg {ns} viewBox="0 0 24 24"><polygon points="1,1 2.5,2.5 3,4.123456789"/></svg>'),
+        ("polyline-points", f'<svg {ns} viewBox="0 0 24 24"><polyline points="10 10 20 10 30 10.00001"/></svg>'),
+        ("polygon-empty", f'<svg {ns} viewBox="0 0 24 24"><polygon points=""/><polyline points="1"/></svg>'),
+        ("polygon-odd-count", f'<svg {ns} viewBox="0 0 24 24"><polygon points="1 2 3"/></svg>'),
+        ("polygon-exponent", f'<svg {ns} viewBox="0 0 24 24"><polygon points="1e1,2e-1 .5,-.5"/></svg>'),
+        (
+            "transform-translate",
+            (f'<svg {ns} viewBox="0 0 24 24"><g transform="translate(5 0)"><rect width="1" height="1"/></g></svg>'),
+        ),
+        (
+            "transform-translate-run",
+            f'<svg {ns} viewBox="0 0 24 24"><g transform="translate(5) translate(3 4) translate(-8 -4)">'
+            f'<rect width="1" height="1"/></g></svg>',
+        ),
+        (
+            "transform-identity",
+            (f'<svg {ns} viewBox="0 0 24 24"><g transform="translate(0 0)"><rect width="1" height="1"/></g></svg>'),
+        ),
+        (
+            "transform-scale",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="scale(2 2) scale(3)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-scale-identity",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="scale(2) scale(0.5)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-scale-mixed",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="scale(2) scale(3 4) scale(5 6) scale(2)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-rotate",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="rotate(30) rotate(60 0 0) rotate(400)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-rotate-centre",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="rotate(30 5 5) rotate(300 5 5)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-rotate-wrap",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="rotate(-100)"><rect width="1" height="1"/></g>'
+                f'<g transform="rotate(-720)"><rect width="1" height="1"/></g><g transform="rotate(280)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-skew-zero",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="skewX(0) skewY(0) rotate(0) translate(1 1)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-matrix-identity",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="matrix(1 0 0 1 0 0)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-matrix-translate",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="matrix(1 0 0 1 10 20)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-matrix-scale",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="matrix(2 0 0 3 0 0)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-matrix-rotate",
+            (
+                f'<svg {ns} viewBox="0 0 24 24">'
+                f'<g transform="matrix(0.5 0.8660254037844386 -0.8660254037844386 0.5 0 0)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-matrix-rotate-back",
+            (
+                f'<svg {ns} viewBox="0 0 24 24">'
+                f'<g transform="matrix(-0.5 0.8660254037844386 -0.8660254037844386 -0.5 0 0)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-matrix-rotate-neg",
+            (
+                f'<svg {ns} viewBox="0 0 24 24">'
+                f'<g transform="matrix(-0.5 -0.8660254037844386 0.8660254037844386 -0.5 0 0)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-matrix-general",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="matrix(1 2 3 4 5 6)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-pattern-gradient",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs><pattern id="p" patternTransform="translate(0 0)"/>'
+                f'<linearGradient id="g" gradientTransform="translate(1 2) translate(2 3)"/></defs>'
+                f'<rect fill="url(#p)" stroke="url(#g)" width="1" height="1"/></svg>'
+            ),
+        ),
+        (
+            "transform-longer-kept",
+            (f'<svg {ns} viewBox="0 0 24 24"><g transform="translate(1,2)"><rect width="1" height="1"/></g></svg>'),
+        ),
+        (
+            "transform-nested",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="translate(0 0)"><g transform="scale(1 1)">'
+                f'<rect width="1" height="1" transform="rotate(360)"/></g></g></svg>'
+            ),
+        ),
+        (
+            "transform-exponent",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g transform="translate(1e1 2e-1) scale(.5)">'
+                f'<rect width="1" height="1"/></g></svg>'
+            ),
+        ),
+        (
+            "transform-invalid",
+            (f'<svg {ns} viewBox="0 0 24 24"><g transform="translate(1 2"><rect width="1" height="1"/></g></svg>'),
+        ),
+        (
+            "transform-unknown",
+            (f'<svg {ns} viewBox="0 0 24 24"><g transform="wobble(1)"><rect width="1" height="1"/></g></svg>'),
+        ),
+        (
+            "gradient-collapse",
+            (
+                f'<svg {ns} {xl} viewBox="0 0 24 24"><defs><linearGradient id="a"><stop offset="0" stop-color="#f00"/>'
+                f'<stop offset="1" stop-color="#00f"/></linearGradient>'
+                f'<linearGradient id="b" xlink:href="#a" x1="0" x2="1"/></defs>'
+                f'<rect fill="url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-collapse-attributes",
+            (
+                f'<svg {ns} {xl} viewBox="0 0 24 24"><defs>'
+                f'<radialGradient id="a" cx="1" cy="2" r="3" fx="1" fy="2"'
+                f' gradientUnits="userSpaceOnUse" spreadMethod="reflect" gradientTransform="scale(2)">'
+                f'<stop offset="0" stop-color="#f00"/><stop offset="1" stop-color="#00f"/></radialGradient>'
+                f'<radialGradient id="b" xlink:href="#a" r="9"/></defs>'
+                f'<rect fill="url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-collapse-chain",
+            (
+                f'<svg {ns} {xl} viewBox="0 0 24 24"><defs><linearGradient id="a">'
+                f'<stop offset="0" stop-color="#f00"/></linearGradient>'
+                f'<linearGradient id="b" xlink:href="#a"/><linearGradient id="c" xlink:href="#b" x1="1"/></defs>'
+                f'<rect fill="url(#c)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-collapse-kind-mismatch",
+            (
+                f'<svg {ns} {xl} viewBox="0 0 24 24"><defs><linearGradient id="a" x1="1" cx="5">'
+                f'<stop offset="0" stop-color="#f00"/></linearGradient>'
+                f'<radialGradient id="b" xlink:href="#a"/></defs><rect fill="url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-collapse-own-stops",
+            (
+                f'<svg {ns} {xl} viewBox="0 0 24 24"><defs><linearGradient id="a">'
+                f'<stop offset="0" stop-color="#f00"/></linearGradient>'
+                f'<linearGradient id="b" xlink:href="#a"><stop offset="1" stop-color="#0f0"/></linearGradient></defs>'
+                f'<rect fill="url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-collapse-no-href",
+            (
+                f'<svg {ns} {xl} viewBox="0 0 24 24"><defs><linearGradient id="a">'
+                f'<stop offset="0" stop-color="#f00"/></linearGradient>'
+                f'<linearGradient id="b" xlink:href="#a"/></defs><rect fill="url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-collapse-forwarded-href",
+            (
+                f'<svg {ns} {xl} viewBox="0 0 24 24"><defs><linearGradient id="a">'
+                f'<stop offset="0" stop-color="#f00"/></linearGradient>'
+                f'<linearGradient id="m" xlink:href="#a"/><linearGradient id="b" xlink:href="#m" x1="1"/>'
+                f'<linearGradient id="c" xlink:href="#m" x1="2"/></defs>'
+                f'<rect fill="url(#b)" stroke="url(#c)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-dedupe",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs>'
+                f'<linearGradient id="a" x1="0" x2="1"><stop offset="0" stop-color="#f00"/>'
+                f'<stop offset="1" stop-color="#00f"/></linearGradient>'
+                f'<linearGradient id="b" x1="0" x2="1"><stop offset="0" stop-color="#f00"/>'
+                f'<stop offset="1" stop-color="#00f"/></linearGradient>'
+                f'<linearGradient id="c" x1="0" x2="1"><stop offset="0" stop-color="#f00"/>'
+                f'<stop offset="1" stop-color="#00f"/></linearGradient>'
+                f'</defs><rect fill="url(#a)" width="4" height="4"/>'
+                f'<rect fill="url(#b)" stroke="url(\'#c\')" width="4" height="4"/>'
+                f'<rect style="fill:url(&quot;#c&quot;);stroke:url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-dedupe-radial",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs>'
+                f'<radialGradient id="a" cx="1"><stop offset="0" stop-color="#f00"/></radialGradient>'
+                f'<radialGradient id="b" cx="1"><stop offset="0" stop-color="#f00"/></radialGradient></defs>'
+                f'<rect fill="url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-dedupe-master-no-id",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs>'
+                f'<linearGradient><stop offset="0" stop-color="#f00"/></linearGradient>'
+                f'<linearGradient id="b"><stop offset="0" stop-color="#f00"/></linearGradient></defs>'
+                f'<rect fill="url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-dedupe-href",
+            (
+                f'<svg {ns} {xl} viewBox="0 0 24 24"><defs>'
+                f'<linearGradient id="base"><stop offset="0" stop-color="#f00"/></linearGradient>'
+                f'<linearGradient id="a" xlink:href="#base" x1="1"/><linearGradient id="b" xlink:href="#base" x1="1"/>'
+                f'<linearGradient id="c" xlink:href="#a"/><linearGradient id="d" xlink:href="#b"/></defs>'
+                f'<rect fill="url(#c)" stroke="url(#d)" width="4" height="4"/>'
+                f'<rect fill="url(#a)" stroke="url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "gradient-different-kept",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs>'
+                f'<linearGradient id="a"><stop offset="0" stop-color="#f00"/></linearGradient>'
+                f'<linearGradient id="b"><stop offset="0" stop-color="#00f"/></linearGradient></defs>'
+                f'<rect fill="url(#a)" stroke="url(#b)" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "group-merge",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g fill="red"><rect width="1" height="1"/></g><g fill="red">'
+                f'<rect width="2" height="2"/></g>'
+                f'<g fill="red"><rect width="3" height="3"/></g></svg>'
+            ),
+        ),
+        (
+            "group-merge-text-between",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g fill="red"><rect width="1" height="1"/>'
+                f'</g> text <g fill="red"><rect width="2" height="2"/></g></svg>'
+            ),
+        ),
+        (
+            "group-merge-different",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g fill="red"><rect width="1" height="1"/></g><g fill="blue">'
+                f'<rect width="2" height="2"/></g>'
+                f'<g fill="blue"><rect width="3" height="3"/></g></svg>'
+            ),
+        ),
+        (
+            "group-merge-title",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g fill="red"><rect width="1" height="1"/></g><g fill="red">'
+                f'<title>t</title><rect width="2" height="2"/></g></svg>'
+            ),
+        ),
+        (
+            "group-merge-no-attributes",
+            f'<svg {ns} viewBox="0 0 24 24"><g><rect width="1" height="1"/></g><g><rect width="2" height="2"/>'
+            f"</g></svg>",
+        ),
+        (
+            "group-merge-nested",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g id="o"><g fill="red"><rect width="1" height="1"/></g>'
+                f'<g fill="red"><rect width="2" height="2"/></g></g></svg>'
+            ),
+        ),
+        (
+            "group-merge-interrupted",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g fill="red"><rect width="1" height="1"/></g>'
+                f'<rect width="5" height="5"/>'
+                f'<g fill="red"><rect width="2" height="2"/></g><g fill="red"><rect width="3" height="3"/></g></svg>'
+            ),
+        ),
+        (
+            "common-attributes",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g><rect width="1" height="1" fill="red" stroke="blue"/>'
+                f'<rect width="2" height="2" fill="red" stroke="green"/>'
+                f'<circle r="3" fill="red" stroke="blue"/></g></svg>'
+            ),
+        ),
+        (
+            "common-attributes-referenced-child",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><defs><rect id="r" width="1" height="1" fill="red"/></defs><g>'
+                f'<use href="#r" fill="red"/>'
+                f'<rect width="2" height="2" fill="red"/><rect width="3" height="3" fill="red"/></g></svg>'
+            ),
+        ),
+        (
+            "common-attributes-text",
+            f'<svg {ns} viewBox="0 0 24 24"><g> x <rect width="1" height="1" fill="red"/>'
+            f'<rect width="2" height="2" fill="red"/></g></svg>',
+        ),
+        (
+            "common-attributes-animation",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g><rect width="1" height="1" fill="red"/>'
+                f'<animate attributeName="x" fill="freeze"/>'
+                f'<rect width="2" height="2" fill="red"/></g></svg>'
+            ),
+        ),
+        (
+            "unused-parent-attributes",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g fill="red" stroke="blue" opacity="0.5">'
+                f'<rect width="1" height="1" fill="green"/>'
+                f'<rect width="2" height="2" fill="inherit"/></g></svg>'
+            ),
+        ),
+        (
+            "style-repair-inherited",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g style="fill:red;stroke:blue">'
+                f'<rect width="1" height="1" style="fill:red;stroke:green"/></g></svg>'
+            ),
+        ),
+        (
+            "style-repair-defaults",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g style="fill:red"><g style="fill:red;opacity:1">'
+                f'<rect width="1" height="1" style="fill:inherit"/></g></g></svg>'
+            ),
+        ),
+        (
+            "style-repair-child-overrides",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g style="fill:red">'
+                f'<rect width="1" height="1" style="fill:blue"/>'
+                f'<rect width="2" height="2" style="fill:green"/></g></svg>'
+            ),
+        ),
+        (
+            "style-repair-non-inherited",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g style="opacity:0.5;display:none">'
+                f'<rect width="1" height="1" style="opacity:0.5;display:none"/></g></svg>'
+            ),
+        ),
+        (
+            "style-repair-text",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><g style="font-size:12px">'
+                f'<text style="font-size:12px;fill:red">a<tspan style="font-size:12px">b</tspan></text></g>'
+                f"</svg>"
+            ),
+        ),
+        (
+            "doctype-public",
+            (
+                '<?xml version="1.0"?>\n'
+                '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"'
+                ' "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n'
+                f'<svg {ns} viewBox="0 0 24 24"><rect width="1" height="1"/></svg>'
+            ),
+        ),
+        (
+            "doctype-system",
+            (f'<!DOCTYPE svg SYSTEM "x.dtd"><svg {ns} viewBox="0 0 24 24"><rect width="1" height="1"/></svg>'),
+        ),
+        ("doctype-plain", f'<!DOCTYPE svg><svg {ns} viewBox="0 0 24 24"><rect width="1" height="1"/></svg>'),
+        (
+            "processing-instructions",
+            f'<?xml-stylesheet href="a.css"?><svg {ns} viewBox="0 0 24 24"><rect width="1" height="1"/></svg>'
+            f"<?after data?>",
+        ),
+        (
+            "style-element-references",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><style>.a {{ fill: url(#g); clip-path: url(#c) }}</style><defs>'
+                f'<linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient>'
+                f'<clipPath id="c"><rect width="1" height="1"/></clipPath>'
+                f'<linearGradient id="unused"><stop offset="0" stop-color="#f00"/></linearGradient></defs>'
+                f'<rect class="a" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "style-element-unreferenced",
+            (
+                f'<svg {ns} viewBox="0 0 24 24"><style>.a {{ fill: red }}</style><defs>'
+                f'<rect id="gone" width="1" height="1"/></defs>'
+                f'<rect class="a" width="4" height="4"/></svg>'
+            ),
+        ),
+        (
+            "references-animation",
+            (
+                f'<svg {ns} {xl} viewBox="0 0 24 24"><defs><linearGradient id="g">'
+                f'<stop offset="0" stop-color="#f00"/></linearGradient></defs>'
+                f'<rect width="1" height="1">'
+                f'<animate attributeName="fill" values="url(#g);red" begin="a.begin"/></rect></svg>'
+            ),
+        ),
+    ]
+    return documents
 
 
 def _simplifier_documents(inputs: list[tuple[str, str]]) -> list[dict[str, Any]]:

@@ -138,6 +138,38 @@ internal sealed class DomElement(string prefix, string localName, string? ns) : 
         Children.Add(child);
     }
 
+    /// <summary>Moves a node (taken from wherever it is) to the end of this element's children, as minidom's <c>appendChild</c> does.</summary>
+    public void Adopt(DomNode node)
+    {
+        node.Parent?.Children.Remove(node);
+        Append(node);
+    }
+
+    /// <summary>The attribute with this namespace and local name, or null (minidom's <c>getAttributeNodeNS</c>).</summary>
+    public DomAttribute? FindAttributeNS(string ns, string localName) =>
+        Attributes.FirstOrDefault(a => a.Namespace == ns && a.LocalName == localName);
+
+    /// <summary>The value of the attribute with this namespace and local name, or an empty string.</summary>
+    public string GetAttributeNS(string ns, string localName) => FindAttributeNS(ns, localName)?.Value ?? string.Empty;
+
+    /// <summary>Sets a namespaced attribute; a new one is written under the name given, which minidom does without adding a prefix.</summary>
+    public void SetAttributeNS(string ns, string qualifiedName, string value)
+    {
+        var colon = qualifiedName.IndexOf(':', StringComparison.Ordinal);
+        var localName = colon < 0 ? qualifiedName : qualifiedName[(colon + 1)..];
+        var existing = FindAttributeNS(ns, localName);
+        if (existing is not null)
+        {
+            existing.Value = value;
+            return;
+        }
+
+        Attributes.Add(new DomAttribute(colon < 0 ? string.Empty : qualifiedName[..colon], localName, ns, value));
+    }
+
+    /// <summary>Removes the attribute with this namespace and local name.</summary>
+    public void RemoveAttributeNS(string ns, string localName) => Attributes.RemoveAll(a => a.Namespace == ns && a.LocalName == localName);
+
     /// <summary>Moves a node (taken from wherever it is) to sit just before a reference child.</summary>
     public void InsertBefore(DomNode node, DomNode reference)
     {
@@ -152,16 +184,24 @@ internal static class DomParser
 {
     /// <summary>
     /// Parses the document element. Throws <see cref="XmlException"/> for anything that is not well formed, which the callers treat
-    /// the way Python treats <c>ParseError</c>. A DOCTYPE is skipped, and an entity it declares is not defined, so a reference to it
-    /// is an error here where defusedxml refuses the document outright.
+    /// the way Python treats <c>ParseError</c>. A DOCTYPE is parsed without resolving anything external, and an internal entity it
+    /// declares is expanded (capped at a million characters), as the Python scour pass does; defusedxml refuses such a document in the
+    /// ElementTree-based passes, where this expands it instead.
     /// </summary>
-    public static DomElement Parse(string text)
+    public static DomElement Parse(string text) => Parse(text, null, null);
+
+    /// <summary>
+    /// Parses the document element and, when the lists are given, collects the top-level DOCTYPE and processing instructions as minidom's
+    /// <c>toxml()</c> writes them: those before the root in <paramref name="before"/>, those after it in <paramref name="after"/>.
+    /// </summary>
+    public static DomElement Parse(string text, List<string>? before, List<string>? after)
     {
         var settings = new XmlReaderSettings
         {
-            DtdProcessing = DtdProcessing.Ignore,
+            DtdProcessing = DtdProcessing.Parse,
+            MaxCharactersFromEntities = 1_000_000,
             IgnoreComments = true,
-            IgnoreProcessingInstructions = true,
+            IgnoreProcessingInstructions = false,
             IgnoreWhitespace = false,
             XmlResolver = null,
         };
@@ -208,10 +248,40 @@ internal static class DomParser
                 case XmlNodeType.CDATA:
                     AppendText(current, reader.Value, true);
                     break;
+
+                case XmlNodeType.DocumentType when current is null:
+                    (root is null ? before : after)?.Add(DoctypeText(reader));
+                    break;
+
+                case XmlNodeType.ProcessingInstruction when current is null:
+                    (root is null ? before : after)?.Add($"<?{reader.Name} {reader.Value}?>");
+                    break;
             }
         }
 
         return root ?? throw new XmlException("The document has no root element.");
+    }
+
+    private static string DoctypeText(XmlReader reader)
+    {
+        var text = "<!DOCTYPE " + reader.Name;
+        var publicId = reader.GetAttribute("PUBLIC") ?? string.Empty;
+        var systemId = reader.GetAttribute("SYSTEM") ?? string.Empty;
+        if (publicId.Length > 0)
+        {
+            text += $"  PUBLIC '{publicId}'  '{systemId}'";
+        }
+        else if (systemId.Length > 0)
+        {
+            text += $"  SYSTEM '{systemId}'";
+        }
+
+        if (reader.Value.Length > 0)
+        {
+            text += " [" + reader.Value + "]";
+        }
+
+        return text + ">";
     }
 
     private static DomElement ReadElement(XmlReader reader)
