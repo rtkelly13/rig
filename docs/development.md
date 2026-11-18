@@ -36,7 +36,7 @@ added upstream in rtkelly-labs/design-system, not hard-coded here.
 `desktop-manager` is `rig.csharp_cli:entry`, which runs `dotnet run --project src/Rig.Cli -- …`: `uv run rig gh …`
 as typed, `uv run latex build` as `rig latex build`, and `uv run help` as `rig help`, the overview.
 `desktop-manager` alone is still Python (`desktop_manager.cli:main`), and it keeps only what has not
-moved: `jobs`, `work`, `chrome-tabs organise` and the compatibility spellings.
+moved: `jobs`, `chrome-tabs organise` and the compatibility spellings.
 
 The docs write commands two ways. `rig <command>` is the installed front door on PATH (the runtime
 copy's shim) and is the form for operating the estate. `dotnet run --project src/Rig.Cli -- <command>`

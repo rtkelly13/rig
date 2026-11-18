@@ -25,6 +25,7 @@ using Rig.Cli.Tools;
 using Rig.Cli.Traces;
 using Rig.Cli.Vault;
 using Rig.Cli.Web;
+using Rig.Cli.Work;
 using Rig.Cli.Workspace;
 using Rig.Core.Browser;
 using Rig.Core.Devenv;
@@ -41,6 +42,7 @@ using Rig.Core.Services;
 using Rig.Core.Skills;
 using Rig.Core.Tools;
 using Rig.Core.Vault;
+using Rig.Core.WorkItems;
 using Rig.Core.Workspace;
 using Rig.Web;
 using Rig.Web.Mcp;
@@ -228,6 +230,7 @@ internal static class Program
                         ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)),
                     new QueueGitHub(github), Console.Out, Console.Error).Build,
                 new JobsCommand(JobsHostFor(codeRoot, checkout, home, proc), Console.Out).Build,
+                new WorkCommand(new WorkHost(codeRoot, home), WorkCollectorFor(git, proc, home).CollectAsync, TimeProvider.System, Console.Out, Console.Error).Build,
                 new RuntimeCommand(
                     new RuntimeHost(
                         Path.Join(AppData.Current(), Rig.Core.Jobs.JobsSite.RuntimeFolder),
@@ -399,6 +402,18 @@ internal static class Program
     }
 
     // The registry as the checkout's `desktop-manager jobs` built it: this checkout's scripts and the per-user plan.
+    // The work list's real sources: git over the estate, gh for pull requests, and Claude's own session files.
+    private static WorkCollector WorkCollectorFor(Git git, IProc proc, string home)
+    {
+        var claude = ClaudeWorkSessions.Home(Environment.GetEnvironmentVariable, home);
+        return new WorkCollector(
+            new WorkGitFacts(git, new CloneDiscovery(CloneDiscovery.CacheFileUnder(home), TimeProvider.System)),
+            new WorkPrSource(new GhApi(proc), WorkPrSource.CacheFileUnder(home)),
+            new ClaudeWorkSessions(claude, ClaudeWorkSessions.LedgerDirectory(Environment.GetEnvironmentVariable, claude), ProcessLiveness.IsAlive),
+            new FileSystemFolderProbe(cwd => SessionFolders.Resolve(git, cwd)),
+            TimeProvider.System);
+    }
+
     private static JobsHost JobsHostFor(string codeRoot, string checkout, string home, IProc proc)
     {
         var windows = OperatingSystem.IsWindows();

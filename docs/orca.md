@@ -227,7 +227,7 @@ The command is typed as given, so it bypasses `agentDefaultArgs`.
 | Antigravity | `agy --conversation <uuid> --dangerously-skip-permissions` | No. The conversation still records its old folder, so tell it where it now is. |
 | OpenCode | `opencode --auto -s <id>` | **Yes.** `-s` creates an empty session when the id is not in the current folder's project, so launch from the original folder or start fresh with a recap. |
 
-`desktop-manager work list --sessions` shows the sessions it has recorded, per work item;
+`rig work list --sessions` shows the sessions it has recorded, per work item;
 Claude's own transcripts under `~/.claude/projects` hold each session's folder. Warp's
 history of agent launches and their folders is in the `commands` table of `warp.sqlite`
 under `~/Library/Group Containers/*.dev.warp/`.
