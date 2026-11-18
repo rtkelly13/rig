@@ -78,8 +78,8 @@ takes the same two options for the dashboard's and the collector's logon tasks.
 There is no separate windowless executable. The earlier `rigw.exe` (rig built as a Windows app) was quarantined
 by CrowdStrike Falcon on every Release build, so it was removed.
 
-Each task's XML is kept in `tests/Rig.Core.Tests/Jobs/Tasks/<task>.xml`, so a policy change shows
-up as a diff; `RIG_UPDATE_SNAPSHOTS=1 dotnet test` rewrites those files from the renderer. Native
+`JobsInstallTests` pins what each task does: the rig command it runs, its trigger, time limit and
+least-privilege identity, the tick's interval and the guard's restarts. The other settings are not tested. Native
 `WIN-JOBS` acceptance and estate rollout remain pending separate Windows evidence; these source
 changes do not modify the machine's installed tasks.
 
