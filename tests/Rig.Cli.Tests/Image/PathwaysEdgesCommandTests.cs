@@ -160,6 +160,41 @@ public sealed class PathwaysEdgesCommandTests : IDisposable
         Assert.Contains("Drift vs reference: SSIM", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Pathways_unknown_project_and_missing_master_exit_two()
+    {
+        Assert.Equal(2, await Run("image", "pathways", "--project", "nope"));
+        Assert.Contains("expected one of parquet-source-generator, rtkelly-labs, found 'nope'", _err.ToString(), StringComparison.Ordinal);
+
+        Assert.Equal(2, await Run("image", "pathways"));
+        Assert.Contains("expected the master SVG at", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Edges_missing_svg_exits_two()
+    {
+        var exit = await Run("image", "edges", "--svg", Path.Join(_temp.Path, "absent.svg"));
+
+        Assert.Equal(2, exit);
+        Assert.Contains("expected an SVG file at", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_reference_is_the_manifest_primary_and_the_parquet_alias_resolves()
+    {
+        var reference = Path.Join(_temp.Path, "assets", "parquet-source-generator", "reference");
+        Directory.CreateDirectory(reference);
+        await File.WriteAllTextAsync(Path.Join(reference, "manifest.json"), "{\"primary\": \"chosen.png\"}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Join(reference, "chosen.png"), "x", TestContext.Current.CancellationToken);
+
+        var project = ImageProjects.Resolve(_temp.Path, "Parquet");
+
+        Assert.Equal("parquet-source-generator", project.Name);
+        Assert.Equal(Path.Join(reference, "chosen.png"), project.Reference);
+        await File.WriteAllTextAsync(Path.Join(reference, "manifest.json"), "{\"primary\": \" \"}", TestContext.Current.CancellationToken);
+        Assert.Equal(Path.Join(reference, "02-simplified-cad-baseline.jpg"), ImageProjects.Resolve(_temp.Path, "diamond").Reference);
+    }
+
     private string Write(string name)
     {
         var path = Path.Join(_temp.Path, name);
