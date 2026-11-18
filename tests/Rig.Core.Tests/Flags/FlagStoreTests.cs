@@ -47,12 +47,12 @@ public sealed class FlagStoreTests : IDisposable
     [Fact]
     public void An_override_is_stamped_in_recorded_isoformat_utc()
     {
-        new FlagStore(Db, new ManualClock(new DateTimeOffset(2026, 11, 12, 9, 30, 5, 123, TimeSpan.Zero))).Set("work-fork", true);
+        new FlagStore(Db, new ManualClock(new DateTimeOffset(2026, 11, 12, 9, 30, 5, 123, TimeSpan.Zero))).Set("personal-desktop", true);
 
         using var connection = new SqliteConnection($"Data Source={Db};Pooling=False");
         connection.Open();
         using var command = connection.CreateCommand();
-        command.CommandText = "SELECT enabled, updated_at FROM feature_flags WHERE name = 'work-fork'";
+        command.CommandText = "SELECT enabled, updated_at FROM feature_flags WHERE name = 'personal-desktop'";
         using var reader = command.ExecuteReader();
         Assert.True(reader.Read());
         Assert.Equal(1, reader.GetInt64(0));

@@ -56,23 +56,6 @@
         }
       },
       "window_process_name": "Fork.exe"
-    },
-    {
-      "name": "T3 Code",
-      "type": "app",
-      "path": "{t3code-path}",
-      "summary": "Disabled on the Review desktop in favour of standard code-review tooling.",
-      "disabled": true,
-      "delay_ms": 1200,
-      "placement": {
-        "screen": 1,
-        "layout": {
-          "mode": "halves",
-          "slot": 1,
-          "orientation": "vertical"
-        }
-      },
-      "window_process_name": "T3 Code (Alpha).exe"
     }
   ]
 }
