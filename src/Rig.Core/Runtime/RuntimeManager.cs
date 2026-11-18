@@ -65,10 +65,10 @@ public sealed record RuntimeStatus(string Root, string Link, RuntimeState State,
 
 /// <summary>
 /// The pinned copy of one commit that the scheduled tasks run from. Ported from <c>desktop_manager.runtime</c>:
-/// each copy is a plain folder under <c>&lt;app data&gt;/runtime/&lt;sha12&gt;</c>, with its own environment and
-/// published <c>rig</c>, and <c>current</c> is the link the tasks and the PATH shim follow.
+/// each copy is a plain folder under <c>&lt;app data&gt;/runtime/&lt;sha12&gt;</c>,
+/// with its published <c>rig</c>, and <c>current</c> is the link the tasks and the PATH shim follow.
 /// </summary>
-/// <param name="proc">Runs git, uv, dotnet and, on Windows, <c>mklink</c>.</param>
+/// <param name="proc">Runs git, dotnet and, on Windows, <c>mklink</c>.</param>
 /// <param name="root">The runtime folder, normally <c>&lt;app data&gt;/runtime</c>.</param>
 /// <param name="clock">The clock <c>installed.json</c> stamps its time with.</param>
 public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
@@ -86,8 +86,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     public const string InstalledName = "installed.json";
 
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(300);
-    private static readonly TimeSpan SyncTimeout = TimeSpan.FromMinutes(30);
-    private static readonly IReadOnlyList<string> Unset = ["VIRTUAL_ENV", "UV_PROJECT_ENVIRONMENT"];
+    private static readonly TimeSpan BuildTimeout = TimeSpan.FromMinutes(30);
     private static readonly IReadOnlyDictionary<string, string> NoPrompt = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["GIT_TERMINAL_PROMPT"] = "0",
@@ -103,13 +102,12 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     public static bool RunningCopy(string path, string root) =>
         PathResolution.IsUnder(PathResolution.Resolve(path), PathResolution.Resolve(root));
 
-    /// <summary>A copy's environment executable, such as its own <c>python</c>.</summary>
-    public static string Executable(string copy, string name, bool windows) =>
-        Path.Join(copy, ".venv", windows ? "Scripts" : "bin", windows ? $"{name}.exe" : name);
+    /// <summary>The folder <c>dotnet publish</c> writes a copy's <c>rig</c> and <c>rigw</c> into.</summary>
+    public static string PublishedFolder(string copy) => Path.Join(copy, "rig");
 
     /// <summary>A copy's published <c>rig</c> or <c>rigw</c>, as <c>dotnet publish</c> wrote it.</summary>
     public static string Published(string copy, string name, bool windows) =>
-        Path.Join(copy, "rig", windows ? $"{name}.exe" : name);
+        Path.Join(PublishedFolder(copy), windows ? $"{name}.exe" : name);
 
     /// <summary>The folder this manager keeps its copies in.</summary>
     public string Root => root;
@@ -212,10 +210,9 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             progress?.Invoke($"Extracting {name} from {repo}");
             Extract(repo, sha, staging);
             Directory.Move(staging, copy);
-            progress?.Invoke("Building its environment from uv.lock and publishing rig");
+            progress?.Invoke("Publishing rig");
             try
             {
-                BuildEnvironment(copy);
                 Publish(copy);
             }
             catch (RuntimeInstallException)
@@ -394,22 +391,17 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         }
     }
 
-    private void BuildEnvironment(string copy) =>
-        _ = Must(["uv", "sync", "--project", copy, "--frozen", "--no-dev", "--link-mode", "copy"], copy);
-
     private void Publish(string copy) =>
-        _ = Must(["dotnet", "publish", Path.Join(copy, "src", "Rig.Launcher"), "-c", "Release", "-o", Path.Join(copy, "rig"), "-m:2", "-v", "q"], copy);
+        _ = Must(["dotnet", "publish", Path.Join(copy, "src", "Rig.Launcher"), "-c", "Release", "-o", PublishedFolder(copy), "-m:2", "-v", "q"], copy);
 
     private List<string> Check(string copy)
     {
         var windows = OperatingSystem.IsWindows();
-        var python = Executable(copy, "python", windows);
         List<IReadOnlyList<string>> commands =
         [
             [Published(copy, "rig", windows), "chrome-tabs", "organise", "--help"],
             [Published(copy, "rig", windows), "jobs", "run", "--help"],
             [Published(copy, "rig", windows), "jobs", "install", "--help"],
-            [python, "-c", "import rig.csharp_cli"],
         ];
         var plan = Path.Join(copy, "desktop-manager", "workspace-plan.bundle.json");
         if (File.Exists(plan))
@@ -658,8 +650,7 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         proc.Run(new ProcRequest(command)
         {
             WorkingDirectory = workingDirectory,
-            Timeout = command[0] is "uv" or "dotnet" ? SyncTimeout : CommandTimeout,
-            Unset = Unset,
+            Timeout = command[0] is "dotnet" ? BuildTimeout : CommandTimeout,
             Environment = NoPrompt,
         });
 }

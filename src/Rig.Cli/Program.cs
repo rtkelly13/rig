@@ -318,7 +318,7 @@ internal static class Program
                     Console.Out,
                     Console.Error,
                     new WrapupHost(
-                        WrapupAgentRig(checkout),
+                        "rig",
                         new WrapupFollower(AppData.Current(), detached, SelfArgv()),
                         new SystemWrapupClock(TimeProvider.System),
                         WrapupStamps.NewAskId)).Build,
@@ -373,13 +373,6 @@ internal static class Program
         }
     }
 
-    // The rig the asked agent runs `report` with: the checkout's own, since the agent's shell is another repo's worktree.
-    private static string WrapupAgentRig(string checkout)
-    {
-        var found = OperatingSystem.IsWindows() ? Path.Join(checkout, ".venv", "Scripts", "rig.exe") : Path.Join(checkout, ".venv", "bin", "rig");
-        return File.Exists(found) ? found : "rig";
-    }
-
     // The default browser, as Python's webbrowser.open: the shell opens the URL.
     private static void OpenBrowser(Uri page) =>
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(page.AbsoluteUri) { UseShellExecute = true })?.Dispose();
@@ -416,7 +409,7 @@ internal static class Program
             JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows),
             Path.Join(codeRoot, "personal"));
         var environment = new JobsEnvironment(
-            Path.Join(checkout, ".venv", windows ? "Scripts" : "bin"),
+            Rig.Core.Runtime.RuntimeManager.PublishedFolder(checkout),
             site.Plan,
             MachineConfig.WorkspaceRepo(machineConfig, Path.GetDirectoryName(site.PersonalRoot) ?? codeRoot, home),
             site.PersonalRoot,

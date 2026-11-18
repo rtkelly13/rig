@@ -73,8 +73,6 @@ Under [ADR 0022](../adr/0022-csharp-is-rigs-primary-language.md), `rig` is imple
 
    ```bash
    dotnet run --project src/Rig.Cli -- <command>
-   # or through the Python forwarding shim:
-   uv run rig <command>
    ```
 
 ______________________________________________________________________

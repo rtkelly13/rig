@@ -5,11 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
-import yaml
 from pydantic import StrictInt, StrictStr, ValidationError
 
 from rig.typed_json import Lenient, decode, decode_json, encode_json, load_json, try_decode, try_decode_json
-from rig.typed_yaml import decode_yaml, load_yaml
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,13 +54,6 @@ class _Loose:
 
 def test_lenient_field_of_the_wrong_type_reads_as_absent() -> None:
     assert decode(_Loose, {"name": 3, "size": 4}) == _Loose(name=None, size=4)
-
-
-def test_yaml_helpers_parse_decode_and_reject() -> None:
-    assert load_yaml("a: 1") == {"a": 1}
-    assert decode_yaml(_Point, "x: 1\ny: 2") == _Point(1, 2)
-    with pytest.raises(yaml.YAMLError):
-        decode_yaml(_Point, "x: [")
 
 
 @pytest.mark.ci

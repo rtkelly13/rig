@@ -23,8 +23,8 @@ public sealed partial class DesignTokensTests
         ("web", ".tsx"),
         ("tools/image-drift/styles", ".css"),
         ("tools/image-drift/src/image_drift/templates", ".jinja"),
-        ("src/rig/web_host/templates", ".html"),
-        ("src/rig/web_host/templates", "studio.css"),
+        ("src/Rig.Web/templates", ".html"),
+        ("src/Rig.Web/templates", "studio.css"),
         ("src/Rig.Web/C4/static", ".html"),
     ];
 

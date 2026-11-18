@@ -8,7 +8,7 @@ using Rig.Web.Mcp;
 namespace Rig.Cli.Web;
 
 /// <summary>Where <c>rig web</c> finds what it serves.</summary>
-/// <param name="Checkout">The rig checkout: the frontend under <c>src/rig/web_host/templates</c>, the C4 viewer under <c>src/Rig.Web/C4/static</c> and the brand images under <c>assets</c>.</param>
+/// <param name="Checkout">The rig checkout: the frontend under <c>src/Rig.Web/templates</c>, the C4 viewer under <c>src/Rig.Web/C4/static</c> and the brand images under <c>assets</c>.</param>
 /// <param name="RegistryFile">The managed-projects registry the estate cards are read from.</param>
 /// <param name="WorkingDirectory">The folder rig was run from.</param>
 /// <param name="DbPath">The shared SQLite database.</param>
@@ -16,7 +16,7 @@ namespace Rig.Cli.Web;
 internal sealed record WebPlaces(string Checkout, string RegistryFile, string WorkingDirectory, string DbPath, string CodeRoot)
 {
     /// <summary>The built frontend.</summary>
-    public string TemplatesDir => Path.Join(Checkout, "src", "rig", "web_host", "templates");
+    public string TemplatesDir => Path.Join(Checkout, "src", "Rig.Web", "templates");
 
     /// <summary>The C4 viewer's page and static files.</summary>
     public string C4StaticDir => Path.Join(Checkout, "src", "Rig.Web", "C4", "static");

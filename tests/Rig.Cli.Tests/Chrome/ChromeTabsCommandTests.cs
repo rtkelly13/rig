@@ -728,7 +728,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
 
     private string Shim => Path.Join(Home, ".local", "bin", "chrome-tabs.cmd");
 
-    private string Target => Path.Join(Local, "shared-utilities", "runtime", "current", ".venv", "Scripts", "rig.exe");
+    private string Target => Path.Join(Local, "shared-utilities", "runtime", "current", "rig", "rig.exe");
 
     private async Task<int> Installs(params string[] args) =>
         await new ChromeTabsCommand(

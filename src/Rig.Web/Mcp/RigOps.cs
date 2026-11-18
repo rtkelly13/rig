@@ -92,7 +92,7 @@ public sealed class RigOps : IDisposable
             Path.Join(codeRoot, "personal"));
         var machineConfig = ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home);
         var environment = new JobsEnvironment(
-            Path.Join(checkout, ".venv", windows ? "Scripts" : "bin"),
+            Rig.Core.Runtime.RuntimeManager.PublishedFolder(checkout),
             site.Plan,
             MachineConfig.WorkspaceRepo(machineConfig, codeRoot, home),
             site.PersonalRoot,

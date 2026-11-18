@@ -5,10 +5,10 @@ switching branches, a half-finished edit or a merge from another machine changes
 nothing until you install a new copy.
 
 ```bash
-uv run rig runtime install            # fetch, build origin/main, check it, switch to it
-uv run rig runtime install --ref HEAD --no-fetch   # this checkout's commit instead
-uv run rig runtime status             # current, previous, commits behind origin/main
-uv run rig runtime rollback           # back to the previous copy
+rig runtime install            # fetch, build origin/main, check it, switch to it
+rig runtime install --ref HEAD --no-fetch   # this checkout's commit instead
+rig runtime status             # current, previous, commits behind origin/main
+rig runtime rollback           # back to the previous copy
 ```
 
 The `desktop-manager runtime` spelling is gone. Install with the C# from the commit you are installing,
@@ -20,7 +20,7 @@ copy, and refuses any commit after its removal.
 ```text
 %LOCALAPPDATA%\shared-utilities\
   runtime\
-    <sha12>\                     the commit's files (git archive) and its own .venv
+    <sha12>\                     the commit's files (git archive)
       rig\                        rig and rigw, published from the commit
       installed.json             sha, ref, source repo, install time
     current                      junction to the copy in use
@@ -30,9 +30,7 @@ copy, and refuses any commit after its removal.
 ```
 
 A copy keeps the repo's layout, so the workspace plan (`desktop-manager/`) and
-anything else found relative to the code is pinned with it. Its environment is
-built from that commit's `uv.lock` with `uv sync --frozen --no-dev`, copying
-files out of uv's cache rather than hard-linking them. `rig` and `rigw` are
+anything else found relative to the code is pinned with it. It has no Python environment. `rig` and `rigw` are
 published from the commit's `src/Rig.Launcher` into `rig\` with `dotnet publish`.
 A `rig` started from `<copy>\rig\` (by its own name or through `current`) runs as
 that copy: its jobs use the copy's bundled plan.
@@ -44,10 +42,9 @@ Copies are plain directories, not git worktrees, so they never hold a branch and
 
 1. Fetch `origin` (for an `origin/*` ref) and resolve the ref to a commit. Installing
    the commit already current does nothing.
-1. Extract the commit to `<sha12>.partial`, rename it to `<sha12>`, build its `.venv`
+1. Extract the commit to `<sha12>.partial`, rename it to `<sha12>`
    and publish its `rig`.
-1. Check it runs: `rig chrome-tabs organise --help`, `rig jobs run --help`, `rig jobs install --help`, importing the
-   scheduled entry points, and `workspace validate-plan` on the copy's plan.
+1. Check it runs: `rig chrome-tabs organise --help`, `rig jobs run --help`, `rig jobs install --help`, and `workspace validate-plan` on the copy's plan.
    A failure leaves `current` where it was and removes the new copy.
 1. Write `installed.json`, repoint `current`, record the old copy as previous and
    remove anything older. A copy still in use is left and removed by a later install.
@@ -72,7 +69,7 @@ move the tasks without registering them again:
 machine job (see [desktop-manager/jobs.md](jobs.md)), and removes
 the standalone tasks older installers registered ("Workspace Restore", "Chrome Tabs
 Organise", "Chrome Tabs Prune", "Workspace Display Guard"). `chrome-tabs install`
-only writes the `chrome-tabs` command shim, pointed at `current\.venv`.
+only writes the `chrome-tabs` command shim, pointed at the published rig in `current`.
 
 ## `rig` on PATH
 

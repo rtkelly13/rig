@@ -17,11 +17,11 @@ pnpm css:check                                          # fails if any committed
 
 Every stylesheet is Tailwind 4 (CSS-first, so no `tailwind.config.js`) built on
 `@rtkelly-labs/design-system`. Each entry imports the package's `theme.css`, and the outputs are
-committed because the Python CLI and server must work without Node:
+committed because the server must work without Node:
 
 | Entry | Output |
 |---|---|
-| `web/app.src.css` | `src/rig/web_host/templates/app_assets/app.css` (with the SPA bundle) |
+| `web/app.src.css` | `src/Rig.Web/templates/app_assets/app.css` (with the SPA bundle) |
 | `tools/image-drift/styles/gallery.src.css` | `tools/image-drift/src/image_drift/templates/gallery.css`, inlined into preview pages |
 | `styles/c4.src.css` | `src/Rig.Web/C4/static/c4.css` |
 
@@ -32,19 +32,16 @@ added upstream in rtkelly-labs/design-system, not hard-coded here.
 
 ## The C# front door
 
-`rig` is moving to C# (ADR 0022, #85). `src/Rig.Cli` is the front door. Every script in `[project.scripts]` is
-`rig.csharp_cli:entry`, which runs `dotnet run --project src/Rig.Cli -- …`: `uv run rig gh …`
-as typed, `uv run latex build` as `rig latex build`, and `uv run help` as `rig help`, the overview.
+`rig` is moving to C# (ADR 0022, #85). `src/Rig.Cli` is the front door. There are no Python entry points: `rig gh …`, `rig latex build` and `rig help` (the overview) are the installed
+shim, and `dotnet run --project src/Rig.Cli -- …` is the same command from a checkout.
 The `desktop-manager` script is gone; its commands are `rig desktop`, `rig jobs`, `rig runtime` and
 `rig chrome-tabs`.
 
 The docs write commands two ways. `rig <command>` is the installed front door on PATH (the runtime
 copy's shim) and is the form for operating the estate. `dotnet run --project src/Rig.Cli -- <command>`
-runs this checkout's code, so it is the form for developing rig and for CI. The per-tool scripts
-(`uv run status`, `uv run workspace …`) still work while callers outside rig move over (#85 s29b).
+runs this checkout's code, so it is the form for developing rig and for CI. The per-tool `uv run status` and `uv run workspace` scripts are gone.
 
-C# parses every command itself; nothing is forwarded to Python. The Python modules C# still starts (the
-job runner's helpers, mdformat) run from `RIG_HOME` when it is set, else
+C# parses every command itself; nothing is forwarded to Python. The Python tools C# still starts (mdformat, through pinned `uvx`) find the checkout from `RIG_HOME` when it is set, else
 `<code root>/personal/rig`.
 
 The [command ownership gate](csharp-port/ownership.md) inspects actual C#/Python registrations and forwarding,

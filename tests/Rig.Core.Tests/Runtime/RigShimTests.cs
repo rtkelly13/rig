@@ -12,11 +12,11 @@ public sealed class RigShimTests : IDisposable
     [Fact]
     public void The_posix_shim_execs_the_target_with_every_argument()
     {
-        var text = RigShim.Render("/a b/current/.venv/bin/rig", windows: false);
+        var text = RigShim.Render("/a b/current/rig/rig", windows: false);
 
         Assert.StartsWith("#!/bin/sh\n", text, StringComparison.Ordinal);
         Assert.Contains(RigShim.Marker, text, StringComparison.Ordinal);
-        Assert.EndsWith("exec '/a b/current/.venv/bin/rig' \"$@\"\n", text, StringComparison.Ordinal);
+        Assert.EndsWith("exec '/a b/current/rig/rig' \"$@\"\n", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -29,11 +29,11 @@ public sealed class RigShimTests : IDisposable
     [Fact]
     public void The_windows_shim_passes_every_argument()
     {
-        var text = RigShim.Render(@"C:\rt\current\.venv\Scripts\rig.exe", windows: true);
+        var text = RigShim.Render(@"C:\rt\current\rig\rig.exe", windows: true);
 
         Assert.StartsWith("@echo off\r\n", text, StringComparison.Ordinal);
         Assert.Contains(RigShim.Marker, text, StringComparison.Ordinal);
-        Assert.EndsWith("\"C:\\rt\\current\\.venv\\Scripts\\rig.exe\" %*\r\n", text, StringComparison.Ordinal);
+        Assert.EndsWith("\"C:\\rt\\current\\rig\\rig.exe\" %*\r\n", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class RigShimTests : IDisposable
         var root = Path.Join(_temp.Path, "runtime");
 
         Assert.Equal(ShimOutcome.Written, RigShim.Install(shim, root, windows: false));
-        Assert.Contains(RuntimeManager.Executable(RuntimeManager.CurrentLink(root), "rig", windows: false), File.ReadAllText(shim), StringComparison.Ordinal);
+        Assert.Contains(RuntimeManager.Published(RuntimeManager.CurrentLink(root), "rig", windows: false), File.ReadAllText(shim), StringComparison.Ordinal);
         Assert.Equal(ShimOutcome.Unchanged, RigShim.Install(shim, root, windows: false));
     }
 

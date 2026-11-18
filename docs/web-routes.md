@@ -31,7 +31,7 @@ the routes are deleted.
 | GET | `/`, `/index.html`, `/estate`, `/studio`, `/optical`, `/triage`, `/ops`, and `/triage/`, `/repos/`, `/estate/`, `/ops/` deep links | the SPA document | C# `Rig.Web.FrontendRoutes` |
 | GET | `/api/estate/graph`, `/api/estate/graph/refresh` | the connectivity graph, a snapshot under a minute old or rebuilt (`no-store`; 503 `{error}`) | C# `Rig.Web.ConnectivityRoutes` |
 | GET | `/static/triage.html` | 302 to `/triage/inbox` | C# `Rig.Web.FrontendRoutes` |
-| GET | `/static/...` | files under `src/rig/web_host/templates` | C# `Rig.Web.FrontendRoutes` |
+| GET | `/static/...` | files under `src/Rig.Web/templates` | C# `Rig.Web.FrontendRoutes` |
 | GET | `/media/assets/...` | read-only brand assets | C# `Rig.Web.FrontendRoutes` |
 | POST | `/api/db/backup` | `{status, backup_file}` | C# `Rig.Web.HostRoutes` |
 | GET | `/api/triage` | `{entries, queue_path}` | C# `Rig.Web.TriageRoutes` |

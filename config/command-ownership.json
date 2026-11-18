@@ -335,7 +335,6 @@
     {"Id": "mcp:start_run","Capability": "surface:mcp:start_run","Owner": "mcp:start_run","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "mcp:telemetry_status","Capability": "surface:mcp:telemetry_status","Owner": "mcp:telemetry_status","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "mcp:trim_candidates","Capability": "surface:mcp:trim_candidates","Owner": "mcp:trim_candidates","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "module:desktop_manager.jobs.scheduled","Capability": "surface:module:desktop_manager.jobs.scheduled","Owner": "module:desktop_manager.jobs.scheduled","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "module:rig.repo_governance.coverage_by_test","Capability": "surface:module:rig.repo_governance.coverage_by_test","Owner": "module:rig.repo_governance.coverage_by_test","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "module:rig.repo_governance.generate_coverage_comment","Capability": "surface:module:rig.repo_governance.generate_coverage_comment","Owner": "module:rig.repo_governance.generate_coverage_comment","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "node-file:scripts/build-web.mjs","Capability": "surface:node-file:scripts/build-web.mjs","Owner": "node-file:scripts/build-web.mjs","Platforms": ["linux","macos","windows"],"AliasTo": null},
@@ -352,20 +351,7 @@
     {"Id": "project:src/Rig.Web/Rig.Web.csproj:Microsoft.NET.Sdk","Capability": "surface:project:src/Rig.Web/Rig.Web.csproj:Microsoft.NET.Sdk","Owner": "project:src/Rig.Web/Rig.Web.csproj:Microsoft.NET.Sdk","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Capability": "surface:project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Owner": "project:tools/command-ownership/CommandOwnership.csproj:Microsoft.NET.Sdk","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "python-file:.github/scripts/coverage_diff.py","Capability": "surface:python-file:.github/scripts/coverage_diff.py","Owner": "python-file:.github/scripts/coverage_diff.py","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "python-file:tools/command-ownership/python_tree.py","Capability": "surface:python-file:tools/command-ownership/python_tree.py","Owner": "python-file:tools/command-ownership/python_tree.py","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "script:agent=rig.csharp_cli:entry","Capability": "agent","Owner": "cs:agent","Platforms": ["linux","macos","windows"],"AliasTo": "cs:agent"},
-    {"Id": "script:devenv=rig.csharp_cli:entry","Capability": "devenv","Owner": "cs:devenv","Platforms": ["linux","macos","windows"],"AliasTo": "cs:devenv"},
-    {"Id": "script:estate=rig.csharp_cli:entry","Capability": "estate","Owner": "cs:estate","Platforms": ["linux","macos","windows"],"AliasTo": "cs:estate"},
-    {"Id": "script:help=rig.csharp_cli:entry","Capability": "help","Owner": "cs:help","Platforms": ["linux","macos","windows"],"AliasTo": "cs:help"},
-    {"Id": "script:latex=rig.csharp_cli:entry","Capability": "latex","Owner": "cs:latex","Platforms": ["linux","macos","windows"],"AliasTo": "cs:latex"},
-    {"Id": "script:mail=rig.csharp_cli:entry","Capability": "mail","Owner": "cs:mail","Platforms": ["linux","macos","windows"],"AliasTo": "cs:mail"},
-    {"Id": "script:md-lint=rig.csharp_cli:entry","Capability": "md-lint","Owner": "cs:md-lint","Platforms": ["linux","macos","windows"],"AliasTo": "cs:md-lint"},
-    {"Id": "script:otel-stack=rig.csharp_cli:entry","Capability": "otel-stack","Owner": "cs:otel-stack","Platforms": ["linux","macos","windows"],"AliasTo": "cs:otel-stack"},
-    {"Id": "script:repo-governance=rig.csharp_cli:entry","Capability": "repo-governance","Owner": "cs:repo-governance","Platforms": ["linux","macos","windows"],"AliasTo": "cs:repo-governance"},
-    {"Id": "script:rig=rig.csharp_cli:entry","Capability": "surface:script:rig=rig.csharp_cli:entry","Owner": "script:rig=rig.csharp_cli:entry","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "script:status=rig.csharp_cli:entry","Capability": "status","Owner": "cs:status","Platforms": ["linux","macos","windows"],"AliasTo": "cs:status"},
-    {"Id": "script:vault=rig.csharp_cli:entry","Capability": "vault","Owner": "cs:vault","Platforms": ["linux","macos","windows"],"AliasTo": "cs:vault"},
-    {"Id": "script:workspace=rig.csharp_cli:entry","Capability": "workspace","Owner": "cs:workspace","Platforms": ["linux","macos","windows"],"AliasTo": "cs:workspace"}
+    {"Id": "python-file:tools/command-ownership/python_tree.py","Capability": "surface:python-file:tools/command-ownership/python_tree.py","Owner": "python-file:tools/command-ownership/python_tree.py","Platforms": ["linux","macos","windows"],"AliasTo": null}
   ],
   "Baseline": [],
   "Retired": [
@@ -837,6 +823,20 @@
     "tests/test_dashboard_frontend.py",
     "tests/test_design_tokens.py",
     "tests/rig_web_host.py",
-    "tests/triage_seed.py"
+    "tests/triage_seed.py",
+    "src/desktop_manager/__init__.py",
+    "src/desktop_manager/jobs/__init__.py",
+    "src/desktop_manager/jobs/scheduled.py",
+    "src/desktop_manager/runtime.py",
+    "src/rig/csharp_cli.py",
+    "src/rig/roots.py",
+    "src/rig/sqlite.py",
+    "src/rig/tracing.py",
+    "src/rig/typed_yaml.py",
+    "tests/desktop_manager/__init__.py",
+    "tests/desktop_manager/test_runtime.py",
+    "tests/test_csharp_cli.py",
+    "tests/test_roots.py",
+    "tests/test_tracing_spawn.py"
   ]
 }
