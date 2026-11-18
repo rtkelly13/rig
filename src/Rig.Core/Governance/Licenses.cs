@@ -35,7 +35,7 @@ public sealed record FileChange(bool Changed, string Message);
 
 /// <summary>
 /// Audits and writes the canonical open source LICENSE (MIT, Apache-2.0, BSD-3-Clause or the Unlicense) and scans source
-/// files for SPDX headers. Ported from <c>rig.repo_governance.license_manager</c>.
+/// files for SPDX headers.
 /// </summary>
 public static partial class Licenses
 {
@@ -349,7 +349,7 @@ public static partial class Licenses
         return new(total, missing);
     }
 
-    /// <summary>The text of <paramref name="file"/> with line endings read as <c>\n</c>, as Python's text mode reads it.</summary>
+    /// <summary>The text of <paramref name="file"/> with line endings read as <c>\n</c>.</summary>
     internal static string ReadText(string file) => File.ReadAllText(file).ReplaceLineEndings("\n");
 
     private static IEnumerable<string> SourceFiles(string root)

@@ -151,7 +151,7 @@ public sealed record SkillPlaces(string Checkout, string Home, string WorkingDir
 /// <summary>
 /// Finds skills: every <c>SKILL.md</c> under each source, outside build output and dot folders, the first of each
 /// name winning. An allowlist keeps the skills whose name or folder matches one of its globs; none, or one holding
-/// <c>*</c>, keeps them all. Ported from <c>rig.skills.engine</c>.
+/// <c>*</c>, keeps them all.
 /// </summary>
 /// <param name="sources">The sources, in priority order.</param>
 /// <param name="estateAllowlist">The estate allowlist, or null when there is none and every skill is curated.</param>
@@ -244,7 +244,7 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
     }
 
     /// <summary>
-    /// Every entry named <c>SKILL.md</c> under <paramref name="root"/>, sorted as Python sorts paths (part by part),
+    /// Every entry named <c>SKILL.md</c> under <paramref name="root"/>, sorted part by part,
     /// never entering a linked folder, a dot folder or an <see cref="Ignored"/> one.
     /// </summary>
     public static IReadOnlyList<string> Find(string root, bool windows)
@@ -267,7 +267,7 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
 
         try
         {
-            // Python's text mode: undecodable bytes replaced, a BOM kept, newlines translated.
+            // Text mode: undecodable bytes replaced, a BOM kept, newlines translated.
             var text = new UTF8Encoding(false).GetString(File.ReadAllBytes(skillMd)).ReplaceLineEndings("\n");
             if (!text.StartsWith("---", StringComparison.Ordinal))
             {

@@ -6,9 +6,7 @@ using Rig.Core.Vault;
 namespace Rig.Core.Desktop;
 
 /// <summary>
-/// Times restore phases: each is an activity, logged when slow, and listed in one closing line. Ported from
-/// <c>desktop_manager.restore_timing.StepTimer</c>, on the port's clock rather than <c>perf_counter</c> so a fake
-/// desktop's sleeps count.
+/// Times restore phases: each is an activity, logged when slow, and listed in one closing line.
 /// </summary>
 /// <param name="log">Where slow steps and the summary go.</param>
 /// <param name="scope">The <c>scope</c> tag on every activity.</param>
@@ -62,7 +60,7 @@ public sealed partial class StepTimer(IRunLog log, string scope, Func<TimeSpan> 
 
     /// <summary>
     /// A token that marks one terminal launch so its window can be told apart: the entry's name as a slug, then eight
-    /// random hex digits. Ported from <c>new_terminal_restore_token</c>.
+    /// random hex digits.
     /// </summary>
     public static string NewTerminalRestoreToken(LaunchEntry entry)
     {

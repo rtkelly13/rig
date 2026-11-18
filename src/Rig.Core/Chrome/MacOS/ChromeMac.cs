@@ -8,8 +8,7 @@ namespace Rig.Core.Chrome.MacOS;
 /// Chrome on macOS: scripting for identity and closing, accessibility for metadata and menus. Chrome's scripting
 /// dictionary supplies stable window and tab ids, titles and URLs, and can select and close a tab without focus;
 /// native accessibility supplies what only the browser UI shows. Missing or ambiguous evidence leaves the affected
-/// tabs pinned and audible, so no planner acts on them. Construction performs no OS calls. Ported from
-/// <c>desktop_manager.chrome.drivers.macos</c>.
+/// tabs pinned and audible, so no planner acts on them. Construction performs no OS calls.
 /// </summary>
 /// <remarks>
 /// Every action re-finds its target and checks it before acting, and reports what happened rather than throwing on a

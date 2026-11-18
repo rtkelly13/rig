@@ -2,7 +2,7 @@ namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
 /// The Win32 reads window inventory is built from, one call each, with no policy of their own. A failed call answers
-/// null, zero or empty rather than throwing, as the Python's <c>WIN32_ERRORS</c> handlers did. The real one is
+/// null, zero or empty rather than throwing. The real one is
 /// <see cref="NativeWin32Windows"/>; tests use a fake, so <see cref="WindowInventory"/> is tested on every OS.
 /// </summary>
 public interface IWin32Windows
@@ -80,7 +80,7 @@ public interface IWin32Windows
     MonitorInfo? PrimaryMonitor();
 }
 
-/// <summary>One monitor's <c>MONITORINFOEX</c>. Ported from <c>desktop_manager.win32.monitor_info.Win32MonitorInfo</c>.</summary>
+/// <summary>One monitor's <c>MONITORINFOEX</c>.</summary>
 /// <param name="Bounds">The whole monitor.</param>
 /// <param name="WorkArea">The monitor less the taskbar and docked bars.</param>
 /// <param name="IsPrimary">Whether it is the primary monitor.</param>

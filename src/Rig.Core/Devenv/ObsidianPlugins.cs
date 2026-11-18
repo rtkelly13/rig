@@ -19,8 +19,7 @@ public sealed record PluginInstall(string? Tag, string? Problem);
 /// <summary>
 /// Installs and enables Obsidian community plugins from their GitHub releases. A plugin is only three files in
 /// <c>&lt;vault&gt;/.obsidian/plugins/&lt;id&gt;/</c> plus an entry in <c>community-plugins.json</c>, and releases publish
-/// exactly those files. Plugin ids resolve to repos through the official registry. Ported from devenv's
-/// <c>obsidian_plugins</c>.
+/// exactly those files. Plugin ids resolve to repos through the official registry.
 /// </summary>
 /// <param name="http">Follows redirects (release assets redirect to a CDN); every URL it is given passes <see cref="CheckUrl"/>.</param>
 public sealed class ObsidianPlugins(HttpClient http)
@@ -240,7 +239,7 @@ public sealed class ObsidianPlugins(HttpClient http)
 
     private static string? Str(JsonNode? node) => JsonShape.AsText(node);
 
-    // Python's str() of a list entry: strings as they are, anything else as JSON.
+    // A list entry as text: strings as they are, anything else as JSON.
     private static string Text(JsonNode? node) => Str(node) ?? node?.ToJsonString() ?? "None";
 
     private static JsonNode? Read(string path)

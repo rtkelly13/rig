@@ -3,13 +3,13 @@ using System.Text.Json;
 
 namespace Rig.Core.Otel;
 
-/// <summary>Reads JSON values the way the Python's pydantic models did in lax mode, so the same files mean the same.</summary>
+/// <summary>Reads JSON values leniently: a wrong-shaped value reads as absent.</summary>
 internal static class LaxJson
 {
     private static readonly HashSet<string> Truthy = new(["1", "on", "t", "true", "y", "yes"], StringComparer.OrdinalIgnoreCase);
     private static readonly HashSet<string> Falsy = new(["0", "off", "f", "false", "n", "no"], StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>The last value under <paramref name="key"/>, as Python's json keeps the last of a repeated key; null when absent.</summary>
+    /// <summary>The last value under <paramref name="key"/>; the last of a repeated key wins; null when absent.</summary>
     public static JsonElement? Field(JsonElement element, string key)
     {
         JsonElement? found = null;

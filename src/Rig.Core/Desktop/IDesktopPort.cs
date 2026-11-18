@@ -2,8 +2,7 @@ namespace Rig.Core.Desktop;
 
 /// <summary>
 /// The machine as restore sees it: every read, write, wait and sleep. Restore reaches the desktop only through this,
-/// so it runs against a fake in tests and the Win32 implementation on Windows. Ported from
-/// <c>desktop_manager.desktop_port.DesktopPort</c>.
+/// so it runs against a fake in tests and the Win32 implementation on Windows.
 /// </summary>
 /// <remarks>
 /// Desktops are numbered from 1 in position order. Time belongs to the port, so a fake's waits and sleeps move its own

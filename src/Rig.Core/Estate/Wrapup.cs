@@ -5,6 +5,7 @@ using Rig.Core.Orca;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Text;
+using Rig.Core.Vault;
 
 namespace Rig.Core.Estate;
 
@@ -160,7 +161,7 @@ public sealed record WrapupWorktree(string WorktreeId, string RepoId, string Pat
 /// <param name="Writable">Whether it takes input.</param>
 public sealed record WrapupTerminal(string Handle, string? TabId = null, string? LeafId = null, string? AgentIdentity = null, bool? Writable = null)
 {
-    /// <summary><c>tabId:leafId</c>, as Python formatted it (a missing half reads <c>None</c>).</summary>
+    /// <summary><c>tabId:leafId</c> (a missing half reads <c>None</c>).</summary>
     public string PaneKey => $"{TabId ?? "None"}:{LeafId ?? "None"}";
 }
 
@@ -262,8 +263,7 @@ public sealed record WrapupRow(string Repo, string Worktree, string WorktreeId, 
 public delegate Task<GitFacts?> GitFactsReader(string path, CancellationToken cancellationToken);
 
 /// <summary>
-/// Finds Orca agent sessions that have gone quiet and asks each one whether its change is finished. Ported from
-/// <c>src/rig/estate/wrapup.py</c>: read Orca, check the git facts first, ask the rest (docs/estate/wrapup.md).
+/// Finds Orca agent sessions that have gone quiet and asks each one whether its change is finished.
 /// </summary>
 public static class Wrapup
 {
@@ -610,7 +610,7 @@ public static class Wrapup
         return $"{Marker} {SafeSubstitute(template, values).Trim()}";
     }
 
-    /// <summary>Python's <c>string.Template.safe_substitute</c>: unknown and malformed placeholders stay as written.</summary>
+    /// <summary>Substitutes <c>$name</c> and <c>${name}</c> placeholders: unknown and malformed placeholders stay as written.</summary>
     public static string SafeSubstitute(string template, IReadOnlyDictionary<string, string> values)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -884,7 +884,7 @@ public sealed class WrapupOrca(IProc proc)
         var ran = await RunAsync(args, cancellationToken).ConfigureAwait(false);
         if (!ran.Ok)
         {
-            var detail = WrapupText.SplitLines((ran.Err.Length > 0 ? ran.Err : ran.Out).Trim());
+            var detail = UnicodeText.SplitLines((ran.Err.Length > 0 ? ran.Err : ran.Out).Trim());
             throw new WrapupException($"orca {args[0]} {args[1]} failed: {(detail.Count > 0 ? detail[0] : $"exit {ran.Code}")}");
         }
 
@@ -1005,7 +1005,7 @@ internal static class WrapupWire
     private static WrapupRepo Repo(JsonObject row) => new(Required(row, "id"), Required(row, "path"), OrcaJson.String(row, "displayName") ?? (row.ContainsKey("displayName") ? throw new InvalidDataException("displayName") : ""));
 }
 
-/// <summary>Python's string helpers that wrap-up's output depends on.</summary>
+/// <summary>String helpers that wrap-up's output depends on.</summary>
 public static class WrapupText
 {
     private static readonly Regex SafeWord = new(@"^[\w@%+=:,./-]+$", RegexOptions.CultureInvariant | RegexOptions.ECMAScript, TimeSpan.FromSeconds(1));
@@ -1013,40 +1013,11 @@ public static class WrapupText
     /// <summary>The first non-blank line, stripped, cut to <paramref name="limit"/> characters with an ellipsis.</summary>
     public static string FirstLine(string? text, int limit = 160)
     {
-        var line = SplitLines(text ?? "").Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? "";
+        var line = UnicodeText.SplitLines(text ?? "").Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? "";
         return line.Length <= limit ? line : line[..(limit - 1)] + "…";
     }
 
-    /// <summary>Python's <c>str.splitlines()</c>.</summary>
-    public static IReadOnlyList<string> SplitLines(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        List<string> lines = [];
-        var start = 0;
-        for (var i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (c is '\n' or '\r' or '\v' or '\f' or '\x1c' or '\x1d' or '\x1e' or '\x85' or '\u2028' or '\u2029')
-            {
-                lines.Add(text[start..i]);
-                if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
-                {
-                    i++;
-                }
-
-                start = i + 1;
-            }
-        }
-
-        if (start < text.Length)
-        {
-            lines.Add(text[start..]);
-        }
-
-        return lines;
-    }
-
-    /// <summary>Python's <c>shlex.quote</c>.</summary>
+    /// <summary>Quotes a word for a POSIX shell.</summary>
     public static string ShellQuote(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -1061,7 +1032,7 @@ public static class WrapupText
     /// <summary>The first <paramref name="length"/> characters.</summary>
     public static string Head(string text, int length) => text is null ? "" : text.Length <= length ? text : text[..length];
 
-    /// <summary>Close to Python's <c>str.casefold()</c>.</summary>
+    /// <summary>A close casefold.</summary>
     public static string Fold(string text) => (text ?? "").ToLowerInvariant();
 
     /// <summary>The last path segment, as <c>Path(path).name</c>.</summary>

@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Rig.Core.Devenv;
 
-/// <summary>Which Python <c>rig devenv runtimes</c> asks uv for. Ported from devenv's <c>steps/runtimes.py</c>.</summary>
+/// <summary>Which Python <c>rig devenv runtimes</c> asks uv for.</summary>
 public static partial class Runtimes
 {
     /// <summary>The Python uv installs when the folder names none.</summary>

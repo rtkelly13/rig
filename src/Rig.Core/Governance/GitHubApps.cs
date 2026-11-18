@@ -40,7 +40,7 @@ public sealed record AppSync(bool Ok, IReadOnlyList<string> Messages);
 
 /// <summary>
 /// The GitHub Apps declared under <c>github_apps</c>: whether each is installed on an account and reaches the repos it
-/// should, and connecting or disconnecting repos to match. Ported from <c>rig.repo_governance.github_apps_manager</c>.
+/// should, and connecting or disconnecting repos to match.
 /// An app cannot be installed by API; only an installed one's repo selection is synced.
 /// </summary>
 /// <param name="api">The GitHub REST seam.</param>

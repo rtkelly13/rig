@@ -56,8 +56,7 @@ public sealed record RunOutput(string Job, string RunId, string? Output);
 public sealed record RunStarted(string? Job, int Pid);
 
 /// <summary>
-/// The jobs coordinator as the ops pages and MCP tools show it. Ported from <c>desktop_manager.jobs.web</c>: the same
-/// <c>state.json</c> and <c>runs.ndjson</c> reads, so an agent and the pages never disagree.
+/// The jobs coordinator as the ops pages and MCP tools show it.
 /// </summary>
 public static class JobViews
 {
@@ -206,6 +205,6 @@ public static class JobViews
         record.Output.Length > 0,
         record.TraceId);
 
-    // Python's _started: an unreadable time sorts as the minimum, and one without an offset is taken as local.
+    // An unreadable time sorts as the minimum, and one without an offset is taken as local.
     private static DateTimeOffset Started(string text) => IsoStamp.Parse(text) ?? DateTimeOffset.MinValue;
 }

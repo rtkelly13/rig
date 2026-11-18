@@ -9,7 +9,7 @@ public sealed record NerdFont(string Name, string Zip);
 
 /// <summary>
 /// The developer Nerd Fonts: which are in the user font folder, and installing the rest from the latest
-/// <c>ryanoasis/nerd-fonts</c> release. Ported from devenv's <c>fonts</c> and <c>downloads</c>.
+/// <c>ryanoasis/nerd-fonts</c> release.
 /// </summary>
 /// <param name="http">Downloads the release zips.</param>
 public sealed class NerdFonts(HttpClient http)

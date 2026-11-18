@@ -132,8 +132,7 @@ public sealed record LayoutSnapshot(IReadOnlyList<Registration> Registrations, G
 }
 
 /// <summary>
-/// Orca's project sidebar, held to the layout <c>managed-projects.json</c> declares. Ported from
-/// <c>src/rig/estate/orca.py</c>.
+/// Orca's project sidebar, held to the layout <c>managed-projects.json</c> declares.
 /// </summary>
 /// <remarks>
 /// <para>

@@ -3,8 +3,7 @@ using System.Globalization;
 namespace Rig.Core.Otel;
 
 /// <summary>
-/// Config for the on-demand pair: a laptop-sized ClickHouse, and the contrib collector feeding it. Ported from
-/// <c>rig.otel_stack.clickhouse_config</c>, text for text.
+/// Config for the on-demand pair: a laptop-sized ClickHouse, and the contrib collector feeding it.
 /// </summary>
 /// <remarks>
 /// <para>ClickHouse binds 127.0.0.1 only, caps server memory at 1 GiB, shrinks the caches that default to gigabytes, runs a

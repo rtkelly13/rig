@@ -5,7 +5,7 @@ namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
 /// The real Windows machine as restore sees it: every read, write, wait and sleep through the Win32 layer and the
-/// launcher. Ported from <c>desktop_manager.desktop_port.Win32DesktopPort</c> and the queries and commands it mixes in.
+/// launcher.
 /// </summary>
 [ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]
 public sealed class NativeDesktopPort : IDesktopPort

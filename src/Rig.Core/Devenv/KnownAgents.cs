@@ -6,7 +6,7 @@ namespace Rig.Core.Devenv;
 /// <param name="Command">The command it is run by.</param>
 public sealed record KnownAgent(string Id, string Name, string Command);
 
-/// <summary>The AI coding agents devenv reports on. Ported from devenv's <c>ai_tools.discovery</c>.</summary>
+/// <summary>The AI coding agents devenv reports on.</summary>
 public static class KnownAgents
 {
     /// <summary>Every agent, in report order.</summary>

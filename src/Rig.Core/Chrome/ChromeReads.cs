@@ -4,7 +4,7 @@ namespace Rig.Core.Chrome;
 
 /// <summary>
 /// Reading Chrome's windows for a command: one <c>chrome_tabs.read_windows</c> span per read, carrying the phase it is
-/// for. Ported from <c>list_profile_windows</c> and <c>filter_profile</c> in <c>desktop_manager.chrome.cli_common</c>.
+/// for.
 /// </summary>
 public static class ChromeReads
 {

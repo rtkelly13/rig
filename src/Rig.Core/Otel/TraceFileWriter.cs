@@ -221,7 +221,7 @@ public sealed class TraceFileWriter : IDisposable
     private static List<object?> Attributes(IEnumerable<KeyValuePair<string, object?>> tags) =>
         [.. tags.Select(tag => new Dictionary<string, object?> { ["key"] = tag.Key, ["value"] = AttributeValue(tag.Value) })];
 
-    /// <summary>One attribute value in OTLP-JSON, the encoding <c>rig.tracing</c> gives the same Python value.</summary>
+    /// <summary>One attribute value in OTLP-JSON, the encoding <c>rig.tracing</c> gives the same value.</summary>
     public static Dictionary<string, object?> AttributeValue(object? value) => value switch
     {
         bool flag => new() { ["boolValue"] = flag },

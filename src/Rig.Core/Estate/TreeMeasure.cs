@@ -20,8 +20,7 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
     public const int SampleStride = 32;
 
     /// <summary>
-    /// Walks <paramref name="path"/> once, returning apparent and freeable bytes. Ported from
-    /// <c>src/rig/estate/disksize.py</c> <c>measure</c>.
+    /// Walks <paramref name="path"/> once, returning apparent and freeable bytes.
     /// </summary>
     /// <remarks>
     /// uv hardlinks <c>.venv</c> files from its cache and pnpm hardlinks <c>node_modules</c> from its store, so a

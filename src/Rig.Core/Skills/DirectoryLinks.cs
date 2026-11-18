@@ -63,7 +63,7 @@ public static class DirectoryLinks
         return Path.Exists(resolved) ? resolved : null;
     }
 
-    /// <summary>Whether two resolved paths name the same place: ignoring case on Windows, as Python's paths compare there.</summary>
+    /// <summary>Whether two resolved paths name the same place: ignoring case on Windows, as paths compare there.</summary>
     public static bool Same(string left, string right, bool windows) =>
         string.Equals(left, right, windows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 

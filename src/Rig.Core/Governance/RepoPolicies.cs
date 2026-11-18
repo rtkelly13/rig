@@ -37,7 +37,6 @@ public sealed record LanguagePreset(
 /// <summary>
 /// <c>config/repo_policies.json</c>, as far as the <c>.gitignore</c> policy, repo selection and the AGENTS.md audit read it. A key resolves from the repo's
 /// override, then the profile naming it, then <c>defaults</c>, taking the first that declares it (no deep merge).
-/// Ported from <c>rig.repo_governance.policy_config</c>.
 /// </summary>
 public sealed class RepoPolicies
 {
@@ -528,7 +527,7 @@ public sealed class RepoPolicies
 
     private static InvalidDataException Bad(string source, string why) => new($"{source}: {why}");
 
-    // agents_md_hygiene, whole: a field it leaves out takes the built-in default, as the Python's dataclass did.
+    // agents_md_hygiene, whole: a field it leaves out takes the built-in default.
     private static AgentsMdRules? Hygiene(AgentsMdHygieneConfig? hygiene, string source)
     {
         if (hygiene is null)

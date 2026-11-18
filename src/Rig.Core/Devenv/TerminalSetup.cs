@@ -10,8 +10,7 @@ namespace Rig.Core.Devenv;
 public sealed record TerminalStatus(string? Path, bool? SnapToGrid);
 
 /// <summary>
-/// devenv's terminal setup: Windows Terminal's defaults and the Oh My Posh prompt hook. Ported from devenv's
-/// <c>steps/terminal.py</c>.
+/// devenv's terminal setup: Windows Terminal's defaults and the Oh My Posh prompt hook.
 /// </summary>
 public static class TerminalSetup
 {

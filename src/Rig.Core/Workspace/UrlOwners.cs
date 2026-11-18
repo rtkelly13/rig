@@ -41,7 +41,7 @@ public sealed record VercelClaim(string Project, string Slug, IReadOnlyList<stri
 /// <summary>
 /// Which managed project a URL belongs to, from what the projects declare in <c>config/managed-projects.json</c>: a
 /// local app's port inside the project's <c>ports</c> range, and a <c>*.vercel.app</c> host starting with one of its
-/// <c>vercel</c> project names. Ported from <c>rig.workspace.url_owners</c>, <c>ports</c> and <c>vercel_names</c>.
+/// <c>vercel</c> project names.
 /// </summary>
 /// <param name="ports">The port claims.</param>
 /// <param name="vercel">The Vercel claims.</param>

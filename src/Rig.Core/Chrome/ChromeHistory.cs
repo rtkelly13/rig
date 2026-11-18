@@ -7,7 +7,7 @@ namespace Rig.Core.Chrome;
 /// never its URL, and some sites title their pages with nothing but the page's own name. The profile's <c>History</c>
 /// database records the URL of every title it has seen, so a title history maps to exactly one host names that host.
 /// Chrome keeps the database open; it is read in place, read-only and immutable, so a lookup can miss the newest
-/// visits but never disturbs Chrome. Ported from <c>desktop_manager.chrome.history</c>.
+/// visits but never disturbs Chrome.
 /// </summary>
 public static class ChromeHistory
 {

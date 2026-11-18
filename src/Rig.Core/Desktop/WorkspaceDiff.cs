@@ -3,8 +3,7 @@ using Rig.Core.Vault;
 namespace Rig.Core.Desktop;
 
 /// <summary>
-/// One screen of one desktop: what the plan puts there, what is there, and how they pair up. Ported from
-/// <c>desktop_manager.visualization.ScreenDiff</c>.
+/// One screen of one desktop: what the plan puts there, what is there, and how they pair up.
 /// </summary>
 /// <remarks>
 /// <see cref="Missing"/> and <see cref="Misplaced"/> are planned entries another restore attempt can fix.
@@ -92,7 +91,7 @@ public sealed record ScreenDiff(int ScreenNumber)
     }
 }
 
-/// <summary>One planned desktop, screen by screen. Ported from <c>desktop_manager.visualization.DesktopDiff</c>.</summary>
+/// <summary>One planned desktop, screen by screen.</summary>
 /// <param name="Name">The desktop's name.</param>
 /// <param name="Screens">Its screens, in number order.</param>
 public sealed record DesktopDiff(string Name, IReadOnlyList<ScreenDiff> Screens)
@@ -106,8 +105,7 @@ public sealed record DesktopDiff(string Name, IReadOnlyList<ScreenDiff> Screens)
 }
 
 /// <summary>
-/// The plan against the live workspace. Decisions read the fields; people read <see cref="Render"/>. Ported from
-/// <c>desktop_manager.visualization</c>.
+/// The plan against the live workspace. Decisions read the fields; people read <see cref="Render"/>.
 /// </summary>
 /// <param name="Desktops">Each planned desktop's diff, in plan order.</param>
 public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
@@ -312,7 +310,7 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
         return names;
     }
 
-    // Each entry takes its best-scoring window, best pair first; Python sorts (score, entry, window) descending, so a
+    // Each entry takes its best-scoring window, best pair first; it sorts (score, entry, window) descending, so a
     // tie goes to the later entry, then the later window.
     private static (Dictionary<int, int> ByEntry, Dictionary<int, int> ByWindow) Match(
         DesktopPlan planned,

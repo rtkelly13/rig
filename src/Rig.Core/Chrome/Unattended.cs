@@ -3,8 +3,7 @@ using System.Globalization;
 namespace Rig.Core.Chrome;
 
 /// <summary>
-/// Unattended runs: leave Chrome alone during calls, and wait for an idle machine before grouping. Ported from the pure
-/// part of <c>desktop_manager.chrome.unattended</c>; <see cref="UnattendedGrouping"/> runs the waits and retries.
+/// Unattended runs: leave Chrome alone during calls, and wait for an idle machine before grouping.
 /// </summary>
 public static class Unattended
 {
@@ -60,7 +59,7 @@ public static class Unattended
         {
             devices = presence.DevicesInUse();
         }
-#pragma warning disable CA1031 // A device check is a hint; any failure means no hint, as in Python.
+#pragma warning disable CA1031 // A device check is a hint; any failure means no hint.
         catch (Exception)
 #pragma warning restore CA1031
         {

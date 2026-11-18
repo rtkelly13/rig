@@ -46,7 +46,7 @@ public sealed record OrcaWorktree(
 public sealed record OrcaActivity(string WorktreeId, IReadOnlyList<string?> AgentStates);
 
 /// <summary>
-/// The project, group and worktree methods of Orca's runtime. Ported from <c>src/rig/estate/orca_runtime.py</c>. A
+/// The project, group and worktree methods of Orca's runtime. A
 /// field of the wrong type in a required place shows up as <see cref="OrcaUnavailableException"/>, never as a guess.
 /// </summary>
 public static class OrcaProjects

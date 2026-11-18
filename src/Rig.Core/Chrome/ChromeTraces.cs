@@ -150,7 +150,7 @@ public sealed record TraceSummary(
 /// Organise-run traces: where they land, how long they are kept, and the reports read from them. Every run is one
 /// <see cref="RunSpan"/> span with a child span per phase, written as OTLP/JSON lines to
 /// <c>%LOCALAPPDATA%\shared-utilities\chrome-tabs\traces\&lt;YYYY-MM-DD&gt;.ndjson</c>. Pure file work, so the reports
-/// run anywhere. Ported from <c>desktop_manager.chrome.traces</c>.
+/// run anywhere.
 /// </summary>
 public static partial class ChromeTraces
 {
@@ -483,7 +483,7 @@ public static partial class ChromeTraces
             _ => null,
         };
 
-    // A seconds count as Python's report did: "250ms", "12.5s", "3.0m", or "-".
+    // A seconds count: "250ms", "12.5s", "3.0m", or "-".
     private static string Duration(double? seconds) =>
         seconds switch
         {
@@ -493,7 +493,7 @@ public static partial class ChromeTraces
             _ => $"{Fixed(seconds.Value / 60, 1)}m",
         };
 
-    // Python's f"{value:.{digits}f}": round half to even on the exact value. F0 is exact; F1 matches outside exact ties.
+    // Round half to even on the exact value. F0 is exact; F1 matches outside exact ties.
     private static string Fixed(double value, int digits) =>
         digits == 0
             ? Math.Round(value, MidpointRounding.ToEven).ToString("F0", CultureInfo.InvariantCulture)
@@ -541,7 +541,7 @@ public static partial class ChromeTraces
         return ordered.Count % 2 == 1 ? ordered[middle] : (ordered[middle - 1] + ordered[middle]) / 2;
     }
 
-    // Python's str() of a decoded attribute value.
+    // A decoded attribute value as text.
     private static string YamlString(object? value) =>
         value switch
         {
@@ -621,7 +621,7 @@ public static partial class ChromeTraces
         };
 
     // An OTLP AnyValue as a plain value: an array becomes a list and intValue's decimal string a long. Each field is
-    // read leniently, as Python's pydantic did, so a field of the wrong type counts as absent.
+    // read leniently, so a field of the wrong type counts as absent.
     private static object? AnyValue(JsonNode? node)
     {
         if (node is not JsonObject value)

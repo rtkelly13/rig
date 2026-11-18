@@ -63,7 +63,7 @@ public interface IRegistryInfo
 /// <summary>
 /// The package and version dashboard: every declared package against its registry, its git tags and its changelog.
 /// Flags unreleased changes, a tag with no registry version, a registry version with no tag, deprecated or unlisted
-/// packages, and version drift across a multi-package project. Ported from <c>rig.workspace.package_dashboard</c>.
+/// packages, and version drift across a multi-package project.
 /// </summary>
 public static partial class PackageDashboard
 {

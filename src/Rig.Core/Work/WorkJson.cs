@@ -4,7 +4,7 @@ using Rig.Core.Text;
 namespace Rig.Core.WorkItems;
 
 /// <summary>
-/// The <c>work list --json</c> schema, ported from <c>desktop_manager/work/serialize.py</c>. Consumers depend on it:
+/// The <c>work list --json</c> schema, Consumers depend on it:
 /// fields may be added without a version bump; renaming or removing one bumps <see cref="SchemaVersion"/>.
 /// </summary>
 public static class WorkJson

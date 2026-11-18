@@ -7,7 +7,7 @@ namespace Rig.Core.Chrome.MacOS;
 /// <summary>
 /// The input clock on macOS, from Quartz, for runs that must not move the mouse under the user. macOS exposes no
 /// per-application device use, so a call is never reported; Spaces are not addressable, so the lock screen is never
-/// treated as a reason to stop either. Ported from the macOS half of <c>desktop_manager.chrome.presence</c>.
+/// treated as a reason to stop either.
 /// </summary>
 [SupportedOSPlatform("macos")]
 [ExcludeFromCodeCoverage(Justification = "Quartz interop; no CI job runs macOS, and the readers around it are covered by their fakes.")]

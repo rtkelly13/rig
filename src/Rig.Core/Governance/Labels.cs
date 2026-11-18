@@ -36,7 +36,7 @@ public sealed record SyncOutcome(bool Changed, IReadOnlyList<string> Messages);
 /// <summary>
 /// GitHub label governance: holds repos to the <c>labels</c> taxonomy in <c>config/repo_policies.json</c>. Labels outside
 /// the taxonomy are left alone; a missing taxonomy label is created, and one whose colour or description differs is
-/// updated. Ported from <c>rig.repo_governance.label_taxonomy</c>.
+/// updated.
 /// </summary>
 public static class LabelTaxonomy
 {

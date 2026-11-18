@@ -43,7 +43,7 @@ public sealed record BranchDeletion(string Branch, bool Deleted, string Error = 
 /// Deletes remote branches whose work has landed. <c>delete_branch_on_merge</c> covers only branches merged while it
 /// is on, so repos accumulate a tail of dead refs. Under squash merge a branch's commits never become ancestors of
 /// main, so merged-ness is read from the PR that merged it, through gh, not from the commit graph. A branch no PR ever
-/// referenced is reported, never deleted. Ported from <c>rig.repo_governance.branch_cleanup</c>.
+/// referenced is reported, never deleted.
 /// </summary>
 /// <param name="proc">Runs gh.</param>
 /// <param name="git">Runs git.</param>

@@ -31,7 +31,7 @@ public interface IPresence
     IReadOnlyList<string> DevicesInUse();
 }
 
-/// <summary>Idle time and waiting for a block to clear. Ported from <c>desktop_manager.chrome.presence</c>.</summary>
+/// <summary>Idle time and waiting for a block to clear.</summary>
 public static class Presence
 {
     /// <summary>Seconds since the last input, across a tick-count wrap.</summary>

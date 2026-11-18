@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace Rig.Core.Desktop.Windows;
 
 /// <summary>
-/// The real Windows machine as align sees it. Ported from <c>desktop_manager.win32.align_ports.Win32AlignPorts</c>.
+/// The real Windows machine as align sees it.
 /// </summary>
 [SupportedOSPlatform("windows")]
 [ExcludeFromCodeCoverage(Justification = "Win32 interop; the Windows CI job smoke-tests it, the ubuntu coverage run cannot reach it.")]

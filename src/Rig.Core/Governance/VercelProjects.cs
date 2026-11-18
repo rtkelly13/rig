@@ -52,8 +52,7 @@ public sealed class VercelClaimException : Exception
 /// Which repository each Vercel project belongs to, checked against what Vercel says. Managed projects declare their
 /// Vercel project names under <c>vercel</c> in <c>config/managed-projects.json</c>; a project's repository comes from
 /// its git link, or for one deployed from the CLI, from the managed repo on GitHub holding its newest deployment's
-/// commit. It reports; it never edits the config (ADR 0020). Ported from <c>rig.repo_governance.vercel_projects</c>
-/// and the loaders of <c>rig.workspace.vercel_names</c>.
+/// commit. It reports; it never edits the config (ADR 0020).
 /// </summary>
 public static partial class VercelProjects
 {

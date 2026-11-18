@@ -12,8 +12,7 @@ namespace Rig.Core.Estate;
 public sealed record Discovered(IReadOnlyList<string> Paths, bool FromCache);
 
 /// <summary>
-/// Finds the git clones under a code root cheaply, and remembers where they are. Ported from
-/// <c>src/rig/estate/discovery.py</c>.
+/// Finds the git clones under a code root cheaply, and remembers where they are.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -27,7 +26,7 @@ public sealed record Discovered(IReadOnlyList<string> Paths, bool FromCache);
 /// </para>
 /// <para>
 /// The answer is cached in one file under the home folder, keyed by resolved root, for <see cref="DefaultTtl"/>. The
-/// file's shape is the Python tool's, which shares it until the estate commands have all moved.
+/// file's shape is a shared on-disk format.
 /// </para>
 /// </remarks>
 /// <param name="cacheFile">The cache file: <see cref="CacheFileUnder"/> in production, a temp path in tests.</param>
@@ -181,7 +180,7 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
 
     private sealed record CachedScan(string Root, DateTimeOffset ScannedAt, IReadOnlyList<string> Repos)
     {
-        // Python's datetime.isoformat() for an aware UTC time, which its fromisoformat() reads back.
+        // ISO 8601 for an aware UTC time, read back by the same parser.
         public JsonObject ToJson() => new()
         {
             ["root"] = Root,

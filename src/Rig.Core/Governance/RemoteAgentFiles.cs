@@ -29,8 +29,7 @@ public sealed record RemoteSweep(IReadOnlyList<RemoteAgentFile> Findings, IReadO
 
 /// <summary>
 /// Sweeps the default branch of every repository the estate's owners own for agent files that shadow
-/// <c>AGENTS.md</c>, over the GitHub API, so a repository with no local clone is covered too. Ported from
-/// <c>rig.repo_governance.agent_files_remote</c>.
+/// <c>AGENTS.md</c>, over the GitHub API, so a repository with no local clone is covered too.
 /// </summary>
 /// <param name="proc">Runs <c>gh</c>.</param>
 public sealed class RemoteAgentFiles(IProc proc)

@@ -52,8 +52,8 @@ public sealed class OtlpSender(HttpClient http, Uri baseUrl) : IOtlpSender
 public sealed record FileMark(long Size, long MtimeNs)
 {
     /// <summary>
-    /// Whether <paramref name="other"/> is the same mark. .NET reads modification times to 100 ns, the Python to 1 ns, so
-    /// the times are compared to 100 ns: a mark the Python wrote still matches, and a mismatch only re-checks a file.
+    /// Whether <paramref name="other"/> is the same mark. .NET reads modification times to 100 ns, the writer to 1 ns, so
+    /// the times are compared to 100 ns: a mark written at 1 ns still matches, and a mismatch only re-checks a file.
     /// </summary>
     public bool Matches(FileMark? other) => other is not null && other.Size == Size && other.MtimeNs / 100 == MtimeNs / 100;
 }
@@ -78,7 +78,7 @@ public sealed record BackfillReport(IReadOnlyList<FileResult> Files, int Unchang
 }
 
 /// <summary>
-/// Replays recorded spans into ClickHouse through the contrib collector; ported from <c>rig.otel_stack.backfill</c>.
+/// Replays recorded spans into ClickHouse through the contrib collector;
 /// Spans are compared with <c>otel.otel_traces</c> by (TraceId, SpanId), so a span is never sent twice, even after the
 /// collector renames its active file. Of a span written twice the complete copy wins. Spans that ended inside the
 /// settle window wait for the next run. A file is marked done (by size and mtime) only once every span in it is
@@ -287,7 +287,7 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         return new BackfillReport(results, unchanged, errors);
     }
 
-    /// <summary>Python's <c>os.path.normcase</c>: lower case with backslashes on Windows, unchanged elsewhere.</summary>
+    /// <summary>Case-normalises a path: lower case with backslashes on Windows, unchanged elsewhere.</summary>
     public static string NormCase(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -378,7 +378,7 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         }
     }
 
-    // json.dumps of the envelope: compact separators would differ from the Python's ", " and ": ", but the collector
+    // json.dumps of the envelope: compact separators would differ from the ", " and ": " written before, but the collector
     // parses either; what matters is the same spans in the same envelope.
     private static string Render(JsonObject body) => body.ToJsonString();
 }

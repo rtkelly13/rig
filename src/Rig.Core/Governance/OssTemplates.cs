@@ -26,8 +26,7 @@ public sealed record OssTemplateContext(string RepoName, string RepoFullName, st
 
 /// <summary>
 /// The community health files every governed repo carries: GitHub issue forms, the PR template, CONTRIBUTING.md and
-/// the Contributor Covenant. Ported from <c>rig.repo_governance.oss_templates</c>; the Jinja templates are embedded
-/// and use only <c>{{ name }}</c> and <c>{{ name | default("…") }}</c>, which <see cref="Render"/> fills.
+/// the Contributor Covenant.
 /// </summary>
 public static partial class OssTemplates
 {

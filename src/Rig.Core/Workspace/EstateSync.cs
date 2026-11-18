@@ -7,8 +7,7 @@ namespace Rig.Core.Workspace;
 
 /// <summary>
 /// Writes the files the personal folder is generated with: its <c>AGENTS.md</c> router, which maps every active
-/// managed project, and <c>personal.code-workspace</c>, which opens every one that is cloned. Ported from
-/// <c>rig.workspace.engine</c>'s <c>sync_estate_router</c> and <c>sync_estate_code_workspace</c>.
+/// managed project, and <c>personal.code-workspace</c>, which opens every one that is cloned.
 /// </summary>
 /// <param name="scopes">The estate's org folders, where org-owned projects are cloned.</param>
 public sealed class EstateSync(EstateScopes scopes)

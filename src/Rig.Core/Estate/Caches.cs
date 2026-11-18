@@ -59,7 +59,6 @@ public sealed record Footprint(long Bytes, DateTime Newest)
 {
     /// <summary>
     /// Walks all of <paramref name="path"/>, <c>.git</c> included, summing apparent size and the newest write time.
-    /// Ported from <c>src/rig/estate/disksize.py</c> <c>footprint</c>.
     /// </summary>
     /// <remarks>
     /// Never stops early and never reads link counts: it answers "how big is this, and is anyone still writing to it".
@@ -92,7 +91,7 @@ public sealed record Footprint(long Bytes, DateTime Newest)
                 }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException)
                 {
-                    // Gone or unreadable since the listing; Python's walk skips it too.
+                    // Gone or unreadable since the listing; the walk skips it.
                 }
             }
         }
@@ -109,8 +108,7 @@ public sealed record IdleSession(string Path, long Bytes, DateTime LastWrite);
 
 
 /// <summary>
-/// Caches that refill themselves: prune them, and say how much each one gave back. Ported from
-/// <c>src/rig/estate/caches.py</c>.
+/// Caches that refill themselves: prune them, and say how much each one gave back.
 /// </summary>
 /// <remarks>
 /// Five categories, each owned by its own tool: uv's cache, pnpm's store, NuGet's http-cache, Claude Code's idle session

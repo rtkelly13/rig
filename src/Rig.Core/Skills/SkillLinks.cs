@@ -46,7 +46,7 @@ public sealed record SystemCount(string System, int Count);
 /// <summary>
 /// Keeps each system's skills folder linked to the catalog. Only links are ever removed: a real file or folder in a
 /// skills folder belongs to that agent (Claude Code keeps its own <c>synced</c> bucket there), except where sync must
-/// put a catalog skill in its place. Ported from <c>rig.skills.engine</c>.
+/// put a catalog skill in its place.
 /// </summary>
 /// <param name="places">Where the systems' folders and the activation ledger live.</param>
 /// <param name="linker">Makes the links; when it cannot, the skill folder is copied instead.</param>

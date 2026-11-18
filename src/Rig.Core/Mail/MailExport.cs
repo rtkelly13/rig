@@ -39,7 +39,7 @@ public sealed record SweepStep(
 public sealed record ApiFilter(
     string Rule, string Sender, string To, string Subject, string Query, string NegatedQuery, string? Label, IReadOnlyList<string> Add, IReadOnlyList<string> Remove);
 
-/// <summary>Compiles rules into Gmail's filter-import XML, the connector's sweep plan and Gmail API filters. Ported from <c>rig.mail.export</c>.</summary>
+/// <summary>Compiles rules into Gmail's filter-import XML, the connector's sweep plan and Gmail API filters.</summary>
 public static class MailExport
 {
     private const string Atom = "http://www.w3.org/2005/Atom";
@@ -75,7 +75,7 @@ public static class MailExport
     }
 
     /// <summary>
-    /// Gmail's filter export format, as Python's ElementTree wrote it; import it under Settings → Filters → Import filters.
+    /// Gmail's filter export format; import it under Settings → Filters → Import filters.
     /// Sweep-only rules (<c>older_than</c>) are left out, since a filter cannot act on age.
     /// </summary>
     public static string FiltersXml(MailRuleSet ruleset, DateTimeOffset now)
@@ -127,7 +127,7 @@ public static class MailExport
         ];
     }
 
-    /// <summary>The plan as indented JSON for the skill to read, field for field as the Python wrote it.</summary>
+    /// <summary>The plan as indented JSON for the skill to read, field for field.</summary>
     public static string SweepJson(IEnumerable<SweepStep> steps)
     {
         var w = new IndentedJsonWriter();

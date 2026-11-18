@@ -8,7 +8,6 @@ namespace Rig.Core.Desktop;
 
 /// <summary>
 /// Reading and writing workspace plan files: a single JSON plan, or a bundle root that lists one file per desktop.
-/// Ported from <c>desktop_manager.plan</c> (<c>parse_plan_json</c>, <c>save_plan</c>, <c>save_plan_bundle</c>).
 /// </summary>
 public static partial class PlanFiles
 {
@@ -189,7 +188,7 @@ public static partial class PlanFiles
         };
     }
 
-    // Python's str() of a bundle alias value: text as itself, null as "None", numbers and booleans as Python prints them.
+    // A bundle alias value as text: text as itself, null as "None", numbers and booleans.
     private static string YamlString(JsonNode? node) => node switch
     {
         null => "None",

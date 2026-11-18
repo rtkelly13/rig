@@ -32,7 +32,7 @@ public static class QueueProjection
         }
     }
 
-    /// <summary>Python's UTF-8 text reads: reject invalid bytes and normalize universal newlines.</summary>
+    /// <summary>UTF-8 text reads: reject invalid bytes and normalize universal newlines.</summary>
     public static string Read(string path) => Utf8.GetString(File.ReadAllBytes(path))
         .Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
 }

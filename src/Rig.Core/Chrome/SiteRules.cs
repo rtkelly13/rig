@@ -19,8 +19,7 @@ public sealed record SiteRule(string Site, Regex Pattern, string Key, bool Auto 
 public sealed record TabIdentity(string Site, string Key, bool Auto, bool ExactOnly);
 
 /// <summary>
-/// Per-site rules that turn a tab title into an identity key, for de-duplicating non-PR tabs. Ported from
-/// <c>desktop_manager.chrome.site_rules</c>.
+/// Per-site rules that turn a tab title into an identity key, for de-duplicating non-PR tabs.
 /// </summary>
 /// <remarks>
 /// <para>

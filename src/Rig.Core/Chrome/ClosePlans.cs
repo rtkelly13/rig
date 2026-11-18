@@ -64,7 +64,6 @@ public sealed record HeldPlan(IReadOnlyList<IPlannedTabClose> Closes, IReadOnlyL
 
 /// <summary>
 /// What the tab planners share: the keeper choice, how a tab is described, and executing plans window by window.
-/// Ported from the shared half of <c>desktop_manager.chrome.pr_prune</c>.
 /// </summary>
 public static class ClosePlans
 {

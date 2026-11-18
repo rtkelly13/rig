@@ -25,8 +25,7 @@ public sealed record PagesInspection(bool Enabled, string? Cname, bool IsAligned
 public sealed record PagesAlignResult(string Status, IReadOnlyList<string> Actions, string? Error = null);
 
 /// <summary>
-/// GitHub Pages governance: build type, custom domain and HTTPS enforcement through the GitHub API. Ported from
-/// <c>rig.repo_governance.pages_manager</c>.
+/// GitHub Pages governance: build type, custom domain and HTTPS enforcement through the GitHub API.
 /// </summary>
 public static class PagesGovernance
 {

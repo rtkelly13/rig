@@ -115,7 +115,7 @@ public sealed class ShelvePlan : IPlan<ShelveResult>
         DecisionNeeded.Count > 0 ? "needs-decision" : Action,
         DecisionNeeded.Count > 0 ? string.Join("; ", DecisionNeeded) : string.Join("; ", Reasons));
 
-    /// <summary>The plan as <c>estate shelve --json</c> prints it, in the Python field order.</summary>
+    /// <summary>The plan as <c>estate shelve --json</c> prints it.</summary>
     public JsonObject ToJson() => new()
     {
         ["clone"] = Clone,
@@ -198,8 +198,7 @@ public sealed record ShelveTarget(
 /// side ref, proves origin holds it, then removes the worktree. The working tree is staged into a throwaway index and
 /// written with <c>commit-tree</c>, so the real index, the branch and any open PR are never touched. A worktree that
 /// needs a person's judgement (ignored files that do not regenerate, anything too big to push, a conflicting shelf, a
-/// live session) is not shelved; its plan carries <see cref="ShelvePlan.DecisionNeeded"/> instead. Ported from
-/// <c>src/rig/estate/shelve.py</c>.
+/// live session) is not shelved; its plan carries <see cref="ShelvePlan.DecisionNeeded"/> instead.
 /// </summary>
 /// <param name="git">Runs git.</param>
 /// <param name="removal">Finishes a removal git stopped part-way through.</param>
@@ -318,10 +317,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         return string.Join('\n', lines) + "\n";
     }
 
-    /// <summary>Python's <c>isoformat(timespec="seconds")</c>.</summary>
+    /// <summary>ISO 8601 to the second.</summary>
     public static string IsoSeconds(DateTimeOffset at) => at.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
 
-    /// <summary>Python's <c>isoformat()</c>: microseconds shown only when there are any.</summary>
+    /// <summary>ISO 8601; microseconds shown only when there are any.</summary>
     public static string Iso(DateTimeOffset at) =>
         at.Ticks % TimeSpan.TicksPerSecond / 10 == 0
             ? IsoSeconds(at)

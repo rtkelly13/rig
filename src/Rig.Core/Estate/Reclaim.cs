@@ -100,7 +100,7 @@ public sealed record RepoReclaim(string Repo, IReadOnlyList<Reclaimable> Entries
 }
 
 /// <summary>
-/// Disk that regenerates from a command. Ported from <c>src/rig/estate/reclaim.py</c>.
+/// Disk that regenerates from a command.
 /// </summary>
 /// <remarks>
 /// <c>temp/</c> is not homogeneous: worktrees live at <c>&lt;repo&gt;/temp/&lt;name&gt;</c> beside scratch files, so

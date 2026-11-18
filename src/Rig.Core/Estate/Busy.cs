@@ -4,8 +4,7 @@ using Rig.Core.Roots;
 namespace Rig.Core.Estate;
 
 /// <summary>
-/// One snapshot of the folders processes are working in, taken once per run and asked many times. Ported from
-/// <c>src/rig/estate/busy.py</c> and the <c>Busy</c> of <c>src/rig/estate/cleanup.py</c>.
+/// One snapshot of the folders processes are working in, taken once per run and asked many times.
 /// </summary>
 /// <remarks>
 /// A worktree with a shell, an agent session or an Orca terminal sitting in it is in use however finished its branch

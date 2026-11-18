@@ -11,7 +11,7 @@ public sealed record GroupRun(int Moved, string? Stopped = null);
 /// <summary>
 /// Carries out a grouping plan: every ungroup first, then window by window with each window in front. Windows on other
 /// virtual desktops are brought here for the run and sent home after, and the user is put back on the desktop they
-/// were on. Ported from <c>desktop_manager.chrome.group_run</c>.
+/// were on.
 /// </summary>
 /// <param name="actions">The platform's grouping steps.</param>
 /// <param name="desktops">The virtual desktops the windows live on.</param>
@@ -208,7 +208,7 @@ public sealed class GroupRunner(
                 {
                     desktops.MoveWindow(handle, home);
                 }
-#pragma warning disable CA1031 // Sending a window home is best effort, as in Python.
+#pragma warning disable CA1031 // Sending a window home is best effort.
                 catch (Exception)
 #pragma warning restore CA1031
                 {

@@ -126,7 +126,7 @@ public sealed class RepoSettingsResource : Resource<RepoSettings, LiveRepoSettin
 }
 
 /// <summary>The ruleset a repo should carry, and why it must not be written when the check-name guard refuses.</summary>
-/// <param name="Payload">The body sent, as Python's <c>json.dumps</c> writes it.</param>
+/// <param name="Payload">The body sent.</param>
 /// <param name="Rules">The payload's comparable shape.</param>
 /// <param name="Refusal">Why it must not be written, or null.</param>
 public sealed record DeclaredRuleset(string Payload, RulesetShape Rules, string? Refusal);
@@ -164,7 +164,7 @@ public sealed record RulesetShape(
     ];
 
     /// <summary>
-    /// A ruleset's shape from its JSON; null when it is not one. Each rule's declaration is Python's <c>repr</c> of its
+    /// A ruleset's shape from its JSON; null when it is not one. Each rule's declaration is the quoted form of its
     /// sorted check contexts and declared parameters, or empty when it has no parameters, so it reads the same as before.
     /// </summary>
     public static RulesetShape? From(JsonNode? node)
@@ -210,7 +210,7 @@ public sealed record RulesetShape(
                 return null;
             }
 
-            // A repeated type keeps its first place and its last declaration, as a Python dict does.
+            // A repeated type keeps its first place and its last declaration.
             var type = GitHubCalls.Str(body, "type") ?? string.Empty;
             var at = rules.FindIndex(r => r.Key == type);
             if (at < 0)

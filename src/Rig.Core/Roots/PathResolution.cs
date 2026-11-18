@@ -1,6 +1,6 @@
 namespace Rig.Core.Roots;
 
-/// <summary>Absolute paths with every symbolic link along them followed, as Python's <c>Path.resolve()</c> gives.</summary>
+/// <summary>Absolute paths with every symbolic link along them followed.</summary>
 public static class PathResolution
 {
     // The POSIX symlink-hop limit (ELOOP): a cycle stops here instead of recursing forever.

@@ -1,11 +1,11 @@
 namespace Rig.Core.Desktop;
 
-/// <summary>A live screen: its number and its work area. Ported from <c>desktop_manager.models.DisplayArea</c>.</summary>
+/// <summary>A live screen: its number and its work area.</summary>
 /// <param name="ScreenNumber">The screen, numbered from 1.</param>
 /// <param name="Bounds">The screen's work area in pixels.</param>
 public sealed record DisplayArea(int ScreenNumber, Rect Bounds);
 
-/// <summary>A placement as fractions of its screen's work area. Ported from <c>desktop_manager.geometry.UnitRect</c>.</summary>
+/// <summary>A placement as fractions of its screen's work area.</summary>
 /// <param name="Left">The left edge, from 0 to 1.</param>
 /// <param name="Top">The top edge, from 0 to 1.</param>
 /// <param name="Width">The width, as a fraction of the screen's.</param>
@@ -29,8 +29,7 @@ public sealed record Coverage(Fraction Empty, Fraction Overlap);
 
 /// <summary>
 /// Placement geometry: where a slot sits on a screen, and how well a window fills it. Pure functions over
-/// <see cref="Rect"/> and fractions of a screen; the caller reads the monitors and windows. Ported from
-/// <c>desktop_manager.geometry</c>.
+/// <see cref="Rect"/> and fractions of a screen; the caller reads the monitors and windows.
 /// </summary>
 public static class Geometry
 {
@@ -291,7 +290,7 @@ public static class Geometry
     private static (int Start, int Length) VerticalFraction(int top, int height, int denominator, int index) =>
         PixelSlice(top, height, denominator, index, "Vertical");
 
-    // A parent narrower than one pixel per slot gives the last slot a negative length, as Python's does: a known defect
+    // A parent narrower than one pixel per slot gives the last slot a negative length: a known defect
     // kept so the port changes no placement.
     private static (int Start, int Length) PixelSlice(int start, int length, int denominator, int index, string axis)
     {
@@ -335,6 +334,6 @@ public static class Geometry
 
     private static ArgumentException UnknownMode(PlacementLayout layout) => new($"Unknown layout mode: {layout.Mode}");
 
-    // Python's floor division, which rounds toward negative infinity where C#'s rounds toward zero.
+    // Floor division, which rounds toward negative infinity where C#'s rounds toward zero.
     private static int FloorDiv(int value, int divisor) => (int)Math.Floor((double)value / divisor);
 }

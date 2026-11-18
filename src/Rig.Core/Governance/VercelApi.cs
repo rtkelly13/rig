@@ -36,7 +36,7 @@ public interface IVercelApi
 
 /// <summary>
 /// The real Vercel API over <paramref name="http"/>. The token is resolved on the first call, so a command that never
-/// reaches Vercel never reads the CLI's credentials. Ported from <c>vercel_gating._get</c>.
+/// reaches Vercel never reads the CLI's credentials.
 /// </summary>
 /// <param name="http">The client; its timeout bounds each call.</param>
 /// <param name="token">Resolves the bearer token, or throws <see cref="VercelApiException"/>.</param>
@@ -89,8 +89,7 @@ public sealed record VercelCliAuth(string? Token, double? ExpiresAt);
 
 /// <summary>
 /// The token the Vercel API is called with: <c>VERCEL_TOKEN</c>, else the Vercel CLI's own, refreshed through the CLI
-/// when it has expired. Never refreshes the OAuth grant itself and never writes the CLI's state. Ported from
-/// <c>vercel_gating.vercel_token</c>.
+/// when it has expired. Never refreshes the OAuth grant itself and never writes the CLI's state.
 /// </summary>
 /// <param name="environment">Reads an environment variable.</param>
 /// <param name="home">The home folder the CLI's auth file lives under.</param>

@@ -130,7 +130,7 @@ internal static class Transcripts
         return summary.Finish(sessionId);
     }
 
-    // The JSON value as Python's truthiness reads it: null, false, zero and anything empty are false.
+    // The JSON value: null, false, zero and anything empty are false.
     private static bool Truthy(JsonElement parent, string name) =>
         parent.TryGetProperty(name, out var value) && value.ValueKind switch
         {

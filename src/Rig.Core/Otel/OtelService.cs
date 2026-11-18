@@ -3,7 +3,7 @@ using Rig.Core.Services;
 namespace Rig.Core.Otel;
 
 /// <summary>
-/// The macOS LaunchAgent that keeps the collector running. Ported from <c>rig.otel_stack.service</c>. Unlike a scheduled
+/// The macOS LaunchAgent that keeps the collector running. Unlike a scheduled
 /// agent this one is resident (<c>KeepAlive</c>), because tools send telemetry whenever they run; that is affordable only
 /// because the collector at rest is measured at 3 MB resident and 0.03 s of CPU per two idle minutes. <c>ProcessType</c>
 /// Background, <c>LowPriorityIO</c> and <c>Nice</c> keep macOS treating it as housekeeping, and <c>ThrottleInterval</c>

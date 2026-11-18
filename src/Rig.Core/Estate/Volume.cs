@@ -26,7 +26,7 @@ public sealed record Hog(string Label, string Pattern, string Remedy, string Saf
 public sealed record HogHit(Hog Hog, long Allocated, IReadOnlyList<string> Paths);
 
 /// <summary>
-/// Where a whole Windows volume's space went, from a WizTree MFT export. Ported from <c>src/rig/estate/volume.py</c>.
+/// Where a whole Windows volume's space went, from a WizTree MFT export.
 /// Walking ten million files takes most of an hour; WizTree reads the Master File Table and exports every folder's
 /// allocated size in under a minute. Three views: <see cref="Tree"/> (where is it), <see cref="Partition"/> (what kind
 /// of thing, each subtree counted once) and <see cref="Hogs"/> (the known offenders, each with its remedy).

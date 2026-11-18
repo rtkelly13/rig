@@ -13,7 +13,7 @@ public sealed record DownloadItem(string Name, string Path, long Bytes, string C
 
 /// <summary>
 /// The large items in Downloads, what kind of thing each is, and whether Google Drive already holds an identical copy.
-/// Ported from <c>src/rig/estate/downloads.py</c>. Read-only: nothing is moved or deleted.
+/// Read-only: nothing is moved or deleted.
 /// </summary>
 /// <param name="disk">Sizes a folder.</param>
 public sealed class Downloads(IDiskUsage disk)
@@ -130,7 +130,7 @@ public sealed class Downloads(IDiskUsage disk)
         var items = new List<DownloadItem>();
         foreach (var child in children)
         {
-            // As Python's is_dir and is_file, a link is followed: a broken one is neither, and is skipped.
+            // A link is followed: a broken one is neither, and is skipped.
             var target = Followed(child);
             var isDir = Directory.Exists(target);
             long size;
@@ -180,7 +180,7 @@ public sealed class Downloads(IDiskUsage disk)
         return SHA256.HashData(stream);
     }
 
-    // Every file under the folder by its relative path, links to folders not entered, as Python's rglob walks it.
+    // Every file under the folder by its relative path, links to folders not entered, .
     private static Dictionary<string, string> TreeFiles(string root)
     {
         var files = new Dictionary<string, string>(StringComparer.Ordinal);

@@ -4,9 +4,6 @@ namespace Rig.Core.Jobs;
 
 /// <summary>
 /// Where the jobs' plan and personal root come from, and what their environment gains, for the rig the jobs run from.
-/// Ported from <c>desktop_manager.jobs.registry.current_environment</c>: run from an installed runtime copy, the plan
-/// is the copy's bundled one, the personal root is the parent of the checkout the copy came from, and restore logs
-/// and traces go outside every copy so they outlive it; from a checkout, the per-user plan and the given root.
 /// </summary>
 /// <param name="Plan">The workspace plan the restore, session and align jobs read.</param>
 /// <param name="PersonalRoot">The personal root passed to <c>estate</c>.</param>

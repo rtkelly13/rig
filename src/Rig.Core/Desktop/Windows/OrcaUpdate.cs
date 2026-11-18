@@ -73,7 +73,7 @@ public sealed record OrcaUpdateResult(IReadOnlyList<string> Actions, bool Ok = t
 
 /// <summary>
 /// Applying a staged Orca update within the plan: close every Orca, install the staged build silently, then let the
-/// caller relaunch every Orca entry. Ported from <c>desktop_manager.orca_update</c>.
+/// caller relaunch every Orca entry.
 /// </summary>
 [SupportedOSPlatform("windows")]
 [ExcludeFromCodeCoverage(Justification = "Reads the Windows registry and process table; the Windows CI job smoke-tests it.")]

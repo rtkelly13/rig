@@ -93,7 +93,7 @@ public sealed record RepoReport(string Repo, IReadOnlyList<Finding> Findings, lo
 }
 
 /// <summary>
-/// Read-only inspection of one checkout's local git hygiene. Ported from <c>src/rig/estate/checks.py</c>.
+/// Read-only inspection of one checkout's local git hygiene.
 /// </summary>
 /// <remarks>
 /// <para>

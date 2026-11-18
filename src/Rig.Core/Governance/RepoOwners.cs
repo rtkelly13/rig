@@ -8,7 +8,7 @@ namespace Rig.Core.Governance;
 /// <param name="InferredProfile">The profile the owner maps to (<c>owner_profiles</c>) when no profile names the repo yet.</param>
 public sealed record OwnerInspection(string Status, bool IsAligned, string Message, string? ActualOwner = null, string? InferredProfile = null);
 
-/// <summary>Owner governance: a repo must live under its expected owner, or at least an allowed one. Ported from <c>repo_discovery.inspect_repo_owner</c>.</summary>
+/// <summary>Owner governance: a repo must live under its expected owner, or at least an allowed one.</summary>
 public static class RepoOwners
 {
     /// <summary>

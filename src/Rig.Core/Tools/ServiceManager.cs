@@ -102,8 +102,7 @@ public sealed record ServiceStatus(bool Installed, bool Running, bool? Listening
 
 /// <summary>
 /// Installs, ensures, uninstalls and reports the background services rig owns: a LaunchAgent on macOS, a logon task
-/// on Windows, a systemd user unit on Linux. Ported from <c>desktop_manager.service_installer</c>, with the target
-/// list widened from the web dashboard to every service the estate runs.
+/// on Windows, a systemd user unit on Linux.
 /// </summary>
 public sealed class ServiceManager(ServiceHost host)
 {
@@ -205,7 +204,7 @@ public sealed class ServiceManager(ServiceHost host)
         return $"Shared Utilities\\{target.DisplayName}{(preview ? " Preview" : string.Empty)}";
     }
 
-    /// <summary>The parity-safe systemd user unit's name.</summary>
+    /// <summary>The systemd user unit's name.</summary>
     public static string UnitName(ServiceTarget target, bool preview)
     {
         ArgumentNullException.ThrowIfNull(target);

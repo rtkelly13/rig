@@ -8,7 +8,7 @@ using Rig.Core.Text;
 namespace Rig.Core.Jobs;
 
 /// <summary>How one job's last run went, as <c>state.json</c> and <c>last-&lt;trigger&gt;.json</c> keep it.</summary>
-/// <param name="Started">When it started, in ISO 8601 with its offset, as Python's <c>isoformat</c> writes it.</param>
+/// <param name="Started">When it started, in ISO 8601 with its offset.</param>
 /// <param name="Seconds">How long it took.</param>
 /// <param name="ReturnCode">Its exit code; null when it never exited on its own (stopped, or never started).</param>
 /// <param name="Trigger">The trigger of the run that started it.</param>
@@ -34,7 +34,7 @@ public sealed record Outcome(string Started, double Seconds, long? ReturnCode, s
 
     /// <summary>
     /// The result cell <c>jobs status</c> and <c>jobs last</c> print: <c>ok</c>, the error or <c>exit N</c>, then
-    /// <c>: summary</c> when there is one. An empty error or summary counts as none, as it did in Python.
+    /// <c>: summary</c> when there is one. An empty error or summary counts as none.
     /// </summary>
     public string Result
     {
@@ -48,7 +48,7 @@ public sealed record Outcome(string Started, double Seconds, long? ReturnCode, s
     /// <summary>The last-run cell <c>jobs status</c> prints: the start's weekday and time at its own offset, and the seconds.</summary>
     public string LastRun => string.Create(CultureInfo.InvariantCulture, $"{StartedAt:ddd HH:mm} ({WholeSeconds}s)");
 
-    /// <summary>The seconds as Python's <c>:.0f</c> prints them: rounded half to even.</summary>
+    /// <summary>The seconds, rounded half to even.</summary>
     public string WholeSeconds => Math.Round(Seconds, MidpointRounding.ToEven).ToString("0", CultureInfo.InvariantCulture);
 }
 
@@ -73,8 +73,7 @@ public sealed record RunRecord(string RunId, string Trigger, string Started, str
 
 /// <summary>
 /// The coordinator's files: <c>state.json</c> (each job's last <see cref="Outcome"/>) and <c>last-&lt;trigger&gt;.json</c>
-/// (the latest <see cref="RunRecord"/> per trigger). Ported from <c>desktop_manager.jobs.state</c>, byte for byte: the
-/// Python runner, web page and MCP read and write the same files. An unreadable file reads as empty, which only makes
+/// (the latest <see cref="RunRecord"/> per trigger). An unreadable file reads as empty, which only makes
 /// every job due once.
 /// </summary>
 public static class JobState
@@ -122,7 +121,7 @@ public static class JobState
         return state;
     }
 
-    /// <summary>Writes <paramref name="state"/> to <paramref name="path"/>, sorted by name, as Python's <c>json.dumps(indent=2)</c> does.</summary>
+    /// <summary>Writes <paramref name="state"/> to <paramref name="path"/>, sorted by name.</summary>
     public static void WriteState(string path, IReadOnlyDictionary<string, Outcome> state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -169,7 +168,7 @@ public static class JobState
         return new RunRecord(runId, trigger, started, Text(root, "finished"), decisions);
     }
 
-    /// <summary>Writes <paramref name="run"/> to <paramref name="path"/>, fields in Python's order.</summary>
+    /// <summary>Writes <paramref name="run"/> to <paramref name="path"/>.</summary>
     public static void WriteRun(string path, RunRecord run)
     {
         ArgumentNullException.ThrowIfNull(run);
@@ -220,7 +219,7 @@ public static class JobState
         ["detail"] = new JsonArray([.. outcome.Detail.Select(line => (JsonNode?)line)]),
     };
 
-    // Python's write_text: written beside the file, then moved over it; newlines are the platform's.
+    // Written beside the file, then moved over it; newlines are the platform's.
     private static void Write(string path, JsonNode payload)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
@@ -289,7 +288,7 @@ public static class JobState
 }
 
 /// <summary>
-/// The ISO 8601 times Python's <c>datetime.fromisoformat</c> reads that rig writes or a person would: a date, then
+/// The ISO 8601 times that rig writes or a person would: a date, then
 /// optionally <c>T</c> or a space, hours, minutes, seconds and a fraction, and an offset or <c>Z</c>. Week dates and the
 /// compact date forms are not read. A time without an offset is taken as local.
 /// </summary>

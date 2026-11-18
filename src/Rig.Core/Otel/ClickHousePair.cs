@@ -48,8 +48,7 @@ public sealed record UpResult(IReadOnlyList<string> Started, IReadOnlyList<strin
 public sealed record PartStatus(string Name, int? Pid, double? ResidentMb);
 
 /// <summary>
-/// The on-demand pair: ClickHouse, and the contrib collector that writes into it; ported from
-/// <c>rig.otel_stack.clickhouse</c>. Nothing is scheduled. <see cref="UpAsync"/> installs (pinned, verified) what is
+/// The on-demand pair: ClickHouse, and the contrib collector that writes into it; Nothing is scheduled. <see cref="UpAsync"/> installs (pinned, verified) what is
 /// missing, writes the configs, starts ClickHouse and waits for it to answer, then starts the collector and waits for
 /// its port. <see cref="DownAsync"/> stops both and waits until they have exited. The always-on core collector is
 /// untouched by either. A pid file whose process has gone is treated as not running and removed.
@@ -207,7 +206,7 @@ public sealed class ClickHousePair(
             return 0;
         }
 
-        // Links are skipped and not followed, as Python's rglob did.
+        // Links are skipped and not followed.
         var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
         return root.EnumerateFiles("*", options).Sum(file => file.Length);
     }

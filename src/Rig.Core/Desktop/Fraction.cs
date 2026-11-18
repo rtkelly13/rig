@@ -3,7 +3,7 @@ using System.Globalization;
 namespace Rig.Core.Desktop;
 
 /// <summary>
-/// An exact rational number, always in lowest terms with a positive denominator, as Python's <c>fractions.Fraction</c>
+/// An exact rational number, always in lowest terms with a positive denominator,
 /// is. Placement geometry works in fractions of a screen so that thirds tile exactly and coverage sums to one.
 /// </summary>
 public readonly record struct Fraction : IComparable<Fraction>, IComparable
@@ -100,10 +100,10 @@ public readonly record struct Fraction : IComparable<Fraction>, IComparable
         _ => throw new ArgumentException("Object is not a Fraction", nameof(obj)),
     };
 
-    /// <summary>The nearest double, as Python's <c>float(Fraction)</c> gives.</summary>
+    /// <summary>The nearest double.</summary>
     public double ToDouble() => (double)Numerator / Denominator;
 
-    /// <summary><c>n/d</c>, or just <c>n</c> for a whole number, as Python's <c>str(Fraction)</c> writes it.</summary>
+    /// <summary><c>n/d</c>, or just <c>n</c> for a whole number.</summary>
     public override string ToString() =>
         Denominator == 1
             ? Numerator.ToString(CultureInfo.InvariantCulture)

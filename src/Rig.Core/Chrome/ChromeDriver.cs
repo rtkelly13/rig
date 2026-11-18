@@ -139,7 +139,7 @@ public static class ChromeDesktopsExtensions
 
     /// <summary>
     /// Switches back to <paramref name="start"/> when the steps since moved the user: bringing a window forward, or
-    /// sending it home while it has the focus, can take Windows to that window's desktop. Best effort, as in Python's
+    /// sending it home while it has the focus, can take Windows to that window's desktop. Best effort,
     /// <c>keep_desktop</c>; traced as <c>restore_desktop</c>.
     /// </summary>
     public static void ReturnTo(this IChromeDesktops desktops, int? start)
@@ -155,7 +155,7 @@ public static class ChromeDesktopsExtensions
                 desktops.SwitchTo(from);
             }
         }
-#pragma warning disable CA1031 // Putting the user back is best effort, as in Python.
+#pragma warning disable CA1031 // Putting the user back is best effort.
         catch (Exception)
 #pragma warning restore CA1031
         {
@@ -240,7 +240,7 @@ public sealed partial record WindowProfile(string? Directory, string? Name)
     private static partial Regex ProfileDirectory();
 }
 
-/// <summary>Reading the entries of Chrome's tab context menu. Ported from <c>desktop_manager.chrome.uia</c>.</summary>
+/// <summary>Reading the entries of Chrome's tab context menu.</summary>
 public static class TabMenus
 {
     /// <summary>

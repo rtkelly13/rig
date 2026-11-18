@@ -29,7 +29,7 @@ public sealed record QueueActivity(string Key, string At, string Actor, string A
 /// <param name="Note">Optional note, at most 10,000 Unicode code points.</param>
 public sealed record QueueInteraction(string Repo, int Number, string Action, string Head, string Note = "")
 {
-    /// <summary>Validate the same public input contract as the Python interaction decoder.</summary>
+    /// <summary>Validates the public input contract of an interaction.</summary>
     public void Validate()
     {
         if (Number <= 0 || Note is null || Vault.UnicodeText.Length(Note) > 10000

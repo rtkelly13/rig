@@ -70,7 +70,7 @@ public sealed record EstateCatalogue(IReadOnlyList<EstateProject> Projects)
         return File.Exists(beside) ? beside : Path.Join(workingDirectory, "config", "orca.json");
     }
 
-    // Each repo's badge. As in Python, any entry or field of the wrong shape, or a file that will not read, gives no badges at all.
+    // Each repo's badge. Any entry or field of the wrong shape, or a file that will not read, gives no badges at all.
     private static Dictionary<string, (string? Color, string? Icon)> Badges(string path)
     {
         var found = new Dictionary<string, (string? Color, string? Icon)>(StringComparer.Ordinal);

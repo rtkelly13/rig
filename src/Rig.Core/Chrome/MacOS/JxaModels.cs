@@ -127,7 +127,7 @@ public sealed record ActionIds(long Window, long Tab)
 }
 
 /// <summary>
-/// Decoding osascript's JSON into the records above, as strictly as Python's pydantic models did: a string is a JSON
+/// Decoding osascript's JSON into the records above, as strictly: a string is a JSON
 /// string, a number an integer, a flag a JSON boolean, and keys the records do not name are ignored. Anything that does
 /// not fit throws <see cref="ChromeMacException"/>.
 /// </summary>
@@ -247,9 +247,9 @@ public static class JxaDecode
         element.ValueKind == JsonValueKind.String ? Text(element) : throw new FormatException("not a string");
 
     /// <summary>
-    /// A JSON string's value, as Python's <c>json.loads</c> reads it. Page titles are the web's to choose, and JXA's
+    /// A JSON string's value. Page titles are the web's to choose, and JXA's
     /// <c>JSON.stringify</c> writes an unpaired surrogate as <c>\ud83d</c>, which <see cref="JsonElement.GetString"/>
-    /// refuses; Python keeps it, so one odd title does not refuse the whole snapshot.
+    /// refuses; this keeps it, so one odd title does not refuse the whole snapshot.
     /// </summary>
     internal static string Text(JsonElement element)
     {

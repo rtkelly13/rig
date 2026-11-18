@@ -17,8 +17,7 @@ public sealed record ProfileMatch(string Directory, string Name);
 /// Pairs native accessibility evidence with the scripting snapshot. Scripting gives stable ids, titles and URLs;
 /// accessibility gives what only the browser UI shows: pinned, audible, memory, group membership and the profile
 /// avatar. The two are paired only one-to-one, and only when the tab strips agree title for title. Anything uncertain
-/// leaves a tab pinned and audible with <see cref="MetadataUnavailable"/>, so no planner acts on it. Ported from
-/// <c>desktop_manager.chrome.drivers.macos_read</c>.
+/// leaves a tab pinned and audible with <see cref="MetadataUnavailable"/>, so no planner acts on it.
 /// </summary>
 public static partial class MacRead
 {
@@ -230,7 +229,7 @@ public static partial class MacRead
     /// Chrome's windows from a settled read: the scripting <paramref name="snapshot"/>, the accessibility windows read
     /// while it held (none when accessibility was unavailable), and the profiles from <c>Local State</c>. A window whose
     /// profile is unclear, or which is not a normal window, gets a scope of its own. A duplicate id or an active tab
-    /// past the strip throws <see cref="ChromeMacException"/>. The pure half of Python's <c>ChromeMac.list_windows</c>.
+    /// past the strip throws <see cref="ChromeMacException"/>. The pure half of listing the windows.
     /// </summary>
     public static IReadOnlyList<ChromeWindow> Windows(JxaSnapshot snapshot, IReadOnlyList<AxNode> axWindows, IReadOnlyDictionary<string, ProfileInfo> profiles)
     {
@@ -336,7 +335,7 @@ public static partial class MacRead
 
     /// <summary>
     /// A group's identity: the window's scripting id and the header element's CFHash, each split into two 32-bit
-    /// halves so neither is truncated, then -1 as Python's tuple ended.
+    /// halves so neither is truncated, then -1.
     /// </summary>
     public static RuntimeId GroupId(long windowId, long header) =>
         new([(int)(windowId >> 32), unchecked((int)windowId), (int)(header >> 32), unchecked((int)header), -1]);

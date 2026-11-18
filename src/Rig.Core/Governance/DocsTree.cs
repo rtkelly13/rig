@@ -3,8 +3,8 @@ using Rig.Core.Roots;
 namespace Rig.Core.Governance;
 
 /// <summary>
-/// The file-system questions the AGENTS.md audit asks, answered as Python's <c>pathlib</c> answers them, so the C#
-/// audit finds what the Python one did: links are followed (a broken one does not exist), a recursive walk does not
+/// The file-system questions the AGENTS.md audit asks, answered as pathlib-style code would, so the
+/// audit finds what the earlier one did: links are followed (a broken one does not exist), a recursive walk does not
 /// descend into a linked folder, and paths sort and compare segment by segment, ignoring case only on Windows.
 /// </summary>
 internal static class DocsTree

@@ -15,7 +15,7 @@ public sealed record Consolidation(int Deleted, string? Stopped = null);
 
 /// <summary>
 /// Plans and carries out deleting closed duplicate saved tab groups, one chip at a time, and remembers which profiles
-/// a run left to look at again. Ported from <c>desktop_manager.chrome.saved_consolidation</c>.
+/// a run left to look at again.
 /// </summary>
 /// <param name="actions">Reads and deletes saved-group chips.</param>
 /// <param name="desktops">Where the user is, so they are put back.</param>
