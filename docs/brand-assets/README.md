@@ -356,5 +356,23 @@ slice lives in `src/Rig.Image` and does not replace the Python yet; slice 4 dele
       --chromium <path to the chrome-headless-shell of the pinned Playwright revision>
   ```
 
+- **`rig image simplify <svg>`** (`Rig.Image.Simplifier` and `DriftGate`) ports `image_drift.simplifier`: geometric
+  decimation (NetTopologySuite for the shapely geometry), a scour-style scrubbing pass, viewBox-aware quantisation,
+  then a loop that renders the original and each candidate at 1000 px, scores them with `DriftMetrics` and halves the
+  tolerance until `--min-ssim` and `--max-rmse` are met (exit 1 when they are not). It renders with Svg.Skia;
+  `--authoritative` or `--chromium <exe>` renders with Chromium instead. The output is `<name>.optimized.svg`
+  unless `--output` or `--in-place` says otherwise, and a missed budget never overwrites the input. The Python's
+  `--snapshot`, `--project` and `--variations-dir` options are not ported with the Asset Studio snapshot manager.
+  The simplifier's expected outputs are frozen in `tests/Rig.Image.Tests/SimplifierOracle/` and regenerated with:
+
+  ```bash
+  cd tools/image-drift && uv run --locked python -I oracle/dump_oracle.py \
+      --simplifier-out ../../tests/Rig.Image.Tests/SimplifierOracle
+  ```
+
+  The C# is exact on the geometric and quantisation stages and on the synthetic scour cases. The scour passes that
+  rewrite path data (`cleanPath`), polygon points, transforms, gradients and group merging are not ported, so for
+  documents that need them the C# final is checked for render equivalence with the Python final, not for equal text.
+
 Not yet ported: the candidate-generating pathways (vtracer and friends, so candidates are frozen SVGs), the
 recommendation text, and parsing `production-cuts.csv` (the cross-check's file set is the fixed set the oracle covers).
