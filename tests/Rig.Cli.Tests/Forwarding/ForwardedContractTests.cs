@@ -85,6 +85,7 @@ public sealed partial class ForwardedContractTests
                     new FakeProc(),
                     new VaultHost(_ => null, "/"),
                     new KnowledgeServerCommand(new FakeProc(), _ => throw new InvalidOperationException(), false, _ => null, TextWriter.Null, TextWriter.Null),
+                    new DriveBackupCommand(new Git(new FakeProc(), "/"), new VaultHost(_ => null, "/"), TimeProvider.System, TextWriter.Null, TextWriter.Null),
                     TextWriter.Null,
                     TextWriter.Null).Build,
                 new ChromeTabsCommand(_ => null, "/", TimeProvider.System, TimeZoneInfo.Utc, TextWriter.Null).Build,

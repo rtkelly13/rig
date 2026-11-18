@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Text.Json;
 using Rig.Cli.Rendering;
 using Rig.Cli.Vault;
+using Rig.Core.Processes;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
 
@@ -62,6 +63,18 @@ public sealed class VaultCommandTests : IDisposable
 
         Assert.Contains(Path.Combine(Home, "code", "personal", "obsidian-vault", "Vault"), Output, StringComparison.Ordinal);
         Assert.Contains(Path.Combine(Home, "Google Drive", "My Drive", "Obsidian", "Vault"), Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Drive_backup_without_a_drive_copy_fails_without_naming_the_path()
+    {
+        _environment["DRIVE_VAULT_PATH"] = "~/Drive placeholder/Vault";
+
+        var exit = await Run("vault", "drive-backup");
+
+        Assert.Equal(2, exit);
+        Assert.Contains("set DRIVE_VAULT_PATH", _err.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Drive placeholder", _err.ToString() + Output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -352,6 +365,7 @@ public sealed class VaultCommandTests : IDisposable
             _proc,
             new VaultHost(v => _environment.GetValueOrDefault(v), Home),
             new KnowledgeServerCommand(_proc, _ => throw new InvalidOperationException("not used"), false, _ => null, _out, _err),
+            new DriveBackupCommand(new Git(_proc, Home), new VaultHost(v => _environment.GetValueOrDefault(v), Home), TimeProvider.System, _out, _err),
             _out,
             _err);
         return command.Build().Parse(args).InvokeAsync(new InvocationConfiguration { Output = _out, Error = _err }, TestContext.Current.CancellationToken);

@@ -16,9 +16,9 @@ internal sealed record VaultHost(Func<string, string?> Environment, string Home)
 /// <c>rig vault</c>: link health, orphans, metadata and filename maintenance for the Obsidian vault, plus the shared
 /// OpenKnowledge server (<see cref="KnowledgeServerCommand"/>). Ported from <c>rig.obsidian.cli</c>. Everything reports
 /// before it repairs: each <c>--apply</c> command changes nothing without the flag. Maintenance targets the git copy of
-/// the vault (<see cref="VaultPath"/>).
+/// the vault (<see cref="VaultPath"/>); <see cref="DriveBackupCommand"/> backs up the Drive copy before a reconcile.
 /// </summary>
-internal sealed class VaultCommand(IProc proc, VaultHost host, KnowledgeServerCommand knowledgeServer, TextWriter output, TextWriter error)
+internal sealed class VaultCommand(IProc proc, VaultHost host, KnowledgeServerCommand knowledgeServer, DriveBackupCommand driveBackup, TextWriter output, TextWriter error)
 {
     private const string LintHelp = """
         Scan for duplicate URLs and other vault inconsistencies. Codes: TVS000-TVS004 (error) invalid frontmatter, missing
@@ -45,6 +45,7 @@ internal sealed class VaultCommand(IProc proc, VaultHost host, KnowledgeServerCo
             paths,
             Graph(),
             knowledgeServer.Build(),
+            DeclarativeCommand.Build(driveBackup),
         };
     }
 
