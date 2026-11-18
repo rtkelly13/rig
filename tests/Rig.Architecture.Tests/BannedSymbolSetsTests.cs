@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Rig.Core.Tests;
 
 namespace Rig.Architecture.Tests;
 
@@ -39,7 +40,7 @@ public sealed class BannedSymbolSetsTests
     private static async Task<(int ExitCode, string Output)> VerifyAsync(string sets)
     {
         var root = RepoRoot();
-        var folder = Directory.CreateTempSubdirectory("rig-banned-sets-").FullName;
+        var folder = Directory.CreateDirectory(RepoTemp.NewPath("banned-sets")).FullName;
         try
         {
             var project = Path.Join(folder, "MisspeltSets.proj");
