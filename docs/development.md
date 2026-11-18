@@ -111,7 +111,7 @@ Windows-safe tests (the Windows jobs catch these, but write them right first tim
 
 ## Standards and quality gates
 
-- **Package managers**: NuGet for C#, `pnpm` for the Tailwind build, `uv` for `tools/image-drift` only.
+- **Package managers**: Paket for C# (`dotnet tool restore` once, then `dotnet restore`; versions live in `paket.dependencies`, ADR 0025), `pnpm` for the Tailwind build, `uv` for `tools/image-drift` only.
 - **Local analytics**: DuckDB for structured ledger querying and cross-referencing large JSON feeds, to avoid
   repeating API calls.
 - **Workflow**: every change goes through a pull request, never a direct push to `main`. All required CI checks pass
