@@ -26,7 +26,7 @@ public static class ChromeInstall
 
     /// <summary>
     /// <c>rig.exe</c> inside the runtime's <c>current</c> copy, which <c>rig runtime install</c>
-    /// maintains: <c>%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe</c>.
+    /// maintains: <c>%LOCALAPPDATA%\rig\runtime\current\rig\rig.exe</c>.
     /// </summary>
     /// <param name="environment">Reads an environment variable.</param>
     /// <param name="home">The user's home, for when <c>LOCALAPPDATA</c> is unset.</param>

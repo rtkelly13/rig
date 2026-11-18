@@ -149,7 +149,7 @@ public sealed record TraceSummary(
 /// <summary>
 /// Organise-run traces: where they land, how long they are kept, and the reports read from them. Every run is one
 /// <see cref="RunSpan"/> span with a child span per phase, written as OTLP/JSON lines to
-/// <c>%LOCALAPPDATA%\shared-utilities\chrome-tabs\traces\&lt;YYYY-MM-DD&gt;.ndjson</c>. Pure file work, so the reports
+/// <c>%LOCALAPPDATA%\rig\chrome-tabs\traces\&lt;YYYY-MM-DD&gt;.ndjson</c>. Pure file work, so the reports
 /// run anywhere.
 /// </summary>
 public static partial class ChromeTraces
