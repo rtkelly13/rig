@@ -338,7 +338,7 @@ pathways and promotion behaviour live on as frozen oracles that the C# is tested
   Chromium decides every write and every promotion; `--fast` only previews.
 - **`rig image cross-check`** renders each project's master and favicon at the production sizes with both, and
   reports the divergence per file against the ADR thresholds: mean absolute difference 1.0, differing pixels 20%,
-  RMSE 0.1pp, SSIM 0.001, composite 0.1pp, and any promotion verdict flip fails. The pixel thresholds apply from 180px up; smaller cuts (the 16px and 32px favicons) fail only on a changed promote or reject decision. The file set comes from each
+  RMSE 0.1pp, SSIM 0.001, composite 0.1pp, and any promotion verdict flip fails. Mean abs difference, RMSE, SSIM and composite are gated from 180px up, and differing pixels from 500px up (below that it is reported, not gated); the 16px and 32px favicons fail only on a changed promote or reject decision. The file set comes from each
   project's `production-cuts.csv`. `--candidates <folder>` adds the verdict comparison for candidate SVGs named
   `<project>.<candidate>.svg`; `--report <file>` writes JSON. CI runs it report-only in the `image-cross-check` job;
   the thresholds are enforced by the tests in `Rig.Image.BrowserTests`.

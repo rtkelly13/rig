@@ -72,6 +72,21 @@ public sealed class ImageCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Differing_pixels_are_reported_below_500px_but_gated_from_500px_up()
+    {
+        _fast = () => new ScriptedRenderer("Svg.Skia", (_, size) => Solid(size, 100));
+        var report = Path.Combine(_temp.Path, "pixels", "cross-check.json");
+
+        _ = await Run("image", "cross-check", "--report", report);
+
+        using var json = JsonDocument.Parse(await File.ReadAllTextAsync(report, TestContext.Current.CancellationToken));
+        string[] Breaches(string id) => [.. json.RootElement.GetProperty("files").EnumerateArray().First(file => file.GetProperty("id").GetString() == id).GetProperty("breaches").EnumerateArray().Select(breach => breach.GetString()!)];
+        Assert.Contains(Breaches("rtkelly-labs.master.180"), breach => breach.StartsWith("mean abs difference", StringComparison.Ordinal));
+        Assert.DoesNotContain(Breaches("rtkelly-labs.master.180"), breach => breach.StartsWith("differing pixels", StringComparison.Ordinal));
+        Assert.Contains(Breaches("rtkelly-labs.master.500"), breach => breach.StartsWith("differing pixels", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task A_renderer_that_will_not_start_exits_2_with_the_reason()
     {
         _authoritative = _ => throw new RendererUnavailableException("expected Chromium to start, it did not: no browser installed");

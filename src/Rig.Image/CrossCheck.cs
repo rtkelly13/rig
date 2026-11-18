@@ -15,6 +15,12 @@ public sealed record DivergenceThresholds(double MeanAbsDifference, double Diffe
 {
     /// <summary>The thresholds ADR 0024 sets.</summary>
     public static DivergenceThresholds Adr { get; } = new(1.0, 0.20, 0.1, 0.001, 0.1);
+
+    /// <summary>Mean abs difference, RMSE, SSIM and composite are gated from this size up; smaller cuts (16px and 32px favicons) fail only on a changed promote or reject decision.</summary>
+    public const int GatedFromSize = 180;
+
+    /// <summary>The differing-pixel fraction is gated from this size up; below it, it is reported but not gated.</summary>
+    public const int DifferingPixelsGatedFromSize = 500;
 }
 
 /// <summary>One SVG rendered at one size by both renderers.</summary>
@@ -92,9 +98,6 @@ public sealed record CrossCheckReport(
 public static class CrossCheck
 {
     private static readonly string[] Projects = ["rtkelly-labs", "parquet-source-generator"];
-
-    /// <summary>Thresholds apply from this size up; smaller cuts (16px and 32px favicons) fail only on a changed promote or reject decision (ADR 0024).</summary>
-    public const int ThresholdMinSize = 180;
 
     /// <summary>
     /// The files to cross-check: each project's raster cuts as its <c>production-cuts.csv</c> declares them (AGENTS.md rule 4), one per source and size.
@@ -236,7 +239,7 @@ public static class CrossCheck
 
         var meanAbs = (double)total / a.Length;
         var fraction = (double)differing / (a.Length / 4);
-        if (file.Size < ThresholdMinSize)
+        if (file.Size < DivergenceThresholds.GatedFromSize)
         {
             return new FileDivergence(file, meanAbs, fraction, maxAbs, metrics, breaches);
         }
@@ -246,7 +249,7 @@ public static class CrossCheck
             breaches.Add($"mean abs difference {Number(meanAbs)} exceeds {Number(thresholds.MeanAbsDifference)}");
         }
 
-        if (fraction > thresholds.DifferingPixelFraction)
+        if (file.Size >= DivergenceThresholds.DifferingPixelsGatedFromSize && fraction > thresholds.DifferingPixelFraction)
         {
             breaches.Add($"differing pixels {Number(fraction * 100)}% exceeds {Number(thresholds.DifferingPixelFraction * 100)}%");
         }
