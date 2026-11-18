@@ -53,23 +53,12 @@ public sealed class ScourPassTests
     }
 
     [Fact]
-    public void A_gradient_that_folds_into_a_reference_without_an_href_leaves_the_document_untouched()
-    {
-        var svg = $"<svg {Ns} xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\"><defs>"
-            + "<linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient>"
-            + "<linearGradient id=\"b\" href=\"#a\"/></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/>"
-            + "<rect fill=\"url(#a)\" width=\"4\" height=\"4\"/></svg>";
-
-        Assert.Contains("linearGradient", SvgSimplifier.RunScour(svg), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void A_document_whose_gradient_has_no_xlink_href_to_remove_is_returned_as_it_came()
+    public void A_gradient_that_folds_into_a_reference_with_no_href_to_remove_leaves_the_document_untouched()
     {
         var svg = $"<svg {Ns} viewBox=\"0 0 24 24\"><defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#f00\"/></linearGradient>"
-            + "<linearGradient id=\"b\"/></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/><style>.a{fill:url(#a)}</style></svg>";
+            + "<linearGradient id=\"b\" fill=\"url(#a)\"/></defs><rect fill=\"url(#b)\" width=\"4\" height=\"4\"/></svg>";
 
-        Assert.NotEmpty(SvgSimplifier.RunScour(svg));
+        Assert.Equal(svg, SvgSimplifier.RunScour(svg));
     }
 
     [Fact]
@@ -90,5 +79,19 @@ public sealed class ScourPassTests
 
         Assert.StartsWith("<?xml-stylesheet href=\"a.css\"?>\n<!DOCTYPE svg [", result, StringComparison.Ordinal);
         Assert.EndsWith("<?after x?>\n", result, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("<!DOCTYPE svg [<!ENTITY a \"4\">]>", "&a;", "4", "<!DOCTYPE svg [<!ENTITY a \"4\">]>\n")]
+    [InlineData("<!DOCTYPE svg [<!ENTITY a \"4\">]>", "1", "1", "<!DOCTYPE svg [<!ENTITY a \"4\">]>\n")]
+    [InlineData("<!DOCTYPE svg [<!ELEMENT svg ANY>]>", "1", "1", "<!DOCTYPE svg [<!ELEMENT svg ANY>]>\n")]
+    public void A_doctype_that_declares_entities_expands_them_as_the_python_scour_does(string doctype, string width, string scoured, string expectedStart)
+    {
+        var svg = $"{doctype}<svg {Ns} viewBox=\"0 0 24 24\"><rect width=\"{width}\" height=\"1\"/></svg>";
+
+        var result = SvgSimplifier.RunScour(svg);
+
+        Assert.StartsWith(expectedStart, result, StringComparison.Ordinal);
+        Assert.Contains($"<rect width=\"{scoured}\" height=\"1\"/>", result, StringComparison.Ordinal);
     }
 }

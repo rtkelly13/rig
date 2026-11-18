@@ -114,6 +114,17 @@ public sealed class ScourDecimalTests
         Assert.Equal(ScourDecimal.Parse("30"), ScourDecimal.FromDouble(30.0));
     }
 
+    [Fact]
+    public void Exponents_outside_the_context_range_overflow_or_round_to_zero_without_huge_arithmetic()
+    {
+        Assert.Throws<OverflowException>(() => ScourDecimal.Parse("1e1000000").Plus(28));
+        Assert.True(ScourDecimal.Parse("1e999999").Plus(28).Adjusted == 999_999);
+        Assert.True(ScourDecimal.Parse("-1e-9999999").Plus(28).IsZero);
+        Assert.True(ScourDecimal.Parse("-1e-9999999").Plus(28).SignedNegative);
+        Assert.True((ScourDecimal.Parse("1e-9999999").Plus(28) + ScourDecimal.Parse("1")).Equals(1));
+        Assert.True(ScourDecimal.Parse("0e9999999").Plus(28).IsZero);
+    }
+
     [Theory]
     [InlineData("1.5", 1.5)]
     [InlineData(" -2e1 ", -20.0)]

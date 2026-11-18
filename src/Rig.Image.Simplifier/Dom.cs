@@ -184,8 +184,9 @@ internal static class DomParser
 {
     /// <summary>
     /// Parses the document element. Throws <see cref="XmlException"/> for anything that is not well formed, which the callers treat
-    /// the way Python treats <c>ParseError</c>. A DOCTYPE is skipped, and an entity it declares is not defined, so a reference to it
-    /// is an error here where defusedxml refuses the document outright.
+    /// the way Python treats <c>ParseError</c>. A DOCTYPE is parsed without resolving anything external, and an internal entity it
+    /// declares is expanded (capped at a million characters), as the Python scour pass does; defusedxml refuses such a document in the
+    /// ElementTree-based passes, where this expands it instead.
     /// </summary>
     public static DomElement Parse(string text) => Parse(text, null, null);
 
