@@ -129,7 +129,7 @@ dotnet_diagnostic.CA1308.severity = none
 # Functional and performance enforcement
 csharp_prefer_static_anonymous_function = true:warning
 csharp_prefer_static_local_function = true:warning
-dotnet_diagnostic.RS0030.severity = suggestion
+dotnet_diagnostic.RS0030.severity = warning
 dotnet_diagnostic.IDE0028.severity = suggestion
 dotnet_diagnostic.IDE0300.severity = suggestion
 dotnet_diagnostic.IDE0301.severity = suggestion
@@ -137,7 +137,6 @@ dotnet_diagnostic.IDE0305.severity = suggestion
 
 # Strict guardrails for gh pr and devenv tooling
 [src/Rig.Cli/Gh/**/*.cs]
-dotnet_diagnostic.RS0030.severity = warning
 csharp_prefer_static_anonymous_function = true:warning
 csharp_prefer_static_local_function = true:warning
 
