@@ -332,6 +332,16 @@ def regularize_ring(
     return out
 
 
+def _coordinate(value: float, precision: int) -> str:
+    """Format a rewritten coordinate; one that rounds to zero carries no sign.
+
+    Rotating onto the axes leaves residues near 1e-17 whose sign depends on the platform's sin and cos, so
+    `-0.00` would make the output differ between Linux and Windows. Matches rig's C# regularizer.
+    """
+    text = f"{value:.{precision}f}"
+    return text[1:] if text.startswith("-") and float(text) == 0 else text
+
+
 def regularize_svg(
     svg_text: str,
     *,
@@ -352,6 +362,9 @@ def regularize_svg(
             collinear_tol=collinear_tol,
         )
 
+    def _pair(p: Point) -> str:
+        return f"{_coordinate(p.x, precision)},{_coordinate(p.y, precision)}"
+
     def rewrite_path(match: re.Match[str]) -> str:
         head, d, tail = match.group(1), match.group(2), match.group(3)
         if has_curves(d):
@@ -359,9 +372,7 @@ def regularize_svg(
         rings = [r for r in parse_subpaths(d) if len(r) >= 3]
         if not rings:
             return match.group(0)
-        parts = [
-            "M " + " L ".join(f"{p.x:.{precision}f},{p.y:.{precision}f}" for p in _fix(ring)) + " Z" for ring in rings
-        ]
+        parts = ["M " + " L ".join(_pair(p) for p in _fix(ring)) + " Z" for ring in rings]
         return head + " ".join(parts) + tail
 
     def rewrite_polygon(match: re.Match[str]) -> str:
@@ -369,7 +380,7 @@ def regularize_svg(
         ring = parse_points(pts)
         if len(ring) < 3:
             return match.group(0)
-        coords = " ".join(f"{p.x:.{precision}f},{p.y:.{precision}f}" for p in _fix(ring))
+        coords = " ".join(_pair(p) for p in _fix(ring))
         return head + coords + tail
 
     return _POLY_RE.sub(rewrite_polygon, _PATH_RE.sub(rewrite_path, svg_text))

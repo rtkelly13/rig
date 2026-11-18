@@ -584,7 +584,7 @@
       }
      ]
     },
-    "regularizedSha256": "f67f8f291452409886b893d45d68f8f0af9d8c5aa96e580a7205b713a1450653",
+    "regularizedSha256": "d7cecd12c7770d9d61edb82aa704a6861467a3b54adc4e4006b4961277e4e6be",
     "afterConformancePct": 82.668623
    },
    "iso": {
@@ -966,7 +966,7 @@
       }
      ]
     },
-    "regularizedSha256": "2ba95d5a5f063f0072014a1ebb3e2514ad2eaed2e5e7586a5d26fe1af3cac50b",
+    "regularizedSha256": "350e4ed5471f97e6b1dc5051ab46c8e648e172e19a1c3e97117cab0490b49ca1",
     "afterConformancePct": 67.947437
    }
   },
@@ -1352,7 +1352,7 @@
       }
      ]
     },
-    "regularizedSha256": "b9b3230c54ae2cdd9e421867d58b09bb7fb2287b5509ce46a9e685c4b9b64a31",
+    "regularizedSha256": "b7c6c6cb6c4999a329ed475315634140840f7915507dc85042f1ae9dfb2e381c",
     "afterConformancePct": 35.023407
    },
    "iso": {
@@ -1734,7 +1734,7 @@
       }
      ]
     },
-    "regularizedSha256": "50ad64c5dd8171a7d65015b8316ac7ff7557630618bd6f1113952817adce8b63",
+    "regularizedSha256": "0d8359f6137e7a325fef1f9ee96b4e0cecbf5a3eee4507a2b7d31b6d4b8daa9a",
     "afterConformancePct": 26.678196
    }
   },
@@ -2120,7 +2120,7 @@
       }
      ]
     },
-    "regularizedSha256": "4e776bf754659b8be0c6055120f5999f86a0bf2463e9d29e9c9a7a7735e1bf66",
+    "regularizedSha256": "a84efabafd7a1bbd7401d4c4626b553b727487fe62edc5fd352273cb1995f479",
     "afterConformancePct": 49.425179
    },
    "iso": {
@@ -2502,7 +2502,7 @@
       }
      ]
     },
-    "regularizedSha256": "1a895f6f3616da1421ea029db5c9ee8176ef8aef07b6dc2a7a4cfd5c9807f85c",
+    "regularizedSha256": "c6d0f380e27eaa25a21ce9dc980f4e9608235a1a5fc2286f1bf7b4a762417084",
     "afterConformancePct": 40.184681
    }
   },
@@ -2888,7 +2888,7 @@
       }
      ]
     },
-    "regularizedSha256": "b4e1f8a49c3b3af54e406cfb901eb9b1c0b253ba9043b164afe42ad083897ac7",
+    "regularizedSha256": "d209caaf12f18a97351f87ff34f5d38a0c5a122f2533e4e914d2e9f14fe28c82",
     "afterConformancePct": 34.954148
    },
    "iso": {
@@ -3270,7 +3270,7 @@
       }
      ]
     },
-    "regularizedSha256": "8477a4530b07a229d89d13f26593158b06d98aaa4264c72aea65f8e392d5086e",
+    "regularizedSha256": "088e97544a59cebd5f7f6503eeebc2ed5f3dee23d46131676a53048198326ffd",
     "afterConformancePct": 26.936553
    }
   },
@@ -3656,7 +3656,7 @@
       }
      ]
     },
-    "regularizedSha256": "4215e7115f6574fe344528ee4255ec22bc227e4c94eea2e4155aadf06fc88dcf",
+    "regularizedSha256": "70c67ee002c01e5ec23d7ca74da96e69d55368bcef540aec89560a6adea23504",
     "afterConformancePct": 88.212409
    },
    "iso": {
@@ -4038,7 +4038,7 @@
       }
      ]
     },
-    "regularizedSha256": "f6278ae09f9b0433a20c3190701ad4c17eaee2adb723ae36d2ab29c71698035b",
+    "regularizedSha256": "f71b0f82cca051babeeb21cf7fe8a09185ec935c23e5de0a6db29d9c00bcfc2c",
     "afterConformancePct": 73.299254
    }
   },
@@ -4063,7 +4063,7 @@
      "linesSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
      "first": []
     },
-    "regularizedSha256": "4bd9e1f562412c1cb4bbd1e727bb52fb0315066a57bd33b731d87831d7e459fe",
+    "regularizedSha256": "eee8bcf8f3b85d92a61858a4b69adb81cc3d1195d8ff58f733ee079b7e431299",
     "afterConformancePct": 100.0
    },
    "iso": {
@@ -4084,7 +4084,7 @@
      "linesSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
      "first": []
     },
-    "regularizedSha256": "4bd9e1f562412c1cb4bbd1e727bb52fb0315066a57bd33b731d87831d7e459fe",
+    "regularizedSha256": "eee8bcf8f3b85d92a61858a4b69adb81cc3d1195d8ff58f733ee079b7e431299",
     "afterConformancePct": 88.517589
    }
   }
@@ -4127,8 +4127,8 @@
    },
    "conformancePct": 73.739483
   },
-  "regularized": "<svg><polygon points=\"-0.00,1.50 100.00,1.50 100.00,100.00 0.00,100.00\" /><path d=\"M -0.00,0.00 L 10.00,0.00 L 10.00,10.00 Z M 20.00,20.10 L 40.00,20.10 L 40.00,40.00 L 20.00,40.00 Z\" /><path d=\"M0,0 C 1,1 2,2 3,3\" /><polygon points=\"1,1 2,2\" /></svg>",
-  "regularizedPrecision0": "<svg><polygon points=\"-0,2 100,2 100,100 0,100\" /><path d=\"M -0,0 L 10,0 L 10,10 Z M 20,20 L 40,20 L 40,40 L 20,40 Z\" /><path d=\"M0,0 C 1,1 2,2 3,3\" /><polygon points=\"1,1 2,2\" /></svg>"
+  "regularized": "<svg><polygon points=\"0.00,1.50 100.00,1.50 100.00,100.00 0.00,100.00\" /><path d=\"M 0.00,0.00 L 10.00,0.00 L 10.00,10.00 Z M 20.00,20.10 L 40.00,20.10 L 40.00,40.00 L 20.00,40.00 Z\" /><path d=\"M0,0 C 1,1 2,2 3,3\" /><polygon points=\"1,1 2,2\" /></svg>",
+  "regularizedPrecision0": "<svg><polygon points=\"0,2 100,2 100,100 0,100\" /><path d=\"M 0,0 L 10,0 L 10,10 Z M 20,20 L 40,20 L 40,40 L 20,40 Z\" /><path d=\"M0,0 C 1,1 2,2 3,3\" /><polygon points=\"1,1 2,2\" /></svg>"
  },
  "parametric": {
   "presets": {

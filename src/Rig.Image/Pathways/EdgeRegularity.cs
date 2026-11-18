@@ -101,6 +101,17 @@ public static partial class EdgeRegularity
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "expected a defect kind"),
     };
 
+    /// <summary>
+    /// Python's <c>f"{value:.{places}f}"</c> without the sign on a value that rounds to zero. A ring rotated onto the
+    /// axes leaves residues near 1e-17 whose sign comes from the platform's sin and cos (glibc and the Windows CRT differ
+    /// in the last bit), so keeping Python's <c>-0.00</c> made the regularized SVG differ between Linux and Windows.
+    /// </summary>
+    internal static string Coordinate(double value, int places)
+    {
+        var text = PythonNumber.FormatFixed(value, places);
+        return text.StartsWith('-') && text.AsSpan(1).IndexOfAnyExcept('0', '.') < 0 ? text[1..] : text;
+    }
+
     /// <summary>Python's <c>f"{value:+.{places}f}"</c>.</summary>
     internal static string Signed(double value, int places)
     {
@@ -358,7 +369,7 @@ public static partial class EdgeRegularity
     {
         var axisSet = axes ?? HexagonalAxes;
 
-        string Format(Point p) => $"{PythonNumber.FormatFixed(p.X, precision)},{PythonNumber.FormatFixed(p.Y, precision)}";
+        string Format(Point p) => $"{Coordinate(p.X, precision)},{Coordinate(p.Y, precision)}";
 
         string RewritePath(Match match)
         {
