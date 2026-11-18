@@ -77,7 +77,7 @@ internal static class C4Routes
         }
     }
 
-    // Python's parse_qs dropped blank values, so a blank is the same as absent.
+    // A blank value is the same as absent.
     private static string First(Microsoft.Extensions.Primitives.StringValues values) => values.FirstOrDefault() ?? string.Empty;
 
     private static Answer Static(string root, string name)

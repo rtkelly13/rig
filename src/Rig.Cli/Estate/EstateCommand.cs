@@ -25,7 +25,7 @@ internal sealed record EstateHost(
     /// <summary>The personal estate folder, the default <c>--root</c>.</summary>
     public string PersonalDir => Path.Join(CodeRoot, "personal");
 
-    /// <summary>The clone list cache, shared with the Python commands still in the group.</summary>
+    /// <summary>The clone list cache.</summary>
     public string CacheFile => CloneDiscovery.CacheFileUnder(Home);
 
     /// <summary><paramref name="path"/> with a leading <c>~</c> replaced by <see cref="Home"/>.</summary>
@@ -66,7 +66,7 @@ internal sealed class EstateCommand(
 
     private readonly Git git = new(proc, host.CodeRoot);
 
-    /// <summary>The <c>estate</c> group with its ported subcommands.</summary>
+    /// <summary>The <c>estate</c> group with its subcommands.</summary>
     public Command Build()
     {
         var estate = new Command("estate", Description);

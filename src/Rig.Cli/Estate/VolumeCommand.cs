@@ -25,7 +25,7 @@ internal readonly record struct DriveSpace(long Total, long Free)
 /// <summary>
 /// <c>rig estate volume</c> (Windows): where a whole drive's space went, from a WizTree MFT export. A drill-down of the
 /// largest folders, the dev artefacts under the code root with each subtree counted once, and the known Windows hogs
-/// with their remedies. Ported from the Python <c>estate volume</c>. Read-only.
+/// with their remedies. Read-only.
 /// </summary>
 /// <param name="host">The default <c>--code-root</c>.</param>
 /// <param name="export">Runs WizTree when no <c>--csv</c> is given.</param>

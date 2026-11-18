@@ -6,8 +6,7 @@ using Rig.Core.Governance;
 namespace Rig.Cli.Governance;
 
 /// <summary>
-/// <c>apps</c>: the GitHub Apps declared under <c>github_apps</c> and the review tools' in-repo configs. Ported from
-/// <c>rig.repo_governance.cli_audits</c>.
+/// <c>apps</c>: the GitHub Apps declared under <c>github_apps</c> and the review tools' in-repo configs.
 /// </summary>
 internal sealed partial class GovernanceCommand
 {

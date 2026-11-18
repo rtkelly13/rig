@@ -10,7 +10,7 @@ namespace Rig.Cli.Estate;
 
 /// <summary>
 /// <c>rig estate decisions</c>: the worktrees and directories only a human can decide about, as a table, as JSON, or
-/// written to the feed the web console reads. Ported from the Python <c>tiers_cli.decisions</c>; the
+/// written to the feed the web console reads. The
 /// scheduled <c>estate-decisions</c> job runs it with <c>--write</c>.
 /// </summary>
 /// <param name="host">The default roots, <c>~</c> in a path, and where the feed lives.</param>

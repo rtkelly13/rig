@@ -9,8 +9,7 @@ using Rig.Core.Text;
 namespace Rig.Cli.Governance;
 
 /// <summary>
-/// The per-repo conventions: <c>status</c> and <c>audit</c> read them, <c>enforce</c> writes them. Ported from
-/// <c>rig.repo_governance.cli_repo_checks</c>.
+/// The per-repo conventions: <c>status</c> and <c>audit</c> read them, <c>enforce</c> writes them.
 /// </summary>
 internal sealed partial class GovernanceCommand
 {

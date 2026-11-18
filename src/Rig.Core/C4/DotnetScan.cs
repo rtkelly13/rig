@@ -303,7 +303,7 @@ public static partial class DotnetScan
             [.. kinds.Keys.Order(StringComparer.Ordinal)],
             Identifier().Matches(Directive().Replace(code, " ")).Select(match => match.Value).ToHashSet(StringComparer.Ordinal),
             Generator().IsMatch(code),
-            PythonLines(raw),
+            LineCount(raw),
             [.. kinds.Keys.Order(StringComparer.Ordinal).Select(name => new TypeInfo(name, kinds[name], docs.GetValueOrDefault(name, string.Empty), members))]);
     }
 
@@ -412,8 +412,8 @@ public static partial class DotnetScan
         return index < 0 ? head : head[..index];
     }
 
-    /// <summary>Python's <c>len(text.splitlines())</c> for normalised text.</summary>
-    internal static int PythonLines(string text)
+    /// <summary>The number of lines in normalised text: a trailing newline adds none.</summary>
+    internal static int LineCount(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
         if (text.Length == 0)

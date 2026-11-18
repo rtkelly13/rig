@@ -7,8 +7,7 @@ namespace Rig.Cli.Devenv;
 
 /// <summary>
 /// <c>rig devenv git</c> and <c>terminal</c>: the global git identity, defaults, per-folder identities and SSH key;
-/// Windows Terminal's defaults and the Oh My Posh prompt hook. Ported from devenv's <c>steps/git.py</c> and
-/// <c>steps/terminal.py</c>.
+/// Windows Terminal's defaults and the Oh My Posh prompt hook.
 /// </summary>
 /// <param name="host">Where it sets up, and where prompts are answered.</param>
 /// <param name="proc">Runs git and ssh-keygen.</param>

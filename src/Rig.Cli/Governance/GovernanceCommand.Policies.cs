@@ -7,7 +7,6 @@ namespace Rig.Cli.Governance;
 
 /// <summary>
 /// The policy files: <c>apply-policy</c> on one repo and <c>sync-policies</c> across the profiles that declare them.
-/// Ported from <c>rig.repo_governance.cli_triage</c>.
 /// </summary>
 internal sealed partial class GovernanceCommand
 {

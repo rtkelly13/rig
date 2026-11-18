@@ -165,7 +165,7 @@ public static partial class OkfBundle
     }
 
     /// <summary>
-    /// Paths compared one folder name at a time, as Python's <c>Path</c> ordering did: <c>a/b.md</c> before <c>a-b.md</c>,
+    /// Paths compared one folder name at a time: <c>a/b.md</c> before <c>a-b.md</c>,
     /// where comparing whole strings would put <c>a-b.md</c> first because <c>-</c> sorts below <c>/</c>.
     /// </summary>
     private static readonly Comparer<string> FolderByFolder = Comparer<string>.Create((left, right) =>
@@ -264,14 +264,14 @@ public static partial class OkfBundle
         return (null, text);
     }
 
-    /// <summary>A file's text as Python's text mode reads it: UTF-8 and universal newlines.</summary>
+    /// <summary>Text with every line ending as <c>\n</c>.</summary>
     public static string NormaliseNewlines(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
         return text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
     }
 
-    /// <summary>Python's <c>str.splitlines()</c> for text already normalised to <c>\n</c>: a trailing newline adds no line.</summary>
+    /// <summary>The lines of text already normalised to <c>\n</c>: a trailing newline adds no line.</summary>
     public static string[] SplitLines(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -284,7 +284,7 @@ public static partial class OkfBundle
         return text.EndsWith('\n') ? lines[..^1] : lines;
     }
 
-    /// <summary>Python's <c>str.splitlines(keepends=True)</c> for text already normalised to <c>\n</c>.</summary>
+    /// <summary>The lines of text already normalised to <c>\n</c>, each keeping its newline.</summary>
     private static List<string> SplitKeepingEnds(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -375,7 +375,7 @@ public static partial class OkfBundle
         _ => null,
     };
 
-    // Python's str.title(): a letter starts a word, everything else lowercase. Hyphens and spaces both start words.
+    // Title case: a letter starts a word, everything else lowercase. Hyphens and spaces both start words.
     private static string TitleCase(string text)
     {
         var characters = text.ToCharArray();

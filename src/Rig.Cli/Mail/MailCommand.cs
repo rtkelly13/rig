@@ -17,7 +17,7 @@ namespace Rig.Cli.Mail;
 internal sealed record MailHost(Func<string, string?> Environment, string Home, string Personal, TimeProvider Clock);
 
 /// <summary>
-/// <c>rig mail</c>: Gmail triage rules as code. Ported from <c>rig.mail.cli</c>. Nothing here calls Gmail: filters are
+/// <c>rig mail</c>: Gmail triage rules as code. Nothing here calls Gmail: filters are
 /// imported by hand and sweeps run through the Gmail connector or the exported Apps Script.
 /// </summary>
 /// <param name="host">The machine's rules file, home and clock.</param>
@@ -49,7 +49,7 @@ internal sealed class MailCommand(MailHost host, TextWriter output, TextWriter e
         return mail;
     }
 
-    /// <summary>A group named without one of its verbs is the parser's error, as before.</summary>
+    /// <summary>A group named without one of its verbs is the parser's error.</summary>
     public int Run() => DeclarativeCommand.RequireSubcommand(error);
 
     private static string Posix(string path) => path.Replace('\\', '/');

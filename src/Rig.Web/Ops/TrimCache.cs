@@ -25,8 +25,7 @@ public sealed record TrimScan(string ScannedAt, IReadOnlyList<TrimCandidate> Can
 public sealed record TrimResult(string Path, string Status, long Freeable);
 
 /// <summary>
-/// The last finished trim scan, refreshed on a background task; safe to share between requests. Ported from
-/// <c>rig.estate.web.TrimCache</c>: a GET never waits for a scan, and an apply removes only paths the last finished
+/// The last finished trim scan, refreshed on a background task; safe to share between requests. A GET never waits for a scan, and an apply removes only paths the last finished
 /// scan offered and still allows.
 /// </summary>
 public sealed class TrimCache : IDisposable
@@ -225,7 +224,7 @@ public sealed class TrimCache : IDisposable
             : new TrimResult(path, await _remove(item, cancellationToken).ConfigureAwait(false), freeable);
     }
 
-    // Python's Path(path): the same path written two ways is one key.
+    // The same path written two ways is one key.
     private static string Key(string path)
     {
         try

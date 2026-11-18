@@ -17,7 +17,7 @@ public static partial class MermaidGenerator
         return "```mermaid\n" + string.Join('\n', lines) + "\n```\n";
     }
 
-    /// <summary>A double-quoted Mermaid label with its quotes replaced, as the Python deriver wrote it.</summary>
+    /// <summary>A double-quoted Mermaid label with its quotes replaced.</summary>
     public static string Quote(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -111,7 +111,7 @@ public static partial class MermaidGenerator
         ]);
     }
 
-    /// <summary>A slug made of lower-case letters, digits and underscores, the same mapping the Python deriver used.</summary>
+    /// <summary>A slug made of lower-case letters, digits and underscores.</summary>
     public static string Slug(string text)
     {
         ArgumentNullException.ThrowIfNull(text);

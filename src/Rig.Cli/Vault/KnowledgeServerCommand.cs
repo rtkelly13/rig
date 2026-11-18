@@ -14,7 +14,7 @@ internal delegate Task<KnowledgeServer> KnowledgeServerFactory(CancellationToken
 
 /// <summary>
 /// <c>rig vault knowledge-server</c>: the one OpenKnowledge server for the vault, shared by every Claude session as a
-/// macOS LaunchAgent. Ported from <c>rig.obsidian.commands.knowledge_server</c>. <c>install</c>, <c>restart</c> and
+/// macOS LaunchAgent. <c>install</c>, <c>restart</c> and
 /// <c>uninstall</c> exit 2 off macOS; <c>connect</c> and <c>status</c> run anywhere.
 /// </summary>
 internal sealed class KnowledgeServerCommand(

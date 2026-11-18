@@ -1,30 +1,24 @@
 ---
 type: C4 Code
-title: StudioServer — code
-description: The request handler classes behind the web control plane.
-resource: https://github.com/rtkelly13/rig/blob/main/src/rig/web_host/server.py
+title: RigWebHost — code
+description: The ASP.NET Core host behind the web control plane and its route modules.
+resource: https://github.com/rtkelly13/rig/blob/main/src/Rig.Web/RigWebHost.cs
 generated: { by: claude-code/opus-5-5, at: 2026-11-04 }
 ---
 
 ```mermaid
 classDiagram
-  class StudioServer {
-    +Path assets_root
-    +bool is_preview
-    +serve_forever()
+  class RigWebHost {
+    <<sealed>>
+    +StartAsync()
+    +DisposeAsync()
   }
-  class StudioRequestHandler {
-    +do_GET()
-    +do_POST()
-    -_send_json(data, status)
+  class C4Routes {
+    <<static>>
+    +Map(app)
   }
-  class serve_c4 {
-    <<function>>
-    +serve_c4(handler, url) bool
-  }
-  StudioServer --> StudioRequestHandler : handles with
-  StudioRequestHandler --> serve_c4 : delegates /c4
-  click serve_c4 href "components.md"
+  RigWebHost --> C4Routes : maps /c4 and /api/c4
+  click C4Routes href "components.md"
 ```
 
 The code level is where C4 says to stop drawing and link to the code: `resource` points at the file.

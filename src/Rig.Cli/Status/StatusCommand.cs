@@ -15,7 +15,7 @@ internal sealed record StatusResult(string Name, bool Passed, string Detail = ""
 
 /// <summary>
 /// <c>rig status</c> (and the <c>status</c> entry point): checks the repo is well managed — git state, and the C#
-/// tests when asked. The Python gates went with the Python (#285); CI runs the C# analyzers and format checks. Ported from <c>repo_health.cli</c>. Exit codes: 0 every check passed, 1
+/// tests when asked. CI runs the C# analyzers and format checks. Exit codes: 0 every check passed, 1
 /// something did not.
 /// </summary>
 /// <param name="proc">Runs the tests.</param>
@@ -116,7 +116,7 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
         return results;
     }
 
-    // Python's (out + err).strip(): a failing git command still reports what it printed.
+    // A failing git command still reports what it printed: stdout then stderr, trimmed.
     private async Task<string> GitTextAsync(string root, string[] args, CancellationToken cancellationToken)
     {
         var ran = await git.RunAsync(root, args, cancellationToken: cancellationToken).ConfigureAwait(false);

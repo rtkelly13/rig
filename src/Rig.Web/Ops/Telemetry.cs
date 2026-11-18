@@ -59,8 +59,7 @@ public sealed record ExplorerStatusView(
 public sealed record TelemetryView(TelemetryStore Store, ExplorerStatusView Explorers);
 
 /// <summary>
-/// ClickHouse when it answers, the NDJSON files otherwise, plus the explorer UIs. Ported from <c>rig.otel_stack.web</c>:
-/// reachability is remembered for <see cref="RecheckSeconds"/>, so a stopped stack costs one short timeout per half
+/// ClickHouse when it answers, the NDJSON files otherwise, plus the explorer UIs. Reachability is remembered for <see cref="RecheckSeconds"/>, so a stopped stack costs one short timeout per half
 /// minute rather than one per request. A down ClickHouse is not an error; only a file read that throws is.
 /// </summary>
 public sealed class Telemetry : IDisposable

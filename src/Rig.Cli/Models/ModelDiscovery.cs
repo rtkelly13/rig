@@ -245,7 +245,7 @@ internal sealed partial class ModelDiscovery(IProc proc, string home, Func<strin
         }
     }
 
-    // A JSON string's value; any other kind (the Python's Lenient) is null.
+    // A JSON string's value; any other kind is null.
     private static string? Text(JsonNode? node) =>
         node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 

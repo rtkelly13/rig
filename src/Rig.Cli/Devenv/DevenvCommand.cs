@@ -24,9 +24,7 @@ internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, 
 
 /// <summary>
 /// <c>rig devenv</c>: <see cref="DoctorCommand"/>'s <c>doctor</c>, <see cref="SetupCommand"/>'s <c>setup</c> and <c>ai</c>, <c>agent-launcher</c>, <c>agents</c>, <c>claude</c>, <c>estate-rules</c>,
-/// <c>fonts</c>, <c>gh</c>, <c>obsidian-plugins</c>, <c>opencode</c>, <see cref="ToolsCommands"/>' <c>tools</c>, <c>runtimes</c> and <c>update</c>, and <see cref="GitTerminalCommands"/>' <c>git</c> and <c>terminal</c>. Ported from devenv's
-/// <c>agent_launcher_setup</c>, <c>agent_shortcut</c>, <c>discovery</c>, <c>fonts</c>, <c>claude_code</c>, <c>session_ledger</c>,
-/// <c>estate_rules</c>, <c>github_cli</c>, <c>obsidian_plugins</c> and <c>opencode</c>.
+/// <c>fonts</c>, <c>gh</c>, <c>obsidian-plugins</c>, <c>opencode</c>, <see cref="ToolsCommands"/>' <c>tools</c>, <c>runtimes</c> and <c>update</c>, and <see cref="GitTerminalCommands"/>' <c>git</c> and <c>terminal</c>.
 /// </summary>
 /// <param name="host">Where it sets up.</param>
 /// <param name="plugins">Fetches Obsidian plugins from GitHub.</param>
@@ -36,7 +34,7 @@ internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, 
 /// <param name="error">Where failures go.</param>
 internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, NerdFonts fonts, IProc proc, TextWriter output, TextWriter error)
 {
-    /// <summary>What <c>rig devenv</c> is, matching the Python group's help.</summary>
+    /// <summary>What <c>rig devenv</c> is, the root help names.</summary>
     public const string Description = "Unified development environment manager (tools, runtimes, fonts, git, AI coding agents).";
 
     /// <summary>The <c>devenv</c> group, holding the subcommands C# owns.</summary>
@@ -218,7 +216,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         try
         {
             var existed = File.Exists(profile);
-            // Compared with \n line ends, as Python's text mode does; written with the platform's.
+            // Compared with \n line ends; written with the platform's.
             var existing = existed ? File.ReadAllText(profile).ReplaceLineEndings("\n") : string.Empty;
             var updated = LauncherShim.Upsert(existing, block);
             if (existed && updated == existing)
@@ -445,7 +443,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         }
 
         var target = Path.Join(root, "AGENTS.md");
-        // Read and compared with \n line ends, as Python's text mode does; written with the platform's.
+        // Read and compared with \n line ends; written with the platform's.
         var merge = EstateRules.Merge(File.Exists(target) ? File.ReadAllText(target).ReplaceLineEndings("\n") : null);
         var action = merge.Action.ToString().ToLowerInvariant();
         if (merge.Action == EstateRulesAction.Unchanged)

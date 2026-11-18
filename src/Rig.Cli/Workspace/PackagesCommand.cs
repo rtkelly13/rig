@@ -15,7 +15,6 @@ namespace Rig.Cli.Workspace;
 
 /// <summary>
 /// <c>rig workspace packages</c> (alias <c>artifacts</c>): track and audit the npm and NuGet packages the estate publishes.
-/// Ported from <c>src/rig/workspace/packages_cli.py</c>.
 /// </summary>
 /// <param name="host">Where it looks.</param>
 /// <param name="proc">Runs git, gh and npm.</param>

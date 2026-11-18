@@ -101,7 +101,7 @@ public sealed class ExpandException : Exception
     }
 
     /// <summary>An expansion failure.</summary>
-    /// <param name="message">What is wrong, in the same words the Python CLI used.</param>
+    /// <param name="message">What is wrong, as the CLI prints it.</param>
     public ExpandException(string message)
         : base(message)
     {

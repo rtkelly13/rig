@@ -92,7 +92,7 @@ internal static class Program
         // followed, so only a 200 from the health endpoint itself counts as healthy.
         using var handler = new HttpClientHandler { AllowAutoRedirect = false, CheckCertificateRevocationList = true };
         using var http = new HttpClient(handler);
-        // otel-stack's clients, each with the Python's timeout: downloads 120 s to the headers, ClickHouse and the sender 30 s.
+        // otel-stack's clients, each with its own timeout: downloads 120 s to the headers, ClickHouse and the sender 30 s.
         // Obsidian plugin downloads share the downloads client.
         using var downloads = new HttpClient { Timeout = TimeSpan.FromSeconds(120) };
         using var clickhouseHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
@@ -373,7 +373,7 @@ internal static class Program
         }
     }
 
-    // The default browser, as Python's webbrowser.open: the shell opens the URL.
+    // The default browser: the shell opens the URL.
     private static void OpenBrowser(Uri page) =>
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(page.AbsoluteUri) { UseShellExecute = true })?.Dispose();
 

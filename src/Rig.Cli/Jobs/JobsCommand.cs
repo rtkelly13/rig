@@ -39,16 +39,14 @@ internal sealed record JobsHost(
     Func<string> UserId);
 
 /// <summary>
-/// <c>rig jobs</c>: the coordinator's runs and task installation. Ported
-/// from <c>desktop_manager.jobs.cli</c>. The text is
-/// Python's without rich's colours, and the table is padded to its widest cell rather than wrapped at 80 columns.
+/// <c>rig jobs</c>: the coordinator's runs and task installation. The table is padded to its widest cell rather than wrapped at 80 columns.
 /// </summary>
 internal sealed class JobsCommand(JobsHost host, TextWriter output)
 {
     /// <summary>A job name that is not in the registry exits with this.</summary>
     public const int UnknownExit = 2;
 
-    /// <summary>The <c>jobs</c> command, with the subcommands ported so far.</summary>
+    /// <summary>The <c>jobs</c> command, with its subcommands.</summary>
     public Command Build()
     {
         var statusTrigger = TriggerOption("tick", "Show what a run on this trigger would do.");
@@ -307,7 +305,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         return 0;
     }
 
-    // Python's text.splitlines()[-lines:]: 0 keeps every line, and a negative count drops that many from the start.
+    // The last <lines> lines: 0 keeps every line, and a negative count drops that many from the start.
     private static IEnumerable<string> Tail(string text, int lines)
     {
         var all = text.Split(["\r\n", "\n", "\r"], StringSplitOptions.None);

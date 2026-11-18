@@ -31,7 +31,7 @@ public interface IWorkPrSource
     Task<PrResults> FetchAsync(IReadOnlyList<PrRequest> requests, bool refresh, DateTimeOffset now, CancellationToken cancellationToken = default);
 }
 
-/// <summary>Claude Code sessions for the work list, behind one seam until the transcript reader is ported.</summary>
+/// <summary>Claude Code sessions for the work list, behind one seam.</summary>
 public interface IWorkSessionSource
 {
     /// <summary>The sessions touched at or after <paramref name="since"/>, classified but not attributed.</summary>

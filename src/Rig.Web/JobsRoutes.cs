@@ -16,7 +16,6 @@ public sealed record JobRunRequest([property: JsonPropertyName("job")] string? J
 
 /// <summary>
 /// The jobs coordinator ops routes: registered jobs, run history, run output and triggering a background run.
-/// Ported from <c>desktop_manager.jobs.web</c>.
 /// </summary>
 /// <remarks>
 /// | route | method | answer |
