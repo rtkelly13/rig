@@ -1,8 +1,8 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Observability;
 using Rig.Core.Text;
@@ -21,6 +21,7 @@ namespace Rig.Cli.Traces;
 /// <param name="zone">The zone run times are shown in.</param>
 /// <param name="output">Where the tables and JSON go.</param>
 /// <param name="error">Where an invalid option is reported.</param>
+[CliCommand(Name = "traces", Description = "Inspect the OTLP-JSON trace files under temp/traces/sdk: recent runs, failures and slow commands.")]
 internal sealed class TracesCommand(
     string defaultRoot,
     Func<string, string?> environment,
@@ -29,6 +30,12 @@ internal sealed class TracesCommand(
     TextWriter output,
     TextWriter error)
 {
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal TracesCommand()
+        : this(string.Empty, static _ => null, TimeProvider.System, TimeZoneInfo.Utc, TextWriter.Null, TextWriter.Null)
+    {
+    }
+
     /// <summary>An unreadable option exits with this.</summary>
     public const int UsageExit = 2;
 
@@ -37,30 +44,13 @@ internal sealed class TracesCommand(
     /// <summary>The <c>traces</c> command.</summary>
     public Command Build()
     {
-        var limit = new Option<int>("--limit") { Description = "Only the N most recent runs.", DefaultValueFactory = _ => 20 };
-        var tool = new Option<string?>("--tool") { Description = "Only spans whose service.name is this tool." };
-        var errorsOnly = new Option<bool>("--errors-only") { Description = "Only runs with a failed span, and print each failure's ids, command, cwd, exit code and stderr snippet." };
-        var runsSince = new Option<string?>("--since") { Description = "Only runs with a span since this window, e.g. 24h or 7d. Default: all recorded." };
-        var runs = new Command("runs", "Recent process runs, newest first: tool, command, duration, spans and failures.") { limit, tool, errorsOnly, runsSince };
-        runs.SetAction(parsed => Runs(
-            parsed.GetValue(limit),
-            parsed.GetValue(tool),
-            parsed.GetValue(errorsOnly),
-            parsed.GetValue(runsSince)));
-
-        var summarySince = new Option<string>("--since") { Description = "How far back to aggregate, e.g. 24h or 7d.", DefaultValueFactory = _ => "24h" };
-        var json = new Option<bool>("--json") { Description = "Machine-readable output; the schema is documented in docs/observability.md." };
-        var summary = new Command("summary", "Totals, failure rate, p50/p90/p99 durations, breakdowns by tool and command, and recent errors.") { summarySince, json };
-        summary.SetAction(parsed => Summary(parsed.GetRequiredValue(summarySince), parsed.GetValue(json)));
-
-        return new Command("traces", "Inspect the OTLP-JSON trace files under temp/traces/sdk: recent runs, failures and slow commands.")
-        {
-            runs,
-            summary,
-        };
+        var traces = DeclarativeCommand.BuildGroup(this);
+        traces.Add(DeclarativeCommand.Build(new RunsCommand(this)));
+        traces.Add(DeclarativeCommand.Build(new SummaryCommand(this)));
+        return traces;
     }
 
-    private int Runs(int limit, string? tool, bool errorsOnly, string? since)
+    internal int Runs(int limit, string? tool, bool errorsOnly, string? since)
     {
         if (limit < 1)
         {
@@ -139,7 +129,7 @@ internal sealed class TracesCommand(
         }
     }
 
-    private int Summary(string since, bool json)
+    internal int Summary(string since, bool json)
     {
         if (!TryWindow(since, out var window))
         {
@@ -311,4 +301,56 @@ internal sealed class TracesCommand(
     }
 
     private static string OrDash(string value) => value.Length > 0 ? value : "-";
+
+    /// <summary><c>rig traces runs</c>.</summary>
+    [CliCommand(Name = "runs", Description = "Recent process runs, newest first: tool, command, duration, spans and failures.")]
+    internal sealed class RunsCommand(TracesCommand traces)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal RunsCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>How many runs to show.</summary>
+        [CliOption(Name = "--limit", Description = "Only the N most recent runs.")]
+        public int Limit { get; set; } = 20;
+
+        /// <summary>Restricts to one tool.</summary>
+        [CliOption(Name = "--tool", Required = false, Description = "Only spans whose service.name is this tool.")]
+        public string? Tool { get; set; }
+
+        /// <summary>Restricts to failed runs.</summary>
+        [CliOption(Name = "--errors-only", Description = "Only runs with a failed span, and print each failure's ids, command, cwd, exit code and stderr snippet.")]
+        public bool ErrorsOnly { get; set; }
+
+        /// <summary>The window.</summary>
+        [CliOption(Name = "--since", Required = false, Description = "Only runs with a span since this window, e.g. 24h or 7d. Default: all recorded.")]
+        public string? Since { get; set; }
+
+        /// <summary>Lists the runs.</summary>
+        public int Run() => traces.Runs(Limit, Tool, ErrorsOnly, Since);
+    }
+
+    /// <summary><c>rig traces summary</c>.</summary>
+    [CliCommand(Name = "summary", Description = "Totals, failure rate, p50/p90/p99 durations, breakdowns by tool and command, and recent errors.")]
+    internal sealed class SummaryCommand(TracesCommand traces)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal SummaryCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The window.</summary>
+        [CliOption(Name = "--since", Description = "How far back to aggregate, e.g. 24h or 7d.")]
+        public string Since { get; set; } = "24h";
+
+        /// <summary>Emits JSON.</summary>
+        [CliOption(Name = "--json", Description = "Machine-readable output; the schema is documented in docs/observability.md.")]
+        public bool Json { get; set; }
+
+        /// <summary>Summarises the window.</summary>
+        public int Run() => traces.Summary(Since, Json);
+    }
 }

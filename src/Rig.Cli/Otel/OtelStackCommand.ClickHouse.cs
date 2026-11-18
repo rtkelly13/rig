@@ -1,7 +1,7 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Otel;
 
@@ -10,44 +10,16 @@ namespace Rig.Cli.Otel;
 /// <summary><c>otel-stack clickhouse</c>: the on-demand half. Nothing here runs until <c>up</c>, and <c>down</c> leaves nothing running.</summary>
 internal sealed partial class OtelStackCommand
 {
-    private Command ClickHouseCommand()
+    private Command ClickHouseGroup()
     {
-        var sql = new Argument<string>("sql") { Description = "SQL to run, e.g. \"SELECT count() FROM otel.otel_traces\"." };
-        var format = new Option<string>("--format")
-        {
-            Description = "ClickHouse output format, unless the SQL names one.",
-            DefaultValueFactory = _ => "PrettyCompactMonoBlock",
-        };
-        var query = new Command("query", "Run SQL against the on-demand ClickHouse and print the result.") { sql, format };
-        query.SetAction((parsed, ct) => QueryAsync(parsed.GetRequiredValue(sql), parsed.GetRequiredValue(format), ct));
-
-        var path = new Option<FileInfo[]>("--path") { Description = "Also replay this NDJSON trace file (repeatable)." };
-        var settle = new Option<int>("--settle-seconds")
-        {
-            Description = "Leave spans that ended this recently for the next run.",
-            DefaultValueFactory = _ => Backfill.SettleSeconds,
-        };
-        var dryRun = new Option<bool>("--dry-run") { Description = "Count what would be sent; send and mark nothing." };
-        var backfill = new Command(
-            "backfill",
-            "Load the recorded files into ClickHouse: spans by identity, logs and metrics by position. Run after `up`.")
-        {
-            path,
-            settle,
-            dryRun,
-        };
-        backfill.SetAction((parsed, ct) => BackfillAsync(
-            [.. (parsed.GetValue(path) ?? []).Select(file => file.FullName)], parsed.GetValue(settle), parsed.GetValue(dryRun), ct));
-
-        return new Command("clickhouse", "ClickHouse on demand: `up`, `backfill` the recorded files, `query`, then `down`. Tables keep 7 days.")
-        {
-            Leaf("install", "Download and verify the pinned ClickHouse and otelcol-contrib, without starting anything.", ClickHouseInstallAsync),
-            Leaf("up", "Install what is missing, start ClickHouse and the contrib collector, wait until both answer.", UpAsync),
-            Leaf("down", "Stop the contrib collector and ClickHouse, and wait for both to exit. The data stays.", DownAsync),
-            Leaf("status", "Whether each part runs, its memory, and what the data folder and tables hold.", ClickHouseStatusAsync),
-            query,
-            backfill,
-        };
+        var clickHouse = DeclarativeCommand.BuildGroup(new ClickHouseCommand());
+        clickHouse.Add(DeclarativeCommand.Build(new ClickHouseInstallCommand(this)));
+        clickHouse.Add(DeclarativeCommand.Build(new UpCommand(this)));
+        clickHouse.Add(DeclarativeCommand.Build(new DownCommand(this)));
+        clickHouse.Add(DeclarativeCommand.Build(new ClickHouseStatusCommand(this)));
+        clickHouse.Add(DeclarativeCommand.Build(new QueryCommand(this)));
+        clickHouse.Add(DeclarativeCommand.Build(new BackfillCommand(this)));
+        return clickHouse;
     }
 
     [GeneratedRegex(@"\bFORMAT\s+\w+\s*;?\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
@@ -205,5 +177,116 @@ internal sealed partial class OtelStackCommand
 
         await error.WriteLineAsync(string.Join("\n", problems)).ConfigureAwait(false);
         return FailedExit;
+    }
+
+    /// <summary><c>otel-stack clickhouse</c>.</summary>
+    [CliCommand(Name = "clickhouse", Description = "ClickHouse on demand: `up`, `backfill` the recorded files, `query`, then `down`. Tables keep 7 days.")]
+    internal sealed class ClickHouseCommand
+    {
+    }
+
+    /// <summary><c>otel-stack clickhouse install</c>.</summary>
+    [CliCommand(Name = "install", Description = "Download and verify the pinned ClickHouse and otelcol-contrib, without starting anything.")]
+    internal sealed class ClickHouseInstallCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal ClickHouseInstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.ClickHouseInstallAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack clickhouse up</c>.</summary>
+    [CliCommand(Name = "up", Description = "Install what is missing, start ClickHouse and the contrib collector, wait until both answer.")]
+    internal sealed class UpCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal UpCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.UpAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack clickhouse down</c>.</summary>
+    [CliCommand(Name = "down", Description = "Stop the contrib collector and ClickHouse, and wait for both to exit. The data stays.")]
+    internal sealed class DownCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal DownCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.DownAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack clickhouse status</c>.</summary>
+    [CliCommand(Name = "status", Description = "Whether each part runs, its memory, and what the data folder and tables hold.")]
+    internal sealed class ClickHouseStatusCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal ClickHouseStatusCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.ClickHouseStatusAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack clickhouse query</c>.</summary>
+    [CliCommand(Name = "query", Description = "Run SQL against the on-demand ClickHouse and print the result.")]
+    internal sealed class QueryCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal QueryCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The SQL to run.</summary>
+        [CliArgument(Name = "sql", Description = "SQL to run, e.g. \"SELECT count() FROM otel.otel_traces\".")]
+        public string Sql { get; set; } = null!;
+
+        /// <summary>The output format.</summary>
+        [CliOption(Name = "--format", Description = "ClickHouse output format, unless the SQL names one.")]
+        public string Format { get; set; } = "PrettyCompactMonoBlock";
+
+        /// <summary>Runs the query.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.QueryAsync(Sql, Format, context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack clickhouse backfill</c>.</summary>
+    [CliCommand(Name = "backfill", Description = "Load the recorded files into ClickHouse: spans by identity, logs and metrics by position. Run after `up`.")]
+    internal sealed class BackfillCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal BackfillCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Extra NDJSON files to replay.</summary>
+        [CliOption(Name = "--path", Required = false, Description = "Also replay this NDJSON trace file (repeatable).")]
+        public FileInfo[] Paths { get; set; } = [];
+
+        /// <summary>Seconds a span must have ended before it is sent.</summary>
+        [CliOption(Name = "--settle-seconds", Description = "Leave spans that ended this recently for the next run.")]
+        public int SettleSeconds { get; set; } = Backfill.SettleSeconds;
+
+        /// <summary>Counts without sending.</summary>
+        [CliOption(Name = "--dry-run", Description = "Count what would be sent; send and mark nothing.")]
+        public bool DryRun { get; set; }
+
+        /// <summary>Loads the files.</summary>
+        public Task<int> RunAsync(CliContext context) =>
+            stack.BackfillAsync([.. Paths.Select(file => file.FullName)], SettleSeconds, DryRun, context.CancellationToken);
     }
 }

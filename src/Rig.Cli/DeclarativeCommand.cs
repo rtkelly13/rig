@@ -85,6 +85,19 @@ internal static class DeclarativeCommand
         return command;
     }
 
+    /// <summary>Limits <paramref name="command"/>'s option <paramref name="option"/> to <paramref name="values"/>, as the parser's own check does.</summary>
+    /// <param name="command">The built command.</param>
+    /// <param name="option">The option's name, as declared.</param>
+    /// <param name="values">The accepted values.</param>
+    /// <returns><paramref name="command"/>.</returns>
+    internal static Command AcceptOnlyFromAmong(this Command command, string option, IEnumerable<string> values)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(values);
+        command.Options.OfType<Option<string>>().Single(declared => declared.Name == option).AcceptOnlyFromAmong([.. values]);
+        return command;
+    }
+
     /// <summary>
     /// What a command group prints when it is named without one of its subcommands. DotMake always gives a declared
     /// command an action, so a group keeps the parser's own answer — the message, and exit code 2 — in its handler.

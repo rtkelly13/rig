@@ -1,6 +1,6 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Globalization;
+using DotMake.CommandLine;
 using Rig.Core.Otel;
 using Rig.Core.Services;
 
@@ -42,8 +42,15 @@ internal sealed record OtelParts(
 /// <c>up</c> and stopped by <c>down</c>, and nothing in the always-on half depends on it. The collector commands
 /// report everything on stdout, the ClickHouse ones their failures on stderr.
 /// </summary>
+[CliCommand(Name = "otel-stack", Description = "Rig's local OpenTelemetry: an always-on collector writing rotated files (7 days), and ClickHouse on demand.")]
 internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, TextWriter output, TextWriter error)
 {
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal OtelStackCommand()
+        : this(null!, null!, TextWriter.Null, TextWriter.Null)
+    {
+    }
+
     /// <summary>A command that could not do its work exits with this.</summary>
     public const int FailedExit = 1;
 
@@ -58,99 +65,91 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     private static readonly string CollectorUrl = $"http://{ClickHouseConfig.Host}:{Text(ClickHouseConfig.CollectorPort)}";
 
     /// <summary>The <c>otel-stack</c> command.</summary>
-    public Command Build() =>
-        new("otel-stack", "Rig's local OpenTelemetry: an always-on collector writing rotated files (7 days), and ClickHouse on demand.")
-        {
-            CollectorCommand(),
-            ClickHouseCommand(),
-        };
+    public Command Build()
+    {
+        var stack = DeclarativeCommand.BuildGroup(this);
+        stack.Add(CollectorGroup());
+        stack.Add(ClickHouseGroup());
+        return stack;
+    }
 
     private static string Text(int value) => value.ToString(CultureInfo.InvariantCulture);
 
     private static string Mb(double bytes) => (bytes / 1_048_576).ToString("0.0", CultureInfo.InvariantCulture);
 
-    private static Command Leaf(string name, string description, Func<CancellationToken, Task<int>> run)
-    {
-        var command = new Command(name, description);
-        command.SetAction((_, ct) => run(ct));
-        return command;
-    }
-
     private string Key() => host.PlatformKey();
 
-    private Command CollectorCommand()
+    private Command CollectorGroup()
     {
-        var show = new Option<bool>("--print") { Description = "Also print it" };
-        var config = new Command("config", "Write the collector config.") { show };
-        config.SetAction(parsed =>
-        {
-            var path = parts.Runtime.WriteConfig();
-            output.WriteLine($"wrote {path}");
-            if (parsed.GetValue(show))
-            {
-                output.Write(File.ReadAllText(path));
-            }
-
-            return 0;
-        });
-
-        return new Command("collector", "The always-on core collector.")
-        {
-            Leaf("install", "Download the pinned otelcol, verify its sha256, unpack the binary. Idempotent.", InstallAsync),
-            config,
-            Leaf("start", "Start the collector now (via its LaunchAgent when one is loaded).", StartAsync),
-            Leaf("stop", "Stop it. On macOS this unloads the agent until `ensure` or `service install` loads it again.", StopAsync),
-            Leaf("ensure", "Install if missing, prune rotated files past 7 days, and make sure it is listening. Safe to run every tick.", EnsureAsync),
-            Leaf("status", "Install state, ports, process memory, and what the data folder holds.", StatusAsync),
-            ServiceCommand(),
-            ForwardCommand(),
-        };
+        var collector = DeclarativeCommand.BuildGroup(new CollectorCommand());
+        collector.Add(DeclarativeCommand.Build(new CollectorInstallCommand(this)));
+        collector.Add(DeclarativeCommand.Build(new CollectorConfigCommand(this)));
+        collector.Add(DeclarativeCommand.Build(new CollectorStartCommand(this)));
+        collector.Add(DeclarativeCommand.Build(new CollectorStopCommand(this)));
+        collector.Add(DeclarativeCommand.Build(new CollectorEnsureCommand(this)));
+        collector.Add(DeclarativeCommand.Build(new CollectorStatusCommand(this)));
+        collector.Add(ServiceGroup());
+        collector.Add(ForwardGroup());
+        return collector;
     }
 
-    private Command ServiceCommand() =>
-        new("service", "The macOS LaunchAgent that keeps it running.")
-        {
-            Leaf("install", "Install and load the LaunchAgent (macOS). Installs the binary first if needed.", ServiceInstallAsync),
-            Leaf("uninstall", "Unload and remove the LaunchAgent.", ServiceUninstallAsync),
-        };
-
-    private Command ForwardCommand()
+    private Command ServiceGroup()
     {
-        var endpoint = new Argument<string>("endpoint") { Description = "OTLP/HTTP base URL, e.g. http://127.0.0.1:24318" };
-        var set = new Command("set", "Also send everything to ENDPOINT (a Docker collector, say). The files stay the record.") { endpoint };
-        set.SetAction(parsed =>
+        var service = DeclarativeCommand.BuildGroup(new ServiceCommand());
+        service.Add(DeclarativeCommand.Build(new ServiceInstallCommand(this)));
+        service.Add(DeclarativeCommand.Build(new ServiceUninstallCommand(this)));
+        return service;
+    }
+
+    private Command ForwardGroup()
+    {
+        var forward = DeclarativeCommand.BuildGroup(new ForwardCommand());
+        forward.Add(DeclarativeCommand.Build(new ForwardSetCommand(this)));
+        forward.Add(DeclarativeCommand.Build(new ForwardOffCommand(this)));
+        forward.Add(DeclarativeCommand.Build(new ForwardShowCommand(this)));
+        return forward;
+    }
+
+    private int Config(bool print)
+    {
+        var path = parts.Runtime.WriteConfig();
+        output.WriteLine($"wrote {path}");
+        if (print)
         {
-            string recorded;
-            try
-            {
-                recorded = parts.Runtime.SetForward(parsed.GetRequiredValue(endpoint))!;
-            }
-            catch (FormatException e)
-            {
-                output.WriteLine(e.Message);
-                return UsageExit;
-            }
+            output.Write(File.ReadAllText(path));
+        }
 
-            output.WriteLine($"forwarding to {recorded}; restart the collector to apply (`collector stop`, then `collector start`)");
-            return 0;
-        });
+        return 0;
+    }
 
-        var off = new Command("off", "Stop forwarding; only the files are written.");
-        off.SetAction(_ =>
+    private int ForwardSet(string endpoint)
+    {
+        string recorded;
+        try
         {
-            parts.Runtime.SetForward(null);
-            output.WriteLine("forwarding off; restart the collector to apply (`collector stop`, then `collector start`)");
-            return 0;
-        });
-
-        var show = new Command("show", "Print the forward endpoint, or `off`.");
-        show.SetAction(_ =>
+            recorded = parts.Runtime.SetForward(endpoint)!;
+        }
+        catch (FormatException e)
         {
-            output.WriteLine(parts.Runtime.Forward() ?? "off");
-            return 0;
-        });
+            output.WriteLine(e.Message);
+            return UsageExit;
+        }
 
-        return new Command("forward", "Optionally also send everything to another OTLP/HTTP collector, such as a Docker one.") { set, off, show };
+        output.WriteLine($"forwarding to {recorded}; restart the collector to apply (`collector stop`, then `collector start`)");
+        return 0;
+    }
+
+    private int ForwardOff()
+    {
+        parts.Runtime.SetForward(null);
+        output.WriteLine("forwarding off; restart the collector to apply (`collector stop`, then `collector start`)");
+        return 0;
+    }
+
+    private int ForwardShow()
+    {
+        output.WriteLine(parts.Runtime.Forward() ?? "off");
+        return 0;
     }
 
     private async Task<int> InstallAsync(CancellationToken ct)
@@ -359,5 +358,185 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
         var removed = host.MacOs && await OtelService.UninstallAsync(await parts.Launchd(ct).ConfigureAwait(false), ct).ConfigureAwait(false);
         await output.WriteLineAsync(removed ? "removed" : "Not installed.").ConfigureAwait(false);
         return 0;
+    }
+
+    /// <summary><c>otel-stack collector</c>.</summary>
+    [CliCommand(Name = "collector", Description = "The always-on core collector.")]
+    internal sealed class CollectorCommand
+    {
+    }
+
+    /// <summary><c>otel-stack collector install</c>.</summary>
+    [CliCommand(Name = "install", Description = "Download the pinned otelcol, verify its sha256, unpack the binary. Idempotent.")]
+    internal sealed class CollectorInstallCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal CollectorInstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.InstallAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack collector config</c>.</summary>
+    [CliCommand(Name = "config", Description = "Write the collector config.")]
+    internal sealed class CollectorConfigCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal CollectorConfigCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Prints the config as well as writing it.</summary>
+        [CliOption(Name = "--print", Description = "Also print it")]
+        public bool Print { get; set; }
+
+        /// <summary>Writes the config.</summary>
+        public int Run() => stack.Config(Print);
+    }
+
+    /// <summary><c>otel-stack collector start</c>.</summary>
+    [CliCommand(Name = "start", Description = "Start the collector now (via its LaunchAgent when one is loaded).")]
+    internal sealed class CollectorStartCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal CollectorStartCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.StartAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack collector stop</c>.</summary>
+    [CliCommand(Name = "stop", Description = "Stop it. On macOS this unloads the agent until `ensure` or `service install` loads it again.")]
+    internal sealed class CollectorStopCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal CollectorStopCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.StopAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack collector ensure</c>.</summary>
+    [CliCommand(Name = "ensure", Description = "Install if missing, prune rotated files past 7 days, and make sure it is listening. Safe to run every tick.")]
+    internal sealed class CollectorEnsureCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal CollectorEnsureCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.EnsureAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack collector status</c>.</summary>
+    [CliCommand(Name = "status", Description = "Install state, ports, process memory, and what the data folder holds.")]
+    internal sealed class CollectorStatusCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal CollectorStatusCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.StatusAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack collector service</c>.</summary>
+    [CliCommand(Name = "service", Description = "The macOS LaunchAgent that keeps it running.")]
+    internal sealed class ServiceCommand
+    {
+    }
+
+    /// <summary><c>otel-stack collector service install</c>.</summary>
+    [CliCommand(Name = "install", Description = "Install and load the LaunchAgent (macOS). Installs the binary first if needed.")]
+    internal sealed class ServiceInstallCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal ServiceInstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.ServiceInstallAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack collector service uninstall</c>.</summary>
+    [CliCommand(Name = "uninstall", Description = "Unload and remove the LaunchAgent.")]
+    internal sealed class ServiceUninstallCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal ServiceUninstallCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The handler.</summary>
+        public Task<int> RunAsync(CliContext context) => stack.ServiceUninstallAsync(context.CancellationToken);
+    }
+
+    /// <summary><c>otel-stack collector forward</c>.</summary>
+    [CliCommand(Name = "forward", Description = "Optionally also send everything to another OTLP/HTTP collector, such as a Docker one.")]
+    internal sealed class ForwardCommand
+    {
+    }
+
+    /// <summary><c>otel-stack collector forward set</c>.</summary>
+    [CliCommand(Name = "set", Description = "Also send everything to ENDPOINT (a Docker collector, say). The files stay the record.")]
+    internal sealed class ForwardSetCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal ForwardSetCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The endpoint to forward to.</summary>
+        [CliArgument(Name = "endpoint", Description = "OTLP/HTTP base URL, e.g. http://127.0.0.1:24318")]
+        public string Endpoint { get; set; } = null!;
+
+        /// <summary>Records the endpoint.</summary>
+        public int Run() => stack.ForwardSet(Endpoint);
+    }
+
+    /// <summary><c>otel-stack collector forward off</c>.</summary>
+    [CliCommand(Name = "off", Description = "Stop forwarding; only the files are written.")]
+    internal sealed class ForwardOffCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal ForwardOffCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Stops forwarding.</summary>
+        public int Run() => stack.ForwardOff();
+    }
+
+    /// <summary><c>otel-stack collector forward show</c>.</summary>
+    [CliCommand(Name = "show", Description = "Print the forward endpoint, or `off`.")]
+    internal sealed class ForwardShowCommand(OtelStackCommand stack)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal ForwardShowCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Prints the endpoint.</summary>
+        public int Run() => stack.ForwardShow();
     }
 }
