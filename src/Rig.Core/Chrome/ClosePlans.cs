@@ -159,9 +159,9 @@ public static class ClosePlans
                 List<AppliedClose> results = [];
                 if (byWindow.GetValueOrDefault(handle) is { } closes)
                 {
-                using var activity = Source.StartActivity("chrome_tabs.close_window");
-                activity?.SetTag("window.profile", window.ProfileName ?? window.ProfileKey);
-                activity?.SetTag("close.planned", closes.Count);
+                    using var activity = Source.StartActivity("chrome_tabs.close_window");
+                    activity?.SetTag("window.profile", window.ProfileName ?? window.ProfileKey);
+                    activity?.SetTag("close.planned", closes.Count);
                     results =
                     [
                         .. closes.Select(close =>
@@ -171,8 +171,8 @@ public static class ClosePlans
                         }),
                     ];
 
-                actions.RestoreSelection([window], Activations(closes));
-                activity?.SetTag("close.closed", results.Count(result => result.Closed));
+                    actions.RestoreSelection([window], Activations(closes));
+                    activity?.SetTag("close.closed", results.Count(result => result.Closed));
                 }
 
                 afterWindow?.Invoke(window, results);
