@@ -23,7 +23,11 @@ public interface IScheduledTasks
 public static class CoordinatorTasks
 {
     /// <summary>The Task Scheduler folder that holds them.</summary>
-    public const string Folder = "Shared Utilities";
+    public const string Folder = "Rig";
+
+    /// <summary>The folder they were registered in before the repo was renamed.</summary>
+    // TODO(2027-01-31): delete with the rest of the shared-utilities -> rig migration (AppDataMigration, the legacy task names) once every machine has run `rig runtime install` and `rig jobs install`.
+    public const string LegacyFolder = "Shared Utilities";
 
     /// <summary>The sign-in run.</summary>
     public const string Logon = Folder + "\\Logon";
@@ -37,8 +41,20 @@ public static class CoordinatorTasks
     /// <summary>All three, in the order <c>jobs status</c> names any missing.</summary>
     public static IReadOnlyList<string> All { get; } = [Logon, Tick, Guard];
 
-    /// <summary>The standalone tasks replaced by the coordinator.</summary>
-    public static IReadOnlyList<string> Retired { get; } = ["Workspace Restore", "Chrome Tabs Organise", "Chrome Tabs Prune", "Workspace Display Guard"];
+    /// <summary>
+    /// The tasks <c>jobs install</c> deletes: the standalone ones the coordinator replaced, and the coordinator's own
+    /// tasks under <see cref="LegacyFolder"/>, which run the runtime copy in the old app-data folder.
+    /// </summary>
+    public static IReadOnlyList<string> Retired { get; } =
+    [
+        "Workspace Restore",
+        "Chrome Tabs Organise",
+        "Chrome Tabs Prune",
+        "Workspace Display Guard",
+        LegacyFolder + "\\Logon",
+        LegacyFolder + "\\Tick",
+        LegacyFolder + "\\Display Guard",
+    ];
 }
 
 /// <summary>Registers, starts, queries and deletes named tasks through <c>schtasks</c>.</summary>

@@ -18,7 +18,7 @@ copy, and refuses any commit after its removal.
 ## Layout
 
 ```text
-%LOCALAPPDATA%\shared-utilities\
+%LOCALAPPDATA%\rig\
   runtime\
     <sha12>\                     the commit's files (git archive)
       rig\                        rig, published from the commit
@@ -28,6 +28,12 @@ copy, and refuses any commit after its removal.
   workspace-restore\logs\        restore logs, kept across updates
   chrome-tabs\                   traces, kept across updates
 ```
+
+Before the repo was renamed the folder was `%LOCALAPPDATA%\shared-utilities\`. The first
+`rig runtime install` into `rig\` copies everything from the old folder except `runtime\`
+(`rig.db`, jobs state, logs, traces), keeping anything `rig\` already has, and leaves the old folder
+alone. Then `rig jobs install` moves the scheduled tasks from `\Shared Utilities\` to `\Rig\`. Once
+a restore has worked from the new copy, the old folder can be deleted.
 
 A copy keeps the repo's layout, so the workspace plan (`desktop-manager/`) and
 anything else found relative to the code is pinned with it. It has no Python environment. `rig` is
@@ -61,8 +67,8 @@ from a copy and registers paths through `current`, so later installs and rollbac
 move the tasks without registering them again:
 
 ```bash
-"%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe" jobs install
-"%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe" chrome-tabs install
+"%LOCALAPPDATA%\rig\runtime\current\rig\rig.exe" jobs install
+"%LOCALAPPDATA%\rig\runtime\current\rig\rig.exe" chrome-tabs install
 ```
 
 `jobs install` registers the Logon, Tick and Display Guard tasks that run every

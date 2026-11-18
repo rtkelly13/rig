@@ -92,11 +92,11 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
             : await pulls.HeadsAsync(clone, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary><c>%LOCALAPPDATA%\shared-utilities\jobs\decisions.json</c>, beside the jobs coordinator's state.</summary>
+    /// <summary><c>%LOCALAPPDATA%\rig\jobs\decisions.json</c>, beside the jobs coordinator's state.</summary>
     /// <param name="localAppData">The <c>LOCALAPPDATA</c> variable; <c>~/AppData/Local</c> when unset.</param>
     /// <param name="home">The user's home folder.</param>
     public static string DefaultFeedPath(string? localAppData, string home) =>
-        Path.Join(string.IsNullOrEmpty(localAppData) ? Path.Join(home, "AppData", "Local") : localAppData, "shared-utilities", "jobs", FeedName);
+        Path.Join(string.IsNullOrEmpty(localAppData) ? Path.Join(home, "AppData", "Local") : localAppData, Roots.AppData.Name, "jobs", FeedName);
 
     /// <summary>The feed as a JSON array of decisions, indented as pydantic writes it.</summary>
     public static string DumpFeed(IEnumerable<Decision> decisions) =>

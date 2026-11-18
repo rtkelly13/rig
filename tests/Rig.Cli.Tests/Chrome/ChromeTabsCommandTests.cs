@@ -31,7 +31,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
         _temp.Dispose();
     }
 
-    private string Traces => Path.Join(_temp.Path, "shared-utilities", "chrome-tabs", "traces");
+    private string Traces => Path.Join(_temp.Path, "rig", "chrome-tabs", "traces");
 
     private async Task<int> Run(params string[] args) =>
         await new ChromeTabsCommand(name => name == "LOCALAPPDATA" ? _temp.Path : null, "/home", new FixedTime(Now), TimeZoneInfo.Utc, _out)
@@ -727,7 +727,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
 
     private string Shim => Path.Join(Home, ".local", "bin", "chrome-tabs.cmd");
 
-    private string Target => Path.Join(Local, "shared-utilities", "runtime", "current", "rig", "rig.exe");
+    private string Target => Path.Join(Local, "rig", "runtime", "current", "rig", "rig.exe");
 
     private async Task<int> Installs(params string[] args) =>
         await new ChromeTabsCommand(
@@ -762,7 +762,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     [Fact]
     public async Task Uninstall_removes_the_shim_and_the_old_snapshot_but_keeps_the_logs()
     {
-        var root = Path.Join(Local, "shared-utilities", "chrome-tabs");
+        var root = Path.Join(Local, "rig", "chrome-tabs");
         _ = Directory.CreateDirectory(Path.Join(root, "venv", "Scripts"));
         await File.WriteAllTextAsync(Path.Join(root, "organise.log"), "kept", TestContext.Current.CancellationToken);
         Assert.Equal(0, await Installs("install"));
@@ -781,7 +781,7 @@ public sealed class ChromeTabsCommandTests : IDisposable
     {
         Assert.Equal(0, await Installs("uninstall"));
 
-        Assert.Equal([$"Removed the command; kept logs in {Path.Join(Local, "shared-utilities", "chrome-tabs")}"], Lines);
+        Assert.Equal([$"Removed the command; kept logs in {Path.Join(Local, "rig", "chrome-tabs")}"], Lines);
     }
 
     private IReadOnlyList<TraceRun> Load() => ChromeTraces.Runs(ChromeTraces.LoadSpans(Traces, DateOnly.FromDateTime(Now.UtcDateTime), 30));

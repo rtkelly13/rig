@@ -29,7 +29,7 @@ rig desktop workspace restore --desktop Work   # restore one desktop in place
   run next to fill them (see [Claude sessions at sign-in](startup-and-display-guard.md#claude-sessions-at-sign-in)).
   Without the flag, those terminals run their command as usual.
 - While a restore runs it holds `workspace-restore.lock` in
-  `%LOCALAPPDATA%\shared-utilities\workspace-restore\`. A second restore exits
+  `%LOCALAPPDATA%\rig\workspace-restore\`. A second restore exits
   instead of fighting it, and the [display guard](startup-and-display-guard.md)
   pauses until the lock is released.
 - The run log times each phase: settling app updates, planning, creating desktops,

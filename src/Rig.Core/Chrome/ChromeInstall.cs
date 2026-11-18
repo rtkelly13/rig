@@ -13,12 +13,12 @@ public static class ChromeInstall
     public const string ShimName = "chrome-tabs.cmd";
 
     /// <summary>
-    /// Where the scheduled run logs and traces: <c>%LOCALAPPDATA%\shared-utilities\chrome-tabs</c>.
+    /// Where the scheduled run logs and traces: <c>%LOCALAPPDATA%\rig\chrome-tabs</c>.
     /// </summary>
     /// <param name="environment">Reads an environment variable.</param>
     /// <param name="home">The user's home, for when <c>LOCALAPPDATA</c> is unset.</param>
     public static string Root(Func<string, string?> environment, string home) =>
-        Path.Join(Local(environment, home), "shared-utilities", "chrome-tabs");
+        Path.Join(Local(environment, home), Roots.AppData.Name, "chrome-tabs");
 
     /// <summary>The <c>chrome-tabs.cmd</c> shim: <c>~/.local/bin/chrome-tabs.cmd</c>.</summary>
     /// <param name="home">The user's home.</param>
@@ -26,13 +26,13 @@ public static class ChromeInstall
 
     /// <summary>
     /// <c>rig.exe</c> inside the runtime's <c>current</c> copy, which <c>rig runtime install</c>
-    /// maintains: <c>%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe</c>.
+    /// maintains: <c>%LOCALAPPDATA%\rig\runtime\current\rig\rig.exe</c>.
     /// </summary>
     /// <param name="environment">Reads an environment variable.</param>
     /// <param name="home">The user's home, for when <c>LOCALAPPDATA</c> is unset.</param>
     public static string RuntimeRig(Func<string, string?> environment, string home) =>
         Runtime.RuntimeManager.Published(
-            Runtime.RuntimeManager.CurrentLink(Path.Join(Local(environment, home), "shared-utilities", "runtime")), "rig", windows: true);
+            Runtime.RuntimeManager.CurrentLink(Path.Join(Local(environment, home), Roots.AppData.Name, "runtime")), "rig", windows: true);
 
     /// <summary>The shim's text: a batch file that runs <paramref name="rig"/> <c>chrome-tabs</c> with every argument.</summary>
     /// <param name="rig">The <c>rig.exe</c> the shim runs.</param>

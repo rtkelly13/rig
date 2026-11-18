@@ -45,7 +45,7 @@ writes it. Each entry is a `Decision`:
 
 The scheduled `estate-decisions` job runs daily after `worktree-reclaim`, over
 the code root plus any configured work folders outside it, and writes the
-feed to **`%LOCALAPPDATA%\shared-utilities\jobs\decisions.json`**, beside the
+feed to **`%LOCALAPPDATA%\rig\jobs\decisions.json`**, beside the
 coordinator's own state. The file is a JSON array of `Decision` objects,
 replaced in one step; its modified time is when it was collected.
 The command runs on the C# CLI (`src/Rig.Core/Estate/Decisions.cs`), and

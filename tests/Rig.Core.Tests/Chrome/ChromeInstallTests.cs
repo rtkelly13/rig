@@ -8,17 +8,17 @@ public sealed class ChromeInstallTests
     public void Root_uses_localappdata_when_present()
     {
         var root = ChromeInstall.Root(varName => varName == "LOCALAPPDATA" ? @"C:\Custom\AppData\Local" : null, @"C:\Users\me");
-        Assert.Equal(Path.Join(@"C:\Custom\AppData\Local", "shared-utilities", "chrome-tabs"), root);
+        Assert.Equal(Path.Join(@"C:\Custom\AppData\Local", "rig", "chrome-tabs"), root);
     }
 
     [Fact]
     public void Root_falls_back_to_home_when_localappdata_is_null_or_empty()
     {
         var root = ChromeInstall.Root(_ => null, @"C:\Users\me");
-        Assert.Equal(Path.Join(@"C:\Users\me", "AppData", "Local", "shared-utilities", "chrome-tabs"), root);
+        Assert.Equal(Path.Join(@"C:\Users\me", "AppData", "Local", "rig", "chrome-tabs"), root);
 
         var rootEmpty = ChromeInstall.Root(_ => "", @"C:\Users\me");
-        Assert.Equal(Path.Join(@"C:\Users\me", "AppData", "Local", "shared-utilities", "chrome-tabs"), rootEmpty);
+        Assert.Equal(Path.Join(@"C:\Users\me", "AppData", "Local", "rig", "chrome-tabs"), rootEmpty);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class ChromeInstallTests
     public void RuntimeRig_renders_full_path()
     {
         var path = ChromeInstall.RuntimeRig(_ => @"C:\Local", @"C:\Users\me");
-        Assert.Equal(Path.Join(@"C:\Local", "shared-utilities", "runtime", "current", "rig", "rig.exe"), path);
+        Assert.Equal(Path.Join(@"C:\Local", "rig", "runtime", "current", "rig", "rig.exe"), path);
     }
 
     [Fact]

@@ -253,8 +253,8 @@ public sealed class DecisionsTests : IDisposable
     [Fact]
     public void The_feed_lives_beside_the_jobs_state()
     {
-        Assert.Equal(Path.Join("L", "shared-utilities", "jobs", "decisions.json"), Decisions.DefaultFeedPath("L", "H"));
-        Assert.Equal(Path.Join("H", "AppData", "Local", "shared-utilities", "jobs", "decisions.json"), Decisions.DefaultFeedPath(null, "H"));
+        Assert.Equal(Path.Join("L", "rig", "jobs", "decisions.json"), Decisions.DefaultFeedPath("L", "H"));
+        Assert.Equal(Path.Join("H", "AppData", "Local", "rig", "jobs", "decisions.json"), Decisions.DefaultFeedPath(null, "H"));
     }
 
     [Fact]

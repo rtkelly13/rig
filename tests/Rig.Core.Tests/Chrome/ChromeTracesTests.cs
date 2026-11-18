@@ -110,7 +110,7 @@ public sealed class ChromeTracesTests
     public void Traces_live_beside_the_scheduled_run()
     {
         Assert.Equal(
-            Path.Join("L", "shared-utilities", "chrome-tabs", "traces"),
+            Path.Join("L", "rig", "chrome-tabs", "traces"),
             ChromeTraces.TracesDir(name => name == "LOCALAPPDATA" ? "L" : null, "H"));
     }
 

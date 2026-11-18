@@ -53,7 +53,7 @@ git -C <parent-repo> worktree remove <worktree-path>
 
 ## 3. Start From the Daily Jobs
 
-The scheduled jobs already do the safe part every day. `estate-trim` drops regenerable output inside worktrees idle for a week, `estate-prune-caches` empties the tool caches, and `worktree-reclaim` removes merged worktrees. What is left for a human is in the decision feed, `%LOCALAPPDATA%\shared-utilities\jobs\decisions.json`, refreshed daily by `estate-decisions`:
+The scheduled jobs already do the safe part every day. `estate-trim` drops regenerable output inside worktrees idle for a week, `estate-prune-caches` empties the tool caches, and `worktree-reclaim` removes merged worktrees. What is left for a human is in the decision feed, `%LOCALAPPDATA%\rig\jobs\decisions.json`, refreshed daily by `estate-decisions`:
 
 ```bash
 rig estate decisions          # or read the feed; --json for the raw entries

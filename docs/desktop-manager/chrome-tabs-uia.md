@@ -238,7 +238,7 @@ The root span's `group.outcome` is `grouped`, `nothing_to_group`, `deferred`,
 `interrupted` (input stopped it and it never finished) or `stopped` (it failed).
 `group.retries` counts the retries after input.
 
-The spans go to `%LOCALAPPDATA%\shared-utilities\chrome-tabs\traces\<YYYY-MM-DD>.ndjson`,
+The spans go to `%LOCALAPPDATA%\rig\chrome-tabs\traces\<YYYY-MM-DD>.ndjson`,
 one file per day. Each line is an OTLP-JSON envelope, the same format the
 repo-wide `rig.tracing` writes. The process flushes them every 30
 seconds and again on exit. Two minutes before the job's time limit, a scheduled

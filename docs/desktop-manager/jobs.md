@@ -33,7 +33,7 @@ Both sides read and write the same `state.json` and `last-<trigger>.json`, held 
 ## Scheduled tasks
 
 `jobs install` registers three tasks in the Task Scheduler folder
-`\Shared Utilities\`, and removes the separate tasks they replace (`Workspace Restore`, `Chrome Tabs Organise`, `Chrome Tabs Prune`, `Workspace Display Guard`):
+`\Rig\`, and removes the tasks they replace: the separate `Workspace Restore`, `Chrome Tabs Organise`, `Chrome Tabs Prune` and `Workspace Display Guard`, and the same three tasks under `\Shared Utilities\`, the folder used before the repo was renamed:
 
 | Task | When | Runs |
 |:-----|:-----|:-----|
@@ -45,7 +45,7 @@ Install from the [runtime copy](runtime.md), so the tasks follow `current`
 through later `runtime install` and `runtime rollback`:
 
 ```bash
-"%LOCALAPPDATA%\shared-utilities\runtime\current\rig\rig.exe" jobs install
+"%LOCALAPPDATA%\rig\runtime\current\rig\rig.exe" jobs install
 ```
 
 Run from a checkout, `jobs install` refuses a linked worktree because the tasks are machine-wide.
@@ -77,7 +77,8 @@ upgrades. `--detach-console` must come first; rig frees its console before anyth
 There is no separate windowless executable. The earlier `rigw.exe` (rig built as a Windows app) was quarantined
 by CrowdStrike Falcon on every Release build, so it was removed.
 
-Source tests pin task policy against `tests/Rig.Core.Tests/Jobs/task-xml-oracle.json`. Native
+Each task's XML is kept in `tests/Rig.Core.Tests/Jobs/Tasks/<task>.xml`, so a policy change shows
+up as a diff; `RIG_UPDATE_SNAPSHOTS=1 dotnet test` rewrites those files from the renderer. Native
 `WIN-JOBS` acceptance and estate rollout remain pending separate Windows evidence; these source
 changes do not modify the machine's installed tasks.
 
@@ -167,13 +168,13 @@ Every `coordinator.log` line names it, it heads that run's section of each job l
   `job.returncode`), written by the scheduled coordinator as the
   `desktop-manager-jobs` tool. A failed job's span has error status.
 - **Traces.** Jobs run from a runtime copy write their spans to
-  `%LOCALAPPDATA%\shared-utilities\traces\<tool>\`, outside every copy, so they
+  `%LOCALAPPDATA%\rig\traces\<tool>\`, outside every copy, so they
   outlive a `runtime install`. Each logon run deletes trace files there older than
   14 days. Chrome organise keeps its own traces directory.
 
 ## Where things live
 
-Everything is under `%LOCALAPPDATA%\shared-utilities\jobs\`:
+Everything is under `%LOCALAPPDATA%\rig\jobs\`:
 
 - `coordinator.log`: each scheduled run's decisions, which jobs ran or were skipped and why, and why a job failed.
 

@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Text.Json;
 using Rig.Core.Processes;
+using Rig.Core.Roots;
 using Rig.Core.Runtime;
 
 namespace Rig.Cli.Runtime;
@@ -104,6 +105,7 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
                 return 2;
             }
 
+            ReportMigration();
             var result = Manager.Install(repo, refName, fetch, line => output.WriteLine(line));
             var link = RuntimeManager.CurrentLink(host.Root);
             var sha = result.Sha[..Math.Min(result.Sha.Length, RuntimeManager.ShortShaLength)];
@@ -148,6 +150,36 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
             output.WriteLine($"Rollback failed: {error.Message}");
             return 1;
         }
+    }
+
+    // Copies state from the app-data folder's pre-rename name, so the first install into the renamed folder keeps rig.db,
+    // the jobs state and the logs. The old folder and its runtime copies stay until the tasks no longer use them.
+    // TODO(2027-01-31): delete with the rest of the shared-utilities -> rig migration (AppDataMigration, the legacy task names) once every machine has run `rig runtime install` and `rig jobs install`.
+    private void ReportMigration()
+    {
+        if (Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(host.Root)) is not { } appData)
+        {
+            return;
+        }
+
+        var result = AppDataMigration.CopyLegacy(appData);
+        if (result.Legacy is null || result.Copied.Count == 0 && result.Failed.Count == 0)
+        {
+            return;
+        }
+
+        output.WriteLine($"Copied from {result.Legacy}: {string.Join(", ", result.Copied)}");
+        if (result.Kept.Count > 0)
+        {
+            output.WriteLine($"Kept (already in {appData}): {string.Join(", ", result.Kept)}");
+        }
+
+        foreach (var failure in result.Failed)
+        {
+            output.WriteLine($"Not copied: {failure}");
+        }
+
+        output.WriteLine($"Run `rig jobs install` next to move the scheduled tasks; then {result.Legacy} can be deleted.");
     }
 
     internal void ReportShim()

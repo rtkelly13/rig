@@ -25,8 +25,8 @@ rig otel-stack collector forward set <url> | off | show  # also send to another 
 | Config | `<rig data>/otel/otelcol.yaml`, regenerated on every start |
 | Log | `<rig data>/logs/otelcol.log` |
 
-`<rig data>` is `~/Library/Application Support/shared-utilities` on macOS and
-`%LOCALAPPDATA%\shared-utilities` on Windows.
+`<rig data>` is `~/Library/Application Support/rig` on macOS and
+`%LOCALAPPDATA%\rig` on Windows.
 
 **macOS**: the `dev.rtkelly.rig.otelcol` LaunchAgent (`RunAtLoad`, `KeepAlive`,
 `ThrottleInterval` 60, `ProcessType` Background, low-priority IO, `Nice` 10).
