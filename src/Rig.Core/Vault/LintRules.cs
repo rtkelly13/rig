@@ -75,7 +75,6 @@ public static partial class LintRules
     /// <summary>Why <paramref name="path"/> cannot be written on Windows, or <see langword="null"/> when it can.</summary>
     public static string? WindowsPortabilityIssueReason(NotePath path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         foreach (var part in path.Parts)
         {
             if (WindowsReservedChars().IsMatch(part) || part.EndsWith(' ') || part.EndsWith('.'))
@@ -97,14 +96,12 @@ public static partial class LintRules
     /// <summary>A lowercase stem that is safe on Windows.</summary>
     public static string PortableWindowsStem(string stem)
     {
-        ArgumentNullException.ThrowIfNull(stem);
         return VaultText.SanitizeFilename(UnicodeText.Lower(stem));
     }
 
     /// <summary>Every filename rule <paramref name="stem"/> breaks; the simplify rule only when it breaks no other.</summary>
     public static IReadOnlyList<FilenameIssueSpec> FilenameIssueSpecs(string stem, string suggestedStem, NotePath? path = null)
     {
-        ArgumentNullException.ThrowIfNull(stem);
         var found = new List<FilenameIssueSpec>();
         if (VaultText.LooksLikeUrlishStem(stem) || StatusToken().IsMatch(UnicodeText.Lower(stem)))
         {
@@ -153,7 +150,6 @@ public static partial class LintRules
     /// <summary>Whether <paramref name="stem"/> breaks a filename rule the cleanup command fixes.</summary>
     public static bool NeedsFilenameCleanup(string stem, NotePath? path = null)
     {
-        ArgumentNullException.ThrowIfNull(stem);
         var lower = UnicodeText.Lower(stem);
         return VaultText.LooksLikeUrlishStem(lower)
             || !stem.All(char.IsAscii)
@@ -169,7 +165,6 @@ public static partial class LintRules
     /// <summary>The type a note's location and name suggest, or <see langword="null"/> when they suggest none.</summary>
     public static string? SuggestedType(NotePath path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var text = path.ToString();
         var stem = path.Stem;
         var parent = path.ParentName;

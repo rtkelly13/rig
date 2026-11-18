@@ -16,7 +16,6 @@ public static class AppData
     /// </summary>
     public static string Resolve(string? localAppData, string? xdgDataHome, string home, bool macOs)
     {
-        ArgumentNullException.ThrowIfNull(home);
         if (!string.IsNullOrEmpty(localAppData))
         {
             return Path.Join(localAppData, Name);

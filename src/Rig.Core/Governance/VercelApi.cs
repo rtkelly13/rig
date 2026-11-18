@@ -50,7 +50,6 @@ public sealed class VercelApi(HttpClient http, Func<CancellationToken, Task<stri
     /// <inheritdoc />
     public async Task<JsonNode?> GetAsync(string path, IReadOnlyList<KeyValuePair<string, string>> query, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(query);
         resolved ??= await token(cancellationToken).ConfigureAwait(false);
         var search = string.Join("&", query.Select(pair => $"{Uri.EscapeDataString(pair.Key)}={Uri.EscapeDataString(pair.Value)}"));
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"{Root}{path}{(search.Length > 0 ? "?" + search : string.Empty)}"));
@@ -111,7 +110,6 @@ public sealed class VercelToken(Func<string, string?> environment, string home, 
     /// </summary>
     public static bool IsLive(VercelCliAuth entry, double nowSeconds)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         if (entry.ExpiresAt is not { } expiresAt || expiresAt <= 0)
         {
             return true;

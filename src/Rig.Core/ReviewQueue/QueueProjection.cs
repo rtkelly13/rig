@@ -11,7 +11,6 @@ public static class QueueProjection
     public static void Export(string path, IEnumerable<QueueEntry> entries)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        ArgumentNullException.ThrowIfNull(entries);
         var previous = File.Exists(path) ? Read(path) : null;
         var content = QueueMarkdown.Project(entries.Where(entry => entry.Active).Select(entry => entry.Item), previous);
         if (previous == content)

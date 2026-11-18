@@ -92,7 +92,6 @@ internal sealed partial class PrCommand(
     /// <summary>Seconds in <c>45m</c>, <c>2h</c> or <c>90s</c>; a bare number is minutes. Null when <paramref name="text"/> is none of those.</summary>
     public static TimeSpan? ParseDuration(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var found = Duration().Match(text);
         if (!found.Success || !int.TryParse(found.Groups["n"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var n))
         {

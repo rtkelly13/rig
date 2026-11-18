@@ -81,7 +81,6 @@ public sealed record KeyEvent(ushort VirtualKey, ushort Scan, uint Flags)
     /// <summary>Type <paramref name="text"/> whatever the keyboard layout: a down and an up per UTF-16 unit.</summary>
     public static IReadOnlyList<KeyEvent> Text(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         return [.. text.SelectMany(unit => new KeyEvent[] { new(0, unit, Unicode), new(0, unit, Unicode | KeyUp) })];
     }
 }

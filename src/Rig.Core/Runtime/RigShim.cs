@@ -35,7 +35,6 @@ public static class RigShim
     /// <param name="windows">Whether to render the Windows <c>.cmd</c> shim.</param>
     public static string Render(string target, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(target);
         if (windows)
         {
             var escaped = target.Replace("%", "%%", StringComparison.Ordinal);
@@ -55,7 +54,6 @@ public static class RigShim
     /// <param name="windows">Whether the shim is the Windows <c>.cmd</c> one.</param>
     public static ShimOutcome Install(string shim, string root, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(shim);
         var text = Render(RuntimeManager.Published(RuntimeManager.CurrentLink(root), "rig", windows), windows);
         var bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(text);
         if (File.Exists(shim))

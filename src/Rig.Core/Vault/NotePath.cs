@@ -32,7 +32,6 @@ public sealed class NotePath
     /// <summary>Reads <paramref name="relative"/>, a vault-relative path with forward slashes.</summary>
     public static NotePath Parse(string relative)
     {
-        ArgumentNullException.ThrowIfNull(relative);
         return new NotePath([.. relative.Split('/').Where(part => part.Length > 0 && part != ".")]);
     }
 

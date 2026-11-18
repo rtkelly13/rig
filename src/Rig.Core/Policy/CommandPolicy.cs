@@ -16,7 +16,6 @@ public sealed class CommandPolicy
     /// <summary>A policy of <paramref name="commandRules"/>, matched as <paramref name="windows"/> matches globs.</summary>
     public CommandPolicy(IReadOnlyList<string> skillsAllowlist, IReadOnlyList<CommandRule> commandRules, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(commandRules);
         SkillsAllowlist = skillsAllowlist;
         CommandRules = commandRules;
         _windows = windows;
@@ -35,7 +34,6 @@ public sealed class CommandPolicy
     /// </summary>
     public static CommandPolicy Load(string path, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(path);
         CliAllowlistsConfig file;
         try
         {
@@ -81,7 +79,6 @@ public sealed class CommandPolicy
     /// </summary>
     public CommandRisk Check(string command)
     {
-        ArgumentNullException.ThrowIfNull(command);
         var normalized = string.Join(' ', command.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         if (!IsDirect(normalized))
         {
@@ -105,7 +102,6 @@ public sealed class CommandPolicy
     /// <summary>Whether <paramref name="command"/> is one command, with no substitution, pipe, list or redirect a glob could hide.</summary>
     public static bool IsDirect(string command)
     {
-        ArgumentNullException.ThrowIfNull(command);
         if (command.Length == 0 || command.Contains("$(", StringComparison.Ordinal) || command.IndexOfAny(['`', '\n', '\r']) >= 0)
         {
             return false;

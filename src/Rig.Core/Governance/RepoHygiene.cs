@@ -395,9 +395,6 @@ public static partial class RepoHygiene
         IReadOnlyList<string> bannedScriptExtensions,
         IReadOnlyList<string>? bannedExtensions = null)
     {
-        ArgumentNullException.ThrowIfNull(allowedExceptions);
-        ArgumentNullException.ThrowIfNull(allowedScriptExtensions);
-        ArgumentNullException.ThrowIfNull(bannedScriptExtensions);
         var banned = (bannedExtensions ?? ScriptBanRules.Default.BannedExtensions).Select(Dotted).ToList();
         List<string> lines =
         [

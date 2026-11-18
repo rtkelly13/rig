@@ -18,7 +18,6 @@ public static class JsonShape
     /// <summary>Runs <paramref name="read"/>; a misshapen reply throws <see cref="FormatException"/>.</summary>
     public static T Read<T>(Func<T> read)
     {
-        ArgumentNullException.ThrowIfNull(read);
         return read();
     }
 
@@ -26,7 +25,6 @@ public static class JsonShape
     public static T? TryRead<T>(Func<T> read)
         where T : class
     {
-        ArgumentNullException.ThrowIfNull(read);
         try
         {
             return read();
@@ -174,7 +172,6 @@ public static class JsonShape
 
     private static bool Present(JsonObject parent, string key, out JsonNode? node)
     {
-        ArgumentNullException.ThrowIfNull(parent);
         return parent.TryGetPropertyValue(key, out node);
     }
 

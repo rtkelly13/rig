@@ -16,7 +16,6 @@ public sealed record Launched(int Pid, string Binary, string Started = "")
     /// <summary>A pid file's record, or null when it does not start with a pid.</summary>
     public static Launched? Parse(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var fields = text.TrimEnd('\n').Split('\t');
         if (!CollectorProcess.IsDigits(fields[0]) || !int.TryParse(fields[0], NumberStyles.None, CultureInfo.InvariantCulture, out var pid))
         {
@@ -45,7 +44,6 @@ public static partial class CollectorProcess
     /// <exception cref="FormatException">It is not such a URL.</exception>
     public static string ValidateForward(string endpoint)
     {
-        ArgumentNullException.ThrowIfNull(endpoint);
         var text = endpoint.Trim();
         var shape = new FormatException($"forward endpoint must look like http://127.0.0.1:24318, got {QuotedText.Str(endpoint)}");
         var colon = text.IndexOf(':', StringComparison.Ordinal);
@@ -82,7 +80,6 @@ public static partial class CollectorProcess
     /// <summary>The pid in <c>netstat -ano -p TCP</c> output listening on <paramref name="port"/> on any local address.</summary>
     public static int? ParseNetstatListener(string text, int port)
     {
-        ArgumentNullException.ThrowIfNull(text);
         foreach (var line in text.Split('\n'))
         {
             var fields = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
@@ -101,7 +98,6 @@ public static partial class CollectorProcess
     /// <summary>Whether <paramref name="command"/> (an image name or command line) runs the core <c>otelcol</c>, not contrib or a container.</summary>
     public static bool IsCollector(string command)
     {
-        ArgumentNullException.ThrowIfNull(command);
         return CollectorExecutable().IsMatch(command);
     }
 

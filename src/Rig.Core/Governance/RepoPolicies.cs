@@ -85,7 +85,6 @@ public sealed class RepoPolicies
     /// </summary>
     public static RepoPolicies Load(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         RepoPoliciesConfig file;
         try
         {
@@ -106,7 +105,6 @@ public sealed class RepoPolicies
     /// <summary>The policy in <paramref name="json"/>; <paramref name="source"/> names it in errors.</summary>
     public static RepoPolicies Parse(string json, string source)
     {
-        ArgumentNullException.ThrowIfNull(json);
         RepoPoliciesConfig file;
         try
         {
@@ -127,7 +125,6 @@ public sealed class RepoPolicies
     /// <summary>The policy in a decoded document; <paramref name="source"/> names it in errors.</summary>
     public static RepoPolicies Parse(RepoPoliciesConfig file, string source)
     {
-        ArgumentNullException.ThrowIfNull(file);
         var profileConfigs = Map(file.Profiles).ToList();
         var profiles = profileConfigs
             .Select(pair => (pair.Key, Layer.From(pair.Value, source), (IReadOnlyList<string>)(pair.Value.Repos ?? [])))
@@ -166,7 +163,6 @@ public sealed class RepoPolicies
     /// <summary>Whether <paramref name="repo"/> (bare or <c>owner/name</c>) is in <paramref name="slug"/>'s <c>disallow_repos</c> on <paramref name="account"/>.</summary>
     public bool IsAppDisallowed(string repo, string account, string slug)
     {
-        ArgumentNullException.ThrowIfNull(repo);
         var bare = repo[(repo.LastIndexOf('/') + 1)..];
         return Apps.FirstOrDefault(app => app.Slug == slug)?.Accounts.GetValueOrDefault(account) is { } policy && policy.DisallowRepos.Contains(bare);
     }
@@ -174,7 +170,6 @@ public sealed class RepoPolicies
     /// <summary>A preset's id for a language name, alias or id, ignoring case; an unknown one comes back trimmed and lowercased.</summary>
     public string NormalizeLanguage(string language)
     {
-        ArgumentNullException.ThrowIfNull(language);
         var cleaned = language.Trim().ToLowerInvariant();
         if (Presets.Any(preset => preset.Id == cleaned))
         {
@@ -218,7 +213,6 @@ public sealed class RepoPolicies
     /// </summary>
     public IReadOnlyList<string> DetectLanguages(string repoPath)
     {
-        ArgumentNullException.ThrowIfNull(repoPath);
         if (!Directory.Exists(repoPath) || Presets.Count == 0)
         {
             return [];
@@ -375,7 +369,6 @@ public sealed class RepoPolicies
     /// </summary>
     public string? OwnerProfileFor(string key)
     {
-        ArgumentNullException.ThrowIfNull(key);
         var slash = key.IndexOf('/', StringComparison.Ordinal);
         if (slash < 0 || IsRegistered(key))
         {
@@ -389,7 +382,6 @@ public sealed class RepoPolicies
     /// <summary>The repo names registered under <paramref name="org"/>: those of profiles and overrides expecting it as owner.</summary>
     public IReadOnlyList<string> ReposForOrg(string org)
     {
-        ArgumentNullException.ThrowIfNull(org);
         var repos = new List<string>();
         foreach (var (_, layer, names) in _profiles)
         {
@@ -413,7 +405,6 @@ public sealed class RepoPolicies
     /// <summary>Whether <paramref name="repo"/> belongs to <paramref name="org"/>: by its slug's owner, its expected owner or registration.</summary>
     public bool IsRepoInOrg(string repo, string org)
     {
-        ArgumentNullException.ThrowIfNull(repo);
         var slash = repo.IndexOf('/', StringComparison.Ordinal);
         if (slash >= 0 && string.Equals(repo[..slash], org, StringComparison.OrdinalIgnoreCase))
         {
@@ -468,7 +459,6 @@ public sealed class RepoPolicies
     /// <summary>A key's last segment, lowercased: the file lists bare names, and GitHub names ignore case.</summary>
     public static string BareName(string key)
     {
-        ArgumentNullException.ThrowIfNull(key);
         return key[(key.LastIndexOf('/') + 1)..].ToLowerInvariant();
     }
 
@@ -715,7 +705,6 @@ public sealed class RepoPolicies
 
         public static Layer From(PolicyLayerConfig layer, string source)
         {
-            ArgumentNullException.ThrowIfNull(layer);
             return new(
                 layer.Languages,
                 Entries(layer.GitignoreEntries, source),

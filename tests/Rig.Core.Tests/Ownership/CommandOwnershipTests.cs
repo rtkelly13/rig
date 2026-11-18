@@ -99,10 +99,4 @@ public sealed class CommandOwnershipTests
         Assert.Equal(2, errors.Count(e => e.StartsWith("Invalid ownership", StringComparison.Ordinal)));
     }
 
-    [Fact]
-    public void Null_inputs_are_rejected()
-    {
-        Assert.Throws<ArgumentNullException>(() => CommandOwnership.Check(null!, Ledger()));
-        Assert.Throws<ArgumentNullException>(() => CommandOwnership.Check([], null!));
-    }
 }

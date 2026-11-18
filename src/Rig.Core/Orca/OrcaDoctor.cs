@@ -23,7 +23,6 @@ public sealed record OrcaPaths(string EstateRoot, string CodeRoot, string Home)
     /// </summary>
     public string RepoPath(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var parts = Parts(path);
         return parts is ["~", "code", ..] ? Posix(string.Join('/', [CodeRoot, .. parts[2..]])) : Expand(path);
     }
@@ -31,7 +30,6 @@ public sealed record OrcaPaths(string EstateRoot, string CodeRoot, string Home)
     /// <summary><paramref name="path"/> with a leading <c>~</c> expanded and the result normalised.</summary>
     public string Expand(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         return path == "~" || path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal)
             ? Posix(Home + path[1..])
             : Posix(path);
@@ -40,7 +38,6 @@ public sealed record OrcaPaths(string EstateRoot, string CodeRoot, string Home)
     /// <summary><paramref name="path"/> normalised: forward slashes, no empty or <c>.</c> segments.</summary>
     public static string Posix(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var unified = path.Replace('\\', '/');
         var rooted = unified.StartsWith('/');
         var joined = string.Join('/', Parts(unified));
@@ -64,10 +61,6 @@ public static class OrcaDoctor
     public static IReadOnlyList<OrcaFinding> Diagnose(
         OrcaPolicy policy, OrcaSnapshot snapshot, OrcaPaths paths, IReadOnlyCollection<string> managedProjects, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(policy);
-        ArgumentNullException.ThrowIfNull(snapshot);
-        ArgumentNullException.ThrowIfNull(paths);
-        ArgumentNullException.ThrowIfNull(managedProjects);
         List<OrcaFinding> findings = [.. SettingsFindings(policy, snapshot.Settings, snapshot.ProfileDir, paths, now)];
         findings.AddRange(AgentChecks(policy, snapshot).Select(Finding));
         if (policy.AgentPermissions is not null && snapshot.LaunchArgs is null)
@@ -82,8 +75,6 @@ public static class OrcaDoctor
     /// <summary>Custom arguments and permission modes from the stored settings, and launch arguments from the running Orca.</summary>
     public static IReadOnlyList<AgentCheck> AgentChecks(OrcaPolicy policy, OrcaSnapshot snapshot)
     {
-        ArgumentNullException.ThrowIfNull(policy);
-        ArgumentNullException.ThrowIfNull(snapshot);
         var stored = snapshot.Settings?.Settings;
         List<AgentCheck> checks = stored is null ? [] : [.. AgentPermissions.CustomArgsChecks(policy.AgentArgs, stored.AgentDefaultArgs ?? new Dictionary<string, string>())];
         if (policy.AgentPermissions is not { } want)

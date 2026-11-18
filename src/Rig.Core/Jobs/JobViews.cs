@@ -76,7 +76,6 @@ public static class JobViews
     /// <summary>When the job runs, in words: <c>every run, idle 3 min, flag claude-session-restore</c>.</summary>
     public static string CadenceText(Job job)
     {
-        ArgumentNullException.ThrowIfNull(job);
         List<string> parts = [CadenceWords[job.Cadence]];
         if (job.IdleMinutes > 0)
         {
@@ -94,7 +93,6 @@ public static class JobViews
     /// <summary>Every job with its last outcome from <c>state.json</c> in <paramref name="directory"/>.</summary>
     public static IReadOnlyList<JobView> Build(IEnumerable<Job> jobs, string directory)
     {
-        ArgumentNullException.ThrowIfNull(jobs);
         var state = JobState.ReadState(Path.Join(directory, JobState.StateName));
         return
         [
@@ -149,7 +147,6 @@ public static class JobViews
     /// </summary>
     public static RunOutput Output(IEnumerable<Job> jobs, string directory, string job, string runId)
     {
-        ArgumentNullException.ThrowIfNull(jobs);
         if (!jobs.Any(item => item.Name == job))
         {
             throw new KeyNotFoundException($"No job named '{job}'");
@@ -174,7 +171,6 @@ public static class JobViews
     /// <summary>The run that produced <paramref name="outcome"/>; outcomes saved before runs had ids get one from their start.</summary>
     public static string OutcomeRunId(Outcome outcome)
     {
-        ArgumentNullException.ThrowIfNull(outcome);
         return outcome.RunId is { Length: > 0 } runId
             ? runId
             : string.Create(CultureInfo.InvariantCulture, $"{outcome.Trigger}-{outcome.StartedAt:yyyyMMdd-HHmmss}");
@@ -183,7 +179,6 @@ public static class JobViews
     /// <summary>A pre-history run's output: its section of the job log, while the log still holds it.</summary>
     public static string? LoggedOutput(string directory, string job, Outcome outcome)
     {
-        ArgumentNullException.ThrowIfNull(outcome);
         if (outcome.RunId is not { Length: > 0 } runId)
         {
             return null;

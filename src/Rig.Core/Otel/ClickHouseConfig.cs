@@ -41,8 +41,6 @@ public static class ClickHouseConfig
     /// <summary>The server config, keeping its data in <paramref name="data"/> and its users in <paramref name="users"/>.</summary>
     public static string ServerXml(string data, string users)
     {
-        ArgumentNullException.ThrowIfNull(data);
-        ArgumentNullException.ThrowIfNull(users);
         return Lf(string.Create(CultureInfo.InvariantCulture, $"""
         <?xml version="1.0"?>
         <!-- Written by `otel-stack clickhouse up`; regenerated on every start. -->

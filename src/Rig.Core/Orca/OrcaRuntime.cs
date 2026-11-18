@@ -62,7 +62,6 @@ public sealed class SocketOrcaExchange(TimeSpan timeout) : IOrcaExchange
     /// <inheritdoc />
     public async IAsyncEnumerable<string> ExchangeAsync(OrcaTransport transport, string request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(transport);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
         var stream = await ConnectAsync(transport, deadline.Token).ConfigureAwait(false);
@@ -79,7 +78,6 @@ public sealed class SocketOrcaExchange(TimeSpan timeout) : IOrcaExchange
     /// <summary>The pipe name in <paramref name="endpoint"/>, without its <c>\\.\pipe\</c> prefix.</summary>
     public static string PipeName(string endpoint)
     {
-        ArgumentNullException.ThrowIfNull(endpoint);
         return endpoint.StartsWith(PipePrefix, StringComparison.OrdinalIgnoreCase) ? endpoint[PipePrefix.Length..] : endpoint;
     }
 
@@ -226,7 +224,6 @@ public sealed class OrcaRuntime
     /// <exception cref="OrcaUnavailableException">Orca could not be reached or refused the update.</exception>
     public async Task<IReadOnlyDictionary<string, string>> SetAgentDefaultArgsAsync(IReadOnlyDictionary<string, string> lines, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(lines);
         var map = new JsonObject();
         foreach (var (agent, line) in lines)
         {
@@ -241,7 +238,6 @@ public sealed class OrcaRuntime
     /// <exception cref="OrcaUnavailableException">Orca could not be reached or refused the update.</exception>
     public Task UpdateRepoAsync(string repoPath, RepoUpdates updates, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(updates);
         return CallAsync("repo.update", new JsonObject { ["repo"] = $"path:{repoPath}", ["updates"] = updates.ToJson() }, cancellationToken);
     }
 

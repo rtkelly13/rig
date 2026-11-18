@@ -103,7 +103,6 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
     /// </summary>
     public Rect AdjustForFrame(long handle, Rect target)
     {
-        ArgumentNullException.ThrowIfNull(target);
         if (win32.ExtendedFrameBounds(handle) is not { } frame || win32.WindowRect(handle) is not { } window)
         {
             return target;
@@ -221,7 +220,6 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
     /// </summary>
     public IReadOnlyList<long> MatchingWindows(string target, bool exact = false, bool currentDesktopOnly = true)
     {
-        ArgumentNullException.ThrowIfNull(target);
         return [.. win32.TopLevelWindows().Where(handle =>
         {
             if (!OnScope(handle, currentDesktopOnly) || !win32.IsVisible(handle) || Title(handle) is not { Length: > 0 } title)
@@ -278,7 +276,6 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
     /// <summary>The id of every process named <paramref name="processName"/>, windowed or not, helpers included.</summary>
     public IReadOnlySet<int> ProcessIdsForImageName(string processName)
     {
-        ArgumentNullException.ThrowIfNull(processName);
         var target = UnicodeText.CaseFold(processName);
         return win32.ProcessIds()
             .Where(pid => pid != 0 && ProcessDetailsOf(pid).Name is { } name && UnicodeText.CaseFold(name) == target)
@@ -288,7 +285,6 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
     /// <summary>Whether a process named <paramref name="processName"/> is running, with a window or not.</summary>
     public bool IsProcessRunning(string processName)
     {
-        ArgumentNullException.ThrowIfNull(processName);
         return RunningProcessNames().Contains(UnicodeText.CaseFold(processName));
     }
 
@@ -345,7 +341,6 @@ public sealed class WindowInventory(IWin32Windows win32, IWindowDesktops desktop
 
     private List<ProcessWindow> ProcessWindows(string processName, bool currentDesktopOnly)
     {
-        ArgumentNullException.ThrowIfNull(processName);
         var target = UnicodeText.CaseFold(processName);
         var names = new Dictionary<int, string?>();
         var matches = new List<ProcessWindow>();

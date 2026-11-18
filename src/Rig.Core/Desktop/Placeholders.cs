@@ -17,7 +17,6 @@ public static partial class Placeholders
     /// <summary><see cref="Environment"/> resolved through <paramref name="getVariable"/>; unset or empty variables are left out.</summary>
     public static OrderedDictionary<string, string> EnvironmentAliases(Func<string, string?> getVariable)
     {
-        ArgumentNullException.ThrowIfNull(getVariable);
         var aliases = new OrderedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var (name, variable) in Environment)
         {
@@ -37,7 +36,6 @@ public static partial class Placeholders
     [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull(nameof(value))]
     public static string? Substitute(string? value, IEnumerable<KeyValuePair<string, string>> substitutions)
     {
-        ArgumentNullException.ThrowIfNull(substitutions);
         if (value is null)
         {
             return null;
@@ -60,7 +58,6 @@ public static partial class Placeholders
     /// </summary>
     public static OrderedDictionary<string, string> ResolveMap(IReadOnlyDictionary<string, string> values)
     {
-        ArgumentNullException.ThrowIfNull(values);
         var resolved = new OrderedDictionary<string, string>(StringComparer.Ordinal);
 
         string ResolveKey(string key, IReadOnlyList<string> stack)

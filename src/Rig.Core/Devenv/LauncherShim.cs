@@ -61,7 +61,6 @@ public static class LauncherShim
     /// <summary>The body of <c>agent.ps1</c>.</summary>
     public static string PowerShell(string cliProject)
     {
-        ArgumentNullException.ThrowIfNull(cliProject);
         return $"{Header}\ndotnet run --project \"{PowerShellDouble(cliProject)}\" -- agent @args\nexit $LASTEXITCODE\n";
     }
 
@@ -72,7 +71,6 @@ public static class LauncherShim
     /// <summary>The PowerShell profile block calling <paramref name="shim"/> with <c>@args</c>.</summary>
     public static string PowerShellBlock(string shim)
     {
-        ArgumentNullException.ThrowIfNull(shim);
         return $"{Begin}\n{BlockComment}\nfunction agent {{\n    & '{shim.Replace("'", "''", StringComparison.Ordinal)}' @args\n}}\n{End}";
     }
 
@@ -94,7 +92,6 @@ public static class LauncherShim
     /// </summary>
     public static string Upsert(string existing, string block)
     {
-        ArgumentNullException.ThrowIfNull(existing);
         var begin = existing.IndexOf(Begin, StringComparison.Ordinal);
         var end = existing.IndexOf(End, StringComparison.Ordinal);
         if (begin != -1 && end > begin)
@@ -143,7 +140,6 @@ public static class LauncherShim
 
     private static string Slashes(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         return path.Replace('\\', '/');
     }
 }

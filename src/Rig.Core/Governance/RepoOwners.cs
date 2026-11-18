@@ -17,7 +17,6 @@ public static class RepoOwners
     /// </summary>
     public static OwnerInspection Inspect(RepoPolicies policies, string? slug)
     {
-        ArgumentNullException.ThrowIfNull(policies);
         if (string.IsNullOrEmpty(slug))
         {
             return new("UNKNOWN_OWNER", false, "Could not determine repository owner");

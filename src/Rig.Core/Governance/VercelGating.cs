@@ -67,7 +67,6 @@ public sealed class VercelGating(IVercelApi api, Git git)
     /// <summary>Whether a deployment created from <paramref name="ref"/> is within budget etiquette.</summary>
     public static bool RefIsAllowed(string @ref, VercelProjectFacts facts)
     {
-        ArgumentNullException.ThrowIfNull(facts);
         return @ref == facts.ProductionRef
             || (facts.Allow is { Count: > 0 } allow && allow.Any(pattern => Glob.Matches(@ref, pattern, OperatingSystem.IsWindows())));
     }
@@ -78,7 +77,6 @@ public sealed class VercelGating(IVercelApi api, Git git)
     /// </summary>
     public static IReadOnlyList<VercelFinding> Plan(VercelProjectFacts facts, long nowMs, int windowDays)
     {
-        ArgumentNullException.ThrowIfNull(facts);
         var findings = new List<VercelFinding>();
         var windowMs = nowMs - (windowDays * DayMs);
         var recent = facts.RecentDeployments.Where(d => d.CreatedAtMs >= windowMs).ToList();

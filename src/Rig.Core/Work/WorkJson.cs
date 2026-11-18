@@ -17,8 +17,6 @@ public static class WorkJson
     /// <param name="items">The items that passed the filters.</param>
     public static JsonObject Report(WorkReport report, IReadOnlyList<WorkItem> items)
     {
-        ArgumentNullException.ThrowIfNull(report);
-        ArgumentNullException.ThrowIfNull(items);
         return new JsonObject
         {
             ["schema_version"] = SchemaVersion,
@@ -39,7 +37,6 @@ public static class WorkJson
     /// <param name="item">The item.</param>
     public static JsonObject Item(WorkItem item)
     {
-        ArgumentNullException.ThrowIfNull(item);
         return new JsonObject
         {
             ["key"] = item.Key,

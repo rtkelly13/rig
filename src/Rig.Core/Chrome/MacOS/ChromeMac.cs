@@ -81,7 +81,6 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     /// <inheritdoc/>
     public CloseOutcome CloseTab(ChromeTab tab)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         var started = _time.GetTimestamp();
         CloseOutcome Outcome(bool closed, string detail) => new(closed, detail, _time.GetElapsedTime(started));
         try
@@ -143,7 +142,6 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
         IEnumerable<ChromeWindow> before,
         IReadOnlyDictionary<long, ChromeTab>? fallbacks = null)
     {
-        ArgumentNullException.ThrowIfNull(before);
         var restored = new Dictionary<long, ChromeTab?>();
         foreach (var window in before)
         {
@@ -295,8 +293,6 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     /// <inheritdoc/>
     public GroupOutcome GroupTab(ChromeTab tab, string title, bool isNew, long? homeHandle = null, TimeSpan? timeout = null)
     {
-        ArgumentNullException.ThrowIfNull(tab);
-        ArgumentNullException.ThrowIfNull(title);
         var started = _time.GetTimestamp();
         GroupOutcome Outcome(bool grouped, string detail) => new(grouped, detail, _time.GetElapsedTime(started));
         try
@@ -400,8 +396,6 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     /// <inheritdoc/>
     public GroupOutcome Ungroup(ChromeTab tab, string title, TimeSpan? timeout = null)
     {
-        ArgumentNullException.ThrowIfNull(tab);
-        ArgumentNullException.ThrowIfNull(title);
         var started = _time.GetTimestamp();
         GroupOutcome Outcome(bool grouped, string detail) => new(grouped, detail, _time.GetElapsedTime(started));
         try
@@ -519,7 +513,6 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     /// <inheritdoc/>
     public MoveOutcome MoveToWindow(ChromeTab tab, long targetHandle, TimeSpan? timeout = null)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         var started = _time.GetTimestamp();
         MoveOutcome Outcome(bool moved, string detail, ChromeTab? arrived) => new(
             new GroupOutcome(moved, detail, _time.GetElapsedTime(started)), arrived);

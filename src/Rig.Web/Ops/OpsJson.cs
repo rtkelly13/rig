@@ -75,7 +75,6 @@ public static class OpsJson
     /// <summary><paramref name="value"/> as an ops answer, which browsers and proxies must not cache.</summary>
     public static IResult Ok<T>(HttpContext context, T value)
     {
-        ArgumentNullException.ThrowIfNull(context);
         context.Response.Headers.CacheControl = "no-store";
         return Results.Text(Serialize(value), WebJson.ContentType);
     }
@@ -96,7 +95,6 @@ public static class OpsJson
     /// </summary>
     public static async Task<IResult> Run(Func<Task<IResult>> produce)
     {
-        ArgumentNullException.ThrowIfNull(produce);
         try
         {
             return await produce().ConfigureAwait(false);
@@ -122,7 +120,6 @@ public static class OpsJson
     /// </summary>
     public static async Task<string> BodyAsync(HttpContext context)
     {
-        ArgumentNullException.ThrowIfNull(context);
         // The body of an acceptable size is read before any header check: answering with it unread resets the socket.
         var length = context.Request.ContentLength;
         if (length is not (> 0 and <= MaxBodyBytes))
@@ -160,7 +157,6 @@ public static class OpsJson
     /// <param name="high">The largest accepted value.</param>
     public static int IntParam(HttpContext context, string name, int fallback, int low, int high)
     {
-        ArgumentNullException.ThrowIfNull(context);
         var raw = context.Request.Query[name].LastOrDefault();
         if (string.IsNullOrEmpty(raw))
         {
@@ -180,7 +176,6 @@ public static class OpsJson
     /// <summary>The last non-empty value of a query parameter, or null.</summary>
     public static string? Param(HttpContext context, string name)
     {
-        ArgumentNullException.ThrowIfNull(context);
         var raw = context.Request.Query[name].LastOrDefault();
         return string.IsNullOrEmpty(raw) ? null : raw;
     }

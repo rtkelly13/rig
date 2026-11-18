@@ -116,7 +116,6 @@ public sealed class Downloads(IDiskUsage disk)
     /// </summary>
     public async Task<IReadOnlyList<DownloadItem>> ScanAsync(string folder, IReadOnlyList<string> cloudRoots, long minSize, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(cloudRoots);
         List<string> children;
         try
         {

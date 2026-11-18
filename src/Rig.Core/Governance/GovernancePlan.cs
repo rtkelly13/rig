@@ -27,7 +27,6 @@ public static class GovernancePlan
     public static async Task<RepoPlan> PlanRepoAsync(
         RepoPolicies policies, IGitHubApi api, Target target, bool apply, IReadOnlyList<IPlanner>? planners = null, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(target);
         var owner = RepoOwners.Inspect(policies, target.Slug);
         if (!owner.IsAligned)
         {
@@ -58,7 +57,6 @@ public static class GovernancePlan
     /// </summary>
     public static int ExitCode(IReadOnlyList<RepoPlan> plans, bool applied)
     {
-        ArgumentNullException.ThrowIfNull(plans);
         if (plans.Any(p => p.Errors.Count > 0))
         {
             return 2;

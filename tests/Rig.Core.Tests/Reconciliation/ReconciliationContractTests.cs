@@ -82,12 +82,6 @@ public sealed class ReconciliationContractTests
         Assert.Equal("/clone/.worktrees/one", new ShelveResult(plan, "shelved").Subject);
     }
 
-    [Fact]
-    public void PlanExtensions_validates_null_plan()
-    {
-        Assert.Throws<ArgumentNullException>(() => PlanExtensions.HasDrift<Row>(null!));
-        Assert.Throws<ArgumentNullException>(() => PlanExtensions.ExitCode<Row>(null!, false));
-    }
 
     [Fact]
     public void ShelveResult_and_TidyAction_fallback_and_details()
@@ -139,14 +133,6 @@ public sealed class ReconciliationContractTests
     }
 
     [Fact]
-    public void ReconciliationRunner_validates_null_arguments()
-    {
-        var plan = new TestPlan([]);
-        Assert.Throws<ArgumentNullException>(() => ReconciliationRunner.Run<Row>(null!, dryRun: true, _ => { }));
-        Assert.Throws<ArgumentNullException>(() => ReconciliationRunner.Run<Row>(plan, dryRun: true, null!));
-    }
-
-    [Fact]
     public void Explicit_IPlan_interface_methods_work()
     {
         IPlan<Row> planWithDrift = new TestPlan([new Row("item", ChangeKind.WouldChange, "drift")]);
@@ -166,9 +152,6 @@ public sealed class ReconciliationContractTests
         Assert.False(untypedEmpty.HasDrift);
         Assert.Equal(0, emptyPlan.ExitCode(applied: false));
         Assert.Equal(0, emptyPlan.ExitCode(applied: true));
-
-        Assert.Throws<ArgumentNullException>(() => PlanExtensions.HasDrift<Row>(null!));
-        Assert.Throws<ArgumentNullException>(() => PlanExtensions.ExitCode<Row>(null!, applied: false));
     }
 
     private sealed record Row(string Subject, ChangeKind Kind, string Detail = "") : IChange;

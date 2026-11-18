@@ -20,7 +20,6 @@ public sealed class ObsidianOrphans(IProc proc, string home)
     /// <summary>The app's orphan list, stripped and without blank lines, or nothing unless <paramref name="vault"/> is the vault it has open.</summary>
     public async Task<IReadOnlyList<string>> ListAsync(string vault, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(vault);
         var open = OpenVault();
         if (open is null || RealPath(open) != RealPath(vault))
         {

@@ -172,7 +172,6 @@ public static partial class Licenses
     /// <summary>The licence <paramref name="content"/> reads as, by its hallmark text, or null.</summary>
     public static string? Detect(string content)
     {
-        ArgumentNullException.ThrowIfNull(content);
         var text = content.ToLowerInvariant();
         if (text.Contains("permission is hereby granted, free of charge", StringComparison.Ordinal) && text.Contains("mit license", StringComparison.Ordinal))
         {
@@ -196,8 +195,6 @@ public static partial class Licenses
     /// <summary>Audits <paramref name="repoPath"/>'s root for a licence of <paramref name="expectedType"/> naming <paramref name="holder"/> and <paramref name="year"/>.</summary>
     public static LicenseAudit Inspect(string repoPath, string expectedType, string holder, int year)
     {
-        ArgumentNullException.ThrowIfNull(repoPath);
-        ArgumentNullException.ThrowIfNull(holder);
         var repoName = Path.GetFileName(Path.TrimEndingDirectorySeparator(repoPath));
         if (FindLicenseFile(repoPath) is not { } file)
         {
@@ -234,7 +231,6 @@ public static partial class Licenses
     /// <summary>The canonical <paramref name="licenseType"/> text (MIT when unknown) for <paramref name="holder"/> in <paramref name="year"/>.</summary>
     public static string Generate(string licenseType, string holder, int year)
     {
-        ArgumentNullException.ThrowIfNull(holder);
         var template = Templates.TryGetValue(licenseType, out var known) ? known : Mit;
         return template
             .Replace("{year}", year.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal)
@@ -248,9 +244,6 @@ public static partial class Licenses
     /// </summary>
     public static string PreserveExistingNotices(string generated, string existing, string holder, int year)
     {
-        ArgumentNullException.ThrowIfNull(generated);
-        ArgumentNullException.ThrowIfNull(existing);
-        ArgumentNullException.ThrowIfNull(holder);
         var lines = CopyrightLine().Matches(existing).Select(m => m.Value).ToList();
         var fresh = CopyrightLine().Match(generated);
         if (lines.Count == 0 || !fresh.Success)

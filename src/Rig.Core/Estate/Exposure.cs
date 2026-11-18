@@ -41,7 +41,6 @@ public sealed record Exposure(
     /// <param name="perBranch">Also name the branches carrying unpushed work: one <c>rev-list</c> per branch.</param>
     public static async Task<Exposure> InspectAsync(Git git, string repo, bool perBranch)
     {
-        ArgumentNullException.ThrowIfNull(git);
         var remotes = await git.OutAsync(repo, "remote").ConfigureAwait(false);
         var origin = await git.OutAsync(repo, "remote", "get-url", "origin").ConfigureAwait(false);
         var dirty = (await git.LinesAsync(repo, "status", "--porcelain").ConfigureAwait(false))?.Count ?? 0;
@@ -59,7 +58,6 @@ public sealed record Exposure(
     /// <summary>The number <c>git <paramref name="args"/></c> prints, or zero when it prints anything else.</summary>
     public static async Task<int> CountAsync(Git git, string repo, params string[] args)
     {
-        ArgumentNullException.ThrowIfNull(git);
         var output = await git.OutAsync(repo, args).ConfigureAwait(false);
         return output.Length > 0 && output.All(char.IsAsciiDigit) && int.TryParse(output, CultureInfo.InvariantCulture, out var count) ? count : 0;
     }
@@ -89,7 +87,6 @@ public sealed record DuplicateClone(string Origin, IReadOnlyList<string> Repos, 
     /// <summary>The checkouts that share an origin, by origin.</summary>
     public static IReadOnlyList<DuplicateClone> Find(IEnumerable<Exposure> exposures)
     {
-        ArgumentNullException.ThrowIfNull(exposures);
         return [.. exposures
             .Where(e => e.Origin.Length > 0)
             .GroupBy(e => Normalise(e.Origin), StringComparer.Ordinal)
@@ -104,7 +101,6 @@ public sealed record DuplicateClone(string Origin, IReadOnlyList<string> Repos, 
     /// <summary>A remote URL reduced to <c>host/owner/name</c>, so the SSH and HTTPS forms of one repo match.</summary>
     public static string Normalise(string remote)
     {
-        ArgumentNullException.ThrowIfNull(remote);
         var cleaned = remote.Trim();
         cleaned = cleaned.EndsWith(".git", StringComparison.Ordinal) ? cleaned[..^4] : cleaned;
         foreach (var prefix in new[] { "git@", "ssh://git@", "https://", "http://" })

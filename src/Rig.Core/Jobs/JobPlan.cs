@@ -37,9 +37,6 @@ public static class JobPlan
         IReadOnlySet<string>? only = null,
         bool force = false)
     {
-        ArgumentNullException.ThrowIfNull(jobs);
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(flags);
         exists ??= path => File.Exists(path) || Directory.Exists(path);
         only ??= new HashSet<string>(StringComparer.Ordinal);
         var planned = new List<Planned>();

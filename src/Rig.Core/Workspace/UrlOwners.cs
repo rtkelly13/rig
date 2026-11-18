@@ -18,7 +18,6 @@ public sealed record PortRange(int Start, int End)
     /// <summary>The two ranges share a port.</summary>
     public bool Overlaps(PortRange other)
     {
-        ArgumentNullException.ThrowIfNull(other);
         return Start <= other.End && other.Start <= End;
     }
 
@@ -65,7 +64,6 @@ public sealed partial class UrlOwners(IReadOnlyList<PortClaim> ports, IReadOnlyL
     /// <summary>The GitHub <c>owner/repo</c> of the project a local or Vercel URL belongs to, or null.</summary>
     public string? SlugFor(Uri url)
     {
-        ArgumentNullException.ThrowIfNull(url);
         if (!url.IsAbsoluteUri)
         {
             return null;
@@ -89,7 +87,6 @@ public sealed partial class UrlOwners(IReadOnlyList<PortClaim> ports, IReadOnlyL
     /// </summary>
     public VercelClaim? ClaimForHost(string host)
     {
-        ArgumentNullException.ThrowIfNull(host);
         var name = host.ToLowerInvariant();
         if (!name.EndsWith(VercelApp, StringComparison.Ordinal))
         {
@@ -199,7 +196,6 @@ public sealed partial class UrlOwners(IReadOnlyList<PortClaim> ports, IReadOnlyL
 
     private static IEnumerable<JsonObject> Projects(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var root = JsonFile.Parse(path);
 
         if (root is not JsonObject top)

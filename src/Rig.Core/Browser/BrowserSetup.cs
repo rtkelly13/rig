@@ -100,7 +100,6 @@ public sealed class BrowserSetup(BrowserPlaces places, Func<string, string?> pro
     /// </summary>
     public async Task<BrowserEnvOutcome> ApplyEnvironmentAsync(bool dryRun, bool force, Action<string> say, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(say);
         var target = Baseline;
         var changes = force ? target : [.. target.Where(v => Current(v.Key) is null)];
         if (Current(AutoConnectVariable) == "1")
@@ -164,7 +163,6 @@ public sealed class BrowserSetup(BrowserPlaces places, Func<string, string?> pro
     /// <summary>Creates the profile folders and adds the per-profile shortcuts to the shell profile, once.</summary>
     public void ProvisionProfiles(bool dryRun, Action<string> say)
     {
-        ArgumentNullException.ThrowIfNull(say);
         if (dryRun)
         {
             say($"Dry run: would ensure {places.ProfilesRoot} profiles exist");

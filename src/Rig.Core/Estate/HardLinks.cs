@@ -32,7 +32,6 @@ public static partial class HardLinks
     /// <summary>The identity of <paramref name="path"/>, or null when it cannot be read.</summary>
     public static FileIdentity? Identify(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         return OperatingSystem.IsWindows() ? WindowsIdentity(path) : UnixIdentity(path);
     }
 

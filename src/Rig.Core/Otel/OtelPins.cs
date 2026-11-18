@@ -127,7 +127,6 @@ public static class OtelPins
     /// <summary>One folder per pinned digest, so a new pin never mixes with an old binary.</summary>
     public static string PinDir(Pin pin, string home)
     {
-        ArgumentNullException.ThrowIfNull(pin);
         return Path.Join(home, "bin", pin.Sha256[..16]);
     }
 

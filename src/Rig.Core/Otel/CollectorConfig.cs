@@ -40,14 +40,12 @@ public static class CollectorConfig
     /// <summary><paramref name="text"/> as a YAML single-quoted scalar.</summary>
     public static string YamlQuoted(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         return "'" + text.Replace("'", "''", StringComparison.Ordinal) + "'";
     }
 
     /// <summary>The config writing into <paramref name="data"/>, also forwarding to <paramref name="forward"/> when set.</summary>
     public static string Render(string data, string? forward = null)
     {
-        ArgumentNullException.ThrowIfNull(data);
         var exporters = new StringBuilder();
         foreach (var signal in OtelPaths.Signals)
         {

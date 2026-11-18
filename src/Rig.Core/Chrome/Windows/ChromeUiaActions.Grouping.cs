@@ -114,8 +114,6 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     /// </summary>
     public GroupOutcome GroupTab(ChromeTab tab, string title, bool isNew, long? homeHandle = null, TimeSpan? timeout = null)
     {
-        ArgumentNullException.ThrowIfNull(tab);
-        ArgumentNullException.ThrowIfNull(title);
         var wait = timeout ?? StepTimeout;
         var started = _clock.GetTimestamp();
         GroupOutcome Outcome(bool grouped, string detail) => new(grouped, detail, _clock.GetElapsedTime(started));
@@ -228,7 +226,6 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     /// </summary>
     public MoveOutcome MoveToWindow(ChromeTab tab, long targetHandle, TimeSpan? timeout = null)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         var wait = timeout ?? StepTimeout;
         var started = _clock.GetTimestamp();
         GroupOutcome Outcome(bool done, string detail) => new(done, detail, _clock.GetElapsedTime(started));
@@ -305,7 +302,6 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     /// </summary>
     public GroupOutcome Ungroup(ChromeTab tab, string title, TimeSpan? timeout = null)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         var wait = timeout ?? StepTimeout;
         var started = _clock.GetTimestamp();
         GroupOutcome Outcome(bool done, string detail) => new(done, detail, _clock.GetElapsedTime(started));
@@ -387,7 +383,6 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     /// <summary>Every open menu item whose stripped, lower-cased name matches.</summary>
     public IReadOnlyList<IUiaElement> MenuItems(int pid, Func<string, bool> matches)
     {
-        ArgumentNullException.ThrowIfNull(matches);
         return [.. PopupElements(pid, UiaControlType.MenuItem).Where(item => matches(Lowered(item)))];
     }
 
@@ -436,8 +431,6 @@ public sealed partial class ChromeUiaActions : IChromeGroupActions
     /// </summary>
     public bool IsAtPoint(ChromeTab tab, IUiaElement element, int x, int y)
     {
-        ArgumentNullException.ThrowIfNull(tab);
-        ArgumentNullException.ThrowIfNull(element);
         var under = _win32.WindowFromPoint(x, y);
         if (under == 0 || _win32.Root(under) != tab.WindowHandle)
         {

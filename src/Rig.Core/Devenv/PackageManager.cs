@@ -14,7 +14,6 @@ public abstract class PackageManager(IProc proc)
     /// <summary>winget on Windows or Homebrew elsewhere, when it is on the PATH; otherwise null.</summary>
     public static PackageManager? For(bool windows, Func<string, string?> find, IProc proc)
     {
-        ArgumentNullException.ThrowIfNull(find);
         return windows
             ? find("winget") is null ? null : new Winget(proc)
             : find("brew") is null ? null : new Homebrew(proc);
@@ -52,14 +51,12 @@ public sealed class Homebrew(IProc proc) : PackageManager(proc)
     /// <inheritdoc />
     public override string? IdOf(ToolInstall install)
     {
-        ArgumentNullException.ThrowIfNull(install);
         return install.Brew;
     }
 
     /// <inheritdoc />
     public override async Task<bool> IsInstalledAsync(string id, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(id);
         if (_installed is null)
         {
             var listed = await RunAsync(["brew", "list"], quiet: true, cancellationToken).ConfigureAwait(false);
@@ -92,7 +89,6 @@ public sealed class Winget(IProc proc) : PackageManager(proc)
     /// <inheritdoc />
     public override string? IdOf(ToolInstall install)
     {
-        ArgumentNullException.ThrowIfNull(install);
         return install.Winget;
     }
 
@@ -125,8 +121,6 @@ public sealed class DevTools(PackageManager? manager, Func<string, string?> find
     /// <summary>Whether <paramref name="tool"/> is installed.</summary>
     public async Task<bool> IsInstalledAsync(DevTool tool, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(tool);
-        ArgumentNullException.ThrowIfNull(find);
         if (tool.Install.CheckCmd is { } program && find(program) is not null)
         {
             return true;
@@ -138,7 +132,6 @@ public sealed class DevTools(PackageManager? manager, Func<string, string?> find
     /// <summary>Installs <paramref name="tool"/>; false when there is no package manager or package for it, or the install fails.</summary>
     public async Task<bool> InstallAsync(DevTool tool, bool quiet, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(tool);
         return manager?.IdOf(tool.Install) is { } id && await manager.InstallAsync(id, quiet, cancellationToken).ConfigureAwait(false);
     }
 }

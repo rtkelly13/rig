@@ -144,7 +144,6 @@ public static partial class SiteRules
     /// <summary>The title is a video call.</summary>
     public static bool IsCall(string title)
     {
-        ArgumentNullException.ThrowIfNull(title);
         var text = UnicodeText.Strip(title);
         return Calls.Any(pattern => pattern.IsMatch(text));
     }
@@ -155,7 +154,6 @@ public static partial class SiteRules
     /// <summary>The identity key a tab title names, or null when it names nothing trustworthy.</summary>
     public static TabIdentity? Identify(string title)
     {
-        ArgumentNullException.ThrowIfNull(title);
         var text = UnicodeText.Strip(title);
         if (NeverDedupe(text))
         {

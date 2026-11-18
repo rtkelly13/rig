@@ -100,7 +100,6 @@ public static class ReplayOffsets
     /// <summary>The state file's text: sorted by key, two-space indented, ending in a newline.</summary>
     public static string Render(IReadOnlyDictionary<string, ReplayOffset> offsets)
     {
-        ArgumentNullException.ThrowIfNull(offsets);
         var w = new IndentedJsonWriter();
         _ = w.Object(() =>
         {

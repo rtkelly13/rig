@@ -15,8 +15,6 @@ public sealed record AgentSleepCheck(string Have, string Want, string Fix)
     /// </summary>
     public static AgentSleepCheck Of(AgentSleepPolicy want, bool? enabled, long? idleMs)
     {
-        ArgumentNullException.ThrowIfNull(want);
-
         // Orca reads a missing or out-of-range window as its 30-minute default.
         var minutes = idleMs is >= 60_000 and <= 86_400_000 ? idleMs.Value / 60_000 : AgentSleepPolicy.DefaultMinutes;
         var have = enabled == true ? $"on, {minutes}m idle" : "off";

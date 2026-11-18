@@ -93,8 +93,6 @@ public static class ReconciliationRunner
     public static ReconciliationReport Run<TChange>(IPlan<TChange> plan, bool dryRun, Action<TChange> apply)
         where TChange : IChange
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(apply);
         var changes = plan.Changes.Where(change => change.Kind == ChangeKind.WouldChange).ToList();
         if (!dryRun)
         {
@@ -125,10 +123,6 @@ public static class ReconciliationRunner
         where TPlan : IPlan<TChange>
         where TChange : IChange
     {
-        ArgumentNullException.ThrowIfNull(reconciler);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(output);
-
         var plan = await reconciler.PlanAsync(target, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<string> applyErrors = [];
         var applied = options.Apply;
@@ -180,10 +174,6 @@ public static class ReconciliationRunner
         where TPlan : IPlan<TChange>
         where TChange : IChange
     {
-        ArgumentNullException.ThrowIfNull(run);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(output);
-
         if (options.Json)
         {
             await output.WriteLineAsync(ToJson(run).ToJsonString(JsonOutputOptions.Indented).AsMemory(), cancellationToken).ConfigureAwait(false);
@@ -220,7 +210,6 @@ public static class ReconciliationRunner
         where TPlan : IPlan<TChange>
         where TChange : IChange
     {
-        ArgumentNullException.ThrowIfNull(run);
         return new JsonObject
         {
             ["applied"] = run.Applied,

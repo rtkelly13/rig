@@ -27,7 +27,6 @@ public sealed class LocalPathProbe : IPathProbe
     /// <inheritdoc />
     public bool Exists(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var expanded = Environment.ExpandEnvironmentVariables(path);
         if (expanded == "~" || expanded.StartsWith("~/", StringComparison.Ordinal) || expanded.StartsWith("~\\", StringComparison.Ordinal))
         {
@@ -63,8 +62,6 @@ public static class Placement
         int monitorCount = 0,
         IPathProbe? paths = null)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(substitutions);
         var errors = new List<string>();
         if (plan.Desktops.Count == 0)
         {
@@ -106,7 +103,6 @@ public static class Placement
     /// </summary>
     public static IReadOnlyList<string> ValidatePlanStructure(WorkspacePlan plan, int? expectedScreenCount = null, bool strict = false, int detectedScreenCount = 0)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         var issues = new List<string>();
         var screenCount = ResolveScreenCount(plan, expectedScreenCount, detectedScreenCount);
         foreach (var desktop in plan.Desktops)
@@ -161,7 +157,6 @@ public static class Placement
     /// </summary>
     public static MonitorShortfall? FindMonitorShortfall(WorkspacePlan plan, int liveScreenCount)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         var required = HighestScreen(plan);
         return required > 1 && liveScreenCount > 0 && liveScreenCount < required ? new(required, liveScreenCount) : null;
     }
@@ -169,7 +164,6 @@ public static class Placement
     /// <summary>Everything wrong with one placement, each message prefixed <c>desktop/entry:</c>.</summary>
     public static IReadOnlyList<string> ValidatePlacementSpec(PlacementSpec placement, string desktopName, string entryName, int monitorCount = 0)
     {
-        ArgumentNullException.ThrowIfNull(placement);
         var prefix = $"{desktopName}/{entryName}";
         var errors = new List<string>();
         if (placement.Screen < 1)
@@ -201,7 +195,6 @@ public static class Placement
     /// </summary>
     public static int ResolveScreenCount(WorkspacePlan plan, int? expectedScreenCount = null, int detectedScreenCount = 0)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         if (expectedScreenCount is { } expected)
         {
             return Math.Max(0, expected);
@@ -213,7 +206,6 @@ public static class Placement
     /// <summary>A placement in one line, such as <c>screen 1: halves#1/vertical -&gt; halves#2/horizontal</c>.</summary>
     public static string FormatPlacement(PlacementSpec placement)
     {
-        ArgumentNullException.ThrowIfNull(placement);
         var text = $"screen {placement.Screen}: {Format(placement.Layout)}";
         return placement.Subdivide is null ? text : $"{text} -> {Format(placement.Subdivide)}";
 
@@ -229,8 +221,6 @@ public static class Placement
     /// </summary>
     public static WorkspacePlan FitColumns(WorkspacePlan plan, IReadOnlyDictionary<int, int> widths)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(widths);
         return plan with { Desktops = [.. plan.Desktops.Select(desktop => FitDesktop(desktop, widths))] };
     }
 

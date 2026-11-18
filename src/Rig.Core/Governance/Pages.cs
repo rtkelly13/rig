@@ -32,7 +32,6 @@ public static class PagesGovernance
     /// <summary>The repo's Pages site, or null when Pages is off (GitHub's 404); throws when it cannot be read.</summary>
     public static async Task<LivePages?> ReadAsync(IGitHubApi api, string repo, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(api);
         var route = $"repos/{repo}/pages";
         var ran = await api.CallAsync(ApiRequest.Get(route), cancellationToken).ConfigureAwait(false);
         if (!ran.Ok)
@@ -104,8 +103,6 @@ public static class PagesGovernance
     /// <summary>Enables Pages with the policy's build type when it is off, then configures its domain and HTTPS.</summary>
     public static async Task<PagesAlignResult> AlignAsync(IGitHubApi api, string repo, PagesPolicy policy, bool dryRun, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(policy);
         var current = await InspectAsync(api, repo, policy, cancellationToken).ConfigureAwait(false);
         if (current.Error is { } error)
         {
@@ -180,15 +177,12 @@ public sealed class PagesResource : Resource<PagesPolicy, LivePages?>
     /// <inheritdoc />
     public override PagesPolicy? Desired(RepoPolicies policies, Target target)
     {
-        ArgumentNullException.ThrowIfNull(policies);
-        ArgumentNullException.ThrowIfNull(target);
         return policies.Pages(target.Slug) is { Enabled: true } policy ? policy : null;
     }
 
     /// <inheritdoc />
     public override Task<LivePages?> ReadAsync(IGitHubApi api, Target target, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
         return PagesGovernance.ReadAsync(api, target.Slug, cancellationToken);
     }
 
@@ -199,9 +193,6 @@ public sealed class PagesResource : Resource<PagesPolicy, LivePages?>
     /// <inheritdoc />
     public override async Task<IReadOnlyList<string>> ApplyAsync(IGitHubApi api, Target target, PagesPolicy desired, IReadOnlyList<Change> changes, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(changes);
         if (!changes.Any(c => c.Kind == Change.Apply))
         {
             return [];

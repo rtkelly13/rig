@@ -21,7 +21,6 @@ public static partial class FileIds
     /// <summary>The inode of <paramref name="path"/> (following links, as <c>os.stat</c>), or null when it cannot be read.</summary>
     public static ulong? Inode(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         return OperatingSystem.IsWindows() ? WindowsFileId(path) : UnixInode(path);
     }
 

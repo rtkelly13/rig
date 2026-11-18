@@ -16,9 +16,6 @@ public sealed class OpsRoutes : IDisposable
     /// <param name="telemetry">The trace store and explorers.</param>
     public OpsRoutes(TriageInbox triage, EstateOps estate, Telemetry telemetry)
     {
-        ArgumentNullException.ThrowIfNull(triage);
-        ArgumentNullException.ThrowIfNull(estate);
-        ArgumentNullException.ThrowIfNull(telemetry);
         Triage = triage;
         Estate = estate;
         Telemetry = telemetry;
@@ -41,7 +38,6 @@ public sealed class OpsRoutes : IDisposable
     /// <param name="cancellationToken">Cancels the git origin lookup the wrap-up scanner makes.</param>
     public static async Task<OpsRoutes> ForSettingsAsync(WebHostSettings settings, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(settings);
         var proc = new SystemProc();
         var git = new Git(proc, settings.EstateRoot);
         var signals = await AgentSignals
@@ -56,7 +52,6 @@ public sealed class OpsRoutes : IDisposable
     /// <param name="registry">The managed-projects registry a triage refresh reads.</param>
     public void Map(IEndpointRouteBuilder routes, string registry)
     {
-        ArgumentNullException.ThrowIfNull(routes);
         ArgumentException.ThrowIfNullOrEmpty(registry);
         TriageRoutes.Map(routes, Triage, registry);
         EstateOpsRoutes.Map(routes, Estate);

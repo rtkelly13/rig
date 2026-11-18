@@ -57,7 +57,6 @@ public static partial class OssTemplates
     /// <summary>The embedded <paramref name="template"/> filled from <paramref name="context"/>, trimmed and ending in one newline.</summary>
     public static string Render(string template, OssTemplateContext context)
     {
-        ArgumentNullException.ThrowIfNull(context);
         var values = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["repo_name"] = context.RepoName,

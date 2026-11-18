@@ -31,8 +31,6 @@ internal static class C4Routes
     /// <summary>Maps the routes onto <paramref name="routes"/>.</summary>
     public static void Map(IEndpointRouteBuilder routes, WebHostSettings settings)
     {
-        ArgumentNullException.ThrowIfNull(routes);
-        ArgumentNullException.ThrowIfNull(settings);
         // A route template ignores a trailing slash, so this answers `/c4/` too; a second route for it would be ambiguous.
         routes.MapGet("/c4", () => Static(settings.C4StaticDir, "index.html"));
         routes.MapGet(StaticPrefix + "{**file}", (HttpContext context) =>
@@ -108,7 +106,6 @@ internal static class C4Routes
     {
         public async Task ExecuteAsync(HttpContext httpContext)
         {
-            ArgumentNullException.ThrowIfNull(httpContext);
             var response = httpContext.Response;
             response.StatusCode = status;
             response.ContentType = type;

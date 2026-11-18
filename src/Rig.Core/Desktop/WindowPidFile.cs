@@ -48,7 +48,6 @@ public static class WindowPidFile
     /// <summary>False when <paramref name="entry"/> pins its window to a recorded pid and <paramref name="windowPid"/> is not it.</summary>
     public static bool WindowOwnerAllowed(LaunchEntry entry, int? windowPid, IReadOnlyDictionary<string, string> substitutions)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         if (string.IsNullOrEmpty(entry.WindowPidFile))
         {
             return true;
@@ -66,7 +65,6 @@ public static class WindowPidFile
     /// </summary>
     public static bool PidVerified(LaunchEntry entry, int? windowPid, IReadOnlyDictionary<string, string> substitutions)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         return !string.IsNullOrEmpty(entry.WindowPidFile) && WindowOwnerAllowed(entry, windowPid, substitutions);
     }
 }

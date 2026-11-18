@@ -15,14 +15,12 @@ public static class VirtualDesktopOperations
     /// <summary>Whether <paramref name="number"/> names a desktop that exists.</summary>
     public static bool Exists(IVirtualDesktops desktops, int number)
     {
-        ArgumentNullException.ThrowIfNull(desktops);
         return number >= 1 && number <= desktops.Count;
     }
 
     /// <summary>Show desktop <paramref name="number"/>; whether it is now current. An out-of-range number does nothing.</summary>
     public static bool GoTo(IVirtualDesktops desktops, int number)
     {
-        ArgumentNullException.ThrowIfNull(desktops);
         try
         {
             if (!Exists(desktops, number))
@@ -49,8 +47,6 @@ public static class VirtualDesktopOperations
     /// </summary>
     public static bool Rename(IVirtualDesktops desktops, int number, string name)
     {
-        ArgumentNullException.ThrowIfNull(desktops);
-        ArgumentNullException.ThrowIfNull(name);
         try
         {
             if (!Exists(desktops, number))
@@ -83,7 +79,6 @@ public static class VirtualDesktopOperations
     /// <summary>Move window <paramref name="handle"/> to desktop <paramref name="number"/>; whether the move was made.</summary>
     public static bool MoveWindow(IVirtualDesktops desktops, long handle, int number)
     {
-        ArgumentNullException.ThrowIfNull(desktops);
         try
         {
             if (!Exists(desktops, number))
@@ -103,7 +98,6 @@ public static class VirtualDesktopOperations
     /// <summary>Add desktops until there are at least <paramref name="target"/>; whether there are now.</summary>
     public static bool EnsureCount(IVirtualDesktops desktops, int target)
     {
-        ArgumentNullException.ThrowIfNull(desktops);
         try
         {
             for (var count = desktops.Count; count < target; count++)
@@ -126,8 +120,6 @@ public static class VirtualDesktopOperations
     /// </summary>
     public static IReadOnlyList<string> RetireSwitchedOff(IVirtualDesktops desktops, int keepCount, IReadOnlyList<string> retiredNames)
     {
-        ArgumentNullException.ThrowIfNull(desktops);
-        ArgumentNullException.ThrowIfNull(retiredNames);
         var wanted = retiredNames.Where(name => name.Length > 0).Select(UnicodeText.CaseFold).ToHashSet(StringComparer.Ordinal);
         List<string> removed = [];
         if (wanted.Count == 0 || keepCount < 1)

@@ -41,8 +41,6 @@ public static class ScheduledRun
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "A scheduled run has no console: whatever it throws is logged and exits 1.")]
     public static int Run(JobTrigger trigger, string jobsDir, ScheduledSeams seams, Func<string, Action<string>, int> run)
     {
-        ArgumentNullException.ThrowIfNull(seams);
-        ArgumentNullException.ThrowIfNull(run);
         var runId = JobRunner.RunId(trigger, seams.Clock.GetLocalNow());
         Directory.CreateDirectory(jobsDir);
         var logPath = Path.Join(jobsDir, LogName);

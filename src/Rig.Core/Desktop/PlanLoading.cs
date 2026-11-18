@@ -12,8 +12,6 @@ public static class PlanLoading
     /// <summary>The per-user plan: under <c>APPDATA</c> on Windows when it is set, else <c>~/.config/workspace-manager</c>.</summary>
     public static string DefaultPath(Func<string, string?> getVariable, string home, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(getVariable);
-        ArgumentNullException.ThrowIfNull(home);
         if (windows && getVariable("APPDATA") is { Length: > 0 } appData)
         {
             return Path.Join(appData, "workspace-manager", "windows-workspace.json");
@@ -25,8 +23,6 @@ public static class PlanLoading
     /// <summary><c>logs</c> beside the plan, unless <see cref="LogDirectoryVariable"/> names another folder.</summary>
     public static string LogsDirectory(string configPath, Func<string, string?> getVariable)
     {
-        ArgumentNullException.ThrowIfNull(configPath);
-        ArgumentNullException.ThrowIfNull(getVariable);
         return getVariable(LogDirectoryVariable) is { Length: > 0 } overridden
             ? overridden
             : Path.Join(Path.GetDirectoryName(Path.GetFullPath(configPath))!, "logs");
@@ -51,8 +47,6 @@ public static class PlanLoading
         Func<string, string?>? getVariable = null,
         IReadOnlyDictionary<string, string>? machineAliases = null)
     {
-        ArgumentNullException.ThrowIfNull(path);
-        ArgumentNullException.ThrowIfNull(flags);
         var plan = PlanFiles.Load(path);
         plan = PlanFeatures.WithFlags(plan, flags());
         plan = PlanFeatures.Apply(plan, enable, disable);
@@ -82,8 +76,6 @@ public static class PlanLoading
         int? expectedScreenCount = null,
         int monitorCount = 0)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(substitutions);
         var errors = Placement.ValidatePlan(plan, substitutions, monitorCount, paths);
         if (errors.Count > 0)
         {
@@ -106,8 +98,6 @@ public static class PlanLoading
     /// <exception cref="InvalidPlanException">The template is not a valid plan.</exception>
     public static WorkspacePlan BuildMachinePlan(string templatePath, string workspace, string? personalWorkspace = null)
     {
-        ArgumentNullException.ThrowIfNull(templatePath);
-        ArgumentNullException.ThrowIfNull(workspace);
         var plan = PlanFiles.Load(templatePath) with { Workspace = workspace, PersonalWorkspace = personalWorkspace };
         return Verify(plan, templatePath, plan.Substitutions(new Dictionary<string, string>(), new Dictionary<string, string>()));
     }

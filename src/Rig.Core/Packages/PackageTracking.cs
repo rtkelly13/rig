@@ -66,7 +66,6 @@ public static class PackageTracking
     /// <summary>The package's page on its registry.</summary>
     public static string RegistryWebUrl(PackageSpec spec)
     {
-        ArgumentNullException.ThrowIfNull(spec);
         return spec.IsNpm ? $"https://www.npmjs.com/package/{spec.Name}" : $"https://www.nuget.org/packages/{spec.Name}";
     }
 
@@ -103,8 +102,6 @@ public static class PackageTracking
     public static async Task<PackageTrackingRecord> TrackAsync(
         PackageBinding binding, IPackageFetcher fetcher, string? projectDir, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(binding);
-        ArgumentNullException.ThrowIfNull(fetcher);
         var spec = binding.Spec;
         var text = projectDir is null ? null : ReadLocal(Path.Combine(projectDir, spec.Manifest));
         if (text is null && PackageAudit.Slug(binding.Repo) is { } slug)

@@ -62,14 +62,12 @@ public sealed class WindowActions(IWin32Actions win32, WindowInventory inventory
     /// <exception cref="ArgumentOutOfRangeException">The screen it names is not connected.</exception>
     public Rect PlacementRectFor(PlacementSpec placement)
     {
-        ArgumentNullException.ThrowIfNull(placement);
         return Geometry.PlacementRectIn(inventory.WorkAreaByNumber(placement.Screen), placement);
     }
 
     /// <summary>Send <paramref name="events"/> to whatever window has focus; whether Windows took all of them.</summary>
     public bool SendKeys(IReadOnlyList<KeyEvent> events)
     {
-        ArgumentNullException.ThrowIfNull(events);
         return events.Count == 0 || win32.SendKeys(events) == events.Count;
     }
 

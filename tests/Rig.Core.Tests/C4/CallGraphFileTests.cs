@@ -11,9 +11,6 @@ public sealed class CallGraphFileTests : IDisposable
     [Fact]
     public void Key_and_TypeOf_parse_identifiers()
     {
-        Assert.Throws<ArgumentNullException>(() => CallGraphFile.Key(null!));
-        Assert.Throws<ArgumentNullException>(() => CallGraphFile.TypeOf(null!));
-
         var ctor = CallGraphFile.Key("Acme.Foo.Bar..ctor/()");
         Assert.Equal("Acme.Foo.Bar", ctor.Type);
         Assert.Equal("new", ctor.Name);
@@ -48,7 +45,6 @@ public sealed class CallGraphFileTests : IDisposable
     public void Read_parses_types_members_calls_and_implements()
     {
         var graph = new CallGraphFile();
-        Assert.Throws<ArgumentNullException>(() => graph.Read(null!));
 
         var lines = new[]
         {

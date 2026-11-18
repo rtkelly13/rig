@@ -162,7 +162,6 @@ public static class GitHubCalls
     /// <summary>GETs <paramref name="route"/> as JSON; throws <see cref="GitHubReadException"/> when the call or the parse fails.</summary>
     public static async Task<JsonNode> ReadJsonAsync(IGitHubApi api, string route, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(api);
         var ran = await api.CallAsync(ApiRequest.Get(route), cancellationToken).ConfigureAwait(false);
         if (!ran.Ok)
         {
@@ -175,21 +174,18 @@ public static class GitHubCalls
     /// <summary>One write through the seam.</summary>
     public static Task<Ran> SendAsync(IGitHubApi api, string method, string route, string? body, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(api);
         return api.CallAsync(new ApiRequest(method, route, body), cancellationToken);
     }
 
     /// <summary>Whether a failed call was GitHub's 404, which for some routes means "not configured".</summary>
     public static bool IsNotFound(Ran ran)
     {
-        ArgumentNullException.ThrowIfNull(ran);
         return ran.Err.Contains("HTTP 404", StringComparison.Ordinal) || ran.Err.Contains("Not Found", StringComparison.Ordinal);
     }
 
     /// <summary>A failed call's error text, trimmed, or <c>exit N</c> when it printed none.</summary>
     public static string Reason(Ran ran)
     {
-        ArgumentNullException.ThrowIfNull(ran);
         return ran.Err.Trim() is { Length: > 0 } err ? err : $"exit {ran.Code}";
     }
 

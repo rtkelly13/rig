@@ -64,7 +64,6 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
     /// <summary>The PR's state, merge state, auto-merge, queue entry and every check on its head commit.</summary>
     public async Task<Snapshot> FetchSnapshotAsync(RepoSlug repo, int number, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(repo);
         var pr = await LandingPageAsync(repo, number, null, cancellationToken).ConfigureAwait(false);
         var contexts = ContextsOf(pr);
         IReadOnlyList<WireContext> nodes = [.. contexts.Nodes];
@@ -103,8 +102,6 @@ internal sealed class LandingGitHub(IGitHubApi api, ThreadsGitHub threads)
     /// <summary>The active ruleset rules on <paramref name="baseBranch"/>. Never throws: unreadable rules come back with <see cref="Rules.ThreadResolution"/> null.</summary>
     public async Task<Rules> FetchRulesAsync(RepoSlug repo, string baseBranch, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(repo);
-        ArgumentNullException.ThrowIfNull(baseBranch);
         var branch = string.Join('/', baseBranch.Split('/').Select(Uri.EscapeDataString));
         var ran = await api.ForRepo(repo)
             .Get($"rules/branches/{branch}")

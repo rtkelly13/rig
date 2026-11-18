@@ -29,7 +29,6 @@ public sealed record GitHubGraphQLRequest(IGitHubApi Api, GraphQLRequestSpec Spe
     /// <summary>Adds or replaces a variable.</summary>
     public GitHubGraphQLRequest WithVariable(string name, object? value)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var updated = new Dictionary<string, object?>(Spec.Variables, StringComparer.Ordinal)
         {
             [name] = value,
@@ -40,7 +39,6 @@ public sealed record GitHubGraphQLRequest(IGitHubApi Api, GraphQLRequestSpec Spe
     /// <summary>Adds or replaces multiple variables.</summary>
     public GitHubGraphQLRequest WithVariables(IReadOnlyDictionary<string, object?> variables)
     {
-        ArgumentNullException.ThrowIfNull(variables);
         var updated = new Dictionary<string, object?>(Spec.Variables, StringComparer.Ordinal);
         foreach (var (key, value) in variables)
         {

@@ -31,7 +31,6 @@ public sealed record Worktree(
     /// <summary>Parses <c>git worktree list --porcelain</c>; blank lines separate the records.</summary>
     public static IReadOnlyList<Worktree> Parse(string porcelain)
     {
-        ArgumentNullException.ThrowIfNull(porcelain);
         var found = new List<Worktree>();
         var fields = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -78,7 +77,6 @@ public sealed record Worktree(
     /// <param name="cancellationToken">Stops the read.</param>
     public static async Task<IReadOnlyList<Worktree>> ListAsync(Git git, string repo, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(git);
         var ran = await git.RunAsync(repo, ["worktree", "list", "--porcelain"], cancellationToken: cancellationToken).ConfigureAwait(false);
         return ran.Ok ? Parse(ran.Out) : [];
     }

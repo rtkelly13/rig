@@ -25,7 +25,6 @@ internal static class WebJson
     /// </summary>
     public static IResult Open<T>(HttpContext context, T value)
     {
-        ArgumentNullException.ThrowIfNull(context);
         context.Response.Headers.AccessControlAllowOrigin = "*";
         return Results.Text(JsonSerializer.Serialize(value, Options), ContentType);
     }

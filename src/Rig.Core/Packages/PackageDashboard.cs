@@ -100,7 +100,6 @@ public static partial class PackageDashboard
     /// <summary>Whether <paramref name="content"/> has entries under an <c>[Unreleased]</c> heading.</summary>
     public static bool ChangelogHasUnreleased(string content)
     {
-        ArgumentNullException.ThrowIfNull(content);
         var inUnreleased = false;
         var entries = new List<string>();
         foreach (var line in CommentPattern().Replace(content, string.Empty).Split('\n'))
@@ -163,8 +162,6 @@ public static partial class PackageDashboard
     /// </summary>
     public static IReadOnlyList<MatchedTag> FindMatchingTags(IEnumerable<string> tags, string package)
     {
-        ArgumentNullException.ThrowIfNull(tags);
-        ArgumentNullException.ThrowIfNull(package);
         var prefix = $"{package}/v";
         var scoped = new List<MatchedTag>();
         var global = new List<MatchedTag>();
@@ -230,10 +227,6 @@ public static partial class PackageDashboard
         IReadOnlyDictionary<string, string> groups,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(bindings);
-        ArgumentNullException.ThrowIfNull(registry);
-        ArgumentNullException.ThrowIfNull(git);
-        ArgumentNullException.ThrowIfNull(groups);
         var rows = new List<PackageStatusRow>();
         foreach (var binding in bindings)
         {

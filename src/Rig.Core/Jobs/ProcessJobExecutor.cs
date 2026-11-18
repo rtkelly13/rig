@@ -18,7 +18,6 @@ public sealed class ProcessJobExecutor(TimeProvider clock, IReadOnlyDictionary<s
     /// <inheritdoc/>
     public long Execute(Job job, string logsDir, string runId)
     {
-        ArgumentNullException.ThrowIfNull(job);
         Directory.CreateDirectory(logsDir);
         using var log = new JobLog(JobState.LogPath(logsDir, job.Name));
         void Write(string text) => log.Write(Encoding.UTF8.GetBytes(text));

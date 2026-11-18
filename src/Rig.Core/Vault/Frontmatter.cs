@@ -64,7 +64,6 @@ public static partial class Frontmatter
     /// <summary>The frontmatter of a note whose text, already decoded with universal newlines, is <paramref name="text"/>.</summary>
     public static FrontmatterRead Parse(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var stripped = UnicodeText.Strip(text);
         try
         {
@@ -92,7 +91,6 @@ public static partial class Frontmatter
     /// </summary>
     public static string Content(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var stripped = UnicodeText.Strip(text);
         foreach (var boundary in new[] { YamlBoundary(), JsonBoundary() })
         {

@@ -17,7 +17,6 @@ public sealed partial record ManifestFields(string? RepositoryUrl, string? Versi
     /// </summary>
     public static ManifestFields Read(string registry, string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         if (registry == PackageSpec.Npm)
         {
             JsonObject? manifest;
@@ -59,7 +58,6 @@ public static class PackageBindings
     /// <exception cref="InvalidDataException">The file, a project or a package entry is malformed.</exception>
     public static IReadOnlyList<PackageBinding> Load(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var root = JsonFile.Parse(path);
 
         if (root is not JsonObject document)

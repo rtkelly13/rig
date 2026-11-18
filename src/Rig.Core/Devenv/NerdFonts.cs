@@ -39,7 +39,6 @@ public sealed class NerdFonts(HttpClient http)
     /// <summary>Whether <paramref name="folder"/> holds a <c>.ttf</c> or <c>.otf</c> whose name, spaces aside, contains <paramref name="font"/>'s.</summary>
     public static bool Installed(string folder, NerdFont font)
     {
-        ArgumentNullException.ThrowIfNull(font);
         if (!Directory.Exists(folder))
         {
             return false;
@@ -54,7 +53,6 @@ public sealed class NerdFonts(HttpClient http)
     /// <summary>The release zip's URL for <paramref name="font"/>.</summary>
     public static Uri Url(NerdFont font)
     {
-        ArgumentNullException.ThrowIfNull(font);
         return new Uri($"{ReleaseBase}/{font.Zip}");
     }
 

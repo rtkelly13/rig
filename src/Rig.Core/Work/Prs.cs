@@ -68,8 +68,6 @@ public sealed class WorkPrSource(
     /// <param name="branches">The branches to look up.</param>
     public static string BuildQuery(string slug, IReadOnlyList<string> branches)
     {
-        ArgumentNullException.ThrowIfNull(slug);
-        ArgumentNullException.ThrowIfNull(branches);
         var slash = slug.IndexOf('/', StringComparison.Ordinal);
         var owner = slash < 0 ? slug : slug[..slash];
         var name = slash < 0 ? string.Empty : slug[(slash + 1)..];
@@ -86,8 +84,6 @@ public sealed class WorkPrSource(
     /// <param name="branches">The branches asked about, in alias order.</param>
     public static IReadOnlyDictionary<string, PrInfo?>? ParseResponse(string stdout, IReadOnlyList<string> branches)
     {
-        ArgumentNullException.ThrowIfNull(stdout);
-        ArgumentNullException.ThrowIfNull(branches);
         try
         {
             if (JsonNode.Parse(stdout) is not JsonObject document
@@ -152,7 +148,6 @@ public sealed class WorkPrSource(
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requests);
         var cache = ReadCache();
         var warnings = new List<string>();
         var lookups = new Dictionary<string, PrLookup>(WorkPaths.Comparer);
@@ -261,7 +256,6 @@ public sealed class WorkPrSource(
     /// <param name="value">The text to quote.</param>
     internal static string JsonQuote(string value)
     {
-        ArgumentNullException.ThrowIfNull(value);
         var builder = new StringBuilder("\"");
         foreach (var character in value)
         {

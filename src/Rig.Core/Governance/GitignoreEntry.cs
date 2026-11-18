@@ -33,7 +33,6 @@ public sealed record GitignoreEntry(string Name, string Comment, IReadOnlyList<s
     /// <summary>The lines of <see cref="Write"/> that <paramref name="gitignoreText"/> does not satisfy.</summary>
     public IReadOnlyList<string> MissingLines(string gitignoreText)
     {
-        ArgumentNullException.ThrowIfNull(gitignoreText);
         var lines = gitignoreText.Split(LineBreaks, StringSplitOptions.None)
             .Select(line => line.Split('#')[0].Trim())
             .Where(line => line.Length > 0)
@@ -49,7 +48,6 @@ public sealed record GitignoreEntry(string Name, string Comment, IReadOnlyList<s
     /// <summary>The block appended for <paramref name="missing"/>: a blank line, the comment, then the lines.</summary>
     public string RenderMissing(IReadOnlyList<string> missing)
     {
-        ArgumentNullException.ThrowIfNull(missing);
         return missing.Count == 0 ? string.Empty : $"\n# {Comment}\n{string.Join('\n', missing)}\n";
     }
 

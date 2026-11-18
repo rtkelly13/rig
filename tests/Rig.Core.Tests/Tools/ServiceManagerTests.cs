@@ -328,15 +328,4 @@ public sealed class ServiceManagerTests : IDisposable
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => manager.UninstallAsync(ServiceTarget.Web, false, Token));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => manager.StatusAsync(ServiceTarget.Web, false, null, Token));
     }
-
-    [Fact]
-    public async Task Null_targets_are_refused()
-    {
-        var manager = new ServiceManager(Host(ServicePlatform.MacOS));
-
-        await Assert.ThrowsAsync<ArgumentNullException>(() => manager.InstallAsync(null!, false, null, Token));
-        await Assert.ThrowsAsync<ArgumentNullException>(() => manager.UninstallAsync(null!, false, Token));
-        await Assert.ThrowsAsync<ArgumentNullException>(() => manager.StatusAsync(null!, false, null, Token));
-        await Assert.ThrowsAsync<ArgumentNullException>(() => manager.EnsureAsync(null!, null, TimeSpan.Zero, Token));
-    }
 }

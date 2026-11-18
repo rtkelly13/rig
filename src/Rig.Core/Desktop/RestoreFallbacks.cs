@@ -28,7 +28,6 @@ public sealed partial class RestoreFailureFallbacks
     /// </summary>
     public void RecordMissingPath(int desktopIndex, LaunchEntry entry, string message)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         var key = NormalizeMissingPathErrorMessage(message);
         if (!_groups.TryGetValue(key, out var group))
         {
@@ -45,7 +44,6 @@ public sealed partial class RestoreFailureFallbacks
     /// <summary>Whether a launch failure's message says a resolved path does not exist.</summary>
     public static bool IsMissingPathError(string message)
     {
-        ArgumentNullException.ThrowIfNull(message);
         return message.Contains("resolved path does not exist", StringComparison.Ordinal)
             && message.Contains("Launch entry `", StringComparison.Ordinal);
     }
@@ -53,7 +51,6 @@ public sealed partial class RestoreFailureFallbacks
     /// <summary>A missing-path message with the entry's name taken out, so entries missing the same path group together.</summary>
     public static string NormalizeMissingPathErrorMessage(string message)
     {
-        ArgumentNullException.ThrowIfNull(message);
         var match = MissingPathError().Match(message);
         return match.Success ? $"Launch target resolved {match.Groups["field"].Value} does not exist: {match.Groups["value"].Value}" : message;
     }

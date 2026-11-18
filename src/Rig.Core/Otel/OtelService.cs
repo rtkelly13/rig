@@ -39,7 +39,6 @@ public static class OtelService
     /// <summary>Where the agent's plist lives in <paramref name="launchd"/>'s agents folder.</summary>
     public static string PlistPath(Launchd launchd)
     {
-        ArgumentNullException.ThrowIfNull(launchd);
         return Path.Join(launchd.AgentsDir, PlistName);
     }
 
@@ -49,7 +48,6 @@ public static class OtelService
     /// <summary>Whether launchd has the agent loaded.</summary>
     public static Task<bool> LoadedAsync(Launchd launchd, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(launchd);
         return launchd.LoadedAsync(Label, cancellationToken);
     }
 
@@ -57,8 +55,6 @@ public static class OtelService
     /// <exception cref="Processes.ProcException"><c>launchctl bootstrap</c> failed.</exception>
     public static async Task<string> InstallAsync(Launchd launchd, OtelPaths paths, string binary, string config, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(launchd);
-        ArgumentNullException.ThrowIfNull(paths);
         var path = PlistPath(launchd);
         _ = Directory.CreateDirectory(Path.GetDirectoryName(paths.Log)!);
         await launchd.LoadAsync(path, Render(binary, config, paths.Log), cancellationToken).ConfigureAwait(false);

@@ -56,8 +56,6 @@ public static partial class FilenameStem
     /// <exception cref="FormatException"><paramref name="sourceUrl"/> has a malformed netloc (see <see cref="VaultUrl.Split"/>).</exception>
     public static string Suggest(string? currentStem, string title = "", string sourceUrl = "", string relatedArticle = "", int maxLength = 80)
     {
-        ArgumentNullException.ThrowIfNull(title);
-        ArgumentNullException.ThrowIfNull(sourceUrl);
         var stem = UnicodeText.Strip(currentStem ?? string.Empty);
         var social = string.Empty;
         if (UnicodeText.Lower(stem).EndsWith(SocialSuffix, StringComparison.Ordinal))

@@ -42,8 +42,6 @@ public sealed class LicenseConfigJsonConverter : JsonConverter<LicenseConfig>
     /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, LicenseConfig value, JsonSerializerOptions options)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(value);
         if (value.Bare)
         {
             writer.WriteStringValue(value.Type);
@@ -122,8 +120,6 @@ public sealed class CliRuleConfigJsonConverter : JsonConverter<CliRuleConfig>
     /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, CliRuleConfig value, JsonSerializerOptions options)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(value);
         if (value.Bare)
         {
             writer.WriteStringValue(value.Pattern);

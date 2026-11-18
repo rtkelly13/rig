@@ -73,7 +73,6 @@ internal sealed class KnowledgeServerCommand(
     /// <summary>The user id that names launchd's GUI domain, from <c>id -u</c>; 0 when that cannot be read.</summary>
     public static async Task<uint> UserIdAsync(IProc proc, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(proc);
         var ran = await proc.RunAsync(new ProcRequest(["id", "-u"]), cancellationToken).ConfigureAwait(false);
         return ran.Code == 0 && uint.TryParse(ran.Out.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var uid) ? uid : 0;
     }

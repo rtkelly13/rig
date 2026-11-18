@@ -93,7 +93,6 @@ public static class OrcaUpdate
     /// <summary>An entry that starts Orca: a plan entry with its process or path ending in <c>Orca.exe</c>.</summary>
     public static bool EntryTargetsOrca(LaunchEntry entry)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         return string.Equals(entry.WindowProcessName, ProcessName, StringComparison.OrdinalIgnoreCase)
             || (entry.Path?.EndsWith(ProcessName, StringComparison.OrdinalIgnoreCase) ?? false);
     }
@@ -101,7 +100,6 @@ public static class OrcaUpdate
     /// <summary>Every enabled entry that starts Orca, with its desktop and 1-based index, in plan order.</summary>
     public static IReadOnlyList<(int DesktopIndex, DesktopPlan Desktop, LaunchEntry Entry)> Entries(WorkspacePlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         var entries = new List<(int, DesktopPlan, LaunchEntry)>();
         for (var index = 0; index < plan.Desktops.Count; index++)
         {
@@ -117,8 +115,6 @@ public static class OrcaUpdate
     /// <summary>The disk and process state of an Orca update.</summary>
     public static OrcaUpdateState State(string localAppData, WindowInventory inventory)
     {
-        ArgumentNullException.ThrowIfNull(localAppData);
-        ArgumentNullException.ThrowIfNull(inventory);
         var running = inventory.RunningProcessNames();
         return new(
             InstalledVersion(localAppData),
@@ -130,7 +126,6 @@ public static class OrcaUpdate
     /// <summary>The installed build: its uninstall entry's display version, else <c>Orca.exe</c>'s file version.</summary>
     public static string? InstalledVersion(string localAppData)
     {
-        ArgumentNullException.ThrowIfNull(localAppData);
         foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
         {
             try
@@ -167,7 +162,6 @@ public static class OrcaUpdate
     /// <summary>The pending installer, versioned by its own file version.</summary>
     public static StagedOrcaUpdate? Staged(string localAppData)
     {
-        ArgumentNullException.ThrowIfNull(localAppData);
         var pending = Path.Join(localAppData, "orca-updater", "pending");
         JsonNode? info;
         try
@@ -231,7 +225,6 @@ public static class OrcaUpdate
     /// <summary>Wait until no Orca installer process remains; whether it finished in time.</summary>
     public static bool WaitForInstaller(WindowInventory inventory, TimeSpan timeout, Action<string>? log = null)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
         var deadline = DateTimeOffset.UtcNow + timeout;
         while (DateTimeOffset.UtcNow < deadline)
         {
@@ -250,7 +243,6 @@ public static class OrcaUpdate
     /// <summary>Verify and silently run the staged installer. It does not relaunch Orca; the caller does.</summary>
     public static bool RunInstaller(StagedOrcaUpdate staged, Action<string>? log = null)
     {
-        ArgumentNullException.ThrowIfNull(staged);
         if (staged.AdminRequired)
         {
             log?.Invoke("Orca installer needs admin rights; not running it unattended");
@@ -296,10 +288,6 @@ public static class OrcaUpdate
         IRunLog log,
         TimeSpan? closeTimeout = null)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(inventory);
-        ArgumentNullException.ThrowIfNull(actions);
-        ArgumentNullException.ThrowIfNull(log);
         var timeout = closeTimeout ?? TimeSpan.FromSeconds(60);
         var result = new List<string>();
 
@@ -384,8 +372,6 @@ public static class OrcaUpdate
     /// <summary>Ask every Orca window to close, then force-kill whatever is still alive after the timeout.</summary>
     public static string CloseAll(WindowInventory inventory, WindowActions actions, TimeSpan timeout, Action<string>? log = null)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
-        ArgumentNullException.ThrowIfNull(actions);
         var handles = inventory.WindowsMatchingProcess(ProcessName, currentDesktopOnly: false);
         foreach (var handle in handles)
         {

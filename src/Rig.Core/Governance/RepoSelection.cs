@@ -27,8 +27,6 @@ public static class RepoSelection
     /// </summary>
     public static ManageDecision ShouldManage(RepoSelectionRules rules, bool registered, bool isFork, string permission)
     {
-        ArgumentNullException.ThrowIfNull(rules);
-        ArgumentNullException.ThrowIfNull(permission);
         if (registered)
         {
             return new(!rules.Exempt, rules.Exempt ? "exempt (its profile opts out of governance)" : string.Empty);

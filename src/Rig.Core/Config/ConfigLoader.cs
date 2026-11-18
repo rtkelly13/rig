@@ -85,7 +85,6 @@ public static class ConfigLoader
         where T : class
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
-        ArgumentNullException.ThrowIfNull(typeInfo);
 
         string text;
         try
@@ -132,9 +131,7 @@ public static class ConfigLoader
     public static T Parse<T>(string json, string source, JsonTypeInfo<T> typeInfo)
         where T : class
     {
-        ArgumentNullException.ThrowIfNull(json);
         ArgumentException.ThrowIfNullOrEmpty(source);
-        ArgumentNullException.ThrowIfNull(typeInfo);
 
         JsonDocument document;
         try

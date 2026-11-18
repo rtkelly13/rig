@@ -19,8 +19,6 @@ public static class ChromeReads
     /// <param name="phase">Which pass this read is for: <c>initial</c>, <c>regroup</c>, <c>wait_check</c>, <c>replan</c>, <c>retry</c>, <c>consolidate</c>.</param>
     public static IReadOnlyList<ChromeWindow> Read(Func<IReadOnlyList<ChromeWindow>> read, string? profile, string phase)
     {
-        ArgumentNullException.ThrowIfNull(read);
-        ArgumentNullException.ThrowIfNull(phase);
         using var activity = Source.StartActivity("chrome_tabs.read_windows");
         activity?.SetTag("read.phase", phase);
         var windows = FilterProfile(read(), profile);
@@ -32,7 +30,6 @@ public static class ChromeReads
     /// <summary>The windows of <paramref name="profile"/>, by directory or display name ignoring case; all of them for null.</summary>
     public static IReadOnlyList<ChromeWindow> FilterProfile(IReadOnlyList<ChromeWindow> windows, string? profile)
     {
-        ArgumentNullException.ThrowIfNull(windows);
         if (profile is null)
         {
             return windows;

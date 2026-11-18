@@ -123,7 +123,6 @@ public sealed class ObsidianPlugins(HttpClient http)
     /// </summary>
     public static IReadOnlyList<string> EnableCore(string vault, IReadOnlyList<string> ids, bool dryRun)
     {
-        ArgumentNullException.ThrowIfNull(ids);
         var path = Path.Join(vault, ".obsidian", "core-plugins.json");
         var turnedOn = new List<string>();
         JsonNode payload;
@@ -162,7 +161,6 @@ public sealed class ObsidianPlugins(HttpClient http)
     /// <summary>Downloads <paramref name="spec"/>'s latest release into the vault; a dry run only reads the release.</summary>
     public async Task<PluginInstall> InstallAsync(string vault, PluginSpec spec, bool dryRun, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(spec);
         (string Tag, Dictionary<string, string> Assets) release;
         try
         {

@@ -133,7 +133,6 @@ public static class Volume
     /// <summary>Depth-first drill-down from each drive root: a folder's children at or above <paramref name="minBytes"/>, largest first.</summary>
     public static IReadOnlyList<TreeRow> Tree(IEnumerable<Folder> folders, long minBytes, int maxDepth)
     {
-        ArgumentNullException.ThrowIfNull(folders);
         var children = new Dictionary<string, List<Folder>>(StringComparer.Ordinal);
         var roots = new List<Folder>();
         foreach (var folder in folders.Where(folder => folder.Allocated >= minBytes))
@@ -185,8 +184,6 @@ public static class Volume
     /// </summary>
     public static IReadOnlyList<KeyValuePair<string, long>> Partition(IReadOnlyCollection<Folder> folders, string codeRoot)
     {
-        ArgumentNullException.ThrowIfNull(folders);
-        ArgumentNullException.ThrowIfNull(codeRoot);
         var root = codeRoot.TrimEnd('\\').ToLowerInvariant() + "\\";
         var totals = new List<KeyValuePair<string, long>>();
         string? consumed = null;
@@ -227,8 +224,6 @@ public static class Volume
     /// <param name="environment">Reads the <c>%VAR%</c> a pattern names; one it does not know stays as written.</param>
     public static IReadOnlyList<HogHit> Hogs(IReadOnlyCollection<Folder> folders, IEnumerable<Hog> catalogue, Func<string, string?> environment)
     {
-        ArgumentNullException.ThrowIfNull(folders);
-        ArgumentNullException.ThrowIfNull(catalogue);
         var found = new List<HogHit>();
         foreach (var hog in catalogue)
         {
@@ -247,7 +242,6 @@ public static class Volume
     /// <summary>Bytes in files at the volume root (pagefile.sys, hiberfil.sys, swapfile.sys): the root less its top-level folders.</summary>
     public static long RootFiles(IReadOnlyCollection<Folder> folders)
     {
-        ArgumentNullException.ThrowIfNull(folders);
         if (folders.FirstOrDefault(folder => Depth(folder.Path) == 0) is not { } root)
         {
             return 0;
@@ -369,7 +363,6 @@ public sealed class WizTreeExport(IProc proc, TimeProvider time, Func<TimeSpan, 
     /// <exception cref="TimeoutException">The export did not finish in time.</exception>
     public async Task RunAsync(string drive, string output, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(drive);
         if (!File.Exists(wizTree))
         {
             throw new FileNotFoundException($"WizTree not found at {wizTree}: winget install --id AntibodySoftware.WizTree");

@@ -168,7 +168,6 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     /// <summary>The verdict for one worktree and the reason, in the order the safety rules need.</summary>
     public static Judgement Decide(OrcaWorktreeFacts facts, double idleDays = DefaultIdleDays)
     {
-        ArgumentNullException.ThrowIfNull(facts);
         if (facts.IsCurrent)
         {
             return new(Current, "this command is running inside it");
@@ -251,8 +250,6 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     /// </remarks>
     public async Task<Comparison> LeftoverMatchesAsync(string folder, string repo, string branch, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(branch);
-        ArgumentNullException.ThrowIfNull(repo);
         if (branch.Length == 0)
         {
             return new(false, "detached when it broke; nothing to compare it with");
@@ -332,8 +329,6 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     /// </summary>
     public static async Task<PrAnswer> BranchPrAsync(Git git, IProc proc, string repo, string branch, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(git);
-        ArgumentNullException.ThrowIfNull(proc);
         var origin = await git.RunAsync(repo, ["remote", "get-url", "origin"], TimeSpan.FromSeconds(10), cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!origin.Ok || RepoSlug.FromRemote(origin.Out.Trim()) is not { } slug)
         {
@@ -371,7 +366,6 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     /// <param name="cancellationToken">Cancels the probes.</param>
     public async Task<OrcaWorktreeFacts> GatherAsync(OrcaWorktree worktree, string? repo, OrcaActivity? activity, double nowMs, string cwd, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(worktree);
         var path = worktree.Path;
         var busy = activity?.AgentStates.Count(state => state is not null && BusyStates.Contains(state)) ?? 0;
         var idle = worktree.LastActivityMs is { } last && last != 0 ? (nowMs - last) / MsPerDay : 0.0;
@@ -467,7 +461,6 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     /// <exception cref="OrcaUnavailableException">Orca could not be asked.</exception>
     public static async Task<IReadOnlySet<string>> SelectAsync(OrcaRuntime runtime, string wanted, string home, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(wanted);
         var repos = await runtime.ProjectsAsync(cancellationToken).ConfigureAwait(false);
         var roots = repos.Select(r => (r.Id, r.Path)).ToList();
         roots.AddRange((await runtime.WorktreesAsync(cancellationToken).ConfigureAwait(false)).Select(w => (w.RepoId, w.Path)));
@@ -496,7 +489,6 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
     /// <exception cref="OrcaUnavailableException">Orca could not be asked for its projects or worktrees.</exception>
     public async Task<IReadOnlyList<WorktreeRow>> ApplyAsync(OrcaRuntime runtime, IReadOnlyList<WorktreeRow> rows, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(rows);
         var repoPaths = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var repo in await runtime.ProjectsAsync(cancellationToken).ConfigureAwait(false))
         {

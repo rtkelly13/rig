@@ -68,10 +68,6 @@ public sealed class BranchCleanup(IProc proc, Git git, GovernedRepos repos, Repo
     public static IReadOnlyList<BranchVerdict> Classify(
         IEnumerable<string> branches, IReadOnlyDictionary<string, long> mergedHeads, IReadOnlyDictionary<string, long> openHeads, BranchCleanupRules rules)
     {
-        ArgumentNullException.ThrowIfNull(branches);
-        ArgumentNullException.ThrowIfNull(mergedHeads);
-        ArgumentNullException.ThrowIfNull(openHeads);
-        ArgumentNullException.ThrowIfNull(rules);
         return [.. branches.Select(branch =>
             rules.IsProtected(branch) ? new BranchVerdict(branch, "protected")
             : rules.ProtectOpenPrHeads && openHeads.TryGetValue(branch, out var open) ? new BranchVerdict(branch, "open-pr", open)

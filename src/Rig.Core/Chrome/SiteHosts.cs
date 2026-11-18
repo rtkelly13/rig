@@ -33,7 +33,6 @@ public sealed partial class SiteHosts(IReadOnlyList<SiteDomain> domains)
     /// <summary>The group of the longest configured domain <paramref name="host"/> equals or ends with, if any.</summary>
     public string? SiteFor(string host)
     {
-        ArgumentNullException.ThrowIfNull(host);
         var name = host.ToLowerInvariant();
         string? best = null;
         var bestLength = 0;

@@ -125,7 +125,6 @@ public static class TabRank
         IReadOnlySet<RuntimeId>? alreadyClosing = null,
         IReadOnlySet<RuntimeId>? held = null)
     {
-        ArgumentNullException.ThrowIfNull(ranked);
         var staying = ranked.Where(item => alreadyClosing?.Contains(item.Tab.RuntimeId) != true).ToList();
         var before = staying.Sum(item => item.MemoryMb);
         var candidates = staying

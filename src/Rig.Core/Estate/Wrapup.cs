@@ -298,7 +298,6 @@ public static class Wrapup
     /// <summary>Rig's estate checks for one worktree; null when the folder is gone.</summary>
     public static async Task<GitFacts?> ReadGitFactsAsync(Git git, string path, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(git);
         if (!Directory.Exists(path))
         {
             return null;
@@ -374,8 +373,6 @@ public static class Wrapup
     /// <param name="home">What <c>~</c> stands for.</param>
     public static WrapupScope? Classify(string path, IReadOnlyList<string> personal, IReadOnlyList<string> work, string home)
     {
-        ArgumentNullException.ThrowIfNull(personal);
-        ArgumentNullException.ThrowIfNull(work);
         var expanded = WrapupText.ExpandUser(path, home);
         if (personal.Any(parent => PathResolution.IsUnder(expanded, parent)))
         {
@@ -389,8 +386,6 @@ public static class Wrapup
     public static IReadOnlyList<WrapupPlaced> Select(
         WrapupSnapshot snapshot, WrapupTarget target, IReadOnlyList<string> personal, IReadOnlyList<string> work, string home, string workingDirectory)
     {
-        ArgumentNullException.ThrowIfNull(snapshot);
-        ArgumentNullException.ThrowIfNull(target);
         var repoPaths = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var repo in snapshot.Repos)
         {
@@ -485,11 +480,6 @@ public static class Wrapup
         IWrapupStore store,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(placed);
-        ArgumentNullException.ThrowIfNull(terminals);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(facts);
-        ArgumentNullException.ThrowIfNull(store);
         var byPane = new Dictionary<string, WrapupTerminal>(StringComparer.Ordinal);
         foreach (var terminal in terminals)
         {
@@ -573,7 +563,6 @@ public static class Wrapup
     /// <summary>Indexes of the rows to ask, deepest subtasks first.</summary>
     public static IReadOnlyList<int> SendOrder(IReadOnlyList<WrapupRow> rows)
     {
-        ArgumentNullException.ThrowIfNull(rows);
         return [.. Enumerable.Range(0, rows.Count).Where(i => rows[i].Status == WrapupStatus.Ask).OrderBy(i => -rows[i].Depth).ThenBy(i => i)];
     }
 
@@ -583,10 +572,6 @@ public static class Wrapup
     /// <summary>The template behind the marker, with <c>$repo</c>, <c>$worktree</c>, <c>$branch</c>, <c>$facts</c>, <c>$children</c>, <c>$report</c>.</summary>
     public static string RenderPrompt(string template, WrapupRow row, IReadOnlyList<WrapupRow> rows, IReadOnlyDictionary<string, WrapupWorktree> worktrees, string rigExecutable)
     {
-        ArgumentNullException.ThrowIfNull(template);
-        ArgumentNullException.ThrowIfNull(row);
-        ArgumentNullException.ThrowIfNull(rows);
-        ArgumentNullException.ThrowIfNull(worktrees);
         var byWorktree = new Dictionary<string, List<WrapupRow>>(StringComparer.Ordinal);
         foreach (var r in rows)
         {
@@ -613,7 +598,6 @@ public static class Wrapup
     /// <summary>Substitutes <c>$name</c> and <c>${name}</c> placeholders: unknown and malformed placeholders stay as written.</summary>
     public static string SafeSubstitute(string template, IReadOnlyDictionary<string, string> values)
     {
-        ArgumentNullException.ThrowIfNull(values);
         return Placeholder.Replace(template, m =>
         {
             if (m.Groups["escaped"].Success)
@@ -641,8 +625,6 @@ public static class Wrapup
     /// <summary>Selected descendant sessions not yet known to be finished (settled or answered done).</summary>
     public static int OpenChildren(WrapupRow row, IReadOnlyList<WrapupRow> rows)
     {
-        ArgumentNullException.ThrowIfNull(row);
-        ArgumentNullException.ThrowIfNull(rows);
         var byParent = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
         foreach (var r in rows)
         {
@@ -1020,7 +1002,6 @@ public static class WrapupText
     /// <summary>Quotes a word for a POSIX shell.</summary>
     public static string ShellQuote(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         if (text.Length == 0)
         {
             return "''";
@@ -1041,7 +1022,6 @@ public static class WrapupText
     /// <summary><c>~</c> and <c>~/…</c> under <paramref name="home"/>.</summary>
     public static string ExpandUser(string path, string home)
     {
-        ArgumentNullException.ThrowIfNull(path);
         if (path == "~")
         {
             return home;

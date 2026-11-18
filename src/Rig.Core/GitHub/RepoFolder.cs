@@ -51,7 +51,6 @@ public sealed record RepoFolderCheck(string RepoPath, RepoSlug? Remote, Canonica
     /// </summary>
     public static RepoFolderCheck Classify(string repoPath, RepoSlug remote, CanonicalRepo? canonical)
     {
-        ArgumentNullException.ThrowIfNull(remote);
         if (canonical is null)
         {
             return new(repoPath, remote, null, RepoFolderStatus.Unresolved, $"Could not resolve repository '{remote}' on GitHub");
@@ -78,7 +77,6 @@ public sealed record RepoFolderCheck(string RepoPath, RepoSlug? Remote, Canonica
     /// </summary>
     public static async Task<RepoFolderCheck> CheckAsync(Git git, RepoResolver resolver, string path, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(resolver);
         var (root, origin) = await IdentifyAsync(git, path).ConfigureAwait(false);
         if (origin.Length == 0)
         {
@@ -105,8 +103,6 @@ public sealed record RepoFolderCheck(string RepoPath, RepoSlug? Remote, Canonica
         bool forceRefresh = false,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(resolver);
-        ArgumentNullException.ThrowIfNull(parents);
         var clones = parents
             .Where(Directory.Exists)
             .SelectMany(Directory.EnumerateDirectories)
@@ -130,7 +126,6 @@ public sealed record RepoFolderCheck(string RepoPath, RepoSlug? Remote, Canonica
     // origin URL; empty when path is not a repository or has no origin.
     private static async Task<(string Root, string Origin)> IdentifyAsync(Git git, string path)
     {
-        ArgumentNullException.ThrowIfNull(git);
         var common = await git.OutAsync(path, "rev-parse", "--git-common-dir").ConfigureAwait(false);
         if (common.Length == 0)
         {

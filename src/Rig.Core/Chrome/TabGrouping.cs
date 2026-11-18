@@ -154,7 +154,6 @@ public static partial class TabGrouping
     /// </summary>
     public static RepoSlug? RepoOf(string title)
     {
-        ArgumentNullException.ThrowIfNull(title);
         var match = TrailingRepo().Match(title);
         if (!match.Success)
         {
@@ -167,7 +166,6 @@ public static partial class TabGrouping
     /// <summary>The work site a tab's title (or, failing that, its <paramref name="host"/>) belongs to, as its group title, or null. Calls never group.</summary>
     public static string? SiteOf(string title, string? host = null, SiteHosts? sites = null)
     {
-        ArgumentNullException.ThrowIfNull(title);
         var text = title.Trim();
         if (SiteRules.IsCall(text))
         {
@@ -193,7 +191,6 @@ public static partial class TabGrouping
     /// <summary>The site group a host belongs to, from <c>config/chrome-site-groups.json</c>; calls never group.</summary>
     public static string? SiteOfHost(string host, SiteHosts? sites = null)
     {
-        ArgumentNullException.ThrowIfNull(host);
         var name = host.ToLowerInvariant();
         if (CallHosts.Any(call => name == call || name.EndsWith("." + call, StringComparison.Ordinal)))
         {
@@ -225,7 +222,6 @@ public static partial class TabGrouping
     /// <summary>The repo or site a tab groups under, from its title first and then its URL.</summary>
     public static string? TabKey(ChromeTab tab, IReadOnlyDictionary<string, string>? hosts = null, UrlOwners? owners = null, SiteHosts? sites = null)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         if ((RepoOf(tab.Title) ?? RepoOfUrl(tab.Url, owners)) is { } repo)
         {
             return repo.FullName;
@@ -244,7 +240,6 @@ public static partial class TabGrouping
     /// </summary>
     public static GroupPlan Plan(IReadOnlyList<ChromeWindow> windows, int? currentDesktop, GroupOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(windows);
         options ??= new GroupOptions();
         var context = new Context(options.MinSize, options.Owners ?? UrlOwners.None, options.Sites ?? PackagedSites.Value);
         List<GroupMove> moves = [];

@@ -124,7 +124,6 @@ public static class JobState
     /// <summary>Writes <paramref name="state"/> to <paramref name="path"/>, sorted by name.</summary>
     public static void WriteState(string path, IReadOnlyDictionary<string, Outcome> state)
     {
-        ArgumentNullException.ThrowIfNull(state);
         var root = new JsonObject();
         foreach (var (name, outcome) in state.OrderBy(item => item.Key, StringComparer.Ordinal))
         {
@@ -171,7 +170,6 @@ public static class JobState
     /// <summary>Writes <paramref name="run"/> to <paramref name="path"/>.</summary>
     public static void WriteRun(string path, RunRecord run)
     {
-        ArgumentNullException.ThrowIfNull(run);
         var decisions = new JsonArray();
         foreach (var item in run.Decisions)
         {
@@ -197,7 +195,6 @@ public static class JobState
     /// <summary>Whether <paramref name="job"/>'s cadence wants it now. Triggers are the caller's to check.</summary>
     public static bool IsDue(Job job, Outcome? last, DateTimeOffset now, DateTimeOffset booted)
     {
-        ArgumentNullException.ThrowIfNull(job);
         if (job.Cadence == JobCadence.EveryRun || last is null)
         {
             return true;
@@ -284,7 +281,6 @@ public static partial class IsoStamp
     /// <summary><paramref name="text"/> as a time, or null when it is not one.</summary>
     public static DateTimeOffset? Parse(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var match = Pattern().Match(text);
         if (!match.Success)
         {

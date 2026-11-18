@@ -20,7 +20,6 @@ public static class OrcaProfile
     /// <param name="cancellationToken">Cancels the CLI call.</param>
     public static async Task<OrcaSnapshot> SnapshotAsync(string profileDir, IOrcaCli cli, IReadOnlyDictionary<string, string>? launchArgs, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(cli);
         var repos = OrcaRepo.ParseList(await cli.RunAsync(["repo", "list", "--json"], cancellationToken).ConfigureAwait(false));
         return new OrcaSnapshot(ReadSettingsCopy(profileDir), repos, profileDir, launchArgs);
     }
@@ -57,7 +56,6 @@ public static class OrcaProfile
     /// </summary>
     public static OrcaSettings? ReadSettings(string dbPath, bool live)
     {
-        ArgumentNullException.ThrowIfNull(dbPath);
         if (!File.Exists(dbPath))
         {
             return null;
@@ -86,7 +84,6 @@ public static class OrcaProfile
     /// <summary><paramref name="path"/> escaped as the path part of the SQLite <c>file:</c> name a backup is opened through.</summary>
     public static string ImmutablePath(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var posix = path.Replace('\\', '/');
         var rooted = posix.StartsWith('/') ? posix : "/" + posix;
         return rooted.Replace("%", "%25", StringComparison.Ordinal).Replace("?", "%3f", StringComparison.Ordinal).Replace("#", "%23", StringComparison.Ordinal);

@@ -37,29 +37,24 @@ public sealed record GitHubRestRequest(IGitHubApi Api, RestRequestSpec Spec)
     /// <summary>Adds a header formatted as <paramref name="name"/>: <paramref name="value"/>.</summary>
     public GitHubRestRequest WithHeader(string name, string value)
     {
-        ArgumentNullException.ThrowIfNull(name);
-        ArgumentNullException.ThrowIfNull(value);
         return this with { Spec = Spec with { Headers = [.. Spec.Headers, $"{name}: {value}"] } };
     }
 
     /// <summary>Adds a preformatted header string (<c>Name: value</c>).</summary>
     public GitHubRestRequest WithHeader(string header)
     {
-        ArgumentNullException.ThrowIfNull(header);
         return this with { Spec = Spec with { Headers = [.. Spec.Headers, header] } };
     }
 
     /// <summary>Adds multiple preformatted headers.</summary>
     public GitHubRestRequest WithHeaders(IEnumerable<string> headers)
     {
-        ArgumentNullException.ThrowIfNull(headers);
         return this with { Spec = Spec with { Headers = [.. Spec.Headers, .. headers] } };
     }
 
     /// <summary>Adds a query parameter. A null value is ignored.</summary>
     public GitHubRestRequest WithQuery(string key, object? value)
     {
-        ArgumentNullException.ThrowIfNull(key);
         if (value is null)
         {
             return this;
@@ -82,7 +77,6 @@ public sealed record GitHubRestRequest(IGitHubApi Api, RestRequestSpec Spec)
     /// <summary>Adds multiple query parameters.</summary>
     public GitHubRestRequest WithQueryParameters(IReadOnlyDictionary<string, object?> parameters)
     {
-        ArgumentNullException.ThrowIfNull(parameters);
         var updated = new Dictionary<string, string>(Spec.QueryParameters, StringComparer.Ordinal);
         foreach (var (key, value) in parameters)
         {

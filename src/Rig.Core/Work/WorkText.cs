@@ -22,7 +22,6 @@ public static partial class WorkText
     /// <param name="now">The moment ages are measured from.</param>
     public static IReadOnlyList<string> Cells(WorkItem item, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(item);
         return
         [
             item.State.Wire(),
@@ -42,7 +41,6 @@ public static partial class WorkText
     /// <param name="now">The moment ages are measured from.</param>
     public static IReadOnlyList<string> SessionCells(SessionFacts session, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(session);
         return
         [
             string.Empty,
@@ -62,7 +60,6 @@ public static partial class WorkText
     /// <param name="shown">The items that passed the filters.</param>
     public static string Summary(int total, IReadOnlyList<WorkItem> shown)
     {
-        ArgumentNullException.ThrowIfNull(shown);
         var counts = WorkJoin.CountStates(shown);
         var states = string.Join("  ", WorkJoin.StateOrder.Where(state => counts[state] > 0).Select(state => Invariant($"{state.Wire()}={counts[state]}")));
         return Invariant($"{shown.Count} items ({states}); {total - shown.Count} hidden by filters");
@@ -95,7 +92,6 @@ public static partial class WorkText
     /// <exception cref="FormatException"><paramref name="text"/> is neither.</exception>
     public static DateTimeOffset ParseSince(string text, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var match = Relative().Match(text.Trim().ToLowerInvariant());
         if (match.Success && int.TryParse(match.Groups[1].ValueSpan, NumberStyles.None, CultureInfo.InvariantCulture, out var amount))
         {

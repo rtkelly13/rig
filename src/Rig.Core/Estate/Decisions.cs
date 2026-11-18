@@ -86,7 +86,6 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     /// <summary>The newest PR per branch from GitHub; null for a clone with no GitHub origin.</summary>
     public static PullRequestLookup GitHub(PullRequests pulls)
     {
-        ArgumentNullException.ThrowIfNull(pulls);
         return async (clone, cancellationToken) => await pulls.OriginAsync(clone, cancellationToken).ConfigureAwait(false) is null
             ? null
             : await pulls.HeadsAsync(clone, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -123,7 +122,6 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     /// <summary>Every decision under the given roots; a root that does not exist contributes nothing, and a path appears once.</summary>
     public async Task<IReadOnlyList<Decision>> CollectRootsAsync(IEnumerable<string> roots, int idleDays = Trim.DefaultIdleDays, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(roots);
         var found = new List<Decision>();
         foreach (var root in roots.Where(Directory.Exists))
         {
@@ -136,7 +134,6 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     /// <summary>One decision per path, the last one found standing; on Windows paths differing only in case or slash direction are one.</summary>
     public static IEnumerable<Decision> Unique(IEnumerable<Decision> decisions, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(decisions);
         var unique = new Dictionary<string, Decision>(StringComparer.Ordinal);
         foreach (var item in decisions)
         {
@@ -164,7 +161,6 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     /// </summary>
     public async Task<IReadOnlyList<Decision>> CloneDecisionsAsync(string clone, int idleDays = Trim.DefaultIdleDays, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(clone);
         var repo = Path.GetFileName(Path.TrimEndingDirectorySeparator(clone));
         if (await IsDubiousAsync(clone).ConfigureAwait(false))
         {

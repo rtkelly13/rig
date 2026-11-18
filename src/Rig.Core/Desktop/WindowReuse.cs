@@ -34,8 +34,6 @@ public static class WindowReuse
         IReadOnlySet<string>? competingTitles = null,
         Func<PlacementSpec, Rect>? placementBounds = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(windows);
         var candidates = targetDesktop is null
             ? windows
             : windows.Where(window =>
@@ -88,8 +86,6 @@ public static class WindowReuse
         IReadOnlySet<string>? competingTitles = null,
         Func<PlacementSpec, Rect>? placementBounds = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(window);
         var score = WindowIdentityMatchScore(entry, window.Title, window.ProcessName, substitutions, competingTitles);
         if (score <= 0 || !WindowPidFile.WindowOwnerAllowed(entry, window.Pid, substitutions))
         {
@@ -152,8 +148,6 @@ public static class WindowReuse
         IReadOnlyDictionary<string, string> substitutions,
         IReadOnlySet<string>? competingTitles = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(window);
         var score = WindowIdentityMatchScore(entry, window.Title, window.ProcessName, substitutions, competingTitles);
         if (score <= 0 || !WindowPidFile.WindowOwnerAllowed(entry, window.Pid, substitutions))
         {
@@ -188,8 +182,6 @@ public static class WindowReuse
     /// </summary>
     public static IReadOnlySet<string> CompetingSiblingTitles(IEnumerable<LaunchEntry> entries, LaunchEntry current)
     {
-        ArgumentNullException.ThrowIfNull(entries);
-        ArgumentNullException.ThrowIfNull(current);
         var ownTitle = Fold(current.WindowTitle);
         var ownProcess = Fold(current.WindowProcessName);
         var titles = new HashSet<string>(StringComparer.Ordinal);
@@ -227,8 +219,6 @@ public static class WindowReuse
         IReadOnlyDictionary<string, string> substitutions,
         IReadOnlySet<string>? competingTitles = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(windowTitle);
         var targetTitle = Fold(entry.WindowTitle);
         var title = UnicodeText.CaseFold(windowTitle);
 
@@ -290,7 +280,6 @@ public static class WindowReuse
     /// <summary>The one-line account of what launching <paramref name="entry"/> runs, for plans and logs.</summary>
     public static string DescribeLaunch(LaunchEntry entry, IReadOnlyDictionary<string, string> substitutions)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         if (entry.Type == LaunchEntry.Terminal)
         {
             // A missing directory prints as None.
@@ -316,7 +305,6 @@ public static class WindowReuse
     /// </summary>
     public static string? ExpectedProcessName(LaunchEntry entry, IReadOnlyDictionary<string, string> substitutions)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         if (!string.IsNullOrEmpty(entry.WindowProcessName))
         {
             return UnicodeText.CaseFold(entry.WindowProcessName);
@@ -329,7 +317,6 @@ public static class WindowReuse
     /// <summary>The last component of a Windows path, as <c>PureWindowsPath(path).name</c> gives it.</summary>
     public static string WindowsFileName(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var trimmed = path.TrimEnd('\\', '/');
         var name = trimmed[(trimmed.LastIndexOfAny(['\\', '/']) + 1)..];
         return name.Length >= 2 && name[1] == ':' && char.IsAsciiLetter(name[0]) ? name[2..] : name;
@@ -338,8 +325,6 @@ public static class WindowReuse
     /// <summary>Whether two placements are the same as a plan file writes them; the runtime column count does not count.</summary>
     public static bool SamePlacement(PlacementSpec a, PlacementSpec b)
     {
-        ArgumentNullException.ThrowIfNull(a);
-        ArgumentNullException.ThrowIfNull(b);
         return JsonNode.DeepEquals(a.ToJson(), b.ToJson());
     }
 

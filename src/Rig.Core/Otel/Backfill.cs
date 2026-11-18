@@ -143,8 +143,6 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
     /// <summary>The NDJSON files under <paramref name="roots"/> plus <paramref name="extra"/> files, each once (links and repeats collapse).</summary>
     public static IReadOnlyList<string> Discover(IEnumerable<string> roots, IEnumerable<string> extra)
     {
-        ArgumentNullException.ThrowIfNull(roots);
-        ArgumentNullException.ThrowIfNull(extra);
         var recurse = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = 0, IgnoreInaccessible = true };
         List<string> candidates = [];
         foreach (var root in roots)
@@ -201,7 +199,6 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
     /// <summary>Writes <paramref name="marks"/> sorted, two-space indented, through a temporary file.</summary>
     public static void WriteMarks(string path, IReadOnlyDictionary<string, FileMark> marks)
     {
-        ArgumentNullException.ThrowIfNull(marks);
         var w = new IndentedJsonWriter();
         _ = w.Object(() =>
         {
@@ -236,7 +233,6 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
         bool dryRun = false,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(files);
         var marks = ReadMarks(statePath);
         List<FileResult> results = [];
         List<string> errors = [];
@@ -290,7 +286,6 @@ public sealed class Backfill(ClickHouseClient clickhouse, IOtlpSender sender, Ti
     /// <summary>Case-normalises a path: lower case with backslashes on Windows, unchanged elsewhere.</summary>
     public static string NormCase(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         return OperatingSystem.IsWindows() ? path.Replace('/', '\\').ToLowerInvariant() : path;
     }
 

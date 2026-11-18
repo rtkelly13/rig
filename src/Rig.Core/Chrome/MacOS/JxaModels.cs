@@ -111,7 +111,6 @@ public sealed record ActionIds(long Window, long Tab)
     /// </summary>
     public static ActionIds Of(ChromeTab tab)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         if (tab.RuntimeId.Parts.Count != 1)
         {
             throw new ChromeMacException("Invalid Chrome tab identity");

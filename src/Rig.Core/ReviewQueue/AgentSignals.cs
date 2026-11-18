@@ -51,10 +51,6 @@ public sealed class AgentSignals : IDisposable
         Func<string, WrapupState?> read,
         Func<double> clock)
     {
-        ArgumentNullException.ThrowIfNull(roots);
-        ArgumentNullException.ThrowIfNull(worktrees);
-        ArgumentNullException.ThrowIfNull(read);
-        ArgumentNullException.ThrowIfNull(clock);
         _roots = roots;
         _worktrees = worktrees;
         _read = read;
@@ -76,9 +72,6 @@ public sealed class AgentSignals : IDisposable
         Git git,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(registryFile);
-        ArgumentNullException.ThrowIfNull(estateRoot);
-        ArgumentNullException.ThrowIfNull(git);
         var scopes = EstateScopes.Load(Path.Join(Path.GetDirectoryName(registryFile), EstateScopes.FileName));
         var currentCheckout = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(registryFile)));
         string? currentSlug = null;
@@ -120,9 +113,6 @@ public sealed class AgentSignals : IDisposable
         string? currentCheckout = null,
         string? currentSlug = null)
     {
-        ArgumentNullException.ThrowIfNull(registryFile);
-        ArgumentNullException.ThrowIfNull(estateRoot);
-        ArgumentNullException.ThrowIfNull(scopes);
         currentCheckout ??= Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(registryFile)));
         var roots = new List<AgentRoot>();
         foreach (var spec in ManagedProjects.Load(registryFile).Where(spec => spec.Enabled))
@@ -188,16 +178,12 @@ public sealed class AgentSignals : IDisposable
     /// <summary>The signal recorded for <paramref name="branch"/>, or null when there is none.</summary>
     public static AgentSignal? ForPr(IReadOnlyDictionary<AgentKey, AgentSignal> found, string repo, string branch)
     {
-        ArgumentNullException.ThrowIfNull(found);
-        ArgumentNullException.ThrowIfNull(repo);
-        ArgumentNullException.ThrowIfNull(branch);
         return branch.Length == 0 ? null : found.GetValueOrDefault(new AgentKey(repo.ToLowerInvariant(), branch));
     }
 
     /// <summary>The newest ask or answer in <paramref name="state"/>, across its panes.</summary>
     public static AgentSignal? Latest(WrapupState state, string worktree)
     {
-        ArgumentNullException.ThrowIfNull(state);
         var ask = state.Asks.Count == 0 ? null : state.Asks.MaxBy(item => When(item.At));
         var answer = state.Answers.Count == 0 ? null : state.Answers.MaxBy(item => When(item.At));
         if (answer is not null && (ask is null || When(answer.At) >= When(ask.At)))

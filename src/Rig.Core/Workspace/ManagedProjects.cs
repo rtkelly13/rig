@@ -48,7 +48,6 @@ public static class ManagedProjects
     /// </summary>
     public static IReadOnlyList<ManagedRepoSpec> Load(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         if (!File.Exists(path))
         {
             return [];

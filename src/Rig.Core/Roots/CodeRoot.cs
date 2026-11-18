@@ -47,7 +47,6 @@ public static class CodeRoot
     /// </summary>
     public static string Resolve(string? configured, string start, string home)
     {
-        ArgumentNullException.ThrowIfNull(home);
         if (!string.IsNullOrEmpty(configured))
         {
             return ExpandHome(configured, home);

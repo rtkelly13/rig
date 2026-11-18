@@ -35,7 +35,6 @@ public static class TabPlanText
     /// <summary>The PR plan, grouped by reason in a fixed order, then a summary.</summary>
     public static IReadOnlyList<string> Prune(PrunePlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         List<string> lines = [];
         foreach (var (kind, heading) in CloseHeadings)
         {
@@ -57,7 +56,6 @@ public static class TabPlanText
     /// <summary>The site-dedupe plan: closes, then reports by kind, then a summary.</summary>
     public static IReadOnlyList<string> Dedupe(DedupePlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         List<string> lines = [];
         Section(lines, "Close: duplicate pages", plan.Closes.Select(close => PlanLine(close.Item, close.Reason)), plan.Closes.Count);
         foreach (var (kind, heading) in SiteReportHeadings)
@@ -73,7 +71,6 @@ public static class TabPlanText
     /// <summary>The memory-budget plan: its closes, then the memory before and after against the budget.</summary>
     public static IReadOnlyList<string> Memory(MemoryPlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         List<string> lines = [];
         Section(
             lines,
@@ -91,7 +88,6 @@ public static class TabPlanText
     /// <summary>One line per tab, keep-worthiest first: rank, score or protection, memory, key, title, reasons.</summary>
     public static IReadOnlyList<string> Rank(IEnumerable<RankedTab> ranked)
     {
-        ArgumentNullException.ThrowIfNull(ranked);
         return
         [
             .. ranked.Select((item, index) =>
@@ -110,7 +106,6 @@ public static class TabPlanText
     /// <summary>The grouping plan, one block per window in the order they run, then a summary.</summary>
     public static IReadOnlyList<string> Groups(GroupPlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         List<string> lines = [];
         if (plan.Ungroups.Count > 0)
         {
@@ -149,7 +144,6 @@ public static class TabPlanText
     /// <summary>Each profile's saved groups as its bookmarks bar shows them, then what consolidating deletes.</summary>
     public static IReadOnlyList<string> SavedGroups(ConsolidationPlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         List<string> lines = [];
         foreach (var profile in plan.Groups.Select(group => group.Profile).Distinct())
         {
@@ -178,7 +172,6 @@ public static class TabPlanText
     /// <summary>One planned tab: its label, where it sits, why, and its title cut to fit.</summary>
     public static string PlanLine(IPlacedTab item, string why)
     {
-        ArgumentNullException.ThrowIfNull(item);
         var where = $"{item.Profile}, window {item.WindowNumber}, tab {item.Tab.Index + 1}";
         return $"  {item.Label}  [{where}]  {why}  | {Clip(item.Tab.Title)}";
     }
@@ -186,7 +179,6 @@ public static class TabPlanText
     /// <summary><paramref name="title"/> cut to <paramref name="width"/> characters, ending in an ellipsis when cut.</summary>
     public static string Clip(string title, int width = 70)
     {
-        ArgumentNullException.ThrowIfNull(title);
         var runes = title.EnumerateRunes().ToList();
         if (runes.Count <= width)
         {

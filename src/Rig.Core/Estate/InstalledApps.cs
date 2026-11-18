@@ -117,7 +117,6 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
     /// </summary>
     public async Task<IReadOnlyList<InstalledApp>> ScanBundlesAsync(IEnumerable<string> appDirs, long minSize, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(appDirs);
         var apps = new List<InstalledApp>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var appDir in appDirs)
@@ -152,7 +151,6 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
     /// </summary>
     public async Task<IReadOnlyList<InstalledApp>> ScanRegistryAsync(IUninstallRegistry registry, long minSize, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(registry);
         var apps = new List<InstalledApp>();
         var seen = new HashSet<(string, string)>();
         foreach (var entry in registry.Entries())
@@ -175,7 +173,6 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
     /// </summary>
     public async Task<InstalledApp?> EntryToAppAsync(UninstallEntry entry, bool measure, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         if (entry.DisplayName is not string name || string.IsNullOrWhiteSpace(name))
         {
             return null;

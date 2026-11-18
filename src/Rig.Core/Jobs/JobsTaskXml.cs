@@ -11,7 +11,6 @@ public static class JobsTaskXml
     /// <summary>Renders the task with interactive, least-privilege identity and the existing timing/restart policy.</summary>
     public static string Render(string name, JobsInstallTarget target, string userId, DateTimeOffset start)
     {
-        ArgumentNullException.ThrowIfNull(target);
         if (!CoordinatorTasks.All.Contains(name, StringComparer.Ordinal))
         {
             throw new ArgumentException("Unknown coordinator task", nameof(name));

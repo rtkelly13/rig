@@ -122,8 +122,6 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
     /// <summary>Compare <paramref name="plan"/>'s desktops with <paramref name="actual"/>'s, position by position.</summary>
     public static WorkspaceDiff Of(WorkspacePlan plan, WorkspacePlan actual, IReadOnlyDictionary<string, string> substitutions)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(actual);
         var desktops = new List<DesktopDiff>();
         for (var index = 0; index < plan.Desktops.Count; index++)
         {
@@ -142,8 +140,6 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
     /// </summary>
     public static IReadOnlySet<string> EntriesMatchedOnPlannedScreen(DesktopPlan planned, DesktopPlan actual, IReadOnlyDictionary<string, string> substitutions)
     {
-        ArgumentNullException.ThrowIfNull(planned);
-        ArgumentNullException.ThrowIfNull(actual);
         var satisfied = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (entryIndex, windowIndex) in Match(planned, actual, substitutions).ByEntry)
         {
@@ -160,14 +156,12 @@ public sealed record WorkspaceDiff(IReadOnlyList<DesktopDiff> Desktops)
     /// <summary><paramref name="value"/> cut to <paramref name="limit"/> code points, ending <c>...</c> when cut.</summary>
     public static string TruncateText(string value, int limit)
     {
-        ArgumentNullException.ThrowIfNull(value);
         return UnicodeText.Length(value) <= limit ? value : UnicodeText.Prefix(value, limit - 3) + "...";
     }
 
     /// <summary>How a captured window reads in the diff: its title and process stem, with its pid.</summary>
     public static string WindowLabel(WindowSnapshot window)
     {
-        ArgumentNullException.ThrowIfNull(window);
         var process = string.IsNullOrEmpty(window.ProcessName) ? null : WindowsStem(window.ProcessName);
         var pid = window.Pid is { } known ? $" pid={known}" : string.Empty;
         return (window.Title.Length > 0, process) switch

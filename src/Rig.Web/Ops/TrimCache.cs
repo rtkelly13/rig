@@ -49,10 +49,6 @@ public sealed class TrimCache : IDisposable
         Func<Trimmable, CancellationToken, Task<string>> remove,
         Func<string> clock)
     {
-        ArgumentNullException.ThrowIfNull(scanAll);
-        ArgumentNullException.ThrowIfNull(recheck);
-        ArgumentNullException.ThrowIfNull(remove);
-        ArgumentNullException.ThrowIfNull(clock);
         _scanAll = scanAll;
         _recheck = recheck;
         _remove = remove;
@@ -112,7 +108,6 @@ public sealed class TrimCache : IDisposable
     /// <summary>Removes each requested path the last finished scan offered and the disk still allows.</summary>
     public async Task<IReadOnlyList<TrimResult>> ApplyAsync(IReadOnlyList<string> paths, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(paths);
         await _applyGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {

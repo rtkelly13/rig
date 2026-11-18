@@ -24,7 +24,6 @@ public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops des
     /// </summary>
     public long ChooseBestWindow(IReadOnlyList<long> handles, PlacementSpec? placement, int? targetDesktop = null)
     {
-        ArgumentNullException.ThrowIfNull(handles);
         if (handles.Count == 0)
         {
             throw new ArgumentException("Expected at least one window handle.", nameof(handles));
@@ -74,7 +73,6 @@ public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops des
         IReadOnlySet<long>? excluded = null,
         Action<string>? diagnostic = null)
     {
-        ArgumentNullException.ThrowIfNull(title);
         var deadline = _time.GetUtcNow() + timeout;
         var target = UnicodeText.CaseFold(title);
         excluded ??= new HashSet<long>();
@@ -116,7 +114,6 @@ public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops des
         TimeSpan? aliveProcessGrace = null,
         Action<string>? diagnostic = null)
     {
-        ArgumentNullException.ThrowIfNull(processName);
         var target = UnicodeText.CaseFold(processName);
         var deadline = _time.GetUtcNow() + timeout;
         var grace = aliveProcessGrace ?? TimeSpan.Zero;
@@ -186,7 +183,6 @@ public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops des
     /// <summary>Wait for <paramref name="handle"/> to take a title other than <paramref name="title"/>; its title then, or null when it is gone.</summary>
     public string? WaitForTitleChange(long handle, string title, TimeSpan timeout, Action<string>? diagnostic = null)
     {
-        ArgumentNullException.ThrowIfNull(title);
         var deadline = _time.GetUtcNow() + timeout;
         var target = UnicodeText.CaseFold(title);
         diagnostic?.Invoke($"Waiting for hwnd={handle} title to change from {title} within {timeout.TotalSeconds:F2}s");
@@ -235,7 +231,6 @@ public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops des
         long? handle = null,
         Action<string>? diagnostic = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         if (entry.Placement is not { } placement)
         {
             return new(false);
@@ -289,7 +284,6 @@ public sealed class EntryWindows(WindowInventory inventory, IVirtualDesktops des
         bool allowProcessFallbackForTerminals = false,
         Action<string>? diagnostic = null)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         diagnostic?.Invoke(
             $"Waiting for entry {entry.Name} title={entry.WindowTitle ?? "none"} process={entry.WindowProcessName ?? "none"} "
             + $"current_desktop_only={currentDesktopOnly} target_desktop={targetDesktop?.ToString(CultureInfo.InvariantCulture) ?? "none"} "

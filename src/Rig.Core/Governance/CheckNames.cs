@@ -61,7 +61,6 @@ public static partial class CheckNames
     /// <summary>Warnings about a check name's shape; empty when it conforms.</summary>
     public static IReadOnlyList<string> LintCheckName(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var warnings = new List<string>();
         if (Lexicon.Contains(name))
         {
@@ -109,7 +108,6 @@ public static partial class CheckNames
     /// </summary>
     public static string? SuggestPreferredName(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var words = Words(name).Select(word => word.ToLowerInvariant()).ToList();
         if (words.Count == 0)
         {
@@ -139,7 +137,6 @@ public static partial class CheckNames
     /// </summary>
     public static CheckNamesResult Inspect(string repoPath, string repo, RepoPolicies policies)
     {
-        ArgumentNullException.ThrowIfNull(policies);
         var required = policies.RequiredChecks(repo);
         var declared = DiscoverPrCheckNames(repoPath);
         if (declared.Count == 0)

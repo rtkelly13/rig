@@ -32,7 +32,6 @@ public static partial class MacRead
     /// <summary><paramref name="node"/> and every element below it, depth first, never entering a skipped role.</summary>
     public static IEnumerable<AxNode> Walk(AxNode node)
     {
-        ArgumentNullException.ThrowIfNull(node);
         var pending = new Stack<AxNode>([node]);
         while (pending.TryPop(out var current))
         {
@@ -50,7 +49,6 @@ public static partial class MacRead
     /// <summary>The one profile this window's avatar names; null when it names none, or several.</summary>
     public static ProfileMatch? ProfileOf(AxNode? node, IReadOnlyDictionary<string, ProfileInfo> profiles)
     {
-        ArgumentNullException.ThrowIfNull(profiles);
         if (node is null)
         {
             return null;
@@ -113,7 +111,6 @@ public static partial class MacRead
     /// </summary>
     public static IReadOnlyList<TabSlot> TabSlots(AxNode node, long windowId)
     {
-        ArgumentNullException.ThrowIfNull(node);
         var result = new List<TabSlot>();
         if (!Visit(node, windowId, result))
         {
@@ -153,7 +150,6 @@ public static partial class MacRead
     /// </summary>
     public static bool PinnedLabelsConsistent(IReadOnlyList<AxNode> nodes)
     {
-        ArgumentNullException.ThrowIfNull(nodes);
         var pinned = nodes.Select(node => TabNames.Parse(node.Name).Pinned).ToList();
         if (pinned.SkipWhile(flag => flag).Any(flag => flag))
         {
@@ -166,8 +162,6 @@ public static partial class MacRead
     /// <summary>Whether <paramref name="node"/> is <paramref name="raw"/>'s window by title: scripting abbreviates it, accessibility shows the active page's.</summary>
     public static bool MatchesWindowTitle(AxNode node, JxaWindow raw)
     {
-        ArgumentNullException.ThrowIfNull(node);
-        ArgumentNullException.ThrowIfNull(raw);
         if (node.Title == raw.Title)
         {
             return true;
@@ -185,7 +179,6 @@ public static partial class MacRead
     /// <summary>Whether <paramref name="node"/>'s tab strip repeats <paramref name="raw"/>'s titles and selection, in order.</summary>
     public static bool StripMatches(AxNode node, JxaWindow raw)
     {
-        ArgumentNullException.ThrowIfNull(raw);
         return Agrees(TabSlots(node, raw.Id), raw);
     }
 
@@ -196,8 +189,6 @@ public static partial class MacRead
     /// </summary>
     public static AxNode? WindowNode(IEnumerable<AxNode> axWindows, JxaWindow raw, IReadOnlyList<JxaWindow> records)
     {
-        ArgumentNullException.ThrowIfNull(axWindows);
-        ArgumentNullException.ThrowIfNull(records);
         var candidates = axWindows.ToList();
         foreach (var matches in new Func<AxNode, JxaWindow, bool>[] { MatchesWindowTitle, StripMatches })
         {
@@ -215,7 +206,6 @@ public static partial class MacRead
     /// <summary>Each scripting tab's native slot, in order; null when there is no window or the strips disagree.</summary>
     public static IReadOnlyList<TabSlot>? AlignedSlots(AxNode? node, JxaWindow raw)
     {
-        ArgumentNullException.ThrowIfNull(raw);
         if (node is null)
         {
             return null;
@@ -233,7 +223,6 @@ public static partial class MacRead
     /// </summary>
     public static IReadOnlyList<ChromeWindow> Windows(JxaSnapshot snapshot, IReadOnlyList<AxNode> axWindows, IReadOnlyDictionary<string, ProfileInfo> profiles)
     {
-        ArgumentNullException.ThrowIfNull(snapshot);
         var windows = new List<ChromeWindow>();
         var seenWindows = new HashSet<long>();
         var seenTabs = new HashSet<long>();
@@ -300,8 +289,6 @@ public static partial class MacRead
     /// </summary>
     public static ChromeTab Tab(JxaTab raw, int index, JxaWindow window, TabSlot? slot)
     {
-        ArgumentNullException.ThrowIfNull(raw);
-        ArgumentNullException.ThrowIfNull(window);
         if (raw.Id > int.MaxValue)
         {
             throw new ChromeMacException("Invalid Chrome tab identity");

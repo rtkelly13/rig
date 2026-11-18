@@ -12,7 +12,6 @@ public static class PlanExtensions
     public static bool HasDrift<TChange>(this IPlan<TChange> plan)
         where TChange : IChange
     {
-        ArgumentNullException.ThrowIfNull(plan);
         return plan.Changes.Any(change => change.Kind is ChangeKind.WouldChange or ChangeKind.Changed);
     }
 
@@ -25,7 +24,6 @@ public static class PlanExtensions
     public static int ExitCode<TChange>(this IPlan<TChange> plan, bool applied)
         where TChange : IChange
     {
-        ArgumentNullException.ThrowIfNull(plan);
         return plan.Errors.Count > 0 ? 2 : (plan.HasDrift() && !applied ? 1 : 0);
     }
 }

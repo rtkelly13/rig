@@ -66,7 +66,6 @@ public sealed record OrcaRepoIcon(
     /// </summary>
     public static OrcaRepoIcon For(string icon)
     {
-        ArgumentNullException.ThrowIfNull(icon);
         var trimmed = icon.Trim();
         if (trimmed.StartsWith("emoji:", StringComparison.Ordinal))
         {

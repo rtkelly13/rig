@@ -78,10 +78,6 @@ public sealed class ChromeUiaReader
         int attempts = ReadAttempts)
         where T : class
     {
-        ArgumentNullException.ThrowIfNull(read);
-        ArgumentNullException.ThrowIfNull(alive);
-        ArgumentNullException.ThrowIfNull(onRetry);
-        ArgumentNullException.ThrowIfNull(sleep);
         UiaException? last = null;
         for (var attempt = 0; attempt < attempts; attempt++)
         {
@@ -172,7 +168,6 @@ public sealed class ChromeUiaReader
     /// <summary>A tab's live element, re-found by runtime id; null when it has gone.</summary>
     public IUiaElement? FindTabElement(ChromeTab tab)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         if (_uia.ElementFromHandle(tab.WindowHandle) is not { } root || FindTabStrip(tab.WindowHandle, root) is not { } strip)
         {
             return null;
@@ -185,7 +180,6 @@ public sealed class ChromeUiaReader
     /// <summary>The tab's window strip, cached while its element stays live.</summary>
     public IUiaElement? FindTabStrip(long handle, IUiaElement root)
     {
-        ArgumentNullException.ThrowIfNull(root);
         if (_strips.TryGetValue(handle, out var cached))
         {
             try
@@ -212,7 +206,6 @@ public sealed class ChromeUiaReader
     /// <remarks>The tab's own "Part of group" suffix is not used: Chrome leaves it stale after a rename.</remarks>
     public static TabGroup? GroupOf(IUiaElement tab)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         if (GroupHeader(tab) is not var (view, header))
         {
             return null;
@@ -224,7 +217,6 @@ public sealed class ChromeUiaReader
     /// <summary>The header of the group holding the tab, and the group's view; null when it is in none.</summary>
     public static (IUiaElement View, IUiaElement Header)? GroupHeader(IUiaElement tab)
     {
-        ArgumentNullException.ThrowIfNull(tab);
         var parent = tab.Parent(UiaView.Raw);
         if (parent is null || parent.ClassName != GroupViewClass)
         {
@@ -306,7 +298,6 @@ public sealed class ChromeUiaReader
     /// <summary>Breadth-first search for a browser view by class that never descends into web content.</summary>
     public static IUiaElement? FindView(IUiaElement root, string className)
     {
-        ArgumentNullException.ThrowIfNull(root);
         List<IUiaElement> level = [root];
         for (var depth = 0; depth < StripSearchMaxDepth && level.Count > 0; depth++)
         {

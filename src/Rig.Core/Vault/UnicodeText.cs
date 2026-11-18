@@ -21,7 +21,6 @@ public static class UnicodeText
     /// <summary><paramref name="s"/> with whitespace (see <see cref="IsSpace"/>) off both ends.</summary>
     public static string Strip(string s)
     {
-        ArgumentNullException.ThrowIfNull(s);
         var start = 0;
         var end = s.Length;
         while (start < end && IsSpace(s[start]))
@@ -40,8 +39,6 @@ public static class UnicodeText
     /// <summary><paramref name="s"/> with any of <paramref name="chars"/> off both ends.</summary>
     public static string Strip(string s, string chars)
     {
-        ArgumentNullException.ThrowIfNull(s);
-        ArgumentNullException.ThrowIfNull(chars);
         return s.Trim(chars.ToCharArray());
     }
 
@@ -51,7 +48,6 @@ public static class UnicodeText
     /// </summary>
     public static string Lower(string s)
     {
-        ArgumentNullException.ThrowIfNull(s);
         var builder = new StringBuilder(s.Length);
         var runes = s.EnumerateRunes().ToArray();
         for (var i = 0; i < runes.Length; i++)
@@ -146,7 +142,6 @@ public static class UnicodeText
     /// <summary>The number of code points in <paramref name="s"/>.</summary>
     public static int Length(string s)
     {
-        ArgumentNullException.ThrowIfNull(s);
         return s.EnumerateRunes().Count();
     }
 
@@ -190,7 +185,6 @@ public static class UnicodeText
     /// </summary>
     public static IReadOnlyList<string> SplitLines(string s)
     {
-        ArgumentNullException.ThrowIfNull(s);
         var lines = new List<string>();
         var start = 0;
         for (var i = 0; i < s.Length; i++)
@@ -218,7 +212,6 @@ public static class UnicodeText
     /// <summary>The first <paramref name="count"/> code points of <paramref name="s"/>.</summary>
     public static string Prefix(string s, int count)
     {
-        ArgumentNullException.ThrowIfNull(s);
         var length = 0;
         foreach (var rune in s.EnumerateRunes().Take(count))
         {

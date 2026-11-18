@@ -14,7 +14,6 @@ public static partial class PlanFiles
     /// <summary>The plan in the file at <paramref name="path"/>, with a bundle's desktop files read from beside it.</summary>
     public static WorkspacePlan Load(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         return Parse(File.ReadAllText(path, Encoding.UTF8), path, Path.GetDirectoryName(Path.GetFullPath(path)));
     }
 
@@ -43,7 +42,6 @@ public static partial class PlanFiles
     /// <summary>Writes <paramref name="plan"/> to <paramref name="path"/> as one JSON file.</summary>
     public static void Save(WorkspacePlan plan, string path)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         WriteJson(path, plan.ToJson());
     }
 
@@ -53,7 +51,6 @@ public static partial class PlanFiles
     /// </summary>
     public static void SaveBundle(WorkspacePlan plan, string path, string desktopDirectoryName = "desktops")
     {
-        ArgumentNullException.ThrowIfNull(plan);
         var root = Path.GetDirectoryName(Path.GetFullPath(path))!;
         var desktopDirectory = Path.Join(root, desktopDirectoryName);
         _ = Directory.CreateDirectory(desktopDirectory);

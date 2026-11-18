@@ -34,7 +34,6 @@ public sealed partial class StepTimer(IRunLog log, string scope, Func<TimeSpan> 
     /// <param name="tags">Extra activity tags.</param>
     public TimedStep Step(string span, string? label = null, TimeSpan? slowAfter = null, IEnumerable<KeyValuePair<string, object?>>? tags = null)
     {
-        ArgumentNullException.ThrowIfNull(span);
         var name = label ?? (span.StartsWith("restore.", StringComparison.Ordinal) ? span["restore.".Length..] : span);
         var activity = Source.StartActivity(span);
         if (activity is not null)
@@ -64,7 +63,6 @@ public sealed partial class StepTimer(IRunLog log, string scope, Func<TimeSpan> 
     /// </summary>
     public static string NewTerminalRestoreToken(LaunchEntry entry)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         var slug = NotSlug().Replace(UnicodeText.CaseFold(entry.Name), "-").Trim('-');
         var suffix = Guid.NewGuid().ToString("N")[..8];
         return $"{(slug.Length > 0 ? slug : "terminal")}-{suffix}";
@@ -80,7 +78,6 @@ public sealed partial class StepTimer(IRunLog log, string scope, Func<TimeSpan> 
     /// </summary>
     public static TimeSpan EntryWindowWaitGrace(LaunchEntry entry)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         return entry.Type == LaunchEntry.Terminal ? TimeSpan.Zero : TimeSpan.FromSeconds(40);
     }
 
@@ -90,13 +87,11 @@ public sealed partial class StepTimer(IRunLog log, string scope, Func<TimeSpan> 
     /// <summary>A Windows Terminal PowerShell entry, which restore always relaunches and polls for readiness.</summary>
     public static bool ShouldForceTerminalRelaunch(LaunchEntry entry)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         return entry.Type == LaunchEntry.Terminal && entry.Shell == LaunchEntry.DefaultTerminalShell;
     }
 
     private static TimeSpan? OwnTimeout(LaunchEntry entry)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         return entry.WindowWaitTimeoutMs is { } ms and > 0 ? TimeSpan.FromMilliseconds(ms) : null;
     }
 

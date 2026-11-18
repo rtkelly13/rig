@@ -88,11 +88,6 @@ public sealed class Telemetry : IDisposable
         Func<double> clock,
         IDisposable? owned = null)
     {
-        ArgumentNullException.ThrowIfNull(clickhouseReachable);
-        ArgumentNullException.ThrowIfNull(clickhouseRecent);
-        ArgumentNullException.ThrowIfNull(fileRecent);
-        ArgumentNullException.ThrowIfNull(explorers);
-        ArgumentNullException.ThrowIfNull(clock);
         _reachable = clickhouseReachable;
         _clickhouse = clickhouseRecent;
         _files = fileRecent;
@@ -168,7 +163,6 @@ public sealed class Telemetry : IDisposable
     /// <summary>Recent traces, newest first, from ClickHouse when it answers and the files otherwise.</summary>
     public async Task<TraceListView> RecentAsync(TraceQuery query)
     {
-        ArgumentNullException.ThrowIfNull(query);
         var note = "ClickHouse unreachable: listing traces from local NDJSON files";
         if (await ClickhouseReachableAsync().ConfigureAwait(false))
         {

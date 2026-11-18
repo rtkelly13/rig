@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    SHORT-TERM (#318). Removes ArgumentNullException.ThrowIfNull on non-nullable parameters.
+    About 20 open PRs touch the same files, so the change is a re-runnable codemod instead of a hand edit.
+    Delete this project (and its rig.slnx entry) once it has run on the landed stack.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Use the parser shipped with the pinned SDK; no separate compiler/runtime version. -->
+    <Reference Include="Microsoft.CodeAnalysis" HintPath="$(MSBuildToolsPath)/Roslyn/bincore/Microsoft.CodeAnalysis.dll" />
+    <Reference Include="Microsoft.CodeAnalysis.CSharp" HintPath="$(MSBuildToolsPath)/Roslyn/bincore/Microsoft.CodeAnalysis.CSharp.dll" />
+  </ItemGroup>
+</Project>

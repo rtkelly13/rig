@@ -128,7 +128,6 @@ public static class OrcaProjects
 
     private static Task<JsonNode?> Call(OrcaRuntime runtime, string method, JsonObject? parameters, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(runtime);
         return runtime.CallAsync(method, parameters, cancellationToken);
     }
 

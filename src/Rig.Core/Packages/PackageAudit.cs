@@ -20,7 +20,6 @@ public static partial class PackageAudit
     public static async Task<IReadOnlyList<Finding>> AuditAsync(
         IReadOnlyList<PackageBinding> bindings, IPackageFetcher fetcher, DateTimeOffset now, bool trust, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(bindings);
         var perBinding = new List<List<Finding>>(bindings.Count);
         foreach (var binding in bindings)
         {
@@ -35,8 +34,6 @@ public static partial class PackageAudit
     public static async Task<List<Finding>> AuditBindingAsync(
         PackageBinding binding, IPackageFetcher fetcher, DateTimeOffset now, bool trust, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(binding);
-        ArgumentNullException.ThrowIfNull(fetcher);
         var spec = binding.Spec;
         var report = new Report($"{spec.Registry}:{spec.Name}");
         var declared = Slug(binding.Repo);
@@ -85,7 +82,6 @@ public static partial class PackageAudit
     /// <summary>Failures since the last success, newest first; cancelled and skipped runs neither break nor extend it.</summary>
     public static int ConsecutiveFailures(IEnumerable<string> conclusions)
     {
-        ArgumentNullException.ThrowIfNull(conclusions);
         var count = 0;
         foreach (var conclusion in conclusions)
         {

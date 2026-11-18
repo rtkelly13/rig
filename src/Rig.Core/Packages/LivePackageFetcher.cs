@@ -62,7 +62,6 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     /// <inheritdoc/>
     public async Task<Release?> RegistryReleaseAsync(PackageSpec spec, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(spec);
         if (!_releases.TryGetValue(spec, out var release))
         {
             release = spec.IsNpm
@@ -125,7 +124,6 @@ public sealed class LivePackageFetcher(HttpClient http, IGitHubApi github, IProc
     /// </summary>
     public static IReadOnlyList<TrustConfig> ParseNpmTrust(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var configs = new List<TrustConfig>();
         foreach (var document in Documents(text))
         {

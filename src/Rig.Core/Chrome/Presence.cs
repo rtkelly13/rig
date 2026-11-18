@@ -37,7 +37,6 @@ public static class Presence
     /// <summary>Seconds since the last input, across a tick-count wrap.</summary>
     public static double IdleSeconds(IPresence presence)
     {
-        ArgumentNullException.ThrowIfNull(presence);
         return unchecked(presence.NowTick() - presence.LastInputTick()) / 1000.0;
     }
 
@@ -54,9 +53,6 @@ public static class Presence
         double firstPause = 5.0,
         double maxPause = 60.0)
     {
-        ArgumentNullException.ThrowIfNull(blocked);
-        ArgumentNullException.ThrowIfNull(sleep);
-        ArgumentNullException.ThrowIfNull(clock);
         var started = clock();
         var pause = firstPause;
         var checks = 0;
@@ -98,7 +94,6 @@ public sealed class InputWatch
     /// <summary>Starts watching from now.</summary>
     public InputWatch(IPresence presence)
     {
-        ArgumentNullException.ThrowIfNull(presence);
         _presence = presence;
         _mark = presence.NowTick();
     }

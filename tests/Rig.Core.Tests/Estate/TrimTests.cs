@@ -410,21 +410,17 @@ public sealed class TrimTests : IDisposable
         var nonExistentItem = new Trimmable(_temp.Path, Path.Join(_temp.Path, "does-not-exist"), "cat", new TreeMeasure(1, 1));
         var failure = await Trim.RemoveAsync(nonExistentItem, removal, Token);
         Assert.StartsWith("failed:", failure, StringComparison.Ordinal);
-
-        await Assert.ThrowsAsync<ArgumentNullException>(() => Trim.RemoveAsync(null!, removal, Token));
-        await Assert.ThrowsAsync<ArgumentNullException>(() => Trim.RemoveAsync(trimmable, null!, Token));
     }
 
     [Fact]
     public async Task RecheckAsync_validates_existence_and_category()
     {
         var trim = Idle();
-        await Assert.ThrowsAsync<ArgumentNullException>(() => trim.RecheckAsync(null!));
 
         var missing = new Trimmable(_temp.Path, Path.Join(_temp.Path, "nonexistent-dir"), "node_modules", new TreeMeasure(1, 1));
         Assert.Equal("no longer exists", await trim.RecheckAsync(missing));
 
-        var (clone, worktree) = await CloneWithWorktreeAsync();
+        var (_, worktree) = await CloneWithWorktreeAsync();
         var candidateDir = Directory.CreateDirectory(Path.Join(worktree, "real-dir")).FullName;
         var mismatch = new Trimmable(worktree, candidateDir, "different-category", new TreeMeasure(1, 1));
         Assert.Equal("no longer regenerable output", await trim.RecheckAsync(mismatch));

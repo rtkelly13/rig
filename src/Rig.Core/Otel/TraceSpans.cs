@@ -45,7 +45,6 @@ public static class TraceSpans
     /// </summary>
     public static IReadOnlyList<FileSpan> Parse(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var spans = new List<FileSpan>();
         foreach (var line in UnicodeText.SplitLines(text))
         {
@@ -61,7 +60,6 @@ public static class TraceSpans
     /// <summary>One copy per span: the complete one when both were written, otherwise the last.</summary>
     public static IReadOnlyList<FileSpan> BestCopies(IEnumerable<FileSpan> spans)
     {
-        ArgumentNullException.ThrowIfNull(spans);
         var chosen = new OrderedDictionary<(string, string), FileSpan>();
         foreach (var span in spans)
         {
@@ -78,7 +76,6 @@ public static class TraceSpans
     /// <summary>OTLP/JSON request bodies for <paramref name="spans"/>, regrouped under their resource and scope, <paramref name="batch"/> spans each.</summary>
     public static IReadOnlyList<JsonObject> Envelopes(IReadOnlyList<FileSpan> spans, int batch = BatchSpans)
     {
-        ArgumentNullException.ThrowIfNull(spans);
         ArgumentOutOfRangeException.ThrowIfLessThan(batch, 1);
         var bodies = new List<JsonObject>();
         foreach (var chunk in spans.Chunk(batch))

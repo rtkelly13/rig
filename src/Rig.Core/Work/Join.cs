@@ -109,7 +109,6 @@ public static partial class WorkJoin
     /// <param name="turnState">The last turn: <c>answered</c>, <c>mid-tool</c> or <c>unanswered</c>.</param>
     public static WorkSessionState ClassifySession(string? liveStatus, bool isLive, bool cleared, bool exitedCleanly, string turnState)
     {
-        ArgumentNullException.ThrowIfNull(turnState);
         if (isLive)
         {
             return liveStatus == "idle" ? WorkSessionState.WaitingOnUser : WorkSessionState.Live;
@@ -139,10 +138,6 @@ public static partial class WorkJoin
         Func<string, bool> exists,
         Func<string, Attribution?> resolveUnknown)
     {
-        ArgumentNullException.ThrowIfNull(session);
-        ArgumentNullException.ThrowIfNull(index);
-        ArgumentNullException.ThrowIfNull(exists);
-        ArgumentNullException.ThrowIfNull(resolveUnknown);
         var cwd = string.IsNullOrEmpty(session.LastCwd) ? session.StartCwd : session.LastCwd;
         if (string.IsNullOrEmpty(cwd))
         {
@@ -183,8 +178,6 @@ public static partial class WorkJoin
         DateTimeOffset now,
         TimeSpan staleAfter)
     {
-        ArgumentNullException.ThrowIfNull(checkouts);
-        ArgumentNullException.ThrowIfNull(sessions);
         var signals = SignalsOf(pr, checkouts, sessions, branchRef);
         if (isTrunk)
         {
@@ -223,7 +216,6 @@ public static partial class WorkJoin
     /// <param name="staleAfter">How old activity may be before an item is stale.</param>
     public static IReadOnlyList<WorkItem> BuildItems(JoinInputs inputs, DateTimeOffset now, TimeSpan staleAfter)
     {
-        ArgumentNullException.ThrowIfNull(inputs);
         var views = Views(inputs);
         var byKey = new Dictionary<BranchKey, List<SessionFacts>>(BranchKeyComparer.Instance);
         var unattached = new List<SessionFacts>();
@@ -263,7 +255,6 @@ public static partial class WorkJoin
     /// <param name="items">The items to order.</param>
     public static IReadOnlyList<WorkItem> SortItems(IEnumerable<WorkItem> items)
     {
-        ArgumentNullException.ThrowIfNull(items);
         return
         [
             .. items
@@ -277,7 +268,6 @@ public static partial class WorkJoin
     /// <param name="item">The item.</param>
     public static bool IsQuietTrunk(WorkItem item)
     {
-        ArgumentNullException.ThrowIfNull(item);
         return item.State == WorkState.Trunk && item.Sessions.Count == 0 && !item.Dirty;
     }
 
@@ -286,8 +276,6 @@ public static partial class WorkJoin
     /// <param name="spec">What to keep.</param>
     public static IReadOnlyList<WorkItem> FilterItems(IEnumerable<WorkItem> items, ItemFilter spec)
     {
-        ArgumentNullException.ThrowIfNull(items);
-        ArgumentNullException.ThrowIfNull(spec);
         var kept = new List<WorkItem>();
         foreach (var item in items)
         {
@@ -322,7 +310,6 @@ public static partial class WorkJoin
     /// <param name="items">The items to count.</param>
     public static IReadOnlyDictionary<WorkState, int> CountStates(IEnumerable<WorkItem> items)
     {
-        ArgumentNullException.ThrowIfNull(items);
         var counts = StateOrder.ToDictionary(state => state, _ => 0);
         foreach (var item in items)
         {
@@ -533,7 +520,6 @@ public sealed class CheckoutIndex
     /// <param name="repos">The repos and their checkouts.</param>
     public CheckoutIndex(IEnumerable<RepoFacts> repos)
     {
-        ArgumentNullException.ThrowIfNull(repos);
         var located = new List<LocatedCheckout>();
         foreach (var repo in repos)
         {
@@ -554,7 +540,6 @@ public sealed class CheckoutIndex
     /// <param name="cwd">A session's working directory.</param>
     internal LocatedCheckout? Find(string cwd)
     {
-        ArgumentNullException.ThrowIfNull(cwd);
         var target = WorkPaths.Normalise(cwd);
         foreach (var entry in _located)
         {

@@ -32,10 +32,6 @@ public static class ChromeClosePlans
         ClosePlanOptions options,
         Action<string> say)
     {
-        ArgumentNullException.ThrowIfNull(windows);
-        ArgumentNullException.ThrowIfNull(resolution);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(say);
         using var activity = Source.StartActivity("chrome_tabs.plan_closes");
         var plans = new List<IClosePlan>();
         var held = new HashSet<RuntimeId>();

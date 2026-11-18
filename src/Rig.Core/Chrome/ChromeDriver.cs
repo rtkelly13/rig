@@ -144,7 +144,6 @@ public static class ChromeDesktopsExtensions
     /// </summary>
     public static void ReturnTo(this IChromeDesktops desktops, int? start)
     {
-        ArgumentNullException.ThrowIfNull(desktops);
         try
         {
             if (start is { } from && desktops.Current() is { } now && now != from)
@@ -250,8 +249,6 @@ public static class TabMenus
     /// </summary>
     public static bool NamesWindow(string entry, string activeTitle, int tabCount)
     {
-        ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(activeTitle);
         var others = tabCount - 1;
         var suffix = others == 0 ? string.Empty : $" and {others} other tab{(others == 1 ? string.Empty : "s")}";
         if (suffix.Length > 0 && !entry.EndsWith(suffix, StringComparison.Ordinal))

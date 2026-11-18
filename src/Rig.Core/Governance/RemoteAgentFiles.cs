@@ -72,8 +72,6 @@ public sealed class RemoteAgentFiles(IProc proc)
     /// </summary>
     public async Task<RemoteSweep> SweepAsync(IReadOnlyList<string> owners, Func<string, bool> isRegistered, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(owners);
-        ArgumentNullException.ThrowIfNull(isRegistered);
         var findings = new List<RemoteAgentFile>();
         var unread = new List<string>();
         foreach (var owner in owners)

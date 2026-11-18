@@ -231,7 +231,6 @@ public sealed class Triage(IProc proc)
     /// <summary>The bucket <paramref name="issue"/> falls in at <paramref name="now"/>.</summary>
     public static IssueBucket Categorize(IssueItem issue, DateTimeOffset now, int staleDays = StaleDays)
     {
-        ArgumentNullException.ThrowIfNull(issue);
         var labels = issue.LabelNames.Select(label => label.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
         if ((labels.Contains("status: needs-repro") || labels.Contains("needs-repro")) && issue.UpdatedAt is { } updated && WholeDays(now - updated) >= staleDays)
         {
@@ -255,7 +254,6 @@ public sealed class Triage(IProc proc)
     /// <summary>The bucket <paramref name="pr"/> falls in at <paramref name="now"/>.</summary>
     public static PrBucket Categorize(PrItem pr, DateTimeOffset now, int staleDays = StaleDays)
     {
-        ArgumentNullException.ThrowIfNull(pr);
         if (pr.IsDraft || pr.Failed.Count > 0 || pr.Missing.Count > 0 || pr.Mergeable == "CONFLICTING" || pr.MergeStateStatus is "DIRTY" or "BLOCKED")
         {
             return PrBucket.Blocked;
@@ -278,7 +276,6 @@ public sealed class Triage(IProc proc)
     /// <summary>The issues grouped into their buckets at <paramref name="now"/>.</summary>
     public static IssueDashboard Dashboard(IReadOnlyList<IssueItem> issues, DateTimeOffset now, int staleDays = StaleDays)
     {
-        ArgumentNullException.ThrowIfNull(issues);
         var buckets = Enum.GetValues<IssueBucket>().ToDictionary(bucket => bucket, _ => new List<IssueItem>());
         foreach (var issue in issues)
         {
@@ -291,7 +288,6 @@ public sealed class Triage(IProc proc)
     /// <summary>The PRs grouped into their buckets at <paramref name="now"/>.</summary>
     public static PrDashboard Dashboard(IReadOnlyList<PrItem> prs, DateTimeOffset now, int staleDays = StaleDays)
     {
-        ArgumentNullException.ThrowIfNull(prs);
         var buckets = Enum.GetValues<PrBucket>().ToDictionary(bucket => bucket, _ => new List<PrItem>());
         foreach (var pr in prs)
         {
@@ -326,7 +322,6 @@ public sealed class Triage(IProc proc)
     /// <summary>The repo's open PRs (at most 50), each with its checks sorted against <paramref name="requiredChecks"/>.</summary>
     public async Task<IReadOnlyList<PrItem>> PullRequestsAsync(string repo, IReadOnlyList<string> requiredChecks, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requiredChecks);
         return await ReadRowsAsync(
             ["gh", "pr", "list", "--repo", repo, "--state", "open", "--limit", "50", "--json", PrFields],
             row =>
@@ -380,7 +375,6 @@ public sealed class Triage(IProc proc)
     /// <summary>Brings the PR's branch up to date with its base through <c>gh pr update-branch</c>.</summary>
     public async Task<PrActionResult> UpdateBehindAsync(PrItem pr, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(pr);
         var ran = await proc.RunAsync(new ProcRequest(["gh", "pr", "update-branch", Number(pr), "--repo", pr.Repo]), cancellationToken).ConfigureAwait(false);
         return ran.Ok
             ? new(true, $"Successfully updated branch for {pr.ShortRef}")
@@ -394,8 +388,6 @@ public sealed class Triage(IProc proc)
     public async Task<PrActionResult> MergeReadyAsync(
         PrItem pr, Func<string, int, CancellationToken, Task<ReviewThreadsResult>> threads, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(pr);
-        ArgumentNullException.ThrowIfNull(threads);
         var resolved = await threads(pr.Repo, pr.Number, cancellationToken).ConfigureAwait(false);
         if (!resolved.IsAligned)
         {

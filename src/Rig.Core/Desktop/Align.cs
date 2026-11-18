@@ -226,10 +226,6 @@ public static class Align
         IReadOnlyList<LiveWindow> windows,
         IReadOnlyDictionary<string, string> substitutions)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(windows);
-        ArgumentNullException.ThrowIfNull(substitutions);
-
         var remaining = windows.ToList();
         var slots = new List<EntryMatch>();
         for (var desktopIndex = 1; desktopIndex <= plan.Desktops.Count; desktopIndex++)
@@ -291,10 +287,6 @@ public static class Align
     /// <summary>Whether the window is already in the placement's slot, by inferred placement or by position.</summary>
     public static bool PlacementInPlace(LiveWindow window, PlacementSpec placement, Func<PlacementSpec, Rect> targetRect)
     {
-        ArgumentNullException.ThrowIfNull(window);
-        ArgumentNullException.ThrowIfNull(placement);
-        ArgumentNullException.ThrowIfNull(targetRect);
-
         var inferred = window.InferredPlacement;
         if (inferred is not null && WindowReuse.SamePlacement(inferred, placement))
         {
@@ -315,8 +307,6 @@ public static class Align
     /// <summary>What align should do with one plan entry's window.</summary>
     public static AlignDecision Decide(EntryMatch match, AlignContext context)
     {
-        ArgumentNullException.ThrowIfNull(match);
-        ArgumentNullException.ThrowIfNull(context);
         var baseDecision = new AlignDecision(match.DesktopIndex, match.Desktop.Name, match.Entry, match.Window, AlignOutcome.Missing);
         if (match.Window is not { } window)
         {
@@ -360,8 +350,6 @@ public static class Align
     /// </summary>
     public static string? DesktopNameMismatch(WorkspacePlan plan, IReadOnlyList<string> liveNames)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(liveNames);
         for (var index = 1; index <= Math.Min(plan.Desktops.Count, liveNames.Count); index++)
         {
             var liveName = liveNames[index - 1];
@@ -378,7 +366,6 @@ public static class Align
     /// <summary>The one summary line the command prints.</summary>
     public static string SummaryLine(AlignReport report, bool dryRun)
     {
-        ArgumentNullException.ThrowIfNull(report);
         var prefix = dryRun ? "align (dry run)" : "align";
         if (report.Blocked is { } blocked)
         {
@@ -472,9 +459,6 @@ public static class Align
         bool reconcileDesktops = false,
         Action<string>? log = null)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(ports);
-        ArgumentNullException.ThrowIfNull(substitutions);
         log ??= _ => { };
 
         var targetIndex = RestoreExecutionPlan.ResolveTargetDesktopIndex(plan, targetDesktop);

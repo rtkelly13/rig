@@ -144,10 +144,6 @@ public sealed class UnattendedGrouping(
         bool unattended,
         Action showPausedNote)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(readWindows);
-        ArgumentNullException.ThrowIfNull(replan);
-        ArgumentNullException.ThrowIfNull(showPausedNote);
         var planned = plan.Moves.Count;
         var moved = 0;
         var created = false;

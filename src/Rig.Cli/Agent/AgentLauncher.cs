@@ -172,7 +172,6 @@ internal sealed partial class AgentLauncher(IProc proc, AgentHost host, TextWrit
     /// </summary>
     public static IReadOnlyList<string>? LauncherArgs(IReadOnlyList<string> args)
     {
-        ArgumentNullException.ThrowIfNull(args);
         return args.Count == 0 || ShortcutFlags.Contains(args[0]) ? args
             : args[0] == CommandName ? [.. args.Skip(1)]
             : null;
@@ -191,7 +190,6 @@ internal sealed partial class AgentLauncher(IProc proc, AgentHost host, TextWrit
     /// <exception cref="ArgumentException"><c>--use</c> ends the line.</exception>
     public static AgentArgs Parse(IReadOnlyList<string> args)
     {
-        ArgumentNullException.ThrowIfNull(args);
         var parsed = new AgentArgs(null, false, false, false, false, []);
         var at = 0;
         while (at < args.Count)
@@ -229,7 +227,6 @@ internal sealed partial class AgentLauncher(IProc proc, AgentHost host, TextWrit
     /// <summary>A Windows path as WSL sees it: <c>C:\code</c> is <c>/mnt/c/code</c>; a POSIX path is kept.</summary>
     public static string WslPath(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var raw = path.Replace('\\', '/');
         var drive = DrivePath().Match(raw);
         return drive.Success ? $"/mnt/{drive.Groups[1].Value.ToLowerInvariant()}/{drive.Groups[2].Value}" : raw;
@@ -239,8 +236,6 @@ internal sealed partial class AgentLauncher(IProc proc, AgentHost host, TextWrit
     /// <exception cref="ArgumentException">The line names an agent id rig does not know.</exception>
     public static AgentLaunch Resolve(AgentArgs parsed, AgentSettings settings, string workingDirectory)
     {
-        ArgumentNullException.ThrowIfNull(parsed);
-        ArgumentNullException.ThrowIfNull(settings);
         string id;
         if (parsed.Agent is not null)
         {

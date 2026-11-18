@@ -18,7 +18,6 @@ internal sealed class TextTable(string? title, IReadOnlyList<(string Heading, bo
     /// <param name="cells">One cell per column.</param>
     public TextTable Add(params string[] cells)
     {
-        ArgumentNullException.ThrowIfNull(cells);
         if (cells.Length != columns.Count)
         {
             throw new ArgumentException($"A row needs {columns.Count} cells, not {cells.Length}.", nameof(cells));
@@ -52,7 +51,6 @@ internal sealed class TextTable(string? title, IReadOnlyList<(string Heading, bo
     /// <param name="console">The output console.</param>
     public void RenderTo(IAnsiConsole console)
     {
-        ArgumentNullException.ThrowIfNull(console);
         console.Write(ToTable());
     }
 

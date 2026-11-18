@@ -289,14 +289,6 @@ public sealed class OrcaRuntimeTests : IDisposable
         Assert.Contains("answered settings.get in a shape", ex.Message, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task SetAgentDefaultArgsAsync_and_UpdateRepoAsync_validate_null_arguments()
-    {
-        var runtime = OrcaRuntime.Parse(Metadata, new ScriptedExchange())!;
-        await Assert.ThrowsAsync<ArgumentNullException>(() => runtime.SetAgentDefaultArgsAsync(null!, Token));
-        await Assert.ThrowsAsync<ArgumentNullException>(() => runtime.UpdateRepoAsync("path", null!, Token));
-    }
-
     private sealed class ScriptedExchange(params string[] lines) : IOrcaExchange
     {
         private int _calls;

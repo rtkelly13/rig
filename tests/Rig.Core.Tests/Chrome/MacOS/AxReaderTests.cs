@@ -221,9 +221,6 @@ public sealed class AxReaderTests
     }
 
     [Fact]
-    public void A_reader_needs_its_native_calls() => Assert.Throws<ArgumentNullException>(() => new AxReader(null!));
-
-    [Fact]
     public void The_unavailable_exception_keeps_its_cause()
     {
         var cause = new InvalidOperationException("stale");

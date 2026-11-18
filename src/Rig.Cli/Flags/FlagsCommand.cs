@@ -46,7 +46,7 @@ internal sealed class FlagsCommand(FlagStore store, TextWriter output, TextWrite
     {
         /// <summary>The declared flag to act on.</summary>
         [CliArgument(Name = "name", Description = "Flag name")]
-        public string Name { get; set; } = null!;
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>The stored overrides.</summary>
         protected FlagStore Store { get; } = store;

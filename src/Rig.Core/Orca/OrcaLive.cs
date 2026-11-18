@@ -62,7 +62,6 @@ public sealed class OrcaLive(OrcaRuntime? runtime) : IOrcaLive
     /// <inheritdoc />
     public async Task<IReadOnlyDictionary<string, string>?> SendLaunchLinesAsync(IReadOnlyDictionary<string, string> lines, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(lines);
         if (runtime is null)
         {
             return null;
@@ -96,7 +95,6 @@ public sealed class OrcaCliRunner(IProc proc, string? userData) : IOrcaCli
     /// <inheritdoc />
     public async Task<string?> RunAsync(IReadOnlyList<string> args, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(args);
         var request = new ProcRequest(["orca", .. args])
         {
             Environment = userData is null

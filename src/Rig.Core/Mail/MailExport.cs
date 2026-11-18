@@ -48,7 +48,6 @@ public static class MailExport
     /// <summary>The criteria and actions of <paramref name="rule"/> as Gmail filter properties, in Gmail's own order.</summary>
     public static IReadOnlyList<FilterProperty> FilterProperties(MailRule rule)
     {
-        ArgumentNullException.ThrowIfNull(rule);
         var (match, actions) = (rule.Match, rule.Actions);
         var props = new List<FilterProperty>();
         void Add(string name, string value, bool when)
@@ -80,7 +79,6 @@ public static class MailExport
     /// </summary>
     public static string FiltersXml(MailRuleSet ruleset, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(ruleset);
         var stamp = now.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
         var xml = new StringBuilder("<?xml version='1.0' encoding='UTF-8'?>\n")
             .Append(CultureInfo.InvariantCulture, $"<feed xmlns=\"{Atom}\" xmlns:apps=\"{Apps}\">\n");
@@ -109,7 +107,6 @@ public static class MailExport
     /// <summary>The sweep for every rule, or just the one named <paramref name="only"/>.</summary>
     public static IReadOnlyList<SweepStep> SweepPlan(MailRuleSet ruleset, string? only = null)
     {
-        ArgumentNullException.ThrowIfNull(ruleset);
         return
         [
             .. ruleset.Rules
@@ -144,7 +141,6 @@ public static class MailExport
     /// <summary>Every exportable rule as a Gmail API filter, matching <see cref="FiltersXml"/> field for field.</summary>
     public static IReadOnlyList<ApiFilter> ApiFilters(MailRuleSet ruleset)
     {
-        ArgumentNullException.ThrowIfNull(ruleset);
         return
         [
             .. ruleset.Rules.Where(r => r.Exportable).Select(rule =>

@@ -27,7 +27,6 @@ public static class VaultWalk
     /// <summary>Every entry under <paramref name="root"/> whose name ends in <c>.md</c>; the root itself is entered even when it is a symlink.</summary>
     public static IReadOnlyList<VaultEntry> Markdown(string root)
     {
-        ArgumentNullException.ThrowIfNull(root);
         var found = new List<VaultEntry>();
         Walk(root, [], found);
         return found;

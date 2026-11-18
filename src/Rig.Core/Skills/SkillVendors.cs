@@ -100,8 +100,6 @@ public sealed class SkillVendors(Git git, string clones, string vendored, bool w
     /// <exception cref="IOException">The clone failed.</exception>
     public async Task<string> CloneOrUpdateAsync(SkillVendor vendor, Action<string> say, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(vendor);
-        ArgumentNullException.ThrowIfNull(say);
         _ = Directory.CreateDirectory(clones);
         var repo = Path.Join(clones, vendor.CloneFolder);
         if (Directory.Exists(Path.Join(repo, ".git")))
@@ -146,7 +144,6 @@ public sealed class SkillVendors(Git git, string clones, string vendored, bool w
     /// </summary>
     public IReadOnlyList<string> Extract(SkillVendor vendor, string repo)
     {
-        ArgumentNullException.ThrowIfNull(vendor);
         var destination = Path.Join(vendored, vendor.Name);
         _ = Directory.CreateDirectory(destination);
         var root = Path.Join(repo, vendor.SkillsSubdir);
@@ -187,8 +184,6 @@ public sealed class SkillVendors(Git git, string clones, string vendored, bool w
     public async Task<IReadOnlyList<(string Vendor, IReadOnlyList<string> Skills)>> UpdateAsync(
         IReadOnlyList<SkillVendor> vendors, Action<string> say, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(vendors);
-        ArgumentNullException.ThrowIfNull(say);
         var results = new List<(string, IReadOnlyList<string>)>();
         foreach (var vendor in vendors)
         {

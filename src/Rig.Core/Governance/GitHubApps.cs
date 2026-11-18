@@ -57,7 +57,6 @@ public sealed class GitHubApps(IGitHubApi api, RepoPolicies policies, Func<strin
     /// </summary>
     public async Task<IReadOnlyList<AppAudit>> AuditAsync(string account, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(account);
         var declared = policies.AppsForAccount(account);
         if (declared.Count == 0)
         {

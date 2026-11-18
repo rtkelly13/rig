@@ -26,7 +26,6 @@ public static partial class QueueMarkdown
     /// <summary>Stable bytes for identical snapshots, with separate PR and issue ranks.</summary>
     public static string Render(IEnumerable<QueueItem> items)
     {
-        ArgumentNullException.ThrowIfNull(items);
         var snapshot = items.ToList();
         var rows = new List<string> { Begin, Header, Divider };
         foreach (var kind in new[] { "pr", "issue" })
@@ -50,7 +49,6 @@ public static partial class QueueMarkdown
     /// <summary>Checks structure, identity, ranks and canonical order without network, database or filesystem access.</summary>
     public static void Verify(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var block = Block(text);
         var rows = UnicodeText.SplitLines(block);
         if (!rows.Take(3).SequenceEqual([Begin, Header, Divider]))

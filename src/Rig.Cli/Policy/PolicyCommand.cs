@@ -48,7 +48,6 @@ internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWrit
     /// <summary>The systems <paramref name="names"/> select, or null when one is unknown; <c>agy</c> is Antigravity and <c>all</c> or none is every one.</summary>
     public static IReadOnlyList<string>? ResolveSystems(IReadOnlyList<string> names, out string? unknown)
     {
-        ArgumentNullException.ThrowIfNull(names);
         unknown = null;
         if (names.Count == 0)
         {

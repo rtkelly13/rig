@@ -215,18 +215,6 @@ public sealed class VirtualDesktopOperationsTests
         });
     }
 
-    [Fact]
-    public void The_operations_reject_null_desktops()
-    {
-        Assert.Throws<ArgumentNullException>(() => VirtualDesktopOperations.Exists(null!, 1));
-        Assert.Throws<ArgumentNullException>(() => VirtualDesktopOperations.GoTo(null!, 1));
-        Assert.Throws<ArgumentNullException>(() => VirtualDesktopOperations.Rename(null!, 1, "a"));
-        Assert.Throws<ArgumentNullException>(() => VirtualDesktopOperations.Rename(new FakeVirtualDesktops("a"), 1, null!));
-        Assert.Throws<ArgumentNullException>(() => VirtualDesktopOperations.MoveWindow(null!, 1, 1));
-        Assert.Throws<ArgumentNullException>(() => VirtualDesktopOperations.EnsureCount(null!, 1));
-        Assert.Throws<ArgumentNullException>(() => VirtualDesktopOperations.RetireSwitchedOff(null!, 1, []));
-        Assert.Throws<ArgumentNullException>(() => VirtualDesktopOperations.RetireSwitchedOff(new FakeVirtualDesktops("a"), 1, null!));
-    }
 
     [Fact]
     public void Rename_fails_when_the_desktop_goes_between_the_count_and_the_names()

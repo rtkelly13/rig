@@ -19,7 +19,6 @@ public static class ChromeHistory
     /// </summary>
     public static string? HistoryPath(Func<string, string?> environment, string profileDir)
     {
-        ArgumentNullException.ThrowIfNull(environment);
         return environment("LOCALAPPDATA") is { Length: > 0 } local
             ? Path.Join(local, "Google", "Chrome", "User Data", profileDir, "History")
             : null;
@@ -31,7 +30,6 @@ public static class ChromeHistory
     /// </summary>
     public static IReadOnlyDictionary<string, string> HostsByTitle(string? path, IEnumerable<string> titles)
     {
-        ArgumentNullException.ThrowIfNull(titles);
         var wanted = titles.Where(title => title.Length > 0).Distinct().Order(StringComparer.Ordinal).ToList();
         if (path is null || !File.Exists(path) || wanted.Count == 0)
         {

@@ -22,7 +22,6 @@ public static class RunLock
     /// <param name="sleep">Waits one step between tries.</param>
     public static IDisposable? Hold(string path, TimeSpan wait, Action<TimeSpan> sleep)
     {
-        ArgumentNullException.ThrowIfNull(sleep);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var stream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
         if (stream.Length == 0)

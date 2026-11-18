@@ -557,9 +557,4 @@ public sealed class ChromeTracesTests
         Assert.Equal([7.0], ChromeTraces.Summarise(found).Waits);
     }
 
-    [Fact]
-    public void A_parent_is_required_to_list_children()
-    {
-        Assert.Throws<ArgumentNullException>(() => FixtureRuns()[0].Children(null!));
-    }
 }

@@ -77,7 +77,6 @@ public sealed class OtelInstaller(HttpClient http)
     /// <exception cref="DigestMismatchException">The download is not the pinned one, or its archive lacks the binary.</exception>
     public Task<string> InstallAsync(Pin pin, string home, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(pin);
         return InstallAsync(
             pin.Url,
             pin.Sha256,
@@ -93,7 +92,6 @@ public sealed class OtelInstaller(HttpClient http)
     /// <exception cref="ArgumentException">The URL is not https.</exception>
     public async Task DownloadAsync(Uri url, string destination, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(url);
         if (url.Scheme != Uri.UriSchemeHttps)
         {
             throw new ArgumentException($"refusing non-HTTPS download: {url.OriginalString}", nameof(url));

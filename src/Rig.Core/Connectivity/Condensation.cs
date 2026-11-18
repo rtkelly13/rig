@@ -12,8 +12,6 @@ public static class Condensation
     /// </summary>
     public static Dag Condense(IReadOnlyList<GraphProject> projects, IReadOnlyList<Dependency> dependencies)
     {
-        ArgumentNullException.ThrowIfNull(projects);
-        ArgumentNullException.ThrowIfNull(dependencies);
         var adjacency = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
         foreach (var project in projects)
         {

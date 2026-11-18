@@ -142,8 +142,6 @@ public sealed class EstateAudit(Git git, EstateScopes scopes)
         IReadOnlySet<string> skip,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(specs);
-        ArgumentNullException.ThrowIfNull(skip);
         var managed = new List<EstateItem>();
         var worktrees = new List<EstateItem>();
         var unmanaged = new List<EstateItem>();
@@ -262,7 +260,6 @@ public sealed class EstateAudit(Git git, EstateScopes scopes)
     /// </summary>
     public async Task<CleanOutcome> CleanAsync(EstateItem item, bool dryRun, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(item);
         if (item.Kind is EstateItemKind.ManagedRepo or EstateItemKind.KnownSystem or EstateItemKind.RetainedArchive)
         {
             return new(false, $"Refused: {item.Name} is a managed, system, or retained archive item");

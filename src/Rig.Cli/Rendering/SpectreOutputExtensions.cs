@@ -15,8 +15,6 @@ internal static class SpectreOutputExtensions
     /// <param name="detail">The reason, a count, or the command that resolves it.</param>
     public static void RenderVerdict(this IAnsiConsole console, string title, bool ok, string? detail = null)
     {
-        ArgumentNullException.ThrowIfNull(console);
-
         var color = ok ? "green" : "red";
         var badge = ok ? "PASS" : "FAIL";
         var body = $"[{color} bold]{badge}[/]  {TextSanitizer.Markup(title)}";

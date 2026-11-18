@@ -113,7 +113,6 @@ public sealed class ServiceManager(ServiceHost host)
     /// <exception cref="ProcException">The platform's service manager refused the registration.</exception>
     public async Task<ServiceResult> InstallAsync(ServiceTarget target, bool preview, int? port, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(target);
         var effectivePort = target.Port(preview, port);
         var arguments = target.Arguments(effectivePort, preview);
         IReadOnlyList<string> command = [.. host.RigCommand, .. arguments];
@@ -129,7 +128,6 @@ public sealed class ServiceManager(ServiceHost host)
     /// <summary>Unload and remove <paramref name="target"/>.</summary>
     public async Task<ServiceResult> UninstallAsync(ServiceTarget target, bool preview, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(target);
         return host.Platform switch
         {
             ServicePlatform.MacOS => new ServiceResult(await UninstallMacAsync(target, preview, cancellationToken).ConfigureAwait(false)),
@@ -142,7 +140,6 @@ public sealed class ServiceManager(ServiceHost host)
     /// <summary>Report whether <paramref name="target"/> is installed, running and listening.</summary>
     public async Task<ServiceStatus> StatusAsync(ServiceTarget target, bool preview, int? port, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(target);
         var effectivePort = target.Port(preview, port);
         return host.Platform switch
         {
@@ -159,7 +156,6 @@ public sealed class ServiceManager(ServiceHost host)
     /// </summary>
     public async Task<bool> EnsureAsync(ServiceTarget target, int? port, TimeSpan timeout, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(target);
         var effectivePort = target.Port(preview: false, port);
         if (effectivePort is not { } listeningPort)
         {
@@ -189,7 +185,6 @@ public sealed class ServiceManager(ServiceHost host)
     /// <summary>The LaunchAgent label for <paramref name="target"/>.</summary>
     public static string Label(ServiceTarget target, bool preview)
     {
-        ArgumentNullException.ThrowIfNull(target);
         return $"com.rtkelly.rig.{target.Name}{(preview ? ".preview" : string.Empty)}";
     }
 
@@ -200,14 +195,12 @@ public sealed class ServiceManager(ServiceHost host)
     /// <summary>The Task Scheduler task's name.</summary>
     public static string TaskName(ServiceTarget target, bool preview)
     {
-        ArgumentNullException.ThrowIfNull(target);
         return $"Shared Utilities\\{target.DisplayName}{(preview ? " Preview" : string.Empty)}";
     }
 
     /// <summary>The systemd user unit's name.</summary>
     public static string UnitName(ServiceTarget target, bool preview)
     {
-        ArgumentNullException.ThrowIfNull(target);
         return $"rig-{target.Name}{(preview ? ".preview" : string.Empty)}.service";
     }
 
@@ -218,8 +211,6 @@ public sealed class ServiceManager(ServiceHost host)
     /// <summary>The LaunchAgent plist for <paramref name="target"/>.</summary>
     public static byte[] RenderPlist(ServiceHost host, ServiceTarget target, bool preview, int? port, IReadOnlyList<string> command)
     {
-        ArgumentNullException.ThrowIfNull(host);
-        ArgumentNullException.ThrowIfNull(target);
         var label = Label(target, preview);
         var log = Path.Join(host.Home, "Library", "Logs", $"rig-{target.Name}{(preview ? "-preview" : string.Empty)}.log");
         var entries = new Dictionary<string, object>(StringComparer.Ordinal)
@@ -247,8 +238,6 @@ public sealed class ServiceManager(ServiceHost host)
     /// <summary>The systemd user unit for <paramref name="target"/>.</summary>
     public static string RenderUnit(ServiceHost host, ServiceTarget target, bool preview, IReadOnlyList<string> command)
     {
-        ArgumentNullException.ThrowIfNull(host);
-        ArgumentNullException.ThrowIfNull(target);
         var restart = target.LongLived ? "Restart=always\nRestartSec=2\n" : string.Empty;
         var description = $"rig {target.Name}{(preview ? " preview" : string.Empty)}";
         return new StringBuilder()

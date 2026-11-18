@@ -378,8 +378,6 @@ public sealed record WorkspacePlan
     /// </summary>
     public OrderedDictionary<string, string> Substitutions(IReadOnlyDictionary<string, string> environment, IReadOnlyDictionary<string, string> machine)
     {
-        ArgumentNullException.ThrowIfNull(environment);
-        ArgumentNullException.ThrowIfNull(machine);
         var values = new OrderedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var layer in new[] { environment, Aliases, machine })
         {

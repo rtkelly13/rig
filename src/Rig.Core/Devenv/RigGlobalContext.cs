@@ -82,8 +82,6 @@ public static class RigGlobalContext
     /// </summary>
     public static void Write(string path, string content, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(path);
-        ArgumentNullException.ThrowIfNull(content);
         var full = Path.GetFullPath(path);
         if (new FileInfo(full).LinkTarget is not null)
         {

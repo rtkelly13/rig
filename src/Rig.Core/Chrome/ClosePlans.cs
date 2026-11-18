@@ -95,14 +95,12 @@ public static class ClosePlans
     /// <summary><c>"2 in window 1"</c>: the tab's 1-based position and its window's number.</summary>
     public static string Describe(IPlacedTab item)
     {
-        ArgumentNullException.ThrowIfNull(item);
         return $"{item.Tab.Index + 1} in window {item.WindowNumber}";
     }
 
     /// <summary>Window to the tab to select because the window's active tab closed and its keeper is there.</summary>
     public static IReadOnlyDictionary<long, ChromeTab> Activations(IEnumerable<IPlannedTabClose> closes)
     {
-        ArgumentNullException.ThrowIfNull(closes);
         var chosen = new Dictionary<long, ChromeTab>();
         foreach (var close in closes)
         {
@@ -132,9 +130,6 @@ public static class ClosePlans
         IEnumerable<long>? order = null,
         Action<ChromeWindow, IReadOnlyList<AppliedClose>>? afterWindow = null)
     {
-        ArgumentNullException.ThrowIfNull(plans);
-        ArgumentNullException.ThrowIfNull(windows);
-        ArgumentNullException.ThrowIfNull(actions);
         var byWindow = plans.SelectMany(plan => plan.Closes).GroupBy(close => close.Item.Tab.WindowHandle)
             .ToDictionary(group => group.Key, group => group.ToList());
         var known = new Dictionary<long, ChromeWindow>();
@@ -186,7 +181,6 @@ public static class ClosePlans
     /// </summary>
     public static HeldPlan HoldUnattended(IEnumerable<IClosePlan> plans, long? foregroundHandle)
     {
-        ArgumentNullException.ThrowIfNull(plans);
         var kept = new List<IPlannedTabClose>();
         var held = new List<IPlannedTabClose>();
         foreach (var close in plans.SelectMany(plan => plan.Closes))

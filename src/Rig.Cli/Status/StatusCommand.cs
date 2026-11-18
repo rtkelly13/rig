@@ -60,7 +60,6 @@ internal sealed class StatusCommand(IProc proc, Git git, string workingDirectory
     /// <summary>The report as machine-safe text: a verdict line, then one row per check.</summary>
     public static string Render(IReadOnlyList<StatusResult> results)
     {
-        ArgumentNullException.ThrowIfNull(results);
         return $"{(results.All(r => r.Passed) ? "Healthy" : "Issues Found")}\n{Table(results).Render()}";
     }
 

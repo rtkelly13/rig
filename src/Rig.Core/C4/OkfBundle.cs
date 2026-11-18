@@ -147,8 +147,6 @@ public static partial class OkfBundle
     /// </summary>
     public static string? ResolveHref(string fromId, string href)
     {
-        ArgumentNullException.ThrowIfNull(fromId);
-        ArgumentNullException.ThrowIfNull(href);
         if (IsExternalOrAnchor(href))
         {
             return null;
@@ -187,7 +185,6 @@ public static partial class OkfBundle
     /// <summary>Every concept under <paramref name="root"/>, keyed by concept id. Hidden directories are skipped.</summary>
     public static Bundle Load(string root)
     {
-        ArgumentNullException.ThrowIfNull(root);
         var resolved = Path.GetFullPath(root);
         var concepts = new Dictionary<string, Concept>(StringComparer.Ordinal);
         foreach (var path in Directory.EnumerateFiles(resolved, "*.md", SearchOption.AllDirectories).Order(FolderByFolder))
@@ -209,8 +206,6 @@ public static partial class OkfBundle
     /// <summary>Read one concept at <paramref name="path"/> inside the bundle rooted at <paramref name="root"/>.</summary>
     public static Concept LoadConcept(string root, string path)
     {
-        ArgumentNullException.ThrowIfNull(root);
-        ArgumentNullException.ThrowIfNull(path);
         var relative = Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/');
         var conceptId = relative.EndsWith(".md", StringComparison.Ordinal) ? relative[..^3] : relative;
         var text = NormaliseNewlines(File.ReadAllText(path));
@@ -246,7 +241,6 @@ public static partial class OkfBundle
     /// <param name="text">The concept's text, with <c>\n</c> newlines.</param>
     public static (string? Frontmatter, string Body) SplitFrontmatter(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         if (!text.StartsWith("---", StringComparison.Ordinal))
         {
             return (null, text);
@@ -267,14 +261,12 @@ public static partial class OkfBundle
     /// <summary>Text with every line ending as <c>\n</c>.</summary>
     public static string NormaliseNewlines(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         return text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
     }
 
     /// <summary>The lines of text already normalised to <c>\n</c>: a trailing newline adds no line.</summary>
     public static string[] SplitLines(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         if (text.Length == 0)
         {
             return [];
@@ -287,7 +279,6 @@ public static partial class OkfBundle
     /// <summary>The lines of text already normalised to <c>\n</c>, each keeping its newline.</summary>
     private static List<string> SplitKeepingEnds(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
         var lines = new List<string>();
         var start = 0;
         for (var index = 0; index < text.Length; index++)

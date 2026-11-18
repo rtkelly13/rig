@@ -125,7 +125,6 @@ public sealed class ConfigLoaderTests : IDisposable
     public void ConfigLoader_validates_null_or_empty_arguments()
     {
         Assert.Throws<ArgumentException>(() => ConfigLoader.Load<ManagedProjectsConfig>("", EstateConfigJsonContext.Default.ManagedProjectsConfig));
-        Assert.Throws<ArgumentNullException>(() => ConfigLoader.Load<ManagedProjectsConfig>("/path", null!));
     }
 
     [Fact]

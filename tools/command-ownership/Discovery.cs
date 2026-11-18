@@ -68,7 +68,7 @@ internal static class Discovery
                     // to the production CLI entry point whose tree we inspected above.
                     CheckLauncher(File.ReadAllText(Path.Join(root, "src/Rig.Launcher/Launcher.cs")));
                 }
-                else if (project is not ("src/Rig.Cli/Rig.Cli.csproj" or "tools/command-ownership/CommandOwnership.csproj"))
+                else if (project is not ("src/Rig.Cli/Rig.Cli.csproj" or "tools/command-ownership/CommandOwnership.csproj" or "tools/null-guards/NullGuards.csproj"))
                 {
                     throw new InvalidOperationException($"Unsupported executable project: {project}; add its runtime discovery adapter");
                 }

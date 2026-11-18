@@ -48,7 +48,6 @@ public static class GitSetup
     /// </summary>
     public static bool AddIdentity(string home, GitIdentity identity, bool windows)
     {
-        ArgumentNullException.ThrowIfNull(identity);
         var path = ConfigPath(home);
         if (SettingsFile.Load(path) is not { } config)
         {
@@ -80,7 +79,6 @@ public static class GitSetup
     /// <summary>The <c>~/.gitconfig-{id}</c> profile an identity's folder includes.</summary>
     public static string Profile(GitIdentity identity)
     {
-        ArgumentNullException.ThrowIfNull(identity);
         var text = $"[user]\n\tname = {identity.Name}\n\temail = {identity.Email}\n";
         return identity.SigningKey is null ? text : text + $"\tsigningkey = {identity.SigningKey}\n";
     }
@@ -88,7 +86,6 @@ public static class GitSetup
     /// <summary>The <c>includeIf</c> block routing <paramref name="matchDirectory"/> to <paramref name="profile"/>.</summary>
     public static string IncludeBlock(string matchDirectory, string profile)
     {
-        ArgumentNullException.ThrowIfNull(matchDirectory);
         return $"[includeIf \"gitdir:{matchDirectory.TrimEnd('/', '\\')}/\"]\n\tpath = {profile}\n";
     }
 
@@ -98,8 +95,6 @@ public static class GitSetup
     /// </summary>
     public static string WithIncludes(string gitconfig, string home, IEnumerable<GitIdentity> identities)
     {
-        ArgumentNullException.ThrowIfNull(gitconfig);
-        ArgumentNullException.ThrowIfNull(identities);
         var text = gitconfig;
         foreach (var identity in identities.Where(i => !string.IsNullOrEmpty(i.MatchDirectory)))
         {

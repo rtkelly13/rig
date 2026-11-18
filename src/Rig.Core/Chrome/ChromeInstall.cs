@@ -40,7 +40,6 @@ public static class ChromeInstall
 
     private static string Local(Func<string, string?> environment, string home)
     {
-        ArgumentNullException.ThrowIfNull(environment);
         return environment("LOCALAPPDATA") is { Length: > 0 } set ? set : Path.Join(home, "AppData", "Local");
     }
 }

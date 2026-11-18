@@ -119,7 +119,6 @@ public sealed class OrganiseRunner(
     /// <param name="cancellationToken">Cancels the GitHub lookups.</param>
     public async Task<OrganiseResult> RunAsync(OrganiseOptions options, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(options);
         Validate(options);
         using var run = Source.StartActivity(ChromeTraces.RunSpan);
         run?.SetTag("chrome.trigger", options.Trigger);

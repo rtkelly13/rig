@@ -110,7 +110,6 @@ public sealed class ClickHousePair(
     /// </summary>
     public async Task<int?> RunningPidAsync(StackPart part, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(part);
         string text;
         try
         {
@@ -140,7 +139,6 @@ public sealed class ClickHousePair(
     /// <exception cref="StartupException">A part exited during startup, or did not answer within <see cref="UpWait"/>.</exception>
     public async Task<UpResult> UpAsync(string server, string contrib, Func<CancellationToken, Task<bool>> ping, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(ping);
         var configs = WriteConfigs();
         List<string> started = [];
         List<string> already = [];

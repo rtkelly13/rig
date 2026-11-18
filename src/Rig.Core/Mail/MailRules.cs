@@ -84,7 +84,6 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     /// </summary>
     public static string DefaultPath(Func<string, string?> environment, string home, string personal)
     {
-        ArgumentNullException.ThrowIfNull(environment);
         if (environment(RulesVariable) is { Length: > 0 } configured)
         {
             return configured == "~" ? home : configured.StartsWith("~/", StringComparison.Ordinal) ? Path.Join(home, configured[2..]) : configured;
@@ -97,7 +96,6 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     /// <exception cref="RulesException">The file is missing or its rules are not valid.</exception>
     public static MailRuleSet Load(string path)
     {
-        ArgumentNullException.ThrowIfNull(path);
         var shown = path.Replace('\\', '/');
         if (!File.Exists(path))
         {
@@ -111,7 +109,6 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     /// <exception cref="RulesException">The text is not YAML, does not fit the schema, or holds a rule that cannot work.</exception>
     public static MailRuleSet Parse(string text, string where = "rules")
     {
-        ArgumentNullException.ThrowIfNull(text);
         YamlValue? loaded;
         try
         {
@@ -139,7 +136,6 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     /// <summary>The Gmail search that selects what <paramref name="match"/> selects, as a filter would see it.</summary>
     public static string MatchQuery(MailMatch match)
     {
-        ArgumentNullException.ThrowIfNull(match);
         var parts = new List<string>();
         if (match.Senders.Count > 0)
         {
@@ -177,7 +173,6 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     /// </summary>
     public static string SweepQuery(MailRule rule)
     {
-        ArgumentNullException.ThrowIfNull(rule);
         var parts = new List<string> { MatchQuery(rule.Match) };
         if (rule.Actions.LeavesInbox)
         {
@@ -203,7 +198,6 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
     /// <summary>Gmail's search form of a label name: stripped, lowercased, each run of whitespace and <c>/</c> one <c>-</c>.</summary>
     public static string SearchLabel(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var text = new StringBuilder();
         var inRun = false;
         foreach (var c in UnicodeText.Strip(name))

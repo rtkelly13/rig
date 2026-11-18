@@ -116,7 +116,6 @@ public sealed class PullRequests(Git git, IGitHubApi github)
     /// <param name="mergedHeads">From <see cref="MergedHeadsAsync"/>; null when GitHub was not asked.</param>
     public static async Task<int?> MergedPrAsync(Git git, string repo, string branch, IReadOnlyDictionary<string, PullRequest>? mergedHeads)
     {
-        ArgumentNullException.ThrowIfNull(git);
         if (mergedHeads is null)
         {
             return null;

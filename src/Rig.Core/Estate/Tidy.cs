@@ -143,7 +143,6 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
         IReadOnlyCollection<string>? checks = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(report);
         var plan = await PlanAsync(new TidyTarget(report, force, mergedHeads, busy, checks), cancellationToken).ConfigureAwait(false);
         if (apply)
         {
@@ -158,7 +157,6 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
     /// <param name="ct">Stops between findings.</param>
     public async Task<TidyPlan> PlanAsync(TidyTarget target, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(target);
         var report = target.Report;
         var plan = new TidyPlan { Target = target };
         var actionable = report.Findings
@@ -183,7 +181,6 @@ public sealed class Tidy(Git git, TreeRemoval removal) : IReconciler<TidyTarget,
     /// <param name="ct">Stops between findings.</param>
     public async Task<IReadOnlyList<string>> ApplyAsync(TidyPlan plan, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         for (var index = 0; index < plan.Changes.Count; index++)
         {
             ct.ThrowIfCancellationRequested();

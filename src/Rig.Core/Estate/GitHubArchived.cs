@@ -43,7 +43,6 @@ public static partial class GitHubArchived
     /// <remarks><c>gh api graphql</c> exits non-zero when any repo is missing but still prints the rest, so the exit code is not read.</remarks>
     public static async Task<IReadOnlySet<string>?> SlugsAsync(IGitHubApi github, IEnumerable<string> slugs, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(github);
         var query = BuildQuery(slugs);
         if (query.Length == 0)
         {

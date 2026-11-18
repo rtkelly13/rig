@@ -209,7 +209,6 @@ public sealed partial class Caches(IProc proc, Func<string, string?> findTool, T
     /// <summary>Locates <paramref name="cache"/>, measures it, and with <paramref name="apply"/> prunes it and measures again.</summary>
     public async Task<Pruned> PruneToolCacheAsync(ToolCache cache, bool apply, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(cache);
         if (findTool(cache.Tool) is not { } exe)
         {
             return new Pruned(cache.Category, cache.Command, PruneStatus.Skipped, $"{cache.Tool} not found on PATH");

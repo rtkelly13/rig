@@ -6,7 +6,6 @@ public static class FileGuard
     /// <summary>The result of <paramref name="read"/>, or <paramref name="fallback"/> when it throws <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/>.</summary>
     public static T Try<T>(Func<T> read, T fallback)
     {
-        ArgumentNullException.ThrowIfNull(read);
         try
         {
             return read();

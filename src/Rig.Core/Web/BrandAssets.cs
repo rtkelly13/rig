@@ -24,7 +24,6 @@ public static class BrandAssets
     /// </summary>
     public static string ProjectDir(string assetsRoot, string projectName)
     {
-        ArgumentNullException.ThrowIfNull(projectName);
         var direct = Path.Join(assetsRoot, projectName);
         if (Directory.Exists(direct) || !Directory.Exists(assetsRoot))
         {

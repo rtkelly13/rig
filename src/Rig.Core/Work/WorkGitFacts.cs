@@ -43,8 +43,6 @@ public static partial class WorkGitParsers
     /// <param name="track">The <c>%(upstream:track)</c> text.</param>
     public static Track ParseTrack(string upstream, string track)
     {
-        ArgumentNullException.ThrowIfNull(upstream);
-        ArgumentNullException.ThrowIfNull(track);
         if (upstream.Length == 0)
         {
             return new Track(null, null, false);
@@ -77,7 +75,6 @@ public static partial class WorkGitParsers
     /// <param name="output">Raw <c>git for-each-ref</c> output.</param>
     public static IReadOnlyList<string> RefTips(string output)
     {
-        ArgumentNullException.ThrowIfNull(output);
         var tips = new List<string>();
         foreach (var line in Lines(output))
         {
@@ -99,8 +96,6 @@ public static partial class WorkGitParsers
     /// <param name="tips">The branch tips to count for.</param>
     public static IReadOnlyDictionary<string, int> UnpushedCounts(string revListParents, IEnumerable<string> tips)
     {
-        ArgumentNullException.ThrowIfNull(revListParents);
-        ArgumentNullException.ThrowIfNull(tips);
         var parents = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var line in Lines(revListParents))
         {
@@ -145,7 +140,6 @@ public static partial class WorkGitParsers
     /// <param name="unpushed">A tip sha's unpushed count; a missing entry means 0.</param>
     public static RefScan ParseRefs(string output, IReadOnlyDictionary<string, int>? unpushed = null)
     {
-        ArgumentNullException.ThrowIfNull(output);
         var branches = new List<BranchRef>();
         var defaultBranch = string.Empty;
         foreach (var line in Lines(output))
@@ -189,8 +183,6 @@ public static partial class WorkGitParsers
     /// <param name="root">The code root.</param>
     public static string RepoDisplayName(string repo, string root)
     {
-        ArgumentNullException.ThrowIfNull(repo);
-        ArgumentNullException.ThrowIfNull(root);
         var trimmed = repo.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var relative = Path.GetRelativePath(root, trimmed);
         var outside = Path.IsPathRooted(relative)
@@ -223,7 +215,6 @@ public sealed class WorkGitFacts(Git git, CloneDiscovery discovery, int workers 
     /// <inheritdoc />
     public async Task<IReadOnlyList<RepoFacts>> ReadEstateAsync(string root, bool refresh, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(root);
         var paths = discovery.Repos(root, refresh).Paths;
         var results = new RepoFacts[paths.Count];
         await Parallel.ForEachAsync(
@@ -236,7 +227,6 @@ public sealed class WorkGitFacts(Git git, CloneDiscovery discovery, int workers 
     /// <inheritdoc />
     public async Task<IReadOnlyList<RepoFacts>> ProbeCheckoutsAsync(IReadOnlyList<RepoFacts> repos, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(repos);
         var results = new IReadOnlyList<Checkout>[repos.Count];
         await Parallel.ForEachAsync(
             Enumerable.Range(0, repos.Count),
@@ -257,7 +247,6 @@ public sealed class WorkGitFacts(Git git, CloneDiscovery discovery, int workers 
     /// <inheritdoc />
     public async Task<IReadOnlyDictionary<string, string>> ReadSlugsAsync(IReadOnlyList<string> repos, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(repos);
         var slugs = new string[repos.Count];
         await Parallel.ForEachAsync(
             Enumerable.Range(0, repos.Count),
@@ -278,8 +267,6 @@ public sealed class WorkGitFacts(Git git, CloneDiscovery discovery, int workers 
     /// <param name="cancellationToken">Stops the reads.</param>
     public async Task<RepoFacts> ReadRepoAsync(string repo, string root, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(repo);
-        ArgumentNullException.ThrowIfNull(root);
         var refs = await git.RunAsync(repo, ["for-each-ref", $"--format={WorkGitParsers.RefFormat}", "refs/heads", "refs/remotes/origin/HEAD"], cancellationToken: cancellationToken).ConfigureAwait(false);
         var refText = refs.Ok ? refs.Out : string.Empty;
         var orphans = await git.RunAsync(
@@ -304,7 +291,6 @@ public sealed class WorkGitFacts(Git git, CloneDiscovery discovery, int workers 
     /// <param name="cancellationToken">Stops the read.</param>
     public async Task<string> ReadSlugAsync(string repo, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(repo);
         var ran = await git.RunAsync(repo, ["remote", "get-url", "origin"], TimeSpan.FromSeconds(10), cancellationToken: cancellationToken).ConfigureAwait(false);
         return ran.Ok ? RepoSlug.FromRemote(ran.Out.Trim())?.FullName ?? string.Empty : string.Empty;
     }
