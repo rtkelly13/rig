@@ -175,25 +175,25 @@ internal static class DomParser
             switch (reader.NodeType)
             {
                 case XmlNodeType.Element:
-                {
-                    var element = ReadElement(reader);
-                    var empty = reader.IsEmptyElement;
-                    if (current is null)
                     {
-                        root = element;
-                    }
-                    else
-                    {
-                        current.Append(element);
-                    }
+                        var element = ReadElement(reader);
+                        var empty = reader.IsEmptyElement;
+                        if (current is null)
+                        {
+                            root = element;
+                        }
+                        else
+                        {
+                            current.Append(element);
+                        }
 
-                    if (!empty)
-                    {
-                        current = element;
-                    }
+                        if (!empty)
+                        {
+                            current = element;
+                        }
 
-                    break;
-                }
+                        break;
+                    }
 
                 case XmlNodeType.EndElement:
                     current = current?.Parent;
