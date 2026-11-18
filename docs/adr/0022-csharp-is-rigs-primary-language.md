@@ -1,6 +1,6 @@
 # ADR 0022: C# on .NET 10 Is rig's Primary Language
 
-- **Status:** Accepted; item 7 (`image_drift` stays Python) is superseded by [ADR 0024](0024-image-pipeline-in-csharp.md)
+- **Status:** Accepted; item 2 (Central Package Management) is superseded by [ADR 0025](0025-paket-for-nuget-dependencies.md); item 7 (`image_drift` stays Python) is superseded by [ADR 0024](0024-image-pipeline-in-csharp.md)
 - **Applies to:** all of rig except the brand-asset pipeline (`image_drift`)
 - **Supersedes:** [0002](0002-uv-for-python-packaging.md), [0003](0003-pyright-strict-type-checking.md) and
   [0004](0004-ruff-for-linting-and-formatting.md) for everything except `image_drift`. Amends
@@ -31,7 +31,7 @@ library reproduces those bytes, so porting it would change every production cut.
    enabled, warnings as errors and `AnalysisLevel` `latest-all`.
 2. **Packages use Central Package Management** (`Directory.Packages.props`), as every sibling .NET repo does,
    so Renovate's nuget manager keeps them current. Paket was considered and rejected: it is unused elsewhere
-   in the estate and Renovate does not manage it natively.
+   in the estate and Renovate does not manage it natively. *Superseded by [ADR 0025](0025-paket-for-nuget-dependencies.md): packages are managed by Paket.*
 3. **The CLI is System.CommandLine with Spectre.Console rendering.** rig's command tree is three levels deep
    (`rig gh threads list`); System.CommandLine supports nested subcommands natively, and oxbow already uses
    the same pairing. CommandLineParser was considered and rejected: it supports one level of verbs and has
