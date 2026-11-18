@@ -54,7 +54,7 @@ public sealed class PlanFileSnapshotTests
     }
 
     [Fact]
-    public void A_plan_using_every_field_in_lax_spellings_writes_back_as_recorded() =>
+    public void A_plan_using_every_field_writes_back_as_recorded() =>
         Assert.Equal(Snapshot("full-plan"), PlanFiles.Format(FullPlan().ToJson()));
 
     [Fact]

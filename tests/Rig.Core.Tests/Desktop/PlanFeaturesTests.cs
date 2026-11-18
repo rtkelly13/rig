@@ -124,7 +124,7 @@ public sealed class PlanFeaturesTests
     public void Features_from_a_plan_file_switch_entries_off()
     {
         var plan = PlanFiles.Parse(
-            """{"features": {"wt-terminals": true, "warp-terminals": "off"}, "desktops": [{"name": "Work", "launch": [{"name": "WT 1", "feature": "wt-terminals"}, {"name": "Warp 1", "feature": "warp-terminals"}]}]}""");
+            """{"features": {"wt-terminals": true, "warp-terminals": false}, "desktops": [{"name": "Work", "launch": [{"name": "WT 1", "feature": "wt-terminals"}, {"name": "Warp 1", "feature": "warp-terminals"}]}]}""");
 
         Assert.Equal(["Warp 1"], DisabledNames(PlanFeatures.Apply(plan)));
     }

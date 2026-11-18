@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Rig.Core.Text;
@@ -24,21 +23,22 @@ public static partial class PlanFiles
     /// <c>columns</c> layout gets the count the plan as written asks for (<see cref="Placement.FitColumns"/> with no
     /// screen widths).
     /// </summary>
-    public static WorkspacePlan Parse(string text, string source = "<memory>", string? baseDirectory = null)
-    {
-        var data = PlanJsonReader.Object(ParseJson(text, source));
-        var plan = data.ContainsKey("bundle") ? ResolveBundle(data, source, baseDirectory) : PlanJsonReader.WorkspacePlan(data);
-        return Placement.FitColumns(plan, new Dictionary<int, int>());
-    }
+    public static WorkspacePlan Parse(string text, string source = "<memory>", string? baseDirectory = null) =>
+        JsonProblem.Run(source, () =>
+        {
+            var data = PlanJsonReader.Object(JsonProblem.Parse(source, text));
+            var plan = data.ContainsKey("bundle") ? ResolveBundle(data, source, baseDirectory) : PlanJsonReader.WorkspacePlan(data);
+            return Placement.FitColumns(plan, new Dictionary<int, int>());
+        });
 
     /// <summary>The desktop a single desktop file holds, as a bundle lists them.</summary>
     public static DesktopPlan ParseDesktop(string text, string source = "<memory>") =>
-        PlanJsonReader.DesktopPlan(ParseJson(text, source));
+        JsonProblem.Run(source, () => PlanJsonReader.DesktopPlan(JsonProblem.Parse(source, text), "$"));
 
     /// <summary>One launch entry from a standalone JSON file, as <c>workspace launch-file</c> reads it.</summary>
-    /// <exception cref="InvalidPlanException">The text is not a JSON object that holds a launch entry.</exception>
+    /// <exception cref="JsonInputException">The text is not a JSON object that holds a launch entry.</exception>
     public static LaunchEntry ParseLaunchEntry(string text, string source = "<memory>") =>
-        PlanJsonReader.LaunchItem(ParseJson(text, source));
+        JsonProblem.Run(source, () => PlanJsonReader.LaunchItem(JsonProblem.Parse(source, text), "$"));
 
     /// <summary>Writes <paramref name="plan"/> to <paramref name="path"/> as one JSON file.</summary>
     public static void Save(WorkspacePlan plan, string path)
@@ -96,105 +96,59 @@ public static partial class PlanFiles
         File.WriteAllText(path, Format(json), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
-    private static JsonNode? ParseJson(string text, string source)
-    {
-        try
-        {
-            return JsonNode.Parse(text);
-        }
-        catch (JsonException e)
-        {
-            throw new InvalidPlanException($"Workspace plan {source} is not valid JSON: {e.Message}", e);
-        }
-    }
-
     // A plan whose desktops live in separate files: {"bundle": {"desktops": [{"path": ...}], "aliases": {...}}, ...}.
     private static WorkspacePlan ResolveBundle(JsonObject data, string source, string? baseDirectory)
     {
-        if (data["bundle"] is not JsonObject body
-            || (body.ContainsKey("aliases") && body["aliases"] is not JsonObject))
+        PlanJsonReader.Only(data, PlanJsonReader.RootFields);
+        var body = PlanJsonReader.Object(data["bundle"], PlanJsonReader.PathOf(data, "bundle"));
+        PlanJsonReader.Only(body, ["desktops", "aliases"]);
+        var refs = PlanJsonReader.List(body, "desktops", (node, path) => PlanJsonReader.Object(node, path));
+        var desktops = refs.Select(reference => BundledDesktop(reference, source, baseDirectory)).ToList();
+        var aliases = PlanJsonReader.TextMap(data, "aliases");
+        foreach (var (key, value) in PlanJsonReader.TextMap(body, "aliases"))
         {
-            throw new InvalidPlanException(PlanJsonReader.EntryNotObject);
-        }
-
-        if (body.ContainsKey("desktops") && body["desktops"] is not JsonArray)
-        {
-            throw new InvalidPlanException($"Bundle desktops must be a list in {source}");
-        }
-
-        var loaded = new List<(JsonObject Ref, string Path, JsonObject Data)>();
-        foreach (var item in body["desktops"] as JsonArray ?? [])
-        {
-            var reference = PlanJsonReader.Object(item);
-            var relative = reference["path"] is JsonValue text && text.GetValueKind() == JsonValueKind.String ? text.GetValue<string>() : null;
-            if (string.IsNullOrWhiteSpace(relative))
-            {
-                throw new InvalidPlanException($"Bundle desktop entries must define a relative path in {source}");
-            }
-
-            if (baseDirectory is null)
-            {
-                throw new InvalidPlanException($"Bundle desktop entries in {source} require a filesystem base directory");
-            }
-
-            var desktopPath = Path.GetFullPath(Path.Join(baseDirectory, relative));
-            var desktopData = PlanJsonReader.Object(ParseJson(File.ReadAllText(desktopPath, Encoding.UTF8), desktopPath));
-            loaded.Add((reference, desktopPath, desktopData));
-        }
-
-        var desktops = loaded.Select(desktop => BundledDesktop(desktop.Ref, desktop.Path, desktop.Data, source)).ToList();
-        var aliases = new OrderedDictionary<string, string>(StringComparer.Ordinal);
-        foreach (var layer in new[] { data["aliases"] as JsonObject, body["aliases"] as JsonObject })
-        {
-            foreach (var (key, value) in layer ?? [])
-            {
-                aliases[key] = YamlString(value);
-            }
+            aliases[key] = value;
         }
 
         // The bundle root's own settings; its inline desktops count only when the bundle lists none.
-        return new WorkspacePlan
-        {
-            Version = PlanJsonReader.Int(data, "version", WorkspacePlan.CurrentVersion),
-            Workspace = PlanJsonReader.OptionalText(data, "workspace"),
-            PersonalWorkspace = PlanJsonReader.OptionalText(data, "personal-workspace"),
-            SwitchDelayMs = PlanJsonReader.Int(data, "switch_delay_ms", 650),
-            Desktops = desktops.Count > 0 ? desktops : PlanJsonReader.List(data, "desktops", PlanJsonReader.DesktopPlan),
-            Notes = PlanJsonReader.List(data, "notes", node => PlanJsonReader.Text(node, "notes")),
-            Aliases = aliases,
-            Features = PlanJsonReader.FeatureMap(data["features"]),
-        };
+        return PlanJsonReader.PlanSettings(data, desktops.Count > 0 ? desktops : PlanJsonReader.List(data, "desktops", PlanJsonReader.DesktopPlan)) with { Aliases = aliases };
     }
 
-    // The desktop file as the plan sees it. The ref is where a desktop is switched on or off, so the bundle file alone
-    // shows the shape of the workspace without opening every desktop file.
-    private static DesktopPlan BundledDesktop(JsonObject reference, string path, JsonObject data, string source)
+    // The desktop file a bundle ref points at, as the plan sees it. The ref is where a desktop is switched on or off, so the
+    // bundle file alone shows the shape of the workspace without opening every desktop file.
+    private static DesktopPlan BundledDesktop(JsonObject reference, string source, string? baseDirectory)
     {
-        var fileName = PlanJsonReader.OptionalText(data, "name");
-        var file = new DesktopPlan(fileName ?? string.Empty)
+        PlanJsonReader.Only(reference, ["path", "name", "feature", "disabled"]);
+        var relative = PlanJsonReader.RequiredText(reference, "path");
+        if (string.IsNullOrWhiteSpace(relative))
         {
-            Launch = PlanJsonReader.Launches(data),
-            CapturedWindows = PlanJsonReader.CapturedWindows(data),
-            Disabled = PlanJsonReader.Bool(data, "disabled"),
-            Feature = PlanJsonReader.OptionalText(data, "feature"),
-        };
-        var name = PlanJsonReader.OptionalText(reference, "name") ?? fileName
-            ?? throw new InvalidPlanException($"Bundle desktop {path.Replace('\\', '/')} in {source} must define a name");
-        return file with
+            throw JsonProblem.Expected(PlanJsonReader.PathOf(reference, "path"), "a relative path", $"the string \"{relative}\"");
+        }
+
+        if (baseDirectory is null)
+        {
+            throw new InvalidPlanException($"Bundle desktop entries in {source} require a filesystem base directory");
+        }
+
+        var refName = PlanJsonReader.OptionalText(reference, "name");
+        var refFeature = PlanJsonReader.OptionalText(reference, "feature");
+        bool? refDisabled = reference.ContainsKey("disabled") ? PlanJsonReader.Bool(reference, "disabled") : null;
+        var desktopPath = Path.GetFullPath(Path.Join(baseDirectory, relative));
+        var file = JsonProblem.Run(desktopPath, () =>
+        {
+            var data = PlanJsonReader.Object(JsonProblem.Parse(desktopPath, File.ReadAllText(desktopPath, Encoding.UTF8)));
+            PlanJsonReader.Only(data, PlanJsonReader.DesktopFields);
+            return (Plan: PlanJsonReader.DesktopContents(data, string.Empty), Name: PlanJsonReader.OptionalText(data, "name"));
+        });
+        var name = refName ?? file.Name
+            ?? throw new InvalidPlanException($"Bundle desktop {desktopPath.Replace('\\', '/')} in {source} must define a name");
+        return file.Plan with
         {
             Name = name,
-            Disabled = reference["disabled"] is { } disabled ? PlanJsonReader.Truthy(disabled) : file.Disabled,
-            Feature = PlanJsonReader.OptionalText(reference, "feature") ?? file.Feature,
+            Disabled = refDisabled ?? file.Plan.Disabled,
+            Feature = refFeature ?? file.Plan.Feature,
         };
     }
-
-    // A bundle alias value as text: text as itself, null as "None", numbers and booleans.
-    private static string YamlString(JsonNode? node) => node switch
-    {
-        null => "None",
-        JsonValue value => PlanJsonReader.Text(value, "aliases"),
-        _ => node.ToJsonString(),
-    };
 
     [GeneratedRegex("[^A-Za-z0-9]+")]
     private static partial Regex NotAlphanumeric();

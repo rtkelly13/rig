@@ -2,6 +2,7 @@
 using System.CommandLine;
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Desktop;
 
@@ -127,7 +128,7 @@ internal sealed partial class DesktopWorkspaceCommand
         {
             plan = Load(path, enable, disable);
         }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
+        catch (Exception error) when (error is InvalidPlanException or JsonInputException or UnknownFeatureException or IOException)
         {
             Report($"align: error: {error.Message}", echo: true);
             return 1;

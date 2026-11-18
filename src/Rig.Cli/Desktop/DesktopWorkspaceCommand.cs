@@ -2,6 +2,7 @@
 using System.CommandLine;
 using System.Diagnostics.CodeAnalysis;
 using Rig.Core.Desktop;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Desktop;
 
@@ -121,7 +122,7 @@ internal sealed partial class DesktopWorkspaceCommand(DesktopHost host)
         {
             return new Loaded(path, verify ? Load(path, enable ?? [], disable ?? []) : LoadContext(path, enable ?? [], disable ?? []));
         }
-        catch (Exception error) when (error is InvalidPlanException or UnknownFeatureException or IOException)
+        catch (Exception error) when (error is InvalidPlanException or JsonInputException or UnknownFeatureException or IOException)
         {
             await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
             return null;

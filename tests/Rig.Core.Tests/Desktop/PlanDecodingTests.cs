@@ -1,163 +1,156 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Desktop;
+using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Desktop;
 
 /// <summary>
-/// Hand-edited plan values read through the lax decoding the plan files were recorded with. Each expectation is a recorded result for the same input.
+/// Plan values are read strictly: a number is a JSON integer, a flag a JSON boolean, text a JSON string, and a rejection
+/// names the source, the JSON path, what was expected and what was found.
 /// </summary>
 public sealed class PlanDecodingTests
 {
     [Theory]
-    [InlineData("900", 900)]
-    [InlineData("1.0", 1)]
-    [InlineData("\"900\"", 900)]
-    [InlineData("\" 900 \"", 900)]
-    [InlineData("true", 1)]
-    [InlineData("\"1.0\"", 1)]
-    public void A_whole_number_in_any_spelling_is_a_delay(string json, int expected) =>
-        Assert.Equal(expected, Entry($$"""{"name": "n", "delay_ms": {{json}}}""").DelayMs);
+    [InlineData("900")]
+    [InlineData("-1")]
+    public void A_whole_number_is_a_delay(string json) =>
+        Assert.Equal(int.Parse(json, System.Globalization.CultureInfo.InvariantCulture), Entry($$"""{"name": "n", "delay_ms": {{json}}}""").DelayMs);
 
     [Theory]
-    [InlineData("1.5")]
-    [InlineData("null")]
-    [InlineData("\"x\"")]
-    [InlineData("\"1e3\"")]
-    public void A_delay_that_is_not_a_whole_number_is_an_error(string json) =>
-        Assert.Throws<InvalidPlanException>(() => Entry($$"""{"name": "n", "delay_ms": {{json}}}"""));
+    [InlineData("1.0", "the number 1.0")]
+    [InlineData("1.5", "the number 1.5")]
+    [InlineData("null", "null")]
+    [InlineData("true", "true")]
+    [InlineData("\"900\"", "the string \"900\"")]
+    [InlineData("\"1.0\"", "the string \"1.0\"")]
+    [InlineData("99999999999", "the number 99999999999")]
+    public void A_delay_that_is_not_a_whole_number_says_what_it_found(string json, string found) =>
+        Assert.Equal(
+            $"<memory>: $.desktops[0].launch[0].delay_ms: expected a whole number, found {found}",
+            Assert.Throws<JsonInputException>(() => Entry($$"""{"name": "n", "delay_ms": {{json}}}""")).Message);
 
     [Theory]
     [InlineData("true", true)]
-    [InlineData("1", true)]
-    [InlineData("0", false)]
-    [InlineData("1.0", true)]
-    [InlineData("\"yes\"", true)]
-    [InlineData("\"on\"", true)]
-    [InlineData("\"off\"", false)]
-    [InlineData("\"t\"", true)]
-    [InlineData("\"Y\"", true)]
-    [InlineData("\"TRUE\"", true)]
-    public void A_yes_or_no_in_any_spelling_is_a_flag(string json, bool expected) =>
+    [InlineData("false", false)]
+    public void A_flag_is_a_json_boolean(string json, bool expected) =>
         Assert.Equal(expected, Entry($$"""{"name": "n", "single_instance": {{json}}}""").SingleInstance);
 
     [Theory]
-    [InlineData("2")]
-    [InlineData("\"nope\"")]
-    [InlineData("null")]
-    public void A_flag_that_is_neither_yes_nor_no_is_an_error(string json) =>
-        Assert.Throws<InvalidPlanException>(() => Entry($$"""{"name": "n", "single_instance": {{json}}}"""));
+    [InlineData("1", "the number 1")]
+    [InlineData("0", "the number 0")]
+    [InlineData("\"yes\"", "the string \"yes\"")]
+    [InlineData("\"false\"", "the string \"false\"")]
+    [InlineData("null", "null")]
+    [InlineData("[]", "a list")]
+    public void A_flag_that_is_not_a_boolean_says_what_it_found(string json, string found) =>
+        Assert.Equal(
+            $"<memory>: $.desktops[0].launch[0].single_instance: expected true or false, found {found}",
+            Assert.Throws<JsonInputException>(() => Entry($$"""{"name": "n", "single_instance": {{json}}}""")).Message);
 
-    [Theory]
-    [InlineData("5", 5)]
-    [InlineData("\"5\"", 5)]
-    [InlineData("true", 1)]
-    [InlineData("1.5", null)]
-    [InlineData("\"x\"", null)]
-    [InlineData("null", null)]
-    public void An_unreadable_optional_timeout_is_absent(string json, int? expected) =>
-        Assert.Equal(expected, Entry($$"""{"name": "n", "window_wait_timeout_ms": {{json}}}""").WindowWaitTimeoutMs);
-
-    [Theory]
-    [InlineData("1", "1")]
-    [InlineData("1.5", "1.5")]
-    [InlineData("true", "True")]
-    [InlineData("1e20", "1E+20")]
-    [InlineData("100000000000000000000", "100000000000000000000")]
-    public void A_number_or_boolean_where_text_belongs_reads_as_recorded(string json, string expected) =>
-        Assert.Equal(expected, Entry($$"""{"name": "n", "path": {{json}}}""").Path);
-
-    [Theory]
-    [InlineData("""{"name": "n", "path": false}""", "False")]
-    [InlineData("""{"name": "n", "delay_ms": false}""", "0")]
-    public void False_reads_as_recorded(string json, string expected)
+    [Fact]
+    public void An_optional_timeout_is_a_whole_number_or_absent()
     {
-        var entry = Entry(json);
-
-        Assert.Equal(expected, entry.Path ?? entry.DelayMs.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Equal(5, Entry("""{"name": "n", "window_wait_timeout_ms": 5}""").WindowWaitTimeoutMs);
+        Assert.Null(Entry("""{"name": "n"}""").WindowWaitTimeoutMs);
     }
 
     [Theory]
-    [InlineData("""{"name": "n", "single_instance": []}""")]
-    [InlineData("""{"name": "n", "placement": {"layout": {"mode": "full"}}}""")]
-    [InlineData("""{"name": "n", "placement": {"screen": [], "layout": {"mode": "full"}}}""")]
-    public void A_value_of_the_wrong_kind_where_one_is_required_is_an_error(string json) =>
-        Assert.Throws<InvalidPlanException>(() => Entry(json));
-
-    [Fact]
-    public void Args_read_every_scalar_as_text_and_anything_but_a_list_as_none()
+    [InlineData("""{"name": "n", "window_wait_timeout_ms": "5"}""", "$.desktops[0].launch[0].window_wait_timeout_ms: expected a whole number, found the string \"5\"")]
+    [InlineData("""{"name": "n", "window_wait_timeout_ms": null}""", "$.desktops[0].launch[0].window_wait_timeout_ms: expected a whole number, found null")]
+    [InlineData("""{"name": "n", "path": 1}""", "$.desktops[0].launch[0].path: expected a string, found the number 1")]
+    [InlineData("""{"name": "n", "path": true}""", "$.desktops[0].launch[0].path: expected a string, found true")]
+    [InlineData("""{"name": 5}""", "$.desktops[0].launch[0].name: expected a string, found the number 5")]
+    [InlineData("""{"name": null}""", "$.desktops[0].launch[0].name: expected a string, found null")]
+    [InlineData("""{}""", "$.desktops[0].launch[0].name: expected a string, found nothing")]
+    [InlineData("""{"name": "n", "args": "a"}""", "$.desktops[0].launch[0].args: expected a list, found the string \"a\"")]
+    [InlineData("""{"name": "n", "args": ["a", 1]}""", "$.desktops[0].launch[0].args[1]: expected a string, found the number 1")]
+    [InlineData("""{"name": "n", "args": ["a", null]}""", "$.desktops[0].launch[0].args[1]: expected a string, found null")]
+    [InlineData("""{"name": "n", "placement": "x"}""", "$.desktops[0].launch[0].placement: expected an object, found the string \"x\"")]
+    [InlineData("""{"name": "n", "placement": {"layout": {"mode": "full"}}}""", "$.desktops[0].launch[0].placement.screen: expected a whole number, found nothing")]
+    [InlineData("""{"name": "n", "placement": {"screen": "2", "layout": {"mode": "full"}}}""", "$.desktops[0].launch[0].placement.screen: expected a whole number, found the string \"2\"")]
+    [InlineData("""{"name": "n", "placement": {"screen": 1}}""", "$.desktops[0].launch[0].placement.layout: expected an object, found nothing")]
+    [InlineData("""{"name": "n", "placement": {"screen": 1, "layout": {"mode": "thirds", "slot": "2"}}}""", "$.desktops[0].launch[0].placement.layout.slot: expected a whole number, found the string \"2\"")]
+    [InlineData("""{"name": "n", "placement": {"screen": 1, "layout": {"mode": "columns", "min_width": "800"}}}""", "$.desktops[0].launch[0].placement.layout.min_width: expected a whole number, found the string \"800\"")]
+    [InlineData("""{"name": "n", "placement": {"screen": 1, "layout": {"mode": "full"}, "subdivide": []}}""", "$.desktops[0].launch[0].placement.subdivide: expected an object, found a list")]
+    [InlineData("""{"name": "n", "colour": "red"}""", "$.desktops[0].launch[0].colour: expected a known field (")]
+    public void A_rejected_value_names_its_path_what_was_expected_and_what_was_found(string json, string message)
     {
-        Assert.Equal(["a", "1", "2.5", "True"], Entry("""{"name": "n", "args": ["a", 1, 2.5, true]}""").Args);
-        Assert.Empty(Entry("""{"name": "n", "args": "a"}""").Args);
-        Assert.Throws<InvalidPlanException>(() => Entry("""{"name": "n", "args": ["a", null]}"""));
+        var error = Assert.Throws<JsonInputException>(() => Entry(json));
+
+        Assert.StartsWith("<memory>: " + message, error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void An_entry_needs_a_name_but_any_scalar_will_do()
+    public void A_rejection_names_the_file_it_came_from() =>
+        Assert.Equal(
+            "plan.json: $.switch_delay_ms: expected a whole number, found the string \"650\"",
+            Assert.Throws<JsonInputException>(() => PlanFiles.Parse("""{"switch_delay_ms": "650"}""", "plan.json")).Message);
+
+    [Fact]
+    public void An_unknown_field_is_rejected_at_every_level()
     {
-        Assert.Equal("5", Entry("""{"name": 5}""").Name);
-        Assert.Equal("True", Entry("""{"name": true}""").Name);
-        Assert.Throws<InvalidPlanException>(() => Entry("""{"name": null}"""));
+        Assert.Contains("$.personal_workspace: expected a known field", Assert.Throws<JsonInputException>(() => PlanFiles.Parse("""{"personal_workspace": "q"}""")).Message, StringComparison.Ordinal);
+        Assert.Contains("$.desktops[0].extra: expected a known field", Assert.Throws<JsonInputException>(() => PlanFiles.Parse("""{"desktops": [{"name": "d", "extra": 1}]}""")).Message, StringComparison.Ordinal);
+        Assert.Contains("$.desktops[0].captured_windows[0].extra", Assert.Throws<JsonInputException>(() => PlanFiles.Parse("""{"desktops": [{"name": "d", "captured_windows": [{"title": "t", "extra": 1}]}]}""")).Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void A_placement_reads_lax_numbers_and_drops_what_it_cannot_read()
+    public void Text_fields_hold_json_strings_only()
     {
-        var placement = Entry("""{"name": "n", "placement": {"screen": "2", "layout": {"mode": "thirds", "slot": "2", "min_width": "x"}}}""").Placement;
+        Assert.Equal("5", Entry("""{"name": "5"}""").Name);
+        Assert.Equal(["1"], PlanFiles.Parse("""{"notes": ["1"]}""").Notes);
+        Assert.Equal("$.notes[0]: expected a string, found the number 1", Assert.Throws<JsonInputException>(() => PlanFiles.Parse("""{"notes": [1]}""")).Message["<memory>: ".Length..]);
+        Assert.Equal("$.aliases.n: expected a string, found the number 2", Assert.Throws<JsonInputException>(() => PlanFiles.Parse("""{"aliases": {"n": 2}}""")).Message["<memory>: ".Length..]);
+    }
+
+    [Fact]
+    public void A_placement_reads_whole_numbers()
+    {
+        var placement = Entry("""{"name": "n", "placement": {"screen": 2, "layout": {"mode": "thirds", "slot": 2}}}""").Placement;
 
         Assert.Equal(new PlacementSpec(2, new PlacementLayout("thirds", 2)), placement);
-        Assert.Null(Entry("""{"name": "n", "placement": "x"}""").Placement);
-        Assert.Throws<InvalidPlanException>(() => Entry("""{"name": "n", "placement": {"screen": 1}}"""));
     }
 
     [Fact]
-    public void Feature_defaults_accept_words_and_truthiness_and_anything_else_is_off()
+    public void Feature_defaults_are_json_booleans()
     {
-        var plan = PlanFiles.Parse("""{"features": {"a": "on", "b": "off", "c": 1, "d": 0, "e": null, "f": [], "g": "maybe"}}""");
+        var plan = PlanFiles.Parse("""{"features": {"a": true, "b": false}}""");
 
-        Assert.Equal(
-            [new("a", true), new("b", false), new("c", true), new("d", false), new("e", false), new("f", false), new("g", false)],
-            plan.Features.ToList());
-        Assert.Empty(PlanFiles.Parse("""{"features": [1]}""").Features);
+        Assert.Equal([new("a", true), new("b", false)], plan.Features.ToList());
     }
 
+    [Theory]
+    [InlineData("""{"features": {"a": "on"}}""", "$.features.a: expected true or false, found the string \"on\"")]
+    [InlineData("""{"features": {"a": 1}}""", "$.features.a: expected true or false, found the number 1")]
+    [InlineData("""{"features": {"a": null}}""", "$.features.a: expected true or false, found null")]
+    [InlineData("""{"features": [1]}""", "$.features: expected an object, found a list")]
+    public void A_feature_default_that_is_not_a_boolean_is_rejected(string json, string message) =>
+        Assert.Equal(message, Assert.Throws<JsonInputException>(() => PlanFiles.Parse(json)).Message["<memory>: ".Length..]);
+
     [Fact]
-    public void Window_bounds_read_from_an_object_or_four_numbers_and_otherwise_are_absent()
+    public void Window_bounds_are_an_object_of_four_whole_numbers()
     {
         static Rect? Bounds(string json) => PlanFiles.Parse($$"""{"desktops": [{"name": "d", "captured_windows": [{"title": "t", "bounds": {{json}}}]}]}""").Desktops[0].CapturedWindows[0].Bounds;
+        static string Rejected(string json) => Assert.Throws<JsonInputException>(() => Bounds(json)).Message["<memory>: ".Length..];
 
-        Assert.Equal(new Rect(1, 2, 3, 4), Bounds("[1, 2, 3, 4]"));
         Assert.Equal(new Rect(1, 2, 3, 4), Bounds("""{"left": 1, "top": 2, "width": 3, "height": 4}"""));
-        Assert.Null(Bounds("[1, 2, 3]"));
-        Assert.Null(Bounds("""{"left": 1}"""));
-        Assert.Null(Bounds("\"x\""));
+        Assert.Equal("$.desktops[0].captured_windows[0].bounds.top: expected a whole number, found nothing", Rejected("""{"left": 1}"""));
+        Assert.Equal("$.desktops[0].captured_windows[0].bounds: expected an object, found a list", Rejected("[1, 2, 3, 4]"));
+        Assert.Equal("$.desktops[0].captured_windows[0].bounds: expected an object, found the string \"x\"", Rejected("\"x\""));
     }
 
     [Fact]
-    public void An_unreadable_window_pid_or_placement_is_absent()
+    public void A_window_pid_or_placement_of_the_wrong_type_is_rejected()
     {
-        var window = PlanFiles.Parse("""{"desktops": [{"name": "d", "captured_windows": [{"title": "t", "pid": "unknown", "inferred_placement": "left"}]}]}""").Desktops[0].CapturedWindows[0];
+        var error = Assert.Throws<JsonInputException>(() => PlanFiles.Parse("""{"desktops": [{"name": "d", "captured_windows": [{"title": "t", "pid": "unknown"}]}]}"""));
 
-        Assert.Equal((null, null), (window.Pid, window.InferredPlacement));
+        Assert.Equal("<memory>: $.desktops[0].captured_windows[0].pid: expected a whole number, found the string \"unknown\"", error.Message);
     }
 
     [Fact]
-    public void Numbers_where_text_belongs_read_as_text_throughout_the_plan()
+    public void The_hyphenated_personal_workspace_key_is_the_one_read()
     {
-        var plan = PlanFiles.Parse("""{"notes": [1], "aliases": {"n": 2}, "desktops": [{"name": 3, "launch": [{"name": "x", "args": [123], "cwd": 4}]}]}""");
-        var entry = plan.Desktops[0].Launch[0];
-
-        Assert.Equal(["1"], plan.Notes);
-        Assert.Equal(("2", "3"), (plan.Aliases["n"], plan.Desktops[0].Name));
-        Assert.Equal(["123"], entry.Args);
-        Assert.Equal("4", entry.Cwd);
-    }
-
-    [Fact]
-    public void The_hyphenated_personal_workspace_key_wins_and_retired_names_are_never_read()
-    {
-        Assert.Equal("p", PlanFiles.Parse("""{"personal-workspace": "p", "personal_workspace": "q"}""").PersonalWorkspace);
-        Assert.Null(PlanFiles.Parse("""{"personal_workspace": "q"}""").PersonalWorkspace);
-        Assert.Empty(PlanFiles.Parse("""{"retired_desktop_names": ["a"]}""").RetiredDesktopNames);
+        Assert.Equal("p", PlanFiles.Parse("""{"personal-workspace": "p"}""").PersonalWorkspace);
     }
 
     [Fact]
@@ -172,17 +165,23 @@ public sealed class PlanDecodingTests
     }
 
     [Theory]
-    [InlineData("1.0", 1)]
-    [InlineData("\"2\"", 2)]
-    [InlineData("true", 1)]
-    public void The_version_reads_lax_numbers(string json, int expected) =>
-        Assert.Equal(expected, PlanFiles.Parse($$"""{"version": {{json}}}""").Version);
+    [InlineData("1")]
+    [InlineData("2")]
+    public void The_version_is_a_whole_number(string json) =>
+        Assert.Equal(int.Parse(json, System.Globalization.CultureInfo.InvariantCulture), PlanFiles.Parse($$"""{"version": {{json}}}""").Version);
+
+    [Theory]
+    [InlineData("1.0", "the number 1.0")]
+    [InlineData("\"2\"", "the string \"2\"")]
+    [InlineData("true", "true")]
+    public void A_version_that_is_not_a_whole_number_says_what_it_found(string json, string found) =>
+        Assert.Equal($"<memory>: $.version: expected a whole number, found {found}", Assert.Throws<JsonInputException>(() => PlanFiles.Parse($$"""{"version": {{json}}}""")).Message);
 
     [Fact]
     public void A_plan_that_is_not_json_or_not_an_object_says_so()
     {
-        Assert.Contains("not valid JSON", Assert.Throws<InvalidPlanException>(() => PlanFiles.Parse("{", "plan.json")).Message, StringComparison.Ordinal);
-        Assert.Contains("JSON objects", Assert.Throws<InvalidPlanException>(() => PlanFiles.Parse("[]")).Message, StringComparison.Ordinal);
+        Assert.Contains("plan.json: $: not valid JSON", Assert.Throws<JsonInputException>(() => PlanFiles.Parse("{", "plan.json")).Message, StringComparison.Ordinal);
+        Assert.Equal("<memory>: $: expected an object, found a list", Assert.Throws<JsonInputException>(() => PlanFiles.Parse("[]")).Message);
     }
 
     [Fact]
