@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Rig.Core</RootNamespace>
+    <BannedSymbolSets>Console</BannedSymbolSets>
     <!-- LibraryImport generates unsafe marshalling stubs (Otel/DetachedStart.cs). -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

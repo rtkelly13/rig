@@ -1,0 +1,25 @@
+<Project>
+  <!--
+    Banned-symbol lists, composed per project (issue #347). BannedApiAnalyzers merges every AdditionalFiles item named
+    BannedSymbols.txt or BannedSymbols.*.txt. Directory.Build.props wires the universal BannedSymbols.txt for every
+    project; this file adds one BannedSymbols.<Set>.txt per name in the project's <BannedSymbolSets> property. It is a
+    targets file because a csproj sets that property after props are evaluated.
+    A set name with no file fails the build (RIGBAN001); it is never skipped. docs/development.md has the set map.
+  -->
+  <PropertyGroup>
+    <!-- Test projects (IsTestProject, set in tests/Directory.Build.props) that name no sets get these. -->
+    <DefaultTestBannedSymbolSets>Console</DefaultTestBannedSymbolSets>
+    <BannedSymbolSets Condition="'$(BannedSymbolSets)' == '' and '$(IsTestProject)' == 'true'">$(DefaultTestBannedSymbolSets)</BannedSymbolSets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RigBannedSymbolSet Include="$(BannedSymbolSets)" />
+    <AdditionalFiles Include="@(RigBannedSymbolSet->'$(MSBuildThisFileDirectory)BannedSymbols.%(Identity).txt')" />
+  </ItemGroup>
+
+  <Target Name="RigVerifyBannedSymbolSets" Condition="'@(RigBannedSymbolSet)' != ''" BeforeTargets="CoreCompile;GenerateMSBuildEditorConfigFile">
+    <Error Code="RIGBAN001"
+           Condition="!Exists('$(MSBuildThisFileDirectory)BannedSymbols.%(RigBannedSymbolSet.Identity).txt')"
+           Text="Banned-symbol set '%(RigBannedSymbolSet.Identity)' named in BannedSymbolSets of $(MSBuildProjectName) has no file: expected $(MSBuildThisFileDirectory)BannedSymbols.%(RigBannedSymbolSet.Identity).txt." />
+  </Target>
+</Project>

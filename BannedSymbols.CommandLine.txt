@@ -1,0 +1,8 @@
+# Banned APIs: the CommandLine set (BannedSymbolSets=CommandLine). Format: <DocumentationId>;<Description>
+
+# Ban imperative System.CommandLine instantiation in favour of DotMake declarative POCOs
+# The ids are System.CommandLine 2.0.13's own (the xml doc of the package). Command takes an optional description, so one
+# id covers both shapes; Option<T> takes (name, params aliases) and Argument<T> takes only a name.
+M:System.CommandLine.Command.#ctor(System.String,System.String);Use DotMake.CommandLine [CliCommand] declarative classes instead of new Command().
+M:System.CommandLine.Option`1.#ctor(System.String,System.String[]);Use DotMake.CommandLine [CliOption] properties instead of new Option<T>().
+M:System.CommandLine.Argument`1.#ctor(System.String);Use DotMake.CommandLine [CliArgument] properties instead of new Argument<T>().

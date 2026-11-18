@@ -61,12 +61,12 @@ else if (floor < target && measured - floor > slack)
 
 foreach (var problem in problems)
 {
-    Console.Out.WriteLine($"::error::{problem}");
+    Console.WriteLine($"::error::{problem}");
 }
 
 if (problems.Count == 0)
 {
-    Console.Out.WriteLine($"Coverage {measured:F2}% holds the floor {floor:g}% (target {target:g}%).");
+    Console.WriteLine($"Coverage {measured:F2}% holds the floor {floor:g}% (target {target:g}%).");
 }
 
 return problems.Count == 0 ? 0 : 1;

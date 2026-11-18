@@ -71,7 +71,7 @@ ______________________________________________________________________
 
 ### 1. Banned API Analyzers (`Microsoft.CodeAnalysis.BannedApiAnalyzers`)
 
-Rig integrates `Microsoft.CodeAnalysis.BannedApiAnalyzers` centrally in `Directory.Build.props` reading `BannedSymbols.txt`.
+Rig integrates `Microsoft.CodeAnalysis.BannedApiAnalyzers` centrally in `Directory.Build.props`: the universal `BannedSymbols.txt` for every project, plus the themed `BannedSymbols.<Set>.txt` lists each project names in `BannedSymbolSets` ([the set map](development.md#banned-symbol-sets)).
 
 - **Rules**:
   - Legacy non-generic collections (`ArrayList`, `Hashtable`) are banned in favor of generic and frozen collections.
