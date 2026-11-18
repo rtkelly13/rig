@@ -376,5 +376,21 @@ slice lives in `src/Rig.Image` and does not replace the Python yet; slice 4 dele
   crashes on a few malformed inputs (for example `translate(5) translate(3)` or a path with too few numbers); the C#
   copes or leaves the document alone, and `ScourPassTests` checks that.
 
-Not yet ported: the candidate-generating pathways (vtracer and friends, so candidates are frozen SVGs), the
-recommendation text, and parsing `production-cuts.csv` (the cross-check's file set is the fixed set the oracle covers).
+- **`rig image edges`** and **`rig image pathways`** (`Rig.Image/Pathways`) port `edge_regularity`, `pathways`, the
+  builders (`LabsBuilder`, `DiamondParquetBuilder`, the parametric `IsoLoopBuilder`) and the variant manifest.
+  `edges` reports axis conformance and lists defects (`--fix <path>` writes a regularized copy and, when Chromium is
+  available, scores it; `--min-conformance` is a CI ratchet). `pathways` builds `traced`, `autotraced`, `regularized`,
+  `parametric` and `fitted` and tabulates edge quality, plus SSIM and composite drift when Chromium launches; `fitted`
+  needs the renderer and is skipped without it. Neither promotes anything and Chromium scores everything.
+- **VTracer is the pinned 0.6.4 CLI, run as a process** (`VtracerTool`). The release archive is downloaded once into
+  `temp/tools/`, checked against its SHA-256 in `Vtracer.Pins`, the binary inside is checked against its own, and the
+  binary is checked again before every run. The CLI's output equals the Python binding's apart from the XML prolog and
+  `Generator` comment and the missing `viewBox`, which `Vtracer.WithViewBox` handles; `VtracerRealBinaryTests` pins
+  that against the frozen autotraced candidates.
+- **The pathways oracle is frozen** in `tests/Rig.Image.Tests/PathwaysOracle/` and regenerated with
+  `uv run --locked python -I oracle/dump_oracle.py --pathways-out ../../tests/Rig.Image.Tests/PathwaysOracle`.
+  Hexagon geometry, edge reports, regularized SVGs (by SHA-256), every parametric preset and override, the builders'
+  masters and the `fitted` coordinate-descent walk (including its loss ties) match exactly; the one tolerance is a
+  defect's length, which can differ by an ulp (`math.hypot` against `sqrt(dx*dx+dy*dy)`).
+
+Not yet ported: promotion and the snapshot manager, the recommendation text, and parsing `production-cuts.csv` (the cross-check's file set is the fixed set the oracle covers).

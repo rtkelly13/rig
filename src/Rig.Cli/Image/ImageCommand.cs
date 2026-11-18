@@ -11,7 +11,8 @@ namespace Rig.Cli.Image;
 /// <param name="Scratch">A folder for the browser's HTML wrappers.</param>
 /// <param name="LaunchAuthoritative">Starts the authoritative renderer; the argument is a browser executable to use instead of Playwright's.</param>
 /// <param name="CreateFast">Creates the fast renderer.</param>
-internal sealed record ImageHost(string RepoRoot, string Scratch, Func<string?, Task<ISvgRenderer>> LaunchAuthoritative, Func<ISvgRenderer> CreateFast);
+/// <param name="Tracer">Runs the pinned VTracer for the autotraced pathway; null makes that pathway an error.</param>
+internal sealed record ImageHost(string RepoRoot, string Scratch, Func<string?, Task<ISvgRenderer>> LaunchAuthoritative, Func<ISvgRenderer> CreateFast, Rig.Image.Pathways.IVtracer? Tracer = null);
 
 /// <summary>
 /// <c>rig image cross-check</c>: renders the project masters with Chromium and Svg.Skia and reports how far they diverge
@@ -36,6 +37,8 @@ internal sealed class ImageCommand(ImageHost host, TextWriter output, TextWriter
         var image = DeclarativeCommand.Build(this);
         image.Add(DeclarativeCommand.Build(new CrossCheckCommand(host, output, error)));
         image.Add(DeclarativeCommand.Build(new SimplifyCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new EdgesCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new PathwaysCommand(host, output, error)));
         return image;
     }
 

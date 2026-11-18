@@ -17,6 +17,12 @@
   <ItemGroup>
     <!-- Frozen from image_drift's labs_builder and diamond_parquet_builder by tools/image-drift/oracle/dump_oracle.py. -->
     <EmbeddedResource Include="feature-regions.json" LogicalName="Rig.Image.feature-regions.json" />
+    <!-- The hand-tuned master and favicon SVGs and the labs manifest, read in place from image_drift until its Python is deleted. -->
+    <EmbeddedResource Include="../../tools/image-drift/src/image_drift/builder_assets/rtkelly-labs/manifest.json" LogicalName="Rig.Image.builder_assets.rtkelly-labs.manifest.json" />
+    <EmbeddedResource Include="../../tools/image-drift/src/image_drift/builder_assets/rtkelly-labs/master.svg" LogicalName="Rig.Image.builder_assets.rtkelly-labs.master.svg" />
+    <EmbeddedResource Include="../../tools/image-drift/src/image_drift/builder_assets/rtkelly-labs/favicon.svg" LogicalName="Rig.Image.builder_assets.rtkelly-labs.favicon.svg" />
+    <EmbeddedResource Include="../../tools/image-drift/src/image_drift/builder_assets/parquet-source-generator/master.svg" LogicalName="Rig.Image.builder_assets.parquet-source-generator.master.svg" />
+    <EmbeddedResource Include="../../tools/image-drift/src/image_drift/builder_assets/parquet-source-generator/favicon.svg" LogicalName="Rig.Image.builder_assets.parquet-source-generator.favicon.svg" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Rig.Image.Tests" />
