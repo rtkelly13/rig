@@ -15,6 +15,12 @@ public sealed record DivergenceThresholds(double MeanAbsDifference, double Diffe
 {
     /// <summary>The thresholds ADR 0024 sets.</summary>
     public static DivergenceThresholds Adr { get; } = new(1.0, 0.20, 0.1, 0.001, 0.1);
+
+    /// <summary>Mean abs difference, RMSE, SSIM and composite are gated from this size up; smaller cuts (16px and 32px favicons) fail only on a changed promote or reject decision.</summary>
+    public const int GatedFromSize = 180;
+
+    /// <summary>The differing-pixel fraction is gated from this size up; below it, it is reported but not gated.</summary>
+    public const int DifferingPixelsGatedFromSize = 500;
 }
 
 /// <summary>One SVG rendered at one size by both renderers.</summary>
@@ -214,12 +220,17 @@ public static class CrossCheck
 
         var meanAbs = (double)total / a.Length;
         var fraction = (double)differing / (a.Length / 4);
+        if (file.Size < DivergenceThresholds.GatedFromSize)
+        {
+            return new FileDivergence(file, meanAbs, fraction, maxAbs, metrics, breaches);
+        }
+
         if (meanAbs > thresholds.MeanAbsDifference)
         {
             breaches.Add($"mean abs difference {Number(meanAbs)} exceeds {Number(thresholds.MeanAbsDifference)}");
         }
 
-        if (fraction > thresholds.DifferingPixelFraction)
+        if (file.Size >= DivergenceThresholds.DifferingPixelsGatedFromSize && fraction > thresholds.DifferingPixelFraction)
         {
             breaches.Add($"differing pixels {Number(fraction * 100)}% exceeds {Number(thresholds.DifferingPixelFraction * 100)}%");
         }
