@@ -38,9 +38,9 @@ while `rig web mcp` keeps serving the tools over stdio for a local client.
   `http://localhost:18888`, empty to disable).
 - Attention is computed client-side from the jobs, runs and decisions answers.
 
-The pages live in `web/Ops*.tsx` with the client in `web/opsApi.ts`; `tests/test_web_ops_spa.py`
-drives them against the same JSON contract, supplying the C# answers with Playwright routes and the
-jobs answers from a fake Python route.
+The pages live in `web/Ops*.tsx` with the client in `web/opsApi.ts`; `OpsBrowserTests` in
+`tests/Rig.Web.BrowserTests` drives them against the same JSON contract, supplying every answer with
+Playwright routes.
 
 ## For agents: `rig web mcp`
 

@@ -4,6 +4,7 @@
   </ItemGroup>
   <ItemGroup Label="Shared doubles">
     <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="Fakes/TempDir.cs" />
+    <Compile Include="../Rig.Web.BrowserTests/Repo.cs" Link="Fakes/Repo.cs" />
   </ItemGroup>
   <ItemGroup Label="Responses recorded from the Python StudioServer, the parity baseline">
     <None Include="Recorded/*.json" CopyToOutputDirectory="PreserveNewest" />

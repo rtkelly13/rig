@@ -94,15 +94,12 @@ directly, and to test the HTTP surface start a `StudioServer` on port 0 with jus
 it, as `tests/test_web_routes.py` does. Browser tests of a page mount a fake route that serves canned
 JSON, so they need no real data on the machine.
 
-The browser talks to the C# host, as it does in production. `tests/rig_web_host.py` starts the
-built C# `rig web` on port 0 in front of the in-process `StudioServer`
-(`RIG_WEB_PYTHON_ROUTES` names it, so the host starts no Python child), from a temp checkout that
-holds a copy of the frontend; a test that draws the estate graph lays out a registry there and
-git checkouts under the temp `CODE_ROOT` beside it (`rig_web_host.estate`). The triage tests seed the
-shared database the C# route reads through `tests/triage_seed.py`; `tests/test_web_ops_spa.py` supplies
-the C# ops answers with Playwright routes and fakes only the jobs coordinator, which is still Python.
-CI builds the CLI before pytest and passes it in `RIG_CLI_DLL`; locally the first test to need it
-builds it into `temp/rig-web-tests/`.
+The browser tests are C# Playwright tests in `tests/Rig.Web.BrowserTests`. They drive an in-process
+`RigWebHost` over a temp tree that holds a copy of the frontend, as the browser talks to the C# host in
+production. A test that draws the estate graph lays out a registry and git checkouts under the temp
+`CODE_ROOT` (`Estates`); the triage tests seed the shared database through `QueueStore`, and the ops tests
+supply the C# answers with Playwright routes. One Chromium is shared by the assembly and each test gets its
+own context. Install the browser once with `playwright.ps1` (see [development.md](development.md)); CI caches it.
 
 ## Why not import the feature into the server
 

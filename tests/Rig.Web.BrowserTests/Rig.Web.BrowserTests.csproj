@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The SPA driven in a real browser. Its own project so launching Chromium never slows Rig.Web.Tests. -->
+  <ItemGroup>
+    <ProjectReference Include="../../src/Rig.Web/Rig.Web.csproj" />
+    <PackageReference Include="Microsoft.Playwright" />
+  </ItemGroup>
+  <ItemGroup Label="Shared doubles">
+    <Compile Include="../Rig.Core.Tests/TempDir.cs" Link="TempDir.cs" />
+  </ItemGroup>
+</Project>
