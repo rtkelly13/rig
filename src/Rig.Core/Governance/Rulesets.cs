@@ -292,34 +292,22 @@ public sealed record RulesetShape(
             return null;
         }
 
-        var contexts = new List<string>();
-        if (declared["required_status_checks"] is JsonArray checks)
+        var checks = declared["required_status_checks"] as JsonArray ?? [];
+        if (checks.Any(check => check is not JsonObject))
         {
-            foreach (var check in checks)
-            {
-                if (check is not JsonObject entry)
-                {
-                    return null;
-                }
-
-                contexts.Add(GitHubCalls.Str(entry, "context") ?? string.Empty);
-            }
+            return null;
         }
 
-        var values = new List<string> { QuotedText.List(contexts.Order(StringComparer.Ordinal)) };
-        foreach (var name in Parameters)
+        var contexts = checks.Select(check => GitHubCalls.Str(check, "context") ?? string.Empty).Order(StringComparer.Ordinal);
+        var values = Parameters.Select(name => declared[name] switch
         {
-            values.Add(declared[name] switch
-            {
-                null => "None",
-                JsonValue v when v.GetValueKind() is JsonValueKind.True => "True",
-                JsonValue v when v.GetValueKind() is JsonValueKind.False => "False",
-                JsonValue v when v.GetValueKind() is JsonValueKind.Number && v.TryGetValue(out long n) => QuotedText.Value(n),
-                _ => "?",
-            });
-        }
-
-        return "(" + string.Join(", ", values) + ")";
+            null => "None",
+            JsonValue v when v.GetValueKind() is JsonValueKind.True => "True",
+            JsonValue v when v.GetValueKind() is JsonValueKind.False => "False",
+            JsonValue v when v.GetValueKind() is JsonValueKind.Number && v.TryGetValue(out long n) => QuotedText.Value(n),
+            _ => "?",
+        });
+        return "(" + string.Join(", ", values.Prepend(QuotedText.List(contexts))) + ")";
     }
 }
 

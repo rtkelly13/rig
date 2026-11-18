@@ -279,26 +279,16 @@ public sealed class Triage(IProc proc)
     public static IssueDashboard Dashboard(IReadOnlyList<IssueItem> issues, DateTimeOffset now, int staleDays = StaleDays)
     {
         ArgumentNullException.ThrowIfNull(issues);
-        var buckets = Enum.GetValues<IssueBucket>().ToDictionary(bucket => bucket, _ => new List<IssueItem>());
-        foreach (var issue in issues)
-        {
-            buckets[Categorize(issue, now, staleDays)].Add(issue);
-        }
-
-        return new(issues.Count, buckets.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<IssueItem>)pair.Value));
+        var grouped = issues.ToLookup(issue => Categorize(issue, now, staleDays));
+        return new(issues.Count, Enum.GetValues<IssueBucket>().ToDictionary(bucket => bucket, bucket => (IReadOnlyList<IssueItem>)[.. grouped[bucket]]));
     }
 
     /// <summary>The PRs grouped into their buckets at <paramref name="now"/>.</summary>
     public static PrDashboard Dashboard(IReadOnlyList<PrItem> prs, DateTimeOffset now, int staleDays = StaleDays)
     {
         ArgumentNullException.ThrowIfNull(prs);
-        var buckets = Enum.GetValues<PrBucket>().ToDictionary(bucket => bucket, _ => new List<PrItem>());
-        foreach (var pr in prs)
-        {
-            buckets[Categorize(pr, now, staleDays)].Add(pr);
-        }
-
-        return new(prs.Count, buckets.Where(pair => pair.Key != PrBucket.Other).ToDictionary(pair => pair.Key, pair => (IReadOnlyList<PrItem>)pair.Value));
+        var grouped = prs.ToLookup(pr => Categorize(pr, now, staleDays));
+        return new(prs.Count, Enum.GetValues<PrBucket>().Where(bucket => bucket != PrBucket.Other).ToDictionary(bucket => bucket, bucket => (IReadOnlyList<PrItem>)[.. grouped[bucket]]));
     }
 
     /// <summary>The repo's open issues (at most 100), optionally only those labelled <paramref name="label"/>.</summary>

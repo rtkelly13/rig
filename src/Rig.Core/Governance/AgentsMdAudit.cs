@@ -77,22 +77,13 @@ public sealed record AgentsMdAuditResult(
     public bool Failed => Findings.Any(finding => finding.Severity == AgentsMdSeverity.Error);
 
     /// <summary>The result as the <c>--json</c> report prints it.</summary>
-    public JsonObject ToJson()
+    public JsonObject ToJson() => new()
     {
-        var metrics = new JsonObject();
-        foreach (var (name, value) in Metrics)
-        {
-            metrics[name] = value;
-        }
-
-        return new()
-        {
-            ["repo"] = Repo,
-            ["findings"] = new JsonArray([.. Findings.Select(JsonNode (f) => f.ToJson())]),
-            ["suppressed"] = new JsonArray([.. Suppressed.Select(JsonNode (f) => f.ToJson())]),
-            ["metrics"] = metrics,
-        };
-    }
+        ["repo"] = Repo,
+        ["findings"] = new JsonArray([.. Findings.Select(JsonNode (f) => f.ToJson())]),
+        ["suppressed"] = new JsonArray([.. Suppressed.Select(JsonNode (f) => f.ToJson())]),
+        ["metrics"] = new JsonObject(Metrics.Select(m => KeyValuePair.Create<string, JsonNode?>(m.Key, m.Value))),
+    };
 }
 
 /// <summary>
@@ -139,16 +130,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     public static DateOnly? ParseIsoDate(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var match = IsoDate().Match(text);
-        if (!match.Success)
-        {
-            return null;
-        }
-
-        var year = int.Parse(match.Groups["y"].Value, CultureInfo.InvariantCulture);
-        var month = int.Parse(match.Groups["m"].Value, CultureInfo.InvariantCulture);
-        var day = int.Parse(match.Groups["d"].Value, CultureInfo.InvariantCulture);
-        return year >= 1 && month is >= 1 and <= 12 && day >= 1 && day <= DateTime.DaysInMonth(year, month) ? new DateOnly(year, month, day) : null;
+        return DateOnly.TryParseExact(text, ["yyyy-MM-dd", "yyyyMMdd"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
     }
 
     /// <summary>
@@ -224,22 +206,19 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(text);
         var lines = UnicodeText.SplitLines(text);
-        var sections = new List<int>();
-        var current = 0;
+        var sections = new List<int> { 0 };
         foreach (var line in lines)
         {
             if (Heading().IsMatch(line))
             {
-                sections.Add(current);
-                current = 0;
+                sections.Add(0);
             }
             else
             {
-                current++;
+                sections[^1]++;
             }
         }
 
-        sections.Add(current);
         return
         [
             new("instruction-count", lines.Count(line => Instruction().IsMatch(line))),
@@ -321,50 +300,23 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
         }
     }
 
-    private static string? TryRead(string path)
-    {
-        return FileGuard.Try(() => DocsTree.ReadText(path), null);
-    }
+    private static string? TryRead(string path) => FileGuard.Try(() => DocsTree.ReadText(path), null);
 
-    private static IEnumerable<AgentsMdFinding> CheckPointers(string repo, IReadOnlyList<string> docs)
-    {
-        foreach (var doc in docs)
-        {
-            if (TryRead(doc) is not { } text)
-            {
-                continue;
-            }
+    // Each readable doc's relative link targets, with the existing file each resolves to (null when it does not exist).
+    private static IEnumerable<(string Doc, string Target, string? Resolved)> Links(IReadOnlyList<string> docs) =>
+        from doc in docs
+        let text = TryRead(doc)
+        where text is not null
+        from target in RelativeTargets(text)
+        select (doc, target, DocsTree.Resolve(Parent(doc), target) is { } resolved && DocsTree.Exists(resolved) ? resolved : null);
 
-            var rel = DocsTree.Relative(repo, doc);
-            foreach (var target in RelativeTargets(text))
-            {
-                if (DocsTree.Resolve(Parent(doc), target) is not { } resolved || !DocsTree.Exists(resolved))
-                {
-                    yield return new("pointer-integrity", AgentsMdSeverity.Error, rel, $"Link target `{target}` does not exist.");
-                }
-            }
-        }
-    }
+    private static IEnumerable<AgentsMdFinding> CheckPointers(string repo, IReadOnlyList<string> docs) =>
+        Links(docs).Where(link => link.Resolved is null)
+            .Select(link => new AgentsMdFinding("pointer-integrity", AgentsMdSeverity.Error, DocsTree.Relative(repo, link.Doc), $"Link target `{link.Target}` does not exist."));
 
     private static IEnumerable<AgentsMdFinding> CheckDocsOrphans(string repo, IReadOnlyList<string> docs)
     {
-        var linked = new HashSet<string>(DocsTree.Comparer);
-        foreach (var doc in docs)
-        {
-            if (TryRead(doc) is not { } text)
-            {
-                continue;
-            }
-
-            foreach (var target in RelativeTargets(text))
-            {
-                if (DocsTree.Resolve(Parent(doc), target) is { } resolved && DocsTree.Exists(resolved))
-                {
-                    linked.Add(resolved);
-                }
-            }
-        }
-
+        var linked = new HashSet<string>(Links(docs).Select(link => link.Resolved).OfType<string>(), DocsTree.Comparer);
         foreach (var doc in docs)
         {
             if (Path.GetFileName(doc) == AgentsFileName || linked.Contains(PathResolution.Resolve(doc)))
@@ -424,19 +376,11 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
         return FileGuard.Try(() => Strip(DocsTree.ReadText(path)) == AgentsFileName, false);
     }
 
-    private static IEnumerable<AgentsMdFinding> CheckBespokeAgentFiles(string repo, AgentsMdRules rules)
-    {
-        foreach (var relative in rules.BespokeAgentFiles)
-        {
-            var name = relative.TrimEnd('/');
-            var path = Path.Join(repo, name);
-            if (DocsTree.IsLink(path) || DocsTree.Exists(path))
-            {
-                yield return new("bespoke-agent-file", AgentsMdSeverity.Error, name,
-                    "Merge anything worth keeping into AGENTS.md, then delete this. The tool that owns this name reads it instead of AGENTS.md.");
-            }
-        }
-    }
+    private static IEnumerable<AgentsMdFinding> CheckBespokeAgentFiles(string repo, AgentsMdRules rules) =>
+        rules.BespokeAgentFiles.Select(relative => relative.TrimEnd('/'))
+            .Where(name => DocsTree.IsLink(Path.Join(repo, name)) || DocsTree.Exists(Path.Join(repo, name)))
+            .Select(name => new AgentsMdFinding("bespoke-agent-file", AgentsMdSeverity.Error, name,
+                "Merge anything worth keeping into AGENTS.md, then delete this. The tool that owns this name reads it instead of AGENTS.md."));
 
     // Backticked text plausibly naming a repo path: it needs a separator, and a dot in its last segment.
     private static bool LooksLikePath(string candidate)
@@ -452,23 +396,12 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
             && candidate[(candidate.LastIndexOf('/') + 1)..].Contains('.', StringComparison.Ordinal);
     }
 
-    private static IEnumerable<AgentsMdFinding> CheckPathLiveness(string repo, string text)
-    {
-        var number = 0;
-        foreach (var line in UnicodeText.SplitLines(text))
-        {
-            number++;
-            foreach (Match match in Backticked().Matches(line))
-            {
-                var candidate = Strip(match.Groups[1].Value);
-                if (LooksLikePath(candidate) && !DocsTree.Exists(Path.Combine(repo, candidate)))
-                {
-                    yield return new("path-liveness", AgentsMdSeverity.Warn, AgentsFileName,
-                        $"`{candidate}` does not exist. Describe the capability, not the location.", number);
-                }
-            }
-        }
-    }
+    private static IEnumerable<AgentsMdFinding> CheckPathLiveness(string repo, string text) =>
+        UnicodeText.SplitLines(text)
+            .SelectMany((line, index) => Backticked().Matches(line).Select(match => (Candidate: Strip(match.Groups[1].Value), Number: index + 1)))
+            .Where(hit => LooksLikePath(hit.Candidate) && !DocsTree.Exists(Path.Combine(repo, hit.Candidate)))
+            .Select(hit => new AgentsMdFinding("path-liveness", AgentsMdSeverity.Warn, AgentsFileName,
+                $"`{hit.Candidate}` does not exist. Describe the capability, not the location.", hit.Number));
 
     private static IEnumerable<AgentsMdFinding> CheckRequiredContent(string text, AgentsMdRules rules)
     {
@@ -687,35 +620,32 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
         return found;
     }
 
-    private static List<AgentsMdFinding> WaiverFindings(string repo, IReadOnlyList<AgentsMdWaiver> waivers, HashSet<string> keysSeen, DateOnly today)
+    private static IEnumerable<AgentsMdFinding> WaiverFindings(string repo, IReadOnlyList<AgentsMdWaiver> waivers, HashSet<string> keysSeen, DateOnly today)
     {
-        var findings = new List<AgentsMdFinding>();
         if (!DocsTree.IsFile(Path.Join(repo, WaiverFileName)))
         {
-            return findings;
+            yield break;
         }
 
         foreach (var waiver in waivers)
         {
             if (Strip(waiver.Reason).Length == 0)
             {
-                findings.Add(new("waiver-unreasoned", AgentsMdSeverity.Error, WaiverFileName,
-                    $"Waiver for `{waiver.Key}` has no reason. A dismissal without a reason is not reviewable."));
+                yield return new("waiver-unreasoned", AgentsMdSeverity.Error, WaiverFileName,
+                    $"Waiver for `{waiver.Key}` has no reason. A dismissal without a reason is not reviewable.");
             }
 
             if (waiver.ExpiredOn(today))
             {
-                findings.Add(new("waiver-expired", AgentsMdSeverity.Warn, WaiverFileName,
-                    $"Waiver for `{waiver.Key}` expired on {waiver.Expires} and no longer suppresses."));
+                yield return new("waiver-expired", AgentsMdSeverity.Warn, WaiverFileName,
+                    $"Waiver for `{waiver.Key}` expired on {waiver.Expires} and no longer suppresses.");
             }
             else if (!keysSeen.Contains(waiver.Key))
             {
-                findings.Add(new("waiver-stale", AgentsMdSeverity.Info, WaiverFileName,
-                    $"Waiver for `{waiver.Key}` suppresses nothing — the finding is fixed. Remove it."));
+                yield return new("waiver-stale", AgentsMdSeverity.Info, WaiverFileName,
+                    $"Waiver for `{waiver.Key}` suppresses nothing — the finding is fixed. Remove it.");
             }
         }
-
-        return findings;
     }
 
     // Each waiver as pydantic validates it: strings must be strings, and one bad waiver rejects the file.
@@ -781,19 +711,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     private static string Strip(string text)
     {
         static bool Space(char c) => char.IsWhiteSpace(c) || c is >= '\x1c' and <= '\x1f';
-        var start = 0;
-        var end = text.Length;
-        while (start < end && Space(text[start]))
-        {
-            start++;
-        }
-
-        while (end > start && Space(text[end - 1]))
-        {
-            end--;
-        }
-
-        return text[start..end];
+        return string.Concat(text.SkipWhile(Space).Reverse().SkipWhile(Space).Reverse());
     }
 
     [GeneratedRegex(@"\b(MUST|NEVER|ALWAYS|REQUIRED)\b")]
@@ -819,7 +737,4 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
 
     [GeneratedRegex(@"^\s*(`{3,}|~{3,})\s*([\w+-]*)")]
     private static partial Regex FenceOpen();
-
-    [GeneratedRegex(@"^(?:(?<y>[0-9]{4})-(?<m>[0-9]{2})-(?<d>[0-9]{2})|(?<y>[0-9]{4})(?<m>[0-9]{2})(?<d>[0-9]{2}))\z")]
-    private static partial Regex IsoDate();
 }
