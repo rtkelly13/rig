@@ -21,7 +21,6 @@ public static class RigMcp
     /// <summary>Registers <paramref name="ops"/> and the tools found in this assembly, without a transport.</summary>
     public static IMcpServerBuilder AddRigMcp(this IServiceCollection services, RigOps ops)
     {
-        ArgumentNullException.ThrowIfNull(services);
         _ = services.AddSingleton(ops);
         return services
             .AddMcpServer(options =>

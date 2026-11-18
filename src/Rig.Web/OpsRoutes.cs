@@ -52,7 +52,6 @@ public sealed class OpsRoutes : IDisposable
     /// <param name="registry">The managed-projects registry a triage refresh reads.</param>
     public void Map(IEndpointRouteBuilder routes, string registry)
     {
-        ArgumentNullException.ThrowIfNull(routes);
         ArgumentException.ThrowIfNullOrEmpty(registry);
         TriageRoutes.Map(routes, Triage, registry);
         EstateOpsRoutes.Map(routes, Estate);

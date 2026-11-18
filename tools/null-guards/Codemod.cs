@@ -32,7 +32,7 @@ internal static class Codemod
             var doomed = new List<ExpressionStatementSyntax>();
             foreach (var statement in tree.GetRoot().DescendantNodes().OfType<ExpressionStatementSyntax>())
             {
-                if (statement.Expression is not InvocationExpressionSyntax call || model.GetSymbolInfo(call).Symbol is not IMethodSymbol method || !IsThrowIfNull(method))
+                if (statement.Expression is not InvocationExpressionSyntax call || Resolve(model, call) is not { } method || !IsThrowIfNull(method))
                 {
                     continue;
                 }
@@ -56,6 +56,12 @@ internal static class Codemod
         }
 
         return tally;
+    }
+
+    private static IMethodSymbol? Resolve(SemanticModel model, InvocationExpressionSyntax call)
+    {
+        var info = model.GetSymbolInfo(call);
+        return info.Symbol as IMethodSymbol ?? info.CandidateSymbols.OfType<IMethodSymbol>().FirstOrDefault();
     }
 
     private static string[] Segments(string dir, string path) => Path.GetRelativePath(dir, path).Split(Path.DirectorySeparatorChar);
@@ -132,7 +138,9 @@ internal static class Codemod
     {
         var runtime = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
         var built = Directory.Exists(Path.Join(dir, "bin", "Debug", "net10.0")) ? Directory.EnumerateFiles(Path.Join(dir, "bin", "Debug", "net10.0"), "*.dll") : [];
-        return [.. runtime.Concat(built).Where(path => path.EndsWith(".dll", StringComparison.Ordinal)).Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))];
+        var shared = Path.Join(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "..", "..", "Microsoft.AspNetCore.App", Path.GetFileName(Path.TrimEndingDirectorySeparator(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory())));
+        var web = Directory.Exists(shared) ? Directory.EnumerateFiles(shared, "*.dll") : [];
+        return [.. runtime.Concat(built).Concat(web).Where(path => path.EndsWith(".dll", StringComparison.Ordinal)).Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))];
     }
 
     /// <summary>Deletes each statement's line, then tidies the blank line a removed guard block leaves behind.</summary>

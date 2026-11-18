@@ -19,7 +19,6 @@ internal static class DeclarativeCommand
     internal static Command Build<T>(T definition)
         where T : class
     {
-        ArgumentNullException.ThrowIfNull(definition);
         lock (Gate)
         {
             // Built as a sub-command, not a process root: a root takes its name from the executable, not the attribute.

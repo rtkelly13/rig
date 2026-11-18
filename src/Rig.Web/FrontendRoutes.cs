@@ -180,7 +180,6 @@ internal static class HeaderResult
     {
         public Task ExecuteAsync(HttpContext httpContext)
         {
-            ArgumentNullException.ThrowIfNull(httpContext);
             httpContext.Response.Headers[name] = value;
             return inner.ExecuteAsync(httpContext);
         }

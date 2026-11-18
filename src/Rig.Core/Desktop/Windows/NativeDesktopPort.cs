@@ -161,7 +161,9 @@ public sealed class NativeDesktopPort : IDesktopPort
     }
 
     /// <inheritdoc/>
-    public void StartTerminalCommandUpgrades(WorkspacePlan plan) => ArgumentNullException.ThrowIfNull(plan);
+    public void StartTerminalCommandUpgrades(WorkspacePlan plan)
+    {
+    }
 
     /// <inheritdoc/>
     public void EnsureDesktopCount(int count, TimeSpan settle)
