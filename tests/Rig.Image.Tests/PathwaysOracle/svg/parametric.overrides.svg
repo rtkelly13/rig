@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1" width="900" height="900" viewBox="0 0 900 900">
+<defs>
+<linearGradient id="f0" x1="479.86" y1="355.5" x2="495.45" y2="328.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#5de7e9" /><stop offset="0.5" stop-color="#35c8e1" /><stop offset="1.0" stop-color="#1b8ec8" /></linearGradient>
+<linearGradient id="f1" x1="512.34" y1="497.25" x2="577.29" y2="384.75" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#5de7e9" /><stop offset="0.5" stop-color="#35c8e1" /><stop offset="1.0" stop-color="#1b8ec8" /></linearGradient>
+<linearGradient id="f2" x1="455.18" y1="596.25" x2="520.13" y2="483.75" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f3" x1="365.55" y1="553.5" x2="381.14" y2="526.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f4" x1="283.71" y1="497.25" x2="348.66" y2="384.75" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f5" x1="340.87" y1="398.25" x2="405.82" y2="285.75" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#5de7e9" /><stop offset="0.5" stop-color="#35c8e1" /><stop offset="1.0" stop-color="#1b8ec8" /></linearGradient>
+<linearGradient id="f6" x1="461.68" y1="387.0" x2="479.86" y2="355.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f7" x1="486.36" y1="483.75" x2="535.72" y2="398.25" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f8" x1="446.09" y1="553.5" x2="495.45" y2="468.0" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f9" x1="381.14" y1="526.5" x2="399.32" y2="495.0" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f10" x1="325.28" y1="483.75" x2="374.64" y2="398.25" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f11" x1="365.55" y1="414.0" x2="414.91" y2="328.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f12" x1="453.02" y1="650.0" x2="537.89" y2="503.0" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#2069bd" /><stop offset="0.5" stop-color="#1c54ac" /><stop offset="1.0" stop-color="#173f96" /></linearGradient>
+<linearGradient id="f13" x1="355.59" y1="593.75" x2="375.51" y2="559.25" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f14" x1="258.16" y1="537.5" x2="343.03" y2="390.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f15" x1="618.86" y1="513.5" x2="634.45" y2="486.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#2069bd" /><stop offset="0.5" stop-color="#1c54ac" /><stop offset="1.0" stop-color="#173f96" /></linearGradient>
+<linearGradient id="f16" x1="651.34" y1="655.25" x2="716.29" y2="542.75" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#2069bd" /><stop offset="0.5" stop-color="#1c54ac" /><stop offset="1.0" stop-color="#173f96" /></linearGradient>
+<linearGradient id="f17" x1="594.18" y1="754.25" x2="659.13" y2="641.75" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#2069bd" /><stop offset="0.5" stop-color="#1c54ac" /><stop offset="1.0" stop-color="#173f96" /></linearGradient>
+<linearGradient id="f18" x1="504.55" y1="711.5" x2="520.14" y2="684.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f19" x1="422.71" y1="655.25" x2="487.66" y2="542.75" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f20" x1="479.87" y1="556.25" x2="544.82" y2="443.75" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#5de7e9" /><stop offset="0.5" stop-color="#35c8e1" /><stop offset="1.0" stop-color="#1b8ec8" /></linearGradient>
+<linearGradient id="f21" x1="600.68" y1="545.0" x2="618.86" y2="513.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f22" x1="625.36" y1="641.75" x2="674.72" y2="556.25" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f23" x1="585.09" y1="711.5" x2="634.45" y2="626.0" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f24" x1="520.14" y1="684.5" x2="538.32" y2="653.0" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f25" x1="464.28" y1="641.75" x2="513.64" y2="556.25" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f26" x1="504.55" y1="572.0" x2="553.91" y2="486.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#147eb6" /><stop offset="0.5" stop-color="#1b6ab8" /><stop offset="1.0" stop-color="#244aa4" /></linearGradient>
+<linearGradient id="f27" x1="592.02" y1="808.0" x2="676.89" y2="661.0" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#2069bd" /><stop offset="0.5" stop-color="#1c54ac" /><stop offset="1.0" stop-color="#173f96" /></linearGradient>
+<linearGradient id="f28" x1="494.59" y1="751.75" x2="514.51" y2="717.25" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f29" x1="397.16" y1="695.5" x2="482.03" y2="548.5" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f30" x1="573.56" y1="519.22" x2="645.76" y2="394.16" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#2069bd" /><stop offset="0.5" stop-color="#1c54ac" /><stop offset="1.0" stop-color="#173f96" /></linearGradient>
+<linearGradient id="f31" x1="594.78" y1="577.47" x2="686.9" y2="417.91" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f32" x1="354.24" y1="645.84" x2="426.44" y2="520.78" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#2069bd" /><stop offset="0.5" stop-color="#1c54ac" /><stop offset="1.0" stop-color="#173f96" /></linearGradient>
+<linearGradient id="f33" x1="375.45" y1="704.09" x2="467.58" y2="544.53" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+<linearGradient id="f34" x1="484.41" y1="547.0" x2="515.59" y2="493.0" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#5de7e9" /><stop offset="0.5" stop-color="#35c8e1" /><stop offset="1.0" stop-color="#1b8ec8" /></linearGradient>
+<linearGradient id="f35" x1="458.86" y1="578.25" x2="478.78" y2="543.75" gradientUnits="userSpaceOnUse"><stop offset="0.0" stop-color="#14b6c3" /><stop offset="0.5" stop-color="#198ec3" /><stop offset="1.0" stop-color="#1e6dc1" /></linearGradient>
+</defs>
+<path d="M0,0 L900,0 L900,900 L0,900 Z" fill="#000000" />
+<polygon points="430.50,291.00 560.40,366.00 529.23,384.00 430.50,327.00" fill="url(#f0)" />
+<polygon points="560.40,366.00 560.40,516.00 529.23,498.00 529.23,384.00" fill="url(#f1)" />
+<polygon points="560.40,516.00 430.50,591.00 430.50,555.00 529.23,498.00" fill="url(#f2)" />
+<polygon points="430.50,591.00 300.60,516.00 331.77,498.00 430.50,555.00" fill="url(#f3)" />
+<polygon points="300.60,516.00 300.60,366.00 331.77,384.00 331.77,498.00" fill="url(#f4)" />
+<polygon points="300.60,366.00 430.50,291.00 430.50,327.00 331.77,384.00" fill="url(#f5)" />
+<polygon points="430.50,327.00 529.23,384.00 492.85,405.00 430.50,369.00" fill="url(#f6)" />
+<polygon points="529.23,384.00 529.23,498.00 492.85,477.00 492.85,405.00" fill="url(#f7)" />
+<polygon points="529.23,498.00 430.50,555.00 430.50,513.00 492.85,477.00" fill="url(#f8)" />
+<polygon points="430.50,555.00 331.77,498.00 368.15,477.00 430.50,513.00" fill="url(#f9)" />
+<polygon points="331.77,498.00 331.77,384.00 368.15,405.00 368.15,477.00" fill="url(#f10)" />
+<polygon points="331.77,384.00 430.50,327.00 430.50,369.00 368.15,405.00" fill="url(#f11)" />
+<polygon points="560.40,516.00 430.50,591.00 430.50,637.00 560.40,562.00" fill="url(#f12)" />
+<polygon points="430.50,591.00 300.60,516.00 300.60,562.00 430.50,637.00" fill="url(#f13)" />
+<polygon points="300.60,516.00 300.60,366.00 300.60,412.00 300.60,562.00" fill="url(#f14)" />
+<polygon points="569.50,449.00 699.40,524.00 668.23,542.00 569.50,485.00" fill="url(#f15)" />
+<polygon points="699.40,524.00 699.40,674.00 668.23,656.00 668.23,542.00" fill="url(#f16)" />
+<polygon points="699.40,674.00 569.50,749.00 569.50,713.00 668.23,656.00" fill="url(#f17)" />
+<polygon points="569.50,749.00 439.60,674.00 470.77,656.00 569.50,713.00" fill="url(#f18)" />
+<polygon points="439.60,674.00 439.60,524.00 470.77,542.00 470.77,656.00" fill="url(#f19)" />
+<polygon points="439.60,524.00 569.50,449.00 569.50,485.00 470.77,542.00" fill="url(#f20)" />
+<polygon points="569.50,485.00 668.23,542.00 631.85,563.00 569.50,527.00" fill="url(#f21)" />
+<polygon points="668.23,542.00 668.23,656.00 631.85,635.00 631.85,563.00" fill="url(#f22)" />
+<polygon points="668.23,656.00 569.50,713.00 569.50,671.00 631.85,635.00" fill="url(#f23)" />
+<polygon points="569.50,713.00 470.77,656.00 507.15,635.00 569.50,671.00" fill="url(#f24)" />
+<polygon points="470.77,656.00 470.77,542.00 507.15,563.00 507.15,635.00" fill="url(#f25)" />
+<polygon points="470.77,542.00 569.50,485.00 569.50,527.00 507.15,563.00" fill="url(#f26)" />
+<polygon points="699.40,674.00 569.50,749.00 569.50,795.00 699.40,720.00" fill="url(#f27)" />
+<polygon points="569.50,749.00 439.60,674.00 439.60,720.00 569.50,795.00" fill="url(#f28)" />
+<polygon points="439.60,674.00 439.60,524.00 439.60,570.00 439.60,720.00" fill="url(#f29)" />
+<polygon points="650.69,397.00 506.28,480.38 568.63,516.38 713.04,433.00" fill="url(#f30)" />
+<polygon points="713.04,433.00 568.63,516.38 568.63,562.38 713.04,479.00" fill="url(#f31)" />
+<polygon points="431.37,523.62 286.96,607.00 349.31,643.00 493.72,559.62" fill="url(#f32)" />
+<polygon points="493.72,559.62 349.31,643.00 349.31,689.00 493.72,605.62" fill="url(#f33)" />
+<polygon points="349.31,397.00 713.04,607.00 650.69,643.00 286.96,433.00" fill="url(#f34)" />
+<polygon points="286.96,433.00 650.69,643.00 650.69,689.00 286.96,479.00" fill="url(#f35)" />
+</svg>

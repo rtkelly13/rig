@@ -1,0 +1,5281 @@
+{
+ "provenance": {
+  "generator": "tools/image-drift/oracle/dump_oracle.py --pathways-out",
+  "python": "3.13.5",
+  "image_drift": "0.1.0"
+ },
+ "hexagons": [
+  {
+   "radius": 158.0,
+   "center": {
+    "x": 440.0,
+    "y": 440.0
+   },
+   "vertices": [
+    {
+     "x": 440.0,
+     "y": 282.0
+    },
+    {
+     "x": 576.832,
+     "y": 361.0
+    },
+    {
+     "x": 576.832,
+     "y": 519.0
+    },
+    {
+     "x": 440.0,
+     "y": 598.0
+    },
+    {
+     "x": 303.168,
+     "y": 519.0
+    },
+    {
+     "x": 303.168,
+     "y": 361.0
+    }
+   ]
+  },
+  {
+   "radius": 114.0,
+   "center": {
+    "x": 584.0,
+    "y": 584.0
+   },
+   "vertices": [
+    {
+     "x": 584.0,
+     "y": 470.0
+    },
+    {
+     "x": 682.727,
+     "y": 527.0
+    },
+    {
+     "x": 682.727,
+     "y": 641.0
+    },
+    {
+     "x": 584.0,
+     "y": 698.0
+    },
+    {
+     "x": 485.273,
+     "y": 641.0
+    },
+    {
+     "x": 485.273,
+     "y": 527.0
+    }
+   ]
+  },
+  {
+   "radius": 72.0,
+   "center": {
+    "x": 250.0,
+    "y": 250.0
+   },
+   "vertices": [
+    {
+     "x": 250.0,
+     "y": 178.0
+    },
+    {
+     "x": 312.354,
+     "y": 214.0
+    },
+    {
+     "x": 312.354,
+     "y": 286.0
+    },
+    {
+     "x": 250.0,
+     "y": 322.0
+    },
+    {
+     "x": 187.646,
+     "y": 286.0
+    },
+    {
+     "x": 187.646,
+     "y": 214.0
+    }
+   ]
+  },
+  {
+   "radius": 33.3,
+   "center": {
+    "x": 12.345,
+    "y": 98.765
+   },
+   "vertices": [
+    {
+     "x": 12.345,
+     "y": 65.465
+    },
+    {
+     "x": 41.184,
+     "y": 82.115
+    },
+    {
+     "x": 41.184,
+     "y": 115.415
+    },
+    {
+     "x": 12.345,
+     "y": 132.065
+    },
+    {
+     "x": -16.494,
+     "y": 115.415
+    },
+    {
+     "x": -16.494,
+     "y": 82.115
+    }
+   ]
+  },
+  {
+   "radius": 1.0,
+   "center": {
+    "x": 0.0,
+    "y": 0.0
+   },
+   "vertices": [
+    {
+     "x": 0.0,
+     "y": -1.0
+    },
+    {
+     "x": 0.866,
+     "y": -0.5
+    },
+    {
+     "x": 0.866,
+     "y": 0.5
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": -0.866,
+     "y": 0.5
+    },
+    {
+     "x": -0.866,
+     "y": -0.5
+    }
+   ]
+  }
+ ],
+ "viewBoxes": [
+  {
+   "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- Generator: visioncortex VTracer 0.6.4 -->\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" width=\"1024\" height=\"1024\">\n<path d=\"M0,0 Z\"/>\n</svg>\n",
+   "output": "<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" width=\"1024\" height=\"1024\" viewBox=\"0 0 1024 1024\">\n<path d=\"M0,0 Z\"/>\n</svg>\n"
+  },
+  {
+   "input": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12.5\" height=\"30\" viewBox=\"0 0 1 1\"><g/></svg>",
+   "output": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12.5\" height=\"30\" viewBox=\"0 0 1 1\"><g/></svg>"
+  },
+  {
+   "input": "<svg width=\"10\"><g/></svg>",
+   "output": "<svg width=\"10\"><g/></svg>"
+  },
+  {
+   "input": "<svg height=\"10\"><g/></svg>",
+   "output": "<svg height=\"10\"><g/></svg>"
+  },
+  {
+   "input": "<svg width=\"10\" height=\"20\"></svg><svg width=\"1\" height=\"2\"></svg>",
+   "output": "<svg width=\"10\" height=\"20\" viewBox=\"0 0 10 20\"></svg><svg width=\"1\" height=\"2\"></svg>"
+  },
+  {
+   "input": "<svg\nwidth=\"7\"\nheight=\"9\">\n<g/></svg>",
+   "output": "<svg\nwidth=\"7\"\nheight=\"9\" viewBox=\"0 0 7 9\">\n<g/></svg>"
+  },
+  {
+   "input": "<g/>",
+   "error": "VTracer output has no <svg> element"
+  }
+ ],
+ "edges": [
+  {
+   "id": "rtkelly-labs.master",
+   "file": "assets/rtkelly-labs/rtkelly-labs.svg",
+   "hex": {
+    "totalEdges": 558,
+    "totalLength": 17338.35699692645,
+    "conformingLength": 8684.449085712626,
+    "axisConformancePct": 50.088074,
+    "summary": {
+     "axis_conformance_pct": 50.09,
+     "total_edges": 558,
+     "micro_segment": 160,
+     "off_axis": 166,
+     "collinear": 0,
+     "staircase": 35
+    },
+    "defects": {
+     "count": 361,
+     "linesSha256": "5b42e9ff978bfa1f24b22e7a6b28aabf3c8f1807e383154cfe6f5f4fdfc98ebf",
+     "first": [
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 1,
+       "length": 17.88854381999832,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 1: off_axis (659,216)->(675,224) len=17.9px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 3,
+       "length": 10.816653826391969,
+       "angle": 33.690067525979785,
+       "deviation": 3.690067525979785,
+       "describe": "path 1 seg 3: off_axis (803,299)->(812,305) len=10.8px angle=33.7° dev=+3.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 4,
+       "length": 8.602325267042627,
+       "angle": 54.46232220802562,
+       "deviation": -5.5376777919743745,
+       "describe": "path 1 seg 4: off_axis (812,305)->(817,312) len=8.6px angle=54.5° dev=-5.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 9,
+       "length": 28.0178514522438,
+       "angle": 145.1755108430432,
+       "deviation": -4.824489156956787,
+       "describe": "path 1 seg 9: off_axis (811,484)->(788,500) len=28.0px angle=145.2° dev=-4.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 13,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 13: micro_segment (757,489)->(757,487) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 14,
+       "length": 22.360679774997898,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 1 seg 14: off_axis (757,487)->(737,477) len=22.4px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 15,
+       "length": 3.1622776601683795,
+       "angle": 71.56505117707798,
+       "deviation": 11.565051177077976,
+       "describe": "path 1 seg 15: micro_segment (737,477)->(736,474) len=3.2px angle=71.6° dev=+11.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 16,
+       "length": 23.706539182259394,
+       "angle": 27.64597536373867,
+       "deviation": -2.354024636261329,
+       "describe": "path 1 seg 16: off_axis (736,474)->(715,463) len=23.7px angle=27.6° dev=-2.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 17,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 17: micro_segment (715,463)->(715,461) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 19,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 19: micro_segment (709,459)->(709,457) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 20,
+       "length": 4.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 20: micro_segment (709,457)->(705,457) len=4.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 21: micro_segment (705,457)->(705,455) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 23,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 23: micro_segment (700,454)->(702,450) len=4.5px angle=116.6° dev=-3.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 26,
+       "length": 72.00694410957877,
+       "angle": 89.20427644726071,
+       "deviation": -0.7957235527392896,
+       "describe": "path 1 seg 26: off_axis (724,434)->(723,362) len=72.0px angle=89.2° dev=-0.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 28,
+       "length": 30.23243291566195,
+       "angle": 34.2157021324374,
+       "deviation": 4.2157021324374,
+       "describe": "path 1 seg 28: off_axis (718,361)->(693,344) len=30.2px angle=34.2° dev=+4.2°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 30,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 30: micro_segment (684,341)->(684,339) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 32,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 32: micro_segment (675,335)->(675,333) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 38,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 38: micro_segment (560,377)->(558,381) len=4.5px angle=116.6° dev=-3.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 39,
+       "length": 38.01315561749642,
+       "angle": 91.50743575877497,
+       "deviation": 1.5074357587749745,
+       "describe": "path 1 seg 39: off_axis (558,381)->(557,419) len=38.0px angle=91.5° dev=+1.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 42,
+       "length": 43.56604182158393,
+       "angle": 31.865977693603696,
+       "deviation": 1.8659776936036963,
+       "describe": "path 1 seg 42: off_axis (499,449)->(462,426) len=43.6px angle=31.9° dev=+1.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 45,
+       "length": 11.661903789690601,
+       "angle": 120.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 45: off_axis (464,330)->(470,320) len=11.7px angle=121.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 47,
+       "length": 190.53870997778904,
+       "angle": 149.3972382019449,
+       "deviation": -0.6027617980550986,
+       "describe": "path 1 seg 47: off_axis (477,314)->(641,217) len=190.5px angle=149.4° dev=-0.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 48,
+       "length": 4.123105625617661,
+       "angle": 165.96375653207352,
+       "deviation": -14.036243467926482,
+       "describe": "path 1 seg 48: micro_segment (641,217)->(645,216) len=4.1px angle=166.0° dev=-14.0°"
+      },
+      {
+       "kind": "staircase",
+       "pathIndex": 1,
+       "segmentIndex": 20,
+       "length": 4.47213595499958,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 1 seg 20: staircase (709,457)->(705,455) len=4.5px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "staircase",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 5.830951894845301,
+       "angle": 30.963756532073518,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 21: staircase (705,457)->(700,454) len=5.8px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 1,
+       "length": 45.79301256742124,
+       "angle": 31.6075022462489,
+       "deviation": 1.6075022462488988,
+       "describe": "path 2 seg 1: off_axis (245,522)->(284,546) len=45.8px angle=31.6° dev=+1.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 2,
+       "length": 12.083045973594572,
+       "angle": 24.443954780416536,
+       "deviation": -5.556045219583467,
+       "describe": "path 2 seg 2: off_axis (284,546)->(295,551) len=12.1px angle=24.4° dev=-5.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 3,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 2 seg 3: micro_segment (295,551)->(295,553) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 4,
+       "length": 7.211102550927978,
+       "angle": 33.690067525979785,
+       "deviation": 3.690067525979785,
+       "describe": "path 2 seg 4: off_axis (295,553)->(301,557) len=7.2px angle=33.7° dev=+3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 5,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 2 seg 5: micro_segment (301,557)->(301,559) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 8,
+       "length": 4.123105625617661,
+       "angle": 14.036243467926479,
+       "deviation": 14.036243467926482,
+       "describe": "path 2 seg 8: micro_segment (315,567)->(319,568) len=4.1px angle=14.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 9,
+       "length": 4.242640687119285,
+       "angle": 45.0,
+       "deviation": 15.0,
+       "describe": "path 2 seg 9: micro_segment (319,568)->(322,571) len=4.2px angle=45.0° dev=+15.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 10,
+       "length": 5.830951894845301,
+       "angle": 120.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 2 seg 10: off_axis (322,571)->(319,576) len=5.8px angle=121.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 11,
+       "length": 6.708203932499369,
+       "angle": 153.434948822922,
+       "deviation": 3.4349488229219958,
+       "describe": "path 2 seg 11: off_axis (319,576)->(313,579) len=6.7px angle=153.4° dev=+3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 14,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292202,
+       "deviation": -11.565051177077976,
+       "describe": "path 2 seg 14: micro_segment (303,585)->(302,588) len=3.2px angle=108.4° dev=-11.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 15,
+       "length": 3.1622776601683795,
+       "angle": 161.565051177078,
+       "deviation": 11.565051177078004,
+       "describe": "path 2 seg 15: micro_segment (302,588)->(299,589) len=3.2px angle=161.6° dev=+11.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 17,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 2 seg 17: micro_segment (299,658)->(301,658) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 19,
+       "length": 71.34423592694787,
+       "angle": 31.23921488820876,
+       "deviation": 1.239214888208764,
+       "describe": "path 2 seg 19: off_axis (306,663)->(367,700) len=71.3px angle=31.2° dev=+1.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 21,
+       "length": 91.0659101969557,
+       "angle": 148.92834193915368,
+       "deviation": -1.0716580608463175,
+       "describe": "path 2 seg 21: off_axis (376,700)->(454,653) len=91.1px angle=148.9° dev=-1.1°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 22,
+       "length": 12.206555615733702,
+       "angle": 124.99202019855866,
+       "deviation": 4.992020198558663,
+       "describe": "path 2 seg 22: off_axis (454,653)->(461,643) len=12.2px angle=125.0° dev=+5.0°"
+      }
+     ]
+    },
+    "regularizedSha256": "f67f8f291452409886b893d45d68f8f0af9d8c5aa96e580a7205b713a1450653",
+    "afterConformancePct": 82.668623
+   },
+   "iso": {
+    "totalEdges": 558,
+    "totalLength": 17338.35699692645,
+    "conformingLength": 6312.200054719434,
+    "axisConformancePct": 36.405987,
+    "summary": {
+     "axis_conformance_pct": 36.41,
+     "total_edges": 558,
+     "micro_segment": 160,
+     "off_axis": 149,
+     "collinear": 0,
+     "staircase": 35
+    },
+    "defects": {
+     "count": 344,
+     "linesSha256": "b852c798d84309b84b005ff6c820e599af87a6488cb449315c02dda34b3b1707",
+     "first": [
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 1,
+       "length": 17.88854381999832,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 1: off_axis (659,216)->(675,224) len=17.9px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 3,
+       "length": 10.816653826391969,
+       "angle": 33.690067525979785,
+       "deviation": 3.690067525979785,
+       "describe": "path 1 seg 3: off_axis (803,299)->(812,305) len=10.8px angle=33.7° dev=+3.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 9,
+       "length": 28.0178514522438,
+       "angle": 145.1755108430432,
+       "deviation": -4.824489156956787,
+       "describe": "path 1 seg 9: off_axis (811,484)->(788,500) len=28.0px angle=145.2° dev=-4.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 13,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 13: micro_segment (757,489)->(757,487) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 14,
+       "length": 22.360679774997898,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 1 seg 14: off_axis (757,487)->(737,477) len=22.4px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 15,
+       "length": 3.1622776601683795,
+       "angle": 71.56505117707798,
+       "deviation": -18.434948822922024,
+       "describe": "path 1 seg 15: micro_segment (737,477)->(736,474) len=3.2px angle=71.6° dev=-18.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 16,
+       "length": 23.706539182259394,
+       "angle": 27.64597536373867,
+       "deviation": -2.354024636261329,
+       "describe": "path 1 seg 16: off_axis (736,474)->(715,463) len=23.7px angle=27.6° dev=-2.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 17,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 17: micro_segment (715,463)->(715,461) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 19,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 19: micro_segment (709,459)->(709,457) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 20,
+       "length": 4.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 20: micro_segment (709,457)->(705,457) len=4.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 21: micro_segment (705,457)->(705,455) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 23,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": 26.56505117707799,
+       "describe": "path 1 seg 23: micro_segment (700,454)->(702,450) len=4.5px angle=116.6° dev=+26.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 26,
+       "length": 72.00694410957877,
+       "angle": 89.20427644726071,
+       "deviation": -0.7957235527392896,
+       "describe": "path 1 seg 26: off_axis (724,434)->(723,362) len=72.0px angle=89.2° dev=-0.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 28,
+       "length": 30.23243291566195,
+       "angle": 34.2157021324374,
+       "deviation": 4.2157021324374,
+       "describe": "path 1 seg 28: off_axis (718,361)->(693,344) len=30.2px angle=34.2° dev=+4.2°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 30,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 30: micro_segment (684,341)->(684,339) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 32,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 32: micro_segment (675,335)->(675,333) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 38,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": 26.56505117707799,
+       "describe": "path 1 seg 38: micro_segment (560,377)->(558,381) len=4.5px angle=116.6° dev=+26.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 39,
+       "length": 38.01315561749642,
+       "angle": 91.50743575877497,
+       "deviation": 1.5074357587749745,
+       "describe": "path 1 seg 39: off_axis (558,381)->(557,419) len=38.0px angle=91.5° dev=+1.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 42,
+       "length": 43.56604182158393,
+       "angle": 31.865977693603696,
+       "deviation": 1.8659776936036963,
+       "describe": "path 1 seg 42: off_axis (499,449)->(462,426) len=43.6px angle=31.9° dev=+1.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 47,
+       "length": 190.53870997778904,
+       "angle": 149.3972382019449,
+       "deviation": -0.6027617980550986,
+       "describe": "path 1 seg 47: off_axis (477,314)->(641,217) len=190.5px angle=149.4° dev=-0.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 48,
+       "length": 4.123105625617661,
+       "angle": 165.96375653207352,
+       "deviation": 15.963756532073518,
+       "describe": "path 1 seg 48: micro_segment (641,217)->(645,216) len=4.1px angle=166.0° dev=+16.0°"
+      },
+      {
+       "kind": "staircase",
+       "pathIndex": 1,
+       "segmentIndex": 20,
+       "length": 4.47213595499958,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 1 seg 20: staircase (709,457)->(705,455) len=4.5px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "staircase",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 5.830951894845301,
+       "angle": 30.963756532073518,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 21: staircase (705,457)->(700,454) len=5.8px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 1,
+       "length": 45.79301256742124,
+       "angle": 31.6075022462489,
+       "deviation": 1.6075022462488988,
+       "describe": "path 2 seg 1: off_axis (245,522)->(284,546) len=45.8px angle=31.6° dev=+1.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 2,
+       "length": 12.083045973594572,
+       "angle": 24.443954780416536,
+       "deviation": -5.556045219583467,
+       "describe": "path 2 seg 2: off_axis (284,546)->(295,551) len=12.1px angle=24.4° dev=-5.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 3,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 2 seg 3: micro_segment (295,551)->(295,553) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 4,
+       "length": 7.211102550927978,
+       "angle": 33.690067525979785,
+       "deviation": 3.690067525979785,
+       "describe": "path 2 seg 4: off_axis (295,553)->(301,557) len=7.2px angle=33.7° dev=+3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 5,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 2 seg 5: micro_segment (301,557)->(301,559) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 8,
+       "length": 4.123105625617661,
+       "angle": 14.036243467926479,
+       "deviation": -15.963756532073518,
+       "describe": "path 2 seg 8: micro_segment (315,567)->(319,568) len=4.1px angle=14.0° dev=-16.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 9,
+       "length": 4.242640687119285,
+       "angle": 45.0,
+       "deviation": 15.0,
+       "describe": "path 2 seg 9: micro_segment (319,568)->(322,571) len=4.2px angle=45.0° dev=+15.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 11,
+       "length": 6.708203932499369,
+       "angle": 153.434948822922,
+       "deviation": 3.4349488229219958,
+       "describe": "path 2 seg 11: off_axis (319,576)->(313,579) len=6.7px angle=153.4° dev=+3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 14,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292202,
+       "deviation": 18.434948822922024,
+       "describe": "path 2 seg 14: micro_segment (303,585)->(302,588) len=3.2px angle=108.4° dev=+18.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 15,
+       "length": 3.1622776601683795,
+       "angle": 161.565051177078,
+       "deviation": 11.565051177078004,
+       "describe": "path 2 seg 15: micro_segment (302,588)->(299,589) len=3.2px angle=161.6° dev=+11.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 17,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 2 seg 17: micro_segment (299,658)->(301,658) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 19,
+       "length": 71.34423592694787,
+       "angle": 31.23921488820876,
+       "deviation": 1.239214888208764,
+       "describe": "path 2 seg 19: off_axis (306,663)->(367,700) len=71.3px angle=31.2° dev=+1.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 21,
+       "length": 91.0659101969557,
+       "angle": 148.92834193915368,
+       "deviation": -1.0716580608463175,
+       "describe": "path 2 seg 21: off_axis (376,700)->(454,653) len=91.1px angle=148.9° dev=-1.1°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 23,
+       "length": 24.020824298928627,
+       "angle": 92.38594403038881,
+       "deviation": 2.3859440303888135,
+       "describe": "path 2 seg 23: off_axis (461,643)->(462,619) len=24.0px angle=92.4° dev=+2.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 24,
+       "length": 79.40403012442127,
+       "angle": 148.91249467652003,
+       "deviation": -1.0875053234799736,
+       "describe": "path 2 seg 24: off_axis (462,619)->(530,578) len=79.4px angle=148.9° dev=-1.1°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 25,
+       "length": 31.38470965295043,
+       "angle": 30.650667957052864,
+       "deviation": 0.6506679570528604,
+       "describe": "path 2 seg 25: off_axis (530,578)->(557,594) len=31.4px angle=30.7° dev=+0.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 29,
+       "length": 25.238858928247925,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 2 seg 29: off_axis (547,708)->(526,722) len=25.2px angle=146.3° dev=-3.7°"
+      }
+     ]
+    },
+    "regularizedSha256": "2ba95d5a5f063f0072014a1ebb3e2514ad2eaed2e5e7586a5d26fe1af3cac50b",
+    "afterConformancePct": 67.947437
+   }
+  },
+  {
+   "id": "parquet-source-generator.master",
+   "file": "assets/parquet-source-generator/parquet-diamond.svg",
+   "hex": {
+    "totalEdges": 3953,
+    "totalLength": 114927.58300751318,
+    "conformingLength": 33294.16995536677,
+    "axisConformancePct": 28.969695,
+    "summary": {
+     "axis_conformance_pct": 28.97,
+     "total_edges": 3953,
+     "micro_segment": 1161,
+     "off_axis": 791,
+     "collinear": 0,
+     "staircase": 69
+    },
+    "defects": {
+     "count": 2021,
+     "linesSha256": "cf0ce6c811d269e64945fd14d2b5138656e03bd2cc55a631c73d7eae0255d5aa",
+     "first": [
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 2,
+       "length": 57.14017850864661,
+       "angle": 147.14427804956702,
+       "deviation": -2.8557219504329794,
+       "describe": "path 1 seg 2: off_axis (65,305)->(17,336) len=57.1px angle=147.1° dev=-2.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 8,
+       "length": 22.825424421026653,
+       "angle": 61.18920625702694,
+       "deviation": 1.1892062570269388,
+       "describe": "path 1 seg 8: off_axis (39,195)->(28,175) len=22.8px angle=61.2° dev=+1.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 0,
+       "length": 25.059928172283335,
+       "angle": 28.61045966596522,
+       "deviation": -1.389540334034777,
+       "describe": "path 2 seg 0: off_axis (0,0)->(22,12) len=25.1px angle=28.6° dev=-1.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 6,
+       "length": 10.295630140987,
+       "angle": 119.05460409907714,
+       "deviation": -0.9453959009228612,
+       "describe": "path 2 seg 6: off_axis (33,115)->(28,124) len=10.3px angle=119.1° dev=-0.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 7,
+       "length": 24.08318915758459,
+       "angle": 94.76364169072617,
+       "deviation": 4.763641690726175,
+       "describe": "path 2 seg 7: off_axis (28,124)->(26,148) len=24.1px angle=94.8° dev=+4.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 10,
+       "length": 13.416407864998739,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 2 seg 10: off_axis (42,174)->(54,180) len=13.4px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 3,
+       "segmentIndex": 0,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 3 seg 0: micro_segment (0,0)->(2,0) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 3,
+       "length": 107.00467279516349,
+       "angle": 89.46454101443547,
+       "deviation": -0.5354589855645315,
+       "describe": "path 3 seg 3: off_axis (-62,289)->(-63,182) len=107.0px angle=89.5° dev=-0.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 5,
+       "length": 10.295630140987,
+       "angle": 150.94539590092285,
+       "deviation": 0.945395900922847,
+       "describe": "path 3 seg 5: off_axis (-49,179)->(-40,174) len=10.3px angle=150.9° dev=+0.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 7,
+       "length": 20.12461179749811,
+       "angle": 116.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 3 seg 7: off_axis (-33,168)->(-24,150) len=20.1px angle=116.6° dev=-3.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 10,
+       "length": 11.661903789690601,
+       "angle": 59.03624346792648,
+       "deviation": -0.9637565320735177,
+       "describe": "path 3 seg 10: off_axis (-27,122)->(-33,112) len=11.7px angle=59.0° dev=-1.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 4,
+       "segmentIndex": 0,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 4 seg 0: micro_segment (0,0)->(2,0) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 5,
+       "length": 70.49113419430843,
+       "angle": 31.660751096636574,
+       "deviation": 1.6607510966365737,
+       "describe": "path 4 seg 5: off_axis (-68,174)->(-128,137) len=70.5px angle=31.7° dev=+1.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 5,
+       "segmentIndex": 0,
+       "length": 79.40403012442127,
+       "angle": 31.08750532347998,
+       "deviation": 1.0875053234799736,
+       "describe": "path 5 seg 0: off_axis (0,0)->(68,41) len=79.4px angle=31.1° dev=+1.1°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 5,
+       "segmentIndex": 5,
+       "length": 13.038404810405298,
+       "angle": 147.52880770915152,
+       "deviation": -2.471192290848478,
+       "describe": "path 5 seg 5: off_axis (18,193)->(29,186) len=13.0px angle=147.5° dev=-2.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 5,
+       "segmentIndex": 9,
+       "length": 21.470910553583888,
+       "angle": 62.241459398939966,
+       "deviation": 2.2414593989399663,
+       "describe": "path 5 seg 9: off_axis (41,147)->(31,128) len=21.5px angle=62.2° dev=+2.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 6,
+       "segmentIndex": 0,
+       "length": 63.52952069707436,
+       "angle": 28.178590109959174,
+       "deviation": -1.821409890040826,
+       "describe": "path 6 seg 0: off_axis (0,0)->(56,30) len=63.5px angle=28.2° dev=-1.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 7,
+       "segmentIndex": 0,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 7 seg 0: micro_segment (0,0)->(2,0) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 7,
+       "segmentIndex": 4,
+       "length": 44.294469180700204,
+       "angle": 151.69924423399362,
+       "deviation": 1.6992442339936247,
+       "describe": "path 7 seg 4: off_axis (-54,29)->(-15,8) len=44.3px angle=151.7° dev=+1.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 7,
+       "segmentIndex": 5,
+       "length": 17.0,
+       "angle": 151.92751306414704,
+       "deviation": 1.9275130641470355,
+       "describe": "path 7 seg 5: off_axis (-15,8)->(0,0) len=17.0px angle=151.9° dev=+1.9°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 8,
+       "segmentIndex": 4,
+       "length": 4.123105625617661,
+       "angle": 104.03624346792647,
+       "deviation": 14.036243467926468,
+       "describe": "path 8 seg 4: micro_segment (-33,33)->(-32,29) len=4.1px angle=104.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 9,
+       "segmentIndex": 5,
+       "length": 1.4142135623730951,
+       "angle": 135.0,
+       "deviation": 15.0,
+       "describe": "path 9 seg 5: micro_segment (-1,1)->(0,0) len=1.4px angle=135.0° dev=+15.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 10,
+       "segmentIndex": 3,
+       "length": 4.47213595499958,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 10 seg 3: micro_segment (168,166)->(164,164) len=4.5px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 10,
+       "segmentIndex": 5,
+       "length": 2.23606797749979,
+       "angle": 63.43494882292201,
+       "deviation": 3.43494882292201,
+       "describe": "path 10 seg 5: micro_segment (1,2)->(0,0) len=2.2px angle=63.4° dev=+3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 11,
+       "segmentIndex": 0,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 11 seg 0: micro_segment (0,0)->(2,0) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 11,
+       "segmentIndex": 4,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 11 seg 4: micro_segment (-152,155)->(-152,153) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 11,
+       "segmentIndex": 6,
+       "length": 2.23606797749979,
+       "angle": 116.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 11 seg 6: micro_segment (-1,2)->(0,0) len=2.2px angle=116.6° dev=-3.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 12,
+       "segmentIndex": 0,
+       "length": 29.154759474226502,
+       "angle": 30.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 12 seg 0: off_axis (0,0)->(25,15) len=29.2px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 12,
+       "segmentIndex": 1,
+       "length": 15.033296378372908,
+       "angle": 86.18592516570965,
+       "deviation": -3.814074834290352,
+       "describe": "path 12 seg 1: off_axis (25,15)->(26,30) len=15.0px angle=86.2° dev=-3.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 12,
+       "segmentIndex": 4,
+       "length": 10.816653826391969,
+       "angle": 33.690067525979785,
+       "deviation": 3.690067525979785,
+       "describe": "path 12 seg 4: off_axis (39,53)->(48,59) len=10.8px angle=33.7° dev=+3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 13,
+       "segmentIndex": 3,
+       "length": 4.123105625617661,
+       "angle": 14.036243467926482,
+       "deviation": 14.036243467926482,
+       "describe": "path 13 seg 3: micro_segment (-70,133)->(-74,132) len=4.1px angle=14.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 14,
+       "segmentIndex": 3,
+       "length": 4.123105625617661,
+       "angle": 14.036243467926482,
+       "deviation": 14.036243467926482,
+       "describe": "path 14 seg 3: micro_segment (135,133)->(131,132) len=4.1px angle=14.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 14,
+       "segmentIndex": 5,
+       "length": 1.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 14 seg 5: micro_segment (0,1)->(0,0) len=1.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 15,
+       "segmentIndex": 2,
+       "length": 12.083045973594572,
+       "angle": 114.44395478041653,
+       "deviation": -5.556045219583467,
+       "describe": "path 15 seg 2: off_axis (32,204)->(27,215) len=12.1px angle=114.4° dev=-5.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 15,
+       "segmentIndex": 3,
+       "length": 31.38470965295043,
+       "angle": 149.34933204294714,
+       "deviation": -0.6506679570528604,
+       "describe": "path 15 seg 3: off_axis (27,215)->(0,231) len=31.4px angle=149.3° dev=-0.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 16,
+       "segmentIndex": 5,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292202,
+       "deviation": -11.565051177077976,
+       "describe": "path 16 seg 5: micro_segment (157,72)->(156,75) len=3.2px angle=108.4° dev=-11.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 16,
+       "segmentIndex": 6,
+       "length": 59.481089431852205,
+       "angle": 153.0041616059134,
+       "deviation": 3.0041616059133958,
+       "describe": "path 16 seg 6: off_axis (156,75)->(103,102) len=59.5px angle=153.0° dev=+3.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 16,
+       "segmentIndex": 8,
+       "length": 1.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 16 seg 8: micro_segment (0,1)->(0,0) len=1.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 17,
+       "segmentIndex": 2,
+       "length": 62.609903369994115,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 17 seg 2: off_axis (-25,102)->(-81,74) len=62.6px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 17,
+       "segmentIndex": 3,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 17 seg 3: micro_segment (-81,74)->(-81,72) len=2.0px angle=90.0° dev=+0.0°"
+      }
+     ]
+    },
+    "regularizedSha256": "b9b3230c54ae2cdd9e421867d58b09bb7fb2287b5509ce46a9e685c4b9b64a31",
+    "afterConformancePct": 35.023407
+   },
+   "iso": {
+    "totalEdges": 3953,
+    "totalLength": 114927.58300751318,
+    "conformingLength": 24806.069011801075,
+    "axisConformancePct": 21.584087,
+    "summary": {
+     "axis_conformance_pct": 21.58,
+     "total_edges": 3953,
+     "micro_segment": 1161,
+     "off_axis": 616,
+     "collinear": 0,
+     "staircase": 69
+    },
+    "defects": {
+     "count": 1846,
+     "linesSha256": "e7a0846d7ea315fca49843823ebe5a6a81e838503d7687455dd4982fc56ccbb4",
+     "first": [
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 2,
+       "length": 57.14017850864661,
+       "angle": 147.14427804956702,
+       "deviation": -2.8557219504329794,
+       "describe": "path 1 seg 2: off_axis (65,305)->(17,336) len=57.1px angle=147.1° dev=-2.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 0,
+       "length": 25.059928172283335,
+       "angle": 28.61045966596522,
+       "deviation": -1.389540334034777,
+       "describe": "path 2 seg 0: off_axis (0,0)->(22,12) len=25.1px angle=28.6° dev=-1.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 7,
+       "length": 24.08318915758459,
+       "angle": 94.76364169072617,
+       "deviation": 4.763641690726175,
+       "describe": "path 2 seg 7: off_axis (28,124)->(26,148) len=24.1px angle=94.8° dev=+4.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 10,
+       "length": 13.416407864998739,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 2 seg 10: off_axis (42,174)->(54,180) len=13.4px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 3,
+       "segmentIndex": 0,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 3 seg 0: micro_segment (0,0)->(2,0) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 3,
+       "length": 107.00467279516349,
+       "angle": 89.46454101443547,
+       "deviation": -0.5354589855645315,
+       "describe": "path 3 seg 3: off_axis (-62,289)->(-63,182) len=107.0px angle=89.5° dev=-0.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 5,
+       "length": 10.295630140987,
+       "angle": 150.94539590092285,
+       "deviation": 0.945395900922847,
+       "describe": "path 3 seg 5: off_axis (-49,179)->(-40,174) len=10.3px angle=150.9° dev=+0.9°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 4,
+       "segmentIndex": 0,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 4 seg 0: micro_segment (0,0)->(2,0) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 5,
+       "length": 70.49113419430843,
+       "angle": 31.660751096636574,
+       "deviation": 1.6607510966365737,
+       "describe": "path 4 seg 5: off_axis (-68,174)->(-128,137) len=70.5px angle=31.7° dev=+1.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 5,
+       "segmentIndex": 0,
+       "length": 79.40403012442127,
+       "angle": 31.08750532347998,
+       "deviation": 1.0875053234799736,
+       "describe": "path 5 seg 0: off_axis (0,0)->(68,41) len=79.4px angle=31.1° dev=+1.1°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 5,
+       "segmentIndex": 5,
+       "length": 13.038404810405298,
+       "angle": 147.52880770915152,
+       "deviation": -2.471192290848478,
+       "describe": "path 5 seg 5: off_axis (18,193)->(29,186) len=13.0px angle=147.5° dev=-2.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 6,
+       "segmentIndex": 0,
+       "length": 63.52952069707436,
+       "angle": 28.178590109959174,
+       "deviation": -1.821409890040826,
+       "describe": "path 6 seg 0: off_axis (0,0)->(56,30) len=63.5px angle=28.2° dev=-1.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 7,
+       "segmentIndex": 0,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 7 seg 0: micro_segment (0,0)->(2,0) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 7,
+       "segmentIndex": 4,
+       "length": 44.294469180700204,
+       "angle": 151.69924423399362,
+       "deviation": 1.6992442339936247,
+       "describe": "path 7 seg 4: off_axis (-54,29)->(-15,8) len=44.3px angle=151.7° dev=+1.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 7,
+       "segmentIndex": 5,
+       "length": 17.0,
+       "angle": 151.92751306414704,
+       "deviation": 1.9275130641470355,
+       "describe": "path 7 seg 5: off_axis (-15,8)->(0,0) len=17.0px angle=151.9° dev=+1.9°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 8,
+       "segmentIndex": 4,
+       "length": 4.123105625617661,
+       "angle": 104.03624346792647,
+       "deviation": 14.036243467926468,
+       "describe": "path 8 seg 4: micro_segment (-33,33)->(-32,29) len=4.1px angle=104.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 9,
+       "segmentIndex": 5,
+       "length": 1.4142135623730951,
+       "angle": 135.0,
+       "deviation": -15.0,
+       "describe": "path 9 seg 5: micro_segment (-1,1)->(0,0) len=1.4px angle=135.0° dev=-15.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 10,
+       "segmentIndex": 3,
+       "length": 4.47213595499958,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 10 seg 3: micro_segment (168,166)->(164,164) len=4.5px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 10,
+       "segmentIndex": 5,
+       "length": 2.23606797749979,
+       "angle": 63.43494882292201,
+       "deviation": -26.56505117707799,
+       "describe": "path 10 seg 5: micro_segment (1,2)->(0,0) len=2.2px angle=63.4° dev=-26.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 11,
+       "segmentIndex": 0,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 11 seg 0: micro_segment (0,0)->(2,0) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 11,
+       "segmentIndex": 4,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 11 seg 4: micro_segment (-152,155)->(-152,153) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 11,
+       "segmentIndex": 6,
+       "length": 2.23606797749979,
+       "angle": 116.56505117707799,
+       "deviation": 26.56505117707799,
+       "describe": "path 11 seg 6: micro_segment (-1,2)->(0,0) len=2.2px angle=116.6° dev=+26.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 12,
+       "segmentIndex": 0,
+       "length": 29.154759474226502,
+       "angle": 30.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 12 seg 0: off_axis (0,0)->(25,15) len=29.2px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 12,
+       "segmentIndex": 1,
+       "length": 15.033296378372908,
+       "angle": 86.18592516570965,
+       "deviation": -3.814074834290352,
+       "describe": "path 12 seg 1: off_axis (25,15)->(26,30) len=15.0px angle=86.2° dev=-3.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 12,
+       "segmentIndex": 4,
+       "length": 10.816653826391969,
+       "angle": 33.690067525979785,
+       "deviation": 3.690067525979785,
+       "describe": "path 12 seg 4: off_axis (39,53)->(48,59) len=10.8px angle=33.7° dev=+3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 13,
+       "segmentIndex": 3,
+       "length": 4.123105625617661,
+       "angle": 14.036243467926482,
+       "deviation": -15.963756532073518,
+       "describe": "path 13 seg 3: micro_segment (-70,133)->(-74,132) len=4.1px angle=14.0° dev=-16.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 14,
+       "segmentIndex": 3,
+       "length": 4.123105625617661,
+       "angle": 14.036243467926482,
+       "deviation": -15.963756532073518,
+       "describe": "path 14 seg 3: micro_segment (135,133)->(131,132) len=4.1px angle=14.0° dev=-16.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 14,
+       "segmentIndex": 5,
+       "length": 1.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 14 seg 5: micro_segment (0,1)->(0,0) len=1.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 15,
+       "segmentIndex": 3,
+       "length": 31.38470965295043,
+       "angle": 149.34933204294714,
+       "deviation": -0.6506679570528604,
+       "describe": "path 15 seg 3: off_axis (27,215)->(0,231) len=31.4px angle=149.3° dev=-0.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 16,
+       "segmentIndex": 5,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292202,
+       "deviation": 18.434948822922024,
+       "describe": "path 16 seg 5: micro_segment (157,72)->(156,75) len=3.2px angle=108.4° dev=+18.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 16,
+       "segmentIndex": 6,
+       "length": 59.481089431852205,
+       "angle": 153.0041616059134,
+       "deviation": 3.0041616059133958,
+       "describe": "path 16 seg 6: off_axis (156,75)->(103,102) len=59.5px angle=153.0° dev=+3.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 16,
+       "segmentIndex": 8,
+       "length": 1.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 16 seg 8: micro_segment (0,1)->(0,0) len=1.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 17,
+       "segmentIndex": 2,
+       "length": 62.609903369994115,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 17 seg 2: off_axis (-25,102)->(-81,74) len=62.6px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 17,
+       "segmentIndex": 3,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 17 seg 3: micro_segment (-81,74)->(-81,72) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 17,
+       "segmentIndex": 4,
+       "length": 62.76941930590086,
+       "angle": 149.34933204294714,
+       "deviation": -0.6506679570528604,
+       "describe": "path 17 seg 4: off_axis (-81,72)->(-27,40) len=62.8px angle=149.3° dev=-0.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 17,
+       "segmentIndex": 8,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": 26.56505117707799,
+       "describe": "path 17 seg 8: micro_segment (-2,4)->(0,0) len=4.5px angle=116.6° dev=+26.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 18,
+       "segmentIndex": 3,
+       "length": 26.076809620810597,
+       "angle": 94.39870535499553,
+       "deviation": 4.398705354995528,
+       "describe": "path 18 seg 3: off_axis (7,69)->(9,43) len=26.1px angle=94.4° dev=+4.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 18,
+       "segmentIndex": 6,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": 26.56505117707799,
+       "describe": "path 18 seg 6: micro_segment (-13,13)->(-11,9) len=4.5px angle=116.6° dev=+26.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 19,
+       "segmentIndex": 0,
+       "length": 4.123105625617661,
+       "angle": 14.036243467926479,
+       "deviation": -15.963756532073518,
+       "describe": "path 19 seg 0: micro_segment (0,0)->(4,1) len=4.1px angle=14.0° dev=-16.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 19,
+       "segmentIndex": 2,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 19 seg 2: micro_segment (11,12)->(13,12) len=2.0px angle=0.0° dev=-30.0°"
+      }
+     ]
+    },
+    "regularizedSha256": "50ad64c5dd8171a7d65015b8316ac7ff7557630618bd6f1113952817adce8b63",
+    "afterConformancePct": 26.678196
+   }
+  },
+  {
+   "id": "rtkelly-labs.autotraced",
+   "file": "tests/Rig.Image.Tests/Oracle/candidates/rtkelly-labs.autotraced.svg",
+   "hex": {
+    "totalEdges": 24790,
+    "totalLength": 184648.83826342272,
+    "conformingLength": 64863.33413246831,
+    "axisConformancePct": 35.127941,
+    "summary": {
+     "axis_conformance_pct": 35.13,
+     "total_edges": 24790,
+     "micro_segment": 12797,
+     "off_axis": 3969,
+     "collinear": 0,
+     "staircase": 5725
+    },
+    "defects": {
+     "count": 22491,
+     "linesSha256": "1bf19e1a9ce37caee2d3672823c16ebe5b05534f4bfb4143576516554fb7c90f",
+     "first": [
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 2,
+       "length": 23.323807579381203,
+       "angle": 30.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 2: off_axis (24,4)->(44,16) len=23.3px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 3,
+       "length": 17.4928556845359,
+       "angle": 30.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 3: off_axis (44,16)->(59,25) len=17.5px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 5,
+       "length": 13.038404810405298,
+       "angle": 32.47119229084849,
+       "deviation": 2.4711922908484922,
+       "describe": "path 1 seg 5: off_axis (73,33)->(84,40) len=13.0px angle=32.5° dev=+2.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 6,
+       "length": 23.323807579381203,
+       "angle": 30.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 6: off_axis (84,40)->(104,52) len=23.3px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 7,
+       "length": 10.816653826391969,
+       "angle": 33.690067525979785,
+       "deviation": 3.690067525979785,
+       "describe": "path 1 seg 7: off_axis (104,52)->(113,58) len=10.8px angle=33.7° dev=+3.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 8,
+       "length": 12.529964086141668,
+       "angle": 28.61045966596522,
+       "deviation": -1.389540334034777,
+       "describe": "path 1 seg 8: off_axis (113,58)->(124,64) len=12.5px angle=28.6° dev=-1.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 9,
+       "length": 9.433981132056603,
+       "angle": 32.005383208083494,
+       "deviation": 2.0053832080834866,
+       "describe": "path 1 seg 9: off_axis (124,64)->(132,69) len=9.4px angle=32.0° dev=+2.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 10,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 10: micro_segment (132,69)->(132,71) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 11,
+       "length": 31.38470965295043,
+       "angle": 149.34933204294714,
+       "deviation": -0.6506679570528604,
+       "describe": "path 1 seg 11: off_axis (132,71)->(105,87) len=31.4px angle=149.3° dev=-0.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 17,
+       "length": 24.020824298928627,
+       "angle": 92.38594403038883,
+       "deviation": 2.3859440303888277,
+       "describe": "path 1 seg 17: off_axis (83,123)->(82,147) len=24.0px angle=92.4° dev=+2.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 19,
+       "length": 3.1622776601683795,
+       "angle": 71.56505117707798,
+       "deviation": 11.565051177077976,
+       "describe": "path 1 seg 19: micro_segment (75,145)->(74,142) len=3.2px angle=71.6° dev=+11.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 10.295630140987,
+       "angle": 29.054604099077153,
+       "deviation": -0.945395900922847,
+       "describe": "path 1 seg 21: off_axis (68,140)->(59,135) len=10.3px angle=29.1° dev=-0.9°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 22,
+       "length": 4.123105625617661,
+       "angle": 14.036243467926482,
+       "deviation": 14.036243467926482,
+       "describe": "path 1 seg 22: micro_segment (59,135)->(55,134) len=4.1px angle=14.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 23,
+       "length": 4.242640687119285,
+       "angle": 45.0,
+       "deviation": 15.0,
+       "describe": "path 1 seg 23: micro_segment (55,134)->(52,131) len=4.2px angle=45.0° dev=+15.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 24,
+       "length": 9.433981132056603,
+       "angle": 32.00538320808349,
+       "deviation": 2.0053832080834866,
+       "describe": "path 1 seg 24: off_axis (52,131)->(44,126) len=9.4px angle=32.0° dev=+2.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 25,
+       "length": 5.830951894845301,
+       "angle": 30.963756532073518,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 25: off_axis (44,126)->(39,123) len=5.8px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 27,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 27: micro_segment (32,119)->(32,117) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 31,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 31: micro_segment (14,109)->(14,107) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 32,
+       "length": 11.045361017187261,
+       "angle": 174.8055710922652,
+       "deviation": -5.194428907734789,
+       "describe": "path 1 seg 32: off_axis (14,107)->(3,108) len=11.0px angle=174.8° dev=-5.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 33,
+       "length": 13.038404810405298,
+       "angle": 147.52880770915152,
+       "deviation": -2.471192290848478,
+       "describe": "path 1 seg 33: off_axis (3,108)->(-8,115) len=13.0px angle=147.5° dev=-2.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 34,
+       "length": 13.416407864998739,
+       "angle": 153.434948822922,
+       "deviation": 3.4349488229219958,
+       "describe": "path 1 seg 34: off_axis (-8,115)->(-20,121) len=13.4px angle=153.4° dev=+3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 35,
+       "length": 4.242640687119285,
+       "angle": 135.0,
+       "deviation": 15.0,
+       "describe": "path 1 seg 35: micro_segment (-20,121)->(-23,124) len=4.2px angle=135.0° dev=+15.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 37,
+       "length": 11.661903789690601,
+       "angle": 149.03624346792648,
+       "deviation": -0.9637565320735177,
+       "describe": "path 1 seg 37: off_axis (-30,127)->(-40,133) len=11.7px angle=149.0° dev=-1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 38,
+       "length": 10.295630140987,
+       "angle": 150.94539590092285,
+       "deviation": 0.945395900922847,
+       "describe": "path 1 seg 38: off_axis (-40,133)->(-49,138) len=10.3px angle=150.9° dev=+0.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 39,
+       "length": 13.038404810405298,
+       "angle": 147.52880770915152,
+       "deviation": -2.471192290848478,
+       "describe": "path 1 seg 39: off_axis (-49,138)->(-60,145) len=13.0px angle=147.5° dev=-2.5°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 42,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 42: micro_segment (-64,219)->(-62,219) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 44,
+       "length": 9.433981132056603,
+       "angle": 32.005383208083494,
+       "deviation": 2.0053832080834866,
+       "describe": "path 1 seg 44: off_axis (-58,224)->(-50,229) len=9.4px angle=32.0° dev=+2.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 46,
+       "length": 6.708203932499369,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 46: off_axis (-36,232)->(-30,235) len=6.7px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 47,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 47: micro_segment (-30,235)->(-30,233) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 48,
+       "length": 3.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 48: micro_segment (-30,233)->(-27,233) len=3.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 49,
+       "length": 47.01063709417264,
+       "angle": 91.21887523513129,
+       "deviation": 1.2188752351312928,
+       "describe": "path 1 seg 49: off_axis (-27,233)->(-26,186) len=47.0px angle=91.2° dev=+1.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 50,
+       "length": 18.027756377319946,
+       "angle": 93.17983011986423,
+       "deviation": 3.179830119864235,
+       "describe": "path 1 seg 50: off_axis (-26,186)->(-25,168) len=18.0px angle=93.2° dev=+3.2°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 51,
+       "length": 3.605551275463989,
+       "angle": 123.69006752597979,
+       "deviation": 3.690067525979785,
+       "describe": "path 1 seg 51: micro_segment (-25,168)->(-23,165) len=3.6px angle=123.7° dev=+3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 52,
+       "length": 3.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 52: micro_segment (-23,165)->(-20,165) len=3.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 53,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 53: micro_segment (-20,165)->(-20,163) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 56,
+       "length": 22.47220505424423,
+       "angle": 147.72435568542238,
+       "deviation": -2.275644314577619,
+       "describe": "path 1 seg 56: off_axis (-3,157)->(16,145) len=22.5px angle=147.7° dev=-2.3°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 58,
+       "length": 3.605551275463989,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 58: micro_segment (28,138)->(31,136) len=3.6px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 60,
+       "length": 32.7566787083184,
+       "angle": 31.26373169437743,
+       "deviation": 1.2637316943774266,
+       "describe": "path 1 seg 60: off_axis (36,137)->(64,154) len=32.8px angle=31.3° dev=+1.3°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 61,
+       "length": 21.095023109728988,
+       "angle": 31.429565614838516,
+       "deviation": 1.4295656148385092,
+       "describe": "path 1 seg 61: off_axis (64,154)->(82,165) len=21.1px angle=31.4° dev=+1.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 64,
+       "length": 22.47220505424423,
+       "angle": 32.27564431457763,
+       "deviation": 2.275644314577633,
+       "describe": "path 1 seg 64: off_axis (87,220)->(106,232) len=22.5px angle=32.3° dev=+2.3°"
+      }
+     ]
+    },
+    "regularizedSha256": "4e776bf754659b8be0c6055120f5999f86a0bf2463e9d29e9c9a7a7735e1bf66",
+    "afterConformancePct": 49.425179
+   },
+   "iso": {
+    "totalEdges": 24790,
+    "totalLength": 184648.83826342272,
+    "conformingLength": 47866.21349299894,
+    "axisConformancePct": 25.922835,
+    "summary": {
+     "axis_conformance_pct": 25.92,
+     "total_edges": 24790,
+     "micro_segment": 12797,
+     "off_axis": 3590,
+     "collinear": 0,
+     "staircase": 5725
+    },
+    "defects": {
+     "count": 22112,
+     "linesSha256": "376735c09b616e98c0466fe1d62eb4a7e9d6b5a30229ad928a730ad078661716",
+     "first": [
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 2,
+       "length": 23.323807579381203,
+       "angle": 30.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 2: off_axis (24,4)->(44,16) len=23.3px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 3,
+       "length": 17.4928556845359,
+       "angle": 30.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 3: off_axis (44,16)->(59,25) len=17.5px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 5,
+       "length": 13.038404810405298,
+       "angle": 32.47119229084849,
+       "deviation": 2.4711922908484922,
+       "describe": "path 1 seg 5: off_axis (73,33)->(84,40) len=13.0px angle=32.5° dev=+2.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 6,
+       "length": 23.323807579381203,
+       "angle": 30.96375653207352,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 6: off_axis (84,40)->(104,52) len=23.3px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 7,
+       "length": 10.816653826391969,
+       "angle": 33.690067525979785,
+       "deviation": 3.690067525979785,
+       "describe": "path 1 seg 7: off_axis (104,52)->(113,58) len=10.8px angle=33.7° dev=+3.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 8,
+       "length": 12.529964086141668,
+       "angle": 28.61045966596522,
+       "deviation": -1.389540334034777,
+       "describe": "path 1 seg 8: off_axis (113,58)->(124,64) len=12.5px angle=28.6° dev=-1.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 9,
+       "length": 9.433981132056603,
+       "angle": 32.005383208083494,
+       "deviation": 2.0053832080834866,
+       "describe": "path 1 seg 9: off_axis (124,64)->(132,69) len=9.4px angle=32.0° dev=+2.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 10,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 10: micro_segment (132,69)->(132,71) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 11,
+       "length": 31.38470965295043,
+       "angle": 149.34933204294714,
+       "deviation": -0.6506679570528604,
+       "describe": "path 1 seg 11: off_axis (132,71)->(105,87) len=31.4px angle=149.3° dev=-0.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 17,
+       "length": 24.020824298928627,
+       "angle": 92.38594403038883,
+       "deviation": 2.3859440303888277,
+       "describe": "path 1 seg 17: off_axis (83,123)->(82,147) len=24.0px angle=92.4° dev=+2.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 19,
+       "length": 3.1622776601683795,
+       "angle": 71.56505117707798,
+       "deviation": -18.434948822922024,
+       "describe": "path 1 seg 19: micro_segment (75,145)->(74,142) len=3.2px angle=71.6° dev=-18.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 10.295630140987,
+       "angle": 29.054604099077153,
+       "deviation": -0.945395900922847,
+       "describe": "path 1 seg 21: off_axis (68,140)->(59,135) len=10.3px angle=29.1° dev=-0.9°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 22,
+       "length": 4.123105625617661,
+       "angle": 14.036243467926482,
+       "deviation": -15.963756532073518,
+       "describe": "path 1 seg 22: micro_segment (59,135)->(55,134) len=4.1px angle=14.0° dev=-16.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 23,
+       "length": 4.242640687119285,
+       "angle": 45.0,
+       "deviation": 15.0,
+       "describe": "path 1 seg 23: micro_segment (55,134)->(52,131) len=4.2px angle=45.0° dev=+15.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 24,
+       "length": 9.433981132056603,
+       "angle": 32.00538320808349,
+       "deviation": 2.0053832080834866,
+       "describe": "path 1 seg 24: off_axis (52,131)->(44,126) len=9.4px angle=32.0° dev=+2.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 25,
+       "length": 5.830951894845301,
+       "angle": 30.963756532073518,
+       "deviation": 0.9637565320735177,
+       "describe": "path 1 seg 25: off_axis (44,126)->(39,123) len=5.8px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 27,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 27: micro_segment (32,119)->(32,117) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 31,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 31: micro_segment (14,109)->(14,107) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 33,
+       "length": 13.038404810405298,
+       "angle": 147.52880770915152,
+       "deviation": -2.471192290848478,
+       "describe": "path 1 seg 33: off_axis (3,108)->(-8,115) len=13.0px angle=147.5° dev=-2.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 34,
+       "length": 13.416407864998739,
+       "angle": 153.434948822922,
+       "deviation": 3.4349488229219958,
+       "describe": "path 1 seg 34: off_axis (-8,115)->(-20,121) len=13.4px angle=153.4° dev=+3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 35,
+       "length": 4.242640687119285,
+       "angle": 135.0,
+       "deviation": -15.0,
+       "describe": "path 1 seg 35: micro_segment (-20,121)->(-23,124) len=4.2px angle=135.0° dev=-15.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 37,
+       "length": 11.661903789690601,
+       "angle": 149.03624346792648,
+       "deviation": -0.9637565320735177,
+       "describe": "path 1 seg 37: off_axis (-30,127)->(-40,133) len=11.7px angle=149.0° dev=-1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 38,
+       "length": 10.295630140987,
+       "angle": 150.94539590092285,
+       "deviation": 0.945395900922847,
+       "describe": "path 1 seg 38: off_axis (-40,133)->(-49,138) len=10.3px angle=150.9° dev=+0.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 39,
+       "length": 13.038404810405298,
+       "angle": 147.52880770915152,
+       "deviation": -2.471192290848478,
+       "describe": "path 1 seg 39: off_axis (-49,138)->(-60,145) len=13.0px angle=147.5° dev=-2.5°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 42,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 42: micro_segment (-64,219)->(-62,219) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 44,
+       "length": 9.433981132056603,
+       "angle": 32.005383208083494,
+       "deviation": 2.0053832080834866,
+       "describe": "path 1 seg 44: off_axis (-58,224)->(-50,229) len=9.4px angle=32.0° dev=+2.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 46,
+       "length": 6.708203932499369,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 46: off_axis (-36,232)->(-30,235) len=6.7px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 47,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 47: micro_segment (-30,235)->(-30,233) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 48,
+       "length": 3.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 48: micro_segment (-30,233)->(-27,233) len=3.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 49,
+       "length": 47.01063709417264,
+       "angle": 91.21887523513129,
+       "deviation": 1.2188752351312928,
+       "describe": "path 1 seg 49: off_axis (-27,233)->(-26,186) len=47.0px angle=91.2° dev=+1.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 50,
+       "length": 18.027756377319946,
+       "angle": 93.17983011986423,
+       "deviation": 3.179830119864235,
+       "describe": "path 1 seg 50: off_axis (-26,186)->(-25,168) len=18.0px angle=93.2° dev=+3.2°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 51,
+       "length": 3.605551275463989,
+       "angle": 123.69006752597979,
+       "deviation": -26.309932474020215,
+       "describe": "path 1 seg 51: micro_segment (-25,168)->(-23,165) len=3.6px angle=123.7° dev=-26.3°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 52,
+       "length": 3.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 52: micro_segment (-23,165)->(-20,165) len=3.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 53,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 53: micro_segment (-20,165)->(-20,163) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 56,
+       "length": 22.47220505424423,
+       "angle": 147.72435568542238,
+       "deviation": -2.275644314577619,
+       "describe": "path 1 seg 56: off_axis (-3,157)->(16,145) len=22.5px angle=147.7° dev=-2.3°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 58,
+       "length": 3.605551275463989,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 58: micro_segment (28,138)->(31,136) len=3.6px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 60,
+       "length": 32.7566787083184,
+       "angle": 31.26373169437743,
+       "deviation": 1.2637316943774266,
+       "describe": "path 1 seg 60: off_axis (36,137)->(64,154) len=32.8px angle=31.3° dev=+1.3°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 61,
+       "length": 21.095023109728988,
+       "angle": 31.429565614838516,
+       "deviation": 1.4295656148385092,
+       "describe": "path 1 seg 61: off_axis (64,154)->(82,165) len=21.1px angle=31.4° dev=+1.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 64,
+       "length": 22.47220505424423,
+       "angle": 32.27564431457763,
+       "deviation": 2.275644314577633,
+       "describe": "path 1 seg 64: off_axis (87,220)->(106,232) len=22.5px angle=32.3° dev=+2.3°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 65,
+       "length": 32.7566787083184,
+       "angle": 31.26373169437743,
+       "deviation": 1.2637316943774266,
+       "describe": "path 1 seg 65: off_axis (106,232)->(134,249) len=32.8px angle=31.3° dev=+1.3°"
+      }
+     ]
+    },
+    "regularizedSha256": "1a895f6f3616da1421ea029db5c9ee8176ef8aef07b6dc2a7a4cfd5c9807f85c",
+    "afterConformancePct": 40.184681
+   }
+  },
+  {
+   "id": "parquet-source-generator.autotraced",
+   "file": "tests/Rig.Image.Tests/Oracle/candidates/parquet-source-generator.autotraced.svg",
+   "hex": {
+    "totalEdges": 21889,
+    "totalLength": 289601.197576519,
+    "conformingLength": 101291.51948613494,
+    "axisConformancePct": 34.976209,
+    "summary": {
+     "axis_conformance_pct": 34.98,
+     "total_edges": 21889,
+     "micro_segment": 8421,
+     "off_axis": 2797,
+     "collinear": 0,
+     "staircase": 2903
+    },
+    "defects": {
+     "count": 14121,
+     "linesSha256": "89baad33ba44aaff94b2b37e34d4f1a194019b7b29c9673a85a493ac954f3f2f",
+     "first": [
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 0,
+       "length": 4.47213595499958,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 0: micro_segment (0,0)->(4,2) len=4.5px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 5,
+       "length": 48.25971404805462,
+       "angle": 145.98065001017355,
+       "deviation": -4.019349989826452,
+       "describe": "path 1 seg 5: off_axis (66,305)->(26,332) len=48.3px angle=146.0° dev=-4.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 6,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292202,
+       "deviation": -11.565051177077976,
+       "describe": "path 1 seg 6: micro_segment (26,332)->(25,335) len=3.2px angle=108.4° dev=-11.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 8,
+       "length": 14.422205101855956,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 8: off_axis (30,333)->(42,325) len=14.4px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 9,
+       "length": 4.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 9: micro_segment (42,325)->(46,325) len=4.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 11,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 11: micro_segment (91,370)->(91,372) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 12,
+       "length": 71.00704190430693,
+       "angle": 179.19307054489764,
+       "deviation": -0.8069294551023631,
+       "describe": "path 1 seg 12: off_axis (91,372)->(20,373) len=71.0px angle=179.2° dev=-0.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 13,
+       "length": 1.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 13: micro_segment (20,373)->(20,374) len=1.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 14,
+       "length": 90.00555538409837,
+       "angle": 0.6365935759634865,
+       "deviation": 0.636593575963488,
+       "describe": "path 1 seg 14: off_axis (20,374)->(110,375) len=90.0px angle=0.6° dev=+0.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 15,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 15: micro_segment (110,375)->(110,373) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 16,
+       "length": 13.038404810405298,
+       "angle": 4.3987053549955135,
+       "deviation": 4.3987053549955135,
+       "describe": "path 1 seg 16: off_axis (110,373)->(97,372) len=13.0px angle=4.4° dev=+4.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 20,
+       "length": 28.844410203711913,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 20: off_axis (48,321)->(72,305) len=28.8px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 23.021728866442675,
+       "angle": 145.61965527615513,
+       "deviation": -4.380344723844871,
+       "describe": "path 1 seg 21: off_axis (72,305)->(91,292) len=23.0px angle=145.6° dev=-4.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 22,
+       "length": 7.211102550927978,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 22: off_axis (91,292)->(97,288) len=7.2px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 24,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292201,
+       "deviation": -11.56505117707799,
+       "describe": "path 1 seg 24: micro_segment (98,295)->(99,292) len=3.2px angle=108.4° dev=-11.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 26,
+       "length": 2.23606797749979,
+       "angle": 116.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 26: micro_segment (100,283)->(101,281) len=2.2px angle=116.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 27,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 27: micro_segment (101,281)->(103,281) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 28,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 28: micro_segment (103,281)->(105,277) len=4.5px angle=116.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 29,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 29: micro_segment (105,277)->(107,277) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 30,
+       "length": 4.123105625617661,
+       "angle": 104.03624346792647,
+       "deviation": 14.036243467926468,
+       "describe": "path 1 seg 30: micro_segment (107,277)->(108,273) len=4.1px angle=104.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 31,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 31: micro_segment (108,273)->(110,273) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 32,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292201,
+       "deviation": -11.56505117707799,
+       "describe": "path 1 seg 32: micro_segment (110,273)->(111,270) len=3.2px angle=108.4° dev=-11.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 33,
+       "length": 8.602325267042627,
+       "angle": 144.46232220802563,
+       "deviation": -5.5376777919743745,
+       "describe": "path 1 seg 33: off_axis (111,270)->(118,265) len=8.6px angle=144.5° dev=-5.5°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 34,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 34: micro_segment (118,265)->(120,265) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 35,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 35: micro_segment (120,265)->(120,263) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 38,
+       "length": 13.416407864998739,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 38: off_axis (150,259)->(162,265) len=13.4px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 42,
+       "length": 2.23606797749979,
+       "angle": 63.43494882292201,
+       "deviation": 3.43494882292201,
+       "describe": "path 1 seg 42: micro_segment (175,283)->(176,285) len=2.2px angle=63.4° dev=+3.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 44,
+       "length": 8.94427190999916,
+       "angle": 116.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 44: off_axis (176,302)->(172,310) len=8.9px angle=116.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 46,
+       "length": 2.23606797749979,
+       "angle": 116.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 46: micro_segment (169,317)->(168,319) len=2.2px angle=116.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 47,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 47: micro_segment (168,319)->(166,319) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 48,
+       "length": 4.123105625617661,
+       "angle": 104.03624346792648,
+       "deviation": 14.036243467926482,
+       "describe": "path 1 seg 48: micro_segment (166,319)->(165,323) len=4.1px angle=104.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 49,
+       "length": 3.1622776601683795,
+       "angle": 161.565051177078,
+       "deviation": 11.565051177078004,
+       "describe": "path 1 seg 49: micro_segment (165,323)->(162,324) len=3.2px angle=161.6° dev=+11.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 50,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 50: micro_segment (162,324)->(160,328) len=4.5px angle=116.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 51,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292202,
+       "deviation": -11.565051177077976,
+       "describe": "path 1 seg 51: micro_segment (160,328)->(159,331) len=3.2px angle=108.4° dev=-11.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 52,
+       "length": 10.816653826391969,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 52: off_axis (159,331)->(168,325) len=10.8px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 54,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292201,
+       "deviation": -11.56505117707799,
+       "describe": "path 1 seg 54: micro_segment (174,318)->(175,315) len=3.2px angle=108.4° dev=-11.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 55,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 55: micro_segment (175,315)->(177,315) len=2.0px angle=0.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 60,
+       "length": 10.816653826391969,
+       "angle": 56.309932474020215,
+       "deviation": -3.690067525979785,
+       "describe": "path 1 seg 60: off_axis (176,275)->(170,266) len=10.8px angle=56.3° dev=-3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 62,
+       "length": 4.47213595499958,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 1 seg 62: micro_segment (162,259)->(158,257) len=4.5px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 63,
+       "length": 4.123105625617661,
+       "angle": 104.03624346792647,
+       "deviation": 14.036243467926468,
+       "describe": "path 1 seg 63: micro_segment (158,257)->(159,253) len=4.1px angle=104.0° dev=+14.0°"
+      }
+     ]
+    },
+    "regularizedSha256": "b4e1f8a49c3b3af54e406cfb901eb9b1c0b253ba9043b164afe42ad083897ac7",
+    "afterConformancePct": 34.954148
+   },
+   "iso": {
+    "totalEdges": 21889,
+    "totalLength": 289601.197576519,
+    "conformingLength": 81174.83316563327,
+    "axisConformancePct": 28.029868,
+    "summary": {
+     "axis_conformance_pct": 28.03,
+     "total_edges": 21889,
+     "micro_segment": 8421,
+     "off_axis": 2106,
+     "collinear": 0,
+     "staircase": 2903
+    },
+    "defects": {
+     "count": 13430,
+     "linesSha256": "7b3142f3278a7deb8c7abcc75087bbb85f469a61540a34c709f702ad0e60c236",
+     "first": [
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 0,
+       "length": 4.47213595499958,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 0: micro_segment (0,0)->(4,2) len=4.5px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 5,
+       "length": 48.25971404805462,
+       "angle": 145.98065001017355,
+       "deviation": -4.019349989826452,
+       "describe": "path 1 seg 5: off_axis (66,305)->(26,332) len=48.3px angle=146.0° dev=-4.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 6,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292202,
+       "deviation": 18.434948822922024,
+       "describe": "path 1 seg 6: micro_segment (26,332)->(25,335) len=3.2px angle=108.4° dev=+18.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 8,
+       "length": 14.422205101855956,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 8: off_axis (30,333)->(42,325) len=14.4px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 9,
+       "length": 4.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 9: micro_segment (42,325)->(46,325) len=4.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 11,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 11: micro_segment (91,370)->(91,372) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 13,
+       "length": 1.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 13: micro_segment (20,373)->(20,374) len=1.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 15,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 15: micro_segment (110,375)->(110,373) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 20,
+       "length": 28.844410203711913,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 20: off_axis (48,321)->(72,305) len=28.8px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 23.021728866442675,
+       "angle": 145.61965527615513,
+       "deviation": -4.380344723844871,
+       "describe": "path 1 seg 21: off_axis (72,305)->(91,292) len=23.0px angle=145.6° dev=-4.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 22,
+       "length": 7.211102550927978,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 22: off_axis (91,292)->(97,288) len=7.2px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 24,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292201,
+       "deviation": 18.43494882292201,
+       "describe": "path 1 seg 24: micro_segment (98,295)->(99,292) len=3.2px angle=108.4° dev=+18.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 26,
+       "length": 2.23606797749979,
+       "angle": 116.56505117707799,
+       "deviation": 26.56505117707799,
+       "describe": "path 1 seg 26: micro_segment (100,283)->(101,281) len=2.2px angle=116.6° dev=+26.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 27,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 27: micro_segment (101,281)->(103,281) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 28,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": 26.56505117707799,
+       "describe": "path 1 seg 28: micro_segment (103,281)->(105,277) len=4.5px angle=116.6° dev=+26.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 29,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 29: micro_segment (105,277)->(107,277) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 30,
+       "length": 4.123105625617661,
+       "angle": 104.03624346792647,
+       "deviation": 14.036243467926468,
+       "describe": "path 1 seg 30: micro_segment (107,277)->(108,273) len=4.1px angle=104.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 31,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 31: micro_segment (108,273)->(110,273) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 32,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292201,
+       "deviation": 18.43494882292201,
+       "describe": "path 1 seg 32: micro_segment (110,273)->(111,270) len=3.2px angle=108.4° dev=+18.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 33,
+       "length": 8.602325267042627,
+       "angle": 144.46232220802563,
+       "deviation": -5.5376777919743745,
+       "describe": "path 1 seg 33: off_axis (111,270)->(118,265) len=8.6px angle=144.5° dev=-5.5°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 34,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 34: micro_segment (118,265)->(120,265) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 35,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 35: micro_segment (120,265)->(120,263) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 38,
+       "length": 13.416407864998739,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 38: off_axis (150,259)->(162,265) len=13.4px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 42,
+       "length": 2.23606797749979,
+       "angle": 63.43494882292201,
+       "deviation": -26.56505117707799,
+       "describe": "path 1 seg 42: micro_segment (175,283)->(176,285) len=2.2px angle=63.4° dev=-26.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 46,
+       "length": 2.23606797749979,
+       "angle": 116.56505117707799,
+       "deviation": 26.56505117707799,
+       "describe": "path 1 seg 46: micro_segment (169,317)->(168,319) len=2.2px angle=116.6° dev=+26.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 47,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 47: micro_segment (168,319)->(166,319) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 48,
+       "length": 4.123105625617661,
+       "angle": 104.03624346792648,
+       "deviation": 14.036243467926482,
+       "describe": "path 1 seg 48: micro_segment (166,319)->(165,323) len=4.1px angle=104.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 49,
+       "length": 3.1622776601683795,
+       "angle": 161.565051177078,
+       "deviation": 11.565051177078004,
+       "describe": "path 1 seg 49: micro_segment (165,323)->(162,324) len=3.2px angle=161.6° dev=+11.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 50,
+       "length": 4.47213595499958,
+       "angle": 116.56505117707799,
+       "deviation": 26.56505117707799,
+       "describe": "path 1 seg 50: micro_segment (162,324)->(160,328) len=4.5px angle=116.6° dev=+26.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 51,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292202,
+       "deviation": 18.434948822922024,
+       "describe": "path 1 seg 51: micro_segment (160,328)->(159,331) len=3.2px angle=108.4° dev=+18.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 52,
+       "length": 10.816653826391969,
+       "angle": 146.30993247402023,
+       "deviation": -3.690067525979771,
+       "describe": "path 1 seg 52: off_axis (159,331)->(168,325) len=10.8px angle=146.3° dev=-3.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 54,
+       "length": 3.1622776601683795,
+       "angle": 108.43494882292201,
+       "deviation": 18.43494882292201,
+       "describe": "path 1 seg 54: micro_segment (174,318)->(175,315) len=3.2px angle=108.4° dev=+18.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 55,
+       "length": 2.0,
+       "angle": 0.0,
+       "deviation": -30.0,
+       "describe": "path 1 seg 55: micro_segment (175,315)->(177,315) len=2.0px angle=0.0° dev=-30.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 62,
+       "length": 4.47213595499958,
+       "angle": 26.565051177078004,
+       "deviation": -3.4349488229219958,
+       "describe": "path 1 seg 62: micro_segment (162,259)->(158,257) len=4.5px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 63,
+       "length": 4.123105625617661,
+       "angle": 104.03624346792647,
+       "deviation": 14.036243467926468,
+       "describe": "path 1 seg 63: micro_segment (158,257)->(159,253) len=4.1px angle=104.0° dev=+14.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 64,
+       "length": 3.1622776601683795,
+       "angle": 18.434948822921996,
+       "deviation": -11.565051177078004,
+       "describe": "path 1 seg 64: micro_segment (159,253)->(156,252) len=3.2px angle=18.4° dev=-11.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 65,
+       "length": 2.8284271247461903,
+       "angle": 135.0,
+       "deviation": -15.0,
+       "describe": "path 1 seg 65: micro_segment (156,252)->(154,254) len=2.8px angle=135.0° dev=-15.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 68,
+       "length": 4.47213595499958,
+       "angle": 26.56505117707799,
+       "deviation": -3.43494882292201,
+       "describe": "path 1 seg 68: micro_segment (142,142)->(146,144) len=4.5px angle=26.6° dev=-3.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 73,
+       "length": 2.0,
+       "angle": 90.0,
+       "deviation": 0.0,
+       "describe": "path 1 seg 73: micro_segment (201,196)->(201,198) len=2.0px angle=90.0° dev=+0.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 74,
+       "length": 3.1622776601683795,
+       "angle": 18.43494882292201,
+       "deviation": -11.56505117707799,
+       "describe": "path 1 seg 74: micro_segment (201,198)->(204,199) len=3.2px angle=18.4° dev=-11.6°"
+      }
+     ]
+    },
+    "regularizedSha256": "8477a4530b07a229d89d13f26593158b06d98aaa4264c72aea65f8e392d5086e",
+    "afterConformancePct": 26.936553
+   }
+  },
+  {
+   "id": "rtkelly-labs.regularized",
+   "file": "tests/Rig.Image.Tests/Oracle/candidates/rtkelly-labs.regularized.svg",
+   "hex": {
+    "totalEdges": 380,
+    "totalLength": 17291.34361403728,
+    "conformingLength": 14294.515652379845,
+    "axisConformancePct": 82.668623,
+    "summary": {
+     "axis_conformance_pct": 82.67,
+     "total_edges": 380,
+     "micro_segment": 24,
+     "off_axis": 62,
+     "collinear": 0,
+     "staircase": 0
+    },
+    "defects": {
+     "count": 86,
+     "linesSha256": "99975c200e0f6a63f5d930b1a516b992ea2a3b80f898e5492fea413485e0a1b4",
+     "first": [
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 0,
+       "length": 15.935294161075234,
+       "angle": 28.07671696755545,
+       "deviation": -1.9232830324445445,
+       "describe": "path 1 seg 0: off_axis (661,216)->(675,224) len=15.9px angle=28.1° dev=-1.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 2,
+       "length": 11.025107709224438,
+       "angle": 31.801562911996072,
+       "deviation": 1.801562911996072,
+       "describe": "path 1 seg 2: off_axis (803,299)->(812,305) len=11.0px angle=31.8° dev=+1.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 18,
+       "length": 2.141588195708995,
+       "angle": 11.309932474020513,
+       "deviation": 11.309932474020513,
+       "describe": "path 1 seg 18: micro_segment (724,362)->(721,362) len=2.1px angle=11.3° dev=+11.3°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 20,
+       "length": 2.204109797628085,
+       "angle": 18.51715218045399,
+       "deviation": -11.48284781954601,
+       "describe": "path 1 seg 20: micro_segment (688,342)->(686,342) len=2.2px angle=18.5° dev=-11.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 12.50299964008636,
+       "angle": 31.592491562936914,
+       "deviation": 1.5924915629369139,
+       "describe": "path 1 seg 21: off_axis (686,342)->(675,335) len=12.5px angle=31.6° dev=+1.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 28,
+       "length": 2.6220793275566523,
+       "angle": 11.43849421677902,
+       "deviation": 11.43849421677902,
+       "describe": "path 1 seg 28: micro_segment (504,450)->(501,449) len=2.6px angle=11.4° dev=+11.4°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 0,
+       "length": 2.8260396317108016,
+       "angle": 11.429215673331079,
+       "deviation": 11.429215673331072,
+       "describe": "path 2 seg 0: micro_segment (240,521)->(243,522) len=2.8px angle=11.4° dev=+11.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 1,
+       "length": 47.680320888181946,
+       "angle": 30.76591562232723,
+       "deviation": 0.7659156223272277,
+       "describe": "path 2 seg 1: off_axis (243,522)->(284,546) len=47.7px angle=30.8° dev=+0.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 2,
+       "length": 14.223923509355668,
+       "angle": 27.645975363738717,
+       "deviation": -2.354024636261286,
+       "describe": "path 2 seg 2: off_axis (284,546)->(297,553) len=14.2px angle=27.6° dev=-2.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 13,
+       "length": 8.33249062405712,
+       "angle": 32.85090839255855,
+       "deviation": 2.8509083925585514,
+       "describe": "path 2 seg 13: off_axis (299,658)->(306,663) len=8.3px angle=32.9° dev=+2.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 14,
+       "length": 72.66533974323661,
+       "angle": 30.6094656917501,
+       "deviation": 0.6094656917501027,
+       "describe": "path 2 seg 14: off_axis (306,663)->(369,700) len=72.7px angle=30.6° dev=+0.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 24,
+       "length": 23.301933396179816,
+       "angle": 147.99461679191646,
+       "deviation": -2.0053832080835434,
+       "describe": "path 2 seg 24: off_axis (546,710)->(526,722) len=23.3px angle=148.0° dev=-2.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 28,
+       "length": 6.352952069707457,
+       "angle": 28.17859010995909,
+       "deviation": -1.8214098900409113,
+       "describe": "path 2 seg 28: off_axis (364,809)->(358,806) len=6.4px angle=28.2° dev=-1.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 29,
+       "length": 161.38463371709216,
+       "angle": 30.537547117828638,
+       "deviation": 0.5375471178286375,
+       "describe": "path 2 seg 29: off_axis (358,806)->(219,724) len=161.4px angle=30.5° dev=+0.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 30,
+       "length": 7.495291855558422,
+       "angle": 31.80281093832744,
+       "deviation": 1.8028109383274398,
+       "describe": "path 2 seg 30: off_axis (219,724)->(213,720) len=7.5px angle=31.8° dev=+1.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 32,
+       "length": 4.585302607244168,
+       "angle": 71.5650511770782,
+       "deviation": 11.565051177078203,
+       "describe": "path 2 seg 32: micro_segment (206,709)->(205,705) len=4.6px angle=71.6° dev=+11.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 8,
+       "length": 12.08386113789789,
+       "angle": 150.71973247521726,
+       "deviation": 0.7197324752172563,
+       "describe": "path 3 seg 8: off_axis (728,770)->(717,776) len=12.1px angle=150.7° dev=+0.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 11,
+       "length": 30.280761218965395,
+       "angle": 151.73384545206574,
+       "deviation": 1.7338454520657365,
+       "describe": "path 3 seg 11: off_axis (701,786)->(674,800) len=30.3px angle=151.7° dev=+1.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 12,
+       "length": 14.20188719853804,
+       "angle": 148.12290985899617,
+       "deviation": -1.8770901410038334,
+       "describe": "path 3 seg 12: off_axis (674,800)->(662,808) len=14.2px angle=148.1° dev=-1.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 14,
+       "length": 16.26268428027792,
+       "angle": 27.46317877283505,
+       "deviation": -2.5368212271649497,
+       "describe": "path 3 seg 14: off_axis (642,808)->(628,800) len=16.3px angle=27.5° dev=-2.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 18,
+       "length": 52.837025843625966,
+       "angle": 31.021407496580196,
+       "deviation": 1.0214074965801956,
+       "describe": "path 3 seg 18: off_axis (569,765)->(524,738) len=52.8px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 20,
+       "length": 23.3189986920536,
+       "angle": 120.65614810975109,
+       "deviation": 0.6561481097510864,
+       "describe": "path 3 seg 20: off_axis (556,719)->(568,699) len=23.3px angle=120.7° dev=+0.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 21,
+       "length": 8.4647268118942,
+       "angle": 118.19989916116084,
+       "deviation": -1.8001008388391568,
+       "describe": "path 3 seg 21: off_axis (568,699)->(572,692) len=8.5px angle=118.2° dev=-1.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 3,
+       "segmentIndex": 24,
+       "length": 4.672001712328502,
+       "angle": 36.82084305208309,
+       "deviation": 6.820843052083092,
+       "describe": "path 3 seg 24: micro_segment (604,675)->(600,673) len=4.7px angle=36.8° dev=+6.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 25,
+       "length": 19.52439755792736,
+       "angle": 28.612801710581103,
+       "deviation": -1.3871982894189046,
+       "describe": "path 3 seg 25: off_axis (600,673)->(617,682) len=19.5px angle=28.6° dev=-1.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 26,
+       "length": 24.66740764652827,
+       "angle": 31.776408126327247,
+       "deviation": 1.7764081263272544,
+       "describe": "path 3 seg 26: off_axis (617,682)->(638,695) len=24.7px angle=31.8° dev=+1.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 3,
+       "segmentIndex": 27,
+       "length": 1.1216059914248526,
+       "angle": 21.99112991717371,
+       "deviation": -8.008870082826292,
+       "describe": "path 3 seg 27: micro_segment (638,695)->(637,695) len=1.1px angle=22.0° dev=-8.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 30,
+       "length": 12.705904139414914,
+       "angle": 151.8214098900409,
+       "deviation": 1.8214098900409113,
+       "describe": "path 3 seg 30: off_axis (658,700)->(669,694) len=12.7px angle=151.8° dev=+1.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 32,
+       "length": 36.927748374359346,
+       "angle": 148.6903229386797,
+       "deviation": -1.3096770613202864,
+       "describe": "path 3 seg 32: off_axis (686,684)->(718,665) len=36.9px angle=148.7° dev=-1.3°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 3,
+       "segmentIndex": 38,
+       "length": 1.7181676286090573,
+       "angle": 159.56104408508642,
+       "deviation": 9.561044085086422,
+       "describe": "path 3 seg 38: micro_segment (675,466)->(677,465) len=1.7px angle=159.6° dev=+9.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 4,
+       "segmentIndex": 0,
+       "length": 3.6506711711683986,
+       "angle": 20.023332899221966,
+       "deviation": -9.97666710077803,
+       "describe": "path 4 seg 0: micro_segment (379,216)->(383,218) len=3.7px angle=20.0° dev=-10.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 4,
+       "segmentIndex": 20,
+       "length": 3.81371210240102,
+       "angle": 161.66006896644484,
+       "deviation": 11.66006896644484,
+       "describe": "path 4 seg 20: micro_segment (304,363)->(300,364) len=3.8px angle=161.7° dev=+11.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 25,
+       "length": 21.885026844854455,
+       "angle": 31.700119422770065,
+       "deviation": 1.700119422770058,
+       "describe": "path 4 seg 25: off_axis (401,497)->(420,508) len=21.9px angle=31.7° dev=+1.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 4,
+       "segmentIndex": 26,
+       "length": 3.697891290992742,
+       "angle": 23.931025068068806,
+       "deviation": -6.068974931931194,
+       "describe": "path 4 seg 26: micro_segment (420,508)->(423,510) len=3.7px angle=23.9° dev=-6.1°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 28,
+       "length": 53.785561259505315,
+       "angle": 148.8900904030929,
+       "deviation": -1.1099095969071016,
+       "describe": "path 4 seg 28: off_axis (404,524)->(358,552) len=53.8px angle=148.9° dev=-1.1°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 29,
+       "length": 13.148764200486665,
+       "angle": 152.8503183022168,
+       "deviation": 2.850318302216806,
+       "describe": "path 4 seg 29: off_axis (358,552)->(346,558) len=13.1px angle=152.9° dev=+2.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 31,
+       "length": 20.731271065711358,
+       "angle": 28.839853307436385,
+       "deviation": -1.1601466925636146,
+       "describe": "path 4 seg 31: off_axis (332,558)->(314,548) len=20.7px angle=28.8° dev=-1.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 32,
+       "length": 86.6083136886985,
+       "angle": 31.304123495590943,
+       "deviation": 1.304123495590943,
+       "describe": "path 4 seg 32: off_axis (314,548)->(240,503) len=86.6px angle=31.3° dev=+1.3°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 33,
+       "length": 12.083045973594572,
+       "angle": 24.443954780416533,
+       "deviation": -5.556045219583467,
+       "describe": "path 4 seg 33: off_axis (240,503)->(229,498) len=12.1px angle=24.4° dev=-5.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 34,
+       "length": 14.705563573015498,
+       "angle": 33.236206264856435,
+       "deviation": 3.2362062648564347,
+       "describe": "path 4 seg 34: off_axis (229,498)->(217,490) len=14.7px angle=33.2° dev=+3.2°"
+      }
+     ]
+    },
+    "regularizedSha256": "4215e7115f6574fe344528ee4255ec22bc227e4c94eea2e4155aadf06fc88dcf",
+    "afterConformancePct": 88.212409
+   },
+   "iso": {
+    "totalEdges": 380,
+    "totalLength": 17291.34361403728,
+    "conformingLength": 11755.282903791202,
+    "axisConformancePct": 67.983629,
+    "summary": {
+     "axis_conformance_pct": 67.98,
+     "total_edges": 380,
+     "micro_segment": 24,
+     "off_axis": 60,
+     "collinear": 0,
+     "staircase": 0
+    },
+    "defects": {
+     "count": 84,
+     "linesSha256": "df8c603dbbc4d686afce5a7f10b2127f8f552db9dc65d72e3c01a61d32672adb",
+     "first": [
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 0,
+       "length": 15.935294161075234,
+       "angle": 28.07671696755545,
+       "deviation": -1.9232830324445445,
+       "describe": "path 1 seg 0: off_axis (661,216)->(675,224) len=15.9px angle=28.1° dev=-1.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 2,
+       "length": 11.025107709224438,
+       "angle": 31.801562911996072,
+       "deviation": 1.801562911996072,
+       "describe": "path 1 seg 2: off_axis (803,299)->(812,305) len=11.0px angle=31.8° dev=+1.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 18,
+       "length": 2.141588195708995,
+       "angle": 11.309932474020513,
+       "deviation": -18.690067525979487,
+       "describe": "path 1 seg 18: micro_segment (724,362)->(721,362) len=2.1px angle=11.3° dev=-18.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 20,
+       "length": 2.204109797628085,
+       "angle": 18.51715218045399,
+       "deviation": -11.48284781954601,
+       "describe": "path 1 seg 20: micro_segment (688,342)->(686,342) len=2.2px angle=18.5° dev=-11.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 1,
+       "segmentIndex": 21,
+       "length": 12.50299964008636,
+       "angle": 31.592491562936914,
+       "deviation": 1.5924915629369139,
+       "describe": "path 1 seg 21: off_axis (686,342)->(675,335) len=12.5px angle=31.6° dev=+1.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 1,
+       "segmentIndex": 28,
+       "length": 2.6220793275566523,
+       "angle": 11.43849421677902,
+       "deviation": -18.56150578322098,
+       "describe": "path 1 seg 28: micro_segment (504,450)->(501,449) len=2.6px angle=11.4° dev=-18.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 0,
+       "length": 2.8260396317108016,
+       "angle": 11.429215673331079,
+       "deviation": -18.570784326668928,
+       "describe": "path 2 seg 0: micro_segment (240,521)->(243,522) len=2.8px angle=11.4° dev=-18.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 1,
+       "length": 47.680320888181946,
+       "angle": 30.76591562232723,
+       "deviation": 0.7659156223272277,
+       "describe": "path 2 seg 1: off_axis (243,522)->(284,546) len=47.7px angle=30.8° dev=+0.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 2,
+       "length": 14.223923509355668,
+       "angle": 27.645975363738717,
+       "deviation": -2.354024636261286,
+       "describe": "path 2 seg 2: off_axis (284,546)->(297,553) len=14.2px angle=27.6° dev=-2.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 13,
+       "length": 8.33249062405712,
+       "angle": 32.85090839255855,
+       "deviation": 2.8509083925585514,
+       "describe": "path 2 seg 13: off_axis (299,658)->(306,663) len=8.3px angle=32.9° dev=+2.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 14,
+       "length": 72.66533974323661,
+       "angle": 30.6094656917501,
+       "deviation": 0.6094656917501027,
+       "describe": "path 2 seg 14: off_axis (306,663)->(369,700) len=72.7px angle=30.6° dev=+0.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 24,
+       "length": 23.301933396179816,
+       "angle": 147.99461679191646,
+       "deviation": -2.0053832080835434,
+       "describe": "path 2 seg 24: off_axis (546,710)->(526,722) len=23.3px angle=148.0° dev=-2.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 28,
+       "length": 6.352952069707457,
+       "angle": 28.17859010995909,
+       "deviation": -1.8214098900409113,
+       "describe": "path 2 seg 28: off_axis (364,809)->(358,806) len=6.4px angle=28.2° dev=-1.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 29,
+       "length": 161.38463371709216,
+       "angle": 30.537547117828638,
+       "deviation": 0.5375471178286375,
+       "describe": "path 2 seg 29: off_axis (358,806)->(219,724) len=161.4px angle=30.5° dev=+0.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 2,
+       "segmentIndex": 30,
+       "length": 7.495291855558422,
+       "angle": 31.80281093832744,
+       "deviation": 1.8028109383274398,
+       "describe": "path 2 seg 30: off_axis (219,724)->(213,720) len=7.5px angle=31.8° dev=+1.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 2,
+       "segmentIndex": 32,
+       "length": 4.585302607244168,
+       "angle": 71.5650511770782,
+       "deviation": -18.434948822921797,
+       "describe": "path 2 seg 32: micro_segment (206,709)->(205,705) len=4.6px angle=71.6° dev=-18.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 8,
+       "length": 12.08386113789789,
+       "angle": 150.71973247521726,
+       "deviation": 0.7197324752172563,
+       "describe": "path 3 seg 8: off_axis (728,770)->(717,776) len=12.1px angle=150.7° dev=+0.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 11,
+       "length": 30.280761218965395,
+       "angle": 151.73384545206574,
+       "deviation": 1.7338454520657365,
+       "describe": "path 3 seg 11: off_axis (701,786)->(674,800) len=30.3px angle=151.7° dev=+1.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 12,
+       "length": 14.20188719853804,
+       "angle": 148.12290985899617,
+       "deviation": -1.8770901410038334,
+       "describe": "path 3 seg 12: off_axis (674,800)->(662,808) len=14.2px angle=148.1° dev=-1.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 14,
+       "length": 16.26268428027792,
+       "angle": 27.46317877283505,
+       "deviation": -2.5368212271649497,
+       "describe": "path 3 seg 14: off_axis (642,808)->(628,800) len=16.3px angle=27.5° dev=-2.5°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 18,
+       "length": 52.837025843625966,
+       "angle": 31.021407496580196,
+       "deviation": 1.0214074965801956,
+       "describe": "path 3 seg 18: off_axis (569,765)->(524,738) len=52.8px angle=31.0° dev=+1.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 3,
+       "segmentIndex": 24,
+       "length": 4.672001712328502,
+       "angle": 36.82084305208309,
+       "deviation": 6.820843052083092,
+       "describe": "path 3 seg 24: micro_segment (604,675)->(600,673) len=4.7px angle=36.8° dev=+6.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 25,
+       "length": 19.52439755792736,
+       "angle": 28.612801710581103,
+       "deviation": -1.3871982894189046,
+       "describe": "path 3 seg 25: off_axis (600,673)->(617,682) len=19.5px angle=28.6° dev=-1.4°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 26,
+       "length": 24.66740764652827,
+       "angle": 31.776408126327247,
+       "deviation": 1.7764081263272544,
+       "describe": "path 3 seg 26: off_axis (617,682)->(638,695) len=24.7px angle=31.8° dev=+1.8°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 3,
+       "segmentIndex": 27,
+       "length": 1.1216059914248526,
+       "angle": 21.99112991717371,
+       "deviation": -8.008870082826292,
+       "describe": "path 3 seg 27: micro_segment (638,695)->(637,695) len=1.1px angle=22.0° dev=-8.0°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 30,
+       "length": 12.705904139414914,
+       "angle": 151.8214098900409,
+       "deviation": 1.8214098900409113,
+       "describe": "path 3 seg 30: off_axis (658,700)->(669,694) len=12.7px angle=151.8° dev=+1.8°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 3,
+       "segmentIndex": 32,
+       "length": 36.927748374359346,
+       "angle": 148.6903229386797,
+       "deviation": -1.3096770613202864,
+       "describe": "path 3 seg 32: off_axis (686,684)->(718,665) len=36.9px angle=148.7° dev=-1.3°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 3,
+       "segmentIndex": 38,
+       "length": 1.7181676286090573,
+       "angle": 159.56104408508642,
+       "deviation": 9.561044085086422,
+       "describe": "path 3 seg 38: micro_segment (675,466)->(677,465) len=1.7px angle=159.6° dev=+9.6°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 4,
+       "segmentIndex": 0,
+       "length": 3.6506711711683986,
+       "angle": 20.023332899221966,
+       "deviation": -9.97666710077803,
+       "describe": "path 4 seg 0: micro_segment (379,216)->(383,218) len=3.7px angle=20.0° dev=-10.0°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 4,
+       "segmentIndex": 20,
+       "length": 3.81371210240102,
+       "angle": 161.66006896644484,
+       "deviation": 11.66006896644484,
+       "describe": "path 4 seg 20: micro_segment (304,363)->(300,364) len=3.8px angle=161.7° dev=+11.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 25,
+       "length": 21.885026844854455,
+       "angle": 31.700119422770065,
+       "deviation": 1.700119422770058,
+       "describe": "path 4 seg 25: off_axis (401,497)->(420,508) len=21.9px angle=31.7° dev=+1.7°"
+      },
+      {
+       "kind": "micro_segment",
+       "pathIndex": 4,
+       "segmentIndex": 26,
+       "length": 3.697891290992742,
+       "angle": 23.931025068068806,
+       "deviation": -6.068974931931194,
+       "describe": "path 4 seg 26: micro_segment (420,508)->(423,510) len=3.7px angle=23.9° dev=-6.1°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 28,
+       "length": 53.785561259505315,
+       "angle": 148.8900904030929,
+       "deviation": -1.1099095969071016,
+       "describe": "path 4 seg 28: off_axis (404,524)->(358,552) len=53.8px angle=148.9° dev=-1.1°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 29,
+       "length": 13.148764200486665,
+       "angle": 152.8503183022168,
+       "deviation": 2.850318302216806,
+       "describe": "path 4 seg 29: off_axis (358,552)->(346,558) len=13.1px angle=152.9° dev=+2.9°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 31,
+       "length": 20.731271065711358,
+       "angle": 28.839853307436385,
+       "deviation": -1.1601466925636146,
+       "describe": "path 4 seg 31: off_axis (332,558)->(314,548) len=20.7px angle=28.8° dev=-1.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 32,
+       "length": 86.6083136886985,
+       "angle": 31.304123495590943,
+       "deviation": 1.304123495590943,
+       "describe": "path 4 seg 32: off_axis (314,548)->(240,503) len=86.6px angle=31.3° dev=+1.3°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 33,
+       "length": 12.083045973594572,
+       "angle": 24.443954780416533,
+       "deviation": -5.556045219583467,
+       "describe": "path 4 seg 33: off_axis (240,503)->(229,498) len=12.1px angle=24.4° dev=-5.6°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 4,
+       "segmentIndex": 34,
+       "length": 14.705563573015498,
+       "angle": 33.236206264856435,
+       "deviation": 3.2362062648564347,
+       "describe": "path 4 seg 34: off_axis (229,498)->(217,490) len=14.7px angle=33.2° dev=+3.2°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 5,
+       "segmentIndex": 2,
+       "length": 11.360110034678355,
+       "angle": 28.32466743555301,
+       "deviation": -1.6753325644469896,
+       "describe": "path 5 seg 2: off_axis (439,308)->(449,313) len=11.4px angle=28.3° dev=-1.7°"
+      },
+      {
+       "kind": "off_axis",
+       "pathIndex": 5,
+       "segmentIndex": 5,
+       "length": 29.98548982424667,
+       "angle": 32.24843511348254,
+       "deviation": 2.248435113482543,
+       "describe": "path 5 seg 5: off_axis (441,361)->(416,345) len=30.0px angle=32.2° dev=+2.2°"
+      }
+     ]
+    },
+    "regularizedSha256": "f6278ae09f9b0433a20c3190701ad4c17eaee2adb723ae36d2ab29c71698035b",
+    "afterConformancePct": 73.299254
+   }
+  },
+  {
+   "id": "rtkelly-labs.parametric",
+   "file": "tests/Rig.Image.Tests/Oracle/candidates/rtkelly-labs.parametric.svg",
+   "hex": {
+    "totalEdges": 148,
+    "totalLength": 17835.97580652663,
+    "conformingLength": 17835.97580652663,
+    "axisConformancePct": 100.0,
+    "summary": {
+     "axis_conformance_pct": 100.0,
+     "total_edges": 148,
+     "micro_segment": 0,
+     "off_axis": 0,
+     "collinear": 0,
+     "staircase": 0
+    },
+    "defects": {
+     "count": 0,
+     "linesSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "first": []
+    },
+    "regularizedSha256": "4bd9e1f562412c1cb4bbd1e727bb52fb0315066a57bd33b731d87831d7e459fe",
+    "afterConformancePct": 100.0
+   },
+   "iso": {
+    "totalEdges": 148,
+    "totalLength": 17835.97580652663,
+    "conformingLength": 15787.975806526625,
+    "axisConformancePct": 88.517589,
+    "summary": {
+     "axis_conformance_pct": 88.52,
+     "total_edges": 148,
+     "micro_segment": 0,
+     "off_axis": 0,
+     "collinear": 0,
+     "staircase": 0
+    },
+    "defects": {
+     "count": 0,
+     "linesSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "first": []
+    },
+    "regularizedSha256": "4bd9e1f562412c1cb4bbd1e727bb52fb0315066a57bd33b731d87831d7e459fe",
+    "afterConformancePct": 88.517589
+   }
+  }
+ ],
+ "edgeOptions": {
+  "exactTol": 1.0,
+  "angleTol": 3.0,
+  "minSegment": 12.0,
+  "totalEdges": 558,
+  "axisConformancePct": 65.500515,
+  "defects": 521
+ },
+ "syntheticEdges": {
+  "svg": "<svg><polygon points=\"0,0 100,3 100,100 0,100\" /><path d=\"M 0,0 L 10,0 L 10,10 Z M 20,20 L 40,20.2 L 40,40 L 20,40 Z\" /><path d=\"M0,0 C 1,1 2,2 3,3\" /><polygon points=\"1,1 2,2\" /></svg>",
+  "report": {
+   "totalEdges": 11,
+   "defects": {
+    "count": 2,
+    "linesSha256": "ef2c858debee7b66d793294cd6674f1946ae338b51ddd5d324114c42173a8e7c",
+    "first": [
+     {
+      "kind": "off_axis",
+      "pathIndex": 0,
+      "segmentIndex": 0,
+      "length": 100.04498987955368,
+      "angle": 1.7183580016554572,
+      "deviation": 1.71835800165546,
+      "describe": "path 0 seg 0: off_axis (0,0)->(100,3) len=100.0px angle=1.7° dev=+1.7°"
+     },
+     {
+      "kind": "off_axis",
+      "pathIndex": 1,
+      "segmentIndex": 0,
+      "length": 20.00099997500125,
+      "angle": 0.5729386976834839,
+      "deviation": 0.5729386976834832,
+      "describe": "path 1 seg 0: off_axis (20,20)->(40,20) len=20.0px angle=0.6° dev=+0.6°"
+     }
+    ]
+   },
+   "conformancePct": 73.739483
+  },
+  "regularized": "<svg><polygon points=\"-0.00,1.50 100.00,1.50 100.00,100.00 0.00,100.00\" /><path d=\"M -0.00,0.00 L 10.00,0.00 L 10.00,10.00 Z M 20.00,20.10 L 40.00,20.10 L 40.00,40.00 L 20.00,40.00 Z\" /><path d=\"M0,0 C 1,1 2,2 3,3\" /><polygon points=\"1,1 2,2\" /></svg>",
+  "regularizedPrecision0": "<svg><polygon points=\"-0,2 100,2 100,100 0,100\" /><path d=\"M -0,0 L 10,0 L 10,10 Z M 20,20 L 40,20 L 40,40 L 20,40 Z\" /><path d=\"M0,0 C 1,1 2,2 3,3\" /><polygon points=\"1,1 2,2\" /></svg>"
+ },
+ "parametric": {
+  "presets": {
+   "baseline": {
+    "sha256": "db10b4f573aeb411997778e65c177fac9104ffe99e77abec5998a20d03ffc296",
+    "file": "parametric.baseline.svg"
+   },
+   "chunky": {
+    "sha256": "b88ce9f30b317aa2de4099a6b138f0d60f26c2546cc574413184332f2baa874b",
+    "file": "parametric.chunky.svg"
+   },
+   "fine": {
+    "sha256": "aa9077d28021a5c60958493c9f8090c138889e6bcad522123ba2b66263b5f6c4",
+    "file": "parametric.fine.svg"
+   }
+  },
+  "variants": {
+   "baseline": {
+    "name": "Baseline",
+    "description": "Parametric candidate: r_outer=158.0, r_inner=72.0, depth=46.0, beam_half_width=36.0."
+   },
+   "chunky": {
+    "name": "Chunky",
+    "description": "Parametric candidate: r_outer=158.0, r_inner=64.0, depth=54.0, beam_half_width=44.0."
+   },
+   "fine": {
+    "name": "Fine",
+    "description": "Parametric candidate: r_outer=158.0, r_inner=80.0, depth=38.0, beam_half_width=30.0."
+   }
+  },
+  "overrides": {
+   "values": {
+    "r_outer": "150",
+    "center": "500, 520",
+    "loop_center": "430.5,441",
+    "canvas": "900",
+    "background": "#000000",
+    "gap": "7.25"
+   },
+   "sha256": "11e93d18ffda01527404ca86951fdae602093d1eef048b2eca33626685735d55",
+   "file": "parametric.overrides.svg"
+  },
+  "unknownParameter": "Unknown parameter 'nope'. Known: background, beam_half_width, beam_length, canvas, center, depth, gap, lighting, loop_center, r_inner, r_mid, r_outer",
+  "unknownVariant": "Unknown variant 'nope'. Declared variants: baseline, chunky, fine",
+  "badNumber": true
+ },
+ "builders": {
+  "labs": {
+   "master": "ed950a4fe75e38a2a7d100c2e827b813ba020e621cde912a3c0c0b33f945af80",
+   "favicon": "635c50abf9be8fa7aa513845d4c5bbb0c0bd6e58f24b02e43c0d04396f3414e5",
+   "default": "ed950a4fe75e38a2a7d100c2e827b813ba020e621cde912a3c0c0b33f945af80",
+   "variants": {
+    "master": {
+     "name": "Candidate 1 Master",
+     "description": "Resolution-independent vector logo for rtkelly-labs: isometric facets, native multi-stop linear gradients, and zero staircase aliasing."
+    },
+    "favicon": {
+     "name": "Favicon Cut",
+     "description": "High-contrast cut for 16-32px display. Same loop and beam geometry as the master, flattened to two tones with the drop shadow removed."
+    }
+   },
+   "manifest": "{\n  \"project\": \"rtkelly-labs\",\n  \"variants\": {\n    \"master\": {\n      \"file\": \"master.svg\",\n      \"sha256\": \"ed950a4fe75e38a2a7d100c2e827b813ba020e621cde912a3c0c0b33f945af80\",\n      \"gated\": true,\n      \"provenance\": \"Traced from reference/02-smooth-crossover-baseline.jpg (Antigravity session 09c871e1). Not recomputable -- edit only via `image-reconcile promote`.\"\n    },\n    \"favicon\": {\n      \"file\": \"favicon.svg\",\n      \"sha256\": \"635c50abf9be8fa7aa513845d4c5bbb0c0bd6e58f24b02e43c0d04396f3414e5\",\n      \"gated\": false,\n      \"provenance\": \"Hand-authored small-size cut. Reuses the master's loop and beam path geometry with flattened two-tone fills and no drop shadow. Deliberately diverges from the master; excluded from the reference drift gate.\"\n    }\n  }\n}\n"
+  },
+  "parquet": {
+   "master": "c11b5a3409946b396ebce0f9c27238efc84829ae9a839cb9c2a4b19e5977d991",
+   "favicon": "129c1df115b5596114b47de7eac435c47570315423d3def992a72e50db43b5f3",
+   "variants": {
+    "master": {
+     "name": "Minimalist Diamond Parquet Master",
+     "description": "Resolution-independent vector mark for Parquet.SourceGenerator featuring an interlocking 45-degree diamond parquet tile card on dark navy-charcoal with a centered 3-way git fork graph carved into wood seams with glowing nodes."
+    },
+    "favicon": {
+     "name": "Favicon Cut",
+     "description": "High-contrast diamond parquet cut optimized for 16-32px display."
+    }
+   }
+  },
+  "unknownVariant": "Unknown variant 'nope'. Declared variants: favicon, master"
+ },
+ "fit": {
+  "fields": [
+   "r_outer",
+   "r_mid",
+   "r_inner",
+   "depth",
+   "beam_half_width",
+   "beam_length"
+  ],
+  "steps": [
+   16.0,
+   8.0,
+   4.0,
+   2.0
+  ],
+  "hashLoss": {
+   "evaluations": [
+    {
+     "loss": 5.0,
+     "accepted": true,
+     "tie": false,
+     "sha256": "db10b4f573aeb411997778e65c177fac9104ffe99e77abec5998a20d03ffc296"
+    },
+    {
+     "loss": 3.0,
+     "accepted": true,
+     "tie": false,
+     "sha256": "744377c382abdf60482510ebfcaa5405690692f5d782c041ca85a2e411d3f40d"
+    },
+    {
+     "loss": 0.0,
+     "accepted": true,
+     "tie": false,
+     "sha256": "c2dee8e881242d6ba3cfd51530e5f634eef31a82d212da0119f42fadfa14c88d"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "78b7d6d13427f8b7660061cdc6eed487215a4c609e409e7e229573b661bbb883"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "5b56a48ddf48032e04072a6ade30dcdfb388673e01486219c678a5b14fd42c8a"
+    },
+    {
+     "loss": 7.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "c6520277da47ffebb157828e536a5eeb35d4c142d52a94a1a147d61addbfdaa0"
+    },
+    {
+     "loss": 7.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "d1b1ce876f2c10af54dee852a621d52647725098073ed6583b0d3cea1b54a685"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "99ad9a792499a61f233b5d826d512613376de2bfe9ef62a8b5dd17f389aedffe"
+    },
+    {
+     "loss": 4.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "172c1a946ee06c10a407af24df3b42ffed11255eaac47dc39d8e3eab05aa3559"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "7d8b424306a0319f7db8a2e2747ab489814dbb5799d5afb25ca86684fa154d0d"
+    },
+    {
+     "loss": 7.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "271491cf6d7edc354cf44177972604feb283b6c74be7acdae2451b36d2d84b12"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "098ba0819041721558e76eb3f72735882df3d43080583fd142ba8447afedde5e"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "a987d0a83b6d0f0cea125d9c313cb17b43cadbd062b0ab0684324121c20f3131"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "bdd6189192df85a8524d86a1ab3fa11ac4bbeac1ac5a5de0962bd974822be9d9"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "6c4a5588a30e7fa795dbb50769eb34d209cf7237be99162c7b3d2c750ac00437"
+    },
+    {
+     "loss": 4.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "db2127f48ddc39ae6a5df22faec6f1f17d0fa08f0d175d3a57220a69d429eea4"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "7d5c5e825b6af66038dd102d24291af422fcc40daaa694d099ee54e92ba660b6"
+    },
+    {
+     "loss": 6.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "737c162699d14851e98dac66df1de54ef8f935161746711e797ac72e5e56dc54"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "c666b5c38ad603d39873d5131bbe9e549f7a87b065c0c168d1895c20e30ab32b"
+    },
+    {
+     "loss": 4.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "a0ea838c5211cf37da80f0783210bd54a41cc318a9568656ec5d87606de3d1da"
+    },
+    {
+     "loss": 6.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "b80e0c7e9e32fcd83ed4de28ac9926af1713fc28bd2c5e854d7cca40d2c695fd"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "6dfd9f02ee083c2688b4a81df41d29b56a3df3b7e12694b1b6bbecef8ddd5904"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "44c3ce09f986b26622b57c8f495ebdec7e7fab2b94080e683f8127ca299f052d"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "20c5d3f1b662323a819cdc4d15e6649f28f3b6bc174b56e6fd4c8571fb73daf9"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "b4e183a58356f6f0a6133b532cf64ab5ec80f7b29b909759186656fc83b064ac"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "d87e88db1f749a70d651ed656b316781db2be748407692139ae4c86abb58c961"
+    },
+    {
+     "loss": 4.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "605cba24c1022e5618713e70060a75fc3c8a528dfa0c22f6242dfad5c87ce9d8"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "e3c0ad99e1d2152ef27898a91039c835db7c05fe339a7720d07be273ae34a039"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "7057ba89030b8a41df44c6afcba2c762fbfdbbeb072e5986cb7f288214fae59f"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "386f5e83b3151edda48fa1bfd239e862bbf84bb6ebdceefbe71f728352e0dd1b"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "0a5ae6c2c78fad061950380d099156de7ff72e8a10e0ed3fcb072b91f20f9dc8"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "e643900dab0bf5a48af9b162702c5699a3a0bd823feb0bf5eecb1b1f66c15fcf"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "f06b83a51e56efbd93e719469abef39e85962d99af5f238598d6faec504bf40d"
+    },
+    {
+     "loss": 4.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "64f3d1840f178579cf0c9c9abbfa47bbd7d8c539eaa598c30e618d5caf9b1af9"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "e2f8f42a154cd1dfa44efda277eeff0ce80363f3e4bf644980b8ba527c2b36ec"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "effad580701ea151f13c42347a9dfb2d8283a8ec268d85a2710d37851d497cf3"
+    },
+    {
+     "loss": 6.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "75b2dd1640c677a9b579a468c7d51e150ad25ad922e2d3ba99e6e5bba8bda448"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "397463723c40c4e52d79c2002c7774666045ce7ee987416fba8e5b97a6fc8e74"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "347433f2836dfcaaafab863ce36110197809a4005af3ee834dc162de7d8fb8e7"
+    },
+    {
+     "loss": 7.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "e3b0343772fa661a10c6edd82f78f8bc517dd679f08832eb1a3a73dfa62921d4"
+    },
+    {
+     "loss": 7.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "50b5e4a7eb55b5a4d41c2ca816a2d2be5bbce03d91fe73ec2362dd917585374a"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "c8e0f282d09c4e142df0a18398bd893e04943a9bafa961e3b6e243b3f762ecd5"
+    },
+    {
+     "loss": 7.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "dcb08faf7f15ff2c0fb43c06e7dc008b0e8ed30d8d759ad21c4d602109356bfb"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "1f3aec98a8a2ab207931eb999a9e38478ea4d7888faaa7382e204d2cf0f207ed"
+    },
+    {
+     "loss": 6.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "3a13cdce76bea1634e0d46e3d0ae1db4c275e7bf2328c826026bb3bc72136ea2"
+    },
+    {
+     "loss": 4.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "809d354caf07760a8b58f93a939658f9cffb74bcb981c0ce27b4b8e2a4bcbe8d"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "a79bf78a999db9b39ef16ee2916a42a3c66d331e4a534fc8c8ad76557aaab06b"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "964f44d00809362001b05252648c9c433007b8b68e83ddff4ebff2325d1b5418"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "4476a840c1e32e1dd63bf82e52463d03a5b49a8b1f2052113c8aca1b6986c944"
+    }
+   ],
+   "finalLoss": 0.0,
+   "params": {
+    "canvas": 1024,
+    "center": {
+     "x": 512.0,
+     "y": 512.0
+    },
+    "loop_center": {
+     "x": 440.0,
+     "y": 440.0
+    },
+    "r_outer": 142.0,
+    "r_mid": 114.0,
+    "r_inner": 72.0,
+    "depth": 46.0,
+    "gap": 6.0,
+    "beam_length": 420.0,
+    "beam_half_width": 36.0,
+    "background": "#101923"
+   },
+   "svgSha256": "c2dee8e881242d6ba3cfd51530e5f634eef31a82d212da0119f42fadfa14c88d"
+  },
+  "hashLossFromChunky": {
+   "evaluations": [
+    {
+     "loss": 3.0,
+     "accepted": true,
+     "tie": false,
+     "sha256": "b88ce9f30b317aa2de4099a6b138f0d60f26c2546cc574413184332f2baa874b"
+    },
+    {
+     "loss": 2.0,
+     "accepted": true,
+     "tie": false,
+     "sha256": "5fcc24724fe8137b8b74ec17b7da96bd5a7eb400f1bf2b0f54b907153d97f7e9"
+    },
+    {
+     "loss": 1.0,
+     "accepted": true,
+     "tie": false,
+     "sha256": "2f6d1a29dbabd734cf4d1e83ed4bc861be8169da403b651e351c0b0df4daed7f"
+    },
+    {
+     "loss": 6.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "d7967326adc8217e35fa4689512b938f470aaaebd1502ff04ce2d6ab9049f294"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "c805ba1596b30099e6e82f6dd9a32da39536f323508ca9b3ecfe7e95cf8cf168"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "ba5dae397ce5718a4d7c6082deeb6ba25e82df72bc434d6b6844e370cb3b198e"
+    },
+    {
+     "loss": 0.0,
+     "accepted": true,
+     "tie": false,
+     "sha256": "0ce672d849a1f9dfb62a83b6b377c56b0a67e9e6e8385ea9d6db30ee6ae88be0"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "a238f0c3ad1947bbb265d7dd85135ca8609d3ca43ed0d19da91fcd1d4acfbbea"
+    },
+    {
+     "loss": 6.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "99d56476d4e93d113ad973c03f6a58440a2f5aa3932a87f5f1801909ccc51c35"
+    },
+    {
+     "loss": 4.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "23f39c7cb0e3a9e261b57635ca5b02137da26eefe1b6d08169da0c841e1f0d78"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "d865e130d861bab05a05489feaf90abcf7a19330ddf19bc5d6040a63836d6afa"
+    },
+    {
+     "loss": 6.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "d98edf36f86a39d79bdb6285e64f9c3447e273d6746373c27cd679f1b9ff1ec3"
+    },
+    {
+     "loss": 7.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "d85a425fa3fe90dfb3e50cb6a98946e023fc27f37b5e1634120cf6deb5800a8b"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "93e650e2ca562ce48913024307600a44beb6d8058f58af00d58226b543da2153"
+    },
+    {
+     "loss": 6.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "adabacdeffca751834d95cb089c8069c97cfe5407ddd00de5ebb6251c869cc6e"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "bb5dc89ad45d4b30ec5679a93c161ad1d5d5c002aac48de872cd592a2c17fd2c"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "8d15e4e97764130fea90414f96aafe270f05a47a951d9666331907453f620ebe"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "dae9c5ddf6c636ed7913d214a77f7f42172b48e3c422d2f8f03e6656774faded"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "c40beef02f0b1f564286abe6c7b29340c0a757e6458c49481814437e344198aa"
+    },
+    {
+     "loss": 4.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "0116c444f7bd656f4132286603f5d4feb79d797009de4ad873a6e1cfab809a7f"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "f38693db69fc785ad708225486400d2cda1056c5bc0de3edab08d4b6d5bf6db3"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "a37d83db0b69868380870a7171a8e382c896db98b0dfdc01ee0f5dc5e1c1daf5"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "28f7bb6a5cd177ca582238404d4e46ab91483ffb1294c38e365d36d41a527c4e"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "d2531829d8c01c3f10fedd633c0a6b2b7004b71dcf34a7660521684fbd16de11"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "93730035cce134d6110933d5f6024ae3fea0070f230cf96b413c293b75766b9f"
+    },
+    {
+     "loss": 7.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "a4bf0477529553436e0d44c6cbe3783fea8228fccf0dae6a8fc2a2fac0f15e53"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "6166b8e3a274eebe4566531af12b490b7dc087771b4345d4cb904b1e35a4fb7c"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "9cef7d53e23d6d1fac9d16e67ea95089189f4128c620b4808c1ea646594235da"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "5af4b66bd0347ed12c9d6f94ee04aab62c69ac1df2de293182235aac3258b181"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "0f6b41798752a2d0b9f0be3fb44174a78cc3abfc7c9ef648c5849a12b26696ef"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "58f846220f00bb20d02af3bd8c51e61155849e0e0ad288d708dec31e5895ed1b"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "c5304a9aa87504bb3d21bff19d5f7fe6fb25d89ce5eff5a076527ba85a0bee11"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "32fb6b42a2b90f3ae3ad90b192236d4b0f035127ea588eeaea2bba84c06bbfab"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "bbb26ad86411e382fffb3c6086cfb1a85755a1c0d94c1c5df6db1acd55b5b472"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "03086abd6e452e4506412f12fa2b98c1491367526e5a411ba80768437abb58dc"
+    },
+    {
+     "loss": 1.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "720d5ac19672d6d5a49aa0149570c040059e959c0def95bed67a4e5e8dd97b5d"
+    },
+    {
+     "loss": 4.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "2e231bbc24b27e1dacda3b032f7eb4d4a6c64c6d5947403169f03285199494b1"
+    },
+    {
+     "loss": 0.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "3c2fb808fd49a1e2041e38d4a81613f03141a842bbedcd6e0262adca605609d0"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "2577bae565697014bab3e30bad62b567403cac62069b5bf189dac3c6c709bed4"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "9bae7e1ae7a1c802a92d9c24e27080cb4ab57efed53b4b9dc7c394f6808d1dbc"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "bf7e0f3d2d17d03dacb47df2d089a35a33366c9197a2798084bd3e7d096a8a2c"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "d1097b3a55c8a8e032bc125008a4bee3f73d1698e4289bbee55dba6057714d69"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "4602b5739e45251e0941cc261f3bc69641682331c55d5919d5a7714ade2ffea1"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "211dbaf380533cc7224206eda95118b092de70226e6916cea2ba7c618f70f91e"
+    },
+    {
+     "loss": 7.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "c5e223b77838dab583d1e3fb8a1f5d72f7dd45a8b239fa62129fd317c675eb9b"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "a0924fbd5045f8c056508a3c9ba580aee681601f8bb964a4236bfec6686d9cfd"
+    },
+    {
+     "loss": 3.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "ec126ceb66a738f6036ec0c019e970aaba7059f900ed4e85b36349c9a242f8ba"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "76a629d2b176a74c9e958228eb0b03d6b5789f1dfa9b36c7f3e0d79f8793d6c1"
+    },
+    {
+     "loss": 2.0,
+     "accepted": false,
+     "tie": false,
+     "sha256": "610146125f4a4fbd9652d597de2b0e1d786537a1d9d99ddfdf8585f4826d5220"
+    }
+   ],
+   "finalLoss": 0.0,
+   "params": {
+    "canvas": 1024,
+    "center": {
+     "x": 512.0,
+     "y": 512.0
+    },
+    "loop_center": {
+     "x": 440.0,
+     "y": 440.0
+    },
+    "r_outer": 142.0,
+    "r_mid": 114.0,
+    "r_inner": 48.0,
+    "depth": 54.0,
+    "gap": 6.0,
+    "beam_length": 420.0,
+    "beam_half_width": 44.0,
+    "background": "#101923"
+   },
+   "svgSha256": "0ce672d849a1f9dfb62a83b6b377c56b0a67e9e6e8385ea9d6db30ee6ae88be0"
+  },
+  "constantLoss": {
+   "evaluations": [
+    {
+     "loss": 5.0,
+     "accepted": true,
+     "tie": false,
+     "sha256": "db10b4f573aeb411997778e65c177fac9104ffe99e77abec5998a20d03ffc296"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "744377c382abdf60482510ebfcaa5405690692f5d782c041ca85a2e411d3f40d"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "c2dee8e881242d6ba3cfd51530e5f634eef31a82d212da0119f42fadfa14c88d"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "111cc161a4159f103cf98fc896ae4bd9b1a57cce99ec80dbf0b4e0e7f4f0442a"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "b7f982754152cec14cc3847d1274ecae6590379ca20b2b0f53240596e06acc21"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "03d7f71ff49f42e25327500f1829b273079abcade2c54251462800f84a044d9f"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "be7aff29e331cef2493411b5945e39f0b5fdb73f1cf6fe7ccc1ea6c5cfd58130"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "8a60d7b46a8b06dd9365f4622df28c684ffbb5f296bca1a9ebb66468f0a84708"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "b34f62eb8c802a5a89265cc1e74a073b7d07101c6df1f254aeaa212b4fd4e7dc"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "dc0484b627b2b5bf3b2e61076c41481f8574e7f496129cfc0b339395533dbc86"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "3029f704685f10ab725113689df2d02f0dcd1f54c9fdfd057dffa4c7317b9b9b"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "ae195214a2dc48c98117b115a5c6cef3b0a3e634c3a16273d06fa46f7505314f"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "2e7e3dfd0fd7a65578e81ca0cc3094ffb5ab29e696d5ff87282f0e809382532e"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "9b97cf0515fba6044fee7f5eedb664aa955c44940d510515685ccbfcb0587ef6"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "bdd6189192df85a8524d86a1ab3fa11ac4bbeac1ac5a5de0962bd974822be9d9"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "13d7dabf6b4846e5e9a4785da2e76fa3639eec5725ed9d2246e42ea54c834afc"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "2161c221216fee1c151cd29374b38525f894062d67d4b9800d961bc9503e394a"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "6000ce2be2092f39b3248e2e062de1a0660b63b11a53f478a5f92fe7fa2e7192"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "19c3245ab4259706822aa605fb6e1d2ebdb5c2dabc59e33c93d8c5d0b501bbb0"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "dd946cae43ca03d40d8af3e8aae97805db6aeea8b520c699ad204a4a04f23fff"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "37739eac3797b908a55b77b31732b4e298839b9e6399fa5a0576ef8c51b12a90"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "4d9f37565b44a36d4fd464a8e1925a0a1c57ea90e63dbf7edf8067e9c4447f3e"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "7efaddfd91b458f8232109e535cfb2020e511abefae648272486e02b22059aeb"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "f02ffa42451a0773e16b9de072b30e56c7ec3b5eaccc4cab1f9ca42be2293710"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "0381a1efaf1d83b0a2a4f54867fb59bc4df295f865e816cd05fdfe4efade659a"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "8707b322e99f88bd80ddd574b74b13a376376ab09ab6039bca941a44a2478c61"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "d62ba8f1b4143b0269b654defc4b4de5394e80b30797b5eeedebcbf1300cd0a4"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "e9ddccbf882967f9e992eaa0b763b6a619300cbafb9cd14c86b1d9dc645f2696"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "e719d2bcafe6d7e9756c0b320cf229852e13fb9227acbc1dc56a17486680992d"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "7061becf443144b6dda6e3b62af45687cffade3599ead70e5edfe5f780dbb044"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "ddf6013bf09ae9c027035b284f9b01fc1dbf79e4db1475660a0c018f5baabf5b"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "196d4e3edf0fff5516d0cc7ba6b831dbfc70511d6cda8223b26dc4a94840d925"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "6f065d255b87a860a566e4285197f93ea8166d38fd4b35ad9c081276a40dbdbd"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "191218508657ab3524f339d2dd6d940492e35b1e1bfc9369e2a78887289edffd"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "077efdbcab2279933450fd24bdbd62cecb3e3d1cc637c5a8aa43310187308780"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "10a79fd02df4fd979b51cf2a6b55a9cd246eda7e865f6dc82bef40fec709e169"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "c638586c346a9b5df1f74cc9eda7e4aca45b4f55e956bf847d5ef17c847690df"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "53348c2181e61328af71900e1042e122d024c86f29f6385f1a775226b09c0e6d"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "7d5511dd44de0e3f31cca2d7a94ce4398bc2a75a69c76b7846f7a91e17b6748a"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "2a1b9eadc7d517033c7f78b1ed7cc1895866103a92413a1c15efcfb03711b644"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "d3d5563064b12b98b6fc674f336812260c3020720902ad55493421c4278a3525"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "9993d5ff06f1be89826993f1e00d3742bec7cd08ad3b64aee93d6b7ea8b74717"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "0e67e9eb0aeb83904f2ef22d8daab1226b6daa5c7ce743afece67aa3ada2afc5"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "fa84b510fe9716a98991d36577f9e3dcd9c438bac1954492d70ccd3c3224dc75"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "9475c77cb9a11a8a92288eaca3277424b3796bddc30c5cea6a9307b8bc38f92d"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "6ff572ae09f4d4c0b89e2d62efc139a583351dee94d409fa5cf03148ede40942"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "c86191bebc26b27eea844e9de12e397315ecc9ae90392910c79e304bbbc68f9b"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "a76bc0a95bc9af0766189a3791f3f1366675e4b8f669f399f0efa48736cdb4cb"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "dff0269a3c72330b65b825be8bc94451becac3223e554f4f05d8d8a79b5a2420"
+    }
+   ],
+   "finalLoss": 5.0,
+   "params": {
+    "canvas": 1024,
+    "center": {
+     "x": 512.0,
+     "y": 512.0
+    },
+    "loop_center": {
+     "x": 440.0,
+     "y": 440.0
+    },
+    "r_outer": 158.0,
+    "r_mid": 114.0,
+    "r_inner": 72.0,
+    "depth": 46.0,
+    "gap": 6.0,
+    "beam_length": 420.0,
+    "beam_half_width": 36.0,
+    "background": "#101923"
+   },
+   "svgSha256": "db10b4f573aeb411997778e65c177fac9104ffe99e77abec5998a20d03ffc296"
+  },
+  "skipsSmallValues": {
+   "evaluations": [
+    {
+     "loss": 5.0,
+     "accepted": true,
+     "tie": false,
+     "sha256": "a86870e5deb5168667f6922123cb61664cf7de768e50319ec1e84f3f73a12583"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "dded6d398f6027c8cca11e57cd37feab5ecb3b304773ef39faa3617d1f73c07d"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "8dab5304c6cac115626dd4843c5fb097ddb633b8d3c189f5734f7da81627a1cc"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "6fe9531b5d2ea138b5cf974c30d1d4c6a3d027639b8554971e370e44420bddb2"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "4a5f22b02348dc621f797a8a23dc43efe8459a06fd14a5e1a13e6a7219370fe0"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "e27696a8ade3cc0cf550157861cd656e7e91706a90294565736749280391b72b"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "7394953aed3ec1ca9141a7f9b869b7382980f3fe26a3bc56fd229f75d24421f2"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "d152d91952d5be9ce967761ec541651fcf723aa1142dd0aa0509f3631d8875d1"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "43e576db4ba9a5e5eb8d52396da4ddf91badf12d3f61b2eb548ad08078600d22"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "6bb89af564e57e4a9458e42dd13da9efa1faaaeebe5048d4cbffbbd9728cae5c"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "2a7f0e7e037fb55b8ecc5b89abea9fdc8072a310ae89e52b4aaa53c8ccd8ff84"
+    },
+    {
+     "loss": 5.0,
+     "accepted": false,
+     "tie": true,
+     "sha256": "fdab7148259d01dffee85f4a9acb1119c6460d67fa88a761fe5e0012c013d7c7"
+    }
+   ],
+   "finalLoss": 5.0,
+   "params": {
+    "canvas": 1024,
+    "center": {
+     "x": 512.0,
+     "y": 512.0
+    },
+    "loop_center": {
+     "x": 440.0,
+     "y": 440.0
+    },
+    "r_outer": 158.0,
+    "r_mid": 40.0,
+    "r_inner": 3.0,
+    "depth": 46.0,
+    "gap": 6.0,
+    "beam_length": 420.0,
+    "beam_half_width": 36.0,
+    "background": "#101923"
+   },
+   "svgSha256": "a86870e5deb5168667f6922123cb61664cf7de768e50319ec1e84f3f73a12583"
+  }
+ }
+}
