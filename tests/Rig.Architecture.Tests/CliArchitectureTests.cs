@@ -107,6 +107,18 @@ public sealed class CliArchitectureTests
     {
         public bool MeetsRule(Mono.Cecil.TypeDefinition type)
         {
+            // A group only names its subcommands, so it needs no handler of its own.
+            return IsGroup(type) || HasHandler(type);
+        }
+
+        private static bool IsGroup(Mono.Cecil.TypeDefinition type)
+        {
+            return type.NestedTypes.Any(nested => nested.CustomAttributes.Any(a =>
+                a.AttributeType.FullName == typeof(CliCommandAttribute).FullName));
+        }
+
+        private static bool HasHandler(Mono.Cecil.TypeDefinition type)
+        {
             // Must have a public RunAsync or Run method returning Task<int> or int
             return type.Methods.Any(m =>
                 m.IsPublic &&
