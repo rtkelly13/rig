@@ -129,7 +129,7 @@ public sealed class DriftGate(ISvgRenderer renderer, string scratch)
         }
 
         var outFile = outputPath ?? svgPath;
-        if (!gatePassed && Path.GetFullPath(outFile) == Path.GetFullPath(svgPath))
+        if (!gatePassed && IsSameFile(outFile, svgPath))
         {
             throw new DriftGateNotMetException(
                 $"Simplification of {svgPath} did not meet the drift budget "
@@ -158,6 +158,25 @@ public sealed class DriftGate(ISvgRenderer renderer, string scratch)
             bestSvg,
             gatePassed);
         return new GatedOutput(outFile, report);
+    }
+
+    // A lexical compare is not enough: other casing on a case-insensitive filesystem, or a symlink, names the same file.
+    // Existing paths are resolved through their links first; the comparison then follows the platform's casing.
+    private static bool IsSameFile(string first, string second)
+    {
+        var comparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        return string.Equals(Resolve(first), Resolve(second), comparison);
+    }
+
+    private static string Resolve(string path)
+    {
+        var full = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(full)!;
+        var resolvedDirectory = Directory.Exists(directory)
+            ? new DirectoryInfo(directory).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? directory
+            : directory;
+        var file = Path.Join(resolvedDirectory, Path.GetFileName(full));
+        return File.Exists(file) ? new FileInfo(file).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? file : file;
     }
 
     // Python's repr of a float: 1.0 keeps its ".0".

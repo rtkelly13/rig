@@ -71,6 +71,35 @@ public sealed class DriftGateTests : IDisposable
     }
 
     [Fact]
+    public async Task A_missed_budget_refuses_when_the_output_is_a_link_to_the_input()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Creating a symlink needs elevation on Windows.");
+        var input = Write("in.svg");
+        var link = Path.Join(_dir, "link.svg");
+        File.CreateSymbolicLink(link, input);
+        await using var renderer = new Scripted((path, _) => Path.GetFileName(path).StartsWith("candidate_", StringComparison.Ordinal) ? 0 : 255);
+
+        await Assert.ThrowsAsync<DriftGateNotMetException>(
+            () => new DriftGate(renderer, _dir).OptimizeAsync(input, link, 0.5, 0.995, 1.0, TestContext.Current.CancellationToken));
+
+        Assert.Equal(Svg, await File.ReadAllTextAsync(input, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task A_missed_budget_refuses_when_the_output_names_the_input_in_other_casing_on_a_case_insensitive_filesystem()
+    {
+        var input = Write("in.svg");
+        var recased = Path.Join(_dir, "IN.SVG");
+        Assert.SkipUnless(File.Exists(recased), "This filesystem is case-sensitive.");
+        await using var renderer = new Scripted((path, _) => Path.GetFileName(path).StartsWith("candidate_", StringComparison.Ordinal) ? 0 : 255);
+
+        await Assert.ThrowsAsync<DriftGateNotMetException>(
+            () => new DriftGate(renderer, _dir).OptimizeAsync(input, recased, 0.5, 0.995, 1.0, TestContext.Current.CancellationToken));
+
+        Assert.Equal(Svg, await File.ReadAllTextAsync(input, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task A_passing_run_may_overwrite_the_input()
     {
         var input = Write("in.svg");
