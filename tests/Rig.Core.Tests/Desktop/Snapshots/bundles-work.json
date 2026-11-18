@@ -7,7 +7,7 @@
       "delay_ms": 1600,
       "feature": "orca-sessions",
       "path": "{orca-path}",
-      "summary": "Orca on the default profile (%APPDATA%\\orca), full screen 1, holding the work repos that \u0060devenv orca apply\u0060 registers. Replaces the Workspace Terminal columns. Listed before Personal Orca so a fresh logon launches it first: each launch waits for a window that was not open before it, so the two Orca windows cannot swap. On a re-run \u0060window_pid_file\u0060 picks the window owned by the pid this profile records in orca-runtime.json.",
+      "summary": "Orca on the default profile (%APPDATA%\\orca), full screen 1: the one Orca on this machine, holding the work repos that \u0060devenv orca apply\u0060 registers and the estate repos (rig) that \u0060rig estate orca --apply\u0060 registers. On a re-run \u0060window_pid_file\u0060 picks the window owned by the pid Orca records in orca-runtime.json.",
       "placement": {
         "screen": 1,
         "layout": {
@@ -18,27 +18,6 @@
       "window_process_name": "Orca.exe",
       "window_wait_timeout_ms": 30000,
       "window_pid_file": "{orca-work-data}\\orca-runtime.json"
-    },
-    {
-      "name": "Personal Orca",
-      "type": "app",
-      "delay_ms": 1600,
-      "feature": "orca-sessions",
-      "path": "{orca-path}",
-      "args": [
-        "--user-data-dir={orca-personal-data}"
-      ],
-      "summary": "Orca on a second profile (\u0060--user-data-dir\u0060), full screen 2, holding the personal repos that \u0060rig estate orca --apply\u0060 registers. Orca is one window per profile, so a second window needs a second profile. Orca\u0027s in-app update relaunches only the profile that ran it, so rig applies updates instead: restore installs a staged update while no Orca is running, and \u0060desktop-manager workspace update-orca\u0060 closes both profiles, installs and relaunches both. If an in-app update closes this one anyway, the next restore finds no orca-runtime.json pid for it and launches it.",
-      "placement": {
-        "screen": 2,
-        "layout": {
-          "mode": "full",
-          "slot": 1
-        }
-      },
-      "window_process_name": "Orca.exe",
-      "window_wait_timeout_ms": 30000,
-      "window_pid_file": "{orca-personal-data}\\orca-runtime.json"
     }
   ]
 }

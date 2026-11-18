@@ -75,15 +75,13 @@ folder workspace below it is deleted, outermost first. Orca deletes a group's
 subgroups with it, moves any projects to the top level and drops its folder
 workspaces, so a group that still holds a folder workspace is never deleted.
 
-**On Windows the estate has its own Orca profile.** The work desktop runs two
-Orca windows: the default profile (`%APPDATA%\orca`) for work, and
-`%APPDATA%\orca-personal` (`--user-data-dir`) for the estate. `estate orca`
-manages `orca-personal` there (`--orca-data` overrides it), and also checks the
-work profile (`--work-orca-data`). Every `rtkelly13`, `rtkelly-labs` and
+**The estate shares Orca's default profile with the work repos.** `estate orca`
+manages the default profile (`--orca-data` overrides it). A machine that keeps a
+separate work profile names it with `--work-orca-data`, and the run checks it too. Every `rtkelly13`, `rtkelly-labs` and
 `Resultful` repo is reported there as `in-work-profile`, declared or not, and
 `--apply` removes them and deletes the groups they leave empty. When the work
-profile isn't running, the run warns and carries on. On macOS and Linux both are
-the one default profile, and there is no work-profile check.
+profile isn't running, the run warns and carries on. Without `--work-orca-data`
+there is no work-profile check.
 
 Top-level projects move last, so they land at the bottom of the top level.
 Only `rtkelly13`, `rtkelly-labs` and `Resultful` repos count. Work repos keep

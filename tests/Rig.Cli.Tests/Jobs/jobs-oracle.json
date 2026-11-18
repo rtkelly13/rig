@@ -152,7 +152,7 @@
   },
   {
    "name": "estate-orca",
-   "description": "Register every cloned managed project in the personal Orca, in its group.",
+   "description": "Register every cloned managed project in Orca, in its group.",
    "argv": [
     "/rig/.venv/bin/rig",
     "estate",
@@ -178,7 +178,7 @@
   },
   {
    "name": "orca-sync",
-   "description": "Apply config/orca.json to the personal Orca: agent default args, repo colours, scripts, refs.",
+   "description": "Apply config/orca.json to Orca: agent default args, repo colours, scripts, refs.",
    "argv": [
     "/rig/.venv/bin/rig",
     "workspace",

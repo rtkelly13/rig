@@ -36,7 +36,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
     public const int Unavailable = 3;
 
     private const string OrcaDataHelp =
-        "Orca's user-data folder, e.g. %APPDATA%/orca-personal (default: the Orca that launched this terminal, else the platform's)";
+        "Orca's user-data folder, e.g. %APPDATA%/orca (default: the Orca that launched this terminal, else the platform's)";
 
     /// <summary>The <c>orca</c> group.</summary>
     public Command Build()

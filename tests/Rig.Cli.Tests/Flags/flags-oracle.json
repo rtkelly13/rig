@@ -4,7 +4,7 @@
   {
    "name": "orca-sessions",
    "default": true,
-   "description": "Work desktop: the Work and Personal Orca windows."
+   "description": "Work desktop: the Orca window."
   },
   {
    "name": "personal-desktop",
@@ -35,7 +35,7 @@
      "on",
      "on",
      "-",
-     "Work desktop: the Work and Personal Orca windows."
+     "Work desktop: the Orca window."
     ],
     [
      "personal-desktop",
@@ -95,7 +95,7 @@
      "on",
      "on",
      "on",
-     "Work desktop: the Work and Personal Orca windows."
+     "Work desktop: the Orca window."
     ],
     [
      "personal-desktop",
@@ -171,7 +171,7 @@
      "on",
      "on",
      "on",
-     "Work desktop: the Work and Personal Orca windows."
+     "Work desktop: the Orca window."
     ],
     [
      "personal-desktop",
@@ -207,7 +207,7 @@
      "on",
      "on",
      "on",
-     "Work desktop: the Work and Personal Orca windows."
+     "Work desktop: the Orca window."
     ],
     [
      "personal-desktop",

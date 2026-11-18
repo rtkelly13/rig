@@ -20,8 +20,8 @@ rig desktop workspace restore --desktop Work   # restore one desktop in place
   same executable launch in list order and each gets its own window.
 - `window_pid_file` names a JSON file with a `pid` key. Reuse only claims a window
   owned by that pid, and a missing file means the app is not running, so restore
-  launches it. The Work desktop's two Orca entries use each profile's
-  `orca-runtime.json`, since both windows are `Orca.exe` titled "Orca".
+  launches it. Orca entries use their profile's
+  `orca-runtime.json`, since every Orca window is `Orca.exe` titled "Orca".
 - Terminal entries launch through `wt.exe` with an explicit starting directory and
   an encoded PowerShell command, which avoids extra tabs and quoting problems at sign-in.
 - `--defer-logon-commands` is for the sign-in run only. It opens terminals marked

@@ -31,11 +31,11 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
         var codeRoot = new Option<string?>("--code-root") { Description = "Folder holding the group folders (default ~/code)" };
         var userData = new Option<string?>("--orca-data")
         {
-            Description = "The estate's Orca user-data folder (default: %APPDATA%\\orca-personal on Windows, Orca's own elsewhere)",
+            Description = "The estate's Orca user-data folder (default: Orca's own)",
         };
         var workData = new Option<string?>("--work-orca-data")
         {
-            Description = "The work Orca profile, kept free of estate repos (default: Orca's own folder on Windows; none elsewhere)",
+            Description = "The work Orca profile, kept free of estate repos (default: none)",
         };
         var apply = new Option<bool>("--apply") { Description = "Register, create, move and delete to match, and clear estate repos from the work profile." };
         var repos = new Option<string[]>("--repo", "-r")
@@ -88,7 +88,7 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
     {
         var root = string.IsNullOrEmpty(args.CodeRoot) ? host.CodeRoot : host.ExpandHome(args.CodeRoot);
         var estateDir = string.IsNullOrEmpty(args.OrcaData) ? orca.Locations.EstateUserData() : host.ExpandHome(args.OrcaData);
-        var workDir = string.IsNullOrEmpty(args.WorkOrcaData) ? orca.Locations.WorkUserData() : host.ExpandHome(args.WorkOrcaData);
+        var workDir = string.IsNullOrEmpty(args.WorkOrcaData) ? null : host.ExpandHome(args.WorkOrcaData);
         var log = (string line) => error.WriteLine(line);
         List<LayoutFinding> findings;
         Func<string, bool> isEstateOwner;
