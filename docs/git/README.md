@@ -24,6 +24,7 @@ These are notes on *this* setup, not general git advice. The shape of it:
 | [waiting-for-a-pr.md](waiting-for-a-pr.md) | Auto-merge is queued and you need to know when it lands, or why it will not |
 | [resolving-conflicts.md](resolving-conflicts.md) | Rebasing a stale branch, especially across many of them |
 | [worktrees.md](worktrees.md) | Working on more than one branch at a time |
+| [local-scratch.md](local-scratch.md) | Deciding what belongs in `temp/`: tries, worktrees, local databases, cleanup |
 | [moving-a-clone-across-a-history-restart.md](moving-a-clone-across-a-history-restart.md) | A clone from before `rig` was restarted without history |
 
 ---
