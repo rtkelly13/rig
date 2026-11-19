@@ -90,8 +90,10 @@ jobs:
       # consume these artifacts. Restore only the two projects they need in that case
       # instead of the whole solution, whose test projects never get built here.
       - name: Restore
+        env:
+          CODE_CHANGED: ${{ needs.changes.outputs.code }}
         run: |
-          if [ "${{ needs.changes.outputs.code }}" = "true" ]; then
+          if [ "${CODE_CHANGED}" = "true" ]; then
             dotnet restore rig.slnx
           else
             # `dotnet restore` takes one target per invocation.
