@@ -17,7 +17,7 @@ nothing committed can come from it.
 
 | Path | Holds | Lifetime |
 |:-----|:------|:---------|
-| `temp/<branch>` | Worktrees, one per live branch ([worktrees.md](worktrees.md)) | The branch's |
+| `temp/<branch>` | Worktrees, one per live branch; the name `tries` is reserved ([worktrees.md](worktrees.md)) | The branch's |
 | `temp/tries/` | Ephemeral clones, spikes, one-off attempts | Hours or days |
 | `temp/tools/` | Downloaded binaries and harnesses, such as a pinned vectorizer | Until the pin moves |
 | `temp/*.db`, `temp/*.log` | Local SQLite, captures, generated reports | Disposable |
@@ -26,6 +26,9 @@ nothing committed can come from it.
 One distinction decides every case: **`temp/` can be deleted wholesale and rebuilt from
 the repository plus a command.** If losing a file would cost work that exists nowhere
 else, it does not belong there.
+
+`tries` is a reserved name: no worktree may live at `temp/tries`, or the try cleanup
+would delete a live checkout.
 
 ## Tries
 
@@ -44,8 +47,11 @@ try clone <url>                       # if try is pointed at temp/tries
 `try init` takes an absolute path, so scope it to the checkout from inside it:
 
 ```bash
-eval "$(try init "$PWD/temp/tries")"
+eval "$(command try init "$PWD/temp/tries")"
 ```
+
+`command` bypasses a `try` shell wrapper that is already loaded (Omarchy installs one),
+which would otherwise read `init` as a selector argument and keep the old root.
 
 A global tries root (Omarchy's default is `~/Work/tries`) is fine for work that spans
 repositories. What is not fine is the same try living in both places.
@@ -62,16 +68,18 @@ The rules for either:
 ## Cleaning up
 
 ```bash
-git worktree list                            # registrations outlive directories
-git worktree remove --force temp/<branch>    # refuses a dirty tree first, deliberately
-git worktree prune                           # after deleting a directory by hand
-rm -rf temp/tries/*                          # safe: see above
+git worktree list                          # registrations outlive directories
+git -C temp/<branch> status --short        # must be empty before removing
+git worktree remove temp/<branch>          # refuses a dirty tree, deliberately
+git worktree prune                         # after deleting a directory by hand
+rm -rf temp/tries/*                        # safe: see above
+git worktree prune                         # a try can be a registered worktree too
 ```
 
-`rm -rf temp` between worktree sessions is fine, but run `git worktree prune` afterwards
-or the stale registrations stay. Check a worktree is disposable
-(`git -C temp/<branch> status --short`) before `--force`; a dirty tree is the one case
-where scratch has quietly become work.
+`git worktree remove` refuses a dirty tree on purpose; add `--force` only after the
+`status` line above shows nothing worth keeping. `rm -rf temp` between worktree sessions
+is fine, but run `git worktree prune` afterwards or the stale registrations stay. A dirty
+tree is the one case where scratch has quietly become work.
 
 Disk accounting and orphaned-worktree reclamation live in
 [`estate/`](../estate/README.md). This guide only fixes where things go.
