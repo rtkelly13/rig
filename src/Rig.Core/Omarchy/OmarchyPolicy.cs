@@ -1,5 +1,6 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.Text;
+using Rig.Core.Config;
 
 namespace Rig.Core.Omarchy;
 
@@ -68,9 +69,25 @@ public sealed record OmarchyPolicy(
     /// <summary>The largest idle timeout Omarchy accepts: a day.</summary>
     public const int MaxIdleSeconds = 24 * 60 * 60;
 
+    /// <summary>The smallest and largest shell font size, in points.</summary>
+    public const int MinFontSize = 6;
+
+    /// <summary>The largest shell font size, in points.</summary>
+    public const int MaxFontSize = 72;
+
     /// <summary>Reads the policy file at <paramref name="path"/>.</summary>
     /// <exception cref="InvalidDataException">The file is malformed.</exception>
-    public static OmarchyPolicy Load(string path) => Parse(File.ReadAllText(path), path);
+    public static OmarchyPolicy Load(string path)
+    {
+        try
+        {
+            return Decode(ConfigLoader.Load(path, OmarchyConfigJsonContext.Default.OmarchyConfig), path);
+        }
+        catch (ConfigLoadException e)
+        {
+            throw new InvalidDataException(e.Message, e);
+        }
+    }
 
     /// <summary>Decodes a policy document.</summary>
     /// <param name="text">The JSON document.</param>
@@ -81,105 +98,79 @@ public sealed record OmarchyPolicy(
         ArgumentNullException.ThrowIfNull(text);
         try
         {
-            var node = JsonProblem.Parse(source, text);
-            var root = node as JsonObject ?? throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(node));
-            return Decode(root, source);
+            return Decode(ConfigLoader.Parse(text, source, OmarchyConfigJsonContext.Default.OmarchyConfig), source);
         }
-        catch (JsonInputException e)
+        catch (ConfigLoadException e)
         {
             throw new InvalidDataException(e.Message, e);
         }
     }
 
-    private static OmarchyPolicy Decode(JsonObject root, string source) => new(
-        root.ContainsKey("idle") ? DecodeIdle(RequiredObject(root, "idle")) : null,
-        root.ContainsKey("suspend") ? DecodeSuspend(RequiredObject(root, "suspend")) : null,
-        OptionalBool(root, "lock_before_suspend"),
-        OptionalNonEmpty(OptionalString(root, "theme"), "theme", source),
-        root.ContainsKey("power") ? DecodePower(RequiredObject(root, "power"), source) : null,
-        root.ContainsKey("font") ? DecodeFont(RequiredObject(root, "font")) : null,
-        DecodeShell(root));
+    private static OmarchyPolicy Decode(OmarchyConfig config, string source) => new(
+        config.Idle is { } idle
+            ? new IdlePolicy(
+                RequiredInt(idle.ScreensaverSeconds, "idle.screensaver_seconds", source),
+                RequiredInt(idle.LockSeconds, "idle.lock_seconds", source))
+            : null,
+        config.Suspend is { } suspend
+            ? new SuspendPolicy(
+                suspend.Menu,
+                Action(suspend.Lid, "suspend.lid", source),
+                Action(suspend.PowerKey, "suspend.power_key", source),
+                Action(suspend.SuspendKey, "suspend.suspend_key", source),
+                Action(suspend.HibernateKey, "suspend.hibernate_key", source),
+                Action(suspend.IdleAction, "suspend.idle_action", source))
+            : null,
+        config.LockBeforeSuspend,
+        Text(config.Theme, "theme", source),
+        config.Power is { } power
+            ? new PowerPolicy(RequiredText(power.Ac, "power.ac", source), RequiredText(power.Battery, "power.battery", source))
+            : null,
+        config.Font is { } font
+            ? new FontPolicy(RequiredInt(font.BaseSize, "font.base_size", source, MinFontSize, MaxFontSize))
+            : null,
+        ShellPolicy(config.Shell, source));
 
-    private static IdlePolicy DecodeIdle(JsonObject idle) =>
-        new(RequiredInt(idle, "screensaver_seconds", 0, MaxIdleSeconds), RequiredInt(idle, "lock_seconds", 0, MaxIdleSeconds));
+    private static int RequiredInt(int? value, string path, string source, int minimum = 0, int maximum = MaxIdleSeconds) =>
+        value is { } number && number >= minimum && number <= maximum
+            ? number
+            : throw new InvalidDataException($"{source}: {path}: a whole number from {minimum} to {maximum}");
 
-    private static SuspendPolicy DecodeSuspend(JsonObject suspend) => new(
-        OptionalBool(suspend, "menu"),
-        OptionalAction(suspend, "lid"),
-        OptionalAction(suspend, "power_key"),
-        OptionalAction(suspend, "suspend_key"),
-        OptionalAction(suspend, "hibernate_key"),
-        OptionalAction(suspend, "idle_action"));
+    private static string RequiredText(string? value, string path, string source) =>
+        Text(value, path, source) ?? throw new InvalidDataException($"{source}: {path}: must not be blank");
 
-    private static PowerPolicy DecodePower(JsonObject power, string source) =>
-        new(RequiredNonEmpty(RequiredString(power, "ac"), "power.ac", source), RequiredNonEmpty(RequiredString(power, "battery"), "power.battery", source));
-
-    private static FontPolicy DecodeFont(JsonObject font) => new(RequiredInt(font, "base_size", 6, 72));
-
-    private static JsonObject? DecodeShell(JsonObject root)
-    {
-        if (JsonShape.Field(root, "shell") is not { } node)
-        {
-            return null;
-        }
-
-        var shell = node as JsonObject ?? throw JsonProblem.Expected(root, "shell", "an object", node);
-        if (shell.ContainsKey("idle"))
-        {
-            throw JsonProblem.Expected(shell, "idle", "not declared under shell (use the top-level idle section)", shell["idle"]);
-        }
-
-        return (JsonObject)shell.DeepClone();
-    }
-
-    private static JsonObject RequiredObject(JsonObject parent, string key) =>
-        JsonShape.Field(parent, key) switch
-        {
-            JsonObject value => value,
-            null => throw JsonProblem.Missing(parent, key, "an object"),
-            var value => throw JsonProblem.Expected(parent, key, "an object", value),
-        };
-
-    private static string RequiredString(JsonObject parent, string key) =>
-        OptionalString(parent, key) ?? throw JsonProblem.Missing(parent, key, "a string");
-
-    private static string? OptionalString(JsonObject parent, string key) =>
-        JsonShape.Field(parent, key) switch
-        {
-            null => null,
-            var value => JsonShape.AsText(value) ?? throw JsonProblem.Expected(parent, key, "a string", value),
-        };
-
-    private static bool? OptionalBool(JsonObject parent, string key) =>
-        JsonShape.Field(parent, key) switch
-        {
-            null => null,
-            var value => JsonShape.AsBool(value) ?? throw JsonProblem.Expected(parent, key, "a boolean", value),
-        };
-
-    private static int RequiredInt(JsonObject parent, string key, int minimum, int maximum) =>
-        JsonShape.Field(parent, key) switch
-        {
-            null => throw JsonProblem.Missing(parent, key, "a whole number"),
-            var value => JsonShape.AsInt32(value) is { } number && number >= minimum && number <= maximum
-                ? number
-                : throw JsonProblem.Expected(parent, key, $"a whole number from {minimum} to {maximum}", value),
-        };
-
-    private static string? OptionalAction(JsonObject parent, string key) =>
-        OptionalString(parent, key) is { } action && SuspendPolicy.Actions.Contains(action, StringComparer.Ordinal)
-            ? action
-            : JsonShape.Field(parent, key) is null
-                ? null
-                : throw JsonProblem.Expected(parent, key, $"one of {string.Join(", ", SuspendPolicy.Actions)}", parent[key]);
-
-    private static string RequiredNonEmpty(string value, string path, string source) =>
-        OptionalNonEmpty(value, path, source) ?? throw new InvalidDataException($"{source}: {path}: must not be blank");
-
-    private static string? OptionalNonEmpty(string? value, string path, string source) =>
+    private static string? Text(string? value, string path, string source) =>
         value is null
             ? null
             : value.Trim() is { Length: > 0 } trimmed
                 ? trimmed
                 : throw new InvalidDataException($"{source}: {path}: must not be blank");
+
+    private static string? Action(string? value, string path, string source) =>
+        value is null
+            ? null
+            : SuspendPolicy.Actions.Contains(value, StringComparer.Ordinal)
+                ? value
+                : throw new InvalidDataException($"{source}: {path}: one of {string.Join(", ", SuspendPolicy.Actions)}");
+
+    private static JsonObject? ShellPolicy(JsonElement? element, string source)
+    {
+        if (element is not { } shell)
+        {
+            return null;
+        }
+
+        if (shell.ValueKind != JsonValueKind.Object
+            || JsonNode.Parse(shell.GetRawText()) is not JsonObject document)
+        {
+            throw new InvalidDataException($"{source}: shell: an object");
+        }
+
+        if (document.ContainsKey("idle"))
+        {
+            throw new InvalidDataException($"{source}: shell.idle: use the top-level idle section");
+        }
+
+        return (JsonObject)document.DeepClone();
+    }
 }
