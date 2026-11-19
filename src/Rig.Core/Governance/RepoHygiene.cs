@@ -559,7 +559,7 @@ public static partial class RepoHygiene
 
     private static bool TargetsCSharp(string glob) =>
         ExpandBraces(glob).Any(pattern =>
-            pattern[(pattern.LastIndexOf('/') + 1)..].EndsWith(".cs", StringComparison.OrdinalIgnoreCase));
+            pattern[(pattern.LastIndexOf('/', StringComparison.Ordinal) + 1)..].EndsWith(".cs", StringComparison.OrdinalIgnoreCase));
 
     // `{cs,vb}` alternatives in an EditorConfig glob, innermost group first.
     private static IEnumerable<string> ExpandBraces(string glob)
@@ -584,9 +584,9 @@ public static partial class RepoHygiene
 
     // Whether marker is on a line that runs: a hook that only mentions it in a comment guards nothing.
     private static bool Runs(string content, string marker) =>
-        content.Split('\n').Select(line => line.TrimStart()).Any(line => !line.StartsWith('#') && line.Contains(marker, StringComparison.Ordinal));
+        content.Split('\n').Select(line => line.TrimStart()).Any(line => !line.StartsWith('#', StringComparison.Ordinal) && line.Contains(marker, StringComparison.Ordinal));
 
-    private static string Dotted(string extension) => extension.StartsWith('.') ? extension : "." + extension;
+    private static string Dotted(string extension) => extension.StartsWith('.', StringComparison.Ordinal) ? extension : "." + extension;
 
     private static string FolderName(string repoPath) => Path.GetFileName(Path.TrimEndingDirectorySeparator(repoPath));
 

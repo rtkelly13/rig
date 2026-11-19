@@ -18,7 +18,7 @@ internal static class GhTarget
             await error.WriteLineAsync(
                 repo is not null
                     ? $"Cannot tell which repo: pass --repo owner/name ({QuotedText.Str(repo)} is not one)"
-                    : "Cannot tell which repo: no GitHub origin here; pass --repo owner/name").ConfigureAwait(false);
+                    : "Cannot tell which repo: no GitHub origin here; pass --repo owner/name", cancellationToken).ConfigureAwait(false);
         }
 
         return slug;

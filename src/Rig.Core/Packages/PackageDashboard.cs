@@ -174,7 +174,7 @@ public static partial class PackageDashboard
             {
                 Add(scoped, tag, tag[prefix.Length..]);
             }
-            else if (tag.StartsWith('v') || tag.StartsWith('V'))
+            else if (tag.StartsWith('v', StringComparison.Ordinal) || tag.StartsWith('V', StringComparison.Ordinal))
             {
                 Add(global, tag, tag[1..]);
             }

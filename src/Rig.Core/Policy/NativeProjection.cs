@@ -100,7 +100,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     {
         ArgumentNullException.ThrowIfNull(pattern);
         var trimmed = pattern.TrimEnd();
-        var wildcard = trimmed.EndsWith('*');
+        var wildcard = trimmed.EndsWith('*', StringComparison.Ordinal);
         var text = wildcard ? trimmed[..^1].TrimEnd() : pattern.Trim();
         if (text.IndexOfAny(['*', '?']) >= 0)
         {
@@ -205,7 +205,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
                 continue;
             }
 
-            if (text.StartsWith("unsandboxed(", StringComparison.Ordinal) && text.EndsWith(')'))
+            if (text.StartsWith("unsandboxed(", StringComparison.Ordinal) && text.EndsWith(')', StringComparison.Ordinal))
             {
                 text = $"command({text["unsandboxed(".Length..^1]})";
             }
@@ -421,7 +421,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
 
             var head = deny.Split('*', 2)[0];
             var words = head.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-            var headTokens = head.EndsWith(' ') ? words : words[..^Math.Min(1, words.Length)];
+            var headTokens = head.EndsWith(' ', StringComparison.Ordinal) ? words : words[..^Math.Min(1, words.Length)];
             var shorter = Math.Min(headTokens.Length, prefix.Tokens.Count);
             return prefix.Tokens.Take(shorter).SequenceEqual(headTokens.Take(shorter), StringComparer.Ordinal);
         });

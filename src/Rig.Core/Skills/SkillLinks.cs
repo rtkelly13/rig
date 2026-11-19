@@ -294,6 +294,6 @@ public sealed class SkillLinks(SkillPlaces places, IDirectoryLinker linker)
 
     private static IEnumerable<string> Entries(string folder) =>
         Directory.EnumerateFileSystemEntries(folder)
-            .Where(e => !Path.GetFileName(e).StartsWith('.'))
+            .Where(e => !Path.GetFileName(e).StartsWith('.', StringComparison.Ordinal))
             .Order(UnicodeText.CodePointOrder);
 }

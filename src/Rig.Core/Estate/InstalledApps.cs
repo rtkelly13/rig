@@ -239,7 +239,7 @@ public sealed class InstalledApps(IProc proc, IDiskUsage disk, TimeProvider time
     internal static string Suffix(string path)
     {
         var name = System.IO.Path.GetFileName(path);
-        var dot = name.LastIndexOf('.');
+        var dot = name.LastIndexOf('.', StringComparison.Ordinal);
         return dot <= 0 || dot == name.Length - 1 ? string.Empty : name[dot..];
     }
 

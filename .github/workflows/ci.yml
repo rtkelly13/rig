@@ -363,7 +363,7 @@ jobs:
           key: playwright-dotnet-linux-${{ hashFiles('Directory.Packages.props') }}
       - name: Install Playwright Chromium
         if: matrix.shard == 'browser' && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+        run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net11.0/playwright.ps1 install --with-deps chromium
       # The COM source generator's stubs and CsWin32's interop (Desktop/Windows) are Windows-only and generated, so
       # they are left out like the [ExcludeFromCodeCoverage] interop they serve; the Windows job exercises them.
       - name: Test with coverage
@@ -550,7 +550,7 @@ jobs:
           key: playwright-dotnet-windows-${{ hashFiles('Directory.Packages.props') }}
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net10.0/playwright.ps1 install chromium
+        run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net11.0/playwright.ps1 install chromium
       # One test module at a time: every module starting git at once on the 4-core runner pushed single git calls
       # past their 10-30s timeouts, failing a different git-backed test on each run.
       - name: Test

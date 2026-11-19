@@ -28,7 +28,7 @@ internal static class Counter
         }
 
         // A trailing newline yields one phantom empty segment.
-        return text.EndsWith('\n') ? lines with { Blank = lines.Blank - 1 } : lines;
+        return text.EndsWith('\n', StringComparison.Ordinal) ? lines with { Blank = lines.Blank - 1 } : lines;
     }
 
     /// <summary>The area of a file under src: <c>Project/Folder</c>, or <c>Project</c> for files directly in the project.</summary>

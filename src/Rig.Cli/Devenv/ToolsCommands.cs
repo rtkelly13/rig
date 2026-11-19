@@ -54,17 +54,17 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
         }
         catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
         {
-            await error.WriteLineAsync($"Could not read the tool catalog: {e.Message}").ConfigureAwait(false);
+            await error.WriteLineAsync($"Could not read the tool catalog: {e.Message}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
         var tools = Tools();
         var missing = new List<DevTool>();
-        await output.WriteLineAsync("Development tools:").ConfigureAwait(false);
+        await output.WriteLineAsync("Development tools:", cancellationToken).ConfigureAwait(false);
         foreach (var tool in catalog)
         {
             var installed = await tools.IsInstalledAsync(tool, cancellationToken).ConfigureAwait(false);
-            await output.WriteLineAsync($"  {tool.Name,-28} {tool.Category,-10} {(installed ? "installed" : tool.Required ? "missing (required)" : "missing"),-18} {tool.Description}").ConfigureAwait(false);
+            await output.WriteLineAsync($"  {tool.Name,-28} {tool.Category,-10} {(installed ? "installed" : tool.Required ? "missing (required)" : "missing"),-18} {tool.Description}", cancellationToken).ConfigureAwait(false);
             if (!installed)
             {
                 missing.Add(tool);
@@ -93,7 +93,7 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
         {
             if (tools.Manager is { } manager && manager.IdOf(tool.Install) is null)
             {
-                await output.WriteLineAsync($"- {tool.Name}: no {manager.Name} package; install it by hand.").ConfigureAwait(false);
+                await output.WriteLineAsync($"- {tool.Name}: no {manager.Name} package; install it by hand.", cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -103,27 +103,27 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
 
         if (wanted.Count == 0)
         {
-            await output.WriteLineAsync("✓ All target tools are already installed.").ConfigureAwait(false);
+            await output.WriteLineAsync("✓ All target tools are already installed.", cancellationToken).ConfigureAwait(false);
             return false;
         }
 
         if (dryRun)
         {
-            await output.WriteLineAsync($"Dry run: would install {wanted.Count} tool(s): {string.Join(", ", wanted.Select(tool => tool.Name))}.").ConfigureAwait(false);
+            await output.WriteLineAsync($"Dry run: would install {wanted.Count} tool(s): {string.Join(", ", wanted.Select(tool => tool.Name))}.", cancellationToken).ConfigureAwait(false);
             return false;
         }
 
         var failed = false;
         foreach (var tool in wanted)
         {
-            await output.WriteLineAsync($"Installing {tool.Name}...").ConfigureAwait(false);
+            await output.WriteLineAsync($"Installing {tool.Name}...", cancellationToken).ConfigureAwait(false);
             if (await tools.InstallAsync(tool, quiet, cancellationToken).ConfigureAwait(false))
             {
-                await output.WriteLineAsync($"✓ Installed {tool.Name}").ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ Installed {tool.Name}", cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                await error.WriteLineAsync($"! Failed to install {tool.Name} via {tools.Manager?.Name ?? "a package manager (none found)"}.").ConfigureAwait(false);
+                await error.WriteLineAsync($"! Failed to install {tool.Name} via {tools.Manager?.Name ?? "a package manager (none found)"}.", cancellationToken).ConfigureAwait(false);
                 failed = true;
             }
         }
@@ -135,13 +135,13 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
     {
         if (tools.Manager is null)
         {
-            await error.WriteLineAsync($"Package upgrade did not run: {(host.Windows ? "winget" : "brew")} is not on the PATH.").ConfigureAwait(false);
+            await error.WriteLineAsync($"Package upgrade did not run: {(host.Windows ? "winget" : "brew")} is not on the PATH.", cancellationToken).ConfigureAwait(false);
             return false;
         }
 
         if (!await tools.Manager.UpgradeAllAsync(quiet, cancellationToken).ConfigureAwait(false))
         {
-            await error.WriteLineAsync($"Package upgrade failed: {tools.Manager.Name} exited non-zero.").ConfigureAwait(false);
+            await error.WriteLineAsync($"Package upgrade failed: {tools.Manager.Name} exited non-zero.", cancellationToken).ConfigureAwait(false);
             return false;
         }
 
@@ -150,13 +150,13 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
 
     private async Task<int> UpdateAsync(CancellationToken cancellationToken)
     {
-        await output.WriteLineAsync("Updating development tools...").ConfigureAwait(false);
+        await output.WriteLineAsync("Updating development tools...", cancellationToken).ConfigureAwait(false);
         if (!await UpgradeAsync(Tools(), quiet: false, cancellationToken).ConfigureAwait(false))
         {
             return 1;
         }
 
-        await output.WriteLineAsync("✓ Environment update complete.").ConfigureAwait(false);
+        await output.WriteLineAsync("✓ Environment update complete.", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -176,10 +176,10 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
             var tool = bundled.Single(t => t.Id == id);
             if (!await tools.IsInstalledAsync(tool, cancellationToken).ConfigureAwait(false))
             {
-                await output.WriteLineAsync(dryRun ? $"Dry run: would install {tool.Name}" : $"Installing {tool.Name}...").ConfigureAwait(false);
+                await output.WriteLineAsync(dryRun ? $"Dry run: would install {tool.Name}" : $"Installing {tool.Name}...", cancellationToken).ConfigureAwait(false);
                 if (!dryRun && !await tools.InstallAsync(tool, quiet, cancellationToken).ConfigureAwait(false))
                 {
-                    await error.WriteLineAsync($"! Failed to install {tool.Name}.").ConfigureAwait(false);
+                    await error.WriteLineAsync($"! Failed to install {tool.Name}.", cancellationToken).ConfigureAwait(false);
                     failed = true;
                     continue;
                 }
@@ -187,19 +187,19 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
 
             if (dryRun)
             {
-                await output.WriteLineAsync($"Dry run: would ensure {label} with: {string.Join(' ', argv)}").ConfigureAwait(false);
+                await output.WriteLineAsync($"Dry run: would ensure {label} with: {string.Join(' ', argv)}", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
-            await output.WriteLineAsync($"Ensuring {label} with {argv[0]}...").ConfigureAwait(false);
+            await output.WriteLineAsync($"Ensuring {label} with {argv[0]}...", cancellationToken).ConfigureAwait(false);
             var ran = await proc.RunAsync(new ProcRequest(argv) { Timeout = TimeSpan.FromMinutes(10) }, cancellationToken).ConfigureAwait(false);
             if (ran.Ok)
             {
-                await output.WriteLineAsync($"✓ {label} is available.").ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ {label} is available.", cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                await error.WriteLineAsync($"! {string.Join(' ', argv)} exited {ran.Code}: {ran.Err.Trim()}").ConfigureAwait(false);
+                await error.WriteLineAsync($"! {string.Join(' ', argv)} exited {ran.Code}: {ran.Err.Trim()}", cancellationToken).ConfigureAwait(false);
                 failed = true;
             }
         }

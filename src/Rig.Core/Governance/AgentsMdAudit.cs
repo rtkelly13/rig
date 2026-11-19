@@ -291,7 +291,7 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
         {
             var target = Strip(match.Groups[1].Value.Split('#', 2)[0]);
             if (target.Length == 0 || target.StartsWith("http://", StringComparison.Ordinal) || target.StartsWith("https://", StringComparison.Ordinal)
-                || target.StartsWith("mailto:", StringComparison.Ordinal) || target.StartsWith('#'))
+                || target.StartsWith("mailto:", StringComparison.Ordinal) || target.StartsWith('#', StringComparison.Ordinal))
             {
                 continue;
             }
@@ -386,14 +386,14 @@ public sealed partial class AgentsMdAudit(Git git, TimeProvider time)
     private static bool LooksLikePath(string candidate)
     {
         if (!candidate.Contains('/', StringComparison.Ordinal)
-            || candidate.StartsWith('/') || candidate.StartsWith('~') || candidate.StartsWith("http", StringComparison.Ordinal)
-            || candidate.StartsWith('@') || candidate.StartsWith('-'))
+            || candidate.StartsWith('/', StringComparison.Ordinal) || candidate.StartsWith('~', StringComparison.Ordinal) || candidate.StartsWith("http", StringComparison.Ordinal)
+            || candidate.StartsWith('@', StringComparison.Ordinal) || candidate.StartsWith('-', StringComparison.Ordinal))
         {
             return false;
         }
 
         return candidate.IndexOfAny([' ', '*', '<', '>', '|', '$', '(', ')', '{', '}']) < 0
-            && candidate[(candidate.LastIndexOf('/') + 1)..].Contains('.', StringComparison.Ordinal);
+            && candidate[(candidate.LastIndexOf('/', StringComparison.Ordinal) + 1)..].Contains('.', StringComparison.Ordinal);
     }
 
     private static IEnumerable<AgentsMdFinding> CheckPathLiveness(string repo, string text) =>

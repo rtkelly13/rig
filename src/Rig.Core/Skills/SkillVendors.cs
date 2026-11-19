@@ -171,7 +171,7 @@ public sealed class SkillVendors(Git git, string clones, string vendored, bool w
                 DirectoryLinks.Remove(target);
             }
 
-            DirectoryLinks.Copy(source, target, n => NotCopied.Contains(n) || n.StartsWith('.'));
+            DirectoryLinks.Copy(source, target, n => NotCopied.Contains(n) || n.StartsWith('.', StringComparison.Ordinal));
             extracted.Add(name);
         }
 
@@ -229,7 +229,7 @@ public sealed class SkillVendors(Git git, string clones, string vendored, bool w
             throw Invalid(at, "skills_subdir must stay inside the repository");
         }
 
-        if (url.StartsWith('-') || branch.StartsWith('-'))
+        if (url.StartsWith('-', StringComparison.Ordinal) || branch.StartsWith('-', StringComparison.Ordinal))
         {
             throw Invalid(at, "url and branch must not start with '-'");
         }

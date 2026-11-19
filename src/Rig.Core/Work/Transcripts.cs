@@ -218,7 +218,7 @@ internal static class Transcripts
     {
         // The text of a prompt the user typed; null for tool results, reminders and compaction summaries.
         public string? TypedPrompt =>
-            CompactSummary || Meta || Content is null || Content.StartsWith('<') ? null : Content;
+            CompactSummary || Meta || Content is null || Content.StartsWith('<', StringComparison.Ordinal) ? null : Content;
 
         // How the conversation ended, judged from this, its last user or assistant entry.
         public string TurnState

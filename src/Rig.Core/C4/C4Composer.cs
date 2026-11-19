@@ -562,7 +562,7 @@ public static partial class C4Composer
             return [];
         }
 
-        if (!lines[start].TrimEnd().EndsWith('{'))
+        if (!lines[start].TrimEnd().EndsWith('{', StringComparison.Ordinal))
         {
             return [start];
         }
@@ -571,7 +571,7 @@ public static partial class C4Composer
         for (var index = start; index < lines.Count; index++)
         {
             var stripped = lines[index].Trim();
-            depth += stripped.EndsWith('{') ? 1 : stripped == "}" ? -1 : 0;
+            depth += stripped.EndsWith('{', StringComparison.Ordinal) ? 1 : stripped == "}" ? -1 : 0;
             if (depth == 0)
             {
                 return [.. Enumerable.Range(start, index - start + 1)];

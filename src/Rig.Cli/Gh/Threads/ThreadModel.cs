@@ -180,7 +180,7 @@ internal static partial class ThreadModel
         var builder = new StringBuilder();
         foreach (var rune in text.EnumerateRunes().Take(runes))
         {
-            builder.Append(rune.ToString());
+            builder.Append(rune);
         }
 
         return builder.ToString();

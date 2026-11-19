@@ -17,7 +17,7 @@ scored against something.
 
 ## Language
 
-rig is C# on .NET 10 ([ADR 0022](adr/0022-csharp-is-rigs-primary-language.md)). The brand-asset pipeline
+rig is C# on .NET 11 ([ADR 0022](adr/0022-csharp-is-rigs-primary-language.md)). The brand-asset pipeline
 (`tools/image-drift`) is the one Python project, kept because its output must stay byte-identical
 ([ADR 0009](adr/0009-deterministic-svg-render-pipeline.md)); it has its own gates and is not part of the C#
 layering below.

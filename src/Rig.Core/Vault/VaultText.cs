@@ -59,7 +59,7 @@ public static partial class VaultText
             return url;
         }
 
-        var fragment = url.IndexOf('#', at);
+        var fragment = url.IndexOf('#', at, StringComparison.Ordinal);
         var query = url[(at + 1)..(fragment < 0 ? url.Length : fragment)];
         var kept = query.Split('&').Where(field =>
             field.IndexOf('=', StringComparison.Ordinal) is > 0 and var equals

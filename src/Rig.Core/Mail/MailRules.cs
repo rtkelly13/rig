@@ -226,7 +226,7 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
         return terms;
     }
 
-    private static string Quote(string term) => HasSpace(term) && !term.StartsWith('"') ? $"\"{term}\"" : term;
+    private static string Quote(string term) => HasSpace(term) && !term.StartsWith('"', StringComparison.Ordinal) ? $"\"{term}\"" : term;
 
     private static string AnyOf(string op, IReadOnlyList<string> values)
     {

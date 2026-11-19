@@ -1,4 +1,4 @@
-# ADR 0022: C# on .NET 10 Is rig's Primary Language
+# ADR 0022: C# on .NET 11 Is rig's Primary Language
 
 - **Status:** Accepted; item 7 (`image_drift` stays Python) is superseded by [ADR 0024](0024-image-pipeline-in-csharp.md)
 - **Applies to:** all of rig except the brand-asset pipeline (`image_drift`)
@@ -27,7 +27,7 @@ library reproduces those bytes, so porting it would change every production cut.
 
 ## Decision
 
-1. **New rig code is C# on .NET 10.** The SDK is pinned in `global.json`. Projects build with nullable
+1. **New rig code is C# on .NET 11.** The SDK is pinned in `global.json`. Projects build with nullable
    enabled, warnings as errors and `AnalysisLevel` `latest-all`.
 2. **Packages use Central Package Management** (`Directory.Packages.props`), as every sibling .NET repo does,
    so Renovate's nuget manager keeps them current. Paket was considered and rejected: it is unused elsewhere
@@ -54,7 +54,7 @@ The step-by-step plan, its done-when checks and progress live on the tracking is
 
 ## Consequences
 
-- Machines need the .NET 10 SDK. `uv` stays installed for `image_drift` and for other estate repos.
+- Machines need the .NET 11 SDK. `uv` stays installed for `image_drift` and for other estate repos.
 - `uv run <command>` keeps working throughout the migration through the forwarding front door. Callers in
   other repos (`AGENTS.md` files, `~/.claude/settings.json`, `config/cli-allowlists.json`) are updated once
   the Python entry points are gone.

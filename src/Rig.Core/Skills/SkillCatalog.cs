@@ -139,7 +139,7 @@ public sealed record SkillPlaces(string Checkout, string Home, string WorkingDir
             sources.AddRange(Directory.EnumerateDirectories(vendors)
                 .Select(Path.GetFileName)
                 .OfType<string>()
-                .Where(name => !name.StartsWith('.'))
+                .Where(name => !name.StartsWith('.', StringComparison.Ordinal))
                 .Order(UnicodeText.CodePointOrder)
                 .Select(name => new SkillSource(name, Path.Join(vendors, name))));
         }
@@ -332,7 +332,7 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
         foreach (var entry in Directory.EnumerateFileSystemEntries(folder))
         {
             var name = Path.GetFileName(entry);
-            if (name.StartsWith('.') || Ignored.Contains(name))
+            if (name.StartsWith('.', StringComparison.Ordinal) || Ignored.Contains(name))
             {
                 continue;
             }

@@ -92,7 +92,7 @@ public static class FrontmatterEditor
         var lines = new List<string>();
         for (var start = 0; start < yaml.Length;)
         {
-            var end = yaml.IndexOf('\n', start);
+            var end = yaml.IndexOf('\n', start, StringComparison.Ordinal);
             end = end < 0 ? yaml.Length : end + 1;
             lines.Add(yaml[start..end]);
             start = end;
@@ -102,7 +102,7 @@ public static class FrontmatterEditor
         var at = lines.FindLastIndex(opens.IsMatch);
         if (at < 0)
         {
-            return (yaml.EndsWith('\n') ? yaml : yaml + "\n") + Line(key, value);
+            return (yaml.EndsWith('\n', StringComparison.Ordinal) ? yaml : yaml + "\n") + Line(key, value);
         }
 
         var last = at;
@@ -159,7 +159,7 @@ public static class FrontmatterEditor
                     quoted.Append("\\u").Append(rune.Value.ToString("X4", CultureInfo.InvariantCulture));
                     break;
                 default:
-                    quoted.Append(rune.ToString());
+                    quoted.Append(rune);
                     break;
             }
         }

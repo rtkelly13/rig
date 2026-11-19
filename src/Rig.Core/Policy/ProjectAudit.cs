@@ -35,7 +35,7 @@ public static partial class ProjectAudit
     {
         ArgumentNullException.ThrowIfNull(root);
         var projects = new[] { root }.Concat(
-            new DirectoryInfo(root).EnumerateDirectories().Where(d => !d.Name.StartsWith('.')).Select(d => d.FullName).Order(StringComparer.Ordinal));
+            new DirectoryInfo(root).EnumerateDirectories().Where(d => !d.Name.StartsWith('.', StringComparison.Ordinal)).Select(d => d.FullName).Order(StringComparer.Ordinal));
         var results = new List<ProjectCommand>();
         foreach (var project in projects)
         {
@@ -119,7 +119,7 @@ public static partial class ProjectAudit
         foreach (var raw in toml.ReplaceLineEndings("\n").Split('\n'))
         {
             var line = raw.Trim();
-            if (line.StartsWith('['))
+            if (line.StartsWith('[', StringComparison.Ordinal))
             {
                 inTable = TableHeader().Match(line) is { Success: true } header
                     && header.Groups["name"].Value.Replace(" ", string.Empty, StringComparison.Ordinal) == "project.scripts";

@@ -64,7 +64,7 @@ public sealed class JsonProblemTests
     public void Describe_words_every_json_kind(string json, string words)
     {
         Assert.Equal(words, JsonProblem.Describe(JsonNode.Parse(json)));
-        Assert.Equal(words, JsonProblem.Describe(JsonDocument.Parse(json).RootElement));
+        Assert.Equal(words, JsonProblem.Describe(JsonElement.Parse(json)));
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class JsonProblemTests
     [InlineData("""{"n": 5}""", 5L)]
     [InlineData("""{"n": -5}""", -5L)]
     public void A_whole_number_reads_an_integer(string json, long expected) =>
-        Assert.Equal(expected, JsonProblem.WholeNumber(JsonDocument.Parse(json).RootElement, "n", "$"));
+        Assert.Equal(expected, JsonProblem.WholeNumber(JsonElement.Parse(json), "n", "$"));
 
     [Theory]
     [InlineData("""{"n": 5.5}""", "$.n: expected a whole number, found the number 5.5")]
@@ -95,5 +95,5 @@ public sealed class JsonProblemTests
     [InlineData("""{"n": true}""", "$.n: expected a whole number, found true")]
     [InlineData("""{}""", "$.n: expected a whole number, found nothing")]
     public void A_whole_number_rejects_everything_else(string json, string message) =>
-        Assert.Equal(message, Assert.Throws<JsonInputException>(() => JsonProblem.WholeNumber(JsonDocument.Parse(json).RootElement, "n", "$")).Message);
+        Assert.Equal(message, Assert.Throws<JsonInputException>(() => JsonProblem.WholeNumber(JsonElement.Parse(json), "n", "$")).Message);
 }

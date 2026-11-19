@@ -118,7 +118,7 @@ internal sealed partial class GovernanceCommand
         var dashboard = Triage.Dashboard(issues, time.GetUtcNow());
         if (scope.Json)
         {
-            await output.WriteLineAsync(JsonOutput.Format(dashboard.ToJson())).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(dashboard.ToJson()), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -136,7 +136,7 @@ internal sealed partial class GovernanceCommand
             text.Append(CultureInfo.InvariantCulture, $"\nOther open issues (already triaged): {dashboard[IssueBucket.Other].Count}\n");
         }
 
-        await output.WriteAsync(text.ToString()).ConfigureAwait(false);
+        await output.WriteAsync(text.ToString(), cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -155,7 +155,7 @@ internal sealed partial class GovernanceCommand
         var dashboard = Triage.Dashboard(prs, time.GetUtcNow());
         if (scope.Json)
         {
-            await output.WriteLineAsync(JsonOutput.Format(dashboard.ToJson())).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(dashboard.ToJson()), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -165,11 +165,11 @@ internal sealed partial class GovernanceCommand
         Section(text, "🔴 BLOCKED / FAILING", dashboard[PrBucket.Blocked], pr => (pr.ShortRef, pr.Title + Tag(BlockedReasons(pr)), pr.Link));
         Section(text, "⏳ IN FLIGHT / PENDING", dashboard[PrBucket.Pending], pr => (pr.ShortRef, pr.Title + (pr.Pending.Count > 0 ? $" [pending: {string.Join(", ", pr.Pending)}]" : string.Empty), pr.Link));
         Section(text, "💤 STALE / IDLE (> 14 days)", dashboard[PrBucket.Stale], pr => (pr.ShortRef, pr.Title, pr.Link));
-        await output.WriteAsync(text.ToString()).ConfigureAwait(false);
+        await output.WriteAsync(text.ToString(), cancellationToken).ConfigureAwait(false);
 
         if (updateBehind && dashboard[PrBucket.Behind].Count > 0)
         {
-            await output.WriteLineAsync("\n── Updating behind branches ──").ConfigureAwait(false);
+            await output.WriteLineAsync("\n── Updating behind branches ──", cancellationToken).ConfigureAwait(false);
             foreach (var pr in dashboard[PrBucket.Behind])
             {
                 await ReportAsync(await triage.UpdateBehindAsync(pr, cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
@@ -178,7 +178,7 @@ internal sealed partial class GovernanceCommand
 
         if (mergeReady && dashboard[PrBucket.Ready].Count > 0)
         {
-            await output.WriteLineAsync("\n── Merging ready PRs ──").ConfigureAwait(false);
+            await output.WriteLineAsync("\n── Merging ready PRs ──", cancellationToken).ConfigureAwait(false);
             foreach (var pr in dashboard[PrBucket.Ready])
             {
                 await ReportAsync(await triage.MergeReadyAsync(pr, (repo, number, ct) => ReviewThreadsAsync(Api, repo, number, ct), cancellationToken).ConfigureAwait(false))
@@ -229,7 +229,7 @@ internal sealed partial class GovernanceCommand
             return await BlockedAsync($"PR {pr} in {target}: {threads.Message}").ConfigureAwait(false);
         }
 
-        await output.WriteLineAsync($"✓ Required checks pass, GitHub can merge it, and every conversation thread is resolved for PR {pr}!").ConfigureAwait(false);
+        await output.WriteLineAsync($"✓ Required checks pass, GitHub can merge it, and every conversation thread is resolved for PR {pr}!", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 

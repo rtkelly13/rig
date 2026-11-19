@@ -55,7 +55,7 @@ ______________________________________________________________________
 
 ## Global Installation & Continual Use
 
-Under [ADR 0022](../adr/0022-csharp-is-rigs-primary-language.md), `rig` is implemented in C# on .NET 10:
+Under [ADR 0022](../adr/0022-csharp-is-rigs-primary-language.md), `rig` is implemented in C# on .NET 11:
 
 1. **Pack as Global Tool**:
    `src/Rig.Cli/Rig.Cli.csproj` is packaged as a standard .NET tool (`<PackAsTool>true</PackAsTool>`).

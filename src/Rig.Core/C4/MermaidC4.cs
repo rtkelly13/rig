@@ -224,7 +224,7 @@ public static partial class MermaidReader
         string? link = null;
         foreach (var part in SplitArgs(raw))
         {
-            if (part.StartsWith('$'))
+            if (part.StartsWith('$', StringComparison.Ordinal))
             {
                 var separator = part.IndexOf('=', StringComparison.Ordinal);
                 var key = separator < 0 ? part : part[..separator];

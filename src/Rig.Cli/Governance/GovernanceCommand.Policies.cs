@@ -39,29 +39,29 @@ internal sealed partial class GovernanceCommand
 
         if (!Path.Exists(repoDir) || !Path.Exists(Path.Join(repoDir, ".git")))
         {
-            await output.WriteLineAsync($"❌ Directory {shown} is not a valid git repository.").ConfigureAwait(false);
+            await output.WriteLineAsync($"❌ Directory {shown} is not a valid git repository.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
         var policies = RepoPolicies.Load(host.PolicyFile);
         var meta = await new PolicyFiles(proc, new Git(proc, host.CodeRoot)).DetectAsync(repoDir, policies, cancellationToken).ConfigureAwait(false);
-        await output.WriteAsync(Panel($"Applying Governance Policies to {meta.RepoName}")).ConfigureAwait(false);
-        await output.WriteLineAsync($"Visibility: {Visibility(meta)} | Runtimes: {meta.SupportedRuntimes}").ConfigureAwait(false);
+        await output.WriteAsync(Panel($"Applying Governance Policies to {meta.RepoName}"), cancellationToken).ConfigureAwait(false);
+        await output.WriteLineAsync($"Visibility: {Visibility(meta)} | Runtimes: {meta.SupportedRuntimes}", cancellationToken).ConfigureAwait(false);
 
         if (policy is ("ai" or "all"))
         {
             PolicyFiles.ApplyAiPolicy(repoDir, meta, dryRun);
             _ = PolicyFiles.InjectReadmeAiDisclosure(repoDir, meta, dryRun);
-            await output.WriteLineAsync("  ✓ AI_POLICY.md and README.md disclosure applied").ConfigureAwait(false);
+            await output.WriteLineAsync("  ✓ AI_POLICY.md and README.md disclosure applied", cancellationToken).ConfigureAwait(false);
         }
 
         if (policy is ("security" or "all") && meta.IsPublic)
         {
             PolicyFiles.ApplySecurityPolicy(repoDir, meta, dryRun);
-            await output.WriteLineAsync("  ✓ SECURITY.md applied").ConfigureAwait(false);
+            await output.WriteLineAsync("  ✓ SECURITY.md applied", cancellationToken).ConfigureAwait(false);
         }
 
-        await output.WriteLineAsync("\n✓ Policy application complete!").ConfigureAwait(false);
+        await output.WriteLineAsync("\n✓ Policy application complete!", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -87,7 +87,7 @@ internal sealed partial class GovernanceCommand
         }
         catch (InvalidDataException e)
         {
-            await output.WriteLineAsync($"❌ Invalid policy config {host.PolicyFile}: {e.Message}").ConfigureAwait(false);
+            await output.WriteLineAsync($"❌ Invalid policy config {host.PolicyFile}: {e.Message}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -103,39 +103,39 @@ internal sealed partial class GovernanceCommand
                 continue;
             }
 
-            await output.WriteLineAsync($"\n── Syncing Profile: {profile.Name} ──").ConfigureAwait(false);
+            await output.WriteLineAsync($"\n── Syncing Profile: {profile.Name} ──", cancellationToken).ConfigureAwait(false);
             foreach (var name in profile.Repos)
             {
                 var target = Path.Join(baseDir, name);
                 if (!Path.Exists(target))
                 {
-                    await output.WriteLineAsync($"  Skipping {name} (not found locally at {target})").ConfigureAwait(false);
+                    await output.WriteLineAsync($"  Skipping {name} (not found locally at {target})", cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
                 var meta = await files.DetectAsync(target, policies, cancellationToken).ConfigureAwait(false);
-                await output.WriteLineAsync($"  • {name} ({Visibility(meta)})").ConfigureAwait(false);
+                await output.WriteLineAsync($"  • {name} ({Visibility(meta)})", cancellationToken).ConfigureAwait(false);
                 if (profile.Policies.Contains("ai_policy"))
                 {
                     PolicyFiles.ApplyAiPolicy(target, meta, dryRun);
-                    await output.WriteLineAsync("    ✓ AI_POLICY.md").ConfigureAwait(false);
+                    await output.WriteLineAsync("    ✓ AI_POLICY.md", cancellationToken).ConfigureAwait(false);
                 }
 
                 if (profile.Policies.Contains("readme_ai_disclosure"))
                 {
                     _ = PolicyFiles.InjectReadmeAiDisclosure(target, meta, dryRun);
-                    await output.WriteLineAsync("    ✓ README.md AI Section").ConfigureAwait(false);
+                    await output.WriteLineAsync("    ✓ README.md AI Section", cancellationToken).ConfigureAwait(false);
                 }
 
                 if (profile.Policies.Contains("security_policy"))
                 {
                     PolicyFiles.ApplySecurityPolicy(target, meta, dryRun);
-                    await output.WriteLineAsync("    ✓ SECURITY.md").ConfigureAwait(false);
+                    await output.WriteLineAsync("    ✓ SECURITY.md", cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
-        await output.WriteLineAsync("\n✓ Multi-repo policy synchronization complete!").ConfigureAwait(false);
+        await output.WriteLineAsync("\n✓ Multi-repo policy synchronization complete!", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 

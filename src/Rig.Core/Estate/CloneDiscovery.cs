@@ -125,7 +125,7 @@ public sealed class CloneDiscovery(string cacheFile, TimeProvider time)
         try
         {
             return [.. Directory.EnumerateDirectories(parent)
-                .Where(child => Path.GetFileName(child) is var name && !name.StartsWith('.') && !Skipped.Contains(name))];
+                .Where(child => Path.GetFileName(child) is var name && !name.StartsWith('.', StringComparison.Ordinal) && !Skipped.Contains(name))];
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

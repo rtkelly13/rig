@@ -224,7 +224,7 @@ public sealed class JobRunner(JobRunnerSeams seams)
         var builder = new StringBuilder();
         foreach (var rune in text.EnumerateRunes().Take(count))
         {
-            builder.Append(rune.ToString());
+            builder.Append(rune);
         }
 
         return builder.ToString();

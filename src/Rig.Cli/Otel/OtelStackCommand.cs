@@ -156,7 +156,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     private async Task<int> InstallAsync(CancellationToken ct)
     {
         var path = await parts.Installer.InstallCollectorAsync(host.Paths.Home, Key(), ct).ConfigureAwait(false);
-        await output.WriteLineAsync($"otelcol {OtelPins.Version} verified at {path}").ConfigureAwait(false);
+        await output.WriteLineAsync($"otelcol {OtelPins.Version} verified at {path}", ct).ConfigureAwait(false);
         return 0;
     }
 
@@ -171,7 +171,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
         var name = holder.Command.Length > 0 ? holder.Command : "an unknown process";
         await output.WriteLineAsync(
             $"port {Text(Port)} is held by {name} (pid {Text(holder.Pid)}), not otelcol: free the port (for a Docker collector, publish it on "
-            + "another port and `otel-stack collector forward set` to it), then run this again").ConfigureAwait(false);
+            + "another port and `otel-stack collector forward set` to it), then run this again", ct).ConfigureAwait(false);
         return true;
     }
 
@@ -187,7 +187,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
                 return ForeignListenerExit;
             }
 
-            await output.WriteLineAsync($"already listening on {Text(Port)}").ConfigureAwait(false);
+            await output.WriteLineAsync($"already listening on {Text(Port)}", ct).ConfigureAwait(false);
             return 0;
         }
 
@@ -195,19 +195,19 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
         {
             _ = parts.Runtime.WriteConfig();
             await (await parts.Launchd(ct).ConfigureAwait(false)).KickstartAsync(OtelService.Label, restart: true, ct).ConfigureAwait(false);
-            await output.WriteLineAsync("kicked the LaunchAgent").ConfigureAwait(false);
+            await output.WriteLineAsync("kicked the LaunchAgent", ct).ConfigureAwait(false);
             return 0;
         }
 
         var key = Key();
         if (!OtelInstaller.CollectorVerified(host.Paths.Home, key))
         {
-            await output.WriteLineAsync("not installed: run `otel-stack collector install`").ConfigureAwait(false);
+            await output.WriteLineAsync("not installed: run `otel-stack collector install`", ct).ConfigureAwait(false);
             return FailedExit;
         }
 
         var pid = await parts.Runtime.StartAsync(OtelPins.BinaryPath(host.Paths.Home, key), ct).ConfigureAwait(false);
-        await output.WriteLineAsync($"started pid {Text(pid)}; log {host.Paths.Log}").ConfigureAwait(false);
+        await output.WriteLineAsync($"started pid {Text(pid)}; log {host.Paths.Log}", ct).ConfigureAwait(false);
         return 0;
     }
 
@@ -217,12 +217,12 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
         {
             var launchd = await parts.Launchd(ct).ConfigureAwait(false);
             await launchd.UnloadAsync(OtelService.PlistPath(launchd), ct).ConfigureAwait(false);
-            await output.WriteLineAsync("unloaded the LaunchAgent").ConfigureAwait(false);
+            await output.WriteLineAsync("unloaded the LaunchAgent", ct).ConfigureAwait(false);
             return 0;
         }
 
         var stopped = await parts.Runtime.StopRecordedAsync(ct).ConfigureAwait(false);
-        await output.WriteLineAsync(stopped ? "stopped" : "no collector started by `otel-stack` is recorded").ConfigureAwait(false);
+        await output.WriteLineAsync(stopped ? "stopped" : "no collector started by `otel-stack` is recorded", ct).ConfigureAwait(false);
         return 0;
     }
 
@@ -233,7 +233,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
         var pruned = Retention.Prune(host.Paths.Data, host.Clock.GetUtcNow(), apply: true);
         if (pruned.Count > 0)
         {
-            await output.WriteLineAsync($"pruned {Text(pruned.Count)} rotated files older than {Text(Retention.KeepDays)} days").ConfigureAwait(false);
+            await output.WriteLineAsync($"pruned {Text(pruned.Count)} rotated files older than {Text(Retention.KeepDays)} days", ct).ConfigureAwait(false);
         }
 
         if (host.MacOs && OtelService.Installed(await parts.Launchd(ct).ConfigureAwait(false)))
@@ -242,14 +242,14 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
             if (!await OtelService.LoadedAsync(launchd, ct).ConfigureAwait(false))
             {
                 _ = await OtelService.InstallAsync(launchd, host.Paths, binary, config, ct).ConfigureAwait(false);
-                await output.WriteLineAsync("loaded the LaunchAgent").ConfigureAwait(false);
+                await output.WriteLineAsync("loaded the LaunchAgent", ct).ConfigureAwait(false);
                 return 0;
             }
 
             if (!await parts.Probe.ListeningAsync(Port, cancellationToken: ct).ConfigureAwait(false))
             {
                 await launchd.KickstartAsync(OtelService.Label, restart: true, ct).ConfigureAwait(false);
-                await output.WriteLineAsync("restarted the LaunchAgent").ConfigureAwait(false);
+                await output.WriteLineAsync("restarted the LaunchAgent", ct).ConfigureAwait(false);
                 return 0;
             }
 
@@ -262,7 +262,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
         }
 
         var pid = await parts.Runtime.StartAsync(binary, ct).ConfigureAwait(false);
-        await output.WriteLineAsync($"started pid {Text(pid)}").ConfigureAwait(false);
+        await output.WriteLineAsync($"started pid {Text(pid)}", ct).ConfigureAwait(false);
         return 0;
     }
 
@@ -273,7 +273,7 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
             return ForeignListenerExit;
         }
 
-        await output.WriteLineAsync($"listening on {Text(Port)}").ConfigureAwait(false);
+        await output.WriteLineAsync($"listening on {Text(Port)}", ct).ConfigureAwait(false);
         return 0;
     }
 
@@ -283,41 +283,41 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
         var binary = OtelPins.BinaryPath(host.Paths.Home, key);
         var installed = File.Exists(binary) ? "installed" : "missing";
         var verified = OtelInstaller.CollectorVerified(host.Paths.Home, key) ? "sha256 verified" : "not verified";
-        await output.WriteLineAsync($"binary: {installed} otelcol {OtelPins.Version} ({verified}) {binary}").ConfigureAwait(false);
+        await output.WriteLineAsync($"binary: {installed} otelcol {OtelPins.Version} ({verified}) {binary}", ct).ConfigureAwait(false);
         if (host.MacOs)
         {
             var launchd = await parts.Launchd(ct).ConfigureAwait(false);
             var state = await OtelService.LoadedAsync(launchd, ct).ConfigureAwait(false)
                 ? "loaded"
                 : OtelService.Installed(launchd) ? "installed, not loaded" : "not installed";
-            await output.WriteLineAsync($"service: {state} ({OtelService.PlistPath(launchd)})").ConfigureAwait(false);
+            await output.WriteLineAsync($"service: {state} ({OtelService.PlistPath(launchd)})", ct).ConfigureAwait(false);
         }
 
         foreach (var port in new[] { CollectorConfig.GrpcPort, CollectorConfig.HttpPort })
         {
-            await output.WriteLineAsync($"port {Text(port)}: {await PortStateAsync(port, ct).ConfigureAwait(false)}").ConfigureAwait(false);
+            await output.WriteLineAsync($"port {Text(port)}: {await PortStateAsync(port, ct).ConfigureAwait(false)}", ct).ConfigureAwait(false);
         }
 
-        await output.WriteLineAsync($"forward: {parts.Runtime.Forward() ?? "off"}").ConfigureAwait(false);
+        await output.WriteLineAsync($"forward: {parts.Runtime.Forward() ?? "off"}", ct).ConfigureAwait(false);
         var holder = await parts.Runtime.OwnerAsync(Port, ct).ConfigureAwait(false);
         if ((holder is null || holder.Ours) && await parts.Runtime.ListenerPidAsync(Port, ct).ConfigureAwait(false) is { } pid)
         {
             var mb = await parts.Runtime.ResidentMbAsync(pid, ct).ConfigureAwait(false);
             var memory = mb is { } resident ? $", {resident.ToString("0.0", CultureInfo.InvariantCulture)} MB resident" : string.Empty;
-            await output.WriteLineAsync($"process: pid {Text(pid)}{memory}").ConfigureAwait(false);
+            await output.WriteLineAsync($"process: pid {Text(pid)}{memory}", ct).ConfigureAwait(false);
         }
 
         var data = host.Paths.Data;
         var files = Directory.Exists(data) ? Directory.GetFiles(data, "*.jsonl").Select(path => new FileInfo(path)).ToList() : [];
         if (files.Count == 0)
         {
-            await output.WriteLineAsync($"data: empty ({data})").ConfigureAwait(false);
+            await output.WriteLineAsync($"data: empty ({data})", ct).ConfigureAwait(false);
             return 0;
         }
 
         var stamps = files.Select(file => file.LastWriteTimeUtc).Order().ToList();
         await output.WriteLineAsync(
-            $"data: {Text(files.Count)} files, {Mb(files.Sum(file => file.Length))} MB, {Local(stamps[0])} to {Local(stamps[^1])} ({data})").ConfigureAwait(false);
+            $"data: {Text(files.Count)} files, {Mb(files.Sum(file => file.Length))} MB, {Local(stamps[0])} to {Local(stamps[^1])} ({data})", ct).ConfigureAwait(false);
         return 0;
     }
 
@@ -343,21 +343,21 @@ internal sealed partial class OtelStackCommand(OtelHost host, OtelParts parts, T
     {
         if (!host.MacOs)
         {
-            await output.WriteLineAsync("Only on macOS; on Windows the jobs coordinator runs `collector ensure`.").ConfigureAwait(false);
+            await output.WriteLineAsync("Only on macOS; on Windows the jobs coordinator runs `collector ensure`.", ct).ConfigureAwait(false);
             return FailedExit;
         }
 
         var binary = await parts.Installer.InstallCollectorAsync(host.Paths.Home, Key(), ct).ConfigureAwait(false);
         var path = await OtelService.InstallAsync(await parts.Launchd(ct).ConfigureAwait(false), host.Paths, binary, parts.Runtime.WriteConfig(), ct)
             .ConfigureAwait(false);
-        await output.WriteLineAsync($"loaded {path}").ConfigureAwait(false);
+        await output.WriteLineAsync($"loaded {path}", ct).ConfigureAwait(false);
         return 0;
     }
 
     private async Task<int> ServiceUninstallAsync(CancellationToken ct)
     {
         var removed = host.MacOs && await OtelService.UninstallAsync(await parts.Launchd(ct).ConfigureAwait(false), ct).ConfigureAwait(false);
-        await output.WriteLineAsync(removed ? "removed" : "Not installed.").ConfigureAwait(false);
+        await output.WriteLineAsync(removed ? "removed" : "Not installed.", ct).ConfigureAwait(false);
         return 0;
     }
 }

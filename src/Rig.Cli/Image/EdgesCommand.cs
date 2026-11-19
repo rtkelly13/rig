@@ -121,16 +121,16 @@ internal sealed class EdgesCommand(ImageHost host, TextWriter output, TextWriter
                 var first = await scorer.ScoreAsync(before, "before", cancellationToken).ConfigureAwait(false);
                 var second = await scorer.ScoreAsync(after, "after", cancellationToken).ConfigureAwait(false);
                 await output.WriteLineAsync(
-                    string.Create(CultureInfo.InvariantCulture, $"  Drift vs reference: SSIM {first.Drift.Ssim:0.0000} -> {second.Drift.Ssim:0.0000}, composite {first.Score.CompositePct:0.000}% -> {second.Score.CompositePct:0.000}%")).ConfigureAwait(false);
+                    string.Create(CultureInfo.InvariantCulture, $"  Drift vs reference: SSIM {first.Drift.Ssim:0.0000} -> {second.Drift.Ssim:0.0000}, composite {first.Score.CompositePct:0.000}% -> {second.Score.CompositePct:0.000}%"), cancellationToken).ConfigureAwait(false);
                 if (second.Drift.Ssim < first.Drift.Ssim)
                 {
-                    await output.WriteLineAsync("  Fidelity fell. The reference raster's own edges are not exactly on-axis, so geometric correctness and reference fidelity pull apart here. Judge by eye, not by SSIM.").ConfigureAwait(false);
+                    await output.WriteLineAsync("  Fidelity fell. The reference raster's own edges are not exactly on-axis, so geometric correctness and reference fidelity pull apart here. Judge by eye, not by SSIM.", cancellationToken).ConfigureAwait(false);
                 }
             }
         }
         catch (RendererUnavailableException exception)
         {
-            await output.WriteLineAsync($"  Drift not scored: {exception.Message}").ConfigureAwait(false);
+            await output.WriteLineAsync($"  Drift not scored: {exception.Message}", cancellationToken).ConfigureAwait(false);
         }
     }
 

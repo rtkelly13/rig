@@ -270,14 +270,14 @@ public static partial class CheckNames
     // `*.y*ml`, as pathlib's glob matches it.
     private static bool IsWorkflowName(string name)
     {
-        var dot = name.LastIndexOf('.');
+        var dot = name.LastIndexOf('.', StringComparison.Ordinal);
         if (dot < 0)
         {
             return false;
         }
 
         var extension = name[(dot + 1)..];
-        return extension.StartsWith('y') && extension.EndsWith("ml", StringComparison.Ordinal) && extension.Length >= 3;
+        return extension.StartsWith('y', StringComparison.Ordinal) && extension.EndsWith("ml", StringComparison.Ordinal) && extension.Length >= 3;
     }
 
     // The workflow's top-level mapping with string keys only, the YAML 1.1 `on: → True` key folded back; null when unreadable.

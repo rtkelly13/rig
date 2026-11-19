@@ -49,7 +49,7 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
         var ran = await proc.RunAsync(new ProcRequest(["git", "config", .. Scope(home), key, value]), cancellationToken).ConfigureAwait(false);
         if (!ran.Ok)
         {
-            await error.WriteLineAsync($"! git config {key} failed: {ran.Err.Trim()}").ConfigureAwait(false);
+            await error.WriteLineAsync($"! git config {key} failed: {ran.Err.Trim()}", cancellationToken).ConfigureAwait(false);
         }
 
         return ran.Ok;
@@ -59,8 +59,8 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
     {
         var name = await GetAsync(home, "user.name", cancellationToken).ConfigureAwait(false);
         var email = await GetAsync(home, "user.email", cancellationToken).ConfigureAwait(false);
-        await output.WriteLineAsync(name is not null && email is not null ? $"  Git identity: {name} <{email}>" : "  Git identity: incomplete (run `rig devenv git`)").ConfigureAwait(false);
-        await output.WriteLineAsync($"  SSH key:      {GitSetup.SshKey(home) ?? "missing"}").ConfigureAwait(false);
+        await output.WriteLineAsync(name is not null && email is not null ? $"  Git identity: {name} <{email}>" : "  Git identity: incomplete (run `rig devenv git`)", cancellationToken).ConfigureAwait(false);
+        await output.WriteLineAsync($"  SSH key:      {GitSetup.SshKey(home) ?? "missing"}", cancellationToken).ConfigureAwait(false);
         return name is not null && email is not null ? 0 : 1;
     }
 
@@ -70,11 +70,11 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
         var email = await GetAsync(home, "user.email", cancellationToken).ConfigureAwait(false);
         if (name is not null && email is not null)
         {
-            await output.WriteLineAsync($"✓ Current global Git identity: {name} <{email}>").ConfigureAwait(false);
+            await output.WriteLineAsync($"✓ Current global Git identity: {name} <{email}>", cancellationToken).ConfigureAwait(false);
         }
         else if (!prompt)
         {
-            await output.WriteLineAsync("! Git user.name or user.email is not set. Run `rig devenv git`, or set them with git config --global.").ConfigureAwait(false);
+            await output.WriteLineAsync("! Git user.name or user.email is not set. Run `rig devenv git`, or set them with git config --global.", cancellationToken).ConfigureAwait(false);
             return 0;
         }
         else
@@ -85,7 +85,7 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
                 && await SetAsync(home, "user.name", name, cancellationToken).ConfigureAwait(false)
                 && await SetAsync(home, "user.email", email, cancellationToken).ConfigureAwait(false))
             {
-                await output.WriteLineAsync($"✓ Configured global Git user: {name} <{email}>").ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ Configured global Git user: {name} <{email}>", cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -94,7 +94,7 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
         {
             if (dryRun)
             {
-                await output.WriteLineAsync($"Dry run: would set git config {key} {value}").ConfigureAwait(false);
+                await output.WriteLineAsync($"Dry run: would set git config {key} {value}", cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -178,15 +178,15 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
         var ssh = Path.Join(home, ".ssh");
         if (GitSetup.SshKey(home) is not null)
         {
-            await output.WriteLineAsync($"✓ SSH key found in {ssh}").ConfigureAwait(false);
+            await output.WriteLineAsync($"✓ SSH key found in {ssh}", cancellationToken).ConfigureAwait(false);
             return true;
         }
 
         var key = Path.Join(ssh, "id_ed25519");
-        await output.WriteLineAsync($"! No standard SSH key found in {ssh}").ConfigureAwait(false);
+        await output.WriteLineAsync($"! No standard SSH key found in {ssh}", cancellationToken).ConfigureAwait(false);
         if (dryRun)
         {
-            await output.WriteLineAsync($"Dry run: would offer to generate an ed25519 key at {key}").ConfigureAwait(false);
+            await output.WriteLineAsync($"Dry run: would offer to generate an ed25519 key at {key}", cancellationToken).ConfigureAwait(false);
             return true;
         }
 
@@ -200,16 +200,16 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
         var ran = await proc.RunAsync(new ProcRequest(["ssh-keygen", "-t", "ed25519", "-C", email, "-f", key, "-N", ""]), cancellationToken).ConfigureAwait(false);
         if (!ran.Ok)
         {
-            await error.WriteLineAsync($"! Failed to generate SSH key: {ran.Err.Trim()}").ConfigureAwait(false);
+            await error.WriteLineAsync($"! Failed to generate SSH key: {ran.Err.Trim()}", cancellationToken).ConfigureAwait(false);
             return false;
         }
 
-        await output.WriteLineAsync($"✓ Generated new SSH key at {key}").ConfigureAwait(false);
+        await output.WriteLineAsync($"✓ Generated new SSH key at {key}", cancellationToken).ConfigureAwait(false);
         var publicKey = key + ".pub";
         if (File.Exists(publicKey))
         {
             var text = (await File.ReadAllTextAsync(publicKey, cancellationToken).ConfigureAwait(false)).Trim();
-            await output.WriteLineAsync($"\nPublic key (add it to GitHub -> Settings -> SSH Keys):\n{text}\n").ConfigureAwait(false);
+            await output.WriteLineAsync($"\nPublic key (add it to GitHub -> Settings -> SSH Keys):\n{text}\n", cancellationToken).ConfigureAwait(false);
         }
 
         return true;
@@ -226,7 +226,7 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
     {
         await output.WriteAsync($"{question} [{(fallback ? "Y/n" : "y/N")}]: ").ConfigureAwait(false);
         var answer = (await Input.ReadLineAsync().ConfigureAwait(false))?.Trim();
-        return string.IsNullOrEmpty(answer) ? fallback : answer.StartsWith('y') || answer.StartsWith('Y');
+        return string.IsNullOrEmpty(answer) ? fallback : answer.StartsWith('y', StringComparison.Ordinal) || answer.StartsWith('Y', StringComparison.Ordinal);
     }
 
     private string? TerminalSettings(string home) =>

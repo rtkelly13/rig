@@ -56,7 +56,7 @@ public static class RigMcp
         }
         catch (IOException e)
         {
-            await error.WriteLineAsync($"rig web mcp: {e.Message}").ConfigureAwait(false);
+            await error.WriteLineAsync($"rig web mcp: {e.Message}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
     }

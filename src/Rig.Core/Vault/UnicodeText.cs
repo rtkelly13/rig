@@ -67,7 +67,7 @@ public static class UnicodeText
                     break;
                 default:
                     // Per scalar, so a supplementary-plane capital (Deseret's 𐐀) lowers correctly.
-                    builder.Append(Rune.ToLowerInvariant(rune).ToString());
+                    builder.Append(Rune.ToLowerInvariant(rune));
                     break;
             }
         }

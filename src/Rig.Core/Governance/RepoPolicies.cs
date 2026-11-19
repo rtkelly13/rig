@@ -167,7 +167,7 @@ public sealed class RepoPolicies
     public bool IsAppDisallowed(string repo, string account, string slug)
     {
         ArgumentNullException.ThrowIfNull(repo);
-        var bare = repo[(repo.LastIndexOf('/') + 1)..];
+        var bare = repo[(repo.LastIndexOf('/', StringComparison.Ordinal) + 1)..];
         return Apps.FirstOrDefault(app => app.Slug == slug)?.Accounts.GetValueOrDefault(account) is { } policy && policy.DisallowRepos.Contains(bare);
     }
 
@@ -384,7 +384,7 @@ public sealed class RepoPolicies
             return true;
         }
 
-        var bare = repo[(repo.LastIndexOf('/') + 1)..];
+        var bare = repo[(repo.LastIndexOf('/', StringComparison.Ordinal) + 1)..];
         if (ExpectedOwner(bare) is { } expected && string.Equals(expected, org, StringComparison.OrdinalIgnoreCase))
         {
             return true;
@@ -433,7 +433,7 @@ public sealed class RepoPolicies
     public static string BareName(string key)
     {
         ArgumentNullException.ThrowIfNull(key);
-        return key[(key.LastIndexOf('/') + 1)..].ToLowerInvariant();
+        return key[(key.LastIndexOf('/', StringComparison.Ordinal) + 1)..].ToLowerInvariant();
     }
 
     private static LanguagePreset Preset(string id, LanguagePresetConfig spec, string source)

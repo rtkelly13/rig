@@ -178,7 +178,7 @@ public static class ReviewToolConfigs
             foreach (var child in Directory.EnumerateDirectories(directory, "*", options))
             {
                 var name = Path.GetFileName(child);
-                if (!name.StartsWith('.') && !DotnetPruneDirs.Contains(name) && !new FileInfo(child).Attributes.HasFlag(FileAttributes.ReparsePoint))
+                if (!name.StartsWith('.', StringComparison.Ordinal) && !DotnetPruneDirs.Contains(name) && !new FileInfo(child).Attributes.HasFlag(FileAttributes.ReparsePoint))
                 {
                     pending.Push(child);
                 }

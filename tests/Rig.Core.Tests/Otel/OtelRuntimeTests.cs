@@ -246,7 +246,7 @@ public sealed class OtelRuntimeTests : IDisposable
 
         _ = await new UnixDetachedStart(new SystemProc()).StartAsync(["/bin/echo", "a b"], log, cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal("before\na b\n", await Eventually(log, text => text.EndsWith('\n') && text != "before\n"));
+        Assert.Equal("before\na b\n", await Eventually(log, text => text.EndsWith('\n', StringComparison.Ordinal) && text != "before\n"));
     }
 
     [Fact]
