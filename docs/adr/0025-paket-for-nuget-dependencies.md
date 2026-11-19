@@ -59,9 +59,9 @@ None of these is a package rig references directly.
 
 ## Decision
 
-1. **NuGet packages are declared in `paket.dependencies` and locked in `paket.lock`.** Every package line is an exact
-   constraint (`nuget X == 1.2.3`), which is what Renovate's paket versioning updates. `storage: none`,
-   `strategy: min`, `lowest_matching: true`, and `framework: net10.0, net11.0`.
+1. **NuGet packages are declared in `paket.dependencies` and locked in `paket.lock`.** Each package is either pinned or
+   floating (see [Pinned and floating packages](#pinned-and-floating-packages)). `storage: none`, `strategy: min`,
+   `lowest_matching: true`, and `framework: net10.0, net11.0`.
 2. **Each project lists what it uses in its own `paket.references`.** `Directory.Packages.props` and
    `ManagePackageVersionsCentrally` are removed; there is no dual setup.
 3. **Paket is a pinned local tool** (`.config/dotnet-tools.json`). CI runs `dotnet tool restore` before any
@@ -78,10 +78,48 @@ None of these is a package rig references directly.
    in a `paket/` folder under rig's binaries (`RuntimeManager` publishes it there, and `check` starts it), and a missing
    sidecar skips the repo's Paket files with one inventory warning.
 
+## Pinned and floating packages
+
+`paket.lock` records one exact version for every package, so a build is reproducible either way. What the line in
+`paket.dependencies` decides is which packages may move when the lock is regenerated.
+
+| Kind | Line | Moves when |
+|---|---|---|
+| Pinned | `nuget X = 1.2.3` | Someone edits the line. |
+| Floating | `nuget X ~> 1.2 lowest_matching: false` | `paket update` regenerates the lock: newest `1.*`, never `2.0`. |
+
+- **`=`, not `==`.** Paket's `==` is a conflict override that forces a version over other packages' requirements. An
+  exact pin is `=`.
+- **Floating lines need `lowest_matching: false`.** The file-wide `lowest_matching: true` would hold a `~>` range at
+  its floor. `strategy: min` still keeps transitives at their floor for both kinds.
+- **Pinned:**
+  - the CLI stack (ADR 0023 item 4);
+  - `Microsoft.Data.Sqlite`, kept with the .NET runtime;
+  - the 0.x packages (`Spectre.Console`, `Microsoft.Windows.CsWin32`);
+  - `ModelContextProtocol`;
+  - `Microsoft.CodeAnalysis.BannedApiAnalyzers`, because a new rule is a build error;
+  - pairs that must move together:
+    - `xunit.v3.mtp-v2` with `Microsoft.Testing.Extensions.TrxReport`;
+    - `SkiaSharp.NativeAssets.Linux.NoDependencies` with the SkiaSharp that `Svg.Skia` brings in;
+  - the whole `Sidecar` group, so Paket.Core matches the Paket tool.
+- **Floating** (on `~> major.minor`):
+  - stable libraries: Markdig, YamlDotNet, Tomlyn, NetTopologySuite;
+  - test-only packages;
+  - Playwright;
+  - the image stack evaluation packages (ImageSharp, Svg.Skia). Their upgrades can change rendered output, which the
+    image cross-check catches.
+- **How changes arrive:**
+  - Renovate's weekly lock-file maintenance runs `paket update`, which moves floating packages and transitives in one
+    reviewable `paket.lock` diff.
+  - A new major, or a new version of a pinned package, arrives as a Renovate PR that edits the line.
+  - By hand: `dotnet paket update` (everything that may move) or `dotnet paket update <package>`. `paket install`
+    changes nothing already locked.
+
 ## Pilot exit criterion
 
-The first Renovate PR after this lands must change both `paket.dependencies` and `paket.lock` and pass CI. If it
-changes only one, or cannot run Paket, revert to CPM (git is the rollback) and amend this ADR.
+The first Renovate PR after this lands that bumps a pinned package must change both `paket.dependencies` and
+`paket.lock`, and the first lock-file maintenance PR must change `paket.lock` alone. Both must pass CI. If either fails
+that, or Renovate cannot run Paket, revert to CPM (git is the rollback) and amend this ADR.
 
 ## Consequences
 
