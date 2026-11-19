@@ -415,13 +415,25 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     // rig first: publishing only the launcher leaves out rig.deps.json, so rig cannot find its native libraries (SQLite).
     private void Publish(string copy)
     {
+        // Paket's restore targets call the paket local tool, which a fresh account has not restored yet.
+        if (File.Exists(Path.Join(copy, ".config", "dotnet-tools.json")))
+        {
+            _ = Must(["dotnet", "tool", "restore"], copy);
+        }
+
         foreach (var project in PublishedProjects)
         {
             _ = Must(["dotnet", "publish", Path.Join(copy, "src", project), "-c", "Release", "-o", PublishedFolder(copy), "-m:2", "-v", "q"], copy);
         }
 
-        _ = Must(["dotnet", "publish", Path.Join(copy, "src", "Rig.Paket"), "-c", "Release", "-o", PublishedSidecarFolder(copy), "-m:2", "-v", "q"], copy);
+        if (HasSidecar(copy))
+        {
+            _ = Must(["dotnet", "publish", Path.Join(copy, "src", "Rig.Paket"), "-c", "Release", "-o", PublishedSidecarFolder(copy), "-m:2", "-v", "q"], copy);
+        }
     }
+
+    /// <summary>Whether the revision being installed has the <c>Rig.Paket</c> sidecar; commits before it install without one.</summary>
+    private static bool HasSidecar(string copy) => File.Exists(Path.Join(copy, "src", "Rig.Paket", "Rig.Paket.csproj"));
 
     private List<string> Check(string copy)
     {
@@ -431,9 +443,13 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             [Published(copy, "rig", windows), "chrome-tabs", "organise", "--help"],
             [Published(copy, "rig", windows), "jobs", "run", "--help"],
             [Published(copy, "rig", windows), "jobs", "install", "--help"],
-            // --check parses a one-line dependencies file: it fails unless Paket.Core published with the sidecar.
-            [PublishedSidecar(copy, windows), "--check"],
         ];
+        if (HasSidecar(copy))
+        {
+            // --check parses a one-line dependencies file: it fails unless Paket.Core published with the sidecar.
+            commands.Add([PublishedSidecar(copy, windows), "--check"]);
+        }
+
         var plan = Path.Join(copy, "desktop-manager", "workspace-plan.bundle.json");
         // The desktop plan names Windows folders and placeholders, so it only validates on Windows.
         if (windows && File.Exists(plan))

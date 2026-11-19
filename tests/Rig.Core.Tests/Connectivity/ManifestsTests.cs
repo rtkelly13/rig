@@ -235,6 +235,44 @@ public sealed class ManifestsTests : IDisposable
     }
 
     [Fact]
+    public async Task A_conflicted_paket_file_is_read_once()
+    {
+        var root = await _estate.CheckoutAsync("paketconflict", new Dictionary<string, string> { ["app/paket.references"] = "Alpha\n" });
+        var blob = (await _estate.Git.RunAsync(root, ["hash-object", "-w", "app/paket.references"], cancellationToken: Token)).Out.Trim();
+        // An unresolved merge: git ls-files lists the path once per index stage.
+        Assert.True((await _estate.Git.RunAsync(root, ["rm", "--cached", "--quiet", "app/paket.references"], cancellationToken: Token)).Ok);
+        var stages = string.Concat(((int[])[1, 2, 3]).Select(stage => $"100644 {blob} {stage}\tapp/paket.references\n"));
+        Assert.True((await _estate.Git.RunAsync(root, ["update-index", "--index-info"], stdinText: stages, cancellationToken: Token)).Ok);
+        _estate.Paket.References(Path.Join(root, "app/paket.references"), "Alpha");
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketconflict", EstateFixture.ListTimeout, Token);
+
+        _ = Assert.Single(Assert.Single(_estate.Paket.Batches));
+        Assert.Equal("alpha", Assert.Single(inventory.Consumptions).Package);
+    }
+
+    [Fact]
+    public async Task An_unreadable_nested_paket_dependencies_still_bounds_its_references()
+    {
+        var root = await _estate.CheckoutAsync("paketnested", new Dictionary<string, string>
+        {
+            ["paket.dependencies"] = string.Empty,
+            ["nested/paket.dependencies"] = string.Empty,
+            ["nested/app/paket.references"] = string.Empty,
+        });
+        _estate.Paket
+            .Dependencies(Path.Join(root, "paket.dependencies"), ("Alpha", "1.0"))
+            .Add(new PaketFile(Path.Join(root, "nested/paket.dependencies"), [], "Unrecognized token: garbage", null))
+            .References(Path.Join(root, "nested/app/paket.references"), "Alpha");
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketnested", EstateFixture.ListTimeout, Token);
+
+        // The root file's 1.0 is not the nested repo's version: the nested file decides, and it could not be read.
+        Assert.Equal("centrally resolved", Assert.Single(inventory.Consumptions).Requirement);
+        Assert.Equal("nested/paket.dependencies: Unrecognized token: garbage", Assert.Single(inventory.Warnings));
+    }
+
+    [Fact]
     public async Task A_paket_lock_that_was_not_used_is_a_warning()
     {
         var root = await _estate.CheckoutAsync("paketlock", new Dictionary<string, string> { ["paket.dependencies"] = string.Empty });

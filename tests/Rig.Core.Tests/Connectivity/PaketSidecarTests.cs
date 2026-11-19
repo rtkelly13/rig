@@ -172,6 +172,19 @@ public sealed class PaketSidecarTests : IDisposable
     }
 
     [Fact]
+    public async Task A_link_to_an_endless_file_is_bounded_by_what_is_read()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "/dev/zero is a Unix device");
+        // The link's own length is its target path's, so only a bound on the read itself stops this.
+        var path = Path.Join(_temp.Folder("endless"), "paket.references");
+        _ = File.CreateSymbolicLink(path, "/dev/zero");
+
+        var file = Assert.Single((await Real.ReadAsync([path], Token)).Files);
+
+        Assert.Equal("Manifest exceeds 2 MB", file.Error);
+    }
+
+    [Fact]
     public async Task A_missing_sidecar_is_unavailable_not_a_crash()
     {
         var proc = new FakeProc();

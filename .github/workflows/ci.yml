@@ -510,7 +510,7 @@ jobs:
             exit 0
           fi
           range="${base}...HEAD"
-          if git diff --name-only --no-renames "${range}" | grep -Eq '(^|/)(\.editorconfig|\.globalconfig|Directory\.Build\.props|Directory\.Build\.targets)$'; then
+          if git diff --name-only --no-renames "${range}" | grep -Eq '(^|/)(\.editorconfig|\.globalconfig|Directory\.Build\.props|Directory\.Build\.targets|paket\.dependencies|paket\.lock)$'; then
             full
             exit 0
           fi

@@ -313,23 +313,27 @@ public static partial class Manifests
             return;
         }
 
-        var reading = await paket.ReadAsync([.. files.Select(file => file.Full)], cancellationToken).ConfigureAwait(false);
+        // git ls-files lists a conflicted path once per index stage; the sidecar answers once per path.
+        var unique = files.DistinctBy(file => file.Full, StringComparer.Ordinal).ToList();
+        var reading = await paket.ReadAsync([.. unique.Select(file => file.Full)], cancellationToken).ConfigureAwait(false);
         if (reading.Unavailable is { } reason)
         {
             inventory.WarningsFound.Add($"Paket manifests skipped: {reason}");
             return;
         }
 
-        var read = reading.Files.ToDictionary(file => file.Path, StringComparer.Ordinal);
-        var readable = files
+        var read = reading.Files.DistinctBy(file => file.Path, StringComparer.Ordinal).ToDictionary(file => file.Path, StringComparer.Ordinal);
+        var readable = unique
             .Select(file => (file.Evidence, file.Full, Reading: read.GetValueOrDefault(file.Full) ?? new PaketFile(file.Full, [], "the Paket sidecar did not answer for this file", null)))
             .ToList();
         inventory.WarningsFound.AddRange(readable
             .Where(file => file.Reading.Error is not null || file.Reading.Warning is not null)
             .Select(file => $"{file.Evidence}: {file.Reading.Error ?? file.Reading.Warning}"));
 
+        // A dependencies file that failed to read still bounds the lookup: its references resolve to no version rather than
+        // to one from a dependencies file further up. Its groups are empty, so its map is too.
         var versions = readable
-            .Where(file => Path.GetFileName(file.Full) == "paket.dependencies" && file.Reading.Error is null)
+            .Where(file => Path.GetFileName(file.Full) == "paket.dependencies")
             .ToDictionary(
                 file => Path.GetDirectoryName(file.Full)!,
                 file => file.Reading.Groups

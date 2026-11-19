@@ -45,8 +45,7 @@ internal static class PaketFileReader
 
     private static FileReading ReadDependencies(string path)
     {
-        Bound(path);
-        var dependencies = DependenciesFile.ReadFromFile(path);
+        var dependencies = DependenciesFile.FromSource(path, ReadBounded(path));
         var (resolved, warning) = ReadLock(path);
         var groups = dependencies.Groups
             .OrderBy(group => group.Key.Name, StringComparer.Ordinal)
@@ -71,8 +70,7 @@ internal static class PaketFileReader
 
         try
         {
-            Bound(lockPath);
-            var versions = LockFile.LoadFrom(lockPath).Groups
+            var versions = LockFile.Parse(lockPath, Lines(ReadBounded(lockPath))).Groups
                 .SelectMany(group => group.Value.Resolution.Select(package => (Group: group.Key.CompareString, Package: package.Key.CompareString, Version: package.Value.Version.AsString)))
                 .ToDictionary(entry => (entry.Group, entry.Package), entry => entry.Version);
             return (versions, null);
@@ -87,8 +85,7 @@ internal static class PaketFileReader
 
     private static FileReading ReadReferences(string path)
     {
-        Bound(path);
-        var references = ReferencesFile.FromFile(path);
+        var references = ReferencesFile.FromLines(Lines(ReadBounded(path)));
         var groups = references.Groups
             .OrderBy(group => group.Key.Name, StringComparer.Ordinal)
             .Select(group => new GroupEntry(group.Key.Name, [.. group.Value.NugetPackages.Select(package => new PackageEntry(package.Name.Name, null))]))
@@ -96,12 +93,29 @@ internal static class PaketFileReader
         return new FileReading(path, "references", groups, null, null);
     }
 
-    private static void Bound(string path)
+    /// <summary>
+    /// Reads at most <see cref="MaxBytes"/> from the opened file, so the bound holds for what is actually read: a symlink
+    /// to a device or an endless file fails here instead of growing until the process dies.
+    /// </summary>
+    private static string ReadBounded(string path)
     {
-        if (new FileInfo(path).Length > MaxBytes)
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var buffer = new byte[MaxBytes + 1];
+        var total = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
+        if (total > MaxBytes)
         {
             throw new InvalidDataException("Manifest exceeds 2 MB");
         }
+
+        using var reader = new StreamReader(new MemoryStream(buffer, 0, total), detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd();
+    }
+
+    /// <summary>Splits like <see cref="File.ReadAllLines(string)"/>: on CR, LF or CRLF, with no entry after a final newline.</summary>
+    private static string[] Lines(string text)
+    {
+        var lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n');
+        return lines[^1].Length == 0 ? lines[..^1] : lines;
     }
 
     private static FileReading Failed(string path, string kind, string error) => new(path, kind, [], error, null);
