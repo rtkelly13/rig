@@ -90,9 +90,14 @@ jobs:
       # consume these artifacts. Restore only the two projects they need in that case
       # instead of the whole solution, whose test projects never get built here.
       - name: Restore
-        run: >-
-          dotnet restore
-          ${{ needs.changes.outputs.code == 'true' && 'rig.slnx' || 'src/Rig.Cli tools/command-ownership' }}
+        run: |
+          if [ "${{ needs.changes.outputs.code }}" = "true" ]; then
+            dotnet restore rig.slnx
+          else
+            # `dotnet restore` takes one target per invocation.
+            dotnet restore src/Rig.Cli
+            dotnet restore tools/command-ownership
+          fi
       # Only the two artifacts other jobs consume, not every test project. `dotnet` still
       # builds the full solution for its tests in parallel. Analyzers stay off here: this
       # job only has to produce runnable output, and `analyze` runs them over the whole
