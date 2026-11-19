@@ -101,11 +101,12 @@ None of these is a package rig references directly.
   - pairs that must move together:
     - `xunit.v3.mtp-v2` with `Microsoft.Testing.Extensions.TrxReport`;
     - `SkiaSharp.NativeAssets.Linux.NoDependencies` with the SkiaSharp that `Svg.Skia` brings in;
+    - `Microsoft.Playwright` with `ChromiumRenderer.PinnedBrowserVersion`, since each release drives a different
+      Chromium build;
   - the whole `Sidecar` group, so Paket.Core matches the Paket tool.
 - **Floating** (on `~> major.minor`):
   - stable libraries: Markdig, YamlDotNet, Tomlyn, NetTopologySuite;
   - test-only packages;
-  - Playwright;
   - the image stack evaluation packages (ImageSharp, Svg.Skia). Their upgrades can change rendered output, which the
     image cross-check catches.
 - **How changes arrive:**

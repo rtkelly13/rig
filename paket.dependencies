@@ -49,8 +49,10 @@ nuget coverlet.MTP ~> 10.1 lowest_matching: false
 nuget NetArchTest.Rules ~> 1.3 lowest_matching: false
 nuget Reqnroll.xunit.v3 ~> 3.3 lowest_matching: false
 
-// Browser tests: CI's browser cache is keyed on paket.lock, so a bump refreshes it
-nuget Microsoft.Playwright ~> 1.64 lowest_matching: false
+// Browser tests: pinned, because each Playwright release drives a different Chromium build and rendered output is
+// checked against ChromiumRenderer.PinnedBrowserVersion; the two move in one edit. CI's browser cache is keyed on
+// paket.lock, so a bump refreshes it.
+nuget Microsoft.Playwright = 1.64.1
 
 // Images: pinned to the SkiaSharp version Svg.Skia brings in. Native assets that drift from the managed SkiaSharp
 // (and its macOS and Win32 natives) fail at run time, so this moves only together with that version.

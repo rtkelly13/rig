@@ -81,7 +81,7 @@ NUGET
       Microsoft.Extensions.DependencyInjection.Abstractions (>= 10.0.14)
       Microsoft.Extensions.Primitives (>= 10.0.14)
     Microsoft.Extensions.Primitives (10.0.14)
-    Microsoft.Playwright (1.65.1)
+    Microsoft.Playwright (1.64.1)
       Microsoft.Bcl.AsyncInterfaces (>= 6.0)
       System.ComponentModel.Annotations (>= 5.0)
       System.Text.Json (>= 6.0.10)
