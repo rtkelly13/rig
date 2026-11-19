@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Web/Rig.Web.csproj" />
@@ -9,4 +10,5 @@
   <ItemGroup Label="Recorded responses, the frozen parity baseline">
     <None Include="Recorded/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

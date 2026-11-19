@@ -1,11 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Image/Rig.Image.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="Oracle/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Oracle" />
     <None Include="SimplifierOracle/**" CopyToOutputDirectory="PreserveNewest" LinkBase="SimplifierOracle" />
     <None Include="PathwaysOracle/**" CopyToOutputDirectory="PreserveNewest" LinkBase="PathwaysOracle" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

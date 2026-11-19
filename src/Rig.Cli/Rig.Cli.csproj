@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- The rig command line (ADR 0022). -->
   <PropertyGroup>
@@ -14,11 +15,6 @@
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/packages</PackageOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="DotMake.CommandLine" />
-    <PackageReference Include="Spectre.Console" />
-    <PackageReference Include="System.CommandLine" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="../Rig.Core/Rig.Core.csproj" />
     <ProjectReference Include="../Rig.Image/Rig.Image.csproj" />
     <ProjectReference Include="../Rig.Web/Rig.Web.csproj" />
@@ -26,4 +22,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Rig.Cli.Tests" />
   </ItemGroup>
+  <Import Project="..\Rig.Paket\Rig.Paket.Sidecar.targets" />
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

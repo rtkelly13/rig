@@ -1,9 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../../src/Rig.Core/Rig.Core.csproj" />
-    <PackageReference Include="CsCheck" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="Vault/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Mail/*.json" CopyToOutputDirectory="PreserveNewest" />
@@ -12,4 +11,6 @@
     <None Include="Connectivity/*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Work/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <Import Project="..\..\src\Rig.Paket\Rig.Paket.Sidecar.targets" />
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

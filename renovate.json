@@ -3,6 +3,12 @@
   "extends": [
     "config:recommended"
   ],
+  "paket": {
+    "enabled": true,
+    "lockFileMaintenance": {
+      "enabled": true
+    }
+  },
   "packageRules": [
     {
       "description": "pnpm 12 refuses packages younger than a day (minimumReleaseAge), so a fresher npm bump would fail `pnpm install --frozen-lockfile` in CI. Wait the same day before proposing one.",

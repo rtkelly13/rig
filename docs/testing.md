@@ -48,7 +48,7 @@ Useful shapes, each with an example in `tests/Rig.Core.Tests/Desktop/GeometryPro
 
 Tests share one vocabulary rather than each file building its own doubles
 ([target-architecture.md](target-architecture.md#behaviour-suites-share-one-vocabulary)).
-`tests/Rig.Core.Tests/Fakes/` holds one fake per port (`FakeProc`, `FakeGitHub`, `FakeChromeTabActions`, ...), typed
+`tests/Rig.Core.Tests/Fakes/` holds one fake per port (`FakeProc`, `FakeGitHub`, `FakeChromeTabActions`, `FakePaketManifests`, ...), typed
 as that port. Extend the shared one rather than writing a double inline.
 
 Line endings are LF everywhere: `.editorconfig` sets `end_of_line = lf` and `.gitattributes` pins `*.cs` to

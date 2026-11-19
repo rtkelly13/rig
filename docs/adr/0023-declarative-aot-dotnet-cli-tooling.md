@@ -47,8 +47,8 @@ Standardize on **`DotMake.CommandLine`** (v3.7.0+) powered by Roslyn incremental
    - CLI parsing and syntax errors are written to stderr, intercepted from `result.ParseResult.Errors`, and forwarded to structured logging (JSON / `ILogger` / Serilog).
    - Setting `CliSettings.EnableDefaultExceptionHandler = false` ensures runtime execution exceptions bubble up to top-level `try / catch` structured telemetry rather than dumping raw console traces.
 
-4. **Package Pinning & Central Package Management**:
-   - Projects must pin exact package versions of both `DotMake.CommandLine` and its underlying transitive `System.CommandLine` dependency in `Directory.Packages.props` under Central Package Management (CPM) to insulate estate tooling from unexpected transitive upgrades or upstream preview breaking changes.
+4. **Package Pinning** (amended by [ADR 0025](0025-paket-for-nuget-dependencies.md): Paket replaces Central Package Management):
+   - Projects must pin exact package versions of both `DotMake.CommandLine` and its underlying transitive `System.CommandLine` dependency in `paket.dependencies`, with `paket.lock` pinning the transitives, to insulate estate tooling from unexpected transitive upgrades or upstream preview breaking changes.
 
 ## Consequences
 

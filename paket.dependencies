@@ -1,0 +1,82 @@
+source https://api.nuget.org/v3/index.json
+
+storage: none
+strategy: min
+lowest_matching: true
+framework: net11.0
+
+// Two kinds of line (ADR 0025):
+// - `= x.y.z` is an exact pin. It changes only when someone edits this file.
+// - `~> x.y lowest_matching: false` floats: it takes the newest x.* release when paket.lock is regenerated
+//   (`paket update`, or Renovate's lock-file maintenance), and never a new major.
+// paket.lock records one exact version for both kinds, so a build is reproducible either way.
+
+// MCP: fast-moving API
+nuget ModelContextProtocol = 2.4.0
+nuget ModelContextProtocol.AspNetCore = 2.4.0
+
+// Command line: pinned by ADR 0023; Spectre.Console is still 0.x
+nuget DotMake.CommandLine = 3.7.0
+nuget Spectre.Console = 0.57.2
+nuget System.CommandLine = 2.0.13
+
+// C4 viewer: notes to HTML
+nuget Markdig ~> 1.5 lowest_matching: false
+
+// Vault
+nuget YamlDotNet ~> 18.1 lowest_matching: false
+
+// Connectivity: pyproject.toml manifests
+nuget Tomlyn ~> 2.10 lowest_matching: false
+
+// Orca: kept in step with the .NET runtime
+nuget Microsoft.Data.Sqlite = 10.0.13
+
+// Desktop: still 0.x
+nuget Microsoft.Windows.CsWin32 = 0.3.366
+
+// Image stack evaluation (experiments/image-stack-eval, issue #317)
+nuget SixLabors.ImageSharp ~> 4.1 lowest_matching: false
+nuget Svg.Skia ~> 5.2 lowest_matching: false
+
+// Tests
+// xunit.v3.mtp-v2 and TrxReport stay pinned together: TrxReport must match the Microsoft.Testing.Platform version
+// xunit.v3.mtp-v2 brings in, so they move in one edit.
+nuget xunit.v3.mtp-v2 = 4.0.3
+nuget Microsoft.Testing.Extensions.TrxReport = 2.5.2
+nuget CsCheck ~> 5.0 lowest_matching: false
+nuget coverlet.MTP ~> 10.1 lowest_matching: false
+nuget NetArchTest.Rules ~> 1.3 lowest_matching: false
+nuget Reqnroll.xunit.v3 ~> 3.3 lowest_matching: false
+
+// Browser tests: pinned, because each Playwright release drives a different Chromium build and rendered output is
+// checked against ChromiumRenderer.PinnedBrowserVersion; the two move in one edit. CI's browser cache is keyed on
+// paket.lock, so a bump refreshes it.
+nuget Microsoft.Playwright = 1.64.1
+
+// Images: pinned to the SkiaSharp version Svg.Skia brings in. Native assets that drift from the managed SkiaSharp
+// (and its macOS and Win32 natives) fail at run time, so this moves only together with that version.
+nuget SkiaSharp.NativeAssets.Linux.NoDependencies = 4.148.0
+
+// Geometry
+nuget NetTopologySuite ~> 2.6 lowest_matching: false
+
+// Analyzers: a new rule is a build error (warnings are errors), so upgrades are deliberate
+nuget Microsoft.CodeAnalysis.BannedApiAnalyzers = 5.6.0
+
+// The Rig.Paket sidecar parses Paket files with Paket's own parsers (ADR 0025). Its own group keeps Paket.Core, FSharp.Core,
+// Newtonsoft.Json and the old NETStandard 1.x packages out of the Main lock, which every other project resolves from.
+// Everything here is pinned: Paket.Core matches the Paket tool in .config/dotnet-tools.json.
+group Sidecar
+  source https://api.nuget.org/v3/index.json
+
+  storage: none
+  strategy: min
+  lowest_matching: true
+  framework: net11.0
+
+  nuget Paket.Core = 12.0.0
+  // Paket.Core's transitive floors carry advisories (NU1902/NU1903); raise them past the fix.
+  nuget System.Net.Http = 4.3.4
+  nuget System.Security.Cryptography.Pkcs = 10.0.13
+  nuget System.Security.Cryptography.X509Certificates = 4.3.2
