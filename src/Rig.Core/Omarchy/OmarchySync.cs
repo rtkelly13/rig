@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Packages;
 using Rig.Core.Processes;
@@ -143,7 +144,9 @@ public static class OmarchySync
         var desired = policy.Shell is null ? new JsonObject() : (JsonObject)policy.Shell.DeepClone();
         if (policy.Idle is { } idle)
         {
-            desired["idle"] = new JsonObject { ["screensaver"] = idle.ScreensaverSeconds, ["lock"] = idle.LockSeconds };
+            desired["idle"] = JsonSerializer.SerializeToNode(
+                new ShellIdleConfig { Screensaver = idle.ScreensaverSeconds, Lock = idle.LockSeconds },
+                OmarchyConfigJsonContext.Default.ShellIdleConfig);
         }
 
         var merged = ShellDocument.Merge(state.Shell, desired);
