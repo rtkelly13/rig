@@ -69,8 +69,14 @@ None of these is a package rig references directly.
 4. **Pinning the CLI stack** (ADR 0023 item 4) is now an exact line for `DotMake.CommandLine` and
    `System.CommandLine` in `paket.dependencies`, and `paket.lock` pins their transitives.
 5. **Renovate** enables the `paket` manager and `lockFileMaintenance` for it.
-6. **Estate connectivity** reads `paket.dependencies` and `paket.references` (the CPM reader stays, for the sibling
-   repos that use it).
+6. **Estate connectivity** reads `paket.dependencies` and `paket.references` through the `IPaketManifests` port (the
+   CPM reader stays, for the sibling repos that use it). The real reader is the `Rig.Paket` sidecar, a separate
+   console project on Paket.Core's own parsers (`DependenciesFile`, `LockFile`, `ReferencesFile`). Paket.Core,
+   FSharp.Core and Newtonsoft.Json load only there, so they never enter `Rig.Core` and Native AOT stays open for rig.
+   rig starts it once per repo, writes the paths to its standard input and reads JSON from its standard output. A
+   `paket.dependencies` takes resolved versions from the `paket.lock` beside it, else the constraint. The sidecar lives
+   in a `paket/` folder under rig's binaries (`RuntimeManager` publishes it there, and `check` starts it), and a missing
+   sidecar skips the repo's Paket files with one inventory warning.
 
 ## Pilot exit criterion
 
@@ -84,4 +90,8 @@ changes only one, or cannot run Paket, revert to CPM (git is the rollback) and a
 - A package bump is one line in `paket.dependencies` plus the regenerated `paket.lock`; transitive changes show in
   the lock diff.
 - `.paket/Paket.Restore.targets` is vendored by `paket install` and is regenerated, not edited, when Paket updates.
+- The published runtime carries a second executable (`paket/Rig.Paket`) and connectivity starts one extra process per
+  repo that has Paket files. Paket.Core's old transitive floors carry advisories, so `paket.dependencies` raises
+  `System.Net.Http`, `System.Security.Cryptography.Pkcs` and `System.Security.Cryptography.X509Certificates` for the
+  sidecar.
 - The retarget to .NET 11 should restore under Paket on CI as it did in the scratch check.

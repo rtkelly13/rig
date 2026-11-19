@@ -17,7 +17,7 @@ public sealed class ManifestsTests : IDisposable
         var files = Enumerable.Range(0, Manifests.MaxManifests + 1).ToDictionary(i => $"p{i}/package.json", _ => "{}");
         var root = await _estate.CheckoutAsync("huge", files);
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/huge", EstateFixture.ListTimeout, Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/huge", EstateFixture.ListTimeout, Token);
 
         Assert.False(inventory.Scanned);
         Assert.Contains($"More than {Manifests.MaxManifests}", Assert.Single(inventory.Warnings), StringComparison.Ordinal);
@@ -35,7 +35,7 @@ public sealed class ManifestsTests : IDisposable
         await File.WriteAllTextAsync(Path.Join(root, "big", "package.json"), new string(' ', (int)Manifests.MaxBytes + 1), Token);
         await File.WriteAllBytesAsync(Path.Join(root, "bad", "package.json"), [0x7b, 0xff, 0x7d], Token);
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/odd", EstateFixture.ListTimeout, Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/odd", EstateFixture.ListTimeout, Token);
 
         Assert.True(inventory.Scanned);
         Assert.Equal(["bad/package.json", "big/package.json"], inventory.Warnings.Select(w => w[..w.IndexOf(':', StringComparison.Ordinal)]));
@@ -53,7 +53,7 @@ public sealed class ManifestsTests : IDisposable
         var utf16Bytes = System.Text.Encoding.Unicode.GetPreamble().Concat(System.Text.Encoding.Unicode.GetBytes("""{"name": "utf16"}""")).ToArray();
         await File.WriteAllBytesAsync(Path.Join(root, "package.json"), utf16Bytes, Token);
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/utf16", EstateFixture.ListTimeout, Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/utf16", EstateFixture.ListTimeout, Token);
 
         Assert.True(inventory.Scanned);
         Assert.Empty(inventory.Publications);
@@ -69,7 +69,7 @@ public sealed class ManifestsTests : IDisposable
         });
         await File.WriteAllTextAsync(Path.Join(root, "package.json"), """{"name":"a","name":"b"}""", Token);
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/dup", EstateFixture.ListTimeout, Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/dup", EstateFixture.ListTimeout, Token);
 
         Assert.True(inventory.Scanned);
         Assert.Empty(inventory.Publications);
@@ -92,7 +92,7 @@ public sealed class ManifestsTests : IDisposable
                 """,
         });
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/gen", EstateFixture.ListTimeout, Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/gen", EstateFixture.ListTimeout, Token);
 
         Assert.Empty(inventory.Publications);
         Assert.Empty(inventory.Consumptions);
@@ -116,7 +116,7 @@ public sealed class ManifestsTests : IDisposable
             ["i/package.json"] = """{"dependencies": {"x": 1}}""",
         });
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/shapes", EstateFixture.ListTimeout, Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/shapes", EstateFixture.ListTimeout, Token);
 
         Assert.Equal(
             ["a/pyproject.toml", "b/pyproject.toml", "c/pyproject.toml", "d/pyproject.toml", "e/pyproject.toml", "g/package.json", "h/package.json", "i/package.json"],
@@ -133,7 +133,7 @@ public sealed class ManifestsTests : IDisposable
             ["b/pyproject.toml"] = "[project]\nname = \"shared-py\"\ndependencies = [\"left\"]\noptional-dependencies = 3\n",
         });
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/partial", EstateFixture.ListTimeout, Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/partial", EstateFixture.ListTimeout, Token);
 
         Assert.Equal(2, inventory.Warnings.Count);
         Assert.Empty(inventory.Publications);
@@ -145,19 +145,24 @@ public sealed class ManifestsTests : IDisposable
     {
         var root = await _estate.CheckoutAsync("paket", new Dictionary<string, string>
         {
-            ["paket.dependencies"] = "source https://api.nuget.org/v3/index.json\nstorage: none\n\n// nuget Commented == 9\nnuget Managed.Lib == 1.0 // pinned\nnuget Ranged ~> 2.0\nnuget Bare\nnuget Equals = 3.0\n",
-            ["src/app/paket.references"] = "Managed.Lib\nRanged copy_local: false\nBare\nEquals\nUnlisted\n// Commented\nFile: shared.fs\ngroup Build\n",
-            ["nested/paket.dependencies"] = "nuget Managed.Lib == 2.0\n",
-            ["nested/app/paket.references"] = "managed.lib\n",
+            ["paket.dependencies"] = string.Empty,
+            ["src/app/paket.references"] = string.Empty,
+            ["nested/paket.dependencies"] = string.Empty,
+            ["nested/app/paket.references"] = string.Empty,
         });
+        _estate.Paket
+            .Dependencies(Path.Join(root, "paket.dependencies"), ("Managed.Lib", "1.0"), ("Ranged", ">= 2.0 < 3.0"), ("Bare", ""), ("Equals", "== 3.0"))
+            .References(Path.Join(root, "src/app/paket.references"), "Managed.Lib", "Ranged", "Bare", "Equals", "Unlisted")
+            .Dependencies(Path.Join(root, "nested/paket.dependencies"), ("Managed.Lib", "2.0"))
+            .References(Path.Join(root, "nested/app/paket.references"), "managed.lib");
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/paket", EstateFixture.ListTimeout, Token);
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paket", EstateFixture.ListTimeout, Token);
 
         Assert.Empty(inventory.Warnings);
         Assert.Equal(
             [
                 ("managed.lib", "1.0", "src/app/paket.references"),
-                ("ranged", "~> 2.0", "src/app/paket.references"),
+                ("ranged", ">= 2.0 < 3.0", "src/app/paket.references"),
                 ("bare", "unconstrained", "src/app/paket.references"),
                 ("equals", "3.0", "src/app/paket.references"),
                 ("unlisted", "centrally resolved", "src/app/paket.references"),
@@ -168,12 +173,93 @@ public sealed class ManifestsTests : IDisposable
     }
 
     [Fact]
-    public async Task An_unreadable_paket_dependencies_is_a_warning()
+    public async Task Every_paket_file_of_a_repo_is_read_in_one_call()
     {
-        var root = await _estate.CheckoutAsync("paketbig", new Dictionary<string, string> { ["paket.dependencies"] = new string(' ', (int)Manifests.MaxBytes + 1) });
+        var root = await _estate.CheckoutAsync("paketonce", new Dictionary<string, string>
+        {
+            ["paket.dependencies"] = string.Empty,
+            ["a/paket.references"] = string.Empty,
+            ["b/paket.references"] = string.Empty,
+        });
 
-        var inventory = await Manifests.ReadAsync(_estate.Git, root, "owner/paketbig", EstateFixture.ListTimeout, Token);
+        _ = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketonce", EstateFixture.ListTimeout, Token);
 
-        Assert.StartsWith("paket.dependencies:", Assert.Single(inventory.Warnings), StringComparison.Ordinal);
+        Assert.Equal(
+            [Path.Join(root, "a/paket.references"), Path.Join(root, "b/paket.references"), Path.Join(root, "paket.dependencies")],
+            Assert.Single(_estate.Paket.Batches).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_repo_without_paket_files_never_starts_the_reader()
+    {
+        var root = await _estate.CheckoutAsync("nopaket", new Dictionary<string, string> { ["package.json"] = "{}" });
+
+        _ = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/nopaket", EstateFixture.ListTimeout, Token);
+
+        Assert.Empty(_estate.Paket.Batches);
+    }
+
+    [Fact]
+    public async Task Paket_references_use_the_group_of_the_dependencies_they_name()
+    {
+        var root = await _estate.CheckoutAsync("paketgroups", new Dictionary<string, string> { ["paket.dependencies"] = string.Empty, ["app/paket.references"] = string.Empty });
+        _estate.Paket
+            .Add(new PaketFile(
+                Path.Join(root, "paket.dependencies"),
+                [new PaketGroup("Main", [new PaketPackage("Shared", "1.0")]), new PaketGroup("Test", [new PaketPackage("Shared", "9.0")])],
+                null,
+                null))
+            .Add(new PaketFile(
+                Path.Join(root, "app/paket.references"),
+                [new PaketGroup("Main", [new PaketPackage("Shared", null)]), new PaketGroup("Test", [new PaketPackage("Shared", null)])],
+                null,
+                null));
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketgroups", EstateFixture.ListTimeout, Token);
+
+        Assert.Equal(["1.0", "9.0"], inventory.Consumptions.Select(c => c.Requirement));
+    }
+
+    [Fact]
+    public async Task An_unreadable_paket_file_is_a_warning_not_a_failure()
+    {
+        var root = await _estate.CheckoutAsync("paketbad", new Dictionary<string, string> { ["paket.dependencies"] = string.Empty, ["app/paket.references"] = string.Empty, ["package.json"] = "{\"dependencies\":{\"left-pad\":\"1.0.0\"}}" });
+        _estate.Paket
+            .Add(new PaketFile(Path.Join(root, "paket.dependencies"), [], "Unrecognized token: garbage", null))
+            .References(Path.Join(root, "app/paket.references"), "Alpha");
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketbad", EstateFixture.ListTimeout, Token);
+
+        Assert.Equal("paket.dependencies: Unrecognized token: garbage", Assert.Single(inventory.Warnings));
+        Assert.Equal(["alpha", "left-pad"], inventory.Consumptions.Select(c => c.Package).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_paket_lock_that_was_not_used_is_a_warning()
+    {
+        var root = await _estate.CheckoutAsync("paketlock", new Dictionary<string, string> { ["paket.dependencies"] = string.Empty });
+        _estate.Paket.Add(new PaketFile(Path.Join(root, "paket.dependencies"), [], null, "paket.lock was not used: truncated"));
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketlock", EstateFixture.ListTimeout, Token);
+
+        Assert.Equal("paket.dependencies: paket.lock was not used: truncated", Assert.Single(inventory.Warnings));
+    }
+
+    [Fact]
+    public async Task A_missing_paket_reader_skips_the_paket_files_with_one_warning()
+    {
+        var root = await _estate.CheckoutAsync("paketmissing", new Dictionary<string, string>
+        {
+            ["paket.dependencies"] = string.Empty,
+            ["app/paket.references"] = string.Empty,
+            ["package.json"] = "{\"dependencies\":{\"left-pad\":\"1.0.0\"}}",
+        });
+        _estate.Paket.Unavailable = "the Paket sidecar is not installed at /nowhere/Rig.Paket";
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketmissing", EstateFixture.ListTimeout, Token);
+
+        Assert.Equal("Paket manifests skipped: the Paket sidecar is not installed at /nowhere/Rig.Paket", Assert.Single(inventory.Warnings));
+        Assert.Equal(["left-pad"], inventory.Consumptions.Select(c => c.Package));
+        Assert.True(inventory.Scanned);
     }
 }

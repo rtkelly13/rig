@@ -73,13 +73,17 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Equal(Path.GetFileName(copy), state.Current);
         Assert.Null(state.Previous);
         Assert.Equal(PathResolution.Resolve(repo), state.Repo);
-        // Only rig is published: the scheduled tasks start it through pythonw, or directly, never through a second executable.
+        // rig and its Paket sidecar are published, and the sidecar into its own folder: the scheduled tasks start rig through
+        // pythonw, or directly, and the sidecar's dependencies stay out of rig's deps.json.
         Assert.Equal(
-            [Path.Join(copy, "src", "Rig.Cli")],
+            [Path.Join(copy, "src", "Rig.Cli"), Path.Join(copy, "src", "Rig.Paket")],
             tools.Calls.Where(call => call.Argv is ["dotnet", "publish", ..]).Select(call => call.Argv[2]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
             ["dotnet", "publish", Path.Join(copy, "src", "Rig.Cli"), "-c", "Release", "-o", Path.Join(copy, "rig"), "-m:2", "-v", "q"]));
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
+            ["dotnet", "publish", Path.Join(copy, "src", "Rig.Paket"), "-c", "Release", "-o", Path.Join(copy, "rig", "paket"), "-m:2", "-v", "q"]));
         var windows = OperatingSystem.IsWindows();
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.PublishedSidecar(copy, windows)]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "run", "--help"]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "install", "--help"]));
         // No interpreter environment is built or probed: the copy is the published rig and nothing else.
@@ -340,6 +344,8 @@ public sealed class RuntimeManagerTests : IDisposable
     {
         Assert.EndsWith(Path.Join("rig", "rig"), RuntimeManager.Published("/rt/curr", "rig", windows: false), StringComparison.Ordinal);
         Assert.EndsWith(Path.Join("rig", "rig.exe"), RuntimeManager.Published(@"C:\rt\curr", "rig", windows: true), StringComparison.Ordinal);
+        Assert.EndsWith(Path.Join("rig", "paket", "Rig.Paket"), RuntimeManager.PublishedSidecar("/rt/curr", windows: false), StringComparison.Ordinal);
+        Assert.EndsWith(Path.Join("rig", "paket", "Rig.Paket.exe"), RuntimeManager.PublishedSidecar(@"C:\rt\curr", windows: true), StringComparison.Ordinal);
     }
 
     [Fact]

@@ -22,5 +22,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Rig.Cli.Tests" />
   </ItemGroup>
+  <Import Project="..\Rig.Paket\Rig.Paket.Sidecar.targets" />
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

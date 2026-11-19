@@ -86,8 +86,9 @@ public sealed class RigWebHost : IAsyncDisposable
         _ = app.MapMcp("/api/mcp");
         (routes ?? owned!).Map(app, settings.RegistryFile);
         var codeRoot = settings.EffectiveCodeRoot;
-        var git = new Git(new SystemProc(), codeRoot);
-        ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System), Path.Join(codeRoot, "personal"));
+        var proc = new SystemProc();
+        var git = new Git(proc, codeRoot);
+        ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System, new PaketSidecar(proc)), Path.Join(codeRoot, "personal"));
         JobsRoutes.Map(app, ops);
         C4Routes.Map(app, settings);
         return host;
