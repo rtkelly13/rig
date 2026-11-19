@@ -185,7 +185,7 @@ public sealed class ManifestsTests : IDisposable
         _ = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketonce", EstateFixture.ListTimeout, Token);
 
         Assert.Equal(
-            [Path.Join(root, "a/paket.references"), Path.Join(root, "b/paket.references"), Path.Join(root, "paket.dependencies")],
+            ((string[])["a/paket.references", "b/paket.references", "paket.dependencies"]).Select(file => Path.GetFullPath(Path.Join(root, file))).Order(StringComparer.Ordinal),
             Assert.Single(_estate.Paket.Batches).Order(StringComparer.Ordinal));
     }
 
@@ -243,6 +243,31 @@ public sealed class ManifestsTests : IDisposable
         var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketlock", EstateFixture.ListTimeout, Token);
 
         Assert.Equal("paket.dependencies: paket.lock was not used: truncated", Assert.Single(inventory.Warnings));
+    }
+
+    [Fact]
+    public async Task A_paket_file_the_reader_does_not_answer_for_is_a_warning()
+    {
+        var root = await _estate.CheckoutAsync("paketsilent", new Dictionary<string, string> { ["app/paket.references"] = string.Empty });
+        _estate.Paket.Answers = false;
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketsilent", EstateFixture.ListTimeout, Token);
+
+        Assert.Equal("app/paket.references: the Paket sidecar did not answer for this file", Assert.Single(inventory.Warnings));
+        Assert.Empty(inventory.Consumptions);
+    }
+
+    [Fact]
+    public async Task Paket_group_names_match_whatever_their_case()
+    {
+        var root = await _estate.CheckoutAsync("paketcase", new Dictionary<string, string> { ["paket.dependencies"] = string.Empty, ["app/paket.references"] = string.Empty });
+        _estate.Paket
+            .Add(new PaketFile(Path.Join(root, "paket.dependencies"), [new PaketGroup("Test", [new PaketPackage("Shared", "9.0")])], null, null))
+            .Add(new PaketFile(Path.Join(root, "app/paket.references"), [new PaketGroup("test", [new PaketPackage("Shared", null)])], null, null));
+
+        var inventory = await Manifests.ReadAsync(_estate.Git, _estate.Paket, root, "owner/paketcase", EstateFixture.ListTimeout, Token);
+
+        Assert.Equal("9.0", Assert.Single(inventory.Consumptions).Requirement);
     }
 
     [Fact]

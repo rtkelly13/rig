@@ -83,7 +83,7 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
             ["dotnet", "publish", Path.Join(copy, "src", "Rig.Paket"), "-c", "Release", "-o", Path.Join(copy, "rig", "paket"), "-m:2", "-v", "q"]));
         var windows = OperatingSystem.IsWindows();
-        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.PublishedSidecar(copy, windows)]));
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.PublishedSidecar(copy, windows), "--check"]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "run", "--help"]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "install", "--help"]));
         // No interpreter environment is built or probed: the copy is the published rig and nothing else.

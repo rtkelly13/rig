@@ -86,6 +86,28 @@ public sealed class PaketSidecarTests : IDisposable
     }
 
     [Fact]
+    public async Task A_lock_matches_its_packages_and_groups_whatever_their_case()
+    {
+        var path = Write("paket.dependencies", "source https://api.nuget.org/v3/index.json\nnuget newtonsoft.json >= 1.0\n");
+        _ = Write("paket.lock", "NUGET\n  remote: https://api.nuget.org/v3/index.json\n    Newtonsoft.Json (1.4.2)\n");
+
+        var file = Assert.Single((await Real.ReadAsync([path], Token)).Files);
+
+        Assert.Equal("1.4.2", Versions(file, "Main")["newtonsoft.json"]);
+    }
+
+    [Fact]
+    public async Task A_path_with_non_ascii_characters_round_trips()
+    {
+        var path = Write("caf\u00e9/\u65e5\u672c/paket.references", "Alpha\n");
+
+        var file = Assert.Single((await Real.ReadAsync([path], Token)).Files);
+
+        Assert.Equal(path, file.Path);
+        Assert.Null(file.Error);
+    }
+
+    [Fact]
     public async Task An_unreadable_lock_is_a_warning_and_the_constraints_stand()
     {
         var path = Write("paket.dependencies", "source https://api.nuget.org/v3/index.json\nnuget Alpha >= 1.0\n");
@@ -170,7 +192,7 @@ public sealed class PaketSidecarTests : IDisposable
         var reading = await new PaketSidecar(proc, exe).ReadAsync(["/x/paket.references"], Token);
 
         Assert.Equal($"the Paket sidecar exited with 3: boom", reading.Unavailable);
-        Assert.Equal("/x/paket.references", Assert.Single(proc.Requests).StdinText);
+        Assert.Equal("""["/x/paket.references"]""", Assert.Single(proc.Requests).StdinText);
     }
 
     [Fact]

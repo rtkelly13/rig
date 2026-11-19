@@ -5,11 +5,14 @@ namespace Rig.Core.Tests.Fakes;
 /// <summary>An <see cref="IPaketManifests"/> that answers from <see cref="Files"/> and records what it was asked.</summary>
 public sealed class FakePaketManifests : IPaketManifests
 {
-    /// <summary>What each file reads as, by absolute path; a file not listed reads as an error.</summary>
+    /// <summary>What each file reads as, by full path (separators as this platform writes them); a file not listed reads as an error.</summary>
     public Dictionary<string, PaketFile> Files { get; init; } = new(StringComparer.Ordinal);
 
     /// <summary>Why nothing can be read, or null when the reader runs.</summary>
     public string? Unavailable { get; set; }
+
+    /// <summary>Whether the reader answers for the files it is asked about; false leaves every request without an entry.</summary>
+    public bool Answers { get; set; } = true;
 
     /// <summary>Every batch of paths asked for, in order: one entry per call.</summary>
     public List<IReadOnlyList<string>> Batches { get; } = [];
@@ -25,7 +28,7 @@ public sealed class FakePaketManifests : IPaketManifests
     /// <summary>Adds a reading under its own path.</summary>
     public FakePaketManifests Add(PaketFile file)
     {
-        Files[file.Path] = file;
+        Files[Path.GetFullPath(file.Path)] = file;
         return this;
     }
 
@@ -33,8 +36,10 @@ public sealed class FakePaketManifests : IPaketManifests
     public Task<PaketReading> ReadAsync(IReadOnlyList<string> paths, CancellationToken cancellationToken = default)
     {
         Batches.Add(paths);
-        return Task.FromResult(Unavailable is null
-            ? new PaketReading([.. paths.Select(path => Files.GetValueOrDefault(path) ?? new PaketFile(path, [], "not in the fake", null))])
+        return Task.FromResult(Unavailable is null && !Answers
+            ? new PaketReading([])
+            : Unavailable is null
+            ? new PaketReading([.. paths.Select(path => Files.GetValueOrDefault(Path.GetFullPath(path)) is { } file ? file with { Path = path } : new PaketFile(path, [], "not in the fake", null))])
             : new PaketReading([], Unavailable));
     }
 }

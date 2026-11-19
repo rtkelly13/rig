@@ -333,7 +333,7 @@ public static partial class Manifests
             .ToDictionary(
                 file => Path.GetDirectoryName(file.Full)!,
                 file => file.Reading.Groups
-                    .SelectMany(group => group.Packages.Select(package => (Key: (group.Name, Canonical("nuget", package.Name)), Version: PaketRequirement(package.Version))))
+                    .SelectMany(group => group.Packages.Select(package => (Key: (Group: group.Name.ToUpperInvariant(), Canonical("nuget", package.Name)), Version: PaketRequirement(package.Version))))
                     .GroupBy(entry => entry.Key)
                     .ToDictionary(entries => entries.Key, entries => entries.Last().Version),
                 StringComparer.Ordinal);
@@ -342,7 +342,7 @@ public static partial class Manifests
             .SelectMany(file => file.Reading.Groups.SelectMany(group => group.Packages.Select(package =>
             {
                 var key = Canonical("nuget", package.Name);
-                return new Consumption("nuget", key, repo, NearestPaketVersions(file.Full, versions).GetValueOrDefault((group.Name, key), "centrally resolved"), "runtime", file.Evidence);
+                return new Consumption("nuget", key, repo, NearestPaketVersions(file.Full, versions).GetValueOrDefault((group.Name.ToUpperInvariant(), key), "centrally resolved"), "runtime", file.Evidence);
             }))));
     }
 

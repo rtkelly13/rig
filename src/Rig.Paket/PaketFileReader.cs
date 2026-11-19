@@ -56,7 +56,7 @@ internal static class PaketFileReader
                     .Where(package => package.Kind.IsPackage)
                     .Select(package => new PackageEntry(
                         package.Name.Name,
-                        resolved.GetValueOrDefault((group.Key.Name, package.Name.Name)) ?? package.VersionRequirement.Range.ToString()))]))
+                        resolved.GetValueOrDefault((group.Key.CompareString, package.Name.CompareString)) ?? package.VersionRequirement.Range.ToString()))]))
             .ToList();
         return new FileReading(path, "dependencies", groups, null, warning);
     }
@@ -73,7 +73,7 @@ internal static class PaketFileReader
         {
             Bound(lockPath);
             var versions = LockFile.LoadFrom(lockPath).Groups
-                .SelectMany(group => group.Value.Resolution.Select(package => (Group: group.Key.Name, Package: package.Key.Name, Version: package.Value.Version.AsString)))
+                .SelectMany(group => group.Value.Resolution.Select(package => (Group: group.Key.CompareString, Package: package.Key.CompareString, Version: package.Value.Version.AsString)))
                 .ToDictionary(entry => (entry.Group, entry.Package), entry => entry.Version);
             return (versions, null);
         }

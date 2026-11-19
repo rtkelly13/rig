@@ -431,8 +431,8 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             [Published(copy, "rig", windows), "chrome-tabs", "organise", "--help"],
             [Published(copy, "rig", windows), "jobs", "run", "--help"],
             [Published(copy, "rig", windows), "jobs", "install", "--help"],
-            // With nothing on standard input the sidecar reads nothing and answers an empty list: it starts, and Paket.Core loads.
-            [PublishedSidecar(copy, windows)],
+            // --check parses a one-line dependencies file: it fails unless Paket.Core published with the sidecar.
+            [PublishedSidecar(copy, windows), "--check"],
         ];
         var plan = Path.Join(copy, "desktop-manager", "workspace-plan.bundle.json");
         // The desktop plan names Windows folders and placeholders, so it only validates on Windows.

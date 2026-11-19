@@ -4,8 +4,8 @@ using Rig.Core.Processes;
 namespace Rig.Core.Connectivity;
 
 /// <summary>
-/// An <see cref="IPaketManifests"/> that runs the <c>Rig.Paket</c> sidecar once per batch: it takes one path per line on
-/// standard input and answers with JSON on standard output. The sidecar is the only place Paket.Core, FSharp.Core and
+/// An <see cref="IPaketManifests"/> that runs the <c>Rig.Paket</c> sidecar once per batch: it takes the paths as a JSON array on
+/// standard input and answers with JSON on standard output, both ASCII so no code page can garble a path. The sidecar is the only place Paket.Core, FSharp.Core and
 /// Newtonsoft.Json load, so none of them reach rig itself.
 /// </summary>
 /// <param name="proc">How the sidecar is run.</param>
@@ -36,7 +36,7 @@ public sealed class PaketSidecar(IProc proc, string? executable = null) : IPaket
         }
 
         var ran = await proc.RunAsync(
-            new ProcRequest([_executable]) { StdinText = string.Join('\n', paths), Timeout = Timeout },
+            new ProcRequest([_executable]) { StdinText = JsonSerializer.Serialize(paths), Timeout = Timeout },
             cancellationToken).ConfigureAwait(false);
         if (!ran.Ok)
         {
