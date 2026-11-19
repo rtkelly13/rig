@@ -41,5 +41,6 @@ and findings are in each CLI's `--help`; these guides hold what `--help` can't.
 | [triage.md](triage.md) | `rig triage`: the estate-wide PR and issue queue and its `rig web` page |
 | [web-ops.md](web-ops.md) | The Operations pages under `/ops` in `rig web` |
 | [orca.md](orca.md) | `workspace orca doctor/sync/lost-tabs`: agent launch flags, worktree folders and per-repo setup |
+| [omarchy.md](omarchy.md) | `omarchy doctor/sync`: idle and sleep settings, logind, theme, power profiles and `shell.json` |
 | [obs-recording.md](obs-recording.md) | Recording a live talk with OBS |
 | [bootable-usb-windows.md](bootable-usb-windows.md) | Rewriting an Ubuntu LTS install stick from Windows |
