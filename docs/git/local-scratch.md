@@ -6,6 +6,10 @@ Everything that is useful while you work but never part of a commit belongs unde
 `temp/` at the repo root. That is this clone's tries directory: ephemeral work kept
 next to the code it explores, in a directory git already ignores.
 
+The checkout itself lives in whatever code root the machine uses — Omarchy seeds
+`~/Work` — but everything in this guide is relative to the clone root, so it holds
+wherever the repository is cloned.
+
 `temp/` is in `.gitignore`, so nothing created there needs its own ignore entry, and
 nothing committed can come from it.
 
