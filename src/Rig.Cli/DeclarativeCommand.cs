@@ -53,6 +53,39 @@ internal static class DeclarativeCommand
     }
 
     /// <summary>
+    /// The group <paramref name="definition"/> declares. A group has no action of its own, so naming it without one of its
+    /// subcommands is the parser's own error: the message, and exit code 2.
+    /// </summary>
+    /// <typeparam name="T">The declaration: a class carrying <see cref="CliCommandAttribute"/>.</typeparam>
+    /// <param name="definition">The wired instance.</param>
+    /// <returns>The built group.</returns>
+    internal static Command BuildGroup<T>(T definition)
+        where T : class
+    {
+        var group = Build(definition);
+        group.Action = null;
+        return group;
+    }
+
+    /// <summary>
+    /// Gives <paramref name="command"/>'s option <paramref name="option"/> the default <paramref name="value"/> returns. A
+    /// default that depends on what the composition root wired cannot be a property initializer: DotMake copies the
+    /// initializer into its generated builder, where the declaration's constructor parameters are out of scope.
+    /// </summary>
+    /// <typeparam name="TValue">The option's value type.</typeparam>
+    /// <param name="command">The built command.</param>
+    /// <param name="option">The option's name, as declared.</param>
+    /// <param name="value">Produces the default each time the command line is parsed.</param>
+    /// <returns><paramref name="command"/>.</returns>
+    internal static Command WithDefault<TValue>(this Command command, string option, Func<TValue> value)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(value);
+        command.Options.OfType<Option<TValue>>().Single(declared => declared.Name == option).DefaultValueFactory = _ => value();
+        return command;
+    }
+
+    /// <summary>
     /// What a command group prints when it is named without one of its subcommands. DotMake always gives a declared
     /// command an action, so a group keeps the parser's own answer — the message, and exit code 2 — in its handler.
     /// </summary>

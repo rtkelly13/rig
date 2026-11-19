@@ -1,6 +1,6 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Text.Json.Nodes;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
@@ -18,30 +18,39 @@ namespace Rig.Cli.Estate;
 /// <param name="time">The clock a Claude session's idleness is measured by.</param>
 /// <param name="output">Where the report goes.</param>
 /// <param name="error">Where a refused option goes.</param>
+[CliCommand(
+    Name = "prune-caches",
+    Description = "Prune the caches that refill themselves: uv, pnpm, NuGet http, Claude temp, Docker build. A tool that is not "
+        + "installed, or a Docker daemon that is not running, is skipped with the reason. Exits 1 when any category failed.")]
 internal sealed class PruneCachesCommand(EstateHost host, IProc proc, Func<string, string?> findTool, TimeProvider time, TextWriter output, TextWriter error)
 {
-    /// <summary>The <c>prune-caches</c> subcommand.</summary>
-    public Command Build()
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal PruneCachesCommand()
+        : this(null!, null!, static _ => null, TimeProvider.System, TextWriter.Null, TextWriter.Null)
     {
-        var apply = new Option<bool>("--apply") { Description = "Actually prune. Off by default." };
-        var idleDays = new Option<int>("--idle-days")
-        {
-            Description = "Claude temp sessions idle this long",
-            DefaultValueFactory = _ => Trim.DefaultIdleDays,
-        };
-        var claudeTemp = new Option<string?>("--claude-temp") { Description = "Claude Code temp root (default: <temp>/claude)" };
-        var json = new Option<bool>("--json") { Description = "Write the results as JSON to stdout" };
-        var command = new Command(
-            "prune-caches",
-            "Prune the caches that refill themselves: uv, pnpm, NuGet http, Claude temp, Docker build. A tool that is not "
-            + "installed, or a Docker daemon that is not running, is skipped with the reason. Exits 1 when any category failed.")
-        {
-            apply, idleDays, claudeTemp, json,
-        };
-        command.SetAction((parsed, cancellationToken) => RunAsync(
-            parsed.GetValue(apply), parsed.GetValue(idleDays), parsed.GetValue(claudeTemp), parsed.GetValue(json), cancellationToken));
-        return command;
     }
+
+    /// <summary>Actually prune.</summary>
+    [CliOption(Name = "--apply", Description = "Actually prune. Off by default.")]
+    public bool Apply { get; set; }
+
+    /// <summary>Claude temp sessions idle this many days are pruned.</summary>
+    [CliOption(Name = "--idle-days", Description = "Claude temp sessions idle this long")]
+    public int IdleDays { get; set; } = Trim.DefaultIdleDays;
+
+    /// <summary>Claude Code temp root.</summary>
+    [CliOption(Name = "--claude-temp", Required = false, Description = "Claude Code temp root (default: <temp>/claude)")]
+    public string? ClaudeTemp { get; set; }
+
+    /// <summary>Write the results as JSON to stdout.</summary>
+    [CliOption(Name = "--json", Description = "Write the results as JSON to stdout")]
+    public bool Json { get; set; }
+
+    /// <summary>The <c>prune-caches</c> subcommand.</summary>
+    public Command Build() => DeclarativeCommand.Build(this);
+
+    /// <summary>The handler: prunes, or reports what would be.</summary>
+    public Task<int> RunAsync(CliContext context) => RunAsync(Apply, IdleDays, ClaudeTemp, Json, context.CancellationToken);
 
     private async Task<int> RunAsync(bool apply, int idleDays, string? claudeTemp, bool json, CancellationToken cancellationToken)
     {

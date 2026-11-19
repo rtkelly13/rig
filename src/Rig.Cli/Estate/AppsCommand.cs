@@ -1,7 +1,7 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Globalization;
 using System.Text.Json.Nodes;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
 using Rig.Core.Text;
@@ -17,17 +17,28 @@ namespace Rig.Cli.Estate;
 /// <param name="registry">The Uninstall keys on Windows; null elsewhere, where the bundles are walked instead.</param>
 /// <param name="time">When "now" is, for dormancy.</param>
 /// <param name="output">Where the table or the JSON goes.</param>
+[CliCommand(Name = "apps", Description = "Audit installed desktop applications by size, version, and last-modified date.")]
 internal sealed class AppsCommand(InstalledApps apps, IReadOnlyList<string> appDirs, IUninstallRegistry? registry, TimeProvider time, TextWriter output)
 {
-    /// <summary>The <c>apps</c> subcommand.</summary>
-    public Command Build()
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal AppsCommand()
+        : this(null!, [], null, TimeProvider.System, TextWriter.Null)
     {
-        var min = new Option<string>("--min") { Description = "Ignore apps smaller than this", DefaultValueFactory = _ => "100MB" };
-        var json = new Option<bool>("--json") { Description = "Emit for a machine" };
-        var command = new Command("apps", "Audit installed desktop applications by size, version, and last-modified date.") { min, json };
-        command.SetAction((parsed, cancellationToken) => RunAsync(parsed.GetValue(min)!, parsed.GetValue(json), cancellationToken));
-        return command;
     }
+
+    /// <summary>Ignore apps smaller than this.</summary>
+    [CliOption(Name = "--min", Description = "Ignore apps smaller than this")]
+    public string Min { get; set; } = "100MB";
+
+    /// <summary>Emit for a machine.</summary>
+    [CliOption(Name = "--json", Description = "Emit for a machine")]
+    public bool Json { get; set; }
+
+    /// <summary>The <c>apps</c> subcommand.</summary>
+    public Command Build() => DeclarativeCommand.Build(this);
+
+    /// <summary>The handler: the installed applications.</summary>
+    public Task<int> RunAsync(CliContext context) => RunAsync(Min, Json, context.CancellationToken);
 
     private async Task<int> RunAsync(string min, bool json, CancellationToken cancellationToken)
     {

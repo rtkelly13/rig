@@ -1,5 +1,5 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using DotMake.CommandLine;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
 
@@ -14,21 +14,26 @@ namespace Rig.Cli.Devenv;
 /// <param name="proc">Runs git, gh, dotnet and uv.</param>
 /// <param name="time">The clock the repository name cache is aged by.</param>
 /// <param name="output">Where the report goes.</param>
+[CliCommand(Name = "doctor", Description = Description)]
 internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider time, TextWriter output)
 {
     /// <summary>What <c>rig doctor</c> is.</summary>
     public const string Description = "Validate environment health across tools, runtimes, git, fonts, and AI assistants.";
 
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal DoctorCommand()
+        : this(null!, null!, TimeProvider.System, TextWriter.Null)
+    {
+    }
+
     // The toolchain rig builds and runs with: label and program, asked for --version.
     private static readonly (string Label, string Program)[] Toolchain = [(".NET SDK", "dotnet"), ("uv (Python tools)", "uv")];
 
     /// <summary>The <c>doctor</c> command.</summary>
-    public Command Build()
-    {
-        var doctor = new Command("doctor", Description);
-        doctor.SetAction((parsed, cancellationToken) => RunAsync(parsed.RootCommandResult.Command, cancellationToken));
-        return doctor;
-    }
+    public Command Build() => DeclarativeCommand.Build(this);
+
+    /// <summary>The handler: the report, running each area's check through the root command.</summary>
+    public Task<int> RunAsync(CliContext context) => RunAsync(context.Result.ParseResult.RootCommandResult.Command, context.CancellationToken);
 
     private async Task<int> RunAsync(Command root, CancellationToken cancellationToken)
     {

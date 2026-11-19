@@ -1,6 +1,6 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Text.Json;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Policy;
 
@@ -20,29 +20,24 @@ internal sealed record PolicyHost(string PolicyPath, string Home, string EstateR
 /// <param name="host">Where it reads and writes.</param>
 /// <param name="output">Where reports go.</param>
 /// <param name="error">Where a malformed policy is reported.</param>
+[CliCommand(Name = "policy", Description = "Audit and manage estate-wide CLI allowlists.")]
 internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWriter error)
 {
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal PolicyCommand()
+        : this(null!, TextWriter.Null, TextWriter.Null)
+    {
+    }
+
     /// <summary>The <c>policy</c> command.</summary>
     public Command Build()
     {
-        var command = new Argument<string>("command") { Description = "Command string to classify." };
-        var check = new Command("check", "Classify a command as safe, local, external, or denied.") { command };
-        check.SetAction(parsed => Guarded(() => Check(parsed.GetValue(command)!)));
-
-        var root = new Option<string>("--root") { Description = "Estate root to inspect.", DefaultValueFactory = _ => host.EstateRoot };
-        var audit = new Command("audit", "Show manifest commands and normalized command-family history counts.") { root };
-        audit.SetAction(parsed => Guarded(() => Audit(parsed.GetValue(root)!)));
-
-        var list = new Command("list", "List the configured command rules and active skill count.");
-        list.SetAction(_ => Guarded(List));
-
-        var system = new Option<string[]>("--system", "-s") { Description = "Permission surfaces to update (opencode, claude, codex, agy, all).", AllowMultipleArgumentsPerToken = false };
-        var dryRun = new Option<bool>("--dry-run") { Description = "Preview changes without writing native config." };
-        var home = new Option<string>("--home") { Description = "Home folder holding the native config (default: yours).", DefaultValueFactory = _ => host.Home };
-        var sync = new Command("sync", "Project the checked-in policy into native agent permission files.") { system, dryRun, home };
-        sync.SetAction(parsed => Guarded(() => Sync(parsed.GetValue(system) ?? [], parsed.GetValue(dryRun), parsed.GetValue(home)!)));
-
-        return new Command("policy", "Audit and manage estate-wide CLI allowlists.") { check, audit, list, sync };
+        var policy = DeclarativeCommand.BuildGroup(this);
+        policy.Add(DeclarativeCommand.Build(new CheckCommand(this)));
+        policy.Add(DeclarativeCommand.Build(new AuditCommand(this)).WithDefault("--root", () => host.EstateRoot));
+        policy.Add(DeclarativeCommand.Build(new ListCommand(this)));
+        policy.Add(DeclarativeCommand.Build(new SyncCommand(this)).WithDefault("--home", () => host.Home));
+        return policy;
     }
 
     /// <summary>The systems <paramref name="names"/> select, or null when one is unknown; <c>agy</c> is Antigravity and <c>all</c> or none is every one.</summary>
@@ -79,7 +74,7 @@ internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWrit
     private CommandPolicy Load() => CommandPolicy.Load(host.PolicyPath, host.Windows);
 
     // A malformed or missing policy is reported, not thrown.
-    private int Guarded(Func<int> run)
+    internal int Guarded(Func<int> run)
     {
         try
         {
@@ -92,14 +87,14 @@ internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWrit
         }
     }
 
-    private int Check(string command)
+    internal int Check(string command)
     {
         var risk = Load().Check(command);
         output.WriteLine($"{risk.Name()}: {command}");
         return risk == CommandRisk.Denied ? 1 : 0;
     }
 
-    private int Audit(string root)
+    internal int Audit(string root)
     {
         var commands = ProjectAudit.Commands(root);
         var table = new TextTable(
@@ -128,7 +123,7 @@ internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWrit
         return 0;
     }
 
-    private int List()
+    internal int List()
     {
         var policy = Load();
         output.WriteLine($"Active skills: {policy.SkillsAllowlist.Count}");
@@ -140,7 +135,7 @@ internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWrit
         return 0;
     }
 
-    private int Sync(IReadOnlyList<string> names, bool dryRun, string home)
+    internal int Sync(IReadOnlyList<string> names, bool dryRun, string home)
     {
         if (ResolveSystems(names, out var unknown) is not { } systems)
         {
@@ -155,5 +150,81 @@ internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWrit
         }
 
         return results.Any(r => r.Status == ProjectionStatus.Failed) ? 1 : 0;
+    }
+
+    /// <summary><c>rig policy check</c>.</summary>
+    [CliCommand(Name = "check", Description = "Classify a command as safe, local, external, or denied.")]
+    internal sealed class CheckCommand(PolicyCommand policy)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal CheckCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The command string to classify.</summary>
+        [CliArgument(Name = "command", Description = "Command string to classify.")]
+        public string Command { get; set; } = null!;
+
+        /// <summary>Classifies the command.</summary>
+        public int Run() => policy.Guarded(() => policy.Check(Command));
+    }
+
+    /// <summary><c>rig policy audit</c>.</summary>
+    [CliCommand(Name = "audit", Description = "Show manifest commands and normalized command-family history counts.")]
+    internal sealed class AuditCommand(PolicyCommand policy)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal AuditCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>The estate root to inspect.</summary>
+        [CliOption(Name = "--root", Required = false, Description = "Estate root to inspect.")]
+        public string Root { get; set; } = null!;
+
+        /// <summary>Shows the estate's commands.</summary>
+        public int Run() => policy.Guarded(() => policy.Audit(Root));
+    }
+
+    /// <summary><c>rig policy list</c>.</summary>
+    [CliCommand(Name = "list", Description = "List the configured command rules and active skill count.")]
+    internal sealed class ListCommand(PolicyCommand policy)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal ListCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Lists the rules.</summary>
+        public int Run() => policy.Guarded(policy.List);
+    }
+
+    /// <summary><c>rig policy sync</c>.</summary>
+    [CliCommand(Name = "sync", Description = "Project the checked-in policy into native agent permission files.")]
+    internal sealed class SyncCommand(PolicyCommand policy)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal SyncCommand()
+            : this(null!)
+        {
+        }
+
+        /// <summary>Permission surfaces to update.</summary>
+        [CliOption(Name = "--system", Aliases = ["-s"], Required = false, AllowMultipleArgumentsPerToken = false, Description = "Permission surfaces to update (opencode, claude, codex, agy, all).")]
+        public string[] Systems { get; set; } = [];
+
+        /// <summary>Preview changes without writing.</summary>
+        [CliOption(Name = "--dry-run", Description = "Preview changes without writing native config.")]
+        public bool DryRun { get; set; }
+
+        /// <summary>The home folder holding the native config.</summary>
+        [CliOption(Name = "--home", Required = false, Description = "Home folder holding the native config (default: yours).")]
+        public string Home { get; set; } = null!;
+
+        /// <summary>Projects the policy.</summary>
+        public int Run() => policy.Guarded(() => policy.Sync(Systems, DryRun, Home));
     }
 }

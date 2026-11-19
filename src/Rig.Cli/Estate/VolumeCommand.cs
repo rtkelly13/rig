@@ -1,7 +1,7 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using System.Globalization;
 using System.Text.Json.Nodes;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
 using Rig.Core.Text;
@@ -33,41 +33,58 @@ internal readonly record struct DriveSpace(long Total, long Free)
 /// <param name="space">Reads a drive's capacity and free space.</param>
 /// <param name="output">Where the tables or the JSON go.</param>
 /// <param name="error">Where the scan's progress and a failure go.</param>
+[CliCommand(Name = "volume", Description = "(Windows) Where a whole drive's space went: drill-down, dev-artefact partition, known hogs.")]
 internal sealed class VolumeCommand(
     EstateHost host, WizTreeExport export, Func<string, string?> environment, Func<string, DriveSpace> space, TextWriter output, TextWriter error)
 {
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal VolumeCommand()
+        : this(null!, null!, static _ => null, static _ => default, TextWriter.Null, TextWriter.Null)
+    {
+    }
+
     // Folders under a mebibyte are left out of the export as it loads: they cannot matter at this scale.
     private const long LoadFloor = 1024 * 1024;
 
     // A hog smaller than this is not worth a row.
     private const long HogFloor = 100 * 1024 * 1024;
 
+    /// <summary>The drive letter to scan.</summary>
+    [CliOption(Name = "--drive", Description = "Drive letter to scan")]
+    public string Drive { get; set; } = "C";
+
+    /// <summary>An existing WizTree export to reuse.</summary>
+    [CliOption(Name = "--csv", Required = false, Description = "Reuse an existing WizTree folder export instead of scanning")]
+    public string? Csv { get; set; }
+
+    /// <summary>Keep the export.</summary>
+    [CliOption(Name = "--keep-csv", Description = "Keep the export (it is ~400 MB) for a later --csv")]
+    public bool KeepCsv { get; set; }
+
+    /// <summary>The clone root for the dev-artefact partition.</summary>
+    [CliOption(Name = "--code-root", Required = false, Description = "Clone root for the dev-artefact partition")]
+    public string? CodeRoot { get; set; }
+
+    /// <summary>The smallest folder shown in the drill-down.</summary>
+    [CliOption(Name = "--min", Description = "Smallest folder shown in the drill-down")]
+    public string Min { get; set; } = "5GB";
+
+    /// <summary>The drill-down depth below the drive root.</summary>
+    [CliOption(Name = "--depth", Description = "Drill-down depth below the drive root")]
+    public int Depth { get; set; } = 4;
+
+    /// <summary>Emit for a machine.</summary>
+    [CliOption(Name = "--json", Description = "Emit for a machine")]
+    public bool Json { get; set; }
+
     /// <summary>The <c>volume</c> subcommand.</summary>
-    public Command Build()
-    {
-        var drive = new Option<string>("--drive") { Description = "Drive letter to scan", DefaultValueFactory = _ => "C" };
-        var csv = new Option<string?>("--csv") { Description = "Reuse an existing WizTree folder export instead of scanning" };
-        var keepCsv = new Option<bool>("--keep-csv") { Description = "Keep the export (it is ~400 MB) for a later --csv" };
-        var codeRoot = new Option<string?>("--code-root") { Description = "Clone root for the dev-artefact partition" };
-        var min = new Option<string>("--min") { Description = "Smallest folder shown in the drill-down", DefaultValueFactory = _ => "5GB" };
-        var depth = new Option<int>("--depth") { Description = "Drill-down depth below the drive root", DefaultValueFactory = _ => 4 };
-        var json = new Option<bool>("--json") { Description = "Emit for a machine" };
-        var command = new Command("volume", "(Windows) Where a whole drive's space went: drill-down, dev-artefact partition, known hogs.")
-        {
-            drive, csv, keepCsv, codeRoot, min, depth, json,
-        };
-        command.SetAction((parsed, cancellationToken) => RunAsync(
-            new Request(
-                parsed.GetValue(drive)!,
-                parsed.GetValue(csv),
-                parsed.GetValue(keepCsv),
-                parsed.GetValue(codeRoot) is { Length: > 0 } root ? root : host.CodeRoot,
-                parsed.GetValue(min)!,
-                parsed.GetValue(depth)),
-            parsed.GetValue(json),
-            cancellationToken));
-        return command;
-    }
+    public Command Build() => DeclarativeCommand.Build(this);
+
+    /// <summary>The handler: where the drive's space went.</summary>
+    public Task<int> RunAsync(CliContext context) => RunAsync(
+        new Request(Drive, Csv, KeepCsv, CodeRoot is { Length: > 0 } root ? root : host.CodeRoot, Min, Depth),
+        Json,
+        context.CancellationToken);
 
     private sealed record Request(string Drive, string? Csv, bool KeepCsv, string CodeRoot, string Min, int Depth);
 

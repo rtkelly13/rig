@@ -1,5 +1,5 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using DotMake.CommandLine;
 using Rig.Cli.Rendering;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
@@ -20,27 +20,40 @@ namespace Rig.Cli.Estate;
 /// <param name="windows">Paths compare without case when the roots overlap.</param>
 /// <param name="output">Where the table or the JSON goes.</param>
 /// <param name="error">Where skipped roots and the written feed are reported, so <c>--json</c> stays clean.</param>
+[CliCommand(
+    Name = "decisions",
+    Description = "Worktrees and directories only a human can decide about: dubious ownership, unpushed or uncommitted work, branches "
+        + "whose PR was closed or never opened, and directories an earlier delete left behind. Read-only: each decision "
+        + "carries the command that would act on it.")]
 internal sealed class DecisionsCommand(EstateHost host, Git git, IGitHubApi github, TimeProvider time, bool windows, TextWriter output, TextWriter error)
 {
-    /// <summary>The <c>decisions</c> subcommand.</summary>
-    public Command Build()
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal DecisionsCommand()
+        : this(null!, null!, null!, TimeProvider.System, false, TextWriter.Null, TextWriter.Null)
     {
-        var roots = new Option<string[]>("--root") { Description = "Code root to scan; repeat for several", AllowMultipleArgumentsPerToken = false };
-        var json = new Option<bool>("--json") { Description = "Write the feed as JSON to stdout" };
-        var write = new Option<string?>("--write") { Description = "Also write the feed JSON to this file" };
-        var idleDays = new Option<int>("--idle-days") { Description = "Worktree idle threshold", DefaultValueFactory = _ => Trim.DefaultIdleDays };
-        var command = new Command(
-            "decisions",
-            "Worktrees and directories only a human can decide about: dubious ownership, unpushed or uncommitted work, branches "
-            + "whose PR was closed or never opened, and directories an earlier delete left behind. Read-only: each decision "
-            + "carries the command that would act on it.")
-        {
-            roots, json, write, idleDays,
-        };
-        command.SetAction((parsed, cancellationToken) => RunAsync(
-            parsed.GetValue(roots) ?? [], parsed.GetValue(json), parsed.GetValue(write), parsed.GetValue(idleDays), cancellationToken));
-        return command;
     }
+
+    /// <summary>Code roots to scan.</summary>
+    [CliOption(Name = "--root", Required = false, Description = "Code root to scan; repeat for several")]
+    public string[] Roots { get; set; } = [];
+
+    /// <summary>Write the feed as JSON to stdout.</summary>
+    [CliOption(Name = "--json", Description = "Write the feed as JSON to stdout")]
+    public bool Json { get; set; }
+
+    /// <summary>The file the feed is also written to.</summary>
+    [CliOption(Name = "--write", Required = false, Description = "Also write the feed JSON to this file")]
+    public string? Write { get; set; }
+
+    /// <summary>Worktree idle threshold, in days.</summary>
+    [CliOption(Name = "--idle-days", Description = "Worktree idle threshold")]
+    public int IdleDays { get; set; } = Trim.DefaultIdleDays;
+
+    /// <summary>The <c>decisions</c> subcommand.</summary>
+    public Command Build() => DeclarativeCommand.Build(this);
+
+    /// <summary>The handler: the decisions.</summary>
+    public Task<int> RunAsync(CliContext context) => RunAsync(Roots, Json, Write, IdleDays, context.CancellationToken);
 
     /// <summary>The personal folder, its org folders and this machine's work folders, where they exist.</summary>
     internal IReadOnlyList<string> DefaultRoots()

@@ -1,5 +1,5 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using DotMake.CommandLine;
 using Rig.Core;
 using Rig.Core.Roots;
 using Rig.Web;
@@ -47,6 +47,7 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
 /// <param name="error">Where problems go.</param>
 /// <param name="ops">The data behind the MCP tools; null builds this machine's real sources.</param>
 /// <param name="aliases">The <c>install</c>, <c>ensure</c>, <c>uninstall</c>, <c>backup</c>, <c>migrate</c> and <c>db-status</c> subcommands that forward to <c>rig tools</c>.</param>
+[CliCommand(Name = "web", Description = "Rig web dashboard & visual studio. Service and database subcommands are aliases for `rig tools`.")]
 internal sealed class WebCommand(
     WebPlaces places,
     Action<Uri> openBrowser,
@@ -57,33 +58,47 @@ internal sealed class WebCommand(
 {
     private readonly Lazy<RigOps> _ops = new(() => ops ?? RigOps.Default());
 
-    /// <summary>The <c>rig web</c> command.</summary>
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal WebCommand()
+        : this(null!, static _ => { }, TextWriter.Null, TextWriter.Null)
+    {
+    }
+
+    /// <summary>The port to bind the web server to.</summary>
+    [CliOption(Name = "--port", Aliases = ["-p"], Description = "Port to bind the web server to.")]
+    public int Port { get; set; } = WebHostSettings.ProductionPort;
+
+    /// <summary>The host address to bind to.</summary>
+    [CliOption(Name = "--host", Description = "Host address to bind to.")]
+    public string Host { get; set; } = "127.0.0.1";
+
+    /// <summary>Open the browser on launch.</summary>
+    [CliOption(Name = "--open", Description = "Open in browser on launch (the default).")]
+    public bool Open { get; set; } = true;
+
+    /// <summary>Do not open the browser.</summary>
+    [CliOption(Name = "--no-open", Description = "Do not open the browser.")]
+    public bool NoOpen { get; set; }
+
+    /// <summary>Run as the preview environment.</summary>
+    [CliOption(Name = "--preview", Description = "Run as preview environment (defaults to port 8091).")]
+    public bool Preview { get; set; }
+
+    /// <summary>The <c>rig web</c> command: the dashboard, with <c>mcp</c> and the <c>rig tools</c> aliases beneath it.</summary>
     public Command Build()
     {
-        var port = new Option<int>("--port", "-p") { Description = "Port to bind the web server to.", DefaultValueFactory = _ => WebHostSettings.ProductionPort };
-        var host = new Option<string>("--host") { Description = "Host address to bind to.", DefaultValueFactory = _ => "127.0.0.1" };
-        var open = new Option<bool>("--open") { Description = "Open in browser on launch (the default).", DefaultValueFactory = _ => true };
-        var noOpen = new Option<bool>("--no-open") { Description = "Do not open the browser." };
-        var preview = new Option<bool>("--preview") { Description = "Run as preview environment (defaults to port 8091)." };
-        var mcp = new Command("mcp", "Serve the ops tools over stdio for an MCP client (Claude Desktop, Cursor, Orca).");
-        mcp.SetAction((_, ct) => RigMcp.RunStdioAsync(_ops.Value, error, ct));
-        var web = new Command("web", "Rig web dashboard & visual studio. Service and database subcommands are aliases for `rig tools`.")
-        {
-            port, host, open, noOpen, preview, mcp,
-        };
+        var web = DeclarativeCommand.Build(this);
+        web.Add(DeclarativeCommand.Build(new McpCommand(_ops, error)));
         foreach (var alias in aliases ?? [])
         {
             web.Subcommands.Add(alias);
         }
 
-        web.SetAction((parsed, ct) => RunAsync(
-            parsed.GetValue(host)!,
-            parsed.GetValue(port),
-            parsed.GetValue(preview),
-            parsed.GetValue(open) && !parsed.GetValue(noOpen),
-            ct));
         return web;
     }
+
+    /// <summary>The handler: serves the dashboard.</summary>
+    public Task<int> RunAsync(CliContext context) => RunAsync(Host, Port, Preview, Open && !NoOpen, context.CancellationToken);
 
     private async Task<int> RunAsync(string host, int port, bool preview, bool open, CancellationToken cancellationToken)
     {
@@ -148,5 +163,19 @@ internal sealed class WebCommand(
 
         await output.WriteLineAsync("Stopping server...").ConfigureAwait(false);
         return (int)ExitCode.Clean;
+    }
+
+    /// <summary><c>rig web mcp</c>.</summary>
+    [CliCommand(Name = "mcp", Description = "Serve the ops tools over stdio for an MCP client (Claude Desktop, Cursor, Orca).")]
+    internal sealed class McpCommand(Lazy<RigOps> ops, TextWriter error)
+    {
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal McpCommand()
+            : this(new Lazy<RigOps>(RigOps.Default), TextWriter.Null)
+        {
+        }
+
+        /// <summary>Serves the tools until the client disconnects.</summary>
+        public Task<int> RunAsync(CliContext context) => RigMcp.RunStdioAsync(ops.Value, error, context.CancellationToken);
     }
 }

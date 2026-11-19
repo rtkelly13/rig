@@ -1,5 +1,6 @@
-#pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
+using DotMake.CommandLine;
+using Rig.Core;
 using Rig.Core.Browser;
 using Rig.Core.Processes;
 
@@ -21,48 +22,90 @@ internal sealed record BrowserHost(string Home, string? Shell, bool Windows, Fun
 /// <param name="proc">Runs the daemon probe.</param>
 /// <param name="output">Where profile progress goes.</param>
 /// <param name="error">Where environment progress goes.</param>
+[CliCommand(Name = "browser", Description = "Set up the environment the upstream agent-browser CLI reads.")]
 internal sealed class BrowserCommand(BrowserHost host, IProc proc, TextWriter output, TextWriter error)
 {
+    /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+    internal BrowserCommand()
+        : this(null!, null!, TextWriter.Null, TextWriter.Null)
+    {
+    }
+
     /// <summary>The <c>browser</c> command.</summary>
     public Command Build()
     {
-        var dryRun = new Option<bool>("--dry-run") { Description = "Show planned changes without writing." };
-        var force = new Option<bool>("--force") { Description = "Overwrite already-set variables (ignores never-clobber)." };
-        var home = new Option<string>("--home") { Description = "Home folder to set up (default: yours).", DefaultValueFactory = _ => host.Home };
-        var setup = new Command(
-            "setup",
-            "Provision user-scoped agent-browser environment variables (AGENT_BROWSER_PROFILE, AGENT_BROWSER_AUTO_CONNECT, AGENT_BROWSER_HEADED), never clobbering one already set.")
-        {
-            dryRun, force, home,
-        };
-        setup.SetAction((parsed, ct) => SetupAsync(parsed.GetValue(dryRun), parsed.GetValue(force), parsed.GetValue(home)!, ct));
-
-        var profiles = new Command("profiles", "Create the dedicated agent-browser profile folders and per-profile shell shortcuts.") { dryRun, home };
-        profiles.SetAction(parsed => Profiles(parsed.GetValue(dryRun), parsed.GetValue(home)!));
-
-        return new Command("browser", "Set up the environment the upstream agent-browser CLI reads.") { setup, profiles };
+        var browser = DeclarativeCommand.BuildGroup(this);
+        browser.Add(DeclarativeCommand.Build(new SetupCommand(host, proc, error)).WithDefault("--home", () => host.Home));
+        browser.Add(DeclarativeCommand.Build(new ProfilesCommand(host, proc, output)).WithDefault("--home", () => host.Home));
+        return browser;
     }
 
-    private BrowserSetup For(string home)
+    private static BrowserSetup For(BrowserHost host, IProc proc, string home)
     {
         var places = new BrowserPlaces(home, host.Shell, host.Windows);
         return new BrowserSetup(places, host.ProcessEnvironment, host.Store(places), proc);
     }
 
-    private async Task<int> SetupAsync(bool dryRun, bool force, string home, CancellationToken cancellationToken)
+    /// <summary><c>rig browser setup</c>.</summary>
+    [CliCommand(
+        Name = "setup",
+        Description = "Provision user-scoped agent-browser environment variables (AGENT_BROWSER_PROFILE, AGENT_BROWSER_AUTO_CONNECT, AGENT_BROWSER_HEADED), never clobbering one already set.")]
+    internal sealed class SetupCommand(BrowserHost host, IProc proc, TextWriter error)
     {
-        var outcome = await For(home).ApplyEnvironmentAsync(dryRun, force, error.WriteLine, cancellationToken).ConfigureAwait(false);
-        if (outcome is { Skipped: > 0, Applied: > 0 })
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal SetupCommand()
+            : this(null!, null!, TextWriter.Null)
         {
-            await error.WriteLineAsync($"{outcome.Skipped} var(s) already set — left untouched.").ConfigureAwait(false);
         }
 
-        return 0;
+        /// <summary>Show planned changes without writing.</summary>
+        [CliOption(Name = "--dry-run", Description = "Show planned changes without writing.")]
+        public bool DryRun { get; set; }
+
+        /// <summary>Overwrite already-set variables.</summary>
+        [CliOption(Name = "--force", Description = "Overwrite already-set variables (ignores never-clobber).")]
+        public bool Force { get; set; }
+
+        /// <summary>The home folder to set up.</summary>
+        [CliOption(Name = "--home", Required = false, Description = "Home folder to set up (default: yours).")]
+        public string Home { get; set; } = null!;
+
+        /// <summary>Applies the environment, saying what it left alone.</summary>
+        public async Task<int> RunAsync(CliContext context)
+        {
+            var outcome = await For(host, proc, Home).ApplyEnvironmentAsync(DryRun, Force, error.WriteLine, context.CancellationToken).ConfigureAwait(false);
+            if (outcome is { Skipped: > 0, Applied: > 0 })
+            {
+                await error.WriteLineAsync($"{outcome.Skipped} var(s) already set — left untouched.").ConfigureAwait(false);
+            }
+
+            return (int)ExitCode.Clean;
+        }
     }
 
-    private int Profiles(bool dryRun, string home)
+    /// <summary><c>rig browser profiles</c>.</summary>
+    [CliCommand(Name = "profiles", Description = "Create the dedicated agent-browser profile folders and per-profile shell shortcuts.")]
+    internal sealed class ProfilesCommand(BrowserHost host, IProc proc, TextWriter output)
     {
-        For(home).ProvisionProfiles(dryRun, output.WriteLine);
-        return 0;
+        /// <summary>The instance DotMake binds onto; rig always builds the wired one above instead.</summary>
+        internal ProfilesCommand()
+            : this(null!, null!, TextWriter.Null)
+        {
+        }
+
+        /// <summary>Show planned changes without writing.</summary>
+        [CliOption(Name = "--dry-run", Description = "Show planned changes without writing.")]
+        public bool DryRun { get; set; }
+
+        /// <summary>The home folder to set up.</summary>
+        [CliOption(Name = "--home", Required = false, Description = "Home folder to set up (default: yours).")]
+        public string Home { get; set; } = null!;
+
+        /// <summary>Creates the profile folders.</summary>
+        public int Run()
+        {
+            For(host, proc, Home).ProvisionProfiles(DryRun, output.WriteLine);
+            return (int)ExitCode.Clean;
+        }
     }
 }
