@@ -93,3 +93,25 @@ The parts of `design-system`'s `regression.yml` that a copy needs:
 Order matters: merge the workflows, then add the context to the repo's `required_checks` in
 `config/repo_policies.json`, then run
 `enforce`. Requiring a check before any workflow posts it blocks every PR.
+
+## Docs-only pull requests
+
+`ci.yml` does not use `paths-ignore`: a workflow that never starts reports no check, and the ruleset
+then blocks the PR on *"N of N required status checks are expected"*. Instead the `changes` job
+classifies the diff once, and each job decides for itself.
+
+That classification is a blocklist of documentation paths — `docs/`, `skills/`, `.vscode/` and any
+`*.md`. Everything else is code, so a new source folder runs the full suite until it is added to the
+list. Failing safe means an unexpected path costs CI time, never a silently skipped test.
+
+| Job | Docs-only | Why |
+| --- | --- | --- |
+| `lint`, `format`, `analyze`, `dotnet`, `dotnet-coverage`, `image-drift`, `dotnet-windows` | skipped | there is no source to lint, format, analyse or test |
+| `image-cross-check`, `loc-report` | skipped | report-only; a markdown change cannot move a renderer or a C# line count |
+| `build` | runs, restoring and building only `src/Rig.Cli` and `tools/command-ownership` | `docs-audit` and `command-ownership` consume exactly those two artifacts |
+| `docs-audit` | runs | a dead link or an unindexed page is exactly what a docs-only PR introduces |
+| `command-ownership` | runs | required on the merged result so a concurrent merge cannot ship two owners; it also proves current `main` is an ancestor ([ownership.md](../csharp-port/ownership.md)) |
+| `ci` | runs | reports Success only when every job above succeeded or was skipped |
+
+The nightly schedule ignores the classification: its Windows jobs exist to run there.
+

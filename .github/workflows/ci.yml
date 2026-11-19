@@ -20,7 +20,9 @@ permissions: {}
 jobs:
   # Docs-only changes skip the heavy jobs here rather than through paths-ignore:
   # a workflow that never starts never reports the required `ci` check, so a
-  # docs-only PR could not merge.
+  # docs-only PR could not merge. The list below is a blocklist of documentation
+  # paths: anything not matching it counts as code, so a new source folder runs CI
+  # by default rather than being silently skipped.
   changes:
     name: changes
     runs-on: ubuntu-latest
@@ -84,8 +86,13 @@ jobs:
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'global.json') }}
+      # This job runs for docs-only PRs too: docs-audit and command-ownership both
+      # consume these artifacts. Restore only the two projects they need in that case
+      # instead of the whole solution, whose test projects never get built here.
       - name: Restore
-        run: dotnet restore rig.slnx
+        run: >-
+          dotnet restore
+          ${{ needs.changes.outputs.code == 'true' && 'rig.slnx' || 'src/Rig.Cli tools/command-ownership' }}
       # Only the two artifacts other jobs consume, not every test project. `dotnet` still
       # builds the full solution for its tests in parallel. Analyzers stay off here: this
       # job only has to produce runnable output, and `analyze` runs them over the whole
@@ -584,14 +591,13 @@ jobs:
               ;;
           esac
 
-  # Always inspect GitHub's merged result, even for a docs-only PR: a concurrent
-  # port must not leave two owners after each branch's individual tests passed.
   # Report only (ADR 0024, #321): renders the masters with Chromium and Svg.Skia and reports how far they diverge.
   # Not in `ci`'s needs, so it never blocks a PR; the Chromium-dependent tests that do block run in the browser shard.
+  # A docs-only change cannot move a renderer, so it skips this with the other code jobs.
   image-cross-check:
     name: image-cross-check
-    needs: build
-    if: github.event_name != 'schedule'
+    needs: [changes, build]
+    if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 10
@@ -642,6 +648,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # Always inspect GitHub's merged result, even for a docs-only PR: a concurrent
+  # port must not leave two owners after each branch's individual tests passed.
   command-ownership:
     name: command-ownership
     needs: build
@@ -686,7 +694,8 @@ jobs:
   # SHORT-TERM: replaced by `diffra record --name loc` once rtkelly-labs/Diffra#159 ships; delete with #320.
   loc-report:
     name: loc-report
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
