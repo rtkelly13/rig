@@ -3,7 +3,7 @@ source https://api.nuget.org/v3/index.json
 storage: none
 strategy: min
 lowest_matching: true
-framework: net10.0, net11.0
+framework: net11.0
 
 // Two kinds of line (ADR 0025):
 // - `= x.y.z` is an exact pin. It changes only when someone edits this file.
@@ -71,7 +71,7 @@ group Sidecar
   storage: none
   strategy: min
   lowest_matching: true
-  framework: net10.0, net11.0
+  framework: net11.0
 
   nuget Paket.Core = 12.0.0
   // Paket.Core's transitive floors carry advisories (NU1902/NU1903); raise them past the fix.

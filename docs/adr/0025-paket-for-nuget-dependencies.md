@@ -47,7 +47,7 @@ None of these is a package rig references directly.
 
 - **One resolution for the repo.** The moves above follow from it; they are a reviewed diff in `paket.lock` rather
   than silent drift, but they are moves.
-- **NU1510.** Paket emits a `PackageReference` for every lock entry, including ones the net10.0 shared framework
+- **NU1510.** Paket emits a `PackageReference` for every lock entry, including ones the net11.0 shared framework
   already provides, so NuGet warns that it will not prune them. `Directory.Build.props` sets
   `NoWarn` `NU1510` for that; the warning would otherwise fail the build under `TreatWarningsAsErrors`.
 - **Private assets need a custom target** (above), and without it every package of the `PackAsTool` project
@@ -61,7 +61,7 @@ None of these is a package rig references directly.
 
 1. **NuGet packages are declared in `paket.dependencies` and locked in `paket.lock`.** Each package is either pinned or
    floating (see [Pinned and floating packages](#pinned-and-floating-packages)). `storage: none`, `strategy: min`,
-   `lowest_matching: true`, and `framework: net10.0, net11.0`.
+   `lowest_matching: true`, and `framework: net11.0`.
 2. **Each project lists what it uses in its own `paket.references`.** `Directory.Packages.props` and
    `ManagePackageVersionsCentrally` are removed; there is no dual setup.
 3. **Paket is a pinned local tool** (`.config/dotnet-tools.json`). CI runs `dotnet tool restore` before any
