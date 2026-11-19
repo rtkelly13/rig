@@ -11,8 +11,8 @@ namespace Rig.Cli.Tests.Web;
 public sealed class WebCommandTests : IDisposable
 {
     private readonly TempDir _dir = new();
-    private readonly BannerWriter _output = new();
-    private readonly StringWriter _error = new();
+    private readonly SignalWriter _output = new("Rig Web Dashboard running at");
+    private readonly SignalWriter _error = new("could not open a browser");
     private readonly List<Uri> _opened = [];
 
     [Fact]
@@ -93,7 +93,8 @@ public sealed class WebCommandTests : IDisposable
         _dir.Dispose();
     }
 
-    // Runs the command; once the host is up, `opened` sees its address and then the run is stopped.
+    // Runs the command; once the host is up, `opened` sees its address and then the run is stopped. When `opened`
+    // throws, the run stops only after rig web has reported it: the token is forwarded, so a stop first would skip it.
     private async Task<int> RunAsync(string[] args, CancellationTokenSource stop, Func<Uri, Task> opened)
     {
         var command = new WebCommand(
@@ -105,32 +106,35 @@ public sealed class WebCommandTests : IDisposable
                 {
                     opened(page).GetAwaiter().GetResult();
                 }
-                finally
+                catch
                 {
-                    stop.Cancel();
+                    _error.Seen = stop.Cancel;
+                    throw;
                 }
+
+                stop.Cancel();
             },
             _output,
             _error);
         var root = new RootCommand { command.Build() };
         // Without a browser to open, the banner is the sign the host is serving; the long timeout only guards a hang.
-        _output.Served = args.Contains("--no-open") ? stop.Cancel : null;
+        _output.Seen = args.Contains("--no-open") ? stop.Cancel : null;
         stop.CancelAfter(TimeSpan.FromMinutes(1));
 
         return await root.Parse(args).InvokeAsync(new InvocationConfiguration { Output = _output, Error = _error }, stop.Token);
     }
 
-    // Captures the output and calls Served once the "running at" banner is written.
-    private sealed class BannerWriter : StringWriter
+    // Captures what is written and calls Seen once a line containing the marker is written.
+    private sealed class SignalWriter(string marker) : StringWriter
     {
-        public Action? Served { get; set; }
+        public Action? Seen { get; set; }
 
         public override async Task WriteLineAsync(string? value)
         {
             await base.WriteLineAsync(value);
-            if (value?.Contains("Rig Web Dashboard running at", StringComparison.Ordinal) == true)
+            if (value?.Contains(marker, StringComparison.Ordinal) == true)
             {
-                Served?.Invoke();
+                Seen?.Invoke();
             }
         }
     }
