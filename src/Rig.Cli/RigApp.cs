@@ -107,10 +107,10 @@ internal sealed class RigApp(
         {
             foreach (var problem in parsed.Errors)
             {
-                await error.WriteLineAsync($"rig: {problem.Message}", CancellationToken.None).ConfigureAwait(false);
+                await error.WriteLineAsync($"rig: {problem.Message}", cancellationToken).ConfigureAwait(false);
             }
 
-            await error.WriteLineAsync("Run 'rig --help' for the commands.", CancellationToken.None).ConfigureAwait(false);
+            await error.WriteLineAsync("Run 'rig --help' for the commands.", cancellationToken).ConfigureAwait(false);
             return (int)ExitCode.Error;
         }
 

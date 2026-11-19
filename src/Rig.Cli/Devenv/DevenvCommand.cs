@@ -84,7 +84,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         {
             foreach (var font in NerdFonts.All)
             {
-                await output.WriteLineAsync($"  {font.Name,-26} {(NerdFonts.Installed(folder, font) ? "installed" : "missing")}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"  {font.Name,-26} {(NerdFonts.Installed(folder, font) ? "installed" : "missing")}", cancellationToken).ConfigureAwait(false);
             }
 
             return NerdFonts.All.All(font => NerdFonts.Installed(folder, font)) ? 0 : 1;
@@ -95,23 +95,23 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         {
             if (NerdFonts.Installed(folder, font))
             {
-                await output.WriteLineAsync($"✓ Font already present: {font.Name}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ Font already present: {font.Name}", cancellationToken).ConfigureAwait(false);
             }
             else if (dryRun)
             {
-                await output.WriteLineAsync($"Dry run: would download and install {font.Name}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"Dry run: would download and install {font.Name}", cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                await output.WriteLineAsync($"Downloading {font.Name} from {NerdFonts.Url(font)}...", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"Downloading {font.Name} from {NerdFonts.Url(font)}...", cancellationToken).ConfigureAwait(false);
                 if (await fonts.InstallAsync(font, folder, cancellationToken).ConfigureAwait(false) is { } problem)
                 {
-                    await error.WriteLineAsync($"! Could not download/install {font.Name}: {problem}", CancellationToken.None).ConfigureAwait(false);
+                    await error.WriteLineAsync($"! Could not download/install {font.Name}: {problem}", cancellationToken).ConfigureAwait(false);
                     failed = true;
                 }
                 else
                 {
-                    await output.WriteLineAsync($"✓ Installed font: {font.Name}", CancellationToken.None).ConfigureAwait(false);
+                    await output.WriteLineAsync($"✓ Installed font: {font.Name}", cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -461,7 +461,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
     {
         if (!Directory.Exists(Path.Join(vault, ".obsidian")))
         {
-            await output.WriteLineAsync($"Not an Obsidian vault, skipping: {vault}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"Not an Obsidian vault, skipping: {vault}", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -472,7 +472,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         }
         catch (Exception e) when (ObsidianPlugins.Fetching(e))
         {
-            await error.WriteLineAsync($"Could not fetch the Obsidian plugin registry: {e.Message}", CancellationToken.None).ConfigureAwait(false);
+            await error.WriteLineAsync($"Could not fetch the Obsidian plugin registry: {e.Message}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -481,7 +481,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         {
             if (registry.FirstOrDefault(spec => spec.Id == id) is not { } spec)
             {
-                await error.WriteLineAsync($"{id}: not in the community plugin registry", CancellationToken.None).ConfigureAwait(false);
+                await error.WriteLineAsync($"{id}: not in the community plugin registry", cancellationToken).ConfigureAwait(false);
                 failed = true;
                 continue;
             }
@@ -490,27 +490,27 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
             var install = await plugins.InstallAsync(vault, spec, dryRun, cancellationToken).ConfigureAwait(false);
             if (install.Tag is not { } tag)
             {
-                await error.WriteLineAsync(install.Problem, CancellationToken.None).ConfigureAwait(false);
+                await error.WriteLineAsync(install.Problem, cancellationToken).ConfigureAwait(false);
                 failed = true;
                 continue;
             }
 
             await output.WriteLineAsync(have is not null && tag.Contains(have, StringComparison.Ordinal)
                 ? $"✓ {spec.Name} {have} already installed"
-                : $"{(dryRun ? "would install" : "installed")} {spec.Name} {tag}", CancellationToken.None).ConfigureAwait(false);
+                : $"{(dryRun ? "would install" : "installed")} {spec.Name} {tag}", cancellationToken).ConfigureAwait(false);
             if (ObsidianPlugins.Enable(vault, id, dryRun))
             {
-                await output.WriteLineAsync($"  + enabled {id}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"  + enabled {id}", cancellationToken).ConfigureAwait(false);
             }
         }
 
         foreach (var id in ObsidianPlugins.EnableCore(vault, ObsidianPlugins.DefaultCorePlugins, dryRun))
         {
-            await output.WriteLineAsync($"enabled core plugin: {id}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"enabled core plugin: {id}", cancellationToken).ConfigureAwait(false);
         }
 
         await output.WriteLineAsync(
-            "Restart Obsidian to load newly installed plugins. Plugins needing an in-app API key must be configured in Obsidian's settings.", CancellationToken.None).ConfigureAwait(false);
+            "Restart Obsidian to load newly installed plugins. Plugins needing an in-app API key must be configured in Obsidian's settings.", cancellationToken).ConfigureAwait(false);
         return failed ? 1 : 0;
     }
 

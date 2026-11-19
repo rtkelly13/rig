@@ -191,7 +191,7 @@ internal sealed class VaultCommand(IProc proc, VaultHost host, KnowledgeServerCo
         {
             if (!parsed.GetValue(flag))
             {
-                await output.WriteLineAsync($"Dry run only. Re-run with --apply to {what}.", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"Dry run only. Re-run with --apply to {what}.", ct).ConfigureAwait(false);
                 return;
             }
 

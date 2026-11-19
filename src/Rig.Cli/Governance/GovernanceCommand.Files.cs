@@ -39,7 +39,7 @@ internal sealed partial class GovernanceCommand
         var git = new Git(proc, host.CodeRoot);
         var scopes = EstateScopes.Load(host.ScopesFile);
         var targets = await repos.ResolveTargetsAsync(options.Path, options.All, host.PersonalDir, host.Cwd, options.Org, cancellationToken).ConfigureAwait(false);
-        await output.WriteAsync(Panel($"License Governance ({options.Type ?? "policy config"})"), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(Panel($"License Governance ({options.Type ?? "policy config"})"), cancellationToken).ConfigureAwait(false);
         var year = time.GetUtcNow().Year;
         var failures = 0;
         foreach (var target in targets)
@@ -52,22 +52,22 @@ internal sealed partial class GovernanceCommand
             if (options.Enforce)
             {
                 var aligned = Licenses.Align(target, type, holder, year, dryRun: false);
-                await output.WriteLineAsync($"{(aligned.Changed ? "✓" : "·")} {name} ({repo}): {aligned.Message}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"{(aligned.Changed ? "✓" : "·")} {name} ({repo}): {aligned.Message}", cancellationToken).ConfigureAwait(false);
             }
             else
             {
                 var result = Licenses.Inspect(target, type, holder, year);
                 if (result.IsAligned)
                 {
-                    await output.WriteLineAsync($"✓ {name} ({repo}): {result.DetectedType} (valid)", CancellationToken.None).ConfigureAwait(false);
+                    await output.WriteLineAsync($"✓ {name} ({repo}): {result.DetectedType} (valid)", cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     failures++;
-                    await output.WriteLineAsync($"✗ {name} ({repo}): not aligned", CancellationToken.None).ConfigureAwait(false);
+                    await output.WriteLineAsync($"✗ {name} ({repo}): not aligned", cancellationToken).ConfigureAwait(false);
                     foreach (var detail in result.Details)
                     {
-                        await output.WriteLineAsync($"   - {detail}", CancellationToken.None).ConfigureAwait(false);
+                        await output.WriteLineAsync($"   - {detail}", cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
@@ -77,7 +77,7 @@ internal sealed partial class GovernanceCommand
                 var scan = Licenses.AuditSpdx(target, type);
                 await output.WriteLineAsync(scan.MissingSpdx.Count > 0
                     ? $"   SPDX: {scan.MissingSpdx.Count}/{scan.TotalFiles} source files missing headers"
-                    : $"   SPDX: all {scan.TotalFiles} files compliant", CancellationToken.None).ConfigureAwait(false);
+                    : $"   SPDX: all {scan.TotalFiles} files compliant", cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -88,11 +88,11 @@ internal sealed partial class GovernanceCommand
 
         if (failures > 0)
         {
-            await output.WriteLineAsync($"\nFAILED: {failures} repo(s) failed license compliance.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"\nFAILED: {failures} repo(s) failed license compliance.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
-        await output.WriteLineAsync("\nSUCCESS: all inspected repos have valid licenses.", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync("\nSUCCESS: all inspected repos have valid licenses.", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -121,7 +121,7 @@ internal sealed partial class GovernanceCommand
         var git = new Git(proc, host.CodeRoot);
         var scopes = EstateScopes.Load(host.ScopesFile);
         var targets = await repos.ResolveTargetsAsync(path, all, host.PersonalDir, host.Cwd, org, cancellationToken).ConfigureAwait(false);
-        await output.WriteAsync(Panel("Community & Issue Templates"), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(Panel("Community & Issue Templates"), cancellationToken).ConfigureAwait(false);
         var failures = 0;
         foreach (var target in targets)
         {
@@ -140,15 +140,15 @@ internal sealed partial class GovernanceCommand
             var result = OssTemplates.Inspect(target);
             if (result.IsFullyAligned)
             {
-                await output.WriteLineAsync($"✓ {name} ({repo}): all {result.TotalTemplates} templates present", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ {name} ({repo}): all {result.TotalTemplates} templates present", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
             failures++;
-            await output.WriteLineAsync($"! {name} ({repo}): missing {result.Missing.Count}/{result.TotalTemplates} templates", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"! {name} ({repo}): missing {result.Missing.Count}/{result.TotalTemplates} templates", cancellationToken).ConfigureAwait(false);
             foreach (var missing in result.Missing)
             {
-                await output.WriteLineAsync($"   - {missing}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"   - {missing}", cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -178,7 +178,7 @@ internal sealed partial class GovernanceCommand
         var targets = await repos.ResolveTargetsAsync(options.Path, options.All, host.PersonalDir, host.Cwd, options.Org, cancellationToken).ConfigureAwait(false);
         if (targets.Count == 0)
         {
-            await output.WriteLineAsync("❌ No target repositories found.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync("❌ No target repositories found.", cancellationToken).ConfigureAwait(false);
             return 2;
         }
 
@@ -209,18 +209,18 @@ internal sealed partial class GovernanceCommand
 
         if (options.Json)
         {
-            await output.WriteLineAsync(JsonOutput.Format(rows), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(rows), cancellationToken).ConfigureAwait(false);
             return drift ? 1 : 0;
         }
 
-        await output.WriteAsync(Panel($"Common .gitignore: {mode}"), CancellationToken.None).ConfigureAwait(false);
-        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(Panel($"Common .gitignore: {mode}"), cancellationToken).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         if (!drift)
         {
             return 0;
         }
 
-        await output.WriteLineAsync("\nRun 'repo-governance gitignore --apply' or 'workspace gitignore sync' to fix.", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync("\nRun 'repo-governance gitignore --apply' or 'workspace gitignore sync' to fix.", cancellationToken).ConfigureAwait(false);
         return 1;
     }
 
@@ -246,7 +246,7 @@ internal sealed partial class GovernanceCommand
         audit = audit || !enforce;
         var (_, repos) = Governed();
         var targets = await repos.ResolveTargetsAsync(path, all, host.PersonalDir, host.Cwd, org, cancellationToken).ConfigureAwait(false);
-        await output.WriteAsync(Panel("EditorConfig Governance"), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(Panel("EditorConfig Governance"), cancellationToken).ConfigureAwait(false);
         var table = new TextTable("Repository .editorconfig Status", [("Repository", false), ("Kind", false), ("Status", false), ("Details", false)]);
         var failures = 0;
         foreach (var target in targets)
@@ -278,14 +278,14 @@ internal sealed partial class GovernanceCommand
             _ = table.Add(name, kind, status, message);
         }
 
-        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         if (audit && failures > 0)
         {
-            await output.WriteLineAsync($"\nFAILED: {failures} repo(s) failed .editorconfig compliance. Run with --enforce to fix.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"\nFAILED: {failures} repo(s) failed .editorconfig compliance. Run with --enforce to fix.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
-        await output.WriteLineAsync("\nSUCCESS: All inspected repositories are compliant with .editorconfig rules.", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync("\nSUCCESS: All inspected repositories are compliant with .editorconfig rules.", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 

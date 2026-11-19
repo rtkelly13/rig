@@ -133,7 +133,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 ["detail"] = f.Detail,
                 ["fix"] = f.Fix,
             })]);
-            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented), cancellationToken).ConfigureAwait(false);
         }
         else
         {
@@ -149,7 +149,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 }
             }
 
-            await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         }
 
         return findings.Any(f => f.Status == CheckStatus.Fail) ? 1 : 0;
@@ -163,7 +163,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
         var (snapshot, live) = await SnapshotAsync(userData, cancellationToken).ConfigureAwait(false);
         if (snapshot.LaunchArgs is null)
         {
-            await orca.Error.WriteLineAsync("Orca is not running, so there is nothing to sync; retry once it starts.", CancellationToken.None).ConfigureAwait(false);
+            await orca.Error.WriteLineAsync("Orca is not running, so there is nothing to sync; retry once it starts.", cancellationToken).ConfigureAwait(false);
             return Unavailable;
         }
 
@@ -190,11 +190,11 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 ["applied"] = a.Applied,
                 ["detail"] = a.Detail,
             })]);
-            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented), cancellationToken).ConfigureAwait(false);
         }
         else if (actions.Count == 0)
         {
-            await output.WriteLineAsync("All Orca repositories are in sync with policy.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync("All Orca repositories are in sync with policy.", cancellationToken).ConfigureAwait(false);
             return 0;
         }
         else
@@ -212,7 +212,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 }
             }
 
-            await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         }
 
         return actions.Any(a => a.Action == "error") ? 1 : 0;

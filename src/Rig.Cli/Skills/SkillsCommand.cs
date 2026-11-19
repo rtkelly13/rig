@@ -150,7 +150,7 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
             }
             catch (Exception e) when (IsReported(e))
             {
-                await error.WriteLineAsync($"rig skills: {e.Message}", CancellationToken.None).ConfigureAwait(false);
+                await error.WriteLineAsync($"rig skills: {e.Message}", ct).ConfigureAwait(false);
                 return 1;
             }
         });
@@ -304,23 +304,23 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
 
     private async Task<int> UpdateAsync(SkillPlaces places, IReadOnlyList<string> systems, string? only, bool sync, CancellationToken ct)
     {
-        await output.WriteLineAsync("Fetching & Updating Upstream Vendored Skills", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync("Fetching & Updating Upstream Vendored Skills", ct).ConfigureAwait(false);
         var vendors = SkillVendors.Load(places.Vendors);
         if (only is not null)
         {
             vendors = [.. vendors.Where(v => v.Name == only)];
             if (vendors.Count == 0)
             {
-                await output.WriteLineAsync($"Error: Vendor '{only}' not found in configuration.", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"Error: Vendor '{only}' not found in configuration.", ct).ConfigureAwait(false);
                 return 1;
             }
         }
 
         var results = await new SkillVendors(git, host.ExternalClones, places.Vendored, places.Windows)
             .UpdateAsync(vendors, output.WriteLine, ct).ConfigureAwait(false);
-        await output.WriteLineAsync(CancellationToken.None).ConfigureAwait(false);
-        await output.WriteLineAsync($"✓ Successfully vendored {results.Sum(r => r.Skills.Count)} skills across {results.Count} repos.", CancellationToken.None).ConfigureAwait(false);
-        await output.WriteLineAsync(CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync(ct).ConfigureAwait(false);
+        await output.WriteLineAsync($"✓ Successfully vendored {results.Sum(r => r.Skills.Count)} skills across {results.Count} repos.", ct).ConfigureAwait(false);
+        await output.WriteLineAsync(ct).ConfigureAwait(false);
         if (!sync)
         {
             return 0;
@@ -328,11 +328,11 @@ internal sealed class SkillsCommand(SkillsHost host, Git git, IDirectoryLinker l
 
         foreach (var (system, count) in new SkillLinks(places, linker).Sync(SkillCatalog.At(places).Curated(), systems, prune: true, dryRun: false))
         {
-            await output.WriteLineAsync($"✓ {SkillSystems.DisplayName(system)}: Synced {count} skill(s)", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"✓ {SkillSystems.DisplayName(system)}: Synced {count} skill(s)", ct).ConfigureAwait(false);
         }
 
-        await output.WriteLineAsync(CancellationToken.None).ConfigureAwait(false);
-        await output.WriteLineAsync("✓ Skills vendoring and global symlink sync complete!", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync(ct).ConfigureAwait(false);
+        await output.WriteLineAsync("✓ Skills vendoring and global symlink sync complete!", ct).ConfigureAwait(false);
         return 0;
     }
 

@@ -75,13 +75,13 @@ internal sealed partial class OtelStackCommand
         }
         catch (UnsupportedPlatformException e)
         {
-            await error.WriteLineAsync(e.Message, CancellationToken.None).ConfigureAwait(false);
+            await error.WriteLineAsync(e.Message, ct).ConfigureAwait(false);
             return FailedExit;
         }
 
         foreach (var binary in binaries)
         {
-            await output.WriteLineAsync($"verified {binary}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"verified {binary}", ct).ConfigureAwait(false);
         }
 
         return 0;
@@ -97,30 +97,30 @@ internal sealed partial class OtelStackCommand
         }
         catch (Exception e) when (e is UnsupportedPlatformException or StartupException)
         {
-            await error.WriteLineAsync(e.Message, CancellationToken.None).ConfigureAwait(false);
+            await error.WriteLineAsync(e.Message, ct).ConfigureAwait(false);
             return FailedExit;
         }
 
         foreach (var name in result.Started)
         {
-            await output.WriteLineAsync($"started {name}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"started {name}", ct).ConfigureAwait(false);
         }
 
         foreach (var name in result.Already)
         {
-            await output.WriteLineAsync($"already running: {name}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"already running: {name}", ct).ConfigureAwait(false);
         }
 
         await output.WriteLineAsync(
             $"ClickHouse http://{ClickHouseConfig.Host}:{Text(ClickHouseConfig.HttpPort)} (database {ClickHouseConfig.Database}); "
-            + $"OTLP for backfill {CollectorUrl}. `otel-stack clickhouse down` stops both.", CancellationToken.None).ConfigureAwait(false);
+            + $"OTLP for backfill {CollectorUrl}. `otel-stack clickhouse down` stops both.", ct).ConfigureAwait(false);
         return 0;
     }
 
     private async Task<int> DownAsync(CancellationToken ct)
     {
         var stopped = await parts.Pair.DownAsync(ct).ConfigureAwait(false);
-        await output.WriteLineAsync(stopped.Count > 0 ? $"stopped: {string.Join(", ", stopped)}" : "nothing was running", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync(stopped.Count > 0 ? $"stopped: {string.Join(", ", stopped)}" : "nothing was running", ct).ConfigureAwait(false);
         return 0;
     }
 
@@ -130,15 +130,15 @@ internal sealed partial class OtelStackCommand
         {
             if (part.Pid is not { } pid)
             {
-                await output.WriteLineAsync($"{part.Name}: not running", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"{part.Name}: not running", ct).ConfigureAwait(false);
                 continue;
             }
 
             var memory = part.ResidentMb is { } mb ? $", {mb.ToString("0.0", CultureInfo.InvariantCulture)} MB resident" : string.Empty;
-            await output.WriteLineAsync($"{part.Name}: pid {Text(pid)}{memory}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"{part.Name}: pid {Text(pid)}{memory}", ct).ConfigureAwait(false);
         }
 
-        await output.WriteLineAsync($"data: {Mb(parts.Pair.DataBytes())} MB in {host.Paths.ClickHouseData}", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync($"data: {Mb(parts.Pair.DataBytes())} MB in {host.Paths.ClickHouseData}", ct).ConfigureAwait(false);
         if (!await parts.ClickHouse.PingAsync(ct).ConfigureAwait(false))
         {
             return 0;
@@ -150,7 +150,7 @@ internal sealed partial class OtelStackCommand
             table.Add(stats.Table, stats.Rows.ToString(CultureInfo.InvariantCulture), $"{Mb(stats.BytesOnDisk)} MB");
         }
 
-        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), ct).ConfigureAwait(false);
         return 0;
     }
 
@@ -164,11 +164,11 @@ internal sealed partial class OtelStackCommand
 
         try
         {
-            await output.WriteAsync(await parts.ClickHouse.TextAsync(statement, cancellationToken: ct).ConfigureAwait(false), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteAsync(await parts.ClickHouse.TextAsync(statement, cancellationToken: ct).ConfigureAwait(false), ct).ConfigureAwait(false);
         }
         catch (ClickHouseException e)
         {
-            await error.WriteLineAsync(e.Message, CancellationToken.None).ConfigureAwait(false);
+            await error.WriteLineAsync(e.Message, ct).ConfigureAwait(false);
             return FailedExit;
         }
 
@@ -179,7 +179,7 @@ internal sealed partial class OtelStackCommand
     {
         if (!await parts.ClickHouse.PingAsync(ct).ConfigureAwait(false))
         {
-            await error.WriteLineAsync("ClickHouse is not answering; run `otel-stack clickhouse up` first. Nothing sent.", CancellationToken.None).ConfigureAwait(false);
+            await error.WriteLineAsync("ClickHouse is not answering; run `otel-stack clickhouse up` first. Nothing sent.", ct).ConfigureAwait(false);
             return FailedExit;
         }
 
@@ -194,16 +194,16 @@ internal sealed partial class OtelStackCommand
         var verb = dryRun ? "would send" : "sent";
         await output.WriteLineAsync(
             $"traces: {Text(files.Count)} files, {Text(report.Unchanged)} unchanged since done, {Text(report.Files.Count)} checked, "
-            + $"{Text(report.Sent)} spans {verb}", CancellationToken.None).ConfigureAwait(false);
+            + $"{Text(report.Sent)} spans {verb}", ct).ConfigureAwait(false);
         await output.WriteLineAsync(
-            $"logs and metrics: {Text(replayed.Sum(result => result.Lines))} lines {verb} from {Text(replayed.Count)} files", CancellationToken.None).ConfigureAwait(false);
+            $"logs and metrics: {Text(replayed.Sum(result => result.Lines))} lines {verb} from {Text(replayed.Count)} files", ct).ConfigureAwait(false);
         string[] problems = [.. report.Errors, .. replayed.Where(result => result.Error.Length > 0).Select(result => result.Error)];
         if (problems.Length == 0)
         {
             return 0;
         }
 
-        await error.WriteLineAsync(string.Join("\n", problems), CancellationToken.None).ConfigureAwait(false);
+        await error.WriteLineAsync(string.Join("\n", problems), ct).ConfigureAwait(false);
         return FailedExit;
     }
 }

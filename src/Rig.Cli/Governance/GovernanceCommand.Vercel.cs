@@ -56,7 +56,7 @@ internal sealed partial class GovernanceCommand
         var teamId = TeamId(RepoPolicies.Load(host.PolicyFile).VercelGating(string.Empty));
         if (teamId.Length == 0)
         {
-            await output.WriteLineAsync(NoTeam, CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(NoTeam, cancellationToken).ConfigureAwait(false);
             return 2;
         }
 
@@ -71,7 +71,7 @@ internal sealed partial class GovernanceCommand
         }
         catch (Exception e) when (e is VercelApiException or VercelClaimException)
         {
-            await output.WriteLineAsync($"❌ {e.Message}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"❌ {e.Message}", cancellationToken).ConfigureAwait(false);
             return 2;
         }
 
@@ -81,7 +81,7 @@ internal sealed partial class GovernanceCommand
             table.Add(finding.VercelProject, finding.Managed ?? "—", finding.Rule, finding.Detail);
         }
 
-        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         return findings.Any(f => f.Severity == "error") ? 1 : 0;
     }
 
@@ -100,7 +100,7 @@ internal sealed partial class GovernanceCommand
             var targets = await repos.ResolveTargetsAsync(path, false, host.PersonalDir, host.Cwd, cancellationToken: cancellationToken).ConfigureAwait(false);
             if (!string.IsNullOrEmpty(path) && targets.Count == 0)
             {
-                await output.WriteLineAsync($"❌ No repository found at {path}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"❌ No repository found at {path}", cancellationToken).ConfigureAwait(false);
                 return 2;
             }
 
@@ -111,7 +111,7 @@ internal sealed partial class GovernanceCommand
         var teamId = TeamId(rules);
         if (teamId.Length == 0)
         {
-            await output.WriteLineAsync(NoTeam, CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(NoTeam, cancellationToken).ConfigureAwait(false);
             return 2;
         }
 
@@ -125,13 +125,13 @@ internal sealed partial class GovernanceCommand
         }
         catch (VercelApiException e)
         {
-            await output.WriteLineAsync($"❌ {e.Message}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"❌ {e.Message}", cancellationToken).ConfigureAwait(false);
             return 2;
         }
 
         if (results.Count == 0)
         {
-            await output.WriteLineAsync($"No linked Vercel projects for {onlyRepo ?? "the team"}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"No linked Vercel projects for {onlyRepo ?? "the team"}", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -158,12 +158,12 @@ internal sealed partial class GovernanceCommand
             table.Add(facts.Name, facts.Repo ?? "—", create, gate, verdict);
         }
 
-        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         foreach (var (facts, findings) in results)
         {
             foreach (var finding in findings)
             {
-                await output.WriteLineAsync($"  {finding.Rule} {facts.Name}: {finding.Detail}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"  {finding.Rule} {facts.Name}: {finding.Detail}", cancellationToken).ConfigureAwait(false);
             }
         }
 

@@ -107,7 +107,7 @@ internal sealed partial class DesktopWorkspaceCommand
         var path = ConfigPath(config);
         if (!File.Exists(path))
         {
-            await host.Output.WriteLineAsync($"Config not found: {path}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Config not found: {path}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -193,7 +193,7 @@ internal sealed partial class DesktopWorkspaceCommand
             {
                 if (verbose)
                 {
-                    await host.Output.WriteLineAsync($"  {decision.Describe()}", CancellationToken.None).ConfigureAwait(false);
+                    await host.Output.WriteLineAsync($"  {decision.Describe()}", cancellationToken).ConfigureAwait(false);
                 }
 
                 continue;
@@ -214,8 +214,8 @@ internal sealed partial class DesktopWorkspaceCommand
         }
 
         var targets = plan.Desktops.Select(desktop => desktop.Name).ToList();
-        await host.Output.WriteLineAsync("Virtual Desktop Reconciliation (IAC)", CancellationToken.None).ConfigureAwait(false);
-        await host.Output.WriteLineAsync($"Config: {path} ({targets.Count} planned desktop(s))", CancellationToken.None).ConfigureAwait(false);
+        await host.Output.WriteLineAsync("Virtual Desktop Reconciliation (IAC)", cancellationToken).ConfigureAwait(false);
+        await host.Output.WriteLineAsync($"Config: {path} ({targets.Count} planned desktop(s))", cancellationToken).ConfigureAwait(false);
 
         var result = DesktopReconcile.Reconcile(
             targets,
@@ -227,50 +227,50 @@ internal sealed partial class DesktopWorkspaceCommand
         {
             if (!result.Plan.HasDrift)
             {
-                await host.Output.WriteLineAsync("No drift detected: all virtual desktops match declared state.", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync("No drift detected: all virtual desktops match declared state.", cancellationToken).ConfigureAwait(false);
             }
 
             foreach (var name in result.Plan.ToRetire)
             {
-                await host.Output.WriteLineAsync($"  - remove switched-off desktop: {name}", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"  - remove switched-off desktop: {name}", cancellationToken).ConfigureAwait(false);
             }
 
             foreach (var create in result.Plan.ToCreate)
             {
-                await host.Output.WriteLineAsync($"  + create Desktop {create.Index} (\"{create.Name}\")", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"  + create Desktop {create.Index} (\"{create.Name}\")", cancellationToken).ConfigureAwait(false);
             }
 
             foreach (var rename in result.Plan.ToRename)
             {
                 var current = rename.CurrentName.Length > 0 ? $"\"{rename.CurrentName}\"" : "(unnamed)";
-                await host.Output.WriteLineAsync($"  ~ rename Desktop {rename.Index} ({current} -> \"{rename.TargetName}\")", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"  ~ rename Desktop {rename.Index} ({current} -> \"{rename.TargetName}\")", cancellationToken).ConfigureAwait(false);
             }
 
             foreach (var item in result.Plan.Unchanged)
             {
-                await host.Output.WriteLineAsync($"  = unchanged Desktop {item.Index} (\"{item.Name}\")", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"  = unchanged Desktop {item.Index} (\"{item.Name}\")", cancellationToken).ConfigureAwait(false);
             }
 
             foreach (var item in result.Plan.Unmanaged)
             {
-                await host.Output.WriteLineAsync($"  ! unmanaged surplus Desktop {item.Index} (\"{item.Name}\")", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"  ! unmanaged surplus Desktop {item.Index} (\"{item.Name}\")", cancellationToken).ConfigureAwait(false);
             }
 
             await host.Output.WriteLineAsync(
                 $"Plan: {result.Plan.ToRetire.Count} to remove, {result.Plan.ToCreate.Count} to create, "
-                + $"{result.Plan.ToRename.Count} to rename, {result.Plan.Unchanged.Count} unchanged.", CancellationToken.None).ConfigureAwait(false);
-            await host.Output.WriteLineAsync("Dry run: no changes applied.", CancellationToken.None).ConfigureAwait(false);
+                + $"{result.Plan.ToRename.Count} to rename, {result.Plan.Unchanged.Count} unchanged.", cancellationToken).ConfigureAwait(false);
+            await host.Output.WriteLineAsync("Dry run: no changes applied.", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
         foreach (var retired in result.Retired)
         {
-            await host.Output.WriteLineAsync($"  Removed switched-off desktop {retired}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"  Removed switched-off desktop {retired}", cancellationToken).ConfigureAwait(false);
         }
 
         foreach (var create in result.Created)
         {
-            await host.Output.WriteLineAsync($"  Created Desktop {create.Index} (\"{create.Name}\")", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"  Created Desktop {create.Index} (\"{create.Name}\")", cancellationToken).ConfigureAwait(false);
         }
 
         foreach (var rename in result.Renamed)
@@ -278,21 +278,21 @@ internal sealed partial class DesktopWorkspaceCommand
             await host.Output.WriteLineAsync(
                 rename.Success
                     ? $"  Desktop {rename.Index} -> {rename.TargetName}"
-                    : $"  Desktop {rename.Index} -> {rename.TargetName} (failed)", CancellationToken.None).ConfigureAwait(false);
+                    : $"  Desktop {rename.Index} -> {rename.TargetName} (failed)", cancellationToken).ConfigureAwait(false);
         }
 
         foreach (var item in result.Unchanged)
         {
-            await host.Output.WriteLineAsync($"  Desktop {item.Index} -> {item.Name} (already matched)", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"  Desktop {item.Index} -> {item.Name} (already matched)", cancellationToken).ConfigureAwait(false);
         }
 
         if (!result.Converged)
         {
-            await host.Output.WriteLineAsync($"Failed to rename {result.FailedRenames.Count} desktop(s).", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Failed to rename {result.FailedRenames.Count} desktop(s).", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
-        await host.Output.WriteLineAsync($"All {targets.Count} virtual desktop(s) converged to declared state.", CancellationToken.None).ConfigureAwait(false);
+        await host.Output.WriteLineAsync($"All {targets.Count} virtual desktop(s) converged to declared state.", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -324,7 +324,7 @@ internal sealed partial class DesktopWorkspaceCommand
         using var guardLock = DisplayGuardLocks.TryHold(Path.Join(locks, DisplayGuardLocks.GuardLockFileName));
         if (guardLock is null)
         {
-            await host.Output.WriteLineAsync("Another display guard is already running; exiting.", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync("Another display guard is already running; exiting.", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 

@@ -119,7 +119,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         var exit = strict && !audit.IsClean ? 1 : 0;
         if (json)
         {
-            await output.WriteLineAsync(AuditReport(audit).ToJsonString(JsonOutputOptions.Indented), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(AuditReport(audit).ToJsonString(JsonOutputOptions.Indented), cancellationToken).ConfigureAwait(false);
             return exit;
         }
 
@@ -135,7 +135,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         _ = text.AppendLine().AppendLine(audit.UnmanagedItems.Count > 0
             ? "Run 'workspace clean --dry-run' to inspect or register them in config/managed-projects.json"
             : "SUCCESS: No unmanaged files or directories in estate root.");
-        await output.WriteAsync(text.ToString(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(text.ToString(), cancellationToken).ConfigureAwait(false);
         return exit;
     }
 
@@ -155,9 +155,9 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
             _ = table.Add(spec.Name, status, spec.Description.Length > 0 ? spec.Description : "--");
         }
 
-        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         await output.WriteLineAsync(
-            $"\n{present.Count}/{specs.Count(spec => spec.Enabled)} active managed repos present · {audit.RetainedArchives.Count} retained archives · {audit.UnmanagedItems.Count} unmanaged items detected\n", CancellationToken.None).ConfigureAwait(false);
+            $"\n{present.Count}/{specs.Count(spec => spec.Enabled)} active managed repos present · {audit.RetainedArchives.Count} retained archives · {audit.UnmanagedItems.Count} unmanaged items detected\n", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -166,17 +166,17 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         var (estate, _, result, audit) = await RunAuditAsync(root, config, cancellationToken).ConfigureAwait(false);
         if (result.UnmanagedItems.Count == 0)
         {
-            await output.WriteLineAsync("✓ Estate is clean. Nothing to remove.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync("✓ Estate is clean. Nothing to remove.", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
-        await output.WriteLineAsync($"{(dryRun ? "[DRY-RUN]" : "[APPLY]")} Found {result.UnmanagedItems.Count} unmanaged item(s) in {estate}:\n", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync($"{(dryRun ? "[DRY-RUN]" : "[APPLY]")} Found {result.UnmanagedItems.Count} unmanaged item(s) in {estate}:\n", cancellationToken).ConfigureAwait(false);
         foreach (var item in result.UnmanagedItems)
         {
             var line = item.Kind == EstateItemKind.UnmanagedRepo && !force
                 ? $"Skipped repo {item.Name} (requires --force to remove git clones)"
                 : (await audit.CleanAsync(item, dryRun, cancellationToken).ConfigureAwait(false)).Message;
-            await output.WriteLineAsync("  " + line, CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync("  " + line, cancellationToken).ConfigureAwait(false);
         }
 
         return 0;
@@ -293,7 +293,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         var exit = strict && drift ? 1 : 0;
         if (json)
         {
-            await output.WriteLineAsync(JsonOutput.Format(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))])), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))])), cancellationToken).ConfigureAwait(false);
             return exit;
         }
 
@@ -303,11 +303,11 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
             _ = table.Add(name, Languages(result.Languages), result.Status, result.MissingLines.Count > 0 ? string.Join(", ", result.MissingLines) : "None (Compliant)");
         }
 
-        await output.WriteLineAsync($"Estate .gitignore Audit: {estate}", CancellationToken.None).ConfigureAwait(false);
-        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync($"Estate .gitignore Audit: {estate}", cancellationToken).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         await output.WriteLineAsync(drift
             ? "\nRun 'workspace gitignore sync' or 'workspace sync' to align missing rules."
-            : "\n✓ All repositories have compliant common .gitignore entries.", CancellationToken.None).ConfigureAwait(false);
+            : "\n✓ All repositories have compliant common .gitignore entries.", cancellationToken).ConfigureAwait(false);
         return exit;
     }
 
@@ -317,7 +317,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         var results = await gitignores.SyncEstateAsync(estate, repos, dryRun, languages, cancellationToken).ConfigureAwait(false);
         if (json)
         {
-            await output.WriteLineAsync(JsonOutput.Format(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))])), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(new JsonArray([.. results.Select(r => (JsonNode)Row(r.RepoName, r.RepoPath, r.Result))])), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -328,11 +328,11 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         }
 
         var updated = results.Count(r => r.Result.Status == "aligned");
-        await output.WriteLineAsync($"Estate .gitignore Sync ({(dryRun ? "DRY-RUN" : "APPLY")}): {estate}", CancellationToken.None).ConfigureAwait(false);
-        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync($"Estate .gitignore Sync ({(dryRun ? "DRY-RUN" : "APPLY")}): {estate}", cancellationToken).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         await output.WriteLineAsync(updated > 0
             ? $"\n✓ {(dryRun ? "Would update" : "Updated")} .gitignore in {updated} repository/repositories."
-            : "\n✓ All repositories already have compliant .gitignore files.", CancellationToken.None).ConfigureAwait(false);
+            : "\n✓ All repositories already have compliant .gitignore files.", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -342,12 +342,12 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
         var specs = Specs(config);
         var scopes = EstateScopes.Load(host.ScopesFile);
         var sync = new EstateSync(scopes);
-        await output.WriteLineAsync($"Synchronizing estate orchestration in {estate}...\n", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync($"Synchronizing estate orchestration in {estate}...\n", cancellationToken).ConfigureAwait(false);
 
         var agents = await sync.SyncRouterAsync(estate, specs, cancellationToken).ConfigureAwait(false);
-        await output.WriteLineAsync($"  ✓ Generated {Path.GetFileName(agents)} ({specs.Count} managed projects mapped)", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync($"  ✓ Generated {Path.GetFileName(agents)} ({specs.Count} managed projects mapped)", cancellationToken).ConfigureAwait(false);
         var workspace = await sync.SyncCodeWorkspaceAsync(estate, specs, cancellationToken).ConfigureAwait(false);
-        await output.WriteLineAsync($"  ✓ Synchronized {Path.GetFileName(workspace)}", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync($"  ✓ Synchronized {Path.GetFileName(workspace)}", cancellationToken).ConfigureAwait(false);
 
         if (gitignore)
         {
@@ -355,10 +355,10 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
             var updated = results.Where(r => r.Result.Status == "aligned").Select(r => r.RepoName).ToList();
             await output.WriteLineAsync(updated.Count > 0
                 ? $"  ✓ Synchronized .gitignore across {results.Count} repos ({updated.Count} updated: {string.Join(", ", updated)})"
-                : $"  ✓ Verified .gitignore across {results.Count} repos (all compliant)", CancellationToken.None).ConfigureAwait(false);
+                : $"  ✓ Verified .gitignore across {results.Count} repos (all compliant)", cancellationToken).ConfigureAwait(false);
         }
 
-        await output.WriteLineAsync("\nEstate orchestration successfully synchronized.", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync("\nEstate orchestration successfully synchronized.", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -413,7 +413,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
                 || spec.Repo.Contains(repo, StringComparison.OrdinalIgnoreCase))];
             if (specs.Count == 0)
             {
-                await output.WriteLineAsync($"Error: repository '{repo}' not found in managed projects.", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"Error: repository '{repo}' not found in managed projects.", cancellationToken).ConfigureAwait(false);
                 return 1;
             }
         }
@@ -440,10 +440,10 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
             }
         }
 
-        await output.WriteAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         await output.WriteLineAsync(string.Create(
             CultureInfo.InvariantCulture,
-            $"\nTotal Evaluated: {checkedRuns} runs | Total Billable Minutes Equivalent: {billable / 60.0:F1}m\n"), CancellationToken.None).ConfigureAwait(false);
+            $"\nTotal Evaluated: {checkedRuns} runs | Total Billable Minutes Equivalent: {billable / 60.0:F1}m\n"), cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -473,7 +473,7 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
 
         if (json)
         {
-            await output.WriteLineAsync(Report(estate, clean, checks).ToJsonString(JsonOutputOptions.Indented), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(Report(estate, clean, checks).ToJsonString(JsonOutputOptions.Indented), cancellationToken).ConfigureAwait(false);
         }
         else
         {
@@ -485,10 +485,10 @@ internal sealed class WorkspaceCommand(WorkspaceHost host, IProc proc, TimeProvi
                 _ = table.Add(check.FolderName, check.Canonical?.CanonicalName ?? "-", check.Remote?.ToString() ?? "-", Label(check.Status), check.Detail);
             }
 
-            await output.WriteLineAsync(table.Render(), CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync(table.Render(), cancellationToken).ConfigureAwait(false);
             await output.WriteLineAsync(clean
                 ? "✓ All estate repository folders match their canonical upstream names.\n"
-                : "! Repository folder or remote mismatches detected. Review the report above.\n", CancellationToken.None).ConfigureAwait(false);
+                : "! Repository folder or remote mismatches detected. Review the report above.\n", cancellationToken).ConfigureAwait(false);
         }
 
         return strict && !clean ? 1 : 0;

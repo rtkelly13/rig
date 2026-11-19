@@ -53,7 +53,7 @@ internal sealed class MdLintCommand(IProc proc, MdLintHost host, TextWriter erro
             var vault = VaultPath.Resolve(host.Environment, host.Home);
             if (!Directory.Exists(vault) && !File.Exists(vault))
             {
-                await error.WriteLineAsync($"Vault not found at {vault} — set VAULT_PATH to override.", CancellationToken.None).ConfigureAwait(false);
+                await error.WriteLineAsync($"Vault not found at {vault} — set VAULT_PATH to override.", cancellationToken).ConfigureAwait(false);
                 return (int)ExitCode.Drift;
             }
 
@@ -63,7 +63,7 @@ internal sealed class MdLintCommand(IProc proc, MdLintHost host, TextWriter erro
         var ran = await proc.RunAsync(new ProcRequest(Argv(targets, fix)) { Attached = true }, cancellationToken).ConfigureAwait(false);
         if (ran.Code == Ran.NotFound && ran.Err.Length > 0)
         {
-            await error.WriteLineAsync($"rig md-lint: {ran.Err}. mdformat runs through uvx.", CancellationToken.None).ConfigureAwait(false);
+            await error.WriteLineAsync($"rig md-lint: {ran.Err}. mdformat runs through uvx.", cancellationToken).ConfigureAwait(false);
             return (int)ExitCode.Error;
         }
 

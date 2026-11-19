@@ -119,11 +119,11 @@ internal sealed class WebCommand(
         }
         catch (IOException e)
         {
-            await error.WriteLineAsync($"rig web: could not listen on {settings.Host}:{settings.Port}: {e.Message}", CancellationToken.None).ConfigureAwait(false);
+            await error.WriteLineAsync($"rig web: could not listen on {settings.Host}:{settings.Port}: {e.Message}", cancellationToken).ConfigureAwait(false);
             return (int)ExitCode.Error;
         }
 
-        await output.WriteLineAsync($"[{settings.Environment} MODE] Rig Web Dashboard running at {server.Address}", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync($"[{settings.Environment} MODE] Rig Web Dashboard running at {server.Address}", cancellationToken).ConfigureAwait(false);
         if (open)
         {
             try
@@ -133,7 +133,7 @@ internal sealed class WebCommand(
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or PlatformNotSupportedException)
             {
                 // No browser (a headless box, a service): the dashboard still serves, at the address in the banner.
-                await error.WriteLineAsync($"rig web: could not open a browser: {e.Message}", CancellationToken.None).ConfigureAwait(false);
+                await error.WriteLineAsync($"rig web: could not open a browser: {e.Message}", cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -146,6 +146,7 @@ internal sealed class WebCommand(
             // Ctrl+C: the host stops as the using unwinds.
         }
 
+        // After Ctrl+C the token is already cancelled, and a cancelled token would skip this line.
         await output.WriteLineAsync("Stopping server...", CancellationToken.None).ConfigureAwait(false);
         return (int)ExitCode.Clean;
     }

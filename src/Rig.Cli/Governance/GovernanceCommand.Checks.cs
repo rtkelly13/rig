@@ -50,12 +50,12 @@ internal sealed partial class GovernanceCommand
 
     private async Task<int> CheckNamesAsync(string? path, bool all, string? org, bool strict, CancellationToken cancellationToken)
     {
-        await output.WriteAsync(Panel("Required Check Names: DRIFT & SHAPE"), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(Panel("Required Check Names: DRIFT & SHAPE"), cancellationToken).ConfigureAwait(false);
         var (policies, repos) = Governed();
         var targets = await repos.ResolveTargetsAsync(path, all, host.PersonalDir, host.Cwd, org, cancellationToken).ConfigureAwait(false);
         if (targets.Count == 0)
         {
-            await output.WriteLineAsync("❌ No target repositories found.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync("❌ No target repositories found.", cancellationToken).ConfigureAwait(false);
             return 2;
         }
 
@@ -71,67 +71,67 @@ internal sealed partial class GovernanceCommand
                 // No origin is a local-only checkout; an origin gh cannot look up is a check that did not run.
                 if ((await git.RunAsync(target, ["remote", "get-url", "origin"], cancellationToken: cancellationToken).ConfigureAwait(false)).OutOrEmpty.Length == 0)
                 {
-                    await output.WriteLineAsync($"? {name}: no GitHub remote, skipped", CancellationToken.None).ConfigureAwait(false);
+                    await output.WriteLineAsync($"? {name}: no GitHub remote, skipped", cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
                 unresolved++;
-                await output.WriteLineAsync($"✗ {name}: gh could not look up its origin, not checked", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"✗ {name}: gh could not look up its origin, not checked", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
             var result = CheckNames.Inspect(target, repo, policies);
             if (result.Status == "no_pr_workflows")
             {
-                await output.WriteLineAsync($"· {name} ({repo}): no pull_request workflows, skipped", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"· {name} ({repo}): no pull_request workflows, skipped", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
             if (result.Missing.Count > 0)
             {
                 _ = drifted.Add(repo);
-                await output.WriteLineAsync($"✗ {name} ({repo})", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"✗ {name} ({repo})", cancellationToken).ConfigureAwait(false);
                 foreach (var missing in result.Missing)
                 {
-                    await output.WriteLineAsync($"   required check {QuotedText.Str(missing)} is declared by no pull_request job", CancellationToken.None).ConfigureAwait(false);
+                    await output.WriteLineAsync($"   required check {QuotedText.Str(missing)} is declared by no pull_request job", cancellationToken).ConfigureAwait(false);
                 }
 
                 var declared = QuotedText.List(result.Declared.Keys.Order(StringComparer.Ordinal));
-                await output.WriteLineAsync($"   declared: {declared}", CancellationToken.None).ConfigureAwait(false);
-                await output.WriteLineAsync($"   suggested required_checks: {declared}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"   declared: {declared}", cancellationToken).ConfigureAwait(false);
+                await output.WriteLineAsync($"   suggested required_checks: {declared}", cancellationToken).ConfigureAwait(false);
             }
             else if (result.Warnings.Count > 0)
             {
-                await output.WriteLineAsync($"⚠ {name} ({repo})", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"⚠ {name} ({repo})", cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                await output.WriteLineAsync($"✓ {name} ({repo}): {QuotedText.List(result.Required)}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ {name} ({repo}): {QuotedText.List(result.Required)}", cancellationToken).ConfigureAwait(false);
             }
 
             foreach (var (check, warnings) in result.Warnings)
             {
                 _ = warned.Add(repo);
                 var where = result.Declared.GetValueOrDefault(check) is { Length: > 0 } at ? $" [{at}]" : string.Empty;
-                await output.WriteLineAsync($"   {QuotedText.Str(check)}{where}", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"   {QuotedText.Str(check)}{where}", cancellationToken).ConfigureAwait(false);
                 foreach (var warning in warnings)
                 {
-                    await output.WriteLineAsync($"      - {warning}", CancellationToken.None).ConfigureAwait(false);
+                    await output.WriteLineAsync($"      - {warning}", cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
-        await output.WriteLineAsync("\n" + new string('=', 50), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync("\n" + new string('=', 50), cancellationToken).ConfigureAwait(false);
         if (drifted.Count > 0)
         {
-            await output.WriteLineAsync($"FAILED: {drifted.Count} repo(s) require a check no job declares.", CancellationToken.None).ConfigureAwait(false);
-            await output.WriteLineAsync("Rename the job and update required_checks in config/repo_policies.json in the same change.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"FAILED: {drifted.Count} repo(s) require a check no job declares.", cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync("Rename the job and update required_checks in config/repo_policies.json in the same change.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
         if (unresolved > 0)
         {
-            await output.WriteLineAsync($"FAILED: {unresolved} repo(s) could not be looked up on GitHub.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"FAILED: {unresolved} repo(s) could not be looked up on GitHub.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -139,12 +139,12 @@ internal sealed partial class GovernanceCommand
         {
             await output.WriteLineAsync(strict
                 ? $"FAILED (--strict): {warned.Count} repo(s) have badly-shaped names."
-                : $"OK with warnings: {warned.Count} repo(s) have names that will drift.", CancellationToken.None).ConfigureAwait(false);
-            await output.WriteLineAsync(LexiconHint, CancellationToken.None).ConfigureAwait(false);
+                : $"OK with warnings: {warned.Count} repo(s) have names that will drift.", cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync(LexiconHint, cancellationToken).ConfigureAwait(false);
             return strict ? 1 : 0;
         }
 
-        await output.WriteLineAsync("SUCCESS: every required check is declared and well-named.", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync("SUCCESS: every required check is declared and well-named.", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -175,11 +175,11 @@ internal sealed partial class GovernanceCommand
         var targets = await repos.ResolveTargetsAsync(path, all, host.PersonalDir, host.Cwd, org, cancellationToken).ConfigureAwait(false);
         if (targets.Count == 0)
         {
-            await output.WriteLineAsync("No target repositories found.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync("No target repositories found.", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
-        await output.WriteAsync(Panel($"Branch Cleanup: {(apply ? "APPLY" : "DRY RUN")}"), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteAsync(Panel($"Branch Cleanup: {(apply ? "APPLY" : "DRY RUN")}"), cancellationToken).ConfigureAwait(false);
         var cleanup = new BranchCleanup(proc, new Git(proc, host.CodeRoot), repos, policies);
         var (deletable, deleted, failed) = (0, 0, 0);
         var seen = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -189,14 +189,14 @@ internal sealed partial class GovernanceCommand
             if (plan.Skipped.Length > 0)
             {
                 failed += plan.Unreadable ? 1 : 0;
-                await output.WriteLineAsync($"- {plan.Repo}: skipped ({plan.Skipped})", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"- {plan.Repo}: skipped ({plan.Skipped})", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
             // Two checkouts of one remote produce identical plans; acting on both double-counts and works on stale refs.
             if (plan.Slug.Length > 0 && seen.TryGetValue(plan.Slug, out var first))
             {
-                await output.WriteLineAsync($"- {plan.Repo}: same remote as {first} ({plan.Slug})", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"- {plan.Repo}: same remote as {first} ({plan.Slug})", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -210,16 +210,16 @@ internal sealed partial class GovernanceCommand
             deletable += merged.Count;
             if (merged.Count == 0 && noPr.Count == 0)
             {
-                await output.WriteLineAsync($"✓ {plan.Repo}: nothing to prune", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ {plan.Repo}: nothing to prune", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
-            await output.WriteLineAsync($"\n{plan.Repo}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"\n{plan.Repo}", cancellationToken).ConfigureAwait(false);
             foreach (var verdict in merged)
             {
                 if (!apply)
                 {
-                    await output.WriteLineAsync($"  would delete {verdict.Branch} (PR #{verdict.Pr} merged)", CancellationToken.None).ConfigureAwait(false);
+                    await output.WriteLineAsync($"  would delete {verdict.Branch} (PR #{verdict.Pr} merged)", cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
@@ -228,24 +228,24 @@ internal sealed partial class GovernanceCommand
                 failed += result.Deleted ? 0 : 1;
                 await output.WriteLineAsync(result.Deleted
                     ? $"  ✗ deleted {verdict.Branch} (PR #{verdict.Pr})"
-                    : $"  ! failed {verdict.Branch}: {result.Error}", CancellationToken.None).ConfigureAwait(false);
+                    : $"  ! failed {verdict.Branch}: {result.Error}", cancellationToken).ConfigureAwait(false);
             }
 
             if (noPr.Count > 0)
             {
-                await output.WriteLineAsync($"  {noPr.Count} branch(es) with no PR — review manually, never auto-deleted:", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync($"  {noPr.Count} branch(es) with no PR — review manually, never auto-deleted:", cancellationToken).ConfigureAwait(false);
                 foreach (var verdict in noPr)
                 {
-                    await output.WriteLineAsync($"    · {verdict.Branch}", CancellationToken.None).ConfigureAwait(false);
+                    await output.WriteLineAsync($"    · {verdict.Branch}", cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
-        await output.WriteLineAsync(CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync(cancellationToken).ConfigureAwait(false);
         await output.WriteLineAsync(
             apply ? $"Deleted {deleted}/{deletable} merged branch(es)."
             : deletable > 0 ? $"{deletable} merged branch(es) would be deleted. Re-run with --apply."
-            : "No merged branches left behind.", CancellationToken.None).ConfigureAwait(false);
+            : "No merged branches left behind.", cancellationToken).ConfigureAwait(false);
         return failed > 0 ? 1 : 0;
     }
 }

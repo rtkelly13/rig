@@ -53,7 +53,7 @@ internal sealed class KnowledgeServerCommand(
             OnMacOs("restart", "Restart the server, for example after the vault's .ok/config.yml changes.", async (ks, ct) =>
             {
                 await ks.RestartAsync(ct).ConfigureAwait(false);
-                await output.WriteLineAsync("restarted", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync("restarted", ct).ConfigureAwait(false);
                 return 0;
             }),
             OnMacOs(
@@ -62,7 +62,7 @@ internal sealed class KnowledgeServerCommand(
                 async (ks, ct) =>
                 {
                     var removed = await ks.UninstallServiceAsync(ct).ConfigureAwait(false);
-                    await output.WriteLineAsync(removed ? "removed" : "no LaunchAgent installed", CancellationToken.None).ConfigureAwait(false);
+                    await output.WriteLineAsync(removed ? "removed" : "no LaunchAgent installed", ct).ConfigureAwait(false);
                     return 0;
                 }),
             connect,
@@ -85,7 +85,7 @@ internal sealed class KnowledgeServerCommand(
         {
             if (!macOs)
             {
-                await output.WriteLineAsync("the shared server runs as a macOS LaunchAgent; nothing to do here", CancellationToken.None).ConfigureAwait(false);
+                await output.WriteLineAsync("the shared server runs as a macOS LaunchAgent; nothing to do here", ct).ConfigureAwait(false);
                 return NotMacOsExit;
             }
 
@@ -95,7 +95,7 @@ internal sealed class KnowledgeServerCommand(
             }
             catch (Exception e) when (e is FileNotFoundException or ProcException)
             {
-                await error.WriteLineAsync($"rig vault knowledge-server {name}: {e.Message}", CancellationToken.None).ConfigureAwait(false);
+                await error.WriteLineAsync($"rig vault knowledge-server {name}: {e.Message}", ct).ConfigureAwait(false);
                 return 1;
             }
         });
@@ -106,11 +106,11 @@ internal sealed class KnowledgeServerCommand(
     {
         var script = await ks.InstallAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
         var path = await ks.InstallServiceAsync(script, cancellationToken: cancellationToken).ConfigureAwait(false);
-        await output.WriteLineAsync($"open-knowledge {KnowledgeServer.Version} LaunchAgent loaded: {path}", CancellationToken.None).ConfigureAwait(false);
-        await output.WriteLineAsync($"editor {KnowledgeServer.EditorUrl()}  connector {KnowledgeServer.McpUrl()}  log {ks.Places.LogPath}", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync($"open-knowledge {KnowledgeServer.Version} LaunchAgent loaded: {path}", cancellationToken).ConfigureAwait(false);
+        await output.WriteLineAsync($"editor {KnowledgeServer.EditorUrl()}  connector {KnowledgeServer.McpUrl()}  log {ks.Places.LogPath}", cancellationToken).ConfigureAwait(false);
         if (!ks.CurrentRegistration().Shared)
         {
-            await output.WriteLineAsync("Claude still starts its own copy per session: run `vault knowledge-server connect`.", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync("Claude still starts its own copy per session: run `vault knowledge-server connect`.", cancellationToken).ConfigureAwait(false);
         }
 
         return 0;
@@ -122,26 +122,26 @@ internal sealed class KnowledgeServerCommand(
         var have = ks.CurrentRegistration();
         if (have.Shared)
         {
-            await output.WriteLineAsync($"already shared: {KnowledgeServer.McpUrl()}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"already shared: {KnowledgeServer.McpUrl()}", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
         if (which("claude") is not { } claude)
         {
-            await error.WriteLineAsync("claude is not on PATH", CancellationToken.None).ConfigureAwait(false);
+            await error.WriteLineAsync("claude is not on PATH", cancellationToken).ConfigureAwait(false);
             return ClaudeMissingExit;
         }
 
-        await output.WriteLineAsync(Describe(have, "now: "), CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync(Describe(have, "now: "), cancellationToken).ConfigureAwait(false);
         var commands = KnowledgeServer.ConnectCommands(have, claude);
         foreach (var argv in commands)
         {
-            await output.WriteLineAsync($"  {string.Join(' ', argv)}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"  {string.Join(' ', argv)}", cancellationToken).ConfigureAwait(false);
         }
 
         if (!apply)
         {
-            await output.WriteLineAsync("dry run: pass --apply to change ~/.claude.json", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync("dry run: pass --apply to change ~/.claude.json", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -151,12 +151,12 @@ internal sealed class KnowledgeServerCommand(
             if (ran.Code != 0)
             {
                 var why = ran.Err.Trim() is { Length: > 0 } err ? err : ran.Out.Trim();
-                await error.WriteLineAsync($"{string.Join(' ', argv.Skip(1))} failed: {why}", CancellationToken.None).ConfigureAwait(false);
+                await error.WriteLineAsync($"{string.Join(' ', argv.Skip(1))} failed: {why}", cancellationToken).ConfigureAwait(false);
                 return 1;
             }
         }
 
-        await output.WriteLineAsync("connected; new sessions use the shared server", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync("connected; new sessions use the shared server", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -174,7 +174,7 @@ internal sealed class KnowledgeServerCommand(
         ];
         foreach (var (name, ok, detail) in rows)
         {
-            await output.WriteLineAsync($"{(ok ? "ok  " : "fail")} {name,-13} {detail}", CancellationToken.None).ConfigureAwait(false);
+            await output.WriteLineAsync($"{(ok ? "ok  " : "fail")} {name,-13} {detail}", cancellationToken).ConfigureAwait(false);
         }
 
         if (rows.All(r => r.Ok))
@@ -182,7 +182,7 @@ internal sealed class KnowledgeServerCommand(
             return 0;
         }
 
-        await output.WriteLineAsync("fix: `vault knowledge-server install`, then `vault knowledge-server connect --apply`", CancellationToken.None).ConfigureAwait(false);
+        await output.WriteLineAsync("fix: `vault knowledge-server install`, then `vault knowledge-server connect --apply`", cancellationToken).ConfigureAwait(false);
         return UnhealthyExit;
     }
 

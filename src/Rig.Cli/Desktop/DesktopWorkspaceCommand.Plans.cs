@@ -181,7 +181,7 @@ internal sealed partial class DesktopWorkspaceCommand
         FeatureLine(plan);
         if (waitForSuccess && maxChecks < 1)
         {
-            await host.Output.WriteLineAsync("--wait-max-checks must be at least 1.", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync("--wait-max-checks must be at least 1.", cancellationToken).ConfigureAwait(false);
             return 2;
         }
 
@@ -196,7 +196,7 @@ internal sealed partial class DesktopWorkspaceCommand
                 $"Workspace restore skipped: plan needs {shortfall.Required} screens, only {shortfall.Live} detected.\n",
                 cancellationToken).ConfigureAwait(false);
             await host.Output.WriteLineAsync(
-                $"Workspace restore skipped: plan needs {shortfall.Required} screens, only {shortfall.Live} detected. Note: {note}.", CancellationToken.None).ConfigureAwait(false);
+                $"Workspace restore skipped: plan needs {shortfall.Required} screens, only {shortfall.Live} detected. Note: {note}.", cancellationToken).ConfigureAwait(false);
             return RestoreDeferred;
         }
 
@@ -208,7 +208,7 @@ internal sealed partial class DesktopWorkspaceCommand
             {
                 foreach (var issue in issues)
                 {
-                    await host.Output.WriteLineAsync($"Structure issue: {issue}", CancellationToken.None).ConfigureAwait(false);
+                    await host.Output.WriteLineAsync($"Structure issue: {issue}", cancellationToken).ConfigureAwait(false);
                 }
 
                 return 1;
@@ -219,7 +219,7 @@ internal sealed partial class DesktopWorkspaceCommand
         using var restoreLock = dryRun ? null : DisplayGuardLocks.Hold(lockPath, TimeSpan.FromSeconds(2), Thread.Sleep);
         if (!dryRun && restoreLock is null)
         {
-            await host.Output.WriteLineAsync($"Another workspace restore is already running ({lockPath}).", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Another workspace restore is already running ({lockPath}).", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -237,15 +237,15 @@ internal sealed partial class DesktopWorkspaceCommand
             var actions = WorkspaceRestore.Run(plan with { Desktops = WorkspaceScope.For(plan, null, screen).Desktops }, options, port, log ?? RunLog.Discard);
             foreach (var action in actions)
             {
-                await host.Output.WriteLineAsync(action, CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync(action, cancellationToken).ConfigureAwait(false);
             }
 
             if (!dryRun)
             {
                 await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken).ConfigureAwait(false);
                 var actual = CurrentStatusForScope(port, plan, desktop, screen);
-                await host.Output.WriteLineAsync("\nFinal Status", CancellationToken.None).ConfigureAwait(false);
-                await host.Output.WriteLineAsync(WorkspaceDiff.Of(scoped, actual, host.Substitutions(plan)).Render(), CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync("\nFinal Status", cancellationToken).ConfigureAwait(false);
+                await host.Output.WriteLineAsync(WorkspaceDiff.Of(scoped, actual, host.Substitutions(plan)).Render(), cancellationToken).ConfigureAwait(false);
             }
 
             if (!dryRun && waitForSuccess
@@ -256,14 +256,14 @@ internal sealed partial class DesktopWorkspaceCommand
 
             if (log is not null)
             {
-                await host.Output.WriteLineAsync($"\nLog: {log.RunPath}", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"\nLog: {log.RunPath}", cancellationToken).ConfigureAwait(false);
             }
 
             return 0;
         }
         catch (Exception error) when (error is DesktopException or InvalidPlanException or IOException)
         {
-            await host.Error.WriteLineAsync(error.Message, CancellationToken.None).ConfigureAwait(false);
+            await host.Error.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
             return 1;
         }
     }
@@ -279,9 +279,9 @@ internal sealed partial class DesktopWorkspaceCommand
         var port = machine.Port(host.Time);
         var actual = CurrentStatusForScope(port, plan, desktop, screen);
         var diff = WorkspaceDiff.Of(scoped, actual, host.Substitutions(plan));
-        await host.Output.WriteLineAsync("Workspace Audit", CancellationToken.None).ConfigureAwait(false);
-        await host.Output.WriteLineAsync(diff.Render(), CancellationToken.None).ConfigureAwait(false);
-        await host.Output.WriteLineAsync(diff.IsClean ? "Audit passed." : "Audit found drift.", CancellationToken.None).ConfigureAwait(false);
+        await host.Output.WriteLineAsync("Workspace Audit", cancellationToken).ConfigureAwait(false);
+        await host.Output.WriteLineAsync(diff.Render(), cancellationToken).ConfigureAwait(false);
+        await host.Output.WriteLineAsync(diff.IsClean ? "Audit passed." : "Audit found drift.", cancellationToken).ConfigureAwait(false);
         return diff.IsClean ? 0 : 1;
     }
 
@@ -299,13 +299,13 @@ internal sealed partial class DesktopWorkspaceCommand
             var item = status.Desktops[index];
             if (index > 0)
             {
-                await host.Output.WriteLineAsync(CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            await host.Output.WriteLineAsync($"Desktop: {item.Name}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Desktop: {item.Name}", cancellationToken).ConfigureAwait(false);
             if (item.CapturedWindows.Count == 0)
             {
-                await host.Output.WriteLineAsync("  (no visible windows)", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync("  (no visible windows)", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -327,7 +327,7 @@ internal sealed partial class DesktopWorkspaceCommand
                     line += $"  {window.ExePath}";
                 }
 
-                await host.Output.WriteLineAsync(line, CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync(line, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -346,17 +346,17 @@ internal sealed partial class DesktopWorkspaceCommand
         var issues = Placement.ValidatePlanStructure(plan, strict: strict);
         foreach (var error in errors)
         {
-            await host.Output.WriteLineAsync($"Error: {error}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Error: {error}", cancellationToken).ConfigureAwait(false);
         }
 
         foreach (var issue in issues)
         {
-            await host.Output.WriteLineAsync($"Structure: {issue}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Structure: {issue}", cancellationToken).ConfigureAwait(false);
         }
 
         if (errors.Count == 0 && issues.Count == 0)
         {
-            await host.Output.WriteLineAsync("Plan is valid.", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync("Plan is valid.", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -368,7 +368,7 @@ internal sealed partial class DesktopWorkspaceCommand
         var path = ConfigPath(config);
         if (!File.Exists(path))
         {
-            await host.Output.WriteLineAsync($"Config not found: {path}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Config not found: {path}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -384,25 +384,25 @@ internal sealed partial class DesktopWorkspaceCommand
         }
         catch (Exception error) when (error is InvalidPlanException or JsonInputException or IOException)
         {
-            await host.Output.WriteLineAsync($"Feature error: {error.Message}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Feature error: {error.Message}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
-        await host.Output.WriteLineAsync("Workspace Features (defaults and overrides: `rig flags list`)", CancellationToken.None).ConfigureAwait(false);
+        await host.Output.WriteLineAsync("Workspace Features (defaults and overrides: `rig flags list`)", cancellationToken).ConfigureAwait(false);
         foreach (var (name, enabled) in plan.Features.OrderBy(pair => pair.Key, StringComparer.Ordinal))
         {
             var source = overridden.Contains(name) ? "rig flags override" : parsed.Features.ContainsKey(name) ? "plan" : "default";
-            await host.Output.WriteLineAsync($"\n  {name}: {(enabled ? "on" : "off (paused)")} ({source})", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"\n  {name}: {(enabled ? "on" : "off (paused)")} ({source})", cancellationToken).ConfigureAwait(false);
             foreach (var desktop in plan.Desktops)
             {
                 if (desktop.Feature == name)
                 {
-                    await host.Output.WriteLineAsync($"    - {desktop.Name}: whole desktop", CancellationToken.None).ConfigureAwait(false);
+                    await host.Output.WriteLineAsync($"    - {desktop.Name}: whole desktop", cancellationToken).ConfigureAwait(false);
                 }
 
                 foreach (var entry in desktop.Launch.Where(entry => entry.Feature == name))
                 {
-                    await host.Output.WriteLineAsync($"    - {desktop.Name}: {entry.Name}", CancellationToken.None).ConfigureAwait(false);
+                    await host.Output.WriteLineAsync($"    - {desktop.Name}: {entry.Name}", cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -417,10 +417,10 @@ internal sealed partial class DesktopWorkspaceCommand
             .Select(desktop => $"{desktop.Name} (whole desktop)"));
         if (unowned.Count > 0)
         {
-            await host.Output.WriteLineAsync("\nReferencing undeclared features (treated as off):", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync("\nReferencing undeclared features (treated as off):", cancellationToken).ConfigureAwait(false);
             foreach (var item in unowned)
             {
-                await host.Output.WriteLineAsync($"  - {item}", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"  - {item}", cancellationToken).ConfigureAwait(false);
             }
 
             return 1;
@@ -446,7 +446,7 @@ internal sealed partial class DesktopWorkspaceCommand
         var count = desktopCount ?? machine.Desktops.Count;
         if (count < 1)
         {
-            await host.Output.WriteLineAsync("Desktop count must be at least 1.", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync("Desktop count must be at least 1.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -461,16 +461,16 @@ internal sealed partial class DesktopWorkspaceCommand
             PlanFiles.Save(plan, path);
         }
 
-        await host.Output.WriteLineAsync($"Exported workspace plan: {path}", CancellationToken.None).ConfigureAwait(false);
-        await host.Output.WriteLineAsync($"Mode: {(bundle ? "bundle" : "single file")}", CancellationToken.None).ConfigureAwait(false);
+        await host.Output.WriteLineAsync($"Exported workspace plan: {path}", cancellationToken).ConfigureAwait(false);
+        await host.Output.WriteLineAsync($"Mode: {(bundle ? "bundle" : "single file")}", cancellationToken).ConfigureAwait(false);
         if (!string.IsNullOrEmpty(workspace))
         {
-            await host.Output.WriteLineAsync($"Workspace: {workspace}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Workspace: {workspace}", cancellationToken).ConfigureAwait(false);
         }
 
         if (desktopCount is not null)
         {
-            await host.Output.WriteLineAsync($"Desktop count: {desktopCount}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Desktop count: {desktopCount}", cancellationToken).ConfigureAwait(false);
         }
 
         return 0;
@@ -484,18 +484,18 @@ internal sealed partial class DesktopWorkspaceCommand
         {
             var plan = PlanLoading.BuildMachinePlan(template, workspace, host.Flags(), personalWorkspace);
             PlanFiles.SaveBundle(plan, path);
-            await host.Output.WriteLineAsync($"Saved workspace plan: {path}", CancellationToken.None).ConfigureAwait(false);
-            await host.Output.WriteLineAsync($"Workspace: {workspace}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Saved workspace plan: {path}", cancellationToken).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Workspace: {workspace}", cancellationToken).ConfigureAwait(false);
             if (!string.IsNullOrEmpty(personalWorkspace))
             {
-                await host.Output.WriteLineAsync($"Personal workspace: {personalWorkspace}", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"Personal workspace: {personalWorkspace}", cancellationToken).ConfigureAwait(false);
             }
 
             return 0;
         }
         catch (Exception error) when (error is InvalidPlanException or JsonInputException or IOException)
         {
-            await host.Output.WriteLineAsync(error.Message, CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
             return 1;
         }
     }
@@ -540,14 +540,14 @@ internal sealed partial class DesktopWorkspaceCommand
             var diff = WorkspaceDiff.Of(target, actual, substitutions);
             var success = diff.IsClean;
             var changed = previous is null || !diff.Equals(previous);
-            await host.Output.WriteLineAsync($"Check {check}: {(success ? "success" : "not yet stable")}", CancellationToken.None).ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Check {check}: {(success ? "success" : "not yet stable")}", cancellationToken).ConfigureAwait(false);
             if (changed)
             {
-                await host.Output.WriteLineAsync(diff.ChangedSince(previous).Render(), CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync(diff.ChangedSince(previous).Render(), cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                await host.Output.WriteLineAsync("No Change", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync("No Change", cancellationToken).ConfigureAwait(false);
             }
 
             log?.Log($"Wait-for-success check {check}: {(success ? "success" : "not yet stable")} changed={(changed ? "yes" : "no")}");
@@ -570,7 +570,7 @@ internal sealed partial class DesktopWorkspaceCommand
             }
             else if (sawSuccess)
             {
-                await host.Output.WriteLineAsync($"Regression detected after initial success on check {check}.", CancellationToken.None).ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"Regression detected after initial success on check {check}.", cancellationToken).ConfigureAwait(false);
                 log?.Log($"Wait-for-success regression detected on check {check}");
                 return false;
             }
