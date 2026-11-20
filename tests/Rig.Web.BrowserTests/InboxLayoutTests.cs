@@ -214,6 +214,32 @@ public sealed class InboxLayoutTests(BrowserFixture fixture) : InboxTest(fixture
     }
 
     [Fact]
+    public async Task Organisation_filters_on_its_own_and_narrows_the_repositories()
+    {
+        Save(new QueueItem("acme/tool", 4, "pr", "Bump the tool", "OPEN", "2026-01-04T00:00:00Z", "2026-01-04T00:00:00Z", new string('d', 40), 1, 0, 6));
+        await Page.GotoAsync(Origin + "/triage/inbox");
+        await Expect(Page.Locator(".queue-row")).ToHaveCountAsync(3);
+        await Page.Button("Queue filters").ClickAsync();
+        var dialog = Page.Modal("Queue filters", exact: true);
+        var organisation = dialog.Combobox("Organisation");
+        await Expect(organisation).ToHaveTextAsync("All organisations");
+        await organisation.ClickAsync();
+        await Page.Option("acme").ClickAsync();
+        await Expect(Page).ToHaveURLAsync(Origin + "/triage/inbox?org=acme");
+        await Expect(Page.Locator(".queue-row")).ToHaveCountAsync(1);
+        await dialog.Combobox("Repository").ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Option)).ToHaveTextAsync(["All repositories", "acme/tool"]);
+        await Page.Option("acme/tool").ClickAsync();
+        await Expect(Page).ToHaveURLAsync(Origin + "/triage/inbox?org=acme&repo=acme%2Ftool");
+        await organisation.ClickAsync();
+        await Page.Option("owner").ClickAsync();
+        await Expect(Page).ToHaveURLAsync(Origin + "/triage/inbox?org=owner");
+        await Expect(Page.Locator(".queue-row")).ToHaveCountAsync(2);
+        await dialog.Button("Done").ClickAsync();
+        await Expect(Page.Locator(".filter-summary")).ToHaveTextAsync("owner");
+    }
+
+    [Fact]
     public async Task Filter_selects_keep_the_parent_open_and_fit_both_themes()
     {
         await Page.GotoAsync(Origin + "/triage/inbox/owner/repo/1");

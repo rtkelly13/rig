@@ -1,7 +1,7 @@
 import { Button, Input, Popover, Select } from '@rtkelly-labs/design-system';
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
-import { readiness, when } from './model';
+import { organisation, readiness, when } from './model';
 import { navigate, updateQuery } from './router';
 import type { Route } from './router';
 import type { QueueState } from './useQueue';
@@ -26,17 +26,31 @@ export function QueueFilters({
   const focused = route.query.get('layout') === 'focus';
   useEffect(() => setOpen(false), [route.page, focused]);
   const filters = [
+    route.query.get('org'),
     route.query.get('repo'),
     route.query.get('action') ? actionNames[route.query.get('action') || ''] : null,
     route.query.has('status') ? readiness[Number(route.query.get('status'))] : null,
     route.query.get('read') === 'unread' ? 'Unread' : null,
   ].filter(Boolean);
+  const selectedOrg = route.query.get('org') || '';
+  const organisations = [...new Set(repos.map(organisation))].sort();
+  const organisationOptions =
+    selectedOrg && !organisations.includes(selectedOrg) ? [selectedOrg, ...organisations] : organisations;
   const selectedRepo = route.query.get('repo') || '';
+  const inOrg = repos.filter((repo) => !selectedOrg || organisation(repo) === selectedOrg);
   const repositoryOptions =
-    selectedRepo && !repos.includes(selectedRepo) ? [selectedRepo, ...repos] : repos;
+    selectedRepo && !inOrg.includes(selectedRepo) ? [selectedRepo, ...inOrg] : inOrg;
+  // Choosing an organisation drops a repository outside it rather than showing nothing.
+  const chooseOrganisation = (value: string) => {
+    const query = new URLSearchParams(route.query);
+    if (value) query.set('org', value);
+    else query.delete('org');
+    if (value && selectedRepo && organisation(selectedRepo) !== value) query.delete('repo');
+    navigate(`${location.pathname}${query.size ? `?${query}` : ''}`);
+  };
   const reset = () => {
     const query = new URLSearchParams(route.query);
-    for (const name of ['repo', 'status', 'read', 'action']) query.delete(name);
+    for (const name of ['org', 'repo', 'status', 'read', 'action']) query.delete(name);
     navigate(`${location.pathname}${query.size ? `?${query}` : ''}`);
   };
   return (
@@ -66,6 +80,18 @@ export function QueueFilters({
           }
         >
           <div className="queue-filter-fields">
+            {!route.repository ? (
+              <Select
+                label="Organisation"
+                className="filter-select"
+                value={selectedOrg || 'all'}
+                onValueChange={(value) => chooseOrganisation(value === 'all' ? '' : value)}
+                options={[
+                  { value: 'all', label: 'All organisations' },
+                  ...organisationOptions.map((org) => ({ value: org, label: org })),
+                ]}
+              />
+            ) : null}
             {!route.repository ? (
               <Select
                 label="Repository"
