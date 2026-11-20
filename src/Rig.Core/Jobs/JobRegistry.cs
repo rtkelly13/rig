@@ -125,6 +125,11 @@ public static class JobRegistry
             {
                 RetryExitCodes = new HashSet<int> { OrcaUnavailable },
             },
+            new("estate-orca-worktrees", "Remove finished Orca worktrees through Orca: merged, landed, folder gone or half-deleted.",
+                [rig, "estate", "orca-worktrees", "--all", "--apply", "--orca-data", env.OrcaUserData], Both, JobCadence.Daily, 15)
+            {
+                RetryExitCodes = new HashSet<int> { OrcaUnavailable },
+            },
             new("orca-sync", "Apply config/orca.json to Orca: agent default args, repo colours, scripts, refs.",
                 [rig, "workspace", "orca", "sync", "--apply", "--root", env.PersonalRoot, "--orca-data", env.OrcaUserData], Both,
                 JobCadence.Daily, 10)

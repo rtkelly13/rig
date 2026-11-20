@@ -56,8 +56,8 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             + "commits, a worktree whose git is not its project's, one whose PRs GitHub could not list, and the worktree this "
             + "command runs in are always kept. Each is re-checked just before removal. --apply removes through Orca's own "
             + "delete, which stops the worktree's terminals and keeps any branch git calls unmerged. Exit code 1 when any "
-            + "removal failed, with or without --json. Exit code 2 for a missing or unmatched scope, or when the estate's Orca "
-            + "is not running.")
+            + "removal failed, with or without --json. Exit code 2 for a missing or unmatched scope, and 3 when the estate's "
+            + "Orca is not running.")
         {
             repos, every, userData, workData, personalOnly, idleDays, kept, apply, json,
         };
@@ -116,16 +116,16 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
         var live = await ConnectAsync(Profiles(args), cancellationToken).ConfigureAwait(false);
         if (live is null)
         {
-            return 2;
+            return OrcaCommand.Unavailable;
         }
 
         var scopes = new IReadOnlySet<string>?[live.Count];
         if (args.Repos.Length > 0)
         {
-            var chosen = await ScopesAsync(live, args.Repos, cancellationToken).ConfigureAwait(false);
+            var (chosen, unavailable) = await ScopesAsync(live, args.Repos, cancellationToken).ConfigureAwait(false);
             if (chosen is null)
             {
-                return 2;
+                return unavailable ? OrcaCommand.Unavailable : 2;
             }
 
             chosen.CopyTo(scopes, 0);
@@ -153,7 +153,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
                 await error.WriteLineAsync($"{name} Orca profile failed: {e.Message}".AsMemory(), cancellationToken).ConfigureAwait(false);
                 if (i == 0 && rows.Count == 0)
                 {
-                    return 2;
+                    return OrcaCommand.Unavailable;
                 }
 
                 // A later profile failing keeps what earlier ones found, and removed, on the report.
@@ -207,8 +207,9 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
     }
 
     // Per profile, the project ids --repo names; null after reporting a name that matches nothing anywhere, or two
-    // projects in one profile, rather than a silent empty run.
-    private async Task<IReadOnlySet<string>[]?> ScopesAsync(List<(string Name, OrcaRuntime Runtime)> live, string[] wanted, CancellationToken cancellationToken)
+    // projects in one profile, rather than a silent empty run. Unavailable is true when the estate profile could not be
+    // asked, which the caller reports as the Orca-unavailable exit code so a scheduled run retries.
+    private async Task<(IReadOnlySet<string>[]? Scopes, bool Unavailable)> ScopesAsync(List<(string Name, OrcaRuntime Runtime)> live, string[] wanted, CancellationToken cancellationToken)
     {
         var scopes = live.Select(_ => (IReadOnlySet<string>)new HashSet<string>(StringComparer.Ordinal)).ToArray();
         foreach (var name in wanted)
@@ -225,7 +226,7 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
                     if (i == 0)
                     {
                         await error.WriteLineAsync(e.Message.AsMemory(), cancellationToken).ConfigureAwait(false);
-                        return null;
+                        return (null, true);
                     }
 
                     // As when connecting: a work profile that stops answering only warns, and matches nothing.
@@ -237,19 +238,19 @@ internal sealed class OrcaWorktreesCommand(EstateHost host, OrcaHost orca, Git g
             if (hits.Any(h => h.Count > 1))
             {
                 await error.WriteLineAsync($"--repo {name} is ambiguous: it names more than one Orca project.".AsMemory(), cancellationToken).ConfigureAwait(false);
-                return null;
+                return (null, false);
             }
 
             if (hits.All(h => h.Count == 0))
             {
                 await error.WriteLineAsync($"--repo {name} matches no Orca project. Pass a name or a path.".AsMemory(), cancellationToken).ConfigureAwait(false);
-                return null;
+                return (null, false);
             }
 
             scopes = [.. scopes.Zip(hits, (scope, hit) => (IReadOnlySet<string>)scope.Union(hit).ToHashSet(StringComparer.Ordinal))];
         }
 
-        return scopes;
+        return (scopes, false);
     }
 
     private async Task ReportAsync(List<WorktreeRow> rows, Args args, CancellationToken cancellationToken)

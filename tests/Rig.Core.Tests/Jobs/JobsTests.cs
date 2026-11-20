@@ -121,6 +121,25 @@ public sealed class JobsTests : IDisposable
     }
 
     [Fact]
+    public void The_orca_worktrees_job_runs_daily_after_estate_sync()
+    {
+        var env = new JobsEnvironment("/rig/bin", "/plan", null, "/code/personal", [], "feed", "/orca", Windows: false);
+        var jobs = JobRegistry.Default(env);
+
+        var job = Assert.Single(jobs, candidate => candidate.Name == "estate-orca-worktrees");
+        Assert.Equal(
+            ["/rig/bin/rig", "estate", "orca-worktrees", "--all", "--apply", "--orca-data", "/orca"],
+            job.Argv);
+        Assert.Equal([JobTrigger.Logon, JobTrigger.Tick], job.Triggers.Order());
+        Assert.Equal(JobCadence.Daily, job.Cadence);
+        Assert.Equal(15, job.TimeoutMinutes);
+        Assert.Equal([JobRegistry.OrcaUnavailable], job.RetryExitCodes.Order());
+
+        var names = jobs.Select(candidate => candidate.Name).ToList();
+        Assert.True(names.IndexOf("estate-sync") < names.IndexOf("estate-orca-worktrees"));
+    }
+
+    [Fact]
     public void The_workspace_paths_need_a_workspace_repo()
     {
         var env = new JobsEnvironment("/rig/bin", "plan", null, "/code/personal", [], "feed", "orca", Windows: false);
