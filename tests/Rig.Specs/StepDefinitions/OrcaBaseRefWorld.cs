@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json.Nodes;
 using Rig.Core.Orca;
@@ -25,11 +26,14 @@ public sealed class OrcaBaseRefWorld : IDisposable
     /// <summary>How many git calls the read made.</summary>
     public int Calls => _counting?.Count ?? _scripted?.Count ?? 0;
 
+    /// <summary>The git command lines the read made, for a failed call-count assertion.</summary>
+    public IReadOnlyList<IReadOnlyList<string>> Requests => _counting?.Requests ?? _scripted?.Requests ?? [];
+
     /// <summary>How long the read took.</summary>
     public TimeSpan Duration { get; private set; }
 
     /// <summary>Builds one repo in memory or on disk, arranged to match <paramref name="state"/>.</summary>
-    public async Task BuildAsync(string state, bool real)
+    public async Task BuildAsync(BaseRefState state, bool real)
     {
         _repos.Clear();
         Findings = [];
@@ -46,28 +50,29 @@ public sealed class OrcaBaseRefWorld : IDisposable
         _counting = new CountingProc(new SystemProc());
         switch (state)
         {
-            case "level":
+            case BaseRefState.Level:
                 break;
-            case "behind 3":
+            case BaseRefState.Behind3:
                 await repo.PushOriginAsync(3);
                 await repo.FetchAsync("origin");
                 break;
-            case "ahead 2":
+            case BaseRefState.Ahead2:
                 await repo.CommitLocalAsync(2);
                 break;
-            case "other upstream":
+            case BaseRefState.OtherUpstream:
                 await repo.SetUpstreamAsync("upstream");
                 await repo.PushOriginAsync(2);
                 await repo.FetchAsync("origin");
                 break;
-            case "missing branch":
+            case BaseRefState.MissingBranch:
                 await repo.RenameMainAsync();
                 break;
-            case "missing remote":
+            case BaseRefState.MissingRemote:
                 await repo.DeleteOriginMainAsync();
                 break;
             default:
-                throw new InvalidOperationException($"the feature names a base-ref state the specs do not know: {state}");
+                throw new InvalidOperationException(
+                    $"OrcaBaseRefWorld has no on-disk arrangement for {state}. Add one beside the other BaseRefState cases.");
         }
 
         _repos.Add(("rig", repo.Local, "origin/main"));
@@ -120,22 +125,28 @@ public sealed class OrcaBaseRefWorld : IDisposable
     public OrcaFinding? BaseFinding(string repo = "rig") =>
         Findings.FirstOrDefault(finding => finding.Subject == $"repo {repo}" && finding.Check == "local base");
 
+    /// <summary>Every finding, on one line, for a failed assertion.</summary>
+    public string DescribeFindings() => Findings.Count == 0
+        ? "(no findings)"
+        : string.Join("; ", Findings.Select(finding => $"{finding.Subject}/{finding.Check}={finding.Status}: {finding.Detail}"));
+
     /// <inheritdoc />
     public void Dispose() => _scratch.Dispose();
 
-    private static Ran Scripted(string state, ProcRequest request)
+    private static Ran Scripted(BaseRefState state, ProcRequest request)
     {
         if (request.Argv.Contains("for-each-ref"))
         {
             return new Ran(0, state switch
             {
-                "level" => "main\torigin/main\t\n",
-                "behind 3" => "main\torigin/main\t[behind 3]\n",
-                "ahead 2" => "main\torigin/main\t[ahead 2]\n",
-                "other upstream" => "main\tupstream/main\t\n",
-                "missing branch" => "trunk\torigin/main\t\n",
-                "missing remote" => "main\torigin/main\t[gone]\n",
-                _ => throw new InvalidOperationException($"the feature names a base-ref state the specs do not know: {state}"),
+                BaseRefState.Level => "main\torigin/main\t\n",
+                BaseRefState.Behind3 => "main\torigin/main\t[behind 3]\n",
+                BaseRefState.Ahead2 => "main\torigin/main\t[ahead 2]\n",
+                BaseRefState.OtherUpstream => "main\tupstream/main\t\n",
+                BaseRefState.MissingBranch => "trunk\torigin/main\t\n",
+                BaseRefState.MissingRemote => "main\torigin/main\t[gone]\n",
+                _ => throw new InvalidOperationException(
+                    $"OrcaBaseRefWorld has no scripted for-each-ref output for {state}. Add one beside the other BaseRefState cases."),
             }, string.Empty);
         }
 
@@ -143,8 +154,11 @@ public sealed class OrcaBaseRefWorld : IDisposable
         {
             return state switch
             {
-                "other upstream" => new Ran(0, "0\t2\n", string.Empty),
-                _ => new Ran(1, string.Empty, "no such ref"),
+                BaseRefState.OtherUpstream => new Ran(0, "0\t2\n", string.Empty),
+                BaseRefState.MissingRemote => new Ran(1, string.Empty, "no such ref"),
+                _ => throw new InvalidOperationException(
+                    $"The read made a rev-list fallback for {state}, which for-each-ref should have answered. "
+                    + "This is a waterfall regression: the state's upstream must match the policy ref and carry its counts."),
             };
         }
 
@@ -153,13 +167,17 @@ public sealed class OrcaBaseRefWorld : IDisposable
 
     private sealed class RecordingProc(Func<ProcRequest, Ran> answer) : IProc
     {
+        private readonly ConcurrentQueue<IReadOnlyList<string>> _requests = new();
         private int _calls;
 
         public int Count => Volatile.Read(ref _calls);
 
+        public IReadOnlyList<IReadOnlyList<string>> Requests => [.. _requests];
+
         public Ran Run(ProcRequest request)
         {
             _ = Interlocked.Increment(ref _calls);
+            _requests.Enqueue(request.Argv);
             return answer(request);
         }
 
@@ -168,19 +186,24 @@ public sealed class OrcaBaseRefWorld : IDisposable
 
     private sealed class CountingProc(IProc inner) : IProc
     {
+        private readonly ConcurrentQueue<IReadOnlyList<string>> _requests = new();
         private int _calls;
 
         public int Count => Volatile.Read(ref _calls);
 
+        public IReadOnlyList<IReadOnlyList<string>> Requests => [.. _requests];
+
         public Ran Run(ProcRequest request)
         {
             _ = Interlocked.Increment(ref _calls);
+            _requests.Enqueue(request.Argv);
             return inner.Run(request);
         }
 
         public async Task<Ran> RunAsync(ProcRequest request, CancellationToken cancellationToken = default)
         {
             _ = Interlocked.Increment(ref _calls);
+            _requests.Enqueue(request.Argv);
             return await inner.RunAsync(request, cancellationToken).ConfigureAwait(false);
         }
     }

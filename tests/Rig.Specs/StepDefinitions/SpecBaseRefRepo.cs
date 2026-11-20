@@ -24,18 +24,18 @@ public sealed record SpecBaseRefRepo(SpecScratch Scratch, IProc Proc, string Ori
             Path.Join(scratch.Path, $"{name}-origin.git"),
             Path.Join(scratch.Path, $"{name}-seed"),
             Path.Join(scratch.Path, $"{name}-clone"));
-        _ = await repo.GitAsync(scratch.Path, "init", "-q", "--bare", "-b", "main", repo.Origin);
-        _ = await repo.GitAsync(scratch.Path, "init", "-q", "-b", "main", repo.Seed);
+        await repo.RunAsync(scratch.Path, "init", "-q", "--bare", "-b", "main", repo.Origin);
+        await repo.RunAsync(scratch.Path, "init", "-q", "-b", "main", repo.Seed);
         await File.WriteAllTextAsync(Path.Join(repo.Seed, "README.md"), "base ref specs\n");
-        _ = await repo.GitAsync(repo.Seed, "add", "README.md");
-        _ = await repo.GitAsync(repo.Seed, "commit", "-qm", "one");
-        _ = await repo.GitAsync(repo.Seed, "remote", "add", "origin", repo.Origin);
-        _ = await repo.GitAsync(repo.Seed, "push", "-q", "-u", "origin", "main");
-        _ = await repo.GitAsync(scratch.Path, "clone", "-q", repo.Origin, repo.Local);
-        _ = await repo.GitAsync(repo.Local, "config", "user.name", "rig-specs");
-        _ = await repo.GitAsync(repo.Local, "config", "user.email", "specs@example.invalid");
-        _ = await repo.GitAsync(repo.Local, "config", "commit.gpgsign", "false");
-        _ = await repo.GitAsync(repo.Local, "config", "core.autocrlf", "false");
+        await repo.RunAsync(repo.Seed, "add", "README.md");
+        await repo.RunAsync(repo.Seed, "commit", "-qm", "one");
+        await repo.RunAsync(repo.Seed, "remote", "add", "origin", repo.Origin);
+        await repo.RunAsync(repo.Seed, "push", "-q", "-u", "origin", "main");
+        await repo.RunAsync(scratch.Path, "clone", "-q", repo.Origin, repo.Local);
+        await repo.RunAsync(repo.Local, "config", "user.name", "rig-specs");
+        await repo.RunAsync(repo.Local, "config", "user.email", "specs@example.invalid");
+        await repo.RunAsync(repo.Local, "config", "commit.gpgsign", "false");
+        await repo.RunAsync(repo.Local, "config", "core.autocrlf", "false");
         return repo;
     }
 
@@ -45,11 +45,11 @@ public sealed record SpecBaseRefRepo(SpecScratch Scratch, IProc Proc, string Ori
         for (var index = 0; index < count; index++)
         {
             await File.AppendAllTextAsync(Path.Join(Seed, "history.txt"), $"origin {index}\n");
-            _ = await GitAsync(Seed, "add", ".");
-            _ = await GitAsync(Seed, "commit", "-qm", $"origin {index}");
+            await RunAsync(Seed, "add", ".");
+            await RunAsync(Seed, "commit", "-qm", $"origin {index}");
         }
 
-        _ = await GitAsync(Seed, "push", "-q", "origin", "main");
+        await RunAsync(Seed, "push", "-q", "origin", "main");
     }
 
     /// <summary>Commits <paramref name="count"/> times on the clone's local main, without pushing.</summary>
@@ -58,8 +58,8 @@ public sealed record SpecBaseRefRepo(SpecScratch Scratch, IProc Proc, string Ori
         for (var index = 0; index < count; index++)
         {
             await File.AppendAllTextAsync(Path.Join(Local, "local.txt"), $"local {index}\n");
-            _ = await GitAsync(Local, "add", ".");
-            _ = await GitAsync(Local, "commit", "-qm", $"local {index}");
+            await RunAsync(Local, "add", ".");
+            await RunAsync(Local, "commit", "-qm", $"local {index}");
         }
     }
 
@@ -68,23 +68,26 @@ public sealed record SpecBaseRefRepo(SpecScratch Scratch, IProc Proc, string Ori
     {
         foreach (var remote in remotes)
         {
-            _ = await GitAsync(Local, "fetch", "-q", remote);
+            await RunAsync(Local, "fetch", "-q", remote);
         }
     }
 
     /// <summary>Adds <paramref name="remote"/>, fetches it, and makes it the upstream of local main.</summary>
     public async Task SetUpstreamAsync(string remote)
     {
-        _ = await GitAsync(Local, "remote", "add", remote, Origin);
-        _ = await GitAsync(Local, "fetch", "-q", remote);
-        _ = await GitAsync(Local, "branch", "--set-upstream-to", $"{remote}/main", "main");
+        await RunAsync(Local, "remote", "add", remote, Origin);
+        await RunAsync(Local, "fetch", "-q", remote);
+        await RunAsync(Local, "branch", "--set-upstream-to", $"{remote}/main", "main");
     }
 
     /// <summary>Renames local main so the policy branch no longer exists.</summary>
-    public async Task RenameMainAsync() => _ = await GitAsync(Local, "branch", "-m", "main", "trunk");
+    public async Task RenameMainAsync() => await RunAsync(Local, "branch", "-m", "main", "trunk");
 
     /// <summary>Deletes origin/main from the clone's remote-tracking refs, leaving local main in place.</summary>
-    public async Task DeleteOriginMainAsync() => _ = await GitAsync(Local, "update-ref", "-d", "refs/remotes/origin/main");
+    public async Task DeleteOriginMainAsync() => await RunAsync(Local, "update-ref", "-d", "refs/remotes/origin/main");
+
+    /// <summary>Runs git for a command whose output the spec does not read, failing with the command and stderr.</summary>
+    public async Task RunAsync(string cwd, params string[] args) => _ = await GitAsync(cwd, args);
 
     /// <summary>Runs git in <paramref name="cwd"/> with an identity, asserting success.</summary>
     public async Task<string> GitAsync(string cwd, params string[] args)
