@@ -229,7 +229,8 @@ public sealed class InboxLayoutTests(BrowserFixture fixture) : InboxTest(fixture
         await Expect(Page).ToHaveURLAsync(Origin + "/triage/inbox?org=acme");
         await Expect(Page.Locator(".queue-row")).ToHaveCountAsync(1);
         await dialog.Combobox("Repository").ClickAsync();
-        await Expect(Page.GetByRole(AriaRole.Option)).ToHaveTextAsync(["All repositories", "acme/tool"]);
+        await Expect(Page.GetByRole(AriaRole.Option)).ToHaveCountAsync(2);
+        await Expect(Page.Option("owner/repo")).ToHaveCountAsync(0);
         await Page.Option("acme/tool").ClickAsync();
         await Expect(Page).ToHaveURLAsync(Origin + "/triage/inbox?org=acme&repo=acme%2Ftool");
         await organisation.ClickAsync();
