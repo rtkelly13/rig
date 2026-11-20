@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Playwright;
+using Rig.Core.ReviewQueue;
 using static Microsoft.Playwright.Assertions;
 
 namespace Rig.Web.BrowserTests;
