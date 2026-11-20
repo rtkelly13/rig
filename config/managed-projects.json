@@ -481,6 +481,16 @@
       "orca": {
         "group": "rtkelly-labs"
       }
+    },
+    {
+      "name": "matchmark",
+      "repo": "git@github.com:rtkelly-labs/matchmark.git",
+      "description": "Spec-first ASP.NET Core: a Roslyn generator turns OpenAPI and AsyncAPI documents into contracts, fakes and regression suites.",
+      "domain": "Developer Tooling & Quality",
+      "stack": ".NET 10 / C#",
+      "orca": {
+        "group": "rtkelly-labs"
+      }
     }
   ]
 }
