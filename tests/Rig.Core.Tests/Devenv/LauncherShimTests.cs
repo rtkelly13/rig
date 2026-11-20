@@ -40,6 +40,30 @@ public sealed class LauncherShimTests : IDisposable
         Assert.Contains("    \"/home/\\$me/agent.sh\" \"$@\"", LauncherShim.PosixBlock("/home/$me/agent.sh"), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Retired_shims_are_the_generated_ones_and_agent_ps1_only_off_windows()
+    {
+        foreach (var name in new[] { "rig.sh", "rig.ps1", "agent.ps1" })
+        {
+            File.WriteAllText(_home.File(name), $"#!/usr/bin/env bash\r\n{LauncherShim.Generated}\r\nexec old\r\n");
+        }
+
+        File.WriteAllText(_home.File("agents.sh"), "#!/bin/sh\n# mine\n");
+        _ = _home.File("agent.sh");
+
+        Assert.Equal([Path.Join(_home.Path, "rig.sh"), Path.Join(_home.Path, "rig.ps1"), Path.Join(_home.Path, "agent.ps1")], LauncherShim.RetiredIn(_home.Path, windows: false));
+        Assert.Equal([Path.Join(_home.Path, "rig.sh"), Path.Join(_home.Path, "rig.ps1")], LauncherShim.RetiredIn(_home.Path, windows: true));
+    }
+
+    [Fact]
+    public void Current_means_a_write_would_change_nothing()
+    {
+        var block = LauncherShim.PosixBlock("/c/agent.sh");
+        Assert.True(LauncherShim.Current($"x\n\n{block}\n", block));
+        Assert.False(LauncherShim.Current(null, block));
+        Assert.False(LauncherShim.Current($"{LauncherShim.Begin}\nrig() {{ :; }}\n{LauncherShim.End}\n", block));
+    }
+
     private const string Block = $"{LauncherShim.Begin}\nnew\n{LauncherShim.End}";
 
     [Theory]

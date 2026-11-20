@@ -11,7 +11,7 @@ namespace Rig.Cli.Tests.Devenv;
 /// </summary>
 public sealed class DoctorCommandTests : IDisposable
 {
-    private static readonly string[] Stubbed = ["tools", "terminal", "git", "gh", "fonts", "claude", "agents"];
+    private static readonly string[] Stubbed = ["tools", "terminal", "git", "gh", "fonts", "claude", "agent-launcher", "agents"];
 
     private readonly TempDir _home = new();
     private readonly List<string> _ran = [];
@@ -54,7 +54,7 @@ public sealed class DoctorCommandTests : IDisposable
         var (code, output) = await RunAsync();
 
         Assert.Equal(0, code);
-        Assert.Equal(["tools --check", "git --check", "gh --check", "fonts --check", "claude --check", "agents"], _ran);
+        Assert.Equal(["tools --check", "git --check", "gh --check", "fonts --check", "claude --check", "agent-launcher --check", "agents"], _ran);
         Assert.Contains("=== Development Environment Doctor (linux) ===", output, StringComparison.Ordinal);
         Assert.Contains("Repository Folder    - Local/non-GitHub   No remote origin URL configured or not a git repository", output, StringComparison.Ordinal);
         Assert.Contains("Claude Code Settings - Not seeded", output, StringComparison.Ordinal);
@@ -64,7 +64,7 @@ public sealed class DoctorCommandTests : IDisposable
     [Fact]
     public async Task Required_checks_that_fail_are_counted_and_informational_ones_are_not()
     {
-        foreach (var name in new[] { "tools", "terminal", "git", "gh", "claude", "fonts", "agents" })
+        foreach (var name in new[] { "tools", "terminal", "git", "gh", "claude", "agent-launcher", "fonts", "agents" })
         {
             _exits[name] = 1;
         }
@@ -75,7 +75,8 @@ public sealed class DoctorCommandTests : IDisposable
         Assert.Contains("terminal --check", _ran);
         Assert.Contains("Run 'rig devenv gh' to install it.", output, StringComparison.Ordinal);
         Assert.Contains("Run 'rig devenv claude' to install the session-ledger hook.", output, StringComparison.Ordinal);
-        Assert.EndsWith("! Found 5 missing required component(s). Run 'rig devenv setup' to resolve.\n", output, StringComparison.Ordinal);
+        Assert.Contains("Run 'rig devenv agent-launcher' to refresh the shortcut and remove retired shims.", output, StringComparison.Ordinal);
+        Assert.EndsWith("! Found 6 missing required component(s). Run 'rig devenv setup' to resolve.\n", output, StringComparison.Ordinal);
     }
 
     [Fact]
