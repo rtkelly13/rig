@@ -60,7 +60,7 @@ public sealed class JobsInstallTests : IDisposable
         Targets(target);
         var proc = new FakeProc().Answer(new Ran(git ? 0 : 1, Path.Join(root, ".git"), ""), "git");
 
-        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(root, Path.Join(_temp.Path, "app"), plan, proc, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
+        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(root, Path.Join(_temp.Path, "app"), plan, proc, JobsPlatform.Windows, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
         Assert.Equal(root, Assert.Single(proc.Requests).WorkingDirectory);
     }
 
@@ -75,15 +75,44 @@ public sealed class JobsInstallTests : IDisposable
         Targets(target);
         var proc = new FakeProc();
 
-        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(Path.Join(app, "runtime", copy), app, "ignored", proc, JobsLauncher.Pythonw, target.Pythonw, TestContext.Current.CancellationToken));
+        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(Path.Join(app, "runtime", copy), app, "ignored", proc, JobsPlatform.Windows, JobsLauncher.Pythonw, target.Pythonw, TestContext.Current.CancellationToken));
         Assert.Empty(proc.Requests);
+    }
+
+    [Fact]
+    public async Task Macos_resolves_the_published_rig_and_needs_no_plan_or_pythonw()
+    {
+        var root = Path.Join(_temp.Path, "checkout");
+        var plan = Path.Join(_temp.Path, "user-plan.json");
+        var target = new JobsInstallTarget(root, plan, Path.Join(root, "temp", "jobs-runtime", "rig"));
+        Directory.CreateDirectory(Path.GetDirectoryName(target.Rig)!);
+        await File.WriteAllTextAsync(target.Rig, "fixture", TestContext.Current.CancellationToken);
+        var proc = new FakeProc().Answer(new Ran(0, Path.Join(root, ".git"), ""), "git");
+
+        var resolved = await JobsInstallTarget.ResolveAsync(root, Path.Join(_temp.Path, "app"), plan, proc, JobsPlatform.MacOS, JobsLauncher.Pythonw, null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(target, resolved);
+        Assert.Null(resolved.Pythonw);
+        Assert.DoesNotContain(proc.Requests, request => request.Argv[0] == "uv");
+    }
+
+    [Fact]
+    public async Task Macos_refuses_a_missing_published_rig_before_changing_agents()
+    {
+        var root = Path.Join(_temp.Path, "checkout");
+        var target = new JobsInstallTarget(root, "plan", Path.Join(root, "temp", "jobs-runtime", "rig"));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(
+            root, Path.Join(_temp.Path, "app"), "plan", new FakeProc(), JobsPlatform.MacOS, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
+
+        Assert.Contains(target.Rig, error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task Linked_worktrees_are_refused_before_checking_or_changing_targets()
     {
         var proc = new FakeProc().Answer(new Ran(0, Path.Join(_temp.Path, "main", ".git"), ""), "git");
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", proc, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", proc, JobsPlatform.Windows, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
         Assert.Contains("not a worktree", error.Message, StringComparison.Ordinal);
     }
 
@@ -91,7 +120,7 @@ public sealed class JobsInstallTests : IDisposable
     public async Task A_git_failure_cannot_hide_a_linked_worktree()
     {
         await File.WriteAllTextAsync(Path.Join(_temp.Path, ".git"), "gitdir: elsewhere", TestContext.Current.CancellationToken);
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", new FakeProc(), JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", new FakeProc(), JobsPlatform.Windows, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
         Assert.Contains("Cannot verify the main checkout", error.Message, StringComparison.Ordinal);
     }
 
@@ -106,7 +135,7 @@ public sealed class JobsInstallTests : IDisposable
         var path = new[] { target.Rig, target.Plan, target.Pythonw! }[missing];
         File.Delete(path);
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, new FakeProc(), JobsLauncher.Pythonw, target.Pythonw, TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, new FakeProc(), JobsPlatform.Windows, JobsLauncher.Pythonw, target.Pythonw, TestContext.Current.CancellationToken));
         Assert.Contains(path, error.Message, StringComparison.Ordinal);
     }
 
@@ -120,20 +149,21 @@ public sealed class JobsInstallTests : IDisposable
             BeforeRun = request =>
             {
                 var path = request.Argv[5];
-                Assert.Equal("<?xml?> & data", File.ReadAllText(path, Encoding.Unicode));
+                Assert.Contains("<Task", File.ReadAllText(path, Encoding.Unicode), StringComparison.Ordinal);
                 Assert.Equal(new byte[] { 255, 254 }, File.ReadAllBytes(path).Take(2));
             }
         };
         proc.Answer(new Ran(fail ? 1 : 0, "", "refused"), "schtasks");
         var tasks = new Schtasks(proc, _temp.Path);
 
+        Task Register() => tasks.RegisterAsync(CoordinatorTasks.Logon, Target, "me", new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero), TestContext.Current.CancellationToken);
         if (fail)
         {
-            await Assert.ThrowsAsync<ProcException>(() => tasks.RegisterAsync(CoordinatorTasks.Logon, "<?xml?> & data", TestContext.Current.CancellationToken));
+            await Assert.ThrowsAsync<ProcException>(Register);
         }
         else
         {
-            await tasks.RegisterAsync(CoordinatorTasks.Logon, "<?xml?> & data", TestContext.Current.CancellationToken);
+            await Register();
         }
 
         Assert.Empty(Directory.GetFileSystemEntries(_temp.Path));
@@ -159,7 +189,7 @@ public sealed class JobsInstallTests : IDisposable
         var app = Path.Join(_temp.Path, "app");
         var proc = new FakeProc().Answer(new Ran(0, "", ""), "git").Answer(new Ran(0, Path.Join(_temp.Path, "py", "python.exe") + "\n", ""), "uv");
 
-        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(_temp.Path, app, target.Plan, proc, JobsLauncher.Pythonw, null, TestContext.Current.CancellationToken));
+        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(_temp.Path, app, target.Plan, proc, JobsPlatform.Windows, JobsLauncher.Pythonw, null, TestContext.Current.CancellationToken));
         var uv = proc.Requests[^1];
         Assert.Equal(["uv", "python", "find", "--managed-python", "--no-project"], uv.Argv);
         Assert.Equal(app, uv.WorkingDirectory);
@@ -172,7 +202,7 @@ public sealed class JobsInstallTests : IDisposable
         Targets(target);
         var proc = new FakeProc().Answer(new Ran(0, "", ""), "git").Answer(new Ran(2, "", "no python"), "uv");
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, proc, JobsLauncher.Pythonw, null, TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, proc, JobsPlatform.Windows, JobsLauncher.Pythonw, null, TestContext.Current.CancellationToken));
         Assert.Contains("--pythonw", error.Message, StringComparison.Ordinal);
         Assert.Contains("--launcher direct", error.Message, StringComparison.Ordinal);
     }

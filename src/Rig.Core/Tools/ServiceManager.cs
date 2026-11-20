@@ -306,7 +306,7 @@ public sealed class ServiceManager(ServiceHost host)
         var userId = host.UserId ?? throw new InvalidOperationException("Cannot register a logon task: the Windows user is unknown.");
         var (program, line) = await WindowsActionAsync(arguments, cancellationToken).ConfigureAwait(false);
         var xml = ServiceTaskXml.Render(target, preview, program, line, host.WorkingDirectory, userId);
-        await new Schtasks(host.Proc, host.ScratchDirectory ?? Path.GetTempPath()).RegisterAsync(name, xml, cancellationToken).ConfigureAwait(false);
+        await new Schtasks(host.Proc, host.ScratchDirectory ?? Path.GetTempPath()).RegisterXmlAsync(name, xml, cancellationToken).ConfigureAwait(false);
         await DeleteLegacyTaskAsync(target, preview, cancellationToken).ConfigureAwait(false);
         _ = await host.Proc.RunAsync(new ProcRequest(["schtasks", "/Run", "/TN", name]), cancellationToken).ConfigureAwait(false);
         return port is { } listening
