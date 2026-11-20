@@ -20,43 +20,69 @@ public sealed class OrcaBaseRefTests
     }
 
     [Fact]
-    public async Task It_reads_each_repos_ahead_and_behind_counts()
+    public void The_track_from_for_each_ref_answers_the_policy_ref()
+    {
+        const string output = "main\torigin/main\t[ahead 2, behind 3]\nfeature\torigin/feature\t\n";
+
+        Assert.Equal(new LocalBaseState("main", "origin", 2, 3), OrcaBaseRef.FromTrack(output, "main", "origin"));
+        Assert.Null(OrcaBaseRef.FromTrack(output, "main", "upstream"));
+        Assert.Null(OrcaBaseRef.FromTrack(output, "absent", "origin"));
+        Assert.Equal(("origin/feature", ""), OrcaBaseRef.FindBranch(output, "feature"));
+    }
+
+    [Fact]
+    public async Task One_for_each_ref_call_answers_the_branch_and_its_counts()
     {
         var proc = new FakeProc()
-            .AnswerIn("/repos/rig", new Ran(0, "abc\n", string.Empty), "git", "rev-parse", "--verify", "--quiet", "refs/heads/main")
-            .AnswerIn("/repos/rig", new Ran(0, "def\n", string.Empty), "git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main")
-            .AnswerIn("/repos/rig", new Ran(0, "2\t3\n", string.Empty), "git", "rev-list", "--count", "--left-right", "main...origin/main");
+            .AnswerIn("/repos/rig", new Ran(0, "main\torigin/main\t[ahead 2, behind 3]\n", string.Empty), "git", "for-each-ref");
 
         var states = await OrcaBaseRef.InspectAsync(new Git(proc, "/code"), [("rig", "/repos/rig", "origin/main")], Token);
 
         var state = Assert.Single(states);
         Assert.Equal("rig", state.Key);
         Assert.Equal(new LocalBaseState("main", "origin", 2, 3), state.Value);
+        Assert.Single(proc.Requests);
+        Assert.DoesNotContain(proc.Requests, request => request.Argv.Contains("rev-list"));
     }
 
     [Fact]
     public async Task A_repo_without_the_local_branch_is_skipped()
     {
         var proc = new FakeProc()
-            .AnswerIn("/repos/rig", new Ran(1, string.Empty, string.Empty), "git", "rev-parse", "--verify", "--quiet", "refs/heads/main");
+            .AnswerIn("/repos/rig", new Ran(0, "other\torigin/other\t\n", string.Empty), "git", "for-each-ref");
 
         var states = await OrcaBaseRef.InspectAsync(new Git(proc, "/code"), [("rig", "/repos/rig", "origin/main")], Token);
 
         Assert.Empty(states);
         Assert.Single(proc.Requests);
+        Assert.DoesNotContain(proc.Requests, request => request.Argv.Contains("rev-list"));
+    }
+
+    [Fact]
+    public async Task An_upstream_that_is_not_the_policy_ref_falls_back_to_rev_list()
+    {
+        var proc = new FakeProc()
+            .AnswerIn("/repos/rig", new Ran(0, "main\tupstream/main\t[ahead 9, behind 9]\n", string.Empty), "git", "for-each-ref")
+            .AnswerIn("/repos/rig", new Ran(0, "1\t2\n", string.Empty), "git", "rev-list", "--count", "--left-right", "main...origin/main");
+
+        var states = await OrcaBaseRef.InspectAsync(new Git(proc, "/code"), [("rig", "/repos/rig", "origin/main")], Token);
+
+        Assert.Equal(new LocalBaseState("main", "origin", 1, 2), Assert.Single(states).Value);
+        Assert.Equal(2, proc.Requests.Count);
+        Assert.Contains(proc.Requests, request => request.Argv.Contains("rev-list"));
     }
 
     [Fact]
     public async Task A_repo_without_the_remote_tracking_ref_is_skipped()
     {
         var proc = new FakeProc()
-            .AnswerIn("/repos/rig", new Ran(0, "abc\n", string.Empty), "git", "rev-parse", "--verify", "--quiet", "refs/heads/main")
-            .AnswerIn("/repos/rig", new Ran(1, string.Empty, string.Empty), "git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main");
+            .AnswerIn("/repos/rig", new Ran(0, "main\t\t\n", string.Empty), "git", "for-each-ref")
+            .AnswerIn("/repos/rig", new Ran(1, string.Empty, string.Empty), "git", "rev-list");
 
         var states = await OrcaBaseRef.InspectAsync(new Git(proc, "/code"), [("rig", "/repos/rig", "origin/main")], Token);
 
         Assert.Empty(states);
-        Assert.DoesNotContain(proc.Requests, request => request.Argv.Contains("rev-list"));
+        Assert.Equal(2, proc.Requests.Count);
     }
 
     [Fact]

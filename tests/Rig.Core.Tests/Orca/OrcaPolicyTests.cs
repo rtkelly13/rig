@@ -25,13 +25,16 @@ public sealed class OrcaPolicyTests
     }
 
     [Fact]
-    public void Every_configured_base_ref_starts_from_the_remote()
+    public void Every_policy_repo_starts_from_a_remote_ref()
     {
         var policy = OrcaPolicy.Load(CheckedInPolicy);
-        var configured = policy.Repos.Where(pair => pair.Value.BaseRef is not null).ToList();
 
-        Assert.NotEmpty(configured);
-        Assert.All(configured, pair => Assert.Contains("/", pair.Value.BaseRef!, StringComparison.Ordinal));
+        Assert.NotEmpty(policy.Repos);
+        Assert.All(policy.Repos, pair =>
+        {
+            Assert.False(string.IsNullOrEmpty(pair.Value.BaseRef), $"{pair.Key} has no base_ref");
+            Assert.Contains("/", pair.Value.BaseRef!, StringComparison.Ordinal);
+        });
     }
 
     [Fact]

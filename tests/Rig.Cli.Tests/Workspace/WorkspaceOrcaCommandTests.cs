@@ -179,9 +179,7 @@ public sealed class WorkspaceOrcaCommandTests : IDisposable
         await File.WriteAllTextAsync(policy, """{"repos": {"app": {"base_ref": "origin/main"}}}""", Token);
         _ = Repos("""{"result": {"repos": [{"path": "/elsewhere/app", "displayName": "app", "worktreeBaseRef": "origin/main"}]}}""");
         _ = _proc
-            .AnswerIn("/elsewhere/app", new Ran(0, "abc\n", string.Empty), "git", "rev-parse", "--verify", "--quiet", "refs/heads/main")
-            .AnswerIn("/elsewhere/app", new Ran(0, "def\n", string.Empty), "git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main")
-            .AnswerIn("/elsewhere/app", new Ran(0, "0\t2\n", string.Empty), "git", "rev-list", "--count", "--left-right", "main...origin/main");
+            .AnswerIn("/elsewhere/app", new Ran(0, "main\torigin/main\t[ahead 0, behind 2]\n", string.Empty), "git", "for-each-ref");
 
         var (code, output, _) = await RunAsync("workspace", "orca", "doctor", "--json", "--config", policy);
 

@@ -43,7 +43,7 @@ daily against the default instance, which holds the work repos and the estate.
 | `repos.<name>.setup` | The setup script each new Orca worktree should run. The repo's committed `orca.yaml` should declare it (see below). |
 | `repos.<name>.archive` | The archive script, run when a worktree is archived; same rule as `setup`. |
 | `repos.<name>.external_worktree_visibility` | `show`, `hide` or `inherit`: whether worktrees Orca did not create appear in the sidebar. |
-| `repos.<name>.base_ref` | Default base ref for future worktrees, `origin/main` in the policy. A remote-tracking ref starts each worktree from the remote, so a stale or dirty local `main` cannot leak into it. See [Base refs and stale local `main`](#base-refs-and-stale-local-main). |
+| `repos.<name>.base_ref` | Default base ref for future worktrees. Every repo in the policy declares one, `origin/main` unless the repository still uses `master` (such as `parquet-dotnet`). A remote-tracking ref starts each worktree from the remote, so a stale or dirty local `main` cannot leak into it. See [Base refs and stale local `main`](#base-refs-and-stale-local-main). |
 | `repos.<name>.worktree_base_path` | Orca's per-repo Worktree Location. Relative paths resolve from the repo root; `""` means the global workspace folder. |
 | `repos.<name>.color` | Hex badge color (e.g. `#6366f1`). |
 | `repos.<name>.icon` | One of the lucide names Orca's icon picker offers (e.g. `SquareTerminal`, `Palette`), an emoji (`emoji:🛠️`), or an image URL. See [Repo icons](#repo-icons). |
@@ -74,9 +74,11 @@ prompts on every step and has no workable auto mode, as Antigravity does.
   When it cannot be read, the newest `profile-state.db.backup.*.db` beside it is used instead.
   The `source` row names which, with its age, and warns past 24 hours.
 - **Repos**: `orca repo list --json`, which is safe while Orca runs.
-- **Local base branches**: for each policy repo with a `base_ref`, the checkout at its registered
-  path is read with `git rev-parse --verify` and `git rev-list --count --left-right`. This is the
-  read behind the [stale local `main`](#base-refs-and-stale-local-main) warning.
+- **Local base branches**: for each policy repo with a `base_ref`, one `git for-each-ref` reads
+  every local branch with its upstream track. When that upstream is the policy ref the counts come
+  from `%(upstream:track)`; otherwise a single `git rev-list --count --left-right` compares the two.
+  Repos are read with bounded concurrency. This is the read behind the
+  [stale local `main`](#base-refs-and-stale-local-main) warning.
 
 ## Repo icons
 
@@ -99,17 +101,20 @@ global and only changes in Orca's Settings. Existing worktrees stay where they a
 
 ## Base refs and stale local `main`
 
-`config/orca.json` sets `base_ref: "origin/main"` for every repo that Orca makes worktrees
-from. Orca accepts a remote-tracking ref there: when it creates a worktree it resolves the ref
-(`refs/remotes/origin/main`), checks it exists, and starts the checkout from it. A local `main`
-that is dirty, behind, or mid-rebase therefore cannot leak into the new worktree, and a PR merged
-seconds before the worktree is created is picked up as soon as the tracking ref has been fetched.
+`config/orca.json` gives every repo a `base_ref`, normally `origin/main`; `parquet-dotnet`
+still uses `origin/master`. Orca accepts a remote-tracking ref there: when it creates a worktree it
+resolves the ref (`refs/remotes/origin/main`), checks it exists, and starts the checkout from it. A
+local `main` that is dirty, behind, or mid-rebase therefore cannot leak into the new worktree, and
+a PR merged seconds before the worktree is created is picked up as soon as the tracking ref has
+been fetched.
 
 The doctor adds defense in depth: for each registered repo whose policy names a `base_ref`, it
-reads the local branch and the matching remote-tracking ref with `git rev-parse --verify` and
-`git rev-list --count --left-right <branch>...<remote>/<branch>`. When the local branch is behind
-(`behind > 0`) it reports a **warn** on `repo <name>` / `local base`, naming the commits and the
-fast-forward command:
+reads every local branch with one `git for-each-ref` per repo. When the branch's configured
+upstream is the policy ref, the `%(upstream:track)` counts are used directly; otherwise one
+`git rev-list --count --left-right <branch>...<remote>/<branch>` compares them. Repos are read
+with bounded concurrency, so the cost is one round trip per repo rather than a chain per ref.
+When the local branch is behind (`behind > 0`) it reports a **warn** on `repo <name>` / `local base`,
+naming the commits and the fast-forward command:
 
 ```text
 repo rig  local base  warn  main is 3 commits behind origin/main
@@ -118,6 +123,18 @@ fix: git -C ~/code/personal/rig fetch origin && git -C ~/code/personal/rig merge
 
 A missing local branch or remote-tracking ref is not reported: there is nothing to compare. The
 check is read-only, and a repo whose `base_ref` names a tag or commit is skipped.
+
+The integration check is opt-in because it creates a real sibling worktree. It asks the running
+Orca to create one without an explicit base branch, then starts a session in it and reads back
+`HEAD` and `origin/main`; both must be the same commit. The session unsets `GIT_DIR` and the other
+git location variables, since an Orca terminal inherits the launcher's environment and would
+otherwise read the caller's checkout.
+
+```bash
+RIG_LIVE_ORCA=1 dotnet test --project tests/Rig.Cli.Tests -- --filter-class "*OrcaBaseRefLiveTests"
+```
+
+Run `rig workspace orca sync --apply` first so Orca has the policy's `origin/main`.
 
 ## Setup and archive scripts belong in `orca.yaml`
 

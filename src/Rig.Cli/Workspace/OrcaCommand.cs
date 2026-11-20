@@ -256,7 +256,8 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                     : pair.Value.Path is { } path ? paths.RepoPath(path) : OrcaPaths.Posix(Path.Join(paths.EstateRoot, pair.Key)),
                 BaseRef: pair.Value.BaseRef!))
             .ToList();
-        return await OrcaBaseRef.InspectAsync(CodeGit, repos, cancellationToken).ConfigureAwait(false);
+        return await OrcaBaseRef.InspectAsync(
+            CodeGit, repos, cancellationToken, Math.Clamp(Environment.ProcessorCount, 1, 8)).ConfigureAwait(false);
     }
 
     // Git hardened under the configured code root (the personal folder's parent), never one derived from --root.
