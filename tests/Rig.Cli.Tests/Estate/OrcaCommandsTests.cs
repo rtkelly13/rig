@@ -228,11 +228,11 @@ public sealed class OrcaCommandsTests : IDisposable
     }
 
     [Fact]
-    public async Task Worktrees_exits_2_when_the_estate_Orca_is_not_running()
+    public async Task Worktrees_exits_3_when_the_estate_Orca_is_not_running()
     {
         var (code, _, error) = await RunAsync(["estate", "orca-worktrees", "--all", "--orca-data", Estate]);
 
-        Assert.Equal(2, code);
+        Assert.Equal(OrcaCommand.Unavailable, code);
         Assert.Contains("is Orca running?", error, StringComparison.Ordinal);
     }
 

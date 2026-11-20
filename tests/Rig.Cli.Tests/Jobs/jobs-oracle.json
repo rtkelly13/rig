@@ -177,6 +177,31 @@
    "feature": null
   },
   {
+   "name": "estate-orca-worktrees",
+   "description": "Remove finished Orca worktrees through Orca: merged, landed, folder gone or half-deleted.",
+   "argv": [
+    "/rig/.venv/bin/rig",
+    "estate",
+    "orca-worktrees",
+    "--all",
+    "--apply",
+    "--orca-data",
+    "/orca/orca-personal"
+   ],
+   "triggers": [
+    "logon",
+    "tick"
+   ],
+   "cadence": "daily",
+   "timeout_minutes": 15,
+   "requires": [],
+   "idle_minutes": 0,
+   "retry_exit_codes": [
+    3
+   ],
+   "feature": null
+  },
+  {
    "name": "orca-sync",
    "description": "Apply config/orca.json to Orca: agent default args, repo colours, scripts, refs.",
    "argv": [
@@ -327,6 +352,7 @@
   "estate-risk",
   "estate-trim",
   "estate-orca",
+  "estate-orca-worktrees",
   "orca-sync",
   "otel-collector",
   "estate-prune-caches",
