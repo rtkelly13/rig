@@ -54,6 +54,8 @@ export type Action =
   | 'resumed'
   | 'note';
 export const readiness = ['Clean', 'Behind base', 'Blocked', 'Draft / unknown'];
+/** The owner half of `owner/name`: a GitHub user or organisation. */
+export const organisation = (repo: string) => repo.split('/')[0] ?? repo;
 export const ref = (item: Item) => `${item.repo}#${item.number}`;
 export const isDeferred = (entry: Entry) =>
   entry.events.filter((event) => ['deferred', 'resumed'].includes(event.action)).at(-1)?.action ===
@@ -120,6 +122,7 @@ export function filterEntries(entries: Entry[], view: QueueView, query: URLSearc
       inView(entry, view) &&
       (query.get('read') !== 'unread' || isUnread(entry)) &&
       (!search || `${ref(entry.item)} ${entry.item.title}`.toLowerCase().includes(search)) &&
+      (!query.get('org') || organisation(entry.item.repo) === query.get('org')) &&
       (!query.get('repo') || entry.item.repo === query.get('repo')) &&
       (!query.get('status') || String(entry.item.readiness) === query.get('status')),
   );
