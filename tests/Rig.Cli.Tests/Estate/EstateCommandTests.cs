@@ -215,6 +215,52 @@ public sealed class EstateCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task FastForward_dry_run_reports_drift_and_apply_updates_only_the_clean_root()
+    {
+        await BuildEstateAsync();
+        await Repos.CommitAsync(Safe, "second");
+        _ = await Repos.GitAsync(Safe, "push", "-q");
+        _ = await Repos.GitAsync(Safe, "reset", "-q", "--hard", "HEAD~1");
+        var behind = await Repos.GitAsync(Safe, "rev-parse", "HEAD");
+
+        var (dryCode, dry, _) = await RunAsync("ff", "--root", Code);
+
+        Assert.Equal(1, dryCode);
+        Assert.Contains("would-change", dry, StringComparison.Ordinal);
+        Assert.Contains("refused", dry, StringComparison.Ordinal);
+        Assert.Equal(behind, await Repos.GitAsync(Safe, "rev-parse", "HEAD"));
+
+        var (applyCode, applied, _) = await RunAsync("ff", "--root", Code, "--apply");
+
+        Assert.Equal(0, applyCode);
+        Assert.Contains("changed", applied, StringComparison.Ordinal);
+        Assert.Equal(await Repos.GitAsync(Safe, "rev-parse", "origin/main"), await Repos.GitAsync(Safe, "rev-parse", "HEAD"));
+
+        var (cleanCode, clean, _) = await RunAsync("ff", "--root", Code);
+
+        Assert.Equal(0, cleanCode);
+        Assert.DoesNotContain("would-change", clean, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task FastForward_repo_scopes_the_run_and_the_opposite_flags_are_an_error()
+    {
+        await BuildEstateAsync();
+
+        var (badCode, _, badError) = await RunAsync("ff", "--root", Code, "--dry-run", "--apply");
+        var (code, output, _) = await RunAsync("ff", "--root", Code, "--repo", "safe", "--json");
+
+        Assert.Equal(2, badCode);
+        Assert.Contains("--dry-run and --apply are opposites.", badError, StringComparison.Ordinal);
+        Assert.Equal(0, code);
+        var payload = JsonNode.Parse(output)!;
+        var change = Assert.Single(payload["changes"]!.AsArray())!;
+        Assert.Equal(Safe, change["subject"]!.GetValue<string>());
+        Assert.Equal("aligned", change["kind"]!.GetValue<string>());
+        Assert.Empty(payload["errors"]!.AsArray());
+    }
+
+    [Fact]
     public async Task Git_in_a_clone_under_the_code_roots_external_folder_runs_hardened()
     {
         var external = PathResolution.Resolve(await Repos.InitAsync(Path.Join(Code, "external", "upstream")));
