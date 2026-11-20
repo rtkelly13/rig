@@ -23,10 +23,11 @@ public sealed record LocalBaseState(string Branch, string Remote, int Ahead, int
 public static class OrcaBaseRef
 {
     /// <summary>
-    /// The <c>for-each-ref</c> fields read for every local branch: its short name, upstream and ahead/behind track.
-    /// One call answers every branch, so a doctor run makes one round trip per repo rather than three per ref.
+    /// The <c>for-each-ref</c> fields read for every local branch: its name without <c>refs/heads/</c>, upstream and
+    /// ahead/behind track. One call answers every branch, so a doctor run makes one round trip per repo rather than
+    /// three per ref.
     /// </summary>
-    public const string BranchFormat = "%(refname:short)%09%(upstream:short)%09%(upstream:track)";
+    public const string BranchFormat = "%(refname:lstrip=2)%09%(upstream:short)%09%(upstream:track)";
 
     /// <summary>
     /// The local branch and remote a configured base ref resolves to, or null when it names a tag or another ref
@@ -208,7 +209,7 @@ public static class OrcaBaseRef
 
         var ran = await git.RunAsync(
             repo.Path,
-            ["rev-list", "--count", "--left-right", $"{branch}...{remote}/{branch}"],
+            ["rev-list", "--count", "--left-right", $"refs/heads/{branch}...refs/remotes/{remote}/{branch}"],
             cancellationToken: cancellationToken).ConfigureAwait(false);
         return Parse(branch, remote, ran.OutOrEmpty);
     }

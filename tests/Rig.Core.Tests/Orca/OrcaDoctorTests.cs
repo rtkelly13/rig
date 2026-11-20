@@ -147,7 +147,38 @@ public sealed class OrcaDoctorTests
 
         Assert.Equal(CheckStatus.Warn, finding.Status);
         Assert.Equal("main is 3 commits behind origin/main", finding.Detail);
-        Assert.Contains("merge --ff-only origin/main", finding.Fix, StringComparison.Ordinal);
+        Assert.Equal(
+            "cd /code/rig && git fetch origin && git switch main && git merge --ff-only origin/main",
+            finding.Fix);
+    }
+
+    [Fact]
+    public void A_repair_hint_quotes_a_repository_path_with_spaces()
+    {
+        var policy = Repos(("rig", new RepoPolicy(BaseRef: "origin/main")));
+        var localBase = new Dictionary<string, LocalBaseState> { ["rig"] = new("main", "origin", 0, 1) };
+
+        var finding = Assert.Single(
+            DiagnoseLocal(policy, Snapshot(null, [Repo("rig", "/code/my repo", baseRef: "origin/main")]), localBase),
+            f => f.Check == "local base");
+
+        Assert.StartsWith("cd '/code/my repo' && git fetch origin", finding.Fix, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_diverged_local_main_is_not_told_to_fast_forward()
+    {
+        var policy = Repos(("rig", new RepoPolicy(BaseRef: "origin/main")));
+        var localBase = new Dictionary<string, LocalBaseState> { ["rig"] = new("main", "origin", 1, 2) };
+
+        var finding = Assert.Single(
+            DiagnoseLocal(policy, Snapshot(null, [Repo("rig", "/code/rig", baseRef: "origin/main")]), localBase),
+            f => f.Check == "local base");
+
+        Assert.Equal(CheckStatus.Warn, finding.Status);
+        Assert.Equal("main is 1 commit ahead and 2 commits behind origin/main", finding.Detail);
+        Assert.Contains("reconcile them manually", finding.Fix, StringComparison.Ordinal);
+        Assert.DoesNotContain("merge --ff-only", finding.Fix, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -114,11 +114,12 @@ upstream is the policy ref, the `%(upstream:track)` counts are used directly; ot
 `git rev-list --count --left-right <branch>...<remote>/<branch>` compares them. Repos are read
 with bounded concurrency, so the cost is one round trip per repo rather than a chain per ref.
 When the local branch is behind (`behind > 0`) it reports a **warn** on `repo <name>` / `local base`,
-naming the commits and the fast-forward command:
+naming the commits. A branch that is only behind gets a directory-scoped fetch, switch and fast-forward
+command; a diverged branch says to reconcile the local commits manually instead:
 
 ```text
 repo rig  local base  warn  main is 3 commits behind origin/main
-fix: git -C ~/code/personal/rig fetch origin && git -C ~/code/personal/rig merge --ff-only origin/main
+fix: cd ~/code/personal/rig && git fetch origin && git switch main && git merge --ff-only origin/main
 ```
 
 A missing local branch or remote-tracking ref is not reported: there is nothing to compare. The

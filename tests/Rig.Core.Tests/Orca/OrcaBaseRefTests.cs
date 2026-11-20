@@ -10,6 +10,12 @@ public sealed class OrcaBaseRefTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
+    public void The_branch_format_strips_the_ref_namespace()
+    {
+        Assert.Contains("%(refname:lstrip=2)", OrcaBaseRef.BranchFormat, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Counts_parse_ahead_then_behind()
     {
         Assert.Equal(new LocalBaseState("main", "origin", 2, 3), OrcaBaseRef.Parse("main", "origin", "2\t3\n"));
@@ -63,7 +69,7 @@ public sealed class OrcaBaseRefTests
     {
         var proc = new FakeProc()
             .AnswerIn("/repos/rig", new Ran(0, "main\tupstream/main\t[ahead 9, behind 9]\n", string.Empty), "git", "for-each-ref")
-            .AnswerIn("/repos/rig", new Ran(0, "1\t2\n", string.Empty), "git", "rev-list", "--count", "--left-right", "main...origin/main");
+            .AnswerIn("/repos/rig", new Ran(0, "1\t2\n", string.Empty), "git", "rev-list", "--count", "--left-right", "refs/heads/main...refs/remotes/origin/main");
 
         var states = await OrcaBaseRef.InspectAsync(new Git(proc, "/code"), [("rig", "/repos/rig", "origin/main")], Token);
 

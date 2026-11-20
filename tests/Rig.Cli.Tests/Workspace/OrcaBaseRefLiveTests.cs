@@ -105,7 +105,7 @@ public sealed class OrcaBaseRefLiveTests
     }
 
     private static Task<Ran> OrcaAsync(SystemProc proc, CancellationToken cancellationToken, params string[] args) =>
-        proc.RunAsync(new ProcRequest(["orca", .. args]), cancellationToken);
+        proc.RunAsync(new ProcRequest(["orca", .. args]) { Timeout = TimeSpan.FromSeconds(120) }, cancellationToken);
 
     private static string RepoRoot()
     {
