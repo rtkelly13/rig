@@ -160,7 +160,7 @@ public sealed class OrcaDoctorTests
             DiagnoseLocal(policy, Snapshot(null, [Repo("rig", "/code/rig", baseRef: "origin/main")]), localBase),
             f => f.Check == "local base");
 
-        Assert.Equal((CheckStatus.Ok, "main is level with origin/main"), (finding.Status, finding.Detail));
+        Assert.Equal((CheckStatus.Ok, "main is 1 commit ahead of origin/main"), (finding.Status, finding.Detail));
         Assert.Empty(finding.Fix);
     }
 

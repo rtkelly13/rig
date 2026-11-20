@@ -267,20 +267,26 @@ public static class OrcaDoctor
         const string check = "local base";
         if (state.Behind == 0)
         {
-            return new($"repo {name}", check, CheckStatus.Ok, $"{state.Branch} is level with {state.Tracking}");
+            var detail = state.Ahead == 0
+                ? $"{state.Branch} is level with {state.Tracking}"
+                : $"{state.Branch} is {Commits(state.Ahead)} ahead of {state.Tracking}";
+            return new($"repo {name}", check, CheckStatus.Ok, detail);
         }
 
-        var commits = state.Behind == 1
-            ? "1 commit"
-            : string.Create(CultureInfo.InvariantCulture, $"{state.Behind} commits");
+        var behind = state.Ahead > 0
+            ? $"{state.Branch} is {Commits(state.Ahead)} ahead and {Commits(state.Behind)} behind {state.Tracking}"
+            : $"{state.Branch} is {Commits(state.Behind)} behind {state.Tracking}";
         var path = OrcaPaths.Posix(repo.Path);
         return new(
             $"repo {name}",
             check,
             CheckStatus.Warn,
-            $"{state.Branch} is {commits} behind {state.Tracking}",
+            behind,
             $"git -C {path} fetch {state.Remote} && git -C {path} merge --ff-only {state.Tracking}");
     }
+
+    private static string Commits(int count) =>
+        count == 1 ? "1 commit" : string.Create(CultureInfo.InvariantCulture, $"{count} commits");
 
     private static OrcaFinding ScriptFinding(string name, string kind, string want, HookSettings? local, Scripts? shared)
     {
