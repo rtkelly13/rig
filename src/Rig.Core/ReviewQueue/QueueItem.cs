@@ -18,9 +18,13 @@ namespace Rig.Core.ReviewQueue;
 /// <param name="InScope">Whether the repository is still managed.</param>
 /// <param name="Body">Description, absent in old snapshots.</param>
 /// <param name="Facts">GitHub metadata; absence means not fetched, never success.</param>
+/// <param name="Additions">Lines a PR adds; absent for issues and for snapshots taken before it was recorded.</param>
+/// <param name="Deletions">Lines a PR deletes; absent for issues and for snapshots taken before it was recorded.</param>
 public sealed record QueueItem(
     string Repo, int Number, string Kind, string Title, string State, string Created, string Updated,
-    string Head = "", int Priority = 4, int Readiness = 3, int Lines = 0, bool InScope = true, string? Body = null, QueueFacts? Facts = null)
+    string Head = "", int Priority = 4, int Readiness = 3, int Lines = 0, bool InScope = true, string? Body = null, QueueFacts? Facts = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Additions = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Deletions = null)
 {
     /// <summary>The stable local key.</summary>
     [JsonIgnore]

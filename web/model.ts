@@ -12,6 +12,9 @@ export interface Item {
   priority: number;
   readiness: number;
   lines: number;
+  /** Absent for issues and for snapshots taken before the split was recorded. */
+  additions?: number;
+  deletions?: number;
   in_scope: boolean;
   body: string | null;
   facts?: Facts | null;

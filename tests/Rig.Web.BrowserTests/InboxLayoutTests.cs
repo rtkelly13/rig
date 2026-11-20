@@ -242,6 +242,17 @@ public sealed class InboxLayoutTests(BrowserFixture fixture) : InboxTest(fixture
     }
 
     [Fact]
+    public async Task A_pr_row_shows_its_additions_and_deletions_in_colour()
+    {
+        Save(new QueueItem("acme/tool", 4, "pr", "Bump the tool", "OPEN", "2026-01-04T00:00:00Z", "2026-01-04T00:00:00Z", new string('d', 40), 1, 0, 1240) { Additions = 1200, Deletions = 40 });
+        await Page.GotoAsync(Origin + "/triage/inbox");
+        var delta = Page.Locator(".queue-row", new() { HasText = "Bump the tool" }).GetByLabel("1,200 lines added, 40 lines deleted");
+        await Expect(delta).ToHaveTextAsync("+1,200−40");
+        var colours = await delta.EvaluateAsync<string[]>("d => [...d.children].map(c => getComputedStyle(c).color)");
+        Assert.NotEqual(colours[0], colours[1]);
+    }
+
+    [Fact]
     public async Task Filter_selects_keep_the_parent_open_and_fit_both_themes()
     {
         await Page.GotoAsync(Origin + "/triage/inbox/owner/repo/1");

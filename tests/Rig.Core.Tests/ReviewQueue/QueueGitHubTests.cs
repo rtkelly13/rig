@@ -90,6 +90,19 @@ public sealed class QueueGitHubTests : IDisposable
         Assert.Equal(2, repeated.Calls.Count);
     }
 
+    [Fact]
+    public async Task A_pr_keeps_additions_and_deletions_apart_and_an_omitted_split_stays_unknown()
+    {
+        const string node = """{"number":1,"title":"PR","state":"OPEN","createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-02T00:00:00Z","additions":12,"deletions":3}""";
+        var observed = await new QueueGitHub(new FakeGitHub().On("POST", "graphql", Lookup(node))).ObserveAsync(Item(), TestContext.Current.CancellationToken);
+        Assert.Equal((12, 3, 15), (observed.Additions, observed.Deletions, observed.Lines));
+        Assert.Contains("\"additions\":12", QueueJson.EncodeItem(observed), StringComparison.Ordinal);
+
+        var unknown = await new QueueGitHub(new FakeGitHub().On("POST", "graphql", Lookup(Node(1)))).ObserveAsync(Item(), TestContext.Current.CancellationToken);
+        Assert.Equal((null, null), (unknown.Additions, unknown.Deletions));
+        Assert.DoesNotContain("additions", QueueJson.EncodeItem(unknown), StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("{}")]
     [InlineData("null")]
