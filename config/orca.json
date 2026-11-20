@@ -23,7 +23,7 @@
       "path": "~/code/personal/rig",
       "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\npnpm install",
       "external_worktree_visibility": "show",
-      "base_ref": "main",
+      "base_ref": "origin/main",
       "worktree_base_path": "temp",
       "color": "#6366f1",
       "icon": "SquareTerminal"
@@ -32,7 +32,7 @@
       "path": "~/code/rtkelly-labs/design-system",
       "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\npnpm install",
       "external_worktree_visibility": "show",
-      "base_ref": "main",
+      "base_ref": "origin/main",
       "worktree_base_path": "temp",
       "color": "#ec4899",
       "icon": "Palette"
@@ -41,7 +41,7 @@
       "path": "~/code/personal/blog",
       "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\npnpm install",
       "external_worktree_visibility": "hide",
-      "base_ref": "main",
+      "base_ref": "origin/main",
       "worktree_base_path": "temp",
       "color": "#14b8a6",
       "icon": "Globe"
@@ -50,7 +50,7 @@
       "path": "~/code/rtkelly-labs/mermaid-toolkit",
       "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\npnpm install",
       "external_worktree_visibility": "hide",
-      "base_ref": "main",
+      "base_ref": "origin/main",
       "worktree_base_path": "temp",
       "color": "#f97316",
       "icon": "Shapes"
@@ -70,7 +70,7 @@
       "color": "#38bdf8",
       "icon": "Database",
       "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\ngit submodule update --init\ndotnet restore Iceberg.Net.slnx\nuv sync --project interop",
-      "base_ref": "main",
+      "base_ref": "origin/main",
       "worktree_base_path": "temp"
     },
     "Diffra": {
@@ -137,7 +137,7 @@
       "path": "~/code/rtkelly-labs/oxbow",
       "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md",
       "external_worktree_visibility": "show",
-      "base_ref": "main",
+      "base_ref": "origin/main",
       "worktree_base_path": "temp",
       "color": "#0e7490",
       "icon": "emoji:🌊"

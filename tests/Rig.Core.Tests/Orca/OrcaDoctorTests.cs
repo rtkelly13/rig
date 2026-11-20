@@ -125,6 +125,45 @@ public sealed class OrcaDoctorTests
         Assert.Equal("orca repo add --path /code-root/personal/elsewhere", byKey[("repo elsewhere", "registered")].Fix);
     }
 
+    [Fact]
+    public void A_remote_tracking_base_ref_is_checked_like_a_local_one()
+    {
+        var policy = Repos(("rig", new RepoPolicy(BaseRef: "origin/main")));
+
+        var finding = Assert.Single(Diagnose(policy, Snapshot(null, [Repo("rig", "/code/rig", baseRef: "origin/main")])), f => f.Check == "base ref");
+
+        Assert.Equal((CheckStatus.Ok, "origin/main"), (finding.Status, finding.Detail));
+    }
+
+    [Fact]
+    public void A_stale_local_main_warns_with_a_fast_forward_fix()
+    {
+        var policy = Repos(("rig", new RepoPolicy(BaseRef: "origin/main")));
+        var localBase = new Dictionary<string, LocalBaseState> { ["rig"] = new("main", "origin", 0, 3) };
+
+        var finding = Assert.Single(
+            DiagnoseLocal(policy, Snapshot(null, [Repo("rig", "/code/rig", baseRef: "origin/main")]), localBase),
+            f => f.Check == "local base");
+
+        Assert.Equal(CheckStatus.Warn, finding.Status);
+        Assert.Equal("main is 3 commits behind origin/main", finding.Detail);
+        Assert.Contains("merge --ff-only origin/main", finding.Fix, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_local_main_level_with_origin_is_ok()
+    {
+        var policy = Repos(("rig", new RepoPolicy(BaseRef: "origin/main")));
+        var localBase = new Dictionary<string, LocalBaseState> { ["rig"] = new("main", "origin", 1, 0) };
+
+        var finding = Assert.Single(
+            DiagnoseLocal(policy, Snapshot(null, [Repo("rig", "/code/rig", baseRef: "origin/main")]), localBase),
+            f => f.Check == "local base");
+
+        Assert.Equal((CheckStatus.Ok, "main is level with origin/main"), (finding.Status, finding.Detail));
+        Assert.Empty(finding.Fix);
+    }
+
     public static TheoryData<string?, string, CheckStatus, string> SetupCases => new()
     {
         { "uv sync", "{}", CheckStatus.Ok, "from orca.yaml" },

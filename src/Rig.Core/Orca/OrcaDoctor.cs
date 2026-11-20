@@ -60,9 +60,14 @@ public static class OrcaDoctor
     /// <summary>The backups Orca writes beside its live store.</summary>
     public const string BackupGlob = "profile-state.db.backup.*.db";
 
-    /// <summary>Every difference between the policy and Orca, plus local managed projects Orca has not registered.</summary>
+    /// <summary>
+    /// Every difference between the policy and Orca, plus local managed projects Orca has not registered.
+    /// <paramref name="localBase"/> carries each repo's local branch against its remote-tracking ref, or is null to
+    /// skip that check.
+    /// </summary>
     public static IReadOnlyList<OrcaFinding> Diagnose(
-        OrcaPolicy policy, OrcaSnapshot snapshot, OrcaPaths paths, IReadOnlyCollection<string> managedProjects, DateTimeOffset now)
+        OrcaPolicy policy, OrcaSnapshot snapshot, OrcaPaths paths, IReadOnlyCollection<string> managedProjects, DateTimeOffset now,
+        IReadOnlyDictionary<string, LocalBaseState>? localBase = null)
     {
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -75,7 +80,7 @@ public static class OrcaDoctor
             findings.Add(new("agents", "launch args", CheckStatus.Skip, "Orca is not running to ask"));
         }
 
-        findings.AddRange(RepoFindings(policy, snapshot.Repos, paths, managedProjects));
+        findings.AddRange(RepoFindings(policy, snapshot.Repos, paths, managedProjects, localBase));
         return findings;
     }
 
@@ -165,7 +170,9 @@ public static class OrcaDoctor
         return findings;
     }
 
-    private static List<OrcaFinding> RepoFindings(OrcaPolicy policy, IReadOnlyList<OrcaRepo>? repos, OrcaPaths paths, IReadOnlyCollection<string> managedProjects)
+    private static List<OrcaFinding> RepoFindings(
+        OrcaPolicy policy, IReadOnlyList<OrcaRepo>? repos, OrcaPaths paths, IReadOnlyCollection<string> managedProjects,
+        IReadOnlyDictionary<string, LocalBaseState>? localBase)
     {
         if (repos is null)
         {
@@ -179,6 +186,11 @@ public static class OrcaDoctor
             if (byName.GetValueOrDefault(name) is { } repo)
             {
                 findings.AddRange(RepoPolicyFindings(name, repo, want));
+                if (localBase?.GetValueOrDefault(name) is { } state)
+                {
+                    findings.Add(LocalBaseFinding(name, repo, state));
+                }
+
                 continue;
             }
 
@@ -248,6 +260,26 @@ public static class OrcaDoctor
         }
 
         return findings;
+    }
+
+    private static OrcaFinding LocalBaseFinding(string name, OrcaRepo repo, LocalBaseState state)
+    {
+        const string check = "local base";
+        if (state.Behind == 0)
+        {
+            return new($"repo {name}", check, CheckStatus.Ok, $"{state.Branch} is level with {state.Tracking}");
+        }
+
+        var commits = state.Behind == 1
+            ? "1 commit"
+            : string.Create(CultureInfo.InvariantCulture, $"{state.Behind} commits");
+        var path = OrcaPaths.Posix(repo.Path);
+        return new(
+            $"repo {name}",
+            check,
+            CheckStatus.Warn,
+            $"{state.Branch} is {commits} behind {state.Tracking}",
+            $"git -C {path} fetch {state.Remote} && git -C {path} merge --ff-only {state.Tracking}");
     }
 
     private static OrcaFinding ScriptFinding(string name, string kind, string want, HookSettings? local, Scripts? shared)
