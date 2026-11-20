@@ -2105,6 +2105,18 @@ button:disabled {
   color: var(--ds-text-muted);
   font: 10px var(--ds-font-mono);
 }
+.line-delta {
+  display: inline-flex;
+  gap: 0.5em;
+  font-family: var(--ds-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.line-delta-added {
+  color: var(--ds-intent-success);
+}
+.line-delta-deleted {
+  color: var(--ds-intent-danger);
+}
 .item-kind {
   display: inline-flex;
   color: var(--ds-accent-primary);

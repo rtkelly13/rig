@@ -1,3 +1,4 @@
+import { LineDelta } from './LineDelta';
 import { Badge, Button, TextArea } from '@rtkelly-labs/design-system';
 import { useEffect, useState } from 'react';
 import {
@@ -260,7 +261,7 @@ export function Detail({
           <dt>{item.kind === 'pr' ? 'Changed lines' : 'Priority'}</dt>
           <dd>
             {item.kind === 'pr'
-              ? item.lines.toLocaleString()
+              ? <LineDelta item={item} />
               : item.priority < 4
                 ? `P${item.priority}`
                 : 'Unlabelled'}

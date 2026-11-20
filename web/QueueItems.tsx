@@ -1,3 +1,4 @@
+import { LineDelta } from './LineDelta';
 import { Badge } from '@rtkelly-labs/design-system';
 import { Icon } from './Icon';
 import { SignalChip } from './Signals';
@@ -86,7 +87,7 @@ export function QueueItems({
               <SignalChip key={signal.key} signal={signal} />
             ))}
             {entry.item.kind === 'pr' ? (
-              <small>{entry.item.lines.toLocaleString()} lines</small>
+              <LineDelta item={entry.item} />
             ) : null}
           </div>
         </div>

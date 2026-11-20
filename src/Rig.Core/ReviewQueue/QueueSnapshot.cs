@@ -48,7 +48,8 @@ internal static class QueueSnapshot
         return new QueueItem(repo, JsonShape.Int(node, "number"), kind, RequiredText(node, "title"), RequiredText(node, "state"),
             RequiredText(node, "createdAt"), RequiredText(node, "updatedAt"), JsonShape.String(node, "headRefOid"), priority,
             kind == "pr" ? readiness : 0, Integer(node, "additions") + Integer(node, "deletions"), Body: JsonShape.OptionalString(node, "body"),
-            Facts: Facts(node, names, draft, Total(labels)));
+            Facts: Facts(node, names, draft, Total(labels)),
+            Additions: kind == "pr" ? JsonShape.OptionalInt(node, "additions") : null, Deletions: kind == "pr" ? JsonShape.OptionalInt(node, "deletions") : null);
     }
 
     private static QueueFacts Facts(JsonObject node, List<string> labels, bool draft, int labelTotal)
