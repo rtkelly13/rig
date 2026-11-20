@@ -234,8 +234,8 @@ public sealed class TraceFileWriterTests : IDisposable
         writer.FlushPeriodically(TimeSpan.FromHours(1));
         _source.StartActivity("a")!.Dispose();
 
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!File.Exists(DayFile) && DateTime.UtcNow < deadline)
+        var deadline = TimeProvider.System.GetUtcNow().UtcDateTime.AddSeconds(10);
+        while (!File.Exists(DayFile) && TimeProvider.System.GetUtcNow().UtcDateTime < deadline)
         {
             Thread.Sleep(10);
         }

@@ -116,7 +116,7 @@ internal sealed partial class DesktopWorkspaceCommand
         var logPath = Path.Join(logDirectory, "align.log");
         void Report(string message, bool echo)
         {
-            File.AppendAllText(logPath, $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} {message}\n");
+            File.AppendAllText(logPath, $"{TimeProvider.System.GetLocalNow():yyyy-MM-dd HH:mm:ss} {message}\n");
             if (echo)
             {
                 host.Output.WriteLine(message);
@@ -330,7 +330,7 @@ internal sealed partial class DesktopWorkspaceCommand
 
         void Log(string message)
         {
-            File.AppendAllText(logPath, $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} {message}\n");
+            File.AppendAllText(logPath, $"{TimeProvider.System.GetLocalNow():yyyy-MM-dd HH:mm:ss} {message}\n");
             host.Output.WriteLine(message);
         }
 

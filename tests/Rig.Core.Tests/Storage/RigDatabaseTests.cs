@@ -100,7 +100,7 @@ public sealed class RigDatabaseTests : IDisposable
         {
             var path = Path.Join(backupDir, name);
             await File.WriteAllTextAsync(path, "old", Token);
-            File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddDays(-age));
+            File.SetLastWriteTimeUtc(path, TimeProvider.System.GetUtcNow().UtcDateTime.AddDays(-age));
         }
 
         var created = RigDatabase.Backup(Db, backupDir, TimeProvider.System, maxBackups: 2);

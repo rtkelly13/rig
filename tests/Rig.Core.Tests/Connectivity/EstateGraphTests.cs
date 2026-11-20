@@ -214,7 +214,7 @@ public sealed class EstateGraphTests : IDisposable
     {
         await _estate.CheckoutAsync("a", new Dictionary<string, string> { ["package.json"] = """{"name":"a"}""" });
         _estate.Owned("a");
-        var now = new FixedTime(DateTimeOffset.UtcNow);
+        var now = new FixedTime(TimeProvider.System.GetUtcNow());
         var graph = _estate.Graph(now);
 
         var first = await graph.LoadAsync(_estate.Registry, _estate.Personal, refresh: false, Token);
@@ -239,7 +239,7 @@ public sealed class EstateGraphTests : IDisposable
         var rebuilt = await _estate.Graph().LoadAsync(_estate.Registry, _estate.Personal, refresh: false, Token);
         Assert.Single(rebuilt.Projects);
 
-        var later = new FixedTime(DateTimeOffset.UtcNow + EstateGraph.Reuse + TimeSpan.FromSeconds(1));
+        var later = new FixedTime(TimeProvider.System.GetUtcNow() + EstateGraph.Reuse + TimeSpan.FromSeconds(1));
         _estate.Owned("a", "b");
         Assert.Equal(2, (await _estate.Graph(later).LoadAsync(_estate.Registry, _estate.Personal, refresh: false, Token)).Projects.Count);
     }

@@ -232,15 +232,9 @@ public static class OrcaUpdate
     public static bool WaitForInstaller(WindowInventory inventory, TimeSpan timeout, Action<string>? log = null)
     {
         ArgumentNullException.ThrowIfNull(inventory);
-        var deadline = DateTimeOffset.UtcNow + timeout;
-        while (DateTimeOffset.UtcNow < deadline)
+        if (PollUntil(() => !InstallerRunning(inventory), timeout))
         {
-            if (!InstallerRunning(inventory))
-            {
-                return true;
-            }
-
-            Thread.Sleep(Poll);
+            return true;
         }
 
         log?.Invoke($"Orca installer still running after {timeout.TotalSeconds:F0}s; continuing anyway");
@@ -393,15 +387,9 @@ public static class OrcaUpdate
         }
 
         log?.Invoke($"Requested WM_CLOSE for {handles.Count} Orca window(s)");
-        var deadline = DateTimeOffset.UtcNow + timeout;
-        while (DateTimeOffset.UtcNow < deadline)
+        if (PollUntil(() => inventory.ProcessIdsForImageName(ProcessName).Count == 0, timeout))
         {
-            if (inventory.ProcessIdsForImageName(ProcessName).Count == 0)
-            {
-                return $"closed {handles.Count} Orca window(s) gracefully";
-            }
-
-            Thread.Sleep(Poll);
+            return $"closed {handles.Count} Orca window(s) gracefully";
         }
 
         var survivors = inventory.ProcessIdsForImageName(ProcessName);
@@ -422,12 +410,16 @@ public static class OrcaUpdate
     private static bool InstallerRunning(WindowInventory inventory) =>
         inventory.RunningProcessNames().Any(name => name.Contains(InstallerHint, StringComparison.Ordinal));
 
-    private static bool InstallerAppears(WindowInventory inventory, TimeSpan timeout)
+    private static bool InstallerAppears(WindowInventory inventory, TimeSpan timeout) =>
+        PollUntil(() => InstallerRunning(inventory), timeout);
+
+    // Measured on the monotonic clock, so a wall-clock change mid-wait neither ends it early nor stretches it.
+    private static bool PollUntil(Func<bool> condition, TimeSpan timeout)
     {
-        var deadline = DateTimeOffset.UtcNow + timeout;
-        while (DateTimeOffset.UtcNow < deadline)
+        var start = TimeProvider.System.GetTimestamp();
+        while (TimeProvider.System.GetElapsedTime(start) < timeout)
         {
-            if (InstallerRunning(inventory))
+            if (condition())
             {
                 return true;
             }
