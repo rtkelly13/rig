@@ -1,9 +1,9 @@
 # Machine jobs (`rig jobs`)
 
 Everything that keeps this machine aligned runs from one registry
-(`src/Rig.Core/Jobs/JobRegistry.cs`). Two scheduled tasks drive it, so there
-is one place to see what runs at logon, what runs every 15 minutes, and what runs
-daily.
+(`src/Rig.Core/Jobs/JobRegistry.cs`). Windows Task Scheduler drives it with two
+tasks, macOS launchd with two LaunchAgents, so there is one place to see what runs
+at logon, what runs every 15 minutes, and what runs daily.
 
 ```bash
 rig jobs status                        # each job: when it runs, last outcome, whether the next tick takes it
@@ -30,7 +30,7 @@ Explorer's shell window and deletes trace files older than 14 days. A plain `rig
 Both sides read and write the same `state.json` and `last-<trigger>.json`, held byte for byte to
 `tests/Rig.Cli.Tests/Jobs/jobs-oracle.json`, which Python records.
 
-## Scheduled tasks
+## Windows: scheduled tasks
 
 `jobs install` registers three tasks in the Task Scheduler folder
 `\Rig\`, and removes the tasks they replace: the separate `Workspace Restore`, `Chrome Tabs Organise`, `Chrome Tabs Prune` and `Workspace Display Guard`, and the same three tasks under `\Shared Utilities\`, the folder used before the repo was renamed:
@@ -83,16 +83,44 @@ least-privilege identity, the tick's interval and the guard's restarts. The othe
 `WIN-JOBS` acceptance and estate rollout remain pending separate Windows evidence; these source
 changes do not modify the machine's installed tasks.
 
+## macOS: LaunchAgents
+
+On macOS, `jobs install` writes two LaunchAgents to `~/Library/LaunchAgents` and loads them with
+`launchctl bootstrap`:
+
+| Agent | When | Runs |
+|:------|:-----|:-----|
+| `com.rtkelly13.rig.jobs.logon` | once at sign-in (`RunAtLoad`) | `jobs run --trigger logon --scheduled` |
+| `com.rtkelly13.rig.jobs.tick` | at sign-in and every 15 minutes (`RunAtLoad` + `StartInterval` 900) | `jobs run --trigger tick --scheduled` |
+
+There is no macOS display guard: the guard moves Windows virtual desktops, so it is not registered.
+Both agents are one-shot launches of the published `rig`, not resident processes. Each plist records the
+installing shell's `PATH`, because launchd's default would not find `git`, `gh` or `uv`; its output goes to
+`~/Library/Logs/rig-jobs-<trigger>.log`. They run as background housekeeping (`ProcessType` `Background`,
+`LowPriorityIO`, `Nice` 10).
+
+`jobs status` reports an agent missing when `launchctl print gui/<uid>/<label>` fails, and `jobs uninstall`
+boots each agent out and deletes its plist. Because loading an agent starts it, the first `jobs install` also
+performs a logon run straight away.
+
+The same guards apply as on Windows: install refuses a linked worktree, and it refuses, changing no agent,
+when the published `rig` is missing. `--launcher` and `--pythonw` are Windows-only and hidden here:
+launchd has no console to hide. `--start`/`--no-start` are accepted and do nothing.
+
+`JobsLaunchAgentTests` pins the policy: each plist's trigger command, the tick's interval, that only the tick
+repeats, the working directory, the log and `PATH` it inherits, and the `launchctl` calls that install,
+report and remove them. Native `MAC-JOBS` acceptance remains pending separate evidence.
+
 ## Jobs
 
 A run takes its jobs in registry order, one at a time:
 
 | Job | Triggers | Cadence | What it does |
 |:----|:---------|:--------|:-------------|
-| `restore` | logon | every run | `workspace restore --defer-logon-commands` against the plan |
+| `restore` (Windows) | logon | every run | `workspace restore --defer-logon-commands` against the plan |
 | `claude-sessions` | logon | every run, flag `claude-session-restore` | `claude-sessions startup`: resume sessions the shutdown cut off, start `claude` in the deferred terminals |
 | `chrome-organise` | tick | every run | `chrome-tabs organise --unattended`, waiting up to 10 minutes for an idle machine |
-| `align` | tick | every run, idle 3 min | `workspace align`: put open plan windows back on their desktop and slot, launching nothing |
+| `align` (Windows) | tick | every run, idle 3 min | `workspace align`: put open plan windows back on their desktop and slot, launching nothing |
 | `estate-sync` | logon, tick | daily | `estate sync`: fetch and prune every clone under the code root (`C:\code`: personal, the org and work folders, external) |
 | `estate-risk` | logon, tick | daily | `estate risk`: report uncommitted or unpushed work across the code root |
 | `estate-trim` | logon, tick | daily | `estate trim --apply`: delete `node_modules`, venvs and build output in worktrees idle 7+ days, across the code root |
@@ -110,6 +138,8 @@ A run takes its jobs in registry order, one at a time:
   runtime copy, which starts the C# CLI with `dotnet run`. The task's pythonw inherits the logged-on
   user's environment, so `dotnet` must be on the user or system `PATH` (the .NET installer puts
   `C:\Program Files\dotnet` on the system one). Without it those jobs fail and say so in their log.
+- **Platform.** `restore` and `align` drive the Windows desktop, so the registry on macOS and Linux leaves
+  them out; every other job listed here runs on both platforms.
 - **Optional jobs.** A job whose required paths are missing is skipped, not failed.
   `worktree-reclaim` and `workspace-maintain` run the work workspace repo's own
   CLI, and are registered only when `tools.estate.workspace_repo` in
@@ -174,7 +204,8 @@ Every `coordinator.log` line names it, it heads that run's section of each job l
 
 ## Where things live
 
-Everything is under `%LOCALAPPDATA%\rig\jobs\`:
+On Windows everything is under `%LOCALAPPDATA%\rig\jobs\`; on macOS the same files are under
+`~/Library/Application Support/rig/jobs/`:
 
 - `coordinator.log`: each scheduled run's decisions, which jobs ran or were skipped and why, and why a job failed.
 

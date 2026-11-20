@@ -90,7 +90,7 @@ public sealed class JobsCommandTests : IDisposable
         _out.GetStringBuilder().Clear();
 
         Assert.Equal(1, await Run(null, "uninstall"));
-        Assert.Equal("jobs uninstall requires Windows.\n", _out.ToString());
+        Assert.Equal("jobs uninstall requires Windows or macOS.\n", _out.ToString());
     }
 
     [Theory]
@@ -122,6 +122,36 @@ public sealed class JobsCommandTests : IDisposable
 
         Assert.Equal((launcher, pythonw), _launch);
         Assert.Contains($"Launcher: {shown}\n", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Macos_install_registers_the_two_launch_agents_and_starts_nothing()
+    {
+        var tasks = new FakeTasks { Names = JobsLaunchAgent.All, Retired = [], StartsAfterInstall = null, Platform = JobsPlatform.MacOS };
+        var host = Host(tasks) with
+        {
+            InstallTarget = (_, _, _) => Task.FromResult(new JobsInstallTarget(_temp.Path, "plan.json", "rig")),
+        };
+
+        Assert.Equal(0, await new JobsCommand(host, _out).Build().Parse(["install"]).InvokeAsync(
+            new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken));
+
+        Assert.Equal(JobsLaunchAgent.All, tasks.Registered);
+        Assert.Empty(tasks.Started);
+        Assert.Empty(tasks.Deleted);
+        Assert.Contains($"Registered {JobsLaunchAgent.Tick}\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Runs from: rig\n", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Launcher:", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Macos_hides_the_windows_launchers()
+    {
+        var install = new JobsCommand(Host(new FakeTasks { Platform = JobsPlatform.MacOS }), _out).Build()
+            .Subcommands.Single(command => command.Name == "install");
+
+        Assert.True(install.Options.Single(option => option.Name == "--launcher").Hidden);
+        Assert.True(install.Options.Single(option => option.Name == "--pythonw").Hidden);
     }
 
     [Fact]
@@ -193,7 +223,7 @@ public sealed class JobsCommandTests : IDisposable
     public async Task Install_requires_windows()
     {
         Assert.Equal(1, await Run(null, "install"));
-        Assert.Equal("jobs install requires Windows.\n", _out.ToString());
+        Assert.Equal("jobs install requires Windows or macOS.\n", _out.ToString());
     }
 
     [Fact]
@@ -465,7 +495,7 @@ public sealed class JobsCommandTests : IDisposable
         new("never", string.Empty, ["x"], new HashSet<JobTrigger> { JobTrigger.Logon }, JobCadence.EveryRun, 5),
     ];
 
-    private JobsHost Host(IScheduledTasks? tasks) => new(
+    private JobsHost Host(IJobsScheduler? tasks) => new(
         _temp.Path,
         Registry,
         () => _flags(),
@@ -498,7 +528,7 @@ public sealed class JobsCommandTests : IDisposable
 
     private (JobsLauncher Launcher, string? Pythonw)? _launch;
 
-    private Task<int> Run(IScheduledTasks? tasks, params string[] args) =>
+    private Task<int> Run(IJobsScheduler? tasks, params string[] args) =>
         new JobsCommand(Host(tasks), _out).Build().Parse(args)
             .InvokeAsync(new InvocationConfiguration { Output = _out, Error = _out }, TestContext.Current.CancellationToken);
 
@@ -551,21 +581,25 @@ public sealed class JobsCommandTests : IDisposable
         }
     }
 
-    private sealed class FakeTasks(params string[] missing) : IScheduledTasks
+    private sealed class FakeTasks(params string[] missing) : IJobsScheduler
     {
         public List<string> Deleted { get; } = [];
         public List<string> Registered { get; } = [];
         public List<string> Started { get; } = [];
         public string? FailAt { get; init; }
+        public JobsPlatform Platform { get; init; } = JobsPlatform.Windows;
+        public IReadOnlyList<string> Names { get; init; } = CoordinatorTasks.All;
+        public IReadOnlyList<string> Retired { get; init; } = CoordinatorTasks.Retired;
+        public string? StartsAfterInstall { get; init; } = CoordinatorTasks.Guard;
 
-        public Task RegisterAsync(string name, string xml, CancellationToken cancellationToken = default)
+        public Task RegisterAsync(string name, JobsInstallTarget target, string userId, DateTimeOffset start, CancellationToken cancellationToken = default)
         {
             if (name == FailAt)
             {
                 throw new InvalidOperationException("registration refused");
             }
 
-            Assert.Contains("InteractiveToken", xml, StringComparison.Ordinal);
+            Assert.Equal("CORP\\me & you", userId);
             Registered.Add(name);
             return Task.CompletedTask;
         }

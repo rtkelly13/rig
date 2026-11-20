@@ -1,6 +1,6 @@
 # Runtime copies for the scheduled tasks
 
-The background tasks (`jobs install`'s Logon, Tick and Display Guard tasks) run from a pinned copy of one commit, not from a checkout. Pulling,
+The background tasks (`jobs install`'s Logon, Tick and Display Guard tasks on Windows, Logon and Tick LaunchAgents on macOS) run from a pinned copy of one commit, not from a checkout. Pulling,
 switching branches, a half-finished edit or a merge from another machine changes
 nothing until you install a new copy.
 
