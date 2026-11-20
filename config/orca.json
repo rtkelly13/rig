@@ -93,8 +93,8 @@
       "color": "#10b981",
       "icon": "Package"
     },
-    "FluentAssertions.Resultful": {
-      "path": "~/code/Resultful/FluentAssertions.Resultful",
+    "Resultful.Assertions": {
+      "path": "~/code/Resultful/Resultful.Assertions",
       "color": "#059669",
       "icon": "Wrench"
     },

@@ -185,9 +185,9 @@
       }
     },
     {
-      "name": "FluentAssertions.Resultful",
-      "repo": "git@github.com:Resultful/FluentAssertions.Resultful.git",
-      "description": "FluentAssertions extensions for Resultful and OneOf union types.",
+      "name": "Resultful.Assertions",
+      "repo": "git@github.com:Resultful/Resultful.Assertions.git",
+      "description": "Assertion packages for result, option and union types (OneOf, Resultful) across assertion libraries.",
       "domain": "Functional Architecture & .NET",
       "stack": ".NET 10 / C#",
       "packages": [

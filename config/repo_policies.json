@@ -187,7 +187,7 @@
       },
       "repos": [
         "Resultful",
-        "FluentAssertions.Resultful",
+        "Resultful.Assertions",
         "blog",
         "ProceduralGeneration3DMazes"
       ],
@@ -364,7 +364,7 @@
         "build"
       ]
     },
-    "FluentAssertions.Resultful": {
+    "Resultful.Assertions": {
       "expected_owner": "Resultful",
       "allowed_owners": [
         "Resultful"
