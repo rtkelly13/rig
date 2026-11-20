@@ -76,6 +76,11 @@ internal static class OrcaFixtures
     public static IReadOnlyList<OrcaFinding> Diagnose(OrcaPolicy policy, OrcaSnapshot snapshot, OrcaPaths? paths = null, params string[] managed) =>
         OrcaDoctor.Diagnose(policy, snapshot, paths ?? Code, managed, Now);
 
+    public static IReadOnlyList<OrcaFinding> DiagnoseLocal(
+        OrcaPolicy policy, OrcaSnapshot snapshot, IReadOnlyDictionary<string, LocalBaseState> localBase, OrcaPaths? paths = null,
+        params string[] managed) =>
+        OrcaDoctor.Diagnose(policy, snapshot, paths ?? Code, managed, Now, localBase);
+
     public static void WriteOrcaYaml(string repoPath, string setup)
     {
         Directory.CreateDirectory(repoPath);

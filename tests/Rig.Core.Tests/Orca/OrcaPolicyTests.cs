@@ -21,6 +21,32 @@ public sealed class OrcaPolicyTests
         Assert.Equal("auto", policy.AgentPermissions.Wanted("codex"));
         Assert.Equal(("show", "#ec4899", "Palette"), (policy.Repos["design-system"].ExternalWorktreeVisibility, policy.Repos["design-system"].Color, policy.Repos["design-system"].Icon));
         Assert.Equal(("#6366f1", "SquareTerminal"), (policy.Repos["rig"].Color, policy.Repos["rig"].Icon));
+        Assert.Equal("origin/main", policy.Repos["rig"].BaseRef);
+    }
+
+    [Fact]
+    public void Every_policy_repo_starts_from_a_remote_ref()
+    {
+        var policy = OrcaPolicy.Load(CheckedInPolicy);
+
+        Assert.NotEmpty(policy.Repos);
+        Assert.All(policy.Repos, pair =>
+        {
+            Assert.False(string.IsNullOrEmpty(pair.Value.BaseRef), $"{pair.Key} has no base_ref");
+            Assert.Contains("/", pair.Value.BaseRef!, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public void A_base_ref_names_its_local_branch_and_remote()
+    {
+        Assert.Equal(("main", "origin"), OrcaBaseRef.Local("origin/main"));
+        Assert.Equal(("main", "origin"), OrcaBaseRef.Local("main"));
+        Assert.Equal(("main", "origin"), OrcaBaseRef.Local("refs/heads/main"));
+        Assert.Equal(("main", "origin"), OrcaBaseRef.Local("refs/remotes/origin/main"));
+        Assert.Equal(("release/1.0", "origin"), OrcaBaseRef.Local("origin/release/1.0"));
+        Assert.Null(OrcaBaseRef.Local("refs/tags/v1.0"));
+        Assert.Null(OrcaBaseRef.Local(""));
     }
 
     [Fact]

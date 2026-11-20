@@ -1,4 +1,5 @@
 using System.Globalization;
+using Rig.Core.Estate;
 using Rig.Core.Packages;
 
 namespace Rig.Core.Orca;
@@ -60,9 +61,14 @@ public static class OrcaDoctor
     /// <summary>The backups Orca writes beside its live store.</summary>
     public const string BackupGlob = "profile-state.db.backup.*.db";
 
-    /// <summary>Every difference between the policy and Orca, plus local managed projects Orca has not registered.</summary>
+    /// <summary>
+    /// Every difference between the policy and Orca, plus local managed projects Orca has not registered.
+    /// <paramref name="localBase"/> carries each repo's local branch against its remote-tracking ref, or is null to
+    /// skip that check.
+    /// </summary>
     public static IReadOnlyList<OrcaFinding> Diagnose(
-        OrcaPolicy policy, OrcaSnapshot snapshot, OrcaPaths paths, IReadOnlyCollection<string> managedProjects, DateTimeOffset now)
+        OrcaPolicy policy, OrcaSnapshot snapshot, OrcaPaths paths, IReadOnlyCollection<string> managedProjects, DateTimeOffset now,
+        IReadOnlyDictionary<string, LocalBaseState>? localBase = null)
     {
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -75,7 +81,7 @@ public static class OrcaDoctor
             findings.Add(new("agents", "launch args", CheckStatus.Skip, "Orca is not running to ask"));
         }
 
-        findings.AddRange(RepoFindings(policy, snapshot.Repos, paths, managedProjects));
+        findings.AddRange(RepoFindings(policy, snapshot.Repos, paths, managedProjects, localBase));
         return findings;
     }
 
@@ -165,7 +171,9 @@ public static class OrcaDoctor
         return findings;
     }
 
-    private static List<OrcaFinding> RepoFindings(OrcaPolicy policy, IReadOnlyList<OrcaRepo>? repos, OrcaPaths paths, IReadOnlyCollection<string> managedProjects)
+    private static List<OrcaFinding> RepoFindings(
+        OrcaPolicy policy, IReadOnlyList<OrcaRepo>? repos, OrcaPaths paths, IReadOnlyCollection<string> managedProjects,
+        IReadOnlyDictionary<string, LocalBaseState>? localBase)
     {
         if (repos is null)
         {
@@ -179,6 +187,11 @@ public static class OrcaDoctor
             if (byName.GetValueOrDefault(name) is { } repo)
             {
                 findings.AddRange(RepoPolicyFindings(name, repo, want));
+                if (localBase?.GetValueOrDefault(name) is { } state)
+                {
+                    findings.Add(LocalBaseFinding(name, repo, state));
+                }
+
                 continue;
             }
 
@@ -249,6 +262,30 @@ public static class OrcaDoctor
 
         return findings;
     }
+
+    private static OrcaFinding LocalBaseFinding(string name, OrcaRepo repo, LocalBaseState state)
+    {
+        const string check = "local base";
+        if (state.Behind == 0)
+        {
+            var detail = state.Ahead == 0
+                ? $"{state.Branch} is level with {state.Tracking}"
+                : $"{state.Branch} is {Commits(state.Ahead)} ahead of {state.Tracking}";
+            return new($"repo {name}", check, CheckStatus.Ok, detail);
+        }
+
+        var behind = state.Ahead > 0
+            ? $"{state.Branch} is {Commits(state.Ahead)} ahead and {Commits(state.Behind)} behind {state.Tracking}"
+            : $"{state.Branch} is {Commits(state.Behind)} behind {state.Tracking}";
+        var fix = state.Ahead > 0
+            ? $"local {state.Branch} has commits {state.Tracking} lacks; reconcile them manually, then fast-forward"
+            : $"cd {WrapupText.ShellQuote(OrcaPaths.Posix(repo.Path))} && git fetch {WrapupText.ShellQuote(state.Remote)} "
+                + $"&& git switch {WrapupText.ShellQuote(state.Branch)} && git merge --ff-only {WrapupText.ShellQuote(state.Tracking)}";
+        return new($"repo {name}", check, CheckStatus.Warn, behind, fix);
+    }
+
+    private static string Commits(int count) =>
+        count == 1 ? "1 commit" : string.Create(CultureInfo.InvariantCulture, $"{count} commits");
 
     private static OrcaFinding ScriptFinding(string name, string kind, string want, HookSettings? local, Scripts? shared)
     {
