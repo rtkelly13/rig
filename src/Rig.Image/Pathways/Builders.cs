@@ -1,4 +1,7 @@
 using System.Collections.Frozen;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 
 namespace Rig.Image.Pathways;
 
@@ -57,8 +60,13 @@ public static class LabsBuilder
     /// <summary>The manifest: per-variant file, digest, gating and provenance.</summary>
     public static VariantManifest Manifest()
     {
-        const string Source = "rtkelly-labs/manifest.json";
-        var document = StrictJson.Parse(Source, BuilderAssets.Read(Project, "manifest.json"));
+        return ParseManifest("rtkelly-labs/manifest.json", BuilderAssets.Read(Project, "manifest.json"));
+    }
+
+    /// <summary>Parses manifest text; <paramref name="source"/> names it in an error. Promote reads the checkout's file this way, not the copy embedded at build time.</summary>
+    public static VariantManifest ParseManifest(string source, string json)
+    {
+        var document = StrictJson.Parse(source, json);
         var variants = document.Property("variants");
         return new VariantManifest(
             document.Property("project").AsString(),
@@ -70,6 +78,42 @@ public static class LabsBuilder
     {
         var key = VariantResolution.Resolve(variant, [.. Variants.Keys], DefaultVariant);
         return BuilderAssets.Read(Project, Manifest().Variants[key].File);
+    }
+
+    /// <summary>The manifest as committed: two-space indented, unset fields omitted, trailing newline (matches image_drift's <c>to_json</c>).</summary>
+    public static string ManifestJson(VariantManifest manifest)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("project", manifest.Project);
+            writer.WriteStartObject("variants");
+            foreach (var (name, entry) in manifest.Variants)
+            {
+                writer.WriteStartObject(name);
+                writer.WriteString("file", entry.File);
+                writer.WriteString("sha256", entry.Sha256);
+                writer.WriteBoolean("gated", entry.Gated);
+                writer.WriteString("provenance", entry.Provenance);
+                if (entry.PromotedFrom is { } promoted)
+                {
+                    writer.WriteStartObject("promoted_from");
+                    writer.WriteString("run_id", promoted.RunId);
+                    writer.WriteNumber("candidate", promoted.Candidate);
+                    writer.WriteString("notes", promoted.Notes);
+                    writer.WriteEndObject();
+                }
+
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray()).ReplaceLineEndings("\n") + "\n";
     }
 
     private static PromotionRecord ReadPromotion(StrictJson promoted) =>

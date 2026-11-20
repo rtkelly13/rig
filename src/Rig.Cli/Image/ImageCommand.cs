@@ -39,6 +39,8 @@ internal sealed class ImageCommand(ImageHost host, TextWriter output, TextWriter
         image.Add(DeclarativeCommand.Build(new SimplifyCommand(host, output, error)));
         image.Add(DeclarativeCommand.Build(new EdgesCommand(host, output, error)));
         image.Add(DeclarativeCommand.Build(new PathwaysCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new ExploreCommand(host, output, error)));
+        image.Add(DeclarativeCommand.Build(new PromoteCommand(host, output, error)));
         return image;
     }
 
