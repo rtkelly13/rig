@@ -50,9 +50,9 @@ public sealed record JobsSite(string Plan, string PersonalRoot, IReadOnlyDiction
     }
 
     /// <summary>A published runtime's stable executable path, so service registrations follow later updates.</summary>
-    public static string? StablePublishedRig(string baseDirectory, string appData, bool windows) =>
+    public static string? StablePublishedRig(string baseDirectory, string appData) =>
         CopyOf(baseDirectory, appData) is null ? null
-            : Path.Join(appData, RuntimeFolder, "current", PublishFolder, windows ? "rig.exe" : "rig");
+            : Path.Join(appData, RuntimeFolder, "current", PublishFolder, OperatingSystem.IsWindows() ? "rig.exe" : "rig");
 
     /// <summary>
     /// The site for a rig at <paramref name="checkout"/>: a runtime copy when it sits under

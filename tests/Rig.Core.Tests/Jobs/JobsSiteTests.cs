@@ -36,8 +36,8 @@ public sealed class JobsSiteTests : IDisposable
 
         Assert.Equal(folder, JobsSite.CopyOf(Path.Join(folder, JobsSite.PublishFolder) + Path.DirectorySeparatorChar, AppData));
         Assert.Equal(folder, JobsSite.CopyOf(Path.Join(folder, JobsSite.PublishFolder), AppData));
-        Assert.Equal(Path.Join(AppData, "runtime", "current", "rig", "rig"), JobsSite.StablePublishedRig(Path.Join(folder, JobsSite.PublishFolder), AppData, windows: false));
-        Assert.Equal(Path.Join(AppData, "runtime", "current", "rig", "rig.exe"), JobsSite.StablePublishedRig(Path.Join(folder, JobsSite.PublishFolder), AppData, windows: true));
+        var executable = OperatingSystem.IsWindows() ? "rig.exe" : "rig";
+        Assert.Equal(Path.Join(AppData, "runtime", "current", "rig", executable), JobsSite.StablePublishedRig(Path.Join(folder, JobsSite.PublishFolder), AppData));
     }
 
     [Theory]
@@ -49,7 +49,7 @@ public sealed class JobsSiteTests : IDisposable
     public void A_rig_anywhere_else_is_no_runtime_copy(string relative)
     {
         Assert.Null(JobsSite.CopyOf(Path.Join(_temp.Path, relative), AppData));
-        Assert.Null(JobsSite.StablePublishedRig(Path.Join(_temp.Path, relative), AppData, windows: false));
+        Assert.Null(JobsSite.StablePublishedRig(Path.Join(_temp.Path, relative), AppData));
     }
 
     [Fact]

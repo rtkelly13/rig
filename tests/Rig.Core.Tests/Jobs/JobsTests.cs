@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Rig.Core.Jobs;
 using Rig.Core.Processes;
 using Rig.Core.Runtime;
@@ -97,7 +98,7 @@ public sealed class JobsTests : IDisposable
     [InlineData(true)]
     public void The_jobs_rig_is_the_checkouts_published_one(bool windows)
     {
-        var env = new JobsEnvironment(RuntimeManager.PublishedFolder("/copy"), "plan", null, "/code/personal", [], "feed", "orca", windows);
+        var env = new JobsEnvironment(RuntimeManager.PublishedFolder("/copy"), "plan", null, "/code/personal", [], "feed", "orca") { Platform = windows ? OSPlatform.Windows : OSPlatform.Linux };
         Assert.Equal(RuntimeManager.Published("/copy", "rig", windows), env.Script("rig"));
         Assert.DoesNotContain(".venv", env.Script("rig"), StringComparison.Ordinal);
     }
@@ -105,7 +106,7 @@ public sealed class JobsTests : IDisposable
     [Fact]
     public void On_windows_scripts_carry_exe_and_estate_roots_compare_without_case()
     {
-        var env = new JobsEnvironment("/rig/Scripts", "plan", "/Code/work/workspace", "/code/personal", ["/CODE/work", "/elsewhere/work"], "feed", "orca", Windows: true);
+        var env = new JobsEnvironment("/rig/Scripts", "plan", "/Code/work/workspace", "/code/personal", ["/CODE/work", "/elsewhere/work"], "feed", "orca") { Platform = OSPlatform.Windows };
 
         Assert.Equal(Path.Join("/rig/Scripts", "rig.exe"), env.Script("rig"));
         Assert.Equal([env.CodeRoot, "/elsewhere/work"], env.EstateRoots);
@@ -114,7 +115,7 @@ public sealed class JobsTests : IDisposable
     [Fact]
     public void Off_windows_case_tells_estate_roots_apart()
     {
-        var env = new JobsEnvironment("/rig/bin", "plan", "/Code/work/ws", "/code/personal", ["work"], "feed", "orca", Windows: false);
+        var env = new JobsEnvironment("/rig/bin", "plan", "/Code/work/ws", "/code/personal", ["work"], "feed", "orca") { Platform = OSPlatform.Linux };
 
         Assert.Equal([env.CodeRoot, "work", "/Code/work/ws"], env.EstateRoots);
         Assert.Equal(Path.Join("/rig/bin", "rig"), env.Script("rig"));
@@ -123,7 +124,7 @@ public sealed class JobsTests : IDisposable
     [Fact]
     public void The_workspace_paths_need_a_workspace_repo()
     {
-        var env = new JobsEnvironment("/rig/bin", "plan", null, "/code/personal", [], "feed", "orca", Windows: false);
+        var env = new JobsEnvironment("/rig/bin", "plan", null, "/code/personal", [], "feed", "orca") { Platform = OSPlatform.Linux };
 
         Assert.Throws<InvalidOperationException>(() => env.WorkspacePython);
     }

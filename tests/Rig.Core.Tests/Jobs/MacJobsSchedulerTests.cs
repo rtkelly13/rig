@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml.Linq;
 using Rig.Core.Jobs;
@@ -72,12 +73,27 @@ public sealed class MacJobsSchedulerTests : IDisposable
     }
 
     [Fact]
+    public async Task The_native_installer_selects_the_host_executable_without_platform_flags()
+    {
+        var app = _temp.Folder("app");
+        var root = Path.Join(app, "runtime", "abc");
+        var executable = OperatingSystem.IsWindows() ? "rig.exe" : "rig";
+        var rig = _temp.File("app/runtime/current/rig/" + executable);
+        _ = _temp.File("app/runtime/current/desktop-manager/workspace-plan.bundle.json");
+
+        var target = await JobsInstallTarget.ResolveAsync(root, app, "unused-plan", new FakeProc(), JobsLauncher.Direct, null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(rig, target.Rig);
+        Assert.Null(target.Pythonw);
+    }
+
+    [Fact]
     public async Task A_runtime_target_on_mac_needs_neither_a_windows_plan_nor_pythonw()
     {
         var app = _temp.Folder("app");
         var root = Path.Join(app, "runtime", "abc");
         _ = _temp.File("app/runtime/current/rig/rig");
-        var target = await JobsInstallTarget.ResolveAsync(root, app, "absent-plan", new FakeProc(), JobsLauncher.Pythonw, null, windows: false, TestContext.Current.CancellationToken);
+        var target = await JobsInstallTarget.ResolveAsync(root, app, "absent-plan", new FakeProc(), JobsLauncher.Pythonw, null, OSPlatform.OSX, TestContext.Current.CancellationToken);
 
         Assert.Equal(Path.Join(app, "runtime", "current", "rig", "rig"), target.Rig);
         Assert.Null(target.Pythonw);
@@ -100,7 +116,7 @@ public sealed class MacJobsSchedulerTests : IDisposable
     [Fact]
     public void Mac_jobs_keep_the_complete_estate_and_never_schedule_windows_desktop_actions()
     {
-        var env = new JobsEnvironment("/runtime/rig", "no-plan", "/code/work/ws", "/code/personal", [], "feed", "orca", false) { MacOS = true };
+        var env = new JobsEnvironment("/runtime/rig", "no-plan", "/code/work/ws", "/code/personal", [], "feed", "orca") { Platform = OSPlatform.OSX };
         var jobs = JobRegistry.Default(env);
 
         Assert.DoesNotContain(jobs, x => x.Name is "restore" or "align");

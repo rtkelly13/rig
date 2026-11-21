@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 namespace Rig.Core.Jobs;
 
 /// <summary>
@@ -10,7 +11,6 @@ namespace Rig.Core.Jobs;
 /// <param name="WorkRoots">This machine's work folders; <c>estate decisions</c> skips any that are absent.</param>
 /// <param name="DecisionsFeed">Where <c>estate decisions</c> writes its feed.</param>
 /// <param name="OrcaUserData">The Orca instance that holds the personal estate.</param>
-/// <param name="Windows">Whether the scripts carry <c>.exe</c> and paths compare without case.</param>
 public sealed record JobsEnvironment(
     string Scripts,
     string Plan,
@@ -18,11 +18,13 @@ public sealed record JobsEnvironment(
     string PersonalRoot,
     IReadOnlyList<string> WorkRoots,
     string DecisionsFeed,
-    string OrcaUserData,
-    bool Windows)
+    string OrcaUserData)
 {
-    /// <summary>Whether this is the macOS schedule, without Windows desktop jobs.</summary>
-    public bool MacOS { get; init; }
+    /// <summary>The native platform by default; inspection and tests may target another OS explicitly.</summary>
+    public OSPlatform Platform { get; init; } = OperatingSystem.IsWindows() ? OSPlatform.Windows
+        : OperatingSystem.IsMacOS() ? OSPlatform.OSX : OSPlatform.Linux;
+
+    private bool Windows => Platform == OSPlatform.Windows;
 
     /// <summary>The folder holding <c>personal</c> and the org and work folders beside it.</summary>
     public string CodeRoot => Path.GetDirectoryName(PersonalRoot) ?? PersonalRoot;
@@ -35,7 +37,7 @@ public sealed record JobsEnvironment(
     public string Script(string name) => Path.Join(Scripts, Windows ? name + ".exe" : name);
 
     /// <summary>The workspace checkout's own interpreter for this machine's schedule.</summary>
-    public string WorkspacePython => MacOS
+    public string WorkspacePython => Platform == OSPlatform.OSX
         ? Path.Join(Workspace(), ".venv", "bin", "python")
         : Path.Join(Workspace(), ".venv", "Scripts", "python.exe");
 
@@ -162,7 +164,7 @@ public static class JobRegistry
             });
         }
 
-        if (env.MacOS)
+        if (env.Platform == OSPlatform.OSX)
         {
             jobs.RemoveAll(job => job.Name is "restore" or "align");
             // Run estate work before Chrome's idle wait; one coordinator serializes all jobs.

@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Runtime.InteropServices;
 using Rig.Cli.Agent;
 using Rig.Cli.Browser;
 using Rig.Cli.C4;
@@ -127,7 +128,7 @@ internal static class Program
         var servicePlatform = exportWindowsTree || (!exportTree && OperatingSystem.IsWindows())
             ? ServicePlatform.Windows
             : macOs ? ServicePlatform.MacOS : ServicePlatform.Linux;
-        var publishedService = JobsSite.StablePublishedRig(AppContext.BaseDirectory, AppData.Current(), OperatingSystem.IsWindows());
+        var publishedService = JobsSite.StablePublishedRig(AppContext.BaseDirectory, AppData.Current());
         var tools = new ToolsCommand(
             new ServiceHost(
                 home,
@@ -369,7 +370,7 @@ internal static class Program
             ]);
         if (exportTree || exportWindowsTree)
         {
-            await Console.Out.WriteLineAsync(CommandTree.Export(app.BuildRoot(), exportWindowsTree, exportMacTree)).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync(CommandTree.Export(app.BuildRoot(), exportWindowsTree ? OSPlatform.Windows : exportMacTree ? OSPlatform.OSX : OSPlatform.Linux)).ConfigureAwait(false);
             return 0;
         }
 
@@ -436,9 +437,7 @@ internal static class Program
             site.PersonalRoot,
             MachineConfig.WorkDirs(machineConfig, codeRoot, home),
             Decisions.DefaultFeedPath(localAppData, home),
-            OrcaLocations.Current.EstateUserData(),
-            windows)
-        { MacOS = OperatingSystem.IsMacOS() };
+            OrcaLocations.Current.EstateUserData());
         return new JobsHost(
             JobState.JobsDir(AppData.Current()),
             () => JobRegistry.Default(environment),
@@ -457,7 +456,7 @@ internal static class Program
                 TimeProvider.System),
             ShellWindow.WaitFor,
             Path.Join(AppData.Current(), "traces"),
-            (launcher, pythonw, ct) => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, launcher, pythonw, windows, ct),
+            (launcher, pythonw, ct) => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, launcher, pythonw, ct),
             WindowsUserId,
             () => File.Exists(environment.Script("rig")) ? null : environment.Script("rig"))
         {

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Rig.Core.Processes;
 
 namespace Rig.Core.Jobs;
@@ -35,10 +36,11 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
     /// <summary>The action's arguments for a rig command line.</summary>
     public string Arguments(string rig) => Pythonw is null ? $"{DetachFlag} {rig}" : $"-I -c \"{Wrapper}\" \"{Rig}\" {rig}";
 
-    /// <summary>Resolve the existing Windows scheduler target.</summary>
+    /// <summary>Resolve the scheduler target using native platform intrinsics.</summary>
     public static Task<JobsInstallTarget> ResolveAsync(
         string checkout, string appData, string userPlan, IProc proc, JobsLauncher launcher, string? pythonw, CancellationToken cancellationToken = default) =>
-        ResolveAsync(checkout, appData, userPlan, proc, launcher, pythonw, windows: true, cancellationToken);
+        ResolveAsync(checkout, appData, userPlan, proc, launcher, pythonw,
+            OperatingSystem.IsWindows() ? OSPlatform.Windows : OperatingSystem.IsMacOS() ? OSPlatform.OSX : OSPlatform.Linux, cancellationToken);
 
     /// <summary>Resolves the install paths, refuses linked worktrees and validates every target before changing tasks.</summary>
     /// <param name="checkout">The rig tree this process runs from.</param>
@@ -48,11 +50,12 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
     /// <param name="launcher">How the tasks start rig.</param>
     /// <param name="pythonw">The <c>pythonw</c> to use; null asks uv for its managed Python.</param>
     /// <param name="cancellationToken">Stops the lookups.</param>
-    /// <param name="windows">Whether desktop-plan validation and Windows launchers apply.</param>
+    /// <param name="platform">The target OS for inspection or portable tests; normal callers use native detection.</param>
     public static async Task<JobsInstallTarget> ResolveAsync(
-        string checkout, string appData, string userPlan, IProc proc, JobsLauncher launcher, string? pythonw, bool windows, CancellationToken cancellationToken = default)
+        string checkout, string appData, string userPlan, IProc proc, JobsLauncher launcher, string? pythonw, OSPlatform platform, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(proc);
+        var windows = platform == OSPlatform.Windows;
         checkout = Path.GetFullPath(checkout);
         string root, plan, rig;
         if (JobsSite.CopyOf(Path.Join(checkout, JobsSite.PublishFolder), appData) is not null)
