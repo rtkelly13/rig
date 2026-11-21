@@ -19,14 +19,14 @@ internal static class CommandTree
     public static Registration[] Read(Command root) => Walk(root, []).ToArray();
 
     /// <summary>Machine-readable inspection, reserved for development/CI.</summary>
-    public static string Export(Command root, bool windows) => JsonSerializer.Serialize(new
+    public static string Export(Command root, bool windows, bool macOS = false) => JsonSerializer.Serialize(new
     {
         commands = Read(root),
         rawAliases = AgentLauncher.ShortcutFlags.Where(flag => AgentLauncher.LauncherArgs([flag]) is not null)
             .Select(flag => new { Path = flag, Target = "agent" })
             .Concat([new { Path = "<bare>", Target = "agent" }, new { Path = "agent models", Target = "models" }, new { Path = "agent --models", Target = "models" }]),
         agentTargets = AgentLauncher.Agents.Select(agent => $"{agent.Id}={agent.Executable}"),
-        jobs = JobRegistry.Default(new JobsEnvironment("/scripts", "/plan", "/workspace", "/code/personal", [], "/feed", "/orca", windows))
+        jobs = JobRegistry.Default(new JobsEnvironment("/scripts", "/plan", "/workspace", "/code/personal", [], "/feed", "/orca", windows) { MacOS = macOS })
             .Select(j => $"{j.Name}={string.Join(' ', j.Argv)}"),
         mcpTools = typeof(RigOpsTools).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .Select(method => method.GetCustomAttribute<McpServerToolAttribute>()?.Name)

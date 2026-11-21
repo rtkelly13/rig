@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace Rig.Core.Jobs;
 
 /// <summary>
@@ -51,6 +49,11 @@ public sealed record JobsSite(string Plan, string PersonalRoot, IReadOnlyDiction
             : null;
     }
 
+    /// <summary>A published runtime's stable executable path, so service registrations follow later updates.</summary>
+    public static string? StablePublishedRig(string baseDirectory, string appData, bool windows) =>
+        CopyOf(baseDirectory, appData) is null ? null
+            : Path.Join(appData, RuntimeFolder, "current", PublishFolder, windows ? "rig.exe" : "rig");
+
     /// <summary>
     /// The site for a rig at <paramref name="checkout"/>: a runtime copy when it sits under
     /// <c>&lt;<paramref name="appData"/>&gt;/runtime</c>, else a checkout using <paramref name="userPlan"/> and
@@ -74,9 +77,7 @@ public sealed record JobsSite(string Plan, string PersonalRoot, IReadOnlyDiction
             [LogDirVariable] = Path.Join(appData, "workspace-restore", "logs"),
             [TraceHomeVariable] = Path.Join(appData, "traces"),
         };
-        var source = SourceRepo(Path.Join(runtime, "state.json"));
-        var root = source is null ? personalRoot : Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(source)) ?? personalRoot;
-        return new JobsSite(plan, root, environment);
+        return new JobsSite(plan, personalRoot, environment);
     }
 
     // Path.GetRelativePath compares as the file system does: without case on Windows and macOS.
@@ -85,22 +86,5 @@ public sealed record JobsSite(string Plan, string PersonalRoot, IReadOnlyDiction
         var relative = Path.GetRelativePath(Path.GetFullPath(folder), Path.GetFullPath(path));
         return relative != "." && relative != ".." && !Path.IsPathRooted(relative)
             && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
-    }
-
-    // The checkout the copy was installed from, as runtime.write_state records it; null when unrecorded or unreadable.
-    private static string? SourceRepo(string statePath)
-    {
-        try
-        {
-            using var document = JsonDocument.Parse(File.ReadAllBytes(statePath));
-            return document.RootElement.TryGetProperty("repo", out var repo) && repo.ValueKind == JsonValueKind.String
-                && repo.GetString() is { Length: > 0 } text
-                ? text
-                : null;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return null;
-        }
     }
 }

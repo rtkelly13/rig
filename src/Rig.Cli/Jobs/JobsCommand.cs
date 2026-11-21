@@ -38,7 +38,11 @@ internal sealed record JobsHost(
     string TracesDir,
     Func<JobsLauncher, string?, CancellationToken, Task<JobsInstallTarget>> InstallTarget,
     Func<string> UserId,
-    Func<string?> MissingRig);
+    Func<string?> MissingRig)
+{
+    /// <summary>The macOS launchd adapter; null off macOS.</summary>
+    public MacJobsScheduler? MacScheduler { get; init; }
+}
 
 /// <summary>
 /// <c>rig jobs</c>: the coordinator's runs and task installation. The table is padded to its widest cell rather than wrapped at 80 columns.
@@ -55,7 +59,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         var status = new Command("status", "Each job: when it runs, its last outcome, and whether the next run takes it.") { statusTrigger };
         status.SetAction((parsed, cancellationToken) => Status(JobWords.Trigger(parsed.GetRequiredValue(statusTrigger)), cancellationToken));
 
-        var lastTrigger = TriggerOption("logon", "Show the latest run on this trigger.");
+        var lastTrigger = TriggerOption(host.MacScheduler is null ? "logon" : "tick", "Show the latest run on this trigger.");
         var last = new Command("last", "The latest run on a trigger: every job it ran or skipped, why, and how each went.") { lastTrigger };
         last.SetAction(parsed => Last(parsed.GetRequiredValue(lastTrigger)));
 
@@ -93,7 +97,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         };
         launcher.AcceptOnlyFromAmong("pythonw", "direct");
         var pythonw = new Option<string?>("--pythonw") { Description = "The pythonw.exe that starts rig. Default: uv's managed Python." };
-        var install = new Command("install", "Register the Logon, Tick and Display Guard tasks, and retire the separate tasks they replace.") { noStart, start, launcher, pythonw };
+        var install = new Command("install", "Register the macOS periodic LaunchAgent or the Windows Logon, Tick and Display Guard tasks.") { noStart, start, launcher, pythonw };
         install.SetAction((parsed, cancellationToken) => Install(
             !parsed.GetValue(noStart),
             parsed.GetRequiredValue(launcher) == "direct" ? JobsLauncher.Direct : JobsLauncher.Pythonw,
@@ -122,9 +126,25 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
 
     private async Task<int> Install(bool start, JobsLauncher launcher, string? pythonw, CancellationToken cancellationToken)
     {
+        if (host.MacScheduler is { } mac)
+        {
+            try
+            {
+                var target = await host.InstallTarget(JobsLauncher.Direct, null, cancellationToken).ConfigureAwait(false);
+                await mac.InstallAsync(target, cancellationToken).ConfigureAwait(false);
+                await output.WriteLineAsync($"Registered {MacJobsScheduler.Label}: at login and every {Job.TickMinutes} minutes.\nRuns from: {target.Rig}\nNo resident coordinator or Windows desktop guard.", cancellationToken).ConfigureAwait(false);
+                return 0;
+            }
+            catch (Exception error) when (error is ProcException or InvalidOperationException or IOException or UnauthorizedAccessException)
+            {
+                await output.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
+                return 1;
+            }
+        }
+
         if (host.Tasks is not { } tasks)
         {
-            await output.WriteLineAsync("jobs install requires Windows.", cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync("jobs install requires Windows or macOS.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -181,9 +201,16 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
 
     private async Task<int> Uninstall(CancellationToken cancellationToken)
     {
+        if (host.MacScheduler is { } mac)
+        {
+            var removed = await mac.UninstallAsync(cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync($"{(removed ? "Removed" : "Not registered")} {MacJobsScheduler.Label}", cancellationToken).ConfigureAwait(false);
+            return 0;
+        }
+
         if (host.Tasks is not { } tasks)
         {
-            await output.WriteLineAsync("jobs uninstall requires Windows.", cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync("jobs uninstall requires Windows or macOS.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -241,6 +268,14 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             {
                 text.Append("Not registered: ").AppendJoin(", ", missing).Append(". Run `rig jobs install`.\n");
             }
+        }
+
+        if (host.MacScheduler is { } mac)
+        {
+            var registered = await mac.RegisteredAsync(cancellationToken).ConfigureAwait(false);
+            text.Append("Mac schedule: ").Append(registered ? "registered" : "not registered")
+                .Append(" (").Append(MacJobsScheduler.Label).Append(").")
+                .Append(registered ? " Idle between ticks.\n" : " Run `rig jobs install`.\n");
         }
 
         if (host.MissingRig() is { } missingRig)
@@ -311,7 +346,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
                 .Run(jobs, trigger, host.JobsDir, host.Booted(host.Clock.GetLocalNow()), host.Flags(), named, force, runId);
 
         return scheduled
-            ? ScheduledRun.Run(trigger, host.JobsDir, new ScheduledSeams(host.Clock, host.WaitForShell, host.TracesDir), RunJobs)
+            ? ScheduledRun.Run(trigger, host.JobsDir, new ScheduledSeams(host.Clock, host.WaitForShell, host.TracesDir) { PruneOnTick = host.MacScheduler is not null }, RunJobs)
             : RunJobs(null, line => output.Write(line + "\n"));
     }
 

@@ -98,7 +98,8 @@ public sealed class RigOps : IDisposable
             MachineConfig.WorkDirs(machineConfig, codeRoot, home),
             Rig.Core.Estate.Decisions.DefaultFeedPath(localAppData, home),
             OrcaLocations.Current.EstateUserData(),
-            windows);
+            windows)
+        { MacOS = OperatingSystem.IsMacOS() };
         var jobs = JobRegistry.Default(environment);
         var proc = new SystemProc();
         var git = new Git(proc, codeRoot);

@@ -21,6 +21,9 @@ public sealed record JobsEnvironment(
     string OrcaUserData,
     bool Windows)
 {
+    /// <summary>Whether this is the macOS schedule, without Windows desktop jobs.</summary>
+    public bool MacOS { get; init; }
+
     /// <summary>The folder holding <c>personal</c> and the org and work folders beside it.</summary>
     public string CodeRoot => Path.GetDirectoryName(PersonalRoot) ?? PersonalRoot;
 
@@ -31,8 +34,10 @@ public sealed record JobsEnvironment(
     /// <summary>The scripts folder's <paramref name="name"/>, with <c>.exe</c> on Windows.</summary>
     public string Script(string name) => Path.Join(Scripts, Windows ? name + ".exe" : name);
 
-    /// <summary>The workspace checkout's own interpreter; its venv is a Windows one wherever this runs.</summary>
-    public string WorkspacePython => Path.Join(Workspace(), ".venv", "Scripts", "python.exe");
+    /// <summary>The workspace checkout's own interpreter for this machine's schedule.</summary>
+    public string WorkspacePython => MacOS
+        ? Path.Join(Workspace(), ".venv", "bin", "python")
+        : Path.Join(Workspace(), ".venv", "Scripts", "python.exe");
 
     /// <summary>The workspace checkout's <c>maintain</c> entry point.</summary>
     public string WorkspaceMaintain => Path.Join(Workspace(), "src", "workspace_cli", "maintain", "__main__.py");
@@ -154,6 +159,36 @@ public static class JobRegistry
                 [env.WorkspacePython, "-m", "workspace_cli.maintain", "run", "--due"], Both, JobCadence.EveryRun, 60)
             {
                 Requires = [env.WorkspacePython, env.WorkspaceMaintain],
+            });
+        }
+
+        if (env.MacOS)
+        {
+            jobs.RemoveAll(job => job.Name is "restore" or "align");
+            // Run estate work before Chrome's idle wait; one coordinator serializes all jobs.
+            var chrome = jobs.Single(job => job.Name == "chrome-organise");
+            jobs.Remove(chrome);
+            jobs.Insert(0, new("web", "Keep the shared rig dashboard and HTTP MCP endpoint available.",
+                [rig, "tools", "ensure", "web"], Both, JobCadence.EveryRun, 5));
+            var decisions = jobs.FindIndex(job => job.Name == "estate-decisions");
+            jobs.InsertRange(decisions,
+            [
+                new("estate-orca-worktrees", "Remove finished Orca worktrees through Orca, preserving active and unmerged work.",
+                    [rig, "estate", "orca-worktrees", "--all", "--apply", "--orca-data", env.OrcaUserData], Both, JobCadence.Daily, 60)
+                {
+                    RetryExitCodes = new HashSet<int> { 2 },
+                },
+                new("estate-tidy", "Remove provably finished worktrees and branches across the code root, without force.",
+                    [rig, "estate", "tidy", "--all", "--merged", "--apply", "--root", code,
+                        "--check", "worktree-prunable", "--check", "worktree-merged",
+                        "--check", "branch-merged", "--check", "branch-upstream-gone"], Both, JobCadence.Daily, 60),
+                new("triage-refresh", "Refresh the managed repositories' PR/issue inbox for rig web.",
+                    [rig, "triage", "refresh"], Both, JobCadence.Daily, 30),
+            ]);
+            jobs.Add(chrome with
+            {
+                // Retry grouping at the next tick instead of retaining a process while the user is active.
+                Argv = [rig, "chrome-tabs", "organise", "--unattended", "--consolidate-saved", "--trigger", "scheduled", "--wait-minutes", "0"],
             });
         }
 

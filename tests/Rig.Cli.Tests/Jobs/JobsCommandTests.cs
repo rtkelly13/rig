@@ -1,7 +1,9 @@
 using System.CommandLine;
 using Rig.Cli.Jobs;
 using Rig.Core.Jobs;
+using Rig.Core.Processes;
 using Rig.Core.Tests;
+using Rig.Core.Tests.Fakes;
 
 namespace Rig.Cli.Tests.Jobs;
 
@@ -90,7 +92,7 @@ public sealed class JobsCommandTests : IDisposable
         _out.GetStringBuilder().Clear();
 
         Assert.Equal(1, await Run(null, "uninstall"));
-        Assert.Equal("jobs uninstall requires Windows.\n", _out.ToString());
+        Assert.Equal("jobs uninstall requires Windows or macOS.\n", _out.ToString());
     }
 
     [Theory]
@@ -193,7 +195,36 @@ public sealed class JobsCommandTests : IDisposable
     public async Task Install_requires_windows()
     {
         Assert.Equal(1, await Run(null, "install"));
-        Assert.Equal("jobs install requires Windows.\n", _out.ToString());
+        Assert.Equal("jobs install requires Windows or macOS.\n", _out.ToString());
+    }
+
+    [Fact]
+    public async Task Mac_install_status_and_uninstall_use_launchd_without_the_windows_scheduler()
+    {
+        var proc = new FakeProc().Answer(new Ran(0, "", ""), "launchctl");
+        var mac = new MacJobsScheduler(proc, _temp.Path, Path.Join(_temp.Path, "jobs"), "/code", "/usr/bin:/bin", _ => Task.FromResult("gui/501"));
+        var rig = _temp.File("published/rig");
+        var host = Host(null) with
+        {
+            MacScheduler = mac,
+            InstallTarget = (launcher, pythonw, _) =>
+            {
+                Assert.Equal(JobsLauncher.Direct, launcher);
+                Assert.Null(pythonw);
+                return Task.FromResult(new JobsInstallTarget(_temp.Path, "absent-plan", rig));
+            },
+        };
+        var command = new JobsCommand(host, _out).Build();
+        var config = new InvocationConfiguration { Output = _out, Error = _out };
+        Assert.Equal(0, await command.Parse(["install"]).InvokeAsync(config, TestContext.Current.CancellationToken));
+        Assert.Contains(MacJobsScheduler.Label, _out.ToString(), StringComparison.Ordinal);
+        Assert.Equal(0, await command.Parse(["status"]).InvokeAsync(config, TestContext.Current.CancellationToken));
+        Assert.Contains("Mac schedule: registered", _out.ToString(), StringComparison.Ordinal);
+        Assert.Equal(0, await command.Parse(["last"]).InvokeAsync(config, TestContext.Current.CancellationToken));
+        Assert.Contains("No tick run recorded yet.", _out.ToString(), StringComparison.Ordinal);
+        Assert.Equal(0, await command.Parse(["uninstall"]).InvokeAsync(config, TestContext.Current.CancellationToken));
+        Assert.False(File.Exists(mac.PlistPath));
+        Assert.Empty(_executor.Ran);
     }
 
     [Fact]

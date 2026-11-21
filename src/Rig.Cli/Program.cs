@@ -127,11 +127,12 @@ internal static class Program
         var servicePlatform = exportWindowsTree || (!exportTree && OperatingSystem.IsWindows())
             ? ServicePlatform.Windows
             : macOs ? ServicePlatform.MacOS : ServicePlatform.Linux;
+        var publishedService = JobsSite.StablePublishedRig(AppContext.BaseDirectory, AppData.Current(), OperatingSystem.IsWindows());
         var tools = new ToolsCommand(
             new ServiceHost(
                 home,
-                Environment.CurrentDirectory,
-                SelfArgv(),
+                publishedService is null ? Environment.CurrentDirectory : Path.GetDirectoryName(Path.GetDirectoryName(publishedService))!,
+                publishedService is null ? SelfArgv() : [publishedService],
                 servicePlatform,
                 proc,
                 probe,
@@ -368,7 +369,7 @@ internal static class Program
             ]);
         if (exportTree || exportWindowsTree)
         {
-            await Console.Out.WriteLineAsync(CommandTree.Export(app.BuildRoot(), exportWindowsTree)).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync(CommandTree.Export(app.BuildRoot(), exportWindowsTree, exportMacTree)).ConfigureAwait(false);
             return 0;
         }
 
@@ -436,7 +437,8 @@ internal static class Program
             MachineConfig.WorkDirs(machineConfig, codeRoot, home),
             Decisions.DefaultFeedPath(localAppData, home),
             OrcaLocations.Current.EstateUserData(),
-            windows);
+            windows)
+        { MacOS = OperatingSystem.IsMacOS() };
         return new JobsHost(
             JobState.JobsDir(AppData.Current()),
             () => JobRegistry.Default(environment),
@@ -455,8 +457,14 @@ internal static class Program
                 TimeProvider.System),
             ShellWindow.WaitFor,
             Path.Join(AppData.Current(), "traces"),
-            (launcher, pythonw, ct) => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, launcher, pythonw, ct),
+            (launcher, pythonw, ct) => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, launcher, pythonw, windows, ct),
             WindowsUserId,
-            () => File.Exists(environment.Script("rig")) ? null : environment.Script("rig"));
+            () => File.Exists(environment.Script("rig")) ? null : environment.Script("rig"))
+        {
+            MacScheduler = OperatingSystem.IsMacOS() ? new MacJobsScheduler(
+                proc, home, JobState.JobsDir(AppData.Current()), codeRoot,
+                Environment.GetEnvironmentVariable("PATH") ?? "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                async ct => Launchd.GuiDomain(await KnowledgeServerCommand.UserIdAsync(proc, ct).ConfigureAwait(false))) : null,
+        };
     }
 }

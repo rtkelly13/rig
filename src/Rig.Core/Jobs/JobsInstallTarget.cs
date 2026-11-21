@@ -35,6 +35,11 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
     /// <summary>The action's arguments for a rig command line.</summary>
     public string Arguments(string rig) => Pythonw is null ? $"{DetachFlag} {rig}" : $"-I -c \"{Wrapper}\" \"{Rig}\" {rig}";
 
+    /// <summary>Resolve the existing Windows scheduler target.</summary>
+    public static Task<JobsInstallTarget> ResolveAsync(
+        string checkout, string appData, string userPlan, IProc proc, JobsLauncher launcher, string? pythonw, CancellationToken cancellationToken = default) =>
+        ResolveAsync(checkout, appData, userPlan, proc, launcher, pythonw, windows: true, cancellationToken);
+
     /// <summary>Resolves the install paths, refuses linked worktrees and validates every target before changing tasks.</summary>
     /// <param name="checkout">The rig tree this process runs from.</param>
     /// <param name="appData">rig's per-user app data folder.</param>
@@ -43,8 +48,9 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
     /// <param name="launcher">How the tasks start rig.</param>
     /// <param name="pythonw">The <c>pythonw</c> to use; null asks uv for its managed Python.</param>
     /// <param name="cancellationToken">Stops the lookups.</param>
+    /// <param name="windows">Whether desktop-plan validation and Windows launchers apply.</param>
     public static async Task<JobsInstallTarget> ResolveAsync(
-        string checkout, string appData, string userPlan, IProc proc, JobsLauncher launcher, string? pythonw, CancellationToken cancellationToken = default)
+        string checkout, string appData, string userPlan, IProc proc, JobsLauncher launcher, string? pythonw, bool windows, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(proc);
         checkout = Path.GetFullPath(checkout);
@@ -53,7 +59,7 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
         {
             root = Path.Join(appData, JobsSite.RuntimeFolder, "current");
             plan = Path.Join(root, "desktop-manager", "workspace-plan.bundle.json");
-            rig = Path.Join(root, JobsSite.PublishFolder, "rig.exe");
+            rig = Path.Join(root, JobsSite.PublishFolder, windows ? "rig.exe" : "rig");
         }
         else
         {
@@ -68,10 +74,10 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
                 throw new InvalidOperationException($"jobs install must run from the main checkout or a runtime copy, not a worktree.\nMain checkout: {main}");
             }
 
-            (root, plan, rig) = (checkout, userPlan, Path.Join(checkout, "temp", "jobs-runtime", "rig.exe"));
+            (root, plan, rig) = (checkout, userPlan, Path.Join(checkout, "temp", "jobs-runtime", windows ? "rig.exe" : "rig"));
         }
 
-        foreach (var path in new[] { rig, plan })
+        foreach (var path in windows ? new[] { rig, plan } : [rig])
         {
             if (!File.Exists(path))
             {
@@ -79,7 +85,7 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
             }
         }
 
-        if (launcher == JobsLauncher.Direct)
+        if (!windows || launcher == JobsLauncher.Direct)
         {
             return new(root, plan, rig);
         }

@@ -8,7 +8,11 @@ namespace Rig.Core.Jobs;
 /// <param name="Clock">Names the run and stamps each line of <c>coordinator.log</c>.</param>
 /// <param name="WaitForShell">Waits up to a time for Explorer's shell window; false on timeout.</param>
 /// <param name="TracesDir">The shared traces folder a logon run prunes.</param>
-public sealed record ScheduledSeams(TimeProvider Clock, Func<TimeSpan, bool> WaitForShell, string TracesDir);
+public sealed record ScheduledSeams(TimeProvider Clock, Func<TimeSpan, bool> WaitForShell, string TracesDir)
+{
+    /// <summary>The Mac coordinator only has a tick, so it also performs trace retention there.</summary>
+    public bool PruneOnTick { get; init; }
+}
 
 /// <summary>
 /// What the scheduled tasks add around a coordinator run, A task has
@@ -59,6 +63,10 @@ public static class ScheduledRun
             if (trigger == JobTrigger.Logon)
             {
                 Report(seams.WaitForShell(ShellTimeout) ? "Explorer shell ready" : "shell probe timed out; continuing");
+            }
+
+            if (trigger == JobTrigger.Logon || seams.PruneOnTick)
+            {
                 var removed = PruneTraces(seams.TracesDir, TraceKeepDays, seams.Clock.GetUtcNow());
                 if (removed > 0)
                 {
