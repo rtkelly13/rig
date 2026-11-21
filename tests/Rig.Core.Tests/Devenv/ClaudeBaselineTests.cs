@@ -32,14 +32,13 @@ public sealed class ClaudeBaselineTests : IDisposable
                 "+ attribution.commit: ''",
                 "+ attribution.pr: ''",
                 "+ attribution.sessionUrl: False",
-                "+ mcpServers.chrome-devtools",
                 $"+ hooks.SessionEnd: {Hook}",
             ],
             merge.Changes);
         Assert.Equal(
             ["permissions", "model", "effortLevel", "autoCompactEnabled", "autoCompactWindow", "skipWorkflowUsageWarning", "workflowSizeGuideline", "env", "attribution", "mcpServers", "hooks"],
             merge.Settings.Select(p => p.Key));
-        Assert.Equal("""{"command":"npx","args":["-y","chrome-devtools-mcp@latest"]}""", merge.Settings["mcpServers"]!["chrome-devtools"]!.ToJsonString());
+        Assert.Empty(merge.Settings["mcpServers"]!.AsObject());
     }
 
     [Fact]
@@ -107,7 +106,7 @@ public sealed class ClaudeBaselineTests : IDisposable
         var merge = Merge("""{"permissions":["Bash(git:*)"],"mcpServers":"none","env":null,"attribution":3,"statusLine":{"type":"command"}}""");
 
         Assert.Equal("""{"defaultMode":"acceptEdits"}""", merge.Settings["permissions"]!.ToJsonString());
-        Assert.Equal(["chrome-devtools"], merge.Settings["mcpServers"]!.AsObject().Select(p => p.Key));
+        Assert.Empty(merge.Settings["mcpServers"]!.AsObject());
         Assert.Equal(["permissions", "mcpServers", "env", "attribution", "statusLine"], merge.Settings.Select(p => p.Key).Take(5));
         Assert.Equal("""{"type":"command"}""", merge.Settings["statusLine"]!.ToJsonString());
     }

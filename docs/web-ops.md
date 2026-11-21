@@ -22,6 +22,10 @@ dashboard replaced the old `prs-to-review.md` checklist. `rig web install|ensure
 remain as aliases. `rig tools install mcp` runs the same host on port 8092 for its HTTP MCP transport,
 while `rig web mcp` keeps serving the tools over stdio for a local client.
 
+For several agents, share the existing web host at `http://127.0.0.1:8090/api/mcp`
+before installing a second host. [MCP tooling](mcp-tooling.md) covers measured
+footprints, process lifetimes and the opt-in companion setup.
+
 On Windows the logon task is registered from XML (`ServiceTaskXml`) and starts rig the way the jobs tasks do, with
 the same `--launcher pythonw|direct` and `--pythonw` options on `install` and `ensure` ([Launchers](desktop-manager/jobs.md#launchers)), so no
 console window stays open for the dashboard. A long-lived service (web, mcp) has no time limit and is restarted

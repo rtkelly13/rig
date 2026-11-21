@@ -65,7 +65,7 @@ public sealed class DevenvCommandTests : IDisposable
 
         Assert.Equal(0, code);
         Assert.Empty(error);
-        Assert.Contains($"Applying 14 baseline updates to {Settings}:\n  + permissions.defaultMode: 'acceptEdits'\n", output, StringComparison.Ordinal);
+        Assert.Contains($"Applying 13 baseline updates to {Settings}:\n  + permissions.defaultMode: 'acceptEdits'\n", output, StringComparison.Ordinal);
         Assert.Contains($"✓ Session-ledger hook script installed at {Hook}\n", output, StringComparison.Ordinal);
         Assert.Contains($"✓ Successfully updated Claude Code settings at {Settings}\n", output, StringComparison.Ordinal);
         Assert.Contains($"✓ Successfully updated Claude Code rules at {rulesPath}\n", output, StringComparison.Ordinal);
