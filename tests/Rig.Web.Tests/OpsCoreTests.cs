@@ -16,6 +16,28 @@ namespace Rig.Web.Tests;
 public sealed class OpsCoreTests
 {
     [Fact]
+    public void Shelving_refusals_without_PRs_are_visible_in_estate_triage_and_bad_reports_are_explicit()
+    {
+        using var dir = new TempDir();
+        var feed = Path.Join(dir.Path, "decisions.json");
+        Decisions.WriteFeed(feed, []);
+        using var trims = new TrimCache(_ => Task.FromResult<IReadOnlyList<Trimmable>>([]),
+            (_, _) => Task.FromResult(string.Empty), (_, _) => Task.FromResult("removed"), () => "now");
+        using var estate = new EstateOps(dir.Path, feed, trims);
+        var shelving = Path.Join(dir.Path, "orca-shelving.json");
+        File.WriteAllText(shelving, JsonSerializer.Serialize(new List<OrcaShelvingRow>
+        {
+            new("wt", "repo", "/repo/wt", "unfinished", "needs-decision", "ignored notes need preserving"),
+            new("done", "repo", "/repo/done", "finished", "shelved", "remote shelf verified"),
+        }, OrcaShelvingJson.Default.ListOrcaShelvingRow));
+        var row = Assert.Single(estate.Decisions().Decisions);
+        Assert.Equal("no-pr-worktree", row.Kind);
+        Assert.Contains("unfinished", row.Reason, StringComparison.Ordinal);
+        File.WriteAllText(shelving, "{}");
+        Assert.Contains("shelving report unreadable", estate.Decisions().Note, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Decision_feed_reads_a_missing_empty_valid_or_unreadable_file()
     {
         using var dir = new TempDir();

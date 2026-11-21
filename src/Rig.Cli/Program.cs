@@ -73,6 +73,7 @@ internal static class Program
         {
             [RigApp.Source.Name] = "rig.cli",
             [SystemProc.Source.Name] = "rig.proc",
+            [OrcaShelving.Source.Name] = "rig.estate",
         };
         using var traces = new TraceFileWriter("rig", scopes, Environment.GetEnvironmentVariable, Path.Join(checkout, "temp", "traces", "sdk"), TimeProvider.System);
         var proc = new SystemProc();

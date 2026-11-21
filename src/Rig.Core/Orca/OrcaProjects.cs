@@ -31,6 +31,8 @@ public sealed record OrcaFolderWorkspace(string Id, string? GroupId = null);
 /// <param name="IsMain">It is the project's main checkout.</param>
 /// <param name="DisplayName">The name Orca shows.</param>
 /// <param name="LastActivityMs">Milliseconds since the epoch.</param>
+/// <param name="Pinned">Pinned workspaces stay in the sidebar.</param>
+/// <param name="HostId">Execution host recorded by Orca; legacy runtimes are local.</param>
 public sealed record OrcaWorktree(
     string Id,
     string Path,
@@ -38,7 +40,9 @@ public sealed record OrcaWorktree(
     string? Branch = null,
     bool IsMain = false,
     string? DisplayName = null,
-    double? LastActivityMs = null);
+    double? LastActivityMs = null,
+    bool Pinned = false,
+    string HostId = "local");
 
 /// <summary>What <c>worktree.ps</c> reports running in one worktree.</summary>
 /// <param name="WorktreeId">The worktree.</param>
@@ -103,12 +107,15 @@ public static class OrcaProjects
 
     /// <summary>Every worktree of every project, main checkouts included.</summary>
     public static async Task<IReadOnlyList<OrcaWorktree>> WorktreesAsync(this OrcaRuntime runtime, CancellationToken cancellationToken = default) =>
-        Read(await Call(runtime, "worktree.list", new JsonObject(), cancellationToken).ConfigureAwait(false), "worktree.list", result => List(result, "worktrees", Worktree));
+        Read(await Call(runtime, "worktree.list", new JsonObject { ["limit"] = 10000 }, cancellationToken).ConfigureAwait(false), "worktree.list", result =>
+            OrcaJson.Bool(result, "truncated") == true
+                ? throw new OrcaUnavailableException("Orca truncated worktree.list; refusing an incomplete inventory")
+                : List(result, "worktrees", Worktree));
 
     /// <summary>Terminals and agents per worktree. Throws rather than answer from a truncated list.</summary>
     public static async Task<IReadOnlyList<OrcaActivity>> ActivityAsync(this OrcaRuntime runtime, CancellationToken cancellationToken = default)
     {
-        var result = await Call(runtime, "worktree.ps", new JsonObject(), cancellationToken).ConfigureAwait(false);
+        var result = await Call(runtime, "worktree.ps", new JsonObject { ["limit"] = 10000 }, cancellationToken).ConfigureAwait(false);
         var (truncated, activity) = Read(result, "worktree.ps", reply => (OrcaJson.Bool(reply, "truncated"), List(reply, "worktrees", Activity)));
         return truncated == true
             ? throw new OrcaUnavailableException("Orca truncated worktree.ps; refusing to judge worktrees it did not report")
@@ -168,7 +175,9 @@ public static class OrcaProjects
         OrcaJson.String(raw, "branch"),
         OrcaJson.Bool(raw, "isMainWorktree") ?? false,
         OrcaJson.String(raw, "displayName"),
-        OrcaJson.Number(raw, "lastActivityAt"));
+        OrcaJson.Number(raw, "lastActivityAt"),
+        OrcaJson.Bool(raw, "isPinned") ?? false,
+        OrcaJson.String(raw, "hostId") ?? "local");
 
     private static OrcaActivity Activity(JsonObject raw)
     {

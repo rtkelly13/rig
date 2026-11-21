@@ -32,7 +32,8 @@ public sealed record ShelveStatus(IReadOnlyList<string> Changed, IReadOnlyList<s
 /// <param name="IncludeIgnored">Carry ignored, non-regenerable paths in the snapshot.</param>
 /// <param name="DiscardIgnored">Let ignored, non-regenerable paths go with the worktree.</param>
 /// <param name="ToUpstream">Also push a branch's own commits to its upstream, never forced.</param>
-public sealed record ShelveOptions(TimeSpan Idle, bool IncludeIgnored = false, bool DiscardIgnored = false, bool ToUpstream = false)
+/// <param name="AlwaysMarker">Keep a remote recovery marker even for clean, already-pushed work.</param>
+public sealed record ShelveOptions(TimeSpan Idle, bool IncludeIgnored = false, bool DiscardIgnored = false, bool ToUpstream = false, bool AlwaysMarker = false)
 {
     /// <summary>Two hours: long enough that an agent's session between commands still looks live.</summary>
     public static readonly TimeSpan DefaultIdle = TimeSpan.FromHours(2);
@@ -635,6 +636,12 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
             plan.DecisionNeeded.Add($"touched {minutes.ToString(CultureInfo.InvariantCulture)}m ago — may be a live session (--idle)");
         }
 
+        if (options.AlwaysMarker && plan.Action == Remove)
+        {
+            plan.Action = Push;
+            plan.Reasons.Add("remote recovery marker required by daily shelving");
+        }
+
         if (plan.Existing.Length > 0 && plan.Action != Remove && !await HoldsAsync(plan, plan.Existing, status).ConfigureAwait(false))
         {
             plan.DecisionNeeded.Add($"{reference} already on {ShelfStore.Remote} at {Head(plan.Existing, 9)} with other content");
@@ -868,10 +875,10 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     }
 
     /// <summary>Carries out one plan. Refuses anything with <see cref="ShelvePlan.DecisionNeeded"/>.</summary>
-    public async Task<ShelveResult> ApplyAsync(ShelvePlan plan)
+    public async Task<ShelveResult> ApplyAsync(ShelvePlan plan, Func<ShelvePlan, string, Task<ShelfStep>>? beforeRemove = null)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        var result = await ApplyCoreAsync(plan).ConfigureAwait(false);
+        var result = await ApplyCoreAsync(plan, beforeRemove).ConfigureAwait(false);
         plan.Result = result;
         return result;
     }
@@ -885,7 +892,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         return result.Kind == ChangeKind.Error ? [result.Detail] : [];
     }
 
-    private async Task<ShelveResult> ApplyCoreAsync(ShelvePlan plan)
+    private async Task<ShelveResult> ApplyCoreAsync(ShelvePlan plan, Func<ShelvePlan, string, Task<ShelfStep>>? beforeRemove)
     {
         if (plan.DecisionNeeded.Count > 0)
         {
@@ -942,6 +949,21 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         if (await DriftedAsync(plan, sha).ConfigureAwait(false) is { Length: > 0 } drift)
         {
             return new ShelveResult(plan, "failed", $"{drift}; worktree kept, shelf {plan.Ref} pushed", sha);
+        }
+
+        if (beforeRemove is not null)
+        {
+            var ready = await beforeRemove(plan, sha).ConfigureAwait(false);
+            if (!ready.Ok)
+            {
+                return new ShelveResult(plan, "failed", $"{ready.Detail}; worktree kept, shelf {plan.Ref} pushed", sha);
+            }
+
+            // Remote triage can take time: compare the files and HEAD again after it succeeds.
+            if (await DriftedAsync(plan, sha).ConfigureAwait(false) is { Length: > 0 } changed)
+            {
+                return new ShelveResult(plan, "failed", $"{changed}; worktree kept, shelf {plan.Ref} pushed", sha);
+            }
         }
 
         // Forced only now: the snapshot holds every change and the remote has it.

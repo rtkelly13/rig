@@ -7,6 +7,9 @@ public sealed class FakeProc : IProc
 {
     private readonly List<(string? WorkingDirectory, IReadOnlyList<string> Prefix, Ran Answer)> _answers = [];
 
+    /// <summary>Optional real adapter for commands a contract test does not replace.</summary>
+    public IProc? Fallback { get; init; }
+
     /// <summary>Every request, in the order it was made.</summary>
     public List<ProcRequest> Requests { get; } = [];
 
@@ -37,7 +40,7 @@ public sealed class FakeProc : IProc
         BeforeRun?.Invoke(request);
         var match = _answers.FirstOrDefault(a =>
             (a.WorkingDirectory is null || a.WorkingDirectory == request.WorkingDirectory) && request.Argv.Take(a.Prefix.Count).SequenceEqual(a.Prefix));
-        return match.Answer ?? Unanswered;
+        return match.Answer ?? Fallback?.Run(request) ?? Unanswered;
     }
 
     /// <inheritdoc />
