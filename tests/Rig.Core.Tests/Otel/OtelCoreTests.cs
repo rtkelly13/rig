@@ -229,6 +229,36 @@ public sealed class OtelCoreTests : IDisposable
     }
 
     [Fact]
+    public void A_bad_earlier_repeat_does_not_hide_a_good_last_one()
+    {
+        var span = Assert.Single(TraceSpans.Parse("""{"resourceSpans": [{"scopeSpans": [{"spans": [{"traceId": 5, "traceId": "t", "spanId": "s"}]}]}]}"""));
+
+        Assert.Equal("t", span.TraceId);
+    }
+
+    [Fact]
+    public void A_bad_earlier_envelope_repeat_does_not_drop_the_line()
+    {
+        var skipped = new List<string>();
+
+        var span = Assert.Single(TraceSpans.Parse("""{"resourceSpans": 5, "resourceSpans": [{"scopeSpans": [{"spans": [{"traceId": "t", "spanId": "s"}]}]}]}""", skipped.Add));
+
+        Assert.Equal("t", span.TraceId);
+        Assert.Empty(skipped);
+    }
+
+    [Fact]
+    public void A_repeated_bad_field_still_names_its_path()
+    {
+        var skipped = new List<string>();
+
+        var spans = TraceSpans.Parse("""{"resourceSpans": [{"scopeSpans": [{"spans": [{"traceId": "t", "spanId": "s"}, {"traceId": 5, "traceId": 6, "spanId": "s"}]}]}]}""", skipped.Add);
+
+        Assert.Single(spans);
+        Assert.Contains("$.resourceSpans[0].scopeSpans[0].spans[1].traceId", Assert.Single(skipped), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Envelopes_need_a_positive_batch() =>
         Assert.Throws<ArgumentOutOfRangeException>(() => TraceSpans.Envelopes([], batch: 0));
 

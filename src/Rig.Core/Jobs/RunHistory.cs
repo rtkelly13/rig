@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Rig.Core.Roots;
 using Rig.Core.Storage;
@@ -38,6 +37,9 @@ public sealed record JobRun(
 /// </summary>
 public static partial class RunHistory
 {
+    /// <summary>The newest line format this build reads. A line carries it as <c>version</c>, its first member, only when it is above 1; a line without one is version 1.</summary>
+    public const int FormatVersion = 1;
+
     /// <summary>The history file's name in the jobs folder.</summary>
     public const string HistoryName = "runs.ndjson";
 
@@ -200,7 +202,8 @@ public static partial class RunHistory
     {
         ArgumentNullException.ThrowIfNull(run);
         var text = new StringBuilder("{");
-        text.Append("\"job\":").Append(Quote(run.Job))
+        text.Append(FormatVersion > 1 ? $"\"version\":{FormatVersion.ToString(CultureInfo.InvariantCulture)}," : string.Empty)
+            .Append("\"job\":").Append(Quote(run.Job))
             .Append(",\"run_id\":").Append(Quote(run.RunId))
             .Append(",\"started\":").Append(Quote(run.Started))
             .Append(",\"seconds\":").Append(JsonOutput.Number(run.Seconds))
@@ -215,44 +218,13 @@ public static partial class RunHistory
     }
 
     // A stored run: job, run_id, started, seconds and trigger must be there and typed; returncode, error, output and the trace ids may
-    // be absent or null, and are otherwise a whole number or a string. Fields nothing reads are ignored.
+    // be absent or null, and are otherwise a whole number or a string. A field the history does not define is ignored; a repeated one and a version above FormatVersion are rejected.
     private static JobRun ReadRun(string line)
     {
-        using var document = JsonDocument.Parse(line);
-        var stored = document.RootElement;
-        if (stored.ValueKind != JsonValueKind.Object)
-        {
-            throw JsonProblem.Expected("$", "an object", JsonProblem.Describe(stored));
-        }
-
-        return new JobRun(
-            RequiredText(stored, "job"),
-            RequiredText(stored, "run_id"),
-            RequiredText(stored, "started"),
-            Seconds(stored),
-            Present(stored, "returncode") is null ? null : JsonProblem.WholeNumber(stored, "returncode", "$"),
-            RequiredText(stored, "trigger"),
-            Present(stored, "error") is null ? null : JsonProblem.OptionalString(stored, "error", "$"),
-            OptionalText(stored, "output") ?? string.Empty)
-        {
-            TraceId = OptionalText(stored, "trace_id") ?? string.Empty,
-            SpanId = OptionalText(stored, "span_id") ?? string.Empty,
-        };
+        var stored = JsonProblem.Read(line, RunHistoryJsonContext.Default.StoredRun);
+        JsonProblem.RequireVersion(stored.Version, FormatVersion);
+        return stored.ToRun();
     }
-
-    private static JsonElement? Present(JsonElement stored, string key) =>
-        stored.TryGetProperty(key, out var value) && value.ValueKind != JsonValueKind.Null ? value : null;
-
-    private static string RequiredText(JsonElement stored, string key) =>
-        JsonProblem.OptionalString(stored, key, "$") ?? throw JsonProblem.Expected(JsonProblem.Child("$", key), "a string", "nothing");
-
-    private static string? OptionalText(JsonElement stored, string key) =>
-        Present(stored, key) is null ? null : JsonProblem.OptionalString(stored, key, "$");
-
-    private static double Seconds(JsonElement stored) =>
-        Present(stored, "seconds") is { ValueKind: JsonValueKind.Number } value && value.TryGetDouble(out var seconds)
-            ? seconds
-            : throw JsonProblem.Expected(JsonProblem.Child("$", "seconds"), "a number", stored.TryGetProperty("seconds", out var found) ? JsonProblem.Describe(found) : "nothing");
 
     // serde_json's escaping: the quote, the backslash and control characters; everything else as itself.
     private static string Quote(string value)
