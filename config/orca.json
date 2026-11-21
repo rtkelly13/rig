@@ -99,8 +99,8 @@
       "color": "#10b981",
       "icon": "Package"
     },
-    "Resultful.Assertions": {
-      "path": "~/code/Resultful/Resultful.Assertions",
+    "Union.Assertions": {
+      "path": "~/code/Resultful/Union.Assertions",
       "base_ref": "origin/main",
       "color": "#059669",
       "icon": "Wrench"

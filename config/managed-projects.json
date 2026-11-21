@@ -185,19 +185,12 @@
       }
     },
     {
-      "name": "Resultful.Assertions",
-      "repo": "git@github.com:Resultful/Resultful.Assertions.git",
-      "description": "Assertion packages for result, option and union types (OneOf, Resultful) across assertion libraries.",
+      "name": "Union.Assertions",
+      "repo": "git@github.com:Resultful/Union.Assertions.git",
+      "description": "Assertion packages for OneOf and other union types across assertion libraries.",
       "domain": "Functional Architecture & .NET",
       "stack": ".NET 10 / C#",
       "packages": [
-        {
-          "registry": "nuget",
-          "name": "FluentAssertions.Resultful",
-          "manifest": "src/FluentAssertions.Resultful/FluentAssertions.Resultful.csproj",
-          "workflow": "ci.yml",
-          "auth": "token"
-        },
         {
           "registry": "nuget",
           "name": "FluentAssertions.OneOf",

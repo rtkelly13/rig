@@ -187,7 +187,7 @@
       },
       "repos": [
         "Resultful",
-        "Resultful.Assertions",
+        "Union.Assertions",
         "blog",
         "ProceduralGeneration3DMazes"
       ],
@@ -364,7 +364,7 @@
         "build"
       ]
     },
-    "Resultful.Assertions": {
+    "Union.Assertions": {
       "expected_owner": "Resultful",
       "allowed_owners": [
         "Resultful"
