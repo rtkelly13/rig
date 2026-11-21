@@ -15,6 +15,7 @@ using Rig.Cli.Jobs;
 using Rig.Cli.Latex;
 using Rig.Cli.Mail;
 using Rig.Cli.Models;
+using Rig.Cli.Omarchy;
 using Rig.Cli.Otel;
 using Rig.Cli.Policy;
 using Rig.Cli.Rendering;
@@ -34,6 +35,7 @@ using Rig.Core.Estate;
 using Rig.Core.Flags;
 using Rig.Core.GitHub;
 using Rig.Core.Jobs;
+using Rig.Core.Omarchy;
 using Rig.Core.Orca;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
@@ -237,6 +239,13 @@ internal static class Program
                             return null;
                         }
                     })).Build,
+                new OmarchyCommand(
+                    new OmarchyHost(
+                        OmarchyPaths.Current,
+                        Path.Join(checkout, OmarchyPolicy.RelativePath),
+                        Console.Error),
+                    proc,
+                    Console.Out).Build,
                 new TriageCommand(
                     new TriageHost(Path.Join(AppData.Current(), "rig.db"),
                         Path.Join(Path.GetDirectoryName(Path.GetDirectoryName(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))!, "temp", "triage", "queue.md"),
