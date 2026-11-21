@@ -132,6 +132,7 @@
     {"Id": "cs:estate decisions","Capability": "estate decisions","Owner": "cs:estate decisions","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:estate doctor","Capability": "estate doctor","Owner": "cs:estate doctor","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:estate downloads","Capability": "estate downloads","Owner": "cs:estate downloads","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:estate ff","Capability": "estate ff","Owner": "cs:estate ff","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:estate orca","Capability": "estate orca","Owner": "cs:estate orca","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:estate orca-worktrees","Capability": "estate orca-worktrees","Owner": "cs:estate orca-worktrees","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:estate prune-caches","Capability": "estate prune-caches","Owner": "cs:estate prune-caches","Platforms": ["linux","macos","windows"],"AliasTo": null},
