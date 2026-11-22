@@ -47,6 +47,7 @@ nuget Microsoft.Testing.Extensions.TrxReport = 2.5.2
 nuget CsCheck ~> 5.0 lowest_matching: false
 nuget coverlet.MTP ~> 10.1 lowest_matching: false
 nuget NetArchTest.Rules ~> 1.3 lowest_matching: false
+nuget TngTech.ArchUnitNET ~> 0.13 lowest_matching: false
 nuget Reqnroll.xunit.v3 ~> 3.3 lowest_matching: false
 
 // Browser tests: pinned, because each Playwright release drives a different Chromium build and rendered output is
