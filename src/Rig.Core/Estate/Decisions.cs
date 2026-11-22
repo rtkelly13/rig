@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Estate;
 

@@ -2,6 +2,7 @@ using CsCheck;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Workspace;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Tests.Workspace;
 

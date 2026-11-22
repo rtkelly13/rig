@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 using Rig.Core.Roots;
 using Rig.Core.Text;
 
-namespace Rig.Core.Estate;
+namespace Rig.Core.Worktrees;
 
 /// <summary>The clones found under a scan root, and whether they came from the cache.</summary>
 /// <param name="Paths">Each clone's folder.</param>

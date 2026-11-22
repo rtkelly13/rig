@@ -1,7 +1,10 @@
 using System.Text;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;
+using Rig.Core.Worktrees;
+using Rig.Core.Wrapups;
 using static Rig.Core.Tests.Estate.WrapupFixtures;
 
 namespace Rig.Core.Tests.Estate;

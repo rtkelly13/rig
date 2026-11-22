@@ -1,6 +1,9 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Tests.Fakes;
+using Rig.Core.Worktrees;
+using Rig.Core.Wrapups;
 using static Rig.Core.Tests.Estate.WrapupFixtures;
 using View = System.Func<double, (string State, string Prompt, string? Reply)?>;
 

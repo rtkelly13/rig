@@ -1,5 +1,6 @@
 using System.Globalization;
 using Rig.Core.Processes;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Estate;
 

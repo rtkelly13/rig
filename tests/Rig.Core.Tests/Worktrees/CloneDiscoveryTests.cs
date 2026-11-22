@@ -2,8 +2,9 @@ using System.Text.Json.Nodes;
 using Rig.Core.Estate;
 using Rig.Core.Roots;
 using Rig.Core.Tests.Otel;
+using Rig.Core.Worktrees;
 
-namespace Rig.Core.Tests.Estate;
+namespace Rig.Core.Tests.Worktrees;
 
 /// <summary><see cref="CloneDiscovery"/>: the bounded scan, and the cache it writes.</summary>
 public sealed class CloneDiscoveryTests

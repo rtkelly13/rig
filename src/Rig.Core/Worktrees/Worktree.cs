@@ -1,6 +1,6 @@
 using Rig.Core.Processes;
 
-namespace Rig.Core.Estate;
+namespace Rig.Core.Worktrees;
 
 /// <summary>One entry of <c>git worktree list --porcelain</c>.</summary>
 /// <param name="Path">The worktree's folder, as git reports it but with the platform's separators: git prints <c>/</c> on Windows too.</param>

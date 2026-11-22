@@ -1,4 +1,4 @@
-namespace Rig.Core.Estate;
+namespace Rig.Core.Worktrees;
 
 /// <summary>
 /// Orders paths segment by segment, as a path sorts: <c>foo/bar</c> before <c>foo-x</c>, where a

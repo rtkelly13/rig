@@ -3,6 +3,7 @@ using System.Text.Json;
 using Rig.Cli.Models;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Worktrees;
 
 namespace Rig.Cli.Tests.Models;
 

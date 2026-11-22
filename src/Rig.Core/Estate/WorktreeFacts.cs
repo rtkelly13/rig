@@ -1,3 +1,5 @@
+using Rig.Core.Worktrees;
+
 namespace Rig.Core.Estate;
 
 /// <summary>
