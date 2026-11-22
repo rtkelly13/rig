@@ -152,6 +152,12 @@ public static class JobRegistry
             });
         }
 
+        jobs.Add(new("estate-orca-shelve", "Shelve Orca worktrees inactive 14+ days, publish recovery PRs and clear their sidebar entries.",
+            [rig, "estate", "orca-shelve", "--all", "--apply", "--orca-data", env.OrcaUserData,
+                "--write", Path.Join(Path.GetDirectoryName(env.DecisionsFeed) ?? ".", "orca-shelving.json")], Both, JobCadence.Daily, 60)
+        {
+            RetryExitCodes = new HashSet<int> { 2 },
+        });
         jobs.Add(new("estate-decisions", "Write the feed of worktrees and directories only a human can decide about.",
             [rig, "estate", "decisions", .. env.EstateRoots.SelectMany(root => new[] { "--root", root }), "--write", env.DecisionsFeed], Both,
             JobCadence.Daily, 30));

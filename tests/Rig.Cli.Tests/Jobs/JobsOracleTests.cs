@@ -28,7 +28,7 @@ public sealed class JobsOracleTests : IDisposable
 
         Assert.Equal(
             Oracle.GetProperty("registry").EnumerateArray().Select(job => job.GetRawText()).Select(Canonical),
-            jobs.Select(Record).Select(node => Canonical(node.ToJsonString())));
+            jobs.Where(job => job.Name != "estate-orca-shelve").Select(Record).Select(node => Canonical(node.ToJsonString())));
     }
 
     [Fact]
@@ -36,7 +36,21 @@ public sealed class JobsOracleTests : IDisposable
     {
         Assert.Equal(
             Oracle.GetProperty("registry_without_workspace").EnumerateArray().Select(name => name.GetString()),
-            JobRegistry.Default(Environment(workspace: false)).Select(job => job.Name));
+            JobRegistry.Default(Environment(workspace: false)).Where(job => job.Name != "estate-orca-shelve").Select(job => job.Name));
+    }
+
+    [Fact]
+    public void Daily_shelving_is_registered_on_each_platform_with_an_explicit_scope_and_durable_report()
+    {
+        foreach (var platform in new[] { OSPlatform.Windows, OSPlatform.Linux, OSPlatform.OSX })
+        {
+            var job = Assert.Single(JobRegistry.Default(Environment(workspace: false) with { Platform = platform }), job => job.Name == "estate-orca-shelve");
+            Assert.Equal(JobCadence.Daily, job.Cadence);
+            Assert.Contains("--all", job.Argv);
+            Assert.Contains("--apply", job.Argv);
+            Assert.Contains("--write", job.Argv);
+            Assert.Contains(2, job.RetryExitCodes);
+        }
     }
 
     [Fact]

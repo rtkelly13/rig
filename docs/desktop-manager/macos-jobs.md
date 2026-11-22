@@ -90,3 +90,5 @@ to retry one job manually, retaining the same run lock.
 
 This implements macOS support in the existing jobs/launchd adapters, following
 [target architecture: one external-state port and one code-root resolver](../target-architecture.md#ports-one-per-kind-of-external-state).
+
+The daily `estate-orca-shelve` job follows [rig’s 14-day shelving policy](../estate/orca-shelving.md), publishing recovery PRs before cleanup.

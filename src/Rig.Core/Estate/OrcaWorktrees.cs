@@ -639,7 +639,7 @@ public sealed class OrcaWorktrees(Git git, IProc proc, PrLookup? prs = null)
         return common.Length > 0 ? Comparable(common) : string.Empty;
     }
 
-    private async Task<bool> BelongsToAsync(string path, string? repo, CancellationToken cancellationToken)
+    internal async Task<bool> BelongsToAsync(string path, string? repo, CancellationToken cancellationToken)
     {
         if (repo is null)
         {

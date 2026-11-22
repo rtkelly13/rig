@@ -81,6 +81,7 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(new PruneCachesCommand(host, proc, findTool, time, output, error).Build());
         estate.Subcommands.Add(new DecisionsCommand(host, git, github, time, OperatingSystem.IsWindows(), output, error).Build());
         estate.Subcommands.Add(new OrcaLayoutCommand(host, orca, proc, github, output, error).Build());
+        estate.Subcommands.Add(new OrcaShelvingCommand(host, orca, git, proc, time, output, error).Build());
         estate.Subcommands.Add(new OrcaWorktreesCommand(host, orca, git, proc, time, output, error).Build());
         estate.Subcommands.Add(new WrapupCommand(host, git, proc, time, wrapup ?? WrapupHost.Inert(time), output, error).Build());
         foreach (var command in new ShelveCommand(host, git, proc, github, time, ClonesAsync, CodeRoot, OneCloneAsync, output, error).Build())

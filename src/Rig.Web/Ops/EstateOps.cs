@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
 
@@ -36,7 +37,34 @@ public sealed class EstateOps : IDisposable
     public TrimCache Trims { get; }
 
     /// <summary>The decisions feed, with a note saying why it is empty when it is.</summary>
-    public DecisionFeedView Decisions() => DecisionFeed.Read(_feedPath);
+    public DecisionFeedView Decisions()
+    {
+        var feed = DecisionFeed.Read(_feedPath);
+        var shelving = Path.Join(Path.GetDirectoryName(_feedPath)!, "orca-shelving.json");
+        if (!File.Exists(shelving))
+        {
+            return feed;
+        }
+
+        try
+        {
+            var rows = JsonSerializer.Deserialize(File.ReadAllText(shelving), OrcaShelvingJson.Default.ListOrcaShelvingRow)
+                ?? throw new JsonException("Empty Orca shelving report");
+            var decisions = rows.Where(row => row.Outcome is "needs-decision" or "failed" or "shelf-verified" or "removing")
+                .Select(row => new Decision(row.PrUrl is null ? "no-pr-worktree" : "unpushed-worktree", row.Repo, row.Path,
+                    $"Daily Orca shelving: {row.Reason}. Branch: {row.Branch}. Shelf: {row.Shelf}. PR: {row.PrUrl}",
+                    0, "Review the shelving refusal; preserved work stays in the worktree or verified recovery shelf",
+                    "rig estate orca-shelve --all --json"));
+            return feed with
+            {
+                Decisions = Rig.Core.Estate.Decisions.Unique([.. feed.Decisions, .. decisions], OperatingSystem.IsWindows()).ToList(),
+            };
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return feed with { Note = $"{feed.Note} Orca shelving report unreadable: {e.Message}".Trim() };
+        }
+    }
 
     /// <summary>Total, used and free bytes on the drive holding the code root.</summary>
     public DiskUsageView Disk()

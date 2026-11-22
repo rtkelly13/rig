@@ -101,3 +101,5 @@ Each page goes one level deeper. Read the one for the command you are using.
   `estate risk` are printed for you to run.
 - **Judge whether a clone is still wanted.** It reports last-commit age and
   duplicate origins; abandonment is your call.
+
+[Daily Orca shelving](orca-shelving.md) checkpoints inactive work, publishes recovery PRs and clears the sidebar through rig jobs.
