@@ -1,6 +1,7 @@
 using CsCheck;
 using Rig.Core.Desktop;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Tests.Desktop;
 

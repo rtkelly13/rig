@@ -1,6 +1,6 @@
-using Rig.Core.Desktop.Windows.Uia;
+using Rig.Core.Windows.Uia;
 
-namespace Rig.Core.Tests.Desktop.Windows;
+namespace Rig.Core.Tests.Windows.Uia;
 
 public sealed class UiaTypesTests
 {

@@ -1,8 +1,8 @@
 using System.Runtime.Versioning;
 using Rig.Core.Desktop.Windows;
-using Rig.Core.Desktop.Windows.Uia;
+using Rig.Core.Windows.Uia;
 
-namespace Rig.Core.Tests.Desktop.Windows;
+namespace Rig.Core.Tests.Windows.Uia;
 
 /// <summary>
 /// The real UI Automation session, on the Windows CI job and Windows machines only: it opens, reads a live window's

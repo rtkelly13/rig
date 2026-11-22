@@ -1,4 +1,4 @@
-namespace Rig.Core.Desktop;
+namespace Rig.Core.Windows;
 
 /// <summary>Which virtual desktop a window is on: all window inventory needs from the virtual-desktop layer.</summary>
 public interface IWindowDesktops

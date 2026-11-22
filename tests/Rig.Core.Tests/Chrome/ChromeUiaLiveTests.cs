@@ -1,7 +1,9 @@
 using System.Runtime.Versioning;
 using Rig.Core.Chrome.Windows;
 using Rig.Core.Desktop.Windows;
-using Rig.Core.Desktop.Windows.Uia;
+using Rig.Core.Screens;
+using Rig.Core.Windows;
+using Rig.Core.Windows.Uia;
 
 namespace Rig.Core.Tests.Chrome;
 
@@ -36,7 +38,7 @@ public sealed class ChromeUiaLiveTests
         Assert.Equal(windows[0].Handle, reader.ReadWindow(windows[0].Handle)?.Handle);
     }
 
-    private sealed class NoDesktops : Rig.Core.Desktop.IWindowDesktops
+    private sealed class NoDesktops : Rig.Core.Windows.IWindowDesktops
     {
         public bool IsOnCurrentDesktop(long handle) => true;
 

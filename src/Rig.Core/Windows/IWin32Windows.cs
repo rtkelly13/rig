@@ -1,9 +1,11 @@
-namespace Rig.Core.Desktop.Windows;
+using Rig.Core.Screens;
+
+namespace Rig.Core.Windows;
 
 /// <summary>
 /// The Win32 reads window inventory is built from, one call each, with no policy of their own. A failed call answers
 /// null, zero or empty rather than throwing. The real one is
-/// <see cref="NativeWin32Windows"/>; tests use a fake, so <see cref="WindowInventory"/> is tested on every OS.
+/// <see cref="Rig.Core.Desktop.Windows.NativeWin32Windows"/>; tests use a fake, so <see cref="Rig.Core.Desktop.Windows.WindowInventory"/> is tested on every OS.
 /// </summary>
 public interface IWin32Windows
 {

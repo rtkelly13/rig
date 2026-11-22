@@ -1,3 +1,5 @@
+using Rig.Core.Screens;
+
 namespace Rig.Core.Desktop;
 
 /// <summary>

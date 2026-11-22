@@ -4,8 +4,9 @@ using Rig.Core.Chrome;
 using Rig.Core.Chrome.Windows;
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
-using Rig.Core.Desktop.Windows.Uia;
 using Rig.Core.Processes;
+using Rig.Core.Windows;
+using Rig.Core.Windows.Uia;
 using Rig.Core.Workspace;
 
 namespace Rig.Cli.Chrome;

@@ -1,4 +1,5 @@
-using Rig.Core.Desktop.Windows.Uia;
+using Rig.Core.Screens;
+using Rig.Core.Windows.Uia;
 
 namespace Rig.Core.Tests.Desktop.Windows;
 
