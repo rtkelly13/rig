@@ -57,11 +57,18 @@ on the PATH a scheduled task gets, so every size read **0** and failed silently:
 `reclaim` reported nothing reclaimable and `downloads` dropped every directory.
 All of them now run on the C# CLI (`src/Rig.Cli/Estate/`, logic in `src/Rig.Core/Estate/`).
 
-- **Sizing** (`DiskUsage`) keeps `du -sk` on POSIX and walks the tree on
-  Windows, counting a hardlinked file only when *every* link is inside the tree.
-  uv builds `.venv`s from hardlinks into its cache, so logical size overstates
-  what deleting one frees by 2-3x; the walker reports what deletion would
-  actually free.
+- **Sizing** (`DiskUsage`) walks the tree on every OS, counting a hardlinked
+  file only when *every* link is inside the tree. uv builds `.venv`s from
+  hardlinks into its cache, so logical size overstates what deleting one frees
+  by 2-3x. On macOS it also reads APFS clone groups (`getattrlist`: clone id,
+  reference count, private bytes): .NET's `File.Copy` clones, so a `bin` is
+  mostly clones of the NuGet cache and of sibling projects' output. A clone
+  group frees its shared blocks only when every member is inside the tree, and
+  each clone frees its private blocks regardless. `du` counted clones in full:
+  on this estate it reported 85.7 GB reclaimable in rows of 500 MB or more
+  where the walk finds 3.4 GB, and deleting all 82 rig worktrees together
+  would free 7 GB of their 114 GB. Linux reflinks (btrfs, XFS) and ReFS block
+  clones are not read yet, so there a cloned file still counts as its own.
 - **Apps** (`InstalledApps`, `UninstallRegistry`) reads the three Uninstall registry hives.
   Windows keeps no reliable last-used time, so "dormant" means *not installed or
   updated in 180 days*. Side-by-side IDE and SDK versions are the stronger

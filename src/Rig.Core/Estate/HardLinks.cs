@@ -10,17 +10,43 @@ namespace Rig.Core.Estate;
 /// <param name="Device">The volume (<c>st_dev</c>; the volume serial number on Windows).</param>
 /// <param name="Inode">The file on that volume (<c>st_ino</c>; the 64-bit file index on Windows).</param>
 /// <param name="Links">How many names the file has (<c>st_nlink</c>).</param>
-public readonly record struct FileIdentity(ulong Device, ulong Inode, ulong Links);
+public readonly record struct FileIdentity(ulong Device, ulong Inode, ulong Links)
+{
+    /// <summary>The copy-on-write clone group the file's blocks belong to; null where clones are not read.</summary>
+    public FileClone? Cloned { get; init; }
+
+    /// <summary>Whether the file shares blocks with another clone.</summary>
+    public bool IsCloned => Cloned is { References: > 1 };
+
+    /// <summary>
+    /// What deleting this one name frees out of <paramref name="allocated"/>: nothing while another hardlink remains,
+    /// only the clone's private blocks while another clone remains, and all of it otherwise.
+    /// </summary>
+    public long Alone(long allocated) => Links > 1 ? 0 : Cloned is { References: > 1 } clone ? Math.Min(clone.Private, allocated) : allocated;
+}
+
+/// <summary>A file's place in a copy-on-write clone group (APFS <c>clonefile</c>).</summary>
+/// <param name="Id">The group, shared by every clone in it: the inode of the file first cloned.</param>
+/// <param name="References">How many files share the group's blocks; one is a file with no clone.</param>
+/// <param name="Private">The bytes this file alone holds: what deleting it frees while another clone remains.</param>
+public readonly record struct FileClone(ulong Id, ulong References, long Private);
 
 /// <summary>
-/// Link counts and file identity, which .NET has no managed API for: <c>lstat</c> on Unix, the file handle's information
-/// on Windows. A link is never followed on Unix; on Windows the walks that ask skip links before asking.
+/// Link counts, clone groups and file identity, which .NET has no managed API for: <c>lstat</c> on Unix, the file
+/// handle's information on Windows, and <c>getattrlist</c> for APFS clones on macOS. A link is never followed on Unix; on
+/// Windows the walks that ask skip links before asking.
 /// </summary>
 /// <remarks>
 /// <c>struct stat</c> holds <c>st_ino</c> as a u64 at byte 8 everywhere supported, but <c>st_dev</c> and <c>st_nlink</c>
 /// move: macOS (the 64-bit-inode layout) has a 32-bit <c>st_dev</c> at 0 and a 16-bit <c>st_nlink</c> at 6; Linux x64 a
 /// 64-bit <c>st_dev</c> at 0 and a 64-bit <c>st_nlink</c> at 16; Linux arm64 (the generic layout) a 64-bit
 /// <c>st_dev</c> at 0 and a 32-bit <c>st_nlink</c> at 20.
+/// <para>
+/// .NET's <c>File.Copy</c> clones on APFS, so a <c>bin</c> folder is mostly clones of the NuGet cache and of its sibling
+/// projects' output: one <c>st_nlink</c>, yet deleting it frees only each file's private blocks. Clones are read only on
+/// macOS. Linux reflinks (btrfs, XFS) and ReFS block clones on Windows are not detected, so there a cloned file counts
+/// as wholly its own and the freeable figure overstates.
+/// </para>
 /// </remarks>
 public static partial class HardLinks
 {
@@ -35,9 +61,6 @@ public static partial class HardLinks
         ArgumentNullException.ThrowIfNull(path);
         return OperatingSystem.IsWindows() ? WindowsIdentity(path) : UnixIdentity(path);
     }
-
-    /// <summary>How many names <paramref name="path"/> has; one when that cannot be read, so the file counts as its own.</summary>
-    public static ulong Count(string path) => Identify(path)?.Links ?? 1;
 
     [UnsupportedOSPlatform("windows")]
     private static unsafe FileIdentity? UnixIdentity(string path)
@@ -54,11 +77,40 @@ public static partial class HardLinks
         var inode = *(ulong*)(buffer + InodeOffset);
         if (OperatingSystem.IsMacOS())
         {
-            return new FileIdentity(*(uint*)buffer, inode, *(ushort*)(buffer + 6));
+            return new FileIdentity(*(uint*)buffer, inode, *(ushort*)(buffer + 6)) { Cloned = MacClone(path) };
         }
 
         var links = RuntimeInformation.ProcessArchitecture == Architecture.X64 ? *(ulong*)(buffer + 16) : *(uint*)(buffer + 20);
         return new FileIdentity(*(ulong*)buffer, inode, links);
+    }
+
+    // getattrlist(2): FSOPT_NOFOLLOW | FSOPT_PACK_INVAL_ATTRS | FSOPT_ATTR_CMN_EXTENDED, the last so forkattr names the
+    // extended common attributes. They come back in bit order after the length and the returned set: ATTR_CMNEXT_
+    // PRIVATESIZE (off_t), ATTR_CMNEXT_CLONEID (u64), ATTR_CMNEXT_CLONE_REFCNT (u32).
+    private const uint GetAttrOptions = 0x1 | 0x8 | 0x20;
+    private const uint ReturnedAttrs = 0x80000000;
+    private const uint PrivateSize = 0x8;
+    private const uint CloneId = 0x100;
+    private const uint CloneRefCount = 0x1000;
+    private const int AttrHeader = 4 + (5 * 4);
+
+    [SupportedOSPlatform("macos")]
+    [ExcludeFromCodeCoverage(Justification = "macOS-only; CI has no macOS runner. The grouping it feeds is tested through WalkTree's seam.")]
+    private static unsafe FileClone? MacClone(string path)
+    {
+        var request = new AttrList { BitmapCount = 5, CommonAttr = ReturnedAttrs, ForkAttr = PrivateSize | CloneId | CloneRefCount };
+        var buffer = stackalloc byte[64];
+        if (GetAttrList(path, &request, buffer, 64, GetAttrOptions) != 0)
+        {
+            return null;
+        }
+
+        // Volumes without clone mapping (HFS+, network shares) leave the bits out of the returned set.
+        var returned = *(uint*)(buffer + 4 + (4 * 4));
+        const uint wanted = PrivateSize | CloneId | CloneRefCount;
+        return (returned & wanted) == wanted
+            ? new FileClone(*(ulong*)(buffer + AttrHeader + 8), *(uint*)(buffer + AttrHeader + 16), *(long*)(buffer + AttrHeader))
+            : null;
     }
 
     [SupportedOSPlatform("windows")]
@@ -86,6 +138,23 @@ public static partial class HardLinks
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
     [LibraryImport("libc", EntryPoint = "lstat$INODE64", StringMarshalling = StringMarshalling.Utf8)]
     private static unsafe partial int LStatInode64(string path, byte* buffer);
+
+    [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
+    [LibraryImport("libc", EntryPoint = "getattrlist", StringMarshalling = StringMarshalling.Utf8)]
+    private static unsafe partial int GetAttrList(string path, AttrList* request, byte* buffer, nuint size, uint options);
+
+    // struct attrlist: a u16 count, a u16 reserved, then the five attribute groups.
+    [StructLayout(LayoutKind.Sequential)]
+    private struct AttrList
+    {
+        public ushort BitmapCount;
+        public ushort Reserved;
+        public uint CommonAttr;
+        public uint VolAttr;
+        public uint DirAttr;
+        public uint FileAttr;
+        public uint ForkAttr;
+    }
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

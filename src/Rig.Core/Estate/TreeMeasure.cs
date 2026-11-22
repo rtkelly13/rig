@@ -3,7 +3,9 @@ namespace Rig.Core.Estate;
 
 /// <summary>What deleting a tree would free, and whether it may be deleted at all.</summary>
 /// <param name="Apparent">Every file's length.</param>
-/// <param name="Freeable">The lengths of files with no other name: deleting a hardlinked copy frees nothing.</param>
+/// <param name="Freeable">
+/// The bytes each file frees alone: a hardlinked copy frees nothing, an APFS clone only its private blocks.
+/// </param>
 /// <param name="HoldsCheckout">
 /// A <c>.git</c> file or folder exists below the root, or a folder below it could not be listed and might hold one; the
 /// walk stopped there.
@@ -67,7 +69,7 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
                 apparent += size;
                 if (!sampled || size >= LargeFile)
                 {
-                    known += HardLinks.Count(entry.FullName) <= 1 ? size : 0;
+                    known += Alone(entry.FullName, size);
                     continue;
                 }
 
@@ -76,7 +78,7 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
                 if (smallSeen % SampleStride == 1)
                 {
                     sampledBytes += size;
-                    sampledFreeable += HardLinks.Count(entry.FullName) <= 1 ? size : 0;
+                    sampledFreeable += Alone(entry.FullName, size);
                 }
             }
         }
@@ -133,6 +135,9 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
         return false;
     }
 
+    private static long Alone(string path, long size) =>
+        HardLinks.Identify(path) is { } identity ? identity.Alone(size) : size;
+
     /// <summary>One folder's entries, hidden ones included; null when it cannot be listed.</summary>
     internal static List<FileSystemInfo>? Entries(string folder)
     {
@@ -145,6 +150,6 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
 }
 
 /// <summary>A tree's allocation, split by whether deleting the tree frees it.</summary>
-/// <param name="Freeable">Bytes that go with the tree: every name of the file is inside it.</param>
-/// <param name="Shared">Bytes also named from outside the tree: deleting it frees none of them.</param>
+/// <param name="Freeable">Bytes that go with the tree: every name of the file, or every clone of its blocks, is inside it.</param>
+/// <param name="Shared">Bytes also named or cloned from outside the tree: deleting it frees none of them.</param>
 public sealed record TreeSize(long Freeable, long Shared);

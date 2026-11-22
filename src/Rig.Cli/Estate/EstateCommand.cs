@@ -89,7 +89,7 @@ internal sealed class EstateCommand(
             estate.Subcommands.Add(command);
         }
 
-        var disk = new DiskUsage(proc);
+        var disk = new DiskUsage();
         estate.Subcommands.Add(new AppsCommand(
             new InstalledApps(proc, disk, time), InstalledApps.DefaultAppDirs(host.Home), OperatingSystem.IsWindows() ? new UninstallRegistry() : null, time, output).Build());
         estate.Subcommands.Add(new DownloadsCommand(new Downloads(disk), Downloads.DefaultFolder(host.Home), () => Downloads.DefaultCloudRoots(host.Home), output).Build());
@@ -413,7 +413,7 @@ internal sealed class EstateCommand(
         var table = new TextTable(
             "Reclaimable" + (apply ? string.Empty : " (dry run — pass --apply)"),
             [("clone", false), ("path", false), ("size", true), ("comes back from", false), (string.Empty, true)]);
-        var scanner = new Reclaim(git, new DiskUsage(proc));
+        var scanner = new Reclaim(git, new DiskUsage());
         var removal = new TreeRemoval(proc);
         var busy = await Busy.SnapshotAsync(proc, cancellationToken).ConfigureAwait(false);
         long freed = 0, pending = 0;
@@ -494,7 +494,7 @@ internal sealed class EstateCommand(
         var clones = await ClonesAsync(scanRoot, refresh, quiet: json, cancellationToken).ConfigureAwait(false);
         var exposures = new List<Exposure>(clones.Count);
         var reclaims = new Dictionary<string, RepoReclaim>(StringComparer.Ordinal);
-        var reclaim = new Reclaim(git, new DiskUsage(proc));
+        var reclaim = new Reclaim(git, new DiskUsage());
         foreach (var clone in clones)
         {
             exposures.Add(await Exposure.InspectAsync(git, clone, perBranch).ConfigureAwait(false));
@@ -641,7 +641,7 @@ internal sealed class EstateCommand(
         var heads = merged ? await MergedHeadsAsync(clone, cancellationToken).ConfigureAwait(false) : null;
         var report = await new RepoChecks(git, time).InspectAsync(clone, heads).ConfigureAwait(false);
         var exposure = await Exposure.InspectAsync(git, clone, perBranch: true).ConfigureAwait(false);
-        var disk = await new Reclaim(git, new DiskUsage(proc)).ScanRepoAsync(clone, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var disk = await new Reclaim(git, new DiskUsage()).ScanRepoAsync(clone, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         if (json)
         {

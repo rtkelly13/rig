@@ -1,7 +1,6 @@
 using Rig.Core.Processes;
 using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
-using Rig.Core.Storage;
 
 namespace Rig.Core.Estate;
 
@@ -100,49 +99,7 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
 
     private static readonly TimeSpan GitTimeout = TimeSpan.FromSeconds(60);
 
-    private static readonly Dictionary<string, string> ByName = new(StringComparer.Ordinal)
-    {
-        ["node_modules"] = "node_modules",
-        [".venv"] = "python venv",
-        ["venv"] = "python venv",
-        ["dist"] = "js build output",
-        [".next"] = "js build output",
-        [".turbo"] = "js build output",
-        ["storybook-static"] = "js build output",
-        [".pytest_cache"] = "tool caches",
-        [".mypy_cache"] = "tool caches",
-        [".ruff_cache"] = "tool caches",
-        [".tox"] = "tool caches",
-        [".nox"] = "tool caches",
-    };
-
-    private static readonly string[] DotnetProjects = ["*.csproj", "*.fsproj", "*.vbproj"];
-
     private static readonly HashSet<string> NeverDescend = new(StringComparer.Ordinal) { ".git", ".worktrees", "temp" };
-
-    /// <summary>The regenerable category <paramref name="path"/> belongs to, or null when it is not one.</summary>
-    public static string? CategoryOf(string path)
-    {
-        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
-        var parent = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path)) ?? string.Empty;
-        if (ByName.TryGetValue(name, out var category))
-        {
-            return category;
-        }
-
-        return name switch
-        {
-            "bin" or "obj" when DotnetProjects.Any(pattern => Has(parent, pattern)) => "dotnet build output",
-            "packages" when Has(parent, "*.sln") => "dotnet build output",
-            "target" when File.Exists(Path.Join(parent, "Cargo.toml")) => "rust build output",
-            _ => null,
-        };
-    }
-
-    private static bool Has(string folder, string pattern)
-    {
-        return FileGuard.Try(() => Directory.EnumerateFiles(folder, pattern).Any(), false);
-    }
 
     /// <summary>Every candidate folder within <see cref="MaxDepth"/> of <paramref name="root"/>, without entering one.</summary>
     public static IReadOnlyList<(string Path, string Category)> Candidates(string root)
@@ -157,7 +114,7 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
                 .Order(PathOrder.Instance);
             foreach (var child in children)
             {
-                if (CategoryOf(child) is { } category)
+                if (IgnoredTiers.OnDisk(child)?.Category is { } category)
                 {
                     found.Add((child, category));
                 }
@@ -347,7 +304,7 @@ public sealed class Trim(Git git, TimeProvider time) : IReconciler<TrimTarget, T
             return registration;
         }
 
-        if (CategoryOf(item.Path) != item.Category)
+        if (IgnoredTiers.OnDisk(item.Path)?.Category != item.Category)
         {
             return "no longer regenerable output";
         }

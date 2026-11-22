@@ -26,12 +26,25 @@ Every candidate directory has to prove it is safe on its own:
 | it resolves outside the worktree | a symlink or junction points at someone else's data |
 | a `.git` exists anywhere below it | a checkout is parked inside it |
 
-`bin`/`obj` count as build output only beside a .NET project file, `packages`
-only beside a `.sln`, and `target` only beside `Cargo.toml`. The main checkout,
-locked worktrees and each worktree's `temp/` are never touched. Sizes are
-measured in Python rather than with `du`, because `du` is not on a scheduled
-task's PATH. A file hard-linked from the uv cache or pnpm store frees nothing
-when it is deleted, so it does not count as freeable.
+What counts as a candidate is one table, `IgnoredTiers`, shared with shelving
+and ranked by how soon deleting it is safe:
+
+| tier | examples | comes back from |
+|---|---|---|
+| 1 build output | `bin`, `obj`, `dist`, `.next`, `target`, `TestResults`, `*.tsbuildinfo` | the next build |
+| 2 tool caches | `__pycache__`, `.pytest_cache`, `.ruff_cache`, `logs`, `*.pyc`, `.DS_Store` | the next run |
+| 3 dependencies | `node_modules`, `.venv`, `packages`, `paket-files` | an install |
+| 4 scratch | `temp/` | nothing: may hold nested checkouts |
+| 5 notes | ignored `*.md` such as `TODO.md` | nothing: someone's notes |
+| 6 local config | `.env*`, `*.local.*` | nothing: never deleted, never pushed |
+| 7 unknown | anything else | a person decides |
+
+Shelving drops tiers 1-3 by name. Trim takes only the rows marked trimmed, and
+on disk: `bin`/`obj` count as build output only beside a .NET project file,
+`packages` only beside a `.sln`, and `target` only beside `Cargo.toml`. The main
+checkout, locked worktrees and each worktree's `temp/` are never touched. A file
+hard-linked from the uv cache or pnpm store, or cloned from the NuGet cache on
+APFS, frees only what no other name holds (see [Internals](./internals.md)).
 
 The scheduled jobs pass `--root` explicitly. Left to itself, `estate` puts the
 code root beside the checkout its own code runs from. For the installed runtime

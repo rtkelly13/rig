@@ -41,7 +41,11 @@ No single one of these causes explains the space. They compound.
   sizing failed silently. A tool that sizes things needs a test that the size
   is not 0.
 - **Hardlinks overstate size by 2–3x.** Count a hardlinked file only when every
-  link to it is inside the tree being removed (`disksize.du`).
+  link to it is inside the tree being removed (`DiskUsage.WalkTree`).
+- **APFS clones overstate it by 10x or more.** `du` reported 114 GB of rig
+  worktrees that would free 7 GB together, and almost nothing one at a time:
+  `bin` folders are clones of the NuGet cache and of each other. Count clone
+  groups the way hardlinks are counted.
 - **Volume-scale questions need the MFT.** A walk of `C:\code` took over 40
   minutes; WizTree reads the MFT in about one.
 
