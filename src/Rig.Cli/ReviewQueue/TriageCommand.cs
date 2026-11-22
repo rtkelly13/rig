@@ -3,6 +3,7 @@ using System.CommandLine.Parsing;
 using System.Text.Json;
 using DotMake.CommandLine;
 using Microsoft.Data.Sqlite;
+using Rig.Cli.Commands;
 using Rig.Core;
 using Rig.Core.GitHub;
 using Rig.Core.ReviewQueue;

@@ -3,7 +3,7 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 
-namespace Rig.Cli;
+namespace Rig.Cli.Commands;
 
 /// <summary>
 /// A command whose <c>--help</c> ends with <see cref="Notes"/>: what it decides, its exit codes and examples. The
