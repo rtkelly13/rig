@@ -1,6 +1,7 @@
 using Rig.Core.GitHub;
+using Rig.Core.Text;
 
-namespace Rig.Core.Tests.GitHub;
+namespace Rig.Core.Tests.Text;
 
 /// <summary>Ported case for case from tests/test_repo_slug.py.</summary>
 public sealed class RepoSlugTests

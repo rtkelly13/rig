@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Rig.Core.GitHub;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
 
 namespace Rig.Core.Chrome;

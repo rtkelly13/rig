@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace Rig.Core.Text;
 
@@ -10,6 +11,18 @@ namespace Rig.Core.Text;
 /// </summary>
 public static class QuotedText
 {
+    private static readonly Regex ShellSafe = new(@"^[\w@%+=:,./-]+$", RegexOptions.CultureInvariant | RegexOptions.ECMAScript, TimeSpan.FromSeconds(1));
+
+    /// <summary>
+    /// A word quoted for a POSIX shell, as Python's <c>shlex.quote</c> does it: bare when every character is an ASCII
+    /// letter, digit or one of <c>_@%+=:,./-</c>, else single-quoted.
+    /// </summary>
+    public static string Shell(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return text.Length == 0 ? "''" : ShellSafe.IsMatch(text) ? text : "'" + text.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
+    }
+
     /// <summary>The text quoted: single quotes, or double when the text holds a single quote and no double one.</summary>
     public static string Str(string text)
     {

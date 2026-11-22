@@ -1,4 +1,5 @@
 using Rig.Core.Processes;
+using Rig.Core.Text;
 
 namespace Rig.Core.GitHub;
 

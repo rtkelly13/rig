@@ -1,4 +1,3 @@
-using Rig.Core.GitHub;
 using Rig.Core.Text;
 
 namespace Rig.Cli.Gh;

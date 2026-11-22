@@ -2,7 +2,6 @@
 using System.CommandLine;
 using System.Text.Json;
 using Rig.Core;
-using Rig.Core.GitHub;
 using Rig.Core.Text;
 
 namespace Rig.Cli.Gh.Threads;

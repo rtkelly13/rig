@@ -49,4 +49,14 @@ public sealed class QuotedTextTests
 
         Assert.Equal("""{"name":"é","size":2}""", QuotedText.Json(node));
     }
+
+    [Theory]
+    [InlineData("plain-word_1.txt", "plain-word_1.txt")]
+    [InlineData("path:/a/b@c%d+e=f,g", "path:/a/b@c%d+e=f,g")]
+    [InlineData("", "''")]
+    [InlineData("two words", "'two words'")]
+    [InlineData("it's", "'it'\"'\"'s'")]
+    [InlineData("$HOME", "'$HOME'")]
+    [InlineData("café", "'café'")]
+    public void Shell_quotes_as_shlex_quote_does(string text, string expected) => Assert.Equal(expected, QuotedText.Shell(text));
 }

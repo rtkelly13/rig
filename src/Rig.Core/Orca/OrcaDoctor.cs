@@ -1,6 +1,6 @@
 using System.Globalization;
-using Rig.Core.Estate;
 using Rig.Core.Packages;
+using Rig.Core.Text;
 
 namespace Rig.Core.Orca;
 
@@ -279,8 +279,8 @@ public static class OrcaDoctor
             : $"{state.Branch} is {Commits(state.Behind)} behind {state.Tracking}";
         var fix = state.Ahead > 0
             ? $"local {state.Branch} has commits {state.Tracking} lacks; reconcile them manually, then fast-forward"
-            : $"cd {WrapupText.ShellQuote(OrcaPaths.Posix(repo.Path))} && git fetch {WrapupText.ShellQuote(state.Remote)} "
-                + $"&& git switch {WrapupText.ShellQuote(state.Branch)} && git merge --ff-only {WrapupText.ShellQuote(state.Tracking)}";
+            : $"cd {QuotedText.Shell(OrcaPaths.Posix(repo.Path))} && git fetch {QuotedText.Shell(state.Remote)} "
+                + $"&& git switch {QuotedText.Shell(state.Branch)} && git merge --ff-only {QuotedText.Shell(state.Tracking)}";
         return new($"repo {name}", check, CheckStatus.Warn, behind, fix);
     }
 

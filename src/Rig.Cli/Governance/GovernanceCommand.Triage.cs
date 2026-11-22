@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Gh.Threads;
-using Rig.Core.GitHub;
 using Rig.Core.Governance;
 using Rig.Core.Processes;
 using Rig.Core.Text;

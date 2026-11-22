@@ -1,5 +1,4 @@
 using System.Text.Json.Nodes;
-using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Text;
 
