@@ -40,6 +40,7 @@ using Rig.Core.ReviewQueue;
 using Rig.Core.Roots;
 using Rig.Core.Services;
 using Rig.Core.Skills;
+using Rig.Core.Storage;
 using Rig.Core.Text;
 using Rig.Core.Tools;
 using Rig.Core.Vault;

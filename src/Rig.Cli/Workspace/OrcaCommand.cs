@@ -3,6 +3,7 @@ using System.CommandLine;
 using System.Text.Json.Nodes;
 using Microsoft.Data.Sqlite;
 using Rig.Cli.Rendering;
+using Rig.Core;
 using Rig.Core.Orca;
 using Rig.Core.Packages;
 using Rig.Core.Processes;

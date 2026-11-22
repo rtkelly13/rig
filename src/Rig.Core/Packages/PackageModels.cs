@@ -1,89 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
+using Rig.Core.Config;
 
 [assembly: SuppressMessage("Design", "CA1054", Justification = "Repository and registry URLs are compared and printed as written; System.Uri normalizes them.", Scope = "namespaceanddescendants", Target = "~N:Rig.Core.Packages")]
 [assembly: SuppressMessage("Design", "CA1055", Justification = "Repository and registry URLs are compared and printed as written; System.Uri normalizes them.", Scope = "namespaceanddescendants", Target = "~N:Rig.Core.Packages")]
 [assembly: SuppressMessage("Design", "CA1056", Justification = "Repository and registry URLs are compared and printed as written; System.Uri normalizes them.", Scope = "namespaceanddescendants", Target = "~N:Rig.Core.Packages")]
 
 namespace Rig.Core.Packages;
-
-/// <summary>How a package check came out.</summary>
-public enum CheckStatus
-{
-    /// <summary>Nothing to do.</summary>
-    Ok,
-
-    /// <summary>Worth a look.</summary>
-    Warn,
-
-    /// <summary>Publishing is broken or will break.</summary>
-    Fail,
-
-    /// <summary>Not a check: something only a person can confirm.</summary>
-    Manual,
-
-    /// <summary>Could not be checked.</summary>
-    Skip,
-}
-
-/// <summary>Spellings of <see cref="CheckStatus"/> as the JSON and tables show them.</summary>
-public static class CheckStatusText
-{
-    /// <summary><c>ok</c>, <c>warn</c>, <c>fail</c>, <c>manual</c> or <c>skip</c>.</summary>
-    public static string Label(this CheckStatus status) => status switch
-    {
-        CheckStatus.Ok => "ok",
-        CheckStatus.Warn => "warn",
-        CheckStatus.Fail => "fail",
-        CheckStatus.Manual => "manual",
-        _ => "skip",
-    };
-}
-
-/// <summary>One published package, as declared under a project's <c>packages</c> list in <c>managed-projects.json</c>.</summary>
-/// <param name="Registry"><c>npm</c> or <c>nuget</c>.</param>
-/// <param name="Name">The package id.</param>
-/// <param name="Manifest">The manifest's path in the repo: <c>package.json</c>, a csproj or props file.</param>
-/// <param name="Workflow">The publish workflow's file name under <c>.github/workflows/</c>.</param>
-/// <param name="Auth"><c>oidc</c> (trusted publishing) or <c>token</c>.</param>
-/// <param name="Environment">The GitHub environment the publish job runs in, when the trust config requires one.</param>
-public sealed record PackageSpec(string Registry, string Name, string Manifest, string Workflow, string Auth = PackageSpec.Oidc, string? Environment = null)
-{
-    /// <summary>The npm registry.</summary>
-    public const string Npm = "npm";
-
-    /// <summary>The NuGet registry.</summary>
-    public const string NuGet = "nuget";
-
-    /// <summary>Trusted publishing.</summary>
-    public const string Oidc = "oidc";
-
-    /// <summary>A long-lived token.</summary>
-    public const string Token = "token";
-
-    /// <summary>NuGet only: the nuget.org user or organisation that owns the trusted publishing policy.</summary>
-    public string? NuGetOwner { get; init; }
-
-    /// <summary>NuGet only: the profile name NuGet/login sends as <c>user:</c>; an organisation's policy is exchanged by a member.</summary>
-    public string? NuGetUser { get; init; }
-
-    /// <summary>NuGet only: the package's expected nuget.org owners.</summary>
-    public IReadOnlyList<string> Owners { get; init; } = [];
-
-    /// <summary>NuGet only: the policy's scopes, such as <c>push-new</c> and <c>push-version</c>.</summary>
-    public IReadOnlyList<string> Scopes { get; init; } = [];
-
-    /// <summary>Whether it is published to npm.</summary>
-    public bool IsNpm => Registry == Npm;
-
-    /// <summary>Whether it is published by trusted publishing.</summary>
-    public bool IsOidc => Auth == Oidc;
-}
-
-/// <summary>A package bound to the managed project that publishes it.</summary>
-/// <param name="Project">The project's name.</param>
-/// <param name="Repo">The project's declared remote.</param>
-/// <param name="Spec">The package.</param>
-public sealed record PackageBinding(string Project, string Repo, PackageSpec Spec);
 
 /// <summary>A repository as GitHub has it now.</summary>
 /// <param name="FullName">Its canonical <c>owner/name</c>, after any redirect.</param>

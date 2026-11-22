@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
-namespace Rig.Core.Jobs;
+namespace Rig.Core.Storage;
 
 /// <summary>
 /// The coordinator's <c>run.lock</c>: one run at a time on Windows, where the lock is byte 0 of the file, the same byte

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Rig.Core.Config;
 
 namespace Rig.Core.Packages;
 

@@ -1,4 +1,5 @@
 using System.Net;
+using Rig.Core.Config;
 using Rig.Core.Packages;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;

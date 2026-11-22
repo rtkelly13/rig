@@ -4,6 +4,7 @@ using System.Text;
 using Rig.Cli.Rendering;
 using Rig.Core.Jobs;
 using Rig.Core.Processes;
+using Rig.Core.Storage;
 
 namespace Rig.Cli.Jobs;
 

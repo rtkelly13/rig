@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Rig.Core.Config;
 using Rig.Core.Processes;
 
 namespace Rig.Core.Packages;
