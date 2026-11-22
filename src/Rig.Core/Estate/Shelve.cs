@@ -221,24 +221,6 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
     /// <summary>GitHub rejects files over 100 MB; well before that, a snapshot is the wrong home.</summary>
     public const long BigFile = 50L * 1024 * 1024;
 
-    /// <summary>
-    /// Ignored names that come back from a command (or were never worth keeping), so losing them costs nothing: the
-    /// reclaim catalogue bar <c>temp</c>, which inside a worktree mixes run output with hand-written scripts, plus what a
-    /// first estate run found blocking plans.
-    /// </summary>
-    public static readonly IReadOnlySet<string> Regenerable = new HashSet<string>(
-        Reclaim.Categories.Where(category => category.Name != "temp").SelectMany(category => category.Names)
-            .Concat([".DS_Store", "Thumbs.db", ".wireit", "packages", "paket-files", "TestResults", "logs"]),
-        StringComparer.Ordinal);
-
-    /// <summary>Folders that only ever hold generated content, so anything below them regenerates.</summary>
-    public static readonly IReadOnlySet<string> CacheDirs = new HashSet<string>(
-        ["node_modules", ".venv", "venv", "__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache", ".next", ".turbo", ".wireit", "paket-files", "TestResults"],
-        StringComparer.Ordinal);
-
-    private static readonly string[] RegenerableFiles = [".DS_Store", "Thumbs.db"];
-    private static readonly string[] RegenerableSuffixes = [".pyc", ".egg-info", ".tsbuildinfo", ".log", ".feature.cs"];
-    private static readonly string[] RegenerablePaths = [".husky/_"];
     private static readonly string[] Containers = [".worktrees", "worktrees"];
     private static readonly TimeSpan CommitTimeout = TimeSpan.FromSeconds(60);
     private static readonly string[] ReadHead = ["read-tree", "HEAD"];
@@ -349,31 +331,8 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         return new Porcelain(changed, untracked);
     }
 
-    /// <summary>
-    /// True when an ignored path is a build output or cache by name. A wholly ignored folder (listed with a trailing
-    /// <c>/</c>) counts by its own name; a file by its name or suffix, or when it sits under a <see cref="CacheDirs"/>
-    /// folder: <c>packages/api/.env</c> is not output.
-    /// </summary>
-    public static bool IsRegenerable(string path)
-    {
-        ArgumentNullException.ThrowIfNull(path);
-        var normal = path.Replace('\\', '/');
-        var parts = normal.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0)
-        {
-            return false;
-        }
-
-        var joined = string.Join('/', parts);
-        var last = parts[^1];
-        return (normal.EndsWith('/', StringComparison.Ordinal) && Regenerable.Contains(last))
-            || RegenerableFiles.Contains(last, StringComparer.Ordinal)
-            || parts.Any(part => RegenerableSuffixes.Any(suffix => part.EndsWith(suffix, StringComparison.Ordinal)))
-            || parts[..^1].Any(CacheDirs.Contains)
-            || RegenerablePaths.Any(known => joined == known
-                || joined.StartsWith(known + "/", StringComparison.Ordinal)
-                || $"/{joined}/".Contains($"/{known}/", StringComparison.Ordinal));
-    }
+    /// <summary>True when an ignored path comes back from a command, by <see cref="IgnoredTiers.Of"/>.</summary>
+    public static bool IsRegenerable(string path) => IgnoredTiers.Of(path).Regenerates;
 
     /// <summary>What <c>git status</c> and <c>ls-files</c> report for <paramref name="path"/>, read raw: a path may start with a space.</summary>
     public async Task<ShelveStatus> ReadStatusAsync(string path)

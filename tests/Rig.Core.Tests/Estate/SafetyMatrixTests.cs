@@ -487,7 +487,7 @@ public sealed class SafetyMatrixTests : IDisposable
 
     private static async Task<Layer> RunReclaimAsync(World world)
     {
-        var reclaim = new Reclaim(GitFor(world), new DiskUsage(Repos.Proc));
+        var reclaim = new Reclaim(GitFor(world), new DiskUsage());
         var entry = (await reclaim.ScanRepoAsync(world.Clone, floor: 0, Token)).Entries.FirstOrDefault(e => Same(e.Path, world.Tree));
         if (entry is null)
         {

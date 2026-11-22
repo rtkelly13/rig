@@ -28,16 +28,44 @@ public sealed class TrimTests : IDisposable
         Assert.NotNull(a);
         Assert.Equal(2UL, a.Value.Links);
         Assert.Equal(a, b);
-        Assert.Equal(1UL, HardLinks.Count(Write("c/alone.bin", 1)));
+        Assert.Equal(1UL, HardLinks.Identify(Write("c/alone.bin", 1))?.Links);
     }
 
     [Fact]
-    public void A_missing_file_has_no_identity_and_counts_as_its_own()
+    public void A_missing_file_has_no_identity()
     {
-        var missing = Path.Join(_temp.Path, "missing");
+        Assert.Null(HardLinks.Identify(Path.Join(_temp.Path, "missing")));
+    }
 
-        Assert.Null(HardLinks.Identify(missing));
-        Assert.Equal(1UL, HardLinks.Count(missing));
+    [Fact]
+    public async Task An_apfs_clone_shares_its_group_and_frees_nothing_while_the_original_remains()
+    {
+        Assert.SkipUnless(OperatingSystem.IsMacOS(), "APFS clones are read only on macOS.");
+        var original = Write("store/lib.dll", 64 * 1024);
+        var clone = Path.Join(_temp.Folder("bin"), "lib.dll");
+        var ran = await Repos.Proc.RunAsync(new ProcRequest(["cp", "-c", original, clone]), Token);
+        Assert.True(ran.Ok, ran.Err);
+
+        var identity = HardLinks.Identify(clone);
+
+        Assert.SkipWhen(identity?.Cloned is null, "The temp volume has no clone mapping.");
+        Assert.Equal(2UL, identity!.Value.Cloned!.Value.References);
+        Assert.Equal(HardLinks.Identify(original)!.Value.Cloned!.Value.Id, identity.Value.Cloned.Value.Id);
+        Assert.Equal(new TreeSize(0, 64 * 1024), DiskUsage.WalkTree(Path.GetDirectoryName(clone)!));
+        Assert.Equal(new TreeSize(64 * 1024, 0), DiskUsage.WalkTree(_temp.Path));
+    }
+
+    [Theory]
+    [InlineData(1UL, 1UL, 0L, 8192L)]
+    [InlineData(2UL, 1UL, 0L, 0L)]
+    [InlineData(1UL, 3UL, 4096L, 4096L)]
+    [InlineData(1UL, 3UL, 65536L, 8192L)]
+    [InlineData(2UL, 3UL, 4096L, 0L)]
+    public void Deleting_one_name_frees_only_what_no_other_hardlink_or_clone_holds(ulong links, ulong clones, long own, long freed)
+    {
+        var identity = new FileIdentity(1, 2, links) { Cloned = new FileClone(9, clones, own) };
+
+        Assert.Equal(freed, identity.Alone(8192));
     }
 
     // ---- TreeMeasure and DiskUsage.WalkTree -----------------------------------------------------------------------
@@ -70,6 +98,46 @@ public sealed class TrimTests : IDisposable
         _ = await HardLinkAsync(Write("tree/a.bin", 10), Path.Join(tree, "b.bin"));
 
         Assert.Equal(new TreeSize(DiskUsage.Cluster, 0), DiskUsage.WalkTree(tree));
+    }
+
+    [Fact]
+    public void A_clone_group_met_whole_inside_the_tree_frees_its_shared_blocks_once()
+    {
+        var tree = _temp.Folder("bin");
+        var first = Write("bin/a.dll", 8192);
+        var second = Write("bin/b.dll", 8192);
+        var clones = new Dictionary<string, FileIdentity>
+        {
+            [first] = new(1, 10, 1) { Cloned = new FileClone(10, 2, 0) },
+            [second] = new(1, 11, 1) { Cloned = new FileClone(10, 2, 4096) },
+        };
+
+        Assert.Equal(new TreeSize(8192 + 4096, 0), DiskUsage.WalkTree(tree, Identities(clones)));
+    }
+
+    [Fact]
+    public void A_clone_of_a_file_outside_the_tree_frees_only_its_private_blocks()
+    {
+        var tree = _temp.Folder("bin");
+        var cloned = Write("bin/SkiaSharp.dll", 3 * 4096);
+        var plain = Write("bin/own.txt", 10);
+        var clones = new Dictionary<string, FileIdentity>
+        {
+            [cloned] = new(1, 20, 1) { Cloned = new FileClone(5, 2, 4096) },
+            [plain] = new(1, 21, 1) { Cloned = new FileClone(21, 1, 4096) },
+        };
+
+        Assert.Equal(new TreeSize(4096 + 4096, 2 * 4096), DiskUsage.WalkTree(tree, Identities(clones)));
+    }
+
+    [Fact]
+    public void A_file_both_hardlinked_and_cloned_is_shared()
+    {
+        var tree = _temp.Folder("bin");
+        var both = Write("bin/both.dll", 4096);
+        var clones = new Dictionary<string, FileIdentity> { [both] = new(1, 30, 2) { Cloned = new FileClone(30, 2, 4096) } };
+
+        Assert.Equal(new TreeSize(0, 4096), DiskUsage.WalkTree(tree, Identities(clones)));
     }
 
     [Fact]
@@ -180,13 +248,13 @@ public sealed class TrimTests : IDisposable
         _ = _temp.File("sln/All.sln");
         _ = _temp.File("crate/Cargo.toml");
 
-        Assert.Equal("node_modules", Trim.CategoryOf(Path.Join(_temp.Path, "x", "node_modules")));
-        Assert.Equal("python venv", Trim.CategoryOf(Path.Join(_temp.Path, "x", ".venv")));
-        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(_temp.Path, "app", "obj")));
-        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(_temp.Path, "sln", "packages")));
-        Assert.Equal("rust build output", Trim.CategoryOf(Path.Join(_temp.Path, "crate", "target")));
-        Assert.Null(Trim.CategoryOf(Path.Join(_temp.Path, "crate", "bin")));
-        Assert.Null(Trim.CategoryOf(Path.Join(_temp.Path, "app", "target")));
+        Assert.Equal("node_modules", IgnoredTiers.OnDisk(Path.Join(_temp.Path, "x", "node_modules"))?.Category);
+        Assert.Equal("python venv", IgnoredTiers.OnDisk(Path.Join(_temp.Path, "x", ".venv"))?.Category);
+        Assert.Equal("dotnet build output", IgnoredTiers.OnDisk(Path.Join(_temp.Path, "app", "obj"))?.Category);
+        Assert.Equal("dotnet packages", IgnoredTiers.OnDisk(Path.Join(_temp.Path, "sln", "packages"))?.Category);
+        Assert.Equal("rust build output", IgnoredTiers.OnDisk(Path.Join(_temp.Path, "crate", "target"))?.Category);
+        Assert.Null(IgnoredTiers.OnDisk(Path.Join(_temp.Path, "crate", "bin"))?.Category);
+        Assert.Null(IgnoredTiers.OnDisk(Path.Join(_temp.Path, "app", "target"))?.Category);
     }
 
     [Fact]
@@ -347,36 +415,36 @@ public sealed class TrimTests : IDisposable
         File.WriteAllText(Path.Join(dir, "test.sln"), "");
         File.WriteAllText(Path.Join(dir, "Cargo.toml"), "");
 
-        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "bin")));
-        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "obj")));
-        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(dir, "packages")));
-        Assert.Equal("rust build output", Trim.CategoryOf(Path.Join(dir, "target")));
-        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, "dist")));
-        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, ".next")));
-        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, ".turbo")));
-        Assert.Equal("js build output", Trim.CategoryOf(Path.Join(dir, "storybook-static")));
-        Assert.Equal("python venv", Trim.CategoryOf(Path.Join(dir, ".venv")));
-        Assert.Equal("python venv", Trim.CategoryOf(Path.Join(dir, "venv")));
-        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".ruff_cache")));
-        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".pytest_cache")));
-        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".mypy_cache")));
-        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".tox")));
-        Assert.Equal("tool caches", Trim.CategoryOf(Path.Join(dir, ".nox")));
-        Assert.Null(Trim.CategoryOf(Path.Join(dir, "src")));
+        Assert.Equal("dotnet build output", IgnoredTiers.OnDisk(Path.Join(dir, "bin"))?.Category);
+        Assert.Equal("dotnet build output", IgnoredTiers.OnDisk(Path.Join(dir, "obj"))?.Category);
+        Assert.Equal("dotnet packages", IgnoredTiers.OnDisk(Path.Join(dir, "packages"))?.Category);
+        Assert.Equal("rust build output", IgnoredTiers.OnDisk(Path.Join(dir, "target"))?.Category);
+        Assert.Equal("js build output", IgnoredTiers.OnDisk(Path.Join(dir, "dist"))?.Category);
+        Assert.Equal("js build output", IgnoredTiers.OnDisk(Path.Join(dir, ".next"))?.Category);
+        Assert.Equal("js build output", IgnoredTiers.OnDisk(Path.Join(dir, ".turbo"))?.Category);
+        Assert.Equal("js build output", IgnoredTiers.OnDisk(Path.Join(dir, "storybook-static"))?.Category);
+        Assert.Equal("python venv", IgnoredTiers.OnDisk(Path.Join(dir, ".venv"))?.Category);
+        Assert.Equal("python venv", IgnoredTiers.OnDisk(Path.Join(dir, "venv"))?.Category);
+        Assert.Equal("tool caches", IgnoredTiers.OnDisk(Path.Join(dir, ".ruff_cache"))?.Category);
+        Assert.Equal("tool caches", IgnoredTiers.OnDisk(Path.Join(dir, ".pytest_cache"))?.Category);
+        Assert.Equal("tool caches", IgnoredTiers.OnDisk(Path.Join(dir, ".mypy_cache"))?.Category);
+        Assert.Equal("tool caches", IgnoredTiers.OnDisk(Path.Join(dir, ".tox"))?.Category);
+        Assert.Equal("tool caches", IgnoredTiers.OnDisk(Path.Join(dir, ".nox"))?.Category);
+        Assert.Null(IgnoredTiers.OnDisk(Path.Join(dir, "src"))?.Category);
 
         var fsharpDir = _temp.Folder("fsharp-build");
         File.WriteAllText(Path.Join(fsharpDir, "test.fsproj"), "<Project/>");
-        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(fsharpDir, "bin")));
+        Assert.Equal("dotnet build output", IgnoredTiers.OnDisk(Path.Join(fsharpDir, "bin"))?.Category);
 
         var vbDir = _temp.Folder("vb-build");
         File.WriteAllText(Path.Join(vbDir, "test.vbproj"), "<Project/>");
-        Assert.Equal("dotnet build output", Trim.CategoryOf(Path.Join(vbDir, "obj")));
+        Assert.Equal("dotnet build output", IgnoredTiers.OnDisk(Path.Join(vbDir, "obj"))?.Category);
 
         var noProjectDir = _temp.Folder("no-project-build");
-        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "bin")));
-        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "obj")));
-        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "packages")));
-        Assert.Null(Trim.CategoryOf(Path.Join(noProjectDir, "target")));
+        Assert.Null(IgnoredTiers.OnDisk(Path.Join(noProjectDir, "bin"))?.Category);
+        Assert.Null(IgnoredTiers.OnDisk(Path.Join(noProjectDir, "obj"))?.Category);
+        Assert.Null(IgnoredTiers.OnDisk(Path.Join(noProjectDir, "packages"))?.Category);
+        Assert.Null(IgnoredTiers.OnDisk(Path.Join(noProjectDir, "target"))?.Category);
     }
 
     [Fact]
@@ -547,6 +615,9 @@ public sealed class TrimTests : IDisposable
         File.WriteAllBytes(path, new byte[bytes]);
         return path;
     }
+
+    private static Func<string, FileIdentity?> Identities(Dictionary<string, FileIdentity> known) =>
+        path => known.TryGetValue(path, out var identity) ? identity : null;
 
     private static async Task<string> HardLinkAsync(string existing, string link)
     {

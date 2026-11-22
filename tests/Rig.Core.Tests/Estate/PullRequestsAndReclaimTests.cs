@@ -150,20 +150,6 @@ public sealed class PullRequestsAndReclaimTests
     }
 
     [Fact]
-    public async Task Disk_usage_reads_du_kilobytes_and_zero_on_failure()
-    {
-        Assert.SkipWhen(OperatingSystem.IsWindows(), "du is the POSIX path");
-        var proc = new FakeProc()
-            .Answer(new Ran(0, "12\t/a\n", string.Empty), "du", "-sk", "/a")
-            .Answer(new Ran(1, string.Empty, "nope"), "du", "-sk", "/b");
-        var disk = new DiskUsage(proc);
-
-        Assert.Equal(12 * 1024, await disk.SizeAsync("/a", Token));
-        Assert.Equal(0, await disk.SizeAsync("/b", Token));
-        Assert.Equal(DiskUsage.Timeout, proc.Requests[0].Timeout);
-    }
-
-    [Fact]
     public void Walk_rounds_each_file_to_a_cluster()
     {
         using var root = new TempDir();
