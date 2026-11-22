@@ -1,3 +1,4 @@
+using Rig.Cli.Gh;
 using Rig.Cli.Gh.Threads;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;

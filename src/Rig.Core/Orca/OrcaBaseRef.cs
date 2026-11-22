@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using Rig.Core.Processes;
-using Rig.Core.WorkItems;
 
 namespace Rig.Core.Orca;
 
@@ -110,7 +109,7 @@ public static class OrcaBaseRef
             return null;
         }
 
-        var track = WorkGitParsers.ParseTrack(row.Upstream, row.Track);
+        var track = Track.Parse(row.Upstream, row.Track);
         return track is { Gone: false, Ahead: int ahead, Behind: int behind }
             ? new LocalBaseState(branch, remote, ahead, behind)
             : null;

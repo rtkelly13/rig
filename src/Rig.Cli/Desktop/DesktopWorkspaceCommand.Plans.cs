@@ -451,7 +451,7 @@ internal sealed partial class DesktopWorkspaceCommand
         }
 
         var path = ConfigPath(config);
-        var plan = WorkspaceStatus.Capture(inventory, count, workspace);
+        var plan = WorkspaceStatus.Capture(inventory.ReusableWindows(), count, workspace);
         if (bundle)
         {
             PlanFiles.SaveBundle(plan, path, desktopDirectory);

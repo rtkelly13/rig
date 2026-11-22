@@ -1,24 +1,8 @@
 using System.Text.Json.Serialization;
-using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Text;
 
 namespace Rig.Cli.Gh.Threads;
-
-/// <summary>A GraphQL call failed or answered with something this module cannot read.</summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1032", Justification = "Always carries the message the command prints.")]
-internal sealed class GitHubException : GitHubApiException
-{
-    public GitHubException(string message)
-        : base(message)
-    {
-    }
-
-    public GitHubException(string message, Exception innerException)
-        : base(message, innerException)
-    {
-    }
-}
 
 /// <summary>
 /// The GraphQL calls behind <c>rig gh threads</c>, through the <see cref="IGitHubApi"/> port. Variables travel in the

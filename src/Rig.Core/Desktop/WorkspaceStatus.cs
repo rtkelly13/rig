@@ -1,4 +1,3 @@
-using Rig.Core.Desktop.Windows;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Desktop;
@@ -20,15 +19,15 @@ public static class WorkspaceStatus
     };
 
     /// <summary>What is open on the first <paramref name="desktopCount"/> desktops, named <c>Desktop N</c>.</summary>
-    public static WorkspacePlan Current(WindowInventory inventory, int desktopCount)
+    public static WorkspacePlan Current(IReadOnlyList<LiveWindow> windows, int desktopCount)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
+        ArgumentNullException.ThrowIfNull(windows);
         if (desktopCount < 1)
         {
             throw new ArgumentException("Desktop count must be at least 1.", nameof(desktopCount));
         }
 
-        var byDesktop = WindowsByDesktop(inventory);
+        var byDesktop = WindowsByDesktop(windows);
         return new()
         {
             Desktops =
@@ -43,9 +42,9 @@ public static class WorkspaceStatus
     }
 
     /// <summary>What is open on the desktops numbered in <paramref name="desktopIndexes"/>, in that order.</summary>
-    public static WorkspacePlan CurrentForDesktopIndexes(WindowInventory inventory, IReadOnlyList<int> desktopIndexes)
+    public static WorkspacePlan CurrentForDesktopIndexes(IReadOnlyList<LiveWindow> windows, IReadOnlyList<int> desktopIndexes)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
+        ArgumentNullException.ThrowIfNull(windows);
         ArgumentNullException.ThrowIfNull(desktopIndexes);
         if (desktopIndexes.Count == 0)
         {
@@ -57,7 +56,7 @@ public static class WorkspaceStatus
             throw new ArgumentException("Desktop indexes must be at least 1.", nameof(desktopIndexes));
         }
 
-        var byDesktop = WindowsByDesktop(inventory);
+        var byDesktop = WindowsByDesktop(windows);
         return new()
         {
             Desktops =
@@ -71,25 +70,25 @@ public static class WorkspaceStatus
     }
 
     /// <summary>The windows on the current desktop, named <paramref name="desktopName"/> or "Current Desktop".</summary>
-    public static DesktopPlan CurrentDesktop(WindowInventory inventory, string? desktopName = null)
+    public static DesktopPlan CurrentDesktop(IReadOnlyList<WindowSnapshot> windows, string? desktopName = null)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
-        return new(desktopName ?? "Current Desktop") { CapturedWindows = inventory.CurrentDesktopWindows() };
+        ArgumentNullException.ThrowIfNull(windows);
+        return new(desktopName ?? "Current Desktop") { CapturedWindows = windows };
     }
 
     /// <summary>
     /// A draft plan captured from the live desktops: every window becomes an app entry with its executable, except
     /// desktop 1's terminals, which become workspace terminal launchers when <paramref name="workspace"/> is given.
     /// </summary>
-    public static WorkspacePlan Capture(WindowInventory inventory, int desktopCount, string? workspace = null)
+    public static WorkspacePlan Capture(IReadOnlyList<LiveWindow> windows, int desktopCount, string? workspace = null)
     {
-        ArgumentNullException.ThrowIfNull(inventory);
+        ArgumentNullException.ThrowIfNull(windows);
         if (desktopCount < 1)
         {
             throw new ArgumentException("Desktop count must be at least 1.", nameof(desktopCount));
         }
 
-        var byDesktop = WindowsByDesktop(inventory);
+        var byDesktop = WindowsByDesktop(windows);
         return new()
         {
             Workspace = workspace,
@@ -173,40 +172,29 @@ public static class WorkspaceStatus
     private static string InferredTerminalCommand(string windowTitle) =>
         UnicodeText.CaseFold(windowTitle).Contains("copilot", StringComparison.Ordinal) ? "copilot" : "opencode";
 
-    private static Dictionary<int, IReadOnlyList<WindowSnapshot>> WindowsByDesktop(WindowInventory inventory)
-    {
-        var byDesktop = new Dictionary<int, List<WindowSnapshot>>();
-        foreach (var window in inventory.ReusableWindows())
-        {
-            if (window.DesktopNumber is not { } desktopNumber || desktopNumber < 1)
-            {
-                continue;
-            }
+    // Reusable windows on numbered desktops, each desktop's sorted by process name, then title.
+    private static Dictionary<int, IReadOnlyList<WindowSnapshot>> WindowsByDesktop(IReadOnlyList<LiveWindow> windows) =>
+        windows
+            .Where(window => window.DesktopNumber is >= 1)
+            .GroupBy(window => window.DesktopNumber!.Value)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<WindowSnapshot>)
+                [
+                    .. group
+                        .Select(Snapshot)
+                        .OrderBy(window => UnicodeText.Lower(window.ProcessName ?? string.Empty), StringComparer.Ordinal)
+                        .ThenBy(window => UnicodeText.Lower(window.Title), StringComparer.Ordinal),
+                ]);
 
-            if (!byDesktop.TryGetValue(desktopNumber, out var windows))
-            {
-                windows = [];
-                byDesktop[desktopNumber] = windows;
-            }
-
-            windows.Add(new(
-                window.Title,
-                window.Pid,
-                window.ProcessName,
-                window.ExePath,
-                window.ClassName,
-                window.ScreenNumber,
-                window.InferredPlacement,
-                window.Bounds));
-        }
-
-        return byDesktop.ToDictionary(
-            pair => pair.Key,
-            pair => (IReadOnlyList<WindowSnapshot>)
-            [
-                .. pair.Value
-                    .OrderBy(window => UnicodeText.Lower(window.ProcessName ?? string.Empty), StringComparer.Ordinal)
-                    .ThenBy(window => UnicodeText.Lower(window.Title), StringComparer.Ordinal),
-            ]);
-    }
+    private static WindowSnapshot Snapshot(LiveWindow window) =>
+        new(
+            window.Title,
+            window.Pid,
+            window.ProcessName,
+            window.ExePath,
+            window.ClassName,
+            window.ScreenNumber,
+            window.InferredPlacement,
+            window.Bounds);
 }

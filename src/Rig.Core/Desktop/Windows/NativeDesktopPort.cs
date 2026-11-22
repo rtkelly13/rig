@@ -52,21 +52,21 @@ public sealed class NativeDesktopPort : IDesktopPort
             throw new DesktopException("Desktop count must be at least 1.");
         }
 
-        return WorkspaceStatus.Current(_inventory, count);
+        return WorkspaceStatus.Current(_inventory.ReusableWindows(), count);
     }
 
     /// <inheritdoc/>
     public WorkspacePlan CurrentWorkspaceStatus(IReadOnlyList<int> desktopIndexes)
     {
         EnsureAvailable();
-        return WorkspaceStatus.CurrentForDesktopIndexes(_inventory, desktopIndexes);
+        return WorkspaceStatus.CurrentForDesktopIndexes(_inventory.ReusableWindows(), desktopIndexes);
     }
 
     /// <inheritdoc/>
     public DesktopPlan CurrentDesktopStatus(string? desktopName = null)
     {
         EnsureAvailable();
-        return WorkspaceStatus.CurrentDesktop(_inventory, desktopName);
+        return WorkspaceStatus.CurrentDesktop(_inventory.CurrentDesktopWindows(), desktopName);
     }
 
     /// <inheritdoc/>

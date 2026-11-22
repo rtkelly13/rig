@@ -3,7 +3,6 @@ using System.CommandLine;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Rig.Cli.Gh.Threads;
 using Rig.Core.Processes;
 using Rig.Core.Text;
 

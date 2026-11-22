@@ -1,5 +1,4 @@
 using System.Globalization;
-using Rig.Cli.Gh.Threads;
 
 namespace Rig.Cli.Gh.Pr;
 
