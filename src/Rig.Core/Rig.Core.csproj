@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Rig.Core</RootNamespace>
-    <!-- LibraryImport generates unsafe marshalling stubs (Otel/DetachedStart.cs). -->
+    <!-- LibraryImport generates unsafe marshalling stubs (Processes/DetachedStart.cs). -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>

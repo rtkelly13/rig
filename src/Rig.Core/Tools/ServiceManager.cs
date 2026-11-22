@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using Rig.Core.Jobs;
-using Rig.Core.Otel;
 using Rig.Core.Processes;
 using Rig.Core.Services;
 
