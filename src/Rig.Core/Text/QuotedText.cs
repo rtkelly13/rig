@@ -11,7 +11,9 @@ namespace Rig.Core.Text;
 /// </summary>
 public static class QuotedText
 {
-    private static readonly Regex ShellSafe = new(@"^[\w@%+=:,./-]+$", RegexOptions.CultureInvariant | RegexOptions.ECMAScript, TimeSpan.FromSeconds(1));
+    // shlex.quote's own test: any character outside this set means quoting. A whole-string `^...$` match would let a
+    // trailing newline through, since .NET's `$` also matches before a final \n.
+    private static readonly Regex ShellUnsafe = new(@"[^\w@%+=:,./-]", RegexOptions.CultureInvariant | RegexOptions.ECMAScript, TimeSpan.FromSeconds(1));
 
     /// <summary>
     /// A word quoted for a POSIX shell, as Python's <c>shlex.quote</c> does it: bare when every character is an ASCII
@@ -20,7 +22,7 @@ public static class QuotedText
     public static string Shell(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return text.Length == 0 ? "''" : ShellSafe.IsMatch(text) ? text : "'" + text.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
+        return text.Length == 0 ? "''" : !ShellUnsafe.IsMatch(text) ? text : "'" + text.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
     }
 
     /// <summary>The text quoted: single quotes, or double when the text holds a single quote and no double one.</summary>

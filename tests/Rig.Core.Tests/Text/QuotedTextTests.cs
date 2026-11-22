@@ -58,5 +58,6 @@ public sealed class QuotedTextTests
     [InlineData("it's", "'it'\"'\"'s'")]
     [InlineData("$HOME", "'$HOME'")]
     [InlineData("café", "'café'")]
+    [InlineData("a\n", "'a\n'")]
     public void Shell_quotes_as_shlex_quote_does(string text, string expected) => Assert.Equal(expected, QuotedText.Shell(text));
 }
