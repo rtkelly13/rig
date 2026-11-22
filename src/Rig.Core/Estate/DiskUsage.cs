@@ -24,7 +24,7 @@ public sealed class DiskUsage : IDiskUsage
     /// <summary>What deleting <paramref name="path"/> frees, by <see cref="WalkTree(string)"/>; a lone file is what deleting it alone frees.</summary>
     public static long Walk(string path) =>
         Directory.Exists(path) ? WalkTree(path).Freeable
-        : File.Exists(path) ? Alone(path, Rounded(new FileInfo(path).Length))
+        : File.Exists(path) ? HardLinks.Alone(path, Rounded(new FileInfo(path).Length))
         : 0;
 
     /// <inheritdoc cref="WalkTree(string, Func{string, FileIdentity?})"/>
@@ -41,58 +41,31 @@ public sealed class DiskUsage : IDiskUsage
     public static TreeSize WalkTree(string path, Func<string, FileIdentity?> identify)
     {
         ArgumentNullException.ThrowIfNull(identify);
-        var groups = new Dictionary<(bool Clone, ulong Device, ulong Id), Group>();
-        long plain = 0, stuck = 0;
-        var stack = new Stack<string>([path]);
-        while (stack.TryPop(out var current))
+        var groups = new Dictionary<ShareGroup, Group>();
+        long plain = 0;
+        foreach (var file in TreeMeasure.Files(path))
         {
-            foreach (var entry in TreeMeasure.Entries(current) ?? [])
+            var allocated = Rounded(file.Length);
+            if (identify(file.FullName)?.Share(allocated) is not { } share)
             {
-                if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                {
-                    continue;
-                }
-
-                if (entry is DirectoryInfo)
-                {
-                    stack.Push(entry.FullName);
-                    continue;
-                }
-
-                var allocated = Rounded(((FileInfo)entry).Length);
-                var identity = identify(entry.FullName);
-                if (identity is not { } known || (known.Links <= 1 && !known.IsCloned))
-                {
-                    plain += allocated;
-                    continue;
-                }
-
-                if (known.Links > 1 && known.IsCloned)
-                {
-                    stuck += allocated;
-                    continue;
-                }
-
-                var (key, met) = known.Cloned is { References: > 1 } clone
-                    ? ((true, known.Device, clone.Id), new Group(clone.References, allocated - Math.Min(clone.Private, allocated), Math.Min(clone.Private, allocated), 1))
-                    : ((false, known.Device, known.Inode), new Group(known.Links, allocated, 0, 1));
-                groups[key] = groups.TryGetValue(key, out var seen) ? seen.With(met) : met;
+                plain += allocated;
+                continue;
             }
+
+            var met = new Group(share.Needed, share.Shared, share.Private, 1);
+            groups[share.Group] = groups.TryGetValue(share.Group, out var seen) ? seen.With(met) : met;
         }
 
         var whole = groups.Values.Where(group => group.Seen >= group.Needed).ToList();
         var partial = groups.Values.Where(group => group.Seen < group.Needed).ToList();
         return new TreeSize(
             plain + whole.Sum(group => group.Shared + group.Private) + partial.Sum(group => group.Private),
-            stuck + partial.Sum(group => group.Shared));
+            partial.Sum(group => group.Shared));
     }
-
-    private static long Alone(string path, long allocated) =>
-        HardLinks.Identify(path) is { } identity ? identity.Alone(allocated) : allocated;
 
     private static long Rounded(long length) => (length + Cluster - 1) / Cluster * Cluster;
 
-    // A hardlink or clone group as met so far: the blocks its members share, counted once, and their private blocks.
+    // A share group as met so far: the blocks its members share, counted once, and their private blocks.
     private readonly record struct Group(ulong Needed, long Shared, long Private, ulong Seen)
     {
         public Group With(Group other) => this with { Shared = Math.Max(Shared, other.Shared), Private = Private + other.Private, Seen = Seen + other.Seen };

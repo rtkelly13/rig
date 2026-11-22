@@ -33,6 +33,22 @@ public enum IgnoredTier
     Unknown = 7,
 }
 
+/// <summary>What part of a path an <see cref="IgnoredKind"/> row's name matches.</summary>
+public enum IgnoredMatch
+{
+    /// <summary>Unset.</summary>
+    None = 0,
+
+    /// <summary>A wholly ignored folder's name.</summary>
+    Folder = 1,
+
+    /// <summary>A file's name.</summary>
+    File = 2,
+
+    /// <summary>The end of any part of the path: <c>.pyc</c>, <c>.egg-info</c>.</summary>
+    Suffix = 3,
+}
+
 /// <summary>How an ignored path was classified.</summary>
 /// <param name="Tier">Its cleanup tier.</param>
 /// <param name="Category">A label for reports: <c>dotnet build output</c>, <c>node_modules</c>.</param>
@@ -46,15 +62,14 @@ public sealed record IgnoredClass(IgnoredTier Tier, string Category)
 }
 
 /// <summary>One row of the table.</summary>
-/// <param name="Name">A folder or file name, or a suffix starting with <c>.</c> when <paramref name="Suffix"/>.</param>
+/// <param name="Name">A folder or file name, or a suffix starting with <c>.</c>.</param>
 /// <param name="Class">What it is.</param>
-/// <param name="Folder">Matches a wholly ignored folder; otherwise a file.</param>
+/// <param name="Match">What <paramref name="Name"/> matches.</param>
 /// <param name="Beside">On disk, a file matching one of these must sit beside the folder: <c>bin</c> is build output only next to a project.</param>
 /// <param name="Contents">Everything below the folder is generated too, so a file inside it classifies as the folder.</param>
 /// <param name="Trimmed">Idle-worktree trimming may take it (<see cref="Trim"/>).</param>
-/// <param name="Suffix">Matches any path part ending in <paramref name="Name"/>.</param>
 public sealed record IgnoredKind(
-    string Name, IgnoredClass Class, bool Folder = true, IReadOnlyList<string>? Beside = null, bool Contents = false, bool Trimmed = false, bool Suffix = false);
+    string Name, IgnoredClass Class, IgnoredMatch Match = IgnoredMatch.Folder, IReadOnlyList<string>? Beside = null, bool Contents = false, bool Trimmed = false);
 
 /// <summary>
 /// The one table of ignored names: what idle-worktree trimming takes, what shelving may drop, and what a worktree
@@ -95,9 +110,9 @@ public static class IgnoredTiers
         new("storybook-static", JsBuild, Trimmed: true),
         new("build", OtherBuild),
         new("TestResults", OtherBuild, Contents: true),
-        new(".tsbuildinfo", OtherBuild, Folder: false, Suffix: true),
-        new(".feature.cs", OtherBuild, Folder: false, Suffix: true),
-        new(".egg-info", OtherBuild, Folder: false, Suffix: true),
+        new(".tsbuildinfo", OtherBuild, Match: IgnoredMatch.Suffix),
+        new(".feature.cs", OtherBuild, Match: IgnoredMatch.Suffix),
+        new(".egg-info", OtherBuild, Match: IgnoredMatch.Suffix),
         new(".pytest_cache", ToolCaches, Contents: true, Trimmed: true),
         new(".mypy_cache", ToolCaches, Contents: true, Trimmed: true),
         new(".ruff_cache", ToolCaches, Contents: true, Trimmed: true),
@@ -106,10 +121,10 @@ public static class IgnoredTiers
         new("__pycache__", ToolCaches, Contents: true),
         new("coverage", ToolCaches),
         new("logs", ToolCaches),
-        new(".pyc", ToolCaches, Folder: false, Suffix: true),
-        new(".log", ToolCaches, Folder: false, Suffix: true),
-        new(".DS_Store", Litter, Folder: false),
-        new("Thumbs.db", Litter, Folder: false),
+        new(".pyc", ToolCaches, Match: IgnoredMatch.Suffix),
+        new(".log", ToolCaches, Match: IgnoredMatch.Suffix),
+        new(".DS_Store", Litter, Match: IgnoredMatch.File),
+        new("Thumbs.db", Litter, Match: IgnoredMatch.File),
         new("node_modules", NodeModules, Contents: true, Trimmed: true),
         new(".venv", Venv, Contents: true, Trimmed: true),
         new("venv", Venv, Contents: true, Trimmed: true),
@@ -122,12 +137,12 @@ public static class IgnoredTiers
     private const string HuskyShims = ".husky/_";
 
     private static readonly Dictionary<string, IgnoredKind> Folders =
-        Table.Where(kind => kind.Folder).ToDictionary(kind => kind.Name, StringComparer.Ordinal);
+        Table.Where(kind => kind.Match == IgnoredMatch.Folder).ToDictionary(kind => kind.Name, StringComparer.Ordinal);
 
     private static readonly Dictionary<string, IgnoredKind> Files =
-        Table.Where(kind => !kind.Folder && !kind.Suffix).ToDictionary(kind => kind.Name, StringComparer.Ordinal);
+        Table.Where(kind => kind.Match == IgnoredMatch.File).ToDictionary(kind => kind.Name, StringComparer.Ordinal);
 
-    private static readonly IgnoredKind[] Suffixes = [.. Table.Where(kind => kind.Suffix)];
+    private static readonly IgnoredKind[] Suffixes = [.. Table.Where(kind => kind.Match == IgnoredMatch.Suffix)];
 
     /// <summary>
     /// Classifies an ignored path by name, as <c>git ls-files --ignored --directory</c> lists it relative to the

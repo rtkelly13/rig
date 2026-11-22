@@ -4,7 +4,8 @@ namespace Rig.Core.Estate;
 /// <summary>What deleting a tree would free, and whether it may be deleted at all.</summary>
 /// <param name="Apparent">Every file's length.</param>
 /// <param name="Freeable">
-/// The bytes each file frees alone: a hardlinked copy frees nothing, an APFS clone only its private blocks.
+/// The bytes each file frees alone: a hardlinked copy frees nothing, an APFS clone only its private blocks. A lower
+/// bound: <see cref="DiskUsage.WalkTree(string)"/> also frees the groups met whole inside the tree.
 /// </param>
 /// <param name="HoldsCheckout">
 /// A <c>.git</c> file or folder exists below the root, or a folder below it could not be listed and might hold one; the
@@ -38,38 +39,21 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
     {
         var sampled = OperatingSystem.IsWindows();
         long apparent = 0, known = 0, smallTotal = 0, smallSeen = 0, sampledBytes = 0, sampledFreeable = 0;
-        var stack = new Stack<string>([path]);
-        while (stack.TryPop(out var current))
+        foreach (var (_, entries) in Folders(path))
         {
             // A folder the walk cannot list is one it cannot clear, and the remover would unlock and empty it.
-            if (Entries(current) is not { } entries)
+            if (entries is null || entries.Any(entry => entry.Name == ".git"))
             {
                 return Unmeasured;
             }
 
-            foreach (var entry in entries)
+            foreach (var file in entries.OfType<FileInfo>().Where(file => !IsLink(file)))
             {
-                if (entry.Name == ".git")
-                {
-                    return Unmeasured;
-                }
-
-                if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                {
-                    continue;
-                }
-
-                if (entry is DirectoryInfo)
-                {
-                    stack.Push(entry.FullName);
-                    continue;
-                }
-
-                var size = ((FileInfo)entry).Length;
+                var size = file.Length;
                 apparent += size;
                 if (!sampled || size >= LargeFile)
                 {
-                    known += Alone(entry.FullName, size);
+                    known += HardLinks.Alone(file.FullName, size);
                     continue;
                 }
 
@@ -78,7 +62,7 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
                 if (smallSeen % SampleStride == 1)
                 {
                     sampledBytes += size;
-                    sampledFreeable += Alone(entry.FullName, size);
+                    sampledFreeable += HardLinks.Alone(file.FullName, size);
                 }
             }
         }
@@ -105,38 +89,34 @@ public sealed record TreeMeasure(long Apparent, long Freeable, bool HoldsCheckou
             return false;
         }
 
-        var stack = new Stack<string>([path]);
-        while (stack.TryPop(out var current))
-        {
-            if (Entries(current) is not { } entries)
-            {
-                return true;
-            }
-
-            foreach (var entry in entries)
-            {
-                if (entry.Name == ".git")
-                {
-                    if (ownGit && current == path)
-                    {
-                        continue;
-                    }
-
-                    return true;
-                }
-
-                if (entry is DirectoryInfo && !entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                {
-                    stack.Push(entry.FullName);
-                }
-            }
-        }
-
-        return false;
+        // Never descending into `.git` loses nothing: any `.git` but the root's own has already answered.
+        return Folders(path, folder => folder.Name != ".git").Any(listed =>
+            listed.Entries is not { } entries || entries.Any(entry => entry.Name == ".git" && !(ownGit && listed.Folder == path)));
     }
 
-    private static long Alone(string path, long size) =>
-        HardLinks.Identify(path) is { } identity ? identity.Alone(size) : size;
+    /// <summary>Every file below <paramref name="root"/>, links not followed; a folder that cannot be listed reads as empty.</summary>
+    internal static IEnumerable<FileInfo> Files(string root) =>
+        Folders(root).SelectMany(listed => listed.Entries ?? []).OfType<FileInfo>().Where(file => !IsLink(file));
+
+    /// <summary>
+    /// Each folder from <paramref name="root"/> down with its entries (null when it cannot be listed), entering every
+    /// subfolder that is not a link and that <paramref name="descend"/> allows. Lazy: a caller that stops early stops the walk.
+    /// </summary>
+    internal static IEnumerable<(string Folder, List<FileSystemInfo>? Entries)> Folders(string root, Func<DirectoryInfo, bool>? descend = null)
+    {
+        var stack = new Stack<string>([root]);
+        while (stack.TryPop(out var current))
+        {
+            var entries = Entries(current);
+            yield return (current, entries);
+            foreach (var folder in entries?.OfType<DirectoryInfo>().Where(folder => !IsLink(folder) && (descend?.Invoke(folder) ?? true)) ?? [])
+            {
+                stack.Push(folder.FullName);
+            }
+        }
+    }
+
+    private static bool IsLink(FileSystemInfo entry) => entry.Attributes.HasFlag(FileAttributes.ReparsePoint);
 
     /// <summary>One folder's entries, hidden ones included; null when it cannot be listed.</summary>
     internal static List<FileSystemInfo>? Entries(string folder)

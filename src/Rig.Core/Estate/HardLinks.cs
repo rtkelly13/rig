@@ -16,15 +16,39 @@ public readonly record struct FileIdentity(ulong Device, ulong Inode, ulong Link
     /// <summary>The copy-on-write clone group the file's blocks belong to; null where clones are not read.</summary>
     public FileClone? Cloned { get; init; }
 
-    /// <summary>Whether the file shares blocks with another clone.</summary>
-    public bool IsCloned => Cloned is { References: > 1 };
-
     /// <summary>
-    /// What deleting this one name frees out of <paramref name="allocated"/>: nothing while another hardlink remains,
-    /// only the clone's private blocks while another clone remains, and all of it otherwise.
+    /// The blocks of <paramref name="allocated"/> this file shares with another name or clone; null when they are all its
+    /// own. A clone that also has another name is a group that is never whole: one tree cannot see both counts.
     /// </summary>
-    public long Alone(long allocated) => Links > 1 ? 0 : Cloned is { References: > 1 } clone ? Math.Min(clone.Private, allocated) : allocated;
+    public BlockShare? Share(long allocated)
+    {
+        if (Cloned is { References: > 1 } clone)
+        {
+            var own = Math.Min(clone.Private, allocated);
+            return Links > 1
+                ? new BlockShare(new ShareGroup(false, Device, Inode), ulong.MaxValue, allocated, 0)
+                : new BlockShare(new ShareGroup(true, Device, clone.Id), clone.References, allocated - own, own);
+        }
+
+        return Links > 1 ? new BlockShare(new ShareGroup(false, Device, Inode), Links, allocated, 0) : null;
+    }
+
+    /// <summary>What deleting this one name frees out of <paramref name="allocated"/>: its private blocks when it shares any.</summary>
+    public long Alone(long allocated) => Share(allocated)?.Private ?? allocated;
 }
+
+/// <summary>The files whose blocks are freed together: one inode's hardlinks, or one APFS clone group.</summary>
+/// <param name="Cloned">A clone group rather than an inode.</param>
+/// <param name="Device">The volume.</param>
+/// <param name="Id">The inode, or the clone group's id.</param>
+public readonly record struct ShareGroup(bool Cloned, ulong Device, ulong Id);
+
+/// <summary>One file's part in a <see cref="ShareGroup"/>.</summary>
+/// <param name="Group">The group.</param>
+/// <param name="Needed">How many members the group has; its shared blocks free only once all of them go.</param>
+/// <param name="Shared">The blocks this file shares with the group's other members.</param>
+/// <param name="Private">The blocks only this file holds, freed with it alone.</param>
+public readonly record struct BlockShare(ShareGroup Group, ulong Needed, long Shared, long Private);
 
 /// <summary>A file's place in a copy-on-write clone group (APFS <c>clonefile</c>).</summary>
 /// <param name="Id">The group, shared by every clone in it: the inode of the file first cloned.</param>
@@ -60,6 +84,9 @@ public static partial class HardLinks
         ArgumentNullException.ThrowIfNull(path);
         return OperatingSystem.IsWindows() ? WindowsIdentity(path) : UnixIdentity(path);
     }
+
+    /// <summary>What deleting <paramref name="path"/> alone frees of its <paramref name="allocated"/> bytes; all of them when it cannot be read.</summary>
+    public static long Alone(string path, long allocated) => Identify(path) is { } identity ? identity.Alone(allocated) : allocated;
 
     [UnsupportedOSPlatform("windows")]
     private static unsafe FileIdentity? UnixIdentity(string path)
