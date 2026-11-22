@@ -66,7 +66,8 @@ The rules that follow from this:
 ## Layering
 
 References point down this stack and never up or sideways. They are project references, and
-`tests/Rig.Architecture.Tests` (NetArchTest) enforces the namespace rules inside a project:
+`tests/Rig.Architecture.Tests` enforces the namespace rules inside a project: NetArchTest for what a namespace may
+reference, ArchUnitNET for cycles:
 
 1. **Composition roots**: `src/Rig.Cli/Program.cs` for `rig`, and `Rig.Web.RigWebHost` for the web host (each route
    group is a static `Map` it calls). These are the
@@ -168,7 +169,7 @@ baseline file. Where existing code violates a rule, the cleanup lands first.
 | Rule | Check |
 |---|---|
 | Each primitive has one owning type: process starts → the process runner; env paths and roots → the code-root resolver; one parser per format | Roslyn `BannedApiAnalyzers` (`RS0030`, `BannedSymbols.txt`) with the owner exempted; no inline suppression |
-| No reference cycles between projects or namespaces | Project references (MSBuild rejects project cycles) and `Rig.Architecture.Tests` namespace rules |
+| No reference cycles between projects or namespaces | Project references (MSBuild rejects project cycles) and `Rig.Architecture.Tests` `CycleTests` (ArchUnitNET) |
 | References follow the layer order; features are independent; adapters never reference features | `Rig.Architecture.Tests` (NetArchTest) |
 | Callers use a type's public API, not its internals | `internal` plus `InternalsVisibleTo` only for the test project; analyzers as errors |
 | Nullable and analyzer warnings | `TreatWarningsAsErrors` and `dotnet format --verify-no-changes` |
