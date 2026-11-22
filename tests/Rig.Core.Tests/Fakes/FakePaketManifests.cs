@@ -1,4 +1,5 @@
 using Rig.Core.Connectivity;
+using Rig.Core.Paket;
 
 namespace Rig.Core.Tests.Fakes;
 

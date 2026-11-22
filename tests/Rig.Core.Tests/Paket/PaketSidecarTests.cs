@@ -1,8 +1,9 @@
 using Rig.Core.Connectivity;
+using Rig.Core.Paket;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
 
-namespace Rig.Core.Tests.Connectivity;
+namespace Rig.Core.Tests.Paket;
 
 /// <summary>
 /// The Paket sidecar against the real <c>Rig.Paket</c> executable the build copies beside the tests, on Paket files
