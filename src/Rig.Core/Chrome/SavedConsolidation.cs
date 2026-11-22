@@ -1,5 +1,4 @@
 using Rig.Core.Text;
-using Rig.Core.Vault;
 
 namespace Rig.Core.Chrome;
 

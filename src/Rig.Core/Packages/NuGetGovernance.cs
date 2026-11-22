@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using Rig.Core.Vault;
+using Rig.Core.Markup;
 
 namespace Rig.Core.Packages;
 

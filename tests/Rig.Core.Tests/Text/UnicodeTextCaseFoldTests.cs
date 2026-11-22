@@ -1,7 +1,7 @@
 using Rig.Core.Text;
 using Rig.Core.Vault;
 
-namespace Rig.Core.Tests.Vault;
+namespace Rig.Core.Tests.Text;
 
 /// <summary><see cref="UnicodeText.CaseFold"/> agrees with the recorded <c>str.casefold</c> on the folds that differ from lower-casing.</summary>
 public sealed class UnicodeTextCaseFoldTests

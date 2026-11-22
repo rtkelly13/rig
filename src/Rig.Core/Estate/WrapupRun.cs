@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Estate;
 

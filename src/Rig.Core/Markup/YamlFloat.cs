@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Rig.Core.Vault;
+namespace Rig.Core.Markup;
 
 /// <summary>The shortest round-trip rendering of a float: always a point or an exponent (<c>1.0</c>, <c>1e+16</c>), <c>inf</c> and <c>nan</c> in lower case.</summary>
 public static class YamlFloat

@@ -506,7 +506,7 @@ internal sealed partial class DesktopWorkspaceCommand
         if (desktop is not null)
         {
             var indexes = Enumerable.Range(1, plan.Desktops.Count)
-                .Where(index => Rig.Core.Vault.UnicodeText.CaseFold(plan.Desktops[index - 1].Name) == Rig.Core.Vault.UnicodeText.CaseFold(desktop))
+                .Where(index => UnicodeText.CaseFold(plan.Desktops[index - 1].Name) == UnicodeText.CaseFold(desktop))
                 .ToList();
             actual = port.CurrentWorkspaceStatus(indexes);
         }

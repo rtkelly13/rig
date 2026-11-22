@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 

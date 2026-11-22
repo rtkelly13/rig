@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop.Windows;
 

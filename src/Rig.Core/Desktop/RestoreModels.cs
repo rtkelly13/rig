@@ -1,4 +1,5 @@
 using System.Globalization;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 
@@ -122,10 +123,10 @@ public sealed class RestoreExecutionPlan
             return null;
         }
 
-        var wanted = Vault.UnicodeText.CaseFold(targetDesktop);
+        var wanted = UnicodeText.CaseFold(targetDesktop);
         for (var index = 0; index < plan.Desktops.Count; index++)
         {
-            if (Vault.UnicodeText.CaseFold(plan.Desktops[index].Name) == wanted)
+            if (UnicodeText.CaseFold(plan.Desktops[index].Name) == wanted)
             {
                 return index + 1;
             }
