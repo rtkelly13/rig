@@ -61,6 +61,10 @@ public static class WorkspaceRestore
             log.Log($"Preserving {preserved.Count} invoking window(s) from reuse/close handling");
         }
 
+        // The invoking windows are read now, while the terminal that ran restore is still in front: by the time background
+        // apps are put away, restore has switched desktops and focused the windows it placed.
+        var invoking = preserved.Count > 0 || !plan.Background.Any(app => !app.Disabled) ? preserved : port.WindowHandlesToPreserve();
+
         int? targetIndex;
         try
         {
@@ -112,6 +116,11 @@ public static class WorkspaceRestore
         actions.AddRange(execution.RenderActions());
         if (options.DryRun)
         {
+            if (targetIndex is null)
+            {
+                actions.AddRange(BackgroundApps.Planned(plan));
+            }
+
             return actions;
         }
 
@@ -178,6 +187,15 @@ public static class WorkspaceRestore
         else
         {
             log.Log("First pass fully successful; skipped second-pass placement");
+        }
+
+        // Only a full restore: restoring one desktop should not reach into apps the user may have opened on purpose.
+        if (targetIndex is null && plan.Background.Count > 0)
+        {
+            using (steps.Step("restore.background_apps", tags: [new("app.count", plan.Background.Count)]))
+            {
+                actions.AddRange(BackgroundApps.PutAway(run, invoking));
+            }
         }
 
         if (startingDesktop is { } start)
