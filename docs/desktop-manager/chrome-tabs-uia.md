@@ -264,12 +264,13 @@ The commands are C#; `organise` and the scheduled entry point are still Python.
 | Area | Where | Role |
 |---|---|---|
 | Command | `src/Rig.Cli/Chrome/ChromeTabsCommand.cs` | The `rig chrome-tabs` group: every command, its flags and its output |
-| Drivers | `src/Rig.Cli/Chrome/WindowsChrome.cs`, `MacOSChrome.cs` | Open a Chrome session for a command: the Windows UIA tree or the macOS scripting and accessibility API |
+| Drivers | `src/Rig.Cli/Chrome/WindowsChrome.cs`, `MacOSChrome.cs`, `LinuxChrome.cs` | Open a Chrome session for a command: the Windows UIA tree, the macOS scripting and accessibility API, or rig's extension on Linux ([chrome-tabs-extension.md](chrome-tabs-extension.md)) |
 | Tabs and windows | `src/Rig.Core/Chrome/ChromeTabs.cs` | Tab identity (RuntimeId), window records and accessible-name parsing |
 | Windows adapter | `src/Rig.Core/Chrome/Windows/ChromeUiaReader.cs`, `ChromeUiaActions.cs` (and `.Grouping.cs`) | Read windows and tabs, find and invoke elements, close and group tabs, read saved-group chips, foreground a window |
 | Windows shell | `src/Rig.Core/Chrome/Windows/NativeChromeWindowShell.cs` | Chrome's top-level windows through Win32: handles, profile, rect, monitor |
 | Virtual desktops | `src/Rig.Core/Chrome/Windows/ChromeVirtualDesktops.cs` | Move windows between desktops and report the current one |
 | macOS adapter | `src/Rig.Core/Chrome/MacOS/` | JXA scripts and native accessibility reads (`AxReader`, `MacUi`, `NativeAxApi`) |
+| Linux adapter | `src/Rig.Core/Chrome/Extension/`, `extensions/chrome-tabs/` | The extension, its native host relay, and the driver over Chrome's tab and group APIs |
 | PR planning | `src/Rig.Core/Chrome/PrPrune.cs`, `ClosePlans.cs` | Pure PR chain and queue planning, and the close executor both planners share |
 | Site rules | `src/Rig.Core/Chrome/SiteRules.cs`, `SiteHosts.cs` | Per-site title rules and the `config/chrome-site-groups.json` host map |
 | Dedupe | `src/Rig.Core/Chrome/Dedupe.cs` | Pure planner for non-PR duplicate pages |

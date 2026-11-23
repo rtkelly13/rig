@@ -21,10 +21,11 @@ namespace Rig.Cli.Chrome;
 /// <param name="time">The clock that picks today's day file.</param>
 /// <param name="zone">The zone run start times are shown in.</param>
 /// <param name="output">Where every line goes.</param>
-/// <param name="driver">Opens Chrome for the commands that read it; null on Linux, where no native driver exists.</param>
+/// <param name="driver">Opens Chrome for the commands that read it; null where there is no driver.</param>
 /// <param name="windows">Whether this is the Windows composition, which alone has the PATH shim to install.</param>
 /// <param name="notes">Writes and opens the note an interrupted unattended run leaves; <see cref="ChromeNotes.Default"/> when null.</param>
 /// <param name="error">Where a span skipped as malformed is reported; the process's standard error when null.</param>
+/// <param name="extension">Builds <c>extension</c>, the Linux driver's install and host; null elsewhere.</param>
 internal sealed class ChromeTabsCommand(
     Func<string, string?> environment,
     string home,
@@ -34,14 +35,15 @@ internal sealed class ChromeTabsCommand(
     ChromeTabsDriver? driver = null,
     bool windows = true,
     ChromeNotes? notes = null,
-    TextWriter? error = null)
+    TextWriter? error = null,
+    Func<Command>? extension = null)
 {
     /// <summary>The group's name, shared with the forwarding row.</summary>
     public const string Name = "chrome-tabs";
 
     /// <summary>The group's help.</summary>
     public const string Description =
-        "Chrome tabs via UI Automation: list them, prune GitHub PR tabs and duplicate pages, group by repo, or organise (both, window by window).";
+        "Chrome tabs via UI Automation, or rig's extension on Linux: list them, prune GitHub PR tabs and duplicate pages, group by repo, or organise (both, window by window).";
 
     /// <summary><c>traces show</c> exits with this when no run matches.</summary>
     public const int NoRunExit = 1;
@@ -76,12 +78,17 @@ internal sealed class ChromeTabsCommand(
             }
         }
 
+        if (extension is not null)
+        {
+            command.Subcommands.Add(extension());
+        }
+
         return command;
     }
 
     private Command List(ChromeTabsDriver chrome)
     {
-        var list = new Command("list", "List every Chrome window's tabs on every desktop (flags: Selected Pinned Loaded Audible). [Windows/macOS only]");
+        var list = new Command("list", "List every Chrome window's tabs on every desktop (flags: Selected Pinned Loaded Audible). [Windows/macOS/Linux]");
         var profile = Profile();
         var prsOnly = new Option<bool>("--prs-only") { Description = "Only tabs showing a GitHub pull request." };
         var json = new Option<bool>("--json") { Description = "Machine-readable output." };
@@ -94,7 +101,7 @@ internal sealed class ChromeTabsCommand(
 
     private Command Rank(ChromeTabsDriver chrome)
     {
-        var rank = new Command("rank", "Rank every tab by keep priority, with the reasons: protected first, the first to close last. [Windows/macOS only]");
+        var rank = new Command("rank", "Rank every tab by keep priority, with the reasons: protected first, the first to close last. [Windows/macOS/Linux]");
         var profile = Profile();
         var github = new Option<bool>("--github") { Description = "Query GitHub for PR state, chains, size, review and checks (the default)." };
         var noGithub = new Option<bool>("--no-github") { Description = "Skip the PR rules and every GitHub call; GitHub pages are still de-duplicated by title." };
@@ -114,7 +121,7 @@ internal sealed class ChromeTabsCommand(
     {
         var prune = new Command(
             "prune",
-            "Close merged, duplicate and superseded GitHub PR tabs, and duplicate pages, per profile across windows. [Windows/macOS only]\n\n"
+            "Close merged, duplicate and superseded GitHub PR tabs, and duplicate pages, per profile across windows. [Windows/macOS/Linux]\n\n"
             + "Tabs close one window at a time in screen order, and each window's active tab is put back before the next window starts.");
         var dryRun = new Option<bool>("--dry-run") { Description = "Print the plan grouped by reason; close nothing." };
         var profile = Profile();
@@ -162,10 +169,11 @@ internal sealed class ChromeTabsCommand(
         var group = new Command(
             "group",
             "Gather GitHub tabs into one group per repo, all in the window holding the most GitHub tabs, and Google, Asana, "
-            + "YouTrack and Claude tabs into one group per site. [Windows/macOS only]\n\n"
+            + "YouTrack and Claude tabs into one group per site. [Windows/macOS/Linux]\n\n"
             + "Chrome only groups through the tab's right-click menu, so this brings each window forward in turn and uses the "
             + "mouse for a moment per tab: leave the mouse and keyboard alone until it finishes. A window on another desktop is "
-            + "brought onto this one while it is worked on, then sent back. Call tabs never move.");
+            + "brought onto this one while it is worked on, then sent back. Call tabs never move. "
+            + "On Linux the extension groups through Chrome's own API: no window comes forward and the mouse is never used.");
         var dryRun = new Option<bool>("--dry-run") { Description = "Print the plan; move nothing." };
         var profile = Profile();
         var minSize = AtLeastOne(new Option<int>("--min-size")
@@ -188,7 +196,7 @@ internal sealed class ChromeTabsCommand(
     {
         var organise = new Command(
             "organise",
-            "Prune, then group, one window at a time: the whole tidy in one command. [Windows/macOS only]\n\n"
+            "Prune, then group, one window at a time: the whole tidy in one command. [Windows/macOS/Linux]\n\n"
             + "Windows go in screen order: the current desktop first, then monitor by monitor, top to bottom. Each window has "
             + "its tabs closed and its active tab put back before the next starts. Then grouping (as `group`) runs window by "
             + "window over what is left; it brings each window forward and uses the mouse.\n\n"

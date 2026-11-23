@@ -29,6 +29,7 @@ using Rig.Cli.Web;
 using Rig.Cli.Work;
 using Rig.Cli.Workspace;
 using Rig.Core.Browser;
+using Rig.Core.Chrome.Extension;
 using Rig.Core.Devenv;
 using Rig.Core.Estate;
 using Rig.Core.Flags;
@@ -58,7 +59,7 @@ namespace Rig.Cli;
 [ExcludeFromCodeCoverage(Justification = "Wiring only; RigApp carries the behaviour and is tested.")]
 internal static class Program
 {
-    internal static Task<int> Main(string[] args) => Run(ScheduledLaunch.Apply(args));
+    internal static Task<int> Main(string[] args) => Run(ScheduledLaunch.Apply(ChromeExtensionCommand.HostArguments(args)));
 
     private static async Task<int> Run(string[] args)
     {
@@ -208,8 +209,20 @@ internal static class Program
 #pragma warning restore CA1416
                             new GhApi(proc),
                             () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
+                        : !exportTree && OperatingSystem.IsLinux() ? new ChromeTabsDriver(
+                            () => LinuxChrome.Open(Environment.GetEnvironmentVariable, home),
+                            new GhApi(proc),
+                            () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
                         : null,
-                    exportTree ? exportWindowsTree : OperatingSystem.IsWindowsVersionAtLeast(8, 1)).Build,
+                    exportTree ? exportWindowsTree : OperatingSystem.IsWindowsVersionAtLeast(8, 1),
+                    extension: !exportTree && OperatingSystem.IsLinux()
+                        ? new ChromeExtensionCommand(
+                            new ExtensionInstaller(home, ProgramPath.Find("rig") ?? Environment.ProcessPath ?? "rig"),
+                            LinuxChrome.Bridge(Environment.GetEnvironmentVariable, home),
+                            Path.Join(AppContext.BaseDirectory, "chrome-extension"),
+                            ExtensionPlaces.SocketFolder(Environment.GetEnvironmentVariable, home),
+                            Console.Out).Build
+                        : null).Build,
                 new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out, Console.Error).Build,
                 new C4Command(
                     new C4Host(Path.Join(checkout, "experiments", "c4-okf", "rig"), (directory, arguments) => git.OutAsync(directory, [.. arguments])),

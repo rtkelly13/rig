@@ -20,6 +20,10 @@
     <ProjectReference Include="../Rig.Web/Rig.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The Linux Chrome driver's extension, shipped beside rig for `chrome-tabs extension install` (ADR 0026). -->
+    <None Include="../../extensions/chrome-tabs/**" LinkBase="chrome-extension" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Rig.Cli.Tests" />
   </ItemGroup>
   <Import Project="..\Rig.Paket\Rig.Paket.Sidecar.targets" />

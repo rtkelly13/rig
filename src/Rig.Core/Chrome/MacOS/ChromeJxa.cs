@@ -75,12 +75,15 @@ public static class ChromeProfiles
     /// missing, unreadable or not the shape Chrome writes. A profile entry that is not an object is skipped, and a
     /// name that is not a string reads as absent.
     /// </summary>
-    public static IReadOnlyDictionary<string, ProfileInfo> Read(string home)
+    public static IReadOnlyDictionary<string, ProfileInfo> Read(string home) => ReadFile(Path.Combine(home, LocalState));
+
+    /// <summary>Chrome's profiles by directory, from the <c>Local State</c> file at <paramref name="path"/>; empty as <see cref="Read"/> is.</summary>
+    public static IReadOnlyDictionary<string, ProfileInfo> ReadFile(string path)
     {
         string text;
         try
         {
-            text = File.ReadAllText(Path.Combine(home, LocalState));
+            text = File.ReadAllText(path);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
