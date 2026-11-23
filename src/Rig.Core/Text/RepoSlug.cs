@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Rig.Core.GitHub;
+namespace Rig.Core.Text;
 
 /// <summary>A GitHub repository's owner and name, as spelled in the remote, parsed from any form a remote URL takes.</summary>
 /// <param name="Owner">The owner (user or organisation).</param>

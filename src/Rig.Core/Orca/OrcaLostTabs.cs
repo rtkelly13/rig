@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.Data.Sqlite;
+using Rig.Core.Text;
 
 namespace Rig.Core.Orca;
 
@@ -182,16 +183,10 @@ public static class OrcaLostTabs
     private static string Reopen(string dir, string label, string? cwd, string resume)
     {
         var inner = cwd is null || SameDir(cwd, dir) ? resume : $"cd '{cwd.Replace("'", "''", StringComparison.Ordinal)}'; {resume}";
-        return $"orca terminal create --worktree {ShellQuote("path:" + dir)} --title {ShellQuote(label)} --command {ShellQuote(inner)} --json";
+        return $"orca terminal create --worktree {QuotedText.Shell("path:" + dir)} --title {QuotedText.Shell(label)} --command {QuotedText.Shell(inner)} --json";
     }
 
     private static bool SameDir(string a, string b) =>
         string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(a)), Path.TrimEndingDirectorySeparator(Path.GetFullPath(b)),
             OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-
-    // POSIX shell quoting, as Python's shlex.quote does it: bare when every character is safe, else single-quoted.
-    private static string ShellQuote(string text) =>
-        text.Length > 0 && text.All(c => char.IsLetterOrDigit(c) || "_@%+=:,./-".Contains(c, StringComparison.Ordinal))
-            ? text
-            : "'" + text.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
 }

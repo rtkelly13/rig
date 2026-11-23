@@ -3,6 +3,7 @@ using Rig.Cli.Gh.Threads;
 using Rig.Cli.Tests.Fakes;
 using Rig.Core.GitHub;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Tests.Gh;
 

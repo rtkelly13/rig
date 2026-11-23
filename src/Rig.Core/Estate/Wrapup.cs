@@ -560,7 +560,7 @@ public static class Wrapup
     public static string ReportCommand(string askId, string rigExecutable)
     {
         string[] parts = [rigExecutable, "estate", "wrapup", "report", .. string.IsNullOrEmpty(askId) ? [] : (string[])["--ask", askId]];
-        return string.Join(' ', parts.Select(WrapupText.ShellQuote));
+        return string.Join(' ', parts.Select(QuotedText.Shell));
     }
 
     /// <summary>Selected descendant sessions not yet known to be finished (settled or answered done).</summary>
@@ -841,20 +841,11 @@ internal static class WrapupWire
 /// <summary>String helpers that wrap-up's output depends on.</summary>
 public static class WrapupText
 {
-    private static readonly Regex SafeWord = new(@"^[\w@%+=:,./-]+$", RegexOptions.CultureInvariant | RegexOptions.ECMAScript, TimeSpan.FromSeconds(1));
-
     /// <summary>The first non-blank line, stripped, cut to <paramref name="limit"/> characters with an ellipsis.</summary>
     public static string FirstLine(string? text, int limit = 160)
     {
         var line = UnicodeText.SplitLines(text ?? "").Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? "";
         return line.Length <= limit ? line : line[..(limit - 1)] + "…";
-    }
-
-    /// <summary>Quotes a word for a POSIX shell.</summary>
-    public static string ShellQuote(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        return text.Length == 0 ? "''" : SafeWord.IsMatch(text) ? text : "'" + text.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
     }
 
     /// <summary>The first <paramref name="length"/> characters.</summary>
