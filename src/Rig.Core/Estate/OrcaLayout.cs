@@ -190,6 +190,9 @@ public static class OrcaLayout
     /// <summary>In Orca, but its folder is gone.</summary>
     public const string Stale = "stale";
 
+    /// <summary>A second registration of a declared project, by its name or a former one, whose folder still exists.</summary>
+    public const string Duplicate = "duplicate";
+
     /// <summary>Declared, but neither in Orca nor cloned where its group expects.</summary>
     public const string NoClone = "no-clone";
 
@@ -420,6 +423,10 @@ public static class OrcaLayout
             {
                 var former = Former(lookup, project, found, run.Exists);
                 run.Declared(project, former is null ? found : null, former);
+                foreach (var extra in lookup.Others(project, found, former?.Registration))
+                {
+                    run.Extra(project, extra, kept: former?.Registration ?? found);
+                }
             }
         }
 
@@ -824,17 +831,30 @@ public static class OrcaLayout
             return null;
         }
 
+        /// <summary>
+        /// Every other registration answering to the project's name or a former one: a clone registered twice, or a
+        /// registration left behind by a rename whose slug the live one shadows. Each is claimed, so none reads as unmanaged.
+        /// </summary>
+        public IReadOnlyList<Registration> Others(DeclaredProject project, Registration? found, Registration? former)
+        {
+            var slugs = project.FormerSlugs.Append(project.Slug.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
+            return [.. state.Registrations
+                .Where(r => r.Slug is not null && slugs.Contains(r.Slug) && r.Id != found?.Id && r.Id != former?.Id)
+                .Where(Claim)];
+        }
+
         private bool Claim(Registration registration) => !_byPathIds.Contains(registration.Id) && _claimed.Add(registration.Id);
 
         public Registration? Find(DeclaredProject project)
         {
+            // Registered twice under one remote, the one in the expected clone is the project; Others reports the rest.
+            var clone = Posix(ExpectedClone(project, state.Groups, codeRoot));
             if (BySlug.GetValueOrDefault(project.Slug.ToLowerInvariant()) is { } found)
             {
-                return found;
+                return state.Registrations.FirstOrDefault(r => r.Slug == found.Slug && PathComparer.Equals(Posix(r.Path), clone)) ?? found;
             }
 
             // Never take a registration another declared project owns by remote.
-            var clone = Posix(ExpectedClone(project, state.Groups, codeRoot));
             var byPath = state.Registrations.FirstOrDefault(r =>
                 PathComparer.Equals(Posix(r.Path), clone) && !(r.Slug is not null && _declaredSlugs.Contains(r.Slug)));
             if (byPath is not null)
@@ -1051,6 +1071,21 @@ public static class OrcaLayout
             if (actual != group)
             {
                 Add(WrongGroup, project.Name, Posix(found.Path), $"under {(actual.Length > 0 ? actual : "no group")}, declared {where}", $"move it to {where}", ApplyCommand);
+            }
+        }
+
+        // Another registration of a declared project, beside the one the audit kept.
+        public void Extra(DeclaredProject project, Registration extra, Registration? kept)
+        {
+            var also = string.Equals(extra.Slug, project.Slug, StringComparison.OrdinalIgnoreCase) ? "registered in Orca again" : $"registered in Orca as {extra.Slug}, which is now {project.Slug}";
+            if (!exists(extra.Path))
+            {
+                Add(Stale, project.Name, Posix(extra.Path), $"{also}, but the folder is gone", "remove it from Orca");
+            }
+            else
+            {
+                var beside = kept is null ? string.Empty : $" beside {Posix(kept.Path)}";
+                Add(Duplicate, project.Name, Posix(extra.Path), $"{also}{beside}", "keep one clone by hand and remove the other from Orca");
             }
         }
 

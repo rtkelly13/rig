@@ -28,7 +28,8 @@ disabled entries).
 | `missing-group` | a declared group Orca does not have | creates it, parents first |
 | `undeclared` | in Orca, but its entry has no `orca.group` | nothing: add one |
 | `unmanaged` | an estate repo in Orca that managed-projects.json does not list | nothing: add it, or remove it from Orca |
-| `stale` | registered, but the folder is gone | nothing |
+| `stale` | registered, but the folder is gone; also a second registration of a declared project, by its name or a former one | nothing: remove it from Orca |
+| `duplicate` | a second registration of a declared project, by its name or a former one, whose folder still exists | nothing: keep one clone, remove the other from Orca |
 | `no-clone` | declared, but not cloned where its top group's folder says | nothing: `git clone`, then run again |
 | `archived` | in Orca, but its repo is archived | removes it from Orca, unless a process is working in it |
 | `archived-clone` | an archived repo is still cloned locally | nothing: delete the clone once nothing exists only there |

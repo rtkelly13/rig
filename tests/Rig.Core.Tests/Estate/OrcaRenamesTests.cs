@@ -55,6 +55,47 @@ public sealed class OrcaRenamesTests : IDisposable
     }
 
     [Fact]
+    public async Task A_registration_left_behind_by_a_rename_is_stale_even_beside_the_live_one()
+    {
+        var live = Clone("Resultful/Union.Assertions");
+        _fake.Repos.Add(FakeOrca.Project("r-live", live, "Union.Assertions", "g-resultful", "Resultful"));
+        _fake.Repos.Add(FakeOrca.Project("r-gone", $"{_code}/Resultful/FluentAssertions.Resultful", "FluentAssertions.Resultful", "g-resultful", "Resultful"));
+
+        var finding = Assert.Single(await AuditAsync(Union("resultful/fluentassertions.resultful")));
+
+        Assert.Equal((OrcaLayout.Stale, "Union.Assertions"), (finding.Kind, finding.Repo));
+        Assert.EndsWith("/Resultful/FluentAssertions.Resultful", finding.Path, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_second_registration_under_the_same_remote_is_reported_not_hidden()
+    {
+        var live = Clone("Resultful/Union.Assertions");
+        var gone = $"{_code}/Resultful/Old.Union";
+        _fake.Repos.Add(FakeOrca.Project("r-live", live, "Union.Assertions", "g-resultful", "Resultful"));
+        _fake.Repos.Add(FakeOrca.Project("r-gone", gone, "Union.Assertions", "g-resultful", "Resultful"));
+
+        var finding = Assert.Single(await AuditAsync(Union()));
+
+        Assert.Equal((OrcaLayout.Stale, gone), (finding.Kind, finding.Path));
+        Assert.Contains("registered in Orca again", finding.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Two_live_clones_under_one_remote_are_a_duplicate()
+    {
+        var live = Clone("Resultful/Union.Assertions");
+        var other = Clone("Resultful/Union.Assertions-copy");
+        _fake.Repos.Add(FakeOrca.Project("r-other", other, "Union.Assertions", "g-resultful", "Resultful"));
+        _fake.Repos.Add(FakeOrca.Project("r-live", live, "Union.Assertions", "g-resultful", "Resultful"));
+
+        var finding = Assert.Single(await AuditAsync(Union()));
+
+        Assert.Equal((OrcaLayout.Duplicate, other), (finding.Kind, finding.Path));
+        Assert.Contains($"beside {live}", finding.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task An_unregistered_clone_with_an_old_name_is_renamed()
     {
         var old = Clone("Resultful/FluentAssertions.Resultful");
