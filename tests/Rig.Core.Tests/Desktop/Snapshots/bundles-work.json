@@ -23,9 +23,9 @@
       "name": "Work Triage",
       "type": "command",
       "delay_ms": 2200,
-      "command": "rig tools ensure web \u0026\u0026 \u0022{chrome-path}\u0022 --user-data-dir=\u0022{chrome-user-data}\u0022 --profile-directory=\u0022{chrome-profile-personal}\u0022 --app=http://127.0.0.1:8090/triage/inbox",
+      "command": "rig tools ensure web \u0026\u0026 \u0022{chrome-path}\u0022 --user-data-dir=\u0022{chrome-user-data}\u0022 --profile-directory=\u0022{chrome-profile-work}\u0022 --new-window http://127.0.0.1:8090/triage/inbox",
       "cwd": "{rig-root}",
-      "summary": "The rig triage queue (\u0060rig triage\u0060) as a Chrome app window, full screen 2, beside Orca: starts the rig web dashboard if it is not already answering, then opens its triage inbox. The triage window also gives the rest of the dashboard.",
+      "summary": "The rig triage queue (\u0060rig triage\u0060) in an ordinary Chrome window on the work profile, full screen 2, beside Orca: starts the rig web dashboard if it is not already answering, then opens its triage inbox. The triage window also gives the rest of the dashboard. \u0060--new-window\u0060 makes Chrome open a window even though the Admin desktop\u0027s work-profile window already exists, and \u0060window_title\u0060 matches every dashboard page (\u0060Rig / Triage\u0060, \u0060Rig / Estate\u0060) as well as the title it loads with (\u0060Rig // Estate Management\u0060), so a later restore finds the window again.",
       "placement": {
         "screen": 2,
         "layout": {
@@ -33,7 +33,7 @@
           "slot": 1
         }
       },
-      "window_title": "Rig // Estate Management",
+      "window_title": "Rig /",
       "window_process_name": "chrome.exe",
       "window_wait_timeout_ms": 45000
     }
