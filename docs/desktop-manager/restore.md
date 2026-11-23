@@ -33,7 +33,8 @@ rig desktop workspace restore --desktop Work   # restore one desktop in place
   instead of fighting it, and the [display guard](startup-and-display-guard.md)
   pauses until the lock is released.
 - The run log times each phase: settling app updates, planning, creating desktops,
-  each desktop, the second pass and the return to the starting desktop. A phase that
+  each desktop, the second pass, putting away [background apps](plan-files.md#background-apps)
+  and the return to the starting desktop. A phase that
   runs over 15 seconds (90 for a desktop) is logged as `Slow step:` when it ends. A
   closing `Step timings:` line lists every phase.
 - Before inventorying windows, restore applies or waits out a staged Warp update.

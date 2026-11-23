@@ -56,6 +56,38 @@ An app entry, here Chrome with explicit profile flags:
   command fresh (see [Claude sessions at sign-in](startup-and-display-guard.md#claude-sessions-at-sign-in)).
   Every other restore runs `command` as usual, so `command` is still required.
 
+## Background apps
+
+Some apps start at sign-in, belong in the tray, and open a window anyway: Docker
+Desktop opens its Containers dashboard. The plan's root `background` list names them,
+and a full restore puts their windows away after placing every planned window and
+before returning to the starting desktop:
+
+```json
+"background": [
+  {
+    "name": "Docker Desktop",
+    "window_process_name": "Docker Desktop.exe",
+    "summary": "Tray only; the engine keeps running when the dashboard closes."
+  }
+]
+```
+
+- `window_process_name` (required) is the image name whose visible windows are put away.
+- `action` is `close` (the default: the window is asked to close, as its close button
+  would, which sends a tray app back to the tray) or `minimize`, for an app that
+  would quit if its window closed.
+- `window_wait_timeout_ms` waits that long for the window of an app that is running
+  but has none open yet. Without it there is no wait: only the windows open when
+  restore reaches the app are put away, so an app already sitting in the tray costs
+  a restore nothing. An app that is not running is never waited on.
+- `summary` says why the app is listed; `disabled: true` keeps it but leaves it alone.
+
+Restoring one desktop (`--desktop`) leaves background apps alone, and the invoking
+terminal's window is never touched. A dry run lists what would be put away. Prefer
+the app's own setting where it has one (Slack's `hideOnStartup`); this list is for
+apps without one.
+
 ## Placeholders
 
 Paths, arguments and `cwd` can use placeholders:

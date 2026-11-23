@@ -112,6 +112,11 @@ public static class WorkspaceRestore
         actions.AddRange(execution.RenderActions());
         if (options.DryRun)
         {
+            if (targetIndex is null)
+            {
+                actions.AddRange(BackgroundApps.Planned(plan));
+            }
+
             return actions;
         }
 
@@ -178,6 +183,15 @@ public static class WorkspaceRestore
         else
         {
             log.Log("First pass fully successful; skipped second-pass placement");
+        }
+
+        // Only a full restore: restoring one desktop should not reach into apps the user may have opened on purpose.
+        if (targetIndex is null && plan.Background.Count > 0)
+        {
+            using (steps.Step("restore.background_apps", tags: [new("app.count", plan.Background.Count)]))
+            {
+                actions.AddRange(BackgroundApps.PutAway(run));
+            }
         }
 
         if (startingDesktop is { } start)

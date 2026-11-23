@@ -298,6 +298,19 @@ public sealed class NativeDesktopPort : IDesktopPort
     }
 
     /// <inheritdoc/>
+    public void PutAwayWindow(long handle, string action)
+    {
+        if (action == BackgroundApp.Minimize)
+        {
+            _windowActions.Minimize(handle);
+        }
+        else
+        {
+            _windowActions.RequestClose(handle);
+        }
+    }
+
+    /// <inheritdoc/>
     public IReadOnlyList<string> OpenMissingPathFallbacks(RestoreFailureFallbacks fallbacks, IRunLog log)
     {
         ArgumentNullException.ThrowIfNull(fallbacks);

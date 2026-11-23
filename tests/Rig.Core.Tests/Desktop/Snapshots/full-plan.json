@@ -86,6 +86,20 @@
   },
   "workspace": "C:/code",
   "personal-workspace": "C:/personal",
+  "background": [
+    {
+      "name": "Tray",
+      "window_process_name": "tray.exe",
+      "summary": "closes to the tray"
+    },
+    {
+      "name": "Quitter",
+      "window_process_name": "quitter.exe",
+      "action": "minimize",
+      "window_wait_timeout_ms": 5000,
+      "disabled": true
+    }
+  ],
   "notes": [
     "one",
     "2"
