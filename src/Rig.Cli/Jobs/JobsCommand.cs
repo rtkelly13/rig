@@ -14,7 +14,7 @@ namespace Rig.Cli.Jobs;
 /// <param name="Flags">The rig flags' effective state.</param>
 /// <param name="Clock">The clock <c>status</c> plans against.</param>
 /// <param name="Booted">When this machine booted, given the time now.</param>
-/// <param name="Tasks">The tasks or LaunchAgents to install and check; null where nothing schedules the jobs (Linux).</param>
+/// <param name="Tasks">The tasks, LaunchAgents or systemd units to install and check; null where nothing schedules the jobs.</param>
 /// <param name="Executor">Starts each job <c>run</c> takes.</param>
 /// <param name="IdleSeconds">Seconds since the last keyboard or mouse input.</param>
 /// <param name="Hold">Takes the run lock; <see cref="RunLock.Hold"/> outside tests.</param>
@@ -121,7 +121,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         return option;
     }
 
-    // The scheduler says which platform it is; nothing scheduled means Linux, where neither install nor uninstall works.
+    // The scheduler says which platform it is; with none, neither install nor uninstall works.
     private JobsPlatform Platform => host.Tasks?.Platform ?? JobsPlatform.Linux;
 
     private string LogsDir => JobState.LogsDir(host.JobsDir);
@@ -130,7 +130,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     {
         if (host.Tasks is not { } tasks)
         {
-            await output.WriteLineAsync("jobs install requires Windows or macOS.", cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync("jobs install has no scheduler on this platform.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -192,7 +192,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     {
         if (host.Tasks is not { } tasks)
         {
-            await output.WriteLineAsync("jobs uninstall requires Windows or macOS.", cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync("jobs uninstall has no scheduler on this platform.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 

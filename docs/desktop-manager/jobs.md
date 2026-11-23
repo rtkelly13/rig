@@ -2,7 +2,7 @@
 
 Everything that keeps this machine aligned runs from one registry
 (`src/Rig.Core/Jobs/JobRegistry.cs`). Windows Task Scheduler drives it with two
-tasks, macOS launchd with two LaunchAgents, so there is one place to see what runs
+tasks, macOS launchd with two LaunchAgents, Linux systemd with two user units, so there is one place to see what runs
 at logon, what runs every 15 minutes, and what runs daily.
 
 ```bash
@@ -111,6 +111,35 @@ launchd has no console to hide. `--start`/`--no-start` are accepted and do nothi
 repeats, the working directory, the log and `PATH` it inherits, and the `launchctl` calls that install,
 report and remove them. Native `MAC-JOBS` acceptance remains pending separate evidence.
 
+## Linux: systemd user units
+
+On Linux (Omarchy and any other systemd desktop), `jobs install` writes these units to
+`~/.config/systemd/user` (or `$XDG_CONFIG_HOME/systemd/user`) and enables them with `systemctl --user`:
+
+| Unit | When | Runs |
+|:-----|:-----|:-----|
+| `rig-jobs-logon.service` | once when the user manager starts, at sign-in (`WantedBy=default.target`) | `jobs run --trigger logon --scheduled` |
+| `rig-jobs-tick.timer` → `rig-jobs-tick.service` | 2 minutes after sign-in, then 15 minutes after each run (`OnStartupSec`, `OnUnitActiveSec`) | `jobs run --trigger tick --scheduled` |
+
+Both services are `Type=oneshot` runs of the published `rig`, at background priority (`Nice=10`,
+`IOSchedulingClass=idle`). Each records the installing shell's `PATH`, because the user manager's own
+would not find `git`, `gh` or `uv`. Their output goes to the journal
+(`journalctl --user -u rig-jobs-tick`), beside the coordinator's own log.
+
+`jobs install` starts the timer straight away. The logon service waits for the next sign-in, so
+run `rig jobs run --trigger logon` by hand if you want the sign-in jobs now. `jobs status`
+reports a unit missing when `systemctl --user is-enabled` fails on the logon service or the tick
+timer. `jobs uninstall` disables them, deletes the unit files and reloads the manager.
+
+The units run while you are signed in. To run them with no session (after a reboot, before
+sign-in), turn on lingering: `loginctl enable-linger $USER`. The same guards apply as on macOS:
+install refuses a linked worktree and a missing published `rig` (`rig runtime install`), and
+`--launcher`/`--pythonw` are Windows-only.
+
+`JobsSystemdTests` pins the policy: each service's command, working directory, `PATH` and
+priority; that only the logon service is wanted by the session and the timer starts the tick; the
+quoting of `%`, `$` and spaces; and the `systemctl` calls that install, report and remove them.
+
 ## Jobs
 
 A run takes its jobs in registry order, one at a time:
@@ -205,7 +234,8 @@ Every `coordinator.log` line names it, it heads that run's section of each job l
 ## Where things live
 
 On Windows everything is under `%LOCALAPPDATA%\rig\jobs\`; on macOS the same files are under
-`~/Library/Application Support/rig/jobs/`:
+`~/Library/Application Support/rig/jobs/`, and on Linux under `~/.local/share/rig/jobs/`
+(`$XDG_DATA_HOME/rig/jobs/`):
 
 - `coordinator.log`: each scheduled run's decisions, which jobs ran or were skipped and why, and why a job failed.
 

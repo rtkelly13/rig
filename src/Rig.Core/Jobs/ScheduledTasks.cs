@@ -4,8 +4,8 @@ using Rig.Core.Processes;
 namespace Rig.Core.Jobs;
 
 /// <summary>
-/// What the jobs commands install on one platform: Task Scheduler tasks on Windows, LaunchAgents on macOS, nothing on
-/// Linux. A registration is named the way its scheduler names it.
+/// What the jobs commands install on one platform: Task Scheduler tasks on Windows, LaunchAgents on macOS, systemd user
+/// units on Linux. A registration is named the way its scheduler names it.
 /// </summary>
 public interface IJobsScheduler
 {

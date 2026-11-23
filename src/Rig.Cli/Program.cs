@@ -452,13 +452,17 @@ internal static class Program
             () => JobRegistry.Default(environment),
             () => new FlagStore(Path.Join(AppData.Current(), "rig.db")).Effective(),
             TimeProvider.System,
-            now => BootTime.At(now, TimeSpan.FromMilliseconds(Environment.TickCount64), scheduled: platform != JobsPlatform.Linux),
+            now => BootTime.At(now, TimeSpan.FromMilliseconds(Environment.TickCount64), scheduled: true),
             platform switch
             {
                 JobsPlatform.Windows => new Schtasks(proc, Path.Join(JobState.JobsDir(AppData.Current()), "temp")),
                 JobsPlatform.MacOS => new LaunchAgents(
                     async ct => new Launchd(proc, Launchd.AgentsDirUnder(home), Launchd.GuiDomain(await KnowledgeServerCommand.UserIdAsync(proc, ct).ConfigureAwait(false))),
                     Path.Join(home, "Library", "Logs"),
+                    Environment.GetEnvironmentVariable("PATH")),
+                JobsPlatform.Linux => new SystemdTimers(
+                    proc,
+                    Path.Join(Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") is { Length: > 0 } config ? config : Path.Join(home, ".config"), "systemd", "user"),
                     Environment.GetEnvironmentVariable("PATH")),
                 _ => null,
             },

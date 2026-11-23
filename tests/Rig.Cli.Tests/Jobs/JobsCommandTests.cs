@@ -82,7 +82,7 @@ public sealed class JobsCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task Uninstall_requires_windows_but_its_help_is_portable()
+    public async Task Uninstall_requires_a_scheduler_but_its_help_is_portable()
     {
         var root = new RootCommand { new JobsCommand(Host(null), _out).Build() };
         Assert.Equal(0, await root.Parse(["jobs", "uninstall", "--help"]).InvokeAsync(
@@ -90,7 +90,7 @@ public sealed class JobsCommandTests : IDisposable
         _out.GetStringBuilder().Clear();
 
         Assert.Equal(1, await Run(null, "uninstall"));
-        Assert.Equal("jobs uninstall requires Windows or macOS.\n", _out.ToString());
+        Assert.Equal("jobs uninstall has no scheduler on this platform.\n", _out.ToString());
     }
 
     [Theory]
@@ -220,10 +220,10 @@ public sealed class JobsCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task Install_requires_windows()
+    public async Task Install_requires_a_scheduler()
     {
         Assert.Equal(1, await Run(null, "install"));
-        Assert.Equal("jobs install requires Windows or macOS.\n", _out.ToString());
+        Assert.Equal("jobs install has no scheduler on this platform.\n", _out.ToString());
     }
 
     [Fact]

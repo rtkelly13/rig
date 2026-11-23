@@ -11,7 +11,7 @@ public enum JobsPlatform
     /// <summary>LaunchAgents under <c>~/Library/LaunchAgents</c>, registered through <c>launchctl</c>.</summary>
     MacOS,
 
-    /// <summary>Nothing schedules them, so <c>jobs run</c> is the only way they run.</summary>
+    /// <summary>systemd user units under <c>~/.config/systemd/user</c>, registered through <c>systemctl --user</c>.</summary>
     Linux,
 }
 
