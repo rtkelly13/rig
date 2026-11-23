@@ -33,7 +33,7 @@ public sealed class DoctorCommandTests : IDisposable
         return command;
     }
 
-    private async Task<(int Code, string Out)> RunAsync(bool windows = false, Func<string, string?>? find = null, string? workingDirectory = null)
+    private async Task<(int Code, string Out)> RunAsync(bool windows = false, Func<string, string?>? find = null, string? workingDirectory = null, params string[] flags)
     {
         using var output = new StringWriter();
         var host = new DevenvHost(_home.Path, "/none.json", windows, "/rig", Path.Join(_home.Path, "code"), "/bin/zsh", find ?? (_ => null), WorkingDirectory: workingDirectory ?? _home.Path);
@@ -44,7 +44,7 @@ public sealed class DoctorCommandTests : IDisposable
         }
 
         var root = new RootCommand { devenv, new DoctorCommand(host, _proc, TimeProvider.System, output).Build() };
-        var code = await root.Parse(["doctor"]).InvokeAsync(new InvocationConfiguration { Output = output, Error = output }, Token);
+        var code = await root.Parse(["doctor", .. flags]).InvokeAsync(new InvocationConfiguration { Output = output, Error = output }, Token);
         return (code, output.ToString().ReplaceLineEndings("\n"));
     }
 
@@ -73,9 +73,18 @@ public sealed class DoctorCommandTests : IDisposable
 
         Assert.Equal(1, code);
         Assert.Contains("terminal --check", _ran);
-        Assert.Contains("Run 'rig devenv gh' to install it.", output, StringComparison.Ordinal);
         Assert.Contains("Run 'rig devenv claude' to install the session-ledger hook.", output, StringComparison.Ordinal);
         Assert.EndsWith("! Found 5 missing required component(s). Run 'rig devenv setup' to resolve.\n", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Outdated_adds_the_upgrade_lookups_to_the_tools_check_only()
+    {
+        var (code, output) = await RunAsync(flags: "--outdated");
+
+        Assert.Equal(0, code);
+        Assert.Equal(["tools --check --outdated", "git --check", "gh --check", "fonts --check", "claude --check", "agents"], _ran);
+        Assert.EndsWith("✓ All required development components are healthy!\n", output, StringComparison.Ordinal);
     }
 
     [Fact]

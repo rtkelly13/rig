@@ -119,14 +119,15 @@ public sealed class ToolsCommandsTests : IDisposable
     public async Task Nothing_missing_says_so_and_update_upgrades_attached()
     {
         Missing();
-        _proc.Answer(new Ran(0, "fork\n", string.Empty), "brew", "list").Answer(Done, "brew", "upgrade");
+        _proc.Answer(new Ran(0, "fork\n", string.Empty), "brew", "list").Answer(Done, "brew", "upgrade").Answer(Done, "gh", "extension", "upgrade");
 
         var (code, output, _) = await RunAsync("tools", "--update");
 
         Assert.Equal(0, code);
         Assert.Contains("✓ All target tools are already installed.\n", output, StringComparison.Ordinal);
-        Assert.Equal([["brew", "list"], ["brew", "upgrade"]], Ran);
-        Assert.True(_proc.Requests[^1].Attached);
+        Assert.EndsWith("Upgrading gh extensions...\n✓ gh extensions are up to date.\n", output, StringComparison.Ordinal);
+        Assert.Equal([["brew", "list"], ["brew", "upgrade"], ["gh", "extension", "upgrade", "--all"]], Ran);
+        Assert.All(_proc.Requests.Skip(1), request => Assert.True(request.Attached));
     }
 
     [Fact]
@@ -189,7 +190,140 @@ public sealed class ToolsCommandsTests : IDisposable
         var (code, output, _) = await RunAsync("update");
 
         Assert.Equal(0, code);
-        Assert.Equal("Updating development tools...\n✓ Environment update complete.\n", output);
+        Assert.Equal("Updating development tools...\n- gh is not on the PATH; skipped gh extension upgrades.\n✓ Environment update complete.\n", output);
+        Assert.Equal([["brew", "upgrade"]], Ran);
+    }
+
+    [Fact]
+    public async Task Update_upgrades_gh_extensions_after_the_package_manager()
+    {
+        _onPath.Add("gh");
+        _proc.Answer(Done, "brew", "upgrade").Answer(Done, "gh", "extension", "upgrade", "--all");
+
+        var (code, output, _) = await RunAsync("update");
+
+        Assert.Equal(0, code);
+        Assert.Equal("Updating development tools...\nUpgrading gh extensions...\n✓ gh extensions are up to date.\n✓ Environment update complete.\n", output);
+        Assert.Equal([["brew", "upgrade"], ["gh", "extension", "upgrade", "--all"]], Ran);
+    }
+
+    [Fact]
+    public async Task A_failed_gh_extension_upgrade_fails_the_update()
+    {
+        _onPath.Add("gh");
+        _proc.Answer(Done, "brew", "upgrade").Answer(new Ran(1, string.Empty, "boom"), "gh", "extension", "upgrade");
+
+        var (code, output, error) = await RunAsync("update");
+
+        Assert.Equal(1, code);
+        Assert.DoesNotContain("Environment update complete", output, StringComparison.Ordinal);
+        Assert.Equal("gh extension upgrade failed: gh extension upgrade --all exited non-zero.\n", error);
+    }
+
+    [Fact]
+    public async Task A_failed_package_upgrade_skips_the_gh_extensions()
+    {
+        _onPath.Add("gh");
+        _proc.Answer(new Ran(1, string.Empty, "boom"), "brew", "upgrade");
+
+        var (code, _, _) = await RunAsync("update");
+
+        Assert.Equal(1, code);
+        Assert.DoesNotContain(Ran, argv => argv[0] == "gh");
+    }
+
+    // brew outdated --json=v2 with gh and a non-catalog formula outdated.
+    private const string BrewOutdated = """
+        {"formulae": [
+          {"name": "gh", "installed_versions": ["2.101.0"], "current_version": "2.105.0"},
+          {"name": "cairo", "installed_versions": ["1.18.4"], "current_version": "1.18.6"}
+        ], "casks": []}
+        """;
+
+    [Fact]
+    public async Task Check_outdated_lists_installed_catalog_tools_with_an_upgrade()
+    {
+        Missing("delta");
+        _proc.Answer(Done, "brew", "list").Answer(new Ran(0, BrewOutdated, string.Empty), "brew", "outdated")
+            .Answer(new Ran(0, "gh stack\tgithub/gh-stack\tv0.1.0\n", string.Empty), "gh", "extension", "list")
+            .Answer(new Ran(0, """{"tag_name": "v0.3.0"}""", string.Empty), "gh", "api", "repos/github/gh-stack/releases/latest");
+
+        var (code, output, _) = await RunAsync("tools", "--check", "--outdated");
+
+        Assert.Equal(0, code);
+        Assert.EndsWith(
+            "Outdated tools:\n  GitHub CLI                   2.101.0 -> 2.105.0\n  1 tool(s) can be upgraded. Run 'rig devenv update' to upgrade them.\n"
+            + "gh extension releases:\n  github/gh-stack              ! v0.1.0 -> v0.3.0\n  1 gh extension(s) can be upgraded. Run 'rig devenv update' to upgrade them.\n",
+            output,
+            StringComparison.Ordinal);
+        Assert.Contains(["brew", "outdated", "--json=v2"], Ran);
+        Assert.DoesNotContain(Ran, argv => argv[1] is "install" or "upgrade");
+    }
+
+    [Fact]
+    public async Task Check_outdated_ignores_missing_tools_and_says_when_all_are_current()
+    {
+        Missing("gh");
+        _proc.Answer(Done, "brew", "list").Answer(new Ran(0, BrewOutdated, string.Empty), "brew", "outdated");
+
+        var (code, output, _) = await RunAsync("tools", "--check", "--outdated");
+
+        Assert.Equal(1, code);
+        Assert.EndsWith(
+            "Outdated tools:\n  ✓ Every installed catalog tool is up to date.\ngh extension releases:\n  ? Could not check: gh is not on the PATH.\n",
+            output,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(Ran, argv => argv[0] == "gh");
+    }
+
+    [Fact]
+    public async Task Check_outdated_says_when_it_could_not_check()
+    {
+        Missing();
+        _proc.Answer(new Ran(1, string.Empty, "offline"), "brew", "outdated");
+
+        var (code, output, _) = await RunAsync("tools", "--check", "--outdated");
+
+        Assert.Equal(0, code);
+        Assert.EndsWith(
+            "Outdated tools:\n  ? Could not check: brew did not list its upgrades.\ngh extension releases:\n  ? Could not check: gh extension list failed: no fake answer\n",
+            output,
+            StringComparison.Ordinal);
+
+        _onPath.Remove("brew");
+        _proc.Answer(Done, "gh", "extension", "list");
+        var (_, without, _) = await RunAsync(true, "tools", "--check", "--outdated");
+
+        Assert.EndsWith(
+            "Outdated tools:\n  ? Could not check: winget is not on the PATH.\ngh extension releases:\n  - No gh extensions installed.\n",
+            without,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Check_outdated_on_windows_reads_winget_upgrade()
+    {
+        Missing();
+        _onPath.Add("winget");
+        _proc.Answer(
+            new Ran(0, "Name       Id         Version  Available Source\n------------------------------\nGitHub CLI GitHub.cli 2.101.0  2.105.0   winget\n1 upgrades available.\n", string.Empty),
+            "winget",
+            "upgrade");
+
+        var (code, output, _) = await RunAsync(true, "tools", "--check", "--outdated");
+
+        Assert.Equal(0, code);
+        Assert.Contains("  GitHub CLI                   2.101.0 -> 2.105.0\n", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Outdated_needs_check()
+    {
+        var (code, _, error) = await RunAsync("tools", "--outdated");
+
+        Assert.Equal(1, code);
+        Assert.Contains("--outdated needs --check.", error, StringComparison.Ordinal);
+        Assert.Empty(_proc.Requests);
     }
 
     [Fact]

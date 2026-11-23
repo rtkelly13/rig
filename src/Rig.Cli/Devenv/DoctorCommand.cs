@@ -8,7 +8,8 @@ namespace Rig.Cli.Devenv;
 /// <summary>
 /// <c>rig doctor</c> and <c>rig devenv doctor</c>: each devenv area's <c>--check</c>, run in this process through the
 /// root command, plus the toolchain, the repository folder and the Claude settings file. Exits 1 when a required part
-/// is missing or stale. The toolchain section reports the .NET SDK and uv.
+/// is missing or stale. The toolchain section reports the .NET SDK and uv. <c>--outdated</c> is passed to
+/// <c>tools --check</c>, which then looks up newer catalog tools and gh extensions; those report but never change the exit code.
 /// </summary>
 /// <param name="host">Where it looks: the home folder, the working directory and the PATH.</param>
 /// <param name="proc">Runs git, gh, dotnet and uv.</param>
@@ -25,20 +26,27 @@ internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider ti
     /// <summary>The <c>doctor</c> command.</summary>
     public Command Build()
     {
-        var doctor = new Command("doctor", Description);
-        doctor.SetAction((parsed, cancellationToken) => RunAsync(parsed.RootCommandResult.Command, cancellationToken));
+        var outdated = new Option<bool>("--outdated")
+        {
+            Description = "Also check for upgrades: catalog tools through brew outdated / winget upgrade, and gh extensions against their latest GitHub release. "
+                + "Needs the network, so it is off by default. Outdated items are reported with a hint to run 'rig devenv update' but do not change the exit code, "
+                + "which stays 1 only when a required component is missing or stale.",
+        };
+        var doctor = new Command("doctor", Description) { outdated };
+        doctor.SetAction((parsed, cancellationToken) => RunAsync(parsed.RootCommandResult.Command, parsed.GetValue(outdated), cancellationToken));
         return doctor;
     }
 
-    private async Task<int> RunAsync(Command root, CancellationToken cancellationToken)
+    private async Task<int> RunAsync(Command root, bool outdated, CancellationToken cancellationToken)
     {
+        string[] upgrades = outdated ? ["--outdated"] : [];
         var platform = host.Windows ? "windows" : host.MacOS ? "macos" : "linux";
         var issues = 0;
         await output.WriteLineAsync($"\n=== Development Environment Doctor ({platform}) ===\n", cancellationToken).ConfigureAwait(false);
 
         await output.WriteLineAsync("1. Tools & Utilities", cancellationToken).ConfigureAwait(false);
         // tools --check exits 1 when a required tool is missing; terminal --check when snapToGrid risks jitter.
-        issues += await FailsAsync(root, ["devenv", "tools", "--check"], cancellationToken).ConfigureAwait(false);
+        issues += await FailsAsync(root, ["devenv", "tools", "--check", .. upgrades], cancellationToken).ConfigureAwait(false);
         if (host.Windows)
         {
             issues += await FailsAsync(root, ["devenv", "terminal", "--check"], cancellationToken).ConfigureAwait(false);
@@ -60,11 +68,8 @@ internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider ti
             issues++;
         }
 
-        if (await FailsAsync(root, ["devenv", "gh", "--check"], cancellationToken).ConfigureAwait(false) > 0)
-        {
-            await output.WriteLineAsync("  Run 'rig devenv gh' to install it.", cancellationToken).ConfigureAwait(false);
-            issues++;
-        }
+        // gh --check names the remedy for each part it finds missing: the overlay, gh itself, or an extension.
+        issues += await FailsAsync(root, ["devenv", "gh", "--check"], cancellationToken).ConfigureAwait(false);
 
         // Informational: a missing font is reported but is not an issue.
         await output.WriteLineAsync("\n4. Developer Fonts", cancellationToken).ConfigureAwait(false);
