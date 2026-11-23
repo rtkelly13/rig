@@ -1,7 +1,7 @@
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
 using Rig.Core.Desktop.Windows.Uia;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Chrome.Windows;
 

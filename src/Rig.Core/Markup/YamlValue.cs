@@ -1,4 +1,5 @@
-namespace Rig.Core.Vault;
+
+namespace Rig.Core.Markup;
 
 /// <summary>A value of a YAML document as the vault tools read it.</summary>
 public abstract record YamlValue;

@@ -1,3 +1,5 @@
+using Rig.Core.Text;
+
 namespace Rig.Core.Vault;
 
 /// <summary>A file or folder in the vault whose name ends in <c>.md</c>.</summary>

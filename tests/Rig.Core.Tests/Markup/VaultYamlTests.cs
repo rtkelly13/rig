@@ -1,6 +1,7 @@
+using Rig.Core.Markup;
 using Rig.Core.Vault;
 
-namespace Rig.Core.Tests.Vault;
+namespace Rig.Core.Tests.Markup;
 
 public sealed class VaultYamlTests
 {

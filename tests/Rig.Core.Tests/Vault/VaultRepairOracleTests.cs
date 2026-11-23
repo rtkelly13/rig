@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Rig.Core.Markup;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Tests.Vault;

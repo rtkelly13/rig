@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Rig.Core.Vault;
+namespace Rig.Core.Text;
 
 /// <summary>
 /// Unicode text rules where .NET's defaults differ, so vault text written by the earlier tooling is read and rewritten the

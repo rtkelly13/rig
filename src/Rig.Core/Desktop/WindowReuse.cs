@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 

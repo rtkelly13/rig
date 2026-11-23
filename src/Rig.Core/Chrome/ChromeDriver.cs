@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Chrome;
 

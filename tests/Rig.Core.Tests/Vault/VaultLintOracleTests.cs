@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Tests.Vault;

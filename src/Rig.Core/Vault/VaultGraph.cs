@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Rig.Core.Storage;
+using Rig.Core.Text;
 
 namespace Rig.Core.Vault;
 

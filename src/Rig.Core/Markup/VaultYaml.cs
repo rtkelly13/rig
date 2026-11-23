@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 
-namespace Rig.Core.Vault;
+namespace Rig.Core.Markup;
 
 /// <summary>A document the loader refuses; <see cref="Exception.Message"/> says why, in rig's words.</summary>
 public sealed class VaultYamlException : Exception
