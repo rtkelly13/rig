@@ -58,6 +58,10 @@ other agent Orca offers a mode for has no Auto, so it runs in Full access: Antig
 OpenClaude (`--dangerously-skip-permissions`) and the rest. OpenCode 2 (`opencode2`) launches with
 its own `--auto`, as a custom argument, since Orca offers OpenCode no permission mode.
 
+The fallback needs no per-agent entry. Every agent whose Full access flags rig knows is checked and
+synced, including Gemini and Copilot (`--yolo`), even when `agent_args` and Orca's overrides never
+mention it.
+
 The rule behind it: no constant prompting. An agent uses its own auto mode where it has one:
 Claude Code's auto mode keeps the allow and deny rules that `rig policy sync` projects, Codex's
 approves for you, and OpenCode has `--auto`. An agent with no auto mode runs in Full access rather

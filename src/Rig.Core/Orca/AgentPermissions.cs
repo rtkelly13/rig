@@ -58,6 +58,19 @@ public static class AgentPermissions
         "devin", "ante", "trae", "droid", "goose",
     };
 
+    // Every agent rig knows any mode's flags for.
+    private static readonly string[] Known = [.. Flags.Values.SelectMany(agents => agents.Keys).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+
+    /// <summary>
+    /// The agents the policy's fallback moves off its default: configurable agents rig knows flags for whose default
+    /// mode Orca does not offer. They need no override or custom arguments in the policy to be checked and synced.
+    /// </summary>
+    public static IEnumerable<string> FallbackAgents(AgentPermissionsPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(policy);
+        return policy.Fallback is null ? [] : Known.Where(agent => IsConfigurable(agent) && policy.Wanted(agent) != policy.Default);
+    }
+
     /// <summary>Whether Orca offers <paramref name="agent"/> a permission mode at all.</summary>
     public static bool IsConfigurable(string agent) => Configurable.Contains(agent);
 
@@ -96,7 +109,7 @@ public static class AgentPermissions
         [
             new("settings", "permission default", fallback, policy.Default, $"Orca Settings → Agents: set the default permission to {Label(policy.Default)}"),
         ];
-        foreach (var agent in agents.Concat(policy.Agents.Keys).Where(IsConfigurable).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
+        foreach (var agent in agents.Concat(policy.Agents.Keys).Concat(FallbackAgents(policy)).Where(IsConfigurable).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
         {
             var want = policy.Wanted(agent);
             var have = overrides?.GetValueOrDefault(agent) ?? fallback;
@@ -146,7 +159,7 @@ public static class AgentPermissions
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentNullException.ThrowIfNull(customArgs);
         var lines = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var agent in customArgs.Keys.Concat(policy.Agents.Keys).Distinct(StringComparer.Ordinal))
+        foreach (var agent in customArgs.Keys.Concat(policy.Agents.Keys).Concat(FallbackAgents(policy)).Distinct(StringComparer.Ordinal))
         {
             var added = IsConfigurable(agent) ? FlagsFor(policy.Wanted(agent), agent) : "";
             if (added is not null)

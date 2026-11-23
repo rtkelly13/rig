@@ -180,6 +180,20 @@ public sealed class AgentPermissionsTests
     }
 
     [Fact]
+    public void The_fallback_reaches_agents_with_no_override_or_custom_args()
+    {
+        var policy = new AgentPermissionsPolicy("auto", new Dictionary<string, string>(), Fallback: "full-access");
+
+        Assert.Equal(["antigravity", "copilot", "gemini", "openclaude"], AgentPermissions.FallbackAgents(policy).Order(StringComparer.Ordinal));
+        var gemini = Assert.Single(AgentPermissions.PermissionChecks(policy, [], "auto", null), c => c.Subject == "agent gemini");
+        Assert.Equal(("auto", "full-access"), (gemini.Have, gemini.Want));
+        var lines = AgentPermissions.LaunchLines(policy, new Dictionary<string, string> { ["claude"] = "" }, new Dictionary<string, string> { ["claude"] = "--permission-mode auto" });
+        Assert.Equal("--yolo", lines["gemini"]);
+        Assert.False(lines.ContainsKey("claude"));
+        Assert.Empty(AgentPermissions.FallbackAgents(policy with { Fallback = null }));
+    }
+
+    [Fact]
     public void Every_mode_has_a_label_and_own_has_no_flags()
     {
         Assert.All(AgentPermissions.Modes, mode => Assert.False(string.IsNullOrEmpty(AgentPermissions.Label(mode))));
