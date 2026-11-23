@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Policy;
+using Rig.Core.Roots;
 
 namespace Rig.Core.Tests.Policy;
 
@@ -27,7 +28,7 @@ public sealed class NativeProjectionTests : IDisposable
     }
 
     private IReadOnlyList<ProjectionResult> Sync(params string[] systems) =>
-        NativeProjection.ApplyAll(PolicyFiles.Load(), systems.Length == 0 ? NativeProjection.Systems : systems, Home, dryRun: false, windows: false);
+        NativeProjection.ApplyAll(PolicyFiles.Load(), systems.Length == 0 ? NativeProjection.Systems : systems, EstateLayout.Isolated(Home), dryRun: false, windows: false);
 
     private static string[] Rules(string path, string key) =>
         [.. JsonNode.Parse(File.ReadAllText(path))!["permissions"]![key]!.AsArray().Select(n => n!.GetValue<string>())];
@@ -74,7 +75,7 @@ public sealed class NativeProjectionTests : IDisposable
     {
         Seed(Codex, "# mine\n");
 
-        var results = NativeProjection.ApplyAll(PolicyFiles.Load(), NativeProjection.Systems, Home, dryRun: true, windows: false);
+        var results = NativeProjection.ApplyAll(PolicyFiles.Load(), NativeProjection.Systems, EstateLayout.Isolated(Home), dryRun: true, windows: false);
 
         Assert.All(results, r => Assert.Equal(ProjectionStatus.DryRun, r.Status));
         Assert.False(File.Exists(Claude));
@@ -231,8 +232,8 @@ public sealed class NativeProjectionTests : IDisposable
     {
         var policy = PolicyFiles.Load();
 
-        var first = NativeProjection.ApplyAll(policy, ["claude", "codex"], Home, dryRun: false, windows: true);
-        var second = NativeProjection.ApplyAll(policy, ["claude", "codex"], Home, dryRun: false, windows: true);
+        var first = NativeProjection.ApplyAll(policy, ["claude", "codex"], EstateLayout.Isolated(Home), dryRun: false, windows: true);
+        var second = NativeProjection.ApplyAll(policy, ["claude", "codex"], EstateLayout.Isolated(Home), dryRun: false, windows: true);
 
         Assert.All(first, r => Assert.Equal(ProjectionStatus.Applied, r.Status));
         Assert.All(second, r => Assert.Equal(ProjectionStatus.Unchanged, r.Status));
@@ -252,7 +253,7 @@ public sealed class NativeProjectionTests : IDisposable
             Seed(Path.Join(Home, ".config", "opencode", name), "{}");
         }
 
-        Assert.Equal(Path.Join(Home, ".config", "opencode", chosen), NativeProjection.For("opencode", Home, windows: false).Path);
+        Assert.Equal(Path.Join(Home, ".config", "opencode", chosen), NativeProjection.For("opencode", EstateLayout.Isolated(Home), windows: false).Path);
     }
 
     [Fact]
@@ -288,13 +289,13 @@ public sealed class NativeProjectionTests : IDisposable
     [Fact]
     public void An_unknown_system_is_rejected()
     {
-        _ = Assert.Throws<ArgumentException>(() => NativeProjection.For("vim", Home, windows: false));
+        _ = Assert.Throws<ArgumentException>(() => NativeProjection.For("vim", EstateLayout.Isolated(Home), windows: false));
     }
 
     [Fact]
     public void A_surface_without_a_native_file_is_unsupported()
     {
-        var result = new NativeProjection("other", null, false).Apply(PolicyFiles.Load(), dryRun: false);
+        var result = new NativeProjection("other", null, false, "~/code").Apply(PolicyFiles.Load(), dryRun: false);
 
         Assert.Equal((ProjectionStatus.Unsupported, (string?)null), (result.Status, result.Path));
     }
@@ -302,7 +303,7 @@ public sealed class NativeProjectionTests : IDisposable
     [Fact]
     public void A_json_surface_the_projection_does_not_know_fails()
     {
-        var result = new NativeProjection("other", Path.Join(Home, "x.json"), false).Apply(PolicyFiles.Load(), dryRun: false);
+        var result = new NativeProjection("other", Path.Join(Home, "x.json"), false, "~/code").Apply(PolicyFiles.Load(), dryRun: false);
 
         Assert.Equal((ProjectionStatus.Failed, "JSON projection is not supported for other"), (result.Status, result.Detail));
     }

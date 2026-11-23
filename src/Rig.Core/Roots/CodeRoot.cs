@@ -1,6 +1,3 @@
-using Rig.Core.Jobs;
-using Rig.Core.Runtime;
-
 namespace Rig.Core.Roots;
 
 /// <summary>
@@ -9,7 +6,7 @@ namespace Rig.Core.Roots;
 /// <c>CODE_ROOT</c>; the nearest ancestor of the start folder carrying the marker, an <c>AGENTS.md</c> beside a
 /// <c>personal/</c> folder (which still finds the root from a worktree nested in a repo); the root the running rig
 /// checkout implies, since it is cloned at <c>&lt;root&gt;/personal/rig</c>; then <c>~/code</c>, else
-/// <c>&lt;drive&gt;/code</c>.
+/// <c>&lt;drive&gt;/code</c>. These are pure helpers: <see cref="EstateLayout"/> gathers the inputs and resolves once.
 /// </summary>
 public static class CodeRoot
 {
@@ -62,12 +59,15 @@ public static class CodeRoot
         return Directory.Exists(atHome) ? atHome : Directory.Exists(onDrive) ? onDrive : atHome;
     }
 
+    /// <summary><paramref name="root"/>'s <c>personal/</c> folder.</summary>
+    public static string Personal(string root) => Path.Join(root, PersonalFolder);
+
     /// <summary>
-    /// The code root, given the <c>CODE_ROOT</c> value (if any), the folder to search up from, the home folder and
-    /// the rig checkouts this process may run from. A checkout only counts when the root it implies is inside
+    /// The code root, given the <c>CODE_ROOT</c> value (if any), the folder to search up from, the home folder and the
+    /// rig checkout this process runs from. A checkout only counts when the root it implies is inside
     /// <paramref name="home"/>: one elsewhere belongs to another home, such as the real one when a test passes its own.
     /// </summary>
-    public static string Resolve(string? configured, string start, string home, IEnumerable<string?>? checkouts = null)
+    public static string Resolve(string? configured, string start, string home, string? checkout = null)
     {
         ArgumentNullException.ThrowIfNull(home);
         if (!string.IsNullOrEmpty(configured))
@@ -75,18 +75,8 @@ public static class CodeRoot
             return ExpandHome(configured, home);
         }
 
-        return Find(start) ?? FromCheckouts(checkouts, home) ?? HomeFallback(home);
+        return Find(start) ?? InsideHome(FromCheckout(checkout), home) ?? HomeFallback(home);
     }
-
-    /// <summary>The code root for this process: its environment, the app's base folder and the user's home.</summary>
-    public static string Current() => For(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-
-    /// <summary>
-    /// The code root under <paramref name="home"/> for this process: as <see cref="Current"/>, but a root the running
-    /// checkout implies only counts when it is inside <paramref name="home"/>, so a command given <c>--home</c> stays there.
-    /// </summary>
-    public static string For(string home) =>
-        Resolve(Environment.GetEnvironmentVariable(EnvironmentVariable), AppContext.BaseDirectory, home, RunningCheckouts());
 
     /// <summary><paramref name="root"/> as people type it: <c>~/…</c> with forward slashes when it is inside <paramref name="home"/>.</summary>
     public static string Display(string root, string home)
@@ -99,41 +89,8 @@ public static class CodeRoot
         return shown.Replace('\\', '/');
     }
 
-    // The checkouts this process may run from, cheapest first: its build output's, the jobs runtime's, then the one
-    // the installed runtime copy was built from. Lazy, so the runtime state is only read when the others say nothing.
-    private static IEnumerable<string?> RunningCheckouts()
-    {
-        var baseDirectory = AppContext.BaseDirectory;
-        yield return BuildCheckout(baseDirectory);
-        yield return JobsSite.PublishedCheckout(baseDirectory);
-        yield return RuntimeManager.RecordedRepo(RuntimeManager.RuntimeRoot(AppData.Current()));
-    }
-
-    // The checkout a build output folder belongs to: the nearest folder above it holding rig.slnx and the CLI project.
-    private static string? BuildCheckout(string baseDirectory)
-    {
-        for (var folder = new DirectoryInfo(Path.GetFullPath(baseDirectory)); folder is not null; folder = folder.Parent)
-        {
-            if (File.Exists(Path.Join(folder.FullName, "rig.slnx"))
-                && File.Exists(Path.Join(folder.FullName, "src", "Rig.Cli", "Rig.Cli.csproj")))
-            {
-                return folder.FullName;
-            }
-        }
-
-        return null;
-    }
-
-    private static string? FromCheckouts(IEnumerable<string?>? checkouts, string home)
-    {
-        if (checkouts is null)
-        {
-            return null;
-        }
-
-        var fullHome = Path.TrimEndingDirectorySeparator(Path.GetFullPath(home));
-        return checkouts.Select(FromCheckout).FirstOrDefault(root => root is not null && PathResolution.IsUnder(root, fullHome));
-    }
+    private static string? InsideHome(string? root, string home) =>
+        root is not null && PathResolution.IsUnder(root, Path.TrimEndingDirectorySeparator(Path.GetFullPath(home))) ? root : null;
 
     private static string ExpandHome(string path, string home) =>
         path == "~" ? home

@@ -1,5 +1,3 @@
-using Rig.Core.Roots;
-
 namespace Rig.Cli.Vault;
 
 /// <summary>
@@ -12,8 +10,8 @@ internal static class VaultPath
     /// <summary>The variables that override the vault, in order; <c>TVS_VAULT_PATH</c> is the legacy name.</summary>
     public static readonly IReadOnlyList<string> Variables = ["VAULT_PATH", "TVS_VAULT_PATH"];
 
-    /// <summary>The git copy: the first override that is set, else <c>~/code/personal/obsidian-vault/Vault</c>.</summary>
-    public static string Resolve(Func<string, string?> environment, string home)
+    /// <summary>The git copy: the first override that is set, else <c>&lt;personal&gt;/obsidian-vault/Vault</c>.</summary>
+    public static string Resolve(Func<string, string?> environment, string home, string personal)
     {
         ArgumentNullException.ThrowIfNull(environment);
         foreach (var variable in Variables)
@@ -25,7 +23,7 @@ internal static class VaultPath
             }
         }
 
-        return Path.Combine(CodeRoot.For(home), CodeRoot.PersonalFolder, "obsidian-vault", "Vault");
+        return Path.Combine(personal, "obsidian-vault", "Vault");
     }
 
     /// <summary>The variable that overrides the Drive copy.</summary>

@@ -4,6 +4,7 @@ using System.Text.Json;
 using Rig.Core.Devenv;
 using Rig.Core.Policy;
 using Rig.Core.Processes;
+using Rig.Core.Roots;
 
 namespace Rig.Cli.Devenv;
 
@@ -20,7 +21,12 @@ namespace Rig.Cli.Devenv;
 /// <param name="WorkingDirectory">Where <c>.devenv/tools</c> catalogs and the Python version are read from (default: <paramref name="Home"/>).</param>
 /// <param name="LocalAppData">The <c>LOCALAPPDATA</c> variable, where Windows Terminal's settings live; ignored under another <c>--home</c>.</param>
 /// <param name="Input">Where <c>git --interactive</c> reads its answers (default: none, so every prompt takes its default).</param>
-internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false, string? WorkingDirectory = null, string? LocalAppData = null, TextReader? Input = null);
+/// <param name="Layouts"></param>
+internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false, string? WorkingDirectory = null, string? LocalAppData = null, TextReader? Input = null, Func<string, EstateLayout>? Layouts = null)
+{
+    /// <summary>The estate layout for <paramref name="home"/>, which a command's <c>--home</c> may point elsewhere.</summary>
+    public EstateLayout LayoutFor(string home) => (Layouts ?? EstateLayout.Isolated)(home);
+}
 
 /// <summary>
 /// <c>rig devenv</c>: <see cref="DoctorCommand"/>'s <c>doctor</c>, <see cref="SetupCommand"/>'s <c>setup</c> and <c>ai</c>, <c>agent-launcher</c>, <c>agents</c>, <c>claude</c>, <c>estate-rules</c>,
@@ -54,7 +60,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var vault = new Option<string?>("--vault") { Description = "Vault to set up (default: personal/obsidian-vault in the code root under --home)." };
         var obsidian = new Command("obsidian-plugins", "Install and enable the estate's Obsidian community and core plugins in a vault.") { dryRun, home, vault };
         obsidian.SetAction((parsed, cancellationToken) =>
-            ObsidianAsync(parsed.GetValue(dryRun), parsed.GetValue(vault) ?? ObsidianPlugins.DefaultVault(parsed.GetValue(home)!), cancellationToken));
+            ObsidianAsync(parsed.GetValue(dryRun), parsed.GetValue(vault) ?? ObsidianPlugins.DefaultVault(host.LayoutFor(parsed.GetValue(home)!).Personal), cancellationToken));
         var agents = new Command("agents", "List the AI coding agents devenv knows and whether each is on the PATH.");
         agents.SetAction(_ => Agents());
         var root = new Option<string>("--root") { Description = "Code root to write the shim to (default: this estate's).", DefaultValueFactory = _ => host.CodeRoot };
@@ -423,7 +429,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
     // The estate-wide AGENTS.md: only the marked block is managed. 1 when the write fails.
     private int Rules(bool dryRun, string home)
     {
-        var root = EstateRules.Root(home);
+        var root = host.LayoutFor(home).Personal;
         if (!Directory.Exists(root))
         {
             output.WriteLine($"Estate root not present, skipping: {root}");
@@ -519,7 +525,7 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
     {
         try
         {
-            var result = NativeProjection.For(system, home, host.Windows).Apply(CommandPolicy.Load(host.PolicyPath, host.Windows), dryRun);
+            var result = NativeProjection.For(system, host.LayoutFor(home), host.Windows).Apply(CommandPolicy.Load(host.PolicyPath, host.Windows), dryRun);
             output.WriteLine($"{result.System}: {result.Status.Name()} — {result.Path ?? "no native path"} ({result.Detail})");
             return result.Status == ProjectionStatus.Failed ? 1 : 0;
         }

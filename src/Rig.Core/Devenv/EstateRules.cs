@@ -1,4 +1,3 @@
-using Rig.Core.Roots;
 
 namespace Rig.Core.Devenv;
 
@@ -81,9 +80,6 @@ public static class EstateRules
         Edit outside the markers — content there is preserved across runs.
 
         """;
-
-    /// <summary>The personal folder of the code root under <paramref name="home"/>; see <see cref="CodeRoot.For"/>.</summary>
-    public static string Root(string home) => Path.Join(CodeRoot.For(home), CodeRoot.PersonalFolder);
 
     /// <summary>The managed block, marker-wrapped.</summary>
     public static string Render() => $"{Begin}\n{ManagedBlock.ReplaceLineEndings("\n")}{End}\n";

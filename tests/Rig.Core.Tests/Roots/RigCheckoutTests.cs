@@ -5,24 +5,20 @@ namespace Rig.Core.Tests.Roots;
 public sealed class RigCheckoutTests
 {
     [Fact]
-    public void The_checkout_defaults_to_personal_rig_under_the_code_root()
+    public void The_estate_clones_rig_into_personal()
     {
-        var checkout = RigCheckout.Resolve(null, Path.Combine("home", "code"));
-
-        Assert.Equal(Path.Combine("home", "code", "personal", "rig"), checkout);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData(null)]
-    public void An_empty_rig_home_is_ignored(string? configured)
-    {
-        Assert.EndsWith("rig", RigCheckout.Resolve(configured, "root"), StringComparison.Ordinal);
+        Assert.Equal(Path.Combine("home", "code", "personal", "rig"), RigCheckout.Under(Path.Combine("home", "code")));
     }
 
     [Fact]
-    public void Rig_home_overrides_the_checkout()
+    public void A_build_output_belongs_to_the_checkout_above_it()
     {
-        Assert.Equal("/elsewhere/rig", RigCheckout.Resolve("/elsewhere/rig", "root"));
+        using var dir = new TempDir();
+        var checkout = dir.Folder("rig");
+        dir.File("rig/rig.slnx");
+        dir.File("rig/src/Rig.Cli/Rig.Cli.csproj");
+
+        Assert.Equal(Path.GetFullPath(checkout), RigCheckout.FromBuildOutput(dir.Folder("rig/src/Rig.Cli/bin/Debug/net11.0")));
+        Assert.Null(RigCheckout.FromBuildOutput(dir.Folder("elsewhere")));
     }
 }

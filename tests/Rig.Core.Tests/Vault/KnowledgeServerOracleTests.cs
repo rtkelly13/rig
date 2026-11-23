@@ -76,7 +76,7 @@ public sealed class KnowledgeServerOracleTests
         using var http = new HttpMessageInvoker(handler);
         foreach (var node in Oracle["plists"]!.AsArray().Select(n => n!.AsObject()))
         {
-            var places = new KnowledgeServerPlaces("/unused", AppData.Resolve(node["local_app_data"]!.GetValue<string>(), null, "/unused", macOs: true));
+            var places = new KnowledgeServerPlaces("/unused", AppData.Resolve(node["local_app_data"]!.GetValue<string>(), null, "/unused", macOs: true), "/unused/code/personal");
             var server = new KnowledgeServer(new FakeProc(), new Launchd(new FakeProc(), "/unused", "gui/0"), places, _ => null, http);
             var (node_, script, root, port) = (node["node"]!.GetValue<string>(), node["script"]!.GetValue<string>(), node["root"]!.GetValue<string>(), node["port"]!.GetValue<int>());
 

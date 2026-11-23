@@ -17,10 +17,10 @@ namespace Rig.Cli.Governance;
 internal sealed record GovernanceHost(string CodeRoot, string Cwd, string Checkout)
 {
     /// <summary>The personal estate folder.</summary>
-    public string PersonalDir => Path.Join(CodeRoot, "personal");
+    public string PersonalDir => Rig.Core.Roots.CodeRoot.Personal(CodeRoot);
 
     /// <summary>The estate scopes file, naming the org folders beside the personal folder.</summary>
-    public string ScopesFile => Path.Join(Checkout, "config", EstateScopes.FileName);
+    public string ScopesFile => RigCheckout.Config(Checkout, EstateScopes.FileName);
 
     /// <summary>The policy: the working directory's <c>config/repo_policies.json</c> when it has one, else the checkout's.</summary>
     public string PolicyFile =>

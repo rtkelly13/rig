@@ -5,6 +5,7 @@ using ModelContextProtocol.Protocol;
 using Rig.Core.Estate;
 using Rig.Core.Jobs;
 using Rig.Core.Otel;
+using Rig.Core.Roots;
 using Rig.Core.Tests;
 using Rig.Web.Mcp;
 using Rig.Web.Ops;
@@ -316,7 +317,7 @@ public sealed class McpTests
     public void The_real_sources_build_for_a_checkout()
     {
         using var dir = new TempDir();
-        using var ops = RigOps.ForCheckout(dir.Path);
+        using var ops = RigOps.For(EstateLayout.Isolated(dir.Path) with { Checkout = dir.Path });
 
         Assert.NotNull(ops);
     }

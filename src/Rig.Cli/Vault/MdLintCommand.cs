@@ -3,13 +3,19 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using Rig.Core;
 using Rig.Core.Processes;
+using Rig.Core.Roots;
 
 namespace Rig.Cli.Vault;
 
 /// <summary>What <c>rig md-lint</c> needs from the machine.</summary>
 /// <param name="Environment">Reads an environment variable, or returns null.</param>
 /// <param name="Home">The user's home folder.</param>
-internal sealed record MdLintHost(Func<string, string?> Environment, string Home);
+/// <param name="Personal"></param>
+internal sealed record MdLintHost(Func<string, string?> Environment, string Home, string? Personal = null)
+{
+    /// <summary>The code root's <c>personal/</c> folder: the one given, else the isolated layout's under <see cref="Home"/>.</summary>
+    public string PersonalDir => Personal ?? EstateLayout.Isolated(Home).Personal;
+}
 
 /// <summary>
 /// <c>rig md-lint [paths...] [--fix]</c>: checks Markdown formatting with mdformat, or rewrites it with
@@ -50,7 +56,7 @@ internal sealed class MdLintCommand(IProc proc, MdLintHost host, TextWriter erro
         var targets = paths;
         if (targets.Count == 0)
         {
-            var vault = VaultPath.Resolve(host.Environment, host.Home);
+            var vault = VaultPath.Resolve(host.Environment, host.Home, host.PersonalDir);
             if (!Directory.Exists(vault) && !File.Exists(vault))
             {
                 await error.WriteLineAsync($"Vault not found at {vault} — set VAULT_PATH to override.", cancellationToken).ConfigureAwait(false);

@@ -111,7 +111,7 @@ public sealed class CodeRootTests
         home.Folder("code");
         var checkout = home.Folder("Work/personal/rig");
 
-        Assert.Equal(Path.Combine(Path.GetFullPath(home.Path), "Work"), CodeRoot.Resolve(null, start.Path, home.Path, [null, checkout]));
+        Assert.Equal(Path.Combine(Path.GetFullPath(home.Path), "Work"), CodeRoot.Resolve(null, start.Path, home.Path, checkout));
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public sealed class CodeRootTests
         using var home = new TempDir();
         var checkout = home.Folder("Work/personal/rig");
 
-        Assert.Equal(Path.GetFullPath(root.Path), CodeRoot.Resolve(null, root.Folder("personal/x"), home.Path, [checkout]));
+        Assert.Equal(Path.GetFullPath(root.Path), CodeRoot.Resolve(null, root.Folder("personal/x"), home.Path, checkout));
     }
 
     [Fact]
@@ -133,7 +133,7 @@ public sealed class CodeRootTests
         using var other = new TempDir();
         var code = home.Folder("code");
 
-        Assert.Equal(code, CodeRoot.Resolve(null, start.Path, home.Path, [other.Folder("Work/personal/rig")]));
+        Assert.Equal(code, CodeRoot.Resolve(null, start.Path, home.Path, other.Folder("Work/personal/rig")));
     }
 
     [Fact]
@@ -144,20 +144,5 @@ public sealed class CodeRootTests
 
         Assert.Equal("~/Work", CodeRoot.Display(home.Folder("Work"), home.Path));
         Assert.Equal(Path.GetFullPath(other.Path).Replace('\\', '/'), CodeRoot.Display(other.Path, home.Path));
-    }
-
-    [Fact]
-    public void The_current_root_honours_the_environment()
-    {
-        var before = Environment.GetEnvironmentVariable(CodeRoot.EnvironmentVariable);
-        try
-        {
-            Environment.SetEnvironmentVariable(CodeRoot.EnvironmentVariable, "/configured/root");
-            Assert.Equal("/configured/root", CodeRoot.Current());
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(CodeRoot.EnvironmentVariable, before);
-        }
     }
 }

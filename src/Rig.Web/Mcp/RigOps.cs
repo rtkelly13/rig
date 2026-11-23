@@ -75,20 +75,21 @@ public sealed class RigOps : IDisposable
         _makeTelemetry = makeTelemetry;
     }
 
-    /// <summary>The real sources for a rig at <paramref name="checkout"/>.</summary>
-    public static RigOps ForCheckout(string checkout)
+    /// <summary>The real sources for the rig <paramref name="layout"/> describes.</summary>
+    public static RigOps For(EstateLayout layout)
     {
-        ArgumentNullException.ThrowIfNull(checkout);
+        ArgumentNullException.ThrowIfNull(layout);
+        var checkout = layout.Checkout;
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var windows = OperatingSystem.IsWindows();
         var appData = AppData.Current();
         var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
-        var codeRoot = CodeRoot.Current();
+        var codeRoot = layout.CodeRoot;
         var site = JobsSite.Locate(
             checkout,
             appData,
             JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows),
-            Path.Join(codeRoot, "personal"));
+            layout.Personal);
         var machineConfig = ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home);
         var environment = new JobsEnvironment(
             Rig.Core.Runtime.RuntimeManager.PublishedFolder(checkout),
@@ -128,7 +129,7 @@ public sealed class RigOps : IDisposable
     }
 
     /// <summary>The tools for this machine, as a checkout launch finds it.</summary>
-    public static RigOps Default() => ForCheckout(Environment.CurrentDirectory);
+    public static RigOps Default() => For(EstateLayout.Current() with { Checkout = Environment.CurrentDirectory });
 
     /// <summary>What needs a person: coordinator jobs whose last run failed, and estate decisions waiting on someone.</summary>
     public string Attention()

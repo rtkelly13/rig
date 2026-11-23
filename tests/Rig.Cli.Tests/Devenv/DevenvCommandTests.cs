@@ -1,6 +1,7 @@
 using System.CommandLine;
 using Rig.Cli.Devenv;
 using Rig.Core.Devenv;
+using Rig.Core.Roots;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Devenv;
 using Rig.Core.Tests.Fakes;
@@ -339,7 +340,7 @@ public sealed class DevenvCommandTests : IDisposable
         Assert.False(File.Exists(target));
     }
 
-    private string Vault => ObsidianPlugins.DefaultVault(_home.Path);
+    private string Vault => ObsidianPlugins.DefaultVault(EstateLayout.Isolated(_home.Path).Personal);
 
     private const string Restart =
         "Restart Obsidian to load newly installed plugins. Plugins needing an in-app API key must be configured in Obsidian's settings.\n";

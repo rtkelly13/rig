@@ -89,7 +89,7 @@ public sealed class RigWebHost : IAsyncDisposable
         var codeRoot = settings.EffectiveCodeRoot;
         var proc = new SystemProc();
         var git = new Git(proc, codeRoot);
-        ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System, new PaketSidecar(proc)), Path.Join(codeRoot, "personal"));
+        ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System, new PaketSidecar(proc)), Rig.Core.Roots.CodeRoot.Personal(codeRoot));
         JobsRoutes.Map(app, ops);
         C4Routes.Map(app, settings);
         return host;

@@ -97,7 +97,7 @@ internal sealed class WebCommand(
             places.DbPath,
             places.RegistryFile,
             places.WorkingDirectory,
-            Path.Join(CodeRoot.Current(), CodeRoot.PersonalFolder),
+            EstateLayout.Current().Personal,
             Rig.Core.Estate.Decisions.DefaultFeedPath(Environment.GetEnvironmentVariable("LOCALAPPDATA"), home),
             places.QueuePath,
             places.TracesDir,
