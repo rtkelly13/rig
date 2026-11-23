@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Config;
 using Rig.Core.Files;
-using Rig.Core.Packages;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Text;
