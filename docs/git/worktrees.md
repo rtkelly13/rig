@@ -5,19 +5,26 @@ migration being trialled. Worktrees keep each in its own directory instead of
 switching one checkout back and forth.
 
 ```bash
-git worktree add -b feat/thing temp/thing origin/main
+git worktree add -b feat/thing ../.worktrees/rig/thing origin/main
 git worktree list
-git worktree remove --force temp/thing   # or `git worktree prune` after deleting
+git worktree remove --force ../.worktrees/rig/thing   # or `git worktree prune` after deleting
 ```
 
-Convention: `temp/<short-name>` inside the repo, ignored by git.
+Convention: `../.worktrees/<repo>/<short-name>` — beside the repo, in the scope folder
+(`~/Work/personal/.worktrees/rig/thing`), never inside the checkout. Build tools walk up
+the directory tree for their config, so a worktree nested in a checkout picks up the
+parent's `Directory.Packages.props` and `.globalconfig` (NU1506 duplicate package
+versions, duplicate analyzer keys) — the same goes for `tsconfig`, eslint and pnpm
+workspaces. Under the scope folder the estate `AGENTS.md` still applies. Older
+worktrees in `temp/` or `.worktrees/` inside the repo still work; move them with
+`git worktree move` when convenient.
 
 ## The three ways this bites
 
 ### A branch can only be checked out once
 
 ```
-fatal: 'feat/thing' is already used by worktree at '…/temp/thing'
+fatal: 'feat/thing' is already used by worktree at '…/.worktrees/rig/thing'
 ```
 
 Harmless on its own. **Dangerous when scripted**, because a failed `checkout`
@@ -78,8 +85,8 @@ Check the port is actually yours before trusting what it serves.
 are disposable before forcing:
 
 ```bash
-cd temp/thing && git status --short
-git worktree remove --force temp/thing
+cd ../.worktrees/rig/thing && git status --short
+git worktree remove --force ../.worktrees/rig/thing
 ```
 
 Removing the directory by hand leaves the registration behind; `git worktree

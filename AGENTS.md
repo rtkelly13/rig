@@ -77,7 +77,7 @@ every quality gate, and the Tailwind gallery build. Read it before writing tests
 2. **Delete Branch on Merge**: Feature branches must be automatically deleted immediately upon merge into `main`.
 3. **Linear History**: Maintain a strictly linear history. Rebase feature branches onto `main` before merging; no merge commits allowed.
 4. **Direct Push Protection**: Non-force direct pushes to `main` are blocked; PR mechanism required (force pushes permitted when needed).
-5. **Local Temp & Worktree Directory**: All temporary files, local databases, scratch files and ephemeral clones MUST go inside the root `/temp/` directory; git worktrees go in `/temp/` or `/.worktrees/` (both gitignored). Ephemeral clones live in `/temp/tries/`; see [docs/git/local-scratch.md](docs/git/local-scratch.md).
+5. **Local Temp & Worktree Directory**: All temporary files, local databases, scratch files and ephemeral clones MUST go inside the root `/temp/` directory; git worktrees go beside the repo in `../.worktrees/rig/<name>`, never inside the checkout, because MSBuild picks up the parent's `Directory.Packages.props` and `.globalconfig` (in-repo `/.worktrees/` stays gitignored for older worktrees). Ephemeral clones live in `/temp/tries/`; see [docs/git/local-scratch.md](docs/git/local-scratch.md).
 6. **Gitignored Local TODO File**: A root `TODO.md` file MUST exist for local task tracking and be gitignored.
 7. **Auto-Merge Enabled**: PRs may enable auto-merge (squash) so they merge automatically once required checks pass.
 8. **Pinned Action SHAs**: All GitHub Actions workflows MUST use 40-character commit SHAs instead of mutable tags.

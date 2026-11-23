@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Roots;
 
 namespace Rig.Core.Estate;
 
@@ -242,7 +243,9 @@ public sealed class ShelfStore(Git git)
             return new ShelfStep(false, $"{shelf.Ref} tip is not a {Prefix} commit; refusing to guess");
         }
 
-        var target = path ?? Path.Combine(clone, (shelf.Trailers.Path.Length > 0 ? shelf.Trailers.Path : $".worktrees/{shelf.Name}").Replace('/', Path.DirectorySeparatorChar));
+        var target = path ?? (shelf.Trailers.Path.Length > 0
+            ? Path.Combine(clone, shelf.Trailers.Path.Replace('/', Path.DirectorySeparatorChar))
+            : Path.Join(WorktreeHome.For(clone), shelf.Name.Replace('/', Path.DirectorySeparatorChar)));
         if (Directory.Exists(target) || File.Exists(target))
         {
             return new ShelfStep(false, $"{target} already exists");

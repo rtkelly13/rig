@@ -17,18 +17,17 @@ nothing committed can come from it.
 
 | Path | Holds | Lifetime |
 |:-----|:------|:---------|
-| `temp/<branch>` | Worktrees, one per live branch; the name `tries` is reserved ([worktrees.md](worktrees.md)) | The branch's |
 | `temp/tries/` | Ephemeral clones, spikes, one-off attempts | Hours or days |
 | `temp/tools/` | Downloaded binaries and harnesses, such as a pinned vectorizer | Until the pin moves |
 | `temp/*.db`, `temp/*.log` | Local SQLite, captures, generated reports | Disposable |
-| `.worktrees/<branch>` | Alternative worktree root, same rules | The branch's |
+| `../.worktrees/rig/<branch>` | Worktrees, beside the repo rather than in it ([worktrees.md](worktrees.md)) | The branch's |
 
 One distinction decides every case: **`temp/` can be deleted wholesale and rebuilt from
 the repository plus a command.** If losing a file would cost work that exists nowhere
 else, it does not belong there.
 
-`tries` is a reserved name: no worktree may live at `temp/tries`, or the try cleanup
-would delete a live checkout.
+Worktrees no longer go in `temp/`. An older one still there must not be named `tries`,
+or the try cleanup would delete a live checkout.
 
 ## Tries
 
