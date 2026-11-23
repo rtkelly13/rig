@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Unicode;
 using Rig.Core.Processes;
+using Rig.Core.Roots;
 using Rig.Core.Services;
 using Rig.Core.Storage;
 
@@ -26,7 +27,7 @@ public sealed record Registration(string? Transport, string? Target)
 public sealed record KnowledgeServerPlaces(string Home, string AppData)
 {
     /// <summary>The vault repository, which holds <c>.ok/</c> and the skill library; the notes are under it in <c>Vault/</c>.</summary>
-    public string ProjectRoot => Path.Join(Home, "code", "personal", "obsidian-vault");
+    public string ProjectRoot => Path.Join(CodeRoot.For(Home), CodeRoot.PersonalFolder, "obsidian-vault");
 
     /// <summary>Where the pinned package is installed.</summary>
     public string Prefix => Path.Join(AppData, "open-knowledge");

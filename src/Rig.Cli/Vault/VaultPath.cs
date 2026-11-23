@@ -1,3 +1,5 @@
+using Rig.Core.Roots;
+
 namespace Rig.Cli.Vault;
 
 /// <summary>
@@ -23,7 +25,7 @@ internal static class VaultPath
             }
         }
 
-        return Path.Combine(home, "code", "personal", "obsidian-vault", "Vault");
+        return Path.Combine(CodeRoot.For(home), CodeRoot.PersonalFolder, "obsidian-vault", "Vault");
     }
 
     /// <summary>The variable that overrides the Drive copy.</summary>

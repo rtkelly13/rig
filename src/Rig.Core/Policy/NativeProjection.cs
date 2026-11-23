@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Roots;
 using Rig.Core.Text;
 using IOPath = System.IO.Path;
 
@@ -21,7 +22,8 @@ public sealed record CommandPrefix(IReadOnlyList<string> Tokens, bool Wildcard)
 /// <param name="System">The agent surface: <c>claude</c>, <c>codex</c>, <c>opencode</c> or <c>antigravity</c>.</param>
 /// <param name="Path">Its native permission file, or null when it exposes none.</param>
 /// <param name="Windows">Whether files are written with CRLF line endings.</param>
-public sealed record NativeProjection(string System, string? Path, bool Windows)
+/// <param name="EstateRoot">The code root as opencode writes it (<c>~/…</c>), so sibling repos stay reachable.</param>
+public sealed record NativeProjection(string System, string? Path, bool Windows, string EstateRoot = "~/code")
 {
     /// <summary>Every surface, in the order <c>policy sync</c> visits them.</summary>
     public static readonly IReadOnlyList<string> Systems = ["opencode", "claude", "codex", "antigravity"];
@@ -48,7 +50,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
             "antigravity" => IOPath.Join(home, ".gemini", "antigravity-cli", "settings.json"),
             _ => throw new ArgumentException($"Unknown native permission system: {system}", nameof(system)),
         };
-        return new NativeProjection(system, path, windows);
+        return new NativeProjection(system, path, windows, CodeRoot.Display(CodeRoot.For(home), home));
     }
 
     /// <summary>Applies <paramref name="policy"/> to each of <paramref name="systems"/> under <paramref name="home"/>.</summary>
@@ -308,7 +310,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
         UnifyShellRules(shells);
 
         // Sibling repos across the estate root stay reachable without tripping OpenCode's external_directory guard.
-        _ = ObjectAt(permission, "external_directory", "permission.external_directory").TryAdd("~/code/**", "allow");
+        _ = ObjectAt(permission, "external_directory", "permission.external_directory").TryAdd($"{EstateRoot}/**", "allow");
         return rendered;
     }
 

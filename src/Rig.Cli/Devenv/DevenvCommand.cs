@@ -49,9 +49,9 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         claude.SetAction(parsed => parsed.GetValue(check) ? Check(parsed.GetValue(home)!) : Claude(parsed.GetValue(dryRun), parsed.GetValue(home)!));
         var opencode = new Command("opencode", "Merge OpenCode's default config and project the estate command policy into it.") { dryRun, home };
         opencode.SetAction(parsed => Opencode(parsed.GetValue(dryRun), parsed.GetValue(home)!));
-        var rules = new Command("estate-rules", "Install or refresh the estate-wide AGENTS.md under ~/code/personal.") { dryRun, home };
+        var rules = new Command("estate-rules", "Install or refresh the estate-wide AGENTS.md in the code root's personal/ folder.") { dryRun, home };
         rules.SetAction(parsed => Rules(parsed.GetValue(dryRun), parsed.GetValue(home)!));
-        var vault = new Option<string?>("--vault") { Description = "Vault to set up (default: ~/code/personal/obsidian-vault under --home)." };
+        var vault = new Option<string?>("--vault") { Description = "Vault to set up (default: personal/obsidian-vault in the code root under --home)." };
         var obsidian = new Command("obsidian-plugins", "Install and enable the estate's Obsidian community and core plugins in a vault.") { dryRun, home, vault };
         obsidian.SetAction((parsed, cancellationToken) =>
             ObsidianAsync(parsed.GetValue(dryRun), parsed.GetValue(vault) ?? ObsidianPlugins.DefaultVault(parsed.GetValue(home)!), cancellationToken));

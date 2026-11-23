@@ -59,8 +59,9 @@ The rules that follow from this:
   decoding, no stdin, no console window and tracing.
 - **Untrusted paths are hardened.** Any git call whose working directory is under the code root's `external/`
   or `other/` gets the hardened flags automatically. Callers cannot opt out.
-- **One code-root resolver.** `CODE_ROOT`, then the code-root marker, then `~/code`. Nothing else derives roots
-  from the assembly location.
+- **One code-root resolver.** `CODE_ROOT`, then the code-root marker, then the root the running rig checkout
+  implies (`<root>/personal/rig`), then `~/code`. `~/code` is a convention, not a requirement: only the layout
+  under the root is. Nothing else derives roots from the assembly location.
 - **Shared parsers, once each.** Repo slugs, branch refs, SVG paths and wikilinks each have exactly one parser.
 
 ## Layering

@@ -1,3 +1,5 @@
+using Rig.Core.Roots;
+
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using Rig.Core.Devenv;
@@ -107,6 +109,10 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
         return failed ? 1 : 0;
     }
 
+    // The personal folder as git's includeIf matches it: the code root's personal/, typed as ~/… when under home.
+    private static string PersonalPattern(string home) =>
+        $"{CodeRoot.Display(CodeRoot.For(home), home)}/{CodeRoot.PersonalFolder}/";
+
     private async Task<bool> IdentitiesAsync(string home, bool dryRun, bool prompt, string? name, string? email)
     {
         var identities = GitSetup.Identities(home);
@@ -125,7 +131,7 @@ internal sealed class GitTerminalCommands(DevenvHost host, IProc proc, TextWrite
             await AskAsync("Display Name", name ?? "").ConfigureAwait(false),
             await AskAsync("Email Address", email ?? "").ConfigureAwait(false),
             null,
-            await AskAsync("Directory pattern to match (e.g. ~/code/personal/)", "~/code/personal/").ConfigureAwait(false));
+            await AskAsync($"Directory pattern to match (e.g. {PersonalPattern(home)})", PersonalPattern(home)).ConfigureAwait(false));
         if (dryRun)
         {
             await output.WriteLineAsync($"Dry run: would save the identity to {GitSetup.ConfigPath(home)}").ConfigureAwait(false);
