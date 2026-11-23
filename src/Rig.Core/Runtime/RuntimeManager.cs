@@ -126,8 +126,26 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     /// <summary>The folder this manager keeps its copies in.</summary>
     public string Root => root;
 
+    /// <summary>
+    /// The checkout the copies under <paramref name="runtimeRoot"/> were built from, as its state file records it;
+    /// null when nothing is installed or the state cannot be read.
+    /// </summary>
+    public static string? RecordedRepo(string runtimeRoot)
+    {
+        try
+        {
+            return ReadStateAt(runtimeRoot).Repo is { Length: > 0 } repo ? repo : null;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>The recorded current and previous copies; empty when nothing is installed.</summary>
-    public RuntimeState ReadState()
+    public RuntimeState ReadState() => ReadStateAt(root);
+
+    private static RuntimeState ReadStateAt(string root)
     {
         var path = Path.Join(root, StateName);
         if (!File.Exists(path))

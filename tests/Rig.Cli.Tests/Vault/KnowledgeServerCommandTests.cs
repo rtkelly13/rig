@@ -35,7 +35,8 @@ public sealed class KnowledgeServerCommandTests : IDisposable
     {
         _handler = new Handler(_ => new HttpResponseMessage(_health));
         _http = new HttpMessageInvoker(_handler);
-        Places = new KnowledgeServerPlaces(_temp.Folder("home"), Path.Join(_temp.Path, "appdata"));
+        var home = _temp.Folder("home");
+        Places = new KnowledgeServerPlaces(home, Path.Join(_temp.Path, "appdata"), Path.Join(home, "code", "personal"));
     }
 
     private KnowledgeServerPlaces Places { get; }

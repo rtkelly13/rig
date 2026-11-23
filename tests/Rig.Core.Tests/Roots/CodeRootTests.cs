@@ -84,17 +84,65 @@ public sealed class CodeRootTests
     }
 
     [Fact]
-    public void The_current_root_honours_the_environment()
+    public void A_checkout_in_a_personal_folder_implies_the_root_above_it()
     {
-        var before = Environment.GetEnvironmentVariable(CodeRoot.EnvironmentVariable);
-        try
-        {
-            Environment.SetEnvironmentVariable(CodeRoot.EnvironmentVariable, "/configured/root");
-            Assert.Equal("/configured/root", CodeRoot.Current());
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(CodeRoot.EnvironmentVariable, before);
-        }
+        using var home = new TempDir();
+        var checkout = home.Folder("Work/personal/rig");
+
+        Assert.Equal(Path.Combine(Path.GetFullPath(home.Path), "Work"), CodeRoot.FromCheckout(checkout));
+    }
+
+    [Theory]
+    [InlineData("rig")]
+    [InlineData("elsewhere/rig")]
+    public void A_checkout_outside_a_personal_folder_implies_nothing(string under)
+    {
+        using var home = new TempDir();
+
+        Assert.Null(CodeRoot.FromCheckout(home.Folder(under)));
+        Assert.Null(CodeRoot.FromCheckout(null));
+    }
+
+    [Fact]
+    public void The_running_checkout_decides_the_root_before_the_code_fallback()
+    {
+        using var start = new TempDir();
+        using var home = new TempDir();
+        home.Folder("code");
+        var checkout = home.Folder("Work/personal/rig");
+
+        Assert.Equal(Path.Combine(Path.GetFullPath(home.Path), "Work"), CodeRoot.Resolve(null, start.Path, home.Path, checkout));
+    }
+
+    [Fact]
+    public void A_marked_ancestor_wins_over_the_checkout()
+    {
+        using var root = new TempDir();
+        root.AsCodeRoot();
+        using var home = new TempDir();
+        var checkout = home.Folder("Work/personal/rig");
+
+        Assert.Equal(Path.GetFullPath(root.Path), CodeRoot.Resolve(null, root.Folder("personal/x"), home.Path, checkout));
+    }
+
+    [Fact]
+    public void A_checkout_outside_home_is_ignored()
+    {
+        using var start = new TempDir();
+        using var home = new TempDir();
+        using var other = new TempDir();
+        var code = home.Folder("code");
+
+        Assert.Equal(code, CodeRoot.Resolve(null, start.Path, home.Path, other.Folder("Work/personal/rig")));
+    }
+
+    [Fact]
+    public void Display_abbreviates_home_with_forward_slashes()
+    {
+        using var home = new TempDir();
+        using var other = new TempDir();
+
+        Assert.Equal("~/Work", CodeRoot.Display(home.Folder("Work"), home.Path));
+        Assert.Equal(Path.GetFullPath(other.Path).Replace('\\', '/'), CodeRoot.Display(other.Path, home.Path));
     }
 }

@@ -1,7 +1,7 @@
 #pragma warning disable RS0030 // Legacy System.CommandLine awaiting DotMake migration (Issue #234)
 using System.CommandLine;
 using Rig.Core;
-using Rig.Core.Roots;
+using Rig.Core.Layout;
 using Rig.Web;
 using Rig.Web.Mcp;
 
@@ -97,7 +97,7 @@ internal sealed class WebCommand(
             places.DbPath,
             places.RegistryFile,
             places.WorkingDirectory,
-            Path.Join(CodeRoot.Current(), CodeRoot.PersonalFolder),
+            EstateLayout.Current().Personal,
             Rig.Core.Estate.Decisions.DefaultFeedPath(Environment.GetEnvironmentVariable("LOCALAPPDATA"), home),
             places.QueuePath,
             places.TracesDir,

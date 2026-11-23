@@ -56,8 +56,8 @@ public sealed class ObsidianPlugins(HttpClient http)
     private static readonly FrozenSet<string> AllowedHosts =
         new[] { "raw.githubusercontent.com", "api.github.com", "github.com", "objects.githubusercontent.com" }.ToFrozenSet(StringComparer.Ordinal);
 
-    /// <summary><c>~/code/personal/obsidian-vault</c> under <paramref name="home"/>.</summary>
-    public static string DefaultVault(string home) => Path.Join(EstateRules.Root(home), "obsidian-vault");
+    /// <summary>The vault repo under the code root's <paramref name="personal"/> folder.</summary>
+    public static string DefaultVault(string personal) => Path.Join(personal, "obsidian-vault");
 
     /// <summary><paramref name="address"/> as a URI when it is an HTTPS fetch from a known host; throws <see cref="InvalidDataException"/> otherwise.</summary>
     public static Uri CheckUrl(string address)

@@ -2,6 +2,7 @@
 using System.CommandLine;
 using System.Text.Json;
 using Rig.Cli.Rendering;
+using Rig.Core.Layout;
 using Rig.Core.Policy;
 
 namespace Rig.Cli.Policy;
@@ -11,7 +12,12 @@ namespace Rig.Cli.Policy;
 /// <param name="Home">The home folder native permission files and shell history live under.</param>
 /// <param name="EstateRoot">What <c>audit</c> inspects unless given <c>--root</c>.</param>
 /// <param name="Windows">Whether globs match case-insensitively and files are written with CRLF.</param>
-internal sealed record PolicyHost(string PolicyPath, string Home, string EstateRoot, bool Windows);
+/// <param name="Layouts"></param>
+internal sealed record PolicyHost(string PolicyPath, string Home, string EstateRoot, bool Windows, Func<string, EstateLayout>? Layouts = null)
+{
+    /// <summary>The estate layout for <paramref name="home"/>, which <c>sync --home</c> may point elsewhere.</summary>
+    public EstateLayout LayoutFor(string home) => (Layouts ?? EstateLayout.Isolated)(home);
+}
 
 /// <summary>
 /// <c>rig policy</c>: classifies commands against the estate policy, audits the estate's manifest commands, and
@@ -148,7 +154,7 @@ internal sealed class PolicyCommand(PolicyHost host, TextWriter output, TextWrit
             return 2;
         }
 
-        var results = NativeProjection.ApplyAll(Load(), systems, home, dryRun, host.Windows);
+        var results = NativeProjection.ApplyAll(Load(), systems, host.LayoutFor(home), dryRun, host.Windows);
         foreach (var result in results)
         {
             output.WriteLine($"{result.System}: {result.Status.Name()} — {result.Path ?? "no native path"} ({result.Detail})");

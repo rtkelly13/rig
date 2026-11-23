@@ -189,5 +189,5 @@ public sealed class ObsidianPluginsTests : IDisposable
 
     [Fact]
     public void The_default_vault_is_in_the_estate() =>
-        Assert.Equal(Path.Join("/h", "code", "personal", "obsidian-vault"), ObsidianPlugins.DefaultVault("/h"));
+        Assert.Equal(Path.Join("/h", "code", "personal", "obsidian-vault"), ObsidianPlugins.DefaultVault(Path.Join("/h", "code", "personal")));
 }
