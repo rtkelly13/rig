@@ -10,6 +10,9 @@ namespace Rig.Core.Tests.Chrome.Extension;
 public sealed class ExtensionHostTests : IDisposable
 {
     // Unix socket paths are limited to about 100 bytes, so the folder is short rather than under TempDir.
+    // Long enough for a loaded CI runner: these tests check what is answered, not how fast; the timeout test sets its own.
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "rigx-" + Guid.NewGuid().ToString("N")[..8]);
 
     public void Dispose()
@@ -28,11 +31,11 @@ public sealed class ExtensionHostTests : IDisposable
         var toHost = new Pipe();
         var fromHost = new Pipe();
         var socket = ExtensionPlaces.SocketFor(_folder, 42);
-        using var host = new ExtensionHost(toHost.Reader.AsStream(), fromHost.Writer.AsStream(), socket, TimeSpan.FromSeconds(5), "/usr/lib/chromium/chromium");
+        using var host = new ExtensionHost(toHost.Reader.AsStream(), fromHost.Writer.AsStream(), socket, Patience, "/usr/lib/chromium/chromium");
         var running = host.RunAsync(cancel);
         var chrome = toHost.Writer.AsStream();
         await NativeFrames.WriteAsync(chrome, new JsonObject { ["type"] = "hello", ["email"] = "me@example.com", ["version"] = "0.1.0" }, cancel);
-        var bridge = new SocketExtensionBridge(_folder, TimeSpan.FromSeconds(5));
+        var bridge = new SocketExtensionBridge(_folder, Patience);
         await WaitForAsync(() => File.Exists(socket), cancel);
 
         // The extension answers the one request it will get.
@@ -84,7 +87,7 @@ public sealed class ExtensionHostTests : IDisposable
         var cancel = TestContext.Current.CancellationToken;
         Directory.CreateDirectory(_folder);
         var connection = new ExtensionConnection(ExtensionPlaces.SocketFor(_folder, 44), "me@example.com", "0.1.0");
-        var bridge = new SocketExtensionBridge(_folder, TimeSpan.FromSeconds(5));
+        var bridge = new SocketExtensionBridge(_folder, Patience);
 
         foreach (var (answer, expected) in new[] { ("not json\n", "not JSON"), ("", "closed without answering") })
         {
