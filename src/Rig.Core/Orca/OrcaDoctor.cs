@@ -73,14 +73,14 @@ public static class OrcaDoctor
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(managedProjects);
-        List<OrcaFinding> findings = [.. SettingsFindings(policy, snapshot.Settings, snapshot.ProfileDir, paths, now)];
+        List<OrcaFinding> findings = [.. SettingsFindings(policy, snapshot.Settings, snapshot.ProfileDir, paths, now, snapshot.Remote)];
         findings.AddRange(AgentChecks(policy, snapshot).Select(Finding));
         if (policy.AgentPermissions is not null && snapshot.LaunchArgs is null)
         {
             findings.Add(new("agents", "launch args", CheckStatus.Skip, "Orca is not running to ask"));
         }
 
-        findings.AddRange(RepoFindings(policy, snapshot.Repos, paths, managedProjects, localBase));
+        findings.AddRange(RepoFindings(policy, snapshot.Repos, paths, managedProjects, localBase, snapshot.Remote));
         return findings;
     }
 
@@ -128,11 +128,13 @@ public static class OrcaDoctor
         ? new(check.Subject, check.Check, CheckStatus.Ok, check.Have.Length > 0 ? check.Have : "(none)")
         : new(check.Subject, check.Check, CheckStatus.Fail, $"\"{check.Have}\", want \"{check.Want}\"", check.Fix);
 
-    private static List<OrcaFinding> SettingsFindings(OrcaPolicy policy, SettingsCopy? copy, string profileDir, OrcaPaths paths, DateTimeOffset now)
+    private static List<OrcaFinding> SettingsFindings(OrcaPolicy policy, SettingsCopy? copy, string profileDir, OrcaPaths paths, DateTimeOffset now, bool remote)
     {
         if (copy is null)
         {
-            return [new("settings", "source", CheckStatus.Skip, $"no readable {BackupGlob} in {OrcaPaths.Posix(profileDir)}", "start Orca once so it writes a settings backup")];
+            return remote
+                ? [new("settings", "source", CheckStatus.Skip, "remote environment (profile-state.db is not readable over the network)")]
+                : [new("settings", "source", CheckStatus.Skip, $"no readable {BackupGlob} in {OrcaPaths.Posix(profileDir)}", "start Orca once so it writes a settings backup")];
         }
 
         var ageHours = (now - copy.Saved).TotalSeconds / 3600;
@@ -172,7 +174,7 @@ public static class OrcaDoctor
 
     private static List<OrcaFinding> RepoFindings(
         OrcaPolicy policy, IReadOnlyList<OrcaRepo>? repos, OrcaPaths paths, IReadOnlyCollection<string> managedProjects,
-        IReadOnlyDictionary<string, LocalBaseState>? localBase)
+        IReadOnlyDictionary<string, LocalBaseState>? localBase, bool remote)
     {
         if (repos is null)
         {
@@ -185,7 +187,7 @@ public static class OrcaDoctor
         {
             if (byName.GetValueOrDefault(name) is { } repo)
             {
-                findings.AddRange(RepoPolicyFindings(name, repo, want));
+                findings.AddRange(RepoPolicyFindings(name, repo, want, remote));
                 if (localBase?.GetValueOrDefault(name) is { } state)
                 {
                     findings.Add(LocalBaseFinding(name, repo, state));
@@ -198,13 +200,16 @@ public static class OrcaDoctor
             findings.Add(new($"repo {name}", "registered", CheckStatus.Fail, "named in config/orca.json but not registered in Orca", $"orca repo add --path {path}"));
         }
 
-        var registered = repos.Select(repo => OrcaPaths.Posix(repo.Path)).ToHashSet(StringComparer.Ordinal);
-        foreach (var name in managedProjects)
+        if (!remote)
         {
-            var path = OrcaPaths.Posix(Path.Join(paths.EstateRoot, name));
-            if (Path.Exists(Path.Join(path, ".git")) && !registered.Contains(path) && !policy.Repos.ContainsKey(name))
+            var registered = repos.Select(repo => OrcaPaths.Posix(repo.Path)).ToHashSet(StringComparer.Ordinal);
+            foreach (var name in managedProjects)
             {
-                findings.Add(new($"repo {name}", "registered", CheckStatus.Warn, "managed project cloned locally but not registered in Orca", $"orca repo add --path {path}"));
+                var path = OrcaPaths.Posix(Path.Join(paths.EstateRoot, name));
+                if (Path.Exists(Path.Join(path, ".git")) && !registered.Contains(path) && !policy.Repos.ContainsKey(name))
+                {
+                    findings.Add(new($"repo {name}", "registered", CheckStatus.Warn, "managed project cloned locally but not registered in Orca", $"orca repo add --path {path}"));
+                }
             }
         }
 
@@ -223,11 +228,19 @@ public static class OrcaDoctor
         return byName;
     }
 
-    private static List<OrcaFinding> RepoPolicyFindings(string name, OrcaRepo repo, RepoPolicy want)
+    private static List<OrcaFinding> RepoPolicyFindings(string name, OrcaRepo repo, RepoPolicy want, bool remote)
     {
         var subject = $"repo {name}";
-        var shared = OrcaHooks.ReadOrcaYaml(repo.Path);
-        List<OrcaFinding> findings = [.. WantedScripts(want).Select(wanted => ScriptFinding(name, wanted.Kind, wanted.Script, repo.HookSettings, shared))];
+        List<OrcaFinding> findings;
+        if (remote)
+        {
+            findings = [.. WantedScripts(want).Select(wanted => new OrcaFinding(subject, $"{wanted.Kind} script", CheckStatus.Skip, "remote environment (orca.yaml is not readable over the network)"))];
+        }
+        else
+        {
+            var shared = OrcaHooks.ReadOrcaYaml(repo.Path);
+            findings = [.. WantedScripts(want).Select(wanted => ScriptFinding(name, wanted.Kind, wanted.Script, repo.HookSettings, shared))];
+        }
         var path = OrcaPaths.Posix(repo.Path);
         if (want.ExternalWorktreeVisibility is { } visibility)
         {

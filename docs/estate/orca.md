@@ -76,7 +76,9 @@ subgroups with it, moves any projects to the top level and drops its folder
 workspaces, so a group that still holds a folder workspace is never deleted.
 
 **The estate shares Orca's default profile with the work repos.** `estate orca`
-manages the default profile (`--orca-data` overrides it). A machine that keeps a
+manages the default profile (`--orca-data` overrides it, and `--environment <selector>`
+targets a saved remote Orca environment such as a Tailscale-paired Linux machine, inferring
+`--code-root` from the remote `rig` checkout when omitted). A machine that keeps a
 separate work profile names it with `--work-orca-data`, and the run checks it too. Every `rtkelly13`, `rtkelly-labs` and
 `Resultful` repo is reported there as `in-work-profile`, declared or not, and
 `--apply` removes them and deletes the groups they leave empty. When the work

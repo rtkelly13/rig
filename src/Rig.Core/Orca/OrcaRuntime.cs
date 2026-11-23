@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Processes;
 
 namespace Rig.Core.Orca;
 
@@ -28,9 +29,9 @@ public sealed class OrcaUnavailableException : Exception
     }
 }
 
-/// <summary>Where Orca's runtime listens: a Unix socket, or a named pipe on Windows.</summary>
-/// <param name="Kind"><c>unix</c> or <c>named-pipe</c>.</param>
-/// <param name="Endpoint">The socket's path, or the pipe's <c>\\.\pipe\name</c>.</param>
+/// <summary>Where Orca's runtime listens: a Unix socket, a named pipe on Windows, or a paired remote environment.</summary>
+/// <param name="Kind"><c>unix</c>, <c>named-pipe</c>, or <c>environment</c>.</param>
+/// <param name="Endpoint">The socket's path, the pipe's <c>\\.\pipe\name</c>, or the saved environment name/id.</param>
 public sealed record OrcaTransport(string Kind, string Endpoint)
 {
     /// <summary>A Unix domain socket.</summary>
@@ -38,6 +39,9 @@ public sealed record OrcaTransport(string Kind, string Endpoint)
 
     /// <summary>A Windows named pipe.</summary>
     public const string NamedPipe = "named-pipe";
+
+    /// <summary>A saved remote Orca environment (e.g. paired over Tailscale).</summary>
+    public const string Environment = "environment";
 }
 
 /// <summary>Sends one request line to Orca's runtime and yields the lines it answers with, as they arrive.</summary>
@@ -47,15 +51,33 @@ public interface IOrcaExchange
     IAsyncEnumerable<string> ExchangeAsync(OrcaTransport transport, string request, CancellationToken cancellationToken);
 }
 
-/// <summary>The real transports: a Unix domain socket, or a named pipe.</summary>
+/// <summary>The real transports: a Unix domain socket, a named pipe, or Orca's paired remote-environment client.</summary>
 /// <param name="timeout">How long one exchange may take before Orca counts as unreachable.</param>
-public sealed class SocketOrcaExchange(TimeSpan timeout) : IOrcaExchange
+/// <param name="proc">Process runner used for remote-environment RPCs via Orca's bundled client; defaults to <see cref="SystemProc"/>.</param>
+public sealed class SocketOrcaExchange(TimeSpan timeout, IProc? proc = null) : IOrcaExchange
 {
     private const string PipePrefix = @"\\.\pipe\";
 
+    private const string EnvironmentBridgeScript = """
+        const { RuntimeClient } = require(process.env.RIG_ORCA_CLIENT_JS);
+        const req = JSON.parse(process.env.RIG_ORCA_REQUEST);
+        const timeoutMs = Number(process.env.RIG_ORCA_TIMEOUT_MS) || 30000;
+        const userData = req.authToken ? req.authToken : undefined;
+        const client = new RuntimeClient(userData, timeoutMs, null, process.env.RIG_ORCA_ENVIRONMENT);
+        client.call(req.method, req.params ?? null)
+          .then(res => process.stdout.write(JSON.stringify({ id: req.id, ok: true, result: res.result ?? null }) + "\n"))
+          .catch(err => {
+            const code = typeof err?.code === "string" ? err.code : "unavailable";
+            const message = typeof err?.message === "string" ? err.message : String(err);
+            process.stdout.write(JSON.stringify({ id: req.id, ok: false, error: { code, message } }) + "\n");
+          });
+        """;
+
+    private readonly IProc _proc = proc ?? new SystemProc();
+
     /// <summary>The exchange with the 30 seconds rig always gave Orca.</summary>
     public SocketOrcaExchange()
-        : this(TimeSpan.FromSeconds(30))
+        : this(TimeSpan.FromSeconds(30), null)
     {
     }
 
@@ -63,6 +85,12 @@ public sealed class SocketOrcaExchange(TimeSpan timeout) : IOrcaExchange
     public async IAsyncEnumerable<string> ExchangeAsync(OrcaTransport transport, string request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transport);
+        if (transport.Kind == OrcaTransport.Environment)
+        {
+            yield return await ExchangeEnvironmentAsync(transport.Endpoint, request, cancellationToken).ConfigureAwait(false);
+            yield break;
+        }
+
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
         var stream = await ConnectAsync(transport, deadline.Token).ConfigureAwait(false);
@@ -76,11 +104,53 @@ public sealed class SocketOrcaExchange(TimeSpan timeout) : IOrcaExchange
         }
     }
 
+    /// <summary>Locates Orca's bundled <c>out/cli/runtime/client.js</c> for paired remote-environment RPCs, or null.</summary>
+    public static string? ResolveRuntimeClientPath()
+    {
+        if (System.Environment.GetEnvironmentVariable("ORCA_CLI_RUNTIME_CLIENT") is { Length: > 0 } configured && File.Exists(configured))
+        {
+            return configured;
+        }
+
+        string[] candidates = OperatingSystem.IsMacOS()
+            ? ["/Applications/Orca.app/Contents/Resources/app.asar.unpacked/out/cli/runtime/client.js"]
+            : OperatingSystem.IsWindows()
+                ? [Path.Join(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "Programs", "orca", "resources", "app.asar.unpacked", "out", "cli", "runtime", "client.js")]
+                : ["/opt/Orca/resources/app.asar.unpacked/out/cli/runtime/client.js", "/usr/lib/orca/resources/app.asar.unpacked/out/cli/runtime/client.js"];
+        return candidates.FirstOrDefault(File.Exists);
+    }
+
     /// <summary>The pipe name in <paramref name="endpoint"/>, without its <c>\\.\pipe\</c> prefix.</summary>
     public static string PipeName(string endpoint)
     {
         ArgumentNullException.ThrowIfNull(endpoint);
         return endpoint.StartsWith(PipePrefix, StringComparison.OrdinalIgnoreCase) ? endpoint[PipePrefix.Length..] : endpoint;
+    }
+
+    private async Task<string> ExchangeEnvironmentAsync(string environment, string request, CancellationToken cancellationToken)
+    {
+        var clientJs = ResolveRuntimeClientPath()
+            ?? throw new IOException("could not locate Orca's bundled runtime client (client.js); set ORCA_CLI_RUNTIME_CLIENT or install Orca");
+        var procRequest = new ProcRequest(["node", "-e", EnvironmentBridgeScript])
+        {
+            Timeout = timeout + TimeSpan.FromSeconds(5),
+            Environment = new Dictionary<string, string>
+            {
+                ["RIG_ORCA_CLIENT_JS"] = clientJs,
+                ["RIG_ORCA_ENVIRONMENT"] = environment,
+                ["RIG_ORCA_REQUEST"] = request.Trim(),
+                ["RIG_ORCA_TIMEOUT_MS"] = ((int)timeout.TotalMilliseconds).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            },
+        };
+        var ran = await _proc.RunAsync(procRequest, cancellationToken).ConfigureAwait(false);
+        var line = ran.Out.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault();
+        if (!string.IsNullOrEmpty(line))
+        {
+            return line;
+        }
+
+        var detail = string.IsNullOrWhiteSpace(ran.Err) ? $"node exited {ran.Code}" : ran.Err.Trim();
+        throw new IOException($"remote Orca environment {environment} failed: {detail}");
     }
 
     private static async Task<Stream> ConnectAsync(OrcaTransport transport, CancellationToken cancellationToken)
@@ -142,6 +212,14 @@ public sealed class OrcaRuntime
 
     /// <summary>The token each request carries.</summary>
     public string AuthToken { get; }
+
+    /// <summary>Connects to a saved remote Orca environment (e.g. a Tailscale-paired machine).</summary>
+    public static OrcaRuntime ForEnvironment(string environment, IOrcaExchange exchange, string? userDataPath = null, Func<string>? newId = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(environment);
+        ArgumentNullException.ThrowIfNull(exchange);
+        return new OrcaRuntime(new OrcaTransport(OrcaTransport.Environment, environment), userDataPath ?? string.Empty, exchange, newId);
+    }
 
     /// <summary>Connects through the runtime metadata file at <paramref name="metadataPath"/>.</summary>
     /// <exception cref="OrcaUnavailableException">The file is missing, unreadable, or names no usable transport or token.</exception>

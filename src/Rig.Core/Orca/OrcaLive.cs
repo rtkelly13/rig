@@ -87,17 +87,21 @@ public sealed class OrcaLive(OrcaRuntime? runtime) : IOrcaLive
 
 /// <summary>
 /// <see cref="IOrcaCli"/> through the <c>orca</c> program. With a user-data folder it targets that instance, through
-/// <c>ORCA_USER_DATA_PATH</c>.
+/// <c>ORCA_USER_DATA_PATH</c>. With an environment selector it targets that saved remote runtime via <c>--environment</c>.
 /// </summary>
 /// <param name="proc">Runs the program.</param>
 /// <param name="userData">The instance's user-data folder, or null for the default instance.</param>
-public sealed class OrcaCliRunner(IProc proc, string? userData) : IOrcaCli
+/// <param name="environment">A saved remote Orca environment name or id, or null for the local instance.</param>
+public sealed class OrcaCliRunner(IProc proc, string? userData, string? environment = null) : IOrcaCli
 {
     /// <inheritdoc />
     public async Task<string?> RunAsync(IReadOnlyList<string> args, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(args);
-        var request = new ProcRequest(["orca", .. args])
+        IReadOnlyList<string> argv = string.IsNullOrWhiteSpace(environment)
+            ? ["orca", .. args]
+            : ["orca", "--environment", environment, .. args];
+        var request = new ProcRequest(argv)
         {
             Environment = userData is null
                 ? new Dictionary<string, string>()

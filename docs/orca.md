@@ -15,9 +15,13 @@ rig workspace orca sync --apply --repo rig  # target a specific repo
 
 # a specific Orca instance, from outside it
 rig workspace orca sync --orca-data "$APPDATA/orca" --root C:/code --apply
+
+# a paired remote Orca environment (e.g. a Linux machine over Tailscale)
+rig workspace orca doctor --environment 100.66.13.122
+rig workspace orca sync --environment 100.66.13.122 --apply
 ```
 
-Both commands take `--orca-data <folder>`, an Orca instance's user-data folder. Without it they
+Both commands take `--orca-data <folder>` (an Orca instance's user-data folder) and `--environment <selector>` (a saved remote Orca environment name or id, such as a Tailscale-paired machine). When `--environment` is set, local-only filesystem checks (`profile-state.db`, `orca.yaml`, local `git` base-ref checks) are skipped and `--code-root` is inferred from the remote `rig` registration when omitted. Without `--orca-data` or `--environment` they
 use the Orca whose terminal they run in (Orca sets `ORCA_USER_DATA_PATH` there), and outside Orca
 the platform default (`~/Library/Application Support/orca`, `%APPDATA%/orca`, `~/.config/orca`). With it, the profile, `orca-runtime.json` and token come from that folder and the
 `orca` CLI is pointed at it through `ORCA_USER_DATA_PATH`. A terminal Orca launched is bound to that

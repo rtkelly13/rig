@@ -37,6 +37,10 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
         {
             Description = "The work Orca profile, kept free of estate repos (default: none)",
         };
+        var environment = new Option<string?>("--environment")
+        {
+            Description = "Target a saved remote Orca environment by name or id (e.g. a Tailscale-paired machine)",
+        };
         var apply = new Option<bool>("--apply") { Description = "Register, create, move and delete to match, and clear estate repos from the work profile." };
         var repos = new Option<string[]>("--repo", "-r")
         {
@@ -56,10 +60,10 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
             + "machine's `tools.estate.skip_repos` (`~/.workspace/config.json`) are never registered; one already in Orca is "
             + "reported as `skipped`, not removed.")
         {
-            config, codeRoot, userData, workData, apply, repos, json,
+            config, codeRoot, userData, workData, environment, apply, repos, json,
         };
         command.SetAction((parsed, cancellationToken) => RunAsync(
-            new(parsed.GetValue(config), parsed.GetValue(codeRoot), parsed.GetValue(userData), parsed.GetValue(workData), parsed.GetValue(apply), parsed.GetValue(repos) ?? [], parsed.GetValue(json)),
+            new(parsed.GetValue(config), parsed.GetValue(codeRoot), parsed.GetValue(userData), parsed.GetValue(workData), parsed.GetValue(environment), parsed.GetValue(apply), parsed.GetValue(repos) ?? [], parsed.GetValue(json)),
             cancellationToken));
         return command;
     }
@@ -86,6 +90,7 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
 
     private async Task<int> RunAsync(Args args, CancellationToken cancellationToken)
     {
+        var isRemote = !string.IsNullOrWhiteSpace(args.Environment);
         var root = string.IsNullOrEmpty(args.CodeRoot) ? host.CodeRoot : host.ExpandHome(args.CodeRoot);
         var estateDir = string.IsNullOrEmpty(args.OrcaData) ? orca.Locations.EstateUserData() : host.ExpandHome(args.OrcaData);
         var workDir = string.IsNullOrEmpty(args.WorkOrcaData) ? null : host.ExpandHome(args.WorkOrcaData);
@@ -103,18 +108,33 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
             }
 
             isEstateOwner = EstateOwners(host.ScopesFile);
-            var skipped = MachineConfig.SkipRepos(host.MachineConfigFile);
-            var runtime = OrcaRuntime.FromMetadata(orca.Locations.RuntimeMetadata(estateDir), orca.Exchange);
-            var archived = await ArchivedAsync(declared, await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false), isEstateOwner, cancellationToken).ConfigureAwait(false);
+            var skipped = isRemote ? new HashSet<string>(StringComparer.Ordinal) : MachineConfig.SkipRepos(host.MachineConfigFile);
+            var runtime = isRemote
+                ? OrcaRuntime.ForEnvironment(args.Environment!, orca.Exchange, string.IsNullOrEmpty(args.OrcaData) ? null : estateDir)
+                : OrcaRuntime.FromMetadata(orca.Locations.RuntimeMetadata(estateDir), orca.Exchange);
+            var initial = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
+            if (isRemote && string.IsNullOrEmpty(args.CodeRoot) && InferRemoteCodeRoot(initial.Registrations) is { } remoteRoot)
+            {
+                root = remoteRoot;
+            }
+
+            var archived = await ArchivedAsync(declared, initial, isEstateOwner, cancellationToken).ConfigureAwait(false);
+            Func<string, bool>? exists = isRemote ? RemoteExists(initial.Registrations) : null;
+            Func<string, Task<bool?>> inUse = isRemote ? (_ => Task.FromResult<bool?>(null)) : InUse(cancellationToken);
             IReadOnlyList<LayoutFinding> carried = [];
             if (args.Apply)
             {
                 carried = await OrcaLayout.ApplyAsync(
-                    runtime, declared, root, isEstateOwner, InUse(cancellationToken), log, archived: archived, skipped: skipped, only: only, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    runtime, declared, root, isEstateOwner, inUse, log, exists: exists, archived: archived, skipped: skipped, only: only, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
             var state = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
-            findings = [.. OrcaLayout.Audit(declared, state, root, isEstateOwner, archived: archived, skipped: skipped)];
+            if (isRemote)
+            {
+                exists = RemoteExists(state.Registrations);
+            }
+
+            findings = [.. OrcaLayout.Audit(declared, state, root, isEstateOwner, exists: exists, archived: archived, skipped: skipped)];
             findings.AddRange(carried.Where(c => !findings.Contains(c)).ToList());
             if (only is not null)
             {
@@ -207,5 +227,17 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
         }
     }
 
-    private sealed record Args(string? Config, string? CodeRoot, string? OrcaData, string? WorkOrcaData, bool Apply, string[] Repos, bool Json);
+    private static Func<string, bool> RemoteExists(IReadOnlyList<Registration> registrations)
+    {
+        var registered = registrations.Select(r => OrcaLayout.Posix(r.Path)).ToHashSet(StringComparer.Ordinal);
+        return path => registered.Contains(OrcaLayout.Posix(path));
+    }
+
+    private static string? InferRemoteCodeRoot(IReadOnlyList<Registration> registrations) =>
+        registrations
+            .Where(r => string.Equals(r.Name, "rig", StringComparison.OrdinalIgnoreCase) || string.Equals(r.Slug, "rtkelly13/rig", StringComparison.OrdinalIgnoreCase))
+            .Select(r => CodeRoot.FromCheckout(r.Path))
+            .FirstOrDefault(r => !string.IsNullOrEmpty(r));
+
+    private sealed record Args(string? Config, string? CodeRoot, string? OrcaData, string? WorkOrcaData, string? Environment, bool Apply, string[] Repos, bool Json);
 }

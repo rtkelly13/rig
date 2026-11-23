@@ -53,20 +53,26 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
 
     private static Option<string?> RootOption() => new("--root") { Description = "Estate root holding the managed projects" };
 
+    private static Option<string?> CodeRootOption() => new("--code-root") { Description = "Code root that ~/code in orca.json maps to (default: derived from the estate root, or inferred from rig on remote environments)" };
+
     private static Option<string?> OrcaDataOption() => new("--orca-data") { Description = OrcaDataHelp };
+
+    private static Option<string?> EnvironmentOption() => new("--environment") { Description = "Target a saved remote Orca environment by name or id (e.g. a Tailscale-paired machine)" };
 
     private Command Doctor()
     {
         var config = ConfigOption();
         var root = RootOption();
+        var codeRoot = CodeRootOption();
         var orcaData = OrcaDataOption();
+        var environment = EnvironmentOption();
         var json = new Option<bool>("--json") { Description = "Output findings as JSON" };
         var doctor = new Command("doctor", "Compare Orca's saved settings and live repos with config/orca.json. Read-only; exits 1 on any failure.")
         {
-            config, root, orcaData, json,
+            config, root, codeRoot, orcaData, environment, json,
         };
         doctor.SetAction((parsed, cancellationToken) =>
-            DoctorAsync(parsed.GetValue(config), parsed.GetValue(root), parsed.GetValue(orcaData), parsed.GetValue(json), cancellationToken));
+            DoctorAsync(parsed.GetValue(config), parsed.GetValue(root), parsed.GetValue(codeRoot), parsed.GetValue(orcaData), parsed.GetValue(environment), parsed.GetValue(json), cancellationToken));
         return doctor;
     }
 
@@ -76,17 +82,19 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
         var config = ConfigOption();
         var repo = new Option<string?>("--repo", "-r") { Description = "Sync only the named repo" };
         var root = RootOption();
+        var codeRoot = CodeRootOption();
         var orcaData = OrcaDataOption();
+        var environment = EnvironmentOption();
         var json = new Option<bool>("--json") { Description = "Output actions as JSON" };
         var sync = new Command(
             "sync",
             "Sync Orca's repos to config/orca.json (registration, colors, icons, scripts, refs). Each agent's launch line is sent through "
             + "Orca's runtime; agent sleep is listed as a manual step. Exits 3 when Orca is not running, 1 when any change failed.")
         {
-            apply, config, repo, root, orcaData, json,
+            apply, config, repo, root, codeRoot, orcaData, environment, json,
         };
         sync.SetAction((parsed, cancellationToken) => SyncAsync(
-            new SyncArgs(parsed.GetValue(apply), parsed.GetValue(config), parsed.GetValue(repo), parsed.GetValue(root), parsed.GetValue(orcaData), parsed.GetValue(json)),
+            new SyncArgs(parsed.GetValue(apply), parsed.GetValue(config), parsed.GetValue(repo), parsed.GetValue(root), parsed.GetValue(codeRoot), parsed.GetValue(orcaData), parsed.GetValue(environment), parsed.GetValue(json)),
             cancellationToken));
         return sync;
     }
@@ -116,15 +124,15 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
         }
     }
 
-    private async Task<int> DoctorAsync(string? config, string? root, string? orcaData, bool json, CancellationToken cancellationToken)
+    private async Task<int> DoctorAsync(string? config, string? root, string? codeRoot, string? orcaData, string? environment, bool json, CancellationToken cancellationToken)
     {
         var policyPath = PolicyPath(config);
         var userData = orca.Locations.UserData(orcaData);
-        var (snapshot, _) = await SnapshotAsync(userData, cancellationToken).ConfigureAwait(false);
+        var (snapshot, _) = await SnapshotAsync(userData, environment, cancellationToken).ConfigureAwait(false);
         var managed = Projects().Where(spec => spec.Enabled).Select(spec => spec.Name).ToList();
         var policy = OrcaPolicy.Load(policyPath);
-        var paths = Paths(root);
-        var localBase = await LocalBaseAsync(policy, snapshot, paths, cancellationToken).ConfigureAwait(false);
+        var paths = Paths(root, codeRoot, snapshot.Remote ? snapshot.Repos : null);
+        var localBase = snapshot.Remote ? null : await LocalBaseAsync(policy, snapshot, paths, cancellationToken).ConfigureAwait(false);
         var findings = OrcaDoctor.Diagnose(policy, snapshot, paths, managed, time.GetUtcNow(), localBase);
 
         if (json)
@@ -164,7 +172,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
         var policyPath = PolicyPath(args.Config);
         var policy = OrcaPolicy.Load(policyPath);
         var userData = orca.Locations.UserData(args.OrcaData);
-        var (snapshot, live) = await SnapshotAsync(userData, cancellationToken).ConfigureAwait(false);
+        var (snapshot, live) = await SnapshotAsync(userData, args.Environment, cancellationToken).ConfigureAwait(false);
         if (snapshot.LaunchArgs is null)
         {
             await orca.Error.WriteLineAsync("Orca is not running, so there is nothing to sync; retry once it starts.", cancellationToken).ConfigureAwait(false);
@@ -180,7 +188,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
 
         var retired = Projects().Where(spec => !spec.Enabled).Select(spec => spec.Name).ToHashSet(StringComparer.Ordinal);
         actions.AddRange(await OrcaSync.SyncReposAsync(
-            policy, snapshot, Paths(args.Root), args.Apply, args.Repo, new OrcaCliRunner(proc, userData), live, retired, cancellationToken).ConfigureAwait(false));
+            policy, snapshot, Paths(args.Root, args.CodeRoot, snapshot.Remote ? snapshot.Repos : null), args.Apply, args.Repo, new OrcaCliRunner(proc, userData, args.Environment), live, retired, cancellationToken).ConfigureAwait(false));
 
         if (args.Json)
         {
@@ -264,20 +272,41 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
     // Git hardened under the configured code root (the personal folder's parent), never one derived from --root.
     private Git CodeGit => new(proc, Path.GetDirectoryName(PathResolution.Resolve(host.PersonalDir)) ?? host.PersonalDir);
 
-    private OrcaPaths Paths(string? root)
+    private OrcaPaths Paths(string? root, string? codeRoot, IReadOnlyList<OrcaRepo>? remoteRepos)
     {
         var personal = PathResolution.Resolve(host.PersonalDir);
-        var estate = PathResolution.Resolve(string.IsNullOrEmpty(root) ? personal : root);
-        return new OrcaPaths(estate, Path.GetDirectoryName(personal) ?? personal, host.Home);
+        var resolvedCodeRoot = !string.IsNullOrEmpty(codeRoot)
+            ? OrcaPaths.Posix(codeRoot)
+            : InferRemoteCodeRoot(remoteRepos) ?? (Path.GetDirectoryName(personal) ?? personal);
+        var estate = !string.IsNullOrEmpty(root)
+            ? OrcaPaths.Posix(root)
+            : !string.IsNullOrEmpty(codeRoot) || remoteRepos is not null
+                ? OrcaPaths.Posix(Path.Join(resolvedCodeRoot, CodeRoot.PersonalFolder))
+                : personal;
+        return new OrcaPaths(estate, resolvedCodeRoot, host.Home);
     }
 
-    private async Task<(OrcaSnapshot Snapshot, OrcaLive Live)> SnapshotAsync(string? userData, CancellationToken cancellationToken)
+    private static string? InferRemoteCodeRoot(IReadOnlyList<OrcaRepo>? repos) =>
+        repos?
+            .Where(r => string.Equals(r.DisplayName, "rig", StringComparison.OrdinalIgnoreCase))
+            .Select(r => CodeRoot.FromCheckout(r.Path))
+            .FirstOrDefault(r => !string.IsNullOrEmpty(r));
+
+    private async Task<(OrcaSnapshot Snapshot, OrcaLive Live)> SnapshotAsync(string? userData, string? environment, CancellationToken cancellationToken)
     {
+        if (!string.IsNullOrWhiteSpace(environment))
+        {
+            var remoteLive = new OrcaLive(OrcaRuntime.ForEnvironment(environment, orca.Exchange, userData));
+            var remoteLaunch = await remoteLive.LaunchArgsAsync(cancellationToken).ConfigureAwait(false);
+            var remoteRepos = OrcaRepo.ParseList(await new OrcaCliRunner(proc, userData, environment).RunAsync(["repo", "list", "--json"], cancellationToken).ConfigureAwait(false));
+            return (new OrcaSnapshot(null, remoteRepos, string.Empty, remoteLaunch, Remote: true), remoteLive);
+        }
+
         var live = new OrcaLive(OrcaLive.TryConnect(orca.Locations.RuntimeMetadata(userData), orca.Exchange));
         var launch = await live.LaunchArgsAsync(cancellationToken).ConfigureAwait(false);
         var snapshot = await OrcaProfile.SnapshotAsync(orca.Locations.ProfileDir(userData), new OrcaCliRunner(proc, userData), launch, cancellationToken).ConfigureAwait(false);
         return (snapshot, live);
     }
 
-    private sealed record SyncArgs(bool Apply, string? Config, string? Repo, string? Root, string? OrcaData, bool Json);
+    private sealed record SyncArgs(bool Apply, string? Config, string? Repo, string? Root, string? CodeRoot, string? OrcaData, string? Environment, bool Json);
 }

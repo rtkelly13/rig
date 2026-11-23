@@ -228,6 +228,24 @@ public sealed class OrcaSyncTests : IDisposable
             """{"badgeColor":"#000","hookSettings":{"scripts":{"setup":"","archive":""}},"worktreeBasePath":""}""",
             new RepoUpdates("#000", HookSettings: new(Scripts: new()), WorktreeBasePath: "").ToJson().ToJsonString());
 
+    [Fact]
+    public async Task Remote_sync_skips_local_orca_yaml_and_local_path_existence_checks()
+    {
+        var policy = Repos(
+            ("rig", new RepoPolicy(Setup: "pnpm install", Color: "#6366f1")),
+            ("missing", new RepoPolicy(Path: "~/code/personal/missing")));
+        var snapshot = new OrcaSnapshot(null, [Hooked("/home/ryank/Work/personal/rig", "{}")], "", new Dictionary<string, string>(), Remote: true);
+        var cli = new FakeOrcaCli(_ => "{}");
+        var live = new FakeOrcaLive();
+
+        var actions = await OrcaSync.SyncReposAsync(policy, snapshot, new OrcaPaths("/home/ryank/Work/personal", "/home/ryank/Work", "/home/ryank"), apply: true, null, cli, live, None, Token);
+
+        Assert.DoesNotContain(actions, a => a.Field == "setup script");
+        Assert.Contains(actions, a => a.Repo == "rig" && a.Field == "badge color" && a.Applied);
+        Assert.Contains(actions, a => a.Repo == "missing" && a.Action == "register" && a.Applied);
+        Assert.Equal([["repo", "add", "--path", "/home/ryank/Work/personal/missing"]], cli.Calls);
+    }
+
     private Task<IReadOnlyList<SyncAction>> Sync(OrcaPolicy policy, IReadOnlyList<OrcaRepo> repos, FakeOrcaCli cli, FakeOrcaLive live, bool apply = false) =>
         OrcaSync.SyncReposAsync(policy, Snapshot(null, repos), Under(_dir.Path), apply, null, cli, live, None, Token);
 }

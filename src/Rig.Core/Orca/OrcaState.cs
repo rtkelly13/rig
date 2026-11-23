@@ -207,8 +207,10 @@ public sealed record SettingsCopy(string Source, DateTimeOffset Saved, OrcaSetti
 /// <param name="LaunchArgs">
 /// What the running Orca launches each agent with (permission flags plus custom arguments), or null when it could not be asked.
 /// </param>
+/// <param name="Remote">True when the snapshot came from a paired remote Orca environment rather than local files.</param>
 public sealed record OrcaSnapshot(
     SettingsCopy? Settings,
     IReadOnlyList<OrcaRepo>? Repos,
     string ProfileDir,
-    IReadOnlyDictionary<string, string>? LaunchArgs = null);
+    IReadOnlyDictionary<string, string>? LaunchArgs = null,
+    bool Remote = false);

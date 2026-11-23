@@ -335,6 +335,34 @@ public sealed class OrcaRuntimeTests : IDisposable
         await Assert.ThrowsAsync<ArgumentNullException>(() => runtime.UpdateRepoAsync("path", null!, Token));
     }
 
+    [Fact]
+    public async Task ForEnvironment_sends_requests_over_the_environment_transport()
+    {
+        var exchange = new ScriptedExchange("""{"id": "r1", "ok": true, "result": {"repos": []}}""");
+        var runtime = OrcaRuntime.ForEnvironment("100.66.13.122", exchange, userDataPath: "/orca-data", newId: () => "r1");
+
+        var result = await runtime.CallAsync("repo.list", null, Token);
+
+        Assert.NotNull(result);
+        var sent = Assert.Single(exchange.Requests);
+        Assert.Equal(new OrcaTransport(OrcaTransport.Environment, "100.66.13.122"), sent.Transport);
+        Assert.Contains("\"authToken\":\"/orca-data\"", sent.Request, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CliRunner_prepends_environment_flag_when_set()
+    {
+        var proc = new Rig.Core.Tests.Fakes.FakeProc(_ => new Rig.Core.Processes.Ran(0, "{}", ""));
+        var cli = new OrcaCliRunner(proc, "/orca-data", "100.66.13.122");
+
+        var output = await cli.RunAsync(["repo", "list", "--json"], Token);
+
+        Assert.Equal("{}", output);
+        var call = Assert.Single(proc.Calls);
+        Assert.Equal(["orca", "--environment", "100.66.13.122", "repo", "list", "--json"], call.Argv);
+        Assert.Equal("/orca-data", call.Environment[OrcaLocations.UserDataVariable]);
+    }
+
     private sealed class ScriptedExchange(params string[] lines) : IOrcaExchange
     {
         private int _calls;

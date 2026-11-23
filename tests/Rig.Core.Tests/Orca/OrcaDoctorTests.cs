@@ -261,6 +261,25 @@ public sealed class OrcaDoctorTests
         Assert.Equal("/home/u", paths.Expand("~"));
     }
 
+    [Fact]
+    public void Remote_snapshots_skip_local_filesystem_checks_and_still_check_runtime_state()
+    {
+        using var dir = new TempDir();
+        dir.Folder(Path.Join("local-only", ".git"));
+        var policy = Repos(("rig", new RepoPolicy(Setup: "pnpm install", BaseRef: "origin/main", Color: "#6366f1")));
+        var snapshot = new OrcaSnapshot(null, [Repo("rig", "/home/ryank/Work/personal/rig", baseRef: "origin/main", color: "#000000")], "", new Dictionary<string, string>(), Remote: true);
+
+        var findings = Diagnose(policy, snapshot, Under(dir.Path), "local-only");
+        var byKey = findings.ToDictionary(f => (f.Subject, f.Check));
+
+        Assert.Equal(CheckStatus.Skip, byKey[("settings", "source")].Status);
+        Assert.Contains("remote environment", byKey[("settings", "source")].Detail, StringComparison.Ordinal);
+        Assert.Equal(CheckStatus.Skip, byKey[("repo rig", "setup script")].Status);
+        Assert.Equal(CheckStatus.Ok, byKey[("repo rig", "base ref")].Status);
+        Assert.Equal(CheckStatus.Fail, byKey[("repo rig", "badge color")].Status);
+        Assert.DoesNotContain(findings, f => f.Subject == "repo local-only");
+    }
+
     private static OrcaSnapshot SleepSnapshot(bool? enabled, long? idleMs)
     {
         var copy = Copy(NoArgs);

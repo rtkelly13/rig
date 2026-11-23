@@ -185,11 +185,11 @@ public static class OrcaSync
             {
                 actions.Add(retired.Contains(name)
                     ? new(name, "manual", "registered", "unregistered", "", false, "retired; drop it from orca.json")
-                    : await RegisterAsync(name, want.Path is not null ? paths.RepoPath(want.Path) : OrcaPaths.Posix(Path.Join(paths.EstateRoot, name)), apply, cli, cancellationToken).ConfigureAwait(false));
+                    : await RegisterAsync(name, want.Path is not null ? paths.RepoPath(want.Path) : OrcaPaths.Posix(Path.Join(paths.EstateRoot, name)), apply, snapshot.Remote, cli, cancellationToken).ConfigureAwait(false));
                 continue;
             }
 
-            var context = new Context(name, repo, apply, cli, live, cancellationToken);
+            var context = new Context(name, repo, apply, snapshot.Remote, cli, live, cancellationToken);
             actions.AddRange(await SyncScriptsAsync(context, want).ConfigureAwait(false));
             actions.AddRange(await SyncCliFieldsAsync(context, want).ConfigureAwait(false));
             actions.AddRange(await SyncBadgeAsync(context, want).ConfigureAwait(false));
@@ -204,9 +204,9 @@ public static class OrcaSync
     private static string Tokens(string line) =>
         string.Join(' ', line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Order(StringComparer.Ordinal));
 
-    private static async Task<SyncAction> RegisterAsync(string name, string path, bool apply, IOrcaCli cli, CancellationToken cancellationToken)
+    private static async Task<SyncAction> RegisterAsync(string name, string path, bool apply, bool remote, IOrcaCli cli, CancellationToken cancellationToken)
     {
-        if (!Path.Exists(path))
+        if (!remote && !Path.Exists(path))
         {
             return new(name, "error", "registered", "unregistered", path, false, $"{path} does not exist");
         }
@@ -224,6 +224,11 @@ public static class OrcaSync
     // Clears local scripts that shadow a matching orca.yaml; reports scripts orca.yaml lacks.
     private static async Task<List<SyncAction>> SyncScriptsAsync(Context context, RepoPolicy want)
     {
+        if (context.Remote)
+        {
+            return [];
+        }
+
         var local = context.Repo.HookSettings;
         var shared = OrcaHooks.ReadOrcaYaml(context.Repo.Path);
         List<SyncAction> manual = [];
@@ -322,7 +327,7 @@ public static class OrcaSync
 
     private sealed record Diff(string Field, string Old, string New);
 
-    private sealed record Context(string Name, OrcaRepo Repo, bool Apply, IOrcaCli Cli, IOrcaLive Live, CancellationToken CancellationToken)
+    private sealed record Context(string Name, OrcaRepo Repo, bool Apply, bool Remote, IOrcaCli Cli, IOrcaLive Live, CancellationToken CancellationToken)
     {
         public SyncAction Outcome(Diff diff, bool ok, string failure) => !Apply
             ? new(Name, "update", diff.Field, diff.Old, diff.New, false, "planned")
