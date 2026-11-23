@@ -19,8 +19,9 @@ internal static class OrcaFixtures
         AgentPermissionsPolicy? permissions = null,
         string? workspaceDir = null,
         AgentSleepPolicy? sleep = null,
-        IReadOnlyDictionary<string, RepoPolicy>? repos = null) =>
-        new(args ?? new Dictionary<string, string>(), permissions, workspaceDir, sleep, repos ?? new Dictionary<string, RepoPolicy>());
+        IReadOnlyDictionary<string, RepoPolicy>? repos = null,
+        bool? keepAwake = null) =>
+        new(args ?? new Dictionary<string, string>(), permissions, workspaceDir, sleep, repos ?? new Dictionary<string, RepoPolicy>(), keepAwake);
 
     public static OrcaPolicy Repos(params (string Name, RepoPolicy Policy)[] repos) =>
         PolicyOf(repos: repos.ToDictionary(r => r.Name, r => r.Policy, StringComparer.Ordinal));

@@ -261,6 +261,45 @@ public sealed class OrcaDoctorTests
         Assert.Equal("/home/u", paths.Expand("~"));
     }
 
+    [Theory]
+    [InlineData(true, true, CheckStatus.Ok, "on")]
+    [InlineData(true, false, CheckStatus.Fail, "off, want on")]
+    [InlineData(true, null, CheckStatus.Fail, "unset, want on")]
+    [InlineData(false, false, CheckStatus.Ok, "off")]
+    public void Keep_awake_is_checked_against_the_policy(bool want, bool? have, CheckStatus status, string detail)
+    {
+        var findings = Diagnose(PolicyOf(keepAwake: want), AwakeSnapshot(have));
+
+        var finding = Assert.Single(findings, f => f.Check == "keep awake");
+        Assert.Equal((status, detail), (finding.Status, finding.Detail));
+    }
+
+    [Fact]
+    public void Keep_awake_is_not_checked_without_a_policy() =>
+        Assert.DoesNotContain(Diagnose(OrcaPolicy.Empty, AwakeSnapshot(false)), f => f.Check == "keep awake");
+
+    [Fact]
+    public void Sync_reports_keep_awake_as_manual_beside_agent_sleep()
+    {
+        var policy = PolicyOf(sleep: new(true, 30), keepAwake: true);
+        var copy = Copy(NoArgs);
+        var snapshot = Snapshot(copy with { Settings = copy.Settings with { AgentSleep = false, KeepAwake = false } }, []);
+
+        var actions = OrcaSync.SettingsManualActions(policy, snapshot);
+
+        Assert.Equal(["agent sleep", "keep awake"], actions.Select(a => a.Field));
+        var awake = actions[1];
+        Assert.Equal(("manual", "off", "on", false), (awake.Action, awake.OldValue, awake.NewValue, awake.Applied));
+        Assert.Contains("Keep computer awake while agents run", awake.Detail, StringComparison.Ordinal);
+        Assert.Empty(OrcaSync.SettingsManualActions(PolicyOf(keepAwake: true), AwakeSnapshot(true)));
+    }
+
+    private static OrcaSnapshot AwakeSnapshot(bool? keepAwake)
+    {
+        var copy = Copy(NoArgs);
+        return Snapshot(copy with { Settings = copy.Settings with { KeepAwake = keepAwake } }, []);
+    }
+
     private static OrcaSnapshot SleepSnapshot(bool? enabled, long? idleMs)
     {
         var copy = Copy(NoArgs);

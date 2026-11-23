@@ -39,6 +39,7 @@ daily against the default instance, which holds the work repos and the estate.
 | `agent_permissions` | Each agent's permission mode (Settings → Agents): `own`, `ask`, `accept-edits`, `auto` or `full-access`. `default` covers agents not named in `agents`. See [Agent permissions](#agent-permissions). |
 | `workspace_dir` | Where Orca creates its worktrees (`~` is expanded). |
 | `agent_sleep` | Orca's experimental Agent sleep (`experimentalAgentHibernation`, `agentHibernationIdleMs`): `{"enabled": true, "idle_minutes": 30}`. Orca stops an agent terminal once its turn has been done for the idle window, and resumes it (`claude --resume <id>`) when the tab is opened again. The tab on screen, agents with running sub-agents and unsent drafts are never stopped. See [Agent sleep](#agent-sleep). |
+| `keep_awake` | Orca's *Keep computer awake while agents run* (`keepComputerAwakeWhileAgentsRun`). While any agent works, Orca holds a sleep lock, on Linux a systemd `sleep:handle-lid-switch` block. See [Keep awake](#keep-awake). |
 | `repos.<name>.path` | Optional filesystem path to repo (defaults to `<estate_root>/<name>`). |
 | `repos.<name>.setup` | The setup script each new Orca worktree should run. The repo's committed `orca.yaml` should declare it (see below). |
 | `repos.<name>.archive` | The archive script, run when a worktree is archived; same rule as `setup`. |
@@ -197,6 +198,7 @@ that differ:
    [Agent permissions](#agent-permissions) for how Orca splits a line.
 7. **Workspace folder**: change it in Orca's Settings.
 8. **Agent sleep**: `manual`, naming the change to make under Settings → Experimental.
+9. **Keep awake**: `manual`, naming the Settings toggle.
 
 ### Agent permissions
 
@@ -259,6 +261,18 @@ edited under it. So `doctor` checks it from the newest settings backup, and `syn
 
 A sleeping session has no live terminal, so [`estate wrapup`](estate/wrapup.md) shows it as
 `no-terminal` and cannot ask it. Run wrap-up inside the idle window, or open the tab first.
+
+### Keep awake
+
+The policy turns *Keep computer awake while agents run* on, so a machine with agents working never
+sleeps under them, and the desktop's own idle timers can stay long rather than off. On Linux Orca
+runs `systemd-inhibit --what=sleep:handle-lid-switch --who=Orca --mode=block` for as long as an
+agent is working; `systemd-inhibit --list` shows it. On Omarchy the idle service only blanks and
+locks the screen, so this lock is what keeps an unattended run going (see
+[Omarchy: sleep on this machine](omarchy.md)).
+
+Like Agent sleep, rig cannot set it while Orca runs: `doctor` checks it from the newest settings
+backup and `sync` reports a `manual` row naming the toggle in Orca's Settings.
 
 ## Restoring agent sessions into Orca
 

@@ -46,12 +46,17 @@ public sealed record AgentPermissionsPolicy(string Default, IReadOnlyDictionary<
 /// <param name="WorkspaceDir">Where Orca creates worktrees (<c>~</c> expands).</param>
 /// <param name="AgentSleep">Agent sleep, or null to leave it unchecked.</param>
 /// <param name="Repos">Each repo's settings, by Orca display name.</param>
+/// <param name="KeepAwake">
+/// Whether Orca keeps the computer awake while agents run (<c>keepComputerAwakeWhileAgentsRun</c>), or null to leave it
+/// unchecked. On Linux Orca holds a systemd sleep block lock while any agent works.
+/// </param>
 public sealed record OrcaPolicy(
     IReadOnlyDictionary<string, string> AgentArgs,
     AgentPermissionsPolicy? AgentPermissions,
     string? WorkspaceDir,
     AgentSleepPolicy? AgentSleep,
-    IReadOnlyDictionary<string, RepoPolicy> Repos)
+    IReadOnlyDictionary<string, RepoPolicy> Repos,
+    bool? KeepAwake = null)
 {
     /// <summary>The policy file's path under a rig checkout.</summary>
     public static readonly string RelativePath = System.IO.Path.Join("config", "orca.json");
@@ -84,7 +89,8 @@ public sealed record OrcaPolicy(
             OrcaJson.Object(root, "agent_permissions") is { } permissions ? Permissions(permissions) : null,
             OrcaJson.String(root, "workspace_dir"),
             OrcaJson.Object(root, "agent_sleep") is { } sleep ? Sleep(sleep) : null,
-            repos);
+            repos,
+            OrcaJson.Bool(root, "keep_awake"));
     }
 
     private static RepoPolicy Repo(JsonObject repo) => new(
