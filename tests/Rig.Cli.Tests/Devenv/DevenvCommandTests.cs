@@ -1,6 +1,7 @@
 using System.CommandLine;
 using Rig.Cli.Devenv;
 using Rig.Core.Devenv;
+using Rig.Core.Layout;
 using Rig.Core.Roots;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Devenv;

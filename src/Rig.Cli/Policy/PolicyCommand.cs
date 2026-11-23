@@ -2,8 +2,8 @@
 using System.CommandLine;
 using System.Text.Json;
 using Rig.Cli.Rendering;
+using Rig.Core.Layout;
 using Rig.Core.Policy;
-using Rig.Core.Roots;
 
 namespace Rig.Cli.Policy;
 

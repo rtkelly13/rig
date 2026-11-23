@@ -4,6 +4,7 @@ using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using Rig.Core.Estate;
 using Rig.Core.Jobs;
+using Rig.Core.Layout;
 using Rig.Core.Otel;
 using Rig.Core.Roots;
 using Rig.Core.Tests;

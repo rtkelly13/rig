@@ -1,6 +1,7 @@
+using Rig.Core.Layout;
 using Rig.Core.Roots;
 
-namespace Rig.Core.Tests.Roots;
+namespace Rig.Core.Tests.Layout;
 
 public sealed class EstateLayoutTests
 {

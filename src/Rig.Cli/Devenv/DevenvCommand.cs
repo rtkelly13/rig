@@ -2,9 +2,9 @@
 using System.CommandLine;
 using System.Text.Json;
 using Rig.Core.Devenv;
+using Rig.Core.Layout;
 using Rig.Core.Policy;
 using Rig.Core.Processes;
-using Rig.Core.Roots;
 
 namespace Rig.Cli.Devenv;
 

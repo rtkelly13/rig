@@ -6,7 +6,7 @@ namespace Rig.Core.Roots;
 /// <c>CODE_ROOT</c>; the nearest ancestor of the start folder carrying the marker, an <c>AGENTS.md</c> beside a
 /// <c>personal/</c> folder (which still finds the root from a worktree nested in a repo); the root the running rig
 /// checkout implies, since it is cloned at <c>&lt;root&gt;/personal/rig</c>; then <c>~/code</c>, else
-/// <c>&lt;drive&gt;/code</c>. These are pure helpers: <see cref="EstateLayout"/> gathers the inputs and resolves once.
+/// <c>&lt;drive&gt;/code</c>. These are pure helpers: <see cref="Rig.Core.Layout.EstateLayout"/> gathers the inputs and resolves once.
 /// </summary>
 public static class CodeRoot
 {

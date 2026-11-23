@@ -2,8 +2,8 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using Rig.Core;
+using Rig.Core.Layout;
 using Rig.Core.Processes;
-using Rig.Core.Roots;
 
 namespace Rig.Cli.Vault;
 

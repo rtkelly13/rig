@@ -33,6 +33,7 @@ using Rig.Core.Devenv;
 using Rig.Core.Estate;
 using Rig.Core.Flags;
 using Rig.Core.Jobs;
+using Rig.Core.Layout;
 using Rig.Core.Orca;
 using Rig.Core.Otel;
 using Rig.Core.Processes;

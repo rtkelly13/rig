@@ -25,7 +25,7 @@ with an `AGENTS.md` beside `personal/`; the folder two above the rig checkout, s
 cloned at `<root>/personal/rig` (Omarchy machines use `~/Work/personal/rig`, giving `~/Work`);
 then `~/code`. An installed runtime copy uses the checkout it was installed from.
 
-`Rig.Core.Roots.EstateLayout` resolves this once per process, together with the rig checkout rig reads
+`Rig.Core.Layout.EstateLayout` resolves this once per process, together with the rig checkout rig reads
 its `config/` from, and is passed down. Paths that come from the root (`Personal`, `ScopesFile`,
 `Config(name)`, `Display`) come from the layout rather than being joined at each call site. A
 command given `--home` asks for `layout.ForHome(home)`, which resolves from that home alone (no environment, running checkout or marked root above it),

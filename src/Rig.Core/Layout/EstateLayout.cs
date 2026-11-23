@@ -1,7 +1,8 @@
 using Rig.Core.Jobs;
+using Rig.Core.Roots;
 using Rig.Core.Runtime;
 
-namespace Rig.Core.Roots;
+namespace Rig.Core.Layout;
 
 /// <summary>What <see cref="EstateLayout.Resolve"/> reads: the environment, where the running rig was loaded from, the home and app-data folders.</summary>
 /// <param name="Environment">Reads an environment variable (<c>CODE_ROOT</c>, <c>RIG_HOME</c>).</param>

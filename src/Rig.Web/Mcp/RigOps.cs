@@ -1,12 +1,12 @@
 using System.Text.Json;
 using Rig.Core.Estate;
 using Rig.Core.Jobs;
+using Rig.Core.Layout;
 using Rig.Core.Orca;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Workspace;
 using Rig.Core.Worktrees;
-
 using Rig.Web.Ops;
 
 namespace Rig.Web.Mcp;
