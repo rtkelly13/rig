@@ -79,6 +79,21 @@ public sealed class EstateLayoutTests
     }
 
     [Fact]
+    public void Another_home_ignores_a_marked_root_the_running_rig_sits_in()
+    {
+        using var estate = new TempDir();
+        estate.AsCodeRoot();
+        using var other = new TempDir();
+        var bin = estate.Folder("personal/rig/src/Rig.Cli/bin");
+        var layout = EstateLayout.Resolve(Inputs(estate.Path, new() { [CodeRoot.EnvironmentVariable] = estate.Path }, bin));
+
+        var moved = layout.ForHome(other.Path);
+
+        Assert.Equal(Path.Combine(other.Path, "code"), moved.CodeRoot);
+        Assert.Equal(Path.Combine(other.Path, "code", "personal"), moved.Personal);
+    }
+
+    [Fact]
     public void Display_abbreviates_home()
     {
         using var home = new TempDir();

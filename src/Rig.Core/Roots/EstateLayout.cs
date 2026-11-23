@@ -29,7 +29,6 @@ public sealed record EstateInputs(Func<string, string?> Environment, string Base
 /// <param name="Source">The git checkout this rig was built from, when it can tell.</param>
 public sealed record EstateLayout(string Home, string CodeRoot, string Checkout, string? Source)
 {
-    private EstateInputs? _inputs;
 
     /// <summary>The code root's <c>personal/</c> folder.</summary>
     public string Personal => Roots.CodeRoot.Personal(CodeRoot);
@@ -70,17 +69,18 @@ public sealed record EstateLayout(string Home, string CodeRoot, string Checkout,
             ?? RuntimeManager.RecordedRepo(RuntimeManager.RuntimeRoot(inputs.AppData));
         var root = Roots.CodeRoot.Resolve(inputs.Environment(Roots.CodeRoot.EnvironmentVariable), inputs.BaseDirectory, inputs.Home, source);
         var checkout = configured ?? JobsSite.CopyOf(inputs.BaseDirectory, inputs.AppData) ?? jobs ?? RigCheckout.Under(root);
-        return new EstateLayout(inputs.Home, root, checkout, source) { _inputs = inputs };
+        return new EstateLayout(inputs.Home, root, checkout, source);
     }
 
     /// <summary>
-    /// This layout re-resolved for <paramref name="home"/>, for a command given <c>--home</c>: the same environment and
-    /// running checkout, but a root the checkout implies only counts inside that home, so a temporary home stays hermetic.
+    /// The layout for <paramref name="home"/>, for a command given <c>--home</c>: this one when it is the same home,
+    /// otherwise one resolved from that home alone, ignoring the environment, the running checkout and any marked
+    /// root above it, so a temporary home never writes into the real estate.
     /// </summary>
     public EstateLayout ForHome(string home)
     {
         ArgumentNullException.ThrowIfNull(home);
-        return PathResolution.Same(home, Home) ? this : Resolve((_inputs ?? IsolatedInputs(home)) with { Home = home });
+        return PathResolution.Same(home, Home) ? this : Isolated(home);
     }
 
     // Inputs that see nothing outside home: no environment, the search starts at home, and app data that does not exist.
