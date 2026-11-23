@@ -1,9 +1,11 @@
-namespace Rig.Core.Desktop.Windows;
+using Rig.Core.Screens;
+
+namespace Rig.Core.Windows;
 
 /// <summary>
 /// The Win32 calls that change windows, processes and input, one call each with no policy of their own. Each answers
-/// whether Windows accepted it; <see cref="WindowActions"/> decides which failures matter. The real one is
-/// <see cref="NativeWin32Actions"/>.
+/// whether Windows accepted it; <see cref="Rig.Core.Desktop.Windows.WindowActions"/> decides which failures matter. The real one is
+/// <see cref="Rig.Core.Desktop.Windows.NativeWin32Actions"/>.
 /// </summary>
 public interface IWin32Actions
 {

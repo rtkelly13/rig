@@ -1,13 +1,13 @@
-namespace Rig.Core.Desktop;
+namespace Rig.Core.Windows;
 
 /// <summary>
 /// The machine's virtual desktops: read, switch, create, name, remove, and move windows between them.
 /// </summary>
 /// <remarks>
 /// Desktops are numbered from 1 in position order, and a number names whichever desktop holds that position when the
-/// call is made, so removing one renumbers those after it. Failures throw <see cref="DesktopException"/>, apart from
+/// call is made, so removing one renumbers those after it. Failures throw <see cref="Rig.Core.Desktop.DesktopException"/>, apart from
 /// the <see cref="IWindowDesktops"/> reads, which answer for an unknown window as window inventory expects.
-/// <see cref="VirtualDesktopOperations"/> holds the rules rig layers over these calls.
+/// <see cref="Rig.Core.Desktop.VirtualDesktopOperations"/> holds the rules rig layers over these calls.
 /// </remarks>
 public interface IVirtualDesktops : IWindowDesktops
 {

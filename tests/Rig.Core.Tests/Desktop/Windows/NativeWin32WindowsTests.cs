@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using Rig.Core.Desktop.Windows;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Tests.Desktop.Windows;
 

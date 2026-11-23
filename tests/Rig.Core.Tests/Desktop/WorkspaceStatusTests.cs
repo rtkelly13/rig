@@ -1,5 +1,6 @@
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
+using Rig.Core.Screens;
 using Rig.Core.Tests.Desktop.Windows;
 
 namespace Rig.Core.Tests.Desktop;

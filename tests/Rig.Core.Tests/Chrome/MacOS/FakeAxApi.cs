@@ -1,4 +1,5 @@
 using Rig.Core.Chrome.MacOS;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Tests.Chrome.MacOS;
 

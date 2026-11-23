@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Rig.Core.Text;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Desktop.Windows;
 

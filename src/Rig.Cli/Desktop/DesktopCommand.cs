@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
 using Rig.Core.Flags;
+using Rig.Core.Windows;
 using Rig.Core.Workspace;
 
 namespace Rig.Cli.Desktop;

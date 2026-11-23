@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using Rig.Core.Screens;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Desktop.Windows;
 

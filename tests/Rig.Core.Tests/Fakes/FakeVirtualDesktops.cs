@@ -1,4 +1,5 @@
 using Rig.Core.Desktop;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Tests.Fakes;
 

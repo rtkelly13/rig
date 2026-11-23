@@ -1,5 +1,6 @@
 using CsCheck;
 using Rig.Core.Desktop;
+using Rig.Core.Screens;
 
 namespace Rig.Core.Tests.Desktop;
 

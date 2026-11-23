@@ -1,4 +1,4 @@
-namespace Rig.Core.Desktop.Windows.Uia;
+namespace Rig.Core.Windows.Uia;
 
 /// <summary>The UI Automation control types rig reads (UIA_*ControlTypeId).</summary>
 public enum UiaControlType
