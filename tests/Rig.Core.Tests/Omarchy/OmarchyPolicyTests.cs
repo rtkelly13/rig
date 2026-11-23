@@ -21,7 +21,7 @@ public sealed class OmarchyPolicyTests
         Assert.True(policy.LockBeforeSuspend);
         Assert.Equal("tokyo-night", policy.Theme);
         Assert.Equal(new PowerPolicy("performance", "power-saver"), policy.Power);
-        Assert.Equal(new FontPolicy(14), policy.Font);
+        Assert.Equal(new FontPolicy(13), policy.Font);
         Assert.NotNull(policy.Shell);
         Assert.True(policy.Shell.ContainsKey("bar"));
         Assert.False(policy.Shell.ContainsKey("idle"));
