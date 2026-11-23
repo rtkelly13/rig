@@ -212,4 +212,69 @@ public sealed class ChromeExtensionTests
     [InlineData("", null)]
     public void The_host_names_the_browser_by_its_program(string program, string? folder) =>
         Assert.Equal(folder, new ExtensionConnection("s", "", "", program).ConfigFolder);
+
+    [Fact]
+    public void The_foreground_window_is_the_one_Chrome_reports_focused()
+    {
+        Assert.Equal(1, Driver(TwoWindows()).ForegroundWindow());
+        Assert.Equal(0, Driver(new FakeExtension()).ForegroundWindow());
+    }
+
+    [Fact]
+    public void Refuses_an_empty_group_title_and_a_tab_already_grouped()
+    {
+        var driver = Driver(TwoWindows().Group(1, "rig", 11));
+        var tabs = driver.ListWindows()[0].Tabs;
+
+        var untitled = driver.GroupTab(tabs[1], "", isNew: true, homeHandle: 1);
+        var grouped = driver.GroupTab(tabs[0], "docs", isNew: true, homeHandle: 1);
+
+        Assert.False(untitled.Grouped);
+        Assert.Contains("empty", untitled.Detail, StringComparison.Ordinal);
+        Assert.False(grouped.Grouped);
+        Assert.Contains("already grouped", grouped.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_profile_whose_windows_cannot_be_read_fails_the_read()
+    {
+        var driver = new ChromeExtension(new UnreadableBridge(), _ => Profiles, TimeProvider.System);
+
+        var error = Assert.Throws<ChromeReadException>(driver.ListWindows);
+
+        Assert.Contains("host went away", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Presence_is_always_long_away_and_unlocked()
+    {
+        var presence = new AwayPresence(TimeProvider.System);
+
+        Assert.True(unchecked(presence.NowTick() - presence.LastInputTick()) >= uint.MaxValue / 2);
+        Assert.False(presence.SessionLocked());
+        Assert.Empty(presence.DevicesInUse());
+    }
+
+    [Fact]
+    public void The_extension_errors_keep_their_message_and_cause()
+    {
+        var cause = new InvalidOperationException("cause");
+        Exception[] errors =
+        [
+            new ExtensionCallException(), new ExtensionCallException("m"), new ExtensionCallException("m", cause),
+            new ExtensionStepRefusedException(), new ExtensionStepRefusedException("m"), new ExtensionStepRefusedException("m", cause),
+            new NativeFrameException(), new NativeFrameException("m"), new NativeFrameException("m", cause),
+        ];
+
+        Assert.All(errors.Where((_, i) => i % 3 > 0), error => Assert.Equal("m", error.Message));
+        Assert.All(errors.Where((_, i) => i % 3 == 2), error => Assert.Same(cause, error.InnerException));
+    }
+
+    private sealed class UnreadableBridge : IExtensionBridge
+    {
+        public IReadOnlyList<ExtensionConnection> Connections() => [new("/run/rig/chrome-tabs/3.sock", "me@example.com", "0.1.0")];
+
+        public System.Text.Json.Nodes.JsonNode? Send(ExtensionConnection connection, string command, System.Text.Json.Nodes.JsonObject? args = null) =>
+            throw new ExtensionCallException("windows: the host went away");
+    }
 }

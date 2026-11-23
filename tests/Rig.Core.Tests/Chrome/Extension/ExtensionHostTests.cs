@@ -1,4 +1,6 @@
 using System.IO.Pipelines;
+using System.Net.Sockets;
+using System.Text;
 using System.Text.Json.Nodes;
 using Rig.Core.Chrome.Extension;
 
@@ -53,6 +55,64 @@ public sealed class ExtensionHostTests : IDisposable
         await chrome.DisposeAsync();
         await running.WaitAsync(TimeSpan.FromSeconds(10), cancel);
         Assert.False(File.Exists(socket));
+    }
+
+    [Fact]
+    public async Task Answers_a_bad_request_and_a_silent_extension_with_an_error()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "The host runs on Linux; Windows uses UI Automation.");
+        var cancel = TestContext.Current.CancellationToken;
+        var toHost = new Pipe();
+        var fromHost = new Pipe();
+        var socket = ExtensionPlaces.SocketFor(_folder, 43);
+        using var host = new ExtensionHost(toHost.Reader.AsStream(), fromHost.Writer.AsStream(), socket, TimeSpan.FromMilliseconds(200));
+        var running = host.RunAsync(cancel);
+        await WaitForAsync(() => File.Exists(socket), cancel);
+
+        Assert.Contains("bad request", await AskAsync(socket, "not json", cancel), StringComparison.Ordinal);
+        Assert.Contains("no cmd", await AskAsync(socket, "{}", cancel), StringComparison.Ordinal);
+        Assert.Contains("did not answer close", await AskAsync(socket, """{"cmd":"close"}""", cancel), StringComparison.Ordinal);
+
+        await toHost.Writer.CompleteAsync();
+        await running.WaitAsync(TimeSpan.FromSeconds(10), cancel);
+    }
+
+    [Fact]
+    public async Task A_host_that_answers_nothing_or_garbage_fails_the_call()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "The host runs on Linux; Windows uses UI Automation.");
+        var cancel = TestContext.Current.CancellationToken;
+        Directory.CreateDirectory(_folder);
+        var connection = new ExtensionConnection(ExtensionPlaces.SocketFor(_folder, 44), "me@example.com", "0.1.0");
+        var bridge = new SocketExtensionBridge(_folder, TimeSpan.FromSeconds(5));
+
+        foreach (var (answer, expected) in new[] { ("not json\n", "not JSON"), ("", "closed without answering") })
+        {
+            using var listener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            File.Delete(connection.Socket);
+            listener.Bind(new UnixDomainSocketEndPoint(connection.Socket));
+            listener.Listen();
+            var call = OnThread(() => bridge.Send(connection, "close"));
+            using (var client = await listener.AcceptAsync(cancel))
+            {
+                await client.ReceiveAsync(new byte[4096], cancel);
+                await client.SendAsync(Encoding.UTF8.GetBytes(answer), cancel);
+                client.Shutdown(SocketShutdown.Both);
+            }
+
+            var error = await Assert.ThrowsAsync<ExtensionCallException>(() => call);
+            Assert.Contains(expected, error.Message, StringComparison.Ordinal);
+        }
+    }
+
+    private static async Task<string> AskAsync(string socketPath, string line, CancellationToken cancel)
+    {
+        using var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        await client.ConnectAsync(new UnixDomainSocketEndPoint(socketPath), cancel);
+        using var stream = new NetworkStream(client, ownsSocket: false);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        await stream.WriteAsync(Encoding.UTF8.GetBytes(line + "\n"), cancel);
+        return await reader.ReadLineAsync(cancel) ?? "";
     }
 
     [Fact]
