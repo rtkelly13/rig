@@ -450,9 +450,10 @@
       }
     },
     {
-      "name": "parquet-dotnet",
-      "repo": "git@github.com:rtkelly-labs/parquet-dotnet.git",
-      "description": "Fork of aloneguid/parquet-dotnet, published as Lake.Parquet: upstream plus only the improvements evaluated against it. A managed fork (docs/forks.md).",
+      "name": "Lake.Parquet",
+      "repo": "git@github.com:rtkelly-labs/Lake.Parquet.git",
+      "formerly": ["rtkelly-labs/parquet-dotnet"],
+      "description": "Fork of the retired aloneguid/parquet-dotnet (Parquet.Net), published as Lake.Parquet: its last upstream commit plus a recorded stack of changes. A managed fork (docs/forks.md).",
       "domain": "Data Engineering & .NET",
       "stack": ".NET 10 / C#",
       "packages": [

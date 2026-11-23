@@ -15,7 +15,7 @@ applied audit; target configuration alone is not provider verification.
 
 | Native ChatGPT Project | Policy | Sources | Memory |
 | --- | --- | --- | --- |
-| Data | Manage; rename the existing Source Generators identity | Parquet, Arrow, Iceberg, TypeProvider and the parquet-dotnet fork | [#22](https://github.com/rtkelly13/rig/issues/22) |
+| Data | Manage; rename the existing Source Generators identity | Parquet, Arrow, Iceberg, TypeProvider and the Lake.Parquet fork | [#22](https://github.com/rtkelly13/rig/issues/22) |
 | Diffra (Artifact Driven Baselines) | Manage existing identity | rtkelly-labs/Diffra | [#12](https://github.com/rtkelly13/rig/issues/12) |
 | Resultful | Retain Project/instructions/chats; independent task paused | Reviewed within Tooling & Design | [Historical #23](https://github.com/rtkelly13/rig/issues/23), reports [#25](https://github.com/rtkelly13/rig/issues/25) |
 | Personal | Manage distinct project | Eight personal application/infrastructure repositories | [#24](https://github.com/rtkelly13/rig/issues/24) |
@@ -259,6 +259,6 @@ Repository-level trackers remain available as detailed memories:
 | `rtkelly-labs/Diffra` | [#12](https://github.com/rtkelly13/rig/issues/12) |
 | `rtkelly-labs/Lake.NET` | [#17](https://github.com/rtkelly13/rig/issues/17) |
 | `rtkelly-labs/mermaid-toolkit` | [#18](https://github.com/rtkelly13/rig/issues/18) |
-| `rtkelly-labs/parquet-dotnet` | [#19](https://github.com/rtkelly13/rig/issues/19) |
+| `rtkelly-labs/Lake.Parquet` | [#19](https://github.com/rtkelly13/rig/issues/19) |
 | `rtkelly-labs/Parquet.SourceGenerator` | [#13](https://github.com/rtkelly13/rig/issues/13) |
 | `rtkelly-labs/Parquet.TypeProvider` | [#20](https://github.com/rtkelly13/rig/issues/20) |

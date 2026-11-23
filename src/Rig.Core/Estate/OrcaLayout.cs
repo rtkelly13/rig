@@ -772,7 +772,7 @@ public static class OrcaLayout
 
     /// <summary>
     /// A declared project's registration: by its remote, else by its expected clone. A fork's canonical remote is its
-    /// upstream (<c>aloneguid/parquet-dotnet</c> for <c>rtkelly-labs/parquet-dotnet</c>), so only its path matches.
+    /// upstream (<c>aloneguid/parquet-dotnet</c> for <c>rtkelly-labs/Lake.Parquet</c>), so only its path matches.
     /// </summary>
     private sealed class Lookup(LayoutSnapshot state, IEnumerable<DeclaredProject> declared, string codeRoot)
     {

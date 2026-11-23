@@ -8,7 +8,7 @@ records the applied audit.
 
 | Group | Repositories | Review emphasis | Canonical memory |
 | --- | --- | --- | --- |
-| Data | Parquet.SourceGenerator, Arrow.SourceGenerator, Lake.NET, Parquet.TypeProvider, parquet-dotnet | Format correctness, interoperability, generated APIs, resource safety and releases | [#22](https://github.com/rtkelly13/rig/issues/22) |
+| Data | Parquet.SourceGenerator, Arrow.SourceGenerator, Lake.NET, Parquet.TypeProvider, Lake.Parquet | Format correctness, interoperability, generated APIs, resource safety and releases | [#22](https://github.com/rtkelly13/rig/issues/22) |
 | Diffra | Diffra | Evidence/baseline protocol, architecture, integration and releases | [#12](https://github.com/rtkelly13/rig/issues/12) |
 | Developer Tooling & Design | design-system, mermaid-toolkit, rig, github-agentic-workflow-experimentation, rtkelly-labs/.github, Resultful/Resultful, Resultful/FluentAssertions.Resultful | Design/accessibility, tooling/workflows, governance, Resultful APIs/compatibility and packaging | [#25](https://github.com/rtkelly13/rig/issues/25) |
 | Personal apps and infrastructure | blog, docs, hearth, obsidian-vault, ynab-budget-companion, ProceduralGeneration3DMazes, MySQLEFConcurrencyBug, AWSBatch-MapReduce | Software/configuration, maintainability, CI, deployment and practical next actions | [#24](https://github.com/rtkelly13/rig/issues/24) |

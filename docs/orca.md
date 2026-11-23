@@ -43,7 +43,7 @@ daily against the default instance, which holds the work repos and the estate.
 | `repos.<name>.setup` | The setup script each new Orca worktree should run. The repo's committed `orca.yaml` should declare it (see below). |
 | `repos.<name>.archive` | The archive script, run when a worktree is archived; same rule as `setup`. |
 | `repos.<name>.external_worktree_visibility` | `show`, `hide` or `inherit`: whether worktrees Orca did not create appear in the sidebar. |
-| `repos.<name>.base_ref` | Default base ref for future worktrees. Every repo in the policy declares one, `origin/main` unless the repository still uses `master` (such as `parquet-dotnet`). A remote-tracking ref starts each worktree from the remote, so a stale or dirty local `main` cannot leak into it. See [Base refs and stale local `main`](#base-refs-and-stale-local-main). |
+| `repos.<name>.base_ref` | Default base ref for future worktrees. Every repo in the policy declares one, `origin/main` unless the repository still uses `master` (such as `Lake.Parquet`). A remote-tracking ref starts each worktree from the remote, so a stale or dirty local `main` cannot leak into it. See [Base refs and stale local `main`](#base-refs-and-stale-local-main). |
 | `repos.<name>.worktree_base_path` | Orca's per-repo Worktree Location. Relative paths resolve from the repo root; `""` means the global workspace folder. |
 | `repos.<name>.color` | Hex badge color (e.g. `#6366f1`). |
 | `repos.<name>.icon` | One of the lucide names Orca's icon picker offers (e.g. `SquareTerminal`, `Palette`), an emoji (`emoji:🛠️`), or an image URL. See [Repo icons](#repo-icons). |
@@ -106,7 +106,7 @@ up the tree for config, so the worktree inherits the parent checkout's. See
 
 ## Base refs and stale local `main`
 
-`config/orca.json` gives every repo a `base_ref`, normally `origin/main`; `parquet-dotnet`
+`config/orca.json` gives every repo a `base_ref`, normally `origin/main`; `Lake.Parquet`
 still uses `origin/master`. Orca accepts a remote-tracking ref there: when it creates a worktree it
 resolves the ref (`refs/remotes/origin/main`), checks it exists, and starts the checkout from it. A
 local `main` that is dirty, behind, or mid-rebase therefore cannot leak into the new worktree, and
