@@ -17,23 +17,24 @@ public static class BackgroundApps
     }
 
     /// <summary>
-    /// Close or minimize every open window of each enabled app, skipping the invoking terminal's. An app
+    /// Close or minimize every open window of each enabled app, skipping <paramref name="invoking"/>: the windows that
+    /// ran restore, read when it started. An app
     /// that is running with no window yet is waited on for its <see cref="BackgroundApp.WindowWait"/>; one that is not
     /// running is left alone. The actions taken.
     /// </summary>
-    public static IReadOnlyList<string> PutAway(RestoreRun run)
+    public static IReadOnlyList<string> PutAway(RestoreRun run, IReadOnlySet<long> invoking)
     {
         ArgumentNullException.ThrowIfNull(run);
+        ArgumentNullException.ThrowIfNull(invoking);
         var (port, log) = (run.Port, run.Log);
         var actions = new List<string>();
         var pending = Enabled(run.Plan).ToList();
         var started = port.Now;
-        var preserved = run.Preserved.Count > 0 ? run.Preserved : port.WindowHandlesToPreserve();
         while (pending.Count > 0)
         {
             foreach (var app in pending.ToList())
             {
-                var handles = port.WindowsMatchingProcess(app.ProcessName).Where(handle => !preserved.Contains(handle)).Order().ToList();
+                var handles = port.WindowsMatchingProcess(app.ProcessName).Where(handle => !invoking.Contains(handle)).Order().ToList();
                 if (handles.Count > 0)
                 {
                     foreach (var handle in handles)

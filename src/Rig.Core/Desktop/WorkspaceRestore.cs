@@ -61,6 +61,10 @@ public static class WorkspaceRestore
             log.Log($"Preserving {preserved.Count} invoking window(s) from reuse/close handling");
         }
 
+        // The invoking windows are read now, while the terminal that ran restore is still in front: by the time background
+        // apps are put away, restore has switched desktops and focused the windows it placed.
+        var invoking = preserved.Count > 0 || !plan.Background.Any(app => !app.Disabled) ? preserved : port.WindowHandlesToPreserve();
+
         int? targetIndex;
         try
         {
@@ -190,7 +194,7 @@ public static class WorkspaceRestore
         {
             using (steps.Step("restore.background_apps", tags: [new("app.count", plan.Background.Count)]))
             {
-                actions.AddRange(BackgroundApps.PutAway(run));
+                actions.AddRange(BackgroundApps.PutAway(run, invoking));
             }
         }
 
