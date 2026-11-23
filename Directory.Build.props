@@ -20,6 +20,18 @@
     <NoWarn>$(NoWarn);NU1510</NoWarn>
   </PropertyGroup>
 
+  <!-- Nothing from a checkout above this one. A worktree lives inside another rig checkout (temp/, .worktrees/), and
+       the SDK looks upward for both files: a second .globalconfig makes Roslyn unset the keys they share, so the
+       banned-API analyzer flags generated code, and an older checkout's Directory.Packages.props duplicates the
+       versions Paket already pins (NU1506). Only this repo's .globalconfig is read, and Paket owns package versions. -->
+  <PropertyGroup>
+    <DiscoverGlobalAnalyzerConfigFiles>false</DiscoverGlobalAnalyzerConfigFiles>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+  </PropertyGroup>
+  <ItemGroup>
+    <EditorConfigFiles Include="$(MSBuildThisFileDirectory).globalconfig" Condition="Exists('$(MSBuildThisFileDirectory).globalconfig')" />
+  </ItemGroup>
+
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" Link="BannedSymbols.txt" Condition="Exists('$(MSBuildThisFileDirectory)BannedSymbols.txt')" />
   </ItemGroup>
