@@ -98,6 +98,40 @@ public sealed class OrcaRenamesTests : IDisposable
         Assert.Empty(await AuditAsync(Union("resultful/fluentassertions.resultful")));
     }
 
+    [Fact]
+    public async Task A_registration_with_its_new_remote_but_old_folder_is_renamed_and_moved()
+    {
+        var old = Clone("Resultful/FluentAssertions.Resultful");
+        var current = FakeOrca.Project("r-old", old, "Union.Assertions", "g-resultful", "Resultful");
+        _fake.Repos.Add(current);
+        var mover = new MovingMover();
+
+        var finding = Assert.Single(await AuditAsync(Union("resultful/fluentassertions.resultful")));
+        _ = await OrcaLayout.ApplyAsync(
+            _fake.Runtime(), [Union("resultful/fluentassertions.resultful")], _code, _ => true, _ => Task.FromResult<bool?>(false), _ => { }, mover: mover, cancellationToken: Token);
+
+        Assert.Equal((OrcaLayout.Renamed, old), (finding.Kind, finding.Path));
+        Assert.Equal(Path.Join(_code, "Resultful", "Union.Assertions"), Assert.Single(mover.Moves).To);
+    }
+
+    [Fact]
+    public async Task Apply_moves_an_unregistered_clone_moved_between_owners_where_the_audit_said()
+    {
+        _fake.Groups.Add(FakeOrca.Group("g-labs", "rtkelly-labs"));
+        _fake.AddedOwner = "rtkelly-labs";
+        _ = Clone("personal/Diffra");
+        var diffra = new DeclaredProject("Diffra", "git@github.com:rtkelly-labs/Diffra.git", "rtkelly-labs/Diffra", "rtkelly-labs", Formerly: ["rtkelly13/diffra"]);
+        var mover = new MovingMover();
+
+        var finding = Assert.Single(await AuditAsync(diffra), f => f.Kind == OrcaLayout.Renamed);
+        _ = await OrcaLayout.ApplyAsync(
+            _fake.Runtime(), [diffra], _code, _ => true, _ => Task.FromResult<bool?>(false), _ => { }, mover: mover, cancellationToken: Token);
+
+        var target = Path.Join(_code, "rtkelly-labs", "Diffra");
+        Assert.Contains($"move it to {target.Replace('\\', '/')}", finding.SuggestedAction, StringComparison.Ordinal);
+        Assert.Equal(target, Assert.Single(mover.Moves).To);
+    }
+
     [Theory]
     [InlineData(true, "a process is working in it")]
     [InlineData(null, "could not check")]
@@ -225,6 +259,7 @@ public sealed class OrcaRenamesTests : IDisposable
             }
 
             Moves.Add((source, destination, repo, accepted));
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             Directory.Move(source, destination);
             return Task.FromResult<string?>(null);
         }

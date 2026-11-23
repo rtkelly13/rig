@@ -607,7 +607,8 @@ public static class OrcaLayout
         CancellationToken cancellationToken)
     {
         var registration = byPath.GetValueOrDefault(finding.Path);
-        var target = RenamedClone(project, new FormerPlace(registration?.Slug ?? FileName(finding.Path), finding.Path, registration), state.Groups, codeRoot);
+        var was = FormerSlugAt(project, registration, finding.Path, registration is null) ?? registration?.Slug ?? FileName(finding.Path);
+        var target = RenamedClone(project, new FormerPlace(was, finding.Path, registration), state.Groups, codeRoot);
         if (mover is null)
         {
             log($"left {finding.Repo} at {finding.Path}: no way to move a clone was given");
@@ -659,10 +660,28 @@ public static class OrcaLayout
 
         if (found is not null)
         {
-            return found.Slug is { } slug && project.FormerSlugs.Contains(slug) ? new(slug, Posix(found.Path), found) : null;
+            return FormerSlugAt(project, found, found.Path, sameName: false) is { } was ? new(was, Posix(found.Path), found) : null;
         }
 
         return lookup.FindFormer(project, exists);
+    }
+
+    // The former slug a clone answers to: its registration's old remote, else the first former name its folder has.
+    // Audit and apply both ask this, so the destination apply moves to is the one the audit suggested. A registered
+    // clone already in a folder of its current name is not renamed again (sameName false); an unregistered one was
+    // found by its old name, and after a move between owners that name can be the current one (sameName true).
+    private static string? FormerSlugAt(DeclaredProject project, Registration? registration, string path, bool sameName)
+    {
+        if (registration?.Slug is { } slug && project.FormerSlugs.Contains(slug))
+        {
+            return slug;
+        }
+
+        var folder = FileName(path);
+        var name = project.Slug.Split('/', 2)[^1];
+        return !sameName && folder.Equals(name, StringComparison.Ordinal)
+            ? null
+            : project.FormerSlugs.FirstOrDefault(was => was.Split('/', 2)[^1].Equals(folder, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Estate repos in the work Orca profile, and the groups that would be left empty without them.</summary>
