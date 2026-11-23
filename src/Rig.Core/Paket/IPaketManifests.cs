@@ -1,4 +1,4 @@
-namespace Rig.Core.Connectivity;
+namespace Rig.Core.Paket;
 
 /// <summary>One package a Paket file names. <paramref name="Version"/> is null in a <c>paket.references</c>, which names none.</summary>
 /// <param name="Name">The package id as written.</param>

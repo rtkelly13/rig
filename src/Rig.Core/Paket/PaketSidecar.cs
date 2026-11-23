@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Rig.Core.Processes;
 
-namespace Rig.Core.Connectivity;
+namespace Rig.Core.Paket;
 
 /// <summary>
 /// An <see cref="IPaketManifests"/> that runs the <c>Rig.Paket</c> sidecar once per batch: it takes the paths as a JSON array on

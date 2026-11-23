@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Rig.Core.Connectivity;
+using Rig.Core.Paket;
 using Rig.Core.Processes;
 using Rig.Web.C4;
 using Rig.Web.Mcp;

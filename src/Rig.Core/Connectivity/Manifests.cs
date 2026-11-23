@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Rig.Core.Paket;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Text;
