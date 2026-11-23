@@ -85,7 +85,7 @@ Check the port is actually yours before trusting what it serves.
 are disposable before forcing:
 
 ```bash
-cd ../.worktrees/rig/thing && git status --short
+git -C ../.worktrees/rig/thing status --short   # run both from the repo
 git worktree remove --force ../.worktrees/rig/thing
 ```
 

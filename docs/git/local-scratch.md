@@ -68,8 +68,8 @@ The rules for either:
 
 ```bash
 git worktree list                          # registrations outlive directories
-git -C temp/<branch> status --short        # must be empty before removing
-git worktree remove temp/<branch>          # refuses a dirty tree, deliberately
+git -C ../.worktrees/rig/<branch> status --short   # must be empty before removing
+git worktree remove ../.worktrees/rig/<branch>     # refuses a dirty tree, deliberately
 git worktree prune                         # after deleting a directory by hand
 rm -rf temp/tries/*                        # safe: see above
 git worktree prune                         # a try can be a registered worktree too
