@@ -33,9 +33,11 @@ public static class ExtensionSnapshot
 
     /// <summary>
     /// The snapshot's windows, in the profile <paramref name="profileDir"/> named <paramref name="profileName"/>.
-    /// Chrome's window ids rise with creation, so they serve as both handle and age; incognito windows are left out.
+    /// Chrome's window ids rise with creation, so they give each window's age; incognito windows are left out.
+    /// Ids are only unique within one browser, so every handle and runtime id carries <paramref name="space"/>, the
+    /// connection's own number (<see cref="Handle"/>).
     /// </summary>
-    public static IReadOnlyList<ChromeWindow> Windows(Snapshot snapshot, string? profileDir, string? profileName, string? scope)
+    public static IReadOnlyList<ChromeWindow> Windows(Snapshot snapshot, int space, string? profileDir, string? profileName, string? scope)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         var groups = snapshot.Groups.ToDictionary(group => group.Id);
@@ -47,14 +49,15 @@ public static class ExtensionSnapshot
                 continue;
             }
 
-            var handle = Long(window, "id");
+            var windowId = Long(window, "id");
+            var handle = Handle(space, windowId);
             var tabs = new List<ChromeTab>();
             foreach (var tab in (window["tabs"] as JsonArray ?? []).OfType<JsonObject>())
             {
                 var title = Text(tab, "title");
                 var groupId = OptionalLong(tab, "groupId") ?? -1;
                 tabs.Add(new ChromeTab(
-                    new RuntimeId([Int(tab, "id")]),
+                    new RuntimeId([space, Int(tab, "id")]),
                     handle,
                     Int(tab, "index"),
                     title,
@@ -64,14 +67,14 @@ public static class ExtensionSnapshot
                     !Bool(tab, "discarded"),
                     Bool(tab, "audible"))
                 {
-                    Group = groupId >= 0 && groups.TryGetValue((int)groupId, out var group) ? new TabGroup(new RuntimeId([group.Id]), group.Title) : null,
+                    Group = groupId >= 0 && groups.TryGetValue((int)groupId, out var group) ? new TabGroup(new RuntimeId([space, group.Id]), group.Title) : null,
                     Url = Uri.TryCreate(Text(tab, "url"), UriKind.Absolute, out var url) ? url : null,
                 });
             }
 
             tabs.Sort((left, right) => left.Index.CompareTo(right.Index));
             var title0 = tabs.FirstOrDefault(tab => tab.Selected)?.Title ?? "";
-            windows.Add(new ChromeWindow(handle, title0, profileDir, profileName, handle, Text(window, "state") == "minimized", null, tabs)
+            windows.Add(new ChromeWindow(handle, title0, profileDir, profileName, windowId, Text(window, "state") == "minimized", null, tabs)
             {
                 Rect = Rect(window),
                 ProfileScope = scope,
@@ -80,6 +83,12 @@ public static class ExtensionSnapshot
 
         return windows;
     }
+
+    /// <summary>Chrome's window <paramref name="windowId"/> as a handle unique across connections: the space in the high half.</summary>
+    public static long Handle(int space, long windowId) => ((long)space << 32) | (uint)windowId;
+
+    /// <summary>Chrome's own id for <paramref name="handle"/>, to send back to the extension.</summary>
+    public static long WindowId(long handle) => (uint)handle;
 
     private static WindowRect? Rect(JsonObject window) =>
         OptionalLong(window, "left") is { } left && OptionalLong(window, "top") is { } top

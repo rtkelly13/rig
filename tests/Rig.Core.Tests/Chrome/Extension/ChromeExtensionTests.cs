@@ -15,6 +15,9 @@ public sealed class ChromeExtensionTests
     private static ChromeExtension Driver(params FakeExtension[] extensions) =>
         new(new FakeBridge(extensions), _ => Profiles, TimeProvider.System);
 
+    /// <summary>Window <paramref name="id"/> of the fakes' default connection, host 1.</summary>
+    private static long W(long id) => ExtensionSnapshot.Handle(1, id);
+
     private static FakeExtension TwoWindows() => new FakeExtension()
         .Window(1, (11, "rig", "https://github.com/rtkelly13/rig"), (12, "Docs", "https://example.com/docs"))
         .Window(2, (21, "Issues", "https://github.com/rtkelly13/rig/issues"));
@@ -24,13 +27,13 @@ public sealed class ChromeExtensionTests
     {
         var windows = Driver(TwoWindows()).ListWindows();
 
-        Assert.Equal([1L, 2L], windows.Select(window => window.Handle));
+        Assert.Equal([W(1), W(2)], windows.Select(window => window.Handle));
         var first = windows[0];
         Assert.Equal(("Profile 2", "Me"), (first.ProfileDir, first.ProfileName));
-        Assert.Null(first.ProfileScope);
+        Assert.Equal("chromium/Profile 2", first.ProfileKey);
         Assert.Equal(new WindowRect(0, 0, 800, 600), first.Rect);
         Assert.Equal(["rig", "Docs"], first.Tabs.Select(tab => tab.Title));
-        Assert.Equal(new RuntimeId([11]), first.Tabs[0].RuntimeId);
+        Assert.Equal(new RuntimeId([1, 11]), first.Tabs[0].RuntimeId);
         Assert.Equal(new Uri("https://example.com/docs"), first.Tabs[1].Url);
         Assert.True(first.Tabs[0].Loaded);
     }
@@ -110,12 +113,12 @@ public sealed class ChromeExtensionTests
         var driver = Driver(TwoWindows());
         var windows = driver.ListWindows();
 
-        var created = driver.GroupTab(windows[0].Tabs[0], "rig", isNew: true, homeHandle: 1);
-        var joined = driver.GroupTab(windows[1].Tabs[0], "rig", isNew: false, homeHandle: 1);
+        var created = driver.GroupTab(windows[0].Tabs[0], "rig", isNew: true, homeHandle: W(1));
+        var joined = driver.GroupTab(windows[1].Tabs[0], "rig", isNew: false, homeHandle: W(1));
 
         Assert.True(created.Grouped, created.Detail);
         Assert.True(joined.Grouped, joined.Detail);
-        var home = driver.ListWindows().Single(window => window.Handle == 1);
+        var home = driver.ListWindows().Single(window => window.Handle == W(1));
         Assert.Equal(["Issues", "rig"], home.Tabs.Where(tab => tab.Group?.Title == "rig").Select(tab => tab.Title).Order(StringComparer.Ordinal));
         Assert.Single(home.Tabs.Select(tab => tab.Group).Where(group => group is not null).Distinct());
     }
@@ -126,7 +129,7 @@ public sealed class ChromeExtensionTests
         var driver = Driver(TwoWindows().Group(2, "rig", 21));
         var tab = driver.ListWindows()[0].Tabs[0];
 
-        var outcome = driver.GroupTab(tab, "rig", isNew: true, homeHandle: 1);
+        var outcome = driver.GroupTab(tab, "rig", isNew: true, homeHandle: W(1));
 
         Assert.False(outcome.Grouped);
         Assert.Contains("unique title", outcome.Detail, StringComparison.Ordinal);
@@ -138,7 +141,7 @@ public sealed class ChromeExtensionTests
         var driver = Driver(TwoWindows().Group(2, "rig", 21));
         var tab = driver.ListWindows()[0].Tabs[0];
 
-        var outcome = driver.GroupTab(tab, "rig", isNew: false, homeHandle: 1);
+        var outcome = driver.GroupTab(tab, "rig", isNew: false, homeHandle: W(1));
 
         Assert.False(outcome.Grouped);
         Assert.Contains("different window", outcome.Detail, StringComparison.Ordinal);
@@ -150,7 +153,7 @@ public sealed class ChromeExtensionTests
         var driver = Driver(TwoWindows().Group(1, "docs", 12));
         var tab = driver.ListWindows()[0].Tabs[1];
 
-        Assert.False(driver.GroupTab(tab, "rig", isNew: true, homeHandle: 1).Grouped);
+        Assert.False(driver.GroupTab(tab, "rig", isNew: true, homeHandle: W(1)).Grouped);
     }
 
     [Fact]
@@ -172,10 +175,10 @@ public sealed class ChromeExtensionTests
         var driver = Driver(TwoWindows());
         var tab = driver.ListWindows()[1].Tabs[0];
 
-        var moved = driver.MoveToWindow(tab, 1);
+        var moved = driver.MoveToWindow(tab, W(1));
 
         Assert.True(moved.Outcome.Grouped, moved.Outcome.Detail);
-        Assert.Equal(1, moved.Tab?.WindowHandle);
+        Assert.Equal(W(1), moved.Tab?.WindowHandle);
         Assert.False(driver.MoveToWindow(driver.ListWindows()[0].Tabs[0], 99).Outcome.Grouped);
     }
 
@@ -189,7 +192,7 @@ public sealed class ChromeExtensionTests
 
         var restored = driver.RestoreSelection([window]);
 
-        Assert.Equal(wanted.RuntimeId, restored[1]?.RuntimeId);
+        Assert.Equal(wanted.RuntimeId, restored[W(1)]?.RuntimeId);
         Assert.True(driver.ListWindows()[0].Tabs[1].Selected);
     }
 
@@ -216,7 +219,7 @@ public sealed class ChromeExtensionTests
     [Fact]
     public void The_foreground_window_is_the_one_Chrome_reports_focused()
     {
-        Assert.Equal(1, Driver(TwoWindows()).ForegroundWindow());
+        Assert.Equal(W(1), Driver(TwoWindows()).ForegroundWindow());
         Assert.Equal(0, Driver(new FakeExtension()).ForegroundWindow());
     }
 
@@ -226,8 +229,8 @@ public sealed class ChromeExtensionTests
         var driver = Driver(TwoWindows().Group(1, "rig", 11));
         var tabs = driver.ListWindows()[0].Tabs;
 
-        var untitled = driver.GroupTab(tabs[1], "", isNew: true, homeHandle: 1);
-        var grouped = driver.GroupTab(tabs[0], "docs", isNew: true, homeHandle: 1);
+        var untitled = driver.GroupTab(tabs[1], "", isNew: true, homeHandle: W(1));
+        var grouped = driver.GroupTab(tabs[0], "docs", isNew: true, homeHandle: W(1));
 
         Assert.False(untitled.Grouped);
         Assert.Contains("empty", untitled.Detail, StringComparison.Ordinal);
@@ -268,6 +271,26 @@ public sealed class ChromeExtensionTests
 
         Assert.All(errors.Where((_, i) => i % 3 > 0), error => Assert.Equal("m", error.Message));
         Assert.All(errors.Where((_, i) => i % 3 == 2), error => Assert.Same(cause, error.InnerException));
+    }
+
+    [Fact]
+    public void Two_browsers_with_the_same_ids_and_profile_folders_stay_apart()
+    {
+        Dictionary<string, ProfileInfo> one = new(StringComparer.Ordinal) { ["Default"] = new("Me", UserName: "me@example.com") };
+        var chromium = new FakeExtension(socket: "/run/rig/chrome-tabs/100.sock").Window(1, (11, "Docs", "https://example.com/docs"));
+        var chrome = new FakeExtension(browser: "/opt/google/chrome/chrome", socket: "/run/rig/chrome-tabs/200.sock").Window(1, (11, "Docs", "https://example.com/docs"));
+        var driver = new ChromeExtension(new FakeBridge(chromium, chrome), _ => one, TimeProvider.System);
+
+        var windows = driver.ListWindows();
+
+        Assert.Equal(["chromium/Default", "google-chrome/Default"], windows.Select(window => window.ProfileKey).Order(StringComparer.Ordinal));
+        Assert.Equal(2, windows.Select(window => window.Handle).Distinct().Count());
+        Assert.NotEqual(windows[0].Tabs[0].RuntimeId, windows[1].Tabs[0].RuntimeId);
+
+        var inChrome = windows.Single(window => window.ProfileKey == "google-chrome/Default").Tabs[0];
+        Assert.True(driver.CloseTab(inChrome).Closed);
+        Assert.Contains(ExtensionProtocol.CloseCommand, chrome.Commands);
+        Assert.DoesNotContain(ExtensionProtocol.CloseCommand, chromium.Commands);
     }
 
     private sealed class UnreadableBridge : IExtensionBridge

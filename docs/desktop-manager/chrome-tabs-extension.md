@@ -47,7 +47,8 @@ After changing the extension's files, run `install` again and reload it in `chro
 - **Every tab has its URL**, as on macOS, so duplicates are matched by address rather than title alone.
 - **No desktops and no saved groups**: no extension API reaches either.
 - **Profiles** come from the browser's `Local State`: matched by the signed-in email, else the browser's only
-  profile. A profile that cannot be named is planned on its own (`extension:<pid>`), never merged with another.
+  profile, and planned as `<browser>/<folder>` so Chromium's and Chrome's `Default` stay apart. A profile that
+  cannot be named is planned on its own (`extension:<pid>`), never merged with another.
 
 ## When it does not connect
 

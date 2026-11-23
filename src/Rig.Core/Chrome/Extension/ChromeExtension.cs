@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Rig.Core.Chrome.MacOS;
 
@@ -26,7 +27,8 @@ public sealed class ChromeExtension(IExtensionBridge bridge, Func<string, IReadO
     public IReadOnlyList<ChromeWindow> ListWindows() => [.. Read().SelectMany(read => read.Windows).OrderBy(window => window.AgeRank)];
 
     /// <inheritdoc/>
-    public long ForegroundWindow() => Read().Select(read => read.Snapshot.FocusedWindowId).FirstOrDefault(id => id is not null) ?? 0;
+    public long ForegroundWindow() =>
+        Read().Where(read => read.Snapshot.FocusedWindowId is not null).Select(read => ExtensionSnapshot.Handle(read.Space, read.Snapshot.FocusedWindowId!.Value)).FirstOrDefault();
 
     /// <inheritdoc/>
     public CloseOutcome CloseTab(ChromeTab tab)
@@ -124,7 +126,7 @@ public sealed class ChromeExtension(IExtensionBridge bridge, Func<string, IReadO
                     throw new ExtensionStepRefusedException("New group needs its home window and a unique title");
                 }
 
-                args = new JsonObject { ["tabIds"] = new JsonArray(TabId(tab)), ["windowId"] = home, ["title"] = title };
+                args = new JsonObject { ["tabIds"] = new JsonArray(TabId(tab)), ["windowId"] = ExtensionSnapshot.WindowId(home), ["title"] = title };
             }
             else
             {
@@ -133,7 +135,7 @@ public sealed class ChromeExtension(IExtensionBridge bridge, Func<string, IReadO
                     throw new ExtensionStepRefusedException("Target group missing or ambiguous");
                 }
 
-                if (titled[0].WindowId != home)
+                if (ExtensionSnapshot.Handle(live.Read.Space, titled[0].WindowId) != home)
                 {
                     throw new ExtensionStepRefusedException("Target group is in a different window");
                 }
@@ -199,7 +201,7 @@ public sealed class ChromeExtension(IExtensionBridge bridge, Func<string, IReadO
                 throw new ExtensionStepRefusedException("Target window is gone or in another profile");
             }
 
-            _ = bridge.Send(live.Connection, ExtensionProtocol.MoveCommand, new JsonObject { ["tabId"] = TabId(tab), ["windowId"] = targetHandle });
+            _ = bridge.Send(live.Connection, ExtensionProtocol.MoveCommand, new JsonObject { ["tabId"] = TabId(tab), ["windowId"] = ExtensionSnapshot.WindowId(targetHandle) });
             return Find(Read(), tab) is { } after && after.Window.Handle == targetHandle
                 ? Outcome(true, "moved", after.Tab)
                 : Outcome(false, "tab is not in the target window after the move");
@@ -226,7 +228,7 @@ public sealed class ChromeExtension(IExtensionBridge bridge, Func<string, IReadO
         }
 
         var reads = new List<ProfileRead>();
-        foreach (var connection in connections)
+        foreach (var (connection, number) in connections.Select((connection, index) => (connection, index)))
         {
             JsonNode? result;
             try
@@ -242,7 +244,8 @@ public sealed class ChromeExtension(IExtensionBridge bridge, Func<string, IReadO
             var known = connection.ConfigFolder is { } folder ? profiles(folder) : new Dictionary<string, ProfileInfo>();
             var sameBrowser = connections.Count(other => other.ConfigFolder == connection.ConfigFolder);
             var (dir, name, scope) = Profile(connection, sameBrowser, known);
-            reads.Add(new ProfileRead(connection, snapshot, ExtensionSnapshot.Windows(snapshot, dir, name, scope)));
+            var space = Space(connection, number);
+            reads.Add(new ProfileRead(connection, space, snapshot, ExtensionSnapshot.Windows(snapshot, space, dir, name, scope)));
         }
 
         return reads;
@@ -255,17 +258,30 @@ public sealed class ChromeExtension(IExtensionBridge bridge, Func<string, IReadO
             : known.Where(entry => string.Equals(entry.Value.UserName, connection.Email, StringComparison.OrdinalIgnoreCase)).ToList();
         if (byEmail.Count == 1)
         {
-            return (byEmail[0].Key, byEmail[0].Value.Name, null);
+            return (byEmail[0].Key, byEmail[0].Value.Name, Scope(connection, byEmail[0].Key));
         }
 
         if (connection.ConfigFolder is not null && connections == 1 && known.Count == 1)
         {
             var only = known.First();
-            return (only.Key, only.Value.Name, null);
+            return (only.Key, only.Value.Name, Scope(connection, only.Key));
         }
 
         return (null, connection.Email.Length > 0 ? connection.Email : null, $"extension:{Path.GetFileNameWithoutExtension(connection.Socket)}");
     }
+
+    /// <summary>
+    /// The planning scope of a named profile: its browser's folder and the profile's, so Chromium's and Chrome's
+    /// <c>Default</c> profiles are never planned as one.
+    /// </summary>
+    private static string Scope(ExtensionConnection connection, string dir) => $"{connection.ConfigFolder}/{dir}";
+
+    /// <summary>
+    /// The connection's id space: its host's process id, taken from the socket's name, which no other connected host
+    /// shares; its position among the connections when the name is not a number.
+    /// </summary>
+    private static int Space(ExtensionConnection connection, int position) =>
+        int.TryParse(Path.GetFileNameWithoutExtension(connection.Socket), NumberStyles.None, CultureInfo.InvariantCulture, out var pid) ? pid : -1 - position;
 
     private LiveTab Live(ChromeTab tab, IReadOnlyList<ProfileRead>? reads = null)
     {
@@ -300,11 +316,11 @@ public sealed class ChromeExtension(IExtensionBridge bridge, Func<string, IReadO
     }
 
     private static List<SnapshotGroup> Groups(ProfileRead read, string title) =>
-        [.. read.Snapshot.Groups.Where(group => group.Title == title && read.Windows.Any(window => window.Handle == group.WindowId))];
+        [.. read.Snapshot.Groups.Where(group => group.Title == title && read.Windows.Any(window => window.Handle == ExtensionSnapshot.Handle(read.Space, group.WindowId)))];
 
-    private static int TabId(ChromeTab tab) => tab.RuntimeId.Parts is [var id] ? id : throw new ExtensionStepRefusedException("not a tab this driver read");
+    private static int TabId(ChromeTab tab) => tab.RuntimeId.Parts is [_, var id] ? id : throw new ExtensionStepRefusedException("not a tab this driver read");
 
-    private sealed record ProfileRead(ExtensionConnection Connection, Snapshot Snapshot, IReadOnlyList<ChromeWindow> Windows);
+    private sealed record ProfileRead(ExtensionConnection Connection, int Space, Snapshot Snapshot, IReadOnlyList<ChromeWindow> Windows);
 
     private sealed record LiveTab(ProfileRead Read, ChromeWindow Window, ChromeTab Tab)
     {

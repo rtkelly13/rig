@@ -33,8 +33,9 @@ managed Windows machine, where unpacked extensions are blocked; on a personal Li
    program, and the host must be started by Chrome, so the socket is how a later command reaches it.
 3. **The id is pinned** by the public `key` in the manifest (`gpfpmehjedofmgdbecdcieeempijapej`), so the host
    manifest's `allowed_origins` is right wherever the folder is loaded from. A test derives the id from the key.
-4. **`ChromeExtension` implements the existing driver interfaces.** Window ids rise with creation, so they serve as
-   handle and age. Each step reads again first and refuses a tab that moved, changed title or URL, or went away,
+4. **`ChromeExtension` implements the existing driver interfaces.** Window ids rise with creation, so they give each
+   window's age. Chrome's ids are unique only within one browser, so every handle and runtime id also carries the
+   connection's host process id, and the driver strips it before sending a request. Each step reads again first and refuses a tab that moved, changed title or URL, or went away,
    the same check the macOS driver makes. Grouping mirrors macOS: a new group needs a title unique in its profile,
    joining needs the one group with that title in the home window. Saved groups are not reachable through any
    extension API, so there are none.
@@ -45,7 +46,8 @@ managed Windows machine, where unpacked extensions are blocked; on a personal Li
    naming rig's PATH shim, and adds the folder to `--load-extension` in `~/.config/chromium-flags.conf` beside
    whatever is there. Google Chrome ignores that flag from version 137, so there the folder is loaded once by hand.
 7. **Profiles** are named from the browser's `Local State`: the signed-in email when there is one, else the
-   browser's only profile, else a scope of their own so plans never mix profiles.
+   browser's only profile, else a scope of their own so plans never mix profiles. A named profile is planned as
+   `<browser>/<folder>` (`chromium/Default`), so the same folder in Chromium and Chrome is never one profile.
 
 ## Consequences
 
