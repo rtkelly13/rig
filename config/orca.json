@@ -125,16 +125,19 @@
     },
     "hearth": {
       "path": "~/code/personal/hearth",
+      "base_ref": "origin/main",
       "color": "#ef4444",
       "icon": "emoji:🔥"
     },
     "MySQLEFConcurrencyBug": {
       "path": "~/code/personal/MySQLEFConcurrencyBug",
+      "base_ref": "origin/main",
       "color": "#8b5cf6",
       "icon": "Database"
     },
     "AWSBatch-MapReduce": {
       "path": "~/code/personal/AWSBatch-MapReduce",
+      "base_ref": "origin/main",
       "color": "#22c55e",
       "icon": "Server"
     },
