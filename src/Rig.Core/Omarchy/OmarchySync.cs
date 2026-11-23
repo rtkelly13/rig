@@ -1,11 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.Packages;
 using Rig.Core.Processes;
 using Rig.Core.Text;
-using Tomlyn;
-using Tomlyn.Model;
 
 namespace Rig.Core.Omarchy;
 
@@ -79,12 +76,12 @@ public static class OmarchySync
         var logind = Indexes(pending, action => action.Check.Area == "logind" && action.Check.Setting != "lock-before-suspend");
         var unit = Indexes(pending, action => action.Check.Area == "logind" && action.Check.Setting == "lock-before-suspend");
 
-        await SetAsync(pending, shell, apply, () => Task.FromResult(WriteShell(policy, state, paths))).ConfigureAwait(false);
-        await SetAsync(pending, font, apply, () => Task.FromResult(WriteFont(policy, paths))).ConfigureAwait(false);
+        await SetAsync(pending, shell, apply, () => Task.FromResult(WriteShell(policy, paths))).ConfigureAwait(false);
+        await SetAsync(pending, font, apply, () => SetTextSize(policy.Font!.BaseSize, proc, cancellationToken)).ConfigureAwait(false);
         await SetAsync(pending, theme, apply, () => SetTheme(policy.Theme!, proc, cancellationToken)).ConfigureAwait(false);
         await SetAsync(pending, power, apply, () => SetPower(policy.Power!, proc, cancellationToken)).ConfigureAwait(false);
         await SetAsync(pending, menu, apply, () => Task.FromResult(SetSuspendMenu(policy.Suspend!, paths))).ConfigureAwait(false);
-        await SetAsync(pending, logind, apply, () => WriteLogind(policy.Suspend!, paths, proc, cancellationToken)).ConfigureAwait(false);
+        await SetAsync(pending, logind, apply, () => WriteLogind(policy.Suspend!, state.LogindText, paths, proc, cancellationToken)).ConfigureAwait(false);
         await SetAsync(pending, unit, apply, () => SetSleepLock(policy.LockBeforeSuspend!.Value, proc, cancellationToken)).ConfigureAwait(false);
         return pending;
     }
@@ -139,7 +136,7 @@ public static class OmarchySync
         return indexes;
     }
 
-    private static (bool Ok, string Detail) WriteShell(OmarchyPolicy policy, OmarchyState state, OmarchyPaths paths)
+    private static (bool Ok, string Detail) WriteShell(OmarchyPolicy policy, OmarchyPaths paths)
     {
         var desired = policy.Shell is null ? new JsonObject() : (JsonObject)policy.Shell.DeepClone();
         if (policy.Idle is { } idle)
@@ -149,29 +146,20 @@ public static class OmarchySync
                 OmarchyConfigJsonContext.Default.ShellIdleConfig);
         }
 
-        var merged = ShellDocument.Merge(state.Shell, desired);
+        // Merge over the file as it is now, not as Read saw it, so a key another writer changed since is kept.
+        var merged = ShellDocument.Merge(OmarchyState.ReadShell(paths.ShellFile), desired);
         EnsureParent(paths.ShellFile);
         File.WriteAllText(paths.ShellFile, JsonOutput.Format(merged, keepNonAscii: true) + "\n");
         return (true, $"wrote {paths.ShellFile}");
     }
 
-    private static (bool Ok, string Detail) WriteFont(OmarchyPolicy policy, OmarchyPaths paths)
+    // Omarchy's own text-size command sets the shell's base size, GTK's scaling factor and the terminals'
+    // font together; writing shell.toml alone would leave the other two at a different size.
+    private static async Task<(bool Ok, string Detail)> SetTextSize(int size, IProc proc, CancellationToken cancellationToken)
     {
-        var text = File.Exists(paths.ShellTomlFile) ? File.ReadAllText(paths.ShellTomlFile) : string.Empty;
-        var model = string.IsNullOrWhiteSpace(text)
-            ? new TomlTable()
-            : TomlSerializer.Deserialize<TomlTable>(text) ?? throw new InvalidDataException($"{paths.ShellTomlFile}: expected a TOML document");
-        if (model["font"] is not TomlTable font)
-        {
-            font = new TomlTable();
-            model["font"] = font;
-        }
-
-        font["base-size"] = (long)policy.Font!.BaseSize;
-        var output = TomlSerializer.Serialize(model);
-        EnsureParent(paths.ShellTomlFile);
-        File.WriteAllText(paths.ShellTomlFile, output.EndsWith('\n') ? output : output + "\n");
-        return (true, $"wrote {paths.ShellTomlFile}");
+        var text = size.ToString(CultureInfo.InvariantCulture);
+        var ran = await RunAsync(proc, cancellationToken, "omarchy", "display", "text", "size", text).ConfigureAwait(false);
+        return ran.Ok ? (true, $"set the text size to {text}px") : (false, Failure("omarchy display text size", ran));
     }
 
     private static async Task<(bool Ok, string Detail)> SetTheme(string theme, IProc proc, CancellationToken cancellationToken)
@@ -215,32 +203,50 @@ public static class OmarchySync
 
     private static async Task<(bool Ok, string Detail)> WriteLogind(
         SuspendPolicy suspend,
+        string? previous,
         OmarchyPaths paths,
         IProc proc,
         CancellationToken cancellationToken)
     {
+        var install = await InstallLogindAsync(LogindFile(suspend), paths, proc, cancellationToken).ConfigureAwait(false);
+        if (!install.Ok)
+        {
+            return (false, $"writing {paths.LogindDropIn} needs sudo; run 'rig omarchy sync --apply' in a terminal and enter its password (exit {install.Code.ToString(CultureInfo.InvariantCulture)})");
+        }
+
+        var reload = await Sudo(proc, cancellationToken, "systemctl", "reload", "systemd-logind").ConfigureAwait(false);
+        if (reload.Ok)
+        {
+            return (true, $"wrote {paths.LogindDropIn} and reloaded logind");
+        }
+
+        // The doctor compares the file, not logind's live values: leaving the new file in place would read
+        // as clean while logind still runs the old settings. Put the old file back so the next sync retries.
+        var restore = previous is null
+            ? await Sudo(proc, cancellationToken, "rm", "-f", paths.LogindDropIn).ConfigureAwait(false)
+            : await InstallLogindAsync(previous + "\n", paths, proc, cancellationToken).ConfigureAwait(false);
+        var outcome = restore.Ok
+            ? "restored the previous drop-in so the next sync retries"
+            : $"could not restore the previous drop-in; remove {paths.LogindDropIn} by hand before the next sync";
+        return (false, $"{Failure("sudo systemctl reload systemd-logind", reload)}; {outcome}");
+    }
+
+    private static async Task<Ran> InstallLogindAsync(string text, OmarchyPaths paths, IProc proc, CancellationToken cancellationToken)
+    {
         var temporary = Path.Join(Path.GetTempPath(), $"rig-omarchy-{Guid.NewGuid():N}.conf");
         try
         {
-            await File.WriteAllTextAsync(temporary, LogindFile(suspend), cancellationToken).ConfigureAwait(false);
-            var install = await proc.RunAsync(
-                new ProcRequest(["sudo", "install", "-D", "-m", "0644", temporary, paths.LogindDropIn]) { ConsoleInput = true },
-                cancellationToken).ConfigureAwait(false);
-            if (!install.Ok)
-            {
-                return (false, $"writing {paths.LogindDropIn} needs sudo; run 'rig omarchy sync --apply' in a terminal and enter its password (exit {install.Code.ToString(CultureInfo.InvariantCulture)})");
-            }
-
-            var reload = await proc.RunAsync(
-                new ProcRequest(["sudo", "systemctl", "reload", "systemd-logind"]) { ConsoleInput = true },
-                cancellationToken).ConfigureAwait(false);
-            return reload.Ok ? (true, $"wrote {paths.LogindDropIn} and reloaded logind") : (false, Failure("sudo systemctl reload systemd-logind", reload));
+            await File.WriteAllTextAsync(temporary, text, cancellationToken).ConfigureAwait(false);
+            return await Sudo(proc, cancellationToken, "install", "-D", "-m", "0644", temporary, paths.LogindDropIn).ConfigureAwait(false);
         }
         finally
         {
             File.Delete(temporary);
         }
     }
+
+    private static Task<Ran> Sudo(IProc proc, CancellationToken cancellationToken, params string[] argv) =>
+        proc.RunAsync(new ProcRequest(["sudo", .. argv]) { ConsoleInput = true }, cancellationToken);
 
     private static async Task<(bool Ok, string Detail)> SetSleepLock(bool enabled, IProc proc, CancellationToken cancellationToken)
     {

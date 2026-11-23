@@ -37,7 +37,7 @@ public sealed record SuspendPolicy(
 /// <param name="Battery">The profile for battery power, such as <c>power-saver</c>.</param>
 public sealed record PowerPolicy(string Ac, string Battery);
 
-/// <summary>The shell's base font size, stored in <c>shell.toml</c>.</summary>
+/// <summary>Omarchy's text size in px: the shell's <c>shell.toml</c> base size, with GTK and the terminals scaled to match.</summary>
 /// <param name="BaseSize">The size in points.</param>
 public sealed record FontPolicy(int BaseSize);
 
@@ -69,11 +69,11 @@ public sealed record OmarchyPolicy(
     /// <summary>The largest idle timeout Omarchy accepts: a day.</summary>
     public const int MaxIdleSeconds = 24 * 60 * 60;
 
-    /// <summary>The smallest and largest shell font size, in points.</summary>
-    public const int MinFontSize = 6;
+    /// <summary>The smallest text size <c>omarchy display text size</c> accepts, in px.</summary>
+    public const int MinFontSize = 9;
 
-    /// <summary>The largest shell font size, in points.</summary>
-    public const int MaxFontSize = 72;
+    /// <summary>The largest text size <c>omarchy display text size</c> accepts, in px.</summary>
+    public const int MaxFontSize = 20;
 
     /// <summary>Reads the policy file at <paramref name="path"/>.</summary>
     /// <exception cref="InvalidDataException">The file is malformed.</exception>

@@ -54,7 +54,8 @@ public sealed record OmarchyState(
             installed ? ReadSleepLock(proc) : null);
     }
 
-    private static JsonObject ReadShell(string path)
+    /// <summary>The parsed <c>shell.json</c>, or the default document when it does not exist.</summary>
+    internal static JsonObject ReadShell(string path)
     {
         if (!File.Exists(path))
         {
@@ -76,7 +77,8 @@ public sealed record OmarchyState(
         try
         {
             var document = TomlSerializer.Deserialize<TomlTable>(text);
-            return document?["font"] is TomlTable font && font.TryGetValue("base-size", out var size) && size is long value
+            return document is not null && document.TryGetValue("font", out var table) && table is TomlTable font
+                && font.TryGetValue("base-size", out var size) && size is long value
                 ? (int)value
                 : null;
         }
@@ -88,13 +90,15 @@ public sealed record OmarchyState(
 
     private static bool? ReadSleepLock(IProc proc)
     {
+        // is-enabled exits 1 for a disabled unit and for a user manager it cannot reach, so the
+        // printed state decides: no recognised state reads as unknown, never as disabled.
         var ran = proc.Run(new ProcRequest(["systemctl", "--user", "is-enabled", SleepLockUnit]));
-        if (!ran.Ok)
+        if (ran.Code == Ran.NotFound)
         {
-            return ran.Code == 1 ? false : null;
+            return null;
         }
 
-        return ran.OutOrEmpty switch
+        return ran.Out.Trim() switch
         {
             "enabled" or "enabled-runtime" => true,
             "disabled" or "masked" or "masked-runtime" => false,

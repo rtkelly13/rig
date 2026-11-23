@@ -1,10 +1,10 @@
 {
   "idle": {
-    "screensaver_seconds": 0,
-    "lock_seconds": 0
+    "screensaver_seconds": 1800,
+    "lock_seconds": 3600
   },
   "suspend": {
-    "menu": false,
+    "menu": true,
     "lid": "ignore",
     "power_key": "ignore",
     "suspend_key": "ignore",

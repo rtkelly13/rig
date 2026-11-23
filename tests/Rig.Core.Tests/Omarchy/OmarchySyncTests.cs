@@ -78,6 +78,82 @@ public sealed class OmarchySyncTests : IDisposable
     }
 
     [Fact]
+    public void A_user_manager_that_cannot_be_reached_reads_as_unknown_not_disabled()
+    {
+        Install();
+        _ = _proc.Answer(new Ran(1, string.Empty, "Failed to connect to bus"), "systemctl", "--user", "is-enabled");
+
+        Assert.Null(OmarchyState.Read(Paths, _proc).SleepLockEnabled);
+    }
+
+    [Fact]
+    public void A_shell_toml_without_a_font_table_reads_as_no_font_size()
+    {
+        Write(Paths.ShellTomlFile, "[bar]\nheight = 30\n");
+
+        Assert.Null(OmarchyState.Read(Paths, _proc).FontBaseSize);
+    }
+
+    [Fact]
+    public async Task Apply_merges_over_the_shell_file_as_it_is_when_written()
+    {
+        Install();
+        Write(Paths.ShellFile, """{"version": 1, "bar": {"position": "top"}}""");
+        var policy = OmarchyPolicy.Parse("""{"shell": {"bar": {"position": "bottom"}}}""");
+        var state = OmarchyState.Read(Paths, _proc);
+        Write(Paths.ShellFile, """{"version": 1, "bar": {"position": "top"}, "dock": {"enabled": true}}""");
+
+        _ = await OmarchySync.ApplyAsync(policy, state, Paths, _proc, apply: true, Token);
+
+        var shell = JsonNode.Parse(await File.ReadAllTextAsync(Paths.ShellFile, Token))!;
+        Assert.Equal("bottom", (string?)shell["bar"]?["position"]);
+        Assert.True((bool?)shell["dock"]?["enabled"]);
+    }
+
+    [Fact]
+    public async Task A_failed_logind_reload_restores_the_previous_drop_in_so_the_next_sync_retries()
+    {
+        Install();
+        Write(Paths.LogindDropIn, "[Login]\nHandleLidSwitch=suspend\n");
+        List<string> installed = [];
+        var proc = new FakeProc
+        {
+            BeforeRun = request =>
+            {
+                if (request.Argv is ["sudo", "install", ..])
+                {
+                    installed.Add(File.ReadAllText(request.Argv[^2]));
+                }
+            },
+        };
+        _ = proc.Answer(new Ran(0, string.Empty, string.Empty), "sudo");
+        _ = proc.Answer(new Ran(1, string.Empty, "reload refused"), "sudo", "systemctl", "reload");
+        var policy = OmarchyPolicy.Parse("""{"suspend": {"lid": "ignore"}}""");
+
+        var actions = await OmarchySync.ApplyAsync(policy, OmarchyState.Read(Paths, proc), Paths, proc, apply: true, Token);
+
+        Assert.All(actions, action => Assert.Equal(OmarchySync.ErrorStatus, action.Status));
+        Assert.All(actions, action => Assert.Contains("restored the previous drop-in", action.Detail, StringComparison.Ordinal));
+        Assert.Equal(2, installed.Count);
+        Assert.Contains("HandleLidSwitch=ignore", installed[0], StringComparison.Ordinal);
+        Assert.Contains("HandleLidSwitch=suspend", installed[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_failed_logind_reload_removes_a_drop_in_that_did_not_exist_before()
+    {
+        Install();
+        _ = _proc.Answer(new Ran(0, string.Empty, string.Empty), "sudo");
+        _ = _proc.Answer(new Ran(1, string.Empty, "reload refused"), "sudo", "systemctl", "reload");
+        var policy = OmarchyPolicy.Parse("""{"suspend": {"lid": "ignore"}}""");
+
+        var actions = await OmarchySync.ApplyAsync(policy, OmarchyState.Read(Paths, _proc), Paths, _proc, apply: true, Token);
+
+        Assert.All(actions, action => Assert.Equal(OmarchySync.ErrorStatus, action.Status));
+        Assert.Contains(_proc.Requests, request => request.Argv is ["sudo", "rm", "-f", var path] && path == Paths.LogindDropIn);
+    }
+
+    [Fact]
     public void A_malformed_shell_file_is_refused()
     {
         Write(Paths.ShellFile, "not json");
@@ -120,6 +196,7 @@ public sealed class OmarchySyncTests : IDisposable
             },
         };
         _ = proc.Answer(new Ran(0, string.Empty, string.Empty), "sudo");
+        _ = proc.Answer(new Ran(0, string.Empty, string.Empty), "omarchy", "display", "text", "size");
         var policy = OmarchyPolicy.Parse("""
             {"idle": {"screensaver_seconds": 0, "lock_seconds": 0},
              "suspend": {"menu": false, "lid": "ignore"},
@@ -135,7 +212,7 @@ public sealed class OmarchySyncTests : IDisposable
         Assert.Equal(0, JsonShape.AsInt32(shell["idle"]?["screensaver"]));
         Assert.Equal(0, JsonShape.AsInt32(shell["idle"]?["lock"]));
         Assert.Equal("bottom", (string?)shell["bar"]?["position"]);
-        Assert.Contains("base-size = 16", await File.ReadAllTextAsync(Paths.ShellTomlFile, Token), StringComparison.Ordinal);
+        Assert.Contains(proc.Requests, request => request.Argv is ["omarchy", "display", "text", "size", "16"]);
         Assert.True(File.Exists(Paths.ToggleFile("suspend-off")));
         Assert.Contains("[Login]", dropIn, StringComparison.Ordinal);
         Assert.Contains("HandleLidSwitch=ignore", dropIn, StringComparison.Ordinal);

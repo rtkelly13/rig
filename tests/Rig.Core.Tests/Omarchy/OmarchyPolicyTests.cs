@@ -16,8 +16,8 @@ public sealed class OmarchyPolicyTests
     {
         var policy = OmarchyPolicy.Load(CheckedInPolicy);
 
-        Assert.Equal(new IdlePolicy(0, 0), policy.Idle);
-        Assert.Equal(new SuspendPolicy(false, "ignore", "ignore", "ignore", "ignore", "ignore"), policy.Suspend);
+        Assert.Equal(new IdlePolicy(1800, 3600), policy.Idle);
+        Assert.Equal(new SuspendPolicy(true, "ignore", "ignore", "ignore", "ignore", "ignore"), policy.Suspend);
         Assert.True(policy.LockBeforeSuspend);
         Assert.Equal("tokyo-night", policy.Theme);
         Assert.Equal(new PowerPolicy("performance", "power-saver"), policy.Power);
@@ -53,6 +53,7 @@ public sealed class OmarchyPolicyTests
     [InlineData("""{"theme": "  "}""")]
     [InlineData("""{"power": {"ac": "performance"}}""")]
     [InlineData("""{"font": {"base_size": 4}}""")]
+    [InlineData("""{"font": {"base_size": 21}}""")]
     public void A_malformed_policy_is_refused(string text) =>
         Assert.Throws<InvalidDataException>(() => OmarchyPolicy.Parse(text));
 
@@ -86,6 +87,28 @@ public sealed class OmarchyPolicyTests
 
         Assert.Equal(("right[1]", "(missing)"), (difference.Path, difference.Have));
         Assert.Contains("\"b\"", difference.Want, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_array_element_with_a_key_the_policy_omits_is_drift()
+    {
+        var current = JsonNode.Parse("""{"center": [{"id": "omarchy.clock", "format": "ss"}]}""")!.AsObject();
+        var desired = JsonNode.Parse("""{"center": [{"id": "omarchy.clock"}]}""")!.AsObject();
+
+        var difference = Assert.Single(ShellDocument.Differences(current, desired));
+
+        Assert.Equal("center[0]", difference.Path);
+        Assert.Contains("\"ss\"", difference.Have, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_empty_object_declares_nothing_over_an_existing_object_but_is_drift_where_none_exists()
+    {
+        var desired = JsonNode.Parse("""{"bar": {}}""")!.AsObject();
+
+        Assert.Empty(ShellDocument.Differences(JsonNode.Parse("""{"bar": {"position": "top"}}""")!.AsObject(), desired));
+        Assert.Equal("bar", Assert.Single(ShellDocument.Differences(new JsonObject(), desired)).Path);
+        Assert.Equal("bar", Assert.Single(ShellDocument.Differences(JsonNode.Parse("""{"bar": 1}""")!.AsObject(), desired)).Path);
     }
 
     [Fact]

@@ -63,8 +63,9 @@ internal static class ShellDocument
 
     private static void DiffNode(bool exists, JsonNode? have, JsonNode? want, string path, List<ShellDifference> differences)
     {
-        if (want is JsonObject wantedObject && wantedObject.Count > 0)
+        if (want is JsonObject wantedObject && (wantedObject.Count > 0 || (exists && have is JsonObject)))
         {
+            // An object merges key by key, so an empty one declares nothing over an existing object.
             Diff(exists ? have as JsonObject : null, wantedObject, path, differences);
             return;
         }
@@ -94,9 +95,10 @@ internal static class ShellDocument
             {
                 differences.Add(new(itemPath, "(missing)", Format(want[index])));
             }
-            else
+            else if (!JsonNode.DeepEquals(have[index], want[index]))
             {
-                DiffNode(true, have[index], want[index], itemPath, differences);
+                // Merge replaces an array whole, so an element must match exactly: a key the policy omits is drift.
+                differences.Add(new(itemPath, Format(have[index]), Format(want[index])));
             }
         }
     }

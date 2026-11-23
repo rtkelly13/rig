@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
-using Rig.Core.Packages;
 using Rig.Core.Text;
 
 namespace Rig.Core.Omarchy;
@@ -88,7 +87,7 @@ public static class OmarchyPlan
 
         if (policy.Font is { } font)
         {
-            checks.Add(Simple("font", "base_size", Number(state.FontBaseSize), Number(font.BaseSize), $"Set font.base-size to {font.BaseSize} in ~/.config/omarchy/shell.toml"));
+            checks.Add(Simple("font", "base_size", Number(state.FontBaseSize), Number(font.BaseSize), $"Run omarchy display text size {font.BaseSize}"));
         }
 
         if (policy.Suspend is { } suspend)
@@ -165,7 +164,7 @@ public static class OmarchyPlan
 
         foreach (var line in text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
         {
-            if (line.StartsWith('[') || line.StartsWith('#') || line.StartsWith(';'))
+            if (line.StartsWith('[', StringComparison.Ordinal) || line.StartsWith('#', StringComparison.Ordinal) || line.StartsWith(';', StringComparison.Ordinal))
             {
                 continue;
             }
