@@ -2,7 +2,7 @@ using System.CommandLine;
 using DotMake.CommandLine;
 using Rig.Core;
 
-namespace Rig.Cli;
+namespace Rig.Cli.Commands;
 
 /// <summary>
 /// Turns one DotMake declaration (ADR 0023) into the command rig composes. rig's root is still stitched in

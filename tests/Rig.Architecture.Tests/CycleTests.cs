@@ -7,7 +7,7 @@ namespace Rig.Architecture.Tests;
 
 /// <summary>
 /// The target architecture's rule that the graph is acyclic at every depth, namespaces included. <c>(**)</c> makes
-/// every full namespace its own slice, the root <c>Rig.Core</c> too, so <c>Desktop</c> and
+/// every full namespace its own slice, the roots <c>Rig.Core</c> and <c>Rig.Cli</c> too, so <c>Desktop</c> and
 /// <c>Desktop.Windows</c> may not reference each other both ways. ArchUnitNET reads the compiled IL, so any type
 /// reference counts, not only a <c>using</c>. A cycle almost always means a shared concept lives inside one feature;
 /// the fix is to move it down a layer.
@@ -27,11 +27,9 @@ public sealed class CycleTests
             .Select(result => result.Description)
             .ToList();
 
-    // Rig.Cli's own namespace is left out until the command base classes move out of it; the commands below it
-    // inherit them, so it is in a cycle with every command group today.
     [Theory]
     [InlineData("Rig.Core")]
-    [InlineData("Rig.Cli.")]
+    [InlineData("Rig.Cli")]
     public void Namespaces_are_free_of_cycles(string root)
     {
         var cycles = Cycles(Compiled, root);

@@ -2,6 +2,7 @@
 using System.CommandLine;
 using System.Diagnostics;
 using Rig.Cli.Agent;
+using Rig.Cli.Commands;
 using Rig.Cli.Gh;
 using Rig.Cli.Gh.Threads;
 using Rig.Core;

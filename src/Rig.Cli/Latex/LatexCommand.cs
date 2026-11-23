@@ -1,5 +1,6 @@
 using System.CommandLine;
 using DotMake.CommandLine;
+using Rig.Cli.Commands;
 using Rig.Core;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
