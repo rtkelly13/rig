@@ -28,6 +28,7 @@ rig jobs install
 | [runtime.md](runtime.md) | The pinned copy the scheduled tasks run from: install, status, rollback |
 | [work-items.md](work-items.md) | `work list`: branches, worktrees, PRs and Claude sessions joined per repo and branch, and its JSON schema |
 | [chrome-tabs-uia.md](chrome-tabs-uia.md) | `chrome-tabs list/prune`: reading and closing Chrome tabs through UI Automation |
+| [chrome-tabs-extension.md](chrome-tabs-extension.md) | `chrome-tabs` on Linux: installing and checking the extension the driver works through |
 
 ## Where things live
 

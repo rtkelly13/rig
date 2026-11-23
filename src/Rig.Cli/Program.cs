@@ -29,6 +29,7 @@ using Rig.Cli.Web;
 using Rig.Cli.Work;
 using Rig.Cli.Workspace;
 using Rig.Core.Browser;
+using Rig.Core.Chrome.Extension;
 using Rig.Core.Devenv;
 using Rig.Core.Estate;
 using Rig.Core.Flags;
@@ -58,13 +59,15 @@ namespace Rig.Cli;
 [ExcludeFromCodeCoverage(Justification = "Wiring only; RigApp carries the behaviour and is tested.")]
 internal static class Program
 {
-    internal static Task<int> Main(string[] args) => Run(ScheduledLaunch.Apply(args));
+    internal static Task<int> Main(string[] args) => Run(ScheduledLaunch.Apply(ChromeExtensionCommand.HostArguments(args)));
 
     private static async Task<int> Run(string[] args)
     {
         var exportTree = args.Length > 0 && args[0] == "--export-command-tree";
         var exportWindowsTree = exportTree && args.Contains("windows", StringComparer.Ordinal);
         var exportMacTree = exportTree && args.Contains("macos", StringComparer.Ordinal);
+        var exportLinuxTree = exportTree && !exportWindowsTree && !exportMacTree;
+        var linux = exportTree ? exportLinuxTree : OperatingSystem.IsLinux();
         // The code root and the checkout, resolved once; everything below derives its paths from this layout.
         var layout = EstateLayout.Current();
         var codeRoot = layout.CodeRoot;
@@ -208,8 +211,20 @@ internal static class Program
 #pragma warning restore CA1416
                             new GhApi(proc),
                             () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
+                        : linux ? new ChromeTabsDriver(
+                            () => OperatingSystem.IsLinux() ? LinuxChrome.Open(Environment.GetEnvironmentVariable, home) : throw new PlatformNotSupportedException("Inspection never opens a native driver."),
+                            new GhApi(proc),
+                            () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
                         : null,
-                    exportTree ? exportWindowsTree : OperatingSystem.IsWindowsVersionAtLeast(8, 1)).Build,
+                    exportTree ? exportWindowsTree : OperatingSystem.IsWindowsVersionAtLeast(8, 1),
+                    extension: linux
+                        ? new ChromeExtensionCommand(
+                            new ExtensionInstaller(home, ProgramPath.Find("rig") ?? Environment.ProcessPath ?? "rig"),
+                            LinuxChrome.Bridge(Environment.GetEnvironmentVariable, home),
+                            Path.Join(AppContext.BaseDirectory, "chrome-extension"),
+                            ExtensionPlaces.SocketFolder(Environment.GetEnvironmentVariable, home),
+                            Console.Out).Build
+                        : null).Build,
                 new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out, Console.Error).Build,
                 new C4Command(
                     new C4Host(Path.Join(checkout, "experiments", "c4-okf", "rig"), (directory, arguments) => git.OutAsync(directory, [.. arguments])),

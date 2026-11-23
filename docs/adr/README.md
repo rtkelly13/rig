@@ -47,3 +47,4 @@ This directory contains the durable architectural ledger for `shared-utilities`.
 | **[0023](0023-declarative-aot-dotnet-cli-tooling.md)** | Declarative Native AOT .NET CLI Tooling Architecture | .NET CLI Tooling | Accepted |
 | **[0024](0024-image-pipeline-in-csharp.md)** | The Image Pipeline in C# Has Two Renderers That Cross-Check Each Other | Brand Assets | Accepted |
 | **[0025](0025-paket-for-nuget-dependencies.md)** | NuGet Dependencies Are Managed by Paket | .NET Packaging | Proposed |
+| **[0026](0026-chrome-tabs-on-linux-through-an-extension.md)** | Chrome Tabs on Linux Work Through rig's Own Extension | Chrome Tabs | Proposed |

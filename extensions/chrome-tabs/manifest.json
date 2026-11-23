@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "rig chrome-tabs",
+  "version": "0.1.0",
+  "description": "Lets `rig chrome-tabs` read, close, group and move this profile's tabs. Installed by rig; all decisions are made by rig.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyvyIPNR3NSXZNFhD4uUXOffIv6LzM8NTVDxbEqj34Ycsscgq+7LSiXYgZZJb4icZRugXr/Du+uCx2eHmz6zS8HPb/bv7r70ZzhwMRj0vlaZ4cd2eHhpod08u2EYBUVwTfjPJh/uL8wC8BJU1VyWFV67x4Vp0YLrVTGVHekGOgKiSRLp2SdTUAvOXU+0IIDC4+7EFUr23SQuDye0t4KngMUIunWF5Er6YHSbpds8JywY9ZooTc9kG6dWUlp7eBIfQPbyK/d+tspDMzR7O+wPCtx0F1O39+JCIUt5dB/9e2bvjw1aNCjhd2Sl4vzeDBBZR3PkbbiTeFASk/iwa4XR6ZwIDAQAB",
+  "minimum_chrome_version": "120",
+  "permissions": ["tabs", "tabGroups", "nativeMessaging", "identity", "identity.email", "alarms"],
+  "background": { "service_worker": "background.js" }
+}
